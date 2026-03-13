@@ -116,7 +116,7 @@ export const ui = {
 
         'fleets.start.page_title': 'Start a fleet',
         'fleets.start.leading_text': 'Create and start tracking a fleet now. You must already be in a fleet in-game. No Discord ping or schedule.',
-        'fleets.start.choose_character': 'Choose the character that is in the fleet',
+        'fleets.start.choose_character': 'Choose the character that is in the fleet previously created in game.',
         'fleets.start.choose_character_hint': 'The fleet must already be created in game.',
         'fleets.start.button': 'Start a fleet',
 
@@ -2049,5 +2049,8 @@ export const ui = {
         'asignee': 'Asignee',
         'doctrines_plural': '{count} doctrines',
         'doctrines_singular': '1 doctrine',
+        'fleet_unexpected_error': 'An unexpected error ocurred: No fleet data.',
+        'starting_fleet': 'Starting fleet',
+        'no_pilots_to_show': 'No pilots to show',
     },
 } as const;

@@ -1,0 +1,79 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { prod_error_messages } from '@helpers/env'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user: User | false = auth_token ? (jose.decodeJwt(auth_token as string) as User) : false
+const is_superuser = user ? user?.is_superuser : false
+
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(Astro.url.toString())}`)
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = user ? await get_user_permissions(user?.username) : []
+const can_view_page = is_superuser || user_permissions.includes('fleets.add_evefleet')
+
+if (!can_view_page) return HTTP_403_Forbidden()
+
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import type { Alert } from '@dtypes/layout_components'
+import { get_characters_summary_sorted } from '@helpers/fetching/characters'
+import { start_fleet_now } from '@helpers/api.minmatar.org/fleets'
+import { send_active_fleet_notification } from '@helpers/notifications'
+
+let alert:Alert | false = false
+
+if (Astro.request.method === 'POST') {
+    const data = await Astro.request.formData()
+    const fcId = data.get('fc_character_id')
+    const fc_character_id = fcId != null && fcId !== '' ? parseInt(fcId as string) : undefined
+    
+    try {
+        const fleet = await start_fleet_now(auth_token as string, fc_character_id)
+        send_active_fleet_notification(auth_token as string, fleet.id)
+
+        return Astro.redirect(translatePath(`/fleets/upcoming/${fleet.id}`))
+    } catch (e) {
+        alert = {
+            title: t('starting_fleet'),
+            content: prod_error_messages() ? t('start_fleet_error') : (e as Error).message,
+        }
+    }
+}
+
+let pilots: SummaryCharacter[] = []
+let fetch_error: string | false = false
+
+try {
+    const summary = await get_characters_summary_sorted(auth_token as string)
+    pilots = summary.characters ?? []
+} catch (e) {
+    fetch_error = prod_error_messages() ? t('get_characters_error') : (e as Error).message
+}
+
+const FLET_START_PARTIAL_URL = translatePath('/partials/fleet_start_component/')
+
+import ShowAlert from '@components/blocks/ShowAlert.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import StartFleet from '@components/blocks/StartFleet.astro'
+---
+
+{alert && <ShowAlert alert={alert} /> }
+
+{fetch_error ?
+    <ErrorRefetch
+        args={{
+            partial: FLET_START_PARTIAL_URL,
+            message: fetch_error,
+            delay: 0,
+        }}
+    /> :
+    pilots.length > 0 ?
+        <StartFleet pilots={pilots} /> :
+        <p>{t('no_pilots_to_show')}</p>
+}

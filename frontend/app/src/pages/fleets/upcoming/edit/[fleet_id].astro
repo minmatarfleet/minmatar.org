@@ -28,7 +28,7 @@ if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
 
 import { update_fleet, get_audiences, start_fleet } from '@helpers/api.minmatar.org/fleets'
-import type { FleetRequest, FleetTypes, Audience } from '@dtypes/api.minmatar.org'
+import type { FleetPatchRequest, FleetTypes, Audience } from '@dtypes/api.minmatar.org'
 import type { DoctrineType, CharacterBasic, Alert } from '@dtypes/layout_components'
 import { send_active_fleet_notification } from '@helpers/notifications'
 
@@ -48,7 +48,7 @@ if (Astro.request.method === "POST") {
             type: data.get('fleet_type') as FleetTypes,
             audience_id: parseInt(data.get('audience_id') as string),
             disable_motd: (data.get('disable_motd' as string) === 'on'),
-        } as FleetRequest
+        } as FleetPatchRequest
         
         const updated_fleet = await update_fleet(auth_token as string, fleet_data, fleet_id)
 
@@ -119,6 +119,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
 import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
 import FleetForm from '@components/blocks/FleetForm.astro'
+import DebugTag from '@components/blocks/DebugTag.astro'
 
 const page_title = `${t('fleet')} ${fleet?.id ?? ''}`;
 
@@ -181,16 +182,19 @@ const eve_time = eve_datetime.toTimeString().slice(0, 5)
                     }}
                 />
                 :
-                <FleetForm
-                    fleet={fleet}
-                    audiences={audiences}
-                    doctrines={doctrines}
-                    fleet_commander={fleet_commander}
-                    eve_date={eve_date}
-                    eve_time={eve_time}
-                    disable_motd={fleet?.disable_motd}
-                    lang={lang}
-                />
+                <>{fleet && audiences && fleet_commander ?
+                    <FleetForm
+                        fleet={fleet}
+                        audiences={audiences}
+                        doctrines={doctrines}
+                        fleet_commander={fleet_commander}
+                        eve_date={eve_date}
+                        eve_time={eve_time}
+                        disable_motd={fleet?.disable_motd}
+                        lang={lang}
+                    />:
+                    <DebugTag>{t('fleet_unexpected_error')}</DebugTag>
+                }</>
             }
         </Flexblock>
 	</PageDefault>
