@@ -327,7 +327,7 @@ def get_v3_fleets(
     if fleet_filter == EveFleetFilter.ACTIVE:
         fleets = (
             EveFleet.objects.filter(evefleetinstance__end_time=None)
-            .filter(start_time__gte=timezone.now() - timedelta(hours=1))
+            .filter(start_time__gte=timezone.now() - timedelta(hours=24))
             .order_by("-start_time")
         )
     elif fleet_filter == EveFleetFilter.UPCOMING:

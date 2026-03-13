@@ -24,7 +24,7 @@ let active_fleet_index:number = -1 // No active fleet
 try {
     fleets = await fetch_fleets_auth(auth_token as string)
     fleets = fleets.filter((i) => (new Date(i.start_time).getTime() < new Date(Date.now() + 24 * 60 * 60 * 1000).getTime()))
-    fleets = fleets.filter((i) => (new Date(i.start_time).getTime() > new Date(Date.now() - 60 * 60 * 1000).getTime()))
+    fleets = fleets.filter((i) => i.status === 'active' || (new Date(i.start_time).getTime() > new Date(Date.now() - 60 * 60 * 1000).getTime()))
     fleets.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
     active_fleet_index = fleets.findIndex(fleet => fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time)
     console.log(active_fleet_index)
