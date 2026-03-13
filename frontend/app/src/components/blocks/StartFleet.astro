@@ -1,0 +1,70 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    pilots:     SummaryCharacter[];
+}
+
+const {
+    pilots,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Grid from '@components/compositions/Grid.astro'
+
+import CharacterCard from '@components/blocks/CharacterCard.astro'
+import CorporationBadge from '@components/blocks/CorporationBadge.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
+
+const FLET_START_PARTIAL_URL = translatePath('/partials/fleet_start_component/')
+---
+
+<form
+    method="post"
+    action={FLET_START_PARTIAL_URL}
+    class="block w-full"
+    x-on:submit="$nextTick(() => {
+        submitted = true
+    })"
+    x-data={`{
+        submitted: false,
+    }`}
+>
+    <Grid
+        role="list"
+        class="[ w-full grid-fill ]"
+        min_item_width='240px'
+        row_gap='var(--space-3xs)'
+        column_gap='var(--space-3xs)'
+    >
+        {pilots.map((pilot) => (
+            <StylessButton
+                type="submit"
+                name="fc_character_id"
+                value={pilot.character_id}
+                x-bind:disabled="submitted"
+            >
+                <CharacterCard
+                    character_id={pilot.character_id}
+                    character_name={pilot.character_name}
+                    inert={true}
+                >
+                    <Flexblock gap='var(--space-3xs)'>
+                        <h3>{pilot.character_name}</h3>
+                        <CorporationBadge
+                            corporation={{
+                                id: pilot.corp_id,
+                                name: pilot.corp_name,
+                                size: 'xs',
+                            }}
+                            highlight={false}
+                        />
+                    </Flexblock>
+                </CharacterCard>
+            </StylessButton>
+        ))}
+    </Grid>
+</form>

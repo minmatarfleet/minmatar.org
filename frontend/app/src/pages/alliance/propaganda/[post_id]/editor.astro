@@ -51,8 +51,6 @@ if (Astro.request.method === "POST") {
             tag_ids: tag_ids,
         } as PostParams
 
-        console.log(submitted_post_data)
-
         if (isNaN(submitted_post_id))
             post = await create_post(auth_token as string, submitted_post_data)
         else
