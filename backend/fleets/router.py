@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import List, Optional
 
-from django.db.models import Count, F, OuterRef, Subquery
+from django.db.models import Count, F, Q, OuterRef, Subquery
 from django.db.models.functions import Coalesce
 from django.contrib.auth.models import User
 from django.utils import timezone
@@ -327,7 +327,10 @@ def get_v3_fleets(
     if fleet_filter == EveFleetFilter.ACTIVE:
         fleets = (
             EveFleet.objects.filter(evefleetinstance__end_time=None)
-            .filter(start_time__gte=timezone.now() - timedelta(hours=24))
+            .filter(
+                Q(status="cancelled", start_time__gte=timezone.now() - timedelta(hours=1)) |
+                Q(~Q(status="cancelled"), start_time__gte=timezone.now() - timedelta(hours=24))
+            )
             .order_by("-start_time")
         )
     elif fleet_filter == EveFleetFilter.UPCOMING:
