@@ -33,10 +33,17 @@ def get_character_tokens(request, character_id: int):
         or user_in_team(request.user, PEOPLE_TEAM)
         or user_in_team(request.user, TECH_TEAM)
     )
+    requested_groups = getattr(character, "esi_scope_groups", None)
+    if not requested_groups and character.esi_token_level:
+        requested_groups = [character.esi_token_level.strip()]
+    requested_groups = requested_groups or []
+
     response = []
     for token in Token.objects.filter(character_id=character.character_id):
         if is_admin or token.user == request.user:
             scopes = scope_names(token)
+            actual_group = scope_group(token)
+            actual_groups = [actual_group] if actual_group else []
             response.append(
                 CharacterTokenInfo(
                     id=str(token.pk),
@@ -45,13 +52,15 @@ def get_character_tokens(request, character_id: int):
                     can_refresh=token.can_refresh,
                     owner_hash=token.character_owner_hash,
                     scopes=scopes,
-                    requested_level=character.esi_token_level or "",
+                    requested_groups=requested_groups,
+                    actual_groups=actual_groups,
                     requested_count=len(character_desired_scopes(character)),
-                    actual_level=scope_group(token) or "",
                     actual_count=len(scopes),
                     token_state=(
                         "SUSPENDED" if character.esi_suspended else "ACTIVE"
                     ),
+                    requested_level=character.esi_token_level or "",
+                    actual_level=actual_group or "",
                 )
             )
     return response
