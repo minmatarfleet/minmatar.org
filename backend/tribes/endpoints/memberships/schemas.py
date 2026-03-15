@@ -27,6 +27,10 @@ class MembershipSchema(BaseModel):
     approved_by_id: Optional[int] = None
     approved_at: Optional[str] = None
     left_at: Optional[str] = None
+    # Primary character for the membership's user (always present when available).
+    primary_character_id: Optional[int] = None
+    primary_character_name: str = ""
+    # Committed characters (alts) in the group; only populated when viewer has permission.
     characters: List[MembershipCharacterSchema] = []
 
 

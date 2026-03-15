@@ -116,6 +116,10 @@ export interface TribeMembership {
     approved_by_id:         number | null;
     approved_at:            string | null;
     left_at:                string | null;
+    /** Always present when available; returned for all viewers. */
+    primary_character_id:   number | null;
+    primary_character_name: string;
+    /** Committed characters (alts); only populated when viewer is a tribe chief/manager. */
     characters:             TribeMembershipCharacter[];
 }
 

@@ -25,7 +25,8 @@ from tribes.endpoints.groups.schemas import (
     TribeMemberActivityBreakdownItemSchema,
     TribeMemberActivitySchema,
 )
-from tribes.models import TribeGroupActivityRecord, TribeGroupMembership
+from tribes.helpers import user_is_tribe_chief
+from tribes.models import Tribe, TribeGroupActivityRecord, TribeGroupMembership
 
 PATH = "/{tribe_id}/members/{member_id}/activity"
 METHOD = "get"
@@ -66,6 +67,10 @@ def get_tribe_member_activity(
     since: str | None = Query(None),
     until: str | None = Query(None),
 ):
+    tribe = Tribe.objects.filter(pk=tribe_id).first()
+    if not tribe:
+        return 404, {"detail": "Tribe not found."}
+
     is_member = TribeGroupMembership.objects.filter(
         tribe_group__tribe_id=tribe_id,
         user_id=member_id,
@@ -73,6 +78,8 @@ def get_tribe_member_activity(
     ).exists()
     if not is_member:
         return 404, {"detail": "Member not found."}
+
+    can_view_members = user_is_tribe_chief(request.user, tribe)
 
     qs = TribeGroupActivityRecord.objects.filter(
         tribe_group_activity__tribe_group__tribe_id=tribe_id,
@@ -135,14 +142,17 @@ def get_tribe_member_activity(
         primary_character_id = None
         primary_character_name = ""
 
-    chars = user_characters(user)
-    alts = [
-        CharacterRefSchema(
-            character_id=c.character_id, character_name=c.character_name or ""
-        )
-        for c in chars
-        if not primary or c.pk != primary.pk
-    ]
+    alts = []
+    if can_view_members:
+        chars = user_characters(user)
+        alts = [
+            CharacterRefSchema(
+                character_id=c.character_id,
+                character_name=c.character_name or "",
+            )
+            for c in chars
+            if not primary or c.pk != primary.pk
+        ]
 
     return 200, TribeMemberActivitySchema(
         primary_character_id=primary_character_id,

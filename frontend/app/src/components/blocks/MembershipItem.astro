@@ -39,6 +39,19 @@ import Tag from '@components/blocks/Tag.astro';
         gap='var(--space-2xs)'
         class="[ membership-characters ][ basis-[350px] ]"
     >
+        {membership.primary_character_id &&
+            <div
+                data-tippy-content={membership.primary_character_name}
+                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+            >
+                <CharacterPicture
+                    character_id={membership.primary_character_id}
+                    character_name={membership.primary_character_name}
+                    size={32}
+                />
+                <div class="[ sr-only ]">{membership.primary_character_name}</div>
+            </div>
+        }
         {membership.characters.map((character) => {
             const hasStatus = character.qualifies != null || character.missing_skills != null || character.missing_assets != null
             const statusLabel = hasStatus

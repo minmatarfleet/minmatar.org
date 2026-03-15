@@ -52,7 +52,18 @@ def post_membership_approve(
     membership.history_changed_by = request.user
     membership.save()
 
-    return 200, serialize_membership(membership)
+    membership = (
+        TribeGroupMembership.objects.select_related(
+            "user__eveplayer__primary_character",
+        )
+        .prefetch_related("characters__character")
+        .get(pk=membership.pk)
+    )
+    return 200, serialize_membership(
+        membership,
+        include_requirement_status=True,
+        include_characters=True,
+    )
 
 
 def _send_welcome_message(user, tg):

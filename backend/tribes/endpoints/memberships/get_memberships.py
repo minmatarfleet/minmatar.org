@@ -38,13 +38,20 @@ def get_memberships(
         qs = qs.filter(status=status)
 
     can_manage = user_can_manage_group(request.user, tg)
-    qs = qs.select_related("tribe_group__tribe").prefetch_related(
+    qs = qs.select_related(
+        "tribe_group__tribe",
+        "user__eveplayer__primary_character",
+    ).prefetch_related(
         "characters__character",
         "tribe_group__requirements__asset_types__eve_type",
         "tribe_group__requirements__qualifying_skills__eve_type",
     )
 
     return 200, [
-        serialize_membership(m, include_requirement_status=can_manage)
+        serialize_membership(
+            m,
+            include_requirement_status=can_manage,
+            include_characters=can_manage,
+        )
         for m in qs
     ]
