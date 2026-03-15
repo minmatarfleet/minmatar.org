@@ -25,7 +25,7 @@ function getRedditImageWidth(url) {
 }
 
 const width = getRedditImageWidth(src)
-const zoomSrc = `/_image?href=${encodeURIComponent(src)}&w=${width ?? 1080}&q=90&f=webp`
+const zoomSrc = `/_image?href=${encodeURIComponent(src).replaceAll('amp%3B', '')}&w=${width ?? 1080}&q=90&f=webp`
 ---
 
 <figure
