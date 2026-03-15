@@ -3,7 +3,7 @@
 import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class BasicCharacterResponse(BaseModel):
@@ -56,11 +56,15 @@ class CharacterTokenInfo(BaseModel):
     can_refresh: bool
     owner_hash: str
     scopes: List[str]
-    requested_level: str
+    # Token groups (preferred): groups requested for the character and groups this token satisfies.
+    requested_groups: List[str] = []
+    actual_groups: List[str] = []
     requested_count: int
-    actual_level: str
     actual_count: int
     token_state: str
+    # Deprecated: use requested_groups / actual_groups instead.
+    requested_level: str = Field(default="", deprecated=True)
+    actual_level: str = Field(default="", deprecated=True)
 
 
 class CharacterTagResponse(BaseModel):
