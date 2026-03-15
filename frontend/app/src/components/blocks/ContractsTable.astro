@@ -78,12 +78,12 @@ import { query_string } from '@helpers/string';
 const REEL_GAP = 80
 
 import Flexblock from '@components/compositions/Flexblock.astro';
-import BlockList from '@components/compositions/BlockList.astro';
 
 import ContractMarketFittingCard from '@components/blocks/ContractMarketFittingCard.astro';
 import Progress from '@components/blocks/Progress.astro';
 import LocationsReel from '@components/blocks/LocationsReel.astro';
 import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
+import Table from '@components/blocks/Table.astro';
 ---
 
 <Flexblock gap='var(--space-xl)'>
@@ -138,25 +138,25 @@ import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
     <Flexblock gap='var(--space-2xl)'>
         <Flexblock gap='var(--space-l)'>
             <h3 class="[ group-title ]">{t('expected_fittings')}</h3>
-            <BlockList role="list" gap='var(--space-l)'>
+            <Table>
                 {sorted_contracts_with_expectations.map((fitting) =>
                     <div x-show="show_item($el)">
                         <ContractMarketFittingCard fitting={fitting} no_expectation_progress={false} />
                     </div>
                 )}
                 <p class="[ no-result-text ]">{t('no_results')}</p>
-            </BlockList>
+            </Table>
         </Flexblock>
         <Flexblock gap='var(--space-l)'>
             <h3 class="[ group-title ]">{t('other_fittings_seeded_at_station')}</h3>
-            <BlockList role="list" gap='var(--space-l)'>
+            <Table>
                 {sorted_contracts_without_expectations.map((fitting) =>
                     <div x-show="show_item($el)">
                         <ContractMarketFittingCard fitting={fitting} no_expectation_progress={false} />
                     </div>
                 )}
                 <p class="[ no-result-text ]">{t('no_results')}</p>
-            </BlockList>
+            </Table>
         </Flexblock>
     </Flexblock>
 </Flexblock>

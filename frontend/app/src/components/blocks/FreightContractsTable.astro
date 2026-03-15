@@ -29,13 +29,13 @@ const STATIONS_NAMES = {
 const active_contracts_location_count = active_contracts_location?.destinations.reduce((c, destination) => c + destination.contracts.length, 0) ?? 0
 
 import Flexblock from '@components/compositions/Flexblock.astro';
-import BlockList from '@components/compositions/BlockList.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import FreightContractItem from '@components/blocks/FreightContractItem.astro';
 import LocationsReel from '@components/blocks/LocationsReel.astro';
 import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
 import NotificationBadge from '@components/blocks/NotificationBadge.astro';
+import Table from '@components/blocks/Table.astro';
 
 import ArrowRightIcon from '@components/icons/ArrowRightIcon.astro';
 ---
@@ -86,14 +86,14 @@ import ArrowRightIcon from '@components/icons/ArrowRightIcon.astro';
                     </NotificationBadge>
                     <h3 class="[ group-title ]">{STATIONS_NAMES[destination.location_name] ?? destination.location_name}</h3>
                 </FlexInline>
-                <BlockList role="list" gap='var(--space-l)'>
+                <Table>
                     {destination.contracts.map(contract =>
                         <div x-show="show_item($el)">
                             <FreightContractItem contract={contract} init_tooltips={init_tooltips} />
                         </div>
                     )}
                     <p class="[ no-result-text ]">{t('no_results')}</p>
-                </BlockList>
+                </Table>
             </Flexblock>
         )}
     </Flexblock>

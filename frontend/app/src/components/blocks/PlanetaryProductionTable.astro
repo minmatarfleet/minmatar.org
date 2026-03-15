@@ -17,16 +17,16 @@ const {
 } = Astro.props
 
 import Flexblock from '@components/compositions/Flexblock.astro';
-import BlockList from '@components/compositions/BlockList.astro';
 
 import HarvestResourceItem from '@components/blocks/HarvestResourceItem.astro';
 import ProductionResourceItem from '@components/blocks/ProductionResourceItem.astro';
+import Table from '@components/blocks/Table.astro';
 ---
 
 <Flexblock gap='var(--space-2xl)'>
     <Flexblock gap='var(--space-l)'>
         <h3 class="[ group-title ]">{t('harvest_summary')}</h3>
-        <BlockList role="list" gap='var(--space-l)'>
+        <Table>
             {harvest.map((resource) =>
                 <div x-show="show_item($el)">
                     <HarvestResourceItem
@@ -36,12 +36,12 @@ import ProductionResourceItem from '@components/blocks/ProductionResourceItem.as
                 </div>
             )}
             <p class="[ no-result-text ]">{t('no_results')}</p>
-        </BlockList>
+        </Table>
     </Flexblock>
 
     <Flexblock gap='var(--space-l)'>
         <h3 class="[ group-title ]">{t('production_summary')}</h3>
-        <BlockList role="list" gap='var(--space-l)'>
+        <Table>
             {production.map((resource) =>
                 <div x-show="show_item($el)">
                     <ProductionResourceItem
@@ -51,7 +51,7 @@ import ProductionResourceItem from '@components/blocks/ProductionResourceItem.as
                 </div>
             )}
             <p class="[ no-result-text ]">{t('no_results')}</p>
-        </BlockList>
+        </Table>
     </Flexblock>
 </Flexblock>
 

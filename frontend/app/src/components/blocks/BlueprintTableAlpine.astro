@@ -8,11 +8,11 @@ const {
 } = Astro.props
 
 import BlueprintTableItemAlpine from '@components/blocks/BlueprintTableItemAlpine.astro';
-import BlockList from '@components/compositions/BlockList.astro';
+import Table from '@components/blocks/Table.astro';
 ---
 
-<BlockList gap='var(--space-l)'>
+<Table>
     <template x-for="blueprint in blueprints_filtered">
         <BlueprintTableItemAlpine is_copy={is_copy} />
     </template>
-</BlockList>
+</Table>
