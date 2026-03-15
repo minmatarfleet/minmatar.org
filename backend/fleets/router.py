@@ -328,8 +328,14 @@ def get_v3_fleets(
         fleets = (
             EveFleet.objects.filter(evefleetinstance__end_time=None)
             .filter(
-                Q(status="cancelled", start_time__gte=timezone.now() - timedelta(hours=1)) |
-                Q(~Q(status="cancelled"), start_time__gte=timezone.now() - timedelta(hours=24))
+                Q(
+                    status="cancelled",
+                    start_time__gte=timezone.now() - timedelta(hours=1),
+                )
+                | Q(
+                    ~Q(status="cancelled"),
+                    start_time__gte=timezone.now() - timedelta(hours=24),
+                )
             )
             .order_by("-start_time")
         )
