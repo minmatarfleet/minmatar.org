@@ -14,11 +14,11 @@ const {
     init_tooltips,
 } = Astro.props
 
-import BlockList from '@components/compositions/BlockList.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import MembershipItem from '@components/blocks/MembershipItem.astro';
+import Table from '@components/blocks/Table.astro';
 
 import MemberIcon from '@components/icons/MemberIcon.astro';
 ---
@@ -32,14 +32,14 @@ import MemberIcon from '@components/icons/MemberIcon.astro';
             <h3 class="[ group-title ]">{t('group_membership')}</h3>
         </FlexInline>
         
-        <BlockList>
+        <Table>
             {memberships.map(membership =>
                 <div x-show="show_item($el)">
                     <MembershipItem membership={membership} init_tooltips={init_tooltips} />
                 </div>
             )}
             <p class="[ no-result-text ]">{t('no_results')}</p>
-        </BlockList>
+        </Table>
     </Flexblock>
 }
 

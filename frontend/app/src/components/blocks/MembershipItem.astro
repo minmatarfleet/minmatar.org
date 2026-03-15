@@ -22,36 +22,33 @@ import { format_date_short, time_diff_text } from '@helpers/date';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
 
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
 import Button from '@components/blocks/Button.astro';
-import Tag from '@components/blocks/Tag.astro';
 ---
 
 <FlexInline gap='var(--space-2xs)'>
-    <Flexblock class="[ basis-[300px] ]" gap='var(--space-3xs)'>
-        <h3>{t('mempership_title').replace('{number}', String(membership.id))}</h3>
-        <small>{`${format_date_short(lang, membership.approved_at)} (${time_diff_text(lang, new Date(membership.approved_at as string), new Date())})`}</small>
-    </Flexblock>
+    <FixedFluid
+        width='64px'
+        class="[ basis-[380px] items-center! ]"
+    >
+        <CharacterPicture
+            character_id={membership.primary_character_id ?? 0}
+            character_name={membership.primary_character_name ?? t('unknown_pilot')}
+            size={64}
+        />
+        <Flexblock gap='var(--space-3xs)'>
+            <h3>{t('membership_title').replace('{number}', String(membership.id))}</h3>
+            <small>{`${format_date_short(lang, membership.approved_at)} (${time_diff_text(lang, new Date(membership.approved_at as string), new Date())})`}</small>
+        </Flexblock>
+    </FixedFluid>
 
     <FlexInline
         gap='var(--space-2xs)'
         class="[ membership-characters ][ basis-[350px] ]"
     >
-        {membership.primary_character_id &&
-            <div
-                data-tippy-content={membership.primary_character_name}
-                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-            >
-                <CharacterPicture
-                    character_id={membership.primary_character_id}
-                    character_name={membership.primary_character_name}
-                    size={32}
-                />
-                <div class="[ sr-only ]">{membership.primary_character_name}</div>
-            </div>
-        }
         {membership.characters.map((character) => {
             const hasStatus = character.qualifies != null || character.missing_skills != null || character.missing_assets != null
             const statusLabel = hasStatus

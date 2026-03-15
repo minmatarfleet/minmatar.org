@@ -60,12 +60,12 @@ import { number_thousand_separator } from '@helpers/numbers'
 const REEL_GAP = 80
 
 import Flexblock from '@components/compositions/Flexblock.astro';
-import BlockList from '@components/compositions/BlockList.astro';
 
 import MarketCard from '@components/blocks/MarketCard.astro';
 import Progress from '@components/blocks/Progress.astro';
 import LocationsReel from '@components/blocks/LocationsReel.astro';
 import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
+import Table from '@components/blocks/Table.astro';
 ---
 
 <Flexblock gap='var(--space-2xl)'>
@@ -120,7 +120,7 @@ import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
     <Flexblock gap='var(--space-2xl)'>
         <Flexblock gap='var(--space-l)'>
             <h3 class="[ group-title ]">{t('expected_items')}</h3>
-            <BlockList role="list" gap='var(--space-l)'>
+            <Table>
                 {sorted_orders_with_expectations.map((item) =>
                     <div x-show="show_item($el)">
                         <MarketCard
@@ -132,12 +132,12 @@ import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
                     </div>
                 )}
                 <p class="[ no-result-text ]">{t('no_results')}</p>
-            </BlockList>
+            </Table>
         </Flexblock>
         
         <Flexblock gap='var(--space-l)'>
             <h3 class="[ group-title ]">{t('other_items_on_market')}</h3>
-            <BlockList role="list" gap='var(--space-l)'>
+            <Table>
                 {sorted_orders_without_expectations.map((item) =>
                     <div x-show="show_item($el)">
                         <MarketCard
@@ -149,7 +149,7 @@ import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
                     </div>
                 )}
                 <p class="[ no-result-text ]">{t('no_results')}</p>
-            </BlockList>
+            </Table>
         </Flexblock>
     </BlockList>
 </Flexblock>

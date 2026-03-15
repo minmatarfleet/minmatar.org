@@ -15,12 +15,12 @@ const {
 } = Astro.props
 
 import ProductItem from '@components/blocks/ProductItem.astro';
-import BlockList from '@components/compositions/BlockList.astro';
+import Table from '@components/blocks/Table.astro';
 ---
 
-<BlockList gap='var(--space-l)'>
+<Table>
     {products.map(product =>
         <ProductItem product={product} init_tooltips={init_tooltips} />
     )}
     <p x-show="products_count === 0">{t('no_products_to_display')}</p>
-</BlockList>
+</Table>

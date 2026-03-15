@@ -14,11 +14,11 @@ const {
     init_tooltips,
 } = Astro.props
 
-import BlockList from '@components/compositions/BlockList.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import MembershipRequestItem from '@components/blocks/MembershipRequestItem.astro';
+import Table from '@components/blocks/Table.astro';
 
 import RecruitmentIcon from '@components/icons/RecruitmentIcon.astro';
 ---
@@ -32,14 +32,14 @@ import RecruitmentIcon from '@components/icons/RecruitmentIcon.astro';
             <h3 class="[ group-title ]">{t('membership_requests')}</h3>
         </FlexInline>
 
-        <BlockList>
+        <Table>
             {requests.map(request =>
                 <div x-show="show_item($el)">
                     <MembershipRequestItem request={request} init_tooltips={init_tooltips} />
                 </div>
             )}
             <p class="[ no-result-text ]">{t('no_results')}</p>
-        </BlockList>
+        </Table>
     </Flexblock>
 }
 
