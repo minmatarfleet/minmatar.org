@@ -2,7 +2,7 @@
 import type { ComponentProps } from "astro/types";
 type AstroImageOptions = ComponentProps<typeof Image>;
 
-import { Image } from 'astro:assets';
+import { Image, getImage } from "astro:assets";
 
 interface Props {
     src:            string;
@@ -17,6 +17,15 @@ const {
     astro_image,
     ...attributes
 } = Astro.props
+
+function getRedditImageWidth(url) {
+    const u = new URL(url)
+    const width = u.searchParams.get("width")
+    return width ? parseInt(width, 10) : null
+}
+
+const width = getRedditImageWidth(src)
+const zoomSrc = `/_image?href=${encodeURIComponent(src)}&w=${width ?? 1080}&q=90&f=webp`
 ---
 
 <figure
@@ -35,7 +44,7 @@ const {
     {astro_image ?
         <Image
             data-zoomable
-            data-zoom-src={src}
+            data-zoom-src={zoomSrc}
             {...attributes}
             {...astro_image}
         /> :
