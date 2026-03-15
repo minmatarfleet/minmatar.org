@@ -2052,5 +2052,6 @@ export const ui = {
         'fleet_unexpected_error': 'An unexpected error ocurred: No fleet data.',
         'starting_fleet': 'Starting fleet',
         'no_pilots_to_show': 'No pilots to show',
+        'alliance_requirements': 'Alliance requirements',
     },
 } as const;
