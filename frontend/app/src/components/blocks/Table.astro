@@ -1,7 +1,15 @@
 ---
+interface Props {
+    [propName: string]: any;
+}
+
+const {
+    ...attributes
+} = Astro.props;
+
 import BlockList from '@components/compositions/BlockList.astro';
 ---
 
-<BlockList role="list">
+<BlockList role="list" {...attributes}>
     <slot />
 </BlockList>
