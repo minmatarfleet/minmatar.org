@@ -3,13 +3,14 @@
 import logging
 
 from authentication import AuthBearer
+from discord.client import DiscordClient
 from eveonline.models import EveCharacter
 from tribes.endpoints.memberships.schemas import (
     ApplyToGroupRequest,
     MembershipSchema,
 )
 from tribes.endpoints.memberships.serializers import serialize_membership
-from tribes.helpers import build_membership_snapshot, user_can_manage_group
+from tribes.helpers import build_membership_snapshot
 from tribes.models import (
     TribeGroup,
     TribeGroupMembership,
@@ -18,6 +19,33 @@ from tribes.models import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _send_new_request_dm_to_chief(membership):
+    """DM the tribe group chief that a new membership application was submitted."""
+    tg = membership.tribe_group
+    chief = tg.chief
+    if not chief:
+        return
+    try:
+        discord_user_id = str(chief.discord_user.id)
+    except Exception:  # noqa: S110 (chief has no linked Discord)
+        return
+    applicant = membership.user.username
+    message = (
+        f"**New tribe membership application** for **{tg.name}** ({tg.tribe.name}): "
+        f"{applicant} has applied. Please review in the admin panel."
+    )
+    try:
+        DiscordClient().send_dm(discord_user_id, message=message)
+    except Exception:  # pylint: disable=broad-except
+        logger.warning(
+            "Failed to send tribe request DM to chief %s for group %s",
+            chief,
+            tg,
+            exc_info=True,
+        )
+
 
 PATH = "/{tribe_id}/groups/{group_id}/memberships"
 METHOD = "post"
@@ -101,9 +129,5 @@ def post_membership(
                 by=request.user,
             )
 
-    can_manage = user_can_manage_group(request.user, tg)
-    return 200, serialize_membership(
-        membership,
-        include_requirement_status=False,
-        include_characters=can_manage,
-    )
+    _send_new_request_dm_to_chief(membership)
+    return 200, serialize_membership(membership)
