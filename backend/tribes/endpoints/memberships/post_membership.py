@@ -10,7 +10,7 @@ from tribes.endpoints.memberships.schemas import (
     MembershipSchema,
 )
 from tribes.endpoints.memberships.serializers import serialize_membership
-from tribes.helpers import build_membership_snapshot
+from tribes.helpers import build_membership_snapshot, user_can_manage_group
 from tribes.models import (
     TribeGroup,
     TribeGroupMembership,
@@ -130,4 +130,9 @@ def post_membership(
             )
 
     _send_new_request_dm_to_chief(membership)
-    return 200, serialize_membership(membership)
+    can_manage = user_can_manage_group(request.user, tg)
+    return 200, serialize_membership(
+        membership,
+        include_requirement_status=False,
+        include_characters=can_manage,
+    )
