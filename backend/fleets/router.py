@@ -329,11 +329,11 @@ def get_v3_fleets(
             EveFleet.objects.filter(evefleetinstance__end_time=None)
             .filter(
                 Q(
-                    status="cancelled",
+                    status__in=["cancelled", "pending"],
                     start_time__gte=timezone.now() - timedelta(hours=1),
                 )
                 | Q(
-                    ~Q(status="cancelled"),
+                    ~Q(status__in=["cancelled", "pending"]),
                     start_time__gte=timezone.now() - timedelta(hours=24),
                 )
             )
