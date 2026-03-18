@@ -1184,7 +1184,7 @@ export const ui = {
         'hide_duplicated': 'Hide duplicated',
         'minute_ago': 'Updated a minute ago',
         'minutes_ago': 'Updated MINUTES minutes ago',
-        'just_now': 'Updated just now',
+        'updated_just_now': 'Updated just now',
         'timers_copied_dialog': 'Active timers',
         'timers_copied_dialog_text': 'Active structure timers copied to clipboard.',
         'copied': 'Copied!',
@@ -2057,5 +2057,6 @@ export const ui = {
         'remove_character': 'Remove character',
         'missing_dialog_slot': '⚠️&nbsp;<b>Dialog slot missing:</b>&nbsp;Add&nbsp;`slot="dialog"`&nbsp;attribute on the element meant to be on the content of the dialog.',
         'select_character_to_remove': 'Select character to remove',
+        'just_now': 'Just now',
     },
 } as const;

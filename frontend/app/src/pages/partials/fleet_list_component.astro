@@ -74,7 +74,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
                 const seconds_past = Math.floor((now.getTime() - this.last_update) / 1000);
 
                 if (seconds_past < 60)
-                    this.updated_time_ago = '${t('just_now')}';
+                    this.updated_time_ago = '${t('updated_just_now')}';
                 else if (seconds_past < 120)
                     this.updated_time_ago = '${t('minute_ago')}';
                 else {
