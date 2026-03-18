@@ -172,7 +172,7 @@ def update_corporation_populate(corporation_id: int) -> None:
 def update_corporation_members_and_roles(corporation_id: int) -> None:
     """
     Sync corporation member list (create missing EveCharacters) and set
-    directors/recruiters/stewards from ESI. Only runs for active alliance/associate
+    directors/recruiters/stewards from ESI. Only runs for active alliance/associate/militia
     corps when a director (or CEO) has a token with
     esi-corporations.read_corporation_membership.v1.
     """
@@ -187,9 +187,10 @@ def update_corporation_members_and_roles(corporation_id: int) -> None:
     if not corporation.active or corporation.type not in [
         "alliance",
         "associate",
+        "militia",
     ]:
         logger.debug(
-            "Corporation %s (%s) not active or not alliance/associate, skipping members/roles",
+            "Corporation %s (%s) not active or not alliance/associate/militia, skipping members/roles",
             corporation.name,
             corporation_id,
         )

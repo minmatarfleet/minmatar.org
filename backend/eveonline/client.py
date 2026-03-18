@@ -681,17 +681,48 @@ class EsiClient:
         return self._operation_results(operation)
 
     def get_corporation_roles(self, corporation_id: int) -> EsiResponse:
-        """Returns roles of all corporation members. Requires Personnel_Manager or grantable role."""
+        """
+        Returns roles of all corporation members. Paginated; fetches all pages.
+        Requires Personnel_Manager or grantable role (esi-corporations.read_corporation_membership.v1).
+        """
         required_scopes = ["esi-corporations.read_corporation_membership.v1"]
         token, status = self._valid_token(required_scopes)
         if status > 0:
             return EsiResponse(status)
 
-        operation = esi_provider.client.Corporation.get_corporations_corporation_id_roles(
-            corporation_id=corporation_id,
-            token=token,
-        )
-        return self._operation_results(operation)
+        url = f"{ESI_BASE_URL}/corporations/{corporation_id}/roles/"
+        headers = {"Authorization": f"Bearer {token}"}
+        try:
+            resp = requests.get(
+                url,
+                params={"page": 1},
+                headers=headers,
+                timeout=30,
+            )
+        except Exception as e:
+            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+        if resp.status_code >= 400:
+            return EsiResponse(response_code=resp.status_code)
+
+        all_roles = resp.json() if resp.content else []
+        total_pages = int(resp.headers.get("X-Pages", 1))
+
+        for page in range(2, total_pages + 1):
+            try:
+                page_resp = requests.get(
+                    url,
+                    params={"page": page},
+                    headers=headers,
+                    timeout=30,
+                )
+            except Exception as e:
+                return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+            if page_resp.status_code >= 400:
+                return EsiResponse(response_code=page_resp.status_code)
+            page_data = page_resp.json() if page_resp.content else []
+            all_roles.extend(page_data)
+
+        return EsiResponse(response_code=SUCCESS, data=all_roles)
 
     def send_evemail(self, mail_details) -> EsiResponse:
         required_scopes = ["esi-mail.send_mail.v1"]
