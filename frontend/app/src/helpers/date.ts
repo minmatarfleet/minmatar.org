@@ -163,7 +163,7 @@ export const time_diff_text = (locale:Locales = 'en', from:Date, to:Date):string
     if (duration.minutes()) parts.push(duration.minutes() + ` ${t('minute')}` + (duration.minutes() > 1 ? 's' : ''))
     if (duration.hours() === 0 && duration.minutes() === 0 && duration.seconds()) parts.push(duration.seconds() + ` ${t('second')}` + (duration.seconds() > 1 ? 's' : ''))
 
-    return parts.join(' ')
+    return parts.join(' ').trim()
 }
 
 export function get_date_progress_percent(start_date: Date | string, end_date: Date | string, fulfilment_date: Date | string = new Date()) {

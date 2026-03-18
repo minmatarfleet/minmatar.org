@@ -46,7 +46,7 @@ import MemberIcon from '@components/icons/MemberIcon.astro';
         />
         <Flexblock gap='var(--space-3xs)'>
             <h3>{membership.primary_character_name ?? t('membership_title').replace('{number}', String(membership.id))}</h3>
-            <small>{`${format_date_short(lang, membership.approved_at)} ${member_since ? `(${member_since})` : ''}`}</small>
+            <small>{`${format_date_short(lang, membership.approved_at)} (${member_since ? member_since : t('just_now')})`}</small>
         </Flexblock>
     </FixedFluid>
 
@@ -78,7 +78,7 @@ import MemberIcon from '@components/icons/MemberIcon.astro';
                     else
                         tooltip_text = t('tribes.detail.unqualified')
                 }
-                
+
                 return (
                     <div class="[ relative ]">
                         <div
