@@ -2053,5 +2053,9 @@ export const ui = {
         'starting_fleet': 'Starting fleet',
         'no_pilots_to_show': 'No pilots to show',
         'alliance_requirements': 'Alliance requirements',
+        'remove_character_membership': 'Remove character membership',
+        'remove_character': 'Remove character',
+        'missing_dialog_slot': '⚠️&nbsp;<b>Dialog slot missing:</b>&nbsp;Add&nbsp;`slot="dialog"`&nbsp;attribute on the element meant to be on the content of the dialog.',
+        'select_character_to_remove': 'Select character to remove',
     },
 } as const;

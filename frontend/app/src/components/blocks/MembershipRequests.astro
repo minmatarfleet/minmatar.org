@@ -15,22 +15,14 @@ const {
 } = Astro.props
 
 import Flexblock from '@components/compositions/Flexblock.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
 
 import MembershipRequestItem from '@components/blocks/MembershipRequestItem.astro';
 import Table from '@components/blocks/Table.astro';
-
-import RecruitmentIcon from '@components/icons/RecruitmentIcon.astro';
 ---
 
 {requests.length > 0 &&
     <Flexblock gap='var(--space-l)'>
-        <FlexInline>
-            <div class="[ text-highlight h-[32px] ]">
-                <RecruitmentIcon size={32} />
-            </div>
-            <h3 class="[ group-title ]">{t('membership_requests')}</h3>
-        </FlexInline>
+        <h3 class="[ group-title ]">{t('membership_requests')}</h3>
 
         <Table>
             {requests.map(request =>
