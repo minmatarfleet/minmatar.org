@@ -1,4 +1,7 @@
 ---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
 import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
 
 interface Props {
@@ -23,8 +26,11 @@ const {
     ...attributes
 } = Astro.props
 
+import { marked } from 'marked';
+
 import Dialog from '@components/blocks/Dialog.astro';
 import Button from '@components/blocks/Button.astro';
+import DebugTag from '@components/blocks/DebugTag.astro';
 ---
 
 <div
@@ -67,7 +73,9 @@ import Button from '@components/blocks/Button.astro';
         @mousedown.outside="open && close_dialog()"
         style={max_width ? `--dialog-max-width: ${max_width}` : undefined}
     >
-        <slot name="dialog" />
+        <slot name="dialog">
+            <DebugTag set:html={marked.parse(t('missing_dialog_slot'))} />
+        </slot>
     </Dialog>
 </div>
 

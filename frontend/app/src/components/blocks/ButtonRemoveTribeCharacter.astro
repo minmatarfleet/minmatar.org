@@ -1,0 +1,190 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { TribeAvailableCharacter, TribeMembership } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    target_id:              string;
+    title:                  string;
+    membership:             TribeMembership;
+    available_characters?:  TribeAvailableCharacter[];
+    hidden?:                boolean;
+    id?:                    string;
+}
+
+const {
+    target_id,
+    title,
+    membership,
+    available_characters,
+    hidden = false,
+    id,
+} = Astro.props
+
+import { query_string } from '@helpers/string';
+const TRIBE_GROUP_MEMBERSHIPS_PARTIAL_URL = translatePath(`/partials/tribe_group_memberships_component?tribe_id=${membership.tribe_id}&group_id=${membership.tribe_group_id}`)
+
+// Avoid adding a frontmatter line with a string literal (e.g. ?? "" or ?? ''). It triggers
+// esbuild "Unterminated string literal" when compiling this .astro file. Use template for defaults (e.g. data-api-url={import.meta.env.API_URL}).
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import DialogButton from "@components/blocks/DialogButton.astro";
+import Button from '@components/blocks/Button.astro';
+import CharacterCard from '@components/blocks/CharacterCard.astro';
+import LandingSwiper from '@components/blocks/LandingSwiper.astro';
+import Tag from '@components/blocks/Tag.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
+---
+
+<DialogButton
+    id={id ? id : undefined}
+    size='sm'
+    color='fleet-red'
+    narrow={false}
+    hidden={hidden}
+    max_width='820px'
+    @dialog_opened.stop="$el.querySelector('button').setAttribute('disabled', '')"
+    @dialog_closed.stop="$el.querySelector('button').removeAttribute('disabled')"
+>
+    {t('remove_character')}
+
+    <Flexblock slot="dialog" gap="var(--space-l)">
+        <Flexblock gap="var(--space-s)">
+            <Flexblock gap="var(--space-3xs)">
+                <h3>{title}</h3>
+                <small>{t('select_character_to_remove')}</small>
+            </Flexblock>
+            
+            <Wrapper
+                padding_block='0'
+                padding_inline='var(--space-xl)'
+            >
+                <div id={`${target_id}-swiper`} class="[ swiper ][ w-full pb-10! ]">
+                    <LandingSwiper swiper_selector={`#${target_id}-swiper`}>
+                        {membership.characters.map((pilot) => {
+                            const available = available_characters?.find(
+                                (a) => a.character_id === pilot.character_id
+                            )
+                            
+                            const has_tag = available != null
+                            let tag_text = ''
+
+                            if (has_tag) {
+                                if (available?.qualifies)
+                                    tag_text = t('tribes.detail.qualified')
+                                else if (available?.missing_skills && available.missing_assets)
+                                    tag_text = t('tribes.detail.missing_skills_and_assets')
+                                else if (available?.missing_skills)
+                                    tag_text = t('tribes.detail.missing_skills')
+                                else if (available?.missing_assets)
+                                    tag_text = t('tribes.detail.missing_assets')
+                                else
+                                    tag_text = t('tribes.detail.unqualified')
+                            }
+
+                            return (
+                                <div class="[ swiper-slide ]" style="margin-right: 5px">
+                                    <div class="[ tribe-apply-character-card ]">
+                                        <div class="[ tribe-apply-card-header ]">
+                                            <StylessButton
+                                                size='sm'
+                                                hx-delete={`${TRIBE_GROUP_MEMBERSHIPS_PARTIAL_URL}&${query_string({
+                                                    membership_id: membership.id,
+                                                    character_id: pilot.character_id,
+                                                })}`}
+                                                hx-target={`#members`}
+                                                hx-indicator=".loader"
+                                                hx-swap="outerHTML transition:true"
+                                                x-on:click="$el.setAttribute('disabled','')"
+                                            >
+                                                <CharacterCard
+                                                    character_id={pilot.character_id}
+                                                    character_name={pilot.character_name}
+                                                    x-model="characters"
+                                                    x-on:change="update_character_ids()"
+                                                    value={pilot.character_id}
+                                                >
+                                                    <Flexblock gap='var(--space-3xs)'>
+                                                        {has_tag &&
+                                                            <Tag
+                                                                color={available.qualifies ? 'green' : 'fleet-red'}
+                                                                text={tag_text}
+                                                            />
+                                                        }
+                                                        <h3>{pilot.character_name}</h3>
+                                                    </Flexblock>
+                                                </CharacterCard>
+                                            </StylessButton>
+                                        </div>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </LandingSwiper>
+                </div>
+
+                <div id={`${target_id}-swiper-button-prev`} class="[ swiper-button-prev hidden lg:block! ]"></div>
+                <div id={`${target_id}-swiper-button-next`} class="[ swiper-button-next hidden lg:block! ]"></div>
+            </Wrapper>
+        </Flexblock>
+
+        <FlexInline justification='flex-end'>
+            <Button
+                type="button"
+                size='sm'
+                x-on:click="close_dialog()"
+            >
+                {t('close')}
+            </Button>
+        </FlexInline>
+    </Flexblock>
+</DialogButton>
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-1);
+    }
+
+    .alliance-reel {
+        position: relative;
+    }
+
+    .swiper-button-prev,
+    .swiper-button-next {
+        --swiper-navigation-color: var(--highlight);
+        --swiper-navigation-sides-offset: var(--space-l);
+
+        opacity: 0;
+    }
+
+    .swiper-initialized ~ .swiper-button-prev,
+    .swiper-initialized ~ .swiper-button-next {
+        opacity: 1;
+    }
+
+    .swiper-initialized ~ .swiper-button-next.swiper-button-disabled,
+    .swiper-initialized ~ .swiper-button-prev.swiper-button-disabled {
+        opacity: 0;
+    }
+
+    .swiper-button-next.swiper-button-disabled,
+    .swiper-button-prev.swiper-button-disabled {
+        --swiper-navigation-color: var(--fleet-yellow);
+        opacity: 1;
+    }
+
+    .swiper-button-prev {
+        transform: translateY(-1.25rem);
+    }
+
+    .swiper-button-next {
+        transform: translateY(-1.25rem);
+    }
+
+    .swiper-slide {
+        width: min(100%, 240px);
+    }
+</style>

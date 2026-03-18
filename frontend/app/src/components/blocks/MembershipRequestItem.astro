@@ -26,6 +26,8 @@ import FixedFluid from '@components/compositions/FixedFluid.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
 import Button from '@components/blocks/Button.astro';
+
+import RecruitmentIcon from '@components/icons/RecruitmentIcon.astro';
 ---
 
 <FlexInline gap='var(--space-2xs)'>
@@ -39,55 +41,69 @@ import Button from '@components/blocks/Button.astro';
             size={64}
         />
         <Flexblock class="[ basis-[300px] ]" gap='var(--space-3xs)'>
-            <h3>{t('membership_request_title').replace('{number}', String(request.id))}</h3>
+            <h3>{request.primary_character_name ?? t('membership_request_title').replace('{number}', String(request.id))}</h3>
             <small>{`${format_date_short(lang, request.created_at)} (${time_diff_text(lang, new Date(request.created_at), new Date())})`}</small>
         </Flexblock>
     </FixedFluid>
 
-    <FlexInline
+    <FixedFluid
+        width='32px'
         gap='var(--space-2xs)'
-        class="[ membership-characters ][ basis-[350px] ]"
+        breakpoint='30%'
+        class="[  items-center! basis-[350px] ]"
     >
-        {request.characters.map(character => {
-            const hasStatus = character.qualifies != null || character.missing_skills != null || character.missing_assets != null
-            const statusLabel = hasStatus
-                ? (character.qualifies
-                    ? t('tribes.detail.qualified')
-                    : character.missing_skills && character.missing_assets
-                        ? t('tribes.detail.missing_skills_and_assets')
-                        : character.missing_skills
-                            ? t('tribes.detail.missing_skills')
-                            : character.missing_assets
-                                ? t('tribes.detail.missing_assets')
-                                : t('tribes.detail.unqualified'))
-                : undefined
-            return (
-                <div class="[ relative ]">
-                    <div
-                        class="[ relative ]"
-                        data-tippy-content={character.character_name}
-                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                    >
-                        <CharacterPicture
-                            character_id={character.character_id}
-                            character_name={character.character_name}
-                            size={32}
-                        />
-                        <div class="[ sr-only ]">{character.character_name}</div>
-                    </div>
+        <div class="[ h-[32px] text-highlight ]"><RecruitmentIcon size={32} /></div>
 
-                    <span
-                        class:list={[ 'membership-status', character.qualifies ? 'text-green' : 'text-red' ]}
-                        color={character.qualifies ? 'green' : 'fleet-red'}
-                        data-tippy-content={statusLabel}
-                        x-init={init_tooltips && statusLabel ? 'tippy($el, tippy_options)' : undefined}
-                    >
-                        {character.qualifies ? '▲' : '▼'}
-                    </span>
-                </div>
-            )
-        })}
-    </FlexInline>
+        <FlexInline
+            gap='var(--space-2xs)'
+            class="[ membership-characters ]"
+        >
+            {request.characters.map(character => {
+                const has_tooltip = character.qualifies != null || character.missing_skills != null || character.missing_assets != null
+                let tooltip_text = ''
+
+                if (has_tooltip) {
+                    if (character?.qualifies)
+                        tooltip_text = t('tribes.detail.qualified')
+                    else if (character?.missing_skills && character.missing_assets)
+                        tooltip_text = t('tribes.detail.missing_skills_and_assets')
+                    else if (character?.missing_skills)
+                        tooltip_text = t('tribes.detail.missing_skills')
+                    else if (character?.missing_assets)
+                        tooltip_text = t('tribes.detail.missing_assets')
+                    else
+                        tooltip_text = t('tribes.detail.unqualified')
+                }
+
+                return (
+                    <div class="[ relative ]">
+                        <div
+                            class="[ relative ]"
+                            data-tippy-content={character.character_name}
+                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                        >
+                            <CharacterPicture
+                                character_id={character.character_id}
+                                character_name={character.character_name}
+                                size={32}
+                            />
+                            <div class="[ sr-only ]">{character.character_name}</div>
+                        </div>
+
+                        <span
+                            class:list={[ 'membership-status', character.qualifies ? 'text-green' : 'text-red' ]}
+                            color={character.qualifies ? 'green' : 'fleet-red'}
+                            data-tippy-content={tooltip_text ? tooltip_text : undefined}
+                            x-init={init_tooltips && tooltip_text ? 'tippy($el, tippy_options)' : undefined}
+                        >
+                            {character.qualifies ? '▲' : '▼'}
+                        </span>
+                    </div>
+                )
+            })}
+        </FlexInline>
+    </FixedFluid>
+
     <FlexInline>
         <Button
             color='green'

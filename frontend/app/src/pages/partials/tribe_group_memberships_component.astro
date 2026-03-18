@@ -71,17 +71,28 @@ if (Astro.request.method === "DELETE") {
     reload_page_header = false
 
     const membership_id = parseInt(Astro.url.searchParams.get('membership_id') ?? '')
+    const character_id = parseInt(Astro.url.searchParams.get('character_id') ?? '')
 
     try {
         if (isNaN(membership_id))
             throw new Error(t('invalid_membership_id'));
 
-        await delete_membership(
-            auth_token as string,
-            tribe_id,
-            group_id,
-            membership_id,
-        )
+        if (character_id > 0) {
+            await delete_membership_character(
+                auth_token as string,
+                tribe_id,
+                group_id,
+                membership_id,
+                character_id,
+            )
+        } else {
+            await delete_membership(
+                auth_token as string,
+                tribe_id,
+                group_id,
+                membership_id,
+            )
+        }
     } catch (error) {
         remove_membership_error = prod_error_messages() ? t('remove_membership_error') : error.message
     }

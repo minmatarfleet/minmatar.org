@@ -20,13 +20,18 @@ import { query_string } from '@helpers/string';
 
 import { format_date_short, time_diff_text } from '@helpers/date';
 
+const member_since = time_diff_text(lang, new Date(membership.approved_at as string), new Date())
+
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
+import ButtonRemoveTribeCharacter from '@components/blocks/ButtonRemoveTribeCharacter.astro';
 import Button from '@components/blocks/Button.astro';
+
+import MemberIcon from '@components/icons/MemberIcon.astro';
 ---
 
 <FlexInline gap='var(--space-2xs)'>
@@ -40,56 +45,76 @@ import Button from '@components/blocks/Button.astro';
             size={64}
         />
         <Flexblock gap='var(--space-3xs)'>
-            <h3>{t('membership_title').replace('{number}', String(membership.id))}</h3>
-            <small>{`${format_date_short(lang, membership.approved_at)} (${time_diff_text(lang, new Date(membership.approved_at as string), new Date())})`}</small>
+            <h3>{membership.primary_character_name ?? t('membership_title').replace('{number}', String(membership.id))}</h3>
+            <small>{`${format_date_short(lang, membership.approved_at)} ${member_since ? `(${member_since})` : ''}`}</small>
         </Flexblock>
     </FixedFluid>
 
-    <FlexInline
+    <FixedFluid
+        width='32px'
         gap='var(--space-2xs)'
-        class="[ membership-characters ][ basis-[350px] ]"
+        breakpoint='30%'
+        class="[  items-center! basis-[350px] ]"
     >
-        {membership.characters.map((character) => {
-            const hasStatus = character.qualifies != null || character.missing_skills != null || character.missing_assets != null
-            const statusLabel = hasStatus
-                ? (character.qualifies
-                    ? t('tribes.detail.qualified')
-                    : character.missing_skills && character.missing_assets
-                        ? t('tribes.detail.missing_skills_and_assets')
-                        : character.missing_skills
-                            ? t('tribes.detail.missing_skills')
-                            : character.missing_assets
-                                ? t('tribes.detail.missing_assets')
-                                : t('tribes.detail.unqualified'))
-                : undefined
-            return (
-                <div class="[ relative ]">
-                    <div
-                        class="[ relative ]"
-                        data-tippy-content={character.character_name}
-                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                    >
-                        <CharacterPicture
-                            character_id={character.character_id}
-                            character_name={character.character_name}
-                            size={32}
-                        />
-                        <div class="[ sr-only ]">{character.character_name}</div>
-                    </div>
+        <div class="[ h-[32px] text-highlight ]"><MemberIcon size={32} /></div>
 
-                    <span
-                        class:list={[ 'membership-status', character.qualifies ? 'text-green' : 'text-red' ]}
-                        color={character.qualifies ? 'green' : 'fleet-red'}
-                        data-tippy-content={statusLabel}
-                        x-init={init_tooltips && statusLabel ? 'tippy($el, tippy_options)' : undefined}
-                    >
-                        {character.qualifies ? '▲' : '▼'}
-                    </span>
-                </div>
-            )
-        })}
-    </FlexInline>
+        <FlexInline
+            gap='var(--space-2xs)'
+            class="[ membership-characters ]"
+        >
+            {membership.characters.map((character) => {
+                const has_tooltip = character.qualifies != null || character.missing_skills != null || character.missing_assets != null
+                let tooltip_text = ''
+
+                if (has_tooltip) {
+                    if (character?.qualifies)
+                        tooltip_text = t('tribes.detail.qualified')
+                    else if (character?.missing_skills && character.missing_assets)
+                        tooltip_text = t('tribes.detail.missing_skills_and_assets')
+                    else if (character?.missing_skills)
+                        tooltip_text = t('tribes.detail.missing_skills')
+                    else if (character?.missing_assets)
+                        tooltip_text = t('tribes.detail.missing_assets')
+                    else
+                        tooltip_text = t('tribes.detail.unqualified')
+                }
+                
+                return (
+                    <div class="[ relative ]">
+                        <div
+                            class="[ relative ]"
+                            data-tippy-content={character.character_name}
+                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                        >
+                            <CharacterPicture
+                                character_id={character.character_id}
+                                character_name={character.character_name}
+                                size={32}
+                            />
+                            <div class="[ sr-only ]">{character.character_name}</div>
+                        </div>
+
+                        <span
+                            class:list={[ 'membership-status', character.qualifies ? 'text-green' : 'text-red' ]}
+                            color={character.qualifies ? 'green' : 'fleet-red'}
+                            data-tippy-content={tooltip_text ? tooltip_text : undefined}
+                            x-init={init_tooltips && tooltip_text ? 'tippy($el, tippy_options)' : undefined}
+                        >
+                            {character.qualifies ? '▲' : '▼'}
+                        </span>
+                    </div>
+                )
+            })}
+        </FlexInline>
+    </FixedFluid>
+    
     <FlexInline>
+        <ButtonRemoveTribeCharacter
+            target_id='members'
+            title={t('remove_character_membership')}
+            membership={membership}
+        />
+
         <ButtonConfirm
             label={t('remove')}
             size='sm'
