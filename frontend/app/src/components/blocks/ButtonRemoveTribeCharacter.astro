@@ -22,6 +22,8 @@ const {
     id,
 } = Astro.props
 
+const swiper_id = `remove-character-${membership.id}`
+
 import { query_string } from '@helpers/string';
 const TRIBE_GROUP_MEMBERSHIPS_PARTIAL_URL = translatePath(`/partials/tribe_group_memberships_component?tribe_id=${membership.tribe_id}&group_id=${membership.tribe_group_id}`)
 
@@ -62,8 +64,8 @@ import StylessButton from '@components/blocks/StylessButton.astro';
                 padding_block='0'
                 padding_inline='var(--space-xl)'
             >
-                <div id={`${target_id}-swiper`} class="[ swiper ][ w-full pb-10! ]">
-                    <LandingSwiper swiper_selector={`#${target_id}-swiper`}>
+                <div id={`${swiper_id}-swiper`} class="[ swiper ][ w-full pb-10! ]">
+                    <LandingSwiper swiper_selector={`#${swiper_id}-swiper`}>
                         {membership.characters.map((pilot) => {
                             const available = available_characters?.find(
                                 (a) => a.character_id === pilot.character_id
@@ -126,8 +128,8 @@ import StylessButton from '@components/blocks/StylessButton.astro';
                     </LandingSwiper>
                 </div>
 
-                <div id={`${target_id}-swiper-button-prev`} class="[ swiper-button-prev hidden lg:block! ]"></div>
-                <div id={`${target_id}-swiper-button-next`} class="[ swiper-button-next hidden lg:block! ]"></div>
+                <div id={`${swiper_id}-swiper-button-prev`} class="[ swiper-button-prev hidden lg:block! ]"></div>
+                <div id={`${swiper_id}-swiper-button-next`} class="[ swiper-button-next hidden lg:block! ]"></div>
             </Wrapper>
         </Flexblock>
 
