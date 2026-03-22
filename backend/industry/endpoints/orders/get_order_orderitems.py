@@ -4,10 +4,8 @@ from typing import List
 
 from app.errors import ErrorResponse
 
-from industry.endpoints.orders.schemas import (
-    AssignmentResponse,
-    OrderItemResponse,
-)
+from industry.endpoints.orders.schemas import OrderItemResponse
+from industry.endpoints.orders.serialization import order_item_to_response
 from industry.models import IndustryOrder
 
 PATH = "{int:order_id}/orderitems"
@@ -34,19 +32,5 @@ def get_order_orderitems(request, order_id: int):
     except IndustryOrder.DoesNotExist:
         return 404, ErrorResponse(detail=f"Order {order_id} not found.")
     return 200, [
-        OrderItemResponse(
-            id=item.pk,
-            eve_type_id=item.eve_type_id,
-            eve_type_name=item.eve_type.name,
-            quantity=item.quantity,
-            assignments=[
-                AssignmentResponse(
-                    character_id=a.character.character_id,
-                    character_name=a.character.character_name,
-                    quantity=a.quantity,
-                )
-                for a in item.assignments.all()
-            ],
-        )
-        for item in order.items.all()
+        order_item_to_response(order, item) for item in order.items.all()
     ]

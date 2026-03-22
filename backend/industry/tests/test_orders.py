@@ -1,7 +1,11 @@
 """Tests for industry orders endpoints: GET /orders, GET /orders/{id} (public)."""
 
+import json
 from datetime import timedelta
+from decimal import Decimal
 
+import jwt
+from django.conf import settings
 from django.test import Client
 from django.utils import timezone
 
@@ -165,6 +169,55 @@ class OrdersEndpointTestCase(AppTestCase):
             data[0]["assigned_to"][0]["character_name"], "Builder One"
         )
 
+    def test_get_orders_items_include_assignment_targets(self):
+        assignee = EveCharacter.objects.create(
+            character_id=999007,
+            character_name="Target Builder",
+            user=self.user,
+        )
+        order = IndustryOrder.objects.create(
+            needed_by=(timezone.now() + timedelta(days=7)).date(),
+            character=self.character,
+            location=self.location,
+        )
+        item = IndustryOrderItem.objects.create(
+            order=order, eve_type=self.eve_type, quantity=3
+        )
+        IndustryOrderItemAssignment.objects.create(
+            order_item=item,
+            character=assignee,
+            quantity=3,
+            target_unit_price=Decimal("1234567.50"),
+            target_estimated_margin=Decimal("89000"),
+        )
+        response = self.client.get("/api/industry/orders")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data[0]["items"]), 1)
+        row = data[0]["items"][0]
+        self.assertEqual(row["eve_type_id"], self.eve_type.id)
+        self.assertEqual(row["target_unit_price"], "1234567.50")
+        self.assertEqual(row["target_estimated_margin"], "89000.00")
+
+    def test_get_orders_items_use_line_targets_when_set(self):
+        order = IndustryOrder.objects.create(
+            needed_by=(timezone.now() + timedelta(days=7)).date(),
+            character=self.character,
+            location=self.location,
+        )
+        IndustryOrderItem.objects.create(
+            order=order,
+            eve_type=self.eve_type,
+            quantity=2,
+            target_unit_price=Decimal("500000.00"),
+            target_estimated_margin=Decimal("10000.00"),
+        )
+        response = self.client.get("/api/industry/orders")
+        self.assertEqual(response.status_code, 200)
+        row = response.json()[0]["items"][0]
+        self.assertEqual(row["target_unit_price"], "500000.00")
+        self.assertEqual(row["target_estimated_margin"], "10000.00")
+
     def test_get_order_returns_detail_with_items_and_assignments(self):
         order = IndustryOrder.objects.create(
             needed_by=(timezone.now() + timedelta(days=7)).date(),
@@ -172,7 +225,11 @@ class OrdersEndpointTestCase(AppTestCase):
             location=self.location,
         )
         item = IndustryOrderItem.objects.create(
-            order=order, eve_type=self.eve_type, quantity=5
+            order=order,
+            eve_type=self.eve_type,
+            quantity=5,
+            target_unit_price=Decimal("99.50"),
+            target_estimated_margin=Decimal("1.25"),
         )
         assignee = EveCharacter.objects.create(
             character_id=999004,
@@ -194,6 +251,8 @@ class OrdersEndpointTestCase(AppTestCase):
         self.assertEqual(data["items"][0]["eve_type_id"], self.eve_type.id)
         self.assertEqual(data["items"][0]["eve_type_name"], self.eve_type.name)
         self.assertEqual(data["items"][0]["quantity"], 5)
+        self.assertEqual(data["items"][0]["target_unit_price"], "99.50")
+        self.assertEqual(data["items"][0]["target_estimated_margin"], "1.25")
         self.assertEqual(len(data["items"][0]["assignments"]), 1)
         self.assertEqual(
             data["items"][0]["assignments"][0]["character_name"],
@@ -260,3 +319,306 @@ class OrdersEndpointTestCase(AppTestCase):
         response = self.client.get("/api/industry/orders/999999")
         self.assertEqual(response.status_code, 404)
         self.assertIn("not found", response.json()["detail"])
+
+
+class OrderMutationApiTests(OrdersEndpointTestCase):
+    """Authenticated POST/PATCH/DELETE on industry orders."""
+
+    def test_post_assignment_creates_row(self):
+        order = IndustryOrder.objects.create(
+            needed_by=(timezone.now() + timedelta(days=7)).date(),
+            character=self.character,
+        )
+        item = IndustryOrderItem.objects.create(
+            order=order, eve_type=self.eve_type, quantity=5
+        )
+        assignee = EveCharacter.objects.create(
+            character_id=999030,
+            character_name="Assign Self",
+            user=self.user,
+        )
+        url = (
+            f"/api/industry/orders/{order.pk}/orderitems/{item.pk}/assignments"
+        )
+        response = self.client.post(
+            url,
+            data=json.dumps(
+                {"character_id": assignee.character_id, "quantity": 2}
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 201, response.content)
+        data = response.json()
+        self.assertEqual(data["quantity"], 2)
+        self.assertEqual(data["character_id"], assignee.character_id)
+
+    def test_post_assignment_rejects_over_remaining(self):
+        order = IndustryOrder.objects.create(
+            needed_by=(timezone.now() + timedelta(days=7)).date(),
+            character=self.character,
+        )
+        item = IndustryOrderItem.objects.create(
+            order=order, eve_type=self.eve_type, quantity=2
+        )
+        assignee = EveCharacter.objects.create(
+            character_id=999031,
+            character_name="Over Qty",
+            user=self.user,
+        )
+        url = (
+            f"/api/industry/orders/{order.pk}/orderitems/{item.pk}/assignments"
+        )
+        response = self.client.post(
+            url,
+            data=json.dumps(
+                {"character_id": assignee.character_id, "quantity": 3}
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_post_assignment_rejects_other_users_character(self):
+        order = IndustryOrder.objects.create(
+            needed_by=(timezone.now() + timedelta(days=7)).date(),
+            character=self.character,
+        )
+        item = IndustryOrderItem.objects.create(
+            order=order, eve_type=self.eve_type, quantity=5
+        )
+        other = self.user.__class__.objects.create(username="other_assign")
+        other_char = EveCharacter.objects.create(
+            character_id=999032,
+            character_name="Not Yours",
+            user=other,
+        )
+        url = (
+            f"/api/industry/orders/{order.pk}/orderitems/{item.pk}/assignments"
+        )
+        response = self.client.post(
+            url,
+            data=json.dumps(
+                {"character_id": other_char.character_id, "quantity": 1}
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_post_assignment_self_assign_maximum_in_48h_window(self):
+        order = IndustryOrder.objects.create(
+            needed_by=(timezone.now() + timedelta(days=7)).date(),
+            character=self.character,
+        )
+        item = IndustryOrderItem.objects.create(
+            order=order,
+            eve_type=self.eve_type,
+            quantity=10,
+            self_assign_maximum=5,
+        )
+        assignee = EveCharacter.objects.create(
+            character_id=999033,
+            character_name="Capped Builder",
+            user=self.user,
+        )
+        url = (
+            f"/api/industry/orders/{order.pk}/orderitems/{item.pk}/assignments"
+        )
+        r1 = self.client.post(
+            url,
+            data=json.dumps(
+                {"character_id": assignee.character_id, "quantity": 5}
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(r1.status_code, 201)
+        r2 = self.client.post(
+            url,
+            data=json.dumps(
+                {"character_id": assignee.character_id, "quantity": 1}
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(r2.status_code, 400)
+
+    def test_post_assignment_after_48h_ignores_self_assign_maximum(self):
+        order = IndustryOrder.objects.create(
+            needed_by=(timezone.now() + timedelta(days=7)).date(),
+            character=self.character,
+        )
+        item = IndustryOrderItem.objects.create(
+            order=order,
+            eve_type=self.eve_type,
+            quantity=10,
+            self_assign_maximum=5,
+        )
+        assignee = EveCharacter.objects.create(
+            character_id=999034,
+            character_name="Late Builder",
+            user=self.user,
+        )
+        old = timezone.now() - timedelta(hours=49)
+        IndustryOrder.objects.filter(pk=order.pk).update(created_at=old)
+        url = (
+            f"/api/industry/orders/{order.pk}/orderitems/{item.pk}/assignments"
+        )
+        r1 = self.client.post(
+            url,
+            data=json.dumps(
+                {"character_id": assignee.character_id, "quantity": 7}
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(r1.status_code, 201)
+        r2 = self.client.post(
+            url,
+            data=json.dumps(
+                {"character_id": assignee.character_id, "quantity": 3}
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(r2.status_code, 201)
+
+    def test_patch_assignment_delivered_assignee_and_owner(self):
+        order = IndustryOrder.objects.create(
+            needed_by=(timezone.now() + timedelta(days=7)).date(),
+            character=self.character,
+        )
+        item = IndustryOrderItem.objects.create(
+            order=order, eve_type=self.eve_type, quantity=5
+        )
+        assignee_user = self.user.__class__.objects.create(
+            username="assignee_owner_test"
+        )
+        assignee = EveCharacter.objects.create(
+            character_id=999035,
+            character_name="Deliveree",
+            user=assignee_user,
+        )
+        assignee_token = jwt.encode(
+            {"user_id": assignee_user.id},
+            settings.SECRET_KEY,
+            algorithm="HS256",
+        )
+        a = IndustryOrderItemAssignment.objects.create(
+            order_item=item, character=assignee, quantity=2
+        )
+        url = f"/api/industry/orders/{order.pk}/orderitems/{item.pk}/assignments/{a.pk}"
+        r = self.client.patch(
+            url,
+            data=json.dumps({"delivered": True}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {assignee_token}",
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertIsNotNone(r.json().get("delivered_at"))
+
+        r2 = self.client.patch(
+            url,
+            data=json.dumps({"delivered": False}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {assignee_token}",
+        )
+        self.assertEqual(r2.status_code, 200)
+        self.assertIsNone(r2.json().get("delivered_at"))
+
+        r3 = self.client.patch(
+            url,
+            data=json.dumps({"delivered": True}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(r3.status_code, 200)
+
+    def test_patch_assignment_delivered_forbidden_for_stranger(self):
+        order = IndustryOrder.objects.create(
+            needed_by=(timezone.now() + timedelta(days=7)).date(),
+            character=self.character,
+        )
+        item = IndustryOrderItem.objects.create(
+            order=order, eve_type=self.eve_type, quantity=5
+        )
+        assignee = EveCharacter.objects.create(
+            character_id=999036,
+            character_name="Assignee Only",
+            user=self.user,
+        )
+        a = IndustryOrderItemAssignment.objects.create(
+            order_item=item, character=assignee, quantity=1
+        )
+        stranger = self.user.__class__.objects.create(username="stranger_ind")
+        payload = jwt.encode(
+            {"user_id": stranger.id},
+            settings.SECRET_KEY,
+            algorithm="HS256",
+        )
+        url = f"/api/industry/orders/{order.pk}/orderitems/{item.pk}/assignments/{a.pk}"
+        r = self.client.patch(
+            url,
+            data=json.dumps({"delivered": True}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {payload}",
+        )
+        self.assertEqual(r.status_code, 403)
+
+    def test_post_create_order_and_delete(self):
+        needed = (timezone.now() + timedelta(days=14)).date().isoformat()
+        body = {
+            "needed_by": needed,
+            "character_id": self.character.character_id,
+            "contract_to": "ACME Corp",
+            "order_identifier": "alpha-beta-gamma",
+            "items": [
+                {
+                    "eve_type_id": self.eve_type.id,
+                    "quantity": 3,
+                    "self_assign_maximum": 2,
+                },
+            ],
+        }
+        r = self.client.post(
+            "/api/industry/orders",
+            data=json.dumps(body),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(r.status_code, 201, r.content)
+        data = r.json()
+        self.assertEqual(data["order_identifier"], "alpha-beta-gamma")
+        oid = data["order_id"]
+        order = IndustryOrder.objects.get(pk=oid)
+        self.assertEqual(order.contract_to, "ACME Corp")
+        self.assertEqual(order.items.get().self_assign_maximum, 2)
+
+        r_del = self.client.delete(
+            f"/api/industry/orders/{oid}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(r_del.status_code, 204)
+        self.assertFalse(IndustryOrder.objects.filter(pk=oid).exists())
+
+    def test_post_create_order_duplicate_identifier_400(self):
+        IndustryOrder.objects.create(
+            needed_by=(timezone.now() + timedelta(days=7)).date(),
+            character=self.character,
+            order_identifier="taken-slug-here",
+        )
+        needed = (timezone.now() + timedelta(days=14)).date().isoformat()
+        body = {
+            "needed_by": needed,
+            "character_id": self.character.character_id,
+            "order_identifier": "taken-slug-here",
+            "items": [{"eve_type_id": self.eve_type.id, "quantity": 1}],
+        }
+        r = self.client.post(
+            "/api/industry/orders",
+            data=json.dumps(body),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(r.status_code, 400)

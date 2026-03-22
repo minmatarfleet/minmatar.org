@@ -46,6 +46,7 @@ interface Props {
             x-bind:hx-swap="modal_partial ? 'innerHTML transition:true' : false"
             hx-target="#modal-description"
             hx-indicator=".loader"
+            hx-on="htmx:afterSwap: htmx.process(this); if (typeof Alpine !== 'undefined') Alpine.initTree(this)"
         />
         <button modal-action="cancel"><TrashIcon /></button>
     </Dialog>

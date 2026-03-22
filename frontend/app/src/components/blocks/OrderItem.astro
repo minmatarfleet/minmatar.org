@@ -65,7 +65,7 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
                             <IndustryIcon size={32} />
                         </div>
                         <FlexInline gap='var(--space-2xs)'>
-                            {order.items.map(item =>
+                            {order.items.map((item) =>
                                 <div
                                     data-tippy-content={item.eve_type_name}
                                     x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
@@ -112,7 +112,7 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
         </FixedFluid>
     </div>
 
-    <div class="[ order-breakdown-container ]">
+    <div class="[ order-breakdown-container ]" id={`order-breakdown-${order.id}`}>
         <small
             hx-get={ORDER_BREAKDOWN_PARTIAL_URL}
             hx-trigger="intersect"

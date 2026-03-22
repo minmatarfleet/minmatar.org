@@ -55,9 +55,13 @@ def get_order_item_assignments_breakdown(
         enrich_breakdown_with_industry_product_ids(tree)
         assignments_list.append(
             AssignmentBreakdownResponse(
+                id=assignment.pk,
                 character_id=assignment.character.character_id,
                 character_name=assignment.character.character_name,
                 quantity=assignment.quantity,
+                target_unit_price=assignment.target_unit_price,
+                target_estimated_margin=assignment.target_estimated_margin,
+                delivered_at=assignment.delivered_at,
                 breakdown=NestedBreakdownNode.from_breakdown_dict(tree),
             )
         )

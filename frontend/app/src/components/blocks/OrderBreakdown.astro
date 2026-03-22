@@ -6,11 +6,15 @@ import type { OrderBreakdownUI } from '@dtypes/layout_components'
 
 interface Props {
     order_breakdown:            OrderBreakdownUI[];
+    assign_modal_partial_url:   string;
+    authenticated:              boolean;
     init_tooltips?:             boolean;
 }
 
 const {
     order_breakdown,
+    assign_modal_partial_url,
+    authenticated,
     init_tooltips = false,
 } = Astro.props
 
@@ -24,6 +28,7 @@ import ItemBadge from '@components/blocks/ItemBadge.astro';
 import ProducersList from '@components/blocks/ProducersList.astro';
 
 import ClipboardButton from './ClipboardButton.astro';
+import Button from '@components/blocks/Button.astro';
 ---
 
 <Flexblock>
@@ -69,4 +74,32 @@ import ClipboardButton from './ClipboardButton.astro';
             </FlexInline>
         </FixedFluid>
     )}
+    {authenticated && (
+        <div class="[ order-breakdown-assign-footer ]">
+            <span
+                x-data={`{
+                    open_assign_modal() {
+                        show_modal({
+                            partial: ${JSON.stringify(assign_modal_partial_url)},
+                        })
+                    },
+                }`}
+            >
+                <Button
+                    type="button"
+                    size="sm"
+                    narrow={true}
+                    x-on:click.prevent="open_assign_modal()"
+                >
+                    {t('industry.orders.assign')}
+                </Button>
+            </span>
+        </div>
+    )}
 </Flexblock>
+
+<style lang="scss">
+    .order-breakdown-assign-footer {
+        margin-top: var(--space-m);
+    }
+</style>

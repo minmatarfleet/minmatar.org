@@ -1025,9 +1025,11 @@ export interface PlanetSummaryItem {
 }
 
 export interface RootItem {
-    eve_type_id:    number;
-    eve_type_name:  string;
-    quantity:       number;
+    eve_type_id:                number;
+    eve_type_name:              string;
+    quantity:                   number;
+    target_unit_price?:         string | null;
+    target_estimated_margin?:   string | null;
 }
 
 export interface IndustryOrder {
@@ -1185,6 +1187,7 @@ export interface RootSingleItem {
     eve_type_id:        number;
     eve_type_name:      string;
     quantity:           number;
+    unassigned_quantity: number;
     assignments:        CharacterQuantity[];
 }
 
