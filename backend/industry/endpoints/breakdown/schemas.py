@@ -1,5 +1,7 @@
 """Schemas for order breakdown endpoints (nested material trees)."""
 
+from datetime import datetime
+from decimal import Decimal
 from typing import List, Optional
 
 from pydantic import BaseModel
@@ -48,9 +50,13 @@ class OrderBreakdownResponse(BaseModel):
 class AssignmentBreakdownResponse(BaseModel):
     """Material breakdown for one assignment (character + quantity) on an order item."""
 
+    id: int
     character_id: int
     character_name: str
     quantity: int
+    target_unit_price: Decimal | None = None
+    target_estimated_margin: Decimal | None = None
+    delivered_at: datetime | None = None
     breakdown: NestedBreakdownNode
 
 

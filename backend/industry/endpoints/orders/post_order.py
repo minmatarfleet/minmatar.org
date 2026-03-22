@@ -1,5 +1,7 @@
 """POST "" - create a new industry order."""
 
+from django.db import IntegrityError
+
 from eveonline.helpers.characters import user_primary_character
 from eveonline.models import EveCharacter, EveLocation
 from eveuniverse.models import EveType
@@ -9,6 +11,10 @@ from authentication import AuthBearer
 from industry.endpoints.orders.schemas import (
     CreateOrderRequest,
     CreateOrderResponse,
+)
+from industry.helpers.order_identifier import (
+    generate_random_order_identifier,
+    validate_order_identifier,
 )
 from industry.models import IndustryOrder, IndustryOrderItem
 
@@ -22,65 +28,167 @@ ROUTE_SPEC = {
         400: ErrorResponse,
         403: ErrorResponse,
         404: ErrorResponse,
+        500: ErrorResponse,
     },
 }
 
 
-def post_order(request, payload: CreateOrderRequest):
-    character = None
+def _resolve_order_character(request, payload: CreateOrderRequest):
     if payload.character_id is not None:
         character = EveCharacter.objects.filter(
             character_id=payload.character_id, user=request.user
         ).first()
         if not character:
-            return 403, ErrorResponse(
-                detail="You may only create orders for your own characters."
+            return None, (
+                403,
+                ErrorResponse(
+                    detail="You may only create orders for your own characters."
+                ),
             )
-    else:
-        character = user_primary_character(request.user)
-        if not character:
-            return 400, ErrorResponse(
+        return character, None
+    character = user_primary_character(request.user)
+    if not character:
+        return None, (
+            400,
+            ErrorResponse(
                 detail="No character specified and no primary character set."
-            )
+            ),
+        )
+    return character, None
 
-    if not payload.items:
-        return 400, ErrorResponse(
-            detail="At least one order item is required."
+
+def _resolve_order_location(payload: CreateOrderRequest):
+    if payload.location_id is None:
+        return None, None
+    try:
+        return EveLocation.objects.get(pk=payload.location_id), None
+    except EveLocation.DoesNotExist:
+        return None, (
+            404,
+            ErrorResponse(detail=f"Location {payload.location_id} not found."),
         )
 
-    location = None
-    if payload.location_id is not None:
-        try:
-            location = EveLocation.objects.get(pk=payload.location_id)
-        except EveLocation.DoesNotExist:
-            return 404, ErrorResponse(
-                detail=f"Location {payload.location_id} not found."
-            )
 
+def _validate_items_and_eve_types(payload: CreateOrderRequest):
+    if not payload.items:
+        return None, (
+            400,
+            ErrorResponse(detail="At least one order item is required."),
+        )
     type_ids = [item.eve_type_id for item in payload.items]
     if len(type_ids) != len(set(type_ids)):
-        return 400, ErrorResponse(detail="Duplicate eve_type_id in items.")
-    eve_types = {t.id: t for t in EveType.objects.filter(id__in=type_ids)}
-    missing = [tid for tid in type_ids if tid not in eve_types]
-    if missing:
-        return 404, ErrorResponse(
-            detail=f"Eve type(s) not found: {', '.join(map(str, missing))}."
+        return None, (
+            400,
+            ErrorResponse(detail="Duplicate eve_type_id in items."),
         )
     for item in payload.items:
         if item.quantity < 1:
-            return 400, ErrorResponse(
-                detail=f"Quantity must be positive for type_id {item.eve_type_id}."
+            return None, (
+                400,
+                ErrorResponse(
+                    detail=f"Quantity must be positive for type_id {item.eve_type_id}."
+                ),
             )
+        if (
+            item.self_assign_maximum is not None
+            and item.self_assign_maximum < 1
+        ):
+            return None, (
+                400,
+                ErrorResponse(
+                    detail=(
+                        "self_assign_maximum must be positive for type_id "
+                        f"{item.eve_type_id}."
+                    ),
+                ),
+            )
+    eve_types = {t.id: t for t in EveType.objects.filter(id__in=type_ids)}
+    missing = [tid for tid in type_ids if tid not in eve_types]
+    if missing:
+        return None, (
+            404,
+            ErrorResponse(
+                detail=f"Eve type(s) not found: {', '.join(map(str, missing))}."
+            ),
+        )
+    return eve_types, None
 
-    order = IndustryOrder.objects.create(
-        needed_by=payload.needed_by,
-        character=character,
-        location=location,
-    )
+
+def _create_order(
+    payload: CreateOrderRequest,
+    character,
+    location,
+    contract_to: str,
+):
+    if payload.order_identifier is not None:
+        try:
+            order_identifier = validate_order_identifier(
+                payload.order_identifier
+            )
+        except ValueError as exc:
+            return None, (400, ErrorResponse(detail=str(exc)))
+        try:
+            order = IndustryOrder.objects.create(
+                needed_by=payload.needed_by,
+                character=character,
+                location=location,
+                contract_to=contract_to,
+                order_identifier=order_identifier,
+            )
+        except IntegrityError:
+            return None, (
+                400,
+                ErrorResponse(
+                    detail="This order_identifier is already in use."
+                ),
+            )
+        return order, None
+
+    order = None
+    for _ in range(80):
+        slug = generate_random_order_identifier()
+        try:
+            order = IndustryOrder.objects.create(
+                needed_by=payload.needed_by,
+                character=character,
+                location=location,
+                contract_to=contract_to,
+                order_identifier=slug,
+            )
+            break
+        except IntegrityError:
+            continue
+    if order is None:
+        return None, (
+            500,
+            ErrorResponse(
+                detail="Could not allocate a unique order_identifier."
+            ),
+        )
+    return order, None
+
+
+def post_order(request, payload: CreateOrderRequest):
+    character, err = _resolve_order_character(request, payload)
+    if err:
+        return err
+    location, err = _resolve_order_location(payload)
+    if err:
+        return err
+    eve_types, err = _validate_items_and_eve_types(payload)
+    if err:
+        return err
+    contract_to = (payload.contract_to or "").strip()
+    order, err = _create_order(payload, character, location, contract_to)
+    if err:
+        return err
     for item in payload.items:
         IndustryOrderItem.objects.create(
             order=order,
             eve_type=eve_types[item.eve_type_id],
             quantity=item.quantity,
+            self_assign_maximum=item.self_assign_maximum,
         )
-    return 201, CreateOrderResponse(order_id=order.pk)
+    return 201, CreateOrderResponse(
+        order_id=order.pk, order_identifier=order.order_identifier
+    )

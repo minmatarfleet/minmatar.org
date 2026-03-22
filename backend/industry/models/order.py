@@ -5,6 +5,8 @@ from django.utils import timezone
 
 from eveonline.models import EveCharacterIndustryJob
 
+from industry.helpers.order_identifier import generate_random_order_identifier
+
 
 class IndustryOrder(models.Model):
     """An industry order: a list of Eve types and quantities to build."""
@@ -15,6 +17,16 @@ class IndustryOrder(models.Model):
         null=True,
         blank=True,
         help_text="When this order was marked as fulfilled.",
+    )
+    order_identifier = models.CharField(
+        max_length=64,
+        unique=True,
+        help_text="Short slug for contracts / cross-reference (e.g. big-iron-hands).",
+    )
+    contract_to = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Contract recipient name (character or corporation), free text.",
     )
     character = models.ForeignKey(
         "eveonline.EveCharacter",
@@ -32,6 +44,22 @@ class IndustryOrder(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+
+    def save(self, *args, **kwargs):
+        if not (self.order_identifier and str(self.order_identifier).strip()):
+            for _ in range(100):
+                candidate = generate_random_order_identifier()
+                qs = IndustryOrder.objects.filter(order_identifier=candidate)
+                if self.pk:
+                    qs = qs.exclude(pk=self.pk)
+                if not qs.exists():
+                    self.order_identifier = candidate
+                    break
+            else:
+                raise RuntimeError(
+                    "Could not allocate a unique order_identifier."
+                )
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Order #{self.pk} ({self.character.character_name}, needed by {self.needed_by})"
@@ -84,6 +112,28 @@ class IndustryOrderItem(models.Model):
         related_name="+",
     )
     quantity = models.PositiveIntegerField()
+    self_assign_maximum = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text=(
+            "Per-character assignment cap for the first 48 hours after the order was "
+            "created; after that window, only total line quantity limits assignments."
+        ),
+    )
+    target_unit_price = models.DecimalField(
+        max_digits=20,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Target unit price (ISK) for this line; shown on the public order list.",
+    )
+    target_estimated_margin = models.DecimalField(
+        max_digits=20,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Target estimated margin (ISK) for this line; shown on the public order list.",
+    )
 
     class Meta:
         ordering = ["id"]
@@ -108,6 +158,25 @@ class IndustryOrderItemAssignment(models.Model):
     )
     quantity = models.PositiveIntegerField(
         help_text="Quantity of this item assigned to this character to build.",
+    )
+    target_unit_price = models.DecimalField(
+        max_digits=20,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Target unit price (ISK); set in admin.",
+    )
+    target_estimated_margin = models.DecimalField(
+        max_digits=20,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="Target estimated margin (ISK); set in admin.",
+    )
+    delivered_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When this assignment was marked delivered.",
     )
 
     class Meta:

@@ -1,15 +1,36 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
 
 const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '0')
 
 import type { OrderBreakdownUI } from '@dtypes/layout_components'
 import type { Alert } from '@dtypes/layout_components'
 import { fetch_order_breakdown } from '@helpers/fetching/industry'
+import { query_string } from '@helpers/string'
+
+const auth_token = Astro.cookies.has('auth_token')
+    ? (Astro.cookies.get('auth_token')?.value as string)
+    : false
+let user: User | false = false
+if (auth_token) {
+    try {
+        user = jose.decodeJwt(auth_token) as User
+    } catch {
+        user = false
+    }
+}
+const authenticated = Boolean(auth_token && user)
+
+const assign_modal_partial_url = `${translatePath('/partials/industry_order_assign_modal')}?${query_string({
+    order_id: String(order_id),
+})}`
 
 let order_breakdown: OrderBreakdownUI[] = []
-let alert:Alert | false = false
+let alert: Alert | false = false
 
 if (!isNaN(order_id)) {
     try {
@@ -17,24 +38,27 @@ if (!isNaN(order_id)) {
     } catch (error) {
         alert = {
             title: t('order_breakdown'),
-            content: error.message
+            content: error.message,
         }
     }
 } else {
     alert = {
         title: t('order_breakdown'),
-        content: t('invalid_resource_type')
+        content: t('invalid_resource_type'),
     }
 }
 
-import OrderBreakdown from '@components/blocks/OrderBreakdown.astro';
-import ShowAlert from '@components/blocks/ShowAlert.astro';
+import OrderBreakdown from '@components/blocks/OrderBreakdown.astro'
+import ShowAlert from '@components/blocks/ShowAlert.astro'
 ---
 
-{alert ?
-    <ShowAlert alert={alert} /> :       
+{alert ? (
+    <ShowAlert alert={alert} />
+) : (
     <OrderBreakdown
         order_breakdown={order_breakdown}
+        assign_modal_partial_url={assign_modal_partial_url}
+        authenticated={authenticated}
         init_tooltips={true}
     />
-}
+)}

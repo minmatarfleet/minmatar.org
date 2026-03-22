@@ -12,7 +12,12 @@ import type {
     OrderAssignmentsBreakdown,
     IndustrySingleOrder,
 } from '@dtypes/api.minmatar.org'
-import { get_error_message, query_string, parse_error_message } from '@helpers/string'
+import {
+    get_error_message,
+    query_string,
+    parse_error_message,
+    parse_response_error,
+} from '@helpers/string'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/industry`
 
@@ -347,6 +352,34 @@ export async function get_order_assignments_breakdown(order_id: number, order_it
     } catch (error) {
         throw new Error(`Error fetching contracts: ${error.message}`);
     }
+}
+
+export async function post_order_item_assignment(
+    access_token: string,
+    order_id: number,
+    order_item_id: number,
+    body: { character_id: number; quantity: number },
+) {
+    const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${access_token}`,
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/orders/${order_id}/orderitems/${order_item_id}/assignments`
+
+    const response = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+    })
+
+    if (!response.ok) {
+        throw new Error(
+            await parse_response_error(response, `POST ${ENDPOINT}`),
+        )
+    }
+
+    return await response.json()
 }
 
 export async function get_order_by_id(order_id: number) {

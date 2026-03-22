@@ -49,7 +49,14 @@ class IndustryOrderItemInline(admin.TabularInline):
     model = IndustryOrderItem
     extra = 1
     raw_id_fields = ("eve_type",)
-    fields = ("eve_type", "quantity", "assignments_link")
+    fields = (
+        "eve_type",
+        "quantity",
+        "self_assign_maximum",
+        "target_unit_price",
+        "target_estimated_margin",
+        "assignments_link",
+    )
     readonly_fields = ("assignments_link",)
 
     @admin.display(description="Assignments")
@@ -66,6 +73,7 @@ class IndustryOrderAdmin(admin.ModelAdmin):
 
     list_display = (
         "id",
+        "order_identifier",
         "created_at",
         "needed_by",
         "fulfilled_at",
@@ -84,12 +92,19 @@ class IndustryOrderAdmin(admin.ModelAdmin):
         "mark_fulfilled_button",
         "relevant_jobs_display",
     )
-    search_fields = ("id", "character__character_name")
+    search_fields = ("id", "order_identifier", "character__character_name")
     fieldsets = (
         (
             None,
             {
-                "fields": ("character", "location", "needed_by", "created_at"),
+                "fields": (
+                    "character",
+                    "location",
+                    "needed_by",
+                    "created_at",
+                    "order_identifier",
+                    "contract_to",
+                ),
             },
         ),
         (
@@ -202,13 +217,26 @@ class IndustryOrderItemAssignmentInline(admin.TabularInline):
     model = IndustryOrderItemAssignment
     extra = 0
     autocomplete_fields = ("character",)
+    fields = (
+        "character",
+        "quantity",
+        "target_unit_price",
+        "target_estimated_margin",
+        "delivered_at",
+    )
 
 
 @admin.register(IndustryOrderItem)
 class IndustryOrderItemAdmin(admin.ModelAdmin):
     """Order item detail: manage assignments. Reached via "Manage assignments" on the order."""
 
-    list_display = ("order", "eve_type", "quantity")
+    list_display = (
+        "order",
+        "eve_type",
+        "quantity",
+        "target_unit_price",
+        "target_estimated_margin",
+    )
     list_filter = ("order",)
     raw_id_fields = ("eve_type",)
     autocomplete_fields = ("order",)
@@ -238,7 +266,14 @@ class IndustryOrderItemAdmin(admin.ModelAdmin):
 
 @admin.register(IndustryOrderItemAssignment)
 class IndustryOrderItemAssignmentAdmin(admin.ModelAdmin):
-    list_display = ("order_item", "character", "quantity")
+    list_display = (
+        "order_item",
+        "character",
+        "quantity",
+        "target_unit_price",
+        "target_estimated_margin",
+        "delivered_at",
+    )
     list_filter = ("character",)
     autocomplete_fields = ("order_item", "character")
 

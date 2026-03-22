@@ -3,11 +3,10 @@
 from app.errors import ErrorResponse
 
 from industry.endpoints.orders.schemas import (
-    AssignmentResponse,
     OrderDetailResponse,
-    OrderItemResponse,
     OrderLocationResponse,
 )
+from industry.endpoints.orders.serialization import order_item_to_response
 from industry.models import IndustryOrder
 
 PATH = "{int:order_id}"
@@ -39,6 +38,8 @@ def get_order(request, order_id: int):
         created_at=order.created_at,
         needed_by=order.needed_by,
         fulfilled_at=order.fulfilled_at,
+        order_identifier=order.order_identifier,
+        contract_to=order.contract_to,
         character_id=order.character.character_id,
         character_name=order.character.character_name,
         location=(
@@ -50,20 +51,6 @@ def get_order(request, order_id: int):
             else None
         ),
         items=[
-            OrderItemResponse(
-                id=item.pk,
-                eve_type_id=item.eve_type_id,
-                eve_type_name=item.eve_type.name,
-                quantity=item.quantity,
-                assignments=[
-                    AssignmentResponse(
-                        character_id=a.character.character_id,
-                        character_name=a.character.character_name,
-                        quantity=a.quantity,
-                    )
-                    for a in item.assignments.all()
-                ],
-            )
-            for item in order.items.all()
+            order_item_to_response(order, item) for item in order.items.all()
         ],
     )
