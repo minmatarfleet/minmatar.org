@@ -4,4 +4,4 @@ const { t } = i18n(Astro.url)
 
 import { get_bug_icon } from '@helpers/bug_icons'
 ---
-<img class={Astro.props.class} loading="lazy" src={get_bug_icon("/images/icons/48px-Cargo.png")} width="48" height="48" alt={t('icon.freight.alt')} />
+<img class={Astro.props.class} loading="lazy" class="[ max-w-[100%] h-auto ]" src={get_bug_icon("/images/icons/48px-Cargo.png")} width="48" height="48" alt={t('icon.freight.alt')} />
