@@ -47,7 +47,6 @@ import RepairBadge from '@components/blocks/RepairBadge.astro';
             {combat_log_analysis?.fitting &&
                 <TextGroup title={t('fitting')}>
                     <Badge
-                        gap='var(--space-3xs)'
                         title={combat_log_analysis.fitting.name}
                         image={get_item_icon(combat_log_analysis.fitting.ship_id, 32)}
                         size={16}
