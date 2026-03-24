@@ -10,7 +10,6 @@ interface Props {
     size?:      EvEImageServiceSize;
     border?:    boolean;
     highlight?: boolean;
-    gap?:       string;
     title_el?:  string;
     quantity?:  number;
     [propName: string]: any;
@@ -22,7 +21,6 @@ const {
     size = 64,
     border = false,
     highlight = true,
-    gap = 'var(--space-s)',
     title_el = 'span',
     quantity,
     ...attributes
@@ -40,7 +38,6 @@ import Badge from '@components/blocks/Badge.astro';
     size={size}
     border={border}
     highlight={highlight}
-    gap={gap}
     title_el={title_el}
     {...attributes}
 >

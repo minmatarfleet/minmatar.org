@@ -36,6 +36,8 @@ import FixedFluid from '@components/compositions/FixedFluid.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 
+const gap = size <= 16 ? 'var(--space-3xs)' : size < 64 ? 'var(--space-2xs)' : 'var(--space-s)'
+
 const TitleElement = heading ? 'h3' : 'span'
 
 const primary_pilot = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot')?.value as string) : null
@@ -46,7 +48,7 @@ delete attributes.class
 
 <FixedFluid
     width={`${size}px`}
-    gap={size < 64 ? 'var(--space-2xs)' : 'var(--space-s)'}
+    gap={gap}
     class:list={['pilot-item', { 'inert': inert }, Astro.props.class]}
     breakpoint='30%'
     {...attributes}

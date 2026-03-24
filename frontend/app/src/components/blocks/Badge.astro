@@ -6,7 +6,6 @@ interface Props {
     size?:      number;
     border?:    boolean;
     highlight?: boolean;
-    gap?:       string;
     title_el?:  string;
     [propName: string]: any;
 }
@@ -18,12 +17,13 @@ const {
     size = 64,
     border = false,
     highlight = true,
-    gap = 'var(--space-s)',
     title_el = 'span',
     ...attributes
 } = Astro.props
 
 const TitleElement = title_el
+
+const gap = size <= 16 ? 'var(--space-3xs)' : size < 64 ? 'var(--space-2xs)' : 'var(--space-s)'
 
 import FixedFluid from '@components/compositions/FixedFluid.astro'
 import Flexblock from '@components/compositions/Flexblock.astro';
