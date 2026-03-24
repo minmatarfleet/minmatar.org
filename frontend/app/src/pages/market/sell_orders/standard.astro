@@ -89,8 +89,6 @@ const categories_select_options = categories.map( category_name => {
 
 const non_active_market_locations_ui = market_locations_ui.filter(location => location.name !== active_location_name)
 
-const is_video_cover = active_location_name === 'R-6KYM - Here be Rats' || active_location_name === 'Amamake - 5 times nearly AT winners'
-
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
@@ -135,8 +133,8 @@ const page_title = t('sell_orders.page_title')
 					   active_location_name === 'Amamake - 5 times nearly AT winners' ? '/images/home-amamake-cover-eve.jpg' :
                        '/images/contracts-cover.jpg',
             animated: false,
-            scrollable: !is_video_cover,
-            overlay: !is_video_cover,
+            scrollable: true,
+            overlay: true,
         }}
         sticky={true}
         x-data={`{

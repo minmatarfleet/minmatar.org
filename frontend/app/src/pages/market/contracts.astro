@@ -82,8 +82,6 @@ const contracts_count = active_market_locations_ui?.fittings.length ?? 0
 
 const non_active_market_locations_ui = market_locations_ui.filter(location => location.name !== active_location_name)
 
-const is_video_cover = active_location_name === 'R-6KYM - Here be Rats' || active_location_name === 'Amamake - 5 times nearly AT winners'
-
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
@@ -100,7 +98,6 @@ import ContractsTable from '@components/blocks/ContractsTable.astro';
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
 const page_title = t('contracts.page_title')
-const page_description = t('contracts.leading_text')
 ---
 
 <Viewport
@@ -126,8 +123,8 @@ const page_description = t('contracts.leading_text')
 					   active_location_name === 'Amamake - 5 times nearly AT winners' ? '/images/home-amamake-cover-eve.jpg' :
                        '/images/contracts-cover.jpg',
             animated: false,
-            scrollable: !is_video_cover,
-            overlay: !is_video_cover,
+            scrollable: true,
+            overlay: true,
         }}
         sticky={true}
         x-data={`{

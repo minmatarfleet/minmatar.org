@@ -87,8 +87,6 @@ const DOCTRINES_PARTIAL_URL = translatePath(`/partials/doctrines_component${acti
 const AMAMAKE_LOCATION_ID = 1022167642188
 const R_6KYM_LOCATION_ID = 1051465618860
 
-const is_video_cover = active_location_id === AMAMAKE_LOCATION_ID || active_location_id === R_6KYM_LOCATION_ID
-
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
@@ -126,8 +124,8 @@ const leading_text = t('doctrines.alliance.page_leading_text')
 					   active_location_id === AMAMAKE_LOCATION_ID ? '/images/home-amamake-cover-eve.jpg' :
                        '/images/doctrines-cover.jpg',
             animated: false,
-            scrollable: !is_video_cover,
-            overlay: !is_video_cover,
+            scrollable: true,
+            overlay: true,
         }}
         x-data={`{
             show_all: $persist(false),
