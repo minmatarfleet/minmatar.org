@@ -303,7 +303,7 @@ lite-youtube {
 
 /* Hack to fix the "Loading" duplicated tooltip */
 [data-tippy-root] + [data-tippy-root] {
-    z-index: calc(var(--tooltips-z-index) - 1);
+    z-index: calc(var(--tooltips-z-index) - 1) !important;
 }
 
 .medium-zoom-image--hidden {
