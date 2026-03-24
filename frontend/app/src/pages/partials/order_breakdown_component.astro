@@ -7,58 +7,58 @@ import * as jose from 'jose'
 
 const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '0')
 
-import type { OrderBreakdownUI } from '@dtypes/layout_components'
-import type { Alert } from '@dtypes/layout_components'
-import { fetch_order_breakdown } from '@helpers/fetching/industry'
-import { query_string } from '@helpers/string'
+import type { RootSingleItem } from '@dtypes/api.minmatar.org'
+import { fetch_order_breakdown_grouped } from '@helpers/fetching/industry'
+import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
 
-const auth_token = Astro.cookies.has('auth_token')
-    ? (Astro.cookies.get('auth_token')?.value as string)
-    : false
-let user: User | false = false
-if (auth_token) {
-    try {
-        user = jose.decodeJwt(auth_token) as User
-    } catch {
-        user = false
-    }
-}
-const authenticated = Boolean(auth_token && user)
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
-const assign_modal_partial_url = `${translatePath('/partials/industry_order_assign_modal')}?${query_string({
-    order_id: String(order_id),
-})}`
-
-let order_breakdown: OrderBreakdownUI[] = []
-let alert: Alert | false = false
+let order_breakdown: RootSingleItem[] = []
+let primary_character_id = 0
+let fetching_error:string | false = false
+let order_id_error:string | false = false
 
 if (!isNaN(order_id)) {
     try {
-        order_breakdown = await fetch_order_breakdown(order_id)
+        order_breakdown = await fetch_order_breakdown_grouped(order_id)
+        const primary_pilot = await get_primary_characters(auth_token as string)
+        primary_character_id = primary_pilot?.character_id ?? 0
     } catch (error) {
-        alert = {
-            title: t('order_breakdown'),
-            content: error.message,
-        }
+        fetching_error = error.message
     }
 } else {
-    alert = {
-        title: t('order_breakdown'),
-        content: t('invalid_resource_type'),
-    }
+    order_id_error = t('invalid_order_id')
 }
 
+const ORDER_BREAKDOWN_PARTIAL_URL = `${translatePath('/partials/order_breakdown_component')}?order_id=${order_id}`
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '5')
+
 import OrderBreakdown from '@components/blocks/OrderBreakdown.astro'
-import ShowAlert from '@components/blocks/ShowAlert.astro'
+import DebugTag from '@components/blocks/DebugTag.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
 
-{alert ? (
-    <ShowAlert alert={alert} />
-) : (
-    <OrderBreakdown
-        order_breakdown={order_breakdown}
-        assign_modal_partial_url={assign_modal_partial_url}
-        authenticated={authenticated}
-        init_tooltips={true}
-    />
-)}
+{order_id_error ?
+    <DebugTag>{order_id_error}</DebugTag> :
+    <>{fetching_error !== false ?
+        <ErrorRefetch
+            args={{
+                partial: ORDER_BREAKDOWN_PARTIAL_URL,
+                message: fetching_error,
+                delay: delay,
+            }}
+        /> :
+        <>{order_breakdown ?
+            <OrderBreakdown
+                order_id={order_id}
+                primary_character_id={primary_character_id}
+                order_breakdown={order_breakdown}
+                init_tooltips={true}
+            />
+            :
+            <DebugTag>{t('no_order_unexpected_error')}</DebugTag>
+        }</>
+    }</>
+}

@@ -1178,17 +1178,27 @@ export interface OrderAssignmentsBreakdown {
     breakdown:          OrderAssignmentsBreakdownItem;
 }
 
-export interface CharacterQuantity extends Character {
-    quantity:   number;
+export interface OrderAssignment {
+    id:                         number;
+    character_id:               number;
+    character_name:             string;
+    quantity:                   number;
+    target_unit_price:          number | null;
+    target_estimated_margin:    number | null;
+    delivered_at:               Date | null;
 }
 
 export interface RootSingleItem {
-    id:                 number;
-    eve_type_id:        number;
-    eve_type_name:      string;
-    quantity:           number;
-    unassigned_quantity: number;
-    assignments:        CharacterQuantity[];
+    id:                             number;
+    eve_type_id:                    number;
+    eve_type_name:                  string;
+    quantity:                       number;
+    unassigned_quantity:            number;
+    self_assign_maximum:            number | null;
+    self_assign_window_ends_at:     Date;
+    target_unit_price:              string | null,
+    target_estimated_margin:        string | null,
+    assignments:                    OrderAssignment[];
 }
 
 export interface IndustrySingleOrder {
@@ -1196,6 +1206,8 @@ export interface IndustrySingleOrder {
     created_at:         Date;
     needed_by:          Date;
     fulfilled_at:       Date | null;
+    order_identifier:   string;
+    contract_to:        string;
     character_id:       number;
     character_name:     string;
     location:           BaseLocation;

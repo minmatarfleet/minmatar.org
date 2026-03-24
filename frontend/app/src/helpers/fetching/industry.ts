@@ -7,7 +7,7 @@ import type {
     OrderAssignmentsBreakdownItem,
     RootItem
 } from '@dtypes/api.minmatar.org'
-import type { OrderLocation, ColonySystems, ColonyPlanet, OrderBreakdownUI } from '@dtypes/layout_components'
+import type { OrderLocation, ColonySystems, ColonyPlanet, OrderBreakdownUI, IndustryOrderUI } from '@dtypes/layout_components'
 import {
     get_orders_summary_flat,
     get_orders_summary_nested,
@@ -197,4 +197,41 @@ export async function fetch_order_breakdown(order_id: number) {
     }))
 
     return order_breakdown
+}
+
+export async function fetch_order_breakdown_grouped(order_id: number) {
+    const order = await get_order_by_id(order_id)
+    return order.items
+}
+
+export async function fetch_order_by_id(order_id: number) {
+    const order =  await get_order_by_id(order_id)
+    const producers:Record<string, Producer> = {}
+
+    order.items.map(character => {
+        character.assignments.map(assignment => {
+            if (!producers[assignment.character_id]) {
+                producers[assignment.character_id] = {
+                    id: assignment.character_id,
+                    name: assignment.character_name,
+                }
+            }
+        })
+    })
+
+    const assigned_to:Producer[] = []
+    for (let i in producers)
+        assigned_to.push(producers[i])
+
+    return {
+        id: order.id,
+        character_id: order.character_id,
+        character_name: order.character_name,
+        created_at: order.created_at,
+        fulfilled_at: order.fulfilled_at,
+        location: order.location,
+        needed_by: order.needed_by,
+        items: order.items,
+        assigned_to: assigned_to,
+    } as IndustryOrderUI
 }

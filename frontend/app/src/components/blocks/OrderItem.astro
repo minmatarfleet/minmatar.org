@@ -2,19 +2,24 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
+import type { RootSingleItem } from '@dtypes/api.minmatar.org'
 import type { IndustryOrderUI } from '@dtypes/layout_components'
 
 interface Props {
-    order:              IndustryOrderUI;
-    init_tooltips:      boolean;
+    order:                  IndustryOrderUI;
+    order_breakdown?:       RootSingleItem[];
+    primary_character_id?:  number | null;
+    init_tooltips:          boolean;
 }
 
 const {
     order,
+    order_breakdown,
+    primary_character_id,
     init_tooltips,
 } = Astro.props
 
-import { format_date_time, format_date, format_date_short, get_date_progress_percent } from '@helpers/date'
+import { format_date, format_date_short, get_date_progress_percent } from '@helpers/date'
 
 const time_to_deadline = !order.fulfilled_at ?
                          get_date_progress_percent(order.created_at, `${order.needed_by}T23:59:59.999Z`) :
@@ -38,11 +43,15 @@ import Progress from "@components/blocks/Progress.astro";
 import ProducersList from '@components/blocks/ProducersList.astro';
 import ItemPicture from '@components/blocks/ItemPicture.astro';
 import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
+import OrderBreakdown from '@components/blocks/OrderBreakdown.astro'
 
 import IndustryIcon from '@components/icons/IndustryIcon.astro';
 ---
 
-<CollapsibleBlock padding_inline='var(--space-2xl)'>
+<CollapsibleBlock
+    id={`order-item-${order.id}`}
+    expanded={order_breakdown ? true : false}
+>
     <div slot="head" class="[ w-full ]">
         <FixedFluid width='350px' class="[ order-item ]">
             <div>
@@ -113,14 +122,24 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
     </div>
 
     <div class="[ order-breakdown-container ]" id={`order-breakdown-${order.id}`}>
-        <small
-            hx-get={ORDER_BREAKDOWN_PARTIAL_URL}
-            hx-trigger="intersect"
-            hx-indicator=".loader"
-            hx-swap="outerHTML transition:true"
-        >
-            {t('fetching_order_breakdown')}
-        </small>
+        {order_breakdown ?
+            <OrderBreakdown
+                order_id={order.id}
+                primary_character_id={primary_character_id}
+                order_breakdown={order_breakdown}
+                init_tooltips={true}
+            />
+            :
+            <small
+                hx-get={ORDER_BREAKDOWN_PARTIAL_URL}
+                hx-trigger="intersect"
+                hx-indicator=".loader"
+                hx-swap="outerHTML transition:true"
+            >
+                {t('fetching_order_breakdown')}
+            </small>
+        }
+        
     </div>
 </CollapsibleBlock>
 
@@ -154,5 +173,7 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
 
     .order-breakdown-container {
         padding-top: var(--space-s);
+        padding-bottom: var(--space-s);
+        padding-left: var(--space-2xl);
     }
 </style>
