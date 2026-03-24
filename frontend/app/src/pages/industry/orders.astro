@@ -36,8 +36,6 @@ const INDUSTRY_ORDERS_PARTIAL_URL = translatePath(`/partials/industry_orders_com
     location_name: active_location_name
 })}` : ''}`)
 
-const is_video_cover = active_location_name === 'R-6KYM - Here be Rats' || active_location_name === 'Amamake - 5 times nearly AT winners'
-
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
@@ -65,21 +63,15 @@ const page_title = t('industry.orders.page_title');
 >
     <PageDefault
         cover={{
-			video: active_location_name === 'R-6KYM - Here be Rats' ? '/videos/r6-loop.webm' :
-					active_location_name === 'Amamake - 5 times nearly AT winners' ? '/videos/amamake-loop.webm' :
-                    undefined,
-			video_thumb: active_location_name === 'R-6KYM - Here be Rats' ? '/images/home-r6-cover.jpg' :
-					active_location_name === 'Amamake - 5 times nearly AT winners' ? '/images/home-amamake-cover.jpg' :
-                    undefined,
             image: active_location_name === 'R-6KYM - Here be Rats' ? '/images/home-r6-cover-eve.jpg' :
 					active_location_name === 'Amamake - 5 times nearly AT winners' ? '/images/home-amamake-cover-eve.jpg' :
-                    '/images/industry-cover.jpg',
+                    '/images/contracts-cover.jpg',
             image_990: active_location_name === 'R-6KYM - Here be Rats' ? '/images/home-r6-cover-eve.jpg' :
 					   active_location_name === 'Amamake - 5 times nearly AT winners' ? '/images/home-amamake-cover-eve.jpg' :
-                       '/images/industry-cover.jpg',
+                       '/images/contracts-cover.jpg',
             animated: false,
-            scrollable: !is_video_cover,
-            overlay: !is_video_cover,
+            scrollable: true,
+            overlay: true,
         }}
         sticky={true}
         x-data={`{

@@ -1,10 +1,14 @@
 ---
 interface Props {
     padding_inline?:    string;
+    expanded?:          boolean;
+    id?:                string;
 }
 
 const {
-    padding_inline = 'var(--space-3xs)'
+    padding_inline = 'var(--space-3xs)',
+    expanded = false,
+    id,
 } = Astro.props
 
 import Wrapper from '@components/compositions/Wrapper.astro';
@@ -14,9 +18,10 @@ import CollapsableButton from '@components/blocks/CollapsableButton.astro';
 ---
 
 <Flexblock
+    id={id ? id : undefined}
     gap='var(--space-3xs)'
     x-data={`{
-        expanded: false,
+        expanded: ${JSON.stringify(expanded)},
         toggle_collapse() {
             this.expanded = !this.expanded
         }

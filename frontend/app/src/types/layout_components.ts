@@ -1051,11 +1051,22 @@ export interface ColonySystems {
     planets:                ColonyPlanet[];
 }
 
-import type { BaseIndustryOrder } from '@dtypes/api.minmatar.org'
+import type { BaseIndustryOrder, OrderAssignment } from '@dtypes/api.minmatar.org'
 
 export interface OrderBreakdownUI extends BaseIndustryOrder {
     character_id:       number;
     character_name:     string;
     materials:          RootItem[];
     copy_breakdown:     string;
+}
+
+export interface OrderBreakdownGroupedUI {
+    id:                             number;
+    eve_type_id:                    number;
+    eve_type_name:                  string;
+    quantity:                       number;
+    unassigned_quantity:            number;
+    self_assign_maximum:            number | null;
+    self_assign_window_ends_at:     Date;
+    assignments:                    OrderAssignment[];
 }

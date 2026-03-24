@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { EvEImageServiceSize, ImageSize } from '@dtypes/layout_components'
+import type { EvEImageServiceSize, ImageSize, BadgeColors } from '@dtypes/layout_components'
 
 interface Props {
     character_id:       number;
@@ -16,6 +16,8 @@ interface Props {
     mask?:              boolean;
     inert?:             boolean;
     centered?:          boolean;
+    quantity?:          number;
+    tag_color?:         BadgeColors;
 }
 
 const {
@@ -30,9 +32,13 @@ const {
     mask = false,
     inert = false,
     centered = false,
+    quantity,
+    tag_color,
 } = Astro.props
 
 import { get_player_icon } from '@helpers/eve_image_server'
+
+import NotificationBadge from '@components/blocks/NotificationBadge.astro';
 ---
 
 <picture
@@ -61,9 +67,27 @@ import { get_player_icon } from '@helpers/eve_image_server'
         }`}
         x-on:click.stop.prevent={inert ? undefined : 'show_character_modal()'}
     />
+    
+    {quantity &&
+        <NotificationBadge
+            class="[ quantity-badge ]"
+            color={tag_color ?? 'fleet-red'}
+            number={quantity}
+        />
+    }
 </picture>
 
 <style lang="scss">
+    picture {
+        position: relative;
+
+        .quantity-badge {
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+        }
+    }
+    
     img {
         transition: var(--slowest-transition);
         filter: brightness(1);

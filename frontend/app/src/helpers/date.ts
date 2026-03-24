@@ -59,31 +59,36 @@ export const humanize_date_diff = (locale:Locales, from:Date, to:Date):string =>
 export const minutes_to = (datetime:Date):number => {
     var from_moment = moment(new Date(datetime))
     var to_moment = moment(new Date())
-    return Math.ceil(moment.duration(to_moment.diff(from_moment)).asMinutes())
+
+    return to_moment.diff(from_moment, 'minutes');
 }
 
 export const days_diff = (from:Date, to:Date):number => {
     var from_moment = moment(new Date(from))
     var to_moment = moment(new Date(to))
-    return Math.floor(moment.duration(to_moment.diff(from_moment)).asDays())
+
+    return to_moment.diff(from_moment, 'days');
 }
 
 export const hours_diff = (from:Date, to:Date):number => {
     var from_moment = moment(new Date(from))
     var to_moment = moment(new Date(to))
-    return Math.floor(moment.duration(to_moment.diff(from_moment)).asHours())
+
+    return to_moment.diff(from_moment, 'hours');
 }
 
 export const month_diff = (from:Date, to:Date):number => {
     var from_moment = moment(new Date(from))
     var to_moment = moment(new Date(to))
-    return moment.duration(to_moment.diff(from_moment)).months()
+    
+    return to_moment.diff(from_moment, 'months');
 }
 
 export const year_diff = (from:Date, to:Date):number => {
     var from_moment = moment(new Date(from))
     var to_moment = moment(new Date(to))
-    return moment.duration(to_moment.diff(from_moment)).years()
+    
+    return to_moment.diff(from_moment, 'years');
 }
 
 export const from_to_text = (locale:Locales = 'en', from:Date, to:Date):string => {

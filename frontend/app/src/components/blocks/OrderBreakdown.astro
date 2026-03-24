@@ -1,23 +1,26 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
-import type { OrderBreakdownUI } from '@dtypes/layout_components'
+import type { RootSingleItem } from '@dtypes/api.minmatar.org'
 
 interface Props {
-    order_breakdown:            OrderBreakdownUI[];
-    assign_modal_partial_url:   string;
-    authenticated:              boolean;
+    order_id:                   number;
+    primary_character_id?:      number | null;
+    order_breakdown:            RootSingleItem[];
     init_tooltips?:             boolean;
 }
 
 const {
+    order_id,
+    primary_character_id,
     order_breakdown,
-    assign_modal_partial_url,
-    authenticated,
     init_tooltips = false,
 } = Astro.props
 
+const ORDER_ITEM_PARTIAL_URL = translatePath(`/partials/order_item_component`)
+
+import { query_string } from '@helpers/string';
 import { number_thousand_separator } from '@helpers/numbers'
 
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -25,77 +28,165 @@ import FixedFluid from '@components/compositions/FixedFluid.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 
 import ItemBadge from '@components/blocks/ItemBadge.astro';
-import ProducersList from '@components/blocks/ProducersList.astro';
-
-import ClipboardButton from './ClipboardButton.astro';
+import Tag from '@components/blocks/Tag.astro';
+import CharacterPicture from '@components/blocks/CharacterPicture.astro';
+import TippyDelivery from '@components/blocks/TippyDelivery.astro';
+import Progress from '@components/blocks/Progress.astro';
 import Button from '@components/blocks/Button.astro';
+import ButtonClaimOrder from '@components/blocks/ButtonClaimOrder.astro';
+import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
+
+import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
 ---
 
 <Flexblock>
-    {order_breakdown.map((item, index) => 
-        <FixedFluid width='270px' class="[ production-drilldown-item ][ w-full items-center! ]">
-            <div>
-                <ItemBadge
-                    item_name={item.name}
-                    type_id={item.type_id}
-                    size={32}
-                    centered={true}
-                >
-                    <small>{t(item.quantity !== 1 ? 'items_count_plural' : 'items_count_singular' as any).replace('{count}', number_thousand_separator(item.quantity))}</small>
-                </ItemBadge>
-            </div>
+    {order_breakdown.map(item => {
+        const items_delivered = item.assignments.reduce(
+            (c, assignment) => c + (assignment.delivered_at ? assignment.quantity : 0)
+        , 0)
 
-            <FlexInline gap='var(--space-3xs)'>
-                <div class="[ basis-[200px] ]">
-                    <ProducersList
-                        character_producers={[{
-                            id: item.character_id,
-                            name: item.character_name,
-                        }]}
-                        init_tooltips={init_tooltips}
-                    />
-                </div>
-                <FlexInline>
-                    <ClipboardButton
-                        id={`breakdown-copy-${index}-${item.type_id}`}
-                        text={t('breakdown')}
-                        narrow={true}
-                    >{item.copy_breakdown}</ClipboardButton>
-                    <ClipboardButton
-                        id={`materials-copy-${index}-${item.type_id}`}
-                        text={t('materials')}
-                        narrow={true}
-                    >{`${item.quantity}×${item.name}\n${
-                    item.materials
-                        .map(material => `${material.eve_type_name}\t${material.quantity}`)
-                        .join('\n')
-                    }\n`}</ClipboardButton>
-                </FlexInline>
-            </FlexInline>
-        </FixedFluid>
-    )}
-    {authenticated && (
-        <div class="[ order-breakdown-assign-footer ]">
-            <span
-                x-data={`{
-                    open_assign_modal() {
-                        show_modal({
-                            partial: ${JSON.stringify(assign_modal_partial_url)},
-                        })
-                    },
-                }`}
+        const user_assignment = item.assignments.find(assignment => assignment.character_id === primary_character_id)
+
+        const completion = item.quantity > 0 ? items_delivered / item.quantity * 100 : 0
+        const progress_color = completion >= 50 ? '--security-status-point-6' :
+                       completion >= 10 && completion < 50 ? '--security-status-point-4':
+                       '--fleet-red'
+        return (
+            <FixedFluid
+                width='270px'
+                class="[ production-drilldown-item ][ w-full items-center! ]"
+                gap='var(--space-2xs)'
             >
-                <Button
-                    type="button"
-                    size="sm"
-                    narrow={true}
-                    x-on:click.prevent="open_assign_modal()"
-                >
-                    {t('industry.orders.assign')}
-                </Button>
-            </span>
-        </div>
-    )}
+                <div>
+                    <ItemBadge
+                        item_name={item.eve_type_name}
+                        type_id={item.eve_type_id}
+                        size={32}
+                        centered={true}
+                    >
+                        <small>{t(item.quantity !== 1 ? 'claim_count_plural' : 'claim_count_singular' as any).replace('{count}', number_thousand_separator(item.quantity - item.unassigned_quantity)).replace('{total}', number_thousand_separator(item.quantity))}</small>
+                    </ItemBadge>
+                </div>
+
+                <FlexInline gap='var(--space-3xs)'>
+                    <div class="[ basis-[205px] ]">
+                        <FixedFluid width='32px' breakpoint='30%' gap='var(--space-2xs)' class="[  items-center! text-highlight ]">
+                            <div
+                                class="[ text-highlight h-[32px] ]"
+                                data-tippy-content={t('industrialists')}
+                                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                            >
+                                <IndustrialistIcon size={32} />
+                            </div>
+
+                            <FlexInline gap='var(--space-3xs)'>
+                                {item.assignments.map(assignment =>
+                                    <TippyDelivery
+                                        producer_name={assignment.character_name}
+                                        delivery={assignment.delivered_at}
+                                        init_tooltip={init_tooltips}
+                                    >
+                                        <CharacterPicture
+                                            character_id={assignment.character_id}
+                                            character_name={assignment.character_name}
+                                            quantity={assignment.quantity}
+                                            tag_color={assignment.delivered_at ? 'green' : 'fleet-red'}
+                                            size={32}
+                                        />
+                                        <div class="[ sr-only ]">{assignment.character_name}</div>
+                                    </TippyDelivery>
+                                )}
+                                {item.assignments.length === 0 &&
+                                    <Tag text={t('no_producers')} />
+                                }
+                            </FlexInline>
+                        </FixedFluid>
+                    </div>
+
+                    <div class="[ basis-[140px] pr-[30px]! ]">
+                        <Progress
+                            class:list={[ 'w-full' ]}
+                            max="100"
+                            value={completion > 0 ? completion : 0.1}
+                            data-tippy-content={item.quantity > 0 ? `${completion.toFixed(0)}%` : t('no_data')}
+                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                            style={`--progress-color: var(${progress_color}); --progress-glow-color: var(${progress_color});`}
+                        >
+                            {completion.toFixed(2)}%
+                        </Progress>
+                    </div>
+
+                    <div class="[ basis-[60px] ]">
+                        {item.quantity > 0 &&
+                            <span class:list={[
+                                    { 'text-status-point-6': completion >= 50 },
+                                    { 'text-status-point-4': completion >= 10 && completion < 50 },
+                                    { 'text-red': completion >= 0 && completion < 10 },
+                                ]}
+                            >
+                                {completion.toFixed(0)}%
+                            </span>
+                        }
+                    </div>
+
+                    <FlexInline>
+                        {item.unassigned_quantity > 0 &&
+                            <ButtonClaimOrder
+                                target_id={`order-item-${order_id}`}
+                                title={t('claim_order_item')}
+                                reclaim={Boolean(user_assignment)}
+                                order_id={order_id}
+                                claimed={user_assignment?.quantity ?? 0}
+                                item={item}
+                                character_id={primary_character_id as number}
+                            />
+                        }
+
+                        {user_assignment &&
+                            <>{!user_assignment.delivered_at ?
+                                <Button
+                                    size='sm'
+                                    color='green'
+                                    hx-patch={`${ORDER_ITEM_PARTIAL_URL}?${query_string({
+                                        order_id: order_id,
+                                        item_id: item.id,
+                                        assignment_id: user_assignment.id,
+                                        delivery: true,
+                                    })}`}
+                                    hx-target={`#order-item-${order_id}`}
+                                    hx-indicator=".loader"
+                                    hx-swap="outerHTML transition:true"
+                                    x-on:click="$el.setAttribute('disabled','')"
+                                >
+                                    {t('mark_delivered')}
+                                </Button> :
+                                <ButtonConfirm
+                                    label={t('revert_delivery')}
+                                    size='sm'
+                                >
+                                    <Button
+                                        size='sm'
+                                        hx-patch={`${ORDER_ITEM_PARTIAL_URL}?${query_string({
+                                            order_id: order_id,
+                                            item_id: item.id,
+                                            assignment_id: user_assignment.id,
+                                            delivery: false,
+                                        })}`}
+                                        hx-target={`#order-item-${order_id}`}
+                                        hx-indicator=".loader"
+                                        hx-swap="outerHTML transition:true"
+                                        x-on:click="$el.setAttribute('disabled','')"
+                                    >
+                                        {t('confirm')}
+                                    </Button>
+                                </ButtonConfirm>
+                            }</>
+                        }
+                    </FlexInline>
+                </FlexInline>
+            </FixedFluid>
+        )
+    })}
 </Flexblock>
 
 <style lang="scss">

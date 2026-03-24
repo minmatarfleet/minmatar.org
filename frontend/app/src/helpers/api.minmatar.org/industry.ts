@@ -11,6 +11,7 @@ import type {
     PlanetWithColoniesItem,
     OrderAssignmentsBreakdown,
     IndustrySingleOrder,
+    OrderAssignment,
 } from '@dtypes/api.minmatar.org'
 import {
     get_error_message,
@@ -408,5 +409,45 @@ export async function get_order_by_id(order_id: number) {
         return await response.json() as IndustrySingleOrder;
     } catch (error) {
         throw new Error(`Error fetching industry orders: ${error.message}`);
+    }
+}
+
+export async function mark_assignment(
+    access_token: string,
+    order_id: number,
+    order_item_id: number,
+    assignment_id: number,
+    delivered: boolean
+) {
+    const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${access_token}`,
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/orders/${order_id}/orderitems/${order_item_id}/assignments/${assignment_id}`
+    
+    console.log(`Requesting: PATCH ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            method: 'PATCH',
+            headers: headers,
+            body: JSON.stringify({
+                delivered: delivered
+            }),
+        })
+
+        // console.log(response)
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `PATCH ${ENDPOINT}`
+            ))
+        }
+
+        return await response.json() as OrderAssignment;
+    } catch (error) {
+        throw new Error(`Error marking assignment: ${error.message}`);
     }
 }

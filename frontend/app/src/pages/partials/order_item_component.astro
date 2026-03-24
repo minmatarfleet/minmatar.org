@@ -1,0 +1,144 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_400_Bad_Request } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+import type { IndustryOrderUI, Alert } from '@dtypes/layout_components'
+import { post_order_item_assignment, mark_assignment } from '@helpers/api.minmatar.org/industry'
+
+const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '')
+let alert:Alert | null = null
+let fetch_breakdown = false
+
+if (isNaN(order_id)) {
+    return HTTP_400_Bad_Request()
+}
+
+if (Astro.request.method === "POST") {
+    fetch_breakdown =  true
+
+    try {
+        const item_id = parseInt(Astro.url.searchParams.get('item_id') ?? '')
+        const data = await Astro.request.formData()
+        const quantity = parseInt(data.get('quantity' as string) as string)
+        const character_id = parseInt(data.get('character_id' as string) as string)
+
+        if (isNaN(item_id))
+            throw new Error(t('invalid_item_id'))
+
+        if (isNaN(quantity) || !(quantity > 0))
+            throw new Error(t('invalid_quantity'))
+
+        if (isNaN(character_id) || !(character_id > 0))
+            throw new Error(t('invalid_character_id'))
+
+        await post_order_item_assignment(
+            auth_token as string,
+            order_id,
+            item_id,
+            {
+                character_id: character_id,
+                quantity: quantity,
+            }
+        )
+    } catch (error) {
+        alert = {
+            title: t('claim_order_item'),
+            content: error.message as string,
+        }
+    }
+}
+
+if (Astro.request.method === "PATCH") {
+    fetch_breakdown =  true
+
+    try {
+        const item_id = parseInt(Astro.url.searchParams.get('item_id') ?? '')
+        const assignment_id = parseInt(Astro.url.searchParams.get('assignment_id') ?? '')
+        const delivery = JSON.parse(Astro.url.searchParams.get('delivery') ?? '')
+
+        if (isNaN(item_id))
+            throw new Error(t('invalid_item_id'))
+
+        if (isNaN(assignment_id))
+            throw new Error(t('invalid_assignment_id'))
+
+        if (delivery !== true && delivery !== false)
+            throw new Error(t('invalid_delivery_state'))
+
+        await mark_assignment(
+            auth_token as string,
+            order_id,
+            item_id,
+            assignment_id,
+            delivery,
+        )
+    } catch (error) {
+        alert = {
+            title: t('mark_assignment'),
+            content: error.message,
+        }
+    }
+}
+
+import { fetch_order_by_id } from '@helpers/fetching/industry'
+import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
+import type { RootSingleItem } from '@dtypes/api.minmatar.org'
+import { fetch_order_breakdown_grouped } from '@helpers/fetching/industry'
+
+let fetching_error:string | false = false
+let order:IndustryOrderUI | null = null
+let order_breakdown: RootSingleItem[] = []
+let primary_character_id = 0
+
+try {
+    order = await fetch_order_by_id(order_id)
+
+    if (!fetch_breakdown)
+        fetch_breakdown = JSON.parse(Astro.url.searchParams.get('fetch_breakdown') ?? 'false')
+
+    if (fetch_breakdown) {
+        order_breakdown = await fetch_order_breakdown_grouped(order_id)
+        const primary_pilot = await get_primary_characters(auth_token as string)
+        primary_character_id = primary_pilot?.character_id ?? 0
+    }
+} catch (error) {
+    fetching_error = error.message
+}
+
+import { query_string } from '@helpers/string';
+const ORDER_ITEM_PARTIAL_URL = translatePath(`/partials/order_item_component?${query_string({
+    order_id: order_id,
+    fetch_breakdown: fetch_breakdown,
+})}`)
+
+import OrderItem from '@components/blocks/OrderItem.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ShowAlert from '@components/blocks/ShowAlert.astro'
+---
+
+{alert && <ShowAlert alert={alert} /> }
+
+{fetching_error !== false ?
+    <ErrorRefetch
+        args={{
+            partial: ORDER_ITEM_PARTIAL_URL,
+            message: fetching_error,
+            delay: 0,
+        }}
+    /> :
+    <OrderItem
+        order={order as IndustryOrderUI }
+        init_tooltips={true}
+        order_breakdown={fetch_breakdown ? order_breakdown : undefined}
+        primary_character_id={fetch_breakdown ? primary_character_id : undefined}
+    />
+}
