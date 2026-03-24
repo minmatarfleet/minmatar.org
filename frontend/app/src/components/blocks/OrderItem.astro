@@ -63,8 +63,8 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
                     <small>{t('contractor')}</small>
                 </PilotBadge>
             </div>
-            <FlexInline>
-                <div class="[ basis-[190px] ]">
+            <FlexInline justification='space-between'>
+                <div class="[ basis-[315px] ]">
                     <FixedFluid width='32px' gap='var(--space-2xs)' breakpoint='30%' class="[  items-center! ]">
                         <div
                             class="[ text-highlight h-[32px] ]"
@@ -91,7 +91,7 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
                         </FlexInline>
                     </FixedFluid>
                 </div>
-                <Flexblock class="[ basis-[300px] pr-10 ]" gap='var(--space-3xs)'>
+                <Flexblock class="[ basis-[320px] pr-10 ]" gap='var(--space-3xs)'>
                     <FlexInline justification='space-between'>
                         <small>{format_date(lang, order.created_at)}</small>
                         <small>{format_date(lang, order.needed_by)}</small>
@@ -111,7 +111,7 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
                         </Progress>
                     </div>
                 </Flexblock>
-                <div class="[ basis-[154px] ]">
+                <div class="[ basis-[240px] ]">
                     <ProducersList
                         character_producers={order.assigned_to}
                         init_tooltips={init_tooltips}

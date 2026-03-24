@@ -21,6 +21,7 @@ import { query_string } from '@helpers/string';
 const REEL_GAP = 80
 
 import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
 
 import OrderItem from '@components/blocks/OrderItem.astro';
 import LocationsReel from '@components/blocks/LocationsReel.astro';
@@ -61,14 +62,20 @@ import Table from '@components/blocks/Table.astro';
         )}
     </LocationsReel>
 
-    <Table class="[ pb-[64px] ]">
-        {active_orders_locations.orders.map((order) =>
-            <div x-show="show_item($el)">
-                <OrderItem order={order} init_tooltips={init_tooltips} />
-            </div>
-        )}
-        <p class="[ no-result-text ]">{t('no_results')}</p>
-    </Table>
+    <Wrapper
+        padding_block='0'
+        padding_inline='0'
+        max_width='90rem'
+    >
+        <Table class="[ pb-[64px] ]">
+            {active_orders_locations.orders.map((order) =>
+                <div x-show="show_item($el)">
+                    <OrderItem order={order} init_tooltips={init_tooltips} />
+                </div>
+            )}
+            <p class="[ no-result-text ]">{t('no_results')}</p>
+        </Table>
+    </Wrapper>
 </Flexblock>
 
 <style lang="scss">
