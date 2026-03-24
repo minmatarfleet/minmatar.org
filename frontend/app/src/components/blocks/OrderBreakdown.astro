@@ -53,7 +53,7 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
                        '--fleet-red'
         return (
             <FixedFluid
-                width='270px'
+                width='320px'
                 class="[ production-drilldown-item ][ w-full items-center! ]"
                 gap='var(--space-2xs)'
             >
@@ -68,8 +68,8 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
                     </ItemBadge>
                 </div>
 
-                <FlexInline gap='var(--space-3xs)'>
-                    <div class="[ basis-[205px] ]">
+                <FlexInline gap='var(--space-3xs)' justification='space-between'>
+                    <div class="[ basis-[315px] ]">
                         <FixedFluid width='32px' breakpoint='30%' gap='var(--space-2xs)' class="[  items-center! text-highlight ]">
                             <div
                                 class="[ text-highlight h-[32px] ]"
@@ -103,33 +103,35 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
                         </FixedFluid>
                     </div>
 
-                    <div class="[ basis-[140px] pr-[30px]! ]">
-                        <Progress
-                            class:list={[ 'w-full' ]}
-                            max="100"
-                            value={completion > 0 ? completion : 0.1}
-                            data-tippy-content={item.quantity > 0 ? `${completion.toFixed(0)}%` : t('no_data')}
-                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                            style={`--progress-color: var(${progress_color}); --progress-glow-color: var(${progress_color});`}
-                        >
-                            {completion.toFixed(2)}%
-                        </Progress>
-                    </div>
-
-                    <div class="[ basis-[60px] ]">
-                        {item.quantity > 0 &&
-                            <span class:list={[
-                                    { 'text-status-point-6': completion >= 50 },
-                                    { 'text-status-point-4': completion >= 10 && completion < 50 },
-                                    { 'text-red': completion >= 0 && completion < 10 },
-                                ]}
+                    <FlexInline class="[ basis-[230px] ]" justification='space-between'>
+                        <div class="[ basis-[140px] pr-[30px]! ]">
+                            <Progress
+                                class:list={[ 'w-full' ]}
+                                max="100"
+                                value={completion > 0 ? completion : 0.1}
+                                data-tippy-content={item.quantity > 0 ? `${completion.toFixed(0)}%` : t('no_data')}
+                                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                                style={`--progress-color: var(${progress_color}); --progress-glow-color: var(${progress_color});`}
                             >
-                                {completion.toFixed(0)}%
-                            </span>
-                        }
-                    </div>
+                                {completion.toFixed(2)}%
+                            </Progress>
+                        </div>
 
-                    <FlexInline>
+                        <div class="[ basis-[60px] ]">
+                            {item.quantity > 0 &&
+                                <span class:list={[
+                                        { 'text-status-point-6': completion >= 50 },
+                                        { 'text-status-point-4': completion >= 10 && completion < 50 },
+                                        { 'text-red': completion >= 0 && completion < 10 },
+                                    ]}
+                                >
+                                    {completion.toFixed(0)}%
+                                </span>
+                            }
+                        </div>
+                    </FlexInline>
+
+                    <FlexInline class="[ basis-[300px] ]">
                         {item.unassigned_quantity > 0 &&
                             <ButtonClaimOrder
                                 target_id={`order-item-${order_id}`}

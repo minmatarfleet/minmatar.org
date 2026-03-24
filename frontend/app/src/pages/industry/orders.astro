@@ -35,7 +35,7 @@ const INDUSTRY_ORDERS_PARTIAL_URL = translatePath(`/partials/industry_orders_com
 
 import Viewport from '@layouts/Viewport.astro';
 
-import PageDefault from '@components/page/PageDefault.astro';
+import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -57,7 +57,7 @@ const page_title = t('industry.orders.page_title');
         alert_dialog: true,
     }}
 >
-    <PageDefault
+    <PageWide
         cover={{
             image: active_location_name === 'R-6KYM - Here be Rats' ? '/images/home-r6-cover-eve.jpg' :
 					active_location_name === 'Amamake - 5 times nearly AT winners' ? '/images/home-amamake-cover-eve.jpg' :
@@ -131,5 +131,5 @@ const page_title = t('industry.orders.page_title');
                 :
                 <p>{t('no_manufacturing_orders')}</p>
         }
-    </PageDefault>
+    </PageWide>
 </Viewport>
