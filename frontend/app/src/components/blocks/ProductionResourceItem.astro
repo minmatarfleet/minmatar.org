@@ -70,13 +70,12 @@ import FactoryIcon from '@components/icons/FactoryIcon.astro';
 
     <div class="[ production-drilldown-container ]">
         <small
+            class="[ loading ]"
             hx-get={PLANETARY_PRODUCTION_DRILLDOWN_PARTIAL_URL}
             hx-trigger="intersect"
             hx-indicator=".loader"
             hx-swap="outerHTML transition:true"
-        >
-            {t('fetching_drilldown')}
-        </small>
+        >{t('fetching_drilldown')}</small>
     </div>
 </CollapsibleBlock>
 
