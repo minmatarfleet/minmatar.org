@@ -67,7 +67,7 @@ import Table from '@components/blocks/Table.astro';
         padding_inline='0'
         max_width='90rem'
     >
-        <Table class="[ pb-[64px] ]">
+        <Table>
             {active_orders_locations.orders.map((order) =>
                 <div x-show="show_item($el)">
                     <OrderItem order={order} init_tooltips={init_tooltips} />
