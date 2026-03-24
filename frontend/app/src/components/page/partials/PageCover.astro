@@ -69,7 +69,17 @@ const optional_attributes = {
         max-height: 100vh;
 
         &.fix-pixel {
-            width: calc(100% + 1px) !important; /* Fix green right border out of sharpen filter */
+            overflow: hidden;
+
+            &.scrollable {
+                video {
+                    transform: scaleX(1.001) translateY(-1px); /* Fix green right border out of sharpen filter */
+                }
+            }
+
+            video {
+                transform: scaleX(1.001); /* Fix green right border out of sharpen filter */
+            }
         }
 
         &.scrollable {
