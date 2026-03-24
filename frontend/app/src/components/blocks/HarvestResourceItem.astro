@@ -70,13 +70,12 @@ import ExtractorIcon from '@components/icons/ExtractorIcon.astro';
 
     <div class="[ harvest-drilldown-container ]">
         <small
+            class="[ loading ]"
             hx-get={PLANETARY_HARVEST_DRILLDOWN_PARTIAL_URL}
             hx-trigger="intersect"
             hx-indicator=".loader"
             hx-swap="outerHTML transition:true"
-        >
-            {t('fetching_drilldown')}
-        </small>
+        >{t('fetching_drilldown')}</small>
     </div>
 </CollapsibleBlock>
 
