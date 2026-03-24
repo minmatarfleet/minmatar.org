@@ -131,13 +131,12 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
             />
             :
             <small
+                class="[ loading ]"
                 hx-get={ORDER_BREAKDOWN_PARTIAL_URL}
                 hx-trigger="intersect"
                 hx-indicator=".loader"
                 hx-swap="outerHTML transition:true"
-            >
-                {t('fetching_order_breakdown')}
-            </small>
+            >{t('fetching_order_breakdown')}</small>
         }
         
     </div>
