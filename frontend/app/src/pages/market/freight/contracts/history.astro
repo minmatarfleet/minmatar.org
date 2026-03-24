@@ -38,10 +38,6 @@ const FREIGHT_CONTRACTS_PARTIAL_URL = translatePath(`/partials/freight_contracts
     is_history: true,
 })}` : ''}`)
 
-const is_video_cover = active_location_name === 'R-6KYM - Here be Rats' ||
-                       active_location_name === 'Amamake - 5 times nearly AT winners' ||
-                       active_location_name === 'Jita'
-
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
@@ -83,8 +79,8 @@ const page_title = t('freight_contracts.history.page_title');
 					   active_location_name === 'Jita' ? '/images/home-jita-cover-eve.jpg' :
                        '/images/freight-service-cover.jpg',
             animated: false,
-            scrollable: !is_video_cover,
-            overlay: !is_video_cover,
+            scrollable: true,
+            overlay: true,
         }}
         sticky={true}
         x-data={`{
