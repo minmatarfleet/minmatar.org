@@ -2105,5 +2105,6 @@ export const ui = {
         'view_station_industry_orders': 'There might be industry orders available at the station.',
         'view_orders_history': 'View orders history',
         'view_active_orders': 'View active orders',
+        'view_active_contracts': 'View active contracts',
     },
 } as const;

@@ -84,8 +84,12 @@ const non_active_doctrine_location_ui = all_locations_ui.filter(location => loca
 
 const DOCTRINES_PARTIAL_URL = translatePath(`/partials/doctrines_component${active_location_id > 0 ? `?location_id=${active_location_id}` : ''}`)
 
-const AMAMAKE_LOCATION_ID = 1022167642188
-const R_6KYM_LOCATION_ID = 1051465618860
+import {
+    get_location_video_cover,
+    get_location_video_cover_thumb,
+    get_location_cover,
+    get_location_cover_990,
+} from '@helpers/covers'
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -111,18 +115,10 @@ const leading_text = t('doctrines.alliance.page_leading_text')
 >
     <PageWide
         cover={{
-            video: active_location_id === R_6KYM_LOCATION_ID ? '/videos/r6-loop.webm' :
-					active_location_id === AMAMAKE_LOCATION_ID ? '/videos/amamake-loop.webm' :
-                    undefined,
-			video_thumb: active_location_id === R_6KYM_LOCATION_ID ? '/images/home-r6-cover.jpg' :
-					active_location_id === AMAMAKE_LOCATION_ID ? '/images/home-amamake-cover.jpg' :
-                    undefined,
-            image: active_location_id === R_6KYM_LOCATION_ID ? '/images/home-r6-cover-eve.jpg' :
-					active_location_id === AMAMAKE_LOCATION_ID ? '/images/home-amamake-cover-eve.jpg' :
-                    '/images/doctrines-cover.jpg',
-            image_990: active_location_id === R_6KYM_LOCATION_ID ? '/images/home-r6-cover-eve.jpg' :
-					   active_location_id === AMAMAKE_LOCATION_ID ? '/images/home-amamake-cover-eve.jpg' :
-                       '/images/doctrines-cover.jpg',
+            video: get_location_video_cover(active_location_id) ?? undefined,
+			video_thumb: get_location_video_cover_thumb(active_location_id) ?? undefined,
+            image: get_location_cover(active_location_id) ?? '/images/doctrines-cover.jpg',
+            image_990: get_location_cover_990(active_location_id) ?? '/images/doctrines-cover.jpg',
             animated: false,
             scrollable: true,
             overlay: true,

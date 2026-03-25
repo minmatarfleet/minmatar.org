@@ -7,12 +7,14 @@ import type { SpaceTruckerStatistics } from '@dtypes/api.minmatar.org'
 import { fetch_freight_contracts } from '@helpers/fetching/freights'
 import { get_characters_statistics } from '@helpers/api.minmatar.org/freights'
 
+const history = Boolean(JSON.parse(Astro.url.searchParams.get('is_history') ?? 'false'))
+
 let fetching_error:string | false = false
 let location_contracts:FreightContractLocation[] = []
 let space_truckers:SpaceTruckerStatistics[] = []
 
 try {
-    location_contracts = await fetch_freight_contracts()
+    location_contracts = await fetch_freight_contracts(history)
     space_truckers = await get_characters_statistics()
 } catch (error) {
     fetching_error = error.message
@@ -33,7 +35,8 @@ const non_active_contracts_location = location_contracts.filter(location => loca
 import { query_string } from '@helpers/string';
 
 const FREIGHT_CONTRACTS_PARTIAL_URL = translatePath(`/partials/freight_contracts_component${active_location_name ? `?${query_string({
-    location_name: active_location_name
+    location_name: active_location_name,
+    is_history: history,
 })}` : ''}`)
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')

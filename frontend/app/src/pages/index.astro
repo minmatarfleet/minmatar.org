@@ -58,6 +58,7 @@ const STAGINGS_STATIONS:StagingTranslation = {
 	amarr: 'Amarr VIII (Oris) - Emperor Family Academy',
 	amamake: 'Amamake - 5 times nearly AT winners',
 	r6: 'R-6KYM - Here be Rats',
+	r6_2: 'R-6KYM - Casper Anchored It',
 }
 
 const STAGINGS_SYSTEMS:StagingTranslation = {
@@ -65,9 +66,10 @@ const STAGINGS_SYSTEMS:StagingTranslation = {
 	amarr: 'Amarr',
 	amamake: 'Amamake',
 	r6: 'R-6KYM',
+	r6_2: 'R-6KYM',
 }
 
-const RATTINI_TRIBE_ID = 98726134
+/*const RATTINI_TRIBE_ID = 98726134
 const BLACK_OMEGA_SECUTIRY_ID = 263585335
 const EMPEROR_FAMILY_ID = 1000086
 const OBLIVION_WATCH_ID = 98217709
@@ -89,7 +91,7 @@ const STAGING_CORPORATIONS = {
 		id: BLACK_OMEGA_SECUTIRY_ID,
 		name: 'Black Omega Security'
 	}
-}
+}*/
 
 const STAGING_DOCTRINES = {
 	amamake: 1022167642188,
@@ -99,16 +101,19 @@ const STAGING_DOCTRINES = {
 const STAGING_SELL_ORDERS = {
 	amamake: 'Amamake - 5 times nearly AT winners',
 	r6: 'R-6KYM - Here be Rats',
+	r6_2: 'R-6KYM - Casper Anchored It',
 }
 
 const FREIGHT_ORDERS = {
 	amamake: 'Amamake - 5 times nearly AT winners',
 	r6: 'R-6KYM - Here be Rats',
+	r6_2: 'R-6KYM - Casper Anchored It',
 }
 
 const INDUSTRY_ORDERS = {
 	amamake: 'Amamake - 5 times nearly AT winners',
 	r6: 'R-6KYM - Here be Rats',
+	r6_2: 'R-6KYM - Casper Anchored It',
 }
 
 const IS_APRIL_FOOLS = is_seasonal_date('04-01', '04-01')
@@ -124,7 +129,7 @@ const is_random_staging = !Astro.cookies.has('staging')
 const staging = IS_APRIL_FOOLS ?
 	'amarr' :
 	is_random_staging ?
-	stagings[Math.floor(Math.random() * (stagings.length - 1))] : // removing amarr from random
+	stagings[Math.floor(Math.random() * (stagings.length - 2))] : // removing amarr and r6_2 from random
 	user_staging
 	
 const auth_error = Astro.cookies.has('auth_error') ? Astro.cookies.get('auth_error')?.value : false
@@ -134,6 +139,13 @@ const alert = auth_error ? {
 	title: t('auth_error_dialog_title'),
 	content: auth_error,
 } as Alert : false
+
+import {
+    get_location_video_cover,
+    get_location_video_cover_thumb,
+    get_location_cover,
+    get_location_cover_990,
+} from '@helpers/covers'
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -149,6 +161,7 @@ import WatermellonInfo from '@components/blocks/WatermellonInfo.astro';
 import AmarrInfo from '@components/blocks/AmarrInfo.astro';
 import AmamakeInfo from '@components/blocks/AmamakeInfo.astro';
 import R6Info from '@components/blocks/R6Info.astro';
+import R6_2Info from '@components/blocks/R6_2Info.astro';
 import HomeCorporations from '@components/blocks/HomeCorporations.astro';
 import FleetFeed from '@components/blocks/FleetFeed.astro';
 import ColorBlindPrompt from '@components/blocks/ColorBlindPrompt.astro';
@@ -187,22 +200,10 @@ const page_description = t('index.leading_text');
 >
     <PageLanding
         cover={{
-			video: staging === 'amarr' ? '/videos/emperor-loop.webm' :
-					staging === 'amamake' ? '/videos/amamake-loop.webm' :
-					staging === 'r6' ? '/videos/r6-loop.webm' :
-					'/videos/watermelon-loop.webm',
-			video_thumb: staging === 'amarr' ? '/images/home-amarr-cover.jpg' :
-					staging === 'amamake' ? '/images/home-amamake-cover.jpg' :
-					staging === 'r6' ? '/images/home-r6-cover.jpg' :
-					'/images/home-cover.jpg',
-            image: staging === 'amarr' ? '/images/home-amarr-cover-eve.jpg' :
-					staging === 'amamake' ? '/images/home-amamake-cover-eve.jpg' :
-					staging === 'r6' ? '/images/home-r6-cover-eve.jpg' :
-					'/images/home-cover-eve.jpg',
-            image_990: staging === 'amarr' ? '/images/home-amarr-cover-eve.jpg' :
-					   staging === 'amamake' ? '/images/home-amamake-cover-eve.jpg' :
-					   staging === 'r6' ? '/images/home-r6-cover-eve.jpg' :
-					   '/images/home-cover-eve.jpg',
+			video: get_location_video_cover(staging) ?? '/videos/watermelon-loop.webm',
+			video_thumb: get_location_video_cover_thumb(staging) ?? '/images/home-cover.jpg',
+            image: get_location_cover(staging) ?? '/images/home-cover-eve.jpg',
+            image_990: get_location_cover_990(staging) ?? '/images/home-cover-eve.jpg',
             animated: false,
         }}
         fullscreen={true}
@@ -228,6 +229,7 @@ const page_description = t('index.leading_text');
 				{staging === 'amamake' ? <AmamakeInfo is_random={is_random_staging} /> :
 					staging === 'amarr' ? <AmarrInfo /> :
 					staging === 'r6' ? <R6Info is_random={is_random_staging} /> :
+					staging === 'r6_2' ? <R6_2Info is_random={is_random_staging} /> :
 					<WatermellonInfo is_random={is_random_staging} />
 				}
 				<FlexInline gap='var(--space-3xs)'>
