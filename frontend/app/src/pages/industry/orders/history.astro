@@ -9,7 +9,7 @@ let fetching_error:string | false = false
 let orders_locations:OrderLocation[] = []
 
 try {
-    orders_locations = await fetch_orders_by_locations()
+    orders_locations = await fetch_orders_by_locations(true)
 } catch (error) {
     fetching_error = error.message
 }
@@ -30,7 +30,8 @@ const non_active_orders_locations = orders_locations.filter(location => location
 import { query_string } from '@helpers/string';
 
 const INDUSTRY_ORDERS_PARTIAL_URL = translatePath(`/partials/industry_orders_component${active_location_name ? `?${query_string({
-    location_name: active_location_name
+    location_name: active_location_name,
+    history: true,
 })}` : ''}`)
 
 import Viewport from '@layouts/Viewport.astro';
@@ -48,7 +49,7 @@ import Button from '@components/blocks/Button.astro'
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
-const page_title = t('industry.orders.page_title');
+const page_title = t('industry.orders.history.page_title');
 ---
 
 <Viewport
@@ -122,10 +123,10 @@ const page_title = t('industry.orders.page_title');
 
         <FlexInline slot="subheader">
             <Button
-                href={translatePath('/industry/orders/history/')}
+                href={translatePath('/industry/orders/')}
                 size='sm'
             >
-                {t('view_orders_history')}
+                {t('view_active_orders')}
             </Button>
         </FlexInline>
 

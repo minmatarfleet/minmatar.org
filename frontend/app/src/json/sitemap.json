@@ -266,10 +266,16 @@
     },
     {
         "slug": "industry.orders",
-        "alt": "icon.orders.alt",
         "path": "/industry/orders/",
         "publish": true,
         "description": "page_finder.orders.description",
+        "keywords": [ "orders", "manufacturing", "materials", "breakdown" ]
+    },
+    {
+        "slug": "industry.orders.history",
+        "path": "/industry/orders/history/",
+        "publish": true,
+        "description": "page_finder.orders.history.description",
         "keywords": [ "orders", "manufacturing", "materials", "breakdown" ]
     },
     {
