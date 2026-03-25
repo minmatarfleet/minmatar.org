@@ -50,6 +50,7 @@
 }
 
 p[data-tippy-content]:not([data-tippy-content=""]),
+small[data-tippy-content]:not([data-tippy-content=""]),
 span[data-tippy-content]:not([data-tippy-content=""]) {
     border-bottom: dotted 2px color-mix(in srgb, currentColor 30%, transparent);
 }

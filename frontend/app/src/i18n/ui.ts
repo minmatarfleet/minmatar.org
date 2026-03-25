@@ -2106,5 +2106,7 @@ export const ui = {
         'view_orders_history': 'View orders history',
         'view_active_orders': 'View active orders',
         'view_active_contracts': 'View active contracts',
+        'date_completed': 'Completed on {date}',
+        'date_issued': 'Issued on {date}',
     },
 } as const;

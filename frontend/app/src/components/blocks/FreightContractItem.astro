@@ -15,7 +15,9 @@ const {
 } = Astro.props
 
 import { number_name } from '@helpers/numbers.ts';
-import { format_date_time, format_date, format_date_short, get_date_progress_percent } from '@helpers/date'
+import { format_date_time } from '@helpers/date'
+
+const date = format_date_time(lang, contract.status === 'finished' ? contract.date_completed : contract.date_issued)
 
 import FixedFluid from "@components/compositions/FixedFluid.astro";
 import Flexblock from "@components/compositions/Flexblock.astro";
@@ -38,7 +40,13 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
             character_name={contract.issuer_character_name}
             heading={true}
         >
-            <small>{t(`contract_${contract.status}` as any) ?? contract.status}</small>
+            <small
+                class="[ w-fit ]"
+                data-tippy-content={(contract.status === 'finished' ? t('date_completed') : t('date_issued')).replace('{date}', date)}
+                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+            >
+                {t(`contract_${contract.status}` as any) ?? contract.status}
+            </small>
         </PilotBadge>
     </Flexblock>
     <FlexInline gap='var(--space-l)'>
