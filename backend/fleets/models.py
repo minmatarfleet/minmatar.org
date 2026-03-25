@@ -1,4 +1,5 @@
 import logging
+from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth.models import Group, User
@@ -28,6 +29,12 @@ class EveFleet(models.Model):
         ("training", "Training Operation"),
     )
     description = models.TextField(blank=True)
+    objective = models.CharField(
+        max_length=200,
+        blank=True,
+        default="",
+        help_text="Short tagline for the fleet (one sentence).",
+    )
     type = models.CharField(max_length=32, choices=fleet_types)
 
     start_time = models.DateTimeField()
@@ -489,6 +496,16 @@ class EveFleetInstance(models.Model):
             tries += 1
             if tries >= max_tries:
                 break
+
+        min_open = self.start_time + timedelta(hours=1)
+        if timezone.now() < min_open:
+            logger.info(
+                "Skipping auto-close for fleet %d: instance open < 1 hour "
+                "(boss recovery exhausted after %d tries)",
+                self.eve_fleet.id,
+                tries,
+            )
+            return
 
         logger.info(
             "Closing fleet %d after %d attempts to find new boss",

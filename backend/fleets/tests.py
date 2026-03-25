@@ -12,7 +12,12 @@ from django.utils import timezone
 from app.test import TestCase
 from users.helpers import add_user_permission
 from eveonline.client import EsiResponse
-from eveonline.models import EveCharacter, EveCorporation, EveLocation
+from eveonline.models import (
+    EveCharacter,
+    EveCorporation,
+    EveLocation,
+    EvePlayer,
+)
 from eveonline.helpers.characters import set_primary_character
 from discord.models import DiscordUser
 
@@ -35,6 +40,7 @@ from fleets.signals import (
     update_fleet_schedule_on_save,
     update_fleet_schedule_on_delete,
 )
+from fleets.motd import get_motd
 from fleets.notifications import get_fleet_discord_notification
 from fleets.tasks import update_fleet_schedule, update_fleet_instances
 
@@ -125,6 +131,25 @@ def make_test_fleet(
 
 class FleetHelperTestCase(SimpleTestCase):
     """Tests for Fleet helper code"""
+
+    @patch(
+        "fleets.motd.random.choice", return_value='Quote with <tags> & "chars"'
+    )
+    def test_get_motd_appends_rat_quote_escaped(self, mock_choice):
+        motd = get_motd(
+            1,
+            "FC Name",
+            None,
+            None,
+            "https://discord.gg/minmatar",
+            "Minmatar Fleet Discord",
+            "https://example.com/d",
+            "Doctrine",
+        )
+        self.assertIn("Quote with", motd)
+        self.assertIn("&lt;tags&gt;", motd)
+        self.assertIn("&amp;", motd)
+        mock_choice.assert_called_once()
 
     def test_discord_notification_template(self):
         notification = get_fleet_discord_notification(
@@ -230,6 +255,107 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(fleet.id, response.json()["id"])
         self.assertEqual("Test fleet", response.json()["description"])
+        self.assertIsNone(response.json().get("objective"))
+
+    def test_get_fleet_includes_objective(self):
+        fleet = make_test_fleet("Test fleet", self.user)
+        fleet.objective = "Take the objective"
+        fleet.save()
+
+        response = self.client.get(
+            f"{BASE_URL}/{fleet.id}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("Take the objective", response.json()["objective"])
+
+    def test_create_fleet_with_objective(self):
+        setup_fc(self.user)
+        audience = EveFleetAudience.objects.first()
+        data = {
+            "type": "training",
+            "description": "Test fleet",
+            "objective": "Short tagline here",
+            "start_time": timezone.now().isoformat(),
+            "audience_id": audience.id,
+        }
+        response = self.client.post(
+            f"{BASE_URL}",
+            data,
+            "application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("Short tagline here", response.json()["objective"])
+        fid = response.json()["id"]
+        self.assertEqual(
+            "Short tagline here",
+            EveFleet.objects.get(id=fid).objective,
+        )
+
+    def test_patch_fleet_objective(self):
+        self.user.is_superuser = True
+        self.user.save()
+        fleet = make_test_fleet("Test fleet", self.user)
+
+        response = self.client.patch(
+            f"{BASE_URL}/{fleet.id}",
+            {"objective": "Updated tagline"},
+            "application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        self.assertEqual("Updated tagline", response.json()["objective"])
+        fleet.refresh_from_db()
+        self.assertEqual("Updated tagline", fleet.objective)
+
+    def test_commander_metrics_requires_privilege(self):
+        response = self.client.get(
+            f"{BASE_URL}/commander-metrics",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(403, response.status_code)
+
+    def test_commander_metrics_month_counts(self):
+        self.user.is_superuser = True
+        self.user.save()
+        setup_fc(self.user)
+        char = EveCharacter.objects.get(user=self.user)
+        player, created = EvePlayer.objects.get_or_create(
+            user=self.user,
+            defaults={
+                "nickname": f"cmdmetrics_{self.user.pk}",
+                "primary_character": char,
+            },
+        )
+        if not created:
+            player.primary_character = char
+            player.save(update_fields=["primary_character"])
+
+        make_test_fleet("A", self.user)
+        make_test_fleet("B", self.user)
+        make_test_fleet(
+            "Old",
+            self.user,
+            start=timezone.now() - timedelta(days=40),
+        )
+        cancelled = make_test_fleet("X", self.user)
+        cancelled.status = "cancelled"
+        cancelled.save()
+
+        response = self.client.get(
+            f"{BASE_URL}/commander-metrics",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        rows = response.json()
+        mine = [r for r in rows if r["user_id"] == self.user.id]
+        self.assertEqual(1, len(mine))
+        self.assertEqual(2, mine[0]["fleet_count"])
+        self.assertEqual(char.character_id, mine[0]["primary_character_id"])
+        self.assertEqual(
+            char.character_name, mine[0]["primary_character_name"]
+        )
 
     def test_patch_fleet(self):
         self.user.is_superuser = True
@@ -773,6 +899,11 @@ class FleetTaskTests(TestCase):
             response_code=400,
         )
 
+        EveFleetInstance.objects.filter(pk=efi.pk).update(
+            start_time=timezone.now() - timedelta(hours=2)
+        )
+        efi.refresh_from_db()
+
         efi.update_fleet_members()
 
         self.assertEqual("complete", efi.eve_fleet.status)
@@ -843,4 +974,42 @@ class FleetTaskTests(TestCase):
             data="The fleet does not exist or you don't have access to it!",
         )
 
+        EveFleetInstance.objects.filter(pk=efi.pk).update(
+            start_time=timezone.now() - timedelta(hours=2)
+        )
+
         update_fleet_instances()
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("fleets.models.EsiClient")
+    @patch("fleets.models.discord")
+    def test_esi_failure_does_not_auto_close_within_one_hour(
+        self, discord_mock, esi
+    ):
+        self.assertIsNotNone(discord_mock)
+        esi_mock = esi.return_value
+        fc_id = setup_fc(self.user)
+        fleet = make_test_fleet("Test", self.user)
+        fleet.disable_motd = True
+        fleet.status = "active"
+        fleet.save()
+
+        efi = EveFleetInstance.objects.create(
+            id=5555,
+            eve_fleet=fleet,
+            boss_id=fc_id,
+        )
+        esi_mock.get_fleet_members.return_value = EsiResponse(
+            response_code=404,
+            data={"error": "no access"},
+        )
+        esi_mock.get_active_fleet.return_value = EsiResponse(
+            response_code=400,
+        )
+
+        efi.update_fleet_members()
+
+        efi.refresh_from_db()
+        fleet.refresh_from_db()
+        self.assertIsNone(efi.end_time)
+        self.assertEqual("active", fleet.status)
