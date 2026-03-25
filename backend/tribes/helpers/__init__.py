@@ -5,6 +5,7 @@ from tribes.helpers.requirements import (
 from tribes.helpers.permissions import (
     user_can_manage_group,
     user_in_tribe_group,
+    user_is_active_tribe_member,
     user_is_tribe_chief,
 )
 
@@ -13,5 +14,6 @@ __all__ = [
     "check_character_meets_requirements",
     "user_can_manage_group",
     "user_in_tribe_group",
+    "user_is_active_tribe_member",
     "user_is_tribe_chief",
 ]

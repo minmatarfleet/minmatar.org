@@ -19,10 +19,15 @@ from groups.models import (
     UserAffiliation,
     EveCorporationGroup,
 )
+from groups.helpers import (
+    TRIBE_CHIEF_GROUP_NAME,
+    sync_tribe_chief_group_membership,
+)
 from groups.tasks import (
     update_affiliations,
     sync_eve_corporation_groups,
 )
+from tribes.models import Tribe
 
 
 class UserAffiliationTestCase(TestCase):
@@ -211,3 +216,60 @@ class GroupTasksTestCase(TestCase):
 
         self.assertEqual(1, self.user.groups.count())
         self.assertEqual(f"{corp.name} group", self.user.groups.all()[0].name)
+
+
+class SyncTribeChiefGroupTestCase(TestCase):
+    @factory.django.mute_signals(
+        signals.pre_save, signals.post_save, signals.m2m_changed
+    )
+    def test_sync_adds_active_tribe_chief_and_creates_group(self):
+        chief = User.objects.create_user(username="tribe_chief_sync")
+        Tribe.objects.create(
+            name="Mining",
+            slug="mining",
+            chief=chief,
+        )
+        self.assertFalse(
+            Group.objects.filter(name=TRIBE_CHIEF_GROUP_NAME).exists()
+        )
+        self.assertEqual(0, chief.groups.count())
+
+        sync_tribe_chief_group_membership()
+
+        chief_group = Group.objects.get(name=TRIBE_CHIEF_GROUP_NAME)
+        self.assertIn(chief_group, chief.groups.all())
+
+    @factory.django.mute_signals(
+        signals.pre_save, signals.post_save, signals.m2m_changed
+    )
+    def test_sync_removes_when_chief_cleared(self):
+        chief = User.objects.create_user(username="former_chief")
+        tribe = Tribe.objects.create(name="Mining", slug="mining", chief=chief)
+        sync_tribe_chief_group_membership()
+        chief_group = Group.objects.get(name=TRIBE_CHIEF_GROUP_NAME)
+        self.assertIn(chief_group, chief.groups.all())
+
+        tribe.chief = None
+        tribe.save(update_fields=["chief"])
+        sync_tribe_chief_group_membership()
+
+        self.assertEqual(
+            0, chief.groups.filter(name=TRIBE_CHIEF_GROUP_NAME).count()
+        )
+
+    @factory.django.mute_signals(
+        signals.pre_save, signals.post_save, signals.m2m_changed
+    )
+    def test_sync_excludes_inactive_tribe_chiefs(self):
+        chief = User.objects.create_user(username="inactive_tribe_chief")
+        Tribe.objects.create(
+            name="Old",
+            slug="old",
+            chief=chief,
+            is_active=False,
+        )
+        sync_tribe_chief_group_membership()
+
+        self.assertEqual(
+            0, chief.groups.filter(name=TRIBE_CHIEF_GROUP_NAME).count()
+        )

@@ -11,7 +11,10 @@ from eveonline.helpers.characters import (
 )
 from eveonline.models import EvePlayer
 
-from .helpers import process_bulk_community_status_row
+from .helpers import (
+    process_bulk_community_status_row,
+    sync_tribe_chief_group_membership,
+)
 from .models import (
     AffiliationType,
     EveCorporationGroup,
@@ -328,3 +331,9 @@ def sync_eve_corporation_groups():
                     e,
                 )
                 continue
+
+
+@app.task
+def sync_tribe_chief_group():
+    """Ensure Tribe - Chief auth group exists and matches active tribe chiefs."""
+    sync_tribe_chief_group_membership()

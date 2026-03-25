@@ -10,6 +10,7 @@ from eveonline.models import EveCharacter
 from tribes.models import (
     Tribe,
     TribeGroup,
+    TribeGroupActivity,
     TribeGroupMembership,
     TribeGroupMembershipCharacter,
     TribeGroupMembershipCharacterHistory,
@@ -365,3 +366,72 @@ class CurrentUserTribesTestCase(TestCase):
     def test_current_requires_auth(self):
         response = self.client.get(f"{BASE_URL}/current")
         self.assertEqual(response.status_code, 401)
+
+
+class TribeGroupActivityDefinitionsTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.tribe = Tribe.objects.create(name="Capitals", slug="capitals")
+        self.tribe_group = TribeGroup.objects.create(
+            tribe=self.tribe, name="Dreads"
+        )
+        self.member = User.objects.create_user(username="cap_member")
+        self.outsider = User.objects.create_user(username="outsider")
+        self.chief = User.objects.create_user(username="cap_chief")
+        self.tribe.chief = self.chief
+        self.tribe.save(update_fields=["chief"])
+        TribeGroupMembership.objects.create(
+            user=self.member,
+            tribe_group=self.tribe_group,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+        self.activity = TribeGroupActivity.objects.create(
+            tribe_group=self.tribe_group,
+            activity_type=TribeGroupActivity.KILLMAIL,
+            description="PvP kills",
+            is_active=True,
+            points_per_record=1.0,
+        )
+        self.url = f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}/activities"
+
+    def test_member_can_list_definitions(self):
+        token = _make_token(self.member)
+        response = self.client.get(
+            self.url, HTTP_AUTHORIZATION=f"Bearer {token}"
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data["items"]), 1)
+        item = data["items"][0]
+        self.assertEqual(item["id"], self.activity.pk)
+        self.assertEqual(item["activity_type"], "killmail")
+        self.assertEqual(item["description"], "PvP kills")
+        self.assertTrue(item["is_active"])
+        self.assertEqual(item["points_per_record"], 1.0)
+
+    def test_tribe_chief_can_list_without_membership(self):
+        token = _make_token(self.chief)
+        response = self.client.get(
+            self.url, HTTP_AUTHORIZATION=f"Bearer {token}"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()["items"]), 1)
+
+    def test_non_member_forbidden(self):
+        token = _make_token(self.outsider)
+        response = self.client.get(
+            self.url, HTTP_AUTHORIZATION=f"Bearer {token}"
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_requires_auth(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 401)
+
+    def test_wrong_group_returns_404(self):
+        token = _make_token(self.member)
+        bad_url = f"{BASE_URL}/{self.tribe.pk}/groups/99999/activities"
+        response = self.client.get(
+            bad_url, HTTP_AUTHORIZATION=f"Bearer {token}"
+        )
+        self.assertEqual(response.status_code, 404)

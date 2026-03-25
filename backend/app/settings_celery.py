@@ -155,6 +155,13 @@ CELERYBEAT_GROUPS = [
             "schedule": crontab(minute="15,45", hour="*"),
         },
     ),
+    (
+        "[Groups] Sync Tribe Chief group",
+        {
+            "task": "groups.tasks.sync_tribe_chief_group",
+            "schedule": crontab(minute=12, hour="*/4"),
+        },
+    ),
 ]
 
 # Tribes (activity records from killmails, mining, etc.)
@@ -164,6 +171,13 @@ CELERYBEAT_TRIBES = [
         {
             "task": "tribes.tasks.process_tribe_group_activities",
             "schedule": crontab(minute=0, hour=3),
+        },
+    ),
+    (
+        "[Tribes] Ensure tribe chiefs are group members",
+        {
+            "task": "tribes.tasks.ensure_tribe_chiefs_have_group_memberships",
+            "schedule": crontab(minute=27, hour="*"),
         },
     ),
 ]

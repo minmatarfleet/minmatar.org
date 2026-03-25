@@ -36,3 +36,14 @@ def user_in_tribe_group(user, tribe_group: TribeGroup) -> bool:
         tribe_group=tribe_group,
         status=TribeGroupMembership.STATUS_ACTIVE,
     ).exists()
+
+
+def user_is_active_tribe_member(user, tribe_id: int) -> bool:
+    """Return True if the user has an active membership in any group of the tribe."""
+    if not getattr(user, "is_authenticated", False) or not user.pk:
+        return False
+    return TribeGroupMembership.objects.filter(
+        tribe_group__tribe_id=tribe_id,
+        user_id=user.pk,
+        status=TribeGroupMembership.STATUS_ACTIVE,
+    ).exists()
