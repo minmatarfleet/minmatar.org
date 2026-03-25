@@ -27,7 +27,7 @@ from groups.tasks import (
     update_affiliations,
     sync_eve_corporation_groups,
 )
-from tribes.models import Tribe
+from tribes.models import Tribe, TribeGroup
 
 
 class UserAffiliationTestCase(TestCase):
@@ -272,4 +272,46 @@ class SyncTribeChiefGroupTestCase(TestCase):
 
         self.assertEqual(
             0, chief.groups.filter(name=TRIBE_CHIEF_GROUP_NAME).count()
+        )
+
+    @factory.django.mute_signals(
+        signals.pre_save, signals.post_save, signals.m2m_changed
+    )
+    def test_sync_adds_active_tribe_group_chief(self):
+        tribe_chief = User.objects.create_user(username="tribe_chief_tg")
+        group_chief = User.objects.create_user(
+            username="tribe_group_chief_sync"
+        )
+        tribe = Tribe.objects.create(
+            name="Capitals",
+            slug="capitals",
+            chief=tribe_chief,
+        )
+        TribeGroup.objects.create(
+            tribe=tribe, name="Dreads", chief=group_chief
+        )
+        sync_tribe_chief_group_membership()
+        chief_group = Group.objects.get(name=TRIBE_CHIEF_GROUP_NAME)
+        self.assertIn(chief_group, group_chief.groups.all())
+        self.assertIn(chief_group, tribe_chief.groups.all())
+
+    @factory.django.mute_signals(
+        signals.pre_save, signals.post_save, signals.m2m_changed
+    )
+    def test_sync_removes_when_tribe_group_chief_cleared(self):
+        group_chief = User.objects.create_user(username="former_group_chief")
+        tribe = Tribe.objects.create(name="Capitals", slug="capitals2")
+        tg = TribeGroup.objects.create(
+            tribe=tribe, name="Carriers", chief=group_chief
+        )
+        sync_tribe_chief_group_membership()
+        chief_group = Group.objects.get(name=TRIBE_CHIEF_GROUP_NAME)
+        self.assertIn(chief_group, group_chief.groups.all())
+
+        tg.chief = None
+        tg.save(update_fields=["chief"])
+        sync_tribe_chief_group_membership()
+
+        self.assertEqual(
+            0, group_chief.groups.filter(name=TRIBE_CHIEF_GROUP_NAME).count()
         )

@@ -4,7 +4,7 @@ from django.contrib.auth.models import Group as AuthGroup
 from django.contrib.auth.models import User
 
 from eveonline.models import EveCorporation
-from tribes.models import Tribe
+from tribes.models import Tribe, TribeGroup
 from users.helpers import offboard_group
 
 from .models import (
@@ -207,24 +207,31 @@ user_in_team = user_in_group_named
 
 def sync_tribe_chief_group_membership() -> None:
     """
-    Ensure the Tribe - Chief auth group exists and matches Tribe.chief for active tribes.
-    Removes users who are no longer chiefs or whose tribe is inactive.
+    Ensure the Tribe - Chief auth group exists and matches every user who chiefs
+    an active tribe or an active tribe group (under an active tribe).
+    Removes users who no longer qualify.
     """
     chief_group, _ = AuthGroup.objects.get_or_create(
         name=TRIBE_CHIEF_GROUP_NAME
     )
-    desired_ids = set(
-        Tribe.objects.filter(
-            is_active=True, chief_id__isnull=False
-        ).values_list("chief_id", flat=True)
-    )
+    tribe_chief_ids = Tribe.objects.filter(
+        is_active=True, chief_id__isnull=False
+    ).values_list("chief_id", flat=True)
+    tribe_group_chief_ids = TribeGroup.objects.filter(
+        is_active=True,
+        tribe__is_active=True,
+        chief_id__isnull=False,
+    ).values_list("chief_id", flat=True)
+    desired_ids = set(tribe_chief_ids) | set(tribe_group_chief_ids)
     current_ids = set(chief_group.user_set.values_list("id", flat=True))
     to_add = desired_ids - current_ids
     to_remove = current_ids - desired_ids
     if to_remove:
-        chief_group.user_set.remove(*User.objects.filter(pk__in=to_remove))
+        for user in User.objects.filter(pk__in=to_remove):
+            user.groups.remove(chief_group)
     if to_add:
-        chief_group.user_set.add(*User.objects.filter(pk__in=to_add))
+        for user in User.objects.filter(pk__in=to_add):
+            user.groups.add(chief_group)
     if to_add or to_remove:
         logger.info(
             "sync_tribe_chief_group_membership: added=%s removed=%s",
