@@ -229,6 +229,7 @@ export const ui = {
         'page_finder.industry.description': 'Industry supply chain overview.',
 
         'industry.orders.page_title': 'Orders',
+        'industry.orders.history.page_title': 'Orders history',
         'industry.orders.leading_text': 'Orders are the outputs, the ships and items our fleet commanders and contract seeders need built. Drill down into each order to see every component and material required, or copy the full summary to understand our needs at a macro level.',
         'industry.orders.meta_description': 'Alliance manufacturing orders with full material breakdowns. See what ships and items need building.',
         'industry.orders.assign': 'Assign',
@@ -245,7 +246,8 @@ export const ui = {
         'industry.orders.assign_unassigned_suffix': 'unassigned',
         'industry.orders.assign_invalid_form': 'Invalid item, character, or quantity.',
         'industry.orders.assign_error': 'Could not create assignment.',
-        'page_finder.orders.description': 'Manufacturing orders and material breakdowns.',
+        'page_finder.orders.description': 'Manufacturing orders and assignments breakdowns.',
+        'page_finder.orders.history.description': 'Manufacturing orders history.',
 
         'industry.products.page_title': 'Products',
         'industry.products.leading_text': 'Products are the inputs — everything our alliance needs to keep the supply chain running. Each product is categorized as produced, harvested, or imported, and linked to the people who make or source it. Find a gap and fill it.',
@@ -2101,5 +2103,7 @@ export const ui = {
         'view_station_selling_orders': 'Browse station selling orders for oportunities.',
         'view_station_freight_orders': 'There might be freight contracts waiting for your to take.',
         'view_station_industry_orders': 'There might be industry orders available at the station.',
+        'view_orders_history': 'View orders history',
+        'view_active_orders': 'View active orders',
     },
 } as const;

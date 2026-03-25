@@ -30,8 +30,10 @@ export async function fetch_orders_summary() {
     return orders.roots ?? []
 }
 
-export async function fetch_orders_by_locations() {
-    const orders = await get_orders_with_location()
+export async function fetch_orders_by_locations(history:boolean = false) {
+    const api_orders = await get_orders_with_location()
+    const orders = api_orders.filter(order => history ? order.fulfilled_at : !order.fulfilled_at)
+    
     let orders_by_locations: Record<string, IndustryOrder[]> = {}
     let orders_locations:OrderLocation[] = []
 

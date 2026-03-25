@@ -9,7 +9,9 @@ let fetching_error:string | false = false
 let orders_locations:OrderLocation[] = []
 
 try {
-    orders_locations = await fetch_orders_by_locations()
+    const history = JSON.parse(Astro.url.searchParams.get('history') ?? 'false')
+
+    orders_locations = await fetch_orders_by_locations(history)
 } catch (error) {
     fetching_error = error.message
 }
@@ -29,7 +31,8 @@ const non_active_orders_locations = orders_locations.filter(location => location
 import { query_string } from '@helpers/string';
 
 const INDUSTRY_ORDERS_PARTIAL_URL = translatePath(`/partials/industry_orders_component${active_location_name ? `?${query_string({
-    location_name: active_location_name
+    location_name: active_location_name,
+    history: history,
 })}` : ''}`)
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
