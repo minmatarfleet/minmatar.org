@@ -57,7 +57,11 @@ import Tag from '@components/blocks/Tag.astro';
 ---
 
 <FlexInline class="[ market-table-item ]">
-    <FixedFluid class="[ items-center! basis-[550px] ]" width='32px'>
+    <FixedFluid
+        class="[ items-center! basis-[550px] ]"
+        width='32px'
+        gap='var(--space-2xs)'
+    >
         {item.category_name !== 'SKINs' ?
             <Picture
                 src={item.category_name === 'Blueprint' ?
@@ -72,7 +76,7 @@ import Tag from '@components/blocks/Tag.astro';
         <Flexblock gap='var(--space-3xs)'>
             <FlexInline class="[ min-w-0 ]">
                 <Flexblock gap='var(--space-3xs)' class="[ min-w-[250px] flex-1 ]">
-                    <span class="[ title ]">{item.item_name}</span>
+                    <h4 class="[ title ]">{item.item_name}</h4>
                     <small class="[ category ][ sr-only ]">{item.category_name}</small>
                     <small class="[ group ][ sr-only ]">{item.group_name}</small>
                 </Flexblock>
