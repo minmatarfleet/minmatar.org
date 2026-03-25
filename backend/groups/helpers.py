@@ -1,7 +1,10 @@
+import logging
+
 from django.contrib.auth.models import Group as AuthGroup
 from django.contrib.auth.models import User
 
 from eveonline.models import EveCorporation
+from tribes.models import Tribe
 from users.helpers import offboard_group
 
 from .models import (
@@ -11,10 +14,15 @@ from .models import (
     UserCommunityStatusHistory,
 )
 
+logger = logging.getLogger(__name__)
+
 VALID_STATUSES = {"active", "trial", "on_leave"}
 
 PEOPLE_TEAM = "People Team"
 TECH_TEAM = "Technology Team"
+
+# Django auth group for Discord / permissions: anyone who is chief of an active tribe.
+TRIBE_CHIEF_GROUP_NAME = "Tribe - Chief"
 
 # Group type to display suffix for "Corp <TICKER> [Suffix]"
 CORPORATION_GROUP_SUFFIXES = {
@@ -195,3 +203,31 @@ def user_in_group_named(user: User, group_name: str) -> bool:
 
 # Alias for callers that still use "team" naming (e.g. People Team, Technology Team); now checks auth group.
 user_in_team = user_in_group_named
+
+
+def sync_tribe_chief_group_membership() -> None:
+    """
+    Ensure the Tribe - Chief auth group exists and matches Tribe.chief for active tribes.
+    Removes users who are no longer chiefs or whose tribe is inactive.
+    """
+    chief_group, _ = AuthGroup.objects.get_or_create(
+        name=TRIBE_CHIEF_GROUP_NAME
+    )
+    desired_ids = set(
+        Tribe.objects.filter(
+            is_active=True, chief_id__isnull=False
+        ).values_list("chief_id", flat=True)
+    )
+    current_ids = set(chief_group.user_set.values_list("id", flat=True))
+    to_add = desired_ids - current_ids
+    to_remove = current_ids - desired_ids
+    if to_remove:
+        chief_group.user_set.remove(*User.objects.filter(pk__in=to_remove))
+    if to_add:
+        chief_group.user_set.add(*User.objects.filter(pk__in=to_add))
+    if to_add or to_remove:
+        logger.info(
+            "sync_tribe_chief_group_membership: added=%s removed=%s",
+            len(to_add),
+            len(to_remove),
+        )

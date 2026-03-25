@@ -32,6 +32,26 @@ class TribeGroupActivityListSchema(BaseModel):
     offset: int
 
 
+class TribeGroupActivityDefinitionSchema(BaseModel):
+    """One configured activity type for a tribe group (what the backend tracks)."""
+
+    id: int
+    activity_type: str
+    activity_type_display: str
+    source_eve_type_id: Optional[int] = None
+    target_eve_type_id: Optional[int] = None
+    description: str = ""
+    is_active: bool
+    points_per_record: Optional[float] = None
+    points_per_unit: Optional[float] = None
+    created_at: str
+    updated_at: str
+
+
+class TribeGroupActivityDefinitionListSchema(BaseModel):
+    items: List[TribeGroupActivityDefinitionSchema]
+
+
 class TribeActivityRecordSchema(TribeGroupActivityRecordSchema):
     """Activity record with optional group context (for tribe-level activity list)."""
 

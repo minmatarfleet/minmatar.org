@@ -4,6 +4,7 @@ Celery tasks for the tribes app.
 Tasks:
 - create_tribe_membership_reminders: Discord reminders for pending memberships.
 - remove_tribe_members_without_permission: Removes members lacking base permission.
+- ensure_tribe_chiefs_have_group_memberships: Active membership for each tribe chief.
 """
 
 import logging
@@ -15,6 +16,9 @@ from app.celery import app
 from discord.client import DiscordClient
 
 from tribes.helpers.activity_processors import process_all_for_tribe_group
+from tribes.helpers.chief_membership import (
+    ensure_tribe_chiefs_have_group_memberships as _ensure_chief_memberships,
+)
 from tribes.models import TribeGroup, TribeGroupMembership
 
 discord = DiscordClient()
@@ -98,6 +102,12 @@ def create_tribe_membership_reminders():
 # ---------------------------------------------------------------------------
 # Permission cleanup task
 # ---------------------------------------------------------------------------
+
+
+@app.task()
+def ensure_tribe_chiefs_have_group_memberships():
+    """Hourly: ensure each tribe chief has active membership in all tribe groups."""
+    _ensure_chief_memberships()
 
 
 @app.task()

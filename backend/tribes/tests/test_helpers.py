@@ -13,6 +13,7 @@ from tribes.helpers import (
     check_character_meets_requirements,
     user_can_manage_group,
     user_in_tribe_group,
+    user_is_active_tribe_member,
     user_is_tribe_chief,
 )
 from tribes.models import (
@@ -175,6 +176,16 @@ class UserPermissionHelpersTestCase(TestCase):
         )
         self.assertTrue(user_in_tribe_group(self.regular, self.tribe_group))
         self.assertFalse(user_in_tribe_group(self.chief, self.tribe_group))
+
+    def test_user_is_active_tribe_member(self):
+        u = User.objects.create_user(username="tribe_member_scope")
+        self.assertFalse(user_is_active_tribe_member(u, self.tribe.pk))
+        TribeGroupMembership.objects.create(
+            user=u,
+            tribe_group=self.tribe_group,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+        self.assertTrue(user_is_active_tribe_member(u, self.tribe.pk))
 
     def test_user_in_tribe_group_pending_not_counted(self):
         TribeGroupMembership.objects.create(
