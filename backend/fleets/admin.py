@@ -28,11 +28,12 @@ class FleetAdmin(admin.ModelAdmin):
     list_display = [
         "start_time",
         "status",
+        "objective",
         "description",
         "created_by__username",
     ]
     list_filter = ["status"]
-    search_fields = ["description"]
+    search_fields = ["description", "objective"]
     readonly_fields = (
         "id",
         "end_time",

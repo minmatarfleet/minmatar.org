@@ -8,11 +8,11 @@ from django.db.models.functions import Coalesce
 from django.contrib.auth.models import User
 from django.utils import timezone
 from ninja import Router
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer, AuthOptional
-from eveonline.models import EveCorporation, EveLocation
+from eveonline.models import EveCorporation, EveLocation, EvePlayer
 from eveonline.helpers.characters import (
     user_characters,
 )
@@ -71,6 +71,7 @@ class EveFleetResponse(BaseModel):
     type: EveFleetType
     audience: str
     description: str
+    objective: Optional[str] = None
     start_time: Optional[datetime] = None
     fleet_commander: int
     doctrine_id: Optional[int] = None
@@ -106,6 +107,7 @@ class EveFleetUsersResponse(BaseModel):
 class CreateEveFleetRequest(BaseModel):
     type: EveFleetType
     description: str
+    objective: Optional[str] = Field(default=None, max_length=200)
     start_time: datetime
     doctrine_id: Optional[int] = None
     audience_id: int
@@ -118,6 +120,7 @@ class CreateEveFleetRequest(BaseModel):
 class UpdateEveFleetRequest(BaseModel):
     type: Optional[EveFleetType] = None
     description: Optional[str] = None
+    objective: Optional[str] = Field(default=None, max_length=200)
     start_time: Optional[datetime] = None
     doctrine_id: Optional[int] = None
     audience_id: Optional[int] = None
@@ -152,6 +155,13 @@ class EveFleetMetric(BaseModel):
     audience_name: str
 
 
+class EveFleetCommanderMetric(BaseModel):
+    user_id: int
+    primary_character_id: Optional[int] = None
+    primary_character_name: Optional[str] = None
+    fleet_count: int
+
+
 class UserActiveFleetResponse(BaseModel):
     character_id: int
     eve_fleet_id: int
@@ -169,6 +179,7 @@ class StartFleetNowRequest(BaseModel):
     """Optional body for quick-start fleet (which character is in the fleet)."""
 
     fc_character_id: Optional[int] = None
+    objective: Optional[str] = Field(default=None, max_length=200)
 
 
 class EveFleetRoleVolunteerResponse(BaseModel):
@@ -384,6 +395,7 @@ def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
         "id": fleet.id,
         "type": fleet.type,
         "description": fleet.description,
+        "objective": fleet.objective or None,
         "start_time": fleet.start_time,
         "fleet_commander": fleet.created_by.id if fleet.created_by else 0,
         "location": (
@@ -421,6 +433,7 @@ def make_fleet_shadow(fleet: EveFleet) -> EveFleetResponse:
         "id": fleet.id,
         "type": "non_strategic",
         "description": "Unavailable",
+        "objective": "Unavailable",
         "start_time": None,
         "fleet_commander": 0,
         "location": "Unavailable",
@@ -502,6 +515,63 @@ def get_fleet_metrics(request):
     return 200, metrics
 
 
+def _calendar_month_bounds():
+    now = timezone.now()
+    start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    if start.month == 12:
+        end = start.replace(year=start.year + 1, month=1)
+    else:
+        end = start.replace(month=start.month + 1)
+    return start, end
+
+
+@router.get(
+    "/commander-metrics",
+    auth=AuthBearer(),
+    response={200: List[EveFleetCommanderMetric], 403: ErrorResponse},
+    summary="Fleet counts per commander for the current calendar month",
+)
+def get_fleet_commander_metrics(request):
+    if not can_see_metrics(request.user):
+        return 403, {"detail": "User missing permission to view metrics"}
+
+    month_start, month_end = _calendar_month_bounds()
+    rows = (
+        EveFleet.objects.filter(
+            start_time__gte=month_start,
+            start_time__lt=month_end,
+            created_by_id__isnull=False,
+        )
+        .exclude(status="cancelled")
+        .values("created_by_id")
+        .annotate(fleet_count=Count("id"))
+        .order_by("-fleet_count", "created_by_id")
+    )
+
+    user_ids = [r["created_by_id"] for r in rows]
+    players = {
+        p.user_id: p
+        for p in EvePlayer.objects.filter(user_id__in=user_ids).select_related(
+            "primary_character"
+        )
+    }
+
+    out: List[EveFleetCommanderMetric] = []
+    for row in rows:
+        uid = row["created_by_id"]
+        player = players.get(uid)
+        char = player.primary_character if player else None
+        out.append(
+            EveFleetCommanderMetric(
+                user_id=uid,
+                primary_character_id=char.character_id if char else None,
+                primary_character_name=char.character_name if char else None,
+                fleet_count=row["fleet_count"],
+            )
+        )
+    return 200, out
+
+
 @router.get(
     "/current",
     summary="Get the fleets that the user is currently active in",
@@ -541,9 +611,11 @@ def start_fleet_now(request, payload: Optional[StartFleetNowRequest] = None):
 
     location = audience.staging_location
 
+    quick_objective = (payload.objective or "").strip() if payload else ""
     fleet = EveFleet.objects.create(
         type="non_strategic",
         description="Quick start fleet",
+        objective=quick_objective,
         start_time=timezone.now(),
         created_by=request.user,
         location=location,
@@ -611,6 +683,7 @@ def get_fleet(request, fleet_id: int):
         "id": fleet.id,
         "type": fleet.type,
         "description": fleet.description,
+        "objective": fleet.objective or None,
         "start_time": fleet.start_time,
         "fleet_commander": fleet.created_by.id if fleet.created_by else 0,
         "location": (
@@ -854,6 +927,7 @@ def create_fleet(request, payload: CreateEveFleetRequest):
     fleet = EveFleet.objects.create(
         type=payload.type,
         description=payload.description,
+        objective=(payload.objective or "").strip(),
         start_time=payload.start_time,
         created_by=request.user,
         location=location,  # DEPRECATED: kept for backward compatibility
@@ -878,6 +952,7 @@ def create_fleet(request, payload: CreateEveFleetRequest):
         "id": fleet.id,
         "type": fleet.type,
         "description": fleet.description,
+        "objective": fleet.objective or None,
         "start_time": fleet.start_time,
         "fleet_commander": fleet.created_by.id,
         "location": (
@@ -886,6 +961,8 @@ def create_fleet(request, payload: CreateEveFleetRequest):
             else "Ask FC"
         ),
         "audience": fleet.audience.name,
+        "disable_motd": fleet.disable_motd,
+        "status": fleet.status,
     }
 
     if fleet.doctrine:
@@ -931,6 +1008,47 @@ def send_discord_pre_ping(fleet: EveFleet) -> bool:
         return False
 
 
+def _fleet_patch_audience_location_errors(
+    fleet: EveFleet, payload: UpdateEveFleetRequest
+) -> Optional[dict]:
+    if payload.audience_id:
+        if not EveFleetAudience.objects.filter(
+            id=payload.audience_id
+        ).exists():
+            return {"detail": "Audience does not exist"}
+        fleet.audience = EveFleetAudience.objects.get(id=payload.audience_id)
+
+    # DEPRECATED: location_id — prefer audience.staging_location; kept for API compat
+    if payload.location_id:
+        if not EveLocation.objects.filter(
+            location_id=payload.location_id
+        ).exists():
+            return {"detail": "Location does not exist"}
+        fleet.location = EveLocation.objects.get(
+            location_id=payload.location_id
+        )
+    return None
+
+
+def _fleet_apply_optional_scalar_updates(
+    fleet: EveFleet, payload: UpdateEveFleetRequest
+) -> None:
+    if payload.type:
+        fleet.type = payload.type
+    if payload.description:
+        fleet.description = payload.description
+    if "objective" in payload.model_fields_set:
+        fleet.objective = (payload.objective or "").strip()
+    if payload.start_time:
+        fleet.start_time = payload.start_time
+    if payload.status:
+        fleet.status = payload.status
+    if payload.doctrine_id:
+        fleet.doctrine = EveDoctrine.objects.get(id=payload.doctrine_id)
+    if payload.aar_link:
+        fleet.aar_link = payload.aar_link
+
+
 @router.patch(
     "/{fleet_id}",
     auth=AuthBearer(),
@@ -946,42 +1064,10 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
 
     fleet = EveFleet.objects.get(id=fleet_id)
 
-    if payload.audience_id:
-        if not EveFleetAudience.objects.filter(
-            id=payload.audience_id
-        ).exists():
-            return 400, {"detail": "Audience does not exist"}
-        audience = EveFleetAudience.objects.get(id=payload.audience_id)
-        fleet.audience = audience
-
-    # DEPRECATED: location_id is deprecated, prefer audience.staging_location
-    # Still accept it for backward compatibility
-    if payload.location_id:
-        if not EveLocation.objects.filter(
-            location_id=payload.location_id
-        ).exists():
-            return 400, {"detail": "Location does not exist"}
-
-        fleet.location = EveLocation.objects.get(
-            location_id=payload.location_id
-        )  # DEPRECATED: kept for backward compatibility
-
-    if payload.type:
-        fleet.type = payload.type
-    if payload.description:
-        fleet.description = payload.description
-    if payload.start_time:
-        fleet.start_time = payload.start_time
-
-    if payload.status:
-        fleet.status = payload.status
-
-    if payload.doctrine_id:
-        doctrine = EveDoctrine.objects.get(id=payload.doctrine_id)
-        fleet.doctrine = doctrine
-
-    if payload.aar_link:
-        fleet.aar_link = payload.aar_link
+    err = _fleet_patch_audience_location_errors(fleet, payload)
+    if err:
+        return 400, err
+    _fleet_apply_optional_scalar_updates(fleet, payload)
 
     fleet.save()
 
@@ -992,6 +1078,7 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
         "id": fleet.id,
         "type": fleet.type,
         "description": fleet.description,
+        "objective": fleet.objective or None,
         "start_time": fleet.start_time,
         "fleet_commander": fleet.created_by.id if fleet.created_by else None,
         "location": (
@@ -1002,6 +1089,8 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
         "audience": fleet.audience.name if fleet.audience else None,
         "doctrine_id": fleet.doctrine.id if fleet.doctrine else None,
         "status": fleet.status,
+        "disable_motd": fleet.disable_motd,
+        "aar_link": fleet.aar_link,
     }
 
     return EveFleetResponse(**payload)

@@ -1,3 +1,8 @@
+import html
+import random
+
+from reminders.messages.rat_quotes import rat_quotes
+
 # Section templates; compose in get_motd(). Each section is self-contained (all <font> closed).
 # role_volunteers: list of (role_label, [(character_id, character_name), ...]) for critical roles.
 
@@ -28,6 +33,8 @@ SECTION_MISSING_BULLET = (
     """<font size="13" color="#ffffffff">- {{item}}</font>"""
 )
 SECTION_MISSING_LINK = """<font size="13" color="#ffffffff"><loc><a href="{{volunteer_url}}">Click here to volunteer</a></loc>.</font>"""
+
+SECTION_RAT_QUOTE = """<font size="13" color="#ffaaaaaa">{{quote}}</font>"""
 
 
 def _role_character_link(character_id, character_name):
@@ -91,8 +98,6 @@ def get_motd(
             ).replace("{{doctrine_name}}", str(doctrine_name))
         )
 
-    parts.append("")  # newline after overview section
-
     parts.extend(
         [
             SECTION_LINKS_HEADER,
@@ -111,5 +116,8 @@ def get_motd(
         parts.append(
             SECTION_MISSING_LINK.replace("{{volunteer_url}}", volunteer_url)
         )
+
+    quote = html.escape(random.choice(rat_quotes))
+    parts.append(SECTION_RAT_QUOTE.replace("{{quote}}", quote))
 
     return "\n".join(parts)
