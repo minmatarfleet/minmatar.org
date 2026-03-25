@@ -1,9 +1,11 @@
 import logging
+import re
 from datetime import datetime, timedelta
 from random import randint
-import re
+from typing import Optional
 
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 from eveuniverse.models import EveType
 from pydantic import BaseModel
@@ -122,6 +124,25 @@ def get_reimbursement_amount(ship: EveType):
     return 0
 
 
+def average_payout_seconds_approved_last_days(days: int = 90):
+    """
+    Mean seconds from created_at to approved_at for approved reimbursements
+    with created_at in the rolling window. Rows without approved_at are excluded.
+    """
+    cutoff = timezone.now() - timedelta(days=days)
+    pairs = list(
+        EveFleetShipReimbursement.objects.filter(
+            status="approved",
+            created_at__gte=cutoff,
+            approved_at__isnull=False,
+        ).values_list("created_at", "approved_at")
+    )
+    if not pairs:
+        return None, 0
+    deltas = [(a - c).total_seconds() for c, a in pairs]
+    return sum(deltas) / len(deltas), len(deltas)
+
+
 def recalculate_reimbursement_amount(reimbursement: EveFleetShipReimbursement):
     """
     Recalculate the amount for the ship
@@ -131,19 +152,51 @@ def recalculate_reimbursement_amount(reimbursement: EveFleetShipReimbursement):
     reimbursement.save()
 
 
-def is_valid_for_reimbursement(killmail: KillmailDetails, fleet: EveFleet):
+def select_fleet_instance_for_killmail(
+    fleet: EveFleet, kill_time: datetime
+) -> EveFleetInstance | None:
+    """
+    When multiple EveFleetInstance rows exist for a fleet, pick the instance
+    whose time window best matches the killmail time; otherwise the latest.
+    """
+    qs = EveFleetInstance.objects.filter(eve_fleet=fleet).order_by(
+        "-start_time"
+    )
+    if not qs.exists():
+        return None
+    instances = list(qs)
+
+    def temporally_plausible(fi: EveFleetInstance) -> bool:
+        if fi.start_time - timedelta(hours=1) > kill_time:
+            return False
+        if fi.end_time and fi.end_time + timedelta(hours=2) < kill_time:
+            return False
+        return True
+
+    plausible = [fi for fi in instances if temporally_plausible(fi)]
+    if plausible:
+        return min(
+            plausible,
+            key=lambda fi: abs((fi.start_time - kill_time).total_seconds()),
+        )
+    return instances[0]
+
+
+def is_valid_for_reimbursement(
+    killmail: KillmailDetails, fleet: Optional[EveFleet]
+):
     """
     Check if a character is valid for reimbursement
     """
 
-    if not EveFleetInstance.objects.filter(
-        eve_fleet=fleet,
-    ).exists():
+    if fleet is None:
         return True, "Non-fleet SRP"
 
-    fleet_instance = EveFleetInstance.objects.get(
-        eve_fleet=fleet,
+    fleet_instance = select_fleet_instance_for_killmail(
+        fleet, killmail.timestamp
     )
+    if fleet_instance is None:
+        return True, "Non-fleet SRP"
 
     if not EveFleetInstanceMember.objects.filter(
         eve_fleet_instance=fleet_instance,
