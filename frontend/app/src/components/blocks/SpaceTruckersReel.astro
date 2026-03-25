@@ -47,11 +47,11 @@ import SpaceTruckerBadge from '@components/blocks/SpaceTruckerBadge.astro';
                                 <SpaceTruckerBadge place={index + 1} trucker={trucker} />
                             </div>
                         )}
-                        {space_truckers.length >= 6 && space_truckers.length < 12 &&
+                        {space_truckers.length >= 5 && space_truckers.length < 12 &&
                             <div class="[ swiper-slide ]" style="margin-right: 40px; width: 160px"></div>
                             <div class="[ swiper-slide ]" style="margin-right: 40px; width: 160px"></div>
                         }
-                        {space_truckers.length >= 6 && space_truckers.length < 12 &&   
+                        {space_truckers.length >= 5 && space_truckers.length < 12 &&   
                             space_truckers.map((trucker, index) =>
                                 <div class="[ swiper-slide ]" style="margin-right: 40px">
                                     <SpaceTruckerBadge place={index + 1} trucker={trucker} />
