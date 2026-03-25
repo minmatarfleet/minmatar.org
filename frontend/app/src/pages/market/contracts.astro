@@ -82,6 +82,13 @@ const contracts_count = active_market_locations_ui?.fittings.length ?? 0
 
 const non_active_market_locations_ui = market_locations_ui.filter(location => location.name !== active_location_name)
 
+import {
+    get_location_video_cover,
+    get_location_video_cover_thumb,
+    get_location_cover,
+    get_location_cover_990,
+} from '@helpers/covers'
+
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
@@ -110,18 +117,10 @@ const page_title = t('contracts.page_title')
 >
     <PageDefault
         cover={{
-			video: active_location_name === 'R-6KYM - Here be Rats' ? '/videos/r6-loop.webm' :
-					active_location_name === 'Amamake - 5 times nearly AT winners' ? '/videos/amamake-loop.webm' :
-                    undefined,
-			video_thumb: active_location_name === 'R-6KYM - Here be Rats' ? '/images/home-r6-cover.jpg' :
-					active_location_name === 'Amamake - 5 times nearly AT winners' ? '/images/home-amamake-cover.jpg' :
-                    undefined,
-            image: active_location_name === 'R-6KYM - Here be Rats' ? '/images/home-r6-cover-eve.jpg' :
-					active_location_name === 'Amamake - 5 times nearly AT winners' ? '/images/home-amamake-cover-eve.jpg' :
-                    '/images/contracts-cover.jpg',
-            image_990: active_location_name === 'R-6KYM - Here be Rats' ? '/images/home-r6-cover-eve.jpg' :
-					   active_location_name === 'Amamake - 5 times nearly AT winners' ? '/images/home-amamake-cover-eve.jpg' :
-                       '/images/contracts-cover.jpg',
+			video: get_location_video_cover(active_location_name) ?? undefined,
+			video_thumb: get_location_video_cover_thumb(active_location_name) ?? undefined,
+            image: get_location_cover(active_location_name) ?? '/images/contracts-cover.jpg',
+            image_990: get_location_cover_990(active_location_name) ?? '/images/contracts-cover.jpg',
             animated: false,
             scrollable: true,
             overlay: true,
