@@ -152,6 +152,7 @@ class EveFleetMetric(BaseModel):
     location_name: str
     status: str
     fc_corp_name: str
+    fc_corp_id: int
     audience_name: str
 
 
@@ -491,6 +492,11 @@ def get_fleet_metrics(request):
             )
         )
         .annotate(
+            fc_corp_id=F(
+                "created_by__eveplayer__primary_character__corporation_id"
+            )
+        )
+        .annotate(
             fc_corp_name=Subquery(
                 EveCorporation.objects.filter(
                     corporation_id=OuterRef(
@@ -509,6 +515,7 @@ def get_fleet_metrics(request):
             location_name=fleet.location_name if fleet.location_name else "",
             status=fleet.status,
             fc_corp_name=fleet.fc_corp_name if fleet.fc_corp_name else "",
+            fc_corp_id=fleet.fc_corp_id if fleet.fc_corp_id else "",
             audience_name=fleet.audience_name if fleet.audience_name else "",
         )
         metrics.append(metric)
