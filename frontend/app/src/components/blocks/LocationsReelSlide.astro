@@ -1,32 +1,68 @@
 ---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
 interface Props {
-    gap:    number;
+    gap:        number;
+    title:      string;
+    subtitle:   string;
+    href:       string;
+    progress?:  number;
+    active?:    boolean;
 }
 
 const {
-    gap
+    gap,
+    title,
+    subtitle,
+    href,
+    progress,
+    active,
 } = Astro.props
+
+const HeadingElement = active ? 'h2' : 'h3'
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import Progress from '@components/blocks/Progress.astro';
 ---
 
-<div class="[ swiper-slide ]" style={`margin-right: ${gap}px`}>
-    <slot />
+<div class:list={[ "swiper-slide", { 'swiper-slide-active': active } ]} style={`margin-right: ${gap}px`}>
+    <a href={href}>
+        <Flexblock gap='var(--space-3xs)'>
+            <HeadingElement>{title}</HeadingElement>
+            {progress &&
+                <Progress
+                    class:list={[ 'w-full', { danger: progress < 30 } ]}
+                    max="100"
+                    value={progress > 0 ? progress : 0.1}
+                    data-tippy-content={`${progress.toFixed(0)}%`}
+                >
+                    {progress.toFixed(2)}%
+                </Progress>
+            }
+            <small class="[ text-foreground ]">{subtitle}</small>
+        </Flexblock>
+    </a>
 </div>
 
 <style lang="scss">
     .swiper-slide {
         position: relative;
         width: fit-content;
-        opacity: 0.5;
+        opacity: 0.4;
 
         &.swiper-slide-active,
         &.swiper-slide-active:hover {
             opacity: 1;
         }
 
+        &:focus-within,
         &:hover {
             opacity: 0.75;
         }
 
+        &:focus-within,
         &:hover,
         &.swiper-slide-active {
             &:after {
@@ -60,6 +96,11 @@ const {
             transition: var(--fast-transition);
             left: 50%;
             transform: translateX(-50%);
+        }
+
+        a {
+            display: block;
+            padding-bottom: var(--space-2xs);
         }
     }
 </style>

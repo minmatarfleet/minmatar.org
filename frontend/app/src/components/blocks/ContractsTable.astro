@@ -88,50 +88,27 @@ import Table from '@components/blocks/Table.astro';
 
 <Flexblock gap='var(--space-xl)'>
     <LocationsReel gap={REEL_GAP}>
-        <LocationsReelSlide gap={REEL_GAP}>
-            <Flexblock gap='var(--space-2xs)'>
-                <h2>
-                    <a href={translatePath(`/market/contracts?${query_string({
-                            location_name: active_market_locations_ui.name
-                        })}`)}
-                    >
-                        {active_market_locations_ui.name}
-                    </a>
-                </h2>
-                <Progress
-                    class:list={[ 'w-full', { danger: active_market_locations_ui.completion < 30 } ]}
-                    max="100"
-                    value={active_market_locations_ui.completion > 0 ? active_market_locations_ui.completion : 0.1}
-                    data-tippy-content={`${active_market_locations_ui.completion.toFixed(0)}%`}
-                >
-                    {active_market_locations_ui.completion.toFixed(2)}%
-                </Progress>
-                <small>{`${active_market_locations_ui.fittings.length} ${active_market_locations_ui.fittings.length != 1 ? t('fittings').toLowerCase() : t('fitting').toLowerCase()}`}</small>
-            </Flexblock>
-        </LocationsReelSlide>
+        <LocationsReelSlide
+            title={active_market_locations_ui.name}
+            href={translatePath(`/market/contracts?${query_string({
+                location_name: active_market_locations_ui.name
+            })}`)}
+            progress={active_market_locations_ui.completion}
+            subtitle={`${active_market_locations_ui.fittings.length} ${active_market_locations_ui.fittings.length != 1 ? t('fittings').toLowerCase() : t('fitting').toLowerCase()}`}
+            gap={REEL_GAP}
+            active={true}
+        />
 
         {deduped_non_active_market_locations_ui.map(location =>
-            <LocationsReelSlide gap={REEL_GAP}>
-                <Flexblock gap='var(--space-2xs)'>
-                    <h3>
-                        <a href={translatePath(`/market/contracts?${query_string({
-                                location_name: location.name
-                            })}`)}
-                        >
-                            {location.name}
-                        </a>
-                    </h3>
-                    <Progress
-                        class:list={[ 'w-full', { danger: location.completion < 30 } ]}
-                        max="100"
-                        value={location.completion > 0 ? location.completion : 1}
-                        data-tippy-content={`${location.completion.toFixed(0)}%`}
-                    >
-                        {location.completion.toFixed(2)}%
-                    </Progress>
-                    <small>{`${location.fittings.length} ${location.fittings.length != 1 ? t('fittings').toLowerCase() : t('fitting').toLowerCase()}`}</small>
-                </Flexblock>
-            </LocationsReelSlide>
+            <LocationsReelSlide
+                title={location.name}
+                href={translatePath(`/market/contracts?${query_string({
+                    location_name: location.name
+                })}`)}
+                progress={location.completion}
+                subtitle={`${location.fittings.length} ${location.fittings.length != 1 ? t('fittings').toLowerCase() : t('fitting').toLowerCase()}`}
+                gap={REEL_GAP}
+            />
         )}
     </LocationsReel>
 
