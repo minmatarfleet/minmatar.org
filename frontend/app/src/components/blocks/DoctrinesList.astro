@@ -31,32 +31,25 @@ import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
 
 <Flexblock class="[ order-table ]" gap='var(--space-xl)'>
     <LocationsReel gap={REEL_GAP}>
-        <LocationsReelSlide gap={REEL_GAP}>
-            <Flexblock gap='var(--space-3xs)'>
-                <h2>
-                    <a href={translatePath(active_doctrine_location_ui.id > 0 ? `/ships/doctrines?${query_string({
-                        location_id: active_doctrine_location_ui.id
-                    })}` : '/ships/doctrines/')}>
-                        {active_doctrine_location_ui.name}
-                    </a>
-                </h2>
-                <small>{t(active_doctrine_location_ui.doctrines.length != 1 ? 'doctrines_plural' : 'doctrines_singular').replace('{count}', String(active_doctrine_location_ui.doctrines.length))}</small>
-            </Flexblock>
-        </LocationsReelSlide>
+        <LocationsReelSlide
+            title={active_doctrine_location_ui.name}
+            href={translatePath(active_doctrine_location_ui.id > 0 ? `/ships/doctrines?${query_string({
+                location_id: active_doctrine_location_ui.id
+            })}` : '/ships/doctrines/')}
+            subtitle={t(active_doctrine_location_ui.doctrines.length != 1 ? 'doctrines_plural' : 'doctrines_singular').replace('{count}', String(active_doctrine_location_ui.doctrines.length))}
+            gap={REEL_GAP}
+            active={true}
+        />
 
         {non_active_doctrine_location_ui.map(location =>
-            <LocationsReelSlide gap={REEL_GAP}>
-                <Flexblock gap='var(--space-3xs)'>
-                    <h3>
-                        <a href={translatePath(location.id > 0 ? `/ships/doctrines?${query_string({
-                            location_id: location.id
-                        })}` : '/ships/doctrines/')}>
-                            {location.name}
-                        </a>
-                    </h3>
-                    <small>{t(location.doctrines.length != 1 ? 'doctrines_plural' : 'doctrines_singular').replace('{count}', String(location.doctrines.length))}</small>
-                </Flexblock>
-            </LocationsReelSlide>
+            <LocationsReelSlide
+                title={location.name}
+                href={translatePath(location.id > 0 ? `/ships/doctrines?${query_string({
+                    location_id: location.id
+                })}` : '/ships/doctrines/')}
+                subtitle={t(location.doctrines.length != 1 ? 'doctrines_plural' : 'doctrines_singular').replace('{count}', String(location.doctrines.length))}
+                gap={REEL_GAP}
+            />
         )}
     </LocationsReel>
 
