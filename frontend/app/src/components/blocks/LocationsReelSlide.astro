@@ -14,6 +14,52 @@ const {
 
 <style lang="scss">
     .swiper-slide {
+        position: relative;
         width: fit-content;
+        opacity: 0.5;
+
+        &.swiper-slide-active,
+        &.swiper-slide-active:hover {
+            opacity: 1;
+        }
+
+        &:hover {
+            opacity: 0.75;
+        }
+
+        &:hover,
+        &.swiper-slide-active {
+            &:after {
+                content: ' ';
+                position: absolute;
+                background-color: var(--highlight);
+            }
+
+            &:before {
+                content: ' ';
+                z-index: 1;
+                position: absolute;
+                width: 24px;
+                border-radius: 50%;
+                filter: blur(4px);
+                bottom: 2px;
+                height: 3px;
+                left: 50%;
+                transform: translateX(-50%);
+                background-color: var(--highlight);
+            }
+        }
+
+        &:after {
+            content: ' ';
+            position: absolute;
+            width: 28px;
+            height: 2px;
+            bottom: 0;
+            background-color: transparent;
+            transition: var(--fast-transition);
+            left: 50%;
+            transform: translateX(-50%);
+        }
     }
 </style>
