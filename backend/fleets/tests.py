@@ -616,7 +616,6 @@ class FleetRouterTestCase(TestCase):
     #                 "location_name": "Test Location",
     #                 "status": "pending",
     #                 "fc_corp_name": "Test Corp",
-    #                 "fc_corp_id": 98726134,
     #                 "audience_name": "Test Audience",
     #             },
     #         ],
