@@ -348,6 +348,8 @@ class SrpRouterTestCase(TestCase):
         type_names = {row["eve_type"]["name"] for row in rows}
         self.assertEqual({"Revelation", "Naglfar"}, type_names)
         self.assertEqual("Ship", rows[0]["eve_category"]["name"])
+        self.assertEqual("Dreadnought", rows[0]["eve_group"]["name"])
+        self.assertEqual(4400, rows[0]["eve_group"]["id"])
         self.assertTrue(rows[0]["current_amount"]["srp_value"] > 0)
 
         history_response = self.client.get(
