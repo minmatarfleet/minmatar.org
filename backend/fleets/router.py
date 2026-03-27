@@ -5,7 +5,6 @@ from typing import List, Optional
 
 from django.db.models import Count, F, Q, OuterRef, Subquery
 from django.db.models.functions import Coalesce
-from django.contrib.auth.models import User
 from django.utils import timezone
 from ninja import Router
 from pydantic import BaseModel, Field
@@ -19,7 +18,6 @@ from eveonline.helpers.characters import (
 from eveonline.client import EsiClient
 from discord.client import DiscordClient
 from fittings.models import EveDoctrine
-from groups.helpers import user_in_team, TECH_TEAM
 
 from .models import (
     EveFleet,
@@ -460,24 +458,13 @@ def time_region(time: datetime) -> str:
             return "??"
 
 
-def can_see_metrics(user: User) -> bool:
-    if user.is_superuser:
-        return True
-    if user_in_team(user, TECH_TEAM):
-        return True
-    return False
-
-
 @router.get(
     "/metrics",
     auth=AuthBearer(),
-    response={200: List[EveFleetMetric], 403: ErrorResponse},
+    response={200: List[EveFleetMetric]},
     summary="Get fleet metrics",
 )
 def get_fleet_metrics(request):
-    if not can_see_metrics(request.user):
-        return 403, {"detail": "User missing permission to view metrics"}
-
     metrics = []
     one_year_ago = timezone.now() - timedelta(days=365)
     fleets = (
@@ -528,13 +515,10 @@ def _calendar_month_bounds():
 @router.get(
     "/commander-metrics",
     auth=AuthBearer(),
-    response={200: List[EveFleetCommanderMetric], 403: ErrorResponse},
+    response={200: List[EveFleetCommanderMetric]},
     summary="Fleet counts per commander for the current calendar month",
 )
 def get_fleet_commander_metrics(request):
-    if not can_see_metrics(request.user):
-        return 403, {"detail": "User missing permission to view metrics"}
-
     month_start, month_end = _calendar_month_bounds()
     rows = (
         EveFleet.objects.filter(

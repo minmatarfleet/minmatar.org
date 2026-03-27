@@ -309,12 +309,12 @@ class FleetRouterTestCase(TestCase):
         fleet.refresh_from_db()
         self.assertEqual("Updated tagline", fleet.objective)
 
-    def test_commander_metrics_requires_privilege(self):
+    def test_commander_metrics_available_without_privilege(self):
         response = self.client.get(
             f"{BASE_URL}/commander-metrics",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
-        self.assertEqual(403, response.status_code)
+        self.assertEqual(200, response.status_code)
 
     def test_commander_metrics_month_counts(self):
         self.user.is_superuser = True
