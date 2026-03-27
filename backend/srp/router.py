@@ -1,33 +1,30 @@
 import logging
-from datetime import datetime
 from enum import Enum
-from typing import List, Literal, Optional
+from typing import List, Optional
 
 from django.contrib.auth.models import User
-from django.utils import timezone
 from ninja import Router
 from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from fleets.models import EveFleet
-from srp.fleet_candidates import (
-    get_candidate_fleets_queryset,
-    serialize_candidate_fleet,
-)
 from srp.helpers import (
     CharacterDoesNotExist,
     PrimaryCharacterDoesNotExist,
     UserCharacterMismatch,
     InvalidKillmailLink,
-    average_payout_seconds_approved_last_days,
     get_killmail_details,
     get_reimbursement_amount,
+    get_latest_program_amount,
     is_valid_for_reimbursement,
-    send_decision_notification,
 )
 
-from .models import EveFleetShipReimbursement, ShipReimbursementAmount
+from .models import (
+    EveFleetShipReimbursement,
+    ShipReimbursementProgram,
+    ShipReimbursementProgramAmount,
+)
 
 router = Router(tags=["SRP"])
 
@@ -48,10 +45,6 @@ class CreateEveFleetReimbursementRequest(BaseModel):
     category: Optional[SrpCategory] = None
     comments: Optional[str] = None
     combat_log_id: Optional[int] = None
-
-
-class UpdateEveFleetReimbursementRequest(BaseModel):
-    status: Literal["pending", "approved", "rejected", "withdrawn"]
 
 
 class EveFleetReimbursementResponse(BaseModel):
@@ -78,138 +71,26 @@ class EveFleetReimbursementResponse(BaseModel):
     combat_log_id: Optional[int] = None
 
 
-class SrpPatchResult(BaseModel):
-    database_update_status: str
-    evemail_status: str
-
-
-class SrpPricingRow(BaseModel):
-    kind: Literal["class", "type"]
-    name: str
-    srp_value: int
-
-
-class SrpStatsResponse(BaseModel):
-    average_seconds: Optional[float] = None
-    sample_size: int
-    window_days: int = 90
-
-
-class ResolveKillmailRequest(BaseModel):
-    external_killmail_link: str
-
-
-class CandidateFleetResponse(BaseModel):
+class ShipReimbursementProgramAmountResponse(BaseModel):
     id: int
-    type: str
-    audience: str
-    start_time: datetime
-    description_snippet: str
-    fleet_commander: int
-    fleet_commander_name: Optional[str] = None
+    program_id: int
+    srp_value: int
+    created_at: str
 
 
-class ResolveKillmailResponse(BaseModel):
-    killmail_time: datetime
-    killmail_id: int
-    victim_character_id: int
-    victim_character_name: str
-    ship_type_id: int
-    ship_name: str
-    candidate_fleets: List[CandidateFleetResponse]
+class ShipReimbursementProgramResponse(BaseModel):
+    class EveCategoryResponse(BaseModel):
+        id: int
+        name: str
 
+    class EveTypeResponse(BaseModel):
+        id: int
+        name: str
 
-@router.get(
-    "/pricing",
-    auth=AuthBearer(),
-    response={200: List[SrpPricingRow], 403: ErrorResponse},
-)
-def get_srp_pricing(request):
-    if not request.user.has_perm("srp.view_evefleetshipreimbursement"):
-        return 403, {
-            "detail": "User missing permission srp.view_evefleetshipreimbursement"
-        }
-    rows = ShipReimbursementAmount.objects.order_by("kind", "name")
-    return [
-        SrpPricingRow(
-            kind=r.kind,
-            name=r.name or "",
-            srp_value=r.srp_value,
-        )
-        for r in rows
-    ]
-
-
-@router.get(
-    "/stats",
-    auth=AuthBearer(),
-    response={200: SrpStatsResponse, 403: ErrorResponse},
-)
-def get_srp_stats(request):
-    if not request.user.has_perm("srp.view_evefleetshipreimbursement"):
-        return 403, {
-            "detail": "User missing permission srp.view_evefleetshipreimbursement"
-        }
-    average_seconds, sample_size = average_payout_seconds_approved_last_days(
-        90
-    )
-    return SrpStatsResponse(
-        average_seconds=average_seconds,
-        sample_size=sample_size,
-        window_days=90,
-    )
-
-
-@router.post(
-    "/resolve-killmail",
-    auth=AuthBearer(),
-    response={
-        200: ResolveKillmailResponse,
-        400: ErrorResponse,
-        403: ErrorResponse,
-        404: ErrorResponse,
-    },
-)
-def resolve_killmail_for_srp(request, payload: ResolveKillmailRequest):
-    if not request.user.has_perm("srp.add_evefleetshipreimbursement"):
-        return 403, {
-            "detail": "User missing permission srp.add_evefleetshipreimbursement"
-        }
-    try:
-        details = get_killmail_details(
-            payload.external_killmail_link, request.user
-        )
-    except PrimaryCharacterDoesNotExist:
-        return 404, {"detail": "Primary character does not exist"}
-    except CharacterDoesNotExist as e:
-        return 404, {"detail": str(e)}
-    except UserCharacterMismatch:
-        return 403, {"detail": "Character does not belong to user"}
-    except InvalidKillmailLink:
-        return 400, ErrorResponse.log(
-            "Killmail link not valid",
-            f"Bad killmail link: '{payload.external_killmail_link}'",
-        )
-    except Exception as e:
-        return 400, ErrorResponse.log(
-            "Unexpected error processing killmail",
-            f"Error parsing killmail: user={request.user} killmail={payload.external_killmail_link} error={e}",
-        )
-
-    fleets_qs = get_candidate_fleets_queryset(details.timestamp)
-    candidate_fleets = [
-        CandidateFleetResponse.model_validate(serialize_candidate_fleet(f))
-        for f in fleets_qs
-    ]
-    return ResolveKillmailResponse(
-        killmail_time=details.timestamp,
-        killmail_id=details.killmail_id,
-        victim_character_id=details.victim_character.character_id,
-        victim_character_name=details.victim_character.character_name,
-        ship_type_id=details.ship.id,
-        ship_name=details.ship.name,
-        candidate_fleets=candidate_fleets,
-    )
+    id: int
+    eve_type: EveTypeResponse
+    eve_category: EveCategoryResponse
+    current_amount: ShipReimbursementProgramAmountResponse | None
 
 
 @router.post(
@@ -263,7 +144,12 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
     if not valid:
         return 403, {"detail": f"Killmail not eligible for SRP, {reason}"}
 
-    reimbursement_amount = get_reimbursement_amount(details.ship)
+    reimbursement_program_amount = get_latest_program_amount(details.ship)
+    reimbursement_amount = (
+        reimbursement_program_amount.srp_value
+        if reimbursement_program_amount
+        else get_reimbursement_amount(details.ship)
+    )
 
     reimbursement = EveFleetShipReimbursement.objects.create(
         fleet=fleet,
@@ -278,6 +164,7 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
         ship_type_id=details.ship.id,
         ship_name=details.ship.name,
         amount=reimbursement_amount,
+        reimbursement_program_amount=reimbursement_program_amount,
         is_corp_ship=payload.is_corp_ship,
         corp_id=(
             details.victim_character.corporation_id
@@ -393,47 +280,72 @@ def can_update(user: User, reimbursement: EveFleetShipReimbursement) -> bool:
     return False
 
 
-@router.patch(
-    "/{reimbursement_id}",
+@router.get(
+    "/programs",
     auth=AuthBearer(),
-    response={200: SrpPatchResult, 403: ErrorResponse, 404: ErrorResponse},
-    description="Update a SRP request, must have fleets.manage_evefleet permission",
+    response={200: List[ShipReimbursementProgramResponse], 403: ErrorResponse},
 )
-def update_fleet_srp(
-    request, reimbursement_id: int, payload: UpdateEveFleetReimbursementRequest
-):
-    reimbursement = EveFleetShipReimbursement.objects.filter(
-        id=reimbursement_id
-    ).first()
-
-    if not reimbursement:
-        return 404, {"detail": "Reimbursement does not exist"}
-
-    if not can_update(request.user, reimbursement):
+def get_srp_programs(request):
+    if not request.user.has_perm("srp.view_shipreimbursementamount"):
         return 403, {
-            "detail": "User missing permission srp.change_evefleetshipreimbursement"
+            "detail": "User missing permission srp.view_shipreimbursementamount"
         }
 
-    if not request.user.has_perm("srp.change_evefleetshipreimbursement"):
-        if payload.status != "withdrawn":
-            return 403, {"detail": "Permission denied"}
+    programs = ShipReimbursementProgram.objects.select_related(
+        "eve_type__eve_group__eve_category"
+    ).all()
 
-    old_status = reimbursement.status
-    reimbursement.status = payload.status
-    if payload.status == "approved" and old_status != "approved":
-        reimbursement.approved_at = timezone.now()
-    reimbursement.save()
+    return [
+        {
+            "id": entry.id,
+            "eve_type": {
+                "id": entry.eve_type.id,
+                "name": entry.eve_type.name,
+            },
+            "eve_category": {
+                "id": entry.eve_type.eve_group.eve_category.id,
+                "name": entry.eve_type.eve_group.eve_category.name,
+            },
+            "current_amount": (
+                {
+                    "id": latest_amount.id,
+                    "program_id": latest_amount.program_id,
+                    "srp_value": latest_amount.srp_value,
+                    "created_at": latest_amount.created_at.isoformat(),
+                }
+                if latest_amount
+                else None
+            ),
+        }
+        for entry in programs.order_by("eve_type__name", "id")
+        for latest_amount in [
+            entry.amounts.order_by("-created_at", "-id").first()
+        ]
+    ]
 
-    if reimbursement.status in ["approved", "rejected"]:
-        try:
-            send_decision_notification(reimbursement)
-            mail_result = "Success"
-        except Exception as err:
-            mail_result = f"Error sending mail: {err}"
-    else:
-        mail_result = "N/A"
 
-    return 200, SrpPatchResult(
-        database_update_status="Success",
-        evemail_status=mail_result,
-    )
+@router.get(
+    "/programs/history",
+    auth=AuthBearer(),
+    response={
+        200: List[ShipReimbursementProgramAmountResponse],
+        403: ErrorResponse,
+    },
+)
+def get_srp_program_history(request):
+    if not request.user.has_perm("srp.view_shipreimbursementprogramamount"):
+        return 403, {
+            "detail": "User missing permission srp.view_shipreimbursementprogramamount"
+        }
+
+    return [
+        {
+            "id": amount.id,
+            "program_id": amount.program_id,
+            "srp_value": amount.srp_value,
+            "created_at": amount.created_at.isoformat(),
+        }
+        for amount in ShipReimbursementProgramAmount.objects.all().order_by(
+            "-created_at", "-id"
+        )
+    ]

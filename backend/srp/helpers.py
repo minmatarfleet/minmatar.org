@@ -5,7 +5,6 @@ from random import randint
 from typing import Optional
 
 from django.contrib.auth.models import User
-from django.utils import timezone
 
 from eveuniverse.models import EveType
 from pydantic import BaseModel
@@ -17,7 +16,11 @@ from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
 from reminders.messages.rat_quotes import rat_quotes
 from srp.srp_table import reimbursement_class_lookup, reimbursement_ship_lookup
 
-from .models import EveFleetShipReimbursement, ShipReimbursementAmount
+from .models import (
+    EveFleetShipReimbursement,
+    ShipReimbursementProgram,
+    ShipReimbursementProgramAmount,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -98,23 +101,9 @@ def get_reimbursement_amount(ship: EveType):
     Get the reimbursement amount for a ship
     """
 
-    # Lookup in the database by ship name first
-    db_val = (
-        ShipReimbursementAmount.objects.filter(kind="type")
-        .filter(name=ship.name)
-        .first()
-    )
-    if db_val:
-        return db_val.srp_value
-
-    # Next, lookup in the database by ship class
-    db_val = (
-        ShipReimbursementAmount.objects.filter(kind="class")
-        .filter(name=ship.eve_group.name)
-        .first()
-    )
-    if db_val:
-        return db_val.srp_value
+    program_amount = get_latest_program_amount(ship)
+    if program_amount:
+        return program_amount.srp_value
 
     # Fallback to the hard-coded values
     if ship.name in reimbursement_ship_lookup:
@@ -124,23 +113,36 @@ def get_reimbursement_amount(ship: EveType):
     return 0
 
 
-def average_payout_seconds_approved_last_days(days: int = 90):
+def get_latest_program_amount(
+    ship: EveType,
+) -> ShipReimbursementProgramAmount | None:
     """
-    Mean seconds from created_at to approved_at for approved reimbursements
-    with created_at in the rolling window. Rows without approved_at are excluded.
+    Return latest configured program amount for this ship.
+    Exact ship type is preferred, then same category fallback.
     """
-    cutoff = timezone.now() - timedelta(days=days)
-    pairs = list(
-        EveFleetShipReimbursement.objects.filter(
-            status="approved",
-            created_at__gte=cutoff,
-            approved_at__isnull=False,
-        ).values_list("created_at", "approved_at")
-    )
-    if not pairs:
-        return None, 0
-    deltas = [(a - c).total_seconds() for c, a in pairs]
-    return sum(deltas) / len(deltas), len(deltas)
+    program = ShipReimbursementProgram.objects.filter(
+        eve_type_id=ship.id
+    ).first()
+
+    if not program:
+        ship_category_id = getattr(
+            getattr(getattr(ship, "eve_group", None), "eve_category", None),
+            "id",
+            None,
+        )
+        if ship_category_id is not None:
+            program = (
+                ShipReimbursementProgram.objects.filter(
+                    eve_type__eve_group__eve_category_id=ship_category_id
+                )
+                .order_by("id")
+                .first()
+            )
+
+    if not program:
+        return None
+
+    return program.amounts.order_by("-created_at", "-id").first()
 
 
 def recalculate_reimbursement_amount(reimbursement: EveFleetShipReimbursement):
@@ -148,7 +150,13 @@ def recalculate_reimbursement_amount(reimbursement: EveFleetShipReimbursement):
     Recalculate the amount for the ship
     """
     ship_type = EsiClient(None).get_eve_type(reimbursement.ship_type_id)
-    reimbursement.amount = get_reimbursement_amount(ship_type)
+    program_amount = get_latest_program_amount(ship_type)
+    if program_amount:
+        reimbursement.reimbursement_program_amount = program_amount
+        reimbursement.amount = program_amount.srp_value
+    else:
+        reimbursement.reimbursement_program_amount = None
+        reimbursement.amount = get_reimbursement_amount(ship_type)
     reimbursement.save()
 
 

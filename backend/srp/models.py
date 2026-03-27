@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.db import models
+from eveuniverse.models import EveType
 
 from fleets.models import EveFleet
 from combatlog.models import CombatLog
@@ -44,6 +45,12 @@ class EveFleetShipReimbursement(models.Model):
     primary_character_id = models.BigIntegerField()
     primary_character_name = models.CharField(max_length=255)
     amount = models.BigIntegerField()
+    reimbursement_program_amount = models.ForeignKey(
+        "ShipReimbursementProgramAmount",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
     ship_name = models.CharField(max_length=255)
     ship_type_id = models.BigIntegerField()
     is_corp_ship = models.BooleanField(default=False)
@@ -65,19 +72,30 @@ class EveFleetShipReimbursement(models.Model):
         ]
 
 
-class ShipReimbursementAmount(models.Model):
+class ShipReimbursementProgram(models.Model):
     """
-    Stores the reimbursement values for destroyed ships.
+    A reimbursement program for one EVE type.
     """
 
-    kind_choices = (
-        ("class", "Ship Class"),
-        ("type", "Ship Type"),
+    eve_type = models.ForeignKey(
+        EveType,
+        on_delete=models.CASCADE,
+        related_name="srp_reimbursement_programs",
     )
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
 
-    kind = models.CharField(max_length=20, choices=kind_choices, null=False)
-    name = models.CharField(max_length=255, null=True, blank=True)
+
+class ShipReimbursementProgramAmount(models.Model):
+    """
+    Time series of reimbursement amounts for one program.
+    """
+
+    program = models.ForeignKey(
+        ShipReimbursementProgram,
+        on_delete=models.CASCADE,
+        related_name="amounts",
+    )
     srp_value = models.BigIntegerField()
-
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)

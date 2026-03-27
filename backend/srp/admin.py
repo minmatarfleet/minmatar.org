@@ -4,7 +4,11 @@ from django.contrib import admin, messages
 from django.db.models import Sum
 
 from .helpers import recalculate_reimbursement_amount
-from .models import EveFleetShipReimbursement, ShipReimbursementAmount
+from .models import (
+    EveFleetShipReimbursement,
+    ShipReimbursementProgram,
+    ShipReimbursementProgramAmount,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -88,15 +92,33 @@ class SrpAdmin(admin.ModelAdmin):
         return super().changelist_view(request, extra_context=extra_context)
 
 
-@admin.register(ShipReimbursementAmount)
+class ProgramAmountInline(admin.TabularInline):
+    model = ShipReimbursementProgramAmount
+    extra = 0
+    readonly_fields = ("created_at", "updated_at")
+    fields = ("srp_value", "created_at", "updated_at")
+    ordering = ("-created_at",)
+
+
+@admin.register(ShipReimbursementProgram)
 class SrpValuesAdmin(admin.ModelAdmin):
     """Admin page for SRP ship values"""
 
     list_display = (
         "id",
-        "kind",
-        "name",
-        "srp_value",
+        "eve_type",
+        "eve_category_name",
+        "current_srp_value",
     )
-    search_fields = ["name"]
-    list_filter = ["kind"]
+    search_fields = ["eve_type__name", "=eve_type__id"]
+    list_filter = ["eve_type__eve_group__eve_category__name"]
+    inlines = [ProgramAmountInline]
+
+    @admin.display(description="EVE Category")
+    def eve_category_name(self, obj):
+        return obj.eve_type.eve_group.eve_category.name
+
+    @admin.display(description="Current SRP Value")
+    def current_srp_value(self, obj):
+        latest = obj.amounts.order_by("-created_at", "-id").first()
+        return latest.srp_value if latest else None
