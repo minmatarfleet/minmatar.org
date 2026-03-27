@@ -175,7 +175,10 @@ const page_title = t('fleets.upcoming.page_title');
                     <p>{t('no_access_to_fleets')}</p>
                     :
                     <div class="[ fleet-list-container relative ]">
-                        <FleetList fleets={fleets} />
+                        <FleetList
+                            fleets={fleets}
+                            init_tooltips={false}
+                        />
                     </div>
                 }
             </Flexblock>

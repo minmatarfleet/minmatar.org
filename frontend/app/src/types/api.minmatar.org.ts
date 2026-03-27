@@ -383,7 +383,7 @@ export interface Fitting {
     updated_at:         Date;
     eft_format:         string;
     minimum_pod:        string;
-    recommended_pod:    string,
+    recommended_pod:    string;
     latest_version:     string;
 }
 
@@ -414,6 +414,7 @@ export interface Fleet {
     type:               FleetTypes;
     audience?:          string;
     description:        string;
+    objective?:         string;
     start_time:         Date;
     fleet_commander?:   number;
     doctrine_id:        number;
@@ -465,9 +466,9 @@ export const tracking_status = ['pending', 'active', 'complete', 'cancelled', 'u
 export type TrackingStatus = typeof tracking_status[number]
 
 export interface MumbleInformation {
-    username:   string,
-    password:   string,
-    url:        string
+    username:   string;
+    password:   string;
+    url:        string;
 }
 
 export interface Audience {
@@ -478,12 +479,12 @@ export interface Audience {
 }
 
 export interface FleetMember {
-    character_id: number,
-    character_name: string,
-    ship_type_id: number,
-    ship_type_name: string,
-    solar_system_id: number,
-    solar_system_name: string,
+    character_id:       number;
+    character_name:     string;
+    ship_type_id:       number;
+    ship_type_name:     string;
+    solar_system_id:    number;
+    solar_system_name:  string;
 }
 
 export interface BaseLocation {
@@ -1212,4 +1213,21 @@ export interface IndustrySingleOrder {
     character_name:     string;
     location:           BaseLocation;
     items:              RootSingleItem[];
+}
+
+export interface FleetMetrics {
+    fleet_id:           number;
+    members:            number;
+    time_region:        string;
+    location_name:      string;
+    status:             string;
+    fc_corp_name:       string;
+    audience_name:      string;
+}
+
+export interface FleetCommanderMetrics {
+    user_id:                    number;
+    primary_character_id:       number;
+    primary_character_name:     string;
+    fleet_count:                number;
 }

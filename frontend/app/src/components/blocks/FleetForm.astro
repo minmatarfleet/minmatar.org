@@ -97,6 +97,7 @@ import TrainingIcon from '@components/icons/TrainingIcon.astro';
 import MarkdownIcon from '@components/icons/buttons/MarkdownIcon.astro';
 import RifterIcon from '@components/icons/RifterIcon.astro';
 import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
+import Input from './Input.astro'
 ---
 
 <div>
@@ -116,12 +117,13 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
             eve_time: '${eve_time}',
             audience: '${default_audience}',
             doctrine_id: '${default_doctrine}',
+            objective: '${fleet?.objective ?? ''}',
             local_datetime: '',
             audiences: ${JSON.stringify(AUDIENCES)},
             fleet_types: ${JSON.stringify(FLEET_TYPES_LABELS)},
             get_images() {
                 let images = [{
-                    src: '${get_player_icon(fleet_commander.character_id)}',
+                    src: '${get_player_icon(fleet_commander?.character_id ?? 0)}',
                     width: 64,
                     height: 64,
                 }];
@@ -266,6 +268,18 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                 </Select>
                             </FixedFluid>
 
+                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                <label for="type">{t('objective')}</label>
+                                <Input
+                                    id="objective"
+                                    name="objective"
+                                    rows="5"
+                                    value={fleet?.objective ? fleet?.objective : undefined}
+                                    required
+                                    x-model="objective"
+                                />
+                            </FixedFluid>
+
                             <Context>
                                 <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
                                     <label for="description">{t('description')}</label>
@@ -335,16 +349,25 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                             </Flexblock>
                         </VerticalCenter>
 
-                        <Flexblock gap="var(--space-s-m)">
-                            <TextGroup
-                                class:list={{ 'text-red': default_audience < 1 }}
-                                x-bind:class="{ 'text-red': audience < 1 }"
-                                title={t('audience')}
-                                x-text={`audience > 0 ? audiences[audience] : '${t('no_audience_selected')}'`}
-                            >
-                                {default_audience > 0 ? AUDIENCES[default_audience] : t('no_audience_selected')}
-                            </TextGroup>
-                        </Flexblock>
+                        <VerticalCenter>
+                            <Flexblock gap="var(--space-s-m)">
+                                <TextGroup
+                                    class:list={{ 'text-red': default_audience < 1 }}
+                                    x-bind:class="{ 'text-red': audience < 1 }"
+                                    title={t('audience')}
+                                    x-text={`audience > 0 ? audiences[audience] : '${t('no_audience_selected')}'`}
+                                >
+                                    {default_audience > 0 ? AUDIENCES[default_audience] : t('no_audience_selected')}
+                                </TextGroup>
+                                <TextGroup
+                                    title={t('objective')}
+                                    x-bind:class="{ 'text-red': objective === '' }"
+                                    x-text={`objective ? objective : '${t('no_objective')}'`}
+                                >
+                                    {fleet?.objective ?? t('no_objective')}
+                                </TextGroup>
+                            </Flexblock>
+                        </VerticalCenter>
                     </ThumbCard>
 
                     <template x-if="doctrine_id !== '-1'">

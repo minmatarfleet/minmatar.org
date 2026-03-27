@@ -136,7 +136,11 @@ const page_description = t('page_finder.fleets.history.description');
                     <p>{t('no_access_to_fleets')}</p>
                     :
                     <div class="[ fleet-list-container relative ]">
-                        <FleetList fleets={fleets} history={true} />
+                        <FleetList
+                            fleets={fleets}
+                            history={true}
+                            init_tooltips={false}
+                        />
                     </div>
                 }
             </Flexblock>

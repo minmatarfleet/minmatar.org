@@ -12,8 +12,14 @@ import type {
     FleetTrackingTexts,
     Tracking,
 } from '@dtypes/layout_components'
-import type { EveCharacterProfile, Fleet, FleetMember, FleetBasic } from '@dtypes/api.minmatar.org'
-import { get_fleets_v3, get_fleets_v2, get_fleet_by_id } from '@helpers/api.minmatar.org/fleets'
+import type { EveCharacterProfile, Fleet, FleetMember, FleetBasic, FleetMetrics, FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
+import {
+    get_fleets_v3,
+    get_fleets_v2,
+    get_fleet_by_id,
+    get_fleets_metrics,
+    get_fleet_commander_metrics,
+} from '@helpers/api.minmatar.org/fleets'
 import { get_route } from '@helpers/api.eveonline/routes'
 import { get_user_character, get_users_character } from '@helpers/fetching/characters'
 import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
@@ -33,10 +39,19 @@ export async function fetch_fleets_auth(access_token:string, upcoming:boolean = 
     if (!upcoming)
         api_fleets = api_fleets.filter(api_fleet => api_fleet?.tracking || new Date(api_fleet.start_time) < new Date())
     
+    const fleet_ids = api_fleets.map(api_fleet =>  api_fleet.id)
     const fleet_commanders = unique_values(api_fleets.map(api_fleet => api_fleet.fleet_commander))
     const fleet_commanders_profiles = await get_users_character(fleet_commanders)
+    const fleets_metrics = await get_fleets_metrics(access_token)
+    const fleets_metrics_filtered = fleets_metrics.filter(metric => fleet_ids.includes(metric.fleet_id))
+    const fleet_commander_metrics = await get_fleet_commander_metrics(access_token)
 
-    return api_fleets.map( fleet => add_fleet_info(fleet, fleet_commanders_profiles.find(profile => profile?.user_id === fleet?.fleet_commander)) )
+    return api_fleets.map( fleet => add_fleet_info(
+        fleet,
+        fleet_commanders_profiles.find(profile => profile?.user_id === fleet?.fleet_commander),
+        fleets_metrics_filtered,
+        fleet_commander_metrics,
+    ))
 }
 
 export async function fetch_fleets(upcoming:boolean = true) {
@@ -55,14 +70,23 @@ export async function fetch_fleets(upcoming:boolean = true) {
     } )
 }
 
-export function add_fleet_info(fleet:Fleet, fc_profile:EveCharacterProfile | undefined) {
+export function add_fleet_info(
+    fleet:Fleet,
+    fc_profile:EveCharacterProfile | undefined,
+    fleets_metrics:FleetMetrics[],
+    fleet_commander_metrics:FleetCommanderMetrics[],
+) {
     return {
         id: fleet.id,
         description: fleet.description,
+        objective: fleet.objective,
         audience: fleet.audience,
         doctrine_id: fleet.doctrine_id,
+        members_count: fleets_metrics.find(metric => metric.fleet_id === fleet.id)?.members,
         fleet_commander_id: fc_profile?.character_id ?? 0,
         fleet_commander_name: fc_profile?.character_name ?? t('not_available'),
+        fleet_commander_fleet_count: fleet_commander_metrics.find(metric => metric.primary_character_id === fc_profile?.character_id)?.fleet_count,
+        fleet_commander_corporation: fleets_metrics.find(metric => metric.fleet_id === fleet.id)?.fc_corp_name,
         location: fleet.location,
         start_time: fleet.start_time,
         type: fleet.type,
@@ -85,6 +109,7 @@ export async function fetch_fleet_by_id(access_token:string, fleet_id:number) {
     return {
         id: fleet.id,
         description: fleet.description,
+        objective: fleet.objective,
         fleet_commander_id: character_profile?.character_id ?? 0,
         fleet_commander_name: character_profile?.character_name ?? t('unknown_character'),
         location: fleet.location,

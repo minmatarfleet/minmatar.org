@@ -154,6 +154,15 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                     </div>
                 </FlexInline>
 
+                {fleet.objective &&
+                    <Flexblock gap='var(--space-3xs)'>
+                        <h4 class="[ sentence-cap ]">{t('objective')}</h4>
+                        <TextBox max_width='40rem'>
+                            <Flexblock>{fleet.objective}</Flexblock>
+                        </TextBox>
+                    </Flexblock>
+                }
+
                 <Flexblock gap='var(--space-3xs)'>
                     <h4 class="[ sentence-cap ]">{t('description')}</h4>
                     <TextBox max_width='40rem'>

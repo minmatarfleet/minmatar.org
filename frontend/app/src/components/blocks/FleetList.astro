@@ -5,13 +5,15 @@ const { t, translatePath } = i18n(Astro.url)
 import type { FleetItem } from '@dtypes/layout_components'
 
 interface Props {
-    fleets:     FleetItem[];
-    history?: boolean;
+    fleets:         FleetItem[];
+    history?:       boolean;
+    init_tooltips:  boolean;
 }
 
 const {
     fleets,
     history = false,
+    init_tooltips,
 } = Astro.props
 
 const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(true)}`)
@@ -58,7 +60,12 @@ const hx_attrs = {
         }`}
     >
         {fleets.map((fleet) =>
-            <FleetListItem role="listitem" fleet={fleet} history={history} />
+            <FleetListItem
+                role="listitem"
+                fleet={fleet}
+                history={history}
+                init_tooltips={init_tooltips}
+            />
         )}
     </Grid>
 

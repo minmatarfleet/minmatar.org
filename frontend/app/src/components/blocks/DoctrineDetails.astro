@@ -70,7 +70,11 @@ import DoctrineTier from '@components/blocks/DoctrineTier.astro';
             </TextBox>
 
             {recently_fleets.length > 0 ?
-                <FleetList fleets={recently_fleets} history={true} />
+                <FleetList
+                    fleets={recently_fleets}
+                    history={true}
+                    init_tooltips={false}
+                />
                 :
                 <Flexblock gap='var(--space-xl)' centered={true}>
                     <p>{t('no_recent_fleets')}</p>
