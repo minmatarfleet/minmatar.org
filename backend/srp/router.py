@@ -89,12 +89,17 @@ class ShipReimbursementProgramResponse(BaseModel):
         id: int
         name: str
 
+    class EveGroupResponse(BaseModel):
+        id: int
+        name: str
+
     class EveTypeResponse(BaseModel):
         id: int
         name: str
 
     id: int
     eve_type: EveTypeResponse
+    eve_group: EveGroupResponse
     eve_category: EveCategoryResponse
     current_amount: ShipReimbursementProgramAmountResponse | None
 
@@ -357,6 +362,10 @@ def get_srp_programs(request):
             "eve_type": {
                 "id": entry.eve_type.id,
                 "name": entry.eve_type.name,
+            },
+            "eve_group": {
+                "id": entry.eve_type.eve_group.id,
+                "name": entry.eve_type.eve_group.name,
             },
             "eve_category": {
                 "id": entry.eve_type.eve_group.eve_category.id,
