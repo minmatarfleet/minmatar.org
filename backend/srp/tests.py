@@ -1,6 +1,8 @@
+from datetime import datetime, timedelta, timezone as dt_timezone
 from unittest.mock import patch
 
 from django.test import Client
+from django.utils import timezone
 
 from eveuniverse.models import EveType, EveGroup, EveCategory
 
@@ -10,6 +12,7 @@ from eveonline.client import EsiResponse
 from eveonline.models import EveCharacter
 from eveonline.helpers.characters import set_primary_character
 from combatlog.models import CombatLog
+from fleets.models import EveFleet, EveFleetInstance
 from fleets.tests import (
     disconnect_fleet_signals,
     setup_fleet_reference_data,
@@ -21,6 +24,7 @@ from srp.models import (
     ShipReimbursementProgramAmount,
 )
 from srp.helpers import get_reimbursement_amount
+from users.helpers import add_user_permission
 
 BASE_URL = "/api/srp"
 
@@ -356,6 +360,116 @@ class SrpRouterTestCase(TestCase):
         rev_rows = [h for h in history if h["program_id"] == rev_program.id]
         self.assertEqual(1, len(rev_rows))
         self.assertEqual(3000000000, rev_rows[0]["srp_value"])
+
+    def test_get_stats_forbidden_without_permission(self):
+        response = self.client.get(
+            f"{BASE_URL}/stats",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(403, response.status_code)
+
+    def test_get_stats_average_payout_seconds(self):
+        add_user_permission(self.user, "view_evefleetshipreimbursement")
+        fc = EveCharacter.objects.create(
+            character_id=777001,
+            character_name="SRP test",
+            user=self.user,
+        )
+        now = timezone.now()
+        r = EveFleetShipReimbursement.objects.create(
+            user=self.user,
+            status="approved",
+            killmail_id=999001,
+            external_killmail_link="https://esi.evetech.net/killmails/999001/abc/",
+            character_id=fc.character_id,
+            character_name=fc.character_name,
+            primary_character_id=fc.character_id,
+            primary_character_name=fc.character_name,
+            amount=1,
+            ship_name="Rifter",
+            ship_type_id=123,
+            approved_at=now - timedelta(days=5) + timedelta(hours=24),
+        )
+        EveFleetShipReimbursement.objects.filter(pk=r.pk).update(
+            created_at=now - timedelta(days=5),
+        )
+        response = self.client.get(
+            f"{BASE_URL}/stats",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        body = response.json()
+        self.assertEqual(1, body["sample_size"])
+        self.assertAlmostEqual(86400.0, body["average_seconds"], places=3)
+
+    def test_resolve_killmail_forbidden_without_add_permission(self):
+        response = self.client.post(
+            f"{BASE_URL}/resolve-killmail",
+            {"external_killmail_link": KM_LINK},
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(403, response.status_code)
+
+    @patch("srp.helpers.EsiClient")
+    def test_resolve_killmail_returns_candidates(self, esi_mock):
+        add_user_permission(self.user, "add_evefleetshipreimbursement")
+        esi = esi_mock.return_value
+        fc_char = EveCharacter.objects.create(
+            character_id=KM_CHAR,
+            character_name="Mr FC",
+            user=self.user,
+        )
+        set_primary_character(self.user, fc_char)
+        kill_time = datetime(2025, 4, 2, 11, 47, 15, tzinfo=dt_timezone.utc)
+        in_window = make_test_fleet("In window", self.user, start=kill_time)
+        cancelled = make_test_fleet("Cancelled", self.user, start=kill_time)
+        EveFleet.objects.filter(pk=cancelled.pk).update(status="cancelled")
+        late_schedule = make_test_fleet(
+            "Late schedule",
+            self.user,
+            start=kill_time + timedelta(days=3),
+        )
+        fi = EveFleetInstance.objects.create(
+            id=8800112233,
+            eve_fleet=late_schedule,
+        )
+        EveFleetInstance.objects.filter(pk=fi.pk).update(
+            start_time=kill_time - timedelta(hours=1),
+        )
+
+        esi.get_character_killmail.return_value = EsiResponse(
+            response_code=200,
+            data={
+                "victim": {
+                    "character_id": fc_char.character_id,
+                    "ship_type_id": 11400,
+                },
+                "killmail_time": "2025-04-02T11:47:15Z",
+            },
+        )
+        esi.get_eve_type.return_value = EveType(
+            id=11400,
+            name="Jaguar",
+            description="Jaguar",
+            eve_group=EveGroup(name="ASSAULT_FRIGATE"),
+        )
+
+        response = self.client.post(
+            f"{BASE_URL}/resolve-killmail",
+            {"external_killmail_link": KM_LINK},
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        data = response.json()
+        self.assertEqual(KM_ID, data["killmail_id"])
+        self.assertEqual(fc_char.character_id, data["victim_character_id"])
+        self.assertEqual(11400, data["ship_type_id"])
+        ids = {c["id"] for c in data["candidate_fleets"]}
+        self.assertIn(in_window.id, ids)
+        self.assertIn(late_schedule.id, ids)
+        self.assertNotIn(cancelled.id, ids)
 
     @patch("srp.helpers.EsiClient")
     def test_srp_with_log(self, esi_mock):

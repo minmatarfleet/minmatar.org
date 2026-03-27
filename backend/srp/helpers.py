@@ -5,6 +5,7 @@ from random import randint
 from typing import Optional
 
 from django.contrib.auth.models import User
+from django.utils import timezone
 
 from eveuniverse.models import EveType
 from pydantic import BaseModel
@@ -143,6 +144,27 @@ def get_latest_program_amount(
         return None
 
     return program.amounts.order_by("-created_at", "-id").first()
+
+
+def average_payout_seconds_approved_last_days(days: int = 90):
+    """
+    Mean seconds from created_at to approved_at for approved reimbursements
+    in the rolling window. Rows without approved_at are excluded.
+    """
+    cutoff = timezone.now() - timedelta(days=days)
+    pairs = list(
+        EveFleetShipReimbursement.objects.filter(
+            status="approved",
+            created_at__gte=cutoff,
+            approved_at__isnull=False,
+        ).values_list("created_at", "approved_at")
+    )
+    if not pairs:
+        return None, 0
+    deltas = [
+        (approved - created).total_seconds() for created, approved in pairs
+    ]
+    return sum(deltas) / len(deltas), len(deltas)
 
 
 def recalculate_reimbursement_amount(reimbursement: EveFleetShipReimbursement):
