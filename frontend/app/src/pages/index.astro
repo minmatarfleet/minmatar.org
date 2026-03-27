@@ -100,20 +100,17 @@ const STAGING_DOCTRINES = {
 
 const STAGING_SELL_ORDERS = {
 	amamake: 'Amamake - 5 times nearly AT winners',
-	r6: 'R-6KYM - Here be Rats',
 	r6_2: 'R-6KYM - Casper Anchored It',
 }
 
 const FREIGHT_ORDERS = {
 	amamake: 'Amamake - 5 times nearly AT winners',
 	r6: 'R-6KYM - Here be Rats',
-	r6_2: 'R-6KYM - Casper Anchored It',
 }
 
 const INDUSTRY_ORDERS = {
 	amamake: 'Amamake - 5 times nearly AT winners',
 	r6: 'R-6KYM - Here be Rats',
-	r6_2: 'R-6KYM - Casper Anchored It',
 }
 
 const IS_APRIL_FOOLS = is_seasonal_date('04-01', '04-01')
@@ -129,7 +126,7 @@ const is_random_staging = !Astro.cookies.has('staging')
 const staging = IS_APRIL_FOOLS ?
 	'amarr' :
 	is_random_staging ?
-	stagings[Math.floor(Math.random() * (stagings.length - 2))] : // removing amarr and r6_2 from random
+	stagings[Math.floor(Math.random() * (stagings.length - 1))] : // removing amarr from random
 	user_staging
 	
 const auth_error = Astro.cookies.has('auth_error') ? Astro.cookies.get('auth_error')?.value : false
