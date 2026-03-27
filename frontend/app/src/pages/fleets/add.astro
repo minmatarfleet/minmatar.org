@@ -44,6 +44,7 @@ if (Astro.request.method === "POST") {
         const fleet_data = {
             doctrine_id: doctrine_id,
             description: data.get('description') as string,
+            objective: data.get('objective') as string,
             start_time: start_time,
             type: data.get('fleet_type') as FleetTypes,
             audience_id: parseInt(data.get('audience_id') as string),

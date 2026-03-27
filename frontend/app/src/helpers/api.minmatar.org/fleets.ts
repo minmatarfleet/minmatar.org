@@ -7,7 +7,9 @@ import type {
     FleetBasic,
     FleetUsers,
     FleetStatus,
-    FleetPatchRequest
+    FleetPatchRequest,
+    FleetMetrics,
+    FleetCommanderMetrics,
 } from '@dtypes/api.minmatar.org'
 import { get_error_message, parse_error_message, parse_response_error } from '@helpers/string'
 
@@ -518,5 +520,65 @@ export async function preping(access_token:string, fleet_id:number) {
         return (response.status === 200)
     } catch (error) {
         throw new Error(`Error creating pre-ping: ${error.message}`);
+    }
+}
+
+export async function get_fleets_metrics(access_token:string) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/metrics`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers
+        })
+
+        // console.log(response)
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ));
+        }
+
+        return await response.json() as FleetMetrics[];
+    } catch (error) {
+        throw new Error(`Error fetching fleet metrics: ${error.message}`);
+    }
+}
+
+export async function get_fleet_commander_metrics(access_token:string) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/commander-metrics`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers
+        })
+
+        // console.log(response)
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ));
+        }
+
+        return await response.json() as FleetCommanderMetrics[];
+    } catch (error) {
+        throw new Error(`Error fetching fleet commander metrics: ${error.message}`);
     }
 }

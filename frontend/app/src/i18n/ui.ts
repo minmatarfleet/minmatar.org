@@ -2108,5 +2108,9 @@ export const ui = {
         'view_active_contracts': 'View active contracts',
         'date_completed': 'Completed on {date}',
         'date_issued': 'Issued on {date}',
+        'fleet_commander_fleets': 'Fleets commanded',
+        'characters_in_fleet': 'Characters in the fleet',
+        'objective': 'Objective',
+        'no_objective': 'No objective',
     },
 } as const;

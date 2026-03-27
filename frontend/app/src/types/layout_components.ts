@@ -658,17 +658,21 @@ export type StagingType = typeof stagings[number]
 import type { Doctrine, FleetTypes } from '@dtypes/api.minmatar.org'
 
 export interface FleetItem {
-    id:                     number;
-    type?:                  FleetTypes;
-    audience:               string;
-    description?:           string;
-    doctrine_id:            number;
-    start_time:             Date;
-    fleet_commander_id:     number;
-    fleet_commander_name:   string;
-    location?:              string;
-    tracking?:              Tracking;
-    status?:                TrackingStatus;
+    id:                             number;
+    type?:                          FleetTypes;
+    audience:                       string;
+    members_count?:                 number;
+    description?:                   string;
+    objective?:                     string;
+    doctrine_id:                    number;
+    start_time:                     Date;
+    fleet_commander_id:             number;
+    fleet_commander_name:           string;
+    fleet_commander_fleet_count?:   number;
+    fleet_commander_corporation?:   string;
+    location?:                      string;
+    tracking?:                      Tracking;
+    status?:                        TrackingStatus;
 }
 
 import type { TrackingStatus } from '@dtypes/api.minmatar.org'
@@ -677,6 +681,7 @@ export interface FleetUI {
     id:                     number;
     type:                   FleetTypes;
     description:            string;
+    objective:              string;
     start_time:             Date;
     fleet_commander_id:     number;
     fleet_commander_name:   string;

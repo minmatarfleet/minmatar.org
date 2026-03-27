@@ -11,14 +11,16 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 import type { FleetItem } from '@dtypes/layout_components';
 
 interface Props {
-    fleet: FleetItem;
-    history?: boolean;
+    fleet:          FleetItem;
+    history?:       boolean;
+    init_tooltips:  boolean;
     [propName: string]: any;
 }
 
 const {
     fleet,
     history = false,
+    init_tooltips,
     ...attributes
 } = Astro.props
 
@@ -38,6 +40,14 @@ const fleet_tracking_texts = get_fleet_tracking_texts(lang, fleet.tracking)
 
 const [ system, station ] = fleet.location?.split(' - ') ?? []
 
+const CORPORATION_IDS = {
+    'Rattini Tribe': 98726134,
+    'Minmatar Fleet Academy': 98741376,
+    'Soltech Armada': 98647659,
+    'Straylight Systems': 98498664,
+    'The Dark Tribe': 1413715023,
+}
+
 import StratopIcon from '@components/icons/StratopIcon.astro';
 import NonStrategicIcon from '@components/icons/NonStrategicIcon.astro';
 import TrainingIcon from '@components/icons/TrainingIcon.astro';
@@ -45,7 +55,6 @@ import TrainingIcon from '@components/icons/TrainingIcon.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
-import BlockList from '@components/compositions/BlockList.astro'
 
 import Countdown from '@components/blocks/Countdown.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
@@ -54,6 +63,10 @@ import Tile from '@components/blocks/Tile.astro';
 import LocalTimeGroup from '@components/blocks/LocalTimeGroup.astro';
 import TimeAlternator from '@components/blocks/TimeAlternator.astro'
 import CompletedStatus from '@components/blocks/CompletedStatus.astro'
+
+import FleetIcon from '@components/icons/FleetIcon.astro';
+import MemberIcon from '@components/icons/MemberIcon.astro';
+import CorporationBadge from './CorporationBadge.astro'
 
 const eve_time = new Date(fleet.start_time);
 const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
@@ -90,15 +103,59 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
         soft={false}
     >
         <Flexblock slot="subtitle">
-            <FlexInline gap='var(--space-2xs)'>
-                <span><b>{system}</b> - {station}</span>
+            <FlexInline class="[ items-center! ]" gap='var(--space-l)'>
+                {fleet.fleet_commander_id &&
+                    <CorporationBadge
+                        corporation={{
+                            id: fleet.fleet_commander_corporation ? CORPORATION_IDS[fleet.fleet_commander_corporation] : 98726134,
+                            name: fleet.fleet_commander_corporation,
+                            size: 'xs'
+                        }}
+                    >
+                        <small>{t('fleet_commander')}</small>
+                    </CorporationBadge>
+                }
+                {fleet.fleet_commander_fleet_count &&
+                    <FlexInline gap='var(--space-3xs)' class="[ items-center! ]">
+                        <div
+                            class="[ text-highlight h-[16px] ]"
+                            data-tippy-content={t('fleet_commander_fleets')}
+                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                        >
+                            <FleetIcon size={16} />
+                        </div>
+                        <span>{fleet.fleet_commander_fleet_count}</span>
+                    </FlexInline>
+                }
             </FlexInline>
 
-            <Flexblock
-                class="[ wrap-break-word max-w-full pr-1.5 max-h-[130px] overflow-y-auto ]"
-                gap="var(--space-s-m)"
-                set:html={marked.parse(fleet.description ?? '', { renderer })}
-            />
+            {fleet.objective &&
+                <Flexblock
+                    class="[ wrap-break-word max-w-full pr-1.5 max-h-[130px] overflow-y-auto ]"
+                    gap="var(--space-s-m)"
+                    set:html={marked.parse(fleet.objective, { renderer })}
+                />
+            }
+
+            <FlexInline class="[ flex-nowrap! items-center! ]" gap='var(--space-l)'>
+                <Flexblock gap='0'>
+                    <b class="[ text-highlight ]">{system}</b>
+                    <small>{station}</small>
+                </Flexblock>
+
+                {fleet.members_count !== undefined &&
+                    <FlexInline gap='var(--space-3xs)' class="[ flex-nowrap! items-center! ]">
+                        <div
+                            class="[ text-highlight h-[16px] ]"
+                            data-tippy-content={t('characters_in_fleet')}
+                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                        >
+                            <MemberIcon size={16} />
+                        </div>
+                        <span>{fleet.members_count}</span>
+                    </FlexInline>
+                }
+            </FlexInline>
         </Flexblock>
     </Tile>
 
