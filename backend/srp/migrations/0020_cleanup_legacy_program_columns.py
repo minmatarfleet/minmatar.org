@@ -24,6 +24,7 @@ def _drop_legacy_columns(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
+    atomic = False
 
     dependencies = [
         ("srp", "0019_merge_20260327_1305"),
