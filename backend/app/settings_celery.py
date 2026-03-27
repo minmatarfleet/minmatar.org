@@ -221,6 +221,13 @@ CELERYBEAT_OTHER = [
         },
     ),
     (
+        "[Misc] Industry order summary (Discord)",
+        {
+            "task": "reminders.tasks.send_industry_daily_summary",
+            "schedule": crontab(minute=0, hour=14),
+        },
+    ),
+    (
         "[Misc] Reddit scheduled post",
         {
             "task": "reddit.tasks.scheduled_reddit_posts",
