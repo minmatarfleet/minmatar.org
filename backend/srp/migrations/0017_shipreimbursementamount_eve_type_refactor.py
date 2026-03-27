@@ -10,39 +10,69 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name="shipreimbursementamount",
-            name="kind",
+        migrations.SeparateDatabaseAndState(
+            state_operations=[
+                migrations.RemoveField(
+                    model_name="shipreimbursementamount",
+                    name="kind",
+                )
+            ],
+            database_operations=[],
         ),
-        migrations.RemoveField(
-            model_name="shipreimbursementamount",
-            name="name",
+        migrations.SeparateDatabaseAndState(
+            state_operations=[
+                migrations.RemoveField(
+                    model_name="shipreimbursementamount",
+                    name="name",
+                )
+            ],
+            database_operations=[],
         ),
-        migrations.RemoveField(
-            model_name="shipreimbursementamount",
-            name="program_key",
+        migrations.SeparateDatabaseAndState(
+            state_operations=[
+                migrations.RemoveField(
+                    model_name="shipreimbursementamount",
+                    name="program_key",
+                )
+            ],
+            database_operations=[],
         ),
-        migrations.RemoveField(
-            model_name="shipreimbursementamount",
-            name="eve_type_id",
+        migrations.SeparateDatabaseAndState(
+            state_operations=[
+                migrations.RemoveField(
+                    model_name="shipreimbursementamount",
+                    name="eve_type_id",
+                )
+            ],
+            database_operations=[],
         ),
-        migrations.AddField(
-            model_name="shipreimbursementamount",
-            name="eve_type",
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.CASCADE,
-                related_name="srp_reimbursement_values",
-                to="eveuniverse.evetype",
-                null=True,
-            ),
+        migrations.SeparateDatabaseAndState(
+            state_operations=[
+                migrations.AddField(
+                    model_name="shipreimbursementamount",
+                    name="eve_type",
+                    field=models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="srp_reimbursement_values",
+                        to="eveuniverse.evetype",
+                        null=True,
+                    ),
+                )
+            ],
+            database_operations=[],
         ),
-        migrations.AlterField(
-            model_name="shipreimbursementamount",
-            name="eve_type",
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.CASCADE,
-                related_name="srp_reimbursement_values",
-                to="eveuniverse.evetype",
-            ),
+        migrations.SeparateDatabaseAndState(
+            state_operations=[
+                migrations.AlterField(
+                    model_name="shipreimbursementamount",
+                    name="eve_type",
+                    field=models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="srp_reimbursement_values",
+                        to="eveuniverse.evetype",
+                    ),
+                )
+            ],
+            database_operations=[],
         ),
     ]
