@@ -38,7 +38,7 @@ class OrderListItemResponse(BaseModel):
     created_at: datetime
     needed_by: date
     fulfilled_at: datetime | None
-    order_identifier: str
+    public_short_code: str
     contract_to: str
     character_id: int
     character_name: str
@@ -81,7 +81,7 @@ class OrderDetailResponse(BaseModel):
     created_at: datetime
     needed_by: date
     fulfilled_at: datetime | None
-    order_identifier: str
+    public_short_code: str
     contract_to: str
     character_id: int
     character_name: str
@@ -105,7 +105,6 @@ class CreateOrderRequest(BaseModel):
     character_id: int | None = None
     location_id: int | None = None
     contract_to: str = ""
-    order_identifier: str | None = None
     items: List[OrderItemInput]
 
 
@@ -113,7 +112,7 @@ class CreateOrderResponse(BaseModel):
     """Response after creating an order."""
 
     order_id: int
-    order_identifier: str
+    public_short_code: str
 
 
 class PostOrderItemAssignmentRequest(BaseModel):

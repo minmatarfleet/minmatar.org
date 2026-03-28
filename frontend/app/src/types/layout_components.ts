@@ -1009,6 +1009,7 @@ export interface IndustryOrderUI {
     created_at:         Date;
     needed_by:          Date;
     fulfilled_at:       Date | null;
+    public_short_code:  string;
     character_id:       number;
     character_name:     string;
     location:           BaseLocation;

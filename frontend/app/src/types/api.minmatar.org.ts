@@ -1038,6 +1038,7 @@ export interface IndustryOrder {
     created_at:         Date;
     needed_by:          Date;
     fulfilled_at:       Date | null;
+    public_short_code:  string;
     character_id:       number;
     character_name:     string;
     location:           BaseLocation;
@@ -1207,7 +1208,7 @@ export interface IndustrySingleOrder {
     created_at:         Date;
     needed_by:          Date;
     fulfilled_at:       Date | null;
-    order_identifier:   string;
+    public_short_code:  string;
     contract_to:        string;
     character_id:       number;
     character_name:     string;

@@ -38,7 +38,7 @@ def get_order(request, order_id: int):
         created_at=order.created_at,
         needed_by=order.needed_by,
         fulfilled_at=order.fulfilled_at,
-        order_identifier=order.order_identifier,
+        public_short_code=order.public_short_code,
         contract_to=order.contract_to,
         character_id=order.character.character_id,
         character_name=order.character.character_name,

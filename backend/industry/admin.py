@@ -8,7 +8,10 @@ from django.utils.safestring import mark_safe
 
 from eveuniverse.models import EveGroup
 
-from industry.forms import MiningUpgradeCompletionAdminForm
+from industry.forms import (
+    IndustryOrderAdminForm,
+    MiningUpgradeCompletionAdminForm,
+)
 from industry.helpers.type_breakdown import get_breakdown_for_industry_product
 from industry.models import (
     IndustryOrder,
@@ -71,9 +74,10 @@ class IndustryOrderItemInline(admin.TabularInline):
 class IndustryOrderAdmin(admin.ModelAdmin):
     """Industry orders: manage order items and their assignments from one place."""
 
+    form = IndustryOrderAdminForm
     list_display = (
         "id",
-        "order_identifier",
+        "public_short_code",
         "created_at",
         "needed_by",
         "fulfilled_at",
@@ -92,7 +96,11 @@ class IndustryOrderAdmin(admin.ModelAdmin):
         "mark_fulfilled_button",
         "relevant_jobs_display",
     )
-    search_fields = ("id", "order_identifier", "character__character_name")
+    search_fields = (
+        "id",
+        "public_short_code",
+        "character__character_name",
+    )
     fieldsets = (
         (
             None,
@@ -102,7 +110,7 @@ class IndustryOrderAdmin(admin.ModelAdmin):
                     "location",
                     "needed_by",
                     "created_at",
-                    "order_identifier",
+                    "public_short_code",
                     "contract_to",
                 ),
             },

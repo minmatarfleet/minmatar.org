@@ -1,7 +1,5 @@
 """POST "" - create a new industry order."""
 
-from django.db import IntegrityError
-
 from eveonline.helpers.characters import user_primary_character
 from eveonline.models import EveCharacter, EveLocation
 from eveuniverse.models import EveType
@@ -12,9 +10,8 @@ from industry.endpoints.orders.schemas import (
     CreateOrderRequest,
     CreateOrderResponse,
 )
-from industry.helpers.order_identifier import (
-    generate_random_order_identifier,
-    validate_order_identifier,
+from industry.helpers.public_short_code import (
+    pick_unique_public_short_code_among_actives,
 )
 from industry.models import IndustryOrder, IndustryOrderItem
 
@@ -120,51 +117,13 @@ def _create_order(
     location,
     contract_to: str,
 ):
-    if payload.order_identifier is not None:
-        try:
-            order_identifier = validate_order_identifier(
-                payload.order_identifier
-            )
-        except ValueError as exc:
-            return None, (400, ErrorResponse(detail=str(exc)))
-        try:
-            order = IndustryOrder.objects.create(
-                needed_by=payload.needed_by,
-                character=character,
-                location=location,
-                contract_to=contract_to,
-                order_identifier=order_identifier,
-            )
-        except IntegrityError:
-            return None, (
-                400,
-                ErrorResponse(
-                    detail="This order_identifier is already in use."
-                ),
-            )
-        return order, None
-
-    order = None
-    for _ in range(80):
-        slug = generate_random_order_identifier()
-        try:
-            order = IndustryOrder.objects.create(
-                needed_by=payload.needed_by,
-                character=character,
-                location=location,
-                contract_to=contract_to,
-                order_identifier=slug,
-            )
-            break
-        except IntegrityError:
-            continue
-    if order is None:
-        return None, (
-            500,
-            ErrorResponse(
-                detail="Could not allocate a unique order_identifier."
-            ),
-        )
+    order = IndustryOrder.objects.create(
+        needed_by=payload.needed_by,
+        character=character,
+        location=location,
+        contract_to=contract_to,
+        public_short_code=pick_unique_public_short_code_among_actives(),
+    )
     return order, None
 
 
@@ -190,5 +149,6 @@ def post_order(request, payload: CreateOrderRequest):
             self_assign_maximum=item.self_assign_maximum,
         )
     return 201, CreateOrderResponse(
-        order_id=order.pk, order_identifier=order.order_identifier
+        order_id=order.pk,
+        public_short_code=order.public_short_code,
     )

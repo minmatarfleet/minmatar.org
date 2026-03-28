@@ -55,6 +55,7 @@ export async function fetch_orders_by_locations(history:boolean = false) {
             orders: location_orders.map(order => {
                 return {
                     id: order.id,
+                    public_short_code: order.public_short_code,
                     character_id: order.character_id,
                     character_name: order.character_name,
                     created_at: order.created_at,
@@ -227,6 +228,7 @@ export async function fetch_order_by_id(order_id: number) {
 
     return {
         id: order.id,
+        public_short_code: order.public_short_code,
         character_id: order.character_id,
         character_name: order.character_name,
         created_at: order.created_at,

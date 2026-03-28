@@ -12,11 +12,8 @@ from eveonline.models import EveCharacter, EveLocation
 from eveuniverse.models import EveCategory, EveGroup, EveType
 
 from app.test import TestCase as AppTestCase
-from industry.models import (
-    IndustryOrder,
-    IndustryOrderItem,
-    IndustryOrderItemAssignment,
-)
+from industry.test_utils import create_industry_order
+from industry.models import IndustryOrderItem, IndustryOrderItemAssignment
 
 
 def _mock_breakdown_for_product(
@@ -72,7 +69,7 @@ class OrderBreakdownTestCase(AppTestCase):
             solar_system_name="Test System",
             short_name="TST",
         )
-        self.order = IndustryOrder.objects.create(
+        self.order = create_industry_order(
             needed_by=(timezone.now() + timedelta(days=7)).date(),
             character=self.character,
             location=self.location,
