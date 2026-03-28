@@ -19,6 +19,7 @@ from industry.models import (
     IndustryOrderItem,
     IndustryOrderItemAssignment,
 )
+from industry.test_utils import create_industry_order
 
 
 class OrdersEndpointTestCase(AppTestCase):
@@ -62,7 +63,7 @@ class OrdersEndpointTestCase(AppTestCase):
         )
 
     def test_get_orders_returns_list_with_location(self):
-        order = IndustryOrder.objects.create(
+        order = create_industry_order(
             needed_by=(timezone.now() + timedelta(days=7)).date(),
             character=self.character,
             location=self.location,
@@ -92,6 +93,7 @@ class OrdersEndpointTestCase(AppTestCase):
         )
         self.assertEqual(data[0]["items"][0]["quantity"], 2)
         self.assertEqual(data[0]["assigned_to"], [])
+        self.assertEqual(data[0]["public_short_code"], order.public_short_code)
 
     def test_get_orders_returns_empty_when_none(self):
         response = self.client.get("/api/industry/orders")
@@ -106,11 +108,11 @@ class OrdersEndpointTestCase(AppTestCase):
             character_name="Other Owner",
             user=other_user,
         )
-        order1 = IndustryOrder.objects.create(
+        order1 = create_industry_order(
             needed_by=(timezone.now() + timedelta(days=7)).date(),
             character=self.character,
         )
-        order2 = IndustryOrder.objects.create(
+        order2 = create_industry_order(
             needed_by=(timezone.now() + timedelta(days=14)).date(),
             character=other_char,
         )
@@ -128,7 +130,7 @@ class OrdersEndpointTestCase(AppTestCase):
             character_name="Builder One",
             user=self.user,
         )
-        order = IndustryOrder.objects.create(
+        order = create_industry_order(
             needed_by=(timezone.now() + timedelta(days=7)).date(),
             character=self.character,
             location=self.location,
@@ -175,7 +177,7 @@ class OrdersEndpointTestCase(AppTestCase):
             character_name="Target Builder",
             user=self.user,
         )
-        order = IndustryOrder.objects.create(
+        order = create_industry_order(
             needed_by=(timezone.now() + timedelta(days=7)).date(),
             character=self.character,
             location=self.location,
@@ -200,7 +202,7 @@ class OrdersEndpointTestCase(AppTestCase):
         self.assertEqual(row["target_estimated_margin"], "89000.00")
 
     def test_get_orders_items_use_line_targets_when_set(self):
-        order = IndustryOrder.objects.create(
+        order = create_industry_order(
             needed_by=(timezone.now() + timedelta(days=7)).date(),
             character=self.character,
             location=self.location,
@@ -219,7 +221,7 @@ class OrdersEndpointTestCase(AppTestCase):
         self.assertEqual(row["target_estimated_margin"], "10000.00")
 
     def test_get_order_returns_detail_with_items_and_assignments(self):
-        order = IndustryOrder.objects.create(
+        order = create_industry_order(
             needed_by=(timezone.now() + timedelta(days=7)).date(),
             character=self.character,
             location=self.location,
@@ -261,7 +263,7 @@ class OrdersEndpointTestCase(AppTestCase):
         self.assertEqual(data["items"][0]["assignments"][0]["quantity"], 3)
 
     def test_get_order_orderitems_returns_items_with_assignments(self):
-        order = IndustryOrder.objects.create(
+        order = create_industry_order(
             needed_by=(timezone.now() + timedelta(days=7)).date(),
             character=self.character,
             location=self.location,
@@ -305,7 +307,7 @@ class OrdersEndpointTestCase(AppTestCase):
             character_name="Other Owner 2",
             user=other_user,
         )
-        order = IndustryOrder.objects.create(
+        order = create_industry_order(
             needed_by=(timezone.now() + timedelta(days=7)).date(),
             character=other_char,
         )
@@ -314,6 +316,7 @@ class OrdersEndpointTestCase(AppTestCase):
         data = response.json()
         self.assertEqual(data["id"], order.pk)
         self.assertEqual(data["character_name"], other_char.character_name)
+        self.assertEqual(data["public_short_code"], order.public_short_code)
 
     def test_get_order_returns_404_when_not_found(self):
         response = self.client.get("/api/industry/orders/999999")
@@ -325,7 +328,7 @@ class OrderMutationApiTests(OrdersEndpointTestCase):
     """Authenticated POST/PATCH/DELETE on industry orders."""
 
     def test_post_assignment_creates_row(self):
-        order = IndustryOrder.objects.create(
+        order = create_industry_order(
             needed_by=(timezone.now() + timedelta(days=7)).date(),
             character=self.character,
         )
@@ -354,7 +357,7 @@ class OrderMutationApiTests(OrdersEndpointTestCase):
         self.assertEqual(data["character_id"], assignee.character_id)
 
     def test_post_assignment_rejects_over_remaining(self):
-        order = IndustryOrder.objects.create(
+        order = create_industry_order(
             needed_by=(timezone.now() + timedelta(days=7)).date(),
             character=self.character,
         )
@@ -380,7 +383,7 @@ class OrderMutationApiTests(OrdersEndpointTestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_post_assignment_rejects_other_users_character(self):
-        order = IndustryOrder.objects.create(
+        order = create_industry_order(
             needed_by=(timezone.now() + timedelta(days=7)).date(),
             character=self.character,
         )
@@ -407,7 +410,7 @@ class OrderMutationApiTests(OrdersEndpointTestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_post_assignment_self_assign_maximum_in_48h_window(self):
-        order = IndustryOrder.objects.create(
+        order = create_industry_order(
             needed_by=(timezone.now() + timedelta(days=7)).date(),
             character=self.character,
         )
@@ -445,7 +448,7 @@ class OrderMutationApiTests(OrdersEndpointTestCase):
         self.assertEqual(r2.status_code, 400)
 
     def test_post_assignment_after_48h_ignores_self_assign_maximum(self):
-        order = IndustryOrder.objects.create(
+        order = create_industry_order(
             needed_by=(timezone.now() + timedelta(days=7)).date(),
             character=self.character,
         )
@@ -485,7 +488,7 @@ class OrderMutationApiTests(OrdersEndpointTestCase):
         self.assertEqual(r2.status_code, 201)
 
     def test_patch_assignment_delivered_assignee_and_owner(self):
-        order = IndustryOrder.objects.create(
+        order = create_industry_order(
             needed_by=(timezone.now() + timedelta(days=7)).date(),
             character=self.character,
         )
@@ -536,7 +539,7 @@ class OrderMutationApiTests(OrdersEndpointTestCase):
         self.assertEqual(r3.status_code, 200)
 
     def test_patch_assignment_delivered_forbidden_for_stranger(self):
-        order = IndustryOrder.objects.create(
+        order = create_industry_order(
             needed_by=(timezone.now() + timedelta(days=7)).date(),
             character=self.character,
         )
@@ -572,7 +575,6 @@ class OrderMutationApiTests(OrdersEndpointTestCase):
             "needed_by": needed,
             "character_id": self.character.character_id,
             "contract_to": "ACME Corp",
-            "order_identifier": "alpha-beta-gamma",
             "items": [
                 {
                     "eve_type_id": self.eve_type.id,
@@ -589,9 +591,11 @@ class OrderMutationApiTests(OrdersEndpointTestCase):
         )
         self.assertEqual(r.status_code, 201, r.content)
         data = r.json()
-        self.assertEqual(data["order_identifier"], "alpha-beta-gamma")
+        self.assertEqual(len(data["public_short_code"]), 3)
+        self.assertNotIn("order_identifier", data)
         oid = data["order_id"]
         order = IndustryOrder.objects.get(pk=oid)
+        self.assertEqual(data["public_short_code"], order.public_short_code)
         self.assertEqual(order.contract_to, "ACME Corp")
         self.assertEqual(order.items.get().self_assign_maximum, 2)
 
@@ -602,23 +606,27 @@ class OrderMutationApiTests(OrdersEndpointTestCase):
         self.assertEqual(r_del.status_code, 204)
         self.assertFalse(IndustryOrder.objects.filter(pk=oid).exists())
 
-    def test_post_create_order_duplicate_identifier_400(self):
-        IndustryOrder.objects.create(
-            needed_by=(timezone.now() + timedelta(days=7)).date(),
-            character=self.character,
-            order_identifier="taken-slug-here",
-        )
+    def test_post_create_two_orders_distinct_public_short_codes(self):
         needed = (timezone.now() + timedelta(days=14)).date().isoformat()
-        body = {
+        base = {
             "needed_by": needed,
             "character_id": self.character.character_id,
-            "order_identifier": "taken-slug-here",
             "items": [{"eve_type_id": self.eve_type.id, "quantity": 1}],
         }
-        r = self.client.post(
+        r1 = self.client.post(
             "/api/industry/orders",
-            data=json.dumps(body),
+            data=json.dumps(base),
             content_type="application/json",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
-        self.assertEqual(r.status_code, 400)
+        r2 = self.client.post(
+            "/api/industry/orders",
+            data=json.dumps(base),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(r1.status_code, 201)
+        self.assertEqual(r2.status_code, 201)
+        c1 = r1.json()["public_short_code"]
+        c2 = r2.json()["public_short_code"]
+        self.assertNotEqual(c1, c2)

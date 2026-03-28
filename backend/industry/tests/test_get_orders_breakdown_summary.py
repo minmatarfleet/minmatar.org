@@ -10,7 +10,8 @@ from eveonline.models import EveCharacter
 from eveuniverse.models import EveCategory, EveGroup, EveType
 
 from app.test import TestCase as AppTestCase
-from industry.models import IndustryOrder, IndustryOrderItem
+from industry.models import IndustryOrderItem
+from industry.test_utils import create_industry_order
 
 
 class GetOrdersBreakdownSummaryTestCase(AppTestCase):
@@ -52,7 +53,7 @@ class GetOrdersBreakdownSummaryTestCase(AppTestCase):
             eve_group=self.eve_group,
         )
         needed_by = (timezone.now() + timedelta(days=7)).date()
-        order = IndustryOrder.objects.create(
+        order = create_industry_order(
             needed_by=needed_by,
             character=self.character,
         )
@@ -86,7 +87,7 @@ class GetOrdersBreakdownSummaryTestCase(AppTestCase):
             eve_group=self.eve_group,
         )
         needed_by = (timezone.now() + timedelta(days=7)).date()
-        order = IndustryOrder.objects.create(
+        order = create_industry_order(
             needed_by=needed_by,
             character=self.character,
         )
@@ -124,7 +125,7 @@ class GetOrdersBreakdownSummaryTestCase(AppTestCase):
             eve_group=self.eve_group,
         )
         needed_by = (timezone.now() + timedelta(days=7)).date()
-        order = IndustryOrder.objects.create(
+        order = create_industry_order(
             needed_by=needed_by,
             character=self.character,
         )
@@ -156,7 +157,7 @@ class GetOrdersBreakdownSummaryTestCase(AppTestCase):
             eve_group=self.eve_group,
         )
         needed_by = (timezone.now() + timedelta(days=7)).date()
-        order = IndustryOrder.objects.create(
+        order = create_industry_order(
             needed_by=needed_by,
             character=self.character,
         )

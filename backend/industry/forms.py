@@ -3,7 +3,12 @@
 from django import forms
 from django.utils import timezone
 
-from industry.models import MiningUpgradeCompletion
+from industry.helpers.public_short_code import (
+    is_valid_public_short_code,
+    pick_unique_public_short_code_among_actives,
+    public_short_code_taken_by_active,
+)
+from industry.models import IndustryOrder, MiningUpgradeCompletion
 from sovereignty.anomalies import get_all_mining_anomaly_names
 
 
@@ -51,3 +56,34 @@ class MiningUpgradeCompletionAdminForm(forms.ModelForm):
                 ),
             )
         return cleaned
+
+
+class IndustryOrderAdminForm(forms.ModelForm):
+    """Show ``public_short_code`` as read-only; validated in ``clean_public_short_code``."""
+
+    class Meta:
+        model = IndustryOrder
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        field = self.fields["public_short_code"]
+        field.widget.attrs["readonly"] = True
+        field.required = False
+        inst = self.instance
+        if inst.pk and inst.public_short_code:
+            field.initial = inst.public_short_code
+        elif not inst.pk:
+            field.initial = pick_unique_public_short_code_among_actives()
+
+    def clean_public_short_code(self):
+        raw = (self.data.get("public_short_code") or "").strip()
+        if self.instance.pk:
+            return self.instance.public_short_code
+        if is_valid_public_short_code(
+            raw
+        ) and not public_short_code_taken_by_active(
+            raw, exclude_order_pk=None
+        ):
+            return raw
+        return pick_unique_public_short_code_among_actives()

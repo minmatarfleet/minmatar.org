@@ -9,11 +9,8 @@ from app.test import TestCase as AppTestCase
 from eveonline.models import EveCharacter, EveLocation
 from eveuniverse.models import EveCategory, EveGroup, EveType
 
-from industry.models import (
-    IndustryOrder,
-    IndustryOrderItem,
-    IndustryOrderItemAssignment,
-)
+from industry.models import IndustryOrderItem, IndustryOrderItemAssignment
+from industry.test_utils import create_industry_order
 from reminders.industry_daily_summary import (
     build_industry_daily_summary_message,
 )
@@ -64,12 +61,17 @@ class IndustryDailySummaryMessageTests(AppTestCase):
         text = build_industry_daily_summary_message()
         self.assertIn("# Industry order summary", text)
         self.assertIn("## Active orders", text)
+        self.assertIn("Open builds, sorted by where they’re headed.", text)
+        self.assertIn("## Unassigned order items", text)
+        self.assertIn(
+            "These order items still need someone to take the work.", text
+        )
         self.assertIn("- *(none)*", text)
         self.assertIn("**Total order amount:** 0B", text)
         self.assertIn("**Total available margin:** 0B", text)
 
     def test_excludes_fulfilled_orders(self):
-        IndustryOrder.objects.create(
+        create_industry_order(
             needed_by=(timezone.now() + timedelta(days=7)).date(),
             character=self.character,
             fulfilled_at=timezone.now(),
@@ -79,7 +81,7 @@ class IndustryDailySummaryMessageTests(AppTestCase):
         self.assertIn("- *(none)*", text)
 
     def test_active_order_and_undelivered_assignment_totals(self):
-        order = IndustryOrder.objects.create(
+        order = create_industry_order(
             needed_by=(timezone.now() + timedelta(days=7)).date(),
             character=self.character,
             location=self.location,
@@ -97,16 +99,18 @@ class IndustryDailySummaryMessageTests(AppTestCase):
             quantity=2,
         )
         text = build_industry_daily_summary_message()
-        self.assertIn(f"`{order.order_identifier}`", text)
+        code = order.public_short_code
+        self.assertIn(f"`{code}` [TST] Test Groups (0.5B profit)", text)
         self.assertIn(
-            f"- `{order.order_identifier}` - {self.eve_type.name} x8",
+            f"- `{code}` [TST] {self.eve_type.name} x8 (0.4B profit)",
             text,
         )
         self.assertIn("**Total order amount:** 2B", text)
         self.assertIn("**Total available margin:** 0.1B", text)
 
-    def test_unfulfilled_line_in_progress_only(self):
-        order = IndustryOrder.objects.create(
+    def test_fully_assigned_in_progress_not_listed_under_unassigned(self):
+        """Lines with no unassigned qty are not listed; totals count all assignments."""
+        order = create_industry_order(
             needed_by=(timezone.now() + timedelta(days=7)).date(),
             character=self.character,
             location=self.location,
@@ -124,13 +128,15 @@ class IndustryDailySummaryMessageTests(AppTestCase):
             quantity=2,
         )
         text = build_industry_daily_summary_message()
-        self.assertIn(
-            f"- `{order.order_identifier}` - {self.eve_type.name} (2 in progress)",
+        self.assertIn(f"`{order.public_short_code}` [TST] Test Groups", text)
+        self.assertNotIn(
+            f"- `{order.public_short_code}` [TST] {self.eve_type.name}",
             text,
         )
+        self.assertIn("**Total order amount:** 2B", text)
 
-    def test_delivered_assignments_omitted_from_totals(self):
-        order = IndustryOrder.objects.create(
+    def test_delivered_assignments_counted_in_totals(self):
+        order = create_industry_order(
             needed_by=(timezone.now() + timedelta(days=7)).date(),
             character=self.character,
             location=self.location,
@@ -149,5 +155,5 @@ class IndustryDailySummaryMessageTests(AppTestCase):
             delivered_at=timezone.now(),
         )
         text = build_industry_daily_summary_message()
-        self.assertIn("**Total order amount:** 0B", text)
-        self.assertIn("**Total available margin:** 0B", text)
+        self.assertIn("**Total order amount:** 2B", text)
+        self.assertIn("**Total available margin:** 0.2B", text)
