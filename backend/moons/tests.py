@@ -1,5 +1,6 @@
 # flake8: noqa
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.test import Client
@@ -77,7 +78,13 @@ class EveMoonYieldTestCase(TestCase):
         self.assertEqual(422, int(yields["Hydrocarbons"]))
         self.assertEqual(201, int(yields["Evaporite Deposits"]))
 
-    def test_moon_revenue(self):
+    @patch("moons.tasks.get_prices")
+    def test_moon_revenue(self, mock_get_prices):
+        mock_get_prices.return_value = {
+            "Hydrocarbons": Decimal("100"),
+            "Pyerite": Decimal("100"),
+            "Mexallon": Decimal("100"),
+        }
         moon = EveMoon.objects.create(
             system="Jita",
             planet="IV",
