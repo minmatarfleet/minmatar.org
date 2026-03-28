@@ -1076,3 +1076,25 @@ export interface OrderBreakdownGroupedUI {
     self_assign_window_ends_at:     Date;
     assignments:                    OrderAssignment[];
 }
+
+export interface SRPTargetValue {
+    name:       string;
+    value:      number;
+    type_id:    number;
+}
+
+import type { CandidateFleet } from '@dtypes/api.minmatar.org'
+
+export const srp_frontend_programs = ['subcapitals', 'dreads', 'carriers'] as const
+export type SRPFrontendPrograms = typeof srp_frontend_programs[number]
+
+export interface KillmailAnalysis {
+    ship_id:            number;
+    ship_name:          string;
+    character_id:       number;
+    character_name:     string;
+    killmail_time:      Date;
+    value:              number;
+    program:            SRPFrontendPrograms | null;
+    candidate_fleets:   CandidateFleet[];
+}

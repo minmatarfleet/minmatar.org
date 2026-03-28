@@ -137,15 +137,6 @@ const page_title = t('fleets.upcoming.page_title');
             >
                 {t('fleet_history')}
             </Button>
-
-            {can_view_srp &&
-                <Button
-                    href={translatePath('/fleets/srp/')}
-                    size='sm'
-                >
-                    {t('ship_replacement_program')}
-                </Button>
-            }
         </FlexInline>
 
         {!fetch_audiences_error &&

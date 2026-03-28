@@ -48,10 +48,6 @@ const CORPORATION_IDS = {
     'The Dark Tribe': 1413715023,
 }
 
-import StratopIcon from '@components/icons/StratopIcon.astro';
-import NonStrategicIcon from '@components/icons/NonStrategicIcon.astro';
-import TrainingIcon from '@components/icons/TrainingIcon.astro';
-
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -67,6 +63,10 @@ import CompletedStatus from '@components/blocks/CompletedStatus.astro'
 import FleetIcon from '@components/icons/FleetIcon.astro';
 import MemberIcon from '@components/icons/MemberIcon.astro';
 import CorporationBadge from './CorporationBadge.astro'
+
+import StratopIcon from '@components/icons/StratopIcon.astro';
+import NonStrategicIcon from '@components/icons/NonStrategicIcon.astro';
+import TrainingIcon from '@components/icons/TrainingIcon.astro';
 
 const eve_time = new Date(fleet.start_time);
 const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
@@ -85,7 +85,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
             t('training_fleet') :
             t('non_strategic_fleet')
         }
-        x-init="tippy($el, tippy_options)"
+        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
     >
         {fleet.type === 'strategic' ?
             <StratopIcon /> :

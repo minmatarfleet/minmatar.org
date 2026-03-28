@@ -19,6 +19,8 @@ const {
 } = Astro.props;
 
 delete attributes.class
+
+import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
 ---
 
 <div
@@ -27,11 +29,11 @@ delete attributes.class
     {...attributes}
 >
     {thin ?
-        <Wrapper padding_block='var(--space-3xs)' padding_inline='var(--space-3xs)'>
+        <Wrapper padding_block='var(--space-3xs)' padding_inline='var(--space-3xs)' max_width='100%'>
             <slot />
         </Wrapper>
         :
-        <Wrapper padding_block='var(--space-m)' padding_inline='var(--space-m)'>
+        <Wrapper padding_block='var(--space-m)' padding_inline='var(--space-m)' max_width='100%'>
             <Flexblock gap='var(--space-m)'>
                 <slot name="header" />
                 <div class="[ cover-body ]">
@@ -41,6 +43,7 @@ delete attributes.class
             </Flexblock>
         </Wrapper>
     }
+    <button class="[ dialog-close ]" x-on:click="close_dialog()"><TrashIcon /></button>
 </div>
 
 <style lang="scss" is:global>
@@ -83,6 +86,32 @@ delete attributes.class
 
         &.fixed {
             position: fixed;
+        }
+
+        .dialog-close {
+            border: none;
+            position: absolute;
+            right: 10px;
+            top: 3px;
+            display: flex;
+            background-color: transparent;
+            color: var(--highlight);
+            z-index: var(--dialog-close-z-index);
+            cursor: pointer;
+            padding: 6px 4px 20px 27px;
+
+            &:focus-visible {
+                outline: none;
+
+                svg {
+                    transform: scale(1.5);
+                }
+            }
+
+            svg {
+                transition: var(--fast-transition);
+                width: 12px;
+            }
         }
     }
 </style>

@@ -1,0 +1,49 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_add_srp = is_superuser || user_permissions.includes('srp.add_evefleetshipreimbursement')
+
+import type { SRPProgram } from '@dtypes/api.minmatar.org'
+import { get_srp_programs } from '@helpers/api.minmatar.org/srp'
+
+let fetching_error:string | false = false
+let programs:SRPProgram[] = []
+
+try {
+    programs = await get_srp_programs(auth_token as string)
+} catch (error) {
+    fetching_error = error.message
+}
+
+const SRP_TILES_PARTIAL_URL = translatePath('/partials/srp_tiles_component/')
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import SRPTiles from '@components/blocks/SRPTiles.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+{fetching_error !== false ?
+    <ErrorRefetch
+        args={{
+            partial: SRP_TILES_PARTIAL_URL,
+            message: fetching_error,
+            delay: delay,
+        }}
+    /> :
+    <SRPTiles
+        programs={programs}
+        readonly={!can_add_srp}
+        init_tooltips={true}
+    />
+}

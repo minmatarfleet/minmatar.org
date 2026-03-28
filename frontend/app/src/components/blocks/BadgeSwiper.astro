@@ -1,0 +1,58 @@
+---
+interface Props {
+    swiper_selector:    string;
+    slides_per_view:    number;
+    autoplay?:          boolean;
+    initial_slide?:     number;
+    mousewheel?:    boolean;
+}
+
+const {
+    autoplay = true,
+    swiper_selector,
+    slides_per_view,
+    initial_slide = 1,
+    mousewheel,
+} = Astro.props
+
+import BlockList from '@components/compositions/BlockList.astro';
+---
+
+<BlockList
+    class="[ swiper-wrapper ][ select-none w-full ]"
+    gap='0'
+    x-data={`{
+        swiper: null,
+        init() {
+            this.swiper = new Swiper('${swiper_selector}', {
+                initialSlide: ${initial_slide},
+                slidesPerView: ${slides_per_view},
+                direction: 'vertical',
+                spaceBetween: 20,
+                mousewheel: ${JSON.stringify(mousewheel)},
+                loop: true,
+                fadeEffect: {
+                    crossFade: true
+                },
+                ${autoplay ? `autoplay: {
+                    delay: 3000,
+                }` : ''}
+            });
+        }
+    }`}
+>
+    <slot />
+</BlockList>
+
+<style lang="scss">
+    .swiper-pagination {
+        --swiper-pagination-color: var(--fleet-yellow);
+        --swiper-pagination-bullet-inactive-color: var(--highlight);
+        --swiper-pagination-bullet-inactive-opacity: 1;
+    }
+
+    .swiper-wrapper {
+        flex-wrap: nowrap;
+        align-items: flex-start;
+    }
+</style>

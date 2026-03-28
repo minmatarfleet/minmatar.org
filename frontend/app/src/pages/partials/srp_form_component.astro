@@ -1,0 +1,141 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { srp_frontend_programs } from '@dtypes/layout_components'
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '')
+const external_killmail_link = Astro.url.searchParams.get('external_killmail_link')
+const program = Astro.url.searchParams.get('program')
+
+console.log(fleet_id)
+console.log(external_killmail_link)
+console.log(program)
+
+const regex = /^https:\/\/esi\.evetech\.net(?:\/v[0-9]+)?\/killmails\/([0-9]+)\/([a-zA-Z0-9]+)$/
+
+let error = ''
+if (isNaN(fleet_id))
+    error = t('invalid_fleet_id')
+else if (!regex.test(external_killmail_link?.trim() ?? ''))
+    error = t('invalid_killmail_link')
+if (!program && !srp_frontend_programs.includes(program as any))
+    error = t('invalid_srp_program')
+
+const SRP_RESULT_PARTIAL_URL = translatePath(`/partials/srp_result_component/`)
+const SRP_INITIAL_FORM_PARTIAL_URL = translatePath(`/partials/srp_initial_form_component?program=${program}`)
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+
+import Input from '@components/blocks/Input.astro';
+import Markdown from '@components/blocks/Markdown.astro';
+import SwitchSquare from '@components/blocks/SwitchSquare.astro';
+import Button from '@components/blocks/Button.astro';
+
+import TutorialIcon from '@components/icons/TutorialIcon.astro';
+import FlexInline from '@components/compositions/FlexInline.astro'
+---
+
+{error ?
+    <p>⚠️ {error}</p> :
+    <form
+        hx-post={`${SRP_RESULT_PARTIAL_URL}?program=${program}`}
+        hx-trigger="submit"
+        hx-target={`#${program}-main-content`}
+        hx-indicator=".loader"
+        hx-swap="innerHTML transition:true"
+        x-data={`{
+            is_corp_ship: false,
+            external_killmail_link: '',
+            category: '',
+            comments: '',
+            gziped_combatlog: '',
+            combatlogfile: '',
+            async update_status(combatlogfileinput) {
+                let array_buffer = this.str2ab(this.combatlog)
+
+                if (combatlogfileinput) {
+                    const file = combatlogfileinput.files[0]
+                    array_buffer = await file.arrayBuffer()
+                }
+
+                const compressed_data = pako.gzip(new Uint8Array(array_buffer))
+                const b64encoded_string = btoa(String.fromCharCode.apply(null, compressed_data))
+                this.gziped_combatlog = b64encoded_string
+            },
+            str2ab(str) {
+                const encoder = new TextEncoder()
+                return encoder.encode(str)
+            },
+        }`}
+        hx-on--before-request={`this.querySelector('[type="submit"]').setAttribute('disabled','')`}
+        hx-on--after-request={`this.querySelector('[type="submit"]').removeAttribute('disabled')`}
+    >
+        <Flexblock
+            class="[ justify-between! h-full ]"
+            gap='var(--space-l)'
+        >
+            <Flexblock class="[ animate-fade-in-left ]">
+                <p>{t('srp_dialog_last_step_text')}</p>
+                <Flexblock
+                    class="[ w-full ]"
+                    gap="var(--space-3xs)"
+                >
+                    <label for="combat_log_file">{t('combatlog')}</label>
+                    <Input
+                        x-model="combatlogfile"
+                        type="file"
+                        id="combat_log_file"
+                        x-on:change="update_status($el)"
+                    />
+                    <FixedFluid
+                        width='48'
+                        breakpoint='70%'
+                        class="[ w-full items-center ]"
+                    >
+                        <picture class="[ hidden sm:block! ]">
+                            <TutorialIcon />
+                        </picture>
+                        <Markdown markdown={t('combat_log_file_text')} inline={true} inline_element='small' />
+                    </FixedFluid>
+                </Flexblock>
+                <input type="hidden" name="gziped_combatlog" x-model="gziped_combatlog" />
+                <input type="hidden" name="fleet_id" value={fleet_id} />
+                <input type="hidden" name="program" value={program} />
+                <input type="hidden" name="external_killmail_link" value={external_killmail_link} />
+                <SwitchSquare
+                    class="[ w-full ]"
+                    name="is_corp_ship"
+                    label={t('corp_ship')}
+                    description={t('corp_ship_description')}
+                    x-model="is_corp_ship"
+                />
+            </Flexblock>
+
+            <FlexInline justification='flex-end'>
+                <Button
+                    type="submit"
+                    color='green'
+                    size='sm'
+                >
+                    {t('submit')}
+                </Button>
+
+                <Button
+                    type="button"
+                    size='sm'
+                    hx-post={SRP_INITIAL_FORM_PARTIAL_URL}
+                    hx-target={`#${program}-main-content`}
+                    hx-indicator=".loader"
+                    hx-swap={'innerHTML transition:true'}
+                    x-on:click="close_dialog()"
+                >
+                    {t('cancel')}
+                </Button>
+            </FlexInline>
+        </Flexblock>
+    </form>
+
+    <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.4/pako.min.js"></script>
+}

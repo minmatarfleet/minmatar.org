@@ -1,0 +1,51 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { SRPFrontendPrograms, FlexInlineJustify } from '@dtypes/layout_components'
+
+interface Props {
+    program:            SRPFrontendPrograms;
+    justification?:     FlexInlineJustify;
+}
+
+const {
+    program,
+    justification = 'flex-start',
+} = Astro.props
+
+const SRP_INITIAL_FORM_PARTIAL_URL = translatePath(`/partials/srp_initial_form_component?program=${program}`)
+const SRP_TILES_PARTIAL_URL = translatePath('/partials/srp_tiles_component/')
+
+import Button from '@components/blocks/Button.astro';
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+---
+
+<FlexInline justification={justification}>
+    <Button
+        size='sm'
+        type="button"
+        color='green'
+        hx-post={SRP_INITIAL_FORM_PARTIAL_URL}
+        hx-target={`#${program}-main-content`}
+        hx-indicator=".loader"
+        hx-swap={'innerHTML transition:true'}
+        hx-on--before-request={`this.setAttribute('disabled','')`}
+        hx-on--after-request={`this.removeAttribute('disabled')`}
+    >
+        {t('submit_another_request')}
+    </Button>
+
+    <Button
+        size='sm'
+        type="button"
+        hx-post={SRP_TILES_PARTIAL_URL}
+        hx-target="#srp-tiles"
+        hx-indicator=".loader"
+        hx-swap="outerHTML transition:true"
+        x-on:click="close_dialog()"
+    >
+        {t('close')}
+    </Button>
+</FlexInline>

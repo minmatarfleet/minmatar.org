@@ -1,0 +1,89 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+import type { KillmailAnalysis, SRPFrontendPrograms } from '@dtypes/layout_components'
+import { srp_frontend_programs } from '@dtypes/layout_components'
+import { analyze_killmail } from '@helpers/fetching/srp'
+
+const query_program = Astro.url.searchParams.get('program')
+
+let external_killmail_link:string | null = null
+
+if (Astro.request.method === "POST") {
+    const data = await Astro.request.formData()
+    external_killmail_link = data.get('external_killmail_link') as string
+}
+
+let killmail_analysis:KillmailAnalysis | null = null
+let fetching_error:string | false = false
+let endpoint_error:string | false = false
+let program:SRPFrontendPrograms | null = null
+
+try {
+    if (!external_killmail_link)
+        external_killmail_link = Astro.url.searchParams.get('external_killmail_link')
+
+    if (!external_killmail_link)
+        throw new Error(t('invalid_killmail_link'), { cause: 402 })
+
+    if (!query_program && !srp_frontend_programs.includes(query_program as any))
+        throw new Error(t('invalid_srp_program'), { cause: 402 })
+        
+    program = query_program as SRPFrontendPrograms
+    killmail_analysis = await analyze_killmail(auth_token as string, external_killmail_link)
+} catch (error) {
+    if (!error.cause)
+        fetching_error = error.message
+    else
+        endpoint_error = error.message
+}
+
+import { query_string } from '@helpers/string';
+const KILLMAIL_CANDIDATE_FLEETS_PARTIAL_URL = translatePath(`/partials/killmail_candidate_fleets_component?${query_string({
+    program: program,
+    external_killmail_link : external_killmail_link,
+})}`)
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '5')
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import KillmailBreakdown from '@components/blocks/KillmailBreakdown.astro'
+import DebugTag from '@components/blocks/DebugTag.astro'
+import SRPWizardActions from '@components/blocks/SRPWizardActions.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{(endpoint_error || !external_killmail_link || !program) ?
+    <Flexblock centered={true}>
+        <p class="[ w-fit animate-rubber-band ]">⚠️ {endpoint_error}</p>
+        <SRPWizardActions program={program as SRPFrontendPrograms} justification='center' />
+    </Flexblock> :
+    <>{fetching_error !== false ?
+        <ErrorRefetch
+            args={{
+                partial: KILLMAIL_CANDIDATE_FLEETS_PARTIAL_URL,
+                message: fetching_error,
+                delay: delay,
+            }}
+        /> :
+        <>{killmail_analysis ?
+            <KillmailBreakdown
+                killmail_analysis={killmail_analysis}
+                program={program}
+                external_killmail_link={external_killmail_link}
+                init_tooltips={true}
+            />
+            :
+            <DebugTag>{t('no_killmail_analysis_unexpected_error')}</DebugTag>
+            <SRPWizardActions program={program as SRPFrontendPrograms} />
+        }</>
+    }</>
+}

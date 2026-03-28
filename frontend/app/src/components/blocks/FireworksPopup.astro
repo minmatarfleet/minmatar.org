@@ -1,0 +1,41 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+interface Props {
+    message:    string;
+}
+
+const {
+    message,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+---
+
+<div
+    class="[ relative ]"
+    x-data={`{
+        id: $id('confetti-container-item')
+    }`}
+    x-bind:id="id"
+    x-init="console.log('confetti'); confetti(`${id}`, {
+        particleCount: 100,
+        spread: 70,
+        origin: { x: 0.7, y: 0.6 }
+    });"
+>
+    <Flexblock
+        class="[ animate-fade-in-up text-center ]"
+        gap='var(--space-l)'
+    >
+        <Flexblock>
+            <h2>{t('congratulations')}</h2>
+            <p>{message}</p>
+        </Flexblock>
+        <FlexInline justification='center'>
+            <slot />
+        </FlexInline>
+    </Flexblock>
+</div>

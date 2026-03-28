@@ -111,7 +111,7 @@ const page_title = t('freight_contracts.page_title');
             </Flexblock>
             <FlexInline>
                 <Input type="text"
-                    placeholder={t('filter')}
+                    placeholder={t('search')}
                     x-model="item_name_filter"
                     x-on:keyup="setTimeout(function () { contracts_count = countVisibleElements('.freight-contract-item') })"
                     x-init="$el.focus()"

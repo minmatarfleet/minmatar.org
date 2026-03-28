@@ -5,14 +5,16 @@ const { t } = i18n(Astro.url)
 import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
 
 interface Props {
-    size?:              ButtonSizes;
-    color?:             ButtonColors;
-    hidden?:            boolean;
-    narrow?:            boolean;
-    id?:                string;
-    max_width?:         string;
-    inside_swiper?:     boolean;
-    [propName: string]: any;
+    size?:                  ButtonSizes;
+    color?:                 ButtonColors;
+    hidden?:                boolean;
+    narrow?:                boolean;
+    id?:                    string;
+    max_width?:             string;
+    inside_swiper?:         boolean;
+    thin_dialog?:           boolean;
+    disable_when_open?:     boolean;
+    [propName: string]:     any;
 }
 
 const {
@@ -23,6 +25,8 @@ const {
     id,
     max_width = '700px',
     inside_swiper = false,
+    thin_dialog = false,
+    disable_when_open = false,
     ...attributes
 } = Astro.props
 
@@ -45,7 +49,8 @@ import DebugTag from '@components/blocks/DebugTag.astro';
             ${inside_swiper ? 'swiper.allowTouchMove = true' : ''}
         }
     }`}
-    {...attributes}
+    @dialog_opened.stop={disable_when_open ? "$el.querySelector('button').setAttribute('disabled', '')" : undefined}
+    @dialog_closed.stop={disable_when_open ? "$el.querySelector('button').removeAttribute('disabled')" : undefined}
 >
     <Button
         size={size}
@@ -56,6 +61,7 @@ import DebugTag from '@components/blocks/DebugTag.astro';
         type="button"
         id={id ? id : undefined}
         class={hidden ? '[ hidden! ]' : undefined}
+        {...attributes}
     >
         <slot name="icon" />
         <slot />
@@ -72,6 +78,7 @@ import DebugTag from '@components/blocks/DebugTag.astro';
         @keyup.escape.window="close_dialog()"
         @mousedown.outside="open && close_dialog()"
         style={max_width ? `--dialog-max-width: ${max_width}` : undefined}
+        thin={thin_dialog}
     >
         <slot name="dialog">
             <DebugTag set:html={marked.parse(t('missing_dialog_slot'))} />

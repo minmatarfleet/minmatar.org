@@ -189,12 +189,22 @@
         }
     },
     {
-        "slug": "fleets.srp",
+        "slug": "ships.srp",
         "alt": "icon.kill_report.alt",
-        "path": "/fleets/srp/",
+        "path": "/ships/srp/",
         "publish": true,
         "icon": "/images/icons/48px-Killreport.png",
-        "description": "page_finder.fleets.srp.description",
+        "description": "page_finder.ships.srp.description",
+        "keywords": [ "srp", "ship", "replacement", "program" ],
+        "permissions" : {
+             "user": [ "srp.view_evefleetshipreimbursement" ]
+        }
+    },
+    {
+        "slug": "ships.srp.killmails",
+        "path": "/ships/srp/killmails/",
+        "publish": true,
+        "description": "page_finder.ships.srp.killmails.description",
         "keywords": [ "srp", "ship", "replacement", "program" ],
         "permissions" : {
              "user": [ "srp.view_evefleetshipreimbursement" ]

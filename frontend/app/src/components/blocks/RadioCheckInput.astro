@@ -1,0 +1,66 @@
+---
+interface Props {
+    label:  string;
+    type:   'checkbox' | 'radio'
+    [propName: string]: any;
+}
+
+const {
+    label,
+    type,
+    ...attributes
+} = Astro.props
+---
+
+<label class="[ cursor-pointer w-fit ]">
+    <input type={type} {...attributes} />
+    <div class="[ box ]" />
+    <slot>
+        <small>{label}</small>
+    </slot>
+</label>
+
+<style lang="scss">
+    input {
+        border: 0;
+        clip: rect(0 0 0 0);
+        height: auto;
+        margin: 0;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+        width: 1px;
+        white-space: nowrap;
+    }
+
+    small {
+        color: var(--fleet-yellow);
+    }
+
+    :checked + small {
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    label {
+        display: flex;
+        gap: var(--space-2xs);
+        position: relative;
+    }
+
+    label:focus-within {
+        text-decoration: underline;
+    }
+
+    .box {
+        z-index: 1;
+        width: var(--space-xs);
+        height: var(--space-xs);
+        background-color: var(--fleet-yellow);
+    }
+
+    :checked + .box {
+        background-color: var(--green);
+        border: solid 2px var(--fleet-yellow);
+    }
+</style>

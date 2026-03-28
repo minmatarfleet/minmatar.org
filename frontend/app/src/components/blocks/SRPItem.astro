@@ -56,11 +56,14 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
     x-data={`{
         srp_process_dialog_open: false,
         action: 'approve',
-        show() {
+        show(el) {
+            const content_to_filter = el.querySelectorAll('.card')
+
             const show_by_category = srp_category_filter.length === 0 || srp_category_filter.includes('${srp.category}') || (srp_category_filter.includes('uncategorized') && ${!srp.category})
             const show_by_type = srp_ship_type_filter.length === 0 || srp_ship_type_filter.includes('${srp.ship_type}')
+            const show_by_name = name_filter === '' || content_to_filter[0].textContent.toLowerCase().includes(name_filter.toLowerCase())
 
-            return show_by_category && show_by_type
+            return show_by_category && show_by_type && show_by_name
         },
         open_dialog() {
             this.srp_process_dialog_open = true
@@ -69,7 +72,7 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
             this.srp_process_dialog_open = false
         },
     }`}
-    x-show={filterable ? 'show()' : undefined}
+    x-show={filterable ? 'show($el)' : undefined}
 >
     <WrapperElement
         class={readonly ? '!cursor-default w-full' : 'w-full'}
@@ -193,20 +196,6 @@ import WalletEVEIcon from "@components/icons/WalletEVEIcon.astro";
                     </Flexblock>
                     
                     {srp.fleet_id === 0 && <p>{t('non_fleet_srp_warning')}</p> }
-
-                    {srp.category &&
-                        <Flexblock gap='var(--space-3xs)'>
-                            <label for="srp-category">{t('category')}</label>
-                            <p id="srp-category" class="[ srp-category ]">{t(srp.category)}</p>
-                        </Flexblock>
-                    }
-
-                    {srp.comments &&
-                        <Flexblock gap='var(--space-3xs)'>
-                            <label for="srp-comments">{t('comments')}</label>
-                            <p id="srp-comments" class="[ srp-comments ]">{srp.comments}</p>
-                        </Flexblock>
-                    }
 
                     {srp.combat_log_id > 0 &&
                         <div>

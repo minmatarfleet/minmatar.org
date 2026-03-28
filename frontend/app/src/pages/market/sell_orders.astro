@@ -181,7 +181,7 @@ const page_title = t('sell_orders.page_title')
             </Flexblock>
             <FlexInline>
                 <Input type="text"
-                    placeholder={t('filter')}
+                    placeholder={t('search')}
                     x-model="item_name_filter"
                     x-on:keyup="setTimeout(function () { items_count = countVisibleElements('.title') })"
                     x-init="$el.focus()"
