@@ -1,31 +1,24 @@
-import logging
 from datetime import timedelta
 
 from django.db.models import Q
+from django.utils import timezone
 
 from eveonline.helpers.characters import user_primary_character
+from eveonline.models import EveCorporation, EveCharacter
 from fleets.models import EveFleet
-
-logger = logging.getLogger(__name__)
-
-DESCRIPTION_SNIPPET_MAX = 200
-
-
-def description_snippet(description: str | None) -> str:
-    d = description or ""
-    if len(d) <= DESCRIPTION_SNIPPET_MAX:
-        return d
-    limit = DESCRIPTION_SNIPPET_MAX - 3
-    return d[:limit] + "..."
 
 
 def get_candidate_fleets_queryset(kill_time):
     """
     Fleets whose scheduled start or any EveFleetInstance activity overlaps
     [kill_time - 6h, kill_time + 6h]. Excludes cancelled fleets.
+
+    Only fleets with start_time in the last 30 days (by server clock) are
+    considered, to avoid scanning very old rows.
     """
     window_start = kill_time - timedelta(hours=6)
     window_end = kill_time + timedelta(hours=6)
+    recent_cutoff = timezone.now() - timedelta(days=30)
 
     scheduled_in_window = Q(
         start_time__gte=window_start,
@@ -40,28 +33,64 @@ def get_candidate_fleets_queryset(kill_time):
 
     return (
         EveFleet.objects.filter(scheduled_in_window | instance_overlaps)
+        .filter(start_time__gte=recent_cutoff)
         .exclude(status="cancelled")
         .distinct()
-        .select_related("audience", "created_by")
+        .select_related("created_by")
         .order_by("-start_time")
     )
 
 
-def serialize_candidate_fleet(fleet: EveFleet) -> dict:
-    """Match fleets API shape where practical; add FC name for UI."""
-    audience_label = fleet.audience.name if fleet.audience else ""
-    fleet_commander_user_id = fleet.created_by.id if fleet.created_by else 0
-    fleet_commander_name = None
-    if fleet.created_by:
-        pc = user_primary_character(fleet.created_by)
-        if pc:
-            fleet_commander_name = pc.character_name
+def _fleet_commander_from_pc(
+    pc: EveCharacter | None, corp_names: dict[int, str]
+) -> dict:
+    if not pc:
+        return {
+            "character_id": 0,
+            "character_name": "",
+            "corporation_id": 0,
+            "corporation_name": "",
+        }
+    corp_id = int(pc.corporation_id) if pc.corporation_id is not None else 0
+    corp_name = corp_names.get(corp_id, "") if corp_id else ""
     return {
-        "id": fleet.id,
-        "type": fleet.type,
-        "audience": audience_label,
-        "start_time": fleet.start_time,
-        "description_snippet": description_snippet(fleet.description),
-        "fleet_commander": fleet_commander_user_id,
-        "fleet_commander_name": fleet_commander_name,
+        "character_id": pc.character_id,
+        "character_name": pc.character_name or "",
+        "corporation_id": corp_id,
+        "corporation_name": corp_name,
     }
+
+
+def serialize_candidate_fleets(fleets_qs) -> list[dict]:
+    """Build API dicts for resolve-killmail candidate fleets."""
+    fleets = list(fleets_qs)
+    corp_ids: set[int] = set()
+    commanders: list[EveCharacter | None] = []
+    for fleet in fleets:
+        if not fleet.created_by:
+            commanders.append(None)
+            continue
+        pc = user_primary_character(fleet.created_by)
+        commanders.append(pc)
+        if pc and pc.corporation_id is not None:
+            corp_ids.add(int(pc.corporation_id))
+
+    corp_names: dict[int, str] = {}
+    if corp_ids:
+        corp_names = {
+            row["corporation_id"]: row["name"] or ""
+            for row in EveCorporation.objects.filter(
+                corporation_id__in=corp_ids
+            ).values("corporation_id", "name")
+        }
+
+    return [
+        {
+            "id": fleet.id,
+            "type": fleet.type,
+            "start_time": fleet.start_time,
+            "objective": fleet.objective or "",
+            "fleet_commander": _fleet_commander_from_pc(pc, corp_names),
+        }
+        for fleet, pc in zip(fleets, commanders)
+    ]
