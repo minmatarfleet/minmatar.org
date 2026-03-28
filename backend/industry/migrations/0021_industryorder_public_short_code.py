@@ -5,7 +5,6 @@ import string
 
 from django.db import migrations, models
 
-
 _ALPHABET = string.ascii_letters + string.digits
 _LEN = 3
 _MAX_TRIES = 512
