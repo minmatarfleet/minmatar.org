@@ -1,7 +1,6 @@
 from datetime import timedelta
 
 from django.db.models import Q
-from django.utils import timezone
 
 from eveonline.helpers.characters import user_primary_character
 from eveonline.models import EveCorporation, EveCharacter
@@ -12,13 +11,9 @@ def get_candidate_fleets_queryset(kill_time):
     """
     Fleets whose scheduled start or any EveFleetInstance activity overlaps
     [kill_time - 6h, kill_time + 6h]. Excludes cancelled fleets.
-
-    Only fleets with start_time in the last 30 days (by server clock) are
-    considered, to avoid scanning very old rows.
     """
     window_start = kill_time - timedelta(hours=6)
     window_end = kill_time + timedelta(hours=6)
-    recent_cutoff = timezone.now() - timedelta(days=30)
 
     scheduled_in_window = Q(
         start_time__gte=window_start,
@@ -33,7 +28,6 @@ def get_candidate_fleets_queryset(kill_time):
 
     return (
         EveFleet.objects.filter(scheduled_in_window | instance_overlaps)
-        .filter(start_time__gte=recent_cutoff)
         .exclude(status="cancelled")
         .distinct()
         .select_related("created_by")

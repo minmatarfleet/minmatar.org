@@ -39,6 +39,12 @@ class IndustryOrder(models.Model):
         related_name="industry_orders",
         help_text="Station or structure where the order should be built/delivered.",
     )
+    tribe_groups = models.ManyToManyField(
+        "tribes.TribeGroup",
+        blank=True,
+        related_name="industry_orders",
+        help_text="Tribe groups this order belongs to (reporting, town hall).",
+    )
 
     class Meta:
         ordering = ["-created_at"]

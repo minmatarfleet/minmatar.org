@@ -615,6 +615,49 @@ class SrpRouterTestCase(TestCase):
         self.assertIn("type", in_window_row)
 
     @patch("srp.helpers.EsiClient")
+    def test_resolve_killmail_candidates_for_historical_kill(self, esi_mock):
+        """Old killmails must still match fleets in the ±6h window."""
+        add_user_permission(self.user, "add_evefleetshipreimbursement")
+        esi = esi_mock.return_value
+        fc_char = EveCharacter.objects.create(
+            character_id=KM_CHAR,
+            character_name="Mr FC",
+            user=self.user,
+        )
+        set_primary_character(self.user, fc_char)
+        kill_time = timezone.now() - timedelta(days=400)
+        kill_utc = kill_time.astimezone(dt_timezone.utc)
+        esi_killmail_time = kill_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+        historical = make_test_fleet(
+            "Historical fleet", self.user, start=kill_time + timedelta(hours=1)
+        )
+        esi.get_character_killmail.return_value = EsiResponse(
+            response_code=200,
+            data={
+                "victim": {
+                    "character_id": fc_char.character_id,
+                    "ship_type_id": 11400,
+                },
+                "killmail_time": esi_killmail_time,
+            },
+        )
+        esi.get_eve_type.return_value = EveType(
+            id=11400,
+            name="Jaguar",
+            description="Jaguar",
+            eve_group=EveGroup(name="ASSAULT_FRIGATE"),
+        )
+        response = self.client.post(
+            f"{BASE_URL}/resolve-killmail",
+            {"external_killmail_link": KM_LINK},
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        ids = {c["id"] for c in response.json()["candidate_fleets"]}
+        self.assertIn(historical.id, ids)
+
+    @patch("srp.helpers.EsiClient")
     def test_srp_with_log(self, esi_mock):
         self.make_superuser()
         esi = esi_mock.return_value

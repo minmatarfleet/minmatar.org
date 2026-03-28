@@ -31,6 +31,7 @@ from industry.models import (
     IndustryOrderItem,
     IndustryOrderItemAssignment,
 )
+from tribes.models import TribeGroup
 
 
 class Command(BaseCommand):
@@ -111,7 +112,10 @@ class Command(BaseCommand):
         return list(
             IndustryOrder.objects.using(source)
             .select_related("character", "location")
-            .prefetch_related(Prefetch("items", queryset=item_qs))
+            .prefetch_related(
+                Prefetch("items", queryset=item_qs),
+                "tribe_groups",
+            )
             .order_by("pk")
         )
 
@@ -212,6 +216,15 @@ class Command(BaseCommand):
         IndustryOrder.objects.using(local).filter(pk=new_order.pk).update(
             created_at=order.created_at
         )
+
+        src_tg_ids = list(order.tribe_groups.values_list("pk", flat=True))
+        if src_tg_ids:
+            existing_ids = (
+                TribeGroup.objects.using(local)
+                .filter(pk__in=src_tg_ids)
+                .values_list("pk", flat=True)
+            )
+            new_order.tribe_groups.add(*existing_ids)
 
         for item in order.items.all():
             new_item = IndustryOrderItem.objects.using(local).create(

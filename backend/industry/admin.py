@@ -20,6 +20,7 @@ from industry.models import (
     IndustryProduct,
     MiningUpgradeCompletion,
 )
+from tribes.models import TribeGroup
 
 
 class IndustryProductEveGroupListFilter(admin.SimpleListFilter):
@@ -88,7 +89,7 @@ class IndustryOrderAdmin(admin.ModelAdmin):
     list_filter = ("character", "needed_by")
     date_hierarchy = "created_at"
     ordering = ("-created_at",)
-    autocomplete_fields = ("character", "location")
+    autocomplete_fields = ("character", "location", "tribe_groups")
     inlines = [IndustryOrderItemInline]
     readonly_fields = (
         "created_at",
@@ -108,6 +109,7 @@ class IndustryOrderAdmin(admin.ModelAdmin):
                 "fields": (
                     "character",
                     "location",
+                    "tribe_groups",
                     "needed_by",
                     "created_at",
                     "public_short_code",
@@ -130,6 +132,13 @@ class IndustryOrderAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name == "tribe_groups":
+            kwargs["queryset"] = TribeGroup.objects.filter(
+                is_active=True
+            ).order_by("tribe__name", "name")
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
 
     def get_urls(self):
         urls = super().get_urls()
