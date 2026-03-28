@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone as dt_timezone
+from datetime import timedelta, timezone as dt_timezone
 from unittest.mock import patch
 
 from django.test import Client
@@ -364,13 +364,15 @@ class SrpRouterTestCase(TestCase):
         self.assertEqual(3000000000, rev_rows[0]["srp_value"])
 
     def test_get_stats_forbidden_without_permission(self):
-        response = self.client.get(
-            f"{BASE_URL}/stats",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
-        )
-        self.assertEqual(403, response.status_code)
+        for path in ("stats/overview", "stats/history"):
+            with self.subTest(path=path):
+                response = self.client.get(
+                    f"{BASE_URL}/{path}",
+                    HTTP_AUTHORIZATION=f"Bearer {self.token}",
+                )
+                self.assertEqual(403, response.status_code)
 
-    def test_get_stats_average_payout_seconds(self):
+    def test_get_stats_overview_pending_and_average_response_days(self):
         add_user_permission(self.user, "view_evefleetshipreimbursement")
         fc = EveCharacter.objects.create(
             character_id=777001,
@@ -378,6 +380,19 @@ class SrpRouterTestCase(TestCase):
             user=self.user,
         )
         now = timezone.now()
+        EveFleetShipReimbursement.objects.create(
+            user=self.user,
+            status="pending",
+            killmail_id=999000,
+            external_killmail_link="https://esi.evetech.net/killmails/999000/abc/",
+            character_id=fc.character_id,
+            character_name=fc.character_name,
+            primary_character_id=fc.character_id,
+            primary_character_name=fc.character_name,
+            amount=500,
+            ship_name="Rifter",
+            ship_type_id=123,
+        )
         r = EveFleetShipReimbursement.objects.create(
             user=self.user,
             status="approved",
@@ -396,13 +411,129 @@ class SrpRouterTestCase(TestCase):
             created_at=now - timedelta(days=5),
         )
         response = self.client.get(
-            f"{BASE_URL}/stats",
+            f"{BASE_URL}/stats/overview",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(200, response.status_code)
         body = response.json()
-        self.assertEqual(1, body["sample_size"])
-        self.assertAlmostEqual(86400.0, body["average_seconds"], places=3)
+        self.assertEqual(1, body["pending_requests"])
+        self.assertEqual(500, body["pending_total"])
+        self.assertAlmostEqual(1.0, body["average_response_days"], places=3)
+
+    def test_get_stats_history_breakdown(self):
+        add_user_permission(self.user, "view_evefleetshipreimbursement")
+        fc = EveCharacter.objects.create(
+            character_id=777002,
+            character_name="SRP hist",
+            user=self.user,
+        )
+        cat, _ = EveCategory.objects.get_or_create(
+            id=99001, defaults={"name": "Ship", "published": True}
+        )
+        g_dread, _ = EveGroup.objects.get_or_create(
+            id=99002,
+            defaults={
+                "name": "Dreadnought",
+                "published": True,
+                "eve_category": cat,
+            },
+        )
+        g_cruiser, _ = EveGroup.objects.get_or_create(
+            id=99003,
+            defaults={
+                "name": "Cruiser",
+                "published": True,
+                "eve_category": cat,
+            },
+        )
+        t_rev, _ = EveType.objects.get_or_create(
+            id=99004,
+            defaults={
+                "name": "Revelation",
+                "published": True,
+                "eve_group": g_dread,
+            },
+        )
+        t_stabber, _ = EveType.objects.get_or_create(
+            id=99005,
+            defaults={
+                "name": "Stabber",
+                "published": True,
+                "eve_group": g_cruiser,
+            },
+        )
+        now = timezone.now()
+        base = {
+            "user": self.user,
+            "character_id": fc.character_id,
+            "character_name": fc.character_name,
+            "primary_character_id": fc.character_id,
+            "primary_character_name": fc.character_name,
+        }
+        for i, kw in enumerate(
+            (
+                {
+                    "status": "approved",
+                    "amount": 100,
+                    "ship_name": "Revelation",
+                    "ship_type_id": t_rev.id,
+                },
+                {
+                    "status": "rejected",
+                    "amount": 50,
+                    "ship_name": "Revelation",
+                    "ship_type_id": t_rev.id,
+                },
+                {
+                    "status": "approved",
+                    "amount": 200,
+                    "ship_name": "Stabber",
+                    "ship_type_id": t_stabber.id,
+                },
+            )
+        ):
+            r = EveFleetShipReimbursement.objects.create(
+                **base,
+                killmail_id=880000 + i,
+                external_killmail_link=(
+                    f"https://esi.evetech.net/killmails/{880000 + i}/a/"
+                ),
+                **kw,
+            )
+            EveFleetShipReimbursement.objects.filter(pk=r.pk).update(
+                created_at=now - timedelta(days=10),
+            )
+
+        response = self.client.get(
+            f"{BASE_URL}/stats/history?days=30",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        body = response.json()
+        self.assertEqual(3, body["requests"]["total"])
+        self.assertEqual(2, body["requests"]["approved"])
+        self.assertEqual(1, body["requests"]["rejected"])
+        self.assertEqual(350, body["amounts"]["total"])
+        self.assertEqual(300, body["amounts"]["approved"])
+        self.assertEqual(50, body["amounts"]["rejected"])
+
+        types_by_id = {t["type_id"]: t for t in body["types"]}
+        self.assertEqual(150, types_by_id[t_rev.id]["total"])
+        self.assertEqual(100, types_by_id[t_rev.id]["approved"])
+        self.assertEqual(50, types_by_id[t_rev.id]["rejected"])
+        self.assertEqual(200, types_by_id[t_stabber.id]["total"])
+
+        groups_by_id = {g["group_id"]: g for g in body["groups"]}
+        self.assertEqual(150, groups_by_id[g_dread.id]["total"])
+        self.assertEqual(200, groups_by_id[g_cruiser.id]["total"])
+
+    def test_get_stats_history_invalid_days(self):
+        add_user_permission(self.user, "view_evefleetshipreimbursement")
+        response = self.client.get(
+            f"{BASE_URL}/stats/history?days=7",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(400, response.status_code)
 
     def test_resolve_killmail_forbidden_without_add_permission(self):
         response = self.client.post(
@@ -423,7 +554,9 @@ class SrpRouterTestCase(TestCase):
             user=self.user,
         )
         set_primary_character(self.user, fc_char)
-        kill_time = datetime(2025, 4, 2, 11, 47, 15, tzinfo=dt_timezone.utc)
+        kill_time = timezone.now()
+        kill_utc = kill_time.astimezone(dt_timezone.utc)
+        esi_killmail_time = kill_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
         in_window = make_test_fleet("In window", self.user, start=kill_time)
         cancelled = make_test_fleet("Cancelled", self.user, start=kill_time)
         EveFleet.objects.filter(pk=cancelled.pk).update(status="cancelled")
@@ -447,7 +580,7 @@ class SrpRouterTestCase(TestCase):
                     "character_id": fc_char.character_id,
                     "ship_type_id": 11400,
                 },
-                "killmail_time": "2025-04-02T11:47:15Z",
+                "killmail_time": esi_killmail_time,
             },
         )
         esi.get_eve_type.return_value = EveType(
@@ -472,6 +605,14 @@ class SrpRouterTestCase(TestCase):
         self.assertIn(in_window.id, ids)
         self.assertIn(late_schedule.id, ids)
         self.assertNotIn(cancelled.id, ids)
+        in_window_row = next(
+            c for c in data["candidate_fleets"] if c["id"] == in_window.id
+        )
+        fc = in_window_row["fleet_commander"]
+        self.assertEqual(fc_char.character_id, fc["character_id"])
+        self.assertEqual("Mr FC", fc["character_name"])
+        self.assertIn("objective", in_window_row)
+        self.assertIn("type", in_window_row)
 
     @patch("srp.helpers.EsiClient")
     def test_srp_with_log(self, esi_mock):
