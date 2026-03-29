@@ -3,7 +3,9 @@ from datetime import datetime, timedelta
 from unittest.mock import patch, MagicMock, ANY
 
 import factory
+import jwt
 
+from django.conf import settings
 from django.db.models import signals
 from django.test import Client, SimpleTestCase
 from django.contrib.auth.models import User, Permission
@@ -29,13 +31,11 @@ from fleets.models import (
     EveFleetInstance,
     EveFleetInstanceMember,
 )
-from fleets.router import (
+from fleets.endpoints.helpers import (
     fixup_fleet_status,
-    can_see_fleet,
-    # can_see_metrics,
     time_region,
-    EveFleetTrackingResponse,
 )
+from fleets.endpoints.schemas import EveFleetTrackingResponse
 from fleets.signals import (
     update_fleet_schedule_on_save,
     update_fleet_schedule_on_delete,
@@ -215,20 +215,22 @@ class FleetRouterTestCase(TestCase):
 
         super().setUp()
 
-    def test_get_fleet_v1_v2(self):
+        add_user_permission(self.user, "view_evefleet")
+
+    def test_deprecated_fleet_list_routes_removed(self):
         make_test_fleet("Test fleet 1", self.user)
 
         response = self.client.get(
             f"{BASE_URL}?upcoming=true",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
-        self.assertEqual(200, response.status_code)
+        self.assertEqual(404, response.status_code)
 
         response = self.client.get(
             f"{BASE_URL}/v2?upcoming=true",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
-        self.assertEqual(200, response.status_code)
+        self.assertEqual(404, response.status_code)
 
     def test_get_fleets_v3(self):
         make_test_fleet("Test fleet 1", self.user)
@@ -356,6 +358,8 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual(
             char.character_name, mine[0]["primary_character_name"]
         )
+        self.assertEqual(1, mine[0]["corporation_id"])
+        self.assertEqual("Test Corp", mine[0]["corporation_name"])
 
     def test_patch_fleet(self):
         self.user.is_superuser = True
@@ -621,7 +625,7 @@ class FleetRouterTestCase(TestCase):
     #         ],
     #     )
 
-    @patch("fleets.router.DiscordClient")
+    @patch("fleets.endpoints.helpers.DiscordClient")
     def test_fleet_preping(self, discord_mock):
         mock_client = MagicMock()
         discord_mock.return_value = mock_client
@@ -640,7 +644,7 @@ class FleetRouterTestCase(TestCase):
             channel_id=ANY, payload=ANY
         )
 
-    @patch("fleets.router.EsiClient")
+    @patch("fleets.endpoints.active.current_fleets.EsiClient")
     def test_user_active_fleets(self, esi_client_class):
         esi_mock = esi_client_class.return_value
 
@@ -711,25 +715,35 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual(400, response.status_code)
         self.assertEqual("Error starting fleet 1", response.json()["detail"])
 
-    def test_can_see_fleet(self):
-        fc_user = self.user
-        nobody = User.objects.create(username="Anybody")
-        somebody = User.objects.create(username="Somebody")
-        add_user_permission(somebody, "view_evefleet")
-        fleet = make_test_fleet("Hidden", fc_user, datetime.now())
+    def test_get_v3_requires_view_evefleet(self):
+        make_test_fleet("Listed", self.user)
+        user_no_perm = User.objects.create(username="noperm_fleets")
 
-        self.assertTrue(can_see_fleet(fleet, fc_user))
-
-        fleet.audience = EveFleetAudience.objects.create(
-            name="Hidden", hidden=True
+        token = jwt.encode(
+            {"user_id": user_no_perm.id},
+            settings.SECRET_KEY,
+            algorithm="HS256",
         )
-        self.assertFalse(can_see_fleet(fleet, somebody))
-
-        fleet.audience = EveFleetAudience.objects.create(
-            name="Testing", hidden=False
+        response = self.client.get(
+            f"{BASE_URL}/v3?fleet_filter=upcoming",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
         )
-        self.assertTrue(can_see_fleet(fleet, somebody))
-        self.assertFalse(can_see_fleet(fleet, nobody))
+        self.assertEqual(403, response.status_code)
+
+    def test_get_fleet_requires_view_evefleet(self):
+        fc_only = User.objects.create(username="fc_only")
+        fleet = make_test_fleet("FC fleet", fc_only)
+
+        fc_token = jwt.encode(
+            {"user_id": fc_only.id},
+            settings.SECRET_KEY,
+            algorithm="HS256",
+        )
+        response = self.client.get(
+            f"{BASE_URL}/{fleet.id}",
+            HTTP_AUTHORIZATION=f"Bearer {fc_token}",
+        )
+        self.assertEqual(403, response.status_code)
 
     def test_time_region(self):
         def hour_time(hour: int) -> datetime:
