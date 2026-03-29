@@ -16,21 +16,24 @@ const user_permissions = (user ? await get_user_permissions(user?.username) : []
 
 const can_add_fleets = is_superuser || user_permissions.includes('fleets.add_evefleet')
 const can_view_srp = is_superuser || user_permissions.includes('srp.view_evefleetshipreimbursement')
+const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_evefleet')
 
 import type { FleetItem, Alert } from '@dtypes/layout_components'
-import { fetch_fleets_auth, fetch_fleets } from '@helpers/fetching/fleets'
+import { fetch_fleets_auth } from '@helpers/fetching/fleets'
 
 let fetch_fleets_error:string | false = false
 let fleets:FleetItem[] = []
-let cant_see_fleets = true
+const show_no_fleet_access = Boolean(user && !can_view_fleets)
 
 try {
-    fleets = can_view_srp ? await fetch_fleets_auth(auth_token as string) : await fetch_fleets()
-    fleets.sort(function(a, b) {
-        return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
-    });
-
-    cant_see_fleets = fleets.filter(fleet => fleet.fleet_commander_id === 0).length === fleets.length && fleets.length > 0
+    if (auth_token && can_view_fleets) {
+        fleets = await fetch_fleets_auth(auth_token as string)
+        fleets.sort(function(a, b) {
+            return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
+        })
+    } else {
+        fleets = []
+    }
 } catch (error) {
     fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
 }
@@ -171,9 +174,10 @@ const page_title = t('fleets.upcoming.page_title');
                     </FlexInline>
                 }
 
-                {cant_see_fleets ?
+                {show_no_fleet_access ?
                     <p>{t('no_access_to_fleets')}</p>
                     :
+                    can_view_fleets &&
                     <div class="[ fleet-list-container relative ]">
                         <FleetList
                             fleets={fleets}

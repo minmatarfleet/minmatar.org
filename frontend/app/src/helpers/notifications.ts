@@ -39,7 +39,7 @@ export async function send_active_fleet_notification(auth_token:string, fleet_id
 
     const users = unique(subscriptions, 'user_id')
 
-    const fleet_users = await fetch_fleet_users(fleet_id) ?? []
+    const fleet_users = await fetch_fleet_users(auth_token, fleet_id) ?? []
 
     const recipients = users.filter((user_id) => fleet_users.includes(user_id))
 

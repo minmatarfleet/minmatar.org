@@ -224,13 +224,13 @@ class FleetRouterTestCase(TestCase):
             f"{BASE_URL}?upcoming=true",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
-        self.assertEqual(404, response.status_code)
+        self.assertEqual(405, response.status_code)
 
         response = self.client.get(
             f"{BASE_URL}/v2?upcoming=true",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
-        self.assertEqual(404, response.status_code)
+        self.assertEqual(422, response.status_code)
 
     def test_get_fleets_v3(self):
         make_test_fleet("Test fleet 1", self.user)

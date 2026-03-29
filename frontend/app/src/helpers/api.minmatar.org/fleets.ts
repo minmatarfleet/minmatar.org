@@ -4,7 +4,6 @@ import type {
     FleetRequest,
     Audience,
     Location,
-    FleetBasic,
     FleetUsers,
     FleetStatus,
     FleetPatchRequest,
@@ -102,64 +101,6 @@ export async function get_audiences(access_token:string) {
         return await response.json() as Audience[];
     } catch (error) {
         throw new Error(`Error fetching fleet types: ${error.message}`);
-    }
-}
-
-export async function get_fleets(upcoming:boolean = true) {
-    const headers = {
-        'Content-Type': 'application/json',
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}?upcoming=${JSON.stringify(upcoming)}&active=${JSON.stringify(upcoming)}`
-
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ));
-        }
-
-        return await response.json() as number[];
-    } catch (error) {
-        throw new Error(`Error fetching fleets: ${error.message}`);
-    }
-}
-
-export async function get_fleets_v2(upcoming:boolean = true) {
-    const headers = {
-        'Content-Type': 'application/json',
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/v2?upcoming=${JSON.stringify(upcoming)}&active=${JSON.stringify(upcoming)}`
-
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ));
-        }
-
-        return await response.json() as FleetBasic[];
-    } catch (error) {
-        throw new Error(`Error fetching fleets: ${error.message}`);
     }
 }
 
@@ -403,9 +344,10 @@ export async function get_fleet_members(access_token:string, id:number) {
     }
 }
 
-export async function get_fleet_users(fleet_id:number) {
+export async function get_fleet_users(access_token:string, fleet_id:number) {
     const headers = {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`,
     }
 
     const ENDPOINT = `${API_ENDPOINT}/${fleet_id}/users`
