@@ -3,6 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -11,29 +12,28 @@ const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_to
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
 const can_add_fleets = is_superuser || user_permissions.includes('fleets.add_evefleet')
-const can_view_srp = is_superuser || user_permissions.includes('srp.view_evefleetshipreimbursement')
 const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_evefleet')
+
+if (!can_view_fleets)
+    return HTTP_403_Forbidden()
 
 import type { FleetItem, Alert } from '@dtypes/layout_components'
 import { fetch_fleets_auth } from '@helpers/fetching/fleets'
 
 let fetch_fleets_error:string | false = false
 let fleets:FleetItem[] = []
-const show_no_fleet_access = Boolean(user && !can_view_fleets)
 
 try {
-    if (auth_token && can_view_fleets) {
-        fleets = await fetch_fleets_auth(auth_token as string)
-        fleets.sort(function(a, b) {
-            return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
-        })
-    } else {
-        fleets = []
-    }
+    fleets = await fetch_fleets_auth(auth_token as string)
+    fleets.sort(function(a, b) {
+        return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
+    });
 } catch (error) {
     fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
 }
@@ -140,15 +140,6 @@ const page_title = t('fleets.upcoming.page_title');
             >
                 {t('fleet_history')}
             </Button>
-
-            {can_view_srp &&
-                <Button
-                    href={translatePath('/fleets/srp/')}
-                    size='sm'
-                >
-                    {t('ship_replacement_program')}
-                </Button>
-            }
         </FlexInline>
 
         {!fetch_audiences_error &&
@@ -165,26 +156,12 @@ const page_title = t('fleets.upcoming.page_title');
             />
             :
             <Flexblock gap='var(--space-xl)'>
-                {!user &&
-                    <FlexInline justification='space-between'>
-                        <Flexblock gap='var(--space-3xs)'>
-                            <p>{t('authenticate_fleet_hint')}</p>
-                            <small set:html={AUTH_FLEET_SUBHINT} />
-                        </Flexblock>
-                    </FlexInline>
-                }
-
-                {show_no_fleet_access ?
-                    <p>{t('no_access_to_fleets')}</p>
-                    :
-                    can_view_fleets &&
-                    <div class="[ fleet-list-container relative ]">
-                        <FleetList
-                            fleets={fleets}
-                            init_tooltips={false}
-                        />
-                    </div>
-                }
+                <div class="[ fleet-list-container relative ]">
+                    <FleetList
+                        fleets={fleets}
+                        init_tooltips={false}
+                    />
+                </div>
             </Flexblock>
         }
 	</PageWide>

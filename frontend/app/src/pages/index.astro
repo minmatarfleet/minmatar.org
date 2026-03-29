@@ -12,6 +12,10 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 
 const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_view_fleets = user_is_superadmin || user_permissions.includes('fleets.view_evefleet')
 
 import type { Alert, StagingType } from '@dtypes/layout_components'
 import type { PostListUI } from '@dtypes/layout_components'
@@ -435,7 +439,7 @@ const page_description = t('index.leading_text');
 
 		<ColorBlindPrompt />
 
-		{user &&
+		{can_view_fleets &&
 			<FleetFeed />
 		}
     </PageLanding>
