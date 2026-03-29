@@ -21,7 +21,6 @@ if (!can_view_fleets)
 
 import { get_user_permissions } from '@helpers/permissions'
 
-const is_superuser = user?.is_superuser ?? false
 const user_permissions = await get_user_permissions(user.username)
 const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_evefleet')
 
