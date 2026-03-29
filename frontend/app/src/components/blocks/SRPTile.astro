@@ -90,6 +90,9 @@ import ButtonAuth from '@components/blocks/ButtonAuth.astro';
                         else
                             if (this.tippy_instance) this.tippy_instance.destroy()
                     })
+                },
+                restart_card() {
+                    this.eligibility = []
                 }
             }`}
             x-init="update_eligibility()"
