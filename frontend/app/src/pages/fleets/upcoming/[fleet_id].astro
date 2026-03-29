@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
-import { HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
+import { HTTP_400_Bad_Request, HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -14,17 +14,20 @@ const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_to
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
-const can_add_srp = is_superuser || user_permissions.includes('srp.add_evefleetshipreimbursement')
+const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_evefleet')
 
-if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+if (!can_view_fleets)
+    return HTTP_403_Forbidden()
 
 const fleet_id = parseInt(Astro?.params?.fleet_id ?? '')
 
 if (isNaN(fleet_id))
-    return HTTP_404_Not_Found()
+    return HTTP_400_Bad_Request()
 
 import type { FleetUI, SRPUI, FleetCompositionUI, FleetRadarUI } from '@dtypes/layout_components'
 import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
@@ -74,8 +77,8 @@ try {
         pilots = summary.characters ?? []
     }
 } catch (error) {
-    if (error.message === 'Error fetching fleet: HTTP error! Status: 403')
-        return HTTP_403_Forbidden()
+    if (error.cause === 404)
+        return HTTP_404_Not_Found()
     
     fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
 }
@@ -168,7 +171,6 @@ const page_title = `${t('fleet')} ${fleet_id}`;
                 fleet_composition={fleet_composition}
                 fleet_radar={fleet_radar}
                 fleet_srps={fleet_srps}
-                can_add_srp={can_add_srp}
                 pilots={pilots}
                 volunteers={volunteers}
             />

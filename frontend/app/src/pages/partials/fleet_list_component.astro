@@ -10,34 +10,32 @@ import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
 
 if (!user)
     return HTTP_403_Forbidden()
 
 import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
-const is_superuser = user?.is_superuser ?? false
-const user_permissions = await get_user_permissions(user.username)
 const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_evefleet')
+
+if (!can_view_fleets)
+    return HTTP_403_Forbidden()
 
 import type { FleetItem } from '@dtypes/layout_components'
 import { fetch_fleets_auth } from '@helpers/fetching/fleets'
 
 let fetch_fleets_error:string | false = false
 let fleets:FleetItem[] | null = null
-const show_no_fleet_access = !can_view_fleets
 
 const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming') as string)
 
 try {
-    if (auth_token && can_view_fleets) {
-        fleets = await fetch_fleets_auth(auth_token as string, upcoming)
-        fleets.sort(function(a, b) {
-            return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
-        })
-    } else {
-        fleets = []
-    }
+    fleets = await fetch_fleets_auth(auth_token as string, upcoming)
+    fleets.sort(function(a, b) {
+        return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
+    });
 } catch (error) {
     fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
 }
@@ -97,18 +95,13 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
             <small class="[ absolute left-0 mt-[-30px] animate-fade-in-up ]" x-text="updated_time_ago" x-ref="timeago_span" />
         }
 
-        {show_no_fleet_access ?
-            <p>{t('no_access_to_fleets')}</p>
-            :
-            can_view_fleets &&
-            <div class="[ fleet-list-container relative ]">
-                <FleetList
-                    fleets={fleets as FleetItem[]}
-                    history={!upcoming}
-                    init_tooltips={true}
-                />
-            </div>
-        }
+        <div class="[ fleet-list-container relative ]">
+            <FleetList
+                fleets={fleets as FleetItem[]}
+                history={!upcoming}
+                init_tooltips={true}
+            />
+        </div>
 
         {(fleets?.length ?? 0) === 0 &&
             <small class="[ block text-center animate-fade-in-up ]" x-text="updated_time_ago" x-ref="timeago_span" />
