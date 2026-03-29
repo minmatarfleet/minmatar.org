@@ -363,6 +363,13 @@ class SrpRouterTestCase(TestCase):
         self.assertEqual(1, len(rev_rows))
         self.assertEqual(3000000000, rev_rows[0]["srp_value"])
 
+        public_programs = self.client.get(f"{BASE_URL}/programs")
+        self.assertEqual(200, public_programs.status_code)
+        self.assertEqual(2, len(public_programs.json()))
+        public_history = self.client.get(f"{BASE_URL}/programs/history")
+        self.assertEqual(200, public_history.status_code)
+        self.assertEqual(2, len(public_history.json()))
+
     def test_get_stats_forbidden_without_permission(self):
         for path in ("stats/overview", "stats/history"):
             with self.subTest(path=path):

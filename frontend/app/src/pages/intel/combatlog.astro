@@ -9,11 +9,17 @@ import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = user?.is_superuser ?? false
+
+import { get_user_permissions } from '@helpers/permissions'
+
+const user_permissions = user ? await get_user_permissions(user.username) : []
+const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_evefleet')
 
 import type { SelectOptions } from '@dtypes/layout_components'
 import type { Fitting, SavedCombatLog } from '@dtypes/api.minmatar.org'
 import { get_fittings } from '@helpers/api.minmatar.org/ships'
-import { get_fleets } from '@helpers/api.minmatar.org/fleets'
+import { get_fleets_v3 } from '@helpers/api.minmatar.org/fleets'
 import { get_saved_logs } from '@helpers/api.minmatar.org/combatlog'
 
 let saved_logs:SavedCombatLog[] = []
@@ -32,8 +38,12 @@ try {
         } as SelectOptions
     })
 
-    fleets = await get_fleets(false)
-    fleets = fleets.sort( (a, b) => { return b - a })
+    if (auth_token && can_view_fleets) {
+        const fleet_list = await get_fleets_v3(auth_token as string, 'recent')
+        fleets = fleet_list.map((f) => f.id).sort((a, b) => b - a)
+    } else {
+        fleets = []
+    }
     fleets_options = fleets.map(fleet => {
         return {
             label: `${t('fleet')} ${fleet}`,
