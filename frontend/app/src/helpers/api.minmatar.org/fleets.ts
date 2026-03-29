@@ -125,12 +125,14 @@ export async function get_fleets_v3(access_token:string, status:FleetStatus) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ));
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as Fleet[];
     } catch (error) {
-        throw new Error(`Error fetching fleets: ${error.message}`);
+        throw new Error(`Error fetching fleets: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -223,12 +225,14 @@ export async function get_fleet_by_id(access_token:string, id:number) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as Fleet;
     } catch (error) {
-        throw new Error(`Error fetching fleet: ${error.message}`);
+        throw new Error(`Error fetching fleet: ${error.message}`, { cause: error.cause });
     }
 }
 
