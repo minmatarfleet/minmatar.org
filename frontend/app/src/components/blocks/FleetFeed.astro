@@ -19,14 +19,6 @@ const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_e
 if (!can_view_fleets)
     return HTTP_403_Forbidden()
 
-import { get_user_permissions } from '@helpers/permissions'
-
-const user_permissions = await get_user_permissions(user.username)
-const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_evefleet')
-
-if (!can_view_fleets)
-    return HTTP_403_Forbidden()
-
 import { prod_error_messages } from '@helpers/env'
 import type { FleetItem } from '@dtypes/layout_components'
 import { fetch_fleets_auth } from '@helpers/fetching/fleets'
