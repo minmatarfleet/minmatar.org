@@ -16,7 +16,6 @@ interface Props {
     fleet_radar?:           FleetRadarUI[];
     fleet_srps?:            SRPUI[];
     saved_logs?:            FleetCombatLog[];
-    can_add_srp:            boolean;
     volunteers:             FleetRoleVolunteer[],
     pilots:                 SummaryCharacter[],
 }
@@ -30,7 +29,6 @@ const {
     fleet_radar,
     fleet_srps,
     saved_logs = [],
-    can_add_srp,
     volunteers,
     pilots,
 } = Astro.props

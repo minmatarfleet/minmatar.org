@@ -2,8 +2,6 @@
 
 from typing import List
 
-from app.errors import ErrorResponse
-from authentication import AuthBearer
 from srp.endpoints.programs.schemas import (
     ShipReimbursementProgramAmountResponse,
 )
@@ -12,20 +10,11 @@ from srp.models import ShipReimbursementProgramAmount
 PATH = "history"
 METHOD = "get"
 ROUTE_SPEC = {
-    "auth": AuthBearer(),
-    "response": {
-        200: List[ShipReimbursementProgramAmountResponse],
-        403: ErrorResponse,
-    },
+    "response": {200: List[ShipReimbursementProgramAmountResponse]},
 }
 
 
 def get_srp_program_history(request):
-    if not request.user.has_perm("srp.view_shipreimbursementprogramamount"):
-        return 403, {
-            "detail": "User missing permission srp.view_shipreimbursementprogramamount"
-        }
-
     return [
         {
             "id": amount.id,

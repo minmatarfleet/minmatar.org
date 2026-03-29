@@ -170,13 +170,19 @@
         "path": "/fleets/upcoming/",
         "publish": true,
         "icon": "/images/icons/48px-Fleet.png",
-        "description": "page_finder.fleets.upcoming.description"
+        "description": "page_finder.fleets.upcoming.description",
+        "permissions" : {
+            "user": [ "fleets.view_evefleet" ]
+        }
     },
     {
         "slug": "fleets.history",
         "path": "/fleets/history/",
         "publish": true,
-        "description": "page_finder.fleets.history.description"
+        "description": "page_finder.fleets.history.description",
+        "permissions" : {
+            "user": [ "fleets.view_evefleet" ]
+        }
     },
     {
         "slug": "fleets.add",

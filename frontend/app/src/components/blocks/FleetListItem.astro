@@ -40,14 +40,6 @@ const fleet_tracking_texts = get_fleet_tracking_texts(lang, fleet.tracking)
 
 const [ system, station ] = fleet.location?.split(' - ') ?? []
 
-const CORPORATION_IDS = {
-    'Rattini Tribe': 98726134,
-    'Minmatar Fleet Academy': 98741376,
-    'Soltech Armada': 98647659,
-    'Straylight Systems': 98498664,
-    'The Dark Tribe': 1413715023,
-}
-
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -104,11 +96,11 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     >
         <Flexblock slot="subtitle">
             <FlexInline class="[ items-center! ]" gap='var(--space-l)'>
-                {fleet.fleet_commander_id &&
+                {fleet.fleet_commander_id && fleet.corporation_id &&
                     <CorporationBadge
                         corporation={{
-                            id: fleet.fleet_commander_corporation ? CORPORATION_IDS[fleet.fleet_commander_corporation] : 98726134,
-                            name: fleet.fleet_commander_corporation,
+                            id: fleet.corporation_id,
+                            name: fleet.corporation_name,
                             size: 'xs'
                         }}
                     >

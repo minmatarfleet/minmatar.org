@@ -3,6 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { prod_error_messages } from '@helpers/env'
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -11,23 +12,25 @@ const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_to
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
 const can_add_fleets = is_superuser || user_permissions.includes('fleets.add_evefleet')
-const can_view_srp = is_superuser || user_permissions.includes('srp.view_evefleetshipreimbursement')
+const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_evefleet')
+
+if (!can_view_fleets)
+    return HTTP_403_Forbidden()
 
 import type { FleetItem } from '@dtypes/layout_components'
-import { fetch_fleets_auth, fetch_fleets } from '@helpers/fetching/fleets'
+import { fetch_fleets_auth } from '@helpers/fetching/fleets'
 
 let fetch_fleets_error:string | false = false
 let fleets:FleetItem[] = []
-let cant_see_fleets = true
 
 try {
-    fleets = can_view_srp ? await fetch_fleets_auth(auth_token as string, false) : await fetch_fleets(false)
-
-    cant_see_fleets = fleets.filter(fleet => fleet.fleet_commander_id === 0).length === fleets.length && fleets.length > 0
+    fleets = await fetch_fleets_auth(auth_token as string, false)
 } catch (error) {
     fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
 }
@@ -114,26 +117,13 @@ const page_description = t('page_finder.fleets.history.description');
             />
             :
             <Flexblock gap='var(--space-xl)'>
-                {!user &&
-                    <FlexInline justification='space-between'>
-                        <Flexblock gap='var(--space-3xs)'>
-                            <p>{t('authenticate_fleet_hint')}</p>
-                            <small set:html={AUTH_FLEET_SUBHINT} />
-                        </Flexblock>
-                    </FlexInline>
-                }
-
-                {cant_see_fleets ?
-                    <p>{t('no_access_to_fleets')}</p>
-                    :
-                    <div class="[ fleet-list-container relative ]">
-                        <FleetList
-                            fleets={fleets}
-                            history={true}
-                            init_tooltips={false}
-                        />
-                    </div>
-                }
+                <div class="[ fleet-list-container relative ]">
+                    <FleetList
+                        fleets={fleets}
+                        history={true}
+                        init_tooltips={false}
+                    />
+                </div>
             </Flexblock>
         }
 	</PageWide>

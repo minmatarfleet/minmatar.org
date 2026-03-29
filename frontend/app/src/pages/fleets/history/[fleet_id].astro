@@ -14,12 +14,15 @@ const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_to
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
-const can_add_srp = is_superuser || user_permissions.includes('srp.add_evefleetshipreimbursement')
+const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_evefleet')
 
-if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+if (!can_view_fleets)
+    return HTTP_403_Forbidden()
 
 const fleet_id = parseInt(Astro.params.fleet_id ?? '0')
 
@@ -128,7 +131,6 @@ const page_title = `${t('fleet')} ${fleet_id}`;
                 can_remove_fleet={can_remove_fleet}
                 fleet_srps={fleet_srps}
                 saved_logs={saved_logs}
-                can_add_srp={can_add_srp}
                 pilots={[]}
                 volunteers={[]}
             />

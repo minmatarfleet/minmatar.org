@@ -10,26 +10,32 @@ import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
 
 if (!user)
     return HTTP_403_Forbidden()
 
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_evefleet')
+
+if (!can_view_fleets)
+    return HTTP_403_Forbidden()
+
 import type { FleetItem } from '@dtypes/layout_components'
-import { fetch_fleets_auth, fetch_fleets } from '@helpers/fetching/fleets'
+import { fetch_fleets_auth } from '@helpers/fetching/fleets'
 
 let fetch_fleets_error:string | false = false
 let fleets:FleetItem[] | null = null
-let cant_see_fleets = true
 
 const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming') as string)
 
 try {
-    fleets = auth_token ? await fetch_fleets_auth(auth_token as string, upcoming) : await fetch_fleets(upcoming)
+    fleets = await fetch_fleets_auth(auth_token as string, upcoming)
     fleets.sort(function(a, b) {
         return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
     });
-
-    cant_see_fleets = fleets.filter(fleet => fleet.fleet_commander_id === 0).length === fleets.length && fleets.length > 0
 } catch (error) {
     fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
 }
@@ -37,18 +43,7 @@ try {
 const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(upcoming)}`)
 const TIMEAGO_UPDATE_RATE_MS = 10000
 
-const AUTH_REDIRECT_URL = `${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`
-
-import { marked } from 'marked';
-const AUTH_FLEET_SUBHINT = (marked.parseInline(t('authenticate_fleet_subhint')) as string)
-    .replace(
-        'AUTH_LINK', AUTH_REDIRECT_URL
-    )
-
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
-
-import Flexblock from '@components/compositions/Flexblock.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
 
 import FleetList from '@components/blocks/FleetList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
@@ -100,26 +95,13 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
             <small class="[ absolute left-0 mt-[-30px] animate-fade-in-up ]" x-text="updated_time_ago" x-ref="timeago_span" />
         }
 
-        {!user &&
-            <FlexInline justification='space-between'>
-                <Flexblock gap='var(--space-3xs)'>
-                    <p>{t('authenticate_fleet_hint')}</p>
-                    <small set:html={AUTH_FLEET_SUBHINT} />
-                </Flexblock>
-            </FlexInline>
-        }
-
-        {cant_see_fleets ?
-            <p>{t('no_access_to_fleets')}</p>
-            :
-            <div class="[ fleet-list-container relative ]">
-                <FleetList
-                    fleets={fleets as FleetItem[]}
-                    history={!upcoming}
-                    init_tooltips={true}
-                />
-            </div>
-        }
+        <div class="[ fleet-list-container relative ]">
+            <FleetList
+                fleets={fleets as FleetItem[]}
+                history={!upcoming}
+                init_tooltips={true}
+            />
+        </div>
 
         {(fleets?.length ?? 0) === 0 &&
             <small class="[ block text-center animate-fade-in-up ]" x-text="updated_time_ago" x-ref="timeago_span" />

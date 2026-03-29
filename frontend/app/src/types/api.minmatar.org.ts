@@ -1223,6 +1223,8 @@ export interface FleetMetrics {
     location_name:      string;
     status:             string;
     fc_corp_name:       string;
+    corporation_id:     number | null;
+    corporation_name:   string | null;
     audience_name:      string;
 }
 
@@ -1230,6 +1232,8 @@ export interface FleetCommanderMetrics {
     user_id:                    number;
     primary_character_id:       number;
     primary_character_name:     string;
+    corporation_id:             number | null;
+    corporation_name:           string | null;
     fleet_count:                number;
 }
 

@@ -9,8 +9,14 @@ import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
 
-if (!user)
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_evefleet')
+
+if (!can_view_fleets)
     return HTTP_403_Forbidden()
 
 import { prod_error_messages } from '@helpers/env'
@@ -27,7 +33,6 @@ try {
     fleets = fleets.filter((i) => i.status === 'active' || (new Date(i.start_time).getTime() > new Date(Date.now() - 60 * 60 * 1000).getTime()))
     fleets.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
     active_fleet_index = fleets.findIndex(fleet => fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time)
-    console.log(active_fleet_index)
 } catch (error) {
     fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
 }

@@ -669,7 +669,8 @@ export interface FleetItem {
     fleet_commander_id:             number;
     fleet_commander_name:           string;
     fleet_commander_fleet_count?:   number;
-    fleet_commander_corporation?:   string;
+    corporation_id?:                number;
+    corporation_name?:                string;
     location?:                      string;
     tracking?:                      Tracking;
     status?:                        TrackingStatus;

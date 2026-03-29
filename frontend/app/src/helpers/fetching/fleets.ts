@@ -12,10 +12,9 @@ import type {
     FleetTrackingTexts,
     Tracking,
 } from '@dtypes/layout_components'
-import type { EveCharacterProfile, Fleet, FleetMember, FleetBasic, FleetMetrics, FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
+import type { EveCharacterProfile, Fleet, FleetMember, FleetMetrics, FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
 import {
     get_fleets_v3,
-    get_fleets_v2,
     get_fleet_by_id,
     get_fleets_metrics,
     get_fleet_commander_metrics,
@@ -54,22 +53,6 @@ export async function fetch_fleets_auth(access_token:string, upcoming:boolean = 
     ))
 }
 
-export async function fetch_fleets(upcoming:boolean = true) {
-    let api_fleets_id:FleetBasic[]
-
-    api_fleets_id = await get_fleets_v2(upcoming)
-
-    return api_fleets_id.map((api_fleet) => {
-        return {
-            id: api_fleet.id,
-            audience: api_fleet.audience,
-            fleet_commander_id: 0,
-            fleet_commander_name: t('not_available'),
-            start_time: new Date('2100-01-01'),
-        } as FleetItem
-    } )
-}
-
 export function add_fleet_info(
     fleet:Fleet,
     fc_profile:EveCharacterProfile | undefined,
@@ -86,7 +69,8 @@ export function add_fleet_info(
         fleet_commander_id: fc_profile?.character_id ?? 0,
         fleet_commander_name: fc_profile?.character_name ?? t('not_available'),
         fleet_commander_fleet_count: fleet_commander_metrics.find(metric => metric.primary_character_id === fc_profile?.character_id)?.fleet_count,
-        fleet_commander_corporation: fleets_metrics.find(metric => metric.fleet_id === fleet.id)?.fc_corp_name,
+        corporation_id: fleets_metrics.find(metric => metric.fleet_id === fleet.id)?.corporation_id,
+        corporation_name: fleets_metrics.find(metric => metric.fleet_id === fleet.id)?.corporation_name,
         location: fleet.location,
         start_time: fleet.start_time,
         type: fleet.type,
@@ -165,8 +149,8 @@ export async function group_members_by_location(members:FleetMember[], staging_s
     })) as FleetRadarUI[]
 }
 
-export async function fetch_fleet_users(fleet_id:number) {
-    const fleet_users = await get_fleet_users(fleet_id)
+export async function fetch_fleet_users(access_token:string, fleet_id:number) {
+    const fleet_users = await get_fleet_users(access_token, fleet_id)
         
     if (fleet_users?.length > 0) {
         return fleet_users.find(() => true)?.user_ids
