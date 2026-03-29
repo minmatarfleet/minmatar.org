@@ -20,8 +20,9 @@ const {
 
 const primary_character = Astro.cookies.has('primary_pilot')
 
-const can_view_intel = user_permissions.includes('structures.view_evestructuretimer')
-const can_view_posts = user_permissions.includes('posts.add_evepost')
+const can_view_intel = user_is_superadmin || user_permissions.includes('structures.view_evestructuretimer')
+const can_view_posts = user_is_superadmin || user_permissions.includes('posts.add_evepost')
+const can_view_fleets = user_is_superadmin || user_permissions.includes('fleets.view_evefleet')
 
 import { is_prod_mode } from '@helpers/env'
 
@@ -102,14 +103,16 @@ const page = Astro.url.pathname
                     >
                         <ShipTreeEvEIcon />
                     </NeocomButton>
-                    <NeocomButton
-                        active={page.startsWith(translatePath('/fleets'))}
-                        title='neocom.fleets'
-                        description='fleets.description'
-                        href={translatePath('/fleets/upcoming/')}
-                    >
-                        <FleetEvEIcon />
-                    </NeocomButton>
+                    {can_view_fleets &&
+                        <NeocomButton
+                            active={page.startsWith(translatePath('/fleets'))}
+                            title='neocom.fleets'
+                            description='fleets.description'
+                            href={translatePath('/fleets/upcoming/')}
+                        >
+                            <FleetEvEIcon />
+                        </NeocomButton>
+                    }
                     <NeocomButton
                         active={page.startsWith(translatePath('/market'))}
                         title='neocom.market'
