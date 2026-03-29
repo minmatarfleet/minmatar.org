@@ -2,8 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import { srp_categories } from '@dtypes/api.minmatar.org'
-
 interface Props {
     ship_types: string[];
 }
@@ -15,77 +13,53 @@ const {
 import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro'
 ---
 
-<div 
-    hx-swap-oob="true"
-    id="srp-filters"
->
-    <div
-        class="[ swiper w-full ]"
-        x-data={`{
-            swiper: null,
-            init() {
-                this.swiper = new Swiper($el, {
-                    slidesPerView: "auto",
-                    spaceBetween: 24,
-                    loop: false,
-                    fadeEffect: {
-                        crossFade: true
-                    },
-                    navigation: {
-                        nextEl: '.swiper-button-next',
-                        prevEl: '.swiper-button-prev',
-                    },
-                });
-            }
-        }`}
+{ship_types.length > 0 &&
+    <div 
+        hx-swap-oob="true"
+        id="srp-filters"
     >
-        <div class="swiper-wrapper">
-            <div class="[ swiper-slide ]" style="margin-right: 24px">
-                <label>{t('categories')}</label>
+        <div
+            class="[ swiper w-full ]"
+            x-data={`{
+                swiper: null,
+                init() {
+                    this.swiper = new Swiper($el, {
+                        slidesPerView: "auto",
+                        spaceBetween: 24,
+                        loop: false,
+                        fadeEffect: {
+                            crossFade: true
+                        },
+                        navigation: {
+                            nextEl: '.swiper-button-next',
+                            prevEl: '.swiper-button-prev',
+                        },
+                    });
+                }
+            }`}
+        >
+            <div class="swiper-wrapper">
+                <div class="[ swiper-slide ]" style="margin-right: 24px">
+                    <label>{t('filters')}</label>
+                </div>
+                {ship_types.map(type =>
+                    <div class="[ swiper-slide ]" style="margin-right: 24px">
+                        <UnstyledRadioCheckButton
+                            type='checkbox'
+                            name="srp_ship_type_filter"
+                            x-model="srp_ship_type_filter"
+                            label={type}
+                            value={type}
+                        />
+                    </div>
+                )}
             </div>
-            {srp_categories.map(category =>
-                <div class="[ swiper-slide ]" style="margin-right: 24px">
-                    <UnstyledRadioCheckButton
-                        type='checkbox'
-                        name="srp_filter"
-                        x-model="srp_category_filter"
-                        label={t(category)}
-                        value={category}
-                    />
-                </div>
-            )}
-
-            <div class="[ swiper-slide ]" style="margin-right: 24px">
-                <UnstyledRadioCheckButton
-                    type='checkbox'
-                    name="srp_filter"
-                    x-model="srp_category_filter"
-                    label={t('uncategorized')}
-                    value='uncategorized'
-                />
-            </div>
-            {ship_types.length > 0 &&
-                <div class="[ swiper-slide ]" style="margin-right: 24px">
-                    <label>{t('ship_type')}</label>    
-                </div>
-            }
-            {ship_types.map(type =>
-                <div class="[ swiper-slide ]" style="margin-right: 24px">
-                    <UnstyledRadioCheckButton
-                        type='checkbox'
-                        name="srp_ship_type_filter"
-                        x-model="srp_ship_type_filter"
-                        label={type}
-                        value={type}
-                    />
-                </div>
-            )}
         </div>
-    </div>
 
-    <div class="[ swiper-button-prev ]"></div>
-    <div class="[ swiper-button-next ]"></div>
-</div>
+        <div class="[ swiper-button-prev ]"></div>
+        <div class="[ swiper-button-next ]"></div>
+    </div>
+}
 
 <style lang="scss">
     #srp-filters {

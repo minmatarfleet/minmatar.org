@@ -1,10 +1,10 @@
 import { useTranslations } from '@i18n/utils';
 const t = useTranslations('en');
 
-import type { SRPUI, FleetSRPUI } from '@dtypes/layout_components'
+import type { SRPUI, FleetSRPUI, KillmailAnalysis, SRPFrontendPrograms } from '@dtypes/layout_components'
 import { get_all_corporations } from '@helpers/api.minmatar.org/corporations'
 import type { SRP, SRPStatus } from '@dtypes/api.minmatar.org'
-import { get_fleet_srp } from '@helpers/api.minmatar.org/srp'
+import { get_fleet_srp, resolve_killmail, get_srp_programs } from '@helpers/api.minmatar.org/srp'
 import { unique_values, get_unique_by_key } from '@helpers/array'
 import { get_ships_type } from '@helpers/sde/ships'
 
@@ -91,4 +91,33 @@ export async function fetch_fleet_srps(access_token:string, fleet_id?: number, s
             combat_log_id: api_srp.combat_log_id,
         } as SRPUI
     })
+}
+
+export function get_frontend_program(eve_group_name:string) {
+    const FRONTEND_PROGRAMS = {
+        'Dreadnought': 'dreads',
+        'Force Auxiliary': 'carriers',
+        'Carrier': 'carriers',
+    }
+
+    return (FRONTEND_PROGRAMS[eve_group_name] ?? 'subcapitals') as SRPFrontendPrograms
+}
+
+export async function analyze_killmail(access_token:string, external_killmail_link:string) {
+    const killmail_resolve = await resolve_killmail(access_token, external_killmail_link)
+    const api_programs = await get_srp_programs(access_token)
+
+    const api_program = api_programs.find(api_program => api_program.eve_type.id === killmail_resolve.ship_type_id)
+    const frontend_program = api_program?.eve_group.name ? get_frontend_program(api_program?.eve_group.name) : null
+
+    return {
+        ship_id: killmail_resolve.ship_type_id,
+        ship_name: killmail_resolve.ship_name,
+        character_id: killmail_resolve.victim_character_id,
+        character_name: killmail_resolve.victim_character_name,
+        killmail_time: killmail_resolve.killmail_time,
+        value: api_program?.current_amount.srp_value ?? 0,
+        program: frontend_program,
+        candidate_fleets: killmail_resolve?.candidate_fleets ?? [],
+    } as KillmailAnalysis
 }

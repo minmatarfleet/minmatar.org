@@ -1,0 +1,200 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+import type { SRPTargetValue, SRPFrontendPrograms } from '@dtypes/layout_components'
+
+interface SRPWarning {
+    index:      number;
+    text:       string;
+}
+
+interface Props {
+    id:             string;
+    program:        SRPFrontendPrograms;
+    description:    string;
+    cover:          string;
+    values?:        SRPTargetValue[];
+    eligibility?:   string[];
+    warnings?:      SRPWarning[];
+    readonly?:      boolean;
+}
+
+const {
+    id,
+    program,
+    description,
+    cover,
+    values,
+    eligibility,
+    warnings = [],
+    readonly = false,
+} = Astro.props
+
+const values_sorted = values ? values.sort((a, b) => a.value - b.value) : undefined
+
+const SLIDES_PER_VIEW = 4
+
+import { number_thousand_separator } from '@helpers/numbers'
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import Tile from '@components/blocks/Tile.astro';
+import ItemBadge from '@components/blocks/ItemBadge.astro';
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro';
+import BadgeSwiper from '@components/blocks/BadgeSwiper.astro';
+import ButtonAddKillmail from '@components/blocks/ButtonAddKillmail.astro';
+import ButtonAuth from '@components/blocks/ButtonAuth.astro';
+---
+<Flexblock
+    id={id}
+    class="[ card component border light-transparency ]"
+    gap='0'
+>
+    <Tile
+        title={t(`${program}_program`)}
+        description={description}
+        cover={cover}
+        transparent={true}
+    />
+
+    <Wrapper
+        class="[ pb-(--component-padding-block)! grow ]"
+        padding_inline='var(--component-padding-block)'
+        padding_block='0'
+        max_width='100%'
+    >
+        <Flexblock
+            class="[ justify-between! h-full ]"
+            gap='var(--space-l)'
+            x-data={`{
+                eligibility: [],
+                tippy_instance: null,
+                tippy_options: {
+                    content: '${t('killmail_fleet_selection_required')}',
+                    delay: [ 100, 200 ],
+                    arrow: true,
+                },
+                update_eligibility() {
+                    $nextTick(() => {
+                        if (this.eligibility.length === 0)
+                            this.tippy_instance = tippy($el.querySelector('.submit-tooltip'), this.tippy_options)
+                        else
+                            if (this.tippy_instance) this.tippy_instance.destroy()
+                    })
+                }
+            }`}
+            x-init="update_eligibility()"
+        >
+            <Wrapper
+                padding_block='0'
+                padding_inline='0'
+                max_width='570px'
+            >
+                <Flexblock gap='var(--space-l)'>
+                    {values_sorted &&
+                        <div
+                            id={`${id}-swiper`}
+                            class="[ swiper ][ w-full ]"
+                            style={`--swiper-height: ${Math.min(SLIDES_PER_VIEW, values_sorted.length) * 64 + (Math.min(SLIDES_PER_VIEW, values_sorted.length) - 1) * 20}px`}
+                        >
+                            <BadgeSwiper
+                                swiper_selector={`#${id}-swiper`}
+                                slides_per_view={SLIDES_PER_VIEW}
+                                mousewheel={values_sorted.length > SLIDES_PER_VIEW}
+                            >
+                                {values_sorted.map(value =>
+                                    <div class="swiper-slide"  style="margin-bottom: 20px">
+                                        <FlexInline gap='var(--space-3xs)' class="[ items-center! ]" justification='space-between'>
+                                            <ItemBadge
+                                                item_name={value.name}
+                                                type_id={value.type_id}
+                                            />
+                                            <h3>{number_thousand_separator(value.value)} ISK</h3>
+                                        </FlexInline> 
+                                    </div>
+                                )}
+                            </BadgeSwiper>
+                        </div>
+                        <slot name="values-footer" />
+                    }
+                    {eligibility && (!user || !readonly) &&
+                        <Flexblock>
+                            <h4>{t('lost_my_ship')}</h4>
+                            <Flexblock gap='var(--space-xs)'>
+                                {eligibility.map((rule, index) =>
+                                    <RadioCheckInput
+                                        type='radio'
+                                        label={rule}
+                                        name={id}
+                                        value={`${id}-${index}`}
+                                        x-model="eligibility"
+                                        x-on:change="update_eligibility()"
+                                    />
+                                )}
+                            </Flexblock>
+                            {warnings.map(warning =>
+                                <small
+                                    class="[ w-fit animate-rubber-band ]"
+                                    x-show={`eligibility.includes('${id}-${warning.index}')`}
+                                    style="display: none;"
+                                >
+                                    {warning.text}
+                                </small>
+                            )}
+                        </Flexblock>
+                    }
+                    <slot />
+                </Flexblock>
+            </Wrapper>
+
+            {!readonly &&
+                <FlexInline>
+                    <div class="[ submit-tooltip ]">
+                        <ButtonAddKillmail
+                            program={program}
+                            description={description}
+                            cover={cover}
+                            off_disable={true}
+                            x-bind:disabled="eligibility.length === 0"
+                            disabled
+                        />
+                    </div>
+                </FlexInline>
+            }
+            {!user &&
+                <FlexInline>
+                    <div class="[ submit-tooltip ]">
+                        <ButtonAuth
+                            color='green'
+                            dialog_title={t('add_killmail')}
+                            off_disable={true}
+                            x-bind:disabled="eligibility.length === 0"
+                            disabled
+                        >
+                            {t('add_killmail')}
+                        </ButtonAuth>
+                    </div>
+                </FlexInline>
+            }
+        </Flexblock>
+    </Wrapper>
+</Flexblock>
+
+<style lang="scss">
+    .swiper {
+        height: var(--swiper-height);
+    }
+
+    .swiper-slide {
+        min-height: 64px;
+    }
+</style>

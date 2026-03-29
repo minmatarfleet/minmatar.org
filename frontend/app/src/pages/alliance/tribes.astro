@@ -36,8 +36,9 @@ import Viewport from '@layouts/Viewport.astro';
 import PageLanding from '@components/page/PageLanding.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
+import TextBox from '@components/layout/TextBox.astro';
+
 import Flexblock from '@components/compositions/Flexblock.astro';
-import Wrapper from '@components/compositions/Wrapper.astro';
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import TribesTiles from '@components/blocks/TribesTiles.astro';
@@ -65,16 +66,13 @@ const leading_text = t('tribes.leading_text');
         wide={true}
     >
         <Flexblock gap='var(--space-2xl)'>
-            <Wrapper
-                max_width="var(--max-text-width)"
-                padding_inline="0"
-                padding_block="0"
-            >
-                <Flexblock gap='var(--space-xl)'>
-                    <PageTitle is_landing={true}>{page_title}</PageTitle>
-                    <p class="[ excerpt ]">{leading_text}</p>
-                </Flexblock>
-            </Wrapper>
+            <TextBox>
+                <PageTitle is_landing={true}>{page_title}</PageTitle>
+            </TextBox>
+            
+            <TextBox>
+                <p class="[ excerpt ]">{leading_text}</p>
+            </TextBox>
 
             {get_tribes_error ?
                 <ErrorRefetch

@@ -1,0 +1,23 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { SRPFrontendPrograms } from '@dtypes/layout_components';
+
+import { srp_frontend_programs } from '@dtypes/layout_components'
+
+const query_program = Astro.url.searchParams.get('program')
+let program:SRPFrontendPrograms | null = null
+
+if (query_program && srp_frontend_programs.includes(query_program as any))
+    program = query_program as SRPFrontendPrograms
+
+import SRPInitialForm from "@components/blocks/SRPInitialForm.astro";
+import DebugTag from '@components/blocks/DebugTag.astro';
+---
+
+{!program ?
+    <DebugTag>{t('invalid_srp_program')}</DebugTag> :
+    <SRPInitialForm program={program} />
+    <div class="[ min-h-[43px] ]" id={`${program}-program-tile-content`} hx-swap-oob="true"></div>
+}

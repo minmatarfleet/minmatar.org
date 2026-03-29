@@ -48,8 +48,7 @@ import Tag from '@components/blocks/Tag.astro';
     narrow={false}
     hidden={hidden}
     max_width='820px'
-    @dialog_opened.stop="$el.querySelector('button').setAttribute('disabled', '')"
-    @dialog_closed.stop="$el.querySelector('button').removeAttribute('disabled')"
+    disable_when_open={true}
 >
     {t('tribes.detail.apply')}
 

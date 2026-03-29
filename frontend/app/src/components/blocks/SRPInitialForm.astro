@@ -1,0 +1,95 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { SRPFrontendPrograms } from '@dtypes/layout_components';
+
+interface Props {
+    program:                    SRPFrontendPrograms;
+}
+
+const {
+    program,
+} = Astro.props
+
+const KILLMAIL_CANDIDATE_FLEETS_PARTIAL_URL = translatePath(`/partials/killmail_candidate_fleets_component?program=${program}`)
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro';
+
+import Input from '@components/blocks/Input.astro';
+import Button from '@components/blocks/Button.astro';
+import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
+import Markdown from "@components/blocks/Markdown.astro";
+
+import TutorialIcon from '@components/icons/TutorialIcon.astro';
+---
+
+<form
+    hx-post={KILLMAIL_CANDIDATE_FLEETS_PARTIAL_URL}
+    hx-trigger="submit"
+    hx-target={`#${program}-main-content`}
+    hx-indicator=".loader"
+    hx-swap={'innerHTML transition:true'}
+    x-data={`{
+        is_corp_ship: false,
+        external_killmail_link: '',
+    }`}
+    hx-on--before-request={`this.querySelector('[type="submit"]').setAttribute('disabled','')`}
+    hx-on--after-request={`this.querySelector('[type="submit"]').removeAttribute('disabled')`}
+>
+    <Flexblock class="[ w-full animate-fade-in-right ]" gap='var(--space-l)'>
+        <Markdown markdown={t('add_killmail_intro_text').replace('{program}', t(program))} inline={true} />
+        <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+            <label for="srp-url">{t('external_killmail_link')}</label>
+            <FlexInlineSiblings
+                min-shink-width='200px'
+                shrinkable-sibbling='first'
+            >
+                <Input
+                    id="srp-url"
+                    x-model="external_killmail_link"
+                    name="external_killmail_link"
+                    type="text"
+                    autocomplete="off"
+                    required
+                    x-data={`{
+                        update_validity() {
+                            if (!external_killmail_link) return
+
+                            const regex = /^https:\\/\\/esi\\.evetech\\.net(?:\\/v[0-9]+)?\\/killmails\\/([0-9]+)\\/([a-zA-Z0-9]+)\\/?$/
+
+                            if (!regex.test(external_killmail_link.trim()))
+                                $el.setCustomValidity('${t('invalid_killmail_link')}')
+                            else
+                                $el.setCustomValidity('')
+                        }
+                    }`}
+                    x-on:input="update_validity()"
+                />
+                <Button type="submit">
+                    {t('analyze')}
+                </Button>
+            </FlexInlineSiblings>
+            <CollapsibleBlock padding_inline='0'>
+                <FixedFluid
+                    width='48'
+                    breakpoint='70%'
+                    slot="head"
+                    class="[ w-full items-center ]"
+                >
+                    <picture class="[ hidden sm:block! ]">
+                        <TutorialIcon />
+                    </picture>
+                    <small>{t('paste_above_tutorial_string')}</small>
+                </FixedFluid>
+
+                <video autoplay loop class="[ mt-[var(--space-xs)] w-full ]">
+                    <source src="/videos/srp-tutorial.mp4" type="video/mp4" />
+                    Your browser does not support the video tag.
+                </video>
+            </CollapsibleBlock>
+        </Flexblock>
+    </Flexblock>
+</form>

@@ -18,7 +18,6 @@ import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
 const can_view_srp = is_superuser || user_permissions.includes('srp.view_evefleetshipreimbursement')
-const can_add_srp = is_superuser || user_permissions.includes('srp.add_evefleetshipreimbursement')
 const can_view_all_srp = is_superuser || user_permissions.includes('srp.change_evefleetshipreimbursement')
 
 if (!can_view_srp)
@@ -26,7 +25,6 @@ if (!can_view_srp)
 
 import type { FleetSRPUI } from '@dtypes/layout_components'
 import { fetch_srps } from '@helpers/fetching/srp'
-import { srp_categories } from '@dtypes/api.minmatar.org'
 
 let fetch_srp_error:string | false = false
 let fleets_srps:FleetSRPUI[] = []
@@ -57,16 +55,16 @@ import BlockList from '@components/compositions/BlockList.astro'
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import SRPTable from '@components/blocks/SRPTable.astro';
-import SRPButton from '@components/blocks/SRPButton.astro'
-import Button from '@components/blocks/Button.astro'
 import SRPFiltersSwiper from '@components/blocks/SRPFiltersSwiper.astro'
+import Input from '@components/blocks/Input.astro'
 
-const page_title = t('fleets.srp.page_title');
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+
+const page_title = t('ships.srp.killmails.page_title');
 ---
 
 <Viewport
     title={page_title}
-    meta_description={t('page_finder.fleets.upcoming.meta_description')}
     components={{
         alert_dialog: true,
         confirm_dialog: true
@@ -80,6 +78,7 @@ const page_title = t('fleets.srp.page_title');
             overlay: true
         }}
         x-data={`{
+            name_filter: '',
             srps_count: ${srps_count},
             srp_category_filter: [],
             srp_ship_type_filter: [],
@@ -99,11 +98,16 @@ const page_title = t('fleets.srp.page_title');
                     </small>
                 </Flexblock>
             </FlexInline>
-            {can_add_srp &&
-                <FlexInline>
-                    <Button color='green' x-on:click="document.getElementById('submit-srp-button').click()">
-                        {t('add_killmail')}
-                    </Button>
+            {can_view_all_srp &&
+                <FlexInline class="[ !items-start ]">
+                    <Input
+                        type="text"
+                        placeholder={t('search')}
+                        x-model="name_filter"
+                        x-init="$el.focus()"
+                    >
+                        <MagnifierIcon slot="icon" />
+                    </Input>
                 </FlexInline>
             }
         </FlexInline>
@@ -112,18 +116,6 @@ const page_title = t('fleets.srp.page_title');
             <FlexInline class="[ w-full ]" slot="subheader">
                 <SRPFiltersSwiper ship_types={ship_types} />
             </FlexInline>
-        }
-
-        {can_add_srp &&
-            <SRPButton
-                id='submit-srp-button'
-                fleet_id={0}
-                target='#srp-table-0'
-                size='lg'
-                fleet_title={true}
-                hidden={true}
-                filterable={true}
-            />
         }
         
         {fetch_srp_error ?

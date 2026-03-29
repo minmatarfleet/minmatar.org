@@ -1,0 +1,124 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { KillmailAnalysis, SRPFrontendPrograms } from '@dtypes/layout_components'
+
+interface Props {
+    killmail_analysis:          KillmailAnalysis;
+    program:                    SRPFrontendPrograms;
+    external_killmail_link:     string;
+    init_tooltips?:             boolean;
+}
+
+const {
+    killmail_analysis,
+    program,
+    external_killmail_link,
+    init_tooltips = false,
+} = Astro.props
+
+const SRP_INITIAL_FORM_PARTIAL_URL = translatePath(`/partials/srp_initial_form_component?program=${program}`)
+
+import { number_thousand_separator } from '@helpers/numbers'
+import { format_date_time } from '@helpers/date'
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Grid from '@components/compositions/Grid.astro';
+
+import ItemBadge from '@components/blocks/ItemBadge.astro';
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+import Button from '@components/blocks/Button.astro';
+import SRPWizardActions from '@components/blocks/SRPWizardActions.astro'
+import Markdown from '@components/blocks/Markdown.astro'
+import CandidateFleetCard from '@components/blocks/CandidateFleetCard.astro'
+---
+
+<Flexblock centered={true}>
+    {!killmail_analysis.program ?
+        <p class="[ w-fit animate-rubber-band ]">{t('ship_is_no_eligible_for_srp')}</p>
+        <SRPWizardActions program={program as SRPFrontendPrograms} justification='center' /> :
+    killmail_analysis.program !== program ?
+        <Markdown
+            class="[ w-fit animate-rubber-band text-center ]"
+            markdown={t('wrong_srp_program')
+                .replace('{killmail_program}', t(`${killmail_analysis.program}_program`))
+                .replace('{program}', t(`${program}_program`))
+            }
+            inline={true}
+        />
+        <SRPWizardActions program={program as SRPFrontendPrograms} justification='center' /> :
+        <Flexblock class="[ animate-fade-in-left w-full ]" gap='var(--space-l)'>
+            {killmail_analysis.candidate_fleets.length > 0 ?
+                <p>{t('select_srp_fleet')}</p>
+                <Grid
+                    role="list"
+                    class="[ w-full grid-fill ]"
+                    min_item_width='235px'
+                    row_gap='var(--space-3xs)'
+                    column_gap='var(--space-3xs)'
+                >
+                    {killmail_analysis.candidate_fleets.map(fleet =>
+                        <CandidateFleetCard
+                            fleet={fleet}
+                            program={program}
+                            external_killmail_link={external_killmail_link}
+                            init_tooltips={init_tooltips}
+                        />
+                    )}
+                </Grid>
+                <FlexInline>
+                    <Button
+                        size='sm'
+                        type="button"
+                        hx-post={SRP_INITIAL_FORM_PARTIAL_URL}
+                        hx-target={`#${program}-main-content`}
+                        hx-indicator=".loader"
+                        hx-swap={'innerHTML transition:true'}
+                        hx-on--before-request={`this.setAttribute('disabled','')`}
+                        hx-on--after-request={`this.removeAttribute('disabled')`}
+                    >
+                        {t('none_of_the_fleets')}
+                    </Button>
+                </FlexInline> :
+                <Flexblock centered={true}>
+                    <p class="[ w-fit animate-rubber-band ]">{t('no_candidate_fleet_srp')}</p>
+                    <SRPWizardActions program={program as SRPFrontendPrograms} justification='center' />
+                </Flexblock>
+            }
+        </Flexblock>
+    }
+
+    {killmail_analysis.ship_id &&
+        <div hx-swap-oob="true" id={`${program}-program-tile-content`} class="[ animate-fade-in-up ]">
+            <FlexInline>
+                <PilotBadge
+                    character_id={killmail_analysis.character_id}
+                    character_name={killmail_analysis.character_name}
+                    size={32}
+                    centered={true}
+                >
+                    <small>{format_date_time(lang, killmail_analysis.killmail_time)}</small>
+                </PilotBadge>
+                <ItemBadge
+                    item_name={killmail_analysis.ship_name}
+                    type_id={killmail_analysis.ship_id}
+                    size={32}
+                >
+                    <small>{number_thousand_separator(killmail_analysis.value)} ISK</small>
+                </ItemBadge>
+            </FlexInline>
+        </div>
+    }
+</Flexblock>
+
+<style lang="scss" is:global>
+    .smaller-markdown {
+        font-size: var(--step--1);
+
+        > * {
+            font-size: smaller !important;
+        }
+    }
+</style>

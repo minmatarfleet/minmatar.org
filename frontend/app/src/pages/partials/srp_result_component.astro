@@ -1,0 +1,94 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+import type { SRPFrontendPrograms } from '@dtypes/layout_components'
+import { prod_error_messages } from '@helpers/env'
+import type { CombatLogAnalysis } from '@dtypes/layout_components'
+import { create_fleet_srp } from '@helpers/api.minmatar.org/srp'
+import { fetch_combatlog_analysis } from '@helpers/fetching/combatlog'
+import { b64_to_Uint8Array } from '@helpers/string'
+
+let killmail_submitted = false
+let submit_srp_error:string | false = false
+
+if (Astro.request.method === "POST") {
+    try {
+        const data = await Astro.request.formData()
+        const external_killmail_link = data.get('external_killmail_link') as string
+        const fleet_id = parseInt(data.get('fleet_id') as string)
+        const is_corp_ship = data.get('is_corp_ship') === 'on'
+        const base64_gziped_combatlog = data.get("gziped_combatlog")?.valueOf()
+
+        const regex = /^https:\/\/esi\.evetech\.net(?:\/v[0-9]+)?\/killmails\/([0-9]+)\/([a-zA-Z0-9]+)$/
+
+        if (!regex.test(external_killmail_link.trim()))
+            throw new Error(t('invalid_killmail_link'))
+
+        if (isNaN(fleet_id))
+            throw new Error(t('invalid_fleet_id'))
+
+        let combat_log_analysis:CombatLogAnalysis | null = null
+        if (base64_gziped_combatlog) {
+            const gziped_combatlog = b64_to_Uint8Array(base64_gziped_combatlog as string)
+
+            combat_log_analysis = await fetch_combatlog_analysis(gziped_combatlog, true, {
+                access_token: auth_token as string,
+                fleet_id: fleet_id
+            })
+        }
+
+        await create_fleet_srp(auth_token as string, {
+            fleet_id: fleet_id,
+            combatlog_id: combat_log_analysis?.id,
+            external_killmail_link: external_killmail_link,
+            is_corp_ship: is_corp_ship,
+        })
+
+        killmail_submitted = true
+    } catch (error) {
+        submit_srp_error = (prod_error_messages() ? t('submit_srp_error') : error.message)
+    }
+}
+
+import type { SRPStatsOverview } from '@dtypes/api.minmatar.org'
+import { get_srp_stats } from '@helpers/api.minmatar.org/srp'
+
+let stats_overview:SRPStatsOverview | null = null
+let fetching_error:string | false = false
+
+try {
+    stats_overview = await get_srp_stats( auth_token as string)
+} catch (error) {
+    fetching_error = error.message
+}
+
+const program = Astro.url.searchParams.get('program')
+const response_days = stats_overview?.average_response_days
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import FireworksPopup from '@components/blocks/FireworksPopup.astro'
+import SRPWizardActions from '@components/blocks/SRPWizardActions.astro'
+---
+
+{killmail_submitted &&
+    <FireworksPopup
+        message={t('srp_submit_success').replace('{time}', response_days ? `${response_days} days` : t('not_available').toLowerCase())}
+    >
+        <SRPWizardActions program={program as SRPFrontendPrograms} justification='center' />
+    </FireworksPopup>
+}
+{submit_srp_error &&
+    <Flexblock class="[ animate-fade-in-up text-center ]">
+        <h4>⚠️ {t('srp_failed')}</h4>
+        <p>{submit_srp_error}</p>
+        <SRPWizardActions program={program as SRPFrontendPrograms} justification='center' />
+    </Flexblock>
+}

@@ -1,0 +1,152 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_view_srp = is_superuser || user_permissions.includes('srp.view_evefleetshipreimbursement')
+const can_add_srp = is_superuser || user_permissions.includes('srp.add_evefleetshipreimbursement')
+
+if (!can_view_srp)
+    return HTTP_403_Forbidden()
+
+import type { SRPProgram } from '@dtypes/api.minmatar.org'
+import { get_srp_programs } from '@helpers/api.minmatar.org/srp'
+
+let fetching_error:string | false = false
+let programs:SRPProgram[] = []
+
+try {
+    programs = await get_srp_programs(auth_token as string)
+} catch (error) {
+    fetching_error = error.message
+}
+
+const SRP_TILES_PARTIAL_URL = translatePath('/partials/srp_tiles_component/')
+
+import * as srp_overview_md from '@markdown/srp-overview.md';
+import * as srp_source_md from '@markdown/srp-source.md';
+
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageLanding from '@components/page/PageLanding.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Button from '@components/blocks/Button.astro';
+import SRPTiles from '@components/blocks/SRPTiles.astro';
+import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+
+const page_title = t('ships.srp.page_title');
+const leading_text = t('ships.srp.leading_text');
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('tribes.meta_description')}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+        modal: true,
+    }}
+>
+    <PageLanding
+        cover={{
+            image: "/images/srp-cover.jpg",
+            image_990: "/images/srp-cover.jpg",
+            overlay: true,
+            scrollable: true,
+        }}
+        wide={true}
+    >
+        <Flexblock gap='var(--space-2xl)'>
+            <FlexInline class="[ !items-start ]" justification='space-between'>
+                <TextBox>
+                    <PageTitle is_landing={true}>{page_title}</PageTitle>
+                </TextBox>
+                {can_view_srp &&
+                    <FlexInline class="[ !items-start ]">
+                        <Button href={translatePath('/ships/srp/killmails/')}>
+                            {t('view_killmails')}
+                        </Button>
+                    </FlexInline>
+                }
+            </FlexInline>
+            
+            <TextBox>
+                <p class="[ excerpt ]">{leading_text}</p>
+            </TextBox>
+            
+            <Flexblock>
+                <TextBox>
+                    <CollapsibleBlock>
+                        <h4 slot="head">{t('overview_description')}</h4>
+
+                        <div
+                            class="[ prose ]"
+                            set:html={marked.parse(srp_overview_md.rawContent(), { renderer })}
+                        />
+                    </CollapsibleBlock>
+                </TextBox>
+
+                <TextBox>
+                    <CollapsibleBlock>
+                        <h4 slot="head">{t('source_description')}</h4>
+
+                        <div
+                            class="[ prose ]"
+                            set:html={marked.parse(srp_source_md.rawContent(), { renderer })}
+                        />
+                    </CollapsibleBlock>
+                </TextBox>
+            </Flexblock>
+
+            {fetching_error !== false ?
+                <ErrorRefetch
+                    args={{
+                        partial: SRP_TILES_PARTIAL_URL,
+                        message: fetching_error,
+                        delay: 0,
+                    }}
+                /> :
+                <SRPTiles
+                    programs={programs}
+                    readonly={!can_add_srp}
+                    init_tooltips={false}
+                />
+            }
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .prose {
+        padding-top: var(--space-s);
+    }
+
+    h4 {
+        font-size: var(--step-0);
+        line-height: 1.5;
+        text-wrap: pretty;
+    }
+</style>

@@ -112,7 +112,7 @@ const page_title = t('posts_trash.page_title');
                 </small>
             </Flexblock>
             <Input type="text"
-                placeholder={t('filter')}
+                placeholder={t('search')}
                 x-model="post_name_filter"
                 x-on:keyup="setTimeout(function () { posts_count = countVisibleElements('h3') })"
             >

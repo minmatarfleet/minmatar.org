@@ -3,6 +3,7 @@ interface Props {
     character_id:   number;
     character_name: string;
     inert?:         boolean;
+    size?:          'sm' | 'lg';
     [propName: string]: any;
 }
 
@@ -10,6 +11,7 @@ const {
     character_id,
     character_name,
     inert = false,
+    size =  'lg',
     ...attributes
 } = Astro.props
 
@@ -27,6 +29,7 @@ import Card from "@components/blocks/Card.astro";
         icon_quality={512}
         mask={true}
         inert={inert}
+        height={size === 'sm' ? 320 : undefined}
     />
 
     <slot name="header" slot="header" />

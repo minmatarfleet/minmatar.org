@@ -33,10 +33,10 @@ const non_active_contracts_location = location_contracts.filter(route => route.l
 
 import { query_string } from '@helpers/string';
 
-const FREIGHT_CONTRACTS_PARTIAL_URL = translatePath(`/partials/freight_contracts_component${active_location_name ? `?${query_string({
+const FREIGHT_CONTRACTS_PARTIAL_URL = translatePath(`/partials/freight_contracts_component?${active_location_name ? query_string({
     location_name: active_location_name,
     is_history: true,
-})}` : ''}`)
+}) : 'is_history=true'}`)
 
 import {
     get_location_video_cover,
@@ -112,7 +112,7 @@ const page_title = t('freight_contracts.history.page_title');
             </Flexblock>
             <FlexInline>
                 <Input type="text"
-                    placeholder={t('filter')}
+                    placeholder={t('search')}
                     x-model="item_name_filter"
                     x-on:keyup="setTimeout(function () { contracts_count = countVisibleElements('.freight-contract-item') })"
                     x-init="$el.focus()"

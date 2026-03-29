@@ -923,8 +923,8 @@ export interface SRPRequest {
     fleet_id?:                  number;
     combatlog_id?:              number;
     is_corp_ship:               boolean;
-    category:                   SRPCategory;
-    comments:                   string;
+    category?:                  SRPCategory;
+    comments?:                  string;
 }
 
 export interface BaseIndustryOrder {
@@ -1235,4 +1235,66 @@ export interface FleetCommanderMetrics {
     corporation_id:             number | null;
     corporation_name:           string | null;
     fleet_count:                number;
+}
+
+export interface CandidateFleetCommander {
+    character_id:           number;
+    character_name:         string;
+    corporation_id:        number;
+    corporation_name:       string;
+}
+
+export interface CandidateFleet {
+    id:                         number;
+    type:                       string;
+    start_time:                 Date;
+    objective:                  string;
+    audience:                   string;
+    fleet_commander:            CandidateFleetCommander;
+}
+
+export interface EVEType {
+    id:     number;
+    name:   string;
+}
+
+export interface EVEGroup {
+    id:     number;
+    name:   string;
+}
+
+export interface EVECAtegory {
+    id:     number;
+    name:   string;
+}
+
+export interface SRPCurrentAmount {
+    id:             number;
+    program_id:     number;
+    srp_value:      number;
+    created_at:     string;
+}
+
+export interface SRPProgram {
+    id:                 number;
+    eve_type:           EVEType;
+    eve_group:          EVEGroup;
+    eve_category:       EVECAtegory;
+    current_amount:     SRPCurrentAmount;
+}
+
+export interface KillmailResolve {
+    killmail_time:                  Date;
+    killmail_id:                    number;
+    victim_character_id:            number;
+    victim_character_name:          string;
+    ship_type_id:                   number;
+    ship_name:                      string;
+    candidate_fleets:               CandidateFleet[];
+}
+
+export interface SRPStatsOverview {
+    pending_requests:           number;
+    pending_total:              number;
+    average_response_days:      number;
 }

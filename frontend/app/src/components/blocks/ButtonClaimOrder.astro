@@ -63,8 +63,7 @@ import ItemBadge from '@components/blocks/ItemBadge.astro';
     size={size}
     hidden={hidden}
     max_width='520px'
-    @dialog_opened.stop="$el.querySelector('button').setAttribute('disabled', '')"
-    @dialog_closed.stop="$el.querySelector('button').removeAttribute('disabled')"
+    disable_when_open={true}
 >
     {reclaim ? t('reclaim') : t('claim')}
 

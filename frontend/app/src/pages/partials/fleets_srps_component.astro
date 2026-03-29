@@ -51,6 +51,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import SRPTable from '@components/blocks/SRPTable.astro';
 import SRPFiltersSwiper from '@components/blocks/SRPFiltersSwiper.astro';
+import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astro'
 ---
         
 {fetch_srp_error ?
@@ -62,7 +63,11 @@ import SRPFiltersSwiper from '@components/blocks/SRPFiltersSwiper.astro';
         }}
     />
     :
-    <div x-data={`{ srps_count: ${srps_count} }`} x-init="$el.remove()"></div>
+    <UpdateAlpineVariables
+        variables={{
+            srps_count: srps_count
+        }}
+    />
 
     <SRPFiltersSwiper ship_types={ship_types} />
 

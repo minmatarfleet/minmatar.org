@@ -1,0 +1,76 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { ButtonSizes, SRPFrontendPrograms } from '@dtypes/layout_components';
+
+interface Props {
+    program:        SRPFrontendPrograms;
+    description:    string;
+    cover:          string;
+    size?:          ButtonSizes;
+    hidden?:        boolean;
+    id?:            string;
+    [propName: string]: any;
+}
+
+const {
+    program,
+    description,
+    cover,
+    size = 'lg',
+    hidden = false,
+    id,
+    ...attributes
+} = Astro.props
+
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import DialogButton from "@components/blocks/DialogButton.astro";
+import SRPTile from "@components/blocks/SRPTile.astro";
+import SRPInitialForm from "@components/blocks/SRPInitialForm.astro";
+---
+
+<DialogButton
+    size={size}
+    color='green'
+    max_width='1350px'
+    hidden={hidden}
+    thin_dialog={true}
+    id={id ? id : undefined}
+    {...attributes}
+>
+    {t('add_killmail')}
+
+    <FixedFluid slot="dialog" width='500px' gap='0' class="[ items-stretch! ]">
+        <SRPTile
+            id={`${program}-program-dialog`}
+            program={program}
+            description={description}
+            readonly={true}
+            cover={cover}
+        >
+            <div class="[ min-h-[43px] ]" id={`${program}-program-tile-content`}></div>
+        </SRPTile>
+        <div class="[ flex items-center! "]>
+            <Wrapper
+                id={`${program}-main-content`}
+                class="[ main-content ]"
+                padding_inline='var(--space-l-xl)'
+                padding_block='var(--space-l)'
+                max_width='100%'
+            >
+                <SRPInitialForm program={program} />
+            </Wrapper>
+        </div>
+    </FixedFluid>
+</DialogButton>
+
+<style lang="scss">
+    .main-content {
+        align-items: center;
+        overflow-x: hidden;
+        width: 100%;
+    }
+</style>

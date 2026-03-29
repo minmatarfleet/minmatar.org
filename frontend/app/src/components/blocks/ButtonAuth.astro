@@ -9,6 +9,7 @@ interface Props {
     size?:          ButtonSizes;
     narrow?:        boolean;
     dialog_title:   string;
+    [propName: string]: any;
 }
 
 const {
@@ -16,6 +17,7 @@ const {
     size = 'lg',
     narrow = false,
     dialog_title,
+    ...attributes
 } = Astro.props;
 
 const AUTH_REDIRECT_URL = `${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`
@@ -44,6 +46,7 @@ import Button from '@components/blocks/Button.astro';
     }`}
     x-on:click="show_auth_request_dialog()"
     type="button"
+    {...attributes}
 >
     <slot />
 </Button>

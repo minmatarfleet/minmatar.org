@@ -317,3 +317,7 @@ lite-youtube {
 .ui-scaling-80 {
     zoom: 0.8;
 }
+
+a[disabled] {
+    pointer-events: none;
+}

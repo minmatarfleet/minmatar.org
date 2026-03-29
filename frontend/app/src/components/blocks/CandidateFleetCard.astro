@@ -1,0 +1,192 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { CandidateFleet } from '@dtypes/api.minmatar.org'
+import type { SRPFrontendPrograms } from '@dtypes/layout_components'
+
+interface Props {
+    fleet:                      CandidateFleet;
+    program:                    SRPFrontendPrograms;
+    external_killmail_link:     string;
+    init_tooltips:              boolean;
+}
+
+const {
+    fleet,
+    program,
+    external_killmail_link,
+    init_tooltips,
+} = Astro.props
+
+console.log(fleet)
+
+const SRP_FORM_PARTIAL_URL = translatePath(`/partials/srp_form_component`)
+
+import { query_string } from '@helpers/string';
+import { format_date_time } from '@helpers/date'
+
+const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}`
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Button from '@components/blocks/Button.astro';
+
+import Flexblock from "@components/compositions/Flexblock.astro";
+import Wrapper from "@components/compositions/Wrapper.astro";
+
+import StylessButton from '@components/blocks/StylessButton.astro';
+import CharacterCard from '@components/blocks/CharacterCard.astro';
+import CorporationBadge from '@components/blocks/CorporationBadge.astro';
+
+import StratopIcon from '@components/icons/StratopIcon.astro';
+import NonStrategicIcon from '@components/icons/NonStrategicIcon.astro';
+import TrainingIcon from '@components/icons/TrainingIcon.astro';
+---
+
+<div
+    class="[ candidate-fleet-card ][ relative ]"
+    x-data={`{
+        show_objective: false,
+    }`}
+>
+    {fleet.objective &&
+        <div
+            class="[ objective ]"
+            x-show="show_objective"
+        >
+            <Wrapper
+                class="[ animate-fade-in animate-duration-faster ]"
+                padding_block='var(--space-xs)'
+                padding_inline='var(--space-xs)'
+            >
+                <Flexblock centered={true}>
+                    <p>{fleet.objective}</p>
+
+                    <FlexInline>
+                        <Button
+                            size='sm'
+                            x-on:click="show_objective = false"
+                        >
+                            {t('close')}
+                        </Button>
+                    </FlexInline>
+                </Flexblock>
+            </Wrapper>
+        </div>
+        
+        <Button
+            class="[ objective-button ]"
+            size='sm'
+            narrow={true}
+            x-on:click="show_objective = true"
+        >
+            {t('objective')}
+        </Button>
+    }
+
+    <StylessButton
+        hx-get={`${SRP_FORM_PARTIAL_URL}?${query_string({
+            fleet_id: fleet.id,
+            external_killmail_link: external_killmail_link,
+            program: program,
+        })}`}
+        hx-target={`#${program}-main-content`}
+        hx-indicator=".loader"
+        hx-swap={'innerHTML transition:true'}
+        hx-on--before-request={`this.setAttribute('disabled','')`}
+        hx-on--after-request={`this.removeAttribute('disabled')`}
+        type="button"
+    >
+        <div
+            class="[ absolute top-px left-px z-10 ]"
+            data-tippy-content={
+                fleet.type === 'strategic' ?
+                t('strategic_fleet') :
+                fleet.type === 'training' ?
+                t('training_fleet') :
+                t('non_strategic_fleet')
+            }
+            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+        >
+            {fleet.type === 'strategic' ?
+                <StratopIcon /> :
+                fleet.type === 'training' ?
+                <TrainingIcon /> :
+                fleet.type === 'non_strategic' &&
+                <NonStrategicIcon />
+            }
+        </div>
+
+        <CharacterCard
+            character_id={fleet.fleet_commander.character_id}
+            character_name={fleet.fleet_commander.character_name}
+            inert={true}
+            size='sm'
+        >
+            <Flexblock gap='var(--space-3xs)'>
+                <h4>{t('fleet')} {fleet.id}</h4>
+                <small>{format_date_time(lang, fleet.start_time)}</small>
+                <CorporationBadge
+                    corporation={{
+                        id: fleet.fleet_commander.corporation_id,
+                        name: fleet.fleet_commander.corporation_name,
+                        size: 'xs',
+                    }}
+                />
+                <h3>{fleet.fleet_commander.character_name}</h3>
+            </Flexblock>
+        </CharacterCard>
+    </StylessButton>
+</div>
+
+<style lang="scss">
+    .candidate-fleet-card {
+        display: flex;
+
+        &:hover {
+            .objective-button {
+                opacity: 1;
+            }
+        }
+    }
+
+    small {
+        color:  var(--fleet-yellow);
+    }
+    
+    picture {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        aspect-ratio: 1/1;
+        width: 64px;
+
+        &.bordered {
+            border: solid 1px var(--border-color)
+        }
+    }
+
+    h3 {
+        font-size: var(--step-1);
+    }
+
+    .objective {
+        position: absolute;
+        z-index: 11;
+        inset: 1px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--component-background);
+    }
+
+    .objective-button {
+        position: absolute;
+        z-index: 1;
+        top: var(--space-2xs);
+        right: var(--space-2xs);
+        opacity: 0;
+        transition: var(--fast-transition);
+    }
+</style>

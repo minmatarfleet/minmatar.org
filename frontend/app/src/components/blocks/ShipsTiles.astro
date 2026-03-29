@@ -2,14 +2,21 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
+interface Props {
+    can_view_srp:   boolean;
+}
+
+const {
+    can_view_srp,
+} = Astro.props
+
 import Wrapper from '@components/compositions/Wrapper.astro';
 import Grid from '@components/compositions/Grid.astro';
 
-import LandingSwiper from '@components/blocks/LandingSwiper.astro';
 import Button from '@components/blocks/Button.astro';
 import Tile from '@components/blocks/Tile.astro';
 
-import DoctrinesEvEIcon from '@components/icons/DoctrinesEvEIcon.astro';
+import KillReportEVEIcon from '@components/icons/KillReportEVEIcon.astro';
 import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
 ---
 
@@ -33,23 +40,38 @@ import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
             <FitsEvEIcon class="[ ml-[-7px] ]" slot="icon" />
                 
             <Button size='sm' href={translatePath('/ships/fittings/')}>
-                {t('browse')}
+                {t('browse_fittings')}
             </Button>
-        </Tile>
-
-        <Tile
-            title={t('doctrines.page_title')}
-            description={t('doctrines.leading_text')}
-            cover='/images/doctrines-tile-background.webp'
-        >
-            <DoctrinesEvEIcon class="[ ml-[-7px] ]" slot="icon" />
             
             <Button
                 size='sm'
                 href={translatePath('/ships/doctrines/')}
             >
-                {t('browse')}
+                {t('browse_doctrines')}
             </Button>
         </Tile>
+
+        {can_view_srp &&
+            <Tile
+                title={t('ships.srp.page_title')}
+                description={t('ships.srp.leading_text')}
+                cover='/images/srp-tile-background.webp'
+            >
+                <KillReportEVEIcon class="[ ml-[-7px] ]" slot="icon" />
+                
+                <Button
+                    size='sm'
+                    href={translatePath('/ships/srp/')}
+                >
+                    {t('request')}
+                </Button>
+                <Button
+                    size='sm'
+                    href={translatePath('/ships/srp/killmails/')}
+                >
+                    {t('killmails')}
+                </Button>
+            </Tile>
+        }
     </Grid>
 </Wrapper>
