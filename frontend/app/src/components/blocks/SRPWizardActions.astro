@@ -43,7 +43,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
         hx-target={`#${program}-main-content`}
         hx-indicator=".loader"
         hx-swap={'innerHTML transition:true'}
-        x-on:click="close_dialog(); restart_card()"
+        x-on:click="close_dialog()"
     >
         {t('close')}
     </Button>
