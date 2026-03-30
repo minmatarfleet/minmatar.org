@@ -30,6 +30,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 import DialogButton from "@components/blocks/DialogButton.astro";
 import SRPTile from "@components/blocks/SRPTile.astro";
 import SRPInitialForm from "@components/blocks/SRPInitialForm.astro";
+import Markdown from "@components/blocks/Markdown.astro";
 ---
 
 <DialogButton
@@ -51,6 +52,7 @@ import SRPInitialForm from "@components/blocks/SRPInitialForm.astro";
             readonly={true}
             cover={cover}
         >
+            <Markdown markdown={t(`${program}_fleet_requirements`)} inline={true} inline_element='small' />
             <div class="[ min-h-[43px] ]" id={`${program}-program-tile-content`}></div>
         </SRPTile>
         <div class="[ flex items-center! "]>

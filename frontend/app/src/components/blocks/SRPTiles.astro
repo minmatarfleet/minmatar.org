@@ -57,10 +57,6 @@ import SRPTile from '@components/blocks/SRPTile.astro';
         description={t('subcapitals_program_description')}
         cover='/images/sbcapital-srp-cover.webp'
         values={subcapitals_values}
-        eligibility={[
-            t('strategic_fc'),
-            t('skirmish_fc_subcapital'),
-        ]}
         readonly={readonly}
     >
         <small slot="values-footer">{t('subcapitals_program_hint')}</small>
@@ -72,9 +68,6 @@ import SRPTile from '@components/blocks/SRPTile.astro';
         description={t('dreads_program_description')}
         cover='/images/dreads-srp-cover.webp'
         values={dreads_values}
-        eligibility={[
-            t('strategic_fc'),
-        ]}
         readonly={readonly}
     />
 
@@ -84,14 +77,6 @@ import SRPTile from '@components/blocks/SRPTile.astro';
         description={t('carriers_program_description')}
         cover='/images/carriers-srp-cover.webp'
         values={carriers_values}
-        eligibility={[
-            t('strategic_fc'),
-            t('skirmish_fc_carriers'),
-        ]}
-        warnings={[{
-            index: 1,
-            text: t('carriers_skirmish_hint')
-        }]}
         readonly={readonly}
     />
 </Grid>
