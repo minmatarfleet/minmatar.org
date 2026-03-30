@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel
 
@@ -18,6 +18,15 @@ class CreateEveFleetReimbursementRequest(BaseModel):
     category: Optional[SrpCategory] = None
     comments: Optional[str] = None
     combat_log_id: Optional[int] = None
+
+
+class UpdateEveFleetReimbursementRequest(BaseModel):
+    status: Literal["pending", "approved", "rejected", "withdrawn"]
+
+
+class SrpPatchResult(BaseModel):
+    database_update_status: str
+    evemail_status: str
 
 
 class EveFleetReimbursementResponse(BaseModel):

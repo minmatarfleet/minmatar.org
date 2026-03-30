@@ -1,0 +1,109 @@
+# Model Context Protocol servers (Docker MCP catalog images).
+# https://hub.docker.com/mcp/server/mcp-reddit
+# https://hub.docker.com/mcp/server/mcp-discord
+#
+# Pull images:
+#   docker compose -f docker-compose-mcp.yml pull
+#
+# Run interactively (stdio — matches Cursor/Claude "docker run -i" style):
+#   docker compose -f docker-compose-mcp.yml run --rm -it reddit-mcp
+#   docker compose -f docker-compose-mcp.yml run --rm -it discord-mcp
+#
+# Local HTTP (Streamable HTTP via supergateway):
+#   docker compose -f docker-compose-mcp.yml --profile http up -d --build
+#   Reddit: http://127.0.0.1:8765/mcp   Discord: http://127.0.0.1:8766/mcp
+#
+# Claude "remote MCP" requires https:// — use Cloudflare quick tunnels (trycloudflare.com):
+#   docker compose -f docker-compose-mcp.yml --profile remote up -d --build
+#   docker compose -f docker-compose-mcp.yml logs -f reddit-mcp-tunnel discord-mcp-tunnel
+# Copy each https://….trycloudflare.com URL from the logs and add /mcp. Reddit and Discord get different
+# hostnames — do not reuse the Reddit URL for the Discord connector. MCP image expects DISCORD_TOKEN in .env
+# (not only DISCORD_BOT_TOKEN from the backend).
+# Quick tunnels are ephemeral and expose your MCP to the public internet; stop when done.
+#
+# Gateways need the host Docker socket (Linux/macOS Docker Desktop; WSL2 default path).
+# 127.0.0.1 binds limit local exposure; tunnels still publish the service.
+#
+# Credentials: copy .env.example to .env and fill values (paths are relative to this file).
+# Reddit: create a "script" app at https://www.reddit.com/prefs/apps
+# Discord: bot token from https://discord.com/developers/applications (Message Content intent, etc.)
+
+name: mcp
+
+services:
+  reddit-mcp:
+    image: mcp/reddit-mcp:latest
+    stdin_open: true
+    tty: true
+    env_file: .env
+
+  discord-mcp:
+    image: mcp/mcp-discord:latest
+    stdin_open: true
+    tty: true
+    env_file: .env
+
+  reddit-mcp-http:
+    profiles: [http, remote]
+    build:
+      context: .
+      dockerfile: docker/mcp-gateway.Dockerfile
+    image: minmatar-mcp-gateway:local
+    env_file: .env
+    ports:
+      - "127.0.0.1:8765:8765"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        exec supergateway --port 8765 --outputTransport streamableHttp --cors
+        --healthEndpoint /healthz
+        --stdio "docker run -i --rm -e REDDIT_CLIENT_ID -e REDDIT_CLIENT_SECRET -e REDDIT_USERNAME -e REDDIT_PASSWORD -e REDDIT_USER_AGENT mcp/reddit-mcp:latest"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:8765/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  discord-mcp-http:
+    profiles: [http, remote]
+    image: minmatar-mcp-gateway:local
+    depends_on:
+      - reddit-mcp-http
+    env_file: .env
+    ports:
+      - "127.0.0.1:8766:8766"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        exec supergateway --port 8766 --outputTransport streamableHttp --cors
+        --healthEndpoint /healthz
+        --stdio "docker run -i --rm -e DISCORD_TOKEN mcp/mcp-discord:latest"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:8766/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  reddit-mcp-tunnel:
+    image: cloudflare/cloudflared:latest
+    profiles: [remote]
+    restart: unless-stopped
+    depends_on:
+      reddit-mcp-http:
+        condition: service_healthy
+    command: tunnel --url http://reddit-mcp-http:8765
+
+  discord-mcp-tunnel:
+    image: cloudflare/cloudflared:latest
+    profiles: [remote]
+    restart: unless-stopped
+    depends_on:
+      discord-mcp-http:
+        condition: service_healthy
+    command: tunnel --url http://discord-mcp-http:8766

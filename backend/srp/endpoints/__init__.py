@@ -7,6 +7,12 @@ from srp.endpoints.reimbursements.get_fleet_srp import (
     get_fleet_srp,
     METHOD as get_fleet_srp_method,
 )
+from srp.endpoints.reimbursements.patch_fleet_srp import (
+    PATH as patch_fleet_srp_path,
+    ROUTE_SPEC as patch_fleet_srp_spec,
+    update_fleet_srp,
+    METHOD as patch_fleet_srp_method,
+)
 from srp.endpoints.reimbursements.post_fleet_srp import (
     PATH as post_fleet_srp_path,
     ROUTE_SPEC as post_fleet_srp_spec,
@@ -35,6 +41,12 @@ _REIMBURSEMENT_ROUTES = (
         post_fleet_srp_path,
         post_fleet_srp_spec,
         create_fleet_srp,
+    ),
+    (
+        patch_fleet_srp_method,
+        patch_fleet_srp_path,
+        patch_fleet_srp_spec,
+        update_fleet_srp,
     ),
 )
 for method, path, spec, view in _REIMBURSEMENT_ROUTES:

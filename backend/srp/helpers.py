@@ -15,7 +15,6 @@ from eveonline.models import EveCharacter
 from eveonline.helpers.characters import user_primary_character
 from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
 from reminders.messages.rat_quotes import rat_quotes
-from srp.srp_table import reimbursement_class_lookup, reimbursement_ship_lookup
 
 from .models import (
     EveFleetShipReimbursement,
@@ -97,52 +96,18 @@ def get_killmail_details(external_link: str, user: User):
     )
 
 
-def get_reimbursement_amount(ship: EveType):
-    """
-    Get the reimbursement amount for a ship
-    """
-
-    program_amount = get_latest_program_amount(ship)
-    if program_amount:
-        return program_amount.srp_value
-
-    # Fallback to the hard-coded values
-    if ship.name in reimbursement_ship_lookup:
-        return reimbursement_ship_lookup[ship.name]
-    if ship.eve_group.name in reimbursement_class_lookup:
-        return reimbursement_class_lookup[ship.eve_group.name]
-    return 0
-
-
 def get_latest_program_amount(
     ship: EveType,
 ) -> ShipReimbursementProgramAmount | None:
     """
-    Return latest configured program amount for this ship.
-    Exact ship type is preferred, then same category fallback.
+    Latest program amount row for this exact ship type, or None if there is
+    no program or no amount history.
     """
     program = ShipReimbursementProgram.objects.filter(
         eve_type_id=ship.id
     ).first()
-
-    if not program:
-        ship_category_id = getattr(
-            getattr(getattr(ship, "eve_group", None), "eve_category", None),
-            "id",
-            None,
-        )
-        if ship_category_id is not None:
-            program = (
-                ShipReimbursementProgram.objects.filter(
-                    eve_type__eve_group__eve_category_id=ship_category_id
-                )
-                .order_by("id")
-                .first()
-            )
-
     if not program:
         return None
-
     return program.amounts.order_by("-created_at", "-id").first()
 
 
@@ -178,7 +143,7 @@ def recalculate_reimbursement_amount(reimbursement: EveFleetShipReimbursement):
         reimbursement.amount = program_amount.srp_value
     else:
         reimbursement.reimbursement_program_amount = None
-        reimbursement.amount = get_reimbursement_amount(ship_type)
+        reimbursement.amount = 0
     reimbursement.save()
 
 

@@ -23,7 +23,7 @@ from srp.models import (
     ShipReimbursementProgram,
     ShipReimbursementProgramAmount,
 )
-from srp.helpers import get_reimbursement_amount
+from srp.helpers import get_latest_program_amount
 from users.helpers import add_user_permission
 
 BASE_URL = "/api/srp"
@@ -48,8 +48,38 @@ class SrpRouterTestCase(TestCase):
         setup_fleet_reference_data()
         self.fleet = make_test_fleet("Test fleet", self.user)
 
+    def _ensure_srp_program_for_jaguar_killmails(self):
+        """Mocked killmails use ship_type_id 11400 (Jaguar); SRP requires a program row."""
+        category, _ = EveCategory.objects.get_or_create(
+            id=6, defaults={"name": "Ship", "published": True}
+        )
+        group, _ = EveGroup.objects.get_or_create(
+            id=32400,
+            defaults={
+                "name": "Assault Frigate",
+                "eve_category": category,
+                "published": True,
+            },
+        )
+        jaguar, _ = EveType.objects.update_or_create(
+            id=11400,
+            defaults={
+                "name": "Jaguar",
+                "eve_group": group,
+                "published": True,
+            },
+        )
+        prog, _ = ShipReimbursementProgram.objects.get_or_create(
+            eve_type=jaguar
+        )
+        if not prog.amounts.exists():
+            ShipReimbursementProgramAmount.objects.create(
+                program=prog, srp_value=10_000_000
+            )
+
     @patch("srp.helpers.EsiClient")
     def test_basic_srp(self, esi_mock):
+        self._ensure_srp_program_for_jaguar_killmails()
         esi = esi_mock.return_value
 
         fc_char = EveCharacter.objects.create(
@@ -96,6 +126,7 @@ class SrpRouterTestCase(TestCase):
 
     @patch("srp.helpers.EsiClient")
     def test_non_fleet_srp(self, esi_mock):
+        self._ensure_srp_program_for_jaguar_killmails()
         esi = esi_mock.return_value
 
         self.make_superuser()
@@ -197,10 +228,9 @@ class SrpRouterTestCase(TestCase):
         self.assertEqual("abc", reimbursements[0]["external_killmail_link"])
 
     def test_srp_values_from_database(self):
-        category = EveCategory.objects.create(
+        category, _ = EveCategory.objects.get_or_create(
             id=6,
-            name="Ship",
-            published=True,
+            defaults={"name": "Ship", "published": True},
         )
         destroyer_group = EveGroup.objects.create(
             id=4200,
@@ -239,8 +269,12 @@ class SrpRouterTestCase(TestCase):
         ShipReimbursementProgramAmount.objects.create(
             program=stabber_program, srp_value=20000000
         )
-        self.assertEqual(12000000, get_reimbursement_amount(thrasher_type))
-        self.assertEqual(20000000, get_reimbursement_amount(stabber_type))
+        self.assertEqual(
+            12000000, get_latest_program_amount(thrasher_type).srp_value
+        )
+        self.assertEqual(
+            20000000, get_latest_program_amount(stabber_type).srp_value
+        )
 
     def test_srp_type_id_rule_takes_precedence(self):
         category = EveCategory.objects.create(
@@ -279,7 +313,9 @@ class SrpRouterTestCase(TestCase):
         ShipReimbursementProgramAmount.objects.create(
             program=phoenix_program, srp_value=2200000000
         )
-        self.assertEqual(3000000000, get_reimbursement_amount(revelation_type))
+        self.assertEqual(
+            3000000000, get_latest_program_amount(revelation_type).srp_value
+        )
 
     def test_invalid_killmail_link(self):
         data = {
@@ -297,6 +333,47 @@ class SrpRouterTestCase(TestCase):
 
         self.assertEqual(400, response.status_code)
         self.assertEqual("Killmail link not valid", response.json()["detail"])
+
+    @patch("srp.helpers.EsiClient")
+    def test_rejects_ship_not_in_program(self, esi_mock):
+        esi = esi_mock.return_value
+        fc_char = EveCharacter.objects.create(
+            character_id=KM_CHAR,
+            character_name="Mr FC",
+            user=self.user,
+        )
+        set_primary_character(self.user, fc_char)
+        esi.get_character_killmail.return_value = EsiResponse(
+            response_code=200,
+            data={
+                "victim": {
+                    "character_id": fc_char.character_id,
+                    "ship_type_id": 99999111,
+                },
+                "killmail_time": "2025-04-02T11:47:15Z",
+            },
+        )
+        esi.get_eve_type.return_value = EveType(
+            id=99999111,
+            name="Uncovered Hull",
+            description="",
+            eve_group=EveGroup(),
+        )
+        response = self.client.post(
+            f"{BASE_URL}",
+            {
+                "external_killmail_link": KM_LINK,
+                "fleet_id": self.fleet.id,
+                "is_corp_ship": False,
+            },
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(403, response.status_code)
+        self.assertIn(
+            "not covered",
+            response.json()["detail"].lower(),
+        )
 
     def test_get_srp_values(self):
         self.make_superuser()
@@ -666,6 +743,7 @@ class SrpRouterTestCase(TestCase):
 
     @patch("srp.helpers.EsiClient")
     def test_srp_with_log(self, esi_mock):
+        self._ensure_srp_program_for_jaguar_killmails()
         self.make_superuser()
         esi = esi_mock.return_value
 
