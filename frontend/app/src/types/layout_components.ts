@@ -1099,3 +1099,9 @@ export interface KillmailAnalysis {
     program:            SRPFrontendPrograms | null;
     candidate_fleets:   CandidateFleet[];
 }
+
+export interface SRPGroupHistory {
+    total:      number;
+    approved:   number;
+    rejected:   number;
+}

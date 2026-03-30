@@ -2,18 +2,20 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import type { SRPProgram } from '@dtypes/api.minmatar.org'
+import type { SRPProgram, SRPStatsHistoryGroup } from '@dtypes/api.minmatar.org'
 import { get_frontend_program } from '@helpers/fetching/srp'
-import type { SRPTargetValue } from '@dtypes/layout_components'
+import type { SRPTargetValue, SRPGroupHistory } from '@dtypes/layout_components'
 
 interface Props {
     programs:           SRPProgram[];
+    history_groups?:    SRPStatsHistoryGroup[];
     readonly:           boolean;
     init_tooltips:      boolean;
 }
 
 const {
     programs,
+    history_groups = [],
     readonly,
     init_tooltips,
 } = Astro.props
@@ -39,6 +41,40 @@ programs.forEach(program => {
         subcapitals_values.push(value)
 })
 
+const subcapitals_stats_history:SRPGroupHistory = {
+    approved: 0,
+    rejected: 0,
+    total: 0,
+}
+const dreads_stats_history:SRPGroupHistory = {
+    approved: 0,
+    rejected: 0,
+    total: 0,
+}
+const carriers_stats_history:SRPGroupHistory = {
+    approved: 0,
+    rejected: 0,
+    total: 0,
+}
+
+history_groups.forEach(history_group => {
+    const frontend_program = get_frontend_program(history_group.group_name)
+
+    if (frontend_program === 'carriers') {
+        carriers_stats_history.approved += history_group.approved
+        carriers_stats_history.rejected += history_group.rejected
+        carriers_stats_history.total += history_group.total
+    } else if (frontend_program === 'dreads') {
+        dreads_stats_history.approved += history_group.approved
+        dreads_stats_history.rejected += history_group.rejected
+        dreads_stats_history.total += history_group.total
+    } else {
+        subcapitals_stats_history.approved += history_group.approved
+        subcapitals_stats_history.rejected += history_group.rejected
+        subcapitals_stats_history.total += history_group.total
+    }
+})
+
 import Grid from '@components/compositions/Grid.astro';
 
 import SRPTile from '@components/blocks/SRPTile.astro';
@@ -57,7 +93,9 @@ import SRPTile from '@components/blocks/SRPTile.astro';
         description={t('subcapitals_program_description')}
         cover='/images/sbcapital-srp-cover.webp'
         values={subcapitals_values}
+        stats_history={history_groups ? subcapitals_stats_history : undefined}
         readonly={readonly}
+        init_tooltips={init_tooltips}
     >
         <small slot="values-footer">{t('subcapitals_program_hint')}</small>
     </SRPTile>
@@ -68,7 +106,9 @@ import SRPTile from '@components/blocks/SRPTile.astro';
         description={t('dreads_program_description')}
         cover='/images/dreads-srp-cover.webp'
         values={dreads_values}
+        stats_history={history_groups ? dreads_stats_history : undefined}
         readonly={readonly}
+        init_tooltips={init_tooltips}
     />
 
     <SRPTile
@@ -77,6 +117,8 @@ import SRPTile from '@components/blocks/SRPTile.astro';
         description={t('carriers_program_description')}
         cover='/images/carriers-srp-cover.webp'
         values={carriers_values}
+        stats_history={history_groups ? carriers_stats_history : undefined}
         readonly={readonly}
+        init_tooltips={init_tooltips}
     />
 </Grid>

@@ -2,6 +2,8 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
@@ -12,16 +14,22 @@ const is_superuser = (user ? user?.is_superuser : false)
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
+const can_view_srp = is_superuser || user_permissions.includes('srp.view_evefleetshipreimbursement')
 const can_add_srp = is_superuser || user_permissions.includes('srp.add_evefleetshipreimbursement')
 
-import type { SRPProgram } from '@dtypes/api.minmatar.org'
-import { get_srp_programs } from '@helpers/api.minmatar.org/srp'
+if (!can_view_srp)
+    return HTTP_403_Forbidden()
+
+import type { SRPProgram, SRPStatsHistory } from '@dtypes/api.minmatar.org'
+import { get_srp_programs, get_srp_stats_history } from '@helpers/api.minmatar.org/srp'
 
 let fetching_error:string | false = false
 let programs:SRPProgram[] = []
+let srp_stats_history:SRPStatsHistory | null = null
 
 try {
     programs = await get_srp_programs(auth_token as string)
+    srp_stats_history = await get_srp_stats_history(auth_token as string)
 } catch (error) {
     fetching_error = error.message
 }
@@ -33,6 +41,7 @@ const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 import SRPTiles from '@components/blocks/SRPTiles.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
+
 {fetching_error !== false ?
     <ErrorRefetch
         args={{
@@ -44,6 +53,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
     <SRPTiles
         programs={programs}
         readonly={!can_add_srp}
+        history_groups={srp_stats_history?.groups}
         init_tooltips={true}
     />
 }
