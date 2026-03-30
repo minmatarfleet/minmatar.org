@@ -55,7 +55,6 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 
 import CorporationMembersList from '@components/blocks/CorporationMembersList.astro';
-import TextBox from '@components/layout/TextBox.astro';
 import Input from '@components/blocks/Input.astro';
 import SelectFinder from '@components/blocks/SelectFinder.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
@@ -82,6 +81,7 @@ const page_title = t('corporations.members.unregistered.page_title')
             scrollable: true,
             overlay: true
         }}
+        sticky={true}
         x-data={`{
             main_count: ${main_count},
             alliance_members_count: ${alliance_members_count},
