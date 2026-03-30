@@ -57,7 +57,7 @@ export async function parse_response_error(response:Response, endpoint:string) {
 }
 
 export function get_error_message(status:number, endpoint:string) {
-    return `HTTP error! Status — ${status}<br><pre style="width: fit-content"><code>${endpoint}</code></pre>`
+    return `HTTP error! Status — ${status}\n\`${endpoint}\``
 }
 
 export function decode_unicode_escapes(text) {

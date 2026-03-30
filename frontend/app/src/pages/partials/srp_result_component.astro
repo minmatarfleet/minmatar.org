@@ -76,6 +76,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 
 import FireworksPopup from '@components/blocks/FireworksPopup.astro'
 import SRPWizardActions from '@components/blocks/SRPWizardActions.astro'
+import Markdown from '@components/blocks/Markdown.astro'
 ---
 
 {killmail_submitted &&
@@ -88,7 +89,7 @@ import SRPWizardActions from '@components/blocks/SRPWizardActions.astro'
 {submit_srp_error &&
     <Flexblock class="[ animate-fade-in-up text-center ]">
         <h4>⚠️ {t('srp_failed')}</h4>
-        <p>{submit_srp_error}</p>
+        <Markdown markdown={submit_srp_error} />
         <SRPWizardActions program={program as SRPFrontendPrograms} justification='center' />
     </Flexblock>
 }
