@@ -4,6 +4,7 @@ import type {
     NestedIndustryOrder,
     Product,
     Blueprint,
+    BlueprintDetail,
     HarvestOverviewItem,
     HarvestDrillDownResponse,
     ProductionOverviewItem,
@@ -231,6 +232,19 @@ export async function get_blueprints(is_copy:boolean = false) {
     } catch (error) {
         throw new Error(`Error fetching blueprints: ${error.message}`);
     }
+}
+
+export async function get_blueprint(item_id: number): Promise<BlueprintDetail> {
+    const ENDPOINT = `${API_ENDPOINT}/blueprints/${item_id}`
+    const response = await fetch(ENDPOINT, {
+        headers: { 'Content-Type': 'application/json' },
+    })
+    if (!response.ok) {
+        throw new Error(
+            get_error_message(response.status, `GET ${ENDPOINT}`)
+        )
+    }
+    return await response.json() as BlueprintDetail
 }
 
 const PLANETARY_ENDPOINT = `${API_ENDPOINT}/planetary`

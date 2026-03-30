@@ -17,9 +17,7 @@ SECTION_FORMUP = """<font size="13" color="#ffffffff">Staging: </font><font size
 
 SECTION_VOICE = """<font size="13" color="#ffffffff">Voice: </font><font size="13" color="#ffffe400"><loc><a href="{{discord_link}}">{{discord_name}}</a></loc></font>"""
 
-SECTION_DOCTRINE = """<font size="13" color="#bfffffff">Doctrine: </font><font size="13" color="#ffffe400"><loc><a href="{{doctrine_link}}">{{doctrine_name}}</a></loc>
-<br>
-</font>"""
+SECTION_DOCTRINE = """<font size="13" color="#bfffffff">Doctrine: </font><font size="13" color="#ffffe400"><loc><a href="{{doctrine_link}}">{{doctrine_name}}</a></loc></font>"""
 
 # Links section: header + bookmarks / broadcast / channels (white font)
 SECTION_LINKS_HEADER = """<font size="13" color="#ffffffff">Links</font>"""
@@ -117,7 +115,8 @@ def get_motd(
             SECTION_MISSING_LINK.replace("{{volunteer_url}}", volunteer_url)
         )
 
-    quote = html.escape(random.choice(rat_quotes))
+    # quote=False: EVE shows &#x27; / &quot; literally; still escape < > & for safety
+    quote = html.escape(random.choice(rat_quotes), quote=False)
     parts.append(SECTION_RAT_QUOTE.replace("{{quote}}", quote))
 
     return "\n".join(parts)

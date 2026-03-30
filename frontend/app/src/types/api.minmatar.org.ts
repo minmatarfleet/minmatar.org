@@ -1096,6 +1096,39 @@ export interface Blueprint {
     owner:                  BlueprintOwner;
 }
 
+export type BlueprintIndustryJobSource = 'character' | 'corporation'
+
+export interface BlueprintIndustryJob {
+    job_id:                 number;
+    source:                 BlueprintIndustryJobSource;
+    activity_id:            number;
+    blueprint_type_id:      number;
+    status:                 string;
+    installer_id:           number;
+    start_date:             string;
+    end_date:               string;
+    completed_date:         string | null;
+    duration:               number;
+    runs:                   number;
+    licensed_runs:          number;
+    cost:                   string | null;
+    location_id:            number;
+    output_location_id:     number;
+    blueprint_location_id:  number;
+    facility_id:            number;
+    character_id:           number | null;
+    character_name:         string | null;
+    corporation_id:         number | null;
+    corporation_name:       string | null;
+}
+
+export interface BlueprintDetail extends Blueprint {
+    quantity:               number;
+    is_original:            boolean;
+    current_jobs:           BlueprintIndustryJob[];
+    historical_jobs:        BlueprintIndustryJob[];
+}
+
 export interface FittingMarketData {
     fitting_id:             number;
     fitting_name:           string
