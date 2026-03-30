@@ -27,6 +27,7 @@ from srp.helpers import get_latest_program_amount
 from users.helpers import add_user_permission
 
 BASE_URL = "/api/srp"
+BASE_URL_V2_REQUESTS = "/api/srp/v2/requests"
 
 KM_CHAR = 634915984
 KM_ID = 126008813
@@ -226,6 +227,60 @@ class SrpRouterTestCase(TestCase):
         reimbursements = response.json()
         self.assertEqual(1, len(reimbursements))
         self.assertEqual("abc", reimbursements[0]["external_killmail_link"])
+
+    def test_v2_requests_list_pagination_and_detail(self):
+        self.make_superuser()
+        fc_char = EveCharacter.objects.create(
+            character_id=634915985,
+            character_name="Mr FC v2",
+            user=self.user,
+        )
+        set_primary_character(self.user, fc_char)
+        r1 = EveFleetShipReimbursement.objects.create(
+            user=self.user,
+            status="pending",
+            killmail_id=12340,
+            external_killmail_link="v2-a",
+            character_id=fc_char.character_id,
+            character_name=fc_char.character_name,
+            primary_character_id=fc_char.character_id,
+            primary_character_name=fc_char.character_name,
+            amount=100,
+            ship_name="Rifter",
+            ship_type_id=1234567,
+        )
+        r2 = EveFleetShipReimbursement.objects.create(
+            user=self.user,
+            status="approved",
+            killmail_id=12341,
+            external_killmail_link="v2-b",
+            character_id=fc_char.character_id,
+            character_name=fc_char.character_name,
+            primary_character_id=fc_char.character_id,
+            primary_character_name=fc_char.character_name,
+            amount=200,
+            ship_name="Rifter",
+            ship_type_id=1234567,
+        )
+
+        list_resp = self.client.get(
+            f"{BASE_URL_V2_REQUESTS}?limit=1&offset=0&status=pending",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, list_resp.status_code)
+        body = list_resp.json()
+        self.assertEqual(1, body["total"])
+        self.assertEqual(1, len(body["items"]))
+        self.assertEqual(1, body["limit"])
+        self.assertEqual(0, body["offset"])
+        self.assertEqual(r1.id, body["items"][0]["id"])
+
+        detail_resp = self.client.get(
+            f"{BASE_URL_V2_REQUESTS}/{r2.id}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, detail_resp.status_code)
+        self.assertEqual("v2-b", detail_resp.json()["external_killmail_link"])
 
     def test_srp_values_from_database(self):
         category, _ = EveCategory.objects.get_or_create(

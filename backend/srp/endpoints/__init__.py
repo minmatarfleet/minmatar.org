@@ -1,6 +1,7 @@
 from ninja import Router
 
 from srp.endpoints.programs import router as programs_router
+from srp.endpoints.requests import router as srp_requests_v2_router
 from srp.endpoints.reimbursements.get_fleet_srp import (
     PATH as get_fleet_srp_path,
     ROUTE_SPEC as get_fleet_srp_spec,
@@ -51,6 +52,8 @@ _REIMBURSEMENT_ROUTES = (
 )
 for method, path, spec, view in _REIMBURSEMENT_ROUTES:
     getattr(router, method)(path, **spec)(view)
+
+router.add_router("v2/requests", srp_requests_v2_router)
 
 router.add_router("programs", programs_router)
 router.add_router("stats", stats_router)

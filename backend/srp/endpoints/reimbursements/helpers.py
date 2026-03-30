@@ -1,22 +1,5 @@
-from django.contrib.auth.models import User
+"""Deprecated: use ``srp.endpoints.requests.helpers``."""
 
-from srp.models import EveFleetShipReimbursement
+from srp.endpoints.requests.helpers import can_update, duplicate_kill
 
-
-def duplicate_kill(details) -> bool:
-    return (
-        EveFleetShipReimbursement.objects.filter(
-            killmail_id=details.killmail_id
-        )
-        .exclude(status="rejected")
-        .exclude(status="withdrawn")
-        .exists()
-    )
-
-
-def can_update(user: User, reimbursement: EveFleetShipReimbursement) -> bool:
-    if reimbursement.user == user:
-        return True
-    if user.has_perm("srp.change_evefleetshipreimbursement"):
-        return True
-    return False
+__all__ = ["can_update", "duplicate_kill"]
