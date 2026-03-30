@@ -69,7 +69,7 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
                 </div>
 
                 <FlexInline gap='var(--space-3xs)' justification='space-between'>
-                    <div class="[ basis-[315px] ]">
+                    <div class="[ basis-[305px] ]">
                         <FixedFluid width='32px' breakpoint='30%' gap='var(--space-2xs)' class="[  items-center! text-highlight ]">
                             <div
                                 class="[ text-highlight h-[32px] ]"
@@ -131,11 +131,10 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
                         </div>
                     </FlexInline>
 
-                    <FlexInline class="[ basis-[300px] ]">
-                        {item.unassigned_quantity > 0 &&
+                    <FlexInline class="[ basis-[310px] ]">
+                        {(item.unassigned_quantity > 0 || user_assignment) &&
                             <ButtonClaimOrder
                                 target_id={`order-item-${order_id}`}
-                                title={t('claim_order_item')}
                                 reclaim={Boolean(user_assignment)}
                                 order_id={order_id}
                                 claimed={user_assignment?.quantity ?? 0}
