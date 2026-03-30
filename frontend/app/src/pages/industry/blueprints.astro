@@ -2,23 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
-
-import type { Blueprint } from '@dtypes/api.minmatar.org'
-import { fetch_blueprints } from '@helpers/fetching/industry'
-
-let blueprints:Blueprint[] = []
-let fetching_error:string | false = false
-
-try {
-    blueprints = await fetch_blueprints()
-} catch (error) {
-    fetching_error = (prod_error_messages() ? t('get_blueprints_error') : error.message)
-}
-
 const BLUEPRINTS_PARTIAL_URL = translatePath('/partials/blueprints_component')
-
-const count_text = t(blueprints.length != 1 ? 'blueprints_plural' : 'blueprints_singular').replace('{count}', blueprints?.length.toLocaleString())
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -28,10 +12,11 @@ import PageTitle from '@components/page/PageTitle.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import BlockList from '@components/compositions/BlockList.astro';
+import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro';
 
-import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import BlueprintTableAlpine from '@components/blocks/BlueprintTableAlpine.astro'
 import Input from '@components/blocks/Input.astro'
+import Form from '@components/blocks/Form.astro'
 import Button from '@components/blocks/Button.astro'
 import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro'
 
@@ -53,9 +38,11 @@ const page_title = t('industry.blueprints.page_title');
         }}
         sticky={true}
         x-data={`{
-            blueprints: ${JSON.stringify(blueprints)},
-            blueprints_filtered: [],
+            blueprints: [],
+            blueprints_sorted: [],
+            blueprint_query: '',
             item_listing_limit: $persist(1000),
+            showing_results: false,
             LOCATION_TEXT: {
                 'Hangar': '${t('Hangar')}',
                 'Cargo': '${t('Cargo')}',
@@ -66,38 +53,27 @@ const page_title = t('industry.blueprints.page_title');
             },
             sorting: 'best_efficiency',
             blueprints_count: 0,
-            count_text: '${count_text}',
             runs_count_plural: '${t('runs_count_plural')}',
             runs_count_singular: '${t('runs_count_singular')}',
             showing_blueprints_plural: '${t('showing_blueprints_plural')}',
             showing_blueprints_singular: '${t('showing_blueprints_singular')}',
-            item_name_filter: '',
             filter() {
-                if (this.item_name_filter === '') {
-                    this.blueprints_filtered = []
-                    this.blueprints_count = ${blueprints.length}
-                    return
-                }
+                this.blueprints_sorted = this.blueprints
+                this.blueprints_count = this.blueprints_sorted.length
 
-                this.blueprints_filtered = this.blueprints.filter(blueprint => blueprint.blueprint_name.toLowerCase().includes(this.item_name_filter.toLowerCase()))
-                this.blueprints_count = this.blueprints_filtered.length
-
-                if (this.item_listing_limit !== -1 && this.blueprints_count > this.item_listing_limit) this.blueprints_filtered = []
+                if (this.item_listing_limit !== -1 && this.blueprints_count > this.item_listing_limit) this.blueprints_sorted = []
 
                 if (this.sorting !== 'best_efficiency')
-                    this.blueprints_filtered = this.blueprints_filtered.sort((a, b) => b[this.sorting] - a[this.sorting])
+                    this.blueprints_sorted = this.blueprints_sorted.sort((a, b) => b[this.sorting] - a[this.sorting])
                 else
-                    this.blueprints_filtered = this.blueprints_filtered.sort((a, b) => (b.material_efficiency + b.time_efficiency) - (a.material_efficiency + a.time_efficiency))
+                    this.blueprints_sorted = this.blueprints_sorted.sort((a, b) => (b.material_efficiency + b.time_efficiency) - (a.material_efficiency + a.time_efficiency))
             },
         }`}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
-            <Flexblock gap="var(--space-3xs)">
-                <PageTitle>
-                    {page_title}
-                </PageTitle>
-                <small x-text="count_text">{count_text}</small>
-            </Flexblock>
+            <PageTitle>
+                {page_title}
+            </PageTitle>
             <FlexInline>
                 <Button href={translatePath('/industry/blueprints/copies/')}>
                     {t('find_copies')}
@@ -107,15 +83,36 @@ const page_title = t('industry.blueprints.page_title');
 
         <FlexInline slot="subheader" justification='center'>
             <Flexblock class="[ basis-200 ]" gap='var(--space-2xs)'>
-                <Input
-                    type="text"
-                    placeholder={t('find_blueprints_placeholder')}
-                    x-model="item_name_filter"
-                    x-on:input="filter()"
-                    x-init="$el.focus()"
+                <Form
+                    hx-get={BLUEPRINTS_PARTIAL_URL}
+                    hx-trigger="submit"
+                    hx-target="#blueprint-table"
+                    hx-indicator=".loader"
+                    block_submit={true}
                 >
-                    <MagnifierIcon slot="icon" />
-                </Input>
+                    <FlexInlineSiblings
+                        min-shink-width='250px'
+                        shrinkable-sibbling='first'
+                    >
+                        <Input
+                            type="text"
+                            placeholder={t('find_blueprints_placeholder')}
+                            name="blueprint_query"
+                            x-model="blueprint_query"
+                            x-init="$el.focus()"
+                        >
+                            <MagnifierIcon slot="icon" />
+                        </Input>
+                        <Button
+                            type="submit"
+                            off_disable={true}
+                            x-bind:disabled="blueprint_query.length < 3"
+                            disabled
+                        >
+                            {t('search')}
+                        </Button>
+                    </FlexInlineSiblings>
+                </Form>
 
                 <FlexInline>
                     <h4>{t('sort_by')}</h4>
@@ -151,14 +148,14 @@ const page_title = t('industry.blueprints.page_title');
             <FlexInline justification='space-between' class="[ items-start! ]">
                 <FlexInline>
                     <span
-                        x-show="item_name_filter.length > 0 && blueprints_count > 0 && blueprints_count < item_listing_limit"
+                        x-show="showing_results && blueprints_count > 0 && blueprints_count < item_listing_limit"
                         x-text="(blueprints_count != 1 ? showing_blueprints_plural : showing_blueprints_singular).replace('{count}', blueprints_count.toLocaleString())"
                         style="display: none"
                     />
 
-                    <span x-show="item_name_filter !== '' && blueprints_count > item_listing_limit">{t('narrow_down_blueprints')}</span>
+                    <span x-show="showing_results && blueprints_count > item_listing_limit">{t('narrow_down_blueprints')}</span>
                     
-                    <span x-show="item_name_filter !== '' && blueprints_count === 0">{t('no_blueprints_to_display')}</span>
+                    <span x-show="showing_results && blueprints_count === 0">{t('no_blueprints_to_display')}</span>
                 </FlexInline>
 
                 <FlexInline>
@@ -206,19 +203,9 @@ const page_title = t('industry.blueprints.page_title');
                 </FlexInline>
             </FlexInline>
 
-            {fetching_error !== false ?
-                <ErrorRefetch
-                    args={{
-                        partial: BLUEPRINTS_PARTIAL_URL,
-                        message: fetching_error,
-                        delay: 0,
-                    }}
-                />
-                :
-                <BlueprintTableAlpine
-                    is_copy={false}
-                />
-            }
+            <BlueprintTableAlpine
+                is_copy={false}
+            />
         </Flexblock>
     </PageWide>
 

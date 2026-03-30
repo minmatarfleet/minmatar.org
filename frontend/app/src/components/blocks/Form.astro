@@ -1,0 +1,21 @@
+---
+interface Props {
+    block_submit?:          boolean;
+    block_only_submit?:     boolean;
+    [propName: string]: any;
+}
+
+const {
+    block_submit = false,
+    block_only_submit = false,
+    ...attributes
+} = Astro.props;
+---
+
+<form
+    hx-on--before-request={block_submit || block_only_submit ? `this.querySelector('[type="submit"]').setAttribute('disabled','')` : undefined}
+    hx-on--after-request={block_submit ? `this.querySelector('[type="submit"]').removeAttribute('disabled')` : undefined}
+    {...attributes}
+>
+    <slot />
+</form>

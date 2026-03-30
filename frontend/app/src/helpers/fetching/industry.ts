@@ -77,8 +77,8 @@ export async function fetch_orders_by_locations(history:boolean = false) {
     return orders_locations
 }
 
-export async function fetch_blueprints(is_copy:boolean = false) {
-    let blueprints = await get_blueprints(is_copy)
+export async function fetch_blueprints(query:string, is_copy:boolean = false) {
+    let blueprints = await get_blueprints(query, is_copy)
     blueprints = blueprints.map(blueprint => {
         blueprint.location_flag = blueprint.location_flag.startsWith('CorpSAG') ? 'CorpSAG' : blueprint.location_flag
         return blueprint
