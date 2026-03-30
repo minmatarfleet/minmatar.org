@@ -1,0 +1,22 @@
+---
+import type { Blueprint } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    blueprints:         Blueprint[];
+    is_copy:            boolean;
+}
+
+const {
+    blueprints,
+    is_copy,
+} = Astro.props
+
+import BlueprintTableItem from '@components/blocks/BlueprintTableItem.astro';
+import Table from '@components/blocks/Table.astro';
+---
+
+<Table>
+    {blueprints.map(blueprint =>
+        <BlueprintTableItem blueprint={blueprint} is_copy={is_copy} />
+    )}
+</Table>

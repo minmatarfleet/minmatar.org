@@ -204,12 +204,12 @@ export async function get_product_breakdown(product_id:number, quantity:number, 
     }
 }
 
-export async function get_blueprints(is_copy:boolean = false) {
+export async function get_blueprints(query:string, is_copy:boolean = false) {
     const headers = {
         'Content-Type': 'application/json',
     }
 
-    const ENDPOINT = `${API_ENDPOINT}/blueprints${is_copy ? '/copies/copies' : ''}`
+    const ENDPOINT = `${API_ENDPOINT}/blueprints${is_copy ? '/copies/copies' : ''}?q=${query}`
 
     console.log(`Requesting: ${ENDPOINT}`)
 
