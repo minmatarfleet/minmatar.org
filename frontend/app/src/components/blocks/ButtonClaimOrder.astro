@@ -7,7 +7,6 @@ import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
 
 interface Props {
     target_id:      string;
-    title:          string;
     reclaim:        boolean;
     order_id:       number;
     claimed:        number;
@@ -20,7 +19,6 @@ interface Props {
 
 const {
     target_id,
-    title,
     reclaim,
     order_id,
     claimed,
@@ -65,7 +63,7 @@ import ItemBadge from '@components/blocks/ItemBadge.astro';
     max_width='520px'
     disable_when_open={true}
 >
-    {reclaim ? t('reclaim') : t('claim')}
+    {reclaim ? t('my_claim') : t('claim')}
 
     <form
         slot="dialog" 
@@ -77,9 +75,12 @@ import ItemBadge from '@components/blocks/ItemBadge.astro';
         x-on:submit="close_dialog(false)"
         x-data={`{
             quantity: 0,
+            claimed: ${claimed},
             target_estimated_margin: ${item.target_estimated_margin},
             total_text: '0 ISK',
             total_text_template: '{value} ISK',
+            units_plural_template: '${t('units_plural')}',
+            units_singular_template: '${t('units_singular')}',
             number_thousand_separator(val) {
                 return val.toLocaleString('${lang}', {
                     minimumFractionDigits: 0,
@@ -87,14 +88,15 @@ import ItemBadge from '@components/blocks/ItemBadge.astro';
                 })
             },
             update_total_text() {
-                const total = this.quantity * this.target_estimated_margin
+                const total = (this.claimed + this.quantity) * this.target_estimated_margin
                 this.total_text = this.total_text_template.replace('{value}', this.number_thousand_separator(total))
             }
         }`}
+        x-init="update_total_text()"
     >
         <Flexblock gap="var(--space-l)">
             <Flexblock gap="var(--space-s)">
-                <h3>{title}</h3>
+                <h3>{reclaim ? t('my_claim') : t('claim_order')}</h3>
                     
                 <p>{reclaim ? t('define_add_assignment_quantity') : t('define_produce_quantity')}</p>
                 
@@ -129,6 +131,15 @@ import ItemBadge from '@components/blocks/ItemBadge.astro';
                         <input type="hidden" name="character_id" value={character_id} />
                     </FluidFixed>
                     <Flexblock gap='var(--space-3xs)'>
+                        <FlexInline justification='flex-end'>
+                            <small>{t('total_to_produce')}</small>
+                            <small
+                                class="[ basis-[160px] text-right ]"
+                                x-text="quantity + claimed !== 1 ? units_plural_template.replace('{count}', quantity + claimed) : units_singular_template"
+                            >
+                                {number_thousand_separator(claimed ?? 0)} {claimed !== 1 ? t('units_plural').replace('{count}', String(claimed)) : t('units_singular')}
+                            </small>
+                        </FlexInline>
                         <FlexInline justification='flex-end'>
                             <small>{t('target_unit_price')}</small>
                             <small class="[ basis-[160px] text-right ]">{number_thousand_separator(parseInt(item.target_unit_price ?? '0') ?? 0)} ISK</small>

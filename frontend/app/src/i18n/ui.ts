@@ -2081,7 +2081,7 @@ export const ui = {
         'define_produce_quantity': 'Define the quantity to produce.',
         'define_add_assignment_quantity': 'Define the quantity to add to your assignment.',
         'quantity_required': 'You should define the quantity first.',
-        'claim_order_item': 'Claim order item',
+        'claim_order': 'Claim order',
         'claim_count_plural': 'Claimed {count} out of {total}',
         'claim_count_singular': '1 claimed out of {total}',
         'target_unit_price': 'Target unit price:',
