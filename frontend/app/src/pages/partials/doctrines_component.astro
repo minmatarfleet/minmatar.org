@@ -72,7 +72,7 @@ try {
         doctrines: doctrines.sort((a, b) => 
             SHIP_TYPES_SORTED.indexOf(a.primary_fittings[0].ship_type) - SHIP_TYPES_SORTED.indexOf(b.primary_fittings[0].ship_type)
         ),
-        name: t('all_locations'),
+        name: t('all_doctrines'),
     })
 } catch (error) {
     fetch_doctrines_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
