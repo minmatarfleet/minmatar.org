@@ -17,7 +17,6 @@ from srp.helpers import (
     UserCharacterMismatch,
     get_killmail_details,
     get_latest_program_amount,
-    get_reimbursement_amount,
     is_valid_for_reimbursement,
 )
 from srp.models import EveFleetShipReimbursement
@@ -79,11 +78,11 @@ def create_fleet_srp(request, payload: CreateEveFleetReimbursementRequest):
         return 403, {"detail": f"Killmail not eligible for SRP, {reason}"}
 
     reimbursement_program_amount = get_latest_program_amount(details.ship)
-    reimbursement_amount = (
-        reimbursement_program_amount.srp_value
-        if reimbursement_program_amount
-        else get_reimbursement_amount(details.ship)
-    )
+    if not reimbursement_program_amount:
+        return 403, {
+            "detail": "Ship type is not covered by the reimbursement program"
+        }
+    reimbursement_amount = reimbursement_program_amount.srp_value
 
     reimbursement = EveFleetShipReimbursement.objects.create(
         fleet=fleet,
