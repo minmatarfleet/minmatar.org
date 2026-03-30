@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { lang, t } = i18n(Astro.url)
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -8,15 +8,17 @@ import * as jose from 'jose'
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 
-import type { SRPTargetValue, SRPFrontendPrograms } from '@dtypes/layout_components'
+import type { SRPTargetValue, SRPFrontendPrograms, SRPGroupHistory } from '@dtypes/layout_components'
 
 interface Props {
-    id:             string;
-    program:        SRPFrontendPrograms;
-    description:    string;
-    cover:          string;
-    values?:        SRPTargetValue[];
-    readonly?:      boolean;
+    id:                 string;
+    program:            SRPFrontendPrograms;
+    description:        string;
+    cover:              string;
+    values?:            SRPTargetValue[];
+    stats_history?:     SRPGroupHistory;
+    readonly?:          boolean;
+    init_tooltips:      boolean;
 }
 
 const {
@@ -25,14 +27,16 @@ const {
     description,
     cover,
     values,
+    stats_history,
     readonly = false,
+    init_tooltips,
 } = Astro.props
 
 const values_sorted = values ? values.sort((a, b) => a.value - b.value) : undefined
 
 const SLIDES_PER_VIEW = 4
 
-import { number_thousand_separator } from '@helpers/numbers'
+import { number_thousand_separator, number_name } from '@helpers/numbers'
 
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -54,7 +58,51 @@ import ButtonAuth from '@components/blocks/ButtonAuth.astro';
         description={description}
         cover={cover}
         transparent={true}
-    />
+    >
+        {stats_history &&
+            <Flexblock slot="subtitle">
+                <FlexInline justification='space-between'>
+                    <Flexblock gap='var(--space-3xs)'>
+                        <small class="[ text-highlight ]">{t('total_requested')}</small>
+                        <p>
+                            <span
+                                data-tippy-content={number_name(stats_history.total, lang)}
+                                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                            >
+                                {number_thousand_separator(stats_history.total)}
+                            </span>
+                            ISK
+                        </p>
+                    </Flexblock>
+                    <Flexblock gap='var(--space-3xs)'>
+                        <small class="[ text-highlight ]">{t('approved')}</small>
+                        <p class="[ text-green ]">
+                            <span
+                                data-tippy-content={number_name(stats_history.approved, lang)}
+                                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                            >
+                                {number_thousand_separator(stats_history?.approved)}
+                            </span>
+                            ISK
+                        </p>
+                    </Flexblock>
+                    <Flexblock gap='var(--space-3xs)'>
+                        <small class="[ text-highlight ]">{t('rejected')}</small>
+                        <p class="[ text-red ]">
+                            <span
+                                data-tippy-content={number_name(stats_history.rejected, lang)}
+                                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                            >
+                                {number_thousand_separator(stats_history?.rejected)}
+                            </span>
+                            ISK
+                        </p>
+                    </Flexblock>
+                </FlexInline>
+                <small>{t('based_on_the_last_90_days')}</small>
+            </Flexblock>
+        }
+    </Tile>
 
     <Wrapper
         class="[ pb-(--component-padding-block)! grow ]"

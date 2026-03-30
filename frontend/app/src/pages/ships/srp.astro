@@ -22,14 +22,16 @@ const can_add_srp = is_superuser || user_permissions.includes('srp.add_evefleets
 if (!can_view_srp)
     return HTTP_403_Forbidden()
 
-import type { SRPProgram } from '@dtypes/api.minmatar.org'
-import { get_srp_programs } from '@helpers/api.minmatar.org/srp'
+import type { SRPProgram, SRPStatsHistory } from '@dtypes/api.minmatar.org'
+import { get_srp_programs, get_srp_stats_history } from '@helpers/api.minmatar.org/srp'
 
 let fetching_error:string | false = false
 let programs:SRPProgram[] = []
+let srp_stats_history:SRPStatsHistory | null = null
 
 try {
     programs = await get_srp_programs(auth_token as string)
+    srp_stats_history = await get_srp_stats_history(auth_token as string)
 } catch (error) {
     fetching_error = error.message
 }
@@ -132,6 +134,7 @@ const leading_text = t('ships.srp.leading_text');
                 <SRPTiles
                     programs={programs}
                     readonly={!can_add_srp}
+                    history_groups={srp_stats_history?.groups}
                     init_tooltips={false}
                 />
             }

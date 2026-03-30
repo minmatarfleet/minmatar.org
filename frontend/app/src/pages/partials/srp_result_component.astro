@@ -80,7 +80,7 @@ import SRPWizardActions from '@components/blocks/SRPWizardActions.astro'
 
 {killmail_submitted &&
     <FireworksPopup
-        message={t('srp_submit_success').replace('{time}', response_days ? `${response_days} days` : t('not_available').toLowerCase())}
+        message={t('srp_submit_success').replace('{time}', response_days ? `${response_days.toFixed(0)} days` : t('not_available').toLowerCase())}
     >
         <SRPWizardActions program={program as SRPFrontendPrograms} justification='center' />
     </FireworksPopup>

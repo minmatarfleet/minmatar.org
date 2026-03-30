@@ -1,5 +1,14 @@
 import { parse_response_error, query_string } from '@helpers/string'
-import type { SRP, SRPStatus, SRPFilter, SRPRequest, KillmailResolve, SRPProgram, SRPStatsOverview } from '@dtypes/api.minmatar.org'
+import type {
+    SRP,
+    SRPStatus,
+    SRPFilter,
+    SRPRequest,
+    KillmailResolve,
+    SRPProgram,
+    SRPStatsOverview,
+    SRPStatsHistory,
+} from '@dtypes/api.minmatar.org'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/srp`
 
@@ -201,5 +210,33 @@ export async function get_srp_stats(access_token:string) {
         return await response.json() as SRPStatsOverview
     } catch (error) {
         throw new Error(`Error reading SRP stats overview: ${error.message}`);
+    }
+}
+
+export async function get_srp_stats_history(access_token:string) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/stats/history`
+    const METHOD = 'GET'
+
+    console.log(`Requesting ${METHOD}: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers,
+            method: METHOD,
+        })
+
+        // console.log(response)
+
+        if (!response.ok)
+            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`))
+        
+        return await response.json() as SRPStatsHistory
+    } catch (error) {
+        throw new Error(`Error reading SRP stats history: ${error.message}`);
     }
 }

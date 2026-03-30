@@ -1298,3 +1298,38 @@ export interface SRPStatsOverview {
     pending_total:              number;
     average_response_days:      number;
 }
+
+export interface SRPStatsHistoryRequests {
+    total:      number;
+    approved:   number;
+    rejected:   number;
+}
+
+export interface SRPStatsHistoryAmounts {
+    total:      number;
+    approved:   number;
+    rejected:   number;
+}
+
+export interface SRPStatsHistoryGroup {
+    group_name:     string,
+    group_id:       number;
+    total:          number;
+    approved:       number;
+    rejected:       number;
+}
+
+export interface SRPStatsHistoryType {
+    type_name:  string,
+    type_id:    number;
+    total:      number;
+    approved:   number;
+    rejected:   number;
+}
+
+export interface SRPStatsHistory {
+    requests:   SRPStatsHistoryRequests;
+    amounts:    SRPStatsHistoryAmounts;
+    groups:     SRPStatsHistoryGroup[];
+    types:      SRPStatsHistoryType[];
+}
