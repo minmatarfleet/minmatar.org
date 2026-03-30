@@ -1,64 +1,24 @@
-"""PATCH /{reimbursement_id} — update SRP request status."""
-
-from django.utils import timezone
+"""PATCH /{reimbursement_id} — update SRP (deprecated; use PATCH /api/srp/v2/requests/{id})."""
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
-from srp.endpoints.reimbursements.helpers import can_update
 from srp.endpoints.reimbursements.schemas import (
     SrpPatchResult,
     UpdateEveFleetReimbursementRequest,
 )
-from srp.helpers import send_decision_notification
-from srp.models import EveFleetShipReimbursement
+from srp.endpoints.requests.patch_request import patch_srp_request
 
 PATH = "/{int:reimbursement_id}"
 METHOD = "patch"
 ROUTE_SPEC = {
     "auth": AuthBearer(),
     "response": {200: SrpPatchResult, 403: ErrorResponse, 404: ErrorResponse},
-    "description": (
-        "Update an SRP request. Owners may withdraw; "
-        "srp.change_evefleetshipreimbursement may set any status."
-    ),
+    "deprecated": True,
+    "description": "Deprecated. Use PATCH /api/srp/v2/requests/{id}.",
 }
 
 
 def update_fleet_srp(
     request, reimbursement_id: int, payload: UpdateEveFleetReimbursementRequest
 ):
-    reimbursement = EveFleetShipReimbursement.objects.filter(
-        id=reimbursement_id
-    ).first()
-
-    if not reimbursement:
-        return 404, {"detail": "Reimbursement does not exist"}
-
-    if not can_update(request.user, reimbursement):
-        return 403, {
-            "detail": "User missing permission srp.change_evefleetshipreimbursement"
-        }
-
-    if not request.user.has_perm("srp.change_evefleetshipreimbursement"):
-        if payload.status != "withdrawn":
-            return 403, {"detail": "Permission denied"}
-
-    old_status = reimbursement.status
-    reimbursement.status = payload.status
-    if payload.status == "approved" and old_status != "approved":
-        reimbursement.approved_at = timezone.now()
-    reimbursement.save()
-
-    if reimbursement.status in ["approved", "rejected"]:
-        try:
-            send_decision_notification(reimbursement)
-            mail_result = "Success"
-        except Exception as err:
-            mail_result = f"Error sending mail: {err}"
-    else:
-        mail_result = "N/A"
-
-    return SrpPatchResult(
-        database_update_status="Success",
-        evemail_status=mail_result,
-    )
+    return patch_srp_request(request, reimbursement_id, payload)
