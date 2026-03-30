@@ -47,6 +47,7 @@ import ItemBadge from '@components/blocks/ItemBadge.astro';
 import BadgeSwiper from '@components/blocks/BadgeSwiper.astro';
 import ButtonAddKillmail from '@components/blocks/ButtonAddKillmail.astro';
 import ButtonAuth from '@components/blocks/ButtonAuth.astro';
+import SRPStat from '@components/blocks/SRPStat.astro';
 ---
 <Flexblock
     id={id}
@@ -60,47 +61,10 @@ import ButtonAuth from '@components/blocks/ButtonAuth.astro';
         transparent={true}
     >
         {stats_history &&
-            <Flexblock slot="subtitle">
-                <FlexInline justification='space-between'>
-                    <Flexblock gap='var(--space-3xs)'>
-                        <small class="[ text-highlight ]">{t('total_requested')}</small>
-                        <p>
-                            <span
-                                data-tippy-content={number_name(stats_history.total, lang)}
-                                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                            >
-                                {number_thousand_separator(stats_history.total)}
-                            </span>
-                            ISK
-                        </p>
-                    </Flexblock>
-                    <Flexblock gap='var(--space-3xs)'>
-                        <small class="[ text-highlight ]">{t('approved')}</small>
-                        <p class="[ text-green ]">
-                            <span
-                                data-tippy-content={number_name(stats_history.approved, lang)}
-                                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                            >
-                                {number_thousand_separator(stats_history?.approved)}
-                            </span>
-                            ISK
-                        </p>
-                    </Flexblock>
-                    <Flexblock gap='var(--space-3xs)'>
-                        <small class="[ text-highlight ]">{t('rejected')}</small>
-                        <p class="[ text-red ]">
-                            <span
-                                data-tippy-content={number_name(stats_history.rejected, lang)}
-                                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                            >
-                                {number_thousand_separator(stats_history?.rejected)}
-                            </span>
-                            ISK
-                        </p>
-                    </Flexblock>
-                </FlexInline>
-                <small>{t('based_on_the_last_90_days')}</small>
-            </Flexblock>
+            <FlexInline slot="subtitle">
+                <SRPStat value={stats_history?.approved} type='approved' init_tooltips={init_tooltips} />
+                <SRPStat value={stats_history?.rejected} type='rejected' init_tooltips={init_tooltips} />
+            </FlexInline>
         }
     </Tile>
 
@@ -157,6 +121,7 @@ import ButtonAuth from '@components/blocks/ButtonAuth.astro';
                             program={program}
                             description={description}
                             cover={cover}
+                            init_tooltips={init_tooltips}
                         />
                     </div>
                 </FlexInline>
