@@ -2163,5 +2163,9 @@ export const ui = {
         'carriers_fleet_requirements': '⚠️ Only ships lost during **Strategic Fleets** and **Skirmishes** are eligible for this program. Skirmish fleets are limited to **2 Carriers** and **1 FAX**.',
         'total_requested': 'Total requested',
         'based_on_the_last_90_days': '* Stats based on the last 90 days',
+        'total_to_produce': 'Total to produce:',
+        'units_plural': '{count} units',
+        'units_singular': '1 unit',
+        'my_claim': 'My claim',
     },
 } as const;
