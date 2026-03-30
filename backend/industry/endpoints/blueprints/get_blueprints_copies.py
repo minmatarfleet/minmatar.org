@@ -1,11 +1,11 @@
 """GET "copies" - list blueprint copies (BPCs) with owner details. Primary character ID in SQL."""
 
-from typing import List
+from typing import List, Optional
 
 from django.db.models import F, OuterRef, Subquery, Value
 from django.db.models.functions import Coalesce
 from eveuniverse.models import EveType
-from ninja import Router
+from ninja import Query, Router
 
 from eveonline.models import (
     EveCharacter,
@@ -17,21 +17,42 @@ from industry.endpoints.blueprints.schemas import (
     BlueprintCopyResponse,
     BlueprintOwnerResponse,
 )
+from industry.endpoints.blueprints.type_name_filter import (
+    filter_queryset_by_type_name_icontains,
+)
 
 PATH = "copies"
 METHOD = "get"
 ROUTE_SPEC = {
-    "summary": "List blueprint copies (BPCs) with owner entity and primary character id",
+    "summary": (
+        "List blueprint copies (BPCs) with owner entity and primary character id. "
+        "Pass query param q (non-empty) to filter by blueprint type name; omit q for an empty list."
+    ),
     "response": {200: List[BlueprintCopyResponse]},
 }
 
 router = Router(tags=["Industry - Blueprints"])
 
 
-def get_blueprints_copies(request) -> List[BlueprintCopyResponse]:
+def get_blueprints_copies(
+    request,
+    q: Optional[str] = Query(
+        None,
+        description=(
+            "Blueprint type name substring (case-insensitive). "
+            "Empty or omitted returns an empty list."
+        ),
+    ),
+) -> List[BlueprintCopyResponse]:
+    search = (q or "").strip()
+    if not search:
+        return []
+
     # Two single-level Subqueries so OuterRef resolves to blueprint queryset
     char_bpcs = (
-        EveCharacterBlueprint.objects.exclude(quantity=-1)
+        filter_queryset_by_type_name_icontains(
+            EveCharacterBlueprint.objects.exclude(quantity=-1), search
+        )
         .select_related("character")
         .annotate(
             _owner_user_id=F("character__user_id"),
@@ -66,7 +87,9 @@ def get_blueprints_copies(request) -> List[BlueprintCopyResponse]:
     )
 
     corp_bpcs = (
-        EveCorporationBlueprint.objects.exclude(quantity=-1)
+        filter_queryset_by_type_name_icontains(
+            EveCorporationBlueprint.objects.exclude(quantity=-1), search
+        )
         .select_related("corporation", "corporation__ceo")
         .annotate(
             _owner_user_id=F("corporation__ceo__user_id"),

@@ -1,11 +1,11 @@
 """GET "" - list blueprint originals (BPOs) with owner details. Primary character ID in SQL."""
 
-from typing import List
+from typing import List, Optional
 
 from django.db.models import F, OuterRef, Subquery, Value
 from django.db.models.functions import Coalesce
 from eveuniverse.models import EveType
-from ninja import Router
+from ninja import Query, Router
 
 from eveonline.models import (
     EveCharacter,
@@ -17,23 +17,44 @@ from industry.endpoints.blueprints.schemas import (
     BlueprintOwnerResponse,
     BlueprintOriginalResponse,
 )
+from industry.endpoints.blueprints.type_name_filter import (
+    filter_queryset_by_type_name_icontains,
+)
 
 PATH = ""
 METHOD = "get"
 ROUTE_SPEC = {
-    "summary": "List blueprint originals (BPOs) with owner entity and primary character id",
+    "summary": (
+        "List blueprint originals (BPOs) with owner entity and primary character id. "
+        "Pass query param q (non-empty) to filter by blueprint type name; omit q for an empty list."
+    ),
     "response": {200: List[BlueprintOriginalResponse]},
 }
 
 router = Router(tags=["Industry - Blueprints"])
 
 
-def get_blueprints(request) -> List[BlueprintOriginalResponse]:
+def get_blueprints(
+    request,
+    q: Optional[str] = Query(
+        None,
+        description=(
+            "Blueprint type name substring (case-insensitive). "
+            "Empty or omitted returns an empty list."
+        ),
+    ),
+) -> List[BlueprintOriginalResponse]:
+    search = (q or "").strip()
+    if not search:
+        return []
+
     # Two single-level Subqueries so OuterRef resolves to blueprint queryset (no nested OuterRef)
     # 1) primary_character_pk = EvePlayer.primary_character_id for owner's user_id
     # 2) primary_character_id = EveCharacter.character_id for that pk
     char_bpos = (
-        EveCharacterBlueprint.objects.filter(quantity=-1)
+        filter_queryset_by_type_name_icontains(
+            EveCharacterBlueprint.objects.filter(quantity=-1), search
+        )
         .select_related("character")
         .annotate(
             _owner_user_id=F("character__user_id"),
@@ -68,7 +89,9 @@ def get_blueprints(request) -> List[BlueprintOriginalResponse]:
     )
 
     corp_bpos = (
-        EveCorporationBlueprint.objects.filter(quantity=-1)
+        filter_queryset_by_type_name_icontains(
+            EveCorporationBlueprint.objects.filter(quantity=-1), search
+        )
         .select_related("corporation", "corporation__ceo")
         .annotate(
             _owner_user_id=F("corporation__ceo__user_id"),
