@@ -180,6 +180,13 @@ CELERYBEAT_TRIBES = [
             "schedule": crontab(minute=27, hour="*"),
         },
     ),
+    (
+        "[Tribes] Remove tribe members without tribe permission",
+        {
+            "task": "tribes.tasks.remove_tribe_members_without_permission",
+            "schedule": schedule(timedelta(minutes=30)),
+        },
+    ),
 ]
 
 # Misc (Celery, Fleets, ESI, Reminders, Reddit, Discord, Mumble)
