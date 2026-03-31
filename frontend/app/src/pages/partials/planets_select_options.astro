@@ -2,8 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
-
 import { find_system_planets, find_systems_moons, get_system_id } from '@helpers/sde/map'
 
 const system = Astro.url.searchParams.get('system') as string
@@ -22,7 +20,7 @@ try {
         (await find_systems_moons([ system_id ])).map(moon => moon.name) :
         (await find_system_planets(system_id)).map(planet => planet.name)
 } catch (error) {
-    fetch_planets_error = prod_error_messages() ? t('fetch_planets_error') : error.message
+    fetch_planets_error = error.message
 }
 
 const invalid_planet = Boolean(fetch_planets_error)

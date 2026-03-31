@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_403_Forbidden, HTTP_500_Server_Error } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -38,7 +37,7 @@ if (Astro.request.method === "PATCH") {
     } catch (error) {        
         alert = {
             title: t('set_prime_time'),
-            content: prod_error_messages() ? t('set_prime_time_error') : error.message,
+            content: error.message,
         } as Alert
     }
 }

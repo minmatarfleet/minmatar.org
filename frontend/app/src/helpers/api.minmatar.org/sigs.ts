@@ -23,12 +23,14 @@ export async function get_groups() {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as Group[];
     } catch (error) {
-        throw new Error(`Error fetching sigs: ${error.message}`);
+        throw new Error(`Error fetching sigs: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -53,12 +55,14 @@ export async function get_current_groups(access_token:string, officer:boolean = 
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as Group[];
     } catch (error) {
-        throw new Error(`Error fetching current sigs: ${error.message}`);
+        throw new Error(`Error fetching current sigs: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -82,12 +86,14 @@ export async function get_group_by_id(id:number) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as Group
     } catch (error) {
-        throw new Error(`Error fetching sig by id: ${error.message}`)
+        throw new Error(`Error fetching sig by id: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -112,12 +118,14 @@ export async function get_group_requests(access_token:string, id:number) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as SigRequest[]
     } catch (error) {
-        throw new Error(`Error fetching group requests: ${error.message}`)
+        throw new Error(`Error fetching group requests: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -143,12 +151,14 @@ export async function create_group_request(access_token:string, id:number) {
             throw new Error(get_error_message(
                 response.status,
                 `POST ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as SigRequest
     } catch (error) {
-        throw new Error(`Error creating sig request: ${error.message}`)
+        throw new Error(`Error creating sig request: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -174,12 +184,14 @@ export async function approve_group_request(access_token:string, id:number, requ
             throw new Error(get_error_message(
                 response.status,
                 `POST ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as SigRequest
     } catch (error) {
-        throw new Error(`Error approving sig request: ${error.message}`)
+        throw new Error(`Error approving sig request: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -205,12 +217,14 @@ export async function deny_group_request(access_token:string, id:number, request
             throw new Error(get_error_message(
                 response.status,
                 `POST ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as SigRequest
     } catch (error) {
-        throw new Error(`Error denying sig request: ${error.message}`)
+        throw new Error(`Error denying sig request: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -236,11 +250,13 @@ export async function remove_group_member(access_token:string, id:number, user_i
             throw new Error(get_error_message(
                 response.status,
                 `DELETE ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as Group
     } catch (error) {
-        throw new Error(`Error removing sig member: ${error.message}`)
+        throw new Error(`Error removing sig member: ${error.message}`, { cause: error.cause })
     }
 }

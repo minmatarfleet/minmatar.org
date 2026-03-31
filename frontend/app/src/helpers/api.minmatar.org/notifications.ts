@@ -24,11 +24,13 @@ export async function get_user_subscriptions(access_token:string, user_id:number
         // console.log(response)
 
         if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`))
+            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
+                cause: response.status
+            })
         
         return await response.json() as NotificationSubscription[]
     } catch (error) {
-        throw new Error(`Error fetching user notifications: ${error.message}`);
+        throw new Error(`Error fetching user notifications: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -59,11 +61,13 @@ export async function create_subscription(access_token:string, user_id:number, s
         // console.log(response)
 
         if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`))
+            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
+                cause: response.status
+            })
                 
         return await response.json() as NotificationSubscription
     } catch (error) {
-        throw new Error(`Error creating subscription: ${error.message}`);
+        throw new Error(`Error creating subscription: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -87,11 +91,13 @@ export async function remove_subscription(access_token:string, subscription_id:n
         // console.log(response)
 
         if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`))
+            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
+                cause: response.status
+            })
         
         return subscription_id
     } catch (error) {
-        throw new Error(`Error deleting subscription: ${error.message}`);
+        throw new Error(`Error deleting subscription: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -115,10 +121,12 @@ export async function get_all_subscriptions(access_token:string) {
         // console.log(response)
 
         if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`))
+            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
+                cause: response.status
+            })
         
         return await response.json() as NotificationSubscriptionsFull[]
     } catch (error) {
-        throw new Error(`Error fetching user notifications: ${error.message}`);
+        throw new Error(`Error fetching user notifications: ${error.message}`, { cause: error.cause });
     }
 }

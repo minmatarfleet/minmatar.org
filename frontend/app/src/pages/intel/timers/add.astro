@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { is_prod_mode } from '@helpers/env'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
@@ -73,14 +72,14 @@ if (Astro.request.method === "POST") {
                     )
                 }
             } catch (error) {
-                const verify_timer_error = prod_error_messages() ? t('verify_timer_error') : error.message
+                const verify_timer_error = error.message
                 Astro.cookies.set('verify_timer_error', verify_timer_error, { path: '/' })
             }
 
             return Astro.redirect(translatePath('/intel/timers/active'))
         }
     } catch (error) {
-        create_structure_timer_error = prod_error_messages() ? t('create_structure_timer_error') : error.message
+        create_structure_timer_error = error.message
     }
 
     alert = {

@@ -2,8 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
-
 import type { DoctrineType } from '@dtypes/layout_components'
 import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
 
@@ -11,12 +9,12 @@ let doctrine:DoctrineType | null = null
 
 const doctrine_id = parseInt(Astro.url.searchParams.get('doctrine_id') ?? '0')
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
-let fetch_doctrines_error:string | null = null
+let fetch_doctrines_error: Error | false = false
 
 try {
     doctrine = await fetch_doctrine_by_id(doctrine_id)
 } catch (error) {
-    fetch_doctrines_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
+    fetch_doctrines_error = error
 }
 
 const DOCTRINE_PARTIAL_URL = `${translatePath('/partials/doctrine_component')}?doctrine_id=${doctrine_id}`
@@ -29,7 +27,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
     <ErrorRefetch
         args={{
             partial: DOCTRINE_PARTIAL_URL,
-            message: fetch_doctrines_error,
+            error: fetch_doctrines_error,
             delay: delay,
         }}
     />

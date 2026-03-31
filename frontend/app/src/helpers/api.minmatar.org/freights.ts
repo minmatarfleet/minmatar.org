@@ -23,12 +23,14 @@ export async function get_routes() {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ));
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as FreightRoute[];
     } catch (error) {
-        throw new Error(`Error fetching freight routes: ${error.message}`);
+        throw new Error(`Error fetching freight routes: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -51,12 +53,14 @@ export async function get_route_cost(route_id: number, m3: number, collateral: n
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ));
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as RouteCost;
     } catch (error) {
-        throw new Error(`Error fetching freight route cost: ${error.message}`);
+        throw new Error(`Error fetching freight route cost: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -80,12 +84,14 @@ export async function get_contracts(history:boolean = false) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ));
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as FreightContract[];
     } catch (error) {
-        throw new Error(`Error fetching freight contracts: ${error.message}`);
+        throw new Error(`Error fetching freight contracts: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -109,11 +115,13 @@ export async function get_characters_statistics() {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ));
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as SpaceTruckerStatistics[];
     } catch (error) {
-        throw new Error(`Error fetching freight contracts: ${error.message}`);
+        throw new Error(`Error fetching freight contracts: ${error.message}`, { cause: error.cause });
     }
 }

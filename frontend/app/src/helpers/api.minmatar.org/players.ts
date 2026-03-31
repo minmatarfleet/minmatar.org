@@ -24,12 +24,14 @@ export async function get_current_player(access_token:string) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as Player;
     } catch (error) {
-        throw new Error(`Error fetching current player: ${error.message}`);
+        throw new Error(`Error fetching current player: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -57,11 +59,13 @@ export async function update_prime_time(access_token:string, prime_time:PrimeTim
             throw new Error(get_error_message(
                 response.status,
                 `${METHOD} ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return (response.status === 200);
     } catch (error) {
-        throw new Error(`Error setting prime time: ${error.message}`);
+        throw new Error(`Error setting prime time: ${error.message}`, { cause: error.cause });
     }
 }

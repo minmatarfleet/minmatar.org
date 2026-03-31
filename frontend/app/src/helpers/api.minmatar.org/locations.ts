@@ -31,13 +31,15 @@ export async function get_locations(): Promise<Location[]> {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ));
+            ), {
+                cause: response.status
+            });
         }
 
         locations_cache = await response.json() as Location[]
         return locations_cache
     } catch (error) {
-        throw new Error(`Error fetching locations: ${error.message}`);
+        throw new Error(`Error fetching locations: ${error.message}`, { cause: error.cause });
     }
 }
 

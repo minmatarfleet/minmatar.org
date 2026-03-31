@@ -15,14 +15,12 @@ const user_permissions = (user ? await get_user_permissions(user?.username) : []
 const can_manage_posts = is_superuser || user_permissions.includes('posts.add_evepost')
 const post_editor = can_manage_posts ? (user as User).user_id : false
 
-import { prod_error_messages } from '@helpers/env'
-
 import type { PostListUI } from '@dtypes/layout_components'
 import { fetch_posts_grouped_by_tags, fetch_posts } from '@helpers/fetching/posts'
 
 let posts: Record<string, PostListUI[]> = {}
 let news_reel_posts:PostListUI[] = []
-let post_fetching_error:string | false = false
+let post_fetching_error: Error | false = false
 let post_count = 0
 const PAGE_LENGTH = 10
 
@@ -39,7 +37,7 @@ try {
 
     news_reel_posts = paginated_posts.chunk
 } catch (error) {
-    post_fetching_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
+    post_fetching_error = error
 }
 
 const count_text = t(post_count != 1 ? 'propaganda_post_plural' : 'propaganda_post_singular').replace('COUNT', String(post_count))
@@ -126,7 +124,7 @@ const leading_text = t('propaganda.leading_text');
                 <ErrorRefetch
                     args={{
                         partial: PROPAGANDA_POSTS_LIST_PARTIAL_URL,
-                        message: post_fetching_error,
+                        error: post_fetching_error,
                         delay: 0,
                     }}
                 />

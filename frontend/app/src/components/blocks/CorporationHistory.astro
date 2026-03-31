@@ -7,7 +7,6 @@ import { marked } from 'marked';
 import { get_corporation_history } from '@helpers/api.eveonline/characters'
 import type { CorporationHistoryItem } from '@dtypes/layout_components'
 import type { CorporationHistoryEvE } from '@dtypes/api.eveonline'
-import { prod_error_messages } from '@helpers/env'
 import { from_to_text, from_to_now_text } from '@helpers/date'
 import type { NamesAndCategoriesEvE } from '@dtypes/api.eveonline'
 import { get_names_and_categories_by_ids } from '@helpers/api.eveonline/universe'
@@ -24,7 +23,7 @@ const {
 } = Astro.props
 
 let corporation_history_eve:CorporationHistoryEvE[]
-let get_eve_corporation_history_error
+let get_eve_corporation_history_error: Error | false = false
 let history_items:CorporationHistoryItem[] | null = null
 const names_by_id = {}
 
@@ -59,7 +58,7 @@ if (!corporation_history && character_id) {
 
         names_and_categories.forEach( (i) => names_by_id[i.id] = i.name )
     } catch (error) {
-        get_eve_corporation_history_error = (prod_error_messages() ? t('get_eve_corporation_history_error') : error.message)
+        get_eve_corporation_history_error = error
     }
 }
 
@@ -84,7 +83,7 @@ import SectionH4 from '@components/blocks/SectionH4.astro';
         <ErrorRefetch
             args={{
                 partial: `${CORPORATION_HISTORY_PARTIAL_URL}?character_id=${character_id}`,
-                message: get_eve_corporation_history_error,
+                error: get_eve_corporation_history_error,
                 delay: delay,
                 target: '#corporation-history',
             }}

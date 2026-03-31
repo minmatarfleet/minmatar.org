@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -49,17 +48,17 @@ if (Astro.request.method === "POST") {
             await reject_corporation_applications(auth_token as string, corporation_id, application_id)
         }
     } catch (error) {
-        application_action_error = prod_error_messages() ? (action == 'accept' ? t('approve_application_error') : t('deny_application_error')) : error.message
+        application_action_error = error.message
     }
 }
 
 let application:ApplicationDetail | null = null
-let get_corporation_application_error:string | false = false
+let get_corporation_application_error: Error | false = false
 
 try {
     application = await get_application_by_id(auth_token as string, corporation_id, application_id)
 } catch (error) {
-    get_corporation_application_error = prod_error_messages() ? t('get_corporation_application_error') : error.message
+    get_corporation_application_error = error
 }
 
 if (application_action_error) {
@@ -101,7 +100,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
     <ErrorRefetch
         args={{
             partial: translatePath(CORPORATION_APPLICATION_PARTIAL_URL),
-            message: get_corporation_application_error,
+            error: get_corporation_application_error,
             delay: delay,
         }}
     />

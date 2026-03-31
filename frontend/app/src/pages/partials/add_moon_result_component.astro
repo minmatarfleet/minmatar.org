@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { get_auth_url } from '@helpers/env'
 
 import type { User } from '@dtypes/jwt'
@@ -28,7 +27,7 @@ if (Astro.request.method === "POST") {
 
         await add_moon(auth_token, paste)
     } catch (error) {
-        add_moon_error = prod_error_messages() ? t('add_moon_error') : error.message
+        add_moon_error = error.message
     }
 }
 

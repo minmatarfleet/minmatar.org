@@ -24,11 +24,13 @@ export async function get_mumble_connection(access_token:string) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as MumbleInformation;
     } catch (error) {
-        throw new Error(`Error fetching mumble connection information: ${error.message}`);
+        throw new Error(`Error fetching mumble connection information: ${error.message}`, { cause: error.cause });
     }
 }

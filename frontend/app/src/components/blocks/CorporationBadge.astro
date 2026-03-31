@@ -5,7 +5,6 @@ const { t } = i18n(Astro.url)
 import type { CorporationBadgeProps, EvEImageServiceSize } from '@dtypes/layout_components'
 import { get_corporation_by_id } from '@helpers/api.eveonline/corporations'
 import type { CorporationEvE } from '@dtypes/api.eveonline'
-import { prod_error_messages } from '@helpers/env'
 
 interface Props {
     corporation:    CorporationBadgeProps;
@@ -25,7 +24,7 @@ if (!corporation?.name) {
     try {
         corporation_eve = await get_corporation_by_id(corporation.id)
     } catch (error) {
-        get_eve_corporation_error = (prod_error_messages() ? t('get_eve_corporation_error') : error.message)
+        get_eve_corporation_error = error.message
     }
 }
 

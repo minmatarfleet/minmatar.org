@@ -3,7 +3,6 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -52,7 +51,7 @@ try {
 
             if (tracking_started) send_active_fleet_notification(auth_token as string, new_fleet?.id)
         } catch (error) {
-            const start_fleet_error = prod_error_messages() ? t('start_fleet_error') : error.message
+            const start_fleet_error = error.message
             Astro.cookies.set('fleet_tracking_error', start_fleet_error, { path: '/' })
         }
 

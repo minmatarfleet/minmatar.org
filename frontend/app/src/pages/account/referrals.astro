@@ -10,18 +10,17 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 
 if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
 
-import { prod_error_messages } from '@helpers/env'
 import { get_external_referrals, get_referral_stats } from '@helpers/fetching/referrals'
 import type { ReferralLinkStatsUI } from '@dtypes/layout_components'
 
 let referral_stats:ReferralLinkStatsUI[] = []
 const external_referrals_pages = get_external_referrals(user.user_id, lang)
-let get_referral_stats_error:string | false = false
+let get_referral_stats_error: Error | false = false
 
 try {
     referral_stats = await get_referral_stats(auth_token as string, user.user_id, lang)
 } catch (error) {
-    get_referral_stats_error = prod_error_messages() ? t('get_referral_stats_error') : error.message
+    get_referral_stats_error = error
 }
 
 const total_clicks = referral_stats.reduce((c, stat) => c + stat.count, 0)
@@ -120,7 +119,7 @@ const page_title = t('account.referral.page_title');
                             <ErrorRefetch
                                 args={{
                                     partial: REFERRAL_STATS_PARTIAL_URL,
-                                    message: get_referral_stats_error,
+                                    error: get_referral_stats_error,
                                     delay: 0,
                                 }}
                             />

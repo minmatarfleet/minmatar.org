@@ -5,13 +5,13 @@ const { t, translatePath } = i18n(Astro.url)
 import type { OrderLocation } from '@dtypes/layout_components'
 import { fetch_orders_by_locations } from '@helpers/fetching/industry'
 
-let fetching_error:string | false = false
+let fetching_error: Error | false = false
 let orders_locations:OrderLocation[] = []
 
 try {
     orders_locations = await fetch_orders_by_locations()
 } catch (error) {
-    fetching_error = error.message
+    fetching_error = error
 }
 
 let active_location_name = Astro.url.searchParams.get('location_name') ?? (orders_locations[0]?.location_name ?? '')
@@ -132,7 +132,7 @@ const page_title = t('industry.orders.page_title');
             <ErrorRefetch
                 args={{
                     partial: INDUSTRY_ORDERS_PARTIAL_URL,
-                    message: fetching_error,
+                    error: fetching_error,
                     delay: 0,
                 }}
             />

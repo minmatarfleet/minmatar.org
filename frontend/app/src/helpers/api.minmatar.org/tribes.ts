@@ -26,7 +26,9 @@ export async function get_tribes(): Promise<Tribe[]> {
             headers: { 'Content-Type': 'application/json' },
         })
         if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`))
+            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status
+            })
         return await response.json() as Tribe[]
     } catch (error) {
         throw new Error(`Error fetching tribes: ${error.message}`)
@@ -44,10 +46,12 @@ export async function get_current_tribes(access_token: string): Promise<Tribe[]>
             },
         })
         if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`))
+            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status
+            })
         return await response.json() as Tribe[]
     } catch (error) {
-        throw new Error(`Error fetching current tribes: ${error.message}`)
+        throw new Error(`Error fetching current tribes: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -59,10 +63,12 @@ export async function get_tribe(id: number): Promise<Tribe> {
             headers: { 'Content-Type': 'application/json' },
         })
         if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`))
+            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status
+            })
         return await response.json() as Tribe
     } catch (error) {
-        throw new Error(`Error fetching tribe: ${error.message}`)
+        throw new Error(`Error fetching tribe: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -74,10 +80,12 @@ export async function get_tribe_groups(tribe_id: number): Promise<TribeGroup[]> 
             headers: { 'Content-Type': 'application/json' },
         })
         if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`))
+            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status
+            })
         return await response.json() as TribeGroup[]
     } catch (error) {
-        throw new Error(`Error fetching tribe groups: ${error.message}`)
+        throw new Error(`Error fetching tribe groups: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -89,10 +97,12 @@ export async function get_tribe_group(tribe_id: number, group_id:number): Promis
             headers: { 'Content-Type': 'application/json' },
         })
         if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`))
+            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status
+            })
         return await response.json() as TribeGroup
     } catch (error) {
-        throw new Error(`Error fetching tribe groups: ${error.message}`)
+        throw new Error(`Error fetching tribe groups: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -108,10 +118,12 @@ export async function get_tribe_group_activity(
             headers: { 'Content-Type': 'application/json' },
         })
         if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`))
+            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status
+            })
         return await response.json() as TribeGroupActivityList
     } catch (error) {
-        throw new Error(`Error fetching tribe group activity: ${error.message}`)
+        throw new Error(`Error fetching tribe group activity: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -132,10 +144,12 @@ export async function get_memberships(
             },
         })
         if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`))
+            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status
+            })
         return await response.json() as TribeMembership[]
     } catch (error) {
-        throw new Error(`Error fetching memberships: ${error.message}`)
+        throw new Error(`Error fetching memberships: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -154,10 +168,12 @@ export async function get_membership_characters_available(
             },
         })
         if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`))
+            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status
+            })
         return await response.json() as TribeAvailableCharacter[]
     } catch (error) {
-        throw new Error(`Error fetching available characters: ${error.message}`)
+        throw new Error(`Error fetching available characters: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -177,7 +193,9 @@ export async function refresh_available_character(
         body: JSON.stringify({ character_id }),
     })
     if (!response.ok)
-        throw new Error(get_error_message(response.status, `POST ${ENDPOINT}`))
+        throw new Error(get_error_message(response.status, `POST ${ENDPOINT}`), {
+                cause: response.status
+            })
     return await response.json() as TribeAvailableCharacter
 }
 
@@ -199,10 +217,12 @@ export async function apply_to_group(
             body: JSON.stringify({ character_ids }),
         })
         if (!response.ok)
-            throw new Error(get_error_message(response.status, `POST ${ENDPOINT}`))
+            throw new Error(get_error_message(response.status, `POST ${ENDPOINT}`), {
+                cause: response.status
+            })
         return await response.json() as TribeMembership
     } catch (error) {
-        throw new Error(`Error applying to group: ${error.message}`)
+        throw new Error(`Error applying to group: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -223,9 +243,11 @@ export async function leave_group(
             },
         })
         if (!response.ok)
-            throw new Error(get_error_message(response.status, `DELETE ${ENDPOINT}`))
+            throw new Error(get_error_message(response.status, `DELETE ${ENDPOINT}`), {
+                cause: response.status
+            })
     } catch (error) {
-        throw new Error(`Error leaving group: ${error.message}`)
+        throw new Error(`Error leaving group: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -246,9 +268,11 @@ export async function delete_membership(
             },
         })
         if (!response.ok)
-            throw new Error(get_error_message(response.status, `DELETE ${ENDPOINT}`))
+            throw new Error(get_error_message(response.status, `DELETE ${ENDPOINT}`), {
+                cause: response.status
+            })
     } catch (error) {
-        throw new Error(`Error deleting membership: ${error.message}`)
+        throw new Error(`Error deleting membership: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -270,9 +294,11 @@ export async function delete_membership_character(
             },
         })
         if (!response.ok)
-            throw new Error(get_error_message(response.status, `DELETE ${ENDPOINT}`))
+            throw new Error(get_error_message(response.status, `DELETE ${ENDPOINT}`), {
+                cause: response.status
+            })
     } catch (error) {
-        throw new Error(`Error deleting membership character: ${error.message}`)
+        throw new Error(`Error deleting membership character: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -293,10 +319,12 @@ export async function approve_membership(
             },
         })
         if (!response.ok)
-            throw new Error(get_error_message(response.status, `POST ${ENDPOINT}`))
+            throw new Error(get_error_message(response.status, `POST ${ENDPOINT}`), {
+                cause: response.status
+            })
         return await response.json() as TribeMembership
     } catch (error) {
-        throw new Error(`Error approving membership: ${error.message}`)
+        throw new Error(`Error approving membership: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -317,10 +345,12 @@ export async function deny_membership(
             },
         })
         if (!response.ok)
-            throw new Error(get_error_message(response.status, `POST ${ENDPOINT}`))
+            throw new Error(get_error_message(response.status, `POST ${ENDPOINT}`), {
+                cause: response.status
+            })
         return await response.json() as TribeMembership
     } catch (error) {
-        throw new Error(`Error denying membership: ${error.message}`)
+        throw new Error(`Error denying membership: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -358,11 +388,13 @@ export async function log_activity(
         })
 
         if (!response.ok)
-            throw new Error(get_error_message(response.status, `POST ${ENDPOINT}`))
+            throw new Error(get_error_message(response.status, `POST ${ENDPOINT}`), {
+                cause: response.status
+            })
 
         return await response.json() as TribeActivity
     } catch (error) {
-        throw new Error(`Error logging tribe activity: ${error.message}`)
+        throw new Error(`Error logging tribe activity: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -383,11 +415,13 @@ export async function get_output(period_start?: Date, period_end?: Date) {
         })
 
         if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`))
+            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status
+            })
 
         return await response.json() as TribeGroupOutputSummary[]
     } catch (error) {
-        throw new Error(`Error fetching tribes output: ${error.message}`)
+        throw new Error(`Error fetching tribes output: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -407,11 +441,13 @@ export async function get_tribe_output(tribe_id: number, period_start?: Date, pe
         })
 
         if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`))
+            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status
+            })
 
         return await response.json() as TribeGroupOutputSummary[]
     } catch (error) {
-        throw new Error(`Error fetching tribe output: ${error.message}`)
+        throw new Error(`Error fetching tribe output: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -437,11 +473,13 @@ export async function get_group_output(
         })
 
         if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`))
+            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status
+            })
 
         return await response.json() as TribeGroupOutputSummary
     } catch (error) {
-        throw new Error(`Error fetching group output: ${error.message}`)
+        throw new Error(`Error fetching group output: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -469,11 +507,13 @@ export async function get_group_leaderboard(
         })
 
         if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`))
+            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status
+            })
 
         return await response.json() as TribeLeaderboardEntry[]
     } catch (error) {
-        throw new Error(`Error fetching group leaderboard: ${error.message}`)
+        throw new Error(`Error fetching group leaderboard: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -486,7 +526,9 @@ export async function get_tribe_activity_metrics(
     const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/activity/${activity_id}/metrics${query ? `?${query}` : ''}`
     const response = await fetch(ENDPOINT, { headers: { 'Content-Type': 'application/json' } })
     if (!response.ok)
-        throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`))
+        throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status
+            })
     return await response.json() as TribeActivityMetrics
 }
 
@@ -499,7 +541,9 @@ export async function get_tribe_member_activity(
     const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/members/${member_id}/activity${query ? `?${query}` : ''}`
     const response = await fetch(ENDPOINT, { headers: { 'Content-Type': 'application/json' } })
     if (!response.ok)
-        throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`))
+        throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status
+            })
     return await response.json() as TribeMemberActivity
 }
 
@@ -519,6 +563,8 @@ export async function get_tribe_activity_leaderboard(
     const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/activity/leaderboard${query ? `?${query}` : ''}`
     const response = await fetch(ENDPOINT, { headers: { 'Content-Type': 'application/json' } })
     if (!response.ok)
-        throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`))
+        throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status
+            })
     return await response.json() as TribeActivityLeaderboardList
 }

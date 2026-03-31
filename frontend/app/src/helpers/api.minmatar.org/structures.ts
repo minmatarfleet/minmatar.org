@@ -24,12 +24,14 @@ export async function get_structure_timers(access_token:string, active:boolean =
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ));
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as StructureTimer[];
     } catch (error) {
-        throw new Error(`Error fetching structure timers: ${error.message}`);
+        throw new Error(`Error fetching structure timers: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -58,16 +60,16 @@ export async function create_structure_timer(access_token:string, timer:Structur
             throw new Error(get_error_message(
                 response.status,
                 `POST ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as StructureTimer;
     } catch (error) {
-        throw new Error(`Error creating structure timer: ${error.message}`);
+        throw new Error(`Error creating structure timer: ${error.message}`, { cause: error.cause });
     }
 }
-
-
 
 export async function verify_structure_timer(access_token:string, timer_id:number, request:VerifyStructureTimerRequest) {
     const data = JSON.stringify(request);
@@ -94,11 +96,13 @@ export async function verify_structure_timer(access_token:string, timer_id:numbe
             throw new Error(get_error_message(
                 response.status,
                 `POST ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as StructureTimer;
     } catch (error) {
-        throw new Error(`Error creating structure timer: ${error.message}`);
+        throw new Error(`Error creating structure timer: ${error.message}`, { cause: error.cause });
     }
 }

@@ -16,19 +16,17 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 
 let order_breakdown: RootSingleItem[] = []
 let primary_character_id = 0
-let fetching_error:string | false = false
-let order_id_error:string | false = false
+let fetching_error: Error | false = false
 
-if (!isNaN(order_id)) {
-    try {
-        order_breakdown = await fetch_order_breakdown_grouped(order_id)
-        const primary_pilot = await get_primary_characters(auth_token as string)
-        primary_character_id = primary_pilot?.character_id ?? 0
-    } catch (error) {
-        fetching_error = error.message
-    }
-} else {
-    order_id_error = t('invalid_order_id')
+try {
+    if (isNaN(order_id))
+        throw new Error(t('invalid_order_id'), { cause: 400 })
+
+    order_breakdown = await fetch_order_breakdown_grouped(order_id)
+    const primary_pilot = await get_primary_characters(auth_token as string)
+    primary_character_id = primary_pilot?.character_id ?? 0
+} catch (error) {
+    fetching_error = error
 }
 
 const ORDER_BREAKDOWN_PARTIAL_URL = `${translatePath('/partials/order_breakdown_component')}?order_id=${order_id}`
@@ -40,25 +38,22 @@ import DebugTag from '@components/blocks/DebugTag.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
 
-{order_id_error ?
-    <DebugTag>{order_id_error}</DebugTag> :
-    <>{fetching_error !== false ?
-        <ErrorRefetch
-            args={{
-                partial: ORDER_BREAKDOWN_PARTIAL_URL,
-                message: fetching_error,
-                delay: delay,
-            }}
-        /> :
-        <>{order_breakdown ?
-            <OrderBreakdown
-                order_id={order_id}
-                primary_character_id={primary_character_id}
-                order_breakdown={order_breakdown}
-                init_tooltips={true}
-            />
-            :
-            <DebugTag>{t('no_order_unexpected_error')}</DebugTag>
-        }</>
+{fetching_error !== false ?
+    <ErrorRefetch
+        args={{
+            partial: ORDER_BREAKDOWN_PARTIAL_URL,
+            error: fetching_error,
+            delay: delay,
+        }}
+    /> :
+    <>{order_breakdown ?
+        <OrderBreakdown
+            order_id={order_id}
+            primary_character_id={primary_character_id}
+            order_breakdown={order_breakdown}
+            init_tooltips={true}
+        />
+        :
+        <DebugTag>{t('no_order_unexpected_error')}</DebugTag>
     }</>
 }

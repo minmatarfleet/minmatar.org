@@ -51,7 +51,7 @@ if (Astro.request.method === "POST") {
         )
     } catch (error) {
         alert = {
-            title: t('claim_order_item'),
+            title: t('claim_order'),
             content: error.message as string,
         }
     }
@@ -94,7 +94,7 @@ import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
 import type { RootSingleItem } from '@dtypes/api.minmatar.org'
 import { fetch_order_breakdown_grouped } from '@helpers/fetching/industry'
 
-let fetching_error:string | false = false
+let fetching_error: Error | false = false
 let order:IndustryOrderUI | null = null
 let order_breakdown: RootSingleItem[] = []
 let primary_character_id = 0
@@ -111,7 +111,7 @@ try {
         primary_character_id = primary_pilot?.character_id ?? 0
     }
 } catch (error) {
-    fetching_error = error.message
+    fetching_error = error
 }
 
 import { query_string } from '@helpers/string';
@@ -131,7 +131,7 @@ import ShowAlert from '@components/blocks/ShowAlert.astro'
     <ErrorRefetch
         args={{
             partial: ORDER_ITEM_PARTIAL_URL,
-            message: fetching_error,
+            error: fetching_error,
             delay: 0,
         }}
     /> :

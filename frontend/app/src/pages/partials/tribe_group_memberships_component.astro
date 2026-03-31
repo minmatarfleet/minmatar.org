@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_400_Bad_Request } from '@helpers/http_responses'
 import { get_auth_url } from '@helpers/env'
 
@@ -56,7 +55,7 @@ if (Astro.request.method === "POST") {
         else
             throw new Error(t('invalid_membership_action'))
     } catch (error) {
-        update_membership_error = prod_error_messages() ? t('update_membership_error') : error.message
+        update_membership_error = error.message
     }
 
     if (update_membership_error) {
@@ -94,7 +93,7 @@ if (Astro.request.method === "DELETE") {
             )
         }
     } catch (error) {
-        remove_membership_error = prod_error_messages() ? t('remove_membership_error') : error.message
+        remove_membership_error = error.message
     }
 
     if (remove_membership_error) {
@@ -108,7 +107,7 @@ if (Astro.request.method === "DELETE") {
 let tribe_group:TribeGroup | null = null
 let approved:TribeMembership[] = []
 let pending:TribeMembership[] = []
-let fetch_membership_error:string | false = false
+let fetch_membership_error: Error | false = false
 
 try {
     tribe_group = await get_tribe_group(tribe_id, group_id)
@@ -116,7 +115,7 @@ try {
     approved = await get_memberships(auth_token as string, tribe_id, tribe_group.id, 'active')
     pending = await get_memberships(auth_token as string, tribe_id, tribe_group.id, 'pending')
 } catch (error) {
-    fetch_membership_error = prod_error_messages() ? t('fetch_membership_error') : error.message
+    fetch_membership_error = error
 }
 
 let count_text = ''
@@ -156,7 +155,7 @@ const page_title = t('tribes.groups.membership.page_title').replace('{group}', t
     <ErrorRefetch
         args={{
             partial: TRIBE_GROUP_MEMBERSHIPS_PARTIAL_URL,
-            message: fetch_membership_error,
+            error: fetch_membership_error,
             delay: delay,
         }}
     />

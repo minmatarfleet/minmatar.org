@@ -26,22 +26,20 @@ try {
 if (!is_alliance)
     return HTTP_404_Not_Found()
 
-import { prod_error_messages } from '@helpers/env'
-
 import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
 import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 
 let pilots:SummaryCharacter[] = []
-let fetching_error:string | false = false
+let fetching_error: Error | false = false
 
 try {
     if (!is_valid_user)
-        throw new Error(t('invalid_user'))
+        throw new Error(t('invalid_user'), { cause: 400 })
 
     const character_summary = await get_characters_summary_sorted(auth_token as string)
     pilots = character_summary.characters ?? []
 } catch (error) {
-    fetching_error = (prod_error_messages() ? t('get_characters_summary_error') : error.message)
+    fetching_error = error
 }
 
 const fix_esi_token_error = Astro.url.searchParams.get('error') as string
@@ -97,7 +95,7 @@ const page_title = t('industry.industrialists.page_title');
                 <ErrorRefetch
                     args={{
                         partial: INDUSTRIALISTS_PARTIAL_URL,
-                        message: fetching_error,
+                        error: fetching_error,
                         delay: 0,
                     }}
                 />

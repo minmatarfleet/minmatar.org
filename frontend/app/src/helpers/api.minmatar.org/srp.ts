@@ -41,11 +41,13 @@ export async function get_fleet_srp(access_token:string, srp_filter:SRPFilter) {
         // console.log(response)
 
         if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`))
+            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
+                cause: response.status
+            })
         
         return await response.json() as SRP[]
     } catch (error) {
-        throw new Error(`Error fetching fleet SRPs: ${error.message}`);
+        throw new Error(`Error fetching fleet SRPs: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -82,11 +84,13 @@ export async function create_fleet_srp(access_token:string, srp_request:SRPReque
         // console.log(response)
 
         if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`))
+            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
+                cause: response.status
+            })
                 
         return (response.status === 200)
     } catch (error) {
-        throw new Error(`Error creating fleet SRP: ${error.message}`);
+        throw new Error(`Error creating fleet SRP: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -115,11 +119,13 @@ export async function update_fleet_srp(access_token:string, status:SRPStatus, re
         // console.log(response)
 
         if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`))
+            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
+                cause: response.status
+            })
         
         return (response.status === 200);
     } catch (error) {
-        throw new Error(`Error updating fleet SRP: ${error.message}`);
+        throw new Error(`Error updating fleet SRP: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -177,11 +183,13 @@ export async function get_srp_programs(access_token:string) {
         // console.log(response)
 
         if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`))
+            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
+                cause: response.status
+            })
         
         return await response.json() as SRPProgram[]
     } catch (error) {
-        throw new Error(`Error reading SRP programs: ${error.message}`);
+        throw new Error(`Error reading SRP programs: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -205,11 +213,13 @@ export async function get_srp_stats(access_token:string) {
         // console.log(response)
 
         if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`))
+            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
+                cause: response.status
+            })
         
         return await response.json() as SRPStatsOverview
     } catch (error) {
-        throw new Error(`Error reading SRP stats overview: ${error.message}`);
+        throw new Error(`Error reading SRP stats overview: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -233,10 +243,12 @@ export async function get_srp_stats_history(access_token:string) {
         // console.log(response)
 
         if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`))
+            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
+                cause: response.status
+            })
         
         return await response.json() as SRPStatsHistory
     } catch (error) {
-        throw new Error(`Error reading SRP stats history: ${error.message}`);
+        throw new Error(`Error reading SRP stats history: ${error.message}`, { cause: error.cause });
     }
 }

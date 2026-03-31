@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { get_auth_url } from '@helpers/env'
 
 import type { User } from '@dtypes/jwt'
@@ -23,14 +22,14 @@ import { get_all_groups_requests } from '@helpers/fetching/group_requests'
 const groups_type = Astro.url.searchParams.get('groups_type') as GroupItemType
 
 let groups_requests:GroupRequestListUI[] = []
-let get_all_corporations_error:string | false = false
+let get_all_corporations_error: Error | false = false
 try {
     groups_requests = await get_all_groups_requests(auth_token, groups_type, user.user_id, is_superuser)
     groups_requests.sort( (a, b) => {
         return b.requests.length - a.requests.length
     })
 } catch (error) {
-    get_all_corporations_error = prod_error_messages() ? t('get_all_corporations_error') : error.message
+    get_all_corporations_error = error
 }
 
 const GROUP_REQUESTS_LIST_PARTIAL_URL = translatePath('/partials/group_requests_list_component/')
@@ -45,7 +44,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
     <ErrorRefetch
         args={{
             partial: `${GROUP_REQUESTS_LIST_PARTIAL_URL}?groups_type=${groups_type}`,
-            message: get_all_corporations_error,
+            error: get_all_corporations_error,
             delay: delay,
         }}
     />

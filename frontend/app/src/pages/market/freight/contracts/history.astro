@@ -7,7 +7,7 @@ import type { SpaceTruckerStatistics } from '@dtypes/api.minmatar.org'
 import { fetch_freight_contracts } from '@helpers/fetching/freights'
 import { get_characters_statistics } from '@helpers/api.minmatar.org/freights'
 
-let fetching_error:string | false = false
+let fetching_error: Error | false = false
 let location_contracts:FreightContractLocation[] = []
 let space_truckers:SpaceTruckerStatistics[] = []
 
@@ -15,7 +15,7 @@ try {
     location_contracts = await fetch_freight_contracts(true)
     space_truckers = await get_characters_statistics()
 } catch (error) {
-    fetching_error = error.message
+    fetching_error = error
 }
 
 let active_location_name = Astro.url.searchParams.get('location_name') ?? (location_contracts[0]?.location_name ?? '')
@@ -135,7 +135,7 @@ const page_title = t('freight_contracts.history.page_title');
             <ErrorRefetch
                 args={{
                     partial: FREIGHT_CONTRACTS_PARTIAL_URL,
-                    message: fetching_error,
+                    error: fetching_error,
                     delay: 0,
                 }}
             />

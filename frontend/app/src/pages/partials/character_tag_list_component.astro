@@ -10,7 +10,6 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 
 if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
 
-import { prod_error_messages } from '@helpers/env'
 import { get_tags, set_character_tags } from '@helpers/api.minmatar.org/characters'
 import { get_tags_summary } from '@helpers/fetching/characters'
 import type { CharacterTag } from '@dtypes/api.minmatar.org'
@@ -18,7 +17,7 @@ import type { CharacterTagSummary, Alert } from '@dtypes/layout_components'
 
 let tags_summary:CharacterTagSummary[] = []
 let tags:CharacterTag[] = []
-let get_tags_error:string | false = false
+let get_tags_error: Error | false = false
 let alert:Alert | false = false
 
 let active_character:number = parseInt(Astro.url.searchParams.get('character_id') ?? '0')
@@ -33,7 +32,7 @@ if (Astro.request.method === "POST") {
 
         await set_character_tags(auth_token as string, active_character, tags)
     } catch (error) {
-        const set_character_tags_error = prod_error_messages() ? t('set_character_tags_error') : error.message
+        const set_character_tags_error = error.message
 
         alert = {
             title: t('setting_roles'),
@@ -46,7 +45,7 @@ try {
     tags_summary = await get_tags_summary(auth_token as string)
     tags = await get_tags(auth_token as string)
 } catch (error) {
-    get_tags_error = prod_error_messages() ? t('get_tags_error') : error.message
+    get_tags_error = error
 }
 
 const CHARACTER_TAG_LIST_PARTIAL_URL = `${translatePath('/partials/character_tag_list_component')}?character_id=${active_character}`
@@ -64,7 +63,7 @@ import ShowAlert from '@components/blocks/ShowAlert.astro'
     <ErrorRefetch
         args={{
             partial: CHARACTER_TAG_LIST_PARTIAL_URL,
-            message: get_tags_error,
+            error: get_tags_error,
             delay: delay,
         }}
     />

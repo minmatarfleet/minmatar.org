@@ -13,12 +13,12 @@ import { get_corporations_list_data } from '@helpers/pages/corporations_list'
 import type { CorporationsListData } from '@helpers/pages/corporations_list'
 
 let corporations_list_data:CorporationsListData = {}
-let data_fetching_error:string | null = null
+let data_fetching_error: Error | false = false
 
 try {
     corporations_list_data = await get_corporations_list_data(auth_token, lang, user_id)
 } catch (error) {
-    data_fetching_error = error.message
+    data_fetching_error = error
 }
 
 import { is_referral_url } from '@helpers/fetching/referrals'
@@ -76,7 +76,7 @@ const page_title = t('corporations.list.page_title');
                 <ErrorRefetch
                     args={{
                         partial: CORPORATIONS_SLIDER_PARTIAL_URL,
-                        message: data_fetching_error,
+                        error: data_fetching_error,
                         delay: 0,
                     }}
                 />

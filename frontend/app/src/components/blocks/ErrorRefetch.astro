@@ -18,6 +18,8 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Markdown from '@components/blocks/Markdown.astro';
 import RifterIcon from '@components/icons/RifterIcon.astro';
 
+console.log(args.error.cause)
+
 let url = new URL(args.partial, new URL(Astro.url.origin))
 const MAX_RETRYING_TIME_SECONDS = parseInt(import.meta.env.MAX_RETRYING_TIME_SECONDS ?? 30)
 const RETRYING_TIME_INCREMENT_SECONDS = parseInt(import.meta.env.RETRYING_TIME_INCREMENT_SECONDS ?? 5)
@@ -25,19 +27,22 @@ const next_delay = args.delay + RETRYING_TIME_INCREMENT_SECONDS
 
 url.searchParams.append('delay', next_delay.toString())
 
-const target = args?.target
+const timeout_error = typeof args.error.cause !== "number"
 
-console.log(args)
+const target = args?.target
 ---
 
-{(args.delay > MAX_RETRYING_TIME_SECONDS) ?
+{(args.delay > MAX_RETRYING_TIME_SECONDS || !timeout_error) ?
     <Flexblock gap='var(--space-3xs)'>
         <Markdown
-            class="[ text-[var(--highlight)] ]"
-            markdown={args.message}
+            class="[ prose text-[var(--highlight)] ]"
+            markdown={`🔴 ${args.error.message}`}
             inline={true}
         />
-        <small>{t('too_many_tries')}</small>
+        {args.delay > MAX_RETRYING_TIME_SECONDS ?
+            <small>{t('too_many_tries')}</small> :
+            <Markdown markdown={t('contact_it')} inline_element='small' inline={true} />
+        }
     </Flexblock>
     :
     <FlexInline
@@ -47,12 +52,10 @@ console.log(args)
         }`}
         x-bind:id="id"
     >
-        {animation && <RifterIcon />}
-            
         <Flexblock gap='var(--space-3xs)' class="[ grow basis-[300px] ]">
             <Markdown
                 class="[ prose text-[var(--highlight)] ]"
-                markdown={args.message}
+                markdown={`🔴 ${args.error.message}`}
                 inline={true}
             />
             <div

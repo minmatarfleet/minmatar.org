@@ -2,8 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
-
 import type { Blueprint } from '@dtypes/api.minmatar.org'
 import { fetch_blueprints } from '@helpers/fetching/industry'
 
@@ -16,7 +14,7 @@ let fetching_error:string | false = false
 try {
     blueprints = await fetch_blueprints(blueprint_query, is_copy)
 } catch (error) {
-    fetching_error = (prod_error_messages() ? t('get_blueprints_error') : error.message)
+    fetching_error = error.message
 }
 
 import BlueprintTableAlpine from '@components/blocks/BlueprintTableAlpine.astro'

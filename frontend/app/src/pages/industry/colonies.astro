@@ -16,7 +16,7 @@ import { get_characters } from '@helpers/api.minmatar.org/characters'
 let colonies:ColonySystems[] = []
 let user_characters_ids:number[] = []
 let alts_collapsing = false
-let data_fetching_error = ''
+let data_fetching_error: Error | false = false
 
 const set_alts_collapsing = Astro.url.searchParams.get('set_alts_collapsing') ?
                             JSON.parse(Astro.url.searchParams.get('set_alts_collapsing') ?? 'false') :
@@ -37,7 +37,7 @@ try {
         user_characters_ids = user_characters.map(character => character.character_id)
     }
 } catch (error) {
-    data_fetching_error = error.message
+    data_fetching_error = error
 }
 
 const COLONIES_PARTIAL_URL = translatePath('/partials/colonies_component/')
@@ -174,7 +174,7 @@ const page_title = t('industry.colonies.page_title')
             <ErrorRefetch
                 args={{
                     partial: COLONIES_PARTIAL_URL,
-                    message: data_fetching_error,
+                    error: data_fetching_error,
                     delay: 0,
                 }}
             />

@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -36,14 +35,14 @@ import { get_corporation_by_id } from '@helpers/api.eveonline/corporations'
 import type { CorporationEvE } from '@dtypes/api.eveonline'
 
 let application:ApplicationDetail | null = null
-let get_corporation_application_error:string | false = false
+let get_corporation_application_error: Error | false = false
 let corporation_eve:CorporationEvE | null = null
 
 try {
     application = await get_application_by_id(auth_token as string, corporation_id, application_id)
     corporation_eve = await get_corporation_by_id(corporation_id)
 } catch (error) {
-    get_corporation_application_error = prod_error_messages() ? t('get_corporation_application_error') : error.message
+    get_corporation_application_error = error
 }
 
 import { query_string } from '@helpers/string';
@@ -114,7 +113,7 @@ const page_title = `${application?.character_name ?? ''} ${t('application').toLo
                 <ErrorRefetch
                     args={{
                         partial: CORPORATION_APPLICATION_PARTIAL_URL,
-                        message: get_corporation_application_error,
+                        error: get_corporation_application_error,
                         delay: 0,
                     }}
                 />

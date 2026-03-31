@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -36,7 +35,7 @@ const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') as string)
 const remove_table = JSON.parse(Astro.url.searchParams.get('remove_table') ?? 'false')
 const fleet_title = JSON.parse(Astro.url.searchParams.get('fleet_title') ?? 'false')
 
-let data_fetching_error:string | false = false
+let data_fetching_error: Error | false = false
 let update_fleet_srp_error:string | false = false
 let fleet_srps:SRPUI[] | null = []
 let alert:Alert | false = false
@@ -81,7 +80,7 @@ if (Astro.request.method === "POST") {
             comments: comments ?? '',
         })
     } catch (error) {
-        submit_srp_error = (prod_error_messages() ? t('submit_srp_error') : error.message)
+        submit_srp_error = error.message
 
         alert = {
             title: t('srp_submit_dialog_title'),
@@ -109,7 +108,7 @@ if (Astro.request.method === "PATCH") {
             'withdrawn': t('canceling'),
         }
 
-        update_fleet_srp_error = prod_error_messages() ? t('update_fleet_srp_error').replace('ACTION', TRANSLATE_ACTION[status]) : error.message
+        update_fleet_srp_error = error.message
 
         alert = {
             title: status !== 'withdrawn' ? t('process_srp_dialog_title') : t('cancel_srp_dialog_title'),
@@ -129,10 +128,10 @@ try {
     } else if (fleet_id === 0) {
         fleet_srps = await fetch_fleet_srps(auth_token as string)
     } else {
-        throw new Error(t('invalid_fleet_id'))
+        throw new Error(t('invalid_fleet_id'), { cause: 400 })
     }
 } catch (error) {
-    data_fetching_error = error.message
+    data_fetching_error = error
 }
 
 const can_view_srp = is_superuser || user_permissions.includes('srp.change_evefleetshipreimbursement') || is_fleet_commander
@@ -164,7 +163,7 @@ import ShowAlert from '@components/blocks/ShowAlert.astro';
     <ErrorRefetch
         args={{
             partial: SRP_TABLE_PARTIAL_URL,
-            message: data_fetching_error,
+            error: data_fetching_error,
             delay: delay,
         }}
     />

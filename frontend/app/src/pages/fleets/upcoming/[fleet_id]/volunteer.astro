@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -28,17 +27,17 @@ import {
 let fleet: FleetUI | null = null
 let pilots: SummaryCharacter[] = []
 let volunteers: FleetRoleVolunteer[] = []
-let fetch_error: string | false = false
+let fetch_error: Error | false = false
 
 try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     const history = Boolean(fleet?.tracking?.end_time)
 
     if (history) return Astro.redirect(translatePath(`/fleets/upcoming/${fleet_id}`))
-} catch (e) {
-    if (e.message?.includes('403')) return HTTP_403_Forbidden()
-    if (e.message?.includes('404')) return HTTP_404_Not_Found()
-    fetch_error = prod_error_messages() ? 'Could not load fleet' : (e as Error).message
+} catch (error) {
+    if (error.message?.includes('403')) return HTTP_403_Forbidden()
+    if (error.message?.includes('404')) return HTTP_404_Not_Found()
+    fetch_error = error
 }
 
 if (fleet) {
@@ -46,8 +45,8 @@ if (fleet) {
         const summary = await get_characters_summary_sorted(auth_token as string)
         pilots = summary.characters ?? []
         volunteers = await get_fleet_role_volunteers(auth_token as string, fleet_id)
-    } catch (e) {
-        fetch_error = prod_error_messages() ? t('get_characters_error') : (e as Error).message
+    } catch (error) {
+        fetch_error = error
     }
 }
 
@@ -113,7 +112,7 @@ const page_title = t('fleets.volunteer.page_title').replace('{fleet_id}', fleet_
             <ErrorRefetch
                 args={{
                     partial: FLEET_ROLES_PARTIAL_URL,
-                    message: fetch_error,
+                    error: fetch_error,
                     delay: 0,
                 }}
             />

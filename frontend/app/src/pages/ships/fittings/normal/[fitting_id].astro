@@ -2,8 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
-
 const { fitting_id } = Astro.params;
 
 import type { FittingGroup, Module, CargoItem } from '@dtypes/layout_components';
@@ -16,7 +14,7 @@ let get_fitting_error:string | false = false
 try {
     fitting = await get_fitting_by_id(parseInt(fitting_id ?? '0'))
 } catch (error) {
-    get_fitting_error = prod_error_messages() ? t('get_fitting_error') : error.message
+    get_fitting_error = error.message
 }
 
 if (!fitting)

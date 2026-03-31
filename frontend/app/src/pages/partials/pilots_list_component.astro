@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { get_auth_url } from '@helpers/env'
 
 import type { User } from '@dtypes/jwt'
@@ -36,7 +35,7 @@ if (Astro.request.method === "DELETE") {
     try {
         status = await delete_characters(auth_token, removed_character_id)
     } catch (error) {
-        delete_character_error = (prod_error_messages() ? t('delete_character_error') : error.message)
+        delete_character_error = error.message
     }
 
     if (status) {
@@ -48,31 +47,29 @@ if (Astro.request.method === "DELETE") {
 
             redirect = translatePath('/account')
         }
-    } else {
-        const error_msg = (prod_error_messages() || !delete_character_error) ? t('delete_character_error') : delete_character_error
-
+    } else if (delete_character_error) {
         const params = query_string({
             id: removed_character_id.toString(),
             character_name: removed_character_name,
-            message: error_msg,
+            message: delete_character_error,
         })
 
         alert = {
             title: t('remove_pilot_dialog_title'),
-            content: error_msg,
+            content: delete_character_error,
             partial: `${translatePath('/partials/dialog_with_character/')}?${params}`,
         }
     }
 }
 
 let pilots:SummaryCharacter[] = []
-let get_characters_error:string | false = false
+let get_characters_error: Error | false = false
 let readonly = false
 try {
     const character_summary = await get_characters_summary_sorted(auth_token as string)
     pilots = character_summary?.characters ?? []
 } catch (error) {
-    get_characters_error = (prod_error_messages() ? t('get_characters_error') : error.message)
+    get_characters_error = error
     readonly = true
 }
 
@@ -95,7 +92,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         <ErrorRefetch
             args={{
                 partial: PILOTS_LIST_PARTIAL_URL,
-                message: get_characters_error,
+                error: get_characters_error,
                 delay: delay,
                 target: '#pilots-list',
             }}

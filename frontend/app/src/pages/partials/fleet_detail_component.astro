@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -32,7 +31,7 @@ import { fetch_fleet_srps } from '@helpers/fetching/srp'
 import { get_system_id } from '@helpers/sde/map'
 import { get_fleet_combatlogs } from '@helpers/fetching/combatlog'
 
-let fetch_fleets_error:string | false = false
+let fetch_fleets_error: Error | false = false
 let fleet:FleetUI | null = null
 let user_character:EveCharacterProfile | null = null
 let fleet_composition:FleetCompositionUI[] = []
@@ -63,7 +62,7 @@ try {
         const staging_solar_system_id = await get_system_id(staging_solar_system)
 
         if (!staging_solar_system_id)
-            throw new Error(t('invalid_staging_solar_system'))
+            throw new Error(t('invalid_staging_solar_system'), { cause: 400 })
 
         const members = await get_fleet_members(auth_token as string, fleet_id)
         fleet_composition = await group_members_by_ship(members)
@@ -77,7 +76,7 @@ try {
     if (error.message === 'Error fetching fleet: HTTP error! Status: 403')
         return HTTP_403_Forbidden()
     
-    fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
+    fetch_fleets_error = error
 }
 
 try {
@@ -102,7 +101,7 @@ import FleetDetails from '@components/blocks/FleetDetails.astro';
     <ErrorRefetch
         args={{
             partial: FLEET_DETAIL_PARTIAL_URL,
-            message: fetch_fleets_error,
+            error: fetch_fleets_error,
             delay: delay,
         }}
     />

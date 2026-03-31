@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_400_Bad_Request } from '@helpers/http_responses'
 
 const tribe_id = parseInt(Astro?.params?.tribe_id ?? '')
@@ -20,7 +19,7 @@ let tribe_group: TribeGroup | null = null
 let activities: TribeGroupActivityRecord[] = []
 let total_activities = 0
 let total_pages:number = 0
-let fetch_error: string | false = false
+let fetch_error: Error | false = false
 
 try {
     tribe_group = await get_tribe_group(tribe_id, group_id)
@@ -29,7 +28,7 @@ try {
     total_activities = activity.total
     total_pages = Math.ceil(total_activities/PAGE_SIZE)
 } catch (error) {
-    fetch_error = prod_error_messages() ? t('fetch_tribe_error') : (error as Error).message
+    fetch_error = error
 }
 
 const count_text = t('activity_count_text').replace('{count}', String(activities.length)).replace('{total}', String(total_activities))
@@ -92,7 +91,7 @@ const page_title = tribe_group ? `${tribe_group.name} ${t('tribes.detail.activit
             <ErrorRefetch
                 args={{
                     partial: TRIBE_GROUP_ACTIVITY_PARTIAL_URL,
-                    message: fetch_error,
+                    error: fetch_error,
                     delay: 0,
                 }}
             />

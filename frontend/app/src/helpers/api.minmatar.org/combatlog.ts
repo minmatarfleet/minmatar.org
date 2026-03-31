@@ -35,12 +35,14 @@ export async function get_saved_logs(access_token:string, saved_logs_request:Sav
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as SavedCombatLog[];
     } catch (error) {
-        throw new Error(`Error analizing log: ${error.message}`);
+        throw new Error(`Error analizing log: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -66,12 +68,14 @@ export async function get_log_by_id(access_token:string, log_id:number) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as CombatLog;
     } catch (error) {
-        throw new Error(`Error fetching log: ${error.message}`);
+        throw new Error(`Error fetching log: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -105,9 +109,11 @@ export async function analize_log(combatlog:string | Uint8Array, gzipped:boolean
     console.log(`Requesting POST: ${ENDPOINT}`)
 
     try {
+        const body = combatlog instanceof Uint8Array ? new Blob([new Uint8Array(combatlog)]) : combatlog
+
         const response = await fetch(ENDPOINT, {
             headers: headers,
-            body: combatlog,
+            body: body,
             method: 'POST'
         })
 
@@ -117,12 +123,14 @@ export async function analize_log(combatlog:string | Uint8Array, gzipped:boolean
             throw new Error(get_error_message(
                 response.status,
                 `POST ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as CombatLog;
     } catch (error) {
-        throw new Error(`Error analizing log: ${error.message}`);
+        throw new Error(`Error analizing log: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -148,11 +156,13 @@ export async function delete_log(access_token:string, log_id:number) {
             throw new Error(get_error_message(
                 response.status,
                 `PUT ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return (response.status === 200);
     } catch (error) {
-        throw new Error(`Error deleting combat log: ${error.message}`);
+        throw new Error(`Error deleting combat log: ${error.message}`, { cause: error.cause });
     }
 }

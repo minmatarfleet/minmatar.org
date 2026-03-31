@@ -2,8 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
-
 import type { DoctrineType, DoctrineLocationUI } from '@dtypes/layout_components'
 import { fetch_doctrines } from '@helpers/fetching/doctrines'
 import { SHIP_TYPES_SORTED } from '@helpers/eve'
@@ -11,7 +9,7 @@ import { get_locations_by_ids } from '@helpers/api.minmatar.org/locations'
 import type { Location } from '@dtypes/api.minmatar.org'
 
 let doctrines:DoctrineType[] = []
-let fetch_doctrines_error:string | null = null
+let fetch_doctrines_error: Error | false = false
 let all_locations:Location[] = []
 let location_doctrine_counts_map: Map<number, number> = new Map()
 let all_locations_ui: DoctrineLocationUI[] = []
@@ -75,7 +73,7 @@ try {
         name: t('all_doctrines'),
     })
 } catch (error) {
-    fetch_doctrines_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
+    fetch_doctrines_error = error
 }
 
 const active_doctrine_location_ui = all_locations_ui.find(location => location.id === active_location_id)
@@ -92,7 +90,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
     <ErrorRefetch
         args={{
             partial: DOCTRINES_PARTIAL_URL,
-            message: fetch_doctrines_error,
+            error: fetch_doctrines_error,
             delay: 0,
         }}
     />

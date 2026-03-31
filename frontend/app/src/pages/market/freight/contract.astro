@@ -2,13 +2,12 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { get_route_cost } from '@helpers/api.minmatar.org/freights'
 import { fetch_freight_routes } from '@helpers/fetching/freights'
 import type { FreightRoutesData } from '@dtypes/layout_components'
 
 let freight_routes_data:FreightRoutesData
-let data_fetching_error:string | null = null
+let data_fetching_error: Error | false = false
 
 let cost:number = 0
 let route:string = ''
@@ -32,12 +31,12 @@ try {
     contract_size = parseInt((data.get("contract_size") as string).replaceAll(',', ''), 10) || 0
 
     if (isNaN(contract_size) || contract_size < 0 || contract_size > MAXIMUM_CARGO)
-        throw new Error(t('invalid_contract_size'))
+        throw new Error(t('invalid_contract_size'), { cause: 400 })
 
     collateral = parseInt((data.get("collateral") as string).replaceAll(',', ''), 10) || 0
 
     if (isNaN(collateral) || collateral < 0)
-        throw new Error(t('invalid_collateral'))
+        throw new Error(t('invalid_collateral'), { cause: 400 })
     
     const route_id = freight_routes_data.route_translation[route]
 
@@ -53,11 +52,11 @@ try {
         days_to_complete = details.days_to_complete
     }
 } catch (error) {
-    data_fetching_error = prod_error_messages() ? t('fetch_freight_cost_error') : error.message
+    data_fetching_error = error
 }
 
 if (data_fetching_error) {
-    Astro.cookies.set('contract_error', data_fetching_error, { path: '/' })
+    Astro.cookies.set('contract_error', data_fetching_error.message, { path: '/' })
     return Astro.redirect(translatePath('/market/freight/calculator'))
 }
 

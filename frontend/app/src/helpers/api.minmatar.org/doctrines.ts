@@ -23,12 +23,14 @@ export async function get_doctrines() {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ));
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as Doctrine[];
     } catch (error) {
-        throw new Error(`Error fetching sigs: ${error.message}`);
+        throw new Error(`Error fetching sigs: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -52,11 +54,13 @@ export async function get_doctrine_by_id(id:number) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ));
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as Doctrine;
     } catch (error) {
-        throw new Error(`Error fetching sigs: ${error.message}`);
+        throw new Error(`Error fetching sigs: ${error.message}`, { cause: error.cause });
     }
 }

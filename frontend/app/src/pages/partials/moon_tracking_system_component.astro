@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -24,12 +23,12 @@ import { get_system_moons_data } from '@helpers/pages/system_moons'
 import type { SystemMoonsData } from '@helpers/pages/system_moons'
 
 let system_moons_data:SystemMoonsData = {}
-let data_fetching_error
+let data_fetching_error: Error | false = false
 
 try {
     system_moons_data = await get_system_moons_data(auth_token as string, system_name, lang)
 } catch (error) {
-    data_fetching_error = error.message
+    data_fetching_error = error
 }
 
 const {
@@ -59,7 +58,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
     <ErrorRefetch
         args={{
             partial: MOON_TRACKING_SYSTEM_PARTIAL_URL,
-            message: data_fetching_error,
+            error: data_fetching_error,
             delay: delay,
         }}
     />

@@ -2,8 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
-
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
@@ -15,12 +13,12 @@ import { get_all_members } from '@helpers/fetching/groups'
 import type { CharacterBasic } from '@dtypes/layout_components'
 
 let members:CharacterBasic[] = []
-let get_groups_members_error:string | false = false
+let get_groups_members_error: Error | false = false
 try {
     members = (auth_token && user ? await get_all_members(auth_token, user.user_id, user_is_superadmin) : [])
     members.sort((a, b) => a.character_name.localeCompare(b.character_name))
 } catch (error) {
-    get_groups_members_error = prod_error_messages() ? t('get_groups_members_error') : error.message
+    get_groups_members_error = error
 }
 
 interface Props {

@@ -3,7 +3,6 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
-import { prod_error_messages } from '@helpers/env'
 
 const is_friend = JSON.parse(Astro.url.searchParams.get('is_friend') ?? 'false') as boolean
 
@@ -27,7 +26,7 @@ if (Astro.request.method === "POST") {
         await sync_user_with_discord(auth_token as string, user.user_id)
         updated = true
     } catch (error) {
-        sync_user_with_discord_error = (prod_error_messages() ? t('sync_user_with_discord_error') : error.message)
+        sync_user_with_discord_error = error.message
     }
 }
 

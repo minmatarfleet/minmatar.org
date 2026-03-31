@@ -2168,5 +2168,6 @@ export const ui = {
         'units_plural': '{count} units',
         'units_singular': '1 unit',
         'my_claim': 'My claim',
+        'contact_it': 'Try reloading the page. If this error persist open a ticket at [#help](https://discordapp.com/channels/1041384161505722368/1183401618943791186).',
     },
 } as const;

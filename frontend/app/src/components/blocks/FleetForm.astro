@@ -8,10 +8,10 @@ import { fleet_types } from '@dtypes/api.minmatar.org'
 import { get_player_icon } from '@helpers/eve_image_server'
 
 interface Props {
-    fleet?:                         FleetUI;
+    fleet?:                         FleetUI | null;
     audiences:                      Audience[];
     doctrines:                      DoctrineType[];
-    fleet_commander:                CharacterBasic;
+    fleet_commander:                CharacterBasic | null;
     eve_date:                       string;
     eve_time:                       string;
     disable_motd:                   boolean;
@@ -302,10 +302,10 @@ import Input from './Input.astro'
                     </ComponentBlock>
 
                     <ThumbCard
-                        thumb_name={fleet_commander.character_name}
-                        thumb_image={get_player_icon(fleet_commander.character_id, 512)}
-                        thumb_image_small={get_player_icon(fleet_commander.character_id, 512)}
-                        thumb_image_alt={fleet_commander.character_name}
+                        thumb_name={fleet_commander?.character_name ?? t('unknown_character')}
+                        thumb_image={get_player_icon(fleet_commander?.character_id ?? 0, 512)}
+                        thumb_image_small={get_player_icon(fleet_commander?.character_id ?? 0, 512)}
+                        thumb_image_alt={fleet_commander?.character_name ?? t('unknown_character')}
                         thumb_title={t('fleet_commander')}
                         class="[ max-w-[var(--max-text-width)] ]"
                     >

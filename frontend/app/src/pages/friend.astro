@@ -2,8 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
-
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
@@ -17,12 +15,12 @@ import type { Character } from '@dtypes/api.minmatar.org'
 import { get_characters } from '@helpers/api.minmatar.org/characters'
 
 let pilots:Character[] = []
-let get_characters_error:string | false = false
+let get_characters_error: Error | false = false
 
 try {
     pilots = await get_characters(auth_token as string);
 } catch (error) {
-    get_characters_error = (prod_error_messages() ? t('get_characters_error') : error.message)
+    get_characters_error = error
 }
 
 const GUEST_PILOTS_LIST_PARTIAL_URL = translatePath('/partials/guest_pilots_list_component/')
@@ -136,7 +134,7 @@ const page_title = t('friend.page_title');
                             <ErrorRefetch
                                 args={{
                                     partial: GUEST_PILOTS_LIST_PARTIAL_URL,
-                                    message: get_characters_error,
+                                    error: get_characters_error,
                                     delay: 0,
                                     target: '#pilots-list',
                                 }}

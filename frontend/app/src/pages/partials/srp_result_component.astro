@@ -9,14 +9,13 @@ const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_tok
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 import type { SRPFrontendPrograms } from '@dtypes/layout_components'
-import { prod_error_messages } from '@helpers/env'
 import type { CombatLogAnalysis } from '@dtypes/layout_components'
 import { create_fleet_srp } from '@helpers/api.minmatar.org/srp'
 import { fetch_combatlog_analysis } from '@helpers/fetching/combatlog'
 import { b64_to_Uint8Array } from '@helpers/string'
 
 let killmail_submitted = false
-let submit_srp_error:string | false = false
+let submit_srp_error: Error | false = false
 
 if (Astro.request.method === "POST") {
     try {
@@ -29,10 +28,10 @@ if (Astro.request.method === "POST") {
         const regex = /^https:\/\/esi\.evetech\.net(?:\/v[0-9]+)?\/killmails\/([0-9]+)\/([a-zA-Z0-9]+)$/
 
         if (!regex.test(external_killmail_link.trim()))
-            throw new Error(t('invalid_killmail_link'))
+            throw new Error(t('invalid_killmail_link'), { cause: 400 })
 
         if (isNaN(fleet_id))
-            throw new Error(t('invalid_fleet_id'))
+            throw new Error(t('invalid_fleet_id'), { cause: 400 })
 
         let combat_log_analysis:CombatLogAnalysis | null = null
         if (base64_gziped_combatlog) {
@@ -53,7 +52,7 @@ if (Astro.request.method === "POST") {
 
         killmail_submitted = true
     } catch (error) {
-        submit_srp_error = (prod_error_messages() ? t('submit_srp_error') : error.message)
+        submit_srp_error = error
     }
 }
 
@@ -61,12 +60,12 @@ import type { SRPStatsOverview } from '@dtypes/api.minmatar.org'
 import { get_srp_stats } from '@helpers/api.minmatar.org/srp'
 
 let stats_overview:SRPStatsOverview | null = null
-let fetching_error:string | false = false
+let fetching_error: Error | false = false
 
 try {
     stats_overview = await get_srp_stats( auth_token as string)
 } catch (error) {
-    fetching_error = error.message
+    fetching_error = error
 }
 
 const program = Astro.url.searchParams.get('program')
@@ -89,7 +88,7 @@ import Markdown from '@components/blocks/Markdown.astro'
 {submit_srp_error &&
     <Flexblock class="[ animate-fade-in-up text-center ]">
         <h4>⚠️ {t('srp_failed')}</h4>
-        <Markdown markdown={submit_srp_error} />
+        <Markdown markdown={submit_srp_error.message} />
         <SRPWizardActions program={program as SRPFrontendPrograms} justification='center' />
     </Flexblock>
 }

@@ -12,19 +12,16 @@ const {
 
 
 import { get_corporation_logo } from '@helpers/eve_image_server';
-import { prod_error_messages } from '@helpers/env'
 import type { CorporationInfo } from '@dtypes/api.minmatar.org'
 import { get_corporation_info } from '@helpers/api.minmatar.org/corporations'
-import { parse_eve_html } from '@helpers/eve'
-import { is_html } from '@helpers/string'
 
 let corporation:CorporationInfo | null = null
-let get_corporation_info_error:string | false = false
+let get_corporation_info_error: Error | false = false
 
 try {
     corporation = await get_corporation_info(corporation_id)
 } catch (error) {
-    get_corporation_info_error = (prod_error_messages() ? t('get_corporation_info_error') : error.message)
+    get_corporation_info_error = error
 }
 
 const CORPORATION_MODAL_PARTIAL_URL = translatePath('/partials/corporation_modal_component')
@@ -73,7 +70,7 @@ const timezones = corporation?.timezones?.length ?? 0 > 0 ? corporation?.timezon
         <ErrorRefetch
             args={{
                 partial: `${CORPORATION_MODAL_PARTIAL_URL}?corporation_id=${corporation_id}`,
-                message: get_corporation_info_error,
+                error: get_corporation_info_error,
                 delay: delay,
                 target: '#corporation-info',
             }}

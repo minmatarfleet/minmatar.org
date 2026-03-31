@@ -24,12 +24,14 @@ export async function get_system_moons(access_token:string, system:string) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as SystemMoon[];
     } catch (error) {
-        throw new Error(`Error fetching system moons: ${error.message}`);
+        throw new Error(`Error fetching system moons: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -54,12 +56,14 @@ export async function get_moon_summary(access_token:string) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as MoonSummarySystem[];
     } catch (error) {
-        throw new Error(`Error fetching moon summary: ${error.message}`);
+        throw new Error(`Error fetching moon summary: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -90,11 +94,13 @@ export async function add_moon(access_token:string, paste:string) {
             throw new Error(get_error_message(
                 response.status,
                 `POST ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as number[];
     } catch (error) {
-        throw new Error(`Error adding moon: ${error.message}`);
+        throw new Error(`Error adding moon: ${error.message}`, { cause: error.cause });
     }
 }

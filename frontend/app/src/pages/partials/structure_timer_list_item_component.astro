@@ -5,7 +5,6 @@ import StructureTimerListItem from '@components/blocks/StructureTimerListItem.as
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -40,7 +39,7 @@ if (Astro.request.method === "POST") {
         if (can_verify_timer)
             await verify_structure_timer(auth_token as string, timer_id, verify_request)
     } catch (error) {
-        verify_structure_timer_error = prod_error_messages() ? t('verify_structure_timer_error') : error.message
+        verify_structure_timer_error = error.message
     }
 }
 

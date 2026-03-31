@@ -35,7 +35,9 @@ export async function get_posts(post_request:PostRequest) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         const total_posts = response.headers.get('x-total-count')
@@ -45,7 +47,7 @@ export async function get_posts(post_request:PostRequest) {
             posts: await response.json() as Post[]
         }
     } catch (error) {
-        throw new Error(`Error fetching posts: ${error.message}`);
+        throw new Error(`Error fetching posts: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -70,12 +72,14 @@ export async function get_post(post_id:number) {
             const error_msg = parse_error_message(error.detail)
             error = error_msg ? error_msg : error?.detail
 
-            throw new Error(error ? error : get_error_message(response.status, `GET ${ENDPOINT}`))
+            throw new Error(error ? error : get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status
+            })
         }
 
         return await response.json() as Post;
     } catch (error) {
-        throw new Error(`Error fetching post: ${error.message}`);
+        throw new Error(`Error fetching post: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -107,12 +111,14 @@ export async function create_post(access_token:string, post:PostParams) {
             const error_msg = parse_error_message(error.detail)
             error = error_msg ? error_msg : error?.detail
 
-            throw new Error(error ? error : get_error_message(response.status, `POST ${ENDPOINT}`))
+            throw new Error(error ? error : get_error_message(response.status, `POST ${ENDPOINT}`), {
+                cause: response.status
+            })
         }
 
         return await response.json() as Post;
     } catch (error) {
-        throw new Error(`Error creating post: ${error.message}`);
+        throw new Error(`Error creating post: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -142,12 +148,14 @@ export async function update_post(access_token:string, post_id:number, post:Post
             const error_msg = parse_error_message(error.detail)
             error = error_msg ? error_msg : error?.detail
 
-            throw new Error(error ? error : get_error_message(response.status, `PATCH ${ENDPOINT}`))
+            throw new Error(error ? error : get_error_message(response.status, `PATCH ${ENDPOINT}`), {
+                cause: response.status
+            })
         }
 
         return await response.json() as Post;
     } catch (error) {
-        throw new Error(`Error updating post: ${error.message}`);
+        throw new Error(`Error updating post: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -173,12 +181,14 @@ export async function delete_post(access_token:string, post_id:number) {
             throw new Error(get_error_message(
                 response.status,
                 `PUT ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return (response.status === 200);
     } catch (error) {
-        throw new Error(`Error deleting post: ${error.message}`);
+        throw new Error(`Error deleting post: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -202,11 +212,13 @@ export async function get_posts_tags() {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as PostTag[];
     } catch (error) {
-        throw new Error(`Error fetching post tags: ${error.message}`);
+        throw new Error(`Error fetching post tags: ${error.message}`, { cause: error.cause });
     }
 }

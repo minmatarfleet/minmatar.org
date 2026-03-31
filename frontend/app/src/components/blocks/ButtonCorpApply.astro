@@ -16,7 +16,7 @@ const {
     id,
 } = Astro.props
 
-const CORPORATION_REQUEST_STATUS_PARTIAL_URL = `${translatePath('/partials/corporation_slide_request_status_item/')}?corporation_id=${corporation.corporation_id}`
+const CORPORATION_REQUEST_STATUS_PARTIAL_URL = `${translatePath('/partials/corporation_slide_request_status_item/')}?corporation_id=${corporation.corporation_id}&id=${id}`
 
 const REAPPLY_PERIOD_HOURS = 1
 let reapplication_date = new Date(corporation?.application_updated as Date)

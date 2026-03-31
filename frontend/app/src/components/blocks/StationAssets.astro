@@ -109,15 +109,14 @@ import StylessButton from './StylessButton.astro';
                 id="station-assets-body"
                 x-show="open"
             >
-                <ErrorRefetch
-                    args={{
-                        partial: STATION_ASSETS_PARTIAL_URL,
-                        message: t('fetching_assets'),
-                        delay: 0,
-                        target: '#station-assets-body',
-                    }}
-                    animation={false}
-                />
+                <small
+                    class="[ loading ]"
+                    hx-get={STATION_ASSETS_PARTIAL_URL}
+                    hx-target="#station-assets-body"
+                    hx-trigger="intersect"
+                    hx-indicator=".loader"
+                    hx-swap="outerHTML transition:true"
+                >{t('fetching_drilldown')}</small>
             </Wrapper>
         </Flexblock>
     </Wrapper>
