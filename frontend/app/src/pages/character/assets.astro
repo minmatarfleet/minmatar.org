@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -32,7 +31,7 @@ let character_assets:AssetsUI = {
     locations: [],
     location_icons: [],
 }
-let get_character_assets_error:string | false = false
+let get_character_assets_error: Error | false = false
 try {
     character_assets = await get_assets(auth_token as string, character_id)
     
@@ -43,7 +42,7 @@ try {
 
     character_assets.location_icons = location_icons_sorted
 } catch (error) {
-    get_character_assets_error = prod_error_messages() ? t('get_character_assets_error') : error.message
+    get_character_assets_error = error
 }
 
 const ASSETS_LIST_PARTIAL_URL = translatePath('/partials/assets_list_component')
@@ -223,7 +222,7 @@ const page_title = `${character_info.character_name} ${t('assets').toLowerCase()
             <ErrorRefetch
                 args={{
                     partial: `${ASSETS_LIST_PARTIAL_URL}?character_id=${character_id}`,
-                    message: get_character_assets_error,
+                    error: get_character_assets_error,
                     delay: 0,
                 }}
             />

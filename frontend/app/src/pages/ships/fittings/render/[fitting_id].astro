@@ -10,8 +10,6 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 
 const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 
-import { prod_error_messages } from '@helpers/env'
-
 const { fitting_id } = Astro.params;
 const show_controls = Astro.url.searchParams.get('controls') ?? null
 
@@ -21,8 +19,8 @@ import type { Fitting } from '@dtypes/api.minmatar.org'
 import { get_ship_info } from '@helpers/sde/ships'
 
 let fitting:Fitting | null = null
-let get_fitting_error:string | false = false
-let fetch_fleets_error:string | false = false
+let get_fitting_error: Error | false = false
+let fetch_fleets_error: Error | false = false
 let saved_logs:FleetCombatLog[] = []
 let ship_type:string | undefined = ''
 
@@ -31,7 +29,7 @@ try {
     const ship_info = await get_ship_info(fitting.ship_id)
     ship_type = ship_info?.type
 } catch (error) {
-    get_fitting_error = prod_error_messages() ? t('get_fitting_error') : error.message
+    get_fitting_error = error
 }
 
 try {

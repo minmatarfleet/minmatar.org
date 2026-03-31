@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found, HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -63,14 +62,14 @@ if (Astro.request.method === "POST") {
 
                 if (tracking_started) send_active_fleet_notification(auth_token as string, updated_fleet?.id)
             } catch (error) {
-                const start_fleet_error = prod_error_messages() ? t('start_fleet_error') : error.message
+                const start_fleet_error = error.message
                 Astro.cookies.set('fleet_tracking_error', start_fleet_error, { path: '/' })
             }
 
             return Astro.redirect(translatePath(`/fleets/upcoming/${updated_fleet?.id}`))
         }
     } catch (error) {
-        update_fleet_error = prod_error_messages() ? t('update_fleet_error') : error.message
+        update_fleet_error = error.message
     }
 
     alert = {
@@ -86,7 +85,7 @@ import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 let doctrines:DoctrineType[] = []
 let fleet:FleetUI | null = null
 let fleet_commander:CharacterBasic | null = null
-let fetch_doctrines_error:string | false = false
+let fetch_doctrines_error: Error | false = false
 let audiences:Audience[] | null = null
 
 try {
@@ -98,7 +97,7 @@ try {
     doctrines = await fetch_doctrines()
     audiences = await get_audiences(auth_token as string)
 } catch (error) {
-    fetch_doctrines_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
+    fetch_doctrines_error = error
 }
 
 const FLEET_FORM_PARTIAL_URL = translatePath('/partials/fleet_form_component')
@@ -177,7 +176,7 @@ const eve_time = eve_datetime.toTimeString().slice(0, 5)
                 <ErrorRefetch
                     args={{
                         partial: `${FLEET_FORM_PARTIAL_URL}?fleet_id=${fleet_id}`,
-                        message: fetch_doctrines_error,
+                        error: fetch_doctrines_error,
                         delay: 0,
                     }}
                 />

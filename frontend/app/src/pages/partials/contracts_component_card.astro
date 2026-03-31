@@ -10,12 +10,12 @@ import type { ContractsData } from '@helpers/pages/contracts'
 import { get_ship_info } from '@helpers/sde/ships'
 
 let contracts_data:ContractsData = {}
-let data_fetching_error = ''
+let data_fetching_error: Error | false = false
 
 try {
     contracts_data = await get_contracts_data(lang)
 } catch (error) {
-    data_fetching_error = error.message
+    data_fetching_error = error
 }
 
 const {
@@ -90,7 +90,7 @@ const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
     <ErrorRefetch
         args={{
             partial: CONTRACTS_PARTIAL_URL,
-            message: data_fetching_error,
+            error: data_fetching_error,
             delay: delay,
         }}
     />

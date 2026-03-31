@@ -43,12 +43,14 @@ export async function get_orders_with_location() {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as IndustryOrder[];
     } catch (error) {
-        throw new Error(`Error fetching industry orders: ${error.message}`);
+        throw new Error(`Error fetching industry orders: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -72,12 +74,14 @@ export async function get_orders_summary_nested() {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as { roots: NestedIndustryOrder[] };
     } catch (error) {
-        throw new Error(`Error fetching contracts: ${error.message}`);
+        throw new Error(`Error fetching contracts: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -101,12 +105,14 @@ export async function get_orders_summary_flat() {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as { items: BaseIndustryOrder[] };
     } catch (error) {
-        throw new Error(`Error fetching contracts: ${error.message}`);
+        throw new Error(`Error fetching contracts: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -130,12 +136,14 @@ export async function get_products() {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as Product[];
     } catch (error) {
-        throw new Error(`Error fetching products: ${error.message}`);
+        throw new Error(`Error fetching products: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -159,12 +167,14 @@ export async function get_product_by_id(id:number) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as Product;
     } catch (error) {
-        throw new Error(`Error fetching products: ${error.message}`);
+        throw new Error(`Error fetching products: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -196,12 +206,14 @@ export async function get_product_breakdown(product_id:number, quantity:number, 
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as Product[];
     } catch (error) {
-        throw new Error(`Error fetching product breakdown: ${error.message}`);
+        throw new Error(`Error fetching product breakdown: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -225,12 +237,14 @@ export async function get_blueprints(query:string, is_copy:boolean = false) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as Blueprint[];
     } catch (error) {
-        throw new Error(`Error fetching blueprints: ${error.message}`);
+        throw new Error(`Error fetching blueprints: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -239,11 +253,15 @@ export async function get_blueprint(item_id: number): Promise<BlueprintDetail> {
     const response = await fetch(ENDPOINT, {
         headers: { 'Content-Type': 'application/json' },
     })
+
     if (!response.ok) {
         throw new Error(
-            get_error_message(response.status, `GET ${ENDPOINT}`)
+            get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status
+            }
         )
     }
+
     return await response.json() as BlueprintDetail
 }
 
@@ -255,7 +273,9 @@ export async function get_planetary_harvest(): Promise<HarvestOverviewItem[]> {
     })
     if (!response.ok) {
         throw new Error(
-            get_error_message(response.status, `GET ${PLANETARY_ENDPOINT}/harvest`)
+            get_error_message(response.status, `GET ${PLANETARY_ENDPOINT}/harvest`), {
+                cause: response.status
+            }
         )
     }
     return await response.json()
@@ -273,7 +293,9 @@ export async function get_planetary_harvest_drilldown(
             get_error_message(
                 response.status,
                 `GET ${PLANETARY_ENDPOINT}/harvest/${typeId}`
-            )
+            ), {
+                cause: response.status
+            }
         )
     }
     return await response.json()
@@ -288,7 +310,9 @@ export async function get_planetary_production(): Promise<ProductionOverviewItem
             get_error_message(
                 response.status,
                 `GET ${PLANETARY_ENDPOINT}/production`
-            )
+            ), {
+                cause: response.status
+            }
         )
     }
     return await response.json()
@@ -306,7 +330,9 @@ export async function get_planetary_production_drilldown(
             get_error_message(
                 response.status,
                 `GET ${PLANETARY_ENDPOINT}/production/${typeId}`
-            )
+            ), {
+                cause: response.status
+            }
         )
     }
     return await response.json()
@@ -333,7 +359,9 @@ export async function get_planetary_planets(params: {
 
     if (!response.ok) {
         throw new Error(
-            get_error_message(response.status, `GET ${ENDPOINT}`)
+            get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status
+            }
         )
     }
     
@@ -360,12 +388,14 @@ export async function get_order_assignments_breakdown(order_id: number, order_it
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as { assignments: OrderAssignmentsBreakdown[] };
     } catch (error) {
-        throw new Error(`Error fetching contracts: ${error.message}`);
+        throw new Error(`Error fetching contracts: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -390,7 +420,9 @@ export async function post_order_item_assignment(
 
     if (!response.ok) {
         throw new Error(
-            await parse_response_error(response, `POST ${ENDPOINT}`),
+            await parse_response_error(response, `POST ${ENDPOINT}`), {
+                cause: response.status
+            }
         )
     }
 
@@ -417,12 +449,14 @@ export async function get_order_by_id(order_id: number) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as IndustrySingleOrder;
     } catch (error) {
-        throw new Error(`Error fetching industry orders: ${error.message}`);
+        throw new Error(`Error fetching industry orders: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -457,11 +491,13 @@ export async function mark_assignment(
             throw new Error(get_error_message(
                 response.status,
                 `PATCH ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as OrderAssignment;
     } catch (error) {
-        throw new Error(`Error marking assignment: ${error.message}`);
+        throw new Error(`Error marking assignment: ${error.message}`, { cause: error.cause });
     }
 }

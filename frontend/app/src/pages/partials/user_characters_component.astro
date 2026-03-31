@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -24,7 +23,7 @@ if (!can_view_page)
 import type { Character } from '@dtypes/api.minmatar.org'
 import { get_characters } from '@helpers/api.minmatar.org/characters'
 
-let get_all_mains_alts_error:string | false = false
+let get_all_mains_alts_error: Error | false = false
 let characters:Character[] = []
 
 const character_id = parseInt(Astro.url.searchParams.get('character_id') as string)
@@ -33,7 +32,7 @@ const character_name = Astro.url.searchParams.get('character_name')
 try {
     characters = await get_characters(auth_token as string, character_id)
 } catch (error) {
-    get_all_mains_alts_error = prod_error_messages() ? t('get_all_mains_alts_error') : error.message
+    get_all_mains_alts_error = error
 }
 
 import { query_string } from '@helpers/string';
@@ -53,7 +52,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
     <ErrorRefetch
         args={{
             partial: `${USER_CHARACTERS_PARTIAL_URL}?character_id=${character_id}`,
-            message: get_all_mains_alts_error,
+            error: get_all_mains_alts_error,
             delay: delay,
         }}
     />

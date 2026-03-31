@@ -2,14 +2,12 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
-
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = user?.is_superuser ?? false
+const is_superuser = user ? user?.is_superuser : false
 
 import { get_user_permissions } from '@helpers/permissions'
 
@@ -25,7 +23,7 @@ import { get_saved_logs } from '@helpers/api.minmatar.org/combatlog'
 let saved_logs:SavedCombatLog[] = []
 let fittings:Fitting[] = []
 let fitting_options:SelectOptions[] = []
-let combatlog_selects_error:string | false = false
+let combatlog_selects_error: Error | false = false
 let fleets:number[] = []
 let fleets_options:SelectOptions[] = []
 
@@ -51,15 +49,13 @@ try {
         } as SelectOptions
     })
 } catch (error) {
-    combatlog_selects_error = prod_error_messages() ? t('get_fittings_error') : error.message
-    console.log(combatlog_selects_error)
+    combatlog_selects_error = error
 }
 
 try {
     saved_logs = user ? await get_saved_logs(auth_token as string, { user_id: user.user_id }) : []
 } catch (error) {
-    combatlog_selects_error = prod_error_messages() ? t('get_fittings_error') : error.message
-    console.log(combatlog_selects_error)
+    combatlog_selects_error = error
 }
 
 const COMBATLOG_LIST_PARTIAL_URL = translatePath('/partials/combatlog_list_component/')
@@ -129,7 +125,7 @@ const page_description = t('intel.combatlog.leading_text');
                 <ErrorRefetch
                     args={{
                         partial: COMBATLOG_LIST_PARTIAL_URL,
-                        message: combatlog_selects_error,
+                        error: combatlog_selects_error,
                         delay: 0,
                         target: '#pilots-list',
                     }}

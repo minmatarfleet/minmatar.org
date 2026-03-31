@@ -369,7 +369,7 @@ export interface GroupRequestUI {
 
 export interface ErrorRefetchParams {
     partial:    string;
-    message:    string;
+    error:      Error;
     delay:      number;
     target?:    string,
 }

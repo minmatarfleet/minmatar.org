@@ -25,12 +25,12 @@ import { get_applications_data } from '@helpers/pages/applications'
 import type { ApplicationsData } from '@helpers/pages/applications'
 
 let applications_data:ApplicationsData = {}
-let data_fetching_error
+let data_fetching_error: Error | false = false
 
 try {
     applications_data = await get_applications_data(auth_token as string, lang)
 } catch (error) {
-    data_fetching_error = error.message
+    data_fetching_error = error
 }
 
 const {
@@ -166,7 +166,7 @@ const page_title = t('corporations.applications.page_title')
                 <ErrorRefetch
                     args={{
                         partial: CORPORATIONS_APPLICATIONS_PARTIAL_URL,
-                        message: data_fetching_error,
+                        error: data_fetching_error,
                         delay: 0,
                     }}
                 />

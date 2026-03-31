@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -40,7 +39,7 @@ if (Astro.request.method === "POST") {
         else
             await create_sig_request(auth_token, group_id)
     } catch (error) {
-        create_group_request_error = prod_error_messages() ? t('create_group_joining_request_error') : error.message
+        create_group_request_error = error.message
     }
 }
 
@@ -52,16 +51,16 @@ if (Astro.request.method === "DELETE") {
         else
             await remove_sig_member(auth_token, group_id, user_id)
     } catch (error) {
-        delete_member_error = prod_error_messages() ? t('delete_member_error') : error.message
+        delete_member_error = error.message
     }
 }
 
 let group:GroupItemUI | null = null
-let get_group_request_error:string | false = false
+let get_group_request_error: Error | false = false
 try {
     group = await get_group_by_id_auth(auth_token, group_id, user_id, type)
 } catch (error) {
-    get_group_request_error = prod_error_messages() ? t('get_group_request_error') : error.message
+    get_group_request_error = error
 }
 
 if (create_group_request_error) {
@@ -129,7 +128,7 @@ const partial_query_string = query_string({
     <ErrorRefetch
         args={{
             partial: `${GROUP_STATUS_PARTIAL_URL}${partial_query_string}`,
-            message: get_group_request_error,
+            error: get_group_request_error,
             delay: delay,
         }}
     />

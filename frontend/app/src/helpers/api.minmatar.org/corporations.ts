@@ -23,12 +23,14 @@ export async function get_all_corporations(corporation_type:CorporationType) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ));
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as Corporation[];
     } catch (error) {
-        throw new Error(`Error fetching corporations: ${error.message}`);
+        throw new Error(`Error fetching corporations: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -53,12 +55,14 @@ export async function get_corporation_by_id(access_token:string, id:number) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ));
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as Corporation;
     } catch (error) {
-        throw new Error(`Error fetching corporation: ${error.message}`);
+        throw new Error(`Error fetching corporation: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -82,7 +86,9 @@ export async function get_corporation_info(id:number) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ));
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as CorporationInfo;

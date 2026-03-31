@@ -23,11 +23,13 @@ export async function get_link_stats(access_token:string) {
         // console.log(response)
         
         if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`))
+            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
+                cause: response.status
+            })
         
         return await response.json() as ReferralLinkStats[]
     } catch (error) {
-        throw new Error(`Error fetching links stats: ${error.message}`);
+        throw new Error(`Error fetching links stats: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -59,11 +61,13 @@ export async function record_referral(page:string, user_id:number, client_ip:str
         // console.log(response)
 
         if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`))
+            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
+                cause: response.status
+            })
         
         return (response.status === 201)
     } catch (error) {
-        throw new Error(`Error recording referral: ${error.message}`);
+        throw new Error(`Error recording referral: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -87,10 +91,12 @@ export async function get_links(access_token:string) {
         // console.log(response)
 
         if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`))
+            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
+                cause: response.status
+            })
         
         return await response.json() as ReferralLink[]
     } catch (error) {
-        throw new Error(`Error fetching links stats: ${error.message}`);
+        throw new Error(`Error fetching links stats: ${error.message}`, { cause: error.cause });
     }
 }

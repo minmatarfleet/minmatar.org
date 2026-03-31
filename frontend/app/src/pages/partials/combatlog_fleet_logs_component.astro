@@ -8,13 +8,12 @@ import * as jose from 'jose'
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
-import { prod_error_messages } from '@helpers/env'
 import { b64_to_Uint8Array } from '@helpers/string'
 
 import { fetch_combatlog_analysis } from '@helpers/fetching/combatlog'
 import type { CombatLogAnalysis, Alert } from '@dtypes/layout_components'
 
-let combatlog_analysis_error:string  | null = null
+let combatlog_analysis_error:string | false = false
 let alert:Alert | false = false
 let fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
 
@@ -31,7 +30,7 @@ if (Astro.request.method === "POST") {
             fleet_id: fleet_id
         }) : await fetch_combatlog_analysis(gziped_combatlog, true)
     } catch (error) {
-        combatlog_analysis_error = prod_error_messages() ? t('combatlog_analysis_error') : error.message
+        combatlog_analysis_error = error.message
 
         alert = {
             title: t('add_fleet_combatlog_dialog_title'),
@@ -47,14 +46,14 @@ let delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 import type { FleetCombatLog } from '@dtypes/layout_components'
 import { get_fleet_combatlogs } from '@helpers/fetching/combatlog'
 
-let fetch_fleets_error:string | false = false
+let fetch_fleets_error: Error | false = false
 let saved_logs:FleetCombatLog[] = []
-let fetch_fleet_combatlogs_error:string  | null = null
+let fetch_fleet_combatlogs_error: Error | false = false
 
 try {
     saved_logs = user && !fetch_fleets_error ? await get_fleet_combatlogs(auth_token as string, fleet_id) : []
 } catch (error) {
-    fetch_fleet_combatlogs_error = prod_error_messages() ? t('fetch_fleet_combatlogs_error') : error.message
+    fetch_fleet_combatlogs_error = error
 }
 
 import FleetCombatLogTable from '@components/blocks/FleetCombatLogTable.astro'
@@ -66,7 +65,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
     <ErrorRefetch
         args={{
             partial: `${COMBAT_LOG_FLEET_LOGS_PARTIAL_URL}?fleet_id=${fleet_id}`,
-            message: fetch_fleet_combatlogs_error,
+            error: fetch_fleet_combatlogs_error,
             delay: delay,
             target: '#fleet-combat-log-table',
         }}

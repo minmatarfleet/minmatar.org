@@ -19,13 +19,11 @@ const post_editor = can_manage_posts ? (user as User).user_id : false
 if (!post_editor)
     return HTTP_403_Forbidden()
 
-import { prod_error_messages } from '@helpers/env'
-
 import type { PostListUI } from '@dtypes/layout_components'
 import { fetch_posts_grouped_by_tags } from '@helpers/fetching/posts'
 
 let posts: Record<string, PostListUI[]> = {}
-let post_fetching_error:string | false = false
+let post_fetching_error: Error | false = false
 let post_count = 0
 
 try {
@@ -33,7 +31,7 @@ try {
     posts = posts_grouped.posts_by_tag
     post_count = posts_grouped.post_count
 } catch (error) {
-    post_fetching_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
+    post_fetching_error = error
 }
 
 const count_text = t(post_count != 1 ? 'propaganda_post_plural' : 'propaganda_post_singular').replace('COUNT', String(post_count))
@@ -112,7 +110,7 @@ const leading_text = t('propaganda.trash.leading_text');
                 <ErrorRefetch
                     args={{
                         partial: PROPAGANDA_POSTS_LIST_PARTIAL_URL,
-                        message: post_fetching_error,
+                        error: post_fetching_error,
                         delay: 0,
                     }}
                 />

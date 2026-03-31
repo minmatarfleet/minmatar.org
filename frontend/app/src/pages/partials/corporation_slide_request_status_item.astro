@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { get_auth_url } from '@helpers/env'
 
 import type { User } from '@dtypes/jwt'
@@ -25,6 +24,8 @@ let corporation:CorporationObject | null = null
 let create_corporation_application_error:string | false = false
 let application:CorporationApplication 
 
+const id = parseInt(Astro.url.searchParams.get('id') as string)
+
 if (Astro.request.method === "POST") {
     try {
         const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id') as string)
@@ -40,7 +41,7 @@ if (Astro.request.method === "POST") {
         application = await create_corporation_application(auth_token, corporation.corporation_id, description)
         corporation.status = application.status as CorporationStatusType
     } catch (error) {
-        create_corporation_application_error = prod_error_messages() ? t('create_corporation_application_error') : error.message
+        create_corporation_application_error = error.message
     }
 }
 
@@ -84,4 +85,5 @@ import CorporationSlideStatus from '@components/blocks/CorporationSlideStatus.as
     corporation={corporation as CorporationObject }
     is_user_corporation={false}
     alert={alert}
+    apply_button_id={`${id}-apply-button`}
 />

@@ -15,17 +15,16 @@ if (!auth_token || !user) {
     return Astro.redirect(get_auth_url())
 }
 
-import { prod_error_messages } from '@helpers/env'
 import { get_referral_stats } from '@helpers/fetching/referrals'
 import type { ReferralLinkStatsUI } from '@dtypes/layout_components'
 
 let referral_stats:ReferralLinkStatsUI[] = []
-let get_referral_stats_error:string | false = false
+let get_referral_stats_error: Error | false = false
 
 try {
     referral_stats = await get_referral_stats(auth_token, user.user_id, lang)
 } catch (error) {
-    get_referral_stats_error = prod_error_messages() ? t('get_referral_stats_error') : error.message
+    get_referral_stats_error = error
 }
 
 const total_clicks = referral_stats.reduce((c, stat) => c + stat.count, 0)
@@ -44,7 +43,7 @@ import ReferralStats from '@components/blocks/ReferralStats.astro';
     <ErrorRefetch
         args={{
             partial: REFERRAL_STATS_PARTIAL_URL,
-            message: get_referral_stats_error,
+            error: get_referral_stats_error,
             delay: delay,
         }}
     />

@@ -22,8 +22,8 @@ if (Astro.request.method === "POST") {
 }
 
 let killmail_analysis:KillmailAnalysis | null = null
-let fetching_error:string | false = false
-let endpoint_error:string | false = false
+let fetching_error: Error | false = false
+let endpoint_error: Error | false = false
 let program:SRPFrontendPrograms | null = null
 
 try {
@@ -39,10 +39,7 @@ try {
     program = query_program as SRPFrontendPrograms
     killmail_analysis = await analyze_killmail(auth_token as string, external_killmail_link)
 } catch (error) {
-    if (!error.cause)
-        fetching_error = error.message
-    else
-        endpoint_error = error.message
+    fetching_error = error
 }
 
 import { query_string } from '@helpers/string';
@@ -61,7 +58,7 @@ import SRPWizardActions from '@components/blocks/SRPWizardActions.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
 
-{(endpoint_error || !external_killmail_link || !program) ?
+{((fetching_error && fetching_error?.cause) || !external_killmail_link || !program) ?
     <Flexblock centered={true}>
         <p class="[ w-fit animate-rubber-band ]">⚠️ {endpoint_error}</p>
         <SRPWizardActions program={program as SRPFrontendPrograms} justification='center' />
@@ -70,7 +67,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         <ErrorRefetch
             args={{
                 partial: KILLMAIL_CANDIDATE_FLEETS_PARTIAL_URL,
-                message: fetching_error,
+                error: fetching_error,
                 delay: delay,
             }}
         /> :

@@ -19,11 +19,10 @@ const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_e
 if (!can_view_fleets)
     return HTTP_403_Forbidden()
 
-import { prod_error_messages } from '@helpers/env'
 import type { FleetItem } from '@dtypes/layout_components'
 import { fetch_fleets_auth } from '@helpers/fetching/fleets'
 
-let fetch_fleets_error:string | false = false
+let fetch_fleets_error: Error | false = false
 let fleets:FleetItem[] = []
 let active_fleet_index:number = -1 // No active fleet
 
@@ -34,7 +33,7 @@ try {
     fleets.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
     active_fleet_index = fleets.findIndex(fleet => fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time)
 } catch (error) {
-    fetch_fleets_error = prod_error_messages() ? t('fetch_fleets_error') : error.message
+    fetch_fleets_error = error
 }
 
 const FLEET_FEED_PARTIAL_URL = `${translatePath('/partials/fleet_feed_component')}`

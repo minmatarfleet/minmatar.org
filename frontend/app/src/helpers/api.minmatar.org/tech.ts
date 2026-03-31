@@ -21,7 +21,9 @@ export async function ping() {
         // console.log(response)
 
         if (!response.ok)
-            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`))
+            throw new Error(await parse_response_error(response, `${METHOD} ${ENDPOINT}`), {
+                cause: response.status
+            })
 
         return (response.status === 200)
     } catch (error) {

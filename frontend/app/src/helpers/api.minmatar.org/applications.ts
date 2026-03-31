@@ -24,12 +24,14 @@ export async function get_corporation_applications(access_token:string, corporat
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ));
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as CorporationApplication[];
     } catch (error) {
-        throw new Error(`Error fetching corporation applications: ${error.message}`);
+        throw new Error(`Error fetching corporation applications: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -60,12 +62,14 @@ export async function create_corporation_application(access_token:string, corpor
             throw new Error(get_error_message(
                 response.status,
                 `POST: ${ENDPOINT}`
-            ));
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as CorporationApplication;
     } catch (error) {
-        throw new Error(`Error creating corporation application: ${error.message}`);
+        throw new Error(`Error creating corporation application: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -90,12 +94,14 @@ export async function get_corporation_applications_by_id(access_token:string, co
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ));
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as CorporationApplicationDetails;
     } catch (error) {
-        throw new Error(`Error fetching corporation application: ${error.message}`);
+        throw new Error(`Error fetching corporation application: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -121,12 +127,14 @@ export async function accept_corporation_applications(access_token:string, corpo
             throw new Error(get_error_message(
                 response.status,
                 `POST ${ENDPOINT}`
-            ));
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as CorporationApplication[];
     } catch (error) {
-        throw new Error(`Error accepting corporation application: ${error.message}`);
+        throw new Error(`Error accepting corporation application: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -152,11 +160,13 @@ export async function reject_corporation_applications(access_token:string, corpo
             throw new Error(get_error_message(
                 response.status,
                 `POST ${ENDPOINT}`
-            ));
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as CorporationApplication[];
     } catch (error) {
-        throw new Error(`Error rejecting corporation application: ${error.message}`);
+        throw new Error(`Error rejecting corporation application: ${error.message}`, { cause: error.cause });
     }
 }

@@ -2,8 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
-
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
@@ -32,7 +30,7 @@ if (Astro.request.method === "POST") {
     } catch (error) {
         alert = {
             title: t('preping_dialog_title'),
-            content: prod_error_messages() ? t('preping_error') : error.message,
+            content: error.message,
         } as Alert
     }
 }

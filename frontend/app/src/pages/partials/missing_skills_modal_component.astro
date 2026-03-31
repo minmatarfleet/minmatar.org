@@ -3,15 +3,14 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import type { SkillsetMissingSkillUI } from '@dtypes/layout_components'
-import { prod_error_messages } from '@helpers/env'
 
 let skillset_missing_skills:SkillsetMissingSkillUI | null = null
-let skillset_missing_skills_modal_error:string | false = false
+let skillset_missing_skills_modal_error: Error | false = false
 try {
     const partial_params = await Astro.request.formData()
     skillset_missing_skills = JSON.parse( partial_params.get("data")?.valueOf() as string ) as SkillsetMissingSkillUI
 } catch (error) {
-    skillset_missing_skills_modal_error = prod_error_messages() ? t('skillset_missing_skills_modal_error') : error.message
+    skillset_missing_skills_modal_error = error
 }
 
 import SkillsetMissingSkills from '@components/blocks/SkillsetMissingSkills.astro'
@@ -19,7 +18,7 @@ import Tag from '@components/blocks/Tag.astro'
 ---
 
 {skillset_missing_skills_modal_error ?
-    <Tag text={skillset_missing_skills_modal_error} />
+    <Tag text={skillset_missing_skills_modal_error.message} />
     :
     <SkillsetMissingSkills skillset_missing_skills={skillset_missing_skills as SkillsetMissingSkillUI} />
 }

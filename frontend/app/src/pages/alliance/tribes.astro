@@ -9,14 +9,12 @@ const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_tok
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
-import { prod_error_messages } from '@helpers/env'
-
 import type { Tribe } from '@dtypes/api.minmatar.org'
 import { get_tribes, get_current_tribes } from '@helpers/api.minmatar.org/tribes'
 
 let tribes: Tribe[] = []
 let current_tribe_ids: Set<number> = new Set()
-let get_tribes_error: string | null = null
+let get_tribes_error: Error | false = false
 
 try {
     tribes = await get_tribes()
@@ -26,7 +24,7 @@ try {
         current_tribe_ids = new Set(current.map(t => t.id))
     }
 } catch (error) {
-    get_tribes_error = prod_error_messages() ? t('fetch_tribes_error') : error.message
+    get_tribes_error = error
 }
 
 const TRIBES_LIST_PARTIAL_URL = translatePath('/partials/tribes_list_component')
@@ -78,7 +76,7 @@ const leading_text = t('tribes.leading_text');
                 <ErrorRefetch
                     args={{
                         partial: TRIBES_LIST_PARTIAL_URL,
-                        message: get_tribes_error,
+                        error: get_tribes_error,
                         delay: 0,
                     }}
                 />

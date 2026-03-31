@@ -35,12 +35,14 @@ export async function get_types(access_token:string) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ));
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as string[];
     } catch (error) {
-        throw new Error(`Error fetching fleet types: ${error.message}`);
+        throw new Error(`Error fetching fleet types: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -65,12 +67,14 @@ export async function get_locations(access_token:string) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ));
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as Location[];
     } catch (error) {
-        throw new Error(`Error fetching fleet types: ${error.message}`);
+        throw new Error(`Error fetching fleet types: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -95,12 +99,14 @@ export async function get_audiences(access_token:string) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ));
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as Audience[];
     } catch (error) {
-        throw new Error(`Error fetching fleet types: ${error.message}`);
+        throw new Error(`Error fetching fleet types: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -166,7 +172,7 @@ export async function create_fleet(access_token:string, fleet:FleetRequest) {
 
         return await response.json() as Fleet;
     } catch (error) {
-        throw new Error(`Error creating fleet: ${error.message}`);
+        throw new Error(`Error creating fleet: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -200,7 +206,7 @@ export async function update_fleet(access_token:string, fleet:FleetPatchRequest,
 
         return await response.json() as Fleet;
     } catch (error) {
-        throw new Error(`Error updating fleet: ${error.message}`);
+        throw new Error(`Error updating fleet: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -258,12 +264,14 @@ export async function delete_fleet(access_token:string, id:number) {
             throw new Error(get_error_message(
                 response.status,
                 `DELETE ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            });
         }
 
         return (response.status === 200);
     } catch (error) {
-        throw new Error(`Error deleting fleet: ${error.message}`);
+        throw new Error(`Error deleting fleet: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -314,7 +322,7 @@ export async function start_fleet(access_token:string, fleet_id:number) {
         
         return (response.status === 200);
     } catch (error) {
-        throw new Error(`Error starting the fleet: ${error.message}`);
+        throw new Error(`Error starting the fleet: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -339,12 +347,14 @@ export async function get_fleet_members(access_token:string, id:number) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as FleetMember[];
     } catch (error) {
-        throw new Error(`Error fetching fleet members: ${error.message}`);
+        throw new Error(`Error fetching fleet members: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -369,12 +379,14 @@ export async function get_fleet_users(access_token:string, fleet_id:number) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as FleetUsers[];
     } catch (error) {
-        throw new Error(`Error fetching fleet: ${error.message}`);
+        throw new Error(`Error fetching fleet: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -465,7 +477,7 @@ export async function preping(access_token:string, fleet_id:number) {
 
         return (response.status === 200)
     } catch (error) {
-        throw new Error(`Error creating pre-ping: ${error.message}`);
+        throw new Error(`Error creating pre-ping: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -490,12 +502,14 @@ export async function get_fleets_metrics(access_token:string) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ));
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as FleetMetrics[];
     } catch (error) {
-        throw new Error(`Error fetching fleet metrics: ${error.message}`);
+        throw new Error(`Error fetching fleet metrics: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -520,11 +534,13 @@ export async function get_fleet_commander_metrics(access_token:string) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ));
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as FleetCommanderMetrics[];
     } catch (error) {
-        throw new Error(`Error fetching fleet commander metrics: ${error.message}`);
+        throw new Error(`Error fetching fleet commander metrics: ${error.message}`, { cause: error.cause });
     }
 }

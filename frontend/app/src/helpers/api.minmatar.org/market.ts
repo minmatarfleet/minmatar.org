@@ -34,12 +34,14 @@ export async function get_market_contracts(location_id: number) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as Contract[];
     } catch (error) {
-        throw new Error(`Error fetching contracts: ${error.message}`);
+        throw new Error(`Error fetching contracts: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -64,12 +66,14 @@ export async function get_market_contract_by_id(expectation_id:number) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as Contract;
     } catch (error) {
-        throw new Error(`Error fetching contract: ${error.message}`);
+        throw new Error(`Error fetching contract: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -102,12 +106,14 @@ export async function create_market_contract_responsability(access_token:string,
             throw new Error(get_error_message(
                 response.status,
                 `POST ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as Contract;
     } catch (error) {
-        throw new Error(`Error creating responsability: ${error.message}`);
+        throw new Error(`Error creating responsability: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -134,12 +140,14 @@ export async function get_market_characters(access_token:string) {
             const error_msg = parse_error_message(error.detail)
             error = error_msg ? error_msg : error?.detail
 
-            throw new Error(error ? error : get_error_message(response.status, `GET ${ENDPOINT}`))
+            throw new Error(error ? error : get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status
+            })
         }
 
         return await response.json() as Character[];
     } catch (error) {
-        throw new Error(`Error fetching market characters: ${error.message}`);
+        throw new Error(`Error fetching market characters: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -165,12 +173,14 @@ export async function get_market_corporations(access_token:string) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as MarketCorporation[];
     } catch (error) {
-        throw new Error(`Error fetching market corporations: ${error.message}`);
+        throw new Error(`Error fetching market corporations: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -196,12 +206,14 @@ export async function get_market_expectation(access_token:string) {
             const error_msg = parse_error_message(error.detail)
             error = error_msg ? error_msg : error?.detail
 
-            throw new Error(error ? error : get_error_message(response.status, `GET ${ENDPOINT}`))
+            throw new Error(error ? error : get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status
+            })
         }
 
         return await response.json() as MarketExpectation[];
     } catch (error) {
-        throw new Error(`Error fetching market expectations: ${error.message}`);
+        throw new Error(`Error fetching market expectations: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -223,12 +235,14 @@ export async function get_market_locations_with_doctrines() {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as DoctrineFitting[];
     } catch (error) {
-        throw new Error(`Error fetching market locations with doctrines: ${error.message}`);
+        throw new Error(`Error fetching market locations with doctrines: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -253,12 +267,14 @@ export async function get_sell_orders(location_id?: number) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as SellOrderLocation[];
     } catch (error) {
-        throw new Error(`Error fetching sell orders: ${error.message}`);
+        throw new Error(`Error fetching sell orders: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -280,11 +296,13 @@ export async function get_market_expectations_by_location() {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as LocationExpectations[];
     } catch (error) {
-        throw new Error(`Error fetching market expectations by location: ${error.message}`);
+        throw new Error(`Error fetching market expectations by location: ${error.message}`, { cause: error.cause });
     }
 }

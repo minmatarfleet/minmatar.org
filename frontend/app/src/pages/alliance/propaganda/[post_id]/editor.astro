@@ -20,8 +20,6 @@ const can_manage_posts = is_superuser || user_permissions.includes('posts.add_ev
 
 if (!can_manage_posts)
     return HTTP_403_Forbidden()
-
-import { prod_error_messages } from '@helpers/env'
 import { get_post, create_post, update_post, get_posts_tags, delete_post } from '@helpers/api.minmatar.org/posts'
 import type { Post, PostParams, PostTag } from '@dtypes/api.minmatar.org'
 import type { Alert } from '@dtypes/layout_components'
@@ -58,7 +56,7 @@ if (Astro.request.method === "POST") {
 
         return Astro.redirect(translatePath(`/alliance/propaganda/${post?.post_id}/editor`))
     } catch (error) {
-        const create_post_error = prod_error_messages() ? t('create_post_error') : error.message
+        const create_post_error = error.message
 
         alert = {
             title: t('post_dialog_title'),
@@ -72,14 +70,14 @@ let post_tags:PostTag[] = []
 try {
     post_tags = await get_posts_tags()
 } catch (error) {
-    error_fetching_post_tags = prod_error_messages() ? t('error_fetching_post_tags') : error.message
+    error_fetching_post_tags = error.message
 }
 
 if (!post && post_id) {
     try {
         post = await get_post(post_id)
     } catch (error) {
-        const get_post_error = prod_error_messages() ? t('error_fetching_post') : error.message
+        const get_post_error = error.message
 
         if (!alert) {
             alert = {

@@ -2,8 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
-
 import type { PostListUI, Posts } from '@dtypes/layout_components'
 import { fetch_posts } from '@helpers/fetching/posts'
 
@@ -11,7 +9,7 @@ let posts:PostListUI[] = []
 let total_posts:number = 0
 const PAGE_LENGTH = 21
 let total_pages:number = 0
-let post_fetching_error:string | false = false
+let post_fetching_error: Error | false = false
 
 const page = parseInt(Astro.url.searchParams.get('page') ?? '1')
 
@@ -26,7 +24,7 @@ try {
     total_posts = paginated_posts.total
     total_pages = Math.ceil(total_posts/PAGE_LENGTH)
 } catch (error) {
-    post_fetching_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
+    post_fetching_error = error
 }
 
 const POSTS_LIST_PARTIAL_URL = `${translatePath('/partials/posts_list_component')}?page=${page}`
@@ -41,7 +39,7 @@ import PropagandaNewsReel from '@components/blocks/PropagandaNewsReel.astro'
     <ErrorRefetch
         args={{
             partial: POSTS_LIST_PARTIAL_URL,
-            message: post_fetching_error,
+            error: post_fetching_error,
             delay: delay,
         }}
     />

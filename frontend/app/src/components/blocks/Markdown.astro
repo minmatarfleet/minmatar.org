@@ -26,6 +26,6 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 ---
 
 {inline ?
-    <InlineElement {...attributes} set:html={content ? marked.parseInline(content, { renderer }) : ''} /> :
-    <Flexblock {...attributes} set:html={content ? marked.parse(content, { renderer }) : ''} />
+    <InlineElement {...attributes} set:html={content ? marked.parseInline(content, { renderer: renderer, breaks: true }) : ''} /> :
+    <Flexblock {...attributes} set:html={content ? marked.parse(content, { renderer: renderer }) : ''} />
 }

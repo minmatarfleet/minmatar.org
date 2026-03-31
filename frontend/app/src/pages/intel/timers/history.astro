@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -26,7 +25,7 @@ import type { StructureTimerUI } from '@dtypes/layout_components'
 import { fetch_structure_timers } from '@helpers/fetching/structures'
 import { get_unique_by_key } from '@helpers/array'
 
-let structure_timers_error:string | false = false
+let structure_timers_error: Error | false = false
 let structure_timers:StructureTimerUI[] = []
 const MAX_TIMERS_COUNT = 50
 
@@ -42,7 +41,7 @@ try {
 
     structure_timers.splice(MAX_TIMERS_COUNT)
 } catch (error) {
-    structure_timers_error = prod_error_messages() ? t('structure_timers_error') : error.message
+    structure_timers_error = error
 }
 
 const STRUCTURE_TIMERS_LIST_PARTIAL_URL = translatePath(`/partials/structure_timers_list_component?active=${JSON.stringify(false)}`)
@@ -117,7 +116,7 @@ const page_title = t('intel.timers.history.page_title');
             <ErrorRefetch
                 args={{
                     partial: STRUCTURE_TIMERS_LIST_PARTIAL_URL,
-                    message: structure_timers_error,
+                    error: structure_timers_error,
                     delay: 0,
                 }}
             />

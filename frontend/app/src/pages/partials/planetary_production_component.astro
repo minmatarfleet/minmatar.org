@@ -16,7 +16,7 @@ import type {  SelectOptions } from '@dtypes/layout_components'
 import { get_characters } from '@helpers/api.minmatar.org/characters'
 
 let user_characters_ids:number[] = []
-let data_fetching_error = ''
+let data_fetching_error: Error | false = false
 let harvest: HarvestOverviewItem[] = []
 let production: ProductionOverviewItem[] = []
 
@@ -29,7 +29,7 @@ try {
     const user_characters = valid_user ? await get_characters(auth_token as string) : []
     user_characters_ids = user_characters.map(character => character.character_id)
 } catch (error) {
-    data_fetching_error = error.message
+    data_fetching_error = error
 }
 
 const PLANETARY_PRODUCTION_PARTIAL_URL = translatePath('/partials/planetary_production_component')
@@ -51,7 +51,7 @@ import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astr
     <ErrorRefetch
         args={{
             partial: PLANETARY_PRODUCTION_PARTIAL_URL,
-            message: data_fetching_error,
+            error: data_fetching_error,
             delay: 0,
         }}
     />

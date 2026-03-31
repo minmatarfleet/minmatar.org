@@ -14,7 +14,6 @@ import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = user && user?.username ? await get_user_permissions(user?.username) : []
 const is_alliance_member = user_permissions.includes('eveonline.add_evecharactertag')
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 import type {
@@ -40,7 +39,7 @@ let tribe_groups: TribeGroup[] = []
 const membership_by_group = new Map<number, TribeMembership | null>()
 const available_by_group = new Map<number, TribeAvailableCharacter[]>()
 let user_characters: SummaryCharacter[] = []
-let get_tribe_error: string | null = null
+let get_tribe_error: Error | false = false
 
 try {
     tribe = await get_tribe(tribe_id)
@@ -75,7 +74,7 @@ try {
             available_by_group.set(gid, list as TribeAvailableCharacter[])
     }
 } catch (error) {
-    get_tribe_error = prod_error_messages() ? t('fetch_tribe_error') : error.message
+    get_tribe_error = error
 }
 
 const TRIBE_PARTIAL_URL = translatePath(`/partials/tribe_component?tribe_id=${tribe_id}`)
@@ -98,7 +97,7 @@ const page_description = tribe?.description ?? ''
     <ErrorRefetch
         args={{
             partial: TRIBE_PARTIAL_URL,
-            message: get_tribe_error,
+            error: get_tribe_error,
             delay: delay,
         }}
     />

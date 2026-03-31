@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_400_Bad_Request } from '@helpers/http_responses'
 import { get_auth_url } from '@helpers/env'
 
@@ -49,7 +48,7 @@ if (Astro.request.method === "POST") {
             character_ids
         )
     } catch (error) {
-        apply_to_group_error = prod_error_messages() ? t('apply_to_group_error') : error.message
+        apply_to_group_error = error.message
     }
 
     if (apply_to_group_error) {
@@ -74,7 +73,7 @@ if (Astro.request.method === "DELETE") {
             membership_id,
         )
     } catch (error) {
-        leave_group_error = prod_error_messages() ? t('leave_group_error') : error.message
+        leave_group_error = error.message
     }
 
     if (leave_group_error) {
@@ -95,7 +94,7 @@ let tribe_group:TribeGroup | null = null
 const membership_by_group = new Map<number, TribeMembership | null>()
 let is_member = false
 let is_pending = false
-let fetch_group_error:string | false = false
+let fetch_group_error: Error | false = false
 
 try {
     tribe_group = await get_tribe_group(tribe_id, group_id)
@@ -117,7 +116,7 @@ try {
     is_member = membership?.status === 'active'
     is_pending = membership?.status === 'pending'
 } catch (error) {
-    fetch_group_error = prod_error_messages() ? t('fetch_group_error') : error.message
+    fetch_group_error = error
 }
 
 const TRIBE_GROUP_STATUS_PARTIAL_URL = translatePath(`/partials/tribe_group_status_component?tribe_id=${tribe_id}&group_id=${group_id}`)
@@ -136,7 +135,7 @@ import DebugTag from '@components/blocks/DebugTag.astro';
     <ErrorRefetch
         args={{
             partial: TRIBE_GROUP_STATUS_PARTIAL_URL,
-            message: fetch_group_error,
+            error: fetch_group_error,
             delay: delay,
         }}
     /> :

@@ -31,12 +31,14 @@ export async function get_characters(access_token:string, primary_character_id:n
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as Character[];
     } catch (error) {
-        throw new Error(`Error fetching characters: ${error.message}`);
+        throw new Error(`Error fetching characters: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -61,12 +63,14 @@ export async function get_character_by_id(access_token:string, character_id:numb
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as Character;
     } catch (error) {
-        throw new Error(`Error fetching character: ${error.message}`);
+        throw new Error(`Error fetching character: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -92,12 +96,14 @@ export async function delete_characters(access_token:string, character_id:number
             throw new Error(get_error_message(
                 response.status,
                 `DELETE ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            });
         }
 
         return (response.status === 200);
     } catch (error) {
-        throw new Error(`Error deleting characters: ${error.message}`);
+        throw new Error(`Error deleting characters: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -122,12 +128,14 @@ export async function get_primary_characters(access_token:string) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as Character;
     } catch (error) {
-        throw new Error(`Error fetching main pilot: ${error.message}`);
+        throw new Error(`Error fetching main pilot: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -152,12 +160,14 @@ export async function get_character_skillsets(access_token:string, character_id:
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as CharacterSkillset[];
     } catch (error) {
-        throw new Error(`Error fetching character skillsets: ${error.message}`);
+        throw new Error(`Error fetching character skillsets: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -182,12 +192,14 @@ export async function get_character_assets(access_token:string, character_id:num
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as CharacterAsset[];
     } catch (error) {
-        throw new Error(`Error fetching character assets: ${error.message}`);
+        throw new Error(`Error fetching character assets: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -213,12 +225,14 @@ export async function set_primary_characters(access_token:string, character_id:n
             throw new Error(get_error_message(
                 response.status,
                 `PUT ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            });
         }
 
         return (response.status === 200);
     } catch (error) {
-        throw new Error(`Error setting main character: ${error.message}`);
+        throw new Error(`Error setting main character: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -243,12 +257,14 @@ export async function get_characters_summary(access_token:string) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as CharacterSummary;
     } catch (error) {
-        throw new Error(`Error fetching character summary: ${error.message}`);
+        throw new Error(`Error fetching character summary: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -273,12 +289,14 @@ export async function get_character_esi_token(access_token:string, character_id:
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as CharacterESITokens[];
     } catch (error) {
-        throw new Error(`Error fetching character summary: ${error.message}`);
+        throw new Error(`Error fetching character summary: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -303,12 +321,14 @@ export async function get_tags(access_token:string) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as CharacterTag[];
     } catch (error) {
-        throw new Error(`Error fetching character summary: ${error.message}`);
+        throw new Error(`Error fetching character summary: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -335,12 +355,14 @@ export async function set_character_tags(access_token:string, character_id:numbe
             throw new Error(get_error_message(
                 response.status,
                 `PUT ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            });
         }
 
         return (response.status === 200);
     } catch (error) {
-        throw new Error(`Error setting character tags: ${error.message}`);
+        throw new Error(`Error setting character tags: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -365,11 +387,13 @@ export async function get_character_tags(access_token:string, character_id:numbe
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            });
         }
 
         return await response.json() as CharacterTag[];
     } catch (error) {
-        throw new Error(`Error fetching character summary: ${error.message}`);
+        throw new Error(`Error fetching character summary: ${error.message}`, { cause: error.cause });
     }
 }

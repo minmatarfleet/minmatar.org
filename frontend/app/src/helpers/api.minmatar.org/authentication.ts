@@ -23,12 +23,14 @@ export async function get_user_by_id(user_id:number) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as UserProfile;
     } catch (error) {
-        throw new Error(`Error fetching user profile: ${error.message}`);
+        throw new Error(`Error fetching user profile: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -52,12 +54,14 @@ export async function get_users_by_id(user_ids:number[]) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as UserProfile[];
     } catch (error) {
-        throw new Error(`Error fetching user profile: ${error.message}`);
+        throw new Error(`Error fetching user profile: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -81,12 +85,14 @@ export async function get_user_by_name(user_name:string) {
             throw new Error(get_error_message(
                 response.status,
                 `GET ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return await response.json() as UserProfile;
     } catch (error) {
-        throw new Error(`Error fetching user profile: ${error.message}`);
+        throw new Error(`Error fetching user profile: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -112,12 +118,14 @@ export async function delete_account(access_token:string) {
             throw new Error(get_error_message(
                 response.status,
                 `DELETE ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return (response.status === 200);
     } catch (error) {
-        throw new Error(`Error deleting account: ${error.message}`);
+        throw new Error(`Error deleting account: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -143,11 +151,13 @@ export async function sync_user_with_discord(access_token:string, user_id:number
             throw new Error(get_error_message(
                 response.status,
                 `POST ${ENDPOINT}`
-            ))
+            ), {
+                cause: response.status
+            })
         }
 
         return (response.status === 200);
     } catch (error) {
-        throw new Error(`Error syncing user roles with Discord: ${error.message}`);
+        throw new Error(`Error syncing user roles with Discord: ${error.message}`, { cause: error.cause });
     }
 }

@@ -7,12 +7,12 @@ import type { SellOrderLocation, SellOrderItem } from '@dtypes/api.minmatar.org'
 import { get_sell_orders } from '@helpers/api.minmatar.org/market'
 
 let market_locations: SellOrderLocation[] = []
-let data_fetching_error = ''
+let data_fetching_error: Error | false = false
 
 try {
     market_locations = await get_sell_orders()
 } catch (error) {
-    data_fetching_error = error.message
+    data_fetching_error = error
 }
 
 let active_location_name = Astro.url.searchParams.get('location_name') ?? (market_locations[0]?.location_name ?? '')
@@ -100,7 +100,7 @@ import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astr
     <ErrorRefetch
         args={{
             partial: CONTRACTS_PARTIAL_URL,
-            message: data_fetching_error,
+            error: data_fetching_error,
             delay: delay,
         }}
     />

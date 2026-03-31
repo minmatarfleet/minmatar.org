@@ -25,7 +25,7 @@ if (!can_view_srp)
 import type { SRPProgram, SRPStatsHistory } from '@dtypes/api.minmatar.org'
 import { get_srp_programs, get_srp_stats_history } from '@helpers/api.minmatar.org/srp'
 
-let fetching_error:string | false = false
+let fetching_error: Error | false = false
 let programs:SRPProgram[] = []
 let srp_stats_history:SRPStatsHistory | null = null
 
@@ -33,7 +33,7 @@ try {
     programs = await get_srp_programs(auth_token as string)
     srp_stats_history = await get_srp_stats_history(auth_token as string)
 } catch (error) {
-    fetching_error = error.message
+    fetching_error = error
 }
 
 const SRP_TILES_PARTIAL_URL = translatePath('/partials/srp_tiles_component/')
@@ -127,7 +127,7 @@ const leading_text = t('ships.srp.leading_text');
                 <ErrorRefetch
                     args={{
                         partial: SRP_TILES_PARTIAL_URL,
-                        message: fetching_error,
+                        error: fetching_error,
                         delay: 0,
                     }}
                 /> :

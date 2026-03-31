@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_403_Forbidden, HTTP_404_Not_Found } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -30,7 +29,7 @@ const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') as string)
 if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
 
-let data_fetching_error:string | false = false
+let data_fetching_error: Error | false = false
 let update_fleet_aar_link_error:string | false = false
 let alert:Alert | false = false
 let fleet:FleetUI | false = false
@@ -45,7 +44,7 @@ if (Astro.request.method === "PATCH") {
 
         await update_fleet(auth_token as string, { aar_link: aar_link }, fleet_id)
     } catch (error) {
-        update_fleet_aar_link_error = prod_error_messages() ? t('update_fleet_aar_link_error') : error.message
+        update_fleet_aar_link_error = error.message
 
         alert = {
             title: t('aar_link_dialog_title'),
@@ -60,7 +59,7 @@ try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     user_character = await get_user_character(user.user_id)
 } catch (error) {
-    data_fetching_error = error.message
+    data_fetching_error = error
 }
 
 const can_remove_fleet = is_superuser ||
@@ -82,7 +81,7 @@ import AARLinkButton from '@components/blocks/AARLinkButton.astro';
     <ErrorRefetch
         args={{
             partial: SRP_TABLE_PARTIAL_URL,
-            message: data_fetching_error,
+            error: data_fetching_error,
             delay: delay,
         }}
     />

@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { get_auth_url } from '@helpers/env'
 
 import type { User } from '@dtypes/jwt'
@@ -53,7 +52,7 @@ if (Astro.request.method === "POST") {
                 group_action_request = await deny_sig_request(auth_token, group_id, request_id)
         }
     } catch (error) {
-        group_request_action_error = prod_error_messages() ? (action == 'accept' ? t('approve_request_error') : t('deny_request_error')) : error.message
+        group_request_action_error = error.message
     }
 }
 
@@ -61,11 +60,11 @@ import type { GroupRequestListUI } from '@dtypes/layout_components'
 import { get_group_requests_by_id, get_group_request_by_id } from '@helpers/fetching/group_requests'
 
 let group_requests:GroupRequestListUI | null = null
-let get_group_requests_error:string | false = false
+let get_group_requests_error: Error | false = false
 try {
     group_requests = await get_group_requests_by_id(auth_token, group_id, group_type)
 } catch (error) {
-    get_group_requests_error = prod_error_messages() ? t('get_group_requests_error') : error.message
+    get_group_requests_error = error
 }
 
 if (group_request_action_error) {
@@ -95,7 +94,7 @@ if (group_request_action_error) {
     }
 }
 
-let get_group_request_error:string | false = false
+let get_group_request_error: Error | false = false
 if (group_action_request?.approved_by) {
     try {
         const group_request:GroupRequestUI | null = await get_group_request_by_id(auth_token, group_id, request_id, group_type)
@@ -131,8 +130,7 @@ if (group_action_request?.approved_by) {
             alert.partial = `${translatePath('/partials/dialog_with_group_request/')}?${params}`
         }
     } catch (error) {
-        get_group_request_error = prod_error_messages() ? t('get_group_request_error') : error.message
-        console.log(get_group_request_error)
+        get_group_request_error = error
     }
 }
 

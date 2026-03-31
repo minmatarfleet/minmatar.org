@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { is_prod_mode, prod_error_messages } from '@helpers/env'
+import { is_prod_mode } from '@helpers/env'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -21,11 +21,11 @@ import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
 import type { StagingType } from '@dtypes/layout_components'
 
 let character_assets:AssetsUI
-let get_character_assets_error:string | false = false
+let get_character_assets_error: Error | false = false
 let user_character:EveCharacterProfile | null = null
 
 const station = Astro.url.searchParams.get('station')
-const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '5')
 let location_assets
 let station_assets
 
@@ -33,7 +33,7 @@ try {
     user_character = await get_user_character(user.user_id)
 
     if (!user_character)
-        throw new Error(t('not_valid_character'))
+        throw new Error(t('not_valid_character'), { cause: 400 })
 
     character_assets = await get_assets(auth_token, user_character.character_id)
 
@@ -41,7 +41,7 @@ try {
     station_assets = location_assets !== undefined ? location_assets.assets : []
     station_assets.sort( (a, b) => a.name.localeCompare(b.name))
 } catch (error) {
-    get_character_assets_error = prod_error_messages() ? t('get_character_assets_error') : error.message
+    get_character_assets_error = error
 }
 
 let  STATION_ASSETS_PARTIAL_URL = `${Astro.url.origin}${translatePath('/partials/station_assets_component')}?station=${station}`
@@ -62,7 +62,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         <ErrorRefetch
             args={{
                 partial: STATION_ASSETS_PARTIAL_URL,
-                message: get_character_assets_error,
+                error: get_character_assets_error,
                 delay: delay,
                 target: '#station-assets-body'
             }}

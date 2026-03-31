@@ -10,7 +10,6 @@ const {
     is_friend = false,
 } = Astro.props
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -27,12 +26,12 @@ import type { MumbleInformation } from '@dtypes/api.minmatar.org'
 import { get_mumble_connection } from '@helpers/api.minmatar.org/mumble'
 
 let mumble_information:MumbleInformation | null = null
-let get_mumble_connection_error:string | false = false
+let get_mumble_connection_error: Error | false = false
 
 try {
     mumble_information = await get_mumble_connection(auth_token)
 } catch (error) {
-    get_mumble_connection_error = prod_error_messages() ? t('get_mumble_connection_error') : error.message
+    get_mumble_connection_error = error
 }
 
 import { query_string } from '@helpers/string';
@@ -47,7 +46,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
     <MumbleConnectButton
         alert={{
             title: t('connect_to_mumble'),
-            content: get_mumble_connection_error,
+            content: get_mumble_connection_error.message,
         }}
     />
     :

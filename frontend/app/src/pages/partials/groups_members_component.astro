@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
@@ -43,7 +42,7 @@ if (Astro.request.method === "DELETE") {
         else if (group_type == 'group')
             await remove_sig_member(auth_token, group_id, user_id)
     } catch (error) {
-        delete_member_error = prod_error_messages() ? t('delete_member_error') : error.message
+        delete_member_error = error.message
     }
 }
 
@@ -88,12 +87,12 @@ if (delete_member_error) {
 }
 
 let groups_members:GroupMembersUI[] = []
-let get_groups_members_error:string | false = false
+let get_groups_members_error: Error | false = false
 
 try {
     groups_members = await get_all_groups_members(auth_token, group_type, user.user_id, is_superuser)
 } catch (error) {
-    get_groups_members_error = prod_error_messages() ? t('get_groups_members_error') : error.message
+    get_groups_members_error = error
 }
 
 const GROUPS_MEMBERS_PARTIAL_URL = translatePath('/partials/groups_members_component')
@@ -127,7 +126,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
     <ErrorRefetch
         args={{
             partial: `${GROUPS_MEMBERS_PARTIAL_URL}?group_type=${group_type}`,
-            message: get_groups_members_error,
+            error: get_groups_members_error,
             delay: delay,
         }}
     />

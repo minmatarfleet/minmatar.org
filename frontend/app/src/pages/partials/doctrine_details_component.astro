@@ -8,7 +8,7 @@ import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = user?.is_superuser ?? false
+const is_superuser = user ? user?.is_superuser : false
 
 import { get_user_permissions } from '@helpers/permissions'
 
@@ -17,13 +17,12 @@ const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_e
 
 const doctrine_id = Astro.url.searchParams.get('doctrine_id') as string
 
-import { prod_error_messages } from '@helpers/env'
 import type { DoctrineType } from '@dtypes/layout_components'
 import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
 import type { FleetItem } from '@dtypes/layout_components'
 import { fetch_fleets_auth } from '@helpers/fetching/fleets'
 let doctrine:DoctrineType | null = null
-let fetch_doctrine_error:string | false = false
+let fetch_doctrine_error: Error | false = false
 let recently_fleets:FleetItem[] = []
 
 try {
@@ -33,7 +32,7 @@ try {
         recently_fleets = recently_fleets.filter((fleet) => fleet.doctrine_id === parseInt(doctrine_id))
     }
 } catch (error) {
-    fetch_doctrine_error = prod_error_messages() ? t('fetch_doctrine_error') : error.message
+    fetch_doctrine_error = error
 }
 
 const DOCTRINE_DETAILS_PARTIAL_URL = translatePath('/partials/doctrine_details_component')
@@ -48,7 +47,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
     <ErrorRefetch
         args={{
             partial: `${DOCTRINE_DETAILS_PARTIAL_URL}?doctrine_id=${doctrine_id}`,
-            message: fetch_doctrine_error,
+            error: fetch_doctrine_error,
             delay: delay,
         }}
     />

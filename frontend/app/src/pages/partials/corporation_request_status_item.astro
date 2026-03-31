@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { get_auth_url } from '@helpers/env'
 
 import type { User } from '@dtypes/jwt'
@@ -36,7 +35,7 @@ if (Astro.request.method === "POST") {
         application = await create_corporation_application(auth_token, corporation.corporation_id, description)
         corporation.status = application.status as CorporationStatusType
     } catch (error) {
-        create_corporation_application_error = prod_error_messages() ? t('create_corporation_application_error') : error.message
+        create_corporation_application_error = error.message
     }
 }
 

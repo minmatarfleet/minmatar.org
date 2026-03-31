@@ -2,8 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
-
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
@@ -26,7 +24,7 @@ import { is_seasonal_date } from '@helpers/date'
 let contracts_service_staging:string[] = []
 let posts:PostListUI[] = []
 const PAGE_LENGTH = 3
-let post_fetching_error:string | false = false
+let post_fetching_error: Error | false = false
 
 try {
     const market_locations = await get_market_locations()
@@ -41,7 +39,7 @@ try {
 
     posts = paginated_posts.chunk
 } catch (error) {
-    post_fetching_error = prod_error_messages() ? t('fetch_doctrines_error') : error.message
+    post_fetching_error = error
 }
 
 const NEY_YEAR_EVE_DECORATION = is_seasonal_date('12-31', '12-31')

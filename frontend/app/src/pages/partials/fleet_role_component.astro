@@ -2,8 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
-
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
@@ -25,7 +23,7 @@ import {
 } from '@helpers/api.minmatar.org/fleets'
 import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 
-let fetch_error: string | false = false
+let fetch_error: Error | false = false
 let pilots: SummaryCharacter[] = []
 let volunteers: FleetRoleVolunteer[] = []
 let alert:Alert | false = false
@@ -33,7 +31,7 @@ let history:boolean = false
 
 try {
     if (isNaN(fleet_id))
-        throw new Error(t('invalid_fleet_id'))
+        throw new Error(t('invalid_fleet_id'), { cause: 400 })
 
     const fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     history = Boolean(fleet?.tracking?.end_time)
@@ -44,11 +42,11 @@ try {
         pilots = summary.characters ?? []
     }
 } catch (error) {
-    fetch_error = prod_error_messages() ? t('get_characters_error') : error.message
+    fetch_error = error
 
     alert = {
         title: t('refresh_fleet_roles'),
-        content: fetch_error as string,
+        content: error.message,
     }
 }
 
@@ -71,7 +69,7 @@ const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
     <ErrorRefetch
         args={{
             partial: FLEET_ROLES_PARTIAL_URL,
-            message: fetch_error,
+            error: fetch_error,
             delay: delay,
         }}
     />

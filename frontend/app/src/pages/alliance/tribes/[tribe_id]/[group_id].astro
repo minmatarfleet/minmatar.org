@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { HTTP_400_Bad_Request } from '@helpers/http_responses'
 import { get_auth_url } from '@helpers/env'
 
@@ -26,8 +25,8 @@ if (isNaN(tribe_id) || isNaN(group_id))
 import { apply_to_group, leave_group } from '@helpers/api.minmatar.org/tribes'
 import type { Alert } from '@dtypes/layout_components'
 
-let apply_to_group_error:string | false = false
-let leave_group_error:string | false = false
+let apply_to_group_error: Error | false = false
+let leave_group_error: Error | false = false
 let alert:Alert | false = false
 
 import type { Tribe, TribeGroup, SummaryCharacter, TribeMembership } from '@dtypes/api.minmatar.org'
@@ -41,7 +40,7 @@ const membership_by_group = new Map<number, TribeMembership | null>()
 let members:TribeMembership[] = []
 let is_member = false
 let is_pending = false
-let fetch_group_error:string | false = false
+let fetch_group_error: Error | false = false
 
 try {
     tribe = await get_tribe(tribe_id)
@@ -59,7 +58,7 @@ try {
     is_member = membership?.status === 'active'
     is_pending = membership?.status === 'pending'
 } catch (error) {
-    fetch_group_error = prod_error_messages() ? t('fetch_group_error') : error.message
+    fetch_group_error = error
 }
 
 import { strip_markdown } from '@helpers/string'
@@ -140,7 +139,7 @@ const meta_description = await strip_markdown(tribe_group?.description ?? '')
                 <ErrorRefetch
                     args={{
                         partial: TRIBE_GROUP_PARTIAL_URL,
-                        message: fetch_group_error,
+                        error: fetch_group_error,
                         delay: 0,
                     }}
                 />

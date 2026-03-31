@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { prod_error_messages } from '@helpers/env'
 import { get_auth_url } from '@helpers/env'
 
 import type { User } from '@dtypes/jwt'
@@ -24,13 +23,13 @@ const character_id = parseInt(Astro.url.searchParams.get('id') as string)
 const character_name = Astro.url.searchParams.get('character_name')
 let set_main_character_error
 let pilots:SummaryCharacter[] = []
-let get_characters_error:string | false = false
+let get_characters_error: Error | false = false
 let readonly = false
 
 try {
     await set_primary_characters(auth_token, character_id)
 } catch (error) {
-    set_main_character_error = (prod_error_messages() ? t('set_main_character_error') : error.message)
+    set_main_character_error = error.message
 }
 
 import type { Alert } from '@dtypes/layout_components'
@@ -58,7 +57,7 @@ if (set_main_character_error) {
         const character_summary = await get_characters_summary_sorted(auth_token as string)
         pilots = character_summary?.characters ?? []
     } catch (error) {
-        get_characters_error = (prod_error_messages() ? t('get_characters_error') : error.message)
+        get_characters_error = error
         readonly = true
     }
 } else {
@@ -97,7 +96,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
         <ErrorRefetch
             args={{
                 partial: PILOTS_LIST_PARTIAL_URL,
-                message: get_characters_error,
+                error: get_characters_error,
                 delay: 0,
                 target: '#pilots-list',
             }}
