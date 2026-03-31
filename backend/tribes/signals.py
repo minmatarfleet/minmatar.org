@@ -3,6 +3,9 @@ import logging
 from django.db.models import signals
 from django.dispatch import receiver
 
+from tribes.helpers.tribe_auth_groups import (
+    remove_tribe_auth_groups_for_inactive_membership,
+)
 from tribes.models import (
     TribeGroupMembership,
     TribeGroupMembershipHistory,
@@ -89,30 +92,4 @@ def tribe_group_membership_post_save(sender, instance, created, **kwargs):
             )
 
     elif instance.status == TribeGroupMembership.STATUS_INACTIVE:
-        if tribe_group.group:
-            user.groups.remove(tribe_group.group)
-            logger.info(
-                "Removed user %s from auth group %s (tribe group left/removed)",
-                user,
-                tribe_group.group,
-            )
-
-        # Remove from the tribe-level group only if the user has no other
-        # active memberships in any TribeGroup belonging to this tribe.
-        has_other_active = (
-            TribeGroupMembership.objects.filter(
-                user=user,
-                status=TribeGroupMembership.STATUS_ACTIVE,
-                tribe_group__tribe=tribe,
-            )
-            .exclude(pk=instance.pk)
-            .exists()
-        )
-
-        if not has_other_active and tribe.group:
-            user.groups.remove(tribe.group)
-            logger.info(
-                "Removed user %s from tribe auth group %s (no remaining active memberships)",
-                user,
-                tribe.group,
-            )
+        remove_tribe_auth_groups_for_inactive_membership(instance)

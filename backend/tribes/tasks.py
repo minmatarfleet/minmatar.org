@@ -19,6 +19,9 @@ from tribes.helpers.activity_processors import process_all_for_tribe_group
 from tribes.helpers.chief_membership import (
     ensure_tribe_chiefs_have_group_memberships as _ensure_chief_memberships,
 )
+from tribes.helpers.tribe_auth_groups import (
+    remove_tribe_auth_groups_for_inactive_membership,
+)
 from tribes.models import TribeGroup, TribeGroupMembership
 
 discord = DiscordClient()
@@ -118,6 +121,9 @@ def remove_tribe_members_without_permission():
 
     Sets status to 'inactive' and records left_at, which triggers the
     post_save signal to remove the user from the auth.Group.
+
+    Also fixes stale auth.Group links: inactive memberships that still have
+    tribe or tribe-group Discord roles are cleaned up (same rules as the signal).
     """
     active_memberships = TribeGroupMembership.objects.filter(
         status=TribeGroupMembership.STATUS_ACTIVE
@@ -141,6 +147,25 @@ def remove_tribe_members_without_permission():
                 "Error checking permission for user %s in group %s: %s",
                 user,
                 membership.tribe_group,
+                exc,
+            )
+
+    inactive_memberships = TribeGroupMembership.objects.filter(
+        status=TribeGroupMembership.STATUS_INACTIVE
+    ).select_related(
+        "user",
+        "tribe_group__tribe",
+        "tribe_group__group",
+        "tribe_group__tribe__group",
+    )
+
+    for membership in inactive_memberships:
+        try:
+            remove_tribe_auth_groups_for_inactive_membership(membership)
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.error(
+                "Error syncing auth groups for inactive membership %s: %s",
+                membership.pk,
                 exc,
             )
 

@@ -184,7 +184,7 @@ CELERYBEAT_TRIBES = [
         "[Tribes] Remove tribe members without tribe permission",
         {
             "task": "tribes.tasks.remove_tribe_members_without_permission",
-            "schedule": schedule(timedelta(minutes=30)),
+            "schedule": crontab(minute=0, hour="*/2"),
         },
     ),
 ]

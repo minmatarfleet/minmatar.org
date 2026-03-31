@@ -5,6 +5,9 @@ from django.db.models import signals as django_signals
 from django.test import TestCase
 from django.utils import timezone
 
+from tribes.helpers.tribe_auth_groups import (
+    remove_tribe_auth_groups_for_inactive_membership,
+)
 from tribes.models import (
     Tribe,
     TribeGroup,
@@ -111,3 +114,17 @@ class MembershipSignalTestCase(TestCase):
 
         self.assertNotIn(self.group_auth_group, self.user.groups.all())
         self.assertIn(self.tribe_auth_group, self.user.groups.all())
+
+    def test_inactive_membership_stale_auth_groups_removed_by_helper(self):
+        """Inactive row with auth groups still attached (e.g. missed signal) is fixed."""
+        membership = TribeGroupMembership.objects.create(
+            user=self.user,
+            tribe_group=self.tribe_group,
+            status=TribeGroupMembership.STATUS_INACTIVE,
+        )
+        self.user.groups.add(self.group_auth_group, self.tribe_auth_group)
+
+        remove_tribe_auth_groups_for_inactive_membership(membership)
+
+        self.assertNotIn(self.group_auth_group, self.user.groups.all())
+        self.assertNotIn(self.tribe_auth_group, self.user.groups.all())
