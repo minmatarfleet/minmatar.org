@@ -480,7 +480,7 @@ export const ui = {
         'freight.calculator.faq_2_title': 'What is collateral?',
         'freight.calculator.faq_2_text': 'Collateral is a payment you receive if the contract fails to deliver. It prevents scamming, and covers you if the freighter pilot dies in transit. Is equivalent to the cost of your items.',
         'freight.calculator.faq_3_title': 'How do sign up to haul?',
-        'freight.calculator.faq_3_text': 'You will need a contract character in Minmatar Fleet Logistics and request join into the [Supply team](https://my.minmatar.org/alliance/teams/list/).',
+        'freight.calculator.faq_3_text': 'You will need a contract character in Minmatar Fleet Logistics and request join into the [Freighters Tribe Group](/alliance/tribes/3).',
         'freight.calculator.faq_4_title': 'How can I estimate the collateral?',
         'freight.calculator.faq_4_text': 'Keeping a record of the cost of all your contracted items. You may use tools like [Janice](https://janice.e-351.com/) to estimate it in case you don’t have any record at your disposal.',
 
