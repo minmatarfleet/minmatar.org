@@ -1967,7 +1967,7 @@ export const ui = {
         'tribal_group_requirement_text': 'At least one of these {count} requirements.',
         'requirement': 'Requirement',
         'tribe_logo': 'tribe logo',
-        'back_to_name': 'Back to {name}',
+        'back_to_tribe_template': 'Back to {name} tribe',
         'tribe': 'tribe',
         'meet_the_gang': 'Meet the gang',
         'fleet_participation': 'Fleet participation',
@@ -2169,5 +2169,6 @@ export const ui = {
         'units_singular': '1 unit',
         'my_claim': 'My claim',
         'contact_it': 'Try reloading the page. If this error persist open a ticket at [#help](https://discordapp.com/channels/1041384161505722368/1183401618943791186).',
+        'become_a_trucker': 'Become a trucker',
     },
 } as const;

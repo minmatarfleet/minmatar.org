@@ -185,7 +185,7 @@ const page_title = t('tribes.groups.membership.page_title').replace('{group}', t
                     href={translatePath(`/alliance/tribes/${tribe_group?.tribe_id}`)}
                     size='sm'
                 >
-                    {t('back_to_name').replace('{name}', tribe_group?.tribe_name ?? t('tribe'))}
+                    {t('back_to_tribe_template').replace('{name}', tribe_group?.tribe_name ?? '')}
                 </Button>
             </FlexInline>
         }</>

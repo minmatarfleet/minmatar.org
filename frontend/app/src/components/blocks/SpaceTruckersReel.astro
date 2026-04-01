@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { SpaceTruckerStatistics } from '@dtypes/api.minmatar.org'
 
@@ -14,9 +14,11 @@ const {
 
 import Wrapper from '@components/compositions/Wrapper.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
+import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro';
 
 import MarqueeSwiper from '@components/blocks/MarqueeSwiper.astro';
 import SpaceTruckerBadge from '@components/blocks/SpaceTruckerBadge.astro';
+import Button from '@components/blocks/Button.astro';
 ---
 
 <div class="[ bottom-bar ][ card component light-transparency hidden! lg:block! animate-slide-in-bottom ]">
@@ -29,41 +31,54 @@ import SpaceTruckerBadge from '@components/blocks/SpaceTruckerBadge.astro';
     >
         <FixedFluid width='170px' class="[ items-center! ]" gap='var(--space-xl)'>
             <h4>{t('space_trucker_ranking')}</h4>
-            <div class="[ relative ]">
-                <div
-                    class="[ swiper ][ w-full ]"
-                    id="space-truckers-list"
-                >
-                    <MarqueeSwiper
-                        swiper_selector='#space-truckers-list'
-                        pagination={false}
-                        gap={40}
-                        speed={7000}
+            <FlexInlineSiblings
+                min-shink-width='250px'
+                shrinkable-sibbling='first'
+                gap='var(--space-xl)'
+            >
+                <div class="[ relative ]">
+                    <div
+                        class="[ swiper ][ w-full ]"
+                        id="space-truckers-list"
                     >
-                        <div class="[ swiper-slide ]" style="margin-right: 40px; width: 160px"></div>
-                        <div class="[ swiper-slide ]" style="margin-right: 40px; width: 160px"></div>
-                        {space_truckers.map((trucker, index) =>
-                            <div class="[ swiper-slide ]" style="margin-right: 40px">
-                                <SpaceTruckerBadge place={index + 1} trucker={trucker} />
-                            </div>
-                        )}
-                        {space_truckers.length >= 5 && space_truckers.length < 12 &&
+                        <MarqueeSwiper
+                            swiper_selector='#space-truckers-list'
+                            pagination={false}
+                            gap={40}
+                            speed={7000}
+                        >
                             <div class="[ swiper-slide ]" style="margin-right: 40px; width: 160px"></div>
                             <div class="[ swiper-slide ]" style="margin-right: 40px; width: 160px"></div>
-                        }
-                        {space_truckers.length >= 5 && space_truckers.length < 12 &&   
-                            space_truckers.map((trucker, index) =>
+                            {space_truckers.map((trucker, index) =>
                                 <div class="[ swiper-slide ]" style="margin-right: 40px">
                                     <SpaceTruckerBadge place={index + 1} trucker={trucker} />
                                 </div>
-                            )
-                        }
-                    </MarqueeSwiper>
+                            )}
+                            {space_truckers.length >= 5 && space_truckers.length < 12 &&
+                                <div class="[ swiper-slide ]" style="margin-right: 40px; width: 160px"></div>
+                                <div class="[ swiper-slide ]" style="margin-right: 40px; width: 160px"></div>
+                            }
+                            {space_truckers.length >= 5 && space_truckers.length < 12 &&   
+                                space_truckers.map((trucker, index) =>
+                                    <div class="[ swiper-slide ]" style="margin-right: 40px">
+                                        <SpaceTruckerBadge place={index + 1} trucker={trucker} />
+                                    </div>
+                                )
+                            }
+                        </MarqueeSwiper>
+                    </div>
+
+                    <div id="space-truckers-list-button-prev" class="[ swiper-button-prev ]"></div>
+                    <div id="space-truckers-list-button-next" class="[ swiper-button-next ]"></div>
                 </div>
 
-                <div id="space-truckers-list-button-prev" class="[ swiper-button-prev ]"></div>
-                <div id="space-truckers-list-button-next" class="[ swiper-button-next ]"></div>
-            </div>
+                <Button
+                    href={translatePath('/alliance/tribes/3')}
+                    size='sm'
+                >
+                    {t('become_a_trucker')}
+                </Button>
+            </FlexInlineSiblings>
         </FixedFluid>
     </Wrapper>
 </div>
