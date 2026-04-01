@@ -81,7 +81,7 @@ const page_title = tribe_group ? `${tribe_group.name} ${t('tribes.detail.activit
                     <Button
                         href={translatePath(`/alliance/tribes/${tribe_group?.tribe_id}`)}
                     >
-                        {t('back_to_name').replace('{name}', tribe_group?.tribe_name ?? t('tribe'))}
+                        {t('back_to_tribe_template').replace('{name}', tribe_group?.tribe_name ?? '')}
                     </Button>
                 }
             </FlexInline>

@@ -125,7 +125,7 @@ const meta_description = await strip_markdown(tribe_group?.description ?? '')
                     {t('tribes.detail.activity')}
                 </Button>
                 <Button href={translatePath(`/alliance/tribes/${tribe_group?.tribe_id}`)}>
-                    {t('back_to_name').replace('{name}', tribe_group?.tribe_name ?? t('tribe'))}
+                    {t('back_to_tribe_template').replace('{name}', tribe_group?.tribe_name ?? '')}
                 </Button>
             </FlexInline>
         </FlexInline>
