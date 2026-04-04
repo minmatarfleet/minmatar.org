@@ -1,6 +1,9 @@
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from app.models import MinmatarSoftDeleteModel
+from safedelete.config import SOFT_DELETE
+
 
 class EveAlliance(models.Model):
     """Alliance model"""
@@ -18,7 +21,7 @@ class EveAlliance(models.Model):
         return str(self.name)
 
 
-class EveLocation(models.Model):
+class EveLocation(MinmatarSoftDeleteModel):
     """An alliance location for freight, market or staging"""
 
     location_id = models.BigIntegerField(primary_key=True)
@@ -47,10 +50,26 @@ class EveLocation(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=["price_baseline"],
-                condition=models.Q(price_baseline=True),
+                condition=models.Q(price_baseline=True)
+                & models.Q(deleted__isnull=True),
                 name="unique_price_baseline_location",
             ),
         ]
+
+    def _clear_operational_flags_for_soft_delete(self) -> None:
+        self.price_baseline = False
+        self.market_active = False
+        self.prices_active = False
+        self.freight_active = False
+        self.staging_active = False
+
+    def delete(self, force_policy=None, **kwargs):
+        policy = (
+            self._safedelete_policy if force_policy is None else force_policy
+        )
+        if policy == SOFT_DELETE:
+            self._clear_operational_flags_for_soft_delete()
+        return super().delete(force_policy=force_policy, **kwargs)
 
     def clean(self):
         if self.price_baseline:

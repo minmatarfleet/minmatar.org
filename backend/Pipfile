@@ -30,6 +30,7 @@ factory-boy = "*"
 coverage = "*"
 black = "*"
 docker = "*"
+django-safedelete = "*"
 
 [dev-packages]
 pylint = "*"

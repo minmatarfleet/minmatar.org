@@ -3,6 +3,8 @@ from django.contrib.auth.models import Group
 from django.db import transaction
 from django.conf import settings
 import requests
+
+from app.models import get_or_create_active
 from structures.models import EveStructure
 from eveonline.models import (
     EveAlliance,
@@ -168,7 +170,8 @@ def seed_locations():
     corporation = EveCorporation.objects.get(name="Soltech Armada")
     structure_id = 1049037316814
 
-    structure, created = EveStructure.objects.get_or_create(
+    structure, created = get_or_create_active(
+        EveStructure,
         id=structure_id,
         defaults={
             "system_id": 30002538,
@@ -187,7 +190,8 @@ def seed_locations():
         },
     )
 
-    location, location_created = EveLocation.objects.get_or_create(
+    location, location_created = get_or_create_active(
+        EveLocation,
         location_id=structure_id,
         defaults={
             "location_name": "Vard - Rickety Roost",
@@ -199,7 +203,6 @@ def seed_locations():
             "prices_active": True,
             "freight_active": True,
             "staging_active": True,
-            "structure": structure,
         },
     )
 
@@ -297,7 +300,8 @@ def sync_production_fittings():
 
     fittings_created = 0
     for fitting in fittings_data:
-        _, created = EveFitting.objects.get_or_create(
+        _, created = get_or_create_active(
+            EveFitting,
             id=fitting["id"],
             defaults={
                 "name": fitting["name"],
@@ -306,6 +310,7 @@ def sync_production_fittings():
                 "eft_format": fitting.get("eft_format", ""),
                 "minimum_pod": fitting.get("minimum_pod", ""),
                 "recommended_pod": fitting.get("recommended_pod", ""),
+                "tags": fitting.get("tags", []),
             },
         )
         if created:
@@ -348,7 +353,9 @@ def sync_production_fittings():
 
         for fitting_key, role in fitting_types:
             for fitting_data in doctrine.get(fitting_key, []):
-                fitting = EveFitting.objects.get(id=fitting_data["id"])
+                fitting = EveFitting.all_objects.get(id=fitting_data["id"])
+                if fitting.deleted:
+                    fitting.save()
                 EveDoctrineFitting.objects.get_or_create(
                     role=role,
                     doctrine=doctrine_obj,

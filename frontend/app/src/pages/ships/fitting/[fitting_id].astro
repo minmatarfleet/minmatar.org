@@ -2,19 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
-const id = parseInt(Astro.params?.fitting_id ?? '0')
-
-const render_view = translatePath(`/ships/fittings/render/${id}`)
-const normal_view = translatePath(`/ships/fittings/normal/${id}`)
+const id = Astro.params?.fitting_id ?? '0'
+return Astro.redirect(translatePath(`/ships/fittings/normal/${id}`))
 ---
-
-<script define:vars={{ render_view, normal_view }}>
-import { navigate } from "astro:transitions/client";
-
-    const render_enabled = JSON.parse(localStorage.getItem('_x_render_enabled') ?? 'true')
-
-    if (window.innerWidth > 1820 && render_enabled === true)
-        navigate(render_view)
-    else
-        navigate(normal_view)
-</script>

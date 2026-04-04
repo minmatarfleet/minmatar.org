@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "4b8d3f39c5ef1efca6041a56a4707033c6fc9151c4d344065bfcf4a72bd603cb"
+            "sha256": "440fc1f4b319badc0f5e7c16be38167fc1f34aa5a51f52a86401b6e3ad77d71f"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -614,6 +614,14 @@
             "index": "pypi",
             "markers": "python_version >= '3.7'",
             "version": "==1.6.2"
+        },
+        "django-safedelete": {
+            "hashes": [
+                "sha256:c4232445e4ec3a2b72ac9002130377088c8e541bba5a5af4cf8936ec3ff0afde",
+                "sha256:f5919d627519fd6d766a3616ee15554a19e13edcb5f7fb9d86503cd71a6986d0"
+            ],
+            "index": "pypi",
+            "version": "==1.4.1"
         },
         "django-timezone-field": {
             "hashes": [

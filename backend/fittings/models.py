@@ -3,17 +3,47 @@ import uuid
 from django.core.exceptions import ValidationError
 from django.db import models
 
+from app.models import MinmatarSoftDeleteModel
 from eveonline.models import EveLocation
 
-# Create your models here.
+
+class FittingTag(models.TextChoices):
+    HIGHSEC = "highsec", "Highsec"
+    LOWSEC = "lowsec", "Lowsec"
+    NULLSEC = "nullsec", "Nullsec"
+    FACTION_WARFARE = "faction_warfare", "Faction warfare"
+    SOLO = "solo", "Solo"
+    NANOGANG = "nanogang", "Nanogang"
+    FLEET_COMPOSITION = "fleet_composition", "Fleet Composition"
+    NEW_PLAYER_FRIENDLY = "new_player_friendly", "New Player Friendly"
+    BUDGET = "budget", "Budget"
 
 
-class EveFitting(models.Model):
+# Fields that define “the fit” for versioning; changes bump latest_version and may write history.
+EVE_FITTING_VERSIONED_FIELDS = (
+    "eft_format",
+    "description",
+    "aliases",
+    "minimum_pod",
+    "recommended_pod",
+    "tags",
+)
+
+
+def _eve_fitting_versioned_field_equal(field: str, old_val, new_val) -> bool:
+    if field == "tags":
+        old_list = old_val if isinstance(old_val, list) else []
+        new_list = new_val if isinstance(new_val, list) else []
+        return sorted(old_list) == sorted(new_list)
+    return (old_val or "") == (new_val or "")
+
+
+class EveFitting(MinmatarSoftDeleteModel):
     """
     Model for storing fittings
     """
 
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255)
     ship_id = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -28,17 +58,96 @@ class EveFitting(models.Model):
 
     minimum_pod = models.TextField(blank=True)
     recommended_pod = models.TextField(blank=True)
+    tags = models.JSONField(default=list, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["name"],
+                condition=models.Q(deleted__isnull=True),
+                name="unique_evefitting_name_not_deleted",
+            ),
+        ]
 
     def __str__(self):
         return str(self.name)
 
+    @staticmethod
+    def coerce_tags(raw):
+        """Validate tags and return a sorted list of unique allowed values."""
+        if raw is None:
+            return []
+        if not isinstance(raw, list):
+            raise ValidationError("tags must be a list")
+        allowed = {c.value for c in FittingTag}
+        seen = set()
+        out = []
+        for item in raw:
+            if not isinstance(item, str):
+                raise ValidationError("each tag must be a string")
+            if item not in allowed:
+                raise ValidationError(f"invalid fitting tag: {item!r}")
+            if item not in seen:
+                seen.add(item)
+                out.append(item)
+        out.sort()
+        return out
+
+    def clean(self):
+        super().clean()
+        try:
+            self.tags = self.coerce_tags(self.tags)
+        except ValidationError as e:
+            raise ValidationError({"tags": list(e.messages)}) from e
+
     def save(self, *args, **kwargs):
-        self.latest_version = str(uuid.uuid4())
+        self.tags = self.coerce_tags(self.tags)
         fitting_name = self.fitting_name_from_eft(self.eft_format)
         if self.name != fitting_name:
             raise ValidationError(
                 f"Name '{self.name}' does not match EFT name '{fitting_name}'"
             )
+
+        if self.pk is None:
+            if not self.latest_version:
+                self.latest_version = str(uuid.uuid4())
+        else:
+            old = (
+                EveFitting.all_objects.filter(pk=self.pk)
+                .values(
+                    *EVE_FITTING_VERSIONED_FIELDS,
+                    "latest_version",
+                    "name",
+                    "ship_id",
+                )
+                .first()
+            )
+            if old:
+                versioned_changed = any(
+                    not _eve_fitting_versioned_field_equal(
+                        f, old.get(f), getattr(self, f)
+                    )
+                    for f in EVE_FITTING_VERSIONED_FIELDS
+                )
+                if versioned_changed:
+                    if old["latest_version"]:
+                        old_tags = old.get("tags")
+                        if not isinstance(old_tags, list):
+                            old_tags = []
+                        EveFittingHistory.objects.create(
+                            fitting_id=self.pk,
+                            superseded_version_id=old["latest_version"],
+                            name=old["name"],
+                            ship_id=old["ship_id"],
+                            eft_format=old["eft_format"],
+                            description=old["description"],
+                            aliases=old["aliases"],
+                            minimum_pod=old["minimum_pod"],
+                            recommended_pod=old["recommended_pod"],
+                            tags=old_tags,
+                        )
+                    self.latest_version = str(uuid.uuid4())
+
         super().save(*args, **kwargs)
 
     @staticmethod
@@ -59,6 +168,36 @@ class EveFitting(models.Model):
         if fitting_name.endswith("]"):
             fitting_name = fitting_name[:-1].strip()
         return fitting_name
+
+
+class EveFittingHistory(models.Model):
+    """
+    Snapshot of an EveFitting before a versioned change. superseded_version_id is the
+    latest_version UUID that was replaced.
+    """
+
+    fitting = models.ForeignKey(
+        EveFitting,
+        on_delete=models.CASCADE,
+        related_name="version_history",
+    )
+    superseded_version_id = models.CharField(max_length=255, blank=True)
+    name = models.CharField(max_length=255)
+    ship_id = models.IntegerField()
+    eft_format = models.TextField()
+    description = models.TextField()
+    aliases = models.TextField(blank=True, null=True)
+    minimum_pod = models.TextField(blank=True)
+    recommended_pod = models.TextField(blank=True)
+    tags = models.JSONField(default=list, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        vid = self.superseded_version_id or "—"
+        return f"{self.fitting.name} ({vid[:8]})"
 
 
 class EveFittingRefit(models.Model):

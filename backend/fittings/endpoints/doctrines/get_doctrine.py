@@ -1,0 +1,55 @@
+"""GET /{doctrine_id} - fetch one doctrine with fittings by role."""
+
+from app.errors import ErrorResponse
+
+from fittings.endpoints.doctrines.schemas import DoctrineResponse
+from fittings.endpoints.eve_fittings.serialization import make_fitting_response
+from fittings.models import EveDoctrine, EveDoctrineFitting
+
+PATH = "{int:doctrine_id}"
+METHOD = "get"
+ROUTE_SPEC = {
+    "response": {200: DoctrineResponse, 404: ErrorResponse},
+}
+
+
+def get_doctrine(request, doctrine_id: int):
+    if not EveDoctrine.objects.filter(id=doctrine_id).exists():
+        return 404, ErrorResponse(
+            detail="Doctrine not found",
+        )
+
+    doctrine = EveDoctrine.objects.get(id=doctrine_id)
+    primary_fittings = []
+    secondary_fittings = []
+    support_fittings = []
+    fittings = (
+        EveDoctrineFitting.objects.filter(doctrine=doctrine)
+        .select_related("fitting")
+        .prefetch_related("fitting__refits")
+    )
+    for doctrine_fitting in fittings:
+        fitting = doctrine_fitting.fitting
+        fitting_response = make_fitting_response(fitting)
+        if doctrine_fitting.role == "primary":
+            primary_fittings.append(fitting_response)
+        elif doctrine_fitting.role == "secondary":
+            secondary_fittings.append(fitting_response)
+        elif doctrine_fitting.role == "support":
+            support_fittings.append(fitting_response)
+    doctrine_response = DoctrineResponse(
+        id=doctrine.id,
+        name=doctrine.name,
+        type=doctrine.type,
+        created_at=doctrine.created_at,
+        updated_at=doctrine.updated_at,
+        description=doctrine.description,
+        primary_fittings=primary_fittings,
+        secondary_fittings=secondary_fittings,
+        support_fittings=support_fittings,
+        sig_ids=[],
+        location_ids=[
+            location.location_id for location in doctrine.locations.all()
+        ],
+    )
+    return doctrine_response

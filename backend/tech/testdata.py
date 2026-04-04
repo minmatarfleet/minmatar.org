@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from authentication import make_test_user
 
+from app.models import get_or_create_active
 from eveonline.helpers.characters import set_primary_character
 from eveonline.models import (
     EveAlliance,
@@ -67,7 +68,8 @@ def setup_users() -> User:
 
 
 def setup_orgs(user: User) -> EveCharacter:
-    EveLocation.objects.get_or_create(
+    get_or_create_active(
+        EveLocation,
         location_name="Homebase",
         defaults={
             "location_id": 1234,
@@ -131,7 +133,8 @@ def setup_char(char: EveCharacter, corp: EveCorporation, user: User):
 
 
 def setup_fittings():
-    EveFitting.objects.get_or_create(
+    get_or_create_active(
+        EveFitting,
         name="AC Rifter",
         defaults={
             "ship_id": 587,
@@ -170,7 +173,8 @@ def setup_fleets(fc: EveCharacter) -> EveFleet:
     rabble, _ = EveFleetAudience.objects.get_or_create(
         name="Rabble",
     )
-    homebase, _ = EveLocation.objects.get_or_create(
+    homebase, _ = get_or_create_active(
+        EveLocation,
         location_name="Homebase",
         defaults={
             "location_id": 1234,

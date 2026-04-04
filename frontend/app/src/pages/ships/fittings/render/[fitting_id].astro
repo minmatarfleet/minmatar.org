@@ -105,10 +105,28 @@ import AugmentationEvEIcon from '@components/icons/AugmentationEvEIcon.astro'
 const normal_view = translatePath(`/ships/fittings/normal/${fitting_id}`)
 
 const page_title = fitting_parsed.name;
-const page_description = await strip_markdown(fitting?.description ?? '')
+const fitting_display_name = fitting?.name ?? fitting_parsed.name
+const ship_display_name = fitting_parsed.ship_name ?? ''
+
+const meta_title = t('fitting.detail.meta_title')
+    .replace('{fitting}', fitting_display_name)
+    .replace('{ship}', ship_display_name)
+    .replace('{site}', t('index.page_title'))
+
+let page_description = (await strip_markdown(fitting?.description ?? '')).trim()
+if (!page_description)
+    page_description = t('fitting.detail.meta_description_fallback')
+        .replace('{fitting}', fitting_display_name)
+        .replace('{ship}', ship_display_name)
+
+const meta_ship_image = ship_id && Number(ship_id) > 0 ? get_item_icon(ship_id, 256) : undefined
+
+const canonical_url = new URL(translatePath(`/ships/fittings/normal/${fitting_id}`), Astro.url.origin).href
 ---
 
 <script define:vars={{ normal_view }}>
+import { navigate } from "astro:transitions/client";
+
     const render_enabled = JSON.parse(localStorage.getItem('_x_render_enabled') ?? 'true')
 
     if (window.innerWidth < 1820 || render_enabled === false)
@@ -116,8 +134,10 @@ const page_description = await strip_markdown(fitting?.description ?? '')
 </script>
 
 <Viewport
-    title={page_title}
+    title={meta_title}
     meta_description={page_description}
+    meta_image={meta_ship_image}
+    canonical_url={canonical_url}
     components={{
         alert_dialog: true,
     }}
