@@ -11,6 +11,7 @@ import VerticalCenter from './VerticalCenter.astro';
 import TextGroup from './TextGroup.astro';
 
 import { get_item_icon } from '@helpers/eve_image_server'
+import { format_fitting_tags_line } from '@helpers/fitting_tags'
 
 interface Props {
     fitting: FittingItem;
@@ -36,8 +37,8 @@ const {
         </VerticalCenter>
 
         <VerticalCenter>
-            <TextGroup title={t('fitting_type')}>
-                {fitting.fitting_type}
+            <TextGroup title={t('fitting_tags')}>
+                {format_fitting_tags_line(fitting.tags, t) || fitting.fitting_type}
             </TextGroup>
         </VerticalCenter>
 

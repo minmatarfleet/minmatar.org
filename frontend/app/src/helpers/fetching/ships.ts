@@ -23,6 +23,7 @@ export async function get_fitting_item(fitting:Fitting) {
     return {
         fitting_name: fitting.name,
         fitting_type: parse_fitting_type(fitting.name),
+        tags: fitting.tags ?? [],
         id: fitting.id,
         ship_id: fitting.ship_id,
         ship_name: ship_info?.name ?? t('error_ship_parsing'),

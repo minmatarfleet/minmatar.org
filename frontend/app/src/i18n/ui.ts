@@ -93,6 +93,17 @@ export const ui = {
 
         'fitting.list.page_title': 'Fittings',
 
+        'fitting.tag.highsec': 'Highsec',
+        'fitting.tag.lowsec': 'Lowsec',
+        'fitting.tag.nullsec': 'Nullsec',
+        'fitting.tag.faction_warfare': 'Faction warfare',
+        'fitting.tag.solo': 'Solo',
+        'fitting.tag.nanogang': 'Nanogang',
+        'fitting.tag.fleet_composition': 'Fleet composition',
+        'fitting.tag.new_player_friendly': 'New player friendly',
+        'fitting.tag.budget': 'Budget',
+        'fitting.tag.escape_frigate': 'Escape Frigate',
+
         'fitting.detail.meta_title': '{fitting} — {ship} | {site}',
         'fitting.detail.meta_description_fallback': 'EVE Online fitting: {fitting} ({ship}). Minmatar Fleet Alliance.',
 
@@ -570,6 +581,7 @@ export const ui = {
         'fleet_countdown': 'Forming countdown',
         'fitting_name': 'Fitting Name',
         'fitting_type': 'Fitting Type',
+        'fitting_tags': 'Tags',
         'ship_type': 'Ship Type',
         'doctrine_name': 'Doctrine Name',
         'tag': 'Tag',
@@ -1734,7 +1746,7 @@ export const ui = {
         'unknown_ship': 'Unknown ship',
         'invalid_killmail_link': 'The killmail link entered is not valid.',
         'open_combatlog': 'Open combatlog',
-        'all_fitting_types': 'All fitting types',
+        'all_fitting_types': 'All tags',
         'all_ship_type': 'All ship types',
         'back_to_sigs': 'Back to SIGs',
         'back_to_teams': 'Back to teams',

@@ -16,6 +16,7 @@ import Grid from '@components/compositions/Grid.astro';
 import FittingCard from '@components/blocks/FittingCard.astro';
 
 import FittingLink from '@components/blocks/FittingLink.astro'
+import { format_fitting_tags_line } from '@helpers/fitting_tags'
 ---
 
 <Grid
@@ -34,7 +35,7 @@ import FittingLink from '@components/blocks/FittingLink.astro'
             <FittingCard
                 fitting={fitting}
                 title={fitting.ship_name}
-                subtitle={fitting.fitting_type}
+                subtitle={format_fitting_tags_line(fitting.tags, t) || fitting.fitting_type}
             />
         </FittingLink>
     )}

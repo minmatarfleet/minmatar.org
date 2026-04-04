@@ -4,6 +4,7 @@ const { t } = i18n(Astro.url)
 
 import type { FittingItem } from '@dtypes/layout_components'
 import { fetch_fittings } from '@helpers/fetching/ships'
+import { fitting_tag_label, format_fitting_tags_line } from '@helpers/fitting_tags'
 import { SHIP_TYPES_SORTED } from '@helpers/eve'
 import { get_ship_type_icon } from '@helpers/eve'
 import { get_ships_meta } from '@helpers/sde/ships'
@@ -30,14 +31,23 @@ try {
     get_fittings_error = error.message
 }
 
-let fitting_type = {};
-let ship_type = {};
+let ship_type: Record<string, string> = {};
 fittings.forEach((fitting) => {
-    fitting_type[fitting.fitting_type] = fitting.fitting_type;
     ship_type[fitting.ship_type] = fitting.ship_type;
     if (fitting.ship_type === 'Unknown')
         console.log(fitting)
 })
+
+const tag_slugs_seen = new Set<string>()
+fittings.forEach((fitting) => {
+    (fitting.tags ?? []).forEach((tag) => tag_slugs_seen.add(tag))
+})
+const tag_options = [...tag_slugs_seen]
+    .map((value) => ({
+        value,
+        label: fitting_tag_label(value, t),
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label))
 
 let fitting_ship_types = Object.keys(ship_type)
 fitting_ship_types = fitting_ship_types.sort((a, b) => SHIP_TYPES_SORTED.indexOf(a) - SHIP_TYPES_SORTED.indexOf(b))
@@ -49,13 +59,9 @@ fitting_ship_types.forEach((fitting_ship_type) => {
     )
 })
 
-let fitting_type_filter:string[] = [];
-
-for (let i in fitting_type)
-    fitting_type_filter.push(fitting_type[i])
-fitting_type_filter.sort( (a, b) => a.localeCompare(b))
-
-const search_type = Astro.url.searchParams.get('type')
+const search_tag = Astro.url.searchParams.get('tag')
+const initial_tag_filter =
+    search_tag && tag_options.some((o) => o.value === search_tag) ? search_tag : '-1'
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -92,7 +98,7 @@ const page_title = t('fitting.list.page_title');
         sticky={true}
         x-data={`{
             fitting_name_filter: '',
-            fitting_type_filter: '${!fitting_type_filter.includes(search_type ?? '') ? -1 : search_type}',
+            fitting_tag_filter: ${JSON.stringify(initial_tag_filter)},
             ship_type_filter: '-1',
             fits_count: ${fittings.length},
             countVisibleElements(selector, parent = document) {
@@ -108,14 +114,16 @@ const page_title = t('fitting.list.page_title');
                 return visible_count
             },
             show_item(el) {
-                const content_to_filter = el.querySelectorAll('.fitting-card-filters p')
-                const show_item =   (
-                                        (this.fitting_name_filter === '' || content_to_filter[0].textContent.toLowerCase().includes(this.fitting_name_filter.toLowerCase())) &&
-                                        (this.fitting_type_filter == '-1' || content_to_filter[1].textContent.includes(this.fitting_type_filter)) &&
-                                        (this.ship_type_filter == '-1' || content_to_filter[2].textContent === this.ship_type_filter)
-                                    )
-
-                return show_item
+                const ps = el.querySelectorAll('.fitting-card-filters p')
+                const name_el = ps[0]
+                const ship_el = ps[1]
+                const tag_attr = el.getAttribute('data-fitting-tags') || ''
+                const tag_list = tag_attr.split(/\\s+/).filter(Boolean)
+                return (
+                    (this.fitting_name_filter === '' || (name_el && name_el.textContent.toLowerCase().includes(this.fitting_name_filter.toLowerCase()))) &&
+                    (this.fitting_tag_filter === '-1' || tag_list.includes(this.fitting_tag_filter)) &&
+                    (this.ship_type_filter === '-1' || (ship_el && ship_el.textContent === this.ship_type_filter))
+                )
             },
         }`}
     >
@@ -143,12 +151,12 @@ const page_title = t('fitting.list.page_title');
                 
                 <div class="[ hidden 2xl:!block ]">
                     <Select
-                        x-model="fitting_type_filter"
+                        x-model="fitting_tag_filter"
                         x-on:change="setTimeout(function () { fits_count = countVisibleElements('.fitting-card') }, 100)"
                     >
                         <option selected value="-1">{t('all_fitting_types')}</option>
-                        {fitting_type_filter.map((option) => 
-                            <option value={option}>{option}</option>
+                        {tag_options.map(({ value, label }) => 
+                            <option value={value}>{label}</option>
                         )}
                     </Select>
                 </div>
@@ -197,12 +205,13 @@ const page_title = t('fitting.list.page_title');
                                 <FittingLink
                                     fitting_id={fitting.id}
                                     class="[ fitting-card-container ]"
+                                    data-fitting-tags={(fitting.tags ?? []).join(' ')}
                                     x-show="show_item($el)"
                                 >
                                     <FittingCard
                                         fitting={fitting}
-                                        title={fitting.fitting_name.replace(`[${fitting.fitting_type}] `, '')}
-                                        subtitle={fitting.fitting_type}
+                                        title={fitting.fitting_name.replace(/^\[[^\]]+\]\s*/, '')}
+                                        subtitle={format_fitting_tags_line(fitting.tags, t)}
                                         role="listitem"
                                     />
                                 </FittingLink>

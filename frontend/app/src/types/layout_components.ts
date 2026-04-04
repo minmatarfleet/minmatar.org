@@ -23,6 +23,8 @@ export function is_of_structure_slots_type(value: string): value is StructureSlo
 export interface FittingItem {
     fitting_name:   string;
     fitting_type:   string;
+    /** Canonical tags from API (slugs); used for filters and subtitles. */
+    tags?:          string[];
     ship_type:      string;
     ship_name:      string;
     ship_id:        number;

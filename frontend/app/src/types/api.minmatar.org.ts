@@ -384,6 +384,7 @@ export type FittingTagSlug =
     | 'fleet_composition'
     | 'new_player_friendly'
     | 'budget'
+    | 'escape_frigate'
 
 export interface Fitting {
     id:                 number;

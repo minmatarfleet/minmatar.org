@@ -17,6 +17,7 @@ class FittingTag(models.TextChoices):
     FLEET_COMPOSITION = "fleet_composition", "Fleet Composition"
     NEW_PLAYER_FRIENDLY = "new_player_friendly", "New Player Friendly"
     BUDGET = "budget", "Budget"
+    ESCAPE_FRIGATE = "escape_frigate", "Escape Frigate"
 
 
 # Fields that define “the fit” for versioning; changes bump latest_version and may write history.
