@@ -1,11 +1,12 @@
 from django.contrib.auth.models import User
 from django.db import models
 
+from app.models import MinmatarSoftDeleteModel
 from eveonline.models import EveCorporation, EveCharacter
+from safedelete.config import SOFT_DELETE
 
 
-# Create your models here.
-class EveStructure(models.Model):
+class EveStructure(MinmatarSoftDeleteModel):
     """
     Object for tracking structures
     """
@@ -44,6 +45,14 @@ class EveStructure(models.Model):
         EveCorporation,
         on_delete=models.CASCADE,
     )
+
+    def delete(self, force_policy=None, **kwargs):
+        policy = (
+            self._safedelete_policy if force_policy is None else force_policy
+        )
+        if policy == SOFT_DELETE:
+            self.is_valid_staging = False
+        return super().delete(force_policy=force_policy, **kwargs)
 
     def __str__(self):
         return str(f"{self.corporation.name} - {self.name}")

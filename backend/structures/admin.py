@@ -3,6 +3,7 @@ from datetime import timezone as dt_timezone
 from django.contrib import admin
 from django.db.models import F, OrderBy
 from django.utils import timezone
+from safedelete.admin import SafeDeleteAdmin, SafeDeleteAdminFilter
 
 from .forms import EveStructureTimerForm
 from .models import (
@@ -13,21 +14,24 @@ from .models import (
 
 
 @admin.register(EveStructure)
-class EveStructureAdmin(admin.ModelAdmin):
+class EveStructureAdmin(SafeDeleteAdmin):
     """Admin page for EveStructure"""
 
+    field_to_highlight = "name"
+
     list_display = (
-        "name",
+        "highlight_deleted_field",
         "system_name",
         "corporation",
         "type_name",
         "reinforced_time_display",
         "fuel_expires_days",
+        "deleted",
     )
-    list_filter = ("type_name", "corporation")
+    list_filter = (SafeDeleteAdminFilter, "type_name", "corporation")
     list_per_page = 50
     search_fields = ("name", "system_name", "corporation__name", "type_name")
-    list_display_links = ("name", "system_name")
+    list_display_links = ("highlight_deleted_field", "system_name")
     readonly_fields = ("id", "system_id", "type_id")
 
     def get_queryset(self, request):
@@ -55,6 +59,9 @@ class EveStructureAdmin(admin.ModelAdmin):
         if days == 0:
             return "<1 day"
         return f"{days} day{'s' if days != 1 else ''}"
+
+
+EveStructureAdmin.highlight_deleted_field.short_description = "Name"
 
 
 @admin.register(EveStructureTimer)

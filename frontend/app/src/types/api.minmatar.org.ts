@@ -374,6 +374,17 @@ export interface CharacterAsset {
     location_name:  string;
 }
 
+export type FittingTagSlug =
+    | 'highsec'
+    | 'lowsec'
+    | 'nullsec'
+    | 'faction_warfare'
+    | 'solo'
+    | 'nanogang'
+    | 'fleet_composition'
+    | 'new_player_friendly'
+    | 'budget'
+
 export interface Fitting {
     id:                 number;
     name:               string;
@@ -385,6 +396,7 @@ export interface Fitting {
     minimum_pod:        string;
     recommended_pod:    string;
     latest_version:     string;
+    tags:               FittingTagSlug[];
 }
 
 export type DoctrineTypes = 'shield' | 'armor' | 'armorshield'

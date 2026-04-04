@@ -94,7 +94,7 @@ def get_fitting_for_contract(contract_summary: str) -> EveFitting | None:
             fitting = candidate
             break
         for alias in candidate.aliases.lower().split(","):
-            if alias == contract_summary.lower():
+            if alias.strip() == contract_summary.lower():
                 fitting = candidate
                 break
 

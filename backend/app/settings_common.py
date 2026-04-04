@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     # Django packages
     "django_extensions",
     "django_celery_beat",
+    "safedelete",
     "esi",
     # Discord auth
     "discord.apps.DiscordConfig",

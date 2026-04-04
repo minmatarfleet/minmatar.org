@@ -246,15 +246,32 @@ class Command(BaseCommand):
                 )
 
     def _ensure_location(self, location_id, source, local):
-        if EveLocation.objects.using(local).filter(pk=location_id).exists():
+        skip_copy = {"location_id", "deleted", "deleted_by_cascade"}
+        existing = (
+            EveLocation.all_objects.using(local).filter(pk=location_id).first()
+        )
+        if existing and not existing.deleted:
             return
         loc = EveLocation.objects.using(source).get(pk=location_id)
-        # concrete_fields: copy all stored columns except pk (passed as location_id).
         fields = {
             field.name: getattr(loc, field.name)
             for field in EveLocation._meta.concrete_fields  # pylint: disable=protected-access
-            if field.name != "location_id"
+            if field.name not in skip_copy
         }
+        if existing:
+            for key, value in fields.items():
+                setattr(existing, key, value)
+            existing.deleted = None
+            existing.deleted_by_cascade = False
+            try:
+                existing.save(using=local)
+            except ValidationError:
+                existing.price_baseline = False
+                existing.save(using=local)
+            self.stdout.write(
+                f"  Restored EveLocation {location_id} ({loc.location_name})."
+            )
+            return
         obj = EveLocation(location_id=location_id, **fields)
         try:
             obj.save(using=local)

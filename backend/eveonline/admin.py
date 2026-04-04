@@ -1,7 +1,10 @@
 from django.contrib import admin
+from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.urls import path, reverse
-from django.contrib import messages
+
+from safedelete.admin import SafeDeleteAdmin, SafeDeleteAdminFilter
+
 from esi.models import CallbackRedirect, Scope, Token
 
 from .models import (
@@ -410,10 +413,12 @@ class EveAllianceAdmin(admin.ModelAdmin):
 
 
 @admin.register(EveLocation)
-class EveLocationAdmin(admin.ModelAdmin):
+class EveLocationAdmin(SafeDeleteAdmin):
+    field_to_highlight = "location_name"
+
     list_display = (
+        "highlight_deleted_field",
         "location_id",
-        "location_name",
         "solar_system_name",
         "is_structure",
         "market_active",
@@ -421,9 +426,11 @@ class EveLocationAdmin(admin.ModelAdmin):
         "price_baseline",
         "freight_active",
         "staging_active",
+        "deleted",
     )
     search_fields = ("location_name", "short_name", "solar_system_name")
     list_filter = (
+        SafeDeleteAdminFilter,
         "is_structure",
         "market_active",
         "prices_active",
@@ -432,6 +439,9 @@ class EveLocationAdmin(admin.ModelAdmin):
         "staging_active",
     )
     ordering = ("location_name",)
+
+
+EveLocationAdmin.highlight_deleted_field.short_description = "Location name"
 
 
 # ---------------------------------------------------------------------------

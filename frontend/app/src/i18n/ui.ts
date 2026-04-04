@@ -93,6 +93,9 @@ export const ui = {
 
         'fitting.list.page_title': 'Fittings',
 
+        'fitting.detail.meta_title': '{fitting} — {ship} | {site}',
+        'fitting.detail.meta_description_fallback': 'EVE Online fitting: {fitting} ({ship}). Minmatar Fleet Alliance.',
+
         'doctrines.page_title': 'Doctrines',
         'doctrines.leading_text': 'Doctrines are recipes for content, and are the primary way that we organize our fleets. They are a set of ships, fits, and tactics that are designed to be flown by a group of pilots. All doctrines are public.',
         'doctrines.cover_alt': 'A fleet of Cyclone Fleet Issue ships engaged in battle, with the local star looming in the background.',

@@ -1,26 +1,145 @@
 from django.contrib import admin
+from django.db.models import Count, Exists, OuterRef, Subquery
+from django.urls import reverse
+from django.utils.html import format_html
+from safedelete.admin import SafeDeleteAdmin, SafeDeleteAdminFilter
 
 from eveuniverse.models import EveType
 
-from .forms import EveDoctrineForm
+from .forms import EveDoctrineForm, EveFittingAdminForm
 from .models import (
     EveDoctrine,
     EveDoctrineFitting,
     EveFitting,
+    EveFittingHistory,
     EveFittingRefit,
 )
 
 
+class HasRefitsListFilter(admin.SimpleListFilter):
+    title = "has refits"
+    parameter_name = "has_refits"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("yes", "Yes"),
+            ("no", "No"),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == "yes":
+            return queryset.filter(
+                Exists(
+                    EveFittingRefit.objects.filter(
+                        base_fitting_id=OuterRef("pk")
+                    )
+                )
+            )
+        if self.value() == "no":
+            return queryset.filter(
+                ~Exists(
+                    EveFittingRefit.objects.filter(
+                        base_fitting_id=OuterRef("pk")
+                    )
+                )
+            )
+        return queryset
+
+
+class EveFittingRefitInline(admin.StackedInline):
+    model = EveFittingRefit
+    extra = 0
+    show_change_link = True
+    fields = (
+        "name",
+        "eft_format",
+        "description",
+        "created_at",
+        "updated_at",
+    )
+    readonly_fields = ("created_at", "updated_at")
+
+
 @admin.register(EveFitting)
-class EveFittingAdmin(admin.ModelAdmin):
+class EveFittingAdmin(SafeDeleteAdmin):
     """Admin screen for EveFitting entity. Name and ship_id are inferred from EFT."""
 
-    list_display = ("name", "ship_id", "description")
+    form = EveFittingAdminForm
+    field_to_highlight = "name"
+
+    list_display = (
+        "highlight_deleted_field",
+        "ship_name",
+        "refit_count",
+        "description",
+        "deleted",
+    )
     search_fields = ("name", "description", "aliases")
-    list_filter = ("ship_id",)
+    list_filter = (SafeDeleteAdminFilter, HasRefitsListFilter)
     list_per_page = 50
     ordering = ("name",)
-    readonly_fields = ("name", "ship_id")
+    readonly_fields = (
+        "name",
+        "ship_id",
+        "latest_version",
+        "created_at",
+        "updated_at",
+    )
+    fieldsets = (
+        (
+            "Fitting",
+            {
+                "fields": (
+                    "name",
+                    "ship_id",
+                    "latest_version",
+                    "created_at",
+                    "updated_at",
+                ),
+            },
+        ),
+        (
+            "EFT & description",
+            {
+                "fields": ("eft_format", "description", "tags"),
+            },
+        ),
+        (
+            "Aliases",
+            {
+                "description": (
+                    "Used when resolving contracts and search; not shown on the public "
+                    "fitting name."
+                ),
+                "fields": ("aliases",),
+            },
+        ),
+        (
+            "Pods",
+            {
+                "fields": ("minimum_pod", "recommended_pod"),
+            },
+        ),
+    )
+    inlines = (EveFittingRefitInline,)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        ship_sq = EveType.objects.filter(pk=OuterRef("ship_id")).values(
+            "name"
+        )[:1]
+        return qs.annotate(
+            _refit_count=Count("refits"),
+            _ship_name=Subquery(ship_sq),
+        )
+
+    @admin.display(description="Ship", ordering="_ship_name")
+    def ship_name(self, obj):
+        return getattr(obj, "_ship_name", None) or "—"
+
+    @admin.display(description="Refits", ordering="_refit_count")
+    def refit_count(self, obj):
+        return getattr(obj, "_refit_count", 0)
 
     def save_model(self, request, obj, form, change):
         eft_format = form.cleaned_data.get("eft_format") or getattr(
@@ -36,15 +155,66 @@ class EveFittingAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 
+EveFittingAdmin.highlight_deleted_field.short_description = "Name"
+
+
+@admin.register(EveFittingHistory)
+class EveFittingHistoryAdmin(admin.ModelAdmin):
+    """Read-only audit of previous fitting versions."""
+
+    list_display = (
+        "fitting",
+        "superseded_version_id",
+        "name",
+        "created_at",
+    )
+    list_filter = ("fitting",)
+    search_fields = ("name", "superseded_version_id", "fitting__name")
+    raw_id_fields = ("fitting",)
+    ordering = ("-created_at",)
+    readonly_fields = (
+        "id",
+        "fitting",
+        "superseded_version_id",
+        "name",
+        "ship_id",
+        "eft_format",
+        "description",
+        "aliases",
+        "minimum_pod",
+        "recommended_pod",
+        "tags",
+        "created_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+
 @admin.register(EveFittingRefit)
 class EveFittingRefitAdmin(admin.ModelAdmin):
     """Admin screen for EveFittingRefit entity"""
 
-    list_display = ("name", "base_fitting", "updated_at")
+    list_display = ("name", "base_fitting_link", "updated_at")
     list_filter = ("base_fitting",)
     search_fields = ("name", "description", "base_fitting__name")
-    raw_id_fields = ("base_fitting",)
+    autocomplete_fields = ("base_fitting",)
     ordering = ("base_fitting", "name")
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        ("Base", {"fields": ("base_fitting",)}),
+        ("Refit", {"fields": ("name", "eft_format", "description")}),
+        ("Timestamps", {"fields": ("created_at", "updated_at")}),
+    )
+
+    @admin.display(description="Base fitting", ordering="base_fitting")
+    def base_fitting_link(self, obj):
+        if obj.base_fitting_id:
+            url = reverse(
+                "admin:fittings_evefitting_change", args=[obj.base_fitting_id]
+            )
+            return format_html('<a href="{}">{}</a>', url, obj.base_fitting)
+        return "—"
 
 
 @admin.register(EveDoctrine)
