@@ -154,20 +154,10 @@ const page_title = post?.title ?? t('new_post')
                 overlay: true
             }}
             x-data={`{
-                update_wyswyg_toolbar() {
-                    post_header = document.querySelector('.post-header')
-                    post_header_height = post_header ? post_header.offsetHeight - 3 : 0
-                    const toolbar = document.querySelector('.toastui-editor-toolbar')
-                    if (toolbar)
-                        toolbar.style.top = \`\${post_header_height}px\`
-                },
                 init() {
                     ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
                 }
             }`}
-            x-on:scroll.window.throttle.250ms={`
-                setTimeout(update_wyswyg_toolbar, 250)
-            `}
         >
             <FlexInline
                 slot="header"
