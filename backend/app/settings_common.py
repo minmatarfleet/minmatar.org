@@ -76,6 +76,8 @@ INSTALLED_APPS = [
     "combatlog",
     # SRP
     "srp",
+    # Onboarding acknowledgments (per program version)
+    "onboarding",
     # Referral links,
     "referrals",
     # User subscriptions

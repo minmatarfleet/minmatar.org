@@ -7,6 +7,28 @@ import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = user ? user.is_superuser : false
+
+import { get_user_permissions } from '@helpers/permissions'
+
+const user_permissions = user ? await get_user_permissions(user.username) : []
+const can_process_srp = is_superuser || user_permissions.includes('srp.change_evefleetshipreimbursement')
+const has_explicit_srp_change = user_permissions.includes('srp.change_evefleetshipreimbursement')
+
+import { is_srp_onboarding_required_error } from '@helpers/api.minmatar.org/onboarding'
+import { should_redirect_to_srp_onboarding } from '@helpers/onboarding/srpRedirect'
+
+if (
+    auth_token &&
+    user &&
+    (await should_redirect_to_srp_onboarding(
+        auth_token as string,
+        has_explicit_srp_change,
+    ))
+) {
+    const return_to = encodeURIComponent(translatePath('/ships/srp/'))
+    return Astro.redirect(`${translatePath('/onboarding/')}?return=${return_to}`)
+}
 
 import type { SRPFrontendPrograms } from '@dtypes/layout_components'
 import type { CombatLogAnalysis } from '@dtypes/layout_components'
@@ -52,7 +74,11 @@ if (Astro.request.method === "POST") {
 
         killmail_submitted = true
     } catch (error) {
-        submit_srp_error = error
+        if (error instanceof Error && is_srp_onboarding_required_error(error)) {
+            submit_srp_error = new Error(t('srp_onboarding_required_after_submit'))
+        } else {
+            submit_srp_error = error instanceof Error ? error : new Error(String(error))
+        }
     }
 }
 

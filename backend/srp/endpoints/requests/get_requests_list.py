@@ -4,6 +4,7 @@ from ninja import Query
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from onboarding.srp_gate import require_current_srp_onboarding
 from srp.endpoints.requests.helpers import (
     reimbursement_to_response,
     visible_reimbursements_qs,
@@ -37,6 +38,10 @@ def list_srp_requests(
         return 403, {
             "detail": "User missing permission srp.view_evefleetshipreimbursement"
         }
+
+    denied = require_current_srp_onboarding(request)
+    if denied:
+        return denied
 
     qs = visible_reimbursements_qs(
         request.user,

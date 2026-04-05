@@ -18,6 +18,12 @@ from fleets.tests import (
     setup_fleet_reference_data,
     make_test_fleet,
 )
+from onboarding.models import (
+    OnboardingProgram,
+    OnboardingProgramType,
+    UserOnboardingAcknowledgment,
+)
+from onboarding.seed import ensure_onboarding_programs
 from srp.models import (
     EveFleetShipReimbursement,
     ShipReimbursementProgram,
@@ -35,6 +41,15 @@ KM_HASH = "9c92aa157f138da9b5a64abbd8225893f1b8b5f0"
 KM_LINK = f"https://esi.evetech.net/killmails/{KM_ID}/{KM_HASH}/"
 
 
+def acknowledge_srp_onboarding_for_user(user):
+    program = OnboardingProgram.objects.get(pk=OnboardingProgramType.SRP)
+    UserOnboardingAcknowledgment.objects.update_or_create(
+        user=user,
+        program=program,
+        defaults={"acknowledged_version": program.version},
+    )
+
+
 class SrpRouterTestCase(TestCase):
     """Test cases for the market router."""
 
@@ -43,6 +58,9 @@ class SrpRouterTestCase(TestCase):
         self.client = Client()
 
         super().setUp()
+
+        ensure_onboarding_programs()
+        acknowledge_srp_onboarding_for_user(self.user)
 
         # Setup fleet stuff
         disconnect_fleet_signals()
@@ -430,6 +448,25 @@ class SrpRouterTestCase(TestCase):
             response.json()["detail"].lower(),
         )
 
+    def test_post_srp_requires_onboarding_acknowledgment(self):
+        UserOnboardingAcknowledgment.objects.filter(user=self.user).delete()
+        self._ensure_srp_program_for_jaguar_killmails()
+        data = {
+            "external_killmail_link": KM_LINK,
+            "fleet_id": self.fleet.id,
+            "is_corp_ship": False,
+            "category": "dps",
+            "comments": "blocked",
+        }
+        response = self.client.post(
+            f"{BASE_URL}",
+            data,
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(403, response.status_code)
+        self.assertEqual("srp_onboarding_required", response.json()["detail"])
+
     def test_get_srp_values(self):
         self.make_superuser()
 
@@ -496,11 +533,9 @@ class SrpRouterTestCase(TestCase):
         self.assertEqual(3000000000, rev_rows[0]["srp_value"])
 
         public_programs = self.client.get(f"{BASE_URL}/programs")
-        self.assertEqual(200, public_programs.status_code)
-        self.assertEqual(2, len(public_programs.json()))
+        self.assertEqual(401, public_programs.status_code)
         public_history = self.client.get(f"{BASE_URL}/programs/history")
-        self.assertEqual(200, public_history.status_code)
-        self.assertEqual(2, len(public_history.json()))
+        self.assertEqual(401, public_history.status_code)
 
     def test_get_stats_forbidden_without_permission(self):
         for path in ("stats/overview", "stats/history"):

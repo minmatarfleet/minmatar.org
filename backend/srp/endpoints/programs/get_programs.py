@@ -2,17 +2,32 @@
 
 from typing import List
 
+from app.errors import ErrorResponse
+from authentication import AuthBearer
+from onboarding.srp_gate import require_current_srp_onboarding
 from srp.endpoints.programs.schemas import ShipReimbursementProgramResponse
 from srp.models import ShipReimbursementProgram
 
 PATH = ""
 METHOD = "get"
 ROUTE_SPEC = {
-    "response": {200: List[ShipReimbursementProgramResponse]},
+    "auth": AuthBearer(),
+    "response": {
+        200: List[ShipReimbursementProgramResponse],
+        403: ErrorResponse,
+    },
 }
 
 
 def get_srp_programs(request):
+    if not request.user.has_perm("srp.view_evefleetshipreimbursement"):
+        return 403, {
+            "detail": "User missing permission srp.view_evefleetshipreimbursement"
+        }
+    denied = require_current_srp_onboarding(request)
+    if denied:
+        return denied
+
     programs = ShipReimbursementProgram.objects.select_related(
         "eve_type__eve_group__eve_category"
     ).all()

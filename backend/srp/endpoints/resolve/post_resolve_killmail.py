@@ -2,6 +2,7 @@
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from onboarding.srp_gate import require_current_srp_onboarding
 from srp.endpoints.resolve.schemas import (
     CandidateFleetResponse,
     ResolveKillmailRequest,
@@ -37,6 +38,11 @@ def resolve_killmail_for_srp(request, payload: ResolveKillmailRequest):
         return 403, {
             "detail": "User missing permission srp.add_evefleetshipreimbursement"
         }
+
+    denied = require_current_srp_onboarding(request)
+    if denied:
+        return denied
+
     try:
         details = get_killmail_details(
             payload.external_killmail_link, request.user

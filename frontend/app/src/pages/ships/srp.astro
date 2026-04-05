@@ -18,9 +18,24 @@ const user_permissions = (user ? await get_user_permissions(user?.username) : []
 
 const can_view_srp = is_superuser || user_permissions.includes('srp.view_evefleetshipreimbursement')
 const can_add_srp = is_superuser || user_permissions.includes('srp.add_evefleetshipreimbursement')
+const can_process_srp = is_superuser || user_permissions.includes('srp.change_evefleetshipreimbursement')
+const has_explicit_srp_change = user_permissions.includes('srp.change_evefleetshipreimbursement')
 
 if (!can_view_srp)
     return HTTP_403_Forbidden()
+
+import { should_redirect_to_srp_onboarding } from '@helpers/onboarding/srpRedirect'
+
+if (
+    auth_token &&
+    (await should_redirect_to_srp_onboarding(
+        auth_token as string,
+        has_explicit_srp_change,
+    ))
+) {
+    const return_to = encodeURIComponent(Astro.url.pathname + Astro.url.search)
+    return Astro.redirect(`${translatePath('/onboarding/')}?return=${return_to}`)
+}
 
 import type { SRPProgram, SRPStatsHistory } from '@dtypes/api.minmatar.org'
 import { get_srp_programs, get_srp_stats_history } from '@helpers/api.minmatar.org/srp'
@@ -38,12 +53,6 @@ try {
 
 const SRP_TILES_PARTIAL_URL = translatePath('/partials/srp_tiles_component/')
 
-import * as srp_overview_md from '@markdown/srp-overview.md';
-import * as srp_source_md from '@markdown/srp-source.md';
-
-import { marked } from 'marked';
-import { renderer } from '@helpers/marked';
-
 import Viewport from '@layouts/Viewport.astro';
 
 import PageLanding from '@components/page/PageLanding.astro';
@@ -56,11 +65,15 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 
 import Button from '@components/blocks/Button.astro';
 import SRPTiles from '@components/blocks/SRPTiles.astro';
-import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import SrpOnboardingRequired from '@components/blocks/SrpOnboardingRequired.astro'
+
+import { is_srp_onboarding_required_error } from '@helpers/api.minmatar.org/onboarding'
 
 const page_title = t('ships.srp.page_title');
 const leading_text = t('ships.srp.leading_text');
+const srp_onboarding_required_ui =
+    fetching_error !== false && is_srp_onboarding_required_error(fetching_error);
 ---
 
 <Viewport
@@ -87,50 +100,35 @@ const leading_text = t('ships.srp.leading_text');
                     <PageTitle is_landing={true}>{page_title}</PageTitle>
                 </TextBox>
                 {can_view_srp &&
-                    <FlexInline class="[ !items-start ]">
+                    <FlexInline class="[ !items-start ]" gap='var(--space-s)'>
+                        <Button href={`${translatePath('/onboarding/')}?return=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`}>
+                            {t('learn_more')}
+                        </Button>
                         <Button href={translatePath('/ships/srp/killmails/')}>
                             {t('view_killmails')}
                         </Button>
                     </FlexInline>
                 }
             </FlexInline>
-            
-            <TextBox>
-                <p class="[ excerpt ]">{leading_text}</p>
-            </TextBox>
-            
-            <Flexblock>
+
+            {!srp_onboarding_required_ui &&
                 <TextBox>
-                    <CollapsibleBlock>
-                        <h4 slot="head">{t('overview_description')}</h4>
-
-                        <div
-                            class="[ prose ]"
-                            set:html={marked.parse(srp_overview_md.rawContent(), { renderer })}
-                        />
-                    </CollapsibleBlock>
+                    <p class="[ excerpt ]">{leading_text}</p>
                 </TextBox>
-
-                <TextBox>
-                    <CollapsibleBlock>
-                        <h4 slot="head">{t('source_description')}</h4>
-
-                        <div
-                            class="[ prose ]"
-                            set:html={marked.parse(srp_source_md.rawContent(), { renderer })}
-                        />
-                    </CollapsibleBlock>
-                </TextBox>
-            </Flexblock>
+            }
 
             {fetching_error !== false ?
-                <ErrorRefetch
-                    args={{
-                        partial: SRP_TILES_PARTIAL_URL,
-                        error: fetching_error,
-                        delay: 0,
-                    }}
-                /> :
+                (srp_onboarding_required_ui ?
+                    <SrpOnboardingRequired return_to_path={Astro.url.pathname + Astro.url.search} />
+                    :
+                    <ErrorRefetch
+                        args={{
+                            partial: SRP_TILES_PARTIAL_URL,
+                            error: fetching_error,
+                            delay: 0,
+                        }}
+                    />
+                ) :
                 <SRPTiles
                     programs={programs}
                     readonly={!can_add_srp}
@@ -141,15 +139,3 @@ const leading_text = t('ships.srp.leading_text');
         </Flexblock>
     </PageLanding>
 </Viewport>
-
-<style lang="scss">
-    .prose {
-        padding-top: var(--space-s);
-    }
-
-    h4 {
-        font-size: var(--step-0);
-        line-height: 1.5;
-        text-wrap: pretty;
-    }
-</style>

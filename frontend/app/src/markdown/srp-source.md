@@ -1,4 +1,4 @@
-That said, the alliance does generate income, and will allocate this income to incentivize engagements and fun that benefits our playerbase.
+The alliance does generate income, and has a desire to allocate this income to incentivize engagements and fun that benefits our playerbase.
 
 These sources of income are,
 
@@ -6,6 +6,6 @@ These sources of income are,
     
 *   Loot from strategic fleets (contract to **Minmatar Fleet Holdings**)
     
-*   Mercenary contracts and other random, one-off sources of income
+*   Temporary holdings (moons), service income (structures), and one-off mercenary contracts
     
-Due to this, the alliance will often cover 25-50% of the cost of certain hulls, with the expectation that corporations will incentivize their kind of gameplay with other subsidies from corporation income.
+These aren't consistent, babysitted income sources. If they go away, they go away- along with certain programs that they support.

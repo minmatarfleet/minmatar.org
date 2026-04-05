@@ -1382,3 +1382,10 @@ export interface SRPStatsHistory {
     groups:     SRPStatsHistoryGroup[];
     types:      SRPStatsHistoryType[];
 }
+
+export interface OnboardingStatusResponse {
+    program_type:           string;
+    current_version:        string;
+    acknowledged_version:   string | null;
+    is_current:             boolean;
+}

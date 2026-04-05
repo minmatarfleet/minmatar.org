@@ -5,6 +5,7 @@ from typing import Optional
 from django.db.models import Count, Sum
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from onboarding.srp_gate import require_current_srp_onboarding
 from pydantic import BaseModel
 from srp.helpers import average_payout_seconds_approved_last_days
 from srp.models import EveFleetShipReimbursement
@@ -30,6 +31,10 @@ def get_srp_stats_overview(request):
         return 403, {
             "detail": "User missing permission srp.view_evefleetshipreimbursement"
         }
+
+    denied = require_current_srp_onboarding(request)
+    if denied:
+        return denied
 
     pending = EveFleetShipReimbursement.objects.filter(status="pending")
     pending_agg = pending.aggregate(

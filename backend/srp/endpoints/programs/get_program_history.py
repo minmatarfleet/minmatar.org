@@ -2,6 +2,9 @@
 
 from typing import List
 
+from app.errors import ErrorResponse
+from authentication import AuthBearer
+from onboarding.srp_gate import require_current_srp_onboarding
 from srp.endpoints.programs.schemas import (
     ShipReimbursementProgramAmountResponse,
 )
@@ -10,11 +13,23 @@ from srp.models import ShipReimbursementProgramAmount
 PATH = "history"
 METHOD = "get"
 ROUTE_SPEC = {
-    "response": {200: List[ShipReimbursementProgramAmountResponse]},
+    "auth": AuthBearer(),
+    "response": {
+        200: List[ShipReimbursementProgramAmountResponse],
+        403: ErrorResponse,
+    },
 }
 
 
 def get_srp_program_history(request):
+    if not request.user.has_perm("srp.view_evefleetshipreimbursement"):
+        return 403, {
+            "detail": "User missing permission srp.view_evefleetshipreimbursement"
+        }
+    denied = require_current_srp_onboarding(request)
+    if denied:
+        return denied
+
     return [
         {
             "id": amount.id,

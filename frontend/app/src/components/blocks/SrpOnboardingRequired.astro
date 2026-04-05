@@ -1,0 +1,24 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+interface Props {
+    /** Path + query for `?return=` after completing onboarding (e.g. current SRP page). */
+    return_to_path: string
+}
+
+const { return_to_path } = Astro.props
+
+import TextBox from '@components/layout/TextBox.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Button from '@components/blocks/Button.astro'
+
+const onboarding_href = `${translatePath('/onboarding/')}?return=${encodeURIComponent(return_to_path)}`
+---
+
+<TextBox>
+    <Flexblock gap="var(--space-m)">
+        <p class="[ excerpt ]">{t('ships.srp.onboarding_required_message')}</p>
+        <Button href={onboarding_href}>{t('ships.srp.onboarding_required_button')}</Button>
+    </Flexblock>
+</TextBox>

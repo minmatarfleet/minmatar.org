@@ -4,6 +4,7 @@ import logging
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from onboarding.srp_gate import require_current_srp_onboarding
 from fleets.models import EveFleet
 from srp.endpoints.requests.helpers import duplicate_kill
 from srp.endpoints.requests.schemas import CreateSrpRequest, SrpRequestResponse
@@ -40,6 +41,10 @@ def create_srp_request(request, payload: CreateSrpRequest):
         request.user.username,
         payload.external_killmail_link,
     )
+
+    denied = require_current_srp_onboarding(request)
+    if denied:
+        return denied
 
     if payload.fleet_id:
         fleet = EveFleet.objects.get(id=payload.fleet_id)
