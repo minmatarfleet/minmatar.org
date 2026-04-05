@@ -61,7 +61,7 @@ import SRPStat from '@components/blocks/SRPStat.astro';
         transparent={true}
     >
         {stats_history &&
-            <FlexInline slot="subtitle">
+            <FlexInline slot="subtitle" gap='var(--space-xl)'>
                 <SRPStat value={stats_history?.approved} type='approved' init_tooltips={init_tooltips} />
                 <SRPStat value={stats_history?.rejected} type='rejected' init_tooltips={init_tooltips} />
             </FlexInline>
