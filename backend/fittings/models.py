@@ -17,6 +17,9 @@ class FittingTag(models.TextChoices):
     FLEET_COMPOSITION = "fleet_composition", "Fleet Composition"
     NEW_PLAYER_FRIENDLY = "new_player_friendly", "New Player Friendly"
     BUDGET = "budget", "Budget"
+    CAPITALS = "capitals", "Capitals"
+    COMMAND_BURSTS = "command_bursts", "Command Bursts"
+    INDUSTRY = "industry", "Industry"
     ESCAPE_FRIGATE = "escape_frigate", "Escape Frigate"
 
 

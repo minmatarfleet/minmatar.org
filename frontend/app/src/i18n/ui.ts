@@ -94,6 +94,7 @@ export const ui = {
         'fitting.list.page_title': 'Fittings',
 
         'fitting.tag.highsec': 'Highsec',
+        'fitting.tag.industry': 'Industry',
         'fitting.tag.lowsec': 'Lowsec',
         'fitting.tag.nullsec': 'Nullsec',
         'fitting.tag.faction_warfare': 'Faction warfare',
@@ -102,6 +103,8 @@ export const ui = {
         'fitting.tag.fleet_composition': 'Fleet composition',
         'fitting.tag.new_player_friendly': 'New player friendly',
         'fitting.tag.budget': 'Budget',
+        'fitting.tag.capitals': 'Capitals',
+        'fitting.tag.command_bursts': 'Command Bursts',
         'fitting.tag.escape_frigate': 'Escape Frigate',
 
         'fitting.detail.meta_title': '{fitting} — {ship} | {site}',

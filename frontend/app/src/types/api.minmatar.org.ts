@@ -376,6 +376,7 @@ export interface CharacterAsset {
 
 export type FittingTagSlug =
     | 'highsec'
+    | 'industry'
     | 'lowsec'
     | 'nullsec'
     | 'faction_warfare'
@@ -384,6 +385,8 @@ export type FittingTagSlug =
     | 'fleet_composition'
     | 'new_player_friendly'
     | 'budget'
+    | 'capitals'
+    | 'command_bursts'
     | 'escape_frigate'
 
 export interface Fitting {
