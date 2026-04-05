@@ -13,7 +13,21 @@ from .models import (
     EveFitting,
     EveFittingHistory,
     EveFittingRefit,
+    FittingTag,
 )
+
+
+class FittingTagListFilter(admin.SimpleListFilter):
+    title = "tag"
+    parameter_name = "fitting_tag"
+
+    def lookups(self, request, model_admin):
+        return FittingTag.choices
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(tags__contains=[self.value()])
+        return queryset
 
 
 class HasRefitsListFilter(admin.SimpleListFilter):
@@ -75,7 +89,11 @@ class EveFittingAdmin(SafeDeleteAdmin):
         "deleted",
     )
     search_fields = ("name", "description", "aliases")
-    list_filter = (SafeDeleteAdminFilter, HasRefitsListFilter)
+    list_filter = (
+        SafeDeleteAdminFilter,
+        HasRefitsListFilter,
+        FittingTagListFilter,
+    )
     list_per_page = 50
     ordering = ("name",)
     readonly_fields = (
