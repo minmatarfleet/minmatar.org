@@ -58,18 +58,9 @@ import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
                 cover='/images/srp-tile-background.webp'
             >
                 <KillReportEVEIcon class="[ ml-[-7px] ]" slot="icon" />
-                
-                <Button
-                    size='sm'
-                    href={translatePath('/ships/srp/')}
-                >
-                    {t('request')}
-                </Button>
-                <Button
-                    size='sm'
-                    href={translatePath('/ships/srp/killmails/')}
-                >
-                    {t('killmails')}
+
+                <Button size='sm' href={translatePath('/ships/srp/')}>
+                    {t('ships.srp.tile_browse')}
                 </Button>
             </Tile>
         }

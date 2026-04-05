@@ -37,6 +37,7 @@ from tribes.router import router as tribes_router
 from industry.router import router as industry_router
 from market.router import router as market_router
 from moons.router import moons_paste_router, moons_router
+from onboarding.router import router as onboarding_router
 from mumble.router import router as mumble_router
 from posts.router import router as posts_router
 from referrals.router import router as referrals_router
@@ -66,6 +67,7 @@ api.add_router("industry", industry_router)
 api.add_router("referrals", referrals_router)
 api.add_router("reminders", reminders_router)
 api.add_router("srp", srp_router)
+api.add_router("onboarding", onboarding_router)
 api.add_router("tech", tech_router)
 api.add_router("subscriptions", subscription_router)
 

@@ -217,6 +217,16 @@
         }
     },
     {
+        "slug": "onboarding",
+        "path": "/onboarding/",
+        "publish": true,
+        "description": "page_finder.onboarding.description",
+        "keywords": [ "onboarding", "srp", "new members", "reimbursement" ],
+        "permissions": {
+            "auth": true
+        }
+    },
+    {
         "slug": "market",
         "alt": "icon.market.alt",
         "path": "/market/",

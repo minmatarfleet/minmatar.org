@@ -1,0 +1,70 @@
+# Model Context Protocol — Reddit via Docker MCP catalog image only.
+# Discord MCP runs locally (JAR + run-discord-mcp.sh); see repo mcps/ README if present.
+# https://hub.docker.com/mcp/server/mcp-reddit
+#
+# Pull image:
+#   docker compose -f docker-compose-mcp.yml pull
+#
+# From this directory (mcps/):
+#   docker compose -f docker-compose-mcp.yml run --rm -it reddit-mcp
+#
+# From repo root:
+#   docker compose -f mcps/docker-compose-mcp.yml run --rm -it reddit-mcp
+#
+# Local HTTP (Streamable HTTP via supergateway):
+#   docker compose -f docker-compose-mcp.yml --profile http up -d --build
+#   Reddit: http://127.0.0.1:8765/mcp
+#
+# Claude "remote MCP" requires https:// — use Cloudflare quick tunnels (trycloudflare.com):
+#   docker compose -f docker-compose-mcp.yml --profile remote up -d --build
+#   docker compose -f docker-compose-mcp.yml logs -f reddit-mcp-tunnel
+# Copy the https://….trycloudflare.com URL from the logs and append /mcp.
+# Quick tunnels are ephemeral and expose your MCP to the public internet; stop when done.
+#
+# Credentials: copy .env.example to .env in this folder and fill values.
+# Reddit: create a "script" app at https://www.reddit.com/prefs/apps
+#
+# Gateways need the host Docker socket (Linux/macOS Docker Desktop; WSL2 default path).
+# 127.0.0.1 binds limit local exposure; tunnels still publish the service.
+
+name: mcp
+
+services:
+  reddit-mcp:
+    image: mcp/reddit-mcp:latest
+    stdin_open: true
+    tty: true
+    env_file: .env
+
+  reddit-mcp-http:
+    profiles: [http, remote]
+    build:
+      context: ..
+      dockerfile: docker/mcp-gateway.Dockerfile
+    image: minmatar-mcp-gateway:local
+    env_file: .env
+    ports:
+      - "127.0.0.1:8765:8765"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >-
+        exec supergateway --port 8765 --outputTransport streamableHttp --cors
+        --healthEndpoint /healthz
+        --stdio "docker run -i --rm -e REDDIT_CLIENT_ID -e REDDIT_CLIENT_SECRET -e REDDIT_USERNAME -e REDDIT_PASSWORD -e REDDIT_USER_AGENT mcp/reddit-mcp:latest"
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://127.0.0.1:8765/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  reddit-mcp-tunnel:
+    image: cloudflare/cloudflared:latest
+    profiles: [remote]
+    restart: unless-stopped
+    depends_on:
+      reddit-mcp-http:
+        condition: service_healthy
+    command: tunnel --url http://reddit-mcp-http:8765

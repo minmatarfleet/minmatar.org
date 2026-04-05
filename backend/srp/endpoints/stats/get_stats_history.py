@@ -7,6 +7,7 @@ from django.db.models import Count, Min, Q, Sum
 from django.utils import timezone
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from onboarding.srp_gate import require_current_srp_onboarding
 from eveuniverse.models import EveType
 from pydantic import BaseModel
 from srp.models import EveFleetShipReimbursement
@@ -80,6 +81,10 @@ def get_srp_stats_history(request, days: str = "90"):
         return 403, {
             "detail": "User missing permission srp.view_evefleetshipreimbursement"
         }
+
+    denied = require_current_srp_onboarding(request)
+    if denied:
+        return denied
 
     if days not in _HISTORY_DAY_CHOICES:
         return 400, {

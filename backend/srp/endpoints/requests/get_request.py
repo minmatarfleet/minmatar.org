@@ -2,6 +2,7 @@
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from onboarding.srp_gate import require_current_srp_onboarding
 from srp.endpoints.requests.helpers import (
     can_view_request,
     reimbursement_to_response,
@@ -26,6 +27,10 @@ def get_srp_request(request, request_id: int):
         return 403, {
             "detail": "User missing permission srp.view_evefleetshipreimbursement"
         }
+
+    denied = require_current_srp_onboarding(request)
+    if denied:
+        return denied
 
     reimbursement = EveFleetShipReimbursement.objects.filter(
         id=request_id

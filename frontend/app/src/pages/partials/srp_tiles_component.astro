@@ -16,9 +16,24 @@ const user_permissions = (user ? await get_user_permissions(user?.username) : []
 
 const can_view_srp = is_superuser || user_permissions.includes('srp.view_evefleetshipreimbursement')
 const can_add_srp = is_superuser || user_permissions.includes('srp.add_evefleetshipreimbursement')
+const can_process_srp = is_superuser || user_permissions.includes('srp.change_evefleetshipreimbursement')
+const has_explicit_srp_change = user_permissions.includes('srp.change_evefleetshipreimbursement')
 
 if (!can_view_srp)
     return HTTP_403_Forbidden()
+
+import { should_redirect_to_srp_onboarding } from '@helpers/onboarding/srpRedirect'
+
+if (
+    auth_token &&
+    (await should_redirect_to_srp_onboarding(
+        auth_token as string,
+        has_explicit_srp_change,
+    ))
+) {
+    const return_to = encodeURIComponent(translatePath('/ships/srp/'))
+    return Astro.redirect(`${translatePath('/onboarding/')}?return=${return_to}`)
+}
 
 import type { SRPProgram, SRPStatsHistory } from '@dtypes/api.minmatar.org'
 import { get_srp_programs, get_srp_stats_history } from '@helpers/api.minmatar.org/srp'
@@ -40,16 +55,23 @@ const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 import SRPTiles from '@components/blocks/SRPTiles.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import SrpOnboardingRequired from '@components/blocks/SrpOnboardingRequired.astro'
+
+import { is_srp_onboarding_required_error } from '@helpers/api.minmatar.org/onboarding'
 ---
 
 {fetching_error !== false ?
-    <ErrorRefetch
-        args={{
-            partial: SRP_TILES_PARTIAL_URL,
-            error: fetching_error,
-            delay: delay,
-        }}
-    /> :
+    (is_srp_onboarding_required_error(fetching_error) ?
+        <SrpOnboardingRequired return_to_path={translatePath('/ships/srp/')} />
+        :
+        <ErrorRefetch
+            args={{
+                partial: SRP_TILES_PARTIAL_URL,
+                error: fetching_error,
+                delay: delay,
+            }}
+        />
+    ) :
     <SRPTiles
         programs={programs}
         readonly={!can_add_srp}

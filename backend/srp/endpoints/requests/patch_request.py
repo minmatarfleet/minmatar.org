@@ -4,6 +4,7 @@ from django.utils import timezone
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from onboarding.srp_gate import require_current_srp_onboarding
 from srp.endpoints.requests.helpers import can_update
 from srp.endpoints.requests.schemas import SrpPatchResult, UpdateSrpRequest
 from srp.helpers import send_decision_notification
@@ -33,6 +34,10 @@ def patch_srp_request(request, request_id: int, payload: UpdateSrpRequest):
         return 403, {
             "detail": "User missing permission srp.change_evefleetshipreimbursement"
         }
+
+    denied = require_current_srp_onboarding(request)
+    if denied:
+        return denied
 
     if not request.user.has_perm("srp.change_evefleetshipreimbursement"):
         if payload.status != "withdrawn":

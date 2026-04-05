@@ -7,6 +7,24 @@ import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = user ? user.is_superuser : false
+
+import { get_user_permissions } from '@helpers/permissions'
+
+const user_permissions = user ? await get_user_permissions(user.username) : []
+const can_process_srp = is_superuser || user_permissions.includes('srp.change_evefleetshipreimbursement')
+const has_explicit_srp_change = user_permissions.includes('srp.change_evefleetshipreimbursement')
+
+import { should_redirect_to_srp_onboarding } from '@helpers/onboarding/srpRedirect'
+
+if (
+    auth_token &&
+    user &&
+    (await should_redirect_to_srp_onboarding(auth_token, has_explicit_srp_change))
+) {
+    const return_to = encodeURIComponent(translatePath('/ships/srp/'))
+    return Astro.redirect(`${translatePath('/onboarding/')}?return=${return_to}`)
+}
 
 import type { KillmailAnalysis, SRPFrontendPrograms } from '@dtypes/layout_components'
 import { srp_frontend_programs } from '@dtypes/layout_components'

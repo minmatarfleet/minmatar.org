@@ -18,9 +18,23 @@ const user_permissions = (user ? await get_user_permissions(user?.username) : []
 
 const can_view_srp = is_superuser || user_permissions.includes('srp.view_evefleetshipreimbursement')
 const can_view_all_srp = is_superuser || user_permissions.includes('srp.change_evefleetshipreimbursement')
+const has_explicit_srp_change = user_permissions.includes('srp.change_evefleetshipreimbursement')
 
 if (!can_view_srp)
     return HTTP_403_Forbidden()
+
+import { should_redirect_to_srp_onboarding } from '@helpers/onboarding/srpRedirect'
+
+if (
+    auth_token &&
+    (await should_redirect_to_srp_onboarding(
+        auth_token as string,
+        has_explicit_srp_change,
+    ))
+) {
+    const return_to = encodeURIComponent(Astro.url.pathname + Astro.url.search)
+    return Astro.redirect(`${translatePath('/onboarding/')}?return=${return_to}`)
+}
 
 import type { FleetSRPUI } from '@dtypes/layout_components'
 import { fetch_srps } from '@helpers/fetching/srp'

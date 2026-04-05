@@ -18,6 +18,11 @@ import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
 const can_add_srp = is_superuser || user_permissions.includes('srp.add_evefleetshipreimbursement')
+const can_process_srp =
+    is_superuser || user_permissions.includes('srp.change_evefleetshipreimbursement')
+
+import { should_redirect_to_srp_onboarding } from '@helpers/onboarding/srpRedirect'
+import { is_srp_onboarding_required_error } from '@helpers/api.minmatar.org/onboarding'
 
 import { fetch_fleet_srps } from '@helpers/fetching/srp'
 import { create_fleet_srp, update_fleet_srp } from '@helpers/api.minmatar.org/srp'
@@ -34,6 +39,24 @@ import type { CombatLogAnalysis } from '@dtypes/layout_components'
 const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') as string)
 const remove_table = JSON.parse(Astro.url.searchParams.get('remove_table') ?? 'false')
 const fleet_title = JSON.parse(Astro.url.searchParams.get('fleet_title') ?? 'false')
+
+if (
+    auth_token &&
+    user &&
+    can_add_srp &&
+    (await should_redirect_to_srp_onboarding(
+        auth_token,
+        has_explicit_srp_change,
+    ))
+) {
+    const returnPath =
+        fleet_id > 0 && !Number.isNaN(fleet_id)
+            ? translatePath(`/fleets/upcoming/${fleet_id}`)
+            : translatePath('/ships/srp/')
+    return Astro.redirect(
+        `${translatePath('/onboarding/')}?return=${encodeURIComponent(returnPath)}`,
+    )
+}
 
 let data_fetching_error: Error | false = false
 let update_fleet_srp_error:string | false = false
@@ -80,7 +103,12 @@ if (Astro.request.method === "POST") {
             comments: comments ?? '',
         })
     } catch (error) {
-        submit_srp_error = error.message
+        submit_srp_error =
+            error instanceof Error && is_srp_onboarding_required_error(error)
+                ? t('srp_onboarding_required_after_submit')
+                : error instanceof Error
+                  ? error.message
+                  : String(error)
 
         alert = {
             title: t('srp_submit_dialog_title'),
