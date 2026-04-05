@@ -163,6 +163,7 @@ class EveFittingAdminRefitInlineTestCase(TestCase):
         ).group(1)
         post = {
             "csrfmiddlewaretoken": csrf,
+            "name": fitting.name,
             "eft_format": fitting.eft_format,
             "description": fitting.description,
             "aliases": "",

@@ -103,11 +103,6 @@ class EveFitting(MinmatarSoftDeleteModel):
 
     def save(self, *args, **kwargs):
         self.tags = self.coerce_tags(self.tags)
-        fitting_name = self.fitting_name_from_eft(self.eft_format)
-        if self.name != fitting_name:
-            raise ValidationError(
-                f"Name '{self.name}' does not match EFT name '{fitting_name}'"
-            )
 
         if self.pk is None:
             if not self.latest_version:

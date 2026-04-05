@@ -62,7 +62,7 @@ class EveFittingRefitInline(admin.StackedInline):
 
 @admin.register(EveFitting)
 class EveFittingAdmin(SafeDeleteAdmin):
-    """Admin screen for EveFitting entity. Name and ship_id are inferred from EFT."""
+    """Admin screen for EveFitting entity. Ship is inferred from EFT; display name is editable."""
 
     form = EveFittingAdminForm
     field_to_highlight = "name"
@@ -79,7 +79,6 @@ class EveFittingAdmin(SafeDeleteAdmin):
     list_per_page = 50
     ordering = ("name",)
     readonly_fields = (
-        "name",
         "ship_id",
         "latest_version",
         "created_at",
@@ -146,7 +145,9 @@ class EveFittingAdmin(SafeDeleteAdmin):
             obj, "eft_format", ""
         )
         if eft_format and eft_format.strip():
-            obj.name = EveFitting.fitting_name_from_eft(eft_format)
+            derived_name = EveFitting.fitting_name_from_eft(eft_format)
+            if not (obj.name and str(obj.name).strip()) and derived_name:
+                obj.name = derived_name
             ship_name = EveFitting.ship_name_from_eft(eft_format)
             if ship_name:
                 eve_type = EveType.objects.filter(name=ship_name).first()
