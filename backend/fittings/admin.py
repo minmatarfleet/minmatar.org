@@ -60,6 +60,27 @@ class HasRefitsListFilter(admin.SimpleListFilter):
         return queryset
 
 
+class InDoctrineListFilter(admin.SimpleListFilter):
+    title = "doctrine"
+    parameter_name = "in_doctrine"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("yes", "Doctrine"),
+            ("no", "No Doctrine"),
+        )
+
+    def queryset(self, request, queryset):
+        in_any_doctrine = EveDoctrineFitting.objects.filter(
+            fitting_id=OuterRef("pk")
+        )
+        if self.value() == "yes":
+            return queryset.filter(Exists(in_any_doctrine))
+        if self.value() == "no":
+            return queryset.filter(~Exists(in_any_doctrine))
+        return queryset
+
+
 class EveFittingRefitInline(admin.StackedInline):
     model = EveFittingRefit
     extra = 0
@@ -92,6 +113,7 @@ class EveFittingAdmin(SafeDeleteAdmin):
     list_filter = (
         SafeDeleteAdminFilter,
         HasRefitsListFilter,
+        InDoctrineListFilter,
         FittingTagListFilter,
     )
     list_per_page = 50
