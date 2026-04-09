@@ -28,12 +28,11 @@ const fleet_id = parseInt(Astro?.params?.fleet_id ?? '')
 if (isNaN(fleet_id))
     return HTTP_400_Bad_Request()
 
-import type { FleetUI, SRPUI, FleetCompositionUI, FleetRadarUI } from '@dtypes/layout_components'
+import type { FleetUI, FleetCompositionUI, FleetRadarUI } from '@dtypes/layout_components'
 import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
 import { fetch_fleet_by_id, group_members_by_ship, group_members_by_location } from '@helpers/fetching/fleets'
 import { get_fleet_members } from '@helpers/api.minmatar.org/fleets'
 import { get_user_character } from '@helpers/fetching/characters'
-import { fetch_fleet_srps } from '@helpers/fetching/srp'
 import { get_system_id } from '@helpers/sde/map'
 
 let fetch_fleets_error: Error | false = false
@@ -41,7 +40,6 @@ let fleet:FleetUI | false = false
 let user_character:EveCharacterProfile | null = null
 let fleet_composition:FleetCompositionUI[] = []
 let fleet_radar:FleetRadarUI[] = []
-let fleet_srps:SRPUI[] | null = []
 let is_fleet_commander = false
 
 import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
@@ -56,7 +54,6 @@ let volunteers: FleetRoleVolunteer[] = []
 try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     user_character = await get_user_character(user.user_id)
-    fleet_srps = await fetch_fleet_srps(auth_token as string, fleet_id)
     is_fleet_commander = (user_character?.character_id === fleet.fleet_commander_id)
 
     if (is_fleet_commander) {
@@ -169,7 +166,6 @@ const page_title = `${t('fleet')} ${fleet_id}`;
                 is_fleet_commander={is_fleet_commander}
                 fleet_composition={fleet_composition}
                 fleet_radar={fleet_radar}
-                fleet_srps={fleet_srps}
                 pilots={pilots}
                 volunteers={volunteers}
             />
