@@ -14,7 +14,6 @@ interface Props {
     is_fleet_commander?:    boolean;
     fleet_composition?:     FleetCompositionUI[];
     fleet_radar?:           FleetRadarUI[];
-    fleet_srps?:            SRPUI[];
     saved_logs?:            FleetCombatLog[];
     volunteers:             FleetRoleVolunteer[],
     pilots:                 SummaryCharacter[],
@@ -27,7 +26,6 @@ const {
     is_fleet_commander = false,
     fleet_composition,
     fleet_radar,
-    fleet_srps,
     saved_logs = [],
     volunteers,
     pilots,

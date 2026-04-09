@@ -22,12 +22,11 @@ const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') as string)
 if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
 
-import type { FleetUI, FleetCompositionUI, FleetRadarUI, SRPUI, FleetCombatLog } from '@dtypes/layout_components'
+import type { FleetUI, FleetCompositionUI, FleetRadarUI, FleetCombatLog } from '@dtypes/layout_components'
 import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
 import { fetch_fleet_by_id, group_members_by_ship, group_members_by_location } from '@helpers/fetching/fleets'
 import { get_fleet_members } from '@helpers/api.minmatar.org/fleets'
 import { get_user_character } from '@helpers/fetching/characters'
-import { fetch_fleet_srps } from '@helpers/fetching/srp'
 import { get_system_id } from '@helpers/sde/map'
 import { get_fleet_combatlogs } from '@helpers/fetching/combatlog'
 
@@ -36,7 +35,6 @@ let fleet:FleetUI | null = null
 let user_character:EveCharacterProfile | null = null
 let fleet_composition:FleetCompositionUI[] = []
 let fleet_radar:FleetRadarUI[] = []
-let fleet_srps:SRPUI[] | null = []
 let is_fleet_commander = false
 let saved_logs:FleetCombatLog[] = []
 
@@ -54,7 +52,6 @@ const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming') as string)
 try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     user_character = await get_user_character(user.user_id)
-    fleet_srps = await fetch_fleet_srps(auth_token as string, fleet_id)
     is_fleet_commander = (user_character?.character_id === fleet.fleet_commander_id)
 
     if (is_fleet_commander && upcoming) {
@@ -113,7 +110,6 @@ import FleetDetails from '@components/blocks/FleetDetails.astro';
         fleet_composition={fleet_composition}
         fleet_radar={fleet_radar}
         history={!upcoming}
-        fleet_srps={fleet_srps}
         saved_logs={saved_logs}
         pilots={pilots}
         volunteers={volunteers}
