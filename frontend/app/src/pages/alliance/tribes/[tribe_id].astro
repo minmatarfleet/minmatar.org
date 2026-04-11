@@ -44,6 +44,7 @@ let get_tribe_error: Error | false = false
 try {
     tribe = await get_tribe(tribe_id)
     tribe_groups = await get_tribe_groups(tribe_id)
+    tribe_groups = tribe_groups.sort((a, b) => a.requirements.reduce((c, req) => c + req.qualifying_skills.length + (req.asset_types.length > 0 ? 2 : 0), 0) - b.requirements.reduce((c, req) => c + req.qualifying_skills.length + (req.asset_types.length > 0 ? 2 : 0), 0))
 
     if (auth_token && user) {
         for (const group of tribe_groups) {
