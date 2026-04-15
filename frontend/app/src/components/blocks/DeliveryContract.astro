@@ -87,12 +87,12 @@ import DeliveryButton from './DeliveryButton.astro';
                 <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
                     <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
                         <h4>{t('name')}</h4>
-                        <p>{order?.character_name}</p>
+                        <p>{order?.contract_to}</p>
                     </Flexblock>
                     <ClipboardButton
                         id="copy-contract-name"
                         class="[ hidden md:!flex relative ]"
-                    >{order?.character_name}</ClipboardButton>
+                    >{order?.contract_to}</ClipboardButton>
                 </FlexInline>
             </VerticalCenter>
         </Flexblock>

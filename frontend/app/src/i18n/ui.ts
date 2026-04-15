@@ -2219,5 +2219,6 @@ export const ui = {
         'already_delivered': 'Assignment already delivered. Revert delivery and return to this page to resubmit the delivery.',
         'unexpected_error': 'An unexpected error ocurred.',
         'week': 'Week',
+        'assignment_not_exist': '🔴 The assignment does not exist.',
     },
 } as const;
