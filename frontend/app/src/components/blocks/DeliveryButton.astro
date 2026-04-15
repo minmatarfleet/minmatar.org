@@ -1,0 +1,69 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { IndustrySingleOrder, RootSingleItem, OrderAssignment } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    order:          IndustrySingleOrder;
+    item:           RootSingleItem;
+    assignment:     OrderAssignment;
+}
+
+const {
+    order,
+    item,
+    assignment,
+} = Astro.props
+
+const ORDER_DELIVERY_BUTTON_PARTIAL_URL = translatePath(`/partials/order_delivery_button_component`)
+
+import { query_string } from '@helpers/string';
+
+import Button from '@components/blocks/Button.astro';
+import ButtonConfirm from '@components/blocks/ButtonConfirm.astro'
+import FlexInline from '@components/compositions/FlexInline.astro';
+---
+
+<div id="delivery-button">
+    {assignment.delivered_at ?
+        <FlexInline>
+            <ButtonConfirm label={t('revert_delivery')}>
+                <Button
+                    hx-patch={`${ORDER_DELIVERY_BUTTON_PARTIAL_URL}?${query_string({
+                        order_id: order.id,
+                        item_id: item.id,
+                        assignment_id: assignment.id,
+                        delivery: false,
+                    })}`}
+                    hx-target="#delivery-button"
+                    hx-indicator=".loader"
+                    hx-swap="outerHTML transition:true"
+                    x-on:click="$el.setAttribute('disabled','')"
+                >
+                    {t('confirm')}
+                </Button>
+            </ButtonConfirm>
+            
+            <Button class="[ !hidden sm:block! ]" href={translatePath(`/industry/orders/`)}>
+                {t('back_to_orders')}
+            </Button>
+        </FlexInline>
+        :
+        <Button
+            color='green'
+            hx-patch={`${ORDER_DELIVERY_BUTTON_PARTIAL_URL}?${query_string({
+                order_id: order.id,
+                item_id: item.id,
+                assignment_id: assignment.id,
+                delivery: true,
+            })}`}
+            hx-target="#delivery-button"
+            hx-indicator=".loader"
+            hx-swap="outerHTML transition:true"
+            x-on:click="$el.setAttribute('disabled','')"
+        >
+            {t('mark_delivered')}
+        </Button>
+    }
+</div>

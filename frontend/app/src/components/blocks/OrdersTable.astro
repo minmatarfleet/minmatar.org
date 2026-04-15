@@ -61,7 +61,11 @@ import Table from '@components/blocks/Table.astro';
         <Table>
             {active_orders_locations.orders.map((order) =>
                 <div x-show="show_item($el)">
-                    <OrderItem order={order} init_tooltips={init_tooltips} />
+                    <OrderItem
+                        order={order}
+                        location_name={active_orders_locations.location_name}
+                        init_tooltips={init_tooltips}
+                    />
                 </div>
             )}
             <p class="[ no-result-text ]">{t('no_results')}</p>

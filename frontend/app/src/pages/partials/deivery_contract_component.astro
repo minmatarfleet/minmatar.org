@@ -1,0 +1,71 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_order_by_id } from '@helpers/api.minmatar.org/industry'
+import type { IndustrySingleOrder, RootSingleItem, OrderAssignment } from '@dtypes/api.minmatar.org'
+
+let order: IndustrySingleOrder | null = null
+let item:RootSingleItem  | undefined = undefined
+let assignment:OrderAssignment | undefined = undefined
+let data_fetching_error: Error | false = false
+
+const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '0')
+const item_id = parseInt(Astro.url.searchParams.get('item_id') ?? '0')
+const assignment_id = parseInt(Astro.url.searchParams.get('assignment_id') ?? '0')
+
+try {
+    if (isNaN(order_id) || order_id < 0)
+        throw new Error(t('invalid_order_id'), { cause: 400 })
+    
+    if (isNaN(item_id) || item_id < 0)
+        throw new Error(t('invalid_item_id'), { cause: 400 })
+    
+    if (isNaN(assignment_id) || assignment_id < 0)
+        throw new Error(t('invalid_assignment_id'), { cause: 400 })
+
+    order = await get_order_by_id(order_id)
+    item = order.items.find(item => item.id === item_id)
+    assignment = item?.assignments.find(assignment => assignment.id === assignment_id)
+} catch (error) {
+    data_fetching_error = error
+}
+
+const DELIVERY_CONTRACT_URL = translatePath(`/partials/deivery_contract_component?${query_string({
+    order_id: order_id,
+    item_id: item_id,
+    assignment_id: assignment_id,
+})}}`)
+
+import { query_string } from '@helpers/string';
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import DeliveryContract from '@components/blocks/DeliveryContract.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{data_fetching_error !== false ?
+    <ErrorRefetch
+        args={{
+            partial: DELIVERY_CONTRACT_URL,
+            error: data_fetching_error,
+            delay: delay,
+        }}
+    />
+    :
+    <>{order && item && assignment ?
+        <TextBox>
+            <p>{t('industry.orders.contract.leading_text')}</p>
+        </TextBox>
+
+        <DeliveryContract order={order} item={item} assignment={assignment} />
+        :
+        <TextBox>
+            <p>{t('industry.orders.contract.leading_text')}</p>
+        </TextBox>
+    }</>
+
+}

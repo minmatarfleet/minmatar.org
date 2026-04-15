@@ -1,0 +1,114 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_400_Bad_Request } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+import type { IndustryOrderUI, Alert } from '@dtypes/layout_components'
+import { mark_assignment } from '@helpers/api.minmatar.org/industry'
+
+const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '')
+let alert:Alert | null = null
+let fetch_breakdown = false
+
+if (isNaN(order_id)) {
+    return HTTP_400_Bad_Request()
+}
+
+const item_id = parseInt(Astro.url.searchParams.get('item_id') ?? '')
+const assignment_id = parseInt(Astro.url.searchParams.get('assignment_id') ?? '')
+const delivery = JSON.parse(Astro.url.searchParams.get('delivery') ?? '')
+
+if (Astro.request.method === "PATCH") {
+    fetch_breakdown =  true
+
+    try {
+        if (isNaN(item_id))
+            throw new Error(t('invalid_item_id'))
+
+        if (isNaN(assignment_id))
+            throw new Error(t('invalid_assignment_id'))
+
+        if (delivery !== true && delivery !== false)
+            throw new Error(t('invalid_delivery_state'))
+
+        await mark_assignment(
+            auth_token as string,
+            order_id,
+            item_id,
+            assignment_id,
+            delivery,
+        )
+    } catch (error) {
+        alert = {
+            title: t('mark_assignment'),
+            content: error.message,
+        }
+    }
+}
+
+import type { IndustrySingleOrder, RootSingleItem, OrderAssignment } from '@dtypes/api.minmatar.org'
+import { get_order_by_id } from '@helpers/api.minmatar.org/industry'
+
+let fetching_error: Error | false = false
+let order: IndustrySingleOrder | null = null
+let item:RootSingleItem  | undefined = undefined
+let assignment:OrderAssignment | undefined = undefined
+
+try {
+    if (isNaN(item_id))
+        throw new Error(t('invalid_item_id'), { cause: 400 })
+
+    if (isNaN(assignment_id))
+        throw new Error(t('invalid_assignment_id'), { cause: 400 })
+
+    if (delivery !== true && delivery !== false)
+        throw new Error(t('invalid_delivery_state'), { cause: 400 })
+
+    order = await get_order_by_id(order_id)
+    item = order.items.find(item => item.id === item_id)
+    assignment = item?.assignments.find(assignment => assignment.id === assignment_id)
+} catch (error) {
+    fetching_error = error
+}
+
+import { query_string } from '@helpers/string';
+const ORDER_DELIVERY_BUTTON_PARTIAL_URL = translatePath(`/partials/order_delivery_button_component?${query_string({
+    order_id: order_id,
+    item_id: item_id,
+    assignment_id: assignment_id,
+})}`)
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ShowAlert from '@components/blocks/ShowAlert.astro'
+import DeliveryButton from '@components/blocks/DeliveryButton.astro'
+import DebugTag from '@components/blocks/DebugTag.astro'
+---
+
+{alert && <ShowAlert alert={alert} /> }
+
+{fetching_error !== false ?
+    <ErrorRefetch
+        args={{
+            partial: ORDER_DELIVERY_BUTTON_PARTIAL_URL,
+            error: fetching_error,
+            delay: 0,
+        }}
+    /> :
+    <>{order && item && assignment ?
+        <DeliveryButton
+            order={order}
+            item={item}
+            assignment={assignment}
+        />
+        :
+        <DebugTag>{t('unexpected_error')}</DebugTag>
+    }</>
+}

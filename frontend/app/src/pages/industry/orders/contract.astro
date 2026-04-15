@@ -1,0 +1,128 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_400_Bad_Request } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+import { get_order_by_id } from '@helpers/api.minmatar.org/industry'
+import type { IndustrySingleOrder, RootSingleItem, OrderAssignment } from '@dtypes/api.minmatar.org'
+import type { Alert } from '@dtypes/layout_components'
+
+let order: IndustrySingleOrder | null = null
+let item:RootSingleItem  | undefined = undefined
+let assignment:OrderAssignment | undefined = undefined
+let data_fetching_error: Error | false = false
+let alert:Alert | null = null
+
+const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '0')
+const item_id = parseInt(Astro.url.searchParams.get('item_id') ?? '0')
+const assignment_id = parseInt(Astro.url.searchParams.get('assignment_id') ?? '0')
+const location_name = Astro.url.searchParams.get('location_name')
+
+try {
+    if (isNaN(order_id) || order_id < 0)
+        throw new Error(t('invalid_order_id'), { cause: 400 })
+    
+    if (isNaN(item_id) || item_id < 0)
+        throw new Error(t('invalid_item_id'), { cause: 400 })
+    
+    if (isNaN(assignment_id) || assignment_id < 0)
+        throw new Error(t('invalid_assignment_id'), { cause: 400 })
+
+    order = await get_order_by_id(order_id)
+    item = order.items.find(item => item.id === item_id)
+    assignment = item?.assignments.find(assignment => assignment.id === assignment_id)
+} catch (error) {
+    data_fetching_error = error
+}
+
+const DELIVERY_CONTRACT_URL = translatePath(`/partials/deivery_contract_component?${query_string({
+    order_id: order_id,
+    item_id: item_id,
+    assignment_id: assignment_id,
+})}}`)
+
+import {
+    get_location_video_cover,
+    get_location_video_cover_thumb,
+    get_location_cover,
+    get_location_cover_990,
+} from '@helpers/covers'
+
+import { query_string } from '@helpers/string';
+
+import Viewport from '@layouts/Viewport.astro';
+import PageDefault from '@components/page/PageDefault.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import BlockList from '@components/compositions/BlockList.astro'
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Button from '@components/blocks/Button.astro';
+import DeliveryContract from '@components/blocks/DeliveryContract.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ShowAlert from '@components/blocks/ShowAlert.astro'
+import DebugTag from '@components/blocks/DebugTag.astro'
+
+const page_title = t('industry.orders.contract.page_title');
+---
+
+<Viewport title={page_title} meta_description={t('industry.orders.contract.meta_description')}>
+    <PageDefault
+        cover={{
+			video: location_name ? get_location_video_cover(location_name) : undefined,
+			video_thumb: location_name ? get_location_video_cover_thumb(location_name) : undefined,
+            image: location_name ? get_location_cover(location_name) : '/images/industry-cover.jpg',
+            image_990: location_name ? get_location_cover_990(location_name) : '/images/industry-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        {alert && <ShowAlert alert={alert} />}
+
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <FlexInline>
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
+            </FlexInline>
+            <FlexInline>
+                <Button class="[ !hidden sm:block! ]" href={translatePath(`/industry/orders/`)}>
+                    {t('back_to_orders')}
+                </Button>
+            </FlexInline>
+        </FlexInline>
+
+        <BlockList gap='var(--space-xl)'>
+            {data_fetching_error !== false ?
+                <ErrorRefetch
+                    args={{
+                        partial: DELIVERY_CONTRACT_URL,
+                        error: data_fetching_error,
+                        delay: 0,
+                    }}
+                />
+                :
+                <>{order && item && assignment ?
+                    <TextBox>
+                        <p>{t('industry.orders.contract.leading_text')}</p>
+                    </TextBox>
+
+                    <DeliveryContract order={order} item={item} assignment={assignment} />
+                    :
+                    <DebugTag>{t('unexpected_error')}</DebugTag>
+                }</>
+            }
+        </Flexblock>
+    </PageDefault>
+</Viewport>

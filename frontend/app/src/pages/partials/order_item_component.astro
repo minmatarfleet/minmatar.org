@@ -139,6 +139,7 @@ import ShowAlert from '@components/blocks/ShowAlert.astro'
         order={order as IndustryOrderUI }
         init_tooltips={true}
         order_breakdown={fetch_breakdown ? order_breakdown : undefined}
+        location_name={order?.location.location_name}
         primary_character_id={fetch_breakdown ? primary_character_id : undefined}
     />
 }
