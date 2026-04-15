@@ -284,6 +284,10 @@ export const ui = {
         'page_finder.orders.description': 'Manufacturing orders and assignments breakdowns.',
         'page_finder.orders.history.description': 'Manufacturing orders history.',
 
+        'industry.orders.contract.page_title': 'Delivery Contract',
+        'industry.orders.contract.leading_text': 'Start creating a contract by selecting your items from your Inventory or Personal Assets, at the station specified below, right click and create contract.',
+        'industry.orders.contract.meta_description': 'Delivery contract for industry orders.',
+
         'industry.products.page_title': 'Products',
         'industry.products.leading_text': 'Products are the inputs — everything our alliance needs to keep the supply chain running. Each product is categorized as produced, harvested, or imported, and linked to the people who make or source it. Find a gap and fill it.',
         'industry.products.meta_description': 'Industry products, materials, components, and goods categorized by production strategy with live producer tracking.',
@@ -2206,5 +2210,14 @@ export const ui = {
         'my_claim': 'My claim',
         'contact_it': 'Try reloading the page. If this error persist open a ticket at [#help](https://discordapp.com/channels/1041384161505722368/1183401618943791186).',
         'become_a_trucker': 'Become a trucker',
+        'delivery_contract': 'Delivery contract',
+        'item_exchange': 'Item Exchange',
+        'back_to_orders': 'Back to orders',
+        'deliver': 'Deliver',
+        'i_will_pay': 'I will pay',
+        'i_will_receive': 'I will receive',
+        'already_delivered': 'Assignment already delivered. Revert delivery and return to this page to resubmit the delivery.',
+        'unexpected_error': 'An unexpected error ocurred.',
+        'week': 'Week',
     },
 } as const;

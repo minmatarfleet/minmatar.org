@@ -9,6 +9,7 @@ interface Props {
     order:                  IndustryOrderUI;
     order_breakdown?:       RootSingleItem[];
     primary_character_id?:  number | null;
+    location_name:          string | undefined;
     init_tooltips:          boolean;
 }
 
@@ -16,6 +17,7 @@ const {
     order,
     order_breakdown,
     primary_character_id,
+    location_name,
     init_tooltips,
 } = Astro.props
 
@@ -32,7 +34,11 @@ if (order.fulfilled_at)
 else if (time_to_deadline === 100)
     completion_tooltip = t('overdue')
 
-const ORDER_BREAKDOWN_PARTIAL_URL = `${translatePath('/partials/order_breakdown_component')}?order_id=${order.id}`
+    import { query_string } from '@helpers/string';
+const ORDER_BREAKDOWN_PARTIAL_URL = `${translatePath('/partials/order_breakdown_component')}?${query_string({
+    order_id: order.id,
+    ...(location_name && { location_name }),
+})}`
 
 import FixedFluid from "@components/compositions/FixedFluid.astro";
 import Flexblock from "@components/compositions/Flexblock.astro";
@@ -127,6 +133,7 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
                 order_id={order.id}
                 primary_character_id={primary_character_id}
                 order_breakdown={order_breakdown}
+                location_name={location_name}
                 init_tooltips={true}
             />
             :

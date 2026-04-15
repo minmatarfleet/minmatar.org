@@ -1,0 +1,187 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { IndustrySingleOrder, RootSingleItem, OrderAssignment } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    order:          IndustrySingleOrder;
+    item:           RootSingleItem;
+    assignment:     OrderAssignment;
+}
+
+const {
+    order,
+    item,
+    assignment,
+} = Astro.props
+
+const target_unit_price = parseFloat(item.target_unit_price ?? '0')
+
+import { number_thousand_separator } from '@helpers/numbers'
+
+import Context from '@components/layout/Context.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import BlockList from '@components/compositions/BlockList.astro';
+
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import TextGroup from '@components/blocks/TextGroup.astro';
+import ItemBadge from '@components/blocks/ItemBadge.astro'
+import Input from '@components/blocks/Input.astro'
+import DeliveryButton from './DeliveryButton.astro';
+---
+
+<Context
+    x-data={`{
+        quantity: ${assignment.quantity},
+        target_unit_price: ${target_unit_price},
+        tippy_instance: null,
+        number_thousand_separator(val) {
+            return val.toLocaleString('${lang}', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+            })
+        },
+        update_tooltip() {
+            const receive = this.target_unit_price * this.quantity
+            const receive_number_name = number_name(receive.toString(), '${lang}')
+            
+            if (this.tippy_instance) this.tippy_instance.destroy()
+            $el.querySelector('[data-tooltip="receive"]').classList.remove('dotted')
+
+            if (receive_number_name) {
+                $nextTick(() => {
+                    $el.querySelector('[data-tooltip="receive"]').classList.add('dotted')
+                    this.tippy_instance = tippy($el.querySelector('[data-tooltip="receive"]'), {
+                        content: receive_number_name,
+                        delay: [ 100, 200 ],
+                        arrow: true,
+                    })
+                })
+            }
+        }
+    }`}
+    x-init="update_tooltip()"
+>
+    <ComponentBlock width='narrow'>
+        <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+            <h2>{t('freight.contract.step_1_title')}</h2>
+
+            <VerticalCenter>
+                <TextGroup title={t('contract_type')}>
+                    {t('item_exchange')}
+                </TextGroup>
+            </VerticalCenter>
+
+            <VerticalCenter>
+                <TextGroup title={t('availability')}>
+                    {t('private')}
+                </TextGroup>
+            </VerticalCenter>
+
+            <VerticalCenter>
+                <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
+                    <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
+                        <h4>{t('name')}</h4>
+                        <p>{order?.character_name}</p>
+                    </Flexblock>
+                    <ClipboardButton
+                        id="copy-contract-name"
+                        class="[ hidden md:!flex relative ]"
+                    >{order?.character_name}</ClipboardButton>
+                </FlexInline>
+            </VerticalCenter>
+        </Flexblock>
+    </ComponentBlock>
+
+    <ComponentBlock width='narrow'>
+        <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+            <h2>{t('freight.contract.step_2_title')}</h2>
+            <p>{order?.location.location_name}</p>
+            <VerticalCenter>
+                <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
+                    <div class="basis-[250px]">
+                        <ItemBadge
+                            item_name={item?.eve_type_name}
+                            type_id={item?.eve_type_id}
+                            size={32}
+                        />
+                    </div>
+                    <Input
+                        type="number"
+                        size='sm'
+                        width='130px'
+                        value={assignment.quantity}
+                        min="1"
+                        max={assignment.quantity}
+                        x-model="quantity"
+                        x-on:input.debounce.250ms="update_tooltip()"
+                    />
+                </FlexInline>
+            </VerticalCenter>
+        </Flexblock>
+    </ComponentBlock>
+
+    <ComponentBlock width='narrow'>
+        <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+            <h2>{t('freight.contract.step_3_title')}</h2>
+
+            <VerticalCenter>
+                <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
+                    <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
+                        <h4>{t('i_will_pay')}</h4>
+                        <p>0.00</p>
+                    </Flexblock>
+                </FlexInline>
+            </VerticalCenter>
+
+            <VerticalCenter>
+                <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
+                    <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
+                        <h4>{t('i_will_receive')}</h4>
+                        <p>
+                            <span data-tooltip="receive" x-text="number_thousand_separator(target_unit_price * quantity)">
+                                {number_thousand_separator(target_unit_price * assignment.quantity)}
+                            </span>
+                        </p>
+                    </Flexblock>
+                    <ClipboardButton
+                        id="copy-receive"
+                        class="[ hidden md:!flex relative ]"
+                        x_value="target_unit_price * quantity"
+                    >{target_unit_price * assignment.quantity}</ClipboardButton>
+                </FlexInline>
+            </VerticalCenter>
+
+            <VerticalCenter>
+                <TextGroup title={t('expiration')}>
+                    {`1 ${t('week')}`}
+                </TextGroup>
+            </VerticalCenter>
+        </Flexblock>
+    </ComponentBlock>
+
+    <ComponentBlock width='narrow'>
+        <BlockList class="[ w-full ]" gap='var(--space-m)'>
+            <h2>{t('freight.contract.step_4_title')}</h2>
+
+            <p>{t('freight.contract.step_4_text')}</p>
+
+            <DeliveryButton
+                order={order}
+                item={item}
+                assignment={assignment}
+            />
+        </BlockList>
+    </ComponentBlock>
+</Context>
+
+<style lang="scss">
+    h3 {
+        margin-block-start: var(--space-l);
+    }
+</style>

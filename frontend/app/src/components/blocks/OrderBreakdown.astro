@@ -8,6 +8,7 @@ interface Props {
     order_id:                   number;
     primary_character_id?:      number | null;
     order_breakdown:            RootSingleItem[];
+    location_name:              string | undefined;
     init_tooltips?:             boolean;
 }
 
@@ -15,6 +16,7 @@ const {
     order_id,
     primary_character_id,
     order_breakdown,
+    location_name,
     init_tooltips = false,
 } = Astro.props
 
@@ -148,18 +150,14 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
                                 <Button
                                     size='sm'
                                     color='green'
-                                    hx-patch={`${ORDER_ITEM_PARTIAL_URL}?${query_string({
+                                    href={translatePath(`/industry/orders/contract?${query_string({
                                         order_id: order_id,
                                         item_id: item.id,
                                         assignment_id: user_assignment.id,
-                                        delivery: true,
-                                    })}`}
-                                    hx-target={`#order-item-${order_id}`}
-                                    hx-indicator=".loader"
-                                    hx-swap="outerHTML transition:true"
-                                    x-on:click="$el.setAttribute('disabled','')"
+                                        location_name: location_name,
+                                    })}`)}
                                 >
-                                    {t('mark_delivered')}
+                                    {t('deliver')}
                                 </Button> :
                                 <ButtonConfirm
                                     label={t('revert_delivery')}
