@@ -27,7 +27,6 @@ const FIX_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirec
 import { esi_token_roles } from '@dtypes/api.minmatar.org'
 
 const esi_tokens_roles = [...esi_token_roles]
-const user_selectable_esi_tokens_roles = esi_tokens_roles.filter(role => !character.requested_groups.includes(role))
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -70,7 +69,7 @@ import Tag from '@components/blocks/Tag.astro';
     
                     <Select x-model="esi_token">
                         <option value="">{t('select_group_to_add')}</option>
-                        {user_selectable_esi_tokens_roles.map(role =>
+                        {esi_tokens_roles.map(role =>
                             <option value={role}>{t(role as any) ?? role}</option>
                         )}
                     </Select>
