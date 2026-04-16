@@ -19,6 +19,7 @@ import {
     get_characters,
     get_characters_summary,
     get_character_tags,
+    get_character_esi_token,
 } from '@helpers/api.minmatar.org/characters'
 import { get_user_by_id, get_users_by_id } from '@helpers/api.minmatar.org/authentication'
 
@@ -202,6 +203,12 @@ export async function  get_tags_summary(auth_token: string) {
 
 export async function get_characters_summary_sorted(auth_token: string) {
     const character_summary = await get_characters_summary(auth_token)
+    character_summary.characters = await Promise.all(character_summary.characters.map(async (character) => {
+        const toknes_info = await get_character_esi_token(auth_token, character.character_id)
+        character.requested_groups = toknes_info.at(0)?.requested_groups ?? []
+        return character
+    }))
+    
     character_summary.characters = character_summary.characters.sort((a, b) => (Number)(b.is_primary === true) - (Number)(a.is_primary === true) || a.character_name.localeCompare(b.character_name))
     return character_summary
 }
