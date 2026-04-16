@@ -13,10 +13,8 @@ const {
     pilots,
 } = Astro.props
 
-const INDUSTRY_INDEX = esi_token_roles.indexOf('Industry')
-
-const pilots_missing_token = pilots.filter(pilot => esi_token_roles.indexOf(pilot.esi_token as ESITokenRoles) < INDUSTRY_INDEX)
-const pilots_with_token = pilots.filter(pilot => esi_token_roles.indexOf(pilot.esi_token as ESITokenRoles) >= INDUSTRY_INDEX)
+const pilots_missing_token = pilots.filter(pilot => !pilot.requested_groups.includes('Industry'))
+const pilots_with_token = pilots.filter(pilot => pilot.requested_groups.includes('Industry'))
 
 import { get_api_url, get_app_url } from '@helpers/env'
 const FIX_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/industry/industrialists/')}`
