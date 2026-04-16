@@ -2220,5 +2220,8 @@ export const ui = {
         'unexpected_error': 'An unexpected error ocurred.',
         'week': 'Week',
         'assignment_not_exist': '🔴 The assignment does not exist.',
+        'select_group_to_add': 'Select group to add',
+        'requested_groups': 'Requested groups',
+        'no_groups_requested': 'No groups has been requested.',
     },
 } as const;

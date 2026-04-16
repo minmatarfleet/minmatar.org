@@ -876,10 +876,10 @@ export interface NotificationSubscriptionsFull {
 }
 
 export interface CharacterSummary {
-    user_id:    number;
-    user_name:  string;
-    discord_id: string;
-    characters: SummaryCharacter[];
+    user_id:        number;
+    user_name:      string;
+    discord_id:     string;
+    characters:     SummaryCharacter[];
 }
 
 export const esi_token_status = [ 'ACTIVE', 'SUSPENDED' ] as const
@@ -888,26 +888,34 @@ export type ESITokenStatus = typeof esi_token_status[number]
 export const character_errors = [ 'MAIN_NOT_IN_FL33T', 'NO_TOKEN_LEVEL', 'ESI_SUSPENDED', 'NO_MAIN_SET', 'NO_TAGS' ] as const
 export type CharacterErrors = typeof character_errors[number]
 export interface SummaryCharacter {
-    character_id:   number;
-    character_name: string;
-    is_primary:     boolean;
-    corp_id:        number;
-    corp_name:      string;
-    alliance_id:    number;
-    alliance_name:  string;
-    esi_token:      string;
-    token_status:   ESITokenStatus;
-    flags:          CharacterErrors[];
+    character_id:       number;
+    character_name:     string;
+    is_primary:         boolean;
+    corp_id:            number;
+    corp_name:          string;
+    alliance_id:        number;
+    alliance_name:      string;
+    esi_token:          string;
+    token_status:       ESITokenStatus;
+    flags:              CharacterErrors[];
+    requested_groups:   string[];
 }
 
 export interface CharacterESITokens {
-    id:             number;
-    created:        Date;
-    expires:        Date;
-    can_refresh:    boolean;
-    owner_hash:     string;
-    scopes:         string[];
-    level:          string;
+    id:                 number;
+    created:            Date;
+    expires:            Date;
+    can_refresh:        boolean;
+    owner_hash:         string;
+    scopes:             string[];
+    level:              string;
+    requested_groups:   string[];
+    actual_groups:      string[];
+    requested_count:    number;
+    actual_count:       number;
+    token_state:        string;
+    requested_level:    string;
+    actual_level:       string;
 }
 
 export interface CharacterTag {

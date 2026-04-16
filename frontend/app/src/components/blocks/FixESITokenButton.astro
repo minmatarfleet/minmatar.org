@@ -24,29 +24,26 @@ const {
 import { get_api_url, get_app_url } from '@helpers/env'
 const FIX_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/account')}`
 
-const CURRENT_ESI_TOKEN = (character.esi_token ?? 'Basic').replace(' (SUSPENDED)', '') as ESITokenRoles
-const DEFAULT_REDIRECT = `${FIX_CHARACTER_URL}&token_type=${CURRENT_ESI_TOKEN}&character_id=${character.character_id}`
-
 import { esi_token_roles } from '@dtypes/api.minmatar.org'
 
-const user_selectable_esi_tokens_roles = [...esi_token_roles]
+const esi_tokens_roles = [...esi_token_roles]
+const user_selectable_esi_tokens_roles = esi_tokens_roles.filter(role => !character.requested_groups.includes(role))
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Grid from '@components/compositions/Grid.astro';
 
 import PilotBadge from '@components/blocks/PilotBadge.astro';
-import Markdown from '@components/blocks/Markdown.astro';
 import DialogButton from '@components/blocks/DialogButton.astro';
 import Button from '@components/blocks/Button.astro';
 import Select from '@components/blocks/Select.astro';
-import TutorialBadge from '@components/blocks/TutorialBadge.astro';
+import Tag from '@components/blocks/Tag.astro';
 ---
 
 <div
     x-data={`{
-        esi_token: '${CURRENT_ESI_TOKEN}',
-        redirect: '${DEFAULT_REDIRECT}',
+        esi_token: '',
+        redirect: '',
         update_fix_token_redirect() {
             this.redirect = \`${FIX_CHARACTER_URL}&token_type=\${this.esi_token}&character_id=${character.character_id}\`
         },
@@ -69,31 +66,36 @@ import TutorialBadge from '@components/blocks/TutorialBadge.astro';
                 <p>{fix ? t('fix_esi_token_dialog_text') : t('update_esi_token_dialog_text')}</p>
 
                 <Grid min_item_width="250px">
-                    <PilotBadge character_id={character.character_id} character_name={character.character_name}>
-                        <small>{`${character.esi_token ?? 'Basic'} ${t('token')}`}</small>
-                    </PilotBadge>
+                    <PilotBadge character_id={character.character_id} character_name={character.character_name} />
     
                     <Select x-model="esi_token">
+                        <option value="">{t('select_group_to_add')}</option>
                         {user_selectable_esi_tokens_roles.map(role =>
                             <option value={role}>{t(role as any) ?? role}</option>
                         )}
                     </Select>
                 </Grid>
                 
-                <TutorialBadge>
-                    <Markdown
-                        markdown={t('esi_token_wiki')}
-                        inline={true}
-                    />
-                </TutorialBadge>
+                <Flexblock gap='var(--space-2xs)'>
+                    <h4>{t('requested_groups')}</h4>
+                    {character.requested_groups.length > 0 ?
+                        <FlexInline gap='var(--space-3xs)'>
+                            {character.requested_groups.map(group =>
+                                <Tag text={group} />
+                            )}
+                        </FlexInline> :
+                        <span>{t('no_groups_requested')}</span>
+                    }
+                </Flexblock>
             </Flexblock>
 
             <FlexInline justification='flex-end'>
                 <Button
                     size='sm'
                     color='green'
-                    href={DEFAULT_REDIRECT}
                     x-bind:href="redirect"
+                    off_disable={true}
+                    x-bind:disabled="!esi_token"
                 >
                     {t('continue')}
                 </Button>
