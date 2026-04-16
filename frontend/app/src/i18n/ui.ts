@@ -2213,7 +2213,7 @@ export const ui = {
         'delivery_contract': 'Delivery contract',
         'item_exchange': 'Item Exchange',
         'back_to_orders': 'Back to orders',
-        'deliver': 'Deliver',
+        'deliver_contract': 'Deliver contract',
         'i_will_pay': 'I will pay',
         'i_will_receive': 'I will receive',
         'already_delivered': 'Assignment already delivered. Revert delivery and return to this page to resubmit the delivery.',
