@@ -115,8 +115,8 @@ import Button from '@components/blocks/Button.astro';
 import TuiEditor from '@components/blocks/TuiEditor.astro';
 import StylessTextArea from '@components/blocks/StylessTextArea.astro';
 import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro';
+import MarkdownTextArea from '@components/blocks/MarkdownTextArea.astro';
 
-import MarkdownIcon from '@components/icons/buttons/MarkdownIcon.astro';
 import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro'
 
 const page_title = post?.title ?? t('new_post')
@@ -257,20 +257,15 @@ const page_title = post?.title ?? t('new_post')
                     max_width='100%'
                 >
                     <Flexblock gap='var(--space-s)'>
-                        <Flexblock gap='0'>
-                            <StylessTextArea
+                        <TextBox>
+                            <MarkdownTextArea
                                 name="excerpt"
                                 placeholder={t('add_excerpt')}
                                 class="[ excerpt !max-h-none ]"
                                 x-model="excerpt"
-                            >{seo_description ? seo_description : undefined}</StylessTextArea>
-                            <a href="https://www.markdownguide.org/" class="[ w-fit ]" target="_blank" rel="noreferrer noopener nofollow">
-                                <FlexInline gap='var(--space-3xs)'>
-                                    <MarkdownIcon />
-                                    <small>{t('markdown_support')}</small>
-                                </FlexInline>
-                            </a>
-                        </Flexblock>
+                                is_transparent={true}
+                            >{seo_description ? seo_description : undefined}</MarkdownTextArea>
+                        </TextBox>
 
                         <FlexInlineSiblings
                             class="[ w-full ]"
