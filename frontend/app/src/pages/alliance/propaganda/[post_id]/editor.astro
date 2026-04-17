@@ -109,6 +109,7 @@ import TextBox from '@components/layout/TextBox.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
 
 import Button from '@components/blocks/Button.astro';
 import TuiEditor from '@components/blocks/TuiEditor.astro';
@@ -116,6 +117,7 @@ import StylessTextArea from '@components/blocks/StylessTextArea.astro';
 import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro';
 
 import MarkdownIcon from '@components/icons/buttons/MarkdownIcon.astro';
+import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro'
 
 const page_title = post?.title ?? t('new_post')
 ---
@@ -132,9 +134,52 @@ const page_title = post?.title ?? t('new_post')
             title: \`${title}\`,
             excerpt: \`${seo_description}\`,
             disabled_actions: true,
+            writing_mode: false,
+            post_header_display: '',
+            editor_metas_display: '',
+            post_content_paddingTop: '',
+            post_content_paddingBottom: '',
+            editor_marginTop: '',
+            prose_paddingBottom: '',
             update_disable() {
                 this.disabled_actions = this.title === ''
             },
+            enable_writing_mode() {
+                $post_header = document.querySelector('.post-header')
+                this.post_header_display = document.querySelector('.post-header').style.display
+                $post_header.style.display = 'none'
+
+                $editor_metas = document.querySelector('#editor-metas')
+                this.editor_metas_display = $editor_metas.style.display
+                $editor_metas.style.display = 'none'
+
+                $post_content = document.querySelector('.post-content > div')
+                this.post_content_paddingTop = $post_content.style.paddingTop
+                this.post_content_paddingBottom = $post_content.style.paddingBottom
+                $post_content.style.paddingTop = '0'
+                $post_content.style.paddingBottom = '0'
+                
+                $editor = document.querySelector('#editor')
+                this.editor_marginTop = $editor.style.marginTop
+                $editor.style.marginTop = '0'
+
+                $prose = document.querySelector('.toastui-editor-md-preview .prose')
+                this.prose_paddingBottom = $prose.style.paddingBottom
+                $prose.style.paddingBottom = 'var(--space-xl)'
+
+                this.writing_mode = true
+            },
+            disable_writing_mode() {
+                document.querySelector('.post-header').style.display = this.post_header_display
+                document.querySelector('#editor-metas').style.display = this.editor_metas_display
+                $post_content = document.querySelector('.post-content > div')
+                document.querySelector('.post-content > div').style.paddingTop = this.post_content_paddingTop
+                document.querySelector('.post-content > div').style.paddingBottom = this.post_content_paddingBottom
+                document.querySelector('#editor').style.marginTop = this.editor_marginTop
+                document.querySelector('.toastui-editor-md-preview .prose').style.paddingBottom = this.prose_paddingBottom
+
+                this.writing_mode = false
+            }
         }`}
         x-on:submit="$nextTick(() => {
             disabled_actions =  true
@@ -205,7 +250,12 @@ const page_title = post?.title ?? t('new_post')
             </FlexInline>
 
             <Flexblock>
-                <TextBox>
+                <Wrapper
+                    id="editor-metas"
+                    padding_inline="0"
+                    padding_block="0"
+                    max_width='100%'
+                >
                     <Flexblock gap='var(--space-s)'>
                         <Flexblock gap='0'>
                             <StylessTextArea
@@ -222,26 +272,92 @@ const page_title = post?.title ?? t('new_post')
                             </a>
                         </Flexblock>
 
-                        {error_fetching_post_tags !== false ?
-                            <span set:html={error_fetching_post_tags}></span> :
-                            <FlexInline>
-                                <label>{t('post_tags')}:</label>
-                                {post_tags.map(tag =>
-                                    <UnstyledRadioCheckButton
-                                        type='radio'
-                                        label={tag.tag}
-                                        value={tag.tag_id}
-                                        name="tag_ids"
-                                        checked={tag_ids.find(tag_id => tag_id === tag.tag_id) !== undefined ? 'checked' : undefined}
-                                    />
-                                )}
-                            </FlexInline>
-                        }
+                        <FlexInlineSiblings
+                            class="[ w-full ]"
+                            min-shink-width='250px'
+                            shrinkable-sibbling='first'
+                        >
+                            {error_fetching_post_tags !== false ?
+                                <span set:html={error_fetching_post_tags}></span> :
+                                <FlexInline>
+                                    <label>{t('post_tags')}:</label>
+                                    {post_tags.map(tag =>
+                                        <UnstyledRadioCheckButton
+                                            type='radio'
+                                            label={tag.tag}
+                                            value={tag.tag_id}
+                                            name="tag_ids"
+                                            checked={tag_ids.find(tag_id => tag_id === tag.tag_id) !== undefined ? 'checked' : undefined}
+                                        />
+                                    )}
+                                </FlexInline>
+                            }
+                            <Button
+                                type="button"
+                                size='sm'
+                                x-on:click="enable_writing_mode()"
+                            >
+                                {t('writing_mode')}
+                            </Button>
+                        </FlexInlineSiblings>
                     </Flexblock>
-                </TextBox>
+                </Wrapper>
 
                 <TuiEditor content={content} />
                 <textarea class="[ hidden ]" name="content" id="post-content" />
+
+                <div
+                    class="[ write-mode-toolbar ]"
+                    x-show="writing_mode === true"
+                >
+                    <Wrapper
+                        class="[ animate-fade-in-up ]"
+                        padding_block='var(--space-2xs)'
+                        padding_inline='var(--space-xs)'
+                    >
+                        <FlexInline>
+                            <Button
+                                class="[ hidden! lg:block! ]"
+                                size='sm'
+                                type="submit"
+                                name="action"
+                                value="draft"
+                                color='transparent'
+                                off_disable={true}
+                                x-bind:disabled="disabled_actions"
+                            >
+                                {post?.state === 'published' ?
+                                    t('switch_to_draft') :
+                                    t('save_draft')
+                                }
+                            </Button>
+
+                            <Button
+                                class="[ hidden! lg:block! ]"
+                                size='sm'
+                                type="submit"
+                                name="action"
+                                value="published"
+                                color='green'
+                                off_disable={true}
+                                x-bind:disabled="disabled_actions"
+                            >
+                                {(post_id > 0 && post?.state === 'published') ?
+                                    t('update') :
+                                    t('publish')
+                                }
+                            </Button>
+
+                            <Button
+                                type="button"
+                                size='sm'
+                                x-on:click="disable_writing_mode()"
+                            >
+                                {t('exit_writing_mode')}
+                            </Button>
+                        </FlexInline>
+                    </Wrapper>
+                </div>
 
                 {post_id > 0 &&
                     <input type="hidden" name="post_id" value={post_id} />
@@ -255,5 +371,17 @@ const page_title = post?.title ?? t('new_post')
     .excerpt,
     :global(.excerpt p) {
         font-size: var(--step-1);
+    }
+
+    .write-mode-toolbar {
+        position: fixed;
+        bottom: var(--space-2xs);
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: var(--dialog-z-index);
+
+        > div {
+            background-color: var(--component-background);
+        }
     }
 </style>

@@ -132,11 +132,10 @@ const {
     .toastui-editor-dark .toastui-editor-defaultUI-toolbar {
         border: none;
         margin-left: calc(var(--max-text-width) + var(--space-m));
-        background-color: var(--light-transparency-background-mobile);
-        
-        @media screen and (min-width: 980px) {
-            background-color: var(--light-transparency-background);
-            backdrop-filter: blur(var(--transparency-backdrop-blur));
+        background-color: var(--component-background);
+
+        @media screen and (max-width: 1800px) {
+            margin-left: 0;
         }
     }
 
@@ -180,8 +179,12 @@ const {
     }
 
     .toastui-editor-dark .toastui-editor {
-        background-color: var(--background);
-        border: solid 1px var(--border-color);
+        background-color: #eee;
+        border: none
+    }
+
+    .toastui-editor-dark .ProseMirror {
+        color: var(--background) !important;
     }
 
     .toastui-editor-dark .toastui-editor-md-container {
@@ -232,12 +235,31 @@ const {
     .toastui-editor-md-container .toastui-editor {
         position: sticky;
         top: 0;
-        min-height: 500px;
         max-height: 100vh;
         overflow-y: auto;
         flex-basis: 0;
         flex-grow: 999;
         max-width: 744px;
+        min-height: 500px;
+
+        &:before,
+        &:after {
+            content: ' ';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: var(--space-s);
+            background-color: #ccc;
+            z-index: -1;
+        }
+
+        &:before {
+            left: 0;
+        }
+
+        &:after {
+            right: 0;
+        }
 
         @media screen and (max-width: 1800px) {
             position: relative;
@@ -262,7 +284,12 @@ const {
     }
 
     .toastui-editor-defaultUI .ProseMirror {
-        padding: 60px 80px; // 5px 8px;
+        height: 100vh;
+        padding: var(--space-xl) 0;
+
+        > div {
+            padding: 0 var(--space-2xl);
+        }
     }
 
     .toastui-editor-ok-button,
