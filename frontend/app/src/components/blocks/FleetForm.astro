@@ -85,19 +85,18 @@ import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import Select from '@components/blocks/Select.astro';
-import Textarea from '@components/blocks/Textarea.astro';
 import FlatPicker from '@components/blocks/FlatPicker.astro';
 import SwitchSquare from '@components/blocks/SwitchSquare.astro';
 import StylessButton from '@components/blocks/StylessButton.astro';
 import CountdownConverter from '@components/blocks/CountdownConverter.astro';
+import Input from '@components/blocks/Input.astro'
+import MarkdownTextArea from '@components/blocks/MarkdownTextArea.astro'
 
 import StratopIcon from '@components/icons/StratopIcon.astro';
 import NonStrategicIcon from '@components/icons/NonStrategicIcon.astro';
 import TrainingIcon from '@components/icons/TrainingIcon.astro';
-import MarkdownIcon from '@components/icons/buttons/MarkdownIcon.astro';
 import RifterIcon from '@components/icons/RifterIcon.astro';
 import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
-import Input from './Input.astro'
 ---
 
 <div>
@@ -283,14 +282,8 @@ import Input from './Input.astro'
                             <Context>
                                 <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
                                     <label for="description">{t('description')}</label>
-                                    <Textarea id="description" name="description" rows="5" required>{fleet?.description}</Textarea>
+                                    <MarkdownTextArea id="description" name="description" rows="5" required>{fleet?.description}</MarkdownTextArea>
                                 </Flexblock>
-                                <a href="https://www.markdownguide.org/" class="[ w-fit ]" target="_blank" rel="noreferrer noopener nofollow">
-                                    <FlexInline gap='var(--space-3xs)'>
-                                        <MarkdownIcon />
-                                        <small>{t('markdown_support')}</small>
-                                    </FlexInline>
-                                </a>
                             </Context>
                         </Flexblock>
                     </Flexblock>

@@ -1,0 +1,54 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+interface Props {
+    is_transparent?:    boolean;
+    [propName: string]: any;
+}
+
+const {
+    is_transparent = false,
+    ...attributes
+} = Astro.props;
+
+import StylessTextArea from '@components/blocks/StylessTextArea.astro';
+import Textarea from '@components/blocks/Textarea.astro';
+
+import MarkdownIcon from '@components/icons/buttons/MarkdownIcon.astro';
+---
+
+<div class:list={[ 'markdown-textarea', { is_transparent: is_transparent } ]}>
+    {is_transparent ?
+        <StylessTextArea {...attributes}><slot /></StylessTextArea> :
+        <Textarea {...attributes}><slot /></Textarea>
+    }
+    <a
+        href="https://www.markdownguide.org/"
+        class="[ w-fit ]"
+        target="_blank"
+        rel="noreferrer noopener nofollow"
+        data-tippy-content={t('markdown_support')}
+    >
+        <MarkdownIcon />
+    </a>
+</div>
+
+<style lang="scss">
+    .markdown-textarea {
+        position: relative;
+        display: flex;
+
+        &.is_transparent:focus-within {
+            background-color: var(--border-color-hover);
+        }
+    }
+
+    a {
+        position: absolute;
+        right: var(--space-3xs);
+        bottom: var(--space-3xs);
+        display: block;
+        height: 24px;
+    }
+</style>
