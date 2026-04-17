@@ -131,7 +131,7 @@ const {
 
     .toastui-editor-dark .toastui-editor-defaultUI-toolbar {
         border: none;
-        margin-left: calc(var(--max-text-width) + var(--space-m));
+        margin-left: calc(var(--max-text-width) + var(--space-m) + 1px);
         background-color: var(--component-background);
 
         @media screen and (max-width: 1800px) {
@@ -371,9 +371,6 @@ const {
 
     .toastui-editor-popup {
         border: none !important;
-        background-color: var(--light-transparency-background) !important;
-        backdrop-filter: blur(var(--transparency-backdrop-blur));
-        border: solid 1px var(--border-color) !important;
     }
 
     .toastui-editor-popup-add-link .toastui-editor-popup-body, .toastui-editor-popup-add-image .toastui-editor-popup-body {
