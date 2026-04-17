@@ -2223,5 +2223,7 @@ export const ui = {
         'select_group_to_add': 'Select group to add',
         'requested_groups': 'Requested groups',
         'no_groups_requested': 'No groups has been requested.',
+        'writing_mode': 'Writing Mode',
+        'exit_writing_mode': 'Exit Writing Mode',
     },
 } as const;

@@ -137,7 +137,7 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
             ${RifterAnimationXData}
             ${InitXData}
 		}`}
-		x-on:scroll.window.throttle.750ms={`
+		x-on:scroll.window.debounce.750ms={`
 			setTimeout(() => {
 				post_header = document.querySelector('.post-header')
 				post_header_height = post_header ? post_header.offsetHeight : 0
