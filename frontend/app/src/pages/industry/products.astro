@@ -111,6 +111,7 @@ const page_title = t('industry.products.page_title');
                     x-model="item_name_filter"
                     x-on:keyup="setTimeout(function () { products_count = countVisibleElements('.product-item') })"
                     x-init="$el.focus()"
+                    width='250px'
                 >
                     <MagnifierIcon slot="icon" />
                 </Input>

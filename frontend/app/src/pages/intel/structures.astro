@@ -108,6 +108,7 @@ const page_title = t('intel.structures.page_title');
                     placeholder={t('search')}
                     x-model="structure_name_filter"
                     x-on:keyup="setTimeout(function () { structure_count = document.querySelectorAll('.structure-item:not([style])').length })"
+                    width='250px'
                 >
                     <MagnifierIcon slot="icon" />
                 </Input>
