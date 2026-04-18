@@ -18,6 +18,8 @@ const {
 
 const target_unit_price = parseFloat(item.target_unit_price ?? '0')
 
+const no_contract_to = order?.contract_to || order?.contract_to === ''
+
 import { number_thousand_separator } from '@helpers/numbers'
 
 import Context from '@components/layout/Context.astro';
@@ -87,12 +89,23 @@ import DeliveryButton from './DeliveryButton.astro';
                 <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
                     <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
                         <h4>{t('name')}</h4>
-                        <p>{order?.contract_to}</p>
+                        <p>
+                            <span
+                                data-tippy-content={no_contract_to ?
+                                    t('not_available_ask_indy_tooltip').replace('{contractor}', order?.character_name) :
+                                    undefined
+                                }
+                            >
+                                {no_contract_to ? t('not_available') : order.contract_to}
+                            </span>
+                        </p>
                     </Flexblock>
-                    <ClipboardButton
-                        id="copy-contract-name"
-                        class="[ hidden md:!flex relative ]"
-                    >{order?.contract_to}</ClipboardButton>
+                    {!no_contract_to &&
+                        <ClipboardButton
+                            id="copy-contract-name"
+                            class="[ hidden md:!flex relative ]"
+                        >{order?.contract_to}</ClipboardButton>
+                    }
                 </FlexInline>
             </VerticalCenter>
         </Flexblock>
