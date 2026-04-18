@@ -2225,5 +2225,6 @@ export const ui = {
         'no_groups_requested': 'No groups has been requested.',
         'writing_mode': 'Writing Mode',
         'exit_writing_mode': 'Exit Writing Mode',
+        'not_available_ask_indy_tooltip': 'Contact {contractor} in #industry (Discord) to clarify where items should be assigned.',
     },
 } as const;
