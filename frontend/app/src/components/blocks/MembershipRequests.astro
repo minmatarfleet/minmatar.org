@@ -22,7 +22,7 @@ import Table from '@components/blocks/Table.astro';
 
 {requests.length > 0 &&
     <Flexblock gap='var(--space-l)'>
-        <h3 class="[ group-title ]">{t('membership_requests')}</h3>
+        <h4 class="[ group-title ]">{t('membership_requests')}</h4>
 
         <Table>
             {requests.map(request =>
@@ -38,9 +38,5 @@ import Table from '@components/blocks/Table.astro';
 <style lang="scss">
     :not([style="display: none;"]) ~ .no-result-text {
         display: none;
-    }
-
-    .group-title {
-        font-size: var(--step-1);
     }
 </style>

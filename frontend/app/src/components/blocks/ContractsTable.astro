@@ -114,7 +114,7 @@ import Table from '@components/blocks/Table.astro';
 
     <Flexblock gap='var(--space-2xl)'>
         <Flexblock gap='var(--space-l)'>
-            <h3 class="[ group-title ]">{t('expected_fittings')}</h3>
+            <h4 class="[ group-title ]">{t('expected_fittings')}</h4>
             <Table>
                 {sorted_contracts_with_expectations.map((fitting) =>
                     <div x-show="show_item($el)">
@@ -125,7 +125,7 @@ import Table from '@components/blocks/Table.astro';
             </Table>
         </Flexblock>
         <Flexblock gap='var(--space-l)'>
-            <h3 class="[ group-title ]">{t('other_fittings_seeded_at_station')}</h3>
+            <h4 class="[ group-title ]">{t('other_fittings_seeded_at_station')}</h4>
             <Table>
                 {sorted_contracts_without_expectations.map((fitting) =>
                     <div x-show="show_item($el)">
@@ -141,9 +141,5 @@ import Table from '@components/blocks/Table.astro';
 <style lang="scss">
     :not([style="display: none;"]) ~ .no-result-text {
         display: none;
-    }
-
-    .group-title {
-        font-size: var(--step-1);
     }
 </style>
