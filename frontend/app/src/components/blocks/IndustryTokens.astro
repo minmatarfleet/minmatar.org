@@ -29,7 +29,7 @@ import Button from '@components/blocks/Button.astro';
 <Flexblock gap='var(--space-xl)'>
     {pilots_missing_token.length > 0 &&
         <Flexblock gap='var(--space-l)'>
-            <h3 class="[ group-title ]">{t('pilots_missing_industry_token')}</h3>
+            <h4 class="[ group-title ]">{t('pilots_missing_industry_token')}</h4>
 
             <Flexblock gap='var(--space-l)'>
                 {pilots_missing_token.map(pilot =>
@@ -57,7 +57,7 @@ import Button from '@components/blocks/Button.astro';
 
     {pilots_with_token.length > 0 &&
         <Flexblock gap='var(--space-l)'>
-            <h3 class="[ group-title ]">{t('pilots_with_industry_token')}</h3>
+            <h4 class="[ group-title ]">{t('pilots_with_industry_token')}</h4>
 
             <Flexblock gap='var(--space-l)'>
                 {pilots_with_token.map(pilot =>
@@ -73,9 +73,3 @@ import Button from '@components/blocks/Button.astro';
         </Flexblock>
     }
 </Flexblock>
-
-<style lang="scss">
-    .group-title {
-        font-size: var(--step-1);
-    }
-</style>

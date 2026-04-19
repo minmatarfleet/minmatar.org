@@ -25,7 +25,7 @@ import PilotBadge from '@components/blocks/PilotBadge.astro';
 
 {leaders.length > 0 &&
     <Flexblock gap='var(--space-l)'>
-            <h3 class="[ group-title ]">{t('group_leadership')}</h3>
+        <h4 class="[ group-title ]">{t('group_leadership')}</h4>
 
         <FlexInline>
             {leaders.map((tribe_leader, index) =>
@@ -47,9 +47,5 @@ import PilotBadge from '@components/blocks/PilotBadge.astro';
 <style lang="scss">
     :not([style="display: none;"]) ~ .no-result-text {
         display: none;
-    }
-
-    .group-title {
-        font-size: var(--step-1);
     }
 </style>

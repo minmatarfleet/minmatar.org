@@ -25,7 +25,7 @@ import Table from '@components/blocks/Table.astro';
 
 <Flexblock gap='var(--space-2xl)'>
     <Flexblock gap='var(--space-l)'>
-        <h3 class="[ group-title ]">{t('harvest_summary')}</h3>
+        <h4 class="[ group-title ]">{t('harvest_summary')}</h4>
         <Table>
             {harvest.map((resource) =>
                 <div x-show="show_item($el)">
@@ -40,7 +40,7 @@ import Table from '@components/blocks/Table.astro';
     </Flexblock>
 
     <Flexblock gap='var(--space-l)'>
-        <h3 class="[ group-title ]">{t('production_summary')}</h3>
+        <h4 class="[ group-title ]">{t('production_summary')}</h4>
         <Table>
             {production.map((resource) =>
                 <div x-show="show_item($el)">
@@ -58,9 +58,5 @@ import Table from '@components/blocks/Table.astro';
 <style lang="scss">
     :not([style="display: none;"]) ~ .no-result-text {
         display: none;
-    }
-
-    .group-title {
-        font-size: var(--step-1);
     }
 </style>
