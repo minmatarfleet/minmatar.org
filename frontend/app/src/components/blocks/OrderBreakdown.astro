@@ -105,7 +105,7 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
                         </FixedFluid>
                     </div>
 
-                    <FlexInline class="[ basis-[230px] ]" justification='space-between'>
+                    <FlexInline class="[ basis-[230px] ]" gap='0'>
                         <div class="[ basis-[140px] pr-[30px]! ]">
                             <Progress
                                 class:list={[ 'w-full' ]}
@@ -121,14 +121,9 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
 
                         <div class="[ basis-[60px] ]">
                             {item.quantity > 0 &&
-                                <span class:list={[
-                                        { 'text-status-point-6': completion >= 50 },
-                                        { 'text-status-point-4': completion >= 10 && completion < 50 },
-                                        { 'text-red': completion >= 0 && completion < 10 },
-                                    ]}
-                                >
+                                <small>
                                     {completion.toFixed(0)}%
-                                </span>
+                                </small>
                             }
                         </div>
                     </FlexInline>

@@ -103,33 +103,30 @@ import Tag from '@components/blocks/Tag.astro';
         }
     </FlexInline>
 
-    <Flexblock class="[ basis-[80px] ]">
-        {(no_expectation_progress || expected_quantity > 0) &&
-            <Progress
-                class:list={[ 'w-full', { danger: low_amount }, { disabled: expected_quantity === 0 } ]}
-                max="100"
-                value={completion > 0 ? completion : 0.1}
-                data-tippy-content={expected_quantity > 0 ? `${completion.toFixed(0)}%` : t('no_expectation')}
-                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                style={`--progress-color: var(${progress_color}); --progress-glow-color: var(${progress_color});`}
-            >
-                {completion.toFixed(2)}%
-            </Progress>
-        }
-    </Flexblock>
+    <FlexInline class="[ basis-[230px] ]" gap='0'>
+        <div class="[ basis-[140px] pr-[30px]! ]">
+            {(no_expectation_progress || expected_quantity > 0) &&
+                <Progress
+                    class:list={[ 'w-full', { danger: low_amount }, { disabled: expected_quantity === 0 } ]}
+                    max="100"
+                    value={completion > 0 ? completion : 0.1}
+                    data-tippy-content={expected_quantity > 0 ? `${completion.toFixed(0)}%` : t('no_expectation')}
+                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                    style={`--progress-color: var(${progress_color}); --progress-glow-color: var(${progress_color});`}
+                >
+                    {completion.toFixed(2)}%
+                </Progress>
+            }
+        </div>
 
-    <Flexblock class="[ basis-[120px] ]">
-        {expected_quantity > 0 &&
-            <span class:list={[
-                    { 'text-status-point-6': completion >= 50 },
-                    { 'text-status-point-4': completion >= 10 && completion < 50 },
-                    { 'text-red': completion >= 0 && completion < 10 },
-                ]}
-            >
-                {completion.toFixed(0)}%
-            </span>
-        }
-    </Flexblock>
+        <div class="[ basis-[60px] ]">
+            {expected_quantity > 0 &&
+                <small>
+                    {completion.toFixed(0)}%
+                </small>
+            }
+        </div>
+    </FlexInline>
 
     {!is_baseline && markup_pct != null && 
         <Tag
