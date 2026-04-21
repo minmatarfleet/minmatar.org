@@ -21,20 +21,28 @@ const {
     init_tooltips,
 } = Astro.props
 
-import { format_date, format_date_short, get_date_progress_percent } from '@helpers/date'
+import {
+    format_date_short,
+    get_date_progress_percent,
+    humanize_date_diff_single,
+    from_to_text
+} from '@helpers/date'
 
 const time_to_deadline = !order.fulfilled_at ?
                          get_date_progress_percent(order.created_at, `${order.needed_by}T23:59:59.999Z`) :
                          get_date_progress_percent(order.created_at, `${order.needed_by}T23:59:59.999Z`, order.fulfilled_at)
 
-let completion_tooltip = t('deadline_percent').replace('{percent}', String(time_to_deadline.toFixed(0)))
+let completion_text = ''
+
+if (time_to_deadline < 100)
+    completion_text = t('time_to_deadline').replace('{time}', humanize_date_diff_single(lang, new Date(), order.needed_by)).replace('{percent}', time_to_deadline.toFixed(0))
+else
+    completion_text = t('time_overdue').replace('{time}', humanize_date_diff_single(lang, order.needed_by, new Date()))
 
 if (order.fulfilled_at)
-    completion_tooltip = t('completed_percent').replace('{date}', format_date_short(lang, order.fulfilled_at))
-else if (time_to_deadline === 100)
-    completion_tooltip = t('overdue')
+    completion_text = t('completed_percent').replace('{date}', format_date_short(lang, order.fulfilled_at))
 
-    import { query_string } from '@helpers/string';
+import { query_string } from '@helpers/string';
 const ORDER_BREAKDOWN_PARTIAL_URL = `${translatePath('/partials/order_breakdown_component')}?${query_string({
     order_id: order.id,
     ...(location_name && { location_name }),
@@ -45,7 +53,6 @@ import Flexblock from "@components/compositions/Flexblock.astro";
 import FlexInline from "@components/compositions/FlexInline.astro";
 
 import PilotBadge from "@components/blocks/PilotBadge.astro";
-import Progress from "@components/blocks/Progress.astro";
 import ProducersList from '@components/blocks/ProducersList.astro';
 import ItemPicture from '@components/blocks/ItemPicture.astro';
 import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
@@ -70,7 +77,7 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
                 </PilotBadge>
             </div>
             <FlexInline justification='space-between'>
-                <div class="[ basis-[315px] ]">
+                <div class="[ basis-[425px] ]">
                     <FixedFluid width='32px' gap='var(--space-2xs)' breakpoint='30%' class="[  items-center! ]">
                         <div
                             class="[ text-highlight h-[32px] ]"
@@ -97,27 +104,21 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
                         </FlexInline>
                     </FixedFluid>
                 </div>
-                <Flexblock class="[ basis-[320px] pr-10 ]" gap='var(--space-3xs)'>
+                <Flexblock class="[ basis-[230px] pr-10 ]" gap='var(--space-3xs)'>
                     <FlexInline justification='space-between'>
-                        <small>{format_date(lang, order.created_at)}</small>
-                        <small>{format_date(lang, order.needed_by)}</small>
-                    </FlexInline>
-                    <div class="[ timeline ]">
-                        <Progress
+                        <small
+                            data-tippy-content={from_to_text(lang, order.created_at, new Date(`${order.needed_by}T23:59:59.999Z`))}
+                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
                             class:list={[
-                                'w-full',
-                                { success: order.fulfilled_at },
-                                { danger: !order.fulfilled_at && time_to_deadline > 90 }
+                                { 'text-highlight': order.fulfilled_at },
+                                { 'text-red': !order.fulfilled_at && time_to_deadline > 90 }
                             ]}
-                            max="100"
-                            value={time_to_deadline}
-                            data-tippy-content={completion_tooltip}
                         >
-                            {completion_tooltip}
-                        </Progress>
-                    </div>
+                            {completion_text}
+                        </small>
+                    </FlexInline>
                 </Flexblock>
-                <div class="[ basis-[240px] ]">
+                <div class="[ basis-[220px] ]">
                     <ProducersList
                         character_producers={order.assigned_to}
                         init_tooltips={init_tooltips}
