@@ -319,6 +319,14 @@ import Markdown from '@components/blocks/Markdown.astro';
             "rigs empty med"
             "low low low";
 
+        .high,
+        .rigs,
+        .med,
+        .low {
+            position: relative;
+            z-index: 1;
+        }
+
         .high {
             grid-area: high;
             pointer-events: all;
@@ -335,7 +343,9 @@ import Markdown from '@components/blocks/Markdown.astro';
             display: flex;
             justify-content: center;
             align-items: center;
-            position: relative;
+            grid-row: 1 / -1;
+            grid-column: 1 / -1;
+            z-index: 0;
         }
 
         .med {
