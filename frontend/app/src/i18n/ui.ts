@@ -2229,6 +2229,6 @@ export const ui = {
         'time_to_deadline': '{time} left ({percent}%)',
         'time_overdue': '{time} overdue',
         'minutes': 'minutes',
-        'needed_at': 'Needed by',
+        'needed_by': 'Needed by',
     },
 } as const;
