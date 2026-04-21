@@ -117,7 +117,6 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
                         x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
                         class:list={[
                             'w-fit',
-                            { 'text-highlight': order.fulfilled_at },
                             { 'text-red': !order.fulfilled_at && time_to_deadline > 90 }
                         ]}
                     >
