@@ -59,6 +59,7 @@ import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
 import OrderBreakdown from '@components/blocks/OrderBreakdown.astro'
 
 import IndustryIcon from '@components/icons/IndustryIcon.astro';
+import FlagIcon from '@components/icons/FlagIcon.astro';
 ---
 
 <CollapsibleBlock
@@ -110,19 +111,28 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
                         init_tooltips={init_tooltips}
                     />
                 </div>
-                <Flexblock class="[ basis-[240px] ]" gap='var(--space-3xs)'>
-                    <h4>🚩 {format_date_short(lang, order.needed_by)}</h4>
-                    <small
-                        data-tippy-content={from_to_text(lang, order.created_at, new Date(`${order.needed_by}T23:59:59.999Z`))}
+                <FlexInline class="[ basis-[240px] ]" gap='var(--space-3xs)'>
+                    <div
+                        class="[ text-highlight h-[32px] ]"
+                        data-tippy-content={t('needed_by')}
                         x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                        class:list={[
-                            'w-fit',
-                            { 'text-red': !order.fulfilled_at && time_to_deadline > 90 }
-                        ]}
                     >
-                        {completion_text}
-                    </small>
-                </Flexblock>
+                        <FlagIcon size={32} />
+                    </div>
+                    <Flexblock gap='var(--space-3xs)'>
+                        <h4>{format_date_short(lang, order.needed_by)}</h4>
+                        <small
+                            data-tippy-content={from_to_text(lang, order.created_at, new Date(`${order.needed_by}T23:59:59.999Z`))}
+                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                            class:list={[
+                                'w-fit',
+                                { 'text-red': !order.fulfilled_at && time_to_deadline > 90 }
+                            ]}
+                        >
+                            {completion_text}
+                        </small>
+                    </Flexblock>
+                </FlexInline>
             </FlexInline>
         </FixedFluid>
     </div>

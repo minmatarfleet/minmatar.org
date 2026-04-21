@@ -2226,8 +2226,9 @@ export const ui = {
         'writing_mode': 'Writing Mode',
         'exit_writing_mode': 'Exit Writing Mode',
         'not_available_ask_indy_tooltip': 'Contact {contractor} in #industry (Discord) to clarify where items should be assigned.',
-        'time_to_deadline': '{time} to deadline ({percent}%)',
+        'time_to_deadline': '{time} left ({percent}%)',
         'time_overdue': '{time} overdue',
         'minutes': 'minutes',
+        'needed_at': 'Needed by',
     },
 } as const;
