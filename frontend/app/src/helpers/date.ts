@@ -52,8 +52,35 @@ export const humanize_date_diff = (locale:Locales, from:Date, to:Date):string =>
     
     if (duration.days() > 0)
         durations.push(`${duration.days()} ${duration.days() != 1 ? t('days').toLowerCase() : t('day').toLowerCase() }`)
-    
+
     return semantic_list(locale, durations)
+}
+
+export const humanize_date_diff_single = (locale:Locales, from:Date, to:Date):string => {
+    const t = useTranslations(locale)
+    var from_moment = moment(new Date(from))
+    var to_moment = moment(new Date(to))
+    const duration = moment.duration(to_moment.diff(from_moment))
+    
+    if (duration.years() > 0)
+        return `${duration.years()} ${duration.years() != 1 ? t('years') : t('year') }`
+    
+    if (duration.months() > 0)
+        return `${duration.months()} ${duration.months() != 1 ? t('months') : t('month') }`
+    
+    if (duration.days() > 0)
+        return `${duration.days()} ${duration.days() != 1 ? t('days').toLowerCase() : t('day').toLowerCase() }`
+    
+    if (duration.hours() > 0)
+        return `${duration.hours()} ${duration.hours() != 1 ? t('hours').toLowerCase() : t('hour').toLowerCase() }`
+    
+    if (duration.minutes() > 0)
+        return `${duration.minutes()} ${duration.minutes() != 1 ? t('minutes').toLowerCase() : t('minute').toLowerCase() }`
+    
+    if (duration.seconds() > 0)
+        return `${duration.seconds()} ${duration.seconds() != 1 ? t('seconds').toLowerCase() : t('second').toLowerCase() }`
+
+    return t('just_now')
 }
 
 export const minutes_to = (datetime:Date):number => {
@@ -94,7 +121,7 @@ export const year_diff = (from:Date, to:Date):number => {
 export const from_to_text = (locale:Locales = 'en', from:Date, to:Date):string => {
     const t = useTranslations(locale);
 
-    return `${format_date_short(locale, from)} ${t('to')} ${format_date_short(locale, to)} (${days_diff_text(locale, from, to)})`
+    return `${format_date_short(locale, from)} ${t('to')} ${format_date_short(locale, to)} (${humanize_date_diff_single(locale, from, to)})`
 }
 
 export const from_to_now_text = (locale:Locales = 'en', from:Date):string => {

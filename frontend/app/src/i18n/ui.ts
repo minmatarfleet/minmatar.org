@@ -1900,7 +1900,7 @@ export const ui = {
         'order': 'Order',
         'contractor': 'Contractor',
         'deadline_percent': '{percent}% to deadline',
-        'completed_percent': 'Fulfilled on {date}',
+        'completed_percent': 'Completed on {date}',
         'overdue': 'Overdue',
         'no_manufacturing_orders': 'There are no currently manufacturing orders.',
         'material_requirements': 'Material requirements',
@@ -2226,5 +2226,8 @@ export const ui = {
         'writing_mode': 'Writing Mode',
         'exit_writing_mode': 'Exit Writing Mode',
         'not_available_ask_indy_tooltip': 'Contact {contractor} in #industry (Discord) to clarify where items should be assigned.',
+        'time_to_deadline': '{time} to deadline ({percent}%)',
+        'time_overdue': '{time} overdue',
+        'minutes': 'minutes',
     },
 } as const;
