@@ -1,0 +1,32 @@
+---
+interface Props {
+    size?:      number;
+    xlink?:     string;
+}
+
+const {
+    size = 128,
+    xlink,
+} = Astro.props
+---
+
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="25 20 78 94"
+    fill="currentColor"
+    width={size}
+    height={size}
+>
+    {xlink ?
+        <use xlink:href={xlink}></use> :
+        <path
+            d="M57.063 44.513c-11.651 3.274-23.875 7.46-31.673 4.657.23.48.479.93.726 1.393 7.009 10.631 12.384 10.095 18.727 9.561 6.225-.525 13.382-1.05 23.931 8.971l24.519-34.396c-10.671-10.293-18.579-8.512-25.478-6.73-7.163 1.848-13.239 3.697-20.19-7.969-4.879 18.313 9.438 24.513 9.438 24.513"
+            fill="currentColor"
+        />
+        
+        <path
+            d="M102.61 40.728L49.497 114l-5.166-1.806 53.753-75.139z"
+            fill="currentColor"
+        />
+    }
+</svg>
