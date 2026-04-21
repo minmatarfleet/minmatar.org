@@ -104,7 +104,13 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
                         </FlexInline>
                     </FixedFluid>
                 </div>
-                <Flexblock class="[ basis-[270px] ]" gap='var(--space-3xs)'>
+                <div class="[ basis-[250px] ]">
+                    <ProducersList
+                        character_producers={order.assigned_to}
+                        init_tooltips={init_tooltips}
+                    />
+                </div>
+                <Flexblock class="[ basis-[240px] ]" gap='var(--space-3xs)'>
                     <h4>🚩 {format_date_short(lang, order.needed_by)}</h4>
                     <small
                         data-tippy-content={from_to_text(lang, order.created_at, new Date(`${order.needed_by}T23:59:59.999Z`))}
@@ -118,12 +124,6 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
                         {completion_text}
                     </small>
                 </Flexblock>
-                <div class="[ basis-[220px] ]">
-                    <ProducersList
-                        character_producers={order.assigned_to}
-                        init_tooltips={init_tooltips}
-                    />
-                </div>
             </FlexInline>
         </FixedFluid>
     </div>
