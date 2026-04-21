@@ -104,19 +104,19 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
                         </FlexInline>
                     </FixedFluid>
                 </div>
-                <Flexblock class="[ basis-[230px] pr-10 ]" gap='var(--space-3xs)'>
-                    <FlexInline justification='space-between'>
-                        <small
-                            data-tippy-content={from_to_text(lang, order.created_at, new Date(`${order.needed_by}T23:59:59.999Z`))}
-                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                            class:list={[
-                                { 'text-highlight': order.fulfilled_at },
-                                { 'text-red': !order.fulfilled_at && time_to_deadline > 90 }
-                            ]}
-                        >
-                            {completion_text}
-                        </small>
-                    </FlexInline>
+                <Flexblock class="[ basis-[270px] ]" gap='var(--space-3xs)'>
+                    <h4>🚩 {format_date_short(lang, order.needed_by)}</h4>
+                    <small
+                        data-tippy-content={from_to_text(lang, order.created_at, new Date(`${order.needed_by}T23:59:59.999Z`))}
+                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                        class:list={[
+                            'w-fit',
+                            { 'text-highlight': order.fulfilled_at },
+                            { 'text-red': !order.fulfilled_at && time_to_deadline > 90 }
+                        ]}
+                    >
+                        {completion_text}
+                    </small>
                 </Flexblock>
                 <div class="[ basis-[220px] ]">
                     <ProducersList
