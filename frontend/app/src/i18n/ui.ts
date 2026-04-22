@@ -2230,5 +2230,6 @@ export const ui = {
         'time_overdue': '{time} overdue',
         'minutes': 'minutes',
         'needed_by': 'Needed by',
+        'weeks': 'Weeks',
     },
 } as const;
