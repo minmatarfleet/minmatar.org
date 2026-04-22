@@ -25,22 +25,28 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
     </FixedFluid>
     <div class="[ prose ]">
         {!is_contract_page &&
-            <h3>{t('freight.calculator.faq_4_title')}</h3>
+            <h4>{t('freight.calculator.faq_4_title')}</h4>
             <Markdown
                 markdown={t('freight.calculator.faq_4_text')}
                 inline={true}
             />
         }
         {is_contract_page &&
-            <h3>{t('freight.contract.faq_1_title')}</h3>
+            <h4>{t('freight.contract.faq_1_title')}</h4>
             <p>{t('freight.contract.faq_1_text')}</p>
         }
-        <h3>{t('freight.calculator.faq_1_title')}</h3>
+        <h4>{t('freight.calculator.faq_1_title')}</h4>
         <p>{t('freight.calculator.faq_1_text')}</p>
-        <h3>{t('freight.calculator.faq_3_title')}</h3>
+        <h4>{t('freight.calculator.faq_3_title')}</h4>
         <Markdown
             markdown={t('freight.calculator.faq_3_text')}
             inline={true}
         />
     </div>
 </Flexblock>
+
+<style lang="scss">
+    h4 {
+        font-size: 1rem;
+    }
+</style>
