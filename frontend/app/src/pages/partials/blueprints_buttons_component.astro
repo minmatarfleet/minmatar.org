@@ -1,0 +1,49 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { Blueprint } from '@dtypes/api.minmatar.org'
+import { fetch_blueprints } from '@helpers/fetching/industry'
+
+const item_name = Astro.url.searchParams.get('item_name') as string
+
+let originals:Blueprint[] = []
+let copies:Blueprint[] = []
+let fetching_error:Error | false = false
+
+try {
+    if (!item_name)
+        throw new Error(t('invalid_blueprint_query'), { cause: 400 })
+
+    originals = await fetch_blueprints(item_name, false)
+    copies = await fetch_blueprints(item_name, true)
+} catch (error) {
+    fetching_error = error
+}
+
+import { query_string } from '@helpers/string';
+
+const BLUEPRINTS_BUTTONS_PARTIAL_URL = translatePath(`/partials/blueprints_buttons_component?${query_string({
+    item_name: item_name
+})}`)
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '5')
+
+import BlueprintsButtons from '@components/blocks/BlueprintsButtons.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{fetching_error !== false ?
+    <ErrorRefetch
+        args={{
+            partial:BLUEPRINTS_BUTTONS_PARTIAL_URL,
+            error: fetching_error,
+            delay: delay,
+        }}
+    /> :
+    <BlueprintsButtons
+        item_name={item_name}
+        originals={originals}
+        copies={copies}
+    />
+}

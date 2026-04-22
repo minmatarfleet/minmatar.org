@@ -2,6 +2,22 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
+import type { Blueprint } from '@dtypes/api.minmatar.org'
+import { fetch_blueprints } from '@helpers/fetching/industry'
+
+const blueprint_query = Astro.url.searchParams.get('blueprint_query') as string ?? ''
+
+let blueprints:Blueprint[] = []
+let fetching_error:string | false = false
+
+if (blueprint_query) {
+    try {
+        blueprints = await fetch_blueprints(blueprint_query, false)
+    } catch (error) {
+        fetching_error = error.message
+    }
+}
+
 const BLUEPRINTS_PARTIAL_URL = translatePath('/partials/blueprints_component')
 
 import Viewport from '@layouts/Viewport.astro';
@@ -38,9 +54,9 @@ const page_title = t('industry.blueprints.page_title');
         }}
         sticky={true}
         x-data={`{
-            blueprints: [],
+            blueprints: ${JSON.stringify(blueprints)},
             blueprints_sorted: [],
-            blueprint_query: '',
+            blueprint_query: '${blueprint_query}',
             item_listing_limit: $persist(1000),
             showing_results: false,
             LOCATION_TEXT: {
@@ -69,6 +85,7 @@ const page_title = t('industry.blueprints.page_title');
                     this.blueprints_sorted = this.blueprints_sorted.sort((a, b) => (b.material_efficiency + b.time_efficiency) - (a.material_efficiency + a.time_efficiency))
             },
         }`}
+        x-init={blueprint_query ? 'filter()' : undefined}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <PageTitle>
@@ -205,7 +222,11 @@ const page_title = t('industry.blueprints.page_title');
 
             <BlueprintTableAlpine
                 is_copy={false}
-            />
+            >
+                {fetching_error &&
+                    <p class="[ w-fit! animate-rubber-band ]">⚠️ {fetching_error}</p>
+                }
+            </BlueprintTableAlpine>
         </Flexblock>
     </PageWide>
 

@@ -129,6 +129,13 @@ const page_title = t('freight_contracts.page_title');
             >
                 {t('view_contract_history')}
             </Button>
+
+            <Button
+                href={translatePath('/market/freight/calculator/')}
+                size='sm'
+            >
+                {t('freight.calculator.page_title')}
+            </Button>
         </FlexInline>
 
         {fetching_error !== false ?
