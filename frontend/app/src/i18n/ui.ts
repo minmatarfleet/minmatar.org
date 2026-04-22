@@ -2231,5 +2231,13 @@ export const ui = {
         'minutes': 'minutes',
         'needed_by': 'Needed by',
         'weeks': 'Weeks',
+        'find_blueprint': 'Find blueprint',
+        'item_blueprint_template': '{item} blueprints',
+        'fetching_blueprints': 'Fetching blueprints',
+        'no_blueprints_found': 'No blueprint for this item was found among our members’ assets.',
+        'invalid_blueprint_query': 'The item name is not valid.',
+        'blueprint_originals': 'Blueprint originals',
+        'blueprint_copies': 'Blueprint copies',
+        'blueprints': 'Blueprints',
     },
 } as const;

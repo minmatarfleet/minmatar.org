@@ -1,0 +1,68 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { RootSingleItem } from '@dtypes/api.minmatar.org'
+import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
+
+interface Props {
+    item_name:      string;
+    size?:          ButtonSizes;
+    hidden?:        boolean;
+    id?:            string;
+}
+
+const {
+    item_name,
+    size = 'sm',
+    hidden = false,
+    id,
+} = Astro.props
+
+import { query_string } from '@helpers/string';
+
+const BLUEPRINTS_BUTTONS_PARTIAL_URL = translatePath(`/partials/blueprints_buttons_component?${query_string({
+    item_name: item_name
+})}`)
+
+// Avoid adding a frontmatter line with a string literal (e.g. ?? "" or ?? ''). It triggers
+// esbuild "Unterminated string literal" when compiling this .astro file. Use template for defaults (e.g. data-api-url={import.meta.env.API_URL}).
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import DialogButton from "@components/blocks/DialogButton.astro";
+---
+
+<DialogButton
+    id={id ? id : undefined}
+    narrow={false}
+    size={size}
+    hidden={hidden}
+    color='fleet-red'
+    max_width='520px'
+>
+    {t('blueprints')}
+
+    <Flexblock slot="dialog"  gap="var(--space-l)">
+        <Flexblock gap="var(--space-s)">
+            <h3>{t('item_blueprint_template').replace('{item}',  item_name)}</h3>
+                
+            <Flexblock>
+                <small
+                    class="[ loading ]"
+                    hx-get={BLUEPRINTS_BUTTONS_PARTIAL_URL}
+                    hx-trigger="intersect"
+                    hx-indicator=".loader"
+                    hx-swap="outerHTML transition:true"
+                    x-show="button_dialog_open"
+                    style="display: none;"
+                >{t('fetching_blueprints')}</small>
+            </Flexblock>
+        </Flexblock>
+    </Flexblock>
+</DialogButton>
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-1);
+    }
+</style>

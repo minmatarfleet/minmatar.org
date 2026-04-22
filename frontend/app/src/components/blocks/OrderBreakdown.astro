@@ -39,6 +39,7 @@ import ButtonClaimOrder from '@components/blocks/ButtonClaimOrder.astro';
 import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
 
 import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
+import ButtonFindBlueprint from './ButtonFindBlueprint.astro';
 ---
 
 <Flexblock>
@@ -71,7 +72,7 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
                 </div>
 
                 <FlexInline gap='var(--space-3xs)' justification='space-between'>
-                    <div class="[ basis-[305px] ]">
+                    <div class="[ basis-[310px] ]">
                         <FixedFluid width='32px' breakpoint='30%' gap='var(--space-2xs)' class="[  items-center! text-highlight ]">
                             <div
                                 class="[ text-highlight h-[32px] ]"
@@ -105,7 +106,7 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
                         </FixedFluid>
                     </div>
 
-                    <FlexInline class="[ basis-[230px] ]" gap='0'>
+                    <FlexInline class="[ basis-[210px] ]" gap='0'>
                         <div class="[ basis-[140px] pr-[30px]! ]">
                             <Progress
                                 class:list={[ 'w-full' ]}
@@ -128,7 +129,7 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
                         </div>
                     </FlexInline>
 
-                    <FlexInline class="[ basis-[350px] ]">
+                    <FlexInline class="[ basis-[470px] ]" justification='flex-end'>
                         {(item.unassigned_quantity > 0 || user_assignment) &&
                             <ButtonClaimOrder
                                 target_id={`order-item-${order_id}`}
@@ -176,6 +177,8 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
                                 </ButtonConfirm>
                             }</>
                         }
+
+                        <ButtonFindBlueprint item_name={item.eve_type_name} />
                     </FlexInline>
                 </FlexInline>
             </FixedFluid>

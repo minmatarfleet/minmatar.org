@@ -1,0 +1,103 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { Blueprint } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    item_name:  string;
+    originals:  Blueprint[];
+    copies:     Blueprint[];
+}
+
+const {
+    item_name,
+    originals,
+    copies,
+} = Astro.props
+
+import { query_string } from '@helpers/string';
+
+import { get_bpc_icon } from '@helpers/eve_image_server';
+
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro';
+
+import Picture from '@components/blocks/Picture.astro';
+import Button from '@components/blocks/Button.astro';
+---
+
+{originals.length > 0 &&
+    <FlexInlineSiblings
+        min-shink-width='250px'
+        shrinkable-sibbling='first'
+    >
+        <FixedFluid
+            class="[ items-center ]"
+            width='64'
+        >
+            <Picture
+                src={get_bpc_icon(
+                    originals[0].type_id,
+                    false,
+                )}
+                alt={originals[0].type_name}
+                size={64}
+            />
+            <Flexblock gap='var(--space-3xs)'>
+                <h3>{t('blueprint_originals')}</h3>
+                <small>
+                    {t(originals.length != 1 ? 'items_count_plural' : 'items_count_singular').replace('{count}', originals.length.toLocaleString())}
+                </small>
+            </Flexblock>
+        </FixedFluid>
+
+        <Button
+            href={translatePath(`/industry/blueprints?${query_string({ blueprint_query: item_name })}`)}
+            size='sm'
+            x-on:click="close_dialog()"
+        >
+            {t('view')}
+        </Button>
+    </FlexInlineSiblings>
+}
+
+{copies.length > 0 &&
+    <FlexInlineSiblings
+        min-shink-width='250px'
+        shrinkable-sibbling='first'
+    >
+        <FixedFluid
+            class="[ items-center ]"
+            width='64'
+        >
+            <Picture
+                src={get_bpc_icon(
+                    copies[0].type_id,
+                    true,
+                )}
+                alt={copies[0].type_name}
+                size={64}
+            />
+            <Flexblock gap='var(--space-3xs)'>
+                <h3>{t('blueprint_copies')}</h3>
+                <small>
+                    {t(copies.length != 1 ? 'items_count_plural' : 'items_count_singular').replace('{count}', copies.length.toLocaleString())}
+                </small>
+            </Flexblock>
+        </FixedFluid>
+
+        <Button
+            href={translatePath(`/industry/blueprints/copies?${query_string({ blueprint_query: item_name })}`)}
+            size='sm'
+            x-on:click="close_dialog()"
+        >
+            {t('view')}
+        </Button>
+    </FlexInlineSiblings>
+}
+
+{originals.length === 0 && copies.length === 0 &&
+    <p>{t('no_blueprints_found')}</p>
+}

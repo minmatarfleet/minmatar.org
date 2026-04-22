@@ -4,6 +4,10 @@ const { t } = i18n(Astro.url)
 
 import type { EvEImageServiceSize, ImageSize } from '@dtypes/layout_components'
 
+interface BlueprintParam {
+    is_copy:    boolean;
+}
+
 interface Props {
     item_id:        number;
     item_name?:     string;
@@ -12,6 +16,7 @@ interface Props {
     icon_quality?:  EvEImageServiceSize;
     mask?:          boolean;
     quantity?:      number;
+    blueprint?:     BlueprintParam;
 }
 
 const {
@@ -22,9 +27,10 @@ const {
     icon_quality = 64,
     mask = false,
     quantity,
+    blueprint,
 } = Astro.props
 
-import { get_item_icon } from '@helpers/eve_image_server';
+import { get_item_icon, get_bpc_icon } from '@helpers/eve_image_server';
 
 import NotificationBadge from '@components/blocks/NotificationBadge.astro';
 ---
@@ -35,7 +41,7 @@ import NotificationBadge from '@components/blocks/NotificationBadge.astro';
         loading="lazy"
         height={narrow ? 412 : size}
         width={size}
-        src={get_item_icon(item_id, icon_quality ?? size)}
+        src={blueprint ? get_bpc_icon(item_id, blueprint.is_copy, icon_quality ?? size) : get_item_icon(item_id, icon_quality ?? size)}
         alt={item_name ?? t('item_picture')}
     />
     {quantity &&
