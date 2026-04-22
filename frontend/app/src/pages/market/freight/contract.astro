@@ -100,9 +100,8 @@ const page_title = t('freight.contract.page_title');
                 </PageTitle>
             </FlexInline>
             <FlexInline>
-                <Button class="[ !hidden sm:block! ]" href={translatePath(`/market/freight/calculator/`)}>
-                    <HistoryIcon slot="icon" />
-                    {t('recalculate')}
+                <Button class="[ !hidden sm:block! ]" href={translatePath(`/market/freight/contracts/`)}>
+                    {t('freight_contracts')}
                 </Button>
             </FlexInline>
         </FlexInline>
@@ -212,7 +211,12 @@ const page_title = t('freight.contract.page_title');
                         <p>{t('freight.contract.step_4_text')}</p>
             
                         <FlexInline>
-                            <Button class="[ !hidden sm:block! ]" href={translatePath(`/market/freight/contracts/`)}>
+                            <Button href={translatePath(`/market/freight/calculator/`)}>
+                                <HistoryIcon slot="icon" />
+                                {t('recalculate')}
+                            </Button>
+
+                            <Button href={translatePath(`/market/freight/contracts/`)}>
                                 {t('freight_contracts')}
                             </Button>
                         </FlexInline>
