@@ -208,7 +208,14 @@ const page_title = t('freight.contract.page_title');
                 <ComponentBlock width='narrow'>
                     <Flexblock class="[ w-full ]" gap='var(--space-m)'>
                         <h2>{t('freight.contract.step_4_title')}</h2>
+
                         <p>{t('freight.contract.step_4_text')}</p>
+            
+                        <FlexInline>
+                            <Button class="[ !hidden sm:block! ]" href={translatePath(`/market/freight/contracts/`)}>
+                                {t('freight_contracts')}
+                            </Button>
+                        </FlexInline>
                     </Flexblock>
                 </ComponentBlock>
             </Context>

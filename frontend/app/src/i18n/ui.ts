@@ -2239,5 +2239,6 @@ export const ui = {
         'blueprint_originals': 'Blueprint originals',
         'blueprint_copies': 'Blueprint copies',
         'blueprints': 'Blueprints',
+        'freight_contracts': 'Freight contracts',
     },
 } as const;
