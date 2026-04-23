@@ -1560,7 +1560,7 @@ export const ui = {
         'etherium_flash_form_hint_title': 'Etherium',
         'click_to_start_forming': 'Click above link to start forming',
         'flash_form_express': 'Flash form express',
-        'flash_form_hint': 'You may instantly start a Flash Form with the links inside this collapsible',
+        'flash_form_hint': 'Expand this section to access Flash Form quick-links',
         'responsability_unclaim_tip': 'Unclaim responsabilities by opening a ticket at [#help](https://discordapp.com/channels/1041384161505722368/1183401618943791186) in our discord.',
         'rats_with_gats_subheading': 'Fl33t’s highsec wardec corp',
         'contact': 'Contact',

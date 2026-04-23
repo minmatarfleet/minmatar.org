@@ -7,16 +7,20 @@ import type { OrderLocation } from '@dtypes/layout_components'
 interface Props {
     active_orders_locations:        OrderLocation;
     non_active_orders_locations:    OrderLocation[];
+    is_history:                     boolean;
     init_tooltips:                  boolean;
 }
 
 const {
     active_orders_locations,
     non_active_orders_locations,
+    is_history,
     init_tooltips,
 } = Astro.props
 
 import { query_string } from '@helpers/string';
+
+const BASE_PATH = is_history ? '/industry/orders/history' : '/industry/orders'
 
 const REEL_GAP = 80
 
@@ -33,7 +37,7 @@ import Table from '@components/blocks/Table.astro';
     <LocationsReel gap={REEL_GAP}>
         <LocationsReelSlide
             title={active_orders_locations.location_name}
-            href={translatePath(`/industry/orders?${query_string({
+            href={translatePath(`${BASE_PATH}?${query_string({
                 location_name: active_orders_locations.location_name
             })}`)}
             subtitle={t(active_orders_locations.orders.length != 1 ? 'orders_plural' : 'orders_singular').replace('{count}', String(active_orders_locations.orders.length))}
@@ -44,7 +48,7 @@ import Table from '@components/blocks/Table.astro';
         {non_active_orders_locations.map(location =>
             <LocationsReelSlide
                 title={location.location_name}
-                href={translatePath(`/industry/orders?${query_string({
+                href={translatePath(`${BASE_PATH}?${query_string({
                     location_name: location.location_name
                 })}`)}
                 subtitle={t(location.orders.length != 1 ? 'orders_plural' : 'orders_singular').replace('{count}', String(location.orders.length))}
