@@ -165,6 +165,28 @@
         "description": "page_finder.ships.doctrines.description"
     },
     {
+        "slug": "ships.srp",
+        "alt": "icon.kill_report.alt",
+        "path": "/ships/srp/",
+        "publish": true,
+        "icon": "/images/icons/48px-Killreport.png",
+        "description": "page_finder.ships.srp.description",
+        "keywords": [ "srp", "ship", "replacement", "program" ],
+        "permissions" : {
+             "user": [ "srp.view_evefleetshipreimbursement" ]
+        }
+    },
+    {
+        "slug": "ships.srp.killmails",
+        "path": "/ships/srp/killmails/",
+        "publish": true,
+        "description": "page_finder.ships.srp.killmails.description",
+        "keywords": [ "srp", "ship", "replacement", "program" ],
+        "permissions" : {
+             "user": [ "srp.view_evefleetshipreimbursement" ]
+        }
+    },
+    {
         "slug": "fleets.upcoming",
         "alt": "icon.fleets.alt",
         "path": "/fleets/upcoming/",
@@ -192,38 +214,6 @@
         "keywords": [ "add", "create", "new" ],
         "permissions" : {
             "user": [ "fleets.add_evefleet" ]
-        }
-    },
-    {
-        "slug": "ships.srp",
-        "alt": "icon.kill_report.alt",
-        "path": "/ships/srp/",
-        "publish": true,
-        "icon": "/images/icons/48px-Killreport.png",
-        "description": "page_finder.ships.srp.description",
-        "keywords": [ "srp", "ship", "replacement", "program" ],
-        "permissions" : {
-             "user": [ "srp.view_evefleetshipreimbursement" ]
-        }
-    },
-    {
-        "slug": "ships.srp.killmails",
-        "path": "/ships/srp/killmails/",
-        "publish": true,
-        "description": "page_finder.ships.srp.killmails.description",
-        "keywords": [ "srp", "ship", "replacement", "program" ],
-        "permissions" : {
-             "user": [ "srp.view_evefleetshipreimbursement" ]
-        }
-    },
-    {
-        "slug": "onboarding",
-        "path": "/onboarding/",
-        "publish": true,
-        "description": "page_finder.onboarding.description",
-        "keywords": [ "onboarding", "srp", "new members", "reimbursement" ],
-        "permissions": {
-            "auth": true
         }
     },
     {

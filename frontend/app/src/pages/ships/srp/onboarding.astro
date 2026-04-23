@@ -1,0 +1,234 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+
+import {
+    post_onboarding_ack,
+    SRP_ONBOARDING_PROGRAM_TYPE,
+} from '@helpers/api.minmatar.org/onboarding'
+
+let submit_error: string | false = false
+
+if (Astro.request.method === 'POST') {    
+    try {
+        const data = await Astro.request.formData()
+
+        const ack_ok = ['onboarding_ack_1', 'onboarding_ack_2', 'onboarding_ack_3'].every(
+            (name) => data.get(name) === name,
+        )
+
+        if (!ack_ok)
+            throw new Error(t('onboarding.submit_incomplete_body'))
+        
+        await post_onboarding_ack(auth_token as string, SRP_ONBOARDING_PROGRAM_TYPE)
+        
+        return Astro.redirect(translatePath('/ships/srp/'))
+    } catch (err) {
+        submit_error = err instanceof Error ? err.message : String(err)
+    }
+}
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+import { is_onboarding_required } from '@helpers/onboarding/srpRedirect'
+
+const requires_onboarding = await is_onboarding_required(auth_token as string)
+
+if (auth_token && !requires_onboarding) {
+    return Astro.redirect(translatePath('/ships/srp/'))
+}
+
+import * as srp_overview_md from '@markdown/srp-overview.md';
+import * as srp_source_md from '@markdown/srp-source.md';
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageLanding from '@components/page/PageLanding.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import BlockList from '@components/compositions/BlockList.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import Button from '@components/blocks/Button.astro';
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
+import Markdown from '@components/blocks/Markdown.astro'
+import ShowAlert from '@components/blocks/ShowAlert.astro'
+
+const page_title = t('ships.srp.page_title');
+
+const acknowledgments = [
+    t('onboarding.acknowledgment_1'),
+    t('onboarding.acknowledgment_2'),
+    t('onboarding.acknowledgment_3'),
+] as const;
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('onboarding.meta_description')}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+        modal: true,
+    }}
+>
+    <PageLanding
+        cover={{
+            image: "/images/srp-cover.jpg",
+            image_990: "/images/srp-cover.jpg",
+            overlay: true,
+            scrollable: true,
+        }}
+        wide={true}
+    >
+        {submit_error && <ShowAlert alert={{ title: t('srp_onboarding'), content: submit_error }} />}
+
+        <form
+            class="[ onboarding-form ]"
+            method="post"
+            x-data={`{
+                show_terms: false,
+                onboarding_ack: [],
+                tippy_instance: null,
+                tippy_options: {
+                    content: '${t('accept_terms_tooltip')}',
+                    delay: [ 100, 200 ],
+                    arrow: true,
+                },
+                update_submit_tooltip() {
+                    $nextTick(() => {
+                        if (this.onboarding_ack.length < 3) {
+                            if (!this.tippy_instance)
+                                this.tippy_instance = tippy($el.querySelector('.accept-terms-tooltip'), this.tippy_options)
+                        } else {
+                            if (this.tippy_instance) {
+                                this.tippy_instance.destroy()
+                                this.tippy_instance = null
+                            }
+                        }
+                    })
+                }
+            }`}
+            x-init="update_submit_tooltip()"
+        >
+            <BlockList gap='var(--space-2xl)' class="[ pb-[90px] ]">
+                <FlexInline class="[ !items-start ]" justification='space-between'>
+                    <TextBox>
+                        <PageTitle is_landing={true}>{page_title}</PageTitle>
+                    </TextBox>
+                </FlexInline>
+
+                <TextBox>
+                    <p class="[ excerpt ]">{t('ships.srp.onboarding_required_message')}</p>
+                </TextBox>
+
+                <Button
+                    class="[ w-fit! ]"
+                    type="button"
+                    x-on:click="show_terms = true"
+                    x-show="show_terms === false"
+                >
+                    {t('ships.srp.onboarding_required_button')}
+                </Button>
+
+                <Flexblock
+                    class="[ animate-fade-in ]"
+                    x-show="show_terms"
+                    gap='var(--space-xl)'
+                    style="display: none;"
+                >
+                    <TextBox class="[ prose ]">
+                        <h2 class="[ onboarding-section-title ]">{t('overview_description')}</h2>
+                        <Markdown
+                            markdown={srp_overview_md.rawContent()}
+                            element='div'
+                        />
+                        <h2 class="[ onboarding-section-title ]">{t('source_description')}</h2>
+                        <Markdown
+                            markdown={srp_source_md.rawContent()}
+                            element='div'
+                        />
+                    </TextBox>
+                </Flexblock>
+
+                <div
+                    class="[ animate-fade-in ]"
+                    x-show="show_terms"
+                    style="display: none;"
+                >
+                    <TextBox>
+                        <Flexblock gap='var(--space-xl)'>
+                            <Flexblock
+                                role="group"
+                                aria-label={t('onboarding.acknowledgments_group_label')}
+                                gap='var(--space-l)'
+                            >
+                                {acknowledgments.map((text, i) => (
+                                    <RadioCheckInput
+                                        type="checkbox"
+                                        name={`onboarding_ack_${i + 1}`}
+                                        x-model="onboarding_ack"
+                                        x-on:change="update_submit_tooltip()"
+                                        value={`onboarding_ack_${i + 1}`}
+                                        required
+                                    >
+                                        <Markdown markdown={text} inline={true} inline_element='span' />
+                                    </RadioCheckInput>
+                                ))}
+                            </Flexblock>
+                        </Flexblock>
+                    </TextBox>
+                </div>
+            </BlockList>
+
+            <div
+                class="[ bottom-bar ][ card component light-transparency animate-slide-in-bottom ]"
+                x-show="show_terms"
+                style="display: none;"
+            >
+                <Wrapper
+                    neocom={true}
+                    max_width='var(--max-content-width)'
+                    centered={true}
+                    padding_block='var(--space-2xs)'
+                >
+                    <FlexInline>
+                        <div class="[ accept-terms-tooltip ]">
+                            <Button
+                                type="submit"
+                                off_disable={true}
+                                x-bind:disabled="onboarding_ack.length < 3"
+                                disabled
+                            >
+                                {t('onboarding.submit_button')}
+                            </Button>
+                        </div>
+                    </FlexInline>
+                </Wrapper>
+            </div>
+        </form>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .bottom-bar {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        z-index: var(--sticky-z-index);
+    }
+</style>
