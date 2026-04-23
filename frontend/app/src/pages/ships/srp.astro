@@ -25,18 +25,6 @@ if (!can_view_srp)
     return HTTP_403_Forbidden()
 
 import { should_redirect_to_srp_onboarding } from '@helpers/onboarding/srpRedirect'
-
-if (
-    auth_token &&
-    (await should_redirect_to_srp_onboarding(
-        auth_token as string,
-        has_explicit_srp_change,
-    ))
-) {
-    const return_to = encodeURIComponent(Astro.url.pathname + Astro.url.search)
-    return Astro.redirect(`${translatePath('/onboarding/')}?return=${return_to}`)
-}
-
 import type { SRPProgram, SRPStatsHistory } from '@dtypes/api.minmatar.org'
 import { get_srp_programs, get_srp_stats_history } from '@helpers/api.minmatar.org/srp'
 
@@ -45,13 +33,24 @@ let programs:SRPProgram[] = []
 let srp_stats_history:SRPStatsHistory | null = null
 
 try {
+    if (await should_redirect_to_srp_onboarding( auth_token as string, has_explicit_srp_change))
+        return Astro.redirect(translatePath('/ships/srp/onboarding/'))
+
     programs = await get_srp_programs(auth_token as string)
     srp_stats_history = await get_srp_stats_history(auth_token as string)
 } catch (error) {
     fetching_error = error
 }
 
+import * as srp_overview_md from '@markdown/srp-overview.md';
+import * as srp_source_md from '@markdown/srp-source.md';
+
 const SRP_TILES_PARTIAL_URL = translatePath('/partials/srp_tiles_component/')
+
+import { is_srp_onboarding_required_error } from '@helpers/api.minmatar.org/onboarding'
+
+if (fetching_error !== false && is_srp_onboarding_required_error(fetching_error))
+    return Astro.redirect(translatePath('/ships/srp/onboarding/'))
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -66,14 +65,11 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Button from '@components/blocks/Button.astro';
 import SRPTiles from '@components/blocks/SRPTiles.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-import SrpOnboardingRequired from '@components/blocks/SrpOnboardingRequired.astro'
-
-import { is_srp_onboarding_required_error } from '@helpers/api.minmatar.org/onboarding'
+import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro'
+import Markdown from '@components/blocks/Markdown.astro'
 
 const page_title = t('ships.srp.page_title');
 const leading_text = t('ships.srp.leading_text');
-const srp_onboarding_required_ui =
-    fetching_error !== false && is_srp_onboarding_required_error(fetching_error);
 ---
 
 <Viewport
@@ -101,9 +97,6 @@ const srp_onboarding_required_ui =
                 </TextBox>
                 {can_view_srp &&
                     <FlexInline class="[ !items-start ]" gap='var(--space-s)'>
-                        <Button href={`${translatePath('/onboarding/')}?return=${encodeURIComponent(Astro.url.pathname + Astro.url.search)}`}>
-                            {t('learn_more')}
-                        </Button>
                         <Button href={translatePath('/ships/srp/killmails/')}>
                             {t('view_killmails')}
                         </Button>
@@ -111,24 +104,31 @@ const srp_onboarding_required_ui =
                 }
             </FlexInline>
 
-            {!srp_onboarding_required_ui &&
-                <TextBox>
-                    <p class="[ excerpt ]">{leading_text}</p>
-                </TextBox>
-            }
+            <TextBox class="[ prose ]">
+                <CollapsibleBlock>
+                    <h4 slot="head">{t('srp_wiki')}</h4>
+
+                        <h2 class="[ onboarding-section-title ]">{t('overview_description')}</h2>
+                        <Markdown
+                            markdown={srp_overview_md.rawContent()}
+                            element='div'
+                        />
+                        <h2 class="[ onboarding-section-title ]">{t('source_description')}</h2>
+                        <Markdown
+                            markdown={srp_source_md.rawContent()}
+                            element='div'
+                        />
+                </CollapsibleBlock>
+            </TextBox>
 
             {fetching_error !== false ?
-                (srp_onboarding_required_ui ?
-                    <SrpOnboardingRequired return_to_path={Astro.url.pathname + Astro.url.search} />
-                    :
-                    <ErrorRefetch
-                        args={{
-                            partial: SRP_TILES_PARTIAL_URL,
-                            error: fetching_error,
-                            delay: 0,
-                        }}
-                    />
-                ) :
+                <ErrorRefetch
+                    args={{
+                        partial: SRP_TILES_PARTIAL_URL,
+                        error: fetching_error,
+                        delay: 0,
+                    }}
+                /> :
                 <SRPTiles
                     programs={programs}
                     readonly={!can_add_srp}

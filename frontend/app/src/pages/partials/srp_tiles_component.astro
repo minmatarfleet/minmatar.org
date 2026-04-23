@@ -11,6 +11,8 @@ const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_tok
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`)
+
 import { get_user_permissions } from '@helpers/permissions'
 const user_permissions = (user ? await get_user_permissions(user?.username) : [])
 
@@ -23,18 +25,6 @@ if (!can_view_srp)
     return HTTP_403_Forbidden()
 
 import { should_redirect_to_srp_onboarding } from '@helpers/onboarding/srpRedirect'
-
-if (
-    auth_token &&
-    (await should_redirect_to_srp_onboarding(
-        auth_token as string,
-        has_explicit_srp_change,
-    ))
-) {
-    const return_to = encodeURIComponent(translatePath('/ships/srp/'))
-    return Astro.redirect(`${translatePath('/onboarding/')}?return=${return_to}`)
-}
-
 import type { SRPProgram, SRPStatsHistory } from '@dtypes/api.minmatar.org'
 import { get_srp_programs, get_srp_stats_history } from '@helpers/api.minmatar.org/srp'
 
@@ -43,6 +33,9 @@ let programs:SRPProgram[] = []
 let srp_stats_history:SRPStatsHistory | null = null
 
 try {
+    if (await should_redirect_to_srp_onboarding( auth_token as string, has_explicit_srp_change))
+        return Astro.redirect(translatePath('/ships/srp/onboarding/'))
+
     programs = await get_srp_programs(auth_token as string)
     srp_stats_history = await get_srp_stats_history(auth_token as string)
 } catch (error) {
@@ -53,25 +46,23 @@ const SRP_TILES_PARTIAL_URL = translatePath('/partials/srp_tiles_component/')
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
+import { is_srp_onboarding_required_error } from '@helpers/api.minmatar.org/onboarding'
+
+if (fetching_error !== false && is_srp_onboarding_required_error(fetching_error))
+    return Astro.redirect(translatePath('/ships/srp/onboarding/'))
+
 import SRPTiles from '@components/blocks/SRPTiles.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-import SrpOnboardingRequired from '@components/blocks/SrpOnboardingRequired.astro'
-
-import { is_srp_onboarding_required_error } from '@helpers/api.minmatar.org/onboarding'
 ---
 
 {fetching_error !== false ?
-    (is_srp_onboarding_required_error(fetching_error) ?
-        <SrpOnboardingRequired return_to_path={translatePath('/ships/srp/')} />
-        :
-        <ErrorRefetch
-            args={{
-                partial: SRP_TILES_PARTIAL_URL,
-                error: fetching_error,
-                delay: delay,
-            }}
-        />
-    ) :
+    <ErrorRefetch
+        args={{
+            partial: SRP_TILES_PARTIAL_URL,
+            error: fetching_error,
+            delay: delay,
+        }}
+    /> :
     <SRPTiles
         programs={programs}
         readonly={!can_add_srp}

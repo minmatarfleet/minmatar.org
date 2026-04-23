@@ -6,6 +6,7 @@ interface Props {
     markdown:           string;
     inline?:            boolean;
     inline_element?:    'p' | 'span' | 'small';
+    element?:           'div' | 'Flexblock';
     [propName: string]: any;
 }
 
@@ -13,6 +14,7 @@ const {
     markdown,
     inline = false,
     inline_element = 'p',
+    element = 'Flexblock',
     ...attributes
 } = Astro.props
 
@@ -20,6 +22,7 @@ import { marked } from 'marked';
 import { renderer } from '@helpers/marked';
 
 const InlineElement = inline_element
+const Element = element
 const content = markdown ?? ''
 
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -27,5 +30,5 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 
 {inline ?
     <InlineElement {...attributes} set:html={content ? marked.parseInline(content, { renderer: renderer, breaks: true }) : ''} /> :
-    <Flexblock {...attributes} set:html={content ? marked.parse(content, { renderer: renderer }) : ''} />
+    <Element {...attributes} set:html={content ? marked.parse(content, { renderer: renderer }) : ''} />
 }

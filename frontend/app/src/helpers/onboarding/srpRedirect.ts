@@ -20,3 +20,8 @@ export async function should_redirect_to_srp_onboarding(
     const st = await get_onboarding_status(auth_token, SRP_ONBOARDING_PROGRAM_TYPE)
     return !st.is_current
 }
+
+export async function is_onboarding_required(auth_token: string): Promise<boolean> {
+    const st = await get_onboarding_status(auth_token, SRP_ONBOARDING_PROGRAM_TYPE)
+    return !st.is_current
+}
