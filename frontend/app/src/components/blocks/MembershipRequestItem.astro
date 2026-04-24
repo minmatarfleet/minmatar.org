@@ -52,7 +52,13 @@ import RecruitmentIcon from '@components/icons/RecruitmentIcon.astro';
         breakpoint='30%'
         class="[  items-center! basis-[350px] ]"
     >
-        <div class="[ h-[32px] text-highlight ]"><RecruitmentIcon size={32} /></div>
+        <div
+            class="[ h-[32px] text-highlight ]"
+            data-tippy-content={t('members')}
+            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+        >
+            <RecruitmentIcon size={32} />
+        </div>
 
         <FlexInline
             gap='var(--space-2xs)'
