@@ -18,7 +18,7 @@ const {
 
 const target_unit_price = parseFloat(item.target_unit_price ?? '0')
 
-const no_contract_to = order?.contract_to || order?.contract_to === ''
+const no_contract_to = !order?.contract_to || order.contract_to === ''
 
 import { number_thousand_separator } from '@helpers/numbers'
 
