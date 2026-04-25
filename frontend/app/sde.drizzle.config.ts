@@ -14,7 +14,7 @@ export default {
     schema: "./src/models/sde/schema.ts",
     out: "./src/models/sde/migrations/",
     dbCredentials: {
-        url: "file:./src/data/sqlite-latest-3316380.sqlite",
+        url: "file:./src/data/sde-3316380.sqlite",
     },
     verbose: true,
     strict: true,
