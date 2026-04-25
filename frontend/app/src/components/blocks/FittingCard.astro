@@ -50,7 +50,7 @@ import Tech3Icon from '@components/icons/Tech3Icon.astro';
             <Flexblock gap='var(--space-3xs)'>
                 <FlexInline gap='var(--space-3xs)'>
                     {tags?.map(tag =>
-                        <Tag narrow={true} text={tag} />
+                        <Tag text={tag} />
                     )}
                 </FlexInline>
                 {subtitle && <small>{subtitle}</small>}
