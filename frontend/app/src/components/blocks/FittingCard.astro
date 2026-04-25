@@ -5,6 +5,7 @@ interface Props {
     fitting:        FittingItem;
     title?:         string;
     subtitle?:      string;
+    tags?:          string[];
     [propName: string]: any;
 }
 
@@ -12,15 +13,19 @@ const {
     fitting,
     title,
     subtitle,
+    tags,
     ...attributes
 } = Astro.props
 
 import Flexblock from "@components/compositions/Flexblock.astro";
 import Wrapper from "@components/compositions/Wrapper.astro";
+import FlexInline from "@components/compositions/FlexInline.astro";
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import ItemPicture from "@components/blocks/ItemPicture.astro";
 import ClipboardButton from "@components/blocks/ClipboardButton.astro";
+import Tag from "@components/blocks/Tag.astro";
+
 import NavyIcon from '@components/icons/NavyIcon.astro';
 import Tech2Icon from '@components/icons/Tech2Icon.astro';
 import Tech3Icon from '@components/icons/Tech3Icon.astro';
@@ -43,6 +48,11 @@ import Tech3Icon from '@components/icons/Tech3Icon.astro';
         </div>
         <Wrapper class="[ fitting-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
             <Flexblock gap='var(--space-3xs)'>
+                <FlexInline gap='var(--space-3xs)'>
+                    {tags?.map(tag =>
+                        <Tag narrow={true} text={tag} />
+                    )}
+                </FlexInline>
                 {subtitle && <small>{subtitle}</small>}
                 <h3>{title ? title : fitting.fitting_name}</h3>
             </Flexblock>
