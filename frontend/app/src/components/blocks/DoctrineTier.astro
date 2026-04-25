@@ -35,7 +35,8 @@ import { format_fitting_tags_line } from '@helpers/fitting_tags'
             <FittingCard
                 fitting={fitting}
                 title={fitting.ship_name}
-                subtitle={format_fitting_tags_line(fitting.tags, t) || fitting.fitting_type}
+                tags={format_fitting_tags_line(fitting.tags, t)}
+                subtitle={fitting.fitting_type}
             />
         </FittingLink>
     )}

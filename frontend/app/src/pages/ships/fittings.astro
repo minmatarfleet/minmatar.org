@@ -212,7 +212,8 @@ const page_title = t('fitting.list.page_title');
                                     <FittingCard
                                         fitting={fitting}
                                         title={fitting.fitting_name.replace(/^\[[^\]]+\]\s*/, '')}
-                                        subtitle={format_fitting_tags_line(fitting.tags, t)}
+                                        tags={format_fitting_tags_line(fitting.tags, t)}
+                                        subtitle={fitting.fitting_type}
                                         role="listitem"
                                     />
                                 </FittingLink>

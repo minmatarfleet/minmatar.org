@@ -10,7 +10,7 @@ export function fitting_tag_label(slug: string, t: (key: string) => string): str
 export function format_fitting_tags_line(
     tags: string[] | undefined,
     t: (key: string) => string,
-): string {
-    if (!tags?.length) return ''
-    return [...tags].sort().map((slug) => fitting_tag_label(slug, t)).join(', ')
+): string[] {
+    if (!tags?.length) return []
+    return [...tags].sort().map((slug) => fitting_tag_label(slug, t)).filter(label => label || label.trim() !== '')
 }
