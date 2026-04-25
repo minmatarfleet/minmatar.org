@@ -14,27 +14,84 @@ if (!is_superuser)
 import fs from 'node:fs';
 import path from 'node:path';
 
-// 1. Define the path to your data folder
-// process.cwd() points to the root of your project
+// 1. Get the path to the data folder
 const dataDirPath = path.resolve(process.cwd(), 'src/data');
+let filesData: { name: string; size: string; modified: string }[] = [];
 
-let files: string[] = [];
+// Helper to format bytes into a human-readable string
+function formatBytes(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
 
-try {
-    // 2. Read the directory contents
-    // readdirSync returns an array of filenames: ['file1.json', 'db.sqlite']
-    if (fs.existsSync(dataDirPath)) {
-        files = fs.readdirSync(dataDirPath);
-    }
-} catch (error) {
-    console.error("Could not read the directory:", error);
+if (fs.existsSync(dataDirPath)) {
+    // 2. Read all filenames in the directory
+    const filenames = fs.readdirSync(dataDirPath);
+
+    filesData = filenames.map((name) => {
+        const filePath = path.join(dataDirPath, name);
+        const stats = fs.statSync(filePath);
+        
+        return {
+            name,
+            size: formatBytes(stats.size),
+            modified: stats.mtime.toLocaleString() // Last modified date
+        };
+    });
 }
 ---
 
-<ul>
-    {files.map((file) => (
-        <li>{file}</li>
-    ))}
-</ul>
+<div class="file-explorer">
+    <h3>Files in /src/data</h3>
+    
+    <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+        <thead>
+            <tr style="text-align: left; background: #23262d; color: white;">
+                <th style="padding: 12px; border: 1px solid #444;">File Name</th>
+                <th style="padding: 12px; border: 1px solid #444;">Size</th>
+                <th style="padding: 12px; border: 1px solid #444;">Last Modified</th>
+            </tr>
+        </thead>
+        <tbody>
+            {filesData.length > 0 ? (
+                filesData.map((file) => (
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;">
+                            <code>{file.name}</code>
+                        </td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">
+                            {file.size}
+                        </td>
+                        <td style="padding: 10px; border: 1px solid #ddd; font-size: 0.9em;">
+                            {file.modified}
+                        </td>
+                    </tr>
+                ))
+            ) : (
+                <tr>
+                    <td colspan="3" style="padding: 20px; text-align: center;">
+                        No files found in <code>/src/data/</code>
+                    </td>
+                </tr>
+            )}
+        </tbody>
+    </table>
+</div>
 
-{files.length === 0 && <p>No files found in src/data/</p>}
+<style>
+    .file-explorer {
+        font-family: system-ui, sans-serif;
+        padding: 20px;
+        background: #f9f9f9;
+        border-radius: 8px;
+        color: #333;
+    }
+    code {
+        background: #eee;
+        padding: 2px 4px;
+        border-radius: 4px;
+    }
+</style>
