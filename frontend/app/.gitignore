@@ -129,3 +129,4 @@ dist
 # sde sqlite db
 sqlite-latest*.sqlite
 sqlite-main.sqlite
+sde-*.sqlite
