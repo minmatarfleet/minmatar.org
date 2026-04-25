@@ -1,0 +1,40 @@
+---
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+if (!is_superuser)
+  return Astro.redirect(HTTP_404_Not_Found())
+
+import fs from 'node:fs';
+import path from 'node:path';
+
+// 1. Define the path to your data folder
+// process.cwd() points to the root of your project
+const dataDirPath = path.resolve(process.cwd(), 'src/data');
+
+let files: string[] = [];
+
+try {
+    // 2. Read the directory contents
+    // readdirSync returns an array of filenames: ['file1.json', 'db.sqlite']
+    if (fs.existsSync(dataDirPath)) {
+        files = fs.readdirSync(dataDirPath);
+    }
+} catch (error) {
+    console.error("Could not read the directory:", error);
+}
+---
+
+<ul>
+    {files.map((file) => (
+        <li>{file}</li>
+    ))}
+</ul>
+
+{files.length === 0 && <p>No files found in src/data/</p>}
