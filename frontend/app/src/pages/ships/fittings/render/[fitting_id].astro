@@ -11,7 +11,6 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 const user_is_superadmin = (auth_token && user ? user.is_superuser : false)
 
 const { fitting_id } = Astro.params;
-const show_controls = Astro.url.searchParams.get('controls') ?? null
 
 import type { FleetCombatLog, CargoItem } from '@dtypes/layout_components'
 import { get_fitting_by_id } from '@helpers/api.minmatar.org/ships'
@@ -42,7 +41,6 @@ import { marked } from 'marked';
 import { get_module_model } from '@helpers/sde/modules'
 import ccpwgl_turrets from '@/data/ccpwgl_turrets.json'
 import { get_item_id } from '@helpers/sde/items'
-import { get_ship_dna } from '@helpers/ccpwgl'
 import { strip_markdown } from '@helpers/string'
 import { get_item_icon } from '@helpers/eve_image_server';
 import { format_date_short } from '@helpers/date';
@@ -64,41 +62,7 @@ await Promise.all((fitting_parsed?.high_slots ?? []).map(async (module, index) =
 const minimum_pod:CargoItem[] = fitting?.minimum_pod ? await parse_pod(fitting?.minimum_pod) : []
 const recommended_pod:CargoItem[] = fitting?.minimum_pod ? await parse_pod(fitting?.recommended_pod) : []
 
-import { is_disabled_ccpwgl } from '@helpers/env';
-const DISABLED_CCPWGL = is_disabled_ccpwgl()
-
-const DEFAULT_ZOOM = 3
-const TECH_III_ZOOM = 8
 const ship_id = await get_item_id(fitting_parsed.ship_name)
-const ship_dna = DISABLED_CCPWGL ? null : await get_ship_dna(ship_id ?? 0, fitting_parsed?.subsystem_slots ?? [])
-
-const CAMERA_ZOOM = (fitting_parsed?.subsystem_slots?.length ?? 0) > 0 ? TECH_III_ZOOM : DEFAULT_ZOOM
-
-import Viewport from '@layouts/Viewport.astro';
-
-import PageLanding from '@components/page/PageLanding.astro';
-import PageTitle from '@components/page/PageTitle.astro';
-
-import FlexInline from '@components/compositions/FlexInline.astro';
-import Flexblock from '@components/compositions/Flexblock.astro';
-import Wrapper from '@components/compositions/Wrapper.astro';
-import Grid from '@components/compositions/Grid.astro';
-
-import FittingCustom from '@components/blocks/FittingCustom.astro';
-import Button from '@components/blocks/Button.astro';
-import Cargohold from '@components/blocks/CargoHold.astro';
-import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
-import ClipboardButton from '@components/blocks/ClipboardButton.astro';
-import Input from '@components/blocks/Input.astro';
-
-import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
-import CargoHoldEvEIcon from '@components/icons/CargoHoldEvEIcon.astro';
-import DronesEvEIcon from '@components/icons/DronesEvEIcon.astro';
-import FleetCombatLogCard from '@components/blocks/FleetCombatLogCard.astro';
-import CopyPodButton from '@components/blocks/CopyPodButton.astro'
-
-import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
-import AugmentationEvEIcon from '@components/icons/AugmentationEvEIcon.astro'
 
 const normal_view = translatePath(`/ships/fittings/normal/${fitting_id}`)
 
@@ -118,6 +82,32 @@ if (!page_description)
         .replace('{ship}', ship_display_name)
 
 const meta_ship_image = ship_id && Number(ship_id) > 0 ? get_item_icon(ship_id, 256) : undefined
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageLanding from '@components/page/PageLanding.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+import Grid from '@components/compositions/Grid.astro';
+
+import FittingCustom from '@components/blocks/FittingCustom.astro';
+import Button from '@components/blocks/Button.astro';
+import Cargohold from '@components/blocks/CargoHold.astro';
+import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+
+import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
+import CargoHoldEvEIcon from '@components/icons/CargoHoldEvEIcon.astro';
+import DronesEvEIcon from '@components/icons/DronesEvEIcon.astro';
+import FleetCombatLogCard from '@components/blocks/FleetCombatLogCard.astro';
+import CopyPodButton from '@components/blocks/CopyPodButton.astro'
+
+import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
+import AugmentationEvEIcon from '@components/icons/AugmentationEvEIcon.astro'
+import FixedFluid from '@components/compositions/FixedFluid.astro'
 
 const canonical_url = new URL(translatePath(`/ships/fittings/normal/${fitting_id}`), Astro.url.origin).href
 ---
@@ -149,171 +139,10 @@ import { navigate } from "astro:transitions/client";
         fullscreen={true}
         wide={true}
         x-data={`{
-            ship_loaded: false,
-            scene_loaded: false,
             render_enabled: $persist(true),
             show_rendering_options: $persist(true),
-            rotation_x: -0.317,
-            rotation_y: 0.229,
-            ship_rotation: 0,
-            camera: null,
-            resize_canvas: null,
-            ccpwgl_context: null,
-            update() {
-                if (!this.camera) return
-
-                this.camera.rotationX = this.rotation_x
-                this.camera.rotationY = this.rotation_y
-            },
-            resizeCanvasToDisplaySize(canvas, ccpwgl_context) {
-                // Lookup the size the browser is displaying the canvas in CSS pixels.
-                const displayWidth  = canvas.clientWidth;
-                const displayHeight = canvas.clientHeight;
-                
-                // Check if the canvas is not the same size.
-                const needResize = canvas.width  !== displayWidth ||
-                                    canvas.height !== displayHeight;
-                
-                if (needResize) {
-                    // Make the canvas the same size
-                    canvas.width  = displayWidth;
-                    canvas.height = displayHeight;
-
-                    ccpwgl_context.viewport(0, 0, canvas.width, canvas.height)
-                }
-                
-                return needResize;
-            },
         }`}
     >
-        {!DISABLED_CCPWGL &&
-            <canvas
-                slot="cover"
-                id="mainCanvas"
-                width="500"
-                height="500"
-                x-effect="update"
-                x-data={`{
-                    init_ccpwgl() {
-                        if (${ship_dna === null})
-                            return;
-
-                        let ship
-                        let canvas
-                        let scene
-                        let siege_state = ccpwgl.ShipSiegeState.SIEGE
-                        let animation_timer
-                        const mat4 = ccpwgl_int.math.mat4
-
-                        canvas = document.getElementById('mainCanvas');
-                        
-                        ccpwgl.initialize(canvas, fitting.options);
-                        ccpwgl_context = canvas.getContext("webgl");
-                        
-                        camera = ccpwgl.createCamera(canvas, undefined, true);
-                        camera.rotationX = rotation_x
-                        camera.rotationY = rotation_y
-                        camera.shift = 0.25
-
-                        scene = ccpwgl.loadScene('res:/dx9/scene/universe/m10_cube.red'); // Minmatar skybox
-                        
-                        scene.loadSun('res:/fisfx/lensflare/blue_small.red', function () {
-                            scene.wrappedScene.lensflares.forEach(lensflare=> {
-                                lensflare.mesh.additiveAreas
-                                .filter(meshArea => meshArea.name.toLowerCase() === "sun0" || meshArea.name.toLowerCase() === "dimwhite")
-                                .forEach(meshArea => meshArea.display = false);
-                            })
-                        });
-
-                        scene.setSunDirection([-1, 0, 0.7]);
-                        
-                        ship = scene.loadShip(${JSON.stringify(ship_dna)}, function() {
-                            ship_loaded = true
-                            camera.focus(this, ${CAMERA_ZOOM})
-                            animation_timer = setTimeout(enter_siege_mode, 50000)
-                        });
-
-                        function check_scene_load() {
-                            scene_loaded = !ccpwgl.isLoading()
-                            
-                            if (!scene_loaded)
-                                setTimeout(check_scene_load, 1000)
-                        }
-
-                        setTimeout(check_scene_load, 1000)
-
-                        function enter_siege_mode() {
-                            console.log('Entering siege mode...')
-                            ship.setSiegeState(ccpwgl.ShipSiegeState.SIEGE)
-                            animation_timer = setTimeout(auto_fire_guns, 15000)
-                        }
-
-                        function auto_fire_guns() {
-                            fire_guns()
-                            animation_timer = setTimeout(leave_siege_mode, 5000)
-                        }
-                        
-                        function fire_guns() {
-                            console.log('firing...')
-
-                            pt = {
-                                0: 15219.994140625,
-                                1: -897.7669067382812,
-                                2: -10204.6015625,
-                                3: 0.00005102222348796204,
-                            }
-                            
-                            for (let i = 0; i < ${turrets.length}; i++) {
-                                ship.setTurretTargetPosition(i + 1, pt);
-                                ship.setTurretState(i + 1, ccpwgl.TurretState.FIRING);
-                            }
-                        }
-
-                        function leave_siege_mode() {
-                            console.log('Leaving siege mode...')
-
-                            ship.setSiegeState(ccpwgl.ShipSiegeState.NORMAL)
-                            animation_timer = setTimeout(enter_siege_mode, 50000)
-                        }
-
-                        function fit_turret(ship, res, slot) {
-                            if (res)
-                                ship.mountTurret(slot, res)
-                            else
-                                ship.removeTurret(slot)
-                        }
-
-                        ${JSON.stringify(turrets)}.map((res, index) => {
-                            fit_turret(ship, res, index + 1)
-                        })
-
-                        ccpwgl.enablePostprocessing(true);
-
-                        document.addEventListener('astro:after-swap', () => {
-                            clearTimeout(animation_timer)
-                        })
-
-                        canvas.addEventListener('mousedown', function (event)
-                        {
-                            if (event.button !== 2)
-                                return
-                            
-                            fire_guns(ship)
-
-                            event.preventDefault();
-                        });
-                        canvas.addEventListener('contextmenu', function (event) { event.preventDefault(); });
-
-                        resize_canvas = ccpwgl_context.canvas
-                        resizeCanvasToDisplaySize(ccpwgl_context.canvas, ccpwgl_context)
-                        // ccpwgl_context.viewport(0, 0, ccpwgl_context.canvas.width, ccpwgl_context.canvas.height)
-                    }
-                }`}
-                x-on:resize.window.throttle="resizeCanvasToDisplaySize(resize_canvas, ccpwgl_context)"
-                x-init="$nextTick(() => init_ccpwgl())"
-            />
-        }
-
         <Wrapper
             class="[ left-panel ]"
             padding_inline='0'
@@ -323,10 +152,17 @@ import { navigate } from "astro:transitions/client";
             <Flexblock gap='var(--space-3xl)'>
                 <Flexblock gap='var(--space-xl)'>
                     <Flexblock class="[ page-header ]">
-                        <Flexblock gap='var(--space-3xs)'>
-                            <img loading="lazy" height="64" width="64" src={get_item_icon(ship_id ?? 0)} alt={fitting_parsed.ship_name} />
-                            <PageTitle>{page_title}</PageTitle>
-                        </Flexblock>
+                        <PageTitle>
+                            <img
+                                class="[ inline-block mb-[-7px] ]"
+                                loading="lazy"
+                                height="64"
+                                width="64"
+                                src={get_item_icon(ship_id ?? 0)}
+                                alt={fitting_parsed.ship_name}
+                            />
+                            {page_title}
+                        </PageTitle>
                         <small>{t('last_updated')} {format_date_short(lang, fitting?.updated_at as Date)}</small>
                         <FlexInline>                            
                             <ClipboardButton id="fit-clipboard" text={t('copy_eft')}>
@@ -453,21 +289,7 @@ import { navigate } from "astro:transitions/client";
             ship_id={ship_id ?? 0}
             ship_type={ship_type}
             fitting={fitting_parsed}
-            text={!ship_dna ? t('ship_preview_not_available') : undefined}
         />
-
-        {(user_is_superadmin && show_controls) &&
-            <Flexblock class="[ camera-controls ]">
-                <Flexblock gap='0'>
-                    <label for="doctrine">{t('rotation_x')}</label>
-                    <Input type="number" x-model="rotation_x" step="0.001" />
-                </Flexblock>
-                <Flexblock gap='0'>
-                    <label for="doctrine">{t('rotation_y')}</label>
-                    <Input type="number" x-model="rotation_y" step="0.001" />
-                </Flexblock>
-            </Flexblock>
-        }
     </PageLanding>
 </Viewport>
 
