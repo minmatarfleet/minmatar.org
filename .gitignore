@@ -180,3 +180,6 @@ backend/scripts/outputs/
 
 # Reddit MCP OAuth config and tokens (JARs under mcps/ are tracked)
 mcps/.reddit-mcp/
+
+# EVE Online Static Data for import_sde.py
+sde/*.zip

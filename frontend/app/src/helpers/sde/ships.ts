@@ -14,11 +14,11 @@ export async function get_ship_fitting_capabilities(ship_name:string) {
     .from(schema.invTypes)
     .innerJoin(
         schema.dgmTypeAttributes,
-        eq(schema.invTypes.typeID, schema.dgmTypeAttributes.typeID),
+        eq(schema.invTypes.typeId, schema.dgmTypeAttributes.typeId),
     )
     .innerJoin(
         schema.dgmAttributeTypes,
-        eq(schema.dgmTypeAttributes.attributeID, schema.dgmAttributeTypes.attributeID),
+        eq(schema.dgmTypeAttributes.attributeId, schema.dgmAttributeTypes.attributeId),
     )
     .where(
         and(
@@ -26,23 +26,23 @@ export async function get_ship_fitting_capabilities(ship_name:string) {
             or(
                 and(
                     eq(schema.dgmAttributeTypes.published, '1'),
-                    eq(schema.dgmAttributeTypes.categoryID, 1),
+                    eq(schema.dgmAttributeTypes.categoryId, 1),
                 ),
-                eq(schema.dgmAttributeTypes.attributeName, 'Subsystem Slots'),
+                eq(schema.dgmAttributeTypes.attributeName, 'maxSubSystems'),
             )
         )
     );
 
     const TRANSLATE = {
-        'High Slots': 'high_slots',
-        'Medium Slots': 'med_slots',
-        'Low Slots': 'low_slots',
-        'Rig Slots': 'rig_slots',
+        'hiSlots': 'high_slots',
+        'medSlots': 'med_slots',
+        'lowSlots': 'low_slots',
+        'upgradeSlotsLeft': 'rig_slots',
         'Subsystem Slots': 'subsystem_slots',
-        'Powergrid Output': 'pg_output',
-        'CPU Output': 'cpu_output',
-        'Launcher Hardpoints': 'launchers',
-        'Turret Hardpoints': 'turrets',
+        'powerOutput': 'pg_output',
+        'cpuOutput': 'cpu_output',
+        'launcherSlotsLeft': 'launchers',
+        'turretSlotsLeft': 'turrets',
     }
     
     let capabilities:ShipFittingCapabilities = {}
@@ -67,24 +67,24 @@ export async function get_ship_info(ship_id:number) {
     .from(schema.invGroups)
     .innerJoin(
         schema.invTypes,
-        eq(schema.invGroups.groupID, schema.invTypes.groupID),
+        eq(schema.invGroups.groupId, schema.invTypes.groupId),
     )
     .leftJoin(
         schema.chrRaces,
-        eq(schema.invTypes.raceID, schema.chrRaces.raceID),
+        eq(schema.invTypes.raceId, schema.chrRaces.raceId),
     )
     .leftJoin(
         schema.invMetaTypes,
-        eq(schema.invTypes.typeID, schema.invMetaTypes.typeID),
+        eq(schema.invTypes.typeId, schema.invMetaTypes.typeId),
     )
     .leftJoin(
         schema.invMetaGroups,
-        eq(schema.invMetaTypes.metaGroupID, schema.invMetaGroups.metaGroupID),
+        eq(schema.invMetaTypes.metaGroupId, schema.invMetaGroups.metaGroupId),
     )
     .where(
         and(
-            eq(schema.invTypes.typeID, ship_id),
-            eq(schema.invGroups.categoryID, 6),
+            eq(schema.invTypes.typeId, ship_id),
+            eq(schema.invGroups.categoryId, 6),
         )
     )
     .limit(1)
@@ -112,10 +112,10 @@ export async function get_ship_graphics(ship_id:number) {
     .from(schema.invTypes)
     .innerJoin(
         schema.eveGraphics,
-        eq(schema.invTypes.graphicID, schema.eveGraphics.graphicID),
+        eq(schema.invTypes.graphicId, schema.eveGraphics.graphicId),
     )
     .where(
-        eq(schema.invTypes.typeID, ship_id)
+        eq(schema.invTypes.typeId, ship_id)
     )
     .limit(1)
 
@@ -133,21 +133,21 @@ export async function get_ships_type(ships_id:number[]) {
     // console.log(`Requesting: sde_db.get_ship_info(${ship_id})`)
 
     const q = await sde_db.select({
-        typeID: schema.invTypes.typeID,
+        typeId: schema.invTypes.typeId,
         groupName: schema.invGroups.groupName,
     })
     .from(schema.invGroups)
     .innerJoin(
         schema.invTypes,
-        eq(schema.invGroups.groupID, schema.invTypes.groupID),
+        eq(schema.invGroups.groupId, schema.invTypes.groupId),
     )
     .where(
-        inArray(schema.invTypes.typeID, ships_id),
+        inArray(schema.invTypes.typeId, ships_id),
     )
 
     return q.map(i => {
         return {
-            ship_id: i.typeID,
+            ship_id: i.typeId,
             type: i.groupName,
         } as ShipType
     })
@@ -157,29 +157,29 @@ export async function get_ships_meta(ships_id:number[]) {
     // console.log(`Requesting: sde_db.get_ship_info(${ship_id})`)
 
     const q = await sde_db.select({
-        typeID: schema.invTypes.typeID,
+        typeId: schema.invTypes.typeId,
         metaGroupName: schema.invMetaGroups.metaGroupName,
     })
     .from(schema.invGroups)
     .innerJoin(
         schema.invTypes,
-        eq(schema.invGroups.groupID, schema.invTypes.groupID),
+        eq(schema.invGroups.groupId, schema.invTypes.groupId),
     )
     .leftJoin(
         schema.invMetaTypes,
-        eq(schema.invTypes.typeID, schema.invMetaTypes.typeID),
+        eq(schema.invTypes.typeId, schema.invMetaTypes.typeId),
     )
     .leftJoin(
         schema.invMetaGroups,
-        eq(schema.invMetaTypes.metaGroupID, schema.invMetaGroups.metaGroupID),
+        eq(schema.invMetaTypes.metaGroupId, schema.invMetaGroups.metaGroupId),
     )
     .where(
-        inArray(schema.invTypes.typeID, ships_id),
+        inArray(schema.invTypes.typeId, ships_id),
     )
 
     return q.map(i => {
         return {
-            ship_id: i.typeID,
+            ship_id: i.typeId,
             meta: i.metaGroupName ?? 'Tech I',
         } as ShipMeta
     })

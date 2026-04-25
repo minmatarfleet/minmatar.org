@@ -154,7 +154,7 @@ const page_title = `${system_name} ${t('moons')}`;
                                                 <span class="[ text-[var(--highlight)] ]">{moon.name}</span>
                                                 {moon.scanned ?
                                                     ((moon?.monthly_revenue ?? 0) > 0) ?
-                                                        <small data-tippy-content={number_name(moon.monthly_revenue as number, lang)}>
+                                                        <small class="[ w-fit! ]" data-tippy-content={number_name(moon.monthly_revenue as number, lang)}>
                                                             <FlexInline class="[ !items-baseline ]" gap='var(--space-3xs)'><Square color='green' /> {(moon?.monthly_revenue ?? '').toLocaleString()} ISK</FlexInline>
                                                         </small> :
                                                         <small><FlexInline class="[ !items-baseline ]" gap='var(--space-3xs)'><Square color='green' /> {t('scanned')}</FlexInline></small>
