@@ -30,11 +30,12 @@ import ExtractorIcon from '@components/icons/ExtractorIcon.astro';
 ---
 
 <Flexblock>
+    <h4>{t('harvest_drilldown')}</h4>
     {harvest_drilldown.entries.map(entity => {
         const comparative = max_harvest > 0 ? (entity.daily_quantity ?? 0) * 100 / max_harvest : 0
         
-        return(<FixedFluid width='370px' class="[ harvest-drilldown-item ][ w-full ]">
-            <div>
+        return(<FixedFluid width='450px' class="[ harvest-drilldown-item ][ w-full ]">
+            <div class="basis-[450px]">
                 <PilotBadge
                     character_id={entity.actual_character.character_id}
                     character_name={entity.actual_character.character_name}
@@ -43,7 +44,7 @@ import ExtractorIcon from '@components/icons/ExtractorIcon.astro';
             </div>
 
             <FlexInline gap='var(--space-3xs)'>
-                <FixedFluid class="[ items-center! basis-[175px] grow shrink ]" width='32px' gap='var(--space-2xs)'>
+                <FixedFluid class="[ items-center! basis-[94px] grow shrink ]" width='32px' gap='var(--space-2xs)'>
                     <div
                         class="[ text-highlight h-[32px] ]"
                         data-tippy-content={t('daily_quantity')}
