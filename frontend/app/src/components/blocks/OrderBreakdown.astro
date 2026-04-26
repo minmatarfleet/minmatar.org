@@ -43,6 +43,7 @@ import ButtonFindBlueprint from './ButtonFindBlueprint.astro';
 ---
 
 <Flexblock>
+    <h4>{t('assignments_breakdown')}</h4>
     {order_breakdown.map(item => {
         const items_delivered = item.assignments.reduce(
             (c, assignment) => c + (assignment.delivered_at ? assignment.quantity : 0)
@@ -56,7 +57,7 @@ import ButtonFindBlueprint from './ButtonFindBlueprint.astro';
                        '--fleet-red'
         return (
             <FixedFluid
-                width='320px'
+                width='350px'
                 class="[ production-drilldown-item ][ w-full items-center! ]"
                 gap='var(--space-2xs)'
             >
