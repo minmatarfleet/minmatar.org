@@ -25,6 +25,10 @@ const {
 
 const interpolation_decay = ship_type ? SHIP_WEIGHT[ship_type] : 50
 
+const CAMERA_DELAY_TIME_MS = 15000
+const TRANSITION_TIME_MS = (interpolation_decay * 0.0076 + 0.12) * 1000
+const CAMERA_ROTATION_TIMER_MS = CAMERA_DELAY_TIME_MS + TRANSITION_TIME_MS
+
 import { query_string } from '@helpers/string';
 
 // Update from https://estamelgg.github.io/EVE_Model_Gallery/statics/resources_index_en.json
@@ -130,7 +134,7 @@ import Markdown from '@components/blocks/Markdown.astro';
                 environment-image="/images/skybox-enviromental.jpg"
                 exposure="1.2"
                 x-data={`{
-                    CAMERA_ROTATION_TIMER_MS: 15000,
+                    CAMERA_ROTATION_TIMER_MS: ${CAMERA_ROTATION_TIMER_MS},
                     init() {
                         function cameraRotate(modelViewer, orbitCycle) {
                             console.log('Ticking ${`ship-model-${ship_id}`}')
