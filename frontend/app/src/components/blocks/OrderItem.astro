@@ -64,10 +64,11 @@ import FlagIcon from '@components/icons/FlagIcon.astro';
 
 <CollapsibleBlock
     id={`order-item-${order.id}`}
+    padding_inline='0'    
     expanded={order_breakdown ? true : false}
 >
     <div slot="head" class="[ w-full ]">
-        <FixedFluid width='350px' class="[ order-item ]">
+        <FixedFluid width='450px' class="[ order-item ]">
             <div>
                 <PilotBadge
                     character_id={order.character_id}

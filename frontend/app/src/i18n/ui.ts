@@ -2243,5 +2243,7 @@ export const ui = {
         'accept_terms_tooltip': 'Please review everything carefully and accept the terms at the bottom of the page.',
         'srp_onboarding': 'SRP onboarding',
         'assignments_breakdown': 'Assignments breakdown',
+        'harvest_drilldown': 'Harvest drilldown',
+        'production_drilldown': 'Production drilldown',
     },
 } as const;

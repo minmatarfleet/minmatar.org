@@ -49,10 +49,10 @@ try {
         external_killmail_link = Astro.url.searchParams.get('external_killmail_link')
 
     if (!external_killmail_link)
-        throw new Error(t('invalid_killmail_link'), { cause: 402 })
+        throw new Error(t('invalid_killmail_link'), { cause: 400 })
 
     if (!query_program && !srp_frontend_programs.includes(query_program as any))
-        throw new Error(t('invalid_srp_program'), { cause: 402 })
+        throw new Error(t('invalid_srp_program'), { cause: 400 })
         
     program = query_program as SRPFrontendPrograms
     killmail_analysis = await analyze_killmail(auth_token as string, external_killmail_link)

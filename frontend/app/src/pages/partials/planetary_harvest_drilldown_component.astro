@@ -1,39 +1,41 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 const type_id = parseInt(Astro.url.searchParams.get('type_id') ?? '0')
 
 import type { HarvestDrillDownResponse } from '@dtypes/api.minmatar.org'
-import type { Alert } from '@dtypes/layout_components'
 import { get_planetary_harvest_drilldown } from '@helpers/api.minmatar.org/industry'
 
 let harvest_drilldown: HarvestDrillDownResponse | null = null
-let alert:Alert | false = false
+let fetch_error:Error | false = false
 
-if (!isNaN(type_id)) {
-    try {
-        harvest_drilldown = await get_planetary_harvest_drilldown(type_id)
-        harvest_drilldown.entries = harvest_drilldown.entries.sort((a, b) => (b.daily_quantity ?? 0) - (a.daily_quantity ?? 0))
-    } catch (error) {
-        alert = {
-            title: t('planetary_harvest_drilldown'),
-            content: error.message
-        }
-    }
-} else {
-    alert = {
-        title: t('planetary_harvest_drilldown'),
-        content: t('invalid_resource_type')
-    }
+try {
+    if (isNaN(type_id))
+        throw new Error(t('invalid_resource_type'), { cause: 400 })
+
+    harvest_drilldown = await get_planetary_harvest_drilldown(type_id)
+    harvest_drilldown.entries = harvest_drilldown.entries.sort((a, b) => (b.daily_quantity ?? 0) - (a.daily_quantity ?? 0))
+} catch (error) {
+    fetch_error = error
 }
 
+const PLANETARY_HARVEST_DRILLDOWN_PARTIAL_URL = `${translatePath('/partials/planetary_harvest_drilldown_component')}?type_id=${type_id}`
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '5')
+
 import HarvestDrilldown from '@components/blocks/HarvestDrilldown.astro';
-import ShowAlert from '@components/blocks/ShowAlert.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
 
-{alert ?
-    <ShowAlert alert={alert} /> :       
+{fetch_error ?
+    <ErrorRefetch
+        args={{
+            partial: PLANETARY_HARVEST_DRILLDOWN_PARTIAL_URL,
+            error: fetch_error,
+            delay: delay,
+        }}
+    /> :      
     <HarvestDrilldown
         harvest_drilldown={harvest_drilldown as HarvestDrillDownResponse }
         init_tooltips={true}
