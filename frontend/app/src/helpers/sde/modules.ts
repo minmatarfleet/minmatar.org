@@ -15,7 +15,7 @@ export async function get_module_props(module_name:string) {
         slotName: schema.dgmEffects.displayName,
     })
     .from(schema.invTypes)
-    .innerJoin(
+    .leftJoin(
         schema.invMetaTypes,
         eq(schema.invTypes.typeId, schema.invMetaTypes.typeId),
     )
@@ -23,7 +23,7 @@ export async function get_module_props(module_name:string) {
         schema.invGroups,
         eq(schema.invTypes.groupId, schema.invGroups.groupId),
     )
-    .innerJoin(
+    .leftJoin(
         schema.invMetaGroups,
         eq(schema.invMetaTypes.metaGroupId, schema.invMetaGroups.metaGroupId),
     )
@@ -53,7 +53,7 @@ export async function get_module_props(module_name:string) {
         return {
             id: q[0].typeId,
             name: q[0].moduleName,
-            meta_name: q[0].metaName,
+            meta_name: q[0].metaName ?? 'Tech I',
             module_type: q[0].groupName,
             slot_name: q[0].slotName
         } as Module
