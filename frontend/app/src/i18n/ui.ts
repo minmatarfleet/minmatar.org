@@ -287,6 +287,9 @@ export const ui = {
         'industry.orders.contract.page_title': 'Delivery Contract',
         'industry.orders.contract.leading_text': 'Start creating a contract by selecting your items from your Inventory or Personal Assets, at the station specified below, right click and create contract.',
         'industry.orders.contract.meta_description': 'Delivery contract for industry orders.',
+        
+        'industry.orders.invoice.page_title': 'Delivery Contract Invoice',
+        'industry.orders.invoice.leading_text': 'Check the in-game contract values are correct.',
 
         'industry.products.page_title': 'Products',
         'industry.products.leading_text': 'Products are the inputs — everything our alliance needs to keep the supply chain running. Each product is categorized as produced, harvested, or imported, and linked to the people who make or source it. Find a gap and fill it.',
@@ -2248,5 +2251,12 @@ export const ui = {
         'membership': 'Membership',
         'add': 'Add',
         'delivery_location': 'Delivery location',
+        'invalid_item_count': 'The item amount is not valid.',
+        'use_copy_button': 'Use the copy button',
+        'contract_value': 'Contract value',
+        'invoice': 'Invoice',
+        'manufacturer': 'Manufacturer',
+        'per_unit_template': '{cost} ISK per unit',
+        'contract_to': 'Contract to',
     },
 } as const;

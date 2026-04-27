@@ -3,19 +3,23 @@ import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
 interface Props {
-    producer_name:  string;
-    delivery:       Date | null;
-    init_tooltip?:  boolean;
-    placement?:     string;
-    htmltag?:       string;
-    width?:         string;
-    height?:        string;
+    producer_name:      string;
+    delivery:           Date | null;
+    contract_value?:    number;
+    earnings?:          number;
+    init_tooltip?:      boolean;
+    placement?:         string;
+    htmltag?:           string;
+    width?:             string;
+    height?:            string;
     [propName: string]: any;
 }
 
 const {
     producer_name,
     delivery,
+    contract_value,
+    earnings,
     init_tooltip = false,
     htmltag = 'div',
     placement = 'top',
@@ -28,6 +32,8 @@ import { query_string } from '@helpers/string';
 const query = query_string({
     producer_name: producer_name,
     ...(delivery && { delivery }),
+    ...(contract_value && { contract_value }),
+    ...(earnings && { earnings }),
 })
 
 import Tippy from '@components/blocks/Tippy.astro';

@@ -21,6 +21,15 @@ const target_unit_price = parseFloat(item.target_unit_price ?? '0')
 const no_contract_to = !order?.contract_to || order.contract_to === ''
 
 import { number_thousand_separator } from '@helpers/numbers'
+import { encode_query } from '@helpers/url_encoding';
+
+const invoice_path = `/invoice/${encode_query(
+    order.id,
+    item.id,
+    assignment.id,
+)}`
+
+const invoice_url = Astro.url.origin+translatePath(invoice_path)
 
 import Context from '@components/layout/Context.astro';
 
@@ -41,6 +50,7 @@ import DeliveryButton from './DeliveryButton.astro';
     x-data={`{
         quantity: ${assignment.quantity},
         target_unit_price: ${target_unit_price},
+        invoice_url: '${invoice_url}',
         tippy_instance: null,
         number_thousand_separator(val) {
             return val.toLocaleString('${lang}', {
@@ -86,8 +96,8 @@ import DeliveryButton from './DeliveryButton.astro';
             </VerticalCenter>
 
             <VerticalCenter>
-                <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
-                    <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
+                <FlexInline gap="var(--space-3xs)" class="[ w-full ]">
+                    <Flexblock gap="var(--space-3xs)" class="basis-[420px]">
                         <h4>{t('name')}</h4>
                         <p>
                             <span
@@ -123,8 +133,8 @@ import DeliveryButton from './DeliveryButton.astro';
             </VerticalCenter>
             
             <VerticalCenter>
-                <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
-                    <div class="basis-[250px]">
+                <FlexInline gap="var(--space-3xs)" class="[ w-full ]">
+                    <div class="basis-[420px]">
                         <ItemBadge
                             item_name={item?.eve_type_name}
                             type_id={item?.eve_type_id}
@@ -151,8 +161,8 @@ import DeliveryButton from './DeliveryButton.astro';
             <h2>{t('freight.contract.step_3_title')}</h2>
 
             <VerticalCenter>
-                <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
-                    <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
+                <FlexInline gap="var(--space-3xs)" class="[ w-full ]">
+                    <Flexblock gap="var(--space-3xs)" class="basis-[420px]">
                         <h4>{t('i_will_pay')}</h4>
                         <p>0.00</p>
                     </Flexblock>
@@ -160,8 +170,8 @@ import DeliveryButton from './DeliveryButton.astro';
             </VerticalCenter>
 
             <VerticalCenter>
-                <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
-                    <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
+                <FlexInline gap="var(--space-3xs)" class="[ w-full ]">
+                    <Flexblock gap="var(--space-3xs)" class="basis-[420px]">
                         <h4>{t('i_will_receive')}</h4>
                         <p>
                             <span data-tooltip="receive" x-text="number_thousand_separator(target_unit_price * quantity)">
@@ -181,6 +191,20 @@ import DeliveryButton from './DeliveryButton.astro';
                 <TextGroup title={t('expiration')}>
                     {`4 ${t('weeks')}`}
                 </TextGroup>
+            </VerticalCenter>
+
+            <VerticalCenter>
+                <FlexInline gap="var(--space-3xs)" class="[ w-full ]">
+                    <Flexblock gap="var(--space-3xs)" class="basis-[420px]">
+                        <h4>{t('description')}</h4>
+                        <p x-text="`${invoice_url}?q=${quantity}`">{invoice_url}</p>
+                    </Flexblock>
+                    <ClipboardButton
+                        id="copy-details-url"
+                        class="[ hidden md:!flex relative ]"
+                        x_value="`${invoice_url}?q=${quantity}`"
+                    >{invoice_url}</ClipboardButton>
+                </FlexInline>
             </VerticalCenter>
         </Flexblock>
     </ComponentBlock>

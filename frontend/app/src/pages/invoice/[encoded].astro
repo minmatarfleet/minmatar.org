@@ -1,0 +1,22 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { decode_query } from '@helpers/url_encoding';
+
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+const quantity = Astro.url.searchParams.get('q');
+const encoded = Astro.params.encoded
+
+if (encoded) {
+    try {
+        const { order_id, item_id, assignment_id } = decode_query(encoded);
+        const destination = `/industry/orders/invoice?order_id=${order_id}&item_id=${item_id}&assignment_id=${assignment_id}&item_count=${quantity}`;
+        
+        return Astro.redirect(translatePath(destination));
+    } catch (e) {
+        return HTTP_404_Not_Found();
+    }
+}
+---
