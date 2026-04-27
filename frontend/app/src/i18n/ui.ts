@@ -2245,5 +2245,6 @@ export const ui = {
         'assignments_breakdown': 'Assignments breakdown',
         'harvest_drilldown': 'Harvest drilldown',
         'production_drilldown': 'Production drilldown',
+        'membership': 'Membership',
     },
 } as const;

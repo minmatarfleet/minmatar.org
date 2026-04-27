@@ -12,6 +12,7 @@ import type {
     TribeActivityLeaderboardList,
     ActivityType,
     LogActivityPayload,
+    CharacterMembership,
 } from '@dtypes/api.minmatar.org'
 import { activity_types }  from '@dtypes/api.minmatar.org'
 import { get_error_message, query_string } from '@helpers/string'
@@ -567,4 +568,31 @@ export async function get_tribe_activity_leaderboard(
                 cause: response.status
             })
     return await response.json() as TribeActivityLeaderboardList
+}
+export async function add_character_to_membership(
+    access_token: string,
+    tribe_id: number,
+    group_id: number,
+    membership_id: number,
+    character_id: number,
+): Promise<CharacterMembership> {
+    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships/${membership_id}/characters`
+    console.log(`Requesting POST: ${ENDPOINT}`)
+    try {
+        const response = await fetch(ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${access_token}`,
+            },
+            body: JSON.stringify({ character_id: character_id }),
+        })
+        if (!response.ok)
+            throw new Error(get_error_message(response.status, `POST ${ENDPOINT}`), {
+                cause: response.status
+            })
+        return await response.json() as CharacterMembership
+    } catch (error) {
+        throw new Error(`Error applying to group: ${error.message}`, { cause: error.cause })
+    }
 }

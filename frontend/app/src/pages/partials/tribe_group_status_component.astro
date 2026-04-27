@@ -19,13 +19,10 @@ if (!auth_token || !user) {
 const tribe_id = parseInt(Astro.url.searchParams.get('tribe_id') ?? '0')
 const group_id = parseInt(Astro.url.searchParams.get('group_id') ?? '0')
 
-console.log(tribe_id)
-console.log(group_id)
-
 if (isNaN(tribe_id) || isNaN(group_id))
     return HTTP_400_Bad_Request()
 
-import { apply_to_group, leave_group } from '@helpers/api.minmatar.org/tribes'
+import { apply_to_group, leave_group, add_character_to_membership, delete_membership_character } from '@helpers/api.minmatar.org/tribes'
 import type { Alert } from '@dtypes/layout_components'
 
 let apply_to_group_error:string | false = false
@@ -35,18 +32,30 @@ let alert:Alert | false = false
 if (Astro.request.method === "POST") {
     try {
         const data = await Astro.request.formData()
-        console.log(data.get('character_ids'))
         const character_ids = JSON.parse(data.get('character_ids') as string) as number[]
+        const character_id = parseInt(Astro.url.searchParams.get('character_id') ?? '')
+        const membership_id = parseInt(Astro.url.searchParams.get('membership_id') ?? '')
 
-        if (!Array.isArray(character_ids) || !character_ids.every(character_id => typeof character_id === 'number'))
-            throw new Error(t('invalid_characters'))
-
-        await apply_to_group(
-            auth_token as string,
-            tribe_id,
-            group_id,
-            character_ids
-        )
+        if (!Array.isArray(character_ids) || !character_ids.every(character_id => typeof character_id === 'number')) {
+            if (isNaN(character_id) || isNaN(membership_id))
+                throw new Error(t('invalid_characters'))
+            else {
+                await add_character_to_membership(
+                    auth_token as string,
+                    tribe_id,
+                    group_id,
+                    membership_id,
+                    character_id
+                )
+            }
+        } else {
+            await apply_to_group(
+                auth_token as string,
+                tribe_id,
+                group_id,
+                character_ids
+            )
+        }
     } catch (error) {
         apply_to_group_error = error.message
     }
@@ -61,17 +70,28 @@ if (Astro.request.method === "POST") {
 
 if (Astro.request.method === "DELETE") {
     try {
-        const membership_id = parseInt(Astro.url.searchParams.get('membership_id') ?? '0')
+        const character_id = parseInt(Astro.url.searchParams.get('character_id') ?? '')
+        const membership_id = parseInt(Astro.url.searchParams.get('membership_id') ?? '')
 
         if (isNaN(membership_id))
             throw new Error(t('invalid_membership_id'));
 
-        await leave_group(
-            auth_token as string,
-            tribe_id,
-            group_id,
-            membership_id,
-        )
+        if (character_id > 0) {
+            await delete_membership_character(
+                auth_token as string,
+                tribe_id,
+                group_id,
+                membership_id,
+                character_id,
+            )
+        } else {
+            await leave_group(
+                auth_token as string,
+                tribe_id,
+                group_id,
+                membership_id,
+            )
+        }
     } catch (error) {
         leave_group_error = error.message
     }
