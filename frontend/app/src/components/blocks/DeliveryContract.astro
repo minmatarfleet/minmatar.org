@@ -114,7 +114,14 @@ import DeliveryButton from './DeliveryButton.astro';
     <ComponentBlock width='narrow'>
         <Flexblock class="[ w-full ]" gap='var(--space-m)'>
             <h2>{t('freight.contract.step_2_title')}</h2>
-            <p>{order?.location.location_name}</p>
+            
+
+            <VerticalCenter>
+                <TextGroup title={t('delivery_location')}>
+                    {order?.location.location_name}
+                </TextGroup>
+            </VerticalCenter>
+            
             <VerticalCenter>
                 <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
                     <div class="basis-[250px]">
