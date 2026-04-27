@@ -2246,5 +2246,6 @@ export const ui = {
         'harvest_drilldown': 'Harvest drilldown',
         'production_drilldown': 'Production drilldown',
         'membership': 'Membership',
+        'add': 'Add',
     },
 } as const;
