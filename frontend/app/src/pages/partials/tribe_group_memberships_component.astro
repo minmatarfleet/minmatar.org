@@ -164,7 +164,7 @@ const page_title = t('tribes.groups.membership.page_title').replace('{group}', t
         <>{reload_page_header &&
             <FlexInline id="header-oob" hx-swap-oob="true" justification='space-between' class="[ w-full ]">
                 <Flexblock gap="var(--space-3xs)">
-                    <PageTitle no_link={true}>
+                    <PageTitle path={`/alliance/tribes/${tribe_id}/${tribe_group}/members/`}>
                         {page_title}
                     </PageTitle>
                     <small x-text="count_text">{count_text}</small>
