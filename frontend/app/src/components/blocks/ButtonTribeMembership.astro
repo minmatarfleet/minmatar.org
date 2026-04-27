@@ -32,8 +32,6 @@ const {
 
 import { query_string } from '@helpers/string';
 
-console.log(available_characters)
-
 const TRIBE_GROUP_STATUS_PARTIAL_URL = translatePath(`/partials/tribe_group_status_component?tribe_id=${tribe_id}&group_id=${group_id}`)
 
 // Avoid adding a frontmatter line with a string literal (e.g. ?? "" or ?? ''). It triggers
@@ -104,6 +102,7 @@ import Tag from '@components/blocks/Tag.astro';
                                                 x-model="characters"
                                                 x-on:change="update_character_ids()"
                                                 value={pilot.character_id}
+                                                inert={true}
                                             >
                                                 <div slot="actions">
                                                     {!is_member ?
