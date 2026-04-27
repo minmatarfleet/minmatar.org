@@ -185,7 +185,7 @@ import Tag from '@components/blocks/Tag.astro';
                         group_id: group_id,
                         membership_id: membership_id,
                     })}`}
-                    hx-target={`#${id}`}
+                    hx-target={`#${target_id}`}
                     hx-indicator=".loader"
                     hx-swap="outerHTML transition:true"
                     x-on:click="$el.setAttribute('disabled','')"
