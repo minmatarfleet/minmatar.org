@@ -2258,5 +2258,6 @@ export const ui = {
         'manufacturer': 'Manufacturer',
         'per_unit_template': '{cost} ISK per unit',
         'contract_to': 'Contract to',
+        'cannot_generate_invoice': 'Cannot generate invoice',
     },
 } as const;
