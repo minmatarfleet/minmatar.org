@@ -1397,3 +1397,14 @@ export interface OnboardingStatusResponse {
     acknowledged_version:   string | null;
     is_current:             boolean;
 }
+
+export interface CharacterMembership {
+    id:                 number;
+    character_id:       number;
+    character_name:     string;
+    committed_at:       string;
+    left_at:            string;
+    qualifies:          boolean;
+    missing_skills:     boolean;
+    missing_assets:     boolean;
+}

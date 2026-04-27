@@ -42,6 +42,7 @@ const id = `tribe-group-status-${group.tribe_id}-${group.id}`
 
 import Button from '@components/blocks/Button.astro';
 import ButtonApplyTribe from '@components/blocks/ButtonApplyTribe.astro';
+import ButtonTribeMembership from '@components/blocks/ButtonTribeMembership.astro';
 import ButtonAuth from '@components/blocks/ButtonAuth.astro';
 import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
 ---
@@ -55,7 +56,7 @@ import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
             >
                 {t('tribes.detail.login_to_apply')}
             </ButtonAuth> :
-        is_auth && membership && (is_pending || is_approved) ?
+        is_auth && membership && (is_pending || !is_approved) ?
             <ButtonConfirm
                 label={is_pending ? t('tribes.detail.withdraw') : t('tribes.detail.leave')}
             >
@@ -81,8 +82,18 @@ import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
                 group_id={group_id}
                 pilots={user_characters}
                 available_characters={available_characters}
-            />
-        :
+            /> :
+        is_auth && is_approved ?
+            <ButtonTribeMembership
+                target_id={id}
+                title={group.name}
+                tribe_id={tribe_id}
+                group_id={group_id}
+                membership_id={membership.id}
+                pilots={user_characters}
+                membership={membership}
+                available_characters={available_characters}
+            /> :
         ''
     }
 </div>
