@@ -123,7 +123,7 @@ let count_text = ''
 if (pending.length > 0)
     count_text = t(pending.length != 1 ? 'pending_applications_plural' : 'pending_applications_singular').replace('{count}', String(pending.length))
 else
-    count_text = t(approved.length != 1 ? 'memebrship_plural' : 'memebrship_singular').replace('{count}', String(pending.length))
+    count_text = t(approved.length != 1 ? 'memebrship_plural' : 'memebrship_singular').replace('{count}', String(approved.length))
 
 const TRIBE_GROUP_MEMBERSHIPS_PARTIAL_URL = translatePath(`/partials/tribe_group_memberships_component?tribe_id=${tribe_id}&group_id=${group_id}`)
 
