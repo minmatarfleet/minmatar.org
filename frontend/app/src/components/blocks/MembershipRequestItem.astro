@@ -16,7 +16,7 @@ const {
 
 const TRIBE_GROUP_MEMBERSHIPS_PARTIAL_URL = translatePath(`/partials/tribe_group_memberships_component?tribe_id=${request.tribe_id}&group_id=${request.tribe_group_id}`)
 
-import { format_date_short, time_diff_text } from '@helpers/date';
+import { format_date_short, humanize_date_diff_single } from '@helpers/date';
 import { query_string } from '@helpers/string';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -42,7 +42,7 @@ import RecruitmentIcon from '@components/icons/RecruitmentIcon.astro';
         />
         <Flexblock class="[ basis-[300px] ]" gap='var(--space-3xs)'>
             <h3>{request.primary_character_name ?? t('membership_request_title').replace('{number}', String(request.id))}</h3>
-            <small>{`${format_date_short(lang, request.created_at)} (${time_diff_text(lang, new Date(request.created_at), new Date())})`}</small>
+            <small>{`${format_date_short(lang, request.created_at)} (${humanize_date_diff_single(lang, new Date(request.created_at), new Date())})`}</small>
         </Flexblock>
     </FixedFluid>
 

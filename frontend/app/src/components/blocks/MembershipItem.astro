@@ -18,9 +18,9 @@ const TRIBE_GROUP_MEMBERSHIPS_PARTIAL_URL = translatePath(`/partials/tribe_group
 
 import { query_string } from '@helpers/string';
 
-import { format_date_short, time_diff_text } from '@helpers/date';
+import { format_date_short, humanize_date_diff_single } from '@helpers/date';
 
-const member_since = time_diff_text(lang, new Date(membership.approved_at as string), new Date())
+const member_since = humanize_date_diff_single(lang, new Date(membership.approved_at as string), new Date())
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
