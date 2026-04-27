@@ -11,21 +11,19 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 interface Props {
     is_landing?:    boolean;
     no_link?:       boolean;
+    path?:          string;
 }
 
 const {
     is_landing = false,
     no_link = false,
+    path,
 } = Astro.props
-
-console.log(Astro.url.href)
-import { is_referral_url_debug } from '@helpers/fetching/referrals'
-const debug = is_referral_url_debug(Astro.url.pathname, lang)
 
 import { is_referral_url } from '@helpers/fetching/referrals'
 const is_referral_page = user ? is_referral_url(Astro.url.pathname, lang) : false
 
-const current_page = `${Astro.url.pathname}${Astro.url.search}${Astro.url.hash}`
+const current_page = path ? path : `${Astro.url.pathname}${Astro.url.search}${Astro.url.hash}`
 
 import FlexInline from '@components/compositions/FlexInline.astro';
 

@@ -32,6 +32,10 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
         <Wrapper class="[ card-actions ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
             <slot name="actions" />
         </Wrapper>
+
+        <Wrapper class="[ visible-actions ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
+            <slot name="visible-actions" />
+        </Wrapper>
     </Flexblock>
 </ComponentBlock>
 
@@ -65,6 +69,12 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
             top: 0;
             right: 0;
             opacity: 0;
+        }
+
+        .visible-actions {
+            position: absolute;
+            top: 0;
+            right: 0;
         }
     }
 </style>

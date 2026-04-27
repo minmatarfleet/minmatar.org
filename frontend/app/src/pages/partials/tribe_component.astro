@@ -112,7 +112,7 @@ const page_description = tribe?.description ?? ''
     />
     :
     <Flexblock id="header-oob" gap="var(--space-3xs)" hx-swap-oob="true">
-        <PageTitle is_landing={true} no_link={true}>
+        <PageTitle is_landing={true} path={`/alliance/tribes/${tribe_id}/`}>
             {page_title}
         </PageTitle>
         {tribe?.chief &&

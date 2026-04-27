@@ -67,7 +67,9 @@ const page_title = tribe_group ? `${tribe_group.name} ${t('tribes.detail.activit
     <>{reload_page_header ?
         <FlexInline id="header-oob" hx-swap-oob="true" justification="space-between" class="[ w-full ]">
             <Flexblock gap="var(--space-3xs)">
-                <PageTitle no_link={true}>{page_title}</PageTitle>
+                <PageTitle path={`/alliance/tribes/${tribe_id}/${tribe_group}/activities/`}>
+                    {page_title}
+                </PageTitle>
                 <small x-text="count_text">{count_text}</small>
             </Flexblock>
             <FlexInline>
