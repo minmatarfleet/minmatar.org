@@ -1,0 +1,124 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { IndustrySingleOrder, RootSingleItem, OrderAssignment } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    order:          IndustrySingleOrder;
+    item:           RootSingleItem;
+    item_count:     number;
+    assignment:     OrderAssignment;
+    init_tooltips:  boolean;
+}
+
+const {
+    order,
+    item,
+    item_count,
+    assignment,
+    init_tooltips,
+} = Astro.props
+
+const target_unit_price = parseFloat(item.target_unit_price ?? '0')
+
+const no_contract_to = !order?.contract_to || order.contract_to === ''
+
+import { number_thousand_separator, number_name } from '@helpers/numbers'
+
+import Context from '@components/layout/Context.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import TextGroup from '@components/blocks/TextGroup.astro';
+import ItemBadge from '@components/blocks/ItemBadge.astro'
+import PilotBadge from './PilotBadge.astro';
+---
+
+<Context
+    x-data={`{
+        quantity: ${item_count},
+        target_unit_price: ${target_unit_price},
+        tippy_instance: null,
+        number_thousand_separator(val) {
+            return val.toLocaleString('${lang}', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+            })
+        },
+    }`}
+    x-init="update_tooltip()"
+>
+    <ComponentBlock width='narrow'>
+        <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+            <h2>{t('invoice')}</h2>
+
+            <VerticalCenter>
+                <PilotBadge
+                    character_id={assignment.character_id}
+                    character_name={assignment.character_name}
+                    centered={true}
+                    size={32}
+                >
+                    <small>{t('manufacturer')}</small>
+                </PilotBadge>
+            </VerticalCenter>
+
+            <VerticalCenter>
+                <TextGroup title={t('delivery_location')}>
+                    {order?.location.location_name}
+                </TextGroup>
+            </VerticalCenter>
+
+            <VerticalCenter>
+                <Flexblock gap="var(--space-3xs)">
+                    <h4>{t('contract_to')}</h4>
+                    <p>
+                        <span
+                            data-tippy-content={no_contract_to ?
+                                t('not_available_ask_indy_tooltip').replace('{contractor}', order?.character_name) :
+                                undefined
+                            }
+                        >
+                            {no_contract_to ? t('not_available') : order.contract_to}
+                        </span>
+                    </p>
+                </Flexblock>
+            </VerticalCenter>
+
+            <hr class="[ border-bottom ]" />
+            
+            <VerticalCenter>
+                <ItemBadge
+                    item_name={`${item_count} × ${item?.eve_type_name}`}
+                    type_id={item?.eve_type_id}
+                    size={32}
+                >
+                    <small>{t('per_unit_template').replace('{cost}', number_thousand_separator(parseInt(item?.target_unit_price ?? '0'), lang))}</small>
+                </ItemBadge>
+            </VerticalCenter>
+
+            <VerticalCenter>
+                <Flexblock gap="var(--space-3xs)">
+                    <h4>{t('contract_value')}</h4>
+                    <p>
+                        <span
+                            data-tippy-content={number_name(target_unit_price * assignment.quantity, lang)}
+                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                        >
+                            {number_thousand_separator(target_unit_price * assignment.quantity)} ISK
+                        </span>
+                    </p>
+                </Flexblock>
+            </VerticalCenter>
+        </Flexblock>
+    </ComponentBlock>
+</Context>
+
+<style lang="scss">
+    h3 {
+        margin-block-start: var(--space-l);
+    }
+</style>

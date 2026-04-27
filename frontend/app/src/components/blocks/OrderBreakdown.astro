@@ -87,6 +87,8 @@ import ButtonFindBlueprint from './ButtonFindBlueprint.astro';
                                     <TippyDelivery
                                         producer_name={assignment.character_name}
                                         delivery={assignment.delivered_at}
+                                        contract_value={item?.target_unit_price ? parseInt(item?.target_unit_price) * assignment.quantity : undefined}
+                                        earnings={item?.target_estimated_margin ? parseInt(item?.target_estimated_margin) * assignment.quantity : undefined}
                                         init_tooltip={init_tooltips}
                                     >
                                         <CharacterPicture
@@ -150,7 +152,6 @@ import ButtonFindBlueprint from './ButtonFindBlueprint.astro';
                                         order_id: order_id,
                                         item_id: item.id,
                                         assignment_id: user_assignment.id,
-                                        location_name: location_name,
                                     })}`)}
                                 >
                                     {t('deliver_contract')}

@@ -13,18 +13,17 @@ const is_superuser = (user ? user?.is_superuser : false)
 
 import { get_order_by_id } from '@helpers/api.minmatar.org/industry'
 import type { IndustrySingleOrder, RootSingleItem, OrderAssignment } from '@dtypes/api.minmatar.org'
-import type { Alert } from '@dtypes/layout_components'
 
 let order: IndustrySingleOrder | null = null
 let item:RootSingleItem  | undefined = undefined
 let assignment:OrderAssignment | undefined = undefined
 let data_fetching_error: Error | false = false
-let alert:Alert | null = null
-let location_name:string | null = null
 
 const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '0')
 const item_id = parseInt(Astro.url.searchParams.get('item_id') ?? '0')
 const assignment_id = parseInt(Astro.url.searchParams.get('assignment_id') ?? '0')
+const item_count = parseInt(Astro.url.searchParams.get('item_count') ?? '0')
+let location_name:string | null = null
 
 try {
     if (isNaN(order_id) || order_id < 0)
@@ -32,6 +31,9 @@ try {
     
     if (isNaN(item_id) || item_id < 0)
         throw new Error(t('invalid_item_id'), { cause: 400 })
+    
+    if (isNaN(item_count) || item_count < 0)
+        throw new Error(t('invalid_item_count'), { cause: 400 })
     
     if (isNaN(assignment_id) || assignment_id < 0)
         throw new Error(t('invalid_assignment_id'), { cause: 400 })
@@ -44,9 +46,10 @@ try {
     data_fetching_error = error
 }
 
-const DELIVERY_CONTRACT_URL = translatePath(`/partials/deivery_contract_component?${query_string({
+const DELIVERY_CONTRACT_INVOICE_URL = translatePath(`/partials/deivery_contract_invoice_component?${query_string({
     order_id: order_id,
     item_id: item_id,
+    item_count: item_count,
     assignment_id: assignment_id,
 })}}`)
 
@@ -69,14 +72,14 @@ import BlockList from '@components/compositions/BlockList.astro'
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import Button from '@components/blocks/Button.astro';
-import DeliveryContract from '@components/blocks/DeliveryContract.astro'
+import DeliveryContractInvoice from '@components/blocks/DeliveryContractInvoice.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import ShowAlert from '@components/blocks/ShowAlert.astro'
 
-const page_title = t('industry.orders.contract.page_title');
+const page_title = t('industry.orders.invoice.page_title');
 ---
 
-<Viewport title={page_title} meta_description={t('industry.orders.contract.meta_description')}>
+<Viewport title={page_title}>
     <PageDefault
         cover={{
 			video: location_name ? get_location_video_cover(location_name) : undefined,
@@ -88,8 +91,6 @@ const page_title = t('industry.orders.contract.page_title');
             overlay: true,
         }}
     >
-        {alert && <ShowAlert alert={alert} />}
-
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <FlexInline>
                 <PageTitle>
@@ -107,7 +108,7 @@ const page_title = t('industry.orders.contract.page_title');
             {data_fetching_error !== false ?
                 <ErrorRefetch
                     args={{
-                        partial: DELIVERY_CONTRACT_URL,
+                        partial: DELIVERY_CONTRACT_INVOICE_URL,
                         error: data_fetching_error,
                         delay: 0,
                     }}
@@ -115,10 +116,16 @@ const page_title = t('industry.orders.contract.page_title');
                 :
                 <>{order && item && assignment ?
                     <TextBox>
-                        <p>{t('industry.orders.contract.leading_text')}</p>
+                        <p>{t('industry.orders.invoice.leading_text')}</p>
                     </TextBox>
 
-                    <DeliveryContract order={order} item={item} assignment={assignment} />
+                    <DeliveryContractInvoice
+                        order={order}
+                        item={item}
+                        item_count={item_count}
+                        assignment={assignment}
+                        init_tooltips={false}
+                    />
                     :
                     <p>{t('assignment_not_exist')}</p>
                 }</>
