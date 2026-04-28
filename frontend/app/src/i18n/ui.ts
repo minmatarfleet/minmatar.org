@@ -2119,7 +2119,7 @@ export const ui = {
         'missing_dialog_slot': '⚠️&nbsp;<b>Dialog slot missing:</b>&nbsp;Add&nbsp;`slot="dialog"`&nbsp;attribute on the element meant to be on the content of the dialog.',
         'select_character_to_remove': 'Select character to remove',
         'just_now': 'Just now',
-        'unfinished': 'Unfinished',
+        'not_delivered': 'Not delivered',
         'claim': 'Claim',
         'define_produce_quantity': 'Define the quantity to produce.',
         'define_add_assignment_quantity': 'Define the quantity to add to your assignment.',
