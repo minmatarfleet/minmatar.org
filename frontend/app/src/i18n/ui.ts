@@ -2138,7 +2138,8 @@ export const ui = {
         'invalid_assignment_id': 'The assignment id is not valid.',
         'invalid_delivery_state': 'The delivery state is not valid.',
         'mark_assignment': 'Mark assignment',
-        'up_to_count': 'Up to {count}',
+        'max_units_plural': 'Max {count} units',
+        'max_units_singular': 'Max 1 unit',
         'revert_delivery': 'Revert delivery',
         'delivered_at': 'Delivered on {date}',
         'reclaim': 'Reclaim',
@@ -2259,5 +2260,7 @@ export const ui = {
         'per_unit_template': '{cost} ISK per unit',
         'contract_to': 'Contract to',
         'cannot_generate_invoice': 'Cannot generate invoice',
+        'maximum_amount_limited_plural': '⚠️ Maximum amount limited for the next {count} hour.',
+        'maximum_amount_limited_singular': '⚠️ Maximum amount limited for the next hour.',
     },
 } as const;
