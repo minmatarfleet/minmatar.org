@@ -141,6 +141,37 @@
         "description": "page_finder.propaganda.description"
     },
     {
+        "slug": "posts_create",
+        "alt": "icon.notepad.alt",
+        "path": "/alliance/propaganda/new/editor",
+        "publish": true,
+        "keywords": [ "new" ],
+        "description": "page_finder.posts.create.description",
+        "icon": "/images/icons/48px-Notepad.png",
+        "permissions" : {
+            "user": [ "posts.add_evepost" ]
+        }
+    },
+    {
+        "slug": "propaganda.my_posts",
+        "path": "/alliance/propaganda/my_posts/",
+        "publish": true,
+        "keywords": [ "my" ],
+        "description": "page_finder.propaganda.my_posts.description",
+        "permissions" : {
+            "user": [ "posts.add_evepost" ]
+        }
+    },
+    {
+        "slug": "propaganda.trash",
+        "path": "/alliance/propaganda/trash/",
+        "publish": true,
+        "description": "page_finder.propaganda.trash.description",
+        "permissions" : {
+            "user": [ "posts.add_evepost" ]
+        }
+    },
+    {
         "slug": "ships",
         "alt": "icon.ships.alt",
         "path": "/ships/",
@@ -383,36 +414,5 @@
         "publish": true,
         "icon": "/images/icons/48px-Log.png",
         "description": "page_finder.intel.combatlog.description"
-    },
-    {
-        "slug": "posts_create",
-        "alt": "icon.notepad.alt",
-        "path": "/alliance/propaganda/new/editor",
-        "publish": true,
-        "keywords": [ "new" ],
-        "description": "page_finder.posts.create.description",
-        "icon": "/images/icons/48px-Notepad.png",
-        "permissions" : {
-            "user": [ "posts.add_evepost" ]
-        }
-    },
-    {
-        "slug": "propaganda.my_posts",
-        "path": "/alliance/propaganda/my_posts/",
-        "publish": true,
-        "keywords": [ "my" ],
-        "description": "page_finder.propaganda.my_posts.description",
-        "permissions" : {
-            "user": [ "posts.add_evepost" ]
-        }
-    },
-    {
-        "slug": "propaganda.trash",
-        "path": "/alliance/propaganda/trash/",
-        "publish": true,
-        "description": "page_finder.propaganda.trash.description",
-        "permissions" : {
-            "user": [ "posts.add_evepost" ]
-        }
     }
 ]
