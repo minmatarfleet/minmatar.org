@@ -65,8 +65,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Button from '@components/blocks/Button.astro';
 import SRPTiles from '@components/blocks/SRPTiles.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro'
-import Markdown from '@components/blocks/Markdown.astro'
+import ButtonSRPLearnMore from '@components/blocks/ButtonSRPLearnMore.astro'
 
 const page_title = t('ships.srp.page_title');
 const leading_text = t('ships.srp.leading_text');
@@ -95,30 +94,18 @@ const leading_text = t('ships.srp.leading_text');
                 <TextBox>
                     <PageTitle is_landing={true}>{page_title}</PageTitle>
                 </TextBox>
-                {can_view_srp &&
-                    <FlexInline class="[ !items-start ]" gap='var(--space-s)'>
+                <FlexInline class="[ !items-start ]" gap='var(--space-s)'>
+                    <ButtonSRPLearnMore size='lg' />
+                    {can_view_srp &&
                         <Button href={translatePath('/ships/srp/killmails/')}>
                             {t('view_killmails')}
                         </Button>
-                    </FlexInline>
-                }
+                    }
+                </FlexInline>
             </FlexInline>
 
-            <TextBox class="[ prose ]">
-                <CollapsibleBlock>
-                    <h4 slot="head">{t('srp_wiki')}</h4>
-
-                        <h2 class="[ onboarding-section-title ]">{t('overview_description')}</h2>
-                        <Markdown
-                            markdown={srp_overview_md.rawContent()}
-                            element='div'
-                        />
-                        <h2 class="[ onboarding-section-title ]">{t('source_description')}</h2>
-                        <Markdown
-                            markdown={srp_source_md.rawContent()}
-                            element='div'
-                        />
-                </CollapsibleBlock>
+            <TextBox>
+                <p class="[ excerpt ]">{leading_text}</p>
             </TextBox>
 
             {fetching_error !== false ?

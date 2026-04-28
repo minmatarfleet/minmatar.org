@@ -1,0 +1,69 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { ButtonSizes } from '@dtypes/layout_components';
+
+interface Props {
+    size?:          ButtonSizes;
+}
+
+const {
+    size = 'sm',
+} = Astro.props
+
+import * as srp_overview_md from '@markdown/srp-overview.md';
+import * as srp_source_md from '@markdown/srp-source.md';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import DialogButton from "@components/blocks/DialogButton.astro";
+import Button from '@components/blocks/Button.astro';
+import Markdown from '@components/blocks/Markdown.astro'
+---
+
+<DialogButton
+    color='fleet-red'
+    narrow={false}
+    size={size}
+    max_width='800px'
+    full_height={true}
+>
+    {t('learn_more')}
+
+    <Flexblock gap="var(--space-l)" slot="dialog">
+        <Flexblock gap="var(--space-s)">            
+            <TextBox class="[ prose ]">
+                <h2 class="[ onboarding-section-title ]">{t('overview_description')}</h2>
+                <Markdown
+                    markdown={srp_overview_md.rawContent()}
+                    element='div'
+                />
+                <h2 class="[ onboarding-section-title ]">{t('source_description')}</h2>
+                <Markdown
+                    markdown={srp_source_md.rawContent()}
+                    element='div'
+                />
+            </TextBox>
+        </Flexblock>
+
+        <FlexInline justification='flex-end'>
+            <Button
+                type="button"
+                size='sm'
+                x-on:click="close_dialog()"
+            >
+                {t('ok')}
+            </Button>
+        </FlexInline>
+    </Flexblock>
+</DialogButton>
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-1);
+    }
+</style>
