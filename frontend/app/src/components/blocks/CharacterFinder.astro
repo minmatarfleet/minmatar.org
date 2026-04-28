@@ -50,6 +50,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
         @keyup.escape.window="close_dialog()"
         @mousedown.outside="open && close_dialog()"
         style="--dialog-max-width: 500px"
+        close_button={false}
     >
         <Flexblock gap="0">
             <Input

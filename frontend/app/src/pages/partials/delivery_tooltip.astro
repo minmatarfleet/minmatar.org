@@ -15,7 +15,7 @@ import Context from '@components/layout/Context.astro';
 
 <Context>
     <h4>{producer_name}</h4>
-    <span>{delivery ? t('delivered_at').replace('{date}', format_date_time(lang, delivery)) : t('unfinished')}</span>
+    <span>{delivery ? t('delivered_at').replace('{date}', format_date_time(lang, delivery)) : t('not_delivered')}</span>
     {contract_value > 0 && earnings > 0 &&
         <small>{number_thousand_separator(contract_value, lang)} ISK — <b class="[ text-green ]">+{number_thousand_separator(earnings, lang)} ISK</b></small>
     }
