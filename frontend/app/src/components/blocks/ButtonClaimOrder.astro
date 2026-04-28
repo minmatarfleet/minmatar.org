@@ -31,12 +31,12 @@ const {
 
 import { hours_diff } from '@helpers/date'
 
-const clip_maximum = new Date(item.self_assign_window_ends_at) > new Date()
-const hours_left = hours_diff(new Date(), item.self_assign_window_ends_at)
-
 let max_claimable_items = item.unassigned_quantity
-if (item.self_assign_maximum && clip_maximum)
+if (item.self_assign_maximum)
     max_claimable_items = item.self_assign_maximum - claimed
+
+const clip_maximum = new Date(item.self_assign_window_ends_at) > new Date() && max_claimable_items < item.unassigned_quantity
+const hours_left = hours_diff(new Date(), item.self_assign_window_ends_at)
 
 const ORDER_ITEM_PARTIAL_URL = translatePath(`/partials/order_item_component?order_id=${order_id}&item_id=${item.id}`)
 
@@ -101,36 +101,35 @@ import ItemBadge from '@components/blocks/ItemBadge.astro';
                 <p>{reclaim ? t('define_add_assignment_quantity') : t('define_produce_quantity')}</p>
                 
                 <Flexblock>
-                    <FluidFixed
-                        width='150px'
-                    >
-                        <FlexInline class="[ w-full ]" justification='space-between'>
+                    <Flexblock gap='var(--space-xs)'>
+                        <FluidFixed
+                            width='150px'
+                        >
                             <ItemBadge
                                 item_name={item.eve_type_name}
                                 type_id={item.eve_type_id}
                             >
-                                {clip_maximum ?
-                                    <small>{hours_left !== 1 ?
-                                        t('up_to_count_for_plural').replace('{count}', String(max_claimable_items)).replace('{hours}', String(hours_left)) :
-                                        t('up_to_count_for_singular').replace('{count}', String(max_claimable_items))
-                                    }</small> :
-                                    <small>{t('up_to_count').replace('{count}', String(max_claimable_items))}</small>
-                                }
+                                <small>{t(max_claimable_items !== 1 ? 'max_units_plural' : 'max_units_singular').replace('{count}', String(max_claimable_items))}</small>
                             </ItemBadge>
-                        </FlexInline>
-                        <Input
-                            autofocus
-                            name="quantity"
-                            type="number"
-                            min="0"
-                            max={max_claimable_items}
-                            value="0"
-                            x-model="quantity"
-                            width='150px'
-                            x-on:input={`quantity = Math.min(quantity, ${max_claimable_items}); update_total_text()`}
-                        />
-                        <input type="hidden" name="character_id" value={character_id} />
-                    </FluidFixed>
+                            <Input
+                                autofocus
+                                name="quantity"
+                                type="number"
+                                min="0"
+                                max={max_claimable_items}
+                                value="0"
+                                x-model="quantity"
+                                width='150px'
+                                x-on:input={`quantity = Math.min(quantity, ${max_claimable_items}); update_total_text()`}
+                            />
+                            <input type="hidden" name="character_id" value={character_id} />
+                        </FluidFixed>
+
+                        {clip_maximum &&
+                            <small>{t(hours_left !== 1 ? 'maximum_amount_limited_plural' : 'maximum_amount_limited_singular').replace('{count}', String(hours_left))}</small>
+                        }
+                    </Flexblock>
+
                     <Flexblock gap='var(--space-3xs)'>
                         <FlexInline justification='flex-end'>
                             <small>{t('total_to_produce')}</small>
