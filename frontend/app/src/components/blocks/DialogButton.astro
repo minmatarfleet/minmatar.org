@@ -14,6 +14,7 @@ interface Props {
     inside_swiper?:         boolean;
     thin_dialog?:           boolean;
     disable_when_open?:     boolean;
+    full_height?:           boolean;
     [propName: string]:     any;
 }
 
@@ -27,6 +28,7 @@ const {
     inside_swiper = false,
     thin_dialog = false,
     disable_when_open = false,
+    full_height = false,
     ...attributes
 } = Astro.props
 
@@ -70,7 +72,7 @@ import DebugTag from '@components/blocks/DebugTag.astro';
     <Dialog
         breakout={true}
         non_centered={true}
-        class:list={[ 'button-dialog w-full component overflow-y-auto' ]}
+        class:list={[ 'button-dialog w-full component overflow-y-auto', { 'button-dialog-h-max': full_height } ]}
         x-bind:class="(button_dialog_open ? 'open' : '')"
         x-bind:aria-hidden="button_dialog_open == false"
         x-trap="button_dialog_open"
@@ -89,5 +91,9 @@ import DebugTag from '@components/blocks/DebugTag.astro';
 <style lang="scss">
     .button-dialog {
         max-height: min(750px, 88vh);
+    }
+
+    .button-dialog-h-max {
+        max-height: 88vh;
     }
 </style>

@@ -28,6 +28,7 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
     class:list={['dialog', { breakout: breakout }, { 'non-centered': non_centered }, { fixed: fixed }, Astro.props.class]}
     {...attributes}
 >
+    <button class="[ dialog-close ]" x-on:click="close_dialog()"><TrashIcon /></button>
     {thin ?
         <Wrapper padding_block='var(--space-3xs)' padding_inline='var(--space-3xs)' max_width='100%'>
             <slot />
@@ -43,7 +44,6 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
             </Flexblock>
         </Wrapper>
     }
-    <button class="[ dialog-close ]" x-on:click="close_dialog()"><TrashIcon /></button>
 </div>
 
 <style lang="scss" is:global>
