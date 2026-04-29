@@ -2262,5 +2262,6 @@ export const ui = {
         'cannot_generate_invoice': 'Cannot generate invoice',
         'maximum_amount_limited_plural': '⚠️ Maximum amount limited for the next {count} hour.',
         'maximum_amount_limited_singular': '⚠️ Maximum amount limited for the next hour.',
+        'fleet_started': 'Fleet started',
     },
 } as const;
