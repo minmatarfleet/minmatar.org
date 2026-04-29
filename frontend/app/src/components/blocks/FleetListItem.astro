@@ -28,13 +28,6 @@ import { get_player_icon } from '@helpers/eve_image_server'
 import { marked } from 'marked';
 import { renderer } from '@helpers/marked';
 
-const APPLY_HINT_TEXT = (marked.parseInline(t('apply_hint')) as string)
-    .replace(
-        'FLEET_PAGE_LINK', translatePath('/alliance/')
-    ).replace(
-        'CORPORATIONS_PAGE_LINK', translatePath('/alliance/corporations/list/')
-    )
-
 import { get_fleet_tracking_texts } from '@helpers/fetching/fleets'
 const fleet_tracking_texts = get_fleet_tracking_texts(lang, fleet.tracking)
 
@@ -171,37 +164,58 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                     </Button>
                 </FlexInline>
 
+                <Flexblock>
                 {
                     fleet?.status === 'cancelled' ?
+                        <TextGroup
+                            title={t('eve_time')}
+                            class="[ sentence-cap ]"
+                        >
+                            {eve_time_text}
+                        </TextGroup>
                         <p class="[ fleet-status-text cancelled ]">{t('cancelled')}</p> :
                     fleet?.tracking && !fleet?.tracking?.end_time ?
-                        <p class="[ fleet-status-text blink-animation ]">{t('active')}</p> :
-                    fleet?.tracking && fleet?.tracking?.end_time ?
-                        <CompletedStatus fleet_tracking_texts={fleet_tracking_texts} /> :
-                    !history && !fleet?.tracking ?
-                        <Flexblock>
+                        <>{fleet?.tracking?.start_time ?
+                            <TextGroup
+                                title={t('fleet_started')}
+                                class="[ sentence-cap ]"
+                            >
+                                {new Date(fleet?.tracking?.start_time).toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))}
+                            </TextGroup>
+                            :
                             <TextGroup
                                 title={t('eve_time')}
                                 class="[ sentence-cap ]"
                             >
                                 {eve_time_text}
                             </TextGroup>
-                            <TimeAlternator>
-                                <div slot="time">
-                                    <LocalTimeGroup eve_time={eve_time} />
-                                </div>
+                        }</>
+                        <p class="[ fleet-status-text blink-animation ]">{t('active')}</p> :
+                    fleet?.tracking && fleet?.tracking?.end_time ?
+                        <CompletedStatus fleet_tracking_texts={fleet_tracking_texts} /> :
+                    !history && !fleet?.tracking ?
+                        <TextGroup
+                            title={t('eve_time')}
+                            class="[ sentence-cap ]"
+                        >
+                            {eve_time_text}
+                        </TextGroup>
+                        <TimeAlternator>
+                            <div slot="time">
+                                <LocalTimeGroup eve_time={eve_time} />
+                            </div>
 
-                                <div slot="countdown" class="[ -ml-2.5 ]">
-                                    <Countdown
-                                        date={fleet.start_time}
-                                        id={fleet.id}
-                                        tag='countdown-fleet'
-                                    />
-                                </div>
-                            </TimeAlternator>
-                        </Flexblock> :
+                            <div slot="countdown" class="[ -ml-2.5 ]">
+                                <Countdown
+                                    date={fleet.start_time}
+                                    id={fleet.id}
+                                    tag='countdown-fleet'
+                                />
+                            </div>
+                        </TimeAlternator> :
                         <p>{t('no_tracking_data')}</p>
                 }
+                </Flexblock>
             </CompletedStatus>
 
             {!history &&
