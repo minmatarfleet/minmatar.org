@@ -60,6 +60,15 @@ if (data_fetching_error) {
     return Astro.redirect(translatePath('/market/freight/calculator'))
 }
 
+const location_name = origin
+
+import {
+    get_location_video_cover,
+    get_location_video_cover_thumb,
+    get_location_cover,
+    get_location_cover_990,
+} from '@helpers/covers'
+
 import { number_name } from '@helpers/numbers.ts';
 
 import Viewport from '@layouts/Viewport.astro';
@@ -86,8 +95,10 @@ const page_title = t('freight.contract.page_title');
 <Viewport title={page_title} meta_description={t('freight.contract.meta_description')}>
     <PageAside
         cover={{
-            image: "/images/freight-service-cover.jpg",
-            image_990: "/images/freight-service-cover.jpg",
+            video: get_location_video_cover(location_name) ?? undefined,
+			video_thumb: get_location_video_cover_thumb(location_name) ?? undefined,
+            image: get_location_cover(location_name) ?? '/images/freight-service-cover.jpg',
+            image_990: get_location_cover_990(location_name) ?? '/images/freight-service-cover.jpg',
             animated: false,
             scrollable: true,
             overlay: true
