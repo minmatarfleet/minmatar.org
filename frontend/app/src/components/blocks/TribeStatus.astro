@@ -40,6 +40,10 @@ const is_pending = membership?.status === 'pending'
 
 const id = `tribe-group-status-${group.tribe_id}-${group.id}`
 
+console.log(membership)
+console.log(is_pending)
+console.log(is_approved)
+
 import Button from '@components/blocks/Button.astro';
 import ButtonApplyTribe from '@components/blocks/ButtonApplyTribe.astro';
 import ButtonTribeMembership from '@components/blocks/ButtonTribeMembership.astro';
@@ -56,9 +60,9 @@ import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
             >
                 {t('tribes.detail.login_to_apply')}
             </ButtonAuth> :
-        is_auth && membership && (is_pending || !is_approved) ?
+        is_auth && is_pending ?
             <ButtonConfirm
-                label={is_pending ? t('tribes.detail.withdraw') : t('tribes.detail.leave')}
+                label={t('tribes.detail.withdraw')}
             >
                 <Button
                     hx-delete={`${TRIBE_GROUP_STATUS_PARTIAL_URL}?${query_string({
@@ -74,7 +78,7 @@ import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
                     {t('confirm')}
                 </Button>
             </ButtonConfirm> :
-        is_auth && !is_approved && !is_pending ?
+        is_auth && !is_pending && !is_approved ?
             <ButtonApplyTribe
                 target_id={id}
                 title={group.name}
