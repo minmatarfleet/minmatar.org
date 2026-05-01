@@ -97,13 +97,19 @@ import SRPStat from '@components/blocks/SRPStat.astro';
                             >
                                 {values_sorted.map(value =>
                                     <div class="swiper-slide"  style="margin-bottom: 20px">
-                                        <FlexInline gap='var(--space-3xs)' class="[ items-center! ]" justification='space-between'>
-                                            <ItemBadge
-                                                item_name={value.name}
-                                                type_id={value.type_id}
-                                            />
-                                            <h3>{number_thousand_separator(value.value)} ISK</h3>
-                                        </FlexInline> 
+                                        <ItemBadge
+                                            item_name={value.name}
+                                            type_id={value.type_id}
+                                            title_el='h3'
+                                        >
+                                            <small>
+                                                <span 
+                                                    class="[ w-fit ]"
+                                                    data-tippy-content={number_name(value.value, lang)}
+                                                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                                                >{number_thousand_separator(value.value)}</span>&nbsp;ISK
+                                            </small>
+                                        </ItemBadge>
                                     </div>
                                 )}
                             </BadgeSwiper>

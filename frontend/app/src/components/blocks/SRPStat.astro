@@ -32,9 +32,6 @@ import FlexInline from '@components/compositions/FlexInline.astro';
         <span
             data-tippy-content={number_name(value, lang)}
             x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-        >
-            {number_thousand_separator(value)}
-        </span>
-        ISK
+        >{number_thousand_separator(value)}</span>&nbsp;ISK
     </h3>
 </FlexInline>
