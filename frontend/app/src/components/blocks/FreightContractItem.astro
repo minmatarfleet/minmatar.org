@@ -58,7 +58,12 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
             >
                 <VolumenIcon xlink='#volumen_icon' size={32} />
             </div>
-            <div><span data-tippy-content={number_name(contract.volume, lang)}>{contract.volume.toLocaleString()} m<sup>3</sup></span></div>
+            <div>
+                <span
+                    data-tippy-content={number_name(contract.volume, lang)}
+                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                >{contract.volume.toLocaleString()}</span> <span>m<sup>3</sup></span>
+            </div>
         </FixedFluid>
 
         <FixedFluid class="[ items-center! basis-[200px] ]" width='32px' gap='var(--space-2xs)'>
@@ -69,7 +74,12 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
             >
                 <InsuranceIcon xlink='#insurance_icon' size={32} />
             </div>
-            <div><span data-tippy-content={number_name(contract.collateral, lang)}>{contract.collateral.toLocaleString()} ISK</span></div>
+            <div>
+                <span
+                    data-tippy-content={number_name(contract.collateral, lang)}
+                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                >{contract.collateral.toLocaleString()}</span> <span>ISK</span>
+            </div>
         </FixedFluid>
 
         <FixedFluid class="[ items-center! basis-[200px] ]" width='32px' gap='var(--space-2xs)'>
@@ -80,7 +90,12 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
             >
                 <RewardIcon xlink='#reward_icon' size={32} />
             </div>
-            <div><span data-tippy-content={number_name(contract.reward, lang)}>{contract.reward.toLocaleString()} ISK</span></div>
+            <div>
+                <span
+                    data-tippy-content={number_name(contract.reward, lang)}
+                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                >{contract.reward.toLocaleString()}</span> <span>ISK</span>
+            </div>
         </FixedFluid>
 
         <FixedFluid width='32px' breakpoint='30%' gap='var(--space-2xs)' class="[  items-center! ]">
