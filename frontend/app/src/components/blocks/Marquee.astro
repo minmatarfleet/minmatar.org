@@ -1,0 +1,44 @@
+---
+import FlexInline from '@components/compositions/FlexInline.astro';
+---
+
+<div 
+    class="marquee-container"
+    x-data="{ 
+        speed: 30, // Pixels per second
+        init() {
+            const content = $refs.content;
+            // We only measure half because we duplicated the items
+            const totalWidth = content.scrollWidth / 2; 
+            const duration = totalWidth / this.speed;
+            content.style.setProperty('--duration', `${duration}s`);
+        }
+    }"
+>
+    <FlexInline 
+        class="marquee-content" 
+        x-ref="content"
+        gap='var(--space-m)'
+    >
+        <slot />
+    </FlexInline>
+</div>
+
+<style>
+    .marquee-container {
+        overflow: hidden;
+        width: 100%;
+        mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+    }
+
+    .marquee-content {
+        display: flex;
+        width: max-content;
+        animation: scroll var(--duration, 30s) linear infinite;
+    }
+
+    @keyframes scroll {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+    }
+</style>

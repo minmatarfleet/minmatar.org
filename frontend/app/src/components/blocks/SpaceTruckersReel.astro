@@ -16,7 +16,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro';
 
-import MarqueeSwiper from '@components/blocks/MarqueeSwiper.astro';
+import Marquee from '@components/blocks/Marquee.astro';
 import SpaceTruckerBadge from '@components/blocks/SpaceTruckerBadge.astro';
 import Button from '@components/blocks/Button.astro';
 ---
@@ -29,48 +29,28 @@ import Button from '@components/blocks/Button.astro';
         centered={true}
         padding_block='var(--space-2xs)'
     >
-        <FixedFluid width='170px' class="[ items-center! ]" gap='var(--space-xl)'>
+        <FixedFluid width='170px' class="[ items-center! ]">
             <h4>{t('space_trucker_ranking')}</h4>
             <FlexInlineSiblings
                 min-shink-width='250px'
                 shrinkable-sibbling='first'
-                gap='var(--space-xl)'
             >
-                <div class="[ relative ]">
-                    <div
-                        class="[ swiper ][ w-full ]"
-                        id="space-truckers-list"
-                    >
-                        <MarqueeSwiper
-                            swiper_selector='#space-truckers-list'
-                            pagination={false}
-                            gap={40}
-                            speed={7000}
-                        >
-                            <div class="[ swiper-slide ]" style="margin-right: 40px; width: 160px"></div>
-                            <div class="[ swiper-slide ]" style="margin-right: 40px; width: 160px"></div>
-                            {space_truckers.map((trucker, index) =>
-                                <div class="[ swiper-slide ]" style="margin-right: 40px">
-                                    <SpaceTruckerBadge place={index + 1} trucker={trucker} />
-                                </div>
-                            )}
-                            {space_truckers.length >= 5 && space_truckers.length < 12 &&
-                                <div class="[ swiper-slide ]" style="margin-right: 40px; width: 160px"></div>
-                                <div class="[ swiper-slide ]" style="margin-right: 40px; width: 160px"></div>
-                            }
-                            {space_truckers.length >= 5 && space_truckers.length < 12 &&   
-                                space_truckers.map((trucker, index) =>
-                                    <div class="[ swiper-slide ]" style="margin-right: 40px">
-                                        <SpaceTruckerBadge place={index + 1} trucker={trucker} />
-                                    </div>
-                                )
-                            }
-                        </MarqueeSwiper>
-                    </div>
-
-                    <div id="space-truckers-list-button-prev" class="[ swiper-button-prev ]"></div>
-                    <div id="space-truckers-list-button-next" class="[ swiper-button-next ]"></div>
-                </div>
+                <Marquee>
+                    <div style="width: 160px"></div>
+                    <div style="width: 160px"></div>
+                    {space_truckers.map((trucker, index) =>
+                        <SpaceTruckerBadge place={index + 1} trucker={trucker} />
+                    )}
+                    {space_truckers.length >= 5 && space_truckers.length < 12 &&
+                        <div style="width: 160px"></div>
+                        <div style="width: 160px"></div>
+                    }
+                    {space_truckers.length >= 5 && space_truckers.length < 12 &&   
+                        space_truckers.map((trucker, index) =>
+                            <SpaceTruckerBadge place={index + 1} trucker={trucker} />
+                        )
+                    }
+                </Marquee>
 
                 <Button
                     href={translatePath('/alliance/tribes/3')}
@@ -94,34 +74,5 @@ import Button from '@components/blocks/Button.astro';
 
     .space-truckers-reel {
         position: relative;
-    }
-
-    .swiper-button-prev,
-    .swiper-button-next {
-        --swiper-navigation-color: var(--highlight);
-        --swiper-navigation-sides-offset: -32px;
-        --swiper-navigation-size: 22px;
-
-        opacity: 0;
-    }
-
-    .swiper-initialized ~ .swiper-button-prev,
-    .swiper-initialized ~ .swiper-button-next {
-        opacity: 1;
-    }
-
-    .swiper-initialized ~ .swiper-button-next.swiper-button-disabled,
-    .swiper-initialized ~ .swiper-button-prev.swiper-button-disabled {
-        opacity: 0;
-    }
-
-    .swiper-button-next.swiper-button-disabled,
-    .swiper-button-prev.swiper-button-disabled {
-        --swiper-navigation-color: var(--fleet-yellow);
-        opacity: 1;
-    }
-
-    .swiper-slide {
-        width: fit-content;
     }
 </style>
