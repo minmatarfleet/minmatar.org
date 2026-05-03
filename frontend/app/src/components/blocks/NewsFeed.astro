@@ -13,10 +13,8 @@ const {
 } = Astro.props
 
 import Wrapper from '@components/compositions/Wrapper.astro'
-import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro'
 
 import PostItem from '@components/blocks/PostItem.astro';
-import Button from '@components/blocks/Button.astro';
 ---
 
 <div class="[ swiper news-swiper ][ w-full ]">
@@ -48,19 +46,7 @@ import Button from '@components/blocks/Button.astro';
             const slides = [
                 <div class="[ swiper-slide ]">
                     <Wrapper max_width="656px" padding_inline="var(--space-s)" padding_block="var(--component-padding-block)">
-                        <FlexInlineSiblings
-                            class="[ !items-center ]"
-                            min-shink-width='200px'
-                            shrinkable-sibbling='first'
-                        >
-                            <PostItem post={post} />
-                            <Button class="[ hidden! md:flex! ]" size='sm' href={translatePath(`/alliance/propaganda/${post.slug}-${post.post_id}`)}>
-                                {post.tags.find(tag => (tag === 'The Cope' || tag === 'Metro Daily News' || tag === 'Video' )) ?
-                                    t('watch_it') :
-                                    t('read_more')
-                                }
-                            </Button>
-                        </FlexInlineSiblings>
+                        <PostItem post={post} />
                     </Wrapper>
                 </div>
             ]
