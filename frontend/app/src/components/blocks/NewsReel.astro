@@ -14,12 +14,16 @@ const {
 
 import Wrapper from '@components/compositions/Wrapper.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
 
 import Marquee from '@components/blocks/Marquee.astro';
 import NewsReelBadge from '@components/blocks/NewsReelBadge.astro';
 ---
 
-<div class="[ bottom-bar ][ card component light-transparency hidden! lg:block! animate-slide-in-bottom ]">
+<div
+    class="[ bottom-bar ][ card component light-transparency hidden! animate-slide-in-bottom ]"
+    x-on:marquee-started="$el.classList.add('lg:block!')"
+>
     <Wrapper
         class="[ news-reel ]"
         neocom={true}
@@ -30,18 +34,23 @@ import NewsReelBadge from '@components/blocks/NewsReelBadge.astro';
         <FixedFluid width='120px' class="[ items-center! ]">
             <h4>{t('recent_events')}</h4>
 
-            <Marquee>
-                <div style="width: 450px"></div>
-                {posts.map(post =>
-                    <NewsReelBadge post={post} />
-                )}
-                <div style="width: 450px"></div>
-                {posts.length >= 6 && posts.length < 12 &&
-                    posts.map(post =>
+            {posts.length >= 5 ?
+                <Marquee>
+                    <div style="width: calc(450px + var(--space-l))"></div>
+                    {posts.map(post =>
                         <NewsReelBadge post={post} />
-                    )
-                }
-            </Marquee>
+                    )}
+                    <div style="width: 450px"></div>
+                    {posts.map(post =>
+                        <NewsReelBadge post={post} />
+                    )}
+                </Marquee> :
+                <FlexInline gap='var(--space-l)'>
+                    {posts.map(post =>
+                        <NewsReelBadge post={post} />
+                    )}
+                </FlexInline>
+            }
         </FixedFluid>
     </Wrapper>
 </div>
