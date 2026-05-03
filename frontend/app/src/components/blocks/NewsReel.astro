@@ -36,11 +36,11 @@ import NewsReelBadge from '@components/blocks/NewsReelBadge.astro';
 
             {posts.length >= 5 ?
                 <Marquee>
-                    <div style="width: calc(450px + var(--space-l))"></div>
+                    <div style="width: calc(450px + var(--space-l))"><hr class="[ border-bottom ]" /></div>
                     {posts.map(post =>
                         <NewsReelBadge post={post} />
                     )}
-                    <div style="width: 450px"></div>
+                    <div style="width: 450px"><hr class="[ border-bottom ]" /></div>
                     {posts.map(post =>
                         <NewsReelBadge post={post} />
                     )}
