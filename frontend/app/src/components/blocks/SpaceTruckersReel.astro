@@ -41,13 +41,11 @@ import Button from '@components/blocks/Button.astro';
             >
                 {space_truckers.length >= 5 ?
                     <Marquee>
-                        <div style="width: calc(160px + var(--space-l))"></div>
-                        <div style="width: 160px"></div>
+                        <div style="width: calc(450px + var(--space-l))"><hr class="[ border-bottom ]" /></div>
                         {space_truckers.map((trucker, index) =>
                             <SpaceTruckerBadge place={index + 1} trucker={trucker} />
                         )}
-                        <div style="width: 160px"></div>
-                        <div style="width: 160px"></div>
+                        <div style="width: 450px"><hr class="[ border-bottom ]" /></div>
                         {space_truckers.map((trucker, index) =>
                             <SpaceTruckerBadge place={index + 1} trucker={trucker} />
                         )}
