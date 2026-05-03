@@ -39,7 +39,8 @@ export async function fetch_freight_contracts(history:boolean = false) {
     const routes: Record<string, Record<string, FreightContract[]>> = {}
     const contracts_by_locations:FreightContractLocation[] = []
     const LOCATION_TRANSLATION = {
-        'Structure': 'Amamake - 5 times nearly AT winners'
+        'Structure': 'Amamake - 5 times nearly AT winners',
+        'Jita': 'Jita IV - Moon 4 - Caldari Navy Assembly Plant',
     }
     
     valid_contracts.forEach(contract => {
