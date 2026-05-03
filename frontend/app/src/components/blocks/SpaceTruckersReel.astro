@@ -15,13 +15,17 @@ const {
 import Wrapper from '@components/compositions/Wrapper.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
 
 import Marquee from '@components/blocks/Marquee.astro';
 import SpaceTruckerBadge from '@components/blocks/SpaceTruckerBadge.astro';
 import Button from '@components/blocks/Button.astro';
 ---
 
-<div class="[ bottom-bar ][ card component light-transparency hidden! lg:block! animate-slide-in-bottom ]">
+<div
+    class="[ bottom-bar ][ card component light-transparency hidden! animate-slide-in-bottom ]"
+    x-on:marquee-started="$el.classList.add('lg:block!')"
+>
     <Wrapper
         class="[ space-truckers-reel ]"
         neocom={true}
@@ -35,22 +39,25 @@ import Button from '@components/blocks/Button.astro';
                 min-shink-width='250px'
                 shrinkable-sibbling='first'
             >
-                <Marquee>
-                    <div style="width: 160px"></div>
-                    <div style="width: 160px"></div>
-                    {space_truckers.map((trucker, index) =>
-                        <SpaceTruckerBadge place={index + 1} trucker={trucker} />
-                    )}
-                    {space_truckers.length >= 5 && space_truckers.length < 12 &&
+                {space_truckers.length >= 5 ?
+                    <Marquee>
+                        <div style="width: calc(160px + var(--space-l))"></div>
                         <div style="width: 160px"></div>
-                        <div style="width: 160px"></div>
-                    }
-                    {space_truckers.length >= 5 && space_truckers.length < 12 &&   
-                        space_truckers.map((trucker, index) =>
+                        {space_truckers.map((trucker, index) =>
                             <SpaceTruckerBadge place={index + 1} trucker={trucker} />
-                        )
-                    }
-                </Marquee>
+                        )}
+                        <div style="width: 160px"></div>
+                        <div style="width: 160px"></div>
+                        {space_truckers.map((trucker, index) =>
+                            <SpaceTruckerBadge place={index + 1} trucker={trucker} />
+                        )}
+                    </Marquee> :
+                    <FlexInline gap='var(--space-l)'>
+                        {space_truckers.map((trucker, index) =>
+                            <SpaceTruckerBadge place={index + 1} trucker={trucker} />
+                        )}
+                    </FlexInline>
+                }
 
                 <Button
                     href={translatePath('/alliance/tribes/3')}

@@ -7,11 +7,15 @@ import FlexInline from '@components/compositions/FlexInline.astro';
     x-data="{ 
         speed: 30, // Pixels per second
         init() {
-            const content = $refs.content;
-            // We only measure half because we duplicated the items
-            const totalWidth = content.scrollWidth / 2; 
-            const duration = totalWidth / this.speed;
-            content.style.setProperty('--duration', `${duration}s`);
+            $dispatch('marquee-started')
+            
+            $nextTick(() => {
+                const content = $refs.content;
+                // We only measure half because we duplicated the items
+                const totalWidth = content.scrollWidth / 2; 
+                const duration = totalWidth / this.speed;
+                content.style.setProperty('--duration', `${duration}s`);
+            })
         }
     }"
 >
@@ -34,7 +38,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
     .marquee-content {
         display: flex;
         width: max-content;
-        animation: scroll var(--duration, 30s) linear infinite;
+        animation: scroll var(--duration, 0s) linear infinite;
     }
 
     @keyframes scroll {
