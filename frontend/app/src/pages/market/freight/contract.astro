@@ -70,6 +70,7 @@ import {
 } from '@helpers/covers'
 
 import { number_name } from '@helpers/numbers.ts';
+import { query_string } from '@helpers/string';
 
 import Viewport from '@layouts/Viewport.astro';
 import PageAside from '@components/page/PageAside.astro';
@@ -111,7 +112,7 @@ const page_title = t('freight.contract.page_title');
                 </PageTitle>
             </FlexInline>
             <FlexInline>
-                <Button class="[ !hidden sm:block! ]" href={translatePath(`/market/freight/contracts/`)}>
+                <Button class="[ !hidden sm:block! ]" href={translatePath(`/market/freight/contracts?${query_string({ location_name: location_name })}`)}>
                     {t('freight_contracts')}
                 </Button>
             </FlexInline>
@@ -227,7 +228,7 @@ const page_title = t('freight.contract.page_title');
                                 {t('recalculate')}
                             </Button>
 
-                            <Button href={translatePath(`/market/freight/contracts/`)}>
+                            <Button href={translatePath(`/market/freight/contracts?${query_string({ location_name: location_name })}`)}>
                                 {t('freight_contracts')}
                             </Button>
                         </FlexInline>
