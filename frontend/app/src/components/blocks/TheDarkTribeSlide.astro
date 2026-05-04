@@ -65,10 +65,6 @@ import StylessButton from '@components/blocks/StylessButton.astro';
 </CorporationSlide>
 
 <style lang="scss">
-    img {
-        image-rendering: pixelated;
-    }
-
     .co-ceo {
         z-index: 11;
         position: absolute;
@@ -128,54 +124,76 @@ import StylessButton from '@components/blocks/StylessButton.astro';
     }
 
     @keyframes tempest {
-        from {
+        0% {
             transform: scale(0);
-            top: 36%;
+            top: 13%;
             left: -34%;
         }
 
-        to {
+        30% {
             transform: scale(1);
-            top: -3%;
+            top: 1%;
+            left: 34%;
+        }
+
+        100% {
+            transform: scale(1.03);
+            top: 0%;
             left: 34%;
         }
     }
 
     @keyframes stabber_2 {
-        from {
+        0% {
             transform: scale(0);
-            top: 41%;
-            left: -20%;
+            top: 30%;
+            left: -10%;
         }
 
-        to {
+        33% {
             transform: scale(1);
+            top: 31%;
+            left: 49%;
+        }
+
+        100% {
+            transform: scale(1.03);
             top: 31%;
             left: 49%;
         }
     }
 
     @keyframes cenotaph {
-        from {
+        0% {
             transform: scale(0);
-            left: -62%;
-            top: 25%;
+            left: -12%;
+            top: 15%;
         }
 
-        to {
+        36% {
             transform: scale(1);
             top: 44%;
             left: 44%;
         }
+
+        100% {
+            transform: scale(1.03);
+            top: 44%;
+            left: 45%;
+        }
     }
 
     @keyframes coceo {
-        from {
+        0% {
             transform: scale(0.9);
             opacity: 0;
         }
 
-        to {
+        20% {
+            opacity: 1;
+        }
+
+        100% {
             transform: scale(1);
             opacity: 1;
         }
@@ -189,31 +207,31 @@ import StylessButton from '@components/blocks/StylessButton.astro';
 
     .swiper-slide-active {
         .tempest {
-            animation: tempest cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation: tempest cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.7s;
             animation-delay: 1.2s;
             animation-iteration-count: 1;
-            transform-origin: top right;
+            transform-origin: center;
             animation-fill-mode: forwards;
         }
         
         .stabber_2 {
-            animation: stabber_2 cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.40s;
+            animation: stabber_2 cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.6s;
             animation-delay: 1.3s;
             animation-iteration-count: 1;
-            transform-origin: top right;
+            transform-origin: center;
             animation-fill-mode: forwards;
         }
         
         .cenotaph {
-            animation: cenotaph cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.35s;
+            animation: cenotaph cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.5s;
             animation-delay: 1.4s;
             animation-iteration-count: 1;
-            transform-origin: top right;
+            transform-origin: center;
             animation-fill-mode: forwards;
         }
 
         #darktribe-slide .co-ceo {
-            animation: coceo ease-out 1s;
+            animation: coceo ease-out 3.2s;
             animation-delay: 0.25s;
             animation-iteration-count: 1;
             transform-origin: bottom;

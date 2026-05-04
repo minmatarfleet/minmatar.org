@@ -39,10 +39,6 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
 </CorporationSlide>
 
 <style lang="scss">
-    img {
-        image-rendering: pixelated;
-    }
-
     .redeemer {
         position: absolute;
         top: 40%;
@@ -74,43 +70,61 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
     }
 
     @keyframes redeemer {
-        from {
+        0% {
             transform: scale(0);
-            top: 30%;
-            left: -38%;
+            top: 20%;
+            left: -5%;
         }
 
-        to {
+        30% {
             transform: scale(1);
+            top: 1%;
+            left: 30%;
+        }
+
+        100% {
+            transform: scale(1.03);
             top: 0%;
             left: 30%;
         }
     }
 
     @keyframes devoter {
-        from {
+        0% {
             transform: scale(0);
-            top: 45%;
-            left: -40%;
+            top: 20%;
+            left: -20%;
         }
 
-        to {
+        30% {
             transform: scale(1);
+            top: 16%;
+            left: 30%;
+        }
+
+        100% {
+            transform: scale(1.03);
             top: 16%;
             left: 30%;
         }
     }
 
     @keyframes curse {
-        from {
+        0% {
             transform: scale(0);
-            left: -40%;
-            top: 30%;
+            left: -20%;
+            top: 15%;
         }
 
-        to {
+        36% {
             transform: scale(1);
             top: 41%;
+            left: 20%;
+        }
+
+        100% {
+            transform: scale(1.03);
+            top: 42%;
             left: 20%;
         }
     }
@@ -123,26 +137,26 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
 
     .swiper-slide-active {
         .redeemer {
-            animation: redeemer cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation: redeemer cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.7s;
             animation-delay: 1.2s;
             animation-iteration-count: 1;
-            transform-origin: top right;
+            transform-origin: center;
             animation-fill-mode: forwards;
         }
         
         .devoter {
-            animation: devoter cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.40s;
+            animation: devoter cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.6s;
             animation-delay: 1.3s;
             animation-iteration-count: 1;
-            transform-origin: top right;
+            transform-origin: center;
             animation-fill-mode: forwards;
         }
         
         .curse {
-            animation: curse cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.35s;
-            animation-delay: 1.4s;
+            animation: curse cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.5s;
+            animation-delay: 1.35s;
             animation-iteration-count: 1;
-            transform-origin: top right;
+            transform-origin: center;
             animation-fill-mode: forwards;
         }
     }

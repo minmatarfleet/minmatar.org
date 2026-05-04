@@ -39,10 +39,6 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
 </CorporationSlide>
 
 <style lang="scss">
-    img {
-        image-rendering: pixelated;
-    }
-
     .jaguar {
         position: absolute;
         top: 40%;
@@ -74,43 +70,61 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
     }
 
     @keyframes jaguar {
-        from {
+        0% {
             transform: scale(0);
-            top: 28%;
-            left: -45%;
+            top: 20%;
+            left: -15%;
         }
 
-        to {
+        30% {
             transform: scale(1);
+            top: 33%;
+            left: 31%;
+        }
+
+        100% {
+            transform: scale(1.03);
             top: 33%;
             left: 31%;
         }
     }
 
     @keyframes scimitar {
-        from {
+        0% {
             transform: scale(0);
-            top: 30%;
-            left: -47%;
+            top: 10%;
+            left: -15%;
         }
 
-        to {
+        33% {
             transform: scale(1);
             top: 2%;
+            left: 30%;
+        }
+
+        100% {
+            transform: scale(1.03);
+            top: 1%;
             left: 30%;
         }
     }
 
     @keyframes sleipnir {
-        from {
+        0% {
             transform: scale(0);
-            left: -50%;
-            top: 25%;
+            left: -15%;
+            top: 10%;
         }
 
-        to {
+        33% {
             transform: scale(1);
             top: 36%;
+            left: 27%;
+        }
+
+        100% {
+            transform: scale(1.03);
+            top: 37%;
             left: 27%;
         }
     }
@@ -123,26 +137,26 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
 
     .swiper-slide-active {
         .jaguar {
-            animation: jaguar cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
-            animation-delay: 1.2s;
+            animation: jaguar cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.7s;
+            animation-delay: 1.3s;
             animation-iteration-count: 1;
-            transform-origin: top right;
+            transform-origin: center;
             animation-fill-mode: forwards;
         }
         
         .scimitar {
-            animation: scimitar cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.40s;
-            animation-delay: 1.3s;
+            animation: scimitar cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.6s;
+            animation-delay: 1.2s;
             animation-iteration-count: 1;
-            transform-origin: top right;
+            transform-origin: center;
             animation-fill-mode: forwards;
         }
         
         .sleipnir {
-            animation: sleipnir cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.35s;
+            animation: sleipnir cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.5s;
             animation-delay: 1.4s;
             animation-iteration-count: 1;
-            transform-origin: top right;
+            transform-origin: center;
             animation-fill-mode: forwards;
         }
     }
