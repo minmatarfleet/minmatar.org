@@ -65,10 +65,6 @@ import StylessButton from '@components/blocks/StylessButton.astro';
 </CorporationSlide>
 
 <style lang="scss">
-    img {
-        image-rendering: pixelated;
-    }
-
     .co-ceo {
         z-index: 11;
         position: absolute;
@@ -134,48 +130,70 @@ import StylessButton from '@components/blocks/StylessButton.astro';
             left: -23%;
         }
 
-        to {
+        30% {
             transform: scale(1);
             top: 8%;
+            left: 43%;
+        }
+
+        100% {
+            transform: scale(1.03);
+            top: 7%;
             left: 43%;
         }
     }
 
     @keyframes stabber {
-        from {
+        0% {
             transform: scale(0);
-            top: 41%;
+            top: 30%;
             left: -20%;
         }
 
-        to {
+        33% {
             transform: scale(1);
+            top: 31%;
+            left: 44%;
+        }
+
+        100% {
+            transform: scale(1.03);
             top: 31%;
             left: 44%;
         }
     }
 
     @keyframes slasher {
-        from {
+        0% {
             transform: scale(0);
-            left: -64%;
-            top: 42%;
+            left: -10%;
+            top: 20%;
         }
 
-        to {
+        36% {
             transform: scale(1);
             top: 35%;
+            left: 21%;
+        }
+
+        100% {
+            transform: scale(1.03);
+            top: 36%;
             left: 21%;
         }
     }
 
     @keyframes coceo {
-        from {
+        0% {
             transform: scale(0.9);
             opacity: 0;
         }
 
-        to {
+        20% {
+            opacity: 1;
+        }
+
+        100% {
             transform: scale(1);
             opacity: 1;
         }
@@ -189,31 +207,31 @@ import StylessButton from '@components/blocks/StylessButton.astro';
 
     .swiper-slide-active {
         .scythe {
-            animation: scythe cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation: scythe cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.7s;
             animation-delay: 1.2s;
             animation-iteration-count: 1;
-            transform-origin: top right;
+            transform-origin: center;
             animation-fill-mode: forwards;
         }
         
         .stabber {
-            animation: stabber cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.40s;
+            animation: stabber cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.6s;
             animation-delay: 1.3s;
             animation-iteration-count: 1;
-            transform-origin: top right;
+            transform-origin: center;
             animation-fill-mode: forwards;
         }
         
         .slasher {
-            animation: slasher cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.35s;
+            animation: slasher cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.5s;
             animation-delay: 1.4s;
             animation-iteration-count: 1;
-            transform-origin: top right;
+            transform-origin: center;
             animation-fill-mode: forwards;
         }
 
         #soltech-slide .co-ceo {
-            animation: coceo ease-out 1s;
+            animation: coceo ease-out 3.2s;
             animation-delay: 0.25s;
             animation-iteration-count: 1;
             transform-origin: bottom;

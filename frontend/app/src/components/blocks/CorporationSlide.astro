@@ -123,10 +123,6 @@ import { query_string } from '@helpers/string';
         font-size: var(--step-2);
     }
 
-    img {
-        image-rendering: pixelated;
-    }
-
     .corporation-identity {
         width: 100%;
         justify-content: center;
@@ -176,12 +172,16 @@ import { query_string } from '@helpers/string';
     }
 
     @keyframes ceo {
-        from {
+        0% {
             transform: scale(0.9);
             opacity: 0;
         }
 
-        to {
+        20% {
+            opacity: 1;
+        }
+
+        100% {
             transform: scale(1);
             opacity: 1;
         }
@@ -193,7 +193,7 @@ import { query_string } from '@helpers/string';
             opacity: 0
         }
 
-        to {
+        100% {
             filter: blur();
             opacity: 1
         }
@@ -211,7 +211,7 @@ import { query_string } from '@helpers/string';
 
     .swiper-slide-active {
         .ceo {
-            animation: ceo ease-out 1s;
+            animation: ceo ease-out 3.2s;
             animation-delay: 0.5s;
             animation-iteration-count: 1;
             transform-origin: bottom;

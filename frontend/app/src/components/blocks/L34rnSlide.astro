@@ -60,10 +60,6 @@ import StylessButton from '@components/blocks/StylessButton.astro';
 </CorporationSlide>
 
 <style lang="scss">
-    img {
-        image-rendering: pixelated;
-    }
-
     .co-ceo {
         z-index: 11;
         position: absolute;
@@ -123,54 +119,76 @@ import StylessButton from '@components/blocks/StylessButton.astro';
     }
 
     @keyframes vigil {
-        from {
+        0% {
             transform: scale(0);
-            top: 35%;
-            left: 5%;
+            top: 1%;
+            left: 10%;
         }
 
-        to {
+        30% {
             transform: scale(1);
             top: 8%;
+            left: 55%;
+        }
+
+        100% {
+            transform: scale(1.03);
+            top: 7%;
             left: 55%;
         }
     }
 
     @keyframes burst {
-        from {
+        0% {
             transform: scale(0);
-            top: 27%;
-            left: -40%;
+            top: 20%;
+            left: -13%;
         }
 
-        to {
+        33% {
             transform: scale(1);
+            top: 30%;
+            left: 44%;
+        }
+
+        100% {
+            transform: scale(1.03);
             top: 30%;
             left: 44%;
         }
     }
 
     @keyframes talwar {
-        from {
+        0% {
             transform: scale(0);
-            left: -45%;
-            top: 38%;
+            left: -13%;
+            top: 27%;
         }
 
-        to {
+        36% {
             transform: scale(1);
             top: 45%;
+            left: 39%;
+        }
+
+        100% {
+            transform: scale(1.03);
+            top: 46%;
             left: 39%;
         }
     }    
 
     @keyframes coceo {
-        from {
+        0% {
             transform: scale(0.9);
             opacity: 0;
         }
 
-        to {
+        20% {
+            opacity: 1;
+        }
+
+        100% {
             transform: scale(1);
             opacity: 1;
         }
@@ -184,31 +202,31 @@ import StylessButton from '@components/blocks/StylessButton.astro';
 
     .swiper-slide-active {
         .vigil {
-            animation: vigil cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.45s;
+            animation: vigil cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.7s;
             animation-delay: 1.2s;
             animation-iteration-count: 1;
-            transform-origin: top right;
+            transform-origin: center;
             animation-fill-mode: forwards;
         }
         
         .burst {
-            animation: burst cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.40s;
-            animation-delay: 1.3s;
+            animation: burst cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.6s;
+            animation-delay: 1.25s;
             animation-iteration-count: 1;
-            transform-origin: top right;
+            transform-origin: center;
             animation-fill-mode: forwards;
         }
         
         .talwar {
-            animation: talwar cubic-bezier(0.390, 0.575, 0.565, 1.000) both 0.35s;
+            animation: talwar cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.4s;
             animation-delay: 1.4s;
             animation-iteration-count: 1;
-            transform-origin: top right;
+            transform-origin: center;
             animation-fill-mode: forwards;
         }
 
         #l34rn-slide .co-ceo {
-            animation: coceo ease-out 1s;
+            animation: coceo ease-out 3.2s;
             animation-delay: 0.25s;
             animation-iteration-count: 1;
             transform-origin: bottom;
