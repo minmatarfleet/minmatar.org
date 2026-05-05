@@ -20,9 +20,17 @@ const {
     init_tooltips = false,
 } = Astro.props
 
+import { query_string } from '@helpers/string';
+
 const ORDER_ITEM_PARTIAL_URL = translatePath(`/partials/order_item_component`)
 
-import { query_string } from '@helpers/string';
+const ORDER_BREAKDOWN_PARTIAL_URL = `${translatePath('/partials/order_breakdown_component')}?${query_string({
+    order_id: order_id,
+    ...(location_name && { location_name }),
+})}`
+
+const id = `order-breakdown-${order_id}-inner`
+
 import { number_thousand_separator } from '@helpers/numbers'
 
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -37,13 +45,26 @@ import Progress from '@components/blocks/Progress.astro';
 import Button from '@components/blocks/Button.astro';
 import ButtonClaimOrder from '@components/blocks/ButtonClaimOrder.astro';
 import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
+import ButtonFindBlueprint from '@components/blocks/ButtonFindBlueprint.astro';
 
 import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
-import ButtonFindBlueprint from './ButtonFindBlueprint.astro';
 ---
 
-<Flexblock>
-    <h4>{t('assignments_breakdown')}</h4>
+<Flexblock id={id}>
+    <FlexInline class="[ items-center! ]" justification='space-between'>
+        <h4>{t('assignments_breakdown')}</h4>
+        <Button
+            size='sm'
+            hx-get={ORDER_BREAKDOWN_PARTIAL_URL}
+            hx-target={`#${id}`}
+            hx-swap="outerHTML transition:true"
+            hx-indicator=".loader"
+            hx-on--before-request="this.setAttribute('disabled','');"
+            hx-on--after-request="this.removeAttribute('disabled')"
+        >
+            {t('reload')}
+        </Button>
+    </FlexInline>
     {order_breakdown.map(item => {
         const items_delivered = item.assignments.reduce(
             (c, assignment) => c + (assignment.delivered_at ? assignment.quantity : 0)
