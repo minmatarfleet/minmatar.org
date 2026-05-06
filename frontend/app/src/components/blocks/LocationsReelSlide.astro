@@ -27,7 +27,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import Progress from '@components/blocks/Progress.astro';
 ---
 
-<div class:list={[ "swiper-slide", { 'swiper-slide-active': active } ]} style={`margin-right: ${gap}px`}>
+<div class:list={[ "swiper-slide", { 'active': active } ]} style={`margin-right: ${gap}px`}>
     <a href={href}>
         <Flexblock gap='var(--space-3xs)'>
             <HeadingElement>{title}</HeadingElement>
@@ -52,8 +52,8 @@ import Progress from '@components/blocks/Progress.astro';
         width: fit-content;
         opacity: 0.4;
 
-        &.swiper-slide-active,
-        &.swiper-slide-active:hover {
+        &.active,
+        &.active:hover {
             opacity: 1;
         }
 
@@ -64,7 +64,7 @@ import Progress from '@components/blocks/Progress.astro';
 
         &:focus-within,
         &:hover,
-        &.swiper-slide-active {
+        &.active {
             &:after {
                 content: ' ';
                 position: absolute;
