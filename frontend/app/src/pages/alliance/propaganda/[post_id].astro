@@ -152,7 +152,7 @@ const page_description = post?.excerpt ?? page_title
                     <Button
                         id="back-button-obb"
                         class="[ w-fit! ]"
-                        href={translatePath(`/alliance/propaganda${post?.tags[0] ? `#${post?.tags[0]}` : '/'}`)}
+                        href={translatePath(`/alliance/propaganda${post?.tags[0] ? `#${post?.tags[0].replaceAll(' ', '_')}` : '/'}`)}
                     >
                         {t('back_to_propaganda')}
                     </Button>
