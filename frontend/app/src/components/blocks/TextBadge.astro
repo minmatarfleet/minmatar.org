@@ -1,19 +1,15 @@
 ---
 interface Props {
-    subtext?: string | false;
+    title:      string;
 }
 
 const {
-    subtext = false,
+    title,
 } = Astro.props
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 ---
-<Flexblock gap='0' class="[ w-full ]">
-    <span>
-        <slot />
-    </span>
-    {subtext &&
-        <small>{subtext}</small>
-    }
+<Flexblock gap='var(--space-3xs)' class="[ badge w-full ]">
+    <h4>{title}</h4>
+    <slot />
 </Flexblock>
