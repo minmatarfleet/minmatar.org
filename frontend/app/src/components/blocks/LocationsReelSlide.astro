@@ -65,9 +65,7 @@ import Progress from '@components/blocks/Progress.astro';
         &:focus-within,
         &:focus-visible,
         &:hover,
-        &.active {
-            outline: none;
-            
+        &.active {            
             &:after {
                 content: ' ';
                 position: absolute;
@@ -104,6 +102,7 @@ import Progress from '@components/blocks/Progress.astro';
         a {
             display: block;
             padding-bottom: var(--space-2xs);
+            outline: none;
         }
     }
 </style>
