@@ -9,6 +9,7 @@ interface Props {
     is_video?:      boolean;
     editor_id?:     number;
     is_editing:     boolean;
+    hash:           string;
 }
 
 const {
@@ -19,6 +20,7 @@ const {
     is_video = false,
     editor_id,
     is_editing,
+    hash,
 } = Astro.props
 
 import { slugify } from '@helpers/string'
@@ -47,7 +49,7 @@ import PostersReel from '@components/blocks/PostersReel.astro';
     <Flexblock gap='var(--space-l)'>
         <TextBox>
             <Flexblock>
-                <h2>{title}</h2>
+                <h2 id={hash}>{title}</h2>
                 {!is_editing && <p>{description}</p>}
             </Flexblock>
         </TextBox>
