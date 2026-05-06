@@ -11,14 +11,14 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 import { query_string } from '@helpers/string'
 import { fetch_post } from '@helpers/fetching/posts'
 import type { PostUI } from '@dtypes/layout_components'
-import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { HTTP_400_Bad_Request, HTTP_404_Not_Found } from '@helpers/http_responses'
 
 const param = Astro.params.post_id
 const slug = param?.split('-') ?? ''
 const post_id = parseInt(slug[slug.length - 1])
 
 if (isNaN(post_id))
-    return HTTP_404_Not_Found()
+    return HTTP_400_Bad_Request()
 
 let post:PostUI | null = null
 let get_post_error: Error | false = false
@@ -32,7 +32,7 @@ try {
     if (post?.state !== 'published' && !is_user_post)
         return HTTP_404_Not_Found()
 } catch (error) {
-    return HTTP_404_Not_Found()
+    get_post_error = error
 }
 
 import { marked } from 'marked';
@@ -40,19 +40,24 @@ import { renderer } from '@helpers/marked';
 import { strip_markdown } from '@helpers/string';
 import { format_date } from '@helpers/date'
 
+const POST_PARTIAL_URL = translatePath(`/partials/post_component?id=${post_id}`)
+
 import Viewport from '@layouts/Viewport.astro';
 
 import PageLanding from '@components/page/PageLanding.astro';
+import PageTitle from '@components/page/PageTitle.astro';
 
 import TextBox from '@components/layout/TextBox.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import BlockList from '@components/compositions/BlockList.astro';
 
 import PilotBadge from '@components/blocks/PilotBadge.astro';
 import Button from '@components/blocks/Button.astro';
-import Tag from '@components/blocks/Tag.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import DebugTag from '@components/blocks/DebugTag.astro'
 
 const page_title = post?.title ?? t('new_post')
 const page_description = post?.excerpt ?? page_title
@@ -75,9 +80,9 @@ const page_description = post?.excerpt ?? page_title
         }}
     >
         <Flexblock gap='var(--space-2xl)'>
-            <FlexInline class="[ !items-start ]" justification='space-between'>
+            <FlexInline id="header-oob" class="[ !items-start ]" justification='space-between'>
                 <TextBox>
-                    <h1>{post?.title}</h1>
+                    <PageTitle is_landing={true}>{post?.title}</PageTitle>
                 </TextBox>
                 <FlexInline class="[ !items-start ]">
                     <ClipboardButton
@@ -100,42 +105,53 @@ const page_description = post?.excerpt ?? page_title
                 </FlexInline>
             </FlexInline>
             <TextBox>
-                <Flexblock gap='var(--space-xl)'>
-                    <PilotBadge
-                        character_id={post?.author?.character_id as number}
-                        character_name={post?.author?.character_name as string}
-                        heading={true}
-                    >
-                        <small>{format_date(lang, post?.date_posted)}</small>
-                    </PilotBadge>
+                <BlockList gap='var(--space-xl)'>
+                    {get_post_error !== false ?
+                        <ErrorRefetch
+                            args={{
+                                partial: POST_PARTIAL_URL,
+                                error: get_post_error,
+                                delay: 0,
+                            }}
+                        />
+                        :
+                        <>{post ?
+                            <PilotBadge
+                                character_id={post?.author?.character_id as number}
+                                character_name={post?.author?.character_name as string}
+                                heading={true}
+                            >
+                                <small>{format_date(lang, post?.date_posted)}</small>
+                            </PilotBadge>
 
-                    {post?.excerpt &&
-                        <Flexblock class="[ excerpt ]" gap='var(--space-m)' set:html={marked.parse(post?.excerpt as string, { renderer })}></Flexblock>
+                            <>{post?.excerpt &&
+                                <Flexblock class="[ excerpt ]" gap='var(--space-m)' set:html={marked.parse(post?.excerpt as string, { renderer })}></Flexblock>
+                            }</>
+
+                            <div
+                                class="[ prose ]"
+                                set:html={marked.parse(post?.content as string, { renderer })}
+                                x-data={`{
+                                    init_zoom() {
+                                        mediumZoom('img[data-zoomable]', {
+                                            background: 'var(--solid-transparency-background)',
+                                            scrollOffset: 0,
+                                            margin: 24,
+                                            metaClick: false,
+                                        })
+                                    }
+                                }`}
+                                x-init="init_zoom()"
+                            /> :
+                            <DebugTag>{t('unexpected_error')}</DebugTag>
+                        }</>
                     }
 
-                    {((post?.tags?.length ?? 0) > 0) &&
-                        <FlexInline>
-                            {post?.tags.map(tag =>
-                                <Tag text={tag} />
-                            )}
-                        </FlexInline>
-                    }
+                    <hr class="[ border-bottom ]" />
 
-                    <div
-                        class="[ prose ]"
-                        set:html={marked.parse(post?.content as string, { renderer })}
-                        x-data={`{
-                            init_zoom() {
-                                mediumZoom('img[data-zoomable]', {
-                                    background: 'var(--solid-transparency-background)',
-                                    scrollOffset: 0,
-                                    margin: 24,
-                                    metaClick: false,
-                                })
-                            }
-                        }`}
-                        x-init="init_zoom()"
-                    />
+                    <Button class="[ w-fit ]" href={translatePath('/alliance/propaganda/')}>
+                        {t('back_to_propaganda')}
+                    </Button>
                 </Flexblock>
             </TextBox>
         </Flexblock>
