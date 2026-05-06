@@ -56,7 +56,7 @@ import PlayIcon from '@components/icons/buttons/PlayIcon.astro';
             />
         }
         <small>{format_date(lang, post.date_posted)}</small>
-        <a href={translatePath(`/alliance/propaganda/${post.slug}-${post.post_id}`)}>
+        <a href={translatePath(`/alliance/propaganda/${post.post_id}`)}>
             <h3>{post.title}</h3>
         </a>
     </Flexblock>
