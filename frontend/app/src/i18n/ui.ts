@@ -2263,5 +2263,6 @@ export const ui = {
         'maximum_amount_limited_plural': '⚠️ Maximum amount limited for the next {count} hour.',
         'maximum_amount_limited_singular': '⚠️ Maximum amount limited for the next hour.',
         'fleet_started': 'Fleet started',
+        'last_30_days': 'Last 30 days',
     },
 } as const;

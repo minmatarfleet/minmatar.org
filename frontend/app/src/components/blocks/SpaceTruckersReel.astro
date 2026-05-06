@@ -20,6 +20,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Marquee from '@components/blocks/Marquee.astro';
 import SpaceTruckerBadge from '@components/blocks/SpaceTruckerBadge.astro';
 import Button from '@components/blocks/Button.astro';
+import TextBadge from '@components/blocks/TextBadge.astro';
 ---
 
 <div
@@ -34,7 +35,10 @@ import Button from '@components/blocks/Button.astro';
         padding_block='var(--space-2xs)'
     >
         <FixedFluid width='170px' class="[ items-center! ]">
-            <h4>{t('space_trucker_ranking')}</h4>
+            <TextBadge title={t('space_trucker_ranking')}>
+                <small>{t('last_30_days')}</small>
+            </TextBadge>
+            
             <FlexInlineSiblings
                 min-shink-width='250px'
                 shrinkable-sibbling='first'
