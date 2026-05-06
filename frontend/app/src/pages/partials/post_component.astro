@@ -125,4 +125,13 @@ import DebugTag from '@components/blocks/DebugTag.astro'
         /> :
         <DebugTag>{t('unexpected_error')}</DebugTag>
     }</>
+
+    <Button
+        id="back-button-obb"
+        class="[ w-fit! ]"
+        href={translatePath(`/alliance/propaganda${post?.tags[0] ? `#${post?.tags[0]}` : '/'}`)}
+        hx-swap-oob="true"
+    >
+        {t('back_to_propaganda')}
+    </Button>
 }

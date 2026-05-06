@@ -50,6 +50,7 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             cover="/images/mdn-cover.png"
             editor_id={editor_id ? editor_id : undefined}
             is_editing={is_editing}
+            hash='Metropolis'
         />
     }
     {frontlines_posts.length > 0 &&
@@ -60,6 +61,7 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             cover="/images/frontlines-cover.png"
             editor_id={editor_id ? editor_id : undefined}
             is_editing={is_editing}
+            hash='Frontlines'
         />
     }
     {propaganda_posts.length > 0 &&
@@ -69,6 +71,7 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             posts={propaganda_posts}
             editor_id={editor_id ? editor_id : undefined}
             is_editing={is_editing}
+            hash='Propaganda'
         />
     }
     {mdn_posts_posts.length > 0 &&
@@ -80,6 +83,7 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             is_video={true}
             editor_id={editor_id ? editor_id : undefined}
             is_editing={is_editing}
+            hash='Metro Daily News'
         />
     }
     {the_cope_posts.length > 0 &&
@@ -91,6 +95,7 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             is_video={true}
             editor_id={editor_id ? editor_id : undefined}
             is_editing={is_editing}
+            hash='The Cope'
         />
     }
     {videos_posts.length > 0 &&
@@ -101,6 +106,7 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             is_video={true}
             editor_id={editor_id ? editor_id : undefined}
             is_editing={is_editing}
+            hash='Videos'
         />
     }
     {!is_editing &&
@@ -116,6 +122,7 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             cover="/images/rust-cover.png"
             editor_id={editor_id ? editor_id : undefined}
             is_editing={is_editing}
+            hash='Rust and Blood'
         />
     }
     {waifu_wars_posts.length > 0 &&
@@ -126,6 +133,7 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             cover="/images/waifu-wars-cover.png"
             editor_id={editor_id ? editor_id : undefined}
             is_editing={is_editing}
+            hash='Waifu Wars'
         />
     }
     {!is_editing &&
