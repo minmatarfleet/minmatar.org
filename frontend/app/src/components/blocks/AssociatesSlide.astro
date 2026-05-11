@@ -21,11 +21,9 @@ import Flexblock from "@components/compositions/Flexblock.astro"
 
 import TextBox from '@components/layout/TextBox.astro'
 
-import VerticalCenter from "@components/blocks/VerticalCenter.astro"
 import Button from "@components/blocks/Button.astro"
 
 import Wrapper from '@components/compositions/Wrapper.astro'
-import FlexInline from '@components/compositions/FlexInline.astro';
 ---
 
 <FixedFluid
@@ -41,19 +39,19 @@ import FlexInline from '@components/compositions/FlexInline.astro';
     >
         <Flexblock gap='var(--space-xl)'>
             <Flexblock>
-                <picture class="[ h-[128px] ]">
+                <picture class="[ animated ][ h-[128px] animate-slide-up-fade ]">
                     <img loading="lazy" src={get_alliance_logo(MINMATAR_FLEET_ASSOCIATES_ID, 128)} width="128" height="128" alt={`${t('minmatar_fleet_associates')} ${t('logo')}`} />
                 </picture>
-                <h2>{t('minmatar_fleet_associates')}</h2>
+                <h2 class="[ animated ][ animate-slide-up-fade animate-delay-150 ]">{t('minmatar_fleet_associates')}</h2>
             </Flexblock>
-            <TextBox>
+            <TextBox class="[ animated ][ animate-fade-in animate-duration-250 animate-delay-300 ]">
                 <p>Minmatar Fleet Associates is a collection of small, medium, and large corporations focused on supplying the relentless war machine of the Minmatar Fleet. These organizations typically specialize in industry, resource collection, and logistics.</p>
             </TextBox>
-            <FlexInline>
+            <div class="[ animated ][ animate-fade-in animate-duration-250 animate-delay-450 ]">
                 <Button href={translatePath('/alliance/corporations/associates/')}>
                     {t('view_associates')}
                 </Button>
-            </FlexInline>
+            </div>
         </Flexblock>
     </Wrapper>
     
