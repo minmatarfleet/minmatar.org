@@ -56,7 +56,6 @@ import Markdown from '@components/blocks/Markdown.astro';
         {(corporation?.status != null && !corporation.active) ?
             <ButtonCeoToken
                 corporation={corporation}
-                size='sm'
                 dialog_title={t('add_ceo_token_dialog_title')}
             >
                 {t('add_ceo_token')}
@@ -65,7 +64,6 @@ import Markdown from '@components/blocks/Markdown.astro';
         (corporation?.status == 'available' && !primary_character_id) ?
             <ButtonAddPrimary
                 color='green'
-                size='sm'
                 dialog_title={t('corporation_join_request_dialog_title')}
             >
                 {t('enlist_today')}
@@ -76,7 +74,6 @@ import Markdown from '@components/blocks/Markdown.astro';
         (is_re_applicable && corporation?.status === 'rejected') ?
             <Button
                 id={`${apply_button_id}-dummy`}
-                size='sm'
                 color='green'
                 x-on:click={`document.getElementById('${apply_button_id}').click()`}
             >
@@ -86,7 +83,6 @@ import Markdown from '@components/blocks/Markdown.astro';
         corporation?.status == 'unauth' ?
             <ButtonAuth
                 color='green'
-                size='sm'
                 dialog_title={t('corporation_join_request_dialog_title')}
             >
                 {t('enlist_today')}
@@ -95,7 +91,6 @@ import Markdown from '@components/blocks/Markdown.astro';
             ''
         }
         <Button
-            size='sm'
             x-data={`{
             show_corporation_modal() {
                     show_modal({

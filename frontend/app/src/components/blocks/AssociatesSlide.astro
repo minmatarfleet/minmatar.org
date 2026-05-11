@@ -40,31 +40,18 @@ import FlexInline from '@components/compositions/FlexInline.astro';
         padding_inline='var(--space-s)'
     >
         <Flexblock gap='var(--space-xl)'>
-            <VerticalCenter>
-                <FixedFluid width='64px' class="[ items-center w-full ]">
-                    <picture class="[ border ]">
-                        <img loading="lazy" src={get_alliance_logo(MINMATAR_FLEET_ASSOCIATES_ID, 64)} width="64" height="64" alt={`${t('minmatar_fleet_associates')} ${t('logo')}`} />
-                    </picture>
-                    <h2>{t('minmatar_fleet_associates')}</h2>
-                </FixedFluid>
-            </VerticalCenter>
+            <Flexblock>
+                <picture class="[ h-[128px] ]">
+                    <img loading="lazy" src={get_alliance_logo(MINMATAR_FLEET_ASSOCIATES_ID, 128)} width="128" height="128" alt={`${t('minmatar_fleet_associates')} ${t('logo')}`} />
+                </picture>
+                <h2>{t('minmatar_fleet_associates')}</h2>
+            </Flexblock>
             <TextBox>
                 <p>Minmatar Fleet Associates is a collection of small, medium, and large corporations focused on supplying the relentless war machine of the Minmatar Fleet. These organizations typically specialize in industry, resource collection, and logistics.</p>
             </TextBox>
             <FlexInline>
-                <Button
-                    size='sm'
-                    href={translatePath('/alliance/corporations/associates/')}
-                >
+                <Button href={translatePath('/alliance/corporations/associates/')}>
                     {t('view_associates')}
-                </Button>
-                
-                <Button
-                    size='sm'
-                    href={translatePath('/market/contracts/')}
-                    color='green'
-                >
-                    {t('become_a_supplier')}
                 </Button>
             </FlexInline>
         </Flexblock>
@@ -87,7 +74,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
     }
 
     h2 {
-        font-size: var(--step-2);
+        font-size: var(--step-5);
     }
 
     .corporation-identity {

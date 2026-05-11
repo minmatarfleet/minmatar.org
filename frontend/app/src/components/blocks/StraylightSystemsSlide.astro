@@ -24,7 +24,7 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
 
 <CorporationSlide
     id="straylight-slide"
-    ceo_image='/images/corporations/straylight/ceo.png'
+    ceo_image='/images/corporations/straylight/ceo.webp'
     ceo_character_id={CHAD_VANGAALEN_ID}
     corporation={corporation}
     is_user_corporation={is_user_corporation}
@@ -78,13 +78,13 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
 
         30% {
             transform: scale(1);
-            top: 1%;
-            left: 30%;
+            top: 0%;
+            left: 27%;
         }
 
         100% {
             transform: scale(1.03);
-            top: -1%;
+            top: -2%;
             left: 30%;
         }
     }
@@ -105,34 +105,34 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
         100% {
             transform: scale(1.04);
             top: 16%;
-            left: 30%;
+            left: 33%;
         }
     }
 
     @keyframes curse {
         0% {
             transform: scale(0);
-            left: -20%;
-            top: 15%;
+            left: -12%;
+            top: 21%;
         }
 
         36% {
             transform: scale(1);
-            top: 41%;
-            left: 20%;
+            top: 48%;
+            left: 31%;
         }
 
         100% {
             transform: scale(1.03);
-            top: 43%;
-            left: 20%;
+            top: 51%;
+            left: 33%;
         }
     }
 </style>
 
 <style lang="scss" is:global>
     #straylight-slide .ceo {
-        left: -1%;
+        left: -11%;
     }
 
     .swiper-slide-active {
