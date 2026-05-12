@@ -56,6 +56,7 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
 import PageTitle from '@components/page/PageTitle.astro';
+import PageSubheader from '@components/page/PageSubheader.astro';
 
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -127,7 +128,7 @@ const page_title = t('assets.user.page_title')
             </FlexInline>
         </FlexInline>
 
-        <FlexInline
+        <PageSubheader
             slot="subheader"
             gap='var(--space-l)'
             class="[ items-center ]"
@@ -169,7 +170,7 @@ const page_title = t('assets.user.page_title')
                     {t('collapse_stations')}
                 </Button>
             </FlexInline>
-        </FlexInline>
+        </PageSubheader>
 
         {get_character_assets_error ?
             <ErrorRefetch

@@ -47,6 +47,7 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
 import PageTitle from '@components/page/PageTitle.astro';
+import PageSubheader from '@components/page/PageSubheader.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -121,14 +122,14 @@ const page_title = t('industry.planetary_production.page_title')
             </FlexInline>
         </FlexInline>
     
-        <FlexInline slot="subheader">
+        <PageSubheader slot="subheader">
             <Button
                 href={translatePath('/industry/colonies/')}
                 size='sm'
             >
                 {t('industry.colonies.page_title')}
             </Button>
-        </FlexInline>
+        </PageSubheader>
 
         {data_fetching_error ?
             <ErrorRefetch

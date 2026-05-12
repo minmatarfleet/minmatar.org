@@ -48,6 +48,7 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
+import PageSubheader from '@components/page/PageSubheader.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -97,14 +98,14 @@ const page_description = t('page_finder.fleets.history.description');
             </FlexInline>
         </FlexInline>
 
-        <FlexInline slot="subheader">
+        <PageSubheader slot="subheader">
             <Button
                 href={translatePath('/fleets/upcoming/')}
                 size='sm'
             >
                 {t('upcoming_fleets')}
             </Button>
-        </FlexInline>
+        </PageSubheader>
         
         {fetch_fleets_error ?
             <ErrorRefetch

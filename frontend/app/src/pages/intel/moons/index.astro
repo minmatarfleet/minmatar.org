@@ -87,6 +87,7 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
+import PageSubheader from '@components/page/PageSubheader.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -145,7 +146,7 @@ const page_title = t('intel.moon_tracking.page_title');
             </FlexInline>
         </FlexInline>
 
-        <FlexInline slot="subheader">   
+        <PageSubheader slot="subheader">   
             <FindSystemButton
                 id="moon_select_home_system"
                 title={t('change_home_system')}
@@ -157,7 +158,7 @@ const page_title = t('intel.moon_tracking.page_title');
             <Button size='sm' x-on:click="toggle_filters()">
                 {t('filters')}
             </Button>
-        </FlexInline>
+        </PageSubheader>
 
         {fetch_moon_system_data_error ?
             <ErrorRefetch

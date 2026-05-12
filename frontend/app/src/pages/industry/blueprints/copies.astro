@@ -24,6 +24,7 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
+import PageSubheader from '@components/page/PageSubheader.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -98,7 +99,7 @@ const page_title = t('industry.blueprint.copies.page_title');
             </FlexInline>
         </FlexInline>
 
-        <FlexInline slot="subheader" justification='center'>
+        <PageSubheader slot="subheader" justification='center'>
             <Flexblock class="[ basis-200 ]" gap='var(--space-2xs)'>
                 <Form
                     hx-get={BLUEPRINTS_PARTIAL_URL}
@@ -159,7 +160,7 @@ const page_title = t('industry.blueprint.copies.page_title');
                     />
                 </FlexInline>
             </Flexblock>
-        </FlexInline>
+        </PageSubheader>
         
         <BlockList>
             <FlexInline justification='space-between' class="[ items-start! ]">

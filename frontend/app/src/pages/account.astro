@@ -69,6 +69,7 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
 import PageTitle from '@components/page/PageTitle.astro';
+import PageSubheader from '@components/page/PageSubheader.astro';
 
 import Context from '@components/layout/Context.astro';
 
@@ -133,7 +134,7 @@ const page_title = t('account.page_title');
             </FlexInline>
         </FlexInline>
 
-        <FlexInline slot="subheader">
+        <PageSubheader slot="subheader">
             <Button
                 href={translatePath('/account/referrals/')}
                 size='sm'
@@ -147,7 +148,7 @@ const page_title = t('account.page_title');
             >
                 {t('troubleshooting')}
             </Button>
-        </FlexInline>
+        </PageSubheader>
         
         <Flexblock>            
             <ComponentBlock width='narrow'>

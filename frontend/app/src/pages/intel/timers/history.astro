@@ -50,6 +50,7 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
+import PageSubheader from '@components/page/PageSubheader.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -103,14 +104,14 @@ const page_title = t('intel.timers.history.page_title');
             </FlexInline>
         </FlexInline>
 
-        <FlexInline slot="subheader">
+        <PageSubheader slot="subheader">
             <Button
                 href={translatePath('/intel/timers/active/')}
                 size='sm'
             >
                 {t('active_timers')}
             </Button>
-        </FlexInline>
+        </PageSubheader>
         
         {structure_timers_error ?
             <ErrorRefetch

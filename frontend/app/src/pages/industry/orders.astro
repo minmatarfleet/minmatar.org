@@ -44,6 +44,7 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
+import PageSubheader from '@components/page/PageSubheader.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -120,14 +121,14 @@ const page_title = t('industry.orders.page_title');
             </FlexInline>
         </FlexInline>
 
-        <FlexInline slot="subheader">
+        <PageSubheader slot="subheader">
             <Button
                 href={translatePath('/industry/orders/history/')}
                 size='sm'
             >
                 {t('view_orders_history')}
             </Button>
-        </FlexInline>
+        </PageSubheader>
 
         {fetching_error !== false ?
             <ErrorRefetch

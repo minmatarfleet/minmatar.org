@@ -100,6 +100,7 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
 import PageTitle from '@components/page/PageTitle.astro';
+import PageSubheader from '@components/page/PageSubheader.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -212,7 +213,7 @@ const page_title = t('sell_orders.page_title')
             </FlexInline>
         </FlexInline>
 
-        <FlexInline
+        <PageSubheader
             id="subheader-oob"
             slot="subheader"
         >
@@ -223,7 +224,7 @@ const page_title = t('sell_orders.page_title')
             <Button size='sm' href={translatePath('/market/sell_orders/standard')}>
                 {t('standard_view')}
             </Button>
-        </FlexInline>
+        </PageSubheader>
     
         {data_fetching_error ?
             <ErrorRefetch

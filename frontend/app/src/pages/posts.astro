@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { lang, t, translatePath } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
@@ -42,6 +42,7 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
+import PageSubheader from '@components/page/PageSubheader.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -119,7 +120,7 @@ const page_title = t('posts.page_title');
             </Input>
         </FlexInline>
 
-        <FlexInline slot="subheader">
+        <PageSubheader slot="subheader">
             <Button
                 href={translatePath('/posts/new')}
                 size='sm'
@@ -133,7 +134,7 @@ const page_title = t('posts.page_title');
             >
                 {t('trash')}
             </Button>
-        </FlexInline>
+        </PageSubheader>
 
         {fetch_user_posts_error ?
             <ErrorRefetch
