@@ -48,6 +48,7 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
+import PageSubheader from '@components/page/PageSubheader.astro';
 
 import TextBox from '@components/layout/TextBox.astro';
 
@@ -103,8 +104,12 @@ const leading_text = t('propaganda.leading_text');
             }
         </FlexInline>
 
-        {post_editor &&
-            <FlexInline slot="subheader">
+        <PageSubheader
+            id="subheader-oob"
+            slot="subheader"
+            is_empty={!post_editor}
+        >
+            {post_editor &&
                 <Button size='sm' href={translatePath('/alliance/propaganda/my_posts/')}>
                     {t('my_posts')}
                 </Button>
@@ -112,8 +117,8 @@ const leading_text = t('propaganda.leading_text');
                 <Button size='sm' href={translatePath('/alliance/propaganda/trash/')}>
                     {t('trash')}
                 </Button>
-            </FlexInline>
-        }
+            }
+        </PageSubheader>
 
         <Flexblock gap='var(--space-2xl)'>
             <TextBox>

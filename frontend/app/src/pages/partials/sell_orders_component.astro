@@ -91,6 +91,10 @@ const non_active_market_locations_ui = market_locations_ui.filter(location => lo
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import ButtonExportShortfallItems from '@components/blocks/ButtonExportShortfallItems.astro';
+import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import MarketList from '@components/blocks/MarketList.astro';
 import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astro';
@@ -106,6 +110,19 @@ import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astr
     />
     :
     active_market_locations_ui !== undefined ?
+        <FlexInline
+            id="subheader-oob"
+            hx-swap-oob="true"
+        >
+            <ButtonExportShortfallItems
+                shortfall_items_by_category={shortfall_items_by_category}
+                shortfall_categories={shortfall_categories}
+            />
+            <Button size='sm' href={translatePath('/market/sell_orders/standard')}>
+                {t('standard_view')}
+            </Button>
+        </FlexInline>
+
         <MarketList
             active_market_locations_ui={active_market_locations_ui}
             non_active_market_locations_ui={non_active_market_locations_ui}

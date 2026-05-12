@@ -22,6 +22,7 @@ const can_verify_timer = is_superuser || user_permissions.includes('structures.c
 import type { StructureTimerUI } from '@dtypes/layout_components'
 import { fetch_structure_timers } from '@helpers/fetching/structures'
 import { get_unique_by_key } from '@helpers/array'
+import { remove_line_breaks } from '@helpers/string'
 import { hours_diff } from '@helpers/date'
 
 const active = JSON.parse(Astro.url.searchParams.get('active') ?? '') as boolean
@@ -29,9 +30,12 @@ const duplicated = JSON.parse(Astro.url.searchParams.get('duplicated') ?? '') as
 
 let structure_timers_error: Error | false = false
 let structure_timers:StructureTimerUI[] = []
+let duplicated_count = 0
+let timers_clipboard = ''
 
 try {
     structure_timers = await fetch_structure_timers(auth_token as string, active)
+
     if (active)
         structure_timers = structure_timers.filter(timer => hours_diff(new Date(), timer.timer) < 200)
     else
@@ -41,16 +45,27 @@ try {
         return new Date(a.timer).getTime() - new Date(b.timer).getTime();
     });
 
-    if (!duplicated)
+    const unfiltered_count = structure_timers.length
+
+    if (!duplicated) {
         structure_timers = get_unique_by_key(structure_timers, 'timer')
+        duplicated_count = unfiltered_count - structure_timers.length
+    }
+
+    timers_clipboard = structure_timers.reduce((c, item) => `${c}${item.timer}: ${t(item.structure_type as any) ?? item.structure_type} [${item.corporation_name}] [${item.system_name} - ${remove_line_breaks(item.name)}]\r`, '')
 } catch (error) {
     structure_timers_error = error
 }
 
-const STRUCTURE_TIMERS_LIST_PARTIAL_URL = translatePath(`/partials/structure_timers_list_component?active=${active}&duplicated=${duplicated ?? false}`)
+const STRUCTURE_TIMERS_LIST_PARTIAL_URL = translatePath(`/partials/structure_timers_list_component?active=${active}`)
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Button from '@components/blocks/Button.astro';
+import NotificationBadge from '@components/blocks/NotificationBadge.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 import StructureTimerList from '@components/blocks/StructureTimerList.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 ---
@@ -58,12 +73,47 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 {structure_timers_error ?
     <ErrorRefetch
         args={{
-            partial: STRUCTURE_TIMERS_LIST_PARTIAL_URL,
+            partial: `${STRUCTURE_TIMERS_LIST_PARTIAL_URL}&duplicated=${duplicated ?? false}`,
             error: structure_timers_error,
             delay: delay,
         }}
     />
     :
+    <FlexInline
+        id="subheader-oob"
+        hx-swap-oob="true"
+    >
+        <Button
+            size='sm'
+            hx-get={`${STRUCTURE_TIMERS_LIST_PARTIAL_URL}&duplicated=${JSON.stringify(!duplicated)}`}
+            hx-target=".structure-timers-list-container"
+            hx-indicator=".loader"
+            hx-on--before-request="this.setAttribute('disabled','');"
+            hx-swap="outerHTML transition:true"
+        >
+            <span>{duplicated ? t('hide_duplicated') : t('show_duplicated')}</span>
+            {!duplicated &&
+                <NotificationBadge
+                    color='fleet-yellow'
+                    number={duplicated_count ?? 0}
+                />
+            }
+        </Button>
+
+        <Button
+            href={translatePath('/intel/timers/history/')}
+            size='sm'
+        >
+            {t('timers_history')}
+        </Button>
+
+        {structure_timers.length > 0 &&
+            <ClipboardButton id="active-timers-to-clipboard">
+                {timers_clipboard}
+            </ClipboardButton>
+        }
+    </FlexInline>
+
     <div
         class="[ structure-timers-list-container ]"
         x-init={`structure_timers_count = ${structure_timers.length}`}

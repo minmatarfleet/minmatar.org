@@ -25,16 +25,7 @@ if (!can_view_srp)
 
 import { should_redirect_to_srp_onboarding } from '@helpers/onboarding/srpRedirect'
 
-if (
-    auth_token &&
-    (await should_redirect_to_srp_onboarding(
-        auth_token as string,
-        has_explicit_srp_change,
-    ))
-) {
-    const return_to = encodeURIComponent(Astro.url.pathname + Astro.url.search)
-    return Astro.redirect(`${translatePath('/onboarding/')}?return=${return_to}`)
-}
+
 
 import type { FleetSRPUI } from '@dtypes/layout_components'
 import { fetch_srps } from '@helpers/fetching/srp'
@@ -46,6 +37,11 @@ let fleetless:boolean = false
 let ship_types:string[] = []
 
 try {
+    if (await should_redirect_to_srp_onboarding(auth_token as string, has_explicit_srp_change)) {
+        const return_to = encodeURIComponent(Astro.url.pathname + Astro.url.search)
+        return Astro.redirect(`${translatePath('/onboarding/')}?return=${return_to}`)
+    }
+
     const fleets_srps_data = await fetch_srps(auth_token as string)
     ship_types = fleets_srps_data.ship_types
     fleets_srps = fleets_srps_data.fleets_srps
@@ -61,6 +57,7 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
+import PageSubheader from '@components/page/PageSubheader.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -90,6 +87,7 @@ const page_title = t('ships.srp.killmails.page_title');
             scrollable: true,
             overlay: true
         }}
+        sticky={true}
         x-data={`{
             name_filter: '',
             srps_count: ${srps_count},
@@ -126,11 +124,13 @@ const page_title = t('ships.srp.killmails.page_title');
             }
         </FlexInline>
 
-        {can_view_all_srp &&
-            <FlexInline class="[ w-full ]" slot="subheader">
-                <SRPFiltersSwiper ship_types={ship_types} />
-            </FlexInline>
-        }
+        <PageSubheader
+            id="subheader-oob"
+            is_empty={!can_view_all_srp || ship_types.length === 0}
+            slot="subheader"
+        >
+            {can_view_all_srp && ship_types.length > 0 && <SRPFiltersSwiper ship_types={ship_types} /> }
+        </PageSubheader>
         
         {fetch_srp_error ?
             <ErrorRefetch

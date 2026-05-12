@@ -130,6 +130,7 @@ const TRIBE_GROUP_MEMBERSHIPS_PARTIAL_URL = translatePath(`/partials/tribe_group
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 import PageTitle from '@components/page/PageTitle.astro';
+import PageSubheader from '@components/page/PageSubheader.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -181,14 +182,27 @@ const page_title = t('tribes.groups.membership.page_title').replace('{group}', t
                 </FlexInline>
             </FlexInline>
 
-            <FlexInline id="subheader-oob" hx-swap-oob="true">
-                <Button
-                    href={translatePath(`/alliance/tribes/${tribe_group?.tribe_id}`)}
-                    size='sm'
-                >
-                    {t('back_to_tribe_template').replace('{name}', tribe_group?.tribe_name ?? '')}
-                </Button>
-            </FlexInline>
+            <PageSubheader
+                id="subheader-oob"
+                hx-swap-oob="true"
+                is_empty={!tribe_group }
+            >
+                {tribe_group &&
+                    <Button
+                        href={translatePath(`/alliance/tribes/${tribe_group.tribe_id}/${tribe_group.id}/activities`)}
+                        size='sm'
+                    >
+                        {t('activities')}
+                    </Button>
+
+                    <Button
+                        href={translatePath(`/alliance/tribes/${tribe_group?.tribe_id}`)}
+                        size='sm'
+                    >
+                        {t('back_to_tribe_template').replace('{name}', tribe_group?.tribe_name ?? '')}
+                    </Button>
+                }
+            </PageSubheader>
         }</>
 
         <UpdateAlpineVariables
