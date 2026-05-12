@@ -72,6 +72,7 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
 import PageTitle from '@components/page/PageTitle.astro';
+import PageSubheader from '@components/page/PageSubheader.astro';
 
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -190,7 +191,7 @@ const page_title = `${character_info.character_name} ${t('assets').toLowerCase()
             </FlexInline>
         </FlexInline>
 
-        <FlexInline slot="subheader">
+        <PageSubheader slot="subheader">
             <RadioCheck data-tippy-content={t('list_view_mode')}>
                 <input
                     type="radio"
@@ -212,7 +213,7 @@ const page_title = `${character_info.character_name} ${t('assets').toLowerCase()
                 />
                 <IconList />
             </RadioChecktype>
-        </FlexInline>
+        </PageSubheader>
 
         <div x-ref="server_side_render">
             {!get_character_assets_error &&

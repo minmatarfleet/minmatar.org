@@ -50,6 +50,7 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
 import PageTitle from '@components/page/PageTitle.astro';
+import PageSubheader from '@components/page/PageSubheader.astro';
 
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -153,7 +154,7 @@ const page_title = t('corporations.members.page_title')
             </FlexInline>
         </FlexInline>
 
-        <FlexInline slot="subheader">
+        <PageSubheader slot="subheader">
             <Button
                 color='transparent'
                 href={translatePath('/alliance/corporations/members/')}
@@ -189,7 +190,7 @@ const page_title = t('corporations.members.page_title')
                     number={main_count ?? 0}
                 />
             </Button>
-        </FlexInline>
+        </PageSubheader>
 
         <Flexblock gap="var(--space-xl)">
             {data_fetching_error ?

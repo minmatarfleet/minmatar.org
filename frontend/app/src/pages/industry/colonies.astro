@@ -54,6 +54,7 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
+import PageSubheader from '@components/page/PageSubheader.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -146,7 +147,7 @@ const page_title = t('industry.colonies.page_title')
             </FlexInline>
         </FlexInline>
     
-        <FlexInline slot="subheader">
+        <PageSubheader slot="subheader">
             {alts_collapsing ?
                 <Button
                     id="alts-collapsing-oob"
@@ -169,7 +170,7 @@ const page_title = t('industry.colonies.page_title')
             >
                 {t('industry.planetary_production.page_title')}
             </Button>
-        </FlexInline>
+        </PageSubheader>
     
         {data_fetching_error ?
             <ErrorRefetch

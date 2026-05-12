@@ -47,6 +47,7 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
 import PageTitle from '@components/page/PageTitle.astro';
+import PageSubheader from '@components/page/PageSubheader.astro';
 
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -148,14 +149,14 @@ const page_title = t('corporations.applications.records.page_title')
             </FlexInline>
         </FlexInline>
 
-        <FlexInline slot="subheader">
+        <PageSubheader slot="subheader">
             <Button
                 href={translatePath('/alliance/corporations/applications/')}
                 size='sm'
             >
                 {t('view_active_applications')}
             </Button>
-        </FlexInline>
+        </PageSubheader>
 
         <Flexblock gap="var(--space-xl)">
             <TextBox>

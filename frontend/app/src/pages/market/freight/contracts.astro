@@ -48,6 +48,7 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
+import PageSubheader from '@components/page/PageSubheader.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -122,7 +123,7 @@ const page_title = t('freight_contracts.page_title');
             </FlexInline>
         </FlexInline>
 
-        <FlexInline slot="subheader">
+        <PageSubheader slot="subheader">
             <Button
                 href={translatePath('/market/freight/contracts/history/')}
                 size='sm'
@@ -136,7 +137,7 @@ const page_title = t('freight_contracts.page_title');
             >
                 {t('freight.calculator.page_title')}
             </Button>
-        </FlexInline>
+        </PageSubheader>
 
         {fetching_error !== false ?
             <ErrorRefetch

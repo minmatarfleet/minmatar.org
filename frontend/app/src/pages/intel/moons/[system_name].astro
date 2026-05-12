@@ -50,6 +50,7 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
 import PageTitle from '@components/page/PageTitle.astro';
+import PageSubheader from '@components/page/PageSubheader.astro';
 
 import TextBox from '@components/layout/TextBox.astro';
 
@@ -111,12 +112,12 @@ const page_title = `${system_name} ${t('moons')}`;
             </FlexInline>
         </FlexInline>
 
-        <FlexInline slot="subheader">   
+        <PageSubheader slot="subheader">   
             <AddMoonButton
                 size='sm'
                 iconed={false}
             />
-        </FlexInline>
+        </PageSubheader>
         
         <Flexblock gap='var(--space-xl)'>
             <TextBox>

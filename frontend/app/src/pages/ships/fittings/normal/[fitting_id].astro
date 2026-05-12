@@ -125,6 +125,7 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
 import PageTitle from '@components/page/PageTitle.astro';
+import PageSubheader from '@components/page/PageSubheader.astro';
 
 import TextBox from '@components/layout/TextBox.astro';
 
@@ -215,7 +216,7 @@ import { navigate } from "astro:transitions/client";
             </FlexInline>
         </FlexInline>
 
-        <FlexInline slot="subheader">
+        <PageSubheader slot="subheader">
             {minimum_pod.length > 0 &&
                 <CopyPodButton
                     pod={minimum_pod}
@@ -238,7 +239,7 @@ import { navigate } from "astro:transitions/client";
             >
                 {t('back_to_fittings')}
             </Button>
-        </FlexInline>
+        </PageSubheader>
 
         <Flexblock gap="var(--space-xl)">
             <TextBox>
