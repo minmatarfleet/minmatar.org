@@ -1,0 +1,28 @@
+---
+interface Props {
+    is_empty?:              boolean;
+    [propName: string]:     any;
+}
+
+const {
+    is_empty = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+---
+
+<FlexInline
+    class:list={[ 'subheader-content', { 'is-empty': is_empty } ]}
+    {...attributes}
+>
+    <slot />
+</FlexInline>
+
+<style>
+    .subheader-content:not(.is-empty) {
+        padding-bottom: var(--space-s);
+    }
+</style>

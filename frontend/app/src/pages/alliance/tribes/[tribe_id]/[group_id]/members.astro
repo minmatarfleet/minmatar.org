@@ -52,6 +52,7 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
+import PageSubheader from '@components/page/PageSubheader.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -115,7 +116,11 @@ const page_title = t('tribes.groups.membership.page_title').replace('{group}', t
             </FlexInline>
         </FlexInline>
 
-        <FlexInline id="subheader-oob" slot="subheader">
+        <PageSubheader
+            id="subheader-oob"
+            slot="subheader"
+            is_empty={!tribe_group }
+        >
             {tribe_group &&
                 <Button
                     href={translatePath(`/alliance/tribes/${tribe_group.tribe_id}/${tribe_group.id}/activities`)}
@@ -131,7 +136,7 @@ const page_title = t('tribes.groups.membership.page_title').replace('{group}', t
                     {t('back_to_tribe_template').replace('{name}', tribe_group?.tribe_name ?? '')}
                 </Button>
             }
-        </FlexInline>
+        </PageSubheader>
         
         {fetch_membership_error ?
             <ErrorRefetch

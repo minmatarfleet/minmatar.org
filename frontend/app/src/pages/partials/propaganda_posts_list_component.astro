@@ -56,6 +56,9 @@ const PROPAGANDA_POSTS_LIST_PARTIAL_URL = `${translatePath('/partials/propaganda
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
+import PageSubheader from '@components/page/PageSubheader.astro';
+
+import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import PropagandaReels from '@components/blocks/PropagandaReels.astro';
 ---
@@ -69,6 +72,22 @@ import PropagandaReels from '@components/blocks/PropagandaReels.astro';
         }}
     />
     :
+    <PageSubheader
+        id="subheader-oob"
+        hx-swap-oob="true"
+        is_empty={!post_editor}
+    >
+        {post_editor &&
+            <Button size='sm' href={translatePath('/alliance/propaganda/my_posts/')}>
+                {t('my_posts')}
+            </Button>
+            
+            <Button size='sm' href={translatePath('/alliance/propaganda/trash/')}>
+                {t('trash')}
+            </Button>
+        }
+    </PageSubheader>
+
     <PropagandaReels
         posts={posts}
         editor_id={post_editor ? post_editor : undefined}

@@ -212,7 +212,10 @@ const page_title = t('sell_orders.page_title')
             </FlexInline>
         </FlexInline>
 
-        <FlexInline slot="subheader">
+        <FlexInline
+            id="subheader-oob"
+            slot="subheader"
+        >
             <ButtonExportShortfallItems
                 shortfall_items_by_category={shortfall_items_by_category}
                 shortfall_categories={shortfall_categories}

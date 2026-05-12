@@ -51,7 +51,7 @@ try {
     structure_timers_error = error
 }
 
-const STRUCTURE_TIMERS_LIST_PARTIAL_URL = translatePath(`/partials/structure_timers_list_component?active=${JSON.stringify(true)}`)
+const STRUCTURE_TIMERS_LIST_PARTIAL_URL = translatePath(`/partials/structure_timers_list_component?active=true`)
 
 const verify_timer_error = Astro.cookies.has('verify_timer_error') ? (Astro.cookies.get('verify_timer_error')?.value ?? false) : false
 if (Astro.cookies.has('verify_timer_error'))
@@ -92,7 +92,6 @@ const page_title = t('intel.timers.page_title');
             overlay: true
         }}
         x-data={`{
-            show_duplicated: false,
             structure_timers_count: ${structure_timers.length}
         }`}
         x-init={`${verify_timer_error !== false ? `show_alert_dialog(${JSON.stringify(verify_timer_error)})` : ''}`}
@@ -116,19 +115,20 @@ const page_title = t('intel.timers.page_title');
             </FlexInline>
         </FlexInline>
 
-        <FlexInline slot="subheader">
+        <FlexInline
+            id="subheader-oob"
+            slot="subheader"
+        >
             {duplicated_count > 0 &&
                 <Button
                     size='sm'
-                    x-bind:hx-get={`\`${STRUCTURE_TIMERS_LIST_PARTIAL_URL}&duplicated=\${!show_duplicated}\``}
+                    hx-get={`${STRUCTURE_TIMERS_LIST_PARTIAL_URL}&duplicated=true`}
                     hx-target=".structure-timers-list-container"
                     hx-indicator=".loader"
                     hx-on--before-request="this.setAttribute('disabled','');"
-                    hx-on--after-request="this.removeAttribute('disabled')"
                     hx-swap="outerHTML transition:true"
-                    x-on:click="show_duplicated = !show_duplicated; $nextTick(() => htmx.process($el))"
                 >
-                    <span x-text={`show_duplicated ? '${t('hide_duplicated')}' : '${t('show_duplicated')}'`}>{t('show_duplicated')}</span>
+                    <span>{t('show_duplicated')}</span>
                     <NotificationBadge
                         color='fleet-yellow'
                         number={duplicated_count ?? 0}
