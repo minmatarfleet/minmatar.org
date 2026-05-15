@@ -15,12 +15,14 @@ const {
     ...attributes
 } = Astro.props;
 
+import { format_number } from '@helpers/numbers';
+
 const badge_background_color = `var(--${color})`;
 const badge_color = !text_color ? (color !== 'fleet-yellow' ? 'var(--highlight)' : 'var(--fleet-red)') : text_color
 ---
 
 <span class:list={['badge', Astro.props.class]} {...attributes}>
-    <slot>{number}</slot>
+    <slot>{format_number(number)}</slot>
 </span>
 
 <style lang="scss" define:vars={{ badge_background_color, badge_color }}>
