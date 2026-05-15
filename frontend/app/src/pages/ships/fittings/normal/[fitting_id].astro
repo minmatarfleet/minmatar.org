@@ -139,8 +139,8 @@ import CopyPodButton from '@components/blocks/CopyPodButton.astro';
 
 const render_view = translatePath(`/ships/fittings/render/${fitting_id}`)
 
-const page_title = fitting?.name ?? ''
-const fitting_display_name = page_title || (fitting_parsed?.name ?? '')
+const fitting_display_name = fitting?.name ?? fitting_parsed?.name
+const page_title = fitting_display_name
 const ship_display_name = fitting_parsed?.ship_name ?? ''
 
 const meta_title = t('fitting.detail.meta_title')

@@ -66,8 +66,8 @@ const ship_id = await get_item_id(fitting_parsed.ship_name)
 
 const normal_view = translatePath(`/ships/fittings/normal/${fitting_id}`)
 
-const page_title = fitting_parsed.name;
 const fitting_display_name = fitting?.name ?? fitting_parsed.name
+const page_title = fitting_display_name;
 const ship_display_name = fitting_parsed.ship_name ?? ''
 
 const meta_title = t('fitting.detail.meta_title')
