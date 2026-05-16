@@ -1,13 +1,25 @@
 ---
+interface Props {
+    pre_chevron?:   boolean;
+}
+
+const {
+    pre_chevron = false,
+} = Astro.props
+
+const Element = pre_chevron ? FixedFluid : FluidFixed
+
 import FluidFixed from '@components/compositions/FluidFixed.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
 import CaretIcon from '@components/icons/CaretIcon.astro';
 ---
 
 <button {...Astro.props} type="button">
-    <FluidFixed width="20px" gap="var(--space-l)" class="[ items-center ]">
+    <Element width="20px" class="[ items-center ]">
+        {pre_chevron && <CaretIcon x-bind:class="expanded ? 'expanded' : 'collapsed'" /> }
         <slot />
-        <CaretIcon :class="expanded ? 'expanded' : 'collapsed'" />
-    </FluidFixed>
+        {!pre_chevron && <CaretIcon x-bind:class="expanded ? 'expanded' : 'collapsed'" /> }
+    </Element>
 </button>
 
 <style lang="scss">
