@@ -139,7 +139,7 @@ import ItemBadge from '@components/blocks/ItemBadge.astro';
                             <small>{t('total_to_produce')}</small>
                             <small
                                 class="[ basis-[160px] text-right ]"
-                                x-text="quantity + claimed !== 1 ? units_plural_template.replace('{count}', quantity + claimed) : units_singular_template"
+                                x-text="quantity + claimed !== 1 ? units_plural_template.replace('{count}', number_thousand_separator(quantity + claimed)) : units_singular_template"
                             >
                                 {number_thousand_separator(claimed ?? 0)} {claimed !== 1 ? t('units_plural').replace('{count}', String(claimed)) : t('units_singular')}
                             </small>
