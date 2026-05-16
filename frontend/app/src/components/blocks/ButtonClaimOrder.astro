@@ -113,7 +113,7 @@ import ItemBadge from '@components/blocks/ItemBadge.astro';
                                 item_name={item.eve_type_name}
                                 type_id={item.eve_type_id}
                             >
-                                <small>{t(max_claimable_items !== 1 ? 'max_units_plural' : 'max_units_singular').replace('{count}', String(max_claimable_items))}</small>
+                                <small>{t(max_claimable_items !== 1 ? 'max_units_plural' : 'max_units_singular').replace('{count}', number_thousand_separator(max_claimable_items, lang))}</small>
                             </ItemBadge>
                             <Input
                                 autofocus

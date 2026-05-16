@@ -88,7 +88,7 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
                         size={32}
                         centered={true}
                     >
-                        <small>{t(item.quantity !== 1 ? 'claim_count_plural' : 'claim_count_singular' as any).replace('{count}', number_thousand_separator(item.quantity - item.unassigned_quantity)).replace('{total}', number_thousand_separator(item.quantity))}</small>
+                        <small>{t('claimed')} <span class="[ text-highlight ]">{number_thousand_separator(item.quantity - item.unassigned_quantity)}</span> / {number_thousand_separator(item.quantity)}</small>
                     </ItemBadge>
                 </div>
 
