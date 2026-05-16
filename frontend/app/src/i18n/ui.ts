@@ -2125,8 +2125,8 @@ export const ui = {
         'define_add_assignment_quantity': 'Define the quantity to add to your assignment.',
         'quantity_required': 'You should define the quantity first.',
         'claim_order': 'Claim order',
-        'claim_count_plural': 'Claimed {count} out of {total}',
-        'claim_count_singular': '1 claimed out of {total}',
+        'claim_count_plural': 'Claimed {count} / {total}',
+        'claim_count_singular': '1 claimed / {total}',
         'target_unit_price': 'Target unit price:',
         'target_estimated_margin': 'Target estimated margin:',
         'total_earnings': 'Total earnings:',
@@ -2264,5 +2264,6 @@ export const ui = {
         'maximum_amount_limited_singular': '⚠️ Maximum amount limited for the next hour.',
         'fleet_started': 'Fleet started',
         'last_30_days': 'Last 30 days',
+        'claimed': 'Claimed',
     },
 } as const;
