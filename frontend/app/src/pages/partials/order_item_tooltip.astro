@@ -1,0 +1,20 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+const item_name = Astro.url.searchParams.get('item_name')
+const quantity = parseInt(Astro.url.searchParams.get('quantity') ?? '')
+const contract_value = parseInt(Astro.url.searchParams.get('contract_value') ?? '')
+const earnings = parseInt(Astro.url.searchParams.get('earnings') ?? '')
+
+import { number_thousand_separator } from '@helpers/numbers'
+
+import Context from '@components/layout/Context.astro';
+---
+
+<Context>
+    <h4>{quantity ? `${number_thousand_separator(quantity, lang)} ×` : ''} {item_name}</h4>
+    {contract_value > 0 && earnings > 0 &&
+        <small>{number_thousand_separator(contract_value, lang)} ISK — <b class="[ text-green ]">+{number_thousand_separator(earnings, lang)} ISK</b></small>
+    }
+</Context>

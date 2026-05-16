@@ -60,6 +60,7 @@ import OrderBreakdown from '@components/blocks/OrderBreakdown.astro'
 
 import IndustryIcon from '@components/icons/IndustryIcon.astro';
 import FlagIcon from '@components/icons/FlagIcon.astro';
+import TippyOrderItem from './TippyOrderItem.astro';
 ---
 
 <CollapsibleBlock
@@ -91,9 +92,12 @@ import FlagIcon from '@components/icons/FlagIcon.astro';
                         </div>
                         <FlexInline gap='var(--space-2xs)'>
                             {order.items.map((item) =>
-                                <div
-                                    data-tippy-content={item.eve_type_name}
-                                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                                <TippyOrderItem
+                                    item_name={item.eve_type_name}
+                                    quantity={item.quantity}
+                                    contract_value={item?.target_unit_price ? parseInt(item?.target_unit_price) * item.quantity : undefined}
+                                    earnings={item?.target_estimated_margin ? parseInt(item?.target_estimated_margin) * item.quantity : undefined}
+                                    init_tooltips={init_tooltips}
                                 >
                                     <ItemPicture
                                         item_name={item.eve_type_name}
@@ -102,7 +106,7 @@ import FlagIcon from '@components/icons/FlagIcon.astro';
                                         size={32}
                                     />
                                     <div class="[ sr-only ]">{item.eve_type_name}</div>
-                                </div>
+                                </TippyOrderItem>
                             )}
                         </FlexInline>
                     </FixedFluid>
