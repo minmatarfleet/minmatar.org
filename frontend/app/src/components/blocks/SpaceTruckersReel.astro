@@ -43,7 +43,7 @@ import TextBadge from '@components/blocks/TextBadge.astro';
                 min-shink-width='250px'
                 shrinkable-sibbling='first'
             >
-                {space_truckers.length >= 5 ?
+                {space_truckers.length >= 4 ?
                     <Marquee>
                         <div style="width: calc(450px + var(--space-l))"><hr class="[ border-bottom ]" /></div>
                         {space_truckers.map((trucker, index) =>
@@ -54,7 +54,7 @@ import TextBadge from '@components/blocks/TextBadge.astro';
                             <SpaceTruckerBadge place={index + 1} trucker={trucker} />
                         )}
                     </Marquee> :
-                    <FlexInline gap='var(--space-l)'>
+                    <FlexInline gap='var(--space-l)' x-init="$dispatch('marquee-started')">
                         {space_truckers.map((trucker, index) =>
                             <SpaceTruckerBadge place={index + 1} trucker={trucker} />
                         )}
