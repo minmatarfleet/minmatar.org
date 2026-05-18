@@ -89,14 +89,7 @@ import CargoIcon from '@components/icons/CargoIcon.astro';
                 />
             </Flexblock>
             
-            <FlexInline gap='var(--space-3xs)'>
-                <template x-if="blueprint.owner.entity_type === 'character'">
-                    <CharacterPicture
-                        character_id={0}
-                        x_character_id='blueprint.owner.entity_id'
-                        size={32}
-                    />
-                </template>
+            <FlexInline gap='var(--space-3xs)' class="[ basis-[72px] ]">
                 <template x-if="blueprint.owner.entity_type === 'corporation'">
                     <div class="[ border ]">
                         <CorporationPicture
@@ -106,6 +99,11 @@ import CargoIcon from '@components/icons/CargoIcon.astro';
                         />
                     </div>
                 </template>
+                <CharacterPicture
+                    character_id={0}
+                    x_character_id='blueprint.owner.primary_character_id'
+                    size={32}
+                />
             </FlexInline>
 
             <FixedFluid width='32px' breakpoint='30%' gap='var(--space-2xs)' class="[  items-center! ]">
