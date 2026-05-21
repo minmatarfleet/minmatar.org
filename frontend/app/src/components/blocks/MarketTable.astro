@@ -64,6 +64,7 @@ const REEL_GAP = 80
 import Flexblock from '@components/compositions/Flexblock.astro';
 import BlockList from '@components/compositions/BlockList.astro';
 
+import Table from '@components/blocks/Table.astro';
 import MarketTableItem from '@components/blocks/MarketTableItem.astro';
 import LocationsReel from '@components/blocks/LocationsReel.astro';
 import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
@@ -99,7 +100,7 @@ import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
         {categories.map(category =>
             <Flexblock class="[ orders-group ]" gap='var(--space-l)'>
                 <h3 class="[ group-title ]">{category}</h3>
-                <BlockList role="list" gap='var(--space-2xs)'>
+                <Table gap='var(--space-2xs)'>
                     {sorted_orders_with_expectations.filter(order => order.category_name === category).map((item) =>
                         <div
                             class="[ orders-item-container ]"
@@ -127,7 +128,7 @@ import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
                         </div>
                     )}
                     <p class="[ no-result-text ]">{t('no_results')}</p>
-                </BlockList>
+                </Table>
             </Flexblock>
         )}
     </BlockList>

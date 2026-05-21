@@ -57,24 +57,18 @@ import Table from '@components/blocks/Table.astro';
         )}
     </LocationsReel>
 
-    <Wrapper
-        padding_block='0'
-        padding_inline='0'
-        max_width='90rem'
-    >
-        <Table>
-            {active_orders_locations.orders.map((order) =>
-                <div x-show="show_item($el)">
-                    <OrderItem
-                        order={order}
-                        location_name={active_orders_locations.location_name}
-                        init_tooltips={init_tooltips}
-                    />
-                </div>
-            )}
-            <p class="[ no-result-text ]">{t('no_results')}</p>
-        </Table>
-    </Wrapper>
+    <Table width='90rem'>
+        {active_orders_locations.orders.map((order) =>
+            <div x-show="show_item($el)">
+                <OrderItem
+                    order={order}
+                    location_name={active_orders_locations.location_name}
+                    init_tooltips={init_tooltips}
+                />
+            </div>
+        )}
+        <p class="[ no-result-text ]">{t('no_results')}</p>
+    </Table>
 </Flexblock>
 
 <style lang="scss">

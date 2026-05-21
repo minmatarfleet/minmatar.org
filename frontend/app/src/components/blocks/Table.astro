@@ -1,15 +1,39 @@
 ---
 interface Props {
+    gap?:               string;
+    responsive?:        boolean;
+    width?:             string;
     [propName: string]: any;
 }
 
 const {
+    gap,
+    responsive = true,
+    width = '90rem',
     ...attributes
 } = Astro.props;
+
+delete attributes.class
 
 import BlockList from '@components/compositions/BlockList.astro';
 ---
 
-<BlockList role="list" {...attributes}>
-    <slot />
-</BlockList>
+<div class:list={[ { 'table-responsive overflow-x-auto will-change-transform': responsive } ]}>
+    <BlockList
+        class:list={[ 'table', Astro.props.class, `w-[${width}]` ]}
+        role="list" {...attributes}
+        gap={gap ?? undefined}
+    >
+        <slot />
+    </BlockList>
+</div>
+
+<style lang="scss">
+    .table {
+        overflow-x: auto;
+    }
+    
+    .table-responsive {
+        mask-image: linear-gradient(to right, black 90%, transparent);
+    }
+</style>

@@ -2266,5 +2266,6 @@ export const ui = {
         'fleet_started': 'Fleet started',
         'last_30_days': 'Last 30 days',
         'claimed': 'Claimed',
+        'click_to_reload': 'Click to reload',
     },
 } as const;
