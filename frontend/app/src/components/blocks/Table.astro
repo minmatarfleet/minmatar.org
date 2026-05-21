@@ -20,7 +20,7 @@ import BlockList from '@components/compositions/BlockList.astro';
 
 <div class:list={[ { 'table-responsive overflow-x-auto will-change-transform': responsive } ]}>
     <BlockList
-        class:list={[ 'table', Astro.props.class, `w-[${width}]` ]}
+        class:list={[ 'table', Astro.props.class ]}
         role="list" {...attributes}
         gap={gap ?? undefined}
     >
@@ -28,9 +28,12 @@ import BlockList from '@components/compositions/BlockList.astro';
     </BlockList>
 </div>
 
-<style lang="scss">
+<style lang="scss" define:vars={{
+    table_width: width
+}}>
     .table {
         overflow-x: auto;
+        width: var(--table_width);
     }
     
     .table-responsive {
