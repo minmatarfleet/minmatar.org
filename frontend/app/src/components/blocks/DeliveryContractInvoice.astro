@@ -55,64 +55,60 @@ import PilotBadge from './PilotBadge.astro';
         <Flexblock class="[ w-full ]" gap='var(--space-m)'>
             <h2>{t('invoice')}</h2>
 
-            <VerticalCenter>
-                <PilotBadge
-                    character_id={assignment.character_id}
-                    character_name={assignment.character_name}
-                    centered={true}
-                    size={32}
-                >
-                    <small>{t('manufacturer')}</small>
-                </PilotBadge>
-            </VerticalCenter>
+            <PilotBadge
+                character_id={assignment.character_id}
+                character_name={assignment.character_name}
+                centered={true}
+                size={32}
+            >
+                <small>{t('manufacturer')}</small>
+            </PilotBadge>
 
-            <VerticalCenter>
-                <TextGroup title={t('delivery_location')}>
-                    {order?.location.location_name}
-                </TextGroup>
-            </VerticalCenter>
+            <TextGroup title={t('delivery_location')}>
+                {order?.location.location_name}
+            </TextGroup>
 
-            <VerticalCenter>
-                <Flexblock gap="var(--space-3xs)">
-                    <h4>{t('contract_to')}</h4>
-                    <p>
-                        <span
-                            data-tippy-content={no_contract_to ?
-                                t('not_available_ask_indy_tooltip').replace('{contractor}', order?.character_name) :
-                                undefined
-                            }
-                        >
-                            {no_contract_to ? t('not_available') : order.contract_to}
-                        </span>
-                    </p>
-                </Flexblock>
-            </VerticalCenter>
+            <Flexblock gap="var(--space-3xs)">
+                <h4>{t('contract_to')}</h4>
+                <p>
+                    <span
+                        data-tippy-content={no_contract_to ?
+                            t('not_available_ask_indy_tooltip').replace('{contractor}', order?.character_name) :
+                            undefined
+                        }
+                    >
+                        {no_contract_to ? t('not_available') : order.contract_to}
+                    </span>
+                </p>
+            </Flexblock>
 
             <hr class="[ border-bottom ]" />
             
-            <VerticalCenter>
-                <ItemBadge
-                    item_name={`${item_count} × ${item?.eve_type_name}`}
-                    type_id={item?.eve_type_id}
-                    size={32}
-                >
-                    <small>{t('per_unit_template').replace('{cost}', number_thousand_separator(parseInt(item?.target_unit_price ?? '0'), lang))}</small>
-                </ItemBadge>
-            </VerticalCenter>
+            <ItemBadge
+                item_name={item?.eve_type_name}
+                type_id={item?.eve_type_id}
+                size={32}
+            />
 
-            <VerticalCenter>
-                <Flexblock gap="var(--space-3xs)">
-                    <h4>{t('contract_value')}</h4>
-                    <p>
-                        <span
-                            data-tippy-content={number_name(target_unit_price * assignment.quantity, lang)}
-                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                        >
-                            {number_thousand_separator(target_unit_price * assignment.quantity)} ISK
-                        </span>
-                    </p>
-                </Flexblock>
-            </VerticalCenter>
+            <TextGroup title={t('items_count')}>
+                {(item_count !== 1 ? t('units_plural') : t('units_singular')).replace('{count}', number_thousand_separator(item_count, lang))}
+            </TextGroup>
+
+            <TextGroup title={t('unit_price')}>
+                {number_thousand_separator(parseInt(item?.target_unit_price ?? '0'), lang)} ISK
+            </TextGroup>
+
+            <Flexblock gap="var(--space-3xs)">
+                <h4>{t('contract_value')}</h4>
+                <p>
+                    <span
+                        data-tippy-content={number_name(target_unit_price * assignment.quantity, lang)}
+                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                    >
+                        {number_thousand_separator(target_unit_price * assignment.quantity)} ISK
+                    </span>
+                </p>
+            </Flexblock>
         </Flexblock>
     </ComponentBlock>
 </Context>
