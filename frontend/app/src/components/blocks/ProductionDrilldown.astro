@@ -30,6 +30,7 @@ import FactoryIcon from '@components/icons/FactoryIcon.astro';
 ---
 
 <Flexblock>
+    <hr class="border-bottom">
     <h4>{t('production_drilldown')}</h4>
     {production_drilldown.entries.map(entity => {
         const comparative = max_harvest > 0 ? (entity.daily_quantity ?? 0) * 100 / max_harvest : 0
