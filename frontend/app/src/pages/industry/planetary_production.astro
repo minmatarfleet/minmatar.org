@@ -45,7 +45,7 @@ const resources_options = resources_names.map(resource_name => {
 
 import Viewport from '@layouts/Viewport.astro';
 
-import PageDefault from '@components/page/PageDefault.astro';
+import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 import PageSubheader from '@components/page/PageSubheader.astro';
 
@@ -68,7 +68,7 @@ const page_title = t('industry.planetary_production.page_title')
         confirm_dialog: true,
     }}
 >
-    <PageDefault
+    <PageWide
         cover={{
             image: "/images/planetary-cover.jpg",
             image_990: "/images/planetary-cover.jpg",
@@ -148,7 +148,7 @@ const page_title = t('industry.planetary_production.page_title')
                 /> :
                 <p>{t('no_planetary_resources')}</p>
         }
-	</PageDefault>
+	</PageWide>
 
     <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="0" height="0">
         <defs>

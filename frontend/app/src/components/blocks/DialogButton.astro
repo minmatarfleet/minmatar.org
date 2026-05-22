@@ -82,6 +82,7 @@ import DebugTag from '@components/blocks/DebugTag.astro';
             @mousedown.outside="open && close_dialog()"
             style={max_width ? `--dialog-max-width: ${max_width}` : undefined}
             thin={thin_dialog}
+            x-init="htmx.process($el)"
         >
             <slot name="dialog">
                 <DebugTag set:html={marked.parse(t('missing_dialog_slot'))} />
