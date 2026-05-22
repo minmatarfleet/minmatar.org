@@ -35,21 +35,10 @@ import TextBox from '@components/layout/TextBox.astro';
 
 import CorporationSlideStatus from "@components/blocks/CorporationSlideStatus.astro";
 import StylessButton from '@components/blocks/StylessButton.astro';
-import ButtonCorpApply from '@components/blocks/ButtonCorpApply.astro';
 
 import { get_corporation_logo } from '@helpers/eve_image_server';
 import { query_string } from '@helpers/string';
 ---
-
-<template x-if={`document.getElementById('${id}-apply-button-dummy') !== null`}>
-    <div x-init="htmx.process($el)">
-        <ButtonCorpApply
-            id={`${id}-apply-button`}
-            corporation={corporation}
-            hidden={true}
-        />
-    </div>
-</template>
 
 <FixedFluid
     id={id}
@@ -80,7 +69,6 @@ import { query_string } from '@helpers/string';
                 <CorporationSlideStatus
                     corporation={corporation}
                     is_user_corporation={is_user_corporation}
-                    apply_button_id={`${id}-apply-button`}
                 />
             </div>
         </Flexblock>

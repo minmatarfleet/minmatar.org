@@ -8,14 +8,12 @@ interface Props {
     corporation:            CorporationObject;
     is_user_corporation?:   boolean;
     alert?:                 Alert | false;
-    apply_button_id:        string;
 }
 
 const {
     corporation,
     is_user_corporation = false,
     alert = false,
-    apply_button_id,
 } = Astro.props
 
 const primary_character = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot')?.value as string) : null
@@ -36,6 +34,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import Button from '@components/blocks/Button.astro';
+import ButtonCorpApply from '@components/blocks/ButtonCorpApply.astro';
 import ButtonAuth from '@components/blocks/ButtonAuth.astro';
 import Tag from '@components/blocks/Tag.astro';
 import ButtonAddPrimary from '@components/blocks/ButtonAddPrimary.astro';
@@ -72,13 +71,7 @@ import Markdown from '@components/blocks/Markdown.astro';
         (!is_user_corporation && corporation?.status === 'accepted' && primary_character_id && is_acceptance_period_passed) ||
         (!is_user_corporation && corporation?.status === 'available' && primary_character_id) ||
         (is_re_applicable && corporation?.status === 'rejected') ?
-            <Button
-                id={`${apply_button_id}-dummy`}
-                color='green'
-                x-on:click={`document.getElementById('${apply_button_id}').click()`}
-            >
-                {t('enlist_today')}
-            </Button>
+            <ButtonCorpApply corporation={corporation} />
         :
         corporation?.status == 'unauth' ?
             <ButtonAuth

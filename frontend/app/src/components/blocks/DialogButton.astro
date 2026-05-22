@@ -69,23 +69,25 @@ import DebugTag from '@components/blocks/DebugTag.astro';
         <slot />
     </Button>
 
-    <Dialog
-        breakout={true}
-        non_centered={true}
-        class:list={[ 'button-dialog w-full component overflow-y-auto', { 'button-dialog-h-max': full_height } ]}
-        x-bind:class="(button_dialog_open ? 'open' : '')"
-        x-bind:aria-hidden="button_dialog_open == false"
-        x-trap="button_dialog_open"
-        x-bind:inert="!button_dialog_open"
-        @keyup.escape.window="close_dialog()"
-        @mousedown.outside="open && close_dialog()"
-        style={max_width ? `--dialog-max-width: ${max_width}` : undefined}
-        thin={thin_dialog}
-    >
-        <slot name="dialog">
-            <DebugTag set:html={marked.parse(t('missing_dialog_slot'))} />
-        </slot>
-    </Dialog>
+    <template x-teleport="body">
+        <Dialog
+            breakout={true}
+            non_centered={true}
+            class:list={[ 'button-dialog w-full component overflow-y-auto', { 'button-dialog-h-max': full_height } ]}
+            x-bind:class="(button_dialog_open ? 'open' : '')"
+            x-bind:aria-hidden="button_dialog_open == false"
+            x-trap="button_dialog_open"
+            x-bind:inert="!button_dialog_open"
+            @keyup.escape.window="close_dialog()"
+            @mousedown.outside="open && close_dialog()"
+            style={max_width ? `--dialog-max-width: ${max_width}` : undefined}
+            thin={thin_dialog}
+        >
+            <slot name="dialog">
+                <DebugTag set:html={marked.parse(t('missing_dialog_slot'))} />
+            </slot>
+        </Dialog>
+    </template>
 </div>
 
 <style lang="scss">

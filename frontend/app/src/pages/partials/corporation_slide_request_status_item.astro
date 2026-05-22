@@ -22,9 +22,7 @@ import { get_corporation_list_by_id_auth } from '@helpers/fetching/corporations'
 
 let corporation:CorporationObject | null = null
 let create_corporation_application_error:string | false = false
-let application:CorporationApplication 
-
-const id = parseInt(Astro.url.searchParams.get('id') as string)
+let application:CorporationApplication
 
 if (Astro.request.method === "POST") {
     try {
@@ -85,5 +83,4 @@ import CorporationSlideStatus from '@components/blocks/CorporationSlideStatus.as
     corporation={corporation as CorporationObject }
     is_user_corporation={false}
     alert={alert}
-    apply_button_id={`${id}-apply-button`}
 />

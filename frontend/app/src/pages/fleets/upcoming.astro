@@ -125,10 +125,7 @@ const page_title = t('fleets.upcoming.page_title');
                         <AddIcon slot="icon" />
                         {t('schedule_fleet')}
                     </Button>
-                    <Button x-on:click="document.getElementById('flash-form-button').click()">
-                        <FlashIcon slot="icon" />
-                        {t('flash_form')}
-                    </Button>
+                    <>{!fetch_audiences_error && <FlashFormButton audiences={audiences} /> }</>
                 }
             </FlexInline>
         </FlexInline>
@@ -141,10 +138,6 @@ const page_title = t('fleets.upcoming.page_title');
                 {t('fleet_history')}
             </Button>
         </PageSubheader>
-
-        {!fetch_audiences_error &&
-            <FlashFormButton audiences={audiences} hidden={true} />
-        }
         
         {fetch_fleets_error ?
             <ErrorRefetch
