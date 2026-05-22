@@ -174,6 +174,8 @@ def get_order_summary_message(
         [
             "# Industry order summary",
             "",
+            "https://my.minmatar.org/industry/orders/ | View Order page",
+            "",
             "## Active orders",
             "Open builds, sorted by where they’re headed.",
             "",
