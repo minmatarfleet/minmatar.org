@@ -39,16 +39,7 @@ import LogEVEIcon from '@components/icons/LogEVEIcon.astro';
         row_gap="var(--space-3xs)"
         column_gap="var(--space-3xs)"
         min_item_width="580px"
-    >
-        {can_add_moons &&
-            <AddMoonButton
-                size='sm'
-                color='fleet-red'
-                iconed={false}
-                hidden={true}
-            />
-        }    
-                
+    >           
         {can_view_timers &&
             <Tile
                 title={t('structure_timers')}
@@ -80,12 +71,11 @@ import LogEVEIcon from '@components/icons/LogEVEIcon.astro';
                     </Button>
                 }
                 {can_add_moons &&
-                    <Button
+                    <AddMoonButton
                         size='sm'
-                        x-on:click="document.getElementById('add-moon-button').click()"
-                    >
-                        {t('add_moon')}
-                    </Button>
+                        color='fleet-red'
+                        iconed={false}
+                    />
                 }
             </Tile>
         }

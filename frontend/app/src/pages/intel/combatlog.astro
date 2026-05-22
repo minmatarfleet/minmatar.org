@@ -104,21 +104,16 @@ const page_description = t('intel.combatlog.leading_text');
                 </Flexblock>
             </FlexInline>
             <FlexInline>
-                <Button color='green' x-on:click="document.getElementById('analize-combatlog-button').click()">
-                    {t('analyze_combatlog')}
-                </Button>
+                <AnalizeCombatLogButton
+                    color={'green'}
+                    target="#combatlog"
+                    fitting_options={fitting_options}
+                    fleets_options={fleets_options}
+                >
+                    {t('paste_combatlog')}
+                </AnalizeCombatLogButton>
             </FlexInline>
         </FlexInline>
-
-        <AnalizeCombatLogButton
-            color={'green'}
-            target="#combatlog"
-            fitting_options={fitting_options}
-            fleets_options={fleets_options}
-            hidden={true}
-        >
-            {t('paste_combatlog')}
-        </AnalizeCombatLogButton>
         
         <div id="combatlog">
             {combatlog_selects_error ?
