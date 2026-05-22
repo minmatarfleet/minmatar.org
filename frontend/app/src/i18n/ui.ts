@@ -2267,5 +2267,6 @@ export const ui = {
         'last_30_days': 'Last 30 days',
         'claimed': 'Claimed',
         'click_to_reload': 'Click to reload',
+        'delivery_contract_text': 'Review everything is fine and finish the contract.',
     },
 } as const;
