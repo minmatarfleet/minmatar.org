@@ -30,6 +30,7 @@ import ExtractorIcon from '@components/icons/ExtractorIcon.astro';
 ---
 
 <Flexblock>
+    <hr class="border-bottom">
     <h4>{t('harvest_drilldown')}</h4>
     {harvest_drilldown.entries.map(entity => {
         const comparative = max_harvest > 0 ? (entity.daily_quantity ?? 0) * 100 / max_harvest : 0

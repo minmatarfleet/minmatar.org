@@ -53,6 +53,7 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
 ---
 
 <Flexblock id={id}>
+    <hr class="border-bottom">
     <StylessButton
         hx-get={ORDER_BREAKDOWN_PARTIAL_URL}
         hx-target={`#${id}`}
