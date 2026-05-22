@@ -29,44 +29,42 @@ import FactoryIcon from '@components/icons/FactoryIcon.astro';
 ---
 
 <CollapsibleBlock padding_inline='0' pre_chevron={true}>
-    <div slot="head" class="[ w-full ]">
-        <FixedFluid width='450px' class="[ production-resource-item ][ w-full ]">
-            <div>
-                <FixedFluid class="[ items-center! ]" width='64px'>
-                    <ItemPicture
-                        item_name={resource.name}
-                        item_id={resource.type_id}
-                        size={64}
-                    />
-                    <h3 class="[ title ]">{resource.name}</h3>
-                </FixedFluid>
-            </div>
+    <FlexInline slot="head" gap="var(--space-xs)">
+        <div class="[ production-resource-item ][ basis-[416px] ]">
+            <FixedFluid class="[ items-center! ]" width='64px'>
+                <ItemPicture
+                    item_name={resource.name}
+                    item_id={resource.type_id}
+                    size={64}
+                />
+                <h3 class="[ title ]">{resource.name}</h3>
+            </FixedFluid>
+        </div>
 
-            <FlexInline gap='var(--space-3xs)'>            
-                <FixedFluid class="[ items-center! basis-[300px] grow shrink ]" width='32px' gap='var(--space-2xs)'>
-                    <div
-                        class="[ text-highlight h-[32px] ]"
-                        data-tippy-content={t('daily_quantity')}
-                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                    >
-                        <VolumenIcon xlink='#volumen_icon' size={32} />
-                    </div>
-                    <div><span data-tippy-content={number_name(resource.total_daily_quantity ?? 0, lang)}>{(resource.total_daily_quantity ?? 0).toLocaleString()} {t('units')}</span></div>
-                </FixedFluid>
-                
-                <FixedFluid class="[ items-center! basis-[100px] grow shrink ]" width='32px' gap='var(--space-2xs)'>
-                    <div
-                        class="[ text-highlight h-[32px] ]"
-                        data-tippy-content={t('factories')}
-                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                    >
-                        <FactoryIcon xlink='#factory_icon' size={32} />
-                    </div>
-                    <div><span data-tippy-content={number_name(resource.total_factories, lang)}>{(resource.total_factories ?? 0).toLocaleString()}</span></div>
-                </FixedFluid>
-            </FlexInline>
-        </FixedFluid>
-    </div>
+        <FlexInline class="[ grow ]" gap='var(--space-3xs)'>            
+            <FixedFluid class="[ items-center! basis-[410px] ]" width='32px' gap='var(--space-2xs)'>
+                <div
+                    class="[ text-highlight h-[32px] ]"
+                    data-tippy-content={t('daily_quantity')}
+                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                >
+                    <VolumenIcon xlink='#volumen_icon' size={32} />
+                </div>
+                <div><span data-tippy-content={number_name(resource.total_daily_quantity ?? 0, lang)}>{(resource.total_daily_quantity ?? 0).toLocaleString()} {t('units')}</span></div>
+            </FixedFluid>
+            
+            <FixedFluid class="[ items-center! basis-[100px] ]" width='32px' gap='var(--space-2xs)'>
+                <div
+                    class="[ text-highlight h-[32px] ]"
+                    data-tippy-content={t('factories')}
+                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                >
+                    <FactoryIcon xlink='#factory_icon' size={32} />
+                </div>
+                <div><span data-tippy-content={number_name(resource.total_factories, lang)}>{(resource.total_factories ?? 0).toLocaleString()}</span></div>
+            </FixedFluid>
+        </FlexInline>
+    </FlexInline>
 
     <div class="[ production-drilldown-container ]">
         <small
