@@ -18,6 +18,7 @@ export const get_location_video_cover = (location: string | number) => {
         'amarr': '/videos/emperor-loop.webm',
         'amamake': '/videos/amamake-loop.webm',
         'r6': '/videos/r6-loop.webm',
+        'r6_2': '/videos/r6-2-loop.webm',
     }
 
     const location_name = typeof location === 'number' ? lookup_location_name(location) : location
@@ -35,6 +36,7 @@ export const get_location_video_cover_thumb = (location: string | number) => {
         'amarr': '/images/home-amarr-cover.jpg',
         'amamake': '/images/home-amamake-cover.jpg',
         'r6': '/images/home-r6-cover.jpg',
+        'r6_2': '/images/home-r6-2-cover.jpg',
     }
 
     const location_name = typeof location === 'number' ? lookup_location_name(location) : location
@@ -52,6 +54,7 @@ export const get_location_cover = (location: string | number) => {
         'amarr': '/images/home-amarr-cover-eve.jpg',
         'amamake': '/images/home-amamake-cover-eve.jpg',
         'r6': '/images/home-r6-cover-eve.jpg',
+        'r6_2': '/images/home-r6-2-cover-eve.jpg',
     }
 
     const location_name = typeof location === 'number' ? lookup_location_name(location) : location
@@ -69,6 +72,7 @@ export const get_location_cover_990 = (location: string | number) => {
         'amarr': '/images/home-amarr-cover-eve.jpg',
         'amamake': '/images/home-amamake-cover-eve.jpg',
         'r6': '/images/home-r6-cover-eve.jpg',
+        'r6_2': '/images/home-r6-2-cover-eve.jpg',
     }
 
     const location_name = typeof location === 'number' ? lookup_location_name(location) : location
