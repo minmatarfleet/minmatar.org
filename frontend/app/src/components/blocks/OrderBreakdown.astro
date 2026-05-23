@@ -54,24 +54,27 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
 
 <Flexblock id={id}>
     <hr class="border-bottom">
-    <StylessButton
-        hx-get={ORDER_BREAKDOWN_PARTIAL_URL}
-        hx-target={`#${id}`}
-        hx-swap="outerHTML transition:true"
-        hx-indicator=".loader"
-        hx-on--before-request="this.setAttribute('disabled','');"
-        hx-on--after-request="this.removeAttribute('disabled')"
-    >
-        <FlexInline
-            gap='var(--space-2xs)'
-            class="[ items-center! w-fit ]"
-            data-tippy-content={t('click_to_reload')}
-            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+    <div>
+        <StylessButton
+            class="[ sticky left-0 ]"
+            hx-get={ORDER_BREAKDOWN_PARTIAL_URL}
+            hx-target={`#${id}`}
+            hx-swap="outerHTML transition:true"
+            hx-indicator=".loader"
+            hx-on--before-request="this.setAttribute('disabled','');"
+            hx-on--after-request="this.removeAttribute('disabled')"
         >
-            <h4>{t('assignments_breakdown')}</h4>
-            <RefreshIcon small_size={true} />
-        </FlexInline>
-    </StylessButton>
+            <FlexInline
+                gap='var(--space-2xs)'
+                class="[ items-center! w-fit ]"
+                data-tippy-content={t('click_to_reload')}
+                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+            >
+                <h4>{t('assignments_breakdown')}</h4>
+                <RefreshIcon small_size={true} />
+            </FlexInline>
+        </StylessButton>
+    </div>
     {order_breakdown.map(item => {
         const items_delivered = item.assignments.reduce(
             (c, assignment) => c + (assignment.delivered_at ? assignment.quantity : 0)
@@ -81,14 +84,14 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
 
         const completion = item.quantity > 0 ? items_delivered / item.quantity * 100 : 0
         const progress_color = completion >= 50 ? '--security-status-point-6' :
-                       completion >= 10 && completion < 50 ? '--security-status-point-4':
-                       '--fleet-red'
+                    completion >= 10 && completion < 50 ? '--security-status-point-4':
+                    '--fleet-red'
         return (
             <FixedFluid
                 width='350px'
                 class="[ production-drilldown-item ][ w-full items-center! ]"
             >
-                <div>
+                <div class="[ freeze ]">
                     <ItemBadge
                         item_name={item.eve_type_name}
                         type_id={item.eve_type_id}
@@ -218,5 +221,9 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
 <style lang="scss">
     .order-breakdown-assign-footer {
         margin-top: var(--space-m);
+    }
+
+    .freeze {
+        left: -33px;
     }
 </style>

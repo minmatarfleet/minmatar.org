@@ -330,3 +330,31 @@ lite-youtube {
 a[disabled] {
     pointer-events: none;
 }
+
+.freeze {
+    @media screen and (max-width: 1619px) {
+        position: sticky;
+        left: 0;
+        z-index: 1;
+        
+        background-image: linear-gradient(
+            to right,
+            hsl(0, 0%, 10%) 0%,
+            hsla(0, 0%, 10%, 0.987) 60.0%,
+            hsla(0, 0%, 10%, 0.951) 67.8%,
+            hsla(0, 0%, 10%, 0.896) 74.4%,
+            hsla(0, 0%, 10%, 0.825) 80.0%,
+            hsla(0, 0%, 10%, 0.741) 84.6%,
+            hsla(0, 0%, 10%, 0.648) 88.3%,
+            hsla(0, 0%, 10%, 0.55) 91.2%,
+            hsla(0, 0%, 10%, 0.45) 93.5%,
+            hsla(0, 0%, 10%, 0.352) 95.1%,
+            hsla(0, 0%, 10%, 0.259) 96.4%,
+            hsla(0, 0%, 10%, 0.175) 97.4%,
+            hsla(0, 0%, 10%, 0.104) 98.1%,
+            hsla(0, 0%, 10%, 0.049) 98.7%,
+            hsla(0, 0%, 10%, 0.013) 99.3%,
+            hsla(0, 0%, 10%, 0) 100.0%
+        );   
+    }
+}
