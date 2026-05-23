@@ -56,6 +56,8 @@ def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
         "tracking": tracking,
         "disable_motd": fleet.disable_motd,
         "status": fixup_fleet_status(fleet, tracking),
+        "doctrine_id": fleet.doctrine.id if fleet.doctrine else None,
+        "aar_link": fleet.aar_link,
     }
 
 
