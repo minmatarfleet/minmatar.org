@@ -131,7 +131,7 @@ const is_random_staging = !Astro.cookies.has('staging')
 const staging = IS_APRIL_FOOLS ?
 	'amarr' :
 	is_random_staging ?
-	stagings[Math.floor(Math.random() * (stagings.length - 2))] : // removing amarr and r6_2 from random
+	stagings[Math.floor(Math.random() * (stagings.length - 2))] : // removing amarr and watermelon from random
 	user_staging
 	
 const auth_error = Astro.cookies.has('auth_error') ? Astro.cookies.get('auth_error')?.value : false
@@ -202,10 +202,10 @@ const page_description = t('index.leading_text');
 >
     <PageLanding
         cover={{
-			video: get_location_video_cover(staging) ?? '/videos/watermelon-loop.webm',
-			video_thumb: get_location_video_cover_thumb(staging) ?? '/images/home-cover.jpg',
-            image: get_location_cover(staging) ?? '/images/home-cover-eve.jpg',
-            image_990: get_location_cover_990(staging) ?? '/images/home-cover-eve.jpg',
+			video: get_location_video_cover(staging) ?? undefined,
+			video_thumb: get_location_video_cover_thumb(staging) ?? undefined,
+            image: get_location_cover(staging) ?? undefined,
+            image_990: get_location_cover_990(staging) ?? undefined,
             animated: false,
         }}
         fullscreen={true}
