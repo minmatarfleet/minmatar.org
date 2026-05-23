@@ -89,22 +89,33 @@ import CargoIcon from '@components/icons/CargoIcon.astro';
                 />
             </Flexblock>
             
-            <FlexInline gap='var(--space-3xs)' class="[ basis-[72px] ]">
+            <div class="[ basis-[72px] ]">
                 <template x-if="blueprint.owner.entity_type === 'corporation'">
-                    <div class="[ border ]">
-                        <CorporationPicture
-                            corporation_id={0}
-                            x_corporation_id="blueprint.owner.entity_id"
+                    <FlexInline gap='var(--space-3xs)'>
+                        <div class="[ border ]">
+                            <CorporationPicture
+                                corporation_id={0}
+                                x_corporation_id="blueprint.owner.entity_id"
+                                size={32}
+                            />
+                        </div>
+                        <CharacterPicture
+                            character_id={0}
+                            x_character_id='blueprint.owner.primary_character_id'
+                            size={32}
+                        />
+                    </FlexInline>
+                </template>
+                <template x-if="blueprint.owner.entity_type === 'character'">
+                    <div class="[ w-fit ]">
+                        <CharacterPicture
+                            character_id={0}
+                            x_character_id="(user_characters_ids.includes(blueprint.owner.entity_id) ? blueprint.owner.entity_id : blueprint.owner.primary_character_id)"
                             size={32}
                         />
                     </div>
                 </template>
-                <CharacterPicture
-                    character_id={0}
-                    x_character_id='blueprint.owner.primary_character_id'
-                    size={32}
-                />
-            </FlexInline>
+            </div>
 
             <FixedFluid width='32px' breakpoint='30%' gap='var(--space-2xs)' class="[  items-center! ]">
                 <div

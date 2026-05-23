@@ -2,13 +2,22 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
 import type { Blueprint } from '@dtypes/api.minmatar.org'
 import { fetch_blueprints } from '@helpers/fetching/industry'
+import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 
 const blueprint_query = Astro.url.searchParams.get('blueprint_query') as string ?? ''
 
 let blueprints:Blueprint[] = []
 let fetching_error:string | false = false
+let user_characters_ids: number[] = []
 
 if (blueprint_query) {
     try {
@@ -16,6 +25,15 @@ if (blueprint_query) {
     } catch (error) {
         fetching_error = error.message
     }
+}
+
+try {
+    if (auth_token) {
+        const summary = await get_characters_summary_sorted(auth_token)
+        user_characters_ids = summary.characters?.map((c) => c.character_id) ?? []
+    }
+} catch (error) {
+    console.log(error.message)
 }
 
 const BLUEPRINTS_PARTIAL_URL = translatePath('/partials/blueprints_component?is_copy=true')
@@ -58,6 +76,7 @@ const page_title = t('industry.blueprint.copies.page_title');
             blueprints: ${JSON.stringify(blueprints)},
             blueprints_sorted: [],
             blueprint_query: '${blueprint_query}',
+            user_characters_ids: ${JSON.stringify(user_characters_ids)},
             item_listing_limit: $persist(1000),
             showing_results: ${blueprint_query ? 'true' : 'false'},
             LOCATION_TEXT: {
