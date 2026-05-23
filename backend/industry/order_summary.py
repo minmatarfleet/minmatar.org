@@ -174,8 +174,6 @@ def get_order_summary_message(
         [
             "# Industry order summary",
             "",
-            "https://my.minmatar.org/industry/orders/ | View Order page",
-            "",
             "## Active orders",
             "Open builds, sorted by where they’re headed.",
             "",
@@ -188,5 +186,7 @@ def get_order_summary_message(
             "",
             f"**Total order amount:** {format_isk_billions_trimmed(totals.total_order_amount_isk)}",
             f"**Total available margin:** {format_isk_billions_trimmed(totals.total_available_margin_isk)}",
+            "",
+            "[View Order page](https://my.minmatar.org/industry/orders/)",
         ]
     )

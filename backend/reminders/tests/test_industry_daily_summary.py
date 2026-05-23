@@ -60,10 +60,6 @@ class IndustryDailySummaryMessageTests(AppTestCase):
     def test_empty_summary(self):
         text = build_industry_daily_summary_message()
         self.assertIn("# Industry order summary", text)
-        self.assertIn(
-            "https://my.minmatar.org/industry/orders/ | View Order page",
-            text,
-        )
         self.assertIn("## Active orders", text)
         self.assertIn("Open builds, sorted by where they’re headed.", text)
         self.assertIn("## Unassigned order items", text)
@@ -73,6 +69,10 @@ class IndustryDailySummaryMessageTests(AppTestCase):
         self.assertIn("- *(none)*", text)
         self.assertIn("**Total order amount:** 0B", text)
         self.assertIn("**Total available margin:** 0B", text)
+        self.assertIn(
+            "[View Order page](https://my.minmatar.org/industry/orders/)",
+            text,
+        )
 
     def test_excludes_fulfilled_orders(self):
         create_industry_order(
