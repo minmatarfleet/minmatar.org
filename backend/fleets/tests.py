@@ -43,6 +43,7 @@ from fleets.signals import (
 from fleets.motd import get_motd
 from fleets.notifications import get_fleet_discord_notification
 from fleets.tasks import update_fleet_schedule, update_fleet_instances
+from fittings.models import EveDoctrine
 
 BASE_URL = "/api/fleets"
 
@@ -245,6 +246,26 @@ class FleetRouterTestCase(TestCase):
         fleets = response.json()
         # logger.info("fleets v3 response = %s", fleets)
         self.assertEqual(2, len(fleets))
+
+    def test_get_fleets_v3_includes_doctrine_id(self):
+        doctrine = EveDoctrine.objects.create(
+            name="Test Doctrine",
+            type="non_strategic",
+            description="A test doctrine",
+        )
+        fleet = make_test_fleet("Test fleet", self.user)
+        fleet.doctrine = doctrine
+        fleet.save()
+
+        response = self.client.get(
+            f"{BASE_URL}/v3?fleet_filter=upcoming",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(200, response.status_code)
+        fleets = response.json()
+        self.assertEqual(1, len(fleets))
+        self.assertEqual(doctrine.id, fleets[0]["doctrine_id"])
 
     def test_get_fleet(self):
         fleet = make_test_fleet("Test fleet", self.user)
