@@ -30,7 +30,7 @@ import { time_diff_text } from '@helpers/date'
 const SOSALA_SYSTEM_ID = 30003070
 const DEFAULT_STAGGERING_SYSTEM = SOSALA_SYSTEM_ID
 
-export async function fetch_fleets_auth(access_token:string, upcoming:boolean = true) {
+export async function fetch_fleets_auth(access_token:string, upcoming:boolean = true, simplified:boolean = false) {
     let api_fleets:Fleet[]
 
     api_fleets = await get_fleets_v3(access_token, upcoming ? 'active' : 'recent')
@@ -41,15 +41,25 @@ export async function fetch_fleets_auth(access_token:string, upcoming:boolean = 
     const fleet_ids = api_fleets.map(api_fleet =>  api_fleet.id)
     const fleet_commanders = unique_values(api_fleets.map(api_fleet => api_fleet.fleet_commander))
     const fleet_commanders_profiles = await get_users_character(fleet_commanders)
-    const fleets_metrics = await get_fleets_metrics(access_token)
-    const fleets_metrics_filtered = fleets_metrics.filter(metric => fleet_ids.includes(metric.fleet_id))
-    const fleet_commander_metrics = await get_fleet_commander_metrics(access_token)
+    
+    if (!simplified) {
+        const fleets_metrics = await get_fleets_metrics(access_token)
+        const fleets_metrics_filtered = fleets_metrics.filter(metric => fleet_ids.includes(metric.fleet_id))
+        const fleet_commander_metrics = await get_fleet_commander_metrics(access_token)
+
+        return api_fleets.map( fleet => add_fleet_info(
+            fleet,
+            fleet_commanders_profiles.find(profile => profile?.user_id === fleet?.fleet_commander),
+            fleets_metrics_filtered,
+            fleet_commander_metrics,
+        ))
+    }
 
     return api_fleets.map( fleet => add_fleet_info(
         fleet,
         fleet_commanders_profiles.find(profile => profile?.user_id === fleet?.fleet_commander),
-        fleets_metrics_filtered,
-        fleet_commander_metrics,
+        [],
+        [],
     ))
 }
 

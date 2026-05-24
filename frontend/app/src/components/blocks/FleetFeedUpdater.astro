@@ -1,0 +1,35 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+interface Props {
+    refresh_rate_seconds:   number;
+}
+
+const {
+    refresh_rate_seconds,
+} = Astro.props
+
+const FLEET_FEED_PARTIAL_URL = `${translatePath('/partials/fleet_feed_component')}`
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+---
+
+<FlexInline
+    class="[ fleet-feed-wrapper ][ flex-nowrap! animate-fade-in-up hidden! 2xl:flex! ]"
+    gap='var(--space-xs)'
+    hx-get={FLEET_FEED_PARTIAL_URL}
+    hx-trigger={`every ${refresh_rate_seconds}s`}
+    hx-swap="innerHTML transition:true"
+    hx-indicator=".loader"
+>
+    <slot />
+</FlexInline>
+
+<style lang="scss">
+    .fleet-feed-wrapper {
+        position: fixed;
+        bottom: var(--space-l);
+        right: var(--space-xl);
+    }
+</style>

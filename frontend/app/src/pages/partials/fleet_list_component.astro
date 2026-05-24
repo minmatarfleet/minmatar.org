@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { translatePath } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
@@ -40,7 +40,6 @@ try {
 }
 
 const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(upcoming)}`)
-const TIMEAGO_UPDATE_RATE_MS = 10000
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
@@ -57,53 +56,9 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         }}
     />
     :
-    <div
-        class="[ fleet-list-container relative ]"
-        x-data={`{
-            last_update: ${new Date().getTime()},
-            updated_time_ago: '',
-            update_time_ago() {
-                const now = new Date()
-
-                const seconds_past = Math.floor((now.getTime() - this.last_update) / 1000);
-
-                if (seconds_past < 60)
-                    this.updated_time_ago = '${t('updated_just_now')}';
-                else if (seconds_past < 120)
-                    this.updated_time_ago = '${t('minute_ago')}';
-                else {
-                    const minutes = Math.floor(seconds_past / 60)
-                    this.updated_time_ago = '${t('minutes_ago')}'.replace('MINUTES', minutes)
-                }
-
-                if ($refs.timeago_span !== undefined)
-                    setTimeout(() => this.update_time_ago(), ${TIMEAGO_UPDATE_RATE_MS})
-            },
-            init() {
-                fleets_count = ${fleets?.length}
-            
-                if (fleets_count > 0)
-                    tippy($el, tippy_options)
-                    
-                this.update_time_ago()
-                setTimeout(() => this.update_time_ago(), ${TIMEAGO_UPDATE_RATE_MS})
-            }
-        }`}
-    >
-        {(fleets?.length ?? 0) > 0 &&
-            <small class="[ absolute left-0 mt-[-30px] animate-fade-in-up ]" x-text="updated_time_ago" x-ref="timeago_span" />
-        }
-
-        <div class="[ fleet-list-container relative ]">
-            <FleetList
-                fleets={fleets as FleetItem[]}
-                history={!upcoming}
-                init_tooltips={true}
-            />
-        </div>
-
-        {(fleets?.length ?? 0) === 0 &&
-            <small class="[ block text-center animate-fade-in-up ]" x-text="updated_time_ago" x-ref="timeago_span" />
-        }
-    </div>
+    <FleetList
+        fleets={fleets as FleetItem[]}
+        history={!upcoming}
+        init_tooltips={true}
+    />
 }

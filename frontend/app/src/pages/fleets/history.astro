@@ -105,26 +105,24 @@ const page_description = t('page_finder.fleets.history.description');
             >
                 {t('upcoming_fleets')}
             </Button>
-        </PageSubheader>
+        </PageSubheader>        
         
-        {fetch_fleets_error ?
-            <ErrorRefetch
-                args={{
-                    partial: FLEET_LIST_PARTIAL_URL,
-                    error: fetch_fleets_error,
-                    delay: 0,
-                }}
-            />
-            :
-            <Flexblock gap='var(--space-xl)'>
-                <div class="[ fleet-list-container relative ]">
-                    <FleetList
-                        fleets={fleets}
-                        history={true}
-                        init_tooltips={false}
-                    />
-                </div>
-            </Flexblock>
-        }
+        <Flexblock gap='var(--space-xl)'>
+            {fetch_fleets_error ?
+                <ErrorRefetch
+                    args={{
+                        partial: FLEET_LIST_PARTIAL_URL,
+                        error: fetch_fleets_error,
+                        delay: 0,
+                    }}
+                />
+                :
+                <FleetList
+                    fleets={fleets}
+                    history={true}
+                    init_tooltips={false}
+                />
+            }
+        </Flexblock>
 	</PageWide>
 </Viewport>

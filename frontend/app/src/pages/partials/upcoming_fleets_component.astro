@@ -1,0 +1,86 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden, HTTP_500_Server_Error } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+if (!user)
+    return HTTP_403_Forbidden()
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = (user ? await get_user_permissions(user?.username) : [])
+
+const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_evefleet')
+
+if (!can_view_fleets)
+    return HTTP_403_Forbidden()
+
+import type { FleetItem } from '@dtypes/layout_components'
+import { fetch_fleets_auth } from '@helpers/fetching/fleets'
+
+let fleets:FleetItem[] | null = null
+
+try {
+    fleets = await fetch_fleets_auth(auth_token as string)
+    fleets.sort(function(a, b) {
+        return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
+    });
+} catch (error) {
+    return HTTP_500_Server_Error()
+}
+
+const TIMEAGO_UPDATE_RATE_MS = 10000
+
+import FleetList from '@components/blocks/FleetList.astro';
+---
+
+<div
+    class="[ relative ]"
+    x-data={`{
+        last_update: ${new Date().getTime()},
+        updated_time_ago: '',
+        update_time_ago() {
+            const now = new Date()
+
+            const seconds_past = Math.floor((now.getTime() - this.last_update) / 1000);
+
+            if (seconds_past < 60)
+                this.updated_time_ago = '${t('updated_just_now')}';
+            else if (seconds_past < 120)
+                this.updated_time_ago = '${t('minute_ago')}';
+            else {
+                const minutes = Math.floor(seconds_past / 60)
+                this.updated_time_ago = '${t('minutes_ago')}'.replace('MINUTES', minutes)
+            }
+
+            if ($refs.timeago_span !== undefined)
+                setTimeout(() => this.update_time_ago(), ${TIMEAGO_UPDATE_RATE_MS})
+        },
+        init() {
+            fleets_count = ${fleets?.length}
+                
+            this.update_time_ago()
+            setTimeout(() => this.update_time_ago(), ${TIMEAGO_UPDATE_RATE_MS})
+        }
+    }`}
+>
+    {(fleets?.length ?? 0) > 0 &&
+        <small class="[ absolute left-0 mt-[-30px] animate-fade-in-up ]" x-text="updated_time_ago" x-ref="timeago_span" />
+    }
+
+    <FleetList
+        fleets={fleets as FleetItem[]}
+        init_tooltips={true}
+    />
+
+    {(fleets?.length ?? 0) === 0 &&
+        <small class="[ block text-center animate-fade-in-up ]" x-text="updated_time_ago" x-ref="timeago_span" />
+    }
+</div>

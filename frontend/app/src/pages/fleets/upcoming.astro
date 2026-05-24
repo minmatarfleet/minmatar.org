@@ -80,9 +80,9 @@ import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import ShowAlert from '@components/blocks/ShowAlert.astro';
 import FlashFormButton from '@components/blocks/FlashFormButton.astro'
+import UpcomingFleetsUpdater from '@components/blocks/UpcomingFleetsUpdater.astro'
 
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
-import FlashIcon from '@components/icons/buttons/FlashIcon.astro';
 
 const page_title = t('fleets.upcoming.page_title');
 ---
@@ -139,23 +139,23 @@ const page_title = t('fleets.upcoming.page_title');
             </Button>
         </PageSubheader>
         
-        {fetch_fleets_error ?
-            <ErrorRefetch
-                args={{
-                    partial: FLEET_LIST_PARTIAL_URL,
-                    error: fetch_fleets_error,
-                    delay: 0,
-                }}
-            />
-            :
-            <Flexblock gap='var(--space-xl)'>
-                <div class="[ fleet-list-container relative ]">
+        <Flexblock gap='var(--space-xl)'>
+            <UpcomingFleetsUpdater refresh_rate_seconds={300}>
+                {fetch_fleets_error ?
+                    <ErrorRefetch
+                        args={{
+                            partial: FLEET_LIST_PARTIAL_URL,
+                            error: fetch_fleets_error,
+                            delay: 0,
+                        }}
+                    />
+                    :
                     <FleetList
                         fleets={fleets}
                         init_tooltips={false}
                     />
-                </div>
-            </Flexblock>
-        }
+                }
+            </UpcomingFleetsUpdater>
+        </Flexblock>
 	</PageWide>
 </Viewport>

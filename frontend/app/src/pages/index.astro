@@ -188,6 +188,7 @@ import DoctrinesEvEIcon from '@components/icons/DoctrinesEvEIcon.astro';
 import MarketDeliveriesEVEIcon from '@components/icons/MarketDeliveriesEVEIcon.astro';
 import FreightServiceEvEIcon from '@components/icons/FreightServiceEvEIcon.astro';
 import IndustryEVEIcon from '@components/icons/IndustryEVEIcon.astro';
+import FleetFeedUpdater from '@components/blocks/FleetFeedUpdater.astro'
 
 const page_title = t('index.page_title');
 const page_description = t('index.leading_text');
@@ -438,7 +439,11 @@ const page_description = t('index.leading_text');
 		<ColorBlindPrompt />
 
 		{can_view_fleets &&
-			<FleetFeed />
+			<div x-show="show_fleet_feeds">
+				<FleetFeedUpdater refresh_rate_seconds={300}>
+					<FleetFeed />
+				</FleetFeedUpdater>
+			</div>
 		}
     </PageLanding>
 </Viewport>
