@@ -1,0 +1,26 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+interface Props {
+    refresh_rate_seconds:   number;
+    [propName: string]:     any;
+}
+
+const {
+    refresh_rate_seconds,
+    ...attributes
+} = Astro.props
+
+const FLEET_LIST_PARTIAL_URL = translatePath('/partials/upcoming_fleets_component/')
+---
+
+<div
+    hx-get={FLEET_LIST_PARTIAL_URL}
+    hx-trigger={`every ${refresh_rate_seconds}s`}
+    hx-swap="innerHTML transition:true"
+    hx-indicator=".loader"
+    {...attributes}
+>
+    <slot />
+</div>

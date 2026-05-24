@@ -16,62 +16,44 @@ const {
     init_tooltips,
 } = Astro.props
 
-const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(true)}`)
-const REFRESH_RATE_SECONDS = 300
-
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Grid from '@components/compositions/Grid.astro';
 
 import FleetListItem from '@components/blocks/FleetListItem.astro';
-
-const hx_attrs = {
-    ...(!history && { 'hx-get': FLEET_LIST_PARTIAL_URL }),
-    ...(!history && { 'hx-trigger': `load delay:${REFRESH_RATE_SECONDS}s` }),
-    ...(!history && { 'hx-swap': 'innerHTML transition:true' }),
-    ...(!history && { 'hx-target': '.fleet-list-container' }),
-    ...(!history && { 'hx-indicator': '.loader' }),
-}
 ---
 
-<div
-    {...hx_attrs}
-    @htmx:response-error={`$el.removeAttribute('hx-trigger'); setTimeout(() => { $el.setAttribute('hx-trigger', 'load delay:${REFRESH_RATE_SECONDS}s'); htmx.process($el, 'load') })`}
-    @htmx:send-error={`$el.removeAttribute('hx-trigger'); setTimeout(() => { $el.setAttribute('hx-trigger', 'load delay:${REFRESH_RATE_SECONDS}s'); htmx.process($el, 'load') })`}
->
-    
-    <Grid
-        class="[ w-full grid-fill ]"
-        row_gap="var(--space-3xs)"
-        column_gap="var(--space-3xs)"
-        min_item_width="350px"
-        x-data={`{
-            init() {
-                const timer = setInterval(() => {
-                    $dispatch('tick')
-                }, 5000)
+<Grid
+    class="[ w-full grid-fill ]"
+    row_gap="var(--space-3xs)"
+    column_gap="var(--space-3xs)"
+    min_item_width="350px"
+    x-data={`{
+        init() {
+            const timer = setInterval(() => {
+                $dispatch('tick')
+            }, 5000)
 
-                function clearTimer(event) {
-                    clearInterval(timer)
-                    event.currentTarget.removeEventListener('astro:after-swap', clearTimer)
-                }
-
-                document.addEventListener('astro:after-swap', clearTimer)
+            function clearTimer(event) {
+                clearInterval(timer)
+                event.currentTarget.removeEventListener('astro:after-swap', clearTimer)
             }
-        }`}
-    >
-        {fleets.map((fleet) =>
-            <FleetListItem
-                role="listitem"
-                fleet={fleet}
-                history={history}
-                init_tooltips={init_tooltips}
-            />
-        )}
-    </Grid>
 
-    {fleets.length == 0 &&
-        <Flexblock gap='var(--space-xl)' centered={true}>
-            <p>{t('fleets.upcoming.empty_message')}</p>
-        </Flexblock>
-    }
-</div>
+            document.addEventListener('astro:after-swap', clearTimer)
+        }
+    }`}
+>
+    {fleets.map((fleet) =>
+        <FleetListItem
+            role="listitem"
+            fleet={fleet}
+            history={history}
+            init_tooltips={init_tooltips}
+        />
+    )}
+</Grid>
+
+{fleets.length == 0 &&
+    <Flexblock gap='var(--space-xl)' centered={true}>
+        <p>{t('fleets.upcoming.empty_message')}</p>
+    </Flexblock>
+}

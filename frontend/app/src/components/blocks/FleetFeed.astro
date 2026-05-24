@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { HTTP_403_Forbidden, HTTP_500_Server_Error } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -22,22 +22,18 @@ if (!can_view_fleets)
 import type { FleetItem } from '@dtypes/layout_components'
 import { fetch_fleets_auth } from '@helpers/fetching/fleets'
 
-let fetch_fleets_error: Error | false = false
 let fleets:FleetItem[] = []
 let active_fleet_index:number = -1 // No active fleet
 
 try {
-    fleets = await fetch_fleets_auth(auth_token as string)
+    fleets = await fetch_fleets_auth(auth_token as string, true, true)
     fleets = fleets.filter((i) => (new Date(i.start_time).getTime() < new Date(Date.now() + 24 * 60 * 60 * 1000).getTime()))
     fleets = fleets.filter((i) => i.status === 'active' || (new Date(i.start_time).getTime() > new Date(Date.now() - 60 * 60 * 1000).getTime()))
     fleets.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
     active_fleet_index = fleets.findIndex(fleet => fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time)
 } catch (error) {
-    fetch_fleets_error = error
+    return HTTP_500_Server_Error()
 }
-
-const FLEET_FEED_PARTIAL_URL = `${translatePath('/partials/fleet_feed_component')}`
-const REFRESH_RATE_SECONDS = 300
 
 import FlexInline from '@components/compositions/FlexInline.astro'
 
@@ -46,48 +42,29 @@ import Button from '@components/blocks/Button.astro';
 import FleetFeedItem from '@components/blocks/FleetFeedItem.astro';
 ---
 
-<div x-show="show_fleet_feeds">
-    <FlexInline
-        class="[ fleet-feed-wrapper ][ flex-nowrap! animate-fade-in-up hidden! 2xl:flex! ]"
-        gap='var(--space-xs)'
-        hx-get={FLEET_FEED_PARTIAL_URL}
-        hx-trigger={`load delay:${REFRESH_RATE_SECONDS}s`}
-        hx-swap="outerHTML transition:true"
-        @htmx:response-error={`$el.removeAttribute('hx-trigger'); setTimeout(() => { $el.setAttribute('hx-trigger', 'load delay:${REFRESH_RATE_SECONDS}s'); htmx.process($el, 'load') })`}
-        @htmx:send-error={`$el.removeAttribute('hx-trigger'); setTimeout(() => { $el.setAttribute('hx-trigger', 'load delay:${REFRESH_RATE_SECONDS}s'); htmx.process($el, 'load') })`}
-    >
-        <div class="[ fleet-feed swiper ]">
-            <FeedSwiper autoplay={active_fleet_index === -1} initial_slide={active_fleet_index >= 0 ? active_fleet_index : 0}>
-                {fleets.map( (fleet) =>
-                    <div class="swiper-slide">
-                        <FleetFeedItem fleet={fleet} />
-                    </div>
-                )}
-            </FeedSwiper>
-        </div>
-
-        {fleets.length > 0 &&
-            <FlexInline justification='flex-end'>
-                <Button
-                    href={translatePath('/fleets/upcoming/')}
-                    size='sm'
-                    narrow={true}
-                >
-                    {t('full_schedule')}
-                </Button>
-            </FlexInline>
-        }
-    </FlexInline>
+<div class="[ fleet-feed swiper ]">
+    <FeedSwiper autoplay={active_fleet_index === -1} initial_slide={active_fleet_index >= 0 ? active_fleet_index : 0}>
+        {fleets.map( (fleet) =>
+            <div class="swiper-slide">
+                <FleetFeedItem fleet={fleet} />
+            </div>
+        )}
+    </FeedSwiper>
 </div>
 
-<style lang="scss">
-    .fleet-feed-wrapper {
-        position: fixed;
-        bottom: var(--space-l);
-        right: var(--space-xl);
-        display: none;
-    }
+{fleets.length > 0 &&
+    <FlexInline justification='flex-end'>
+        <Button
+            href={translatePath('/fleets/upcoming/')}
+            size='sm'
+            narrow={true}
+        >
+            {t('full_schedule')}
+        </Button>
+    </FlexInline>
+}
 
+<style lang="scss">
     .fleet-feed {
         max-height: calc(2 * 64px);
     }
