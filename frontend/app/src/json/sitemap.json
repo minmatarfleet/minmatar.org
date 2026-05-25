@@ -133,6 +133,34 @@
         "keywords": [ "groups" ]
     },
     {
+        "slug": "tribes_capitals",
+        "path": "/alliance/tribes/1/",
+        "description": "page_finder.tribes.capitals.description",
+        "publish": true,
+        "keywords": [ "groups", "tribes" ]
+    },
+    {
+        "slug": "tribes_industry",
+        "path": "/alliance/tribes/2/",
+        "description": "page_finder.tribes.industry.description",
+        "publish": true,
+        "keywords": [ "groups", "tribes" ]
+    },
+    {
+        "slug": "tribes_market",
+        "path": "/alliance/tribes/3/",
+        "description": "page_finder.tribes.market.description",
+        "publish": true,
+        "keywords": [ "groups", "tribes" ]
+    },
+    {
+        "slug": "tribes_pulse",
+        "path": "/alliance/tribes/4/",
+        "description": "page_finder.tribes.pulse.description",
+        "publish": true,
+        "keywords": [ "groups", "tribes" ]
+    },
+    {
         "slug": "propaganda",
         "alt": "icon.tv.alt",
         "path": "/alliance/propaganda/",
