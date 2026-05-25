@@ -7,6 +7,7 @@ import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
 
 interface Props {
     color?:             ButtonColors;
+    new_tab?:           boolean;
     external?:          boolean;
     href?:              string;
     size?:              ButtonSizes;
@@ -18,6 +19,7 @@ interface Props {
 
 const {
     color = 'fleet-red',
+    new_tab = false,
     external = false,
     href,
     size = 'lg',
@@ -48,7 +50,7 @@ const Element = href ? 'a' : 'button';
     disabled={Element === 'button' ? 'disabled' : undefined}
     x-init={Element === 'button' && !off_disable ? '$el.removeAttribute("disabled")' : undefined}
 
-    target={external ? '_blank' : undefined }
+    target={external || new_tab ? '_blank' : undefined }
     rel={external ? 'nofollow noopener noreferrer' : undefined }
     x-data={external ? `{
         hide_external_link_disclaimer: $persist(false),
