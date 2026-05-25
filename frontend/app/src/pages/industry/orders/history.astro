@@ -129,6 +129,15 @@ const page_title = t('industry.orders.history.page_title');
             >
                 {t('view_active_orders')}
             </Button>
+
+            <Button
+                href={translatePath('/resources/IndyConfig_uq0uu_qm.json')}
+                new_tab={true}
+                size='sm'
+                data-tippy-content={t('ravworks_tooltip')}
+            >
+                {t('ravworks_config')}
+            </Button>
         </PageSubheader>
 
         {fetching_error !== false ?

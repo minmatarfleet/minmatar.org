@@ -2270,5 +2270,7 @@ export const ui = {
         'delivery_contract_text': 'Review everything is fine and finish the contract.',
         'unit_price': 'Unit price',
         'items_count': 'Items count',
+        'ravworks_config': 'Ravworks config',
+        'ravworks_tooltip': 'Ravworks is a production calculator; use this file to instantly calculate manufacturing yields for the RKY-FW Indy Park.',
     },
 } as const;
