@@ -11,11 +11,12 @@ import { get_groups } from '@helpers/fetching/groups'
 import { get_locations_by_ids } from '@helpers/api.minmatar.org/locations'
 
 function normalize_doctrine_type(type: string): DoctrineTypes {
-    // If the type is one of the valid types, return it
+    if (type === 'training') {
+        return 'non_strategic'
+    }
     if (doctrine_types.includes(type as DoctrineTypes)) {
         return type as DoctrineTypes
     }
-    // Otherwise, default to non_strategic
     return 'non_strategic'
 }
 

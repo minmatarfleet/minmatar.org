@@ -771,8 +771,8 @@ export interface RouteStations {
 export type DoctrineTypes = typeof doctrine_types[number]
 
 export const doctrine_types = [
+    'experimental',
     'non_strategic',
-    'training',
     'strategic',
 ] as const
 
