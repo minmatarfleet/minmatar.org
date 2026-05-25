@@ -1055,6 +1055,7 @@ export const ui = {
         'minmatar_ourzad_description': 'Starkman Offensive FOB',
         'station_assets': 'View station assets',
         'fetching_assets': 'Fetching assets',
+        'experimental': 'Experimental',
         'non_strategic': 'Non strategic',
         'casual': 'Casual',
         'training': 'Training',

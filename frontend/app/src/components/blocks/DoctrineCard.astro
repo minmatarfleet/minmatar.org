@@ -84,8 +84,8 @@ import TrainingIcon from '@components/icons/TrainingIcon.astro';
                 data-tippy-content={
                     doctrine.type === 'strategic' ?
                     t('strategic') :
-                    doctrine.type === 'training' ?
-                    t('training') :
+                    doctrine.type === 'experimental' ?
+                    t('experimental') :
                     t('non_strategic')
                 }
                 x-init={`tippy($el, {
@@ -95,7 +95,7 @@ import TrainingIcon from '@components/icons/TrainingIcon.astro';
             >
                 {doctrine.type === 'strategic' ?
                     <StratopIcon /> :
-                    doctrine.type === 'training' ?
+                    doctrine.type === 'experimental' ?
                     <TrainingIcon /> :
                     <NonStrategicIcon />
                 }

@@ -1,20 +1,156 @@
-from django.contrib import admin
+import json
+
+from django.contrib import admin, messages
+from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Exists, OuterRef, Subquery
+from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.html import format_html
 from safedelete.admin import SafeDeleteAdmin, SafeDeleteAdminFilter
 
 from eveuniverse.models import EveType
 
-from .forms import EveDoctrineForm, EveFittingAdminForm
-from .models import (
+from fittings.helpers.doctrine_changes import (
+    apply_doctrine_payload,
+    approve_doctrine_change_request,
+    build_doctrine_payload_from_form,
+    cancel_doctrine_change_request,
+    reject_doctrine_change_request,
+    submit_doctrine_change_request,
+)
+from fittings.helpers.fitting_changes import (
+    approve_fitting_change_request,
+    build_fitting_payload_from_instance,
+    build_refit_payload,
+    cancel_fitting_change_request,
+    reject_fitting_change_request,
+    submit_fitting_change_request,
+)
+from fittings.helpers.permissions import (
+    can_approve_doctrine_request,
+    can_approve_fitting_request,
+    can_publish_doctrine_change,
+    can_publish_fitting_change,
+    effective_protection_tier,
+    protection_tier_for_doctrine,
+)
+from fittings.models import (
+    ChangeRequestStatus,
     EveDoctrine,
+    EveDoctrineChangeRequest,
     EveDoctrineFitting,
+    EveDoctrineHistory,
     EveFitting,
+    EveFittingChangeRequest,
     EveFittingHistory,
     EveFittingRefit,
     FittingTag,
 )
+from fittings.tasks import (
+    notify_doctrine_change_request_proposed,
+    notify_fitting_change_request_proposed,
+)
+
+from .forms import EveDoctrineForm, EveFittingAdminForm
+
+
+def _mark_change_request_queued(request, redirect_url: str) -> None:
+    # pylint: disable=protected-access
+    request._change_request_queued = True
+    request._change_request_redirect_url = redirect_url
+
+
+def _warn_if_refit_edited_after_fitting_queued(request, formset) -> None:
+    refit_edited = any(
+        inline_form.has_changed()
+        for inline_form in formset.forms
+        if inline_form.cleaned_data
+        and not inline_form.cleaned_data.get("DELETE")
+    )
+    if refit_edited:
+        messages.warning(
+            request,
+            "Fitting change was queued; inline refit edits were not "
+            "included. Save refit changes in a separate submit after "
+            "approval.",
+        )
+
+
+def _queue_refit_delete_request(
+    request, fitting, inline_form, user
+) -> tuple[bool, bool]:
+    """Return (queued, abort). abort True if user should stop processing."""
+    try:
+        req = submit_fitting_change_request(
+            fitting,
+            change_kind="refit_delete",
+            payload=build_refit_payload(inline_form.instance),
+            user=user,
+            refit=inline_form.instance,
+        )
+        if req:
+            notify_fitting_change_request_proposed.delay(req.pk)
+            return True, False
+    except (PermissionError, ValueError) as exc:
+        messages.error(request, str(exc))
+        return False, True
+    return False, False
+
+
+def _queue_refit_upsert_request(
+    request, fitting, inline_form, user
+) -> tuple[bool, bool]:
+    """Return (queued, abort). abort True if user should stop processing."""
+    refit = inline_form.instance
+    payload = {
+        "name": inline_form.cleaned_data.get("name", refit.name),
+        "eft_format": inline_form.cleaned_data.get(
+            "eft_format", refit.eft_format
+        ),
+        "description": inline_form.cleaned_data.get(
+            "description", refit.description or ""
+        ),
+    }
+    kind = "refit_update" if refit.pk else "refit_create"
+    try:
+        req = submit_fitting_change_request(
+            fitting,
+            change_kind=kind,
+            payload=payload,
+            user=user,
+            refit=refit if refit.pk else None,
+        )
+        if req:
+            notify_fitting_change_request_proposed.delay(req.pk)
+            return True, False
+    except (PermissionError, ValueError) as exc:
+        messages.error(request, str(exc))
+        return False, True
+    return False, False
+
+
+class ApprovalQueuedAdminMixin:  # pylint: disable=protected-access
+    """Avoid false 'saved successfully' when a change is queued for approval."""
+
+    def log_addition(self, request, obj, message):
+        if getattr(request, "_change_request_queued", False):
+            return
+        return super().log_addition(request, obj, message)
+
+    def log_change(self, request, obj, message):
+        if getattr(request, "_change_request_queued", False):
+            return
+        return super().log_change(request, obj, message)
+
+    def response_add(self, request, obj):
+        if getattr(request, "_change_request_queued", False):
+            return HttpResponseRedirect(request._change_request_redirect_url)
+        return super().response_add(request, obj)
+
+    def response_change(self, request, obj):
+        if getattr(request, "_change_request_queued", False):
+            return HttpResponseRedirect(request._change_request_redirect_url)
+        return super().response_change(request, obj)
 
 
 class FittingTagListFilter(admin.SimpleListFilter):
@@ -96,7 +232,7 @@ class EveFittingRefitInline(admin.StackedInline):
 
 
 @admin.register(EveFitting)
-class EveFittingAdmin(SafeDeleteAdmin):
+class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
     """Admin screen for EveFitting entity. Ship is inferred from EFT; display name is editable."""
 
     form = EveFittingAdminForm
@@ -123,6 +259,7 @@ class EveFittingAdmin(SafeDeleteAdmin):
         "latest_version",
         "created_at",
         "updated_at",
+        "protection_tier_display",
     )
     fieldsets = (
         (
@@ -132,6 +269,7 @@ class EveFittingAdmin(SafeDeleteAdmin):
                     "name",
                     "ship_id",
                     "latest_version",
+                    "protection_tier_display",
                     "created_at",
                     "updated_at",
                 ),
@@ -180,7 +318,14 @@ class EveFittingAdmin(SafeDeleteAdmin):
     def refit_count(self, obj):
         return getattr(obj, "_refit_count", 0)
 
-    def save_model(self, request, obj, form, change):
+    @admin.display(description="Protection tier")
+    def protection_tier_display(self, obj):
+        if not obj.pk:
+            return "—"
+        tier = effective_protection_tier(obj)
+        return tier or "none (immediate publish)"
+
+    def _prepare_fitting_from_form(self, obj, form):
         eft_format = form.cleaned_data.get("eft_format") or getattr(
             obj, "eft_format", ""
         )
@@ -193,7 +338,99 @@ class EveFittingAdmin(SafeDeleteAdmin):
                 eve_type = EveType.objects.filter(name=ship_name).first()
                 if eve_type is not None:
                     obj.ship_id = eve_type.id
-        super().save_model(request, obj, form, change)
+
+    def save_model(self, request, obj, form, change):
+        self._prepare_fitting_from_form(obj, form)
+
+        if not change:
+            obj.description = obj.description or ""
+            super().save_model(request, obj, form, change)
+            return
+
+        tier = effective_protection_tier(obj)
+        payload = build_fitting_payload_from_instance(obj)
+        for field in payload:
+            if field in form.cleaned_data:
+                payload[field] = form.cleaned_data[field]
+
+        if tier is None or can_publish_fitting_change(request.user, tier):
+            for field, value in payload.items():
+                setattr(obj, field, value)
+            super().save_model(request, obj, form, change)
+            return
+
+        try:
+            req = submit_fitting_change_request(
+                obj,
+                change_kind="fitting_versioned",
+                payload=payload,
+                user=request.user,
+            )
+        except (PermissionError, ValueError) as exc:
+            messages.error(request, str(exc))
+            return
+
+        if req:
+            notify_fitting_change_request_proposed.delay(req.pk)
+            url = reverse(
+                "admin:fittings_evefittingchangerequest_change",
+                args=[req.pk],
+            )
+            messages.warning(
+                request,
+                format_html(
+                    "Fitting change submitted for approval. "
+                    '<a href="{}">View request</a>.',
+                    url,
+                ),
+            )
+            _mark_change_request_queued(request, url)
+
+    def save_formset(self, request, form, formset, change):
+        if formset.model is not EveFittingRefit:
+            return super().save_formset(request, form, formset, change)
+
+        if getattr(request, "_change_request_queued", False):
+            _warn_if_refit_edited_after_fitting_queued(request, formset)
+            return
+
+        fitting = form.instance
+        if not fitting.pk:
+            super().save_formset(request, form, formset, change)
+            return
+
+        tier = effective_protection_tier(fitting)
+        if tier is None or can_publish_fitting_change(request.user, tier):
+            return super().save_formset(request, form, formset, change)
+
+        queued = False
+        for inline_form in formset.forms:
+            is_delete = (
+                not inline_form.cleaned_data
+                or inline_form.cleaned_data.get("DELETE")
+            )
+            if is_delete:
+                if inline_form.instance.pk:
+                    q, abort = _queue_refit_delete_request(
+                        request, fitting, inline_form, request.user
+                    )
+                    if abort:
+                        return
+                    queued = queued or q
+                continue
+
+            q, abort = _queue_refit_upsert_request(
+                request, fitting, inline_form, request.user
+            )
+            if abort:
+                return
+            queued = queued or q
+
+        if queued:
+            messages.warning(
+                request,
+                "Refit change(s) submitted for approval (live refits unchanged).",
+            )
 
 
 EveFittingAdmin.highlight_deleted_field.short_description = "Name"
@@ -257,9 +494,254 @@ class EveFittingRefitAdmin(admin.ModelAdmin):
             return format_html('<a href="{}">{}</a>', url, obj.base_fitting)
         return "—"
 
+    def save_model(self, request, obj, form, change):
+        tier = effective_protection_tier(obj.base_fitting)
+        payload = build_refit_payload(obj)
+        for key in payload:
+            if key in form.cleaned_data:
+                payload[key] = form.cleaned_data[key]
+
+        if not change:
+            if tier is None or can_publish_fitting_change(request.user, tier):
+                super().save_model(request, obj, form, change)
+                return
+            if not obj.base_fitting_id:
+                messages.error(request, "Base fitting is required.")
+                return
+            try:
+                req = submit_fitting_change_request(
+                    obj.base_fitting,
+                    change_kind="refit_create",
+                    payload=payload,
+                    user=request.user,
+                )
+            except (PermissionError, ValueError) as exc:
+                messages.error(request, str(exc))
+                return
+            if req:
+                notify_fitting_change_request_proposed.delay(req.pk)
+                messages.warning(
+                    request, "Refit creation submitted for approval."
+                )
+            return
+
+        if tier is None or can_publish_fitting_change(request.user, tier):
+            super().save_model(request, obj, form, change)
+            return
+
+        try:
+            req = submit_fitting_change_request(
+                obj.base_fitting,
+                change_kind="refit_update",
+                payload=payload,
+                user=request.user,
+                refit=obj,
+            )
+        except (PermissionError, ValueError) as exc:
+            messages.error(request, str(exc))
+            return
+        if req:
+            notify_fitting_change_request_proposed.delay(req.pk)
+            messages.warning(request, "Refit change submitted for approval.")
+
+
+class ChangeRequestAdminMixin:
+    """Approve / reject / cancel actions for change request admins."""
+
+    def changelist_view(self, request, extra_context=None):
+        if "status" not in request.GET and "status__exact" not in request.GET:
+            q = request.GET.copy()
+            q["status__exact"] = ChangeRequestStatus.PENDING
+            return HttpResponseRedirect(f"{request.path}?{q.urlencode()}")
+        return super().changelist_view(request, extra_context)
+
+    @admin.display(description="Payload")
+    def payload_display(self, obj):
+        if obj is None:
+            return "—"
+        text = json.dumps(obj.payload, indent=2, sort_keys=True, default=str)
+        return format_html('<pre style="white-space:pre-wrap">{}</pre>', text)
+
+    def _check_approve(self, request, change_request):
+        tier = change_request.tier
+        if isinstance(change_request, EveDoctrineChangeRequest):
+            if not can_approve_doctrine_request(request.user, tier):
+                raise PermissionDenied(
+                    "You cannot approve this doctrine change request."
+                )
+        elif not can_approve_fitting_request(request.user, tier):
+            raise PermissionDenied(
+                "You cannot approve this fitting change request."
+            )
+
+    @admin.action(description="Approve selected pending requests")
+    def approve_requests(self, request, queryset):
+        pending = queryset.filter(status=ChangeRequestStatus.PENDING)
+        count = 0
+        for change_request in pending:
+            try:
+                self._check_approve(request, change_request)
+                if isinstance(change_request, EveDoctrineChangeRequest):
+                    approve_doctrine_change_request(
+                        change_request, request.user
+                    )
+                else:
+                    approve_fitting_change_request(
+                        change_request, request.user
+                    )
+                count += 1
+            except (PermissionDenied, ValueError) as exc:
+                messages.error(request, str(exc))
+                return
+        messages.success(request, f"Approved {count} request(s).")
+
+    @admin.action(description="Reject selected pending requests")
+    def reject_requests(self, request, queryset):
+        pending = queryset.filter(status=ChangeRequestStatus.PENDING)
+        count = 0
+        for change_request in pending:
+            try:
+                self._check_approve(request, change_request)
+                if isinstance(change_request, EveDoctrineChangeRequest):
+                    reject_doctrine_change_request(
+                        change_request, request.user
+                    )
+                else:
+                    reject_fitting_change_request(change_request, request.user)
+                count += 1
+            except (PermissionDenied, ValueError) as exc:
+                messages.error(request, str(exc))
+                return
+        messages.success(request, f"Rejected {count} request(s).")
+
+    @admin.action(
+        description="Cancel selected pending requests (submitter or superuser)"
+    )
+    def cancel_requests(self, request, queryset):
+        pending = queryset.filter(status=ChangeRequestStatus.PENDING)
+        count = 0
+        for change_request in pending:
+            if not (
+                request.user.is_superuser
+                or change_request.submitted_by_id == request.user.id
+            ):
+                messages.error(
+                    request,
+                    "You can only cancel your own pending requests.",
+                )
+                return
+            try:
+                if isinstance(change_request, EveDoctrineChangeRequest):
+                    cancel_doctrine_change_request(
+                        change_request, request.user
+                    )
+                else:
+                    cancel_fitting_change_request(change_request, request.user)
+                count += 1
+            except ValueError as exc:
+                messages.error(request, str(exc))
+                return
+        messages.success(request, f"Cancelled {count} request(s).")
+
+
+@admin.register(EveDoctrineChangeRequest)
+class EveDoctrineChangeRequestAdmin(ChangeRequestAdminMixin, admin.ModelAdmin):
+    list_display = (
+        "doctrine",
+        "tier",
+        "status",
+        "submitted_by",
+        "submitted_at",
+        "reviewed_by",
+    )
+    list_filter = ("status", "tier")
+    search_fields = ("doctrine__name", "submitted_by__username")
+    readonly_fields = (
+        "doctrine",
+        "tier",
+        "change_kind",
+        "payload_display",
+        "submitted_by",
+        "submitted_at",
+        "reviewed_by",
+        "reviewed_at",
+        "review_note",
+    )
+    actions = ["approve_requests", "reject_requests", "cancel_requests"]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_staff
+
+    def has_delete_permission(self, request, obj=None):
+        return request.user.is_superuser
+
+
+@admin.register(EveFittingChangeRequest)
+class EveFittingChangeRequestAdmin(ChangeRequestAdminMixin, admin.ModelAdmin):
+    list_display = (
+        "fitting",
+        "change_kind",
+        "tier",
+        "status",
+        "submitted_by",
+        "submitted_at",
+    )
+    list_filter = ("status", "tier", "change_kind")
+    search_fields = ("fitting__name", "submitted_by__username")
+    readonly_fields = (
+        "fitting",
+        "refit",
+        "tier",
+        "change_kind",
+        "payload_display",
+        "submitted_by",
+        "submitted_at",
+        "reviewed_by",
+        "reviewed_at",
+        "review_note",
+    )
+    actions = ["approve_requests", "reject_requests", "cancel_requests"]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return request.user.is_staff
+
+
+@admin.register(EveDoctrineHistory)
+class EveDoctrineHistoryAdmin(admin.ModelAdmin):
+    list_display = (
+        "doctrine",
+        "superseded_version_id",
+        "name",
+        "type",
+        "created_at",
+    )
+    list_filter = ("doctrine", "type")
+    search_fields = ("name", "doctrine__name")
+    raw_id_fields = ("doctrine",)
+    ordering = ("-created_at",)
+    readonly_fields = (
+        "doctrine",
+        "superseded_version_id",
+        "name",
+        "type",
+        "description",
+        "composition",
+        "location_ids",
+        "created_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
 
 @admin.register(EveDoctrine)
-class EveDoctrineAdmin(admin.ModelAdmin):
+class EveDoctrineAdmin(ApprovalQueuedAdminMixin, admin.ModelAdmin):
     """
     Custom admin to make editing doctrines easier
     """
@@ -270,57 +752,69 @@ class EveDoctrineAdmin(admin.ModelAdmin):
     ordering = ("name",)
 
     def save_model(self, request, obj, form, change):
-        obj.save()
-        doctrine_id = obj.id
-        primary_doctrine_fittings = [
-            doctrine_fitting.fitting
-            for doctrine_fitting in EveDoctrineFitting.objects.filter(
-                doctrine_id=doctrine_id, role="primary"
-            )
-        ]
-        secondary_doctrine_fittings = [
-            doctrine_fitting.fitting
-            for doctrine_fitting in EveDoctrineFitting.objects.filter(
-                doctrine_id=doctrine_id, role="secondary"
-            )
-        ]
-        support_doctrine_fittings = [
-            doctrine_fitting.fitting
-            for doctrine_fitting in EveDoctrineFitting.objects.filter(
-                doctrine_id=doctrine_id, role="support"
-            )
-        ]
-        for fitting in form.cleaned_data["primary_fittings"]:
-            EveDoctrineFitting.objects.get_or_create(
-                doctrine=obj, fitting=fitting, role="primary"
-            )
-        for fitting in form.cleaned_data["secondary_fittings"]:
-            EveDoctrineFitting.objects.get_or_create(
-                doctrine=obj, fitting=fitting, role="secondary"
-            )
-        for fitting in form.cleaned_data["support_fittings"]:
-            EveDoctrineFitting.objects.get_or_create(
-                doctrine=obj, fitting=fitting, role="support"
-            )
+        payload = build_doctrine_payload_from_form(form.cleaned_data)
 
-        # delete fittings that were removed
-        for fitting in primary_doctrine_fittings:
-            if fitting not in form.cleaned_data["primary_fittings"]:
-                EveDoctrineFitting.objects.filter(
-                    doctrine=obj, fitting=fitting, role="primary"
-                ).delete()
+        if not change:
+            tier = protection_tier_for_doctrine(obj)
+            if tier is None:
+                if not obj.pk:
+                    obj.save()
+                apply_doctrine_payload(obj, payload)
+                return
+            if can_publish_doctrine_change(request.user, tier):
+                if not obj.pk:
+                    obj.save()
+                apply_doctrine_payload(obj, payload)
+                return
+            try:
+                req = submit_doctrine_change_request(
+                    obj,
+                    payload,
+                    request.user,
+                    ensure_doctrine_row=True,
+                )
+            except (PermissionError, ValueError) as exc:
+                messages.error(request, str(exc))
+                return
+            if req:
+                notify_doctrine_change_request_proposed.delay(req.pk)
+                url = reverse(
+                    "admin:fittings_evedoctrinechangerequest_change",
+                    args=[req.pk],
+                )
+                messages.warning(
+                    request,
+                    format_html(
+                        "Doctrine submitted for approval. "
+                        '<a href="{}">View request</a>.',
+                        url,
+                    ),
+                )
+                _mark_change_request_queued(request, url)
+            return
 
-        for fitting in secondary_doctrine_fittings:
-            if fitting not in form.cleaned_data["secondary_fittings"]:
-                EveDoctrineFitting.objects.filter(
-                    doctrine=obj, fitting=fitting, role="secondary"
-                ).delete()
+        tier = protection_tier_for_doctrine(obj)
+        if tier is None or can_publish_doctrine_change(request.user, tier):
+            apply_doctrine_payload(obj, payload)
+            return
 
-        for fitting in support_doctrine_fittings:
-            if fitting not in form.cleaned_data["support_fittings"]:
-                EveDoctrineFitting.objects.filter(
-                    doctrine=obj, fitting=fitting, role="support"
-                ).delete()
-
-        # Handle ManyToMany fields (locations)
-        obj.locations.set(form.cleaned_data["locations"])
+        try:
+            req = submit_doctrine_change_request(obj, payload, request.user)
+        except (PermissionError, ValueError) as exc:
+            messages.error(request, str(exc))
+            return
+        if req:
+            notify_doctrine_change_request_proposed.delay(req.pk)
+            url = reverse(
+                "admin:fittings_evedoctrinechangerequest_change",
+                args=[req.pk],
+            )
+            messages.warning(
+                request,
+                format_html(
+                    "Doctrine change submitted for approval. "
+                    '<a href="{}">View request</a>.',
+                    url,
+                ),
+            )
+            _mark_change_request_queued(request, url)

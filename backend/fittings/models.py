@@ -1,5 +1,6 @@
 import uuid
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -23,6 +24,13 @@ class FittingTag(models.TextChoices):
     ESCAPE_FRIGATE = "escape_frigate", "Escape Frigate"
 
 
+DOCTRINE_TYPE_EXPERIMENTAL = "experimental"
+DOCTRINE_TYPE_NON_STRATEGIC = "non_strategic"
+DOCTRINE_TYPE_STRATEGIC = "strategic"
+
+PROTECTION_TIER_NON_STRATEGIC = "non_strategic"
+PROTECTION_TIER_STRATEGIC = "strategic"
+
 # Fields that define “the fit” for versioning; changes bump latest_version and may write history.
 EVE_FITTING_VERSIONED_FIELDS = (
     "eft_format",
@@ -33,6 +41,8 @@ EVE_FITTING_VERSIONED_FIELDS = (
     "tags",
 )
 
+EVE_DOCTRINE_VERSIONED_FIELDS = ("name", "type", "description")
+
 
 def _eve_fitting_versioned_field_equal(field: str, old_val, new_val) -> bool:
     if field == "tags":
@@ -40,6 +50,28 @@ def _eve_fitting_versioned_field_equal(field: str, old_val, new_val) -> bool:
         new_list = new_val if isinstance(new_val, list) else []
         return sorted(old_list) == sorted(new_list)
     return (old_val or "") == (new_val or "")
+
+
+def _eve_doctrine_scalar_equal(field: str, old_val, new_val) -> bool:
+    return (old_val or "") == (new_val or "")
+
+
+def composition_snapshot_for_doctrine(doctrine) -> dict:
+    """Snapshot primary/secondary/support fitting ids for a doctrine."""
+    composition = {"primary": [], "secondary": [], "support": []}
+    for row in EveDoctrineFitting.objects.filter(doctrine=doctrine).values(
+        "role", "fitting_id"
+    ):
+        role = row["role"]
+        if role in composition:
+            composition[role].append(row["fitting_id"])
+    for role, fitting_ids in composition.items():
+        fitting_ids.sort()
+    return composition
+
+
+def location_ids_for_doctrine(doctrine) -> list:
+    return sorted(doctrine.locations.values_list("pk", flat=True))
 
 
 class EveFitting(MinmatarSoftDeleteModel):
@@ -238,9 +270,9 @@ class EveDoctrine(models.Model):
     """
 
     type_choices = (
-        ("non_strategic", "Non strategic"),
-        ("training", "Training"),
-        ("strategic", "Strategic"),
+        (DOCTRINE_TYPE_EXPERIMENTAL, "Experimental"),
+        (DOCTRINE_TYPE_NON_STRATEGIC, "Non strategic"),
+        (DOCTRINE_TYPE_STRATEGIC, "Strategic"),
     )
     name = models.CharField(max_length=255, unique=True)
     type = models.CharField(max_length=255, choices=type_choices)
@@ -248,6 +280,43 @@ class EveDoctrine(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     description = models.TextField()
     locations = models.ManyToManyField(EveLocation, blank=True)
+    latest_version = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        permissions = [
+            (
+                "change_doctrine_non_strategic",
+                "Can propose non strategic doctrine changes",
+            ),
+            (
+                "approve_doctrine_non_strategic",
+                "Can approve non strategic doctrine changes",
+            ),
+            (
+                "change_doctrine_strategic",
+                "Can propose strategic doctrine changes",
+            ),
+            (
+                "approve_doctrine_strategic",
+                "Can approve strategic doctrine changes",
+            ),
+            (
+                "change_doctrine_fitting_non_strategic",
+                "Can propose non strategic doctrine fitting changes",
+            ),
+            (
+                "approve_doctrine_fitting_non_strategic",
+                "Can approve non strategic doctrine fitting changes",
+            ),
+            (
+                "change_doctrine_fitting_strategic",
+                "Can propose strategic doctrine fitting changes",
+            ),
+            (
+                "approve_doctrine_fitting_strategic",
+                "Can approve doctrine fittings (strategic)",
+            ),
+        ]
 
     @property
     def doctrine_link(self):
@@ -255,6 +324,73 @@ class EveDoctrine(models.Model):
 
     def __str__(self):
         return str(self.name)
+
+    def save_without_versioning(self, *args, **kwargs):
+        """Save without bumping latest_version / history (approval apply)."""
+        self._skip_doctrine_versioning = True
+        try:
+            return super().save(*args, **kwargs)
+        finally:
+            if hasattr(self, "_skip_doctrine_versioning"):
+                del self._skip_doctrine_versioning
+
+    def save(self, *args, **kwargs):
+        if getattr(self, "_skip_doctrine_versioning", False):
+            super().save(*args, **kwargs)
+            return
+
+        if self.pk is None:
+            if not self.latest_version:
+                self.latest_version = str(uuid.uuid4())
+        else:
+            old = (
+                EveDoctrine.objects.filter(pk=self.pk)
+                .values(*EVE_DOCTRINE_VERSIONED_FIELDS, "latest_version")
+                .first()
+            )
+            if old:
+                scalar_changed = any(
+                    not _eve_doctrine_scalar_equal(
+                        f, old.get(f), getattr(self, f)
+                    )
+                    for f in EVE_DOCTRINE_VERSIONED_FIELDS
+                )
+                if scalar_changed and old["latest_version"]:
+                    prior = EveDoctrine.objects.get(pk=self.pk)
+                    EveDoctrineHistory.objects.create(
+                        doctrine_id=self.pk,
+                        superseded_version_id=old["latest_version"],
+                        name=old["name"],
+                        type=old["type"],
+                        description=old["description"],
+                        composition=composition_snapshot_for_doctrine(prior),
+                        location_ids=location_ids_for_doctrine(prior),
+                    )
+                    self.latest_version = str(uuid.uuid4())
+
+        super().save(*args, **kwargs)
+
+
+class EveDoctrineHistory(models.Model):
+    doctrine = models.ForeignKey(
+        EveDoctrine,
+        on_delete=models.CASCADE,
+        related_name="version_history",
+    )
+    superseded_version_id = models.CharField(max_length=255, blank=True)
+    name = models.CharField(max_length=255)
+    type = models.CharField(max_length=255)
+    description = models.TextField()
+    composition = models.JSONField(default=dict)
+    location_ids = models.JSONField(default=list)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        vid = self.superseded_version_id or "—"
+        return f"{self.doctrine.name} ({vid[:8]})"
 
 
 class EveDoctrineFitting(models.Model):
@@ -274,3 +410,93 @@ class EveDoctrineFitting(models.Model):
 
     def __str__(self):
         return f"{self.doctrine.name} - {self.fitting.name}"
+
+
+class ChangeRequestStatus(models.TextChoices):
+    PENDING = "pending", "Pending"
+    APPROVED = "approved", "Approved"
+    REJECTED = "rejected", "Rejected"
+    CANCELLED = "cancelled", "Cancelled"
+
+
+class EveDoctrineChangeRequest(models.Model):
+    doctrine = models.ForeignKey(
+        EveDoctrine,
+        on_delete=models.CASCADE,
+        related_name="change_requests",
+    )
+    status = models.CharField(
+        max_length=32,
+        choices=ChangeRequestStatus.choices,
+        default=ChangeRequestStatus.PENDING,
+    )
+    tier = models.CharField(max_length=32)
+    change_kind = models.CharField(max_length=64, default="full")
+    payload = models.JSONField()
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="submitted_doctrine_change_requests",
+    )
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_doctrine_change_requests",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_note = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-submitted_at"]
+
+    def __str__(self):
+        return f"{self.doctrine.name} ({self.status})"
+
+
+class EveFittingChangeRequest(models.Model):
+    fitting = models.ForeignKey(
+        EveFitting,
+        on_delete=models.CASCADE,
+        related_name="change_requests",
+    )
+    refit = models.ForeignKey(
+        EveFittingRefit,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="change_requests",
+    )
+    status = models.CharField(
+        max_length=32,
+        choices=ChangeRequestStatus.choices,
+        default=ChangeRequestStatus.PENDING,
+    )
+    tier = models.CharField(max_length=32)
+    change_kind = models.CharField(max_length=64)
+    payload = models.JSONField()
+    submitted_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="submitted_fitting_change_requests",
+    )
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_fitting_change_requests",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_note = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-submitted_at"]
+
+    def __str__(self):
+        return f"{self.fitting.name} ({self.status})"

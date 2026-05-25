@@ -235,6 +235,13 @@ CELERYBEAT_OTHER = [
         },
     ),
     (
+        "[Misc] Doctrine/fitting change request reminders (Discord DM)",
+        {
+            "task": "fittings.tasks.send_pending_change_request_reminders",
+            "schedule": crontab(minute=0, hour=15),
+        },
+    ),
+    (
         "[Misc] Reddit scheduled post",
         {
             "task": "reddit.tasks.scheduled_reddit_posts",
