@@ -43,6 +43,22 @@ try {
     return HTTP_500_Server_Error()
 }
 
+import { get_market_contracts } from '@helpers/api.minmatar.org/market'
+import { get_locations } from '@helpers/api.minmatar.org/locations'
+import type { Contract } from '@dtypes/api.minmatar.org'
+let supply_contracts: Contract[] = []
+
+if (active_fleet && active_doctrine) {
+    try {
+        const locations = await get_locations()
+        const fleet_location = locations.find(location => location.location_name === active_fleet?.location)
+        
+        supply_contracts = fleet_location?.location_id ? await get_market_contracts(fleet_location?.location_id) : []
+    } catch (error) {
+        console.error('Error fetching supply contracts:', error)
+    }
+}
+
 const TIMEAGO_UPDATE_RATE_MS = 10000
 
 const count_text = t(fleets.length !== 1 ? 'fleets_on_schedule_plural' : 'fleets_on_schedule_singular')
@@ -93,6 +109,7 @@ import FleetList from '@components/blocks/FleetList.astro';
         fleets={fleets as FleetItem[]}
         active_fleet={active_fleet}
         active_doctrine={active_doctrine}
+        supply_contracts={supply_contracts}
         init_tooltips={true}
     />
 

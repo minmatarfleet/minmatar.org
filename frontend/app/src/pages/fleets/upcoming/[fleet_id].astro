@@ -91,6 +91,22 @@ try {
     fetch_fleets_error = error
 }
 
+import { get_market_contracts } from '@helpers/api.minmatar.org/market'
+import { get_locations } from '@helpers/api.minmatar.org/locations'
+import type { Contract } from '@dtypes/api.minmatar.org'
+let supply_contracts: Contract[] = []
+
+if (fleet?.doctrine) {
+    try {
+        const locations = await get_locations()
+        const fleet_location = locations.find(location => location.location_name === fleet?.location)
+        
+        supply_contracts = fleet_location?.location_id ? await get_market_contracts(fleet_location?.location_id) : []
+    } catch (error) {
+        console.error('Error fetching supply contracts:', error)
+    }
+}
+
 const can_remove_fleet = is_superuser ||
                          user_permissions.includes('fleets.delete_evefleet') ||
                          (user_character as EveCharacterProfile)?.character_id === (fleet as FleetUI).fleet_commander_id
@@ -116,7 +132,7 @@ import {
 
 import Viewport from '@layouts/Viewport.astro';
 
-import PageDefault from '@components/page/PageDefault.astro';
+import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 import PageSubheader from '@components/page/PageSubheader.astro';
 
@@ -141,7 +157,7 @@ const page_title = `${t('fleet')} ${fleet_id}`;
         confirm_dialog: true,
     }}
 >
-    <PageDefault
+    <PageWide
         cover={{
             video: get_location_video_cover(fleet?.location ?? '') ?? undefined,
             video_thumb: get_location_video_cover_thumb(fleet?.location ?? '') ?? undefined,
@@ -227,7 +243,8 @@ const page_title = `${t('fleet')} ${fleet_id}`;
                 update_cover={false}
                 fleet_metrics={fleet_metrics}
                 fleet_commander_metrics={fleet_commander_metrics}
+                supply_contracts={supply_contracts}
             />
         }
-    </PageDefault>
+    </PageWide>
 </Viewport>

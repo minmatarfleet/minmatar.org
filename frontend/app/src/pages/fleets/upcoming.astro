@@ -44,6 +44,22 @@ try {
     fetch_fleets_error = error
 }
 
+import { get_market_contracts } from '@helpers/api.minmatar.org/market'
+import { get_locations } from '@helpers/api.minmatar.org/locations'
+import type { Contract } from '@dtypes/api.minmatar.org'
+let supply_contracts: Contract[] = []
+
+if (active_fleet && active_doctrine) {
+    try {
+        const locations = await get_locations()
+        const fleet_location = locations.find(location => location.location_name === active_fleet?.location)
+        
+        supply_contracts = fleet_location?.location_id ? await get_market_contracts(fleet_location?.location_id) : []
+    } catch (error) {
+        console.error('Error fetching supply contracts:', error)
+    }
+}
+
 const flash_form_error = Astro.cookies.has('flash_form_error') ? Astro.cookies.get('flash_form_error')?.value : false
 if (Astro.cookies.has('flash_form_error')) Astro.cookies.delete('flash_form_error', { path: '/' })
 
@@ -171,6 +187,7 @@ const page_title = t('fleets.upcoming.page_title');
                     fleets={fleets}
                     active_fleet={active_fleet}
                     active_doctrine={active_doctrine}
+                    supply_contracts={supply_contracts}
                     init_tooltips={false}
                 />
             }

@@ -1,4 +1,14 @@
 ---
+const slot = await Astro.slots.render('default');
+
+interface Props {
+    separator_width?:   string;
+}
+
+const {
+    separator_width = '450px',
+} = Astro.props
+
 import FlexInline from '@components/compositions/FlexInline.astro';
 ---
 
@@ -24,7 +34,10 @@ import FlexInline from '@components/compositions/FlexInline.astro';
         x-ref="content"
         gap='var(--space-l)'
     >
-        <slot />
+        <div style={`width: calc(${separator_width} + var(--space-l))`}><hr class="[ border-bottom ]" /></div>
+        <Fragment set:html={slot} />
+        <div style={`width: ${separator_width}`}><hr class="[ border-bottom ]" /></div>
+        <Fragment set:html={slot} />
     </FlexInline>
 </div>
 

@@ -50,6 +50,22 @@ try {
     fetch_fleets_error = error
 }
 
+import { get_market_contracts } from '@helpers/api.minmatar.org/market'
+import { get_locations } from '@helpers/api.minmatar.org/locations'
+import type { Contract } from '@dtypes/api.minmatar.org'
+let supply_contracts: Contract[] = []
+
+if (active_fleet && active_doctrine) {
+    try {
+        const locations = await get_locations()
+        const fleet_location = locations.find(location => location.location_name === active_fleet?.location)
+        
+        supply_contracts = fleet_location?.location_id ? await get_market_contracts(fleet_location?.location_id) : []
+    } catch (error) {
+        console.error('Error fetching supply contracts:', error)
+    }
+}
+
 let count_text = ''
 if (upcoming)
     count_text = t(fleets.length !== 1 ? 'fleets_on_schedule_plural' : 'fleets_on_schedule_singular')
@@ -83,6 +99,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         fleets={fleets}
         active_fleet={upcoming ? active_fleet : undefined}
         active_doctrine={upcoming ? active_doctrine : undefined}
+        supply_contracts={upcoming ? supply_contracts : undefined}
         history={!upcoming}
         init_tooltips={true}
     />

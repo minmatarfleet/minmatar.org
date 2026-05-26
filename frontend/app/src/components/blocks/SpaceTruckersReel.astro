@@ -45,11 +45,6 @@ import TextBadge from '@components/blocks/TextBadge.astro';
             >
                 {space_truckers.length >= 4 ?
                     <Marquee>
-                        <div style="width: calc(450px + var(--space-l))"><hr class="[ border-bottom ]" /></div>
-                        {space_truckers.map((trucker, index) =>
-                            <SpaceTruckerBadge place={index + 1} trucker={trucker} />
-                        )}
-                        <div style="width: 450px"><hr class="[ border-bottom ]" /></div>
                         {space_truckers.map((trucker, index) =>
                             <SpaceTruckerBadge place={index + 1} trucker={trucker} />
                         )}
