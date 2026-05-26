@@ -2291,5 +2291,6 @@ export const ui = {
         'cancel_fleet': 'Cancel fleet',
         'restore_fleet': 'Restore fleet',
         'other_fleets': 'Other fleets',
+        'in_contracts_template': '{count} in contracts',
     },
 } as const;

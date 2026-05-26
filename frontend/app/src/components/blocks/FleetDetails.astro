@@ -4,7 +4,7 @@ const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { FleetUI, FleetCompositionUI, FleetRadarUI, SRPUI, FleetCombatLog } from '@dtypes/layout_components'
 
-import type { SummaryCharacter, FleetMetrics, FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
+import type { SummaryCharacter, FleetMetrics, FleetCommanderMetrics, Contract } from '@dtypes/api.minmatar.org'
 import type { FleetRoleVolunteer } from '@helpers/api.minmatar.org/fleets'
 
 interface Props {
@@ -20,6 +20,7 @@ interface Props {
     update_cover:               boolean;
     fleet_metrics:              FleetMetrics | undefined;
     fleet_commander_metrics:    FleetCommanderMetrics | undefined;
+    supply_contracts?:          Contract[];
 }
 
 const {
@@ -35,9 +36,8 @@ const {
     update_cover,
     fleet_metrics,
     fleet_commander_metrics,
+    supply_contracts = [],
 } = Astro.props
-
-console.log(fleet)
 
 const FLEET_COMPOSITION_PARTIAL_URL = `${translatePath('/partials/fleet_composition')}?id=${fleet.id}`
 
@@ -98,6 +98,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                 members_count: fleet_metrics?.members ?? 0,
             }}
             doctrine={fleet.doctrine}
+            supply_contracts={supply_contracts}
             update_cover={update_cover}
             cover_overlay={true}
         >
@@ -119,28 +120,42 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
         </div>
 
         {history &&
-            <div class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]">
+            <Wrapper
+                class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
+                padding_block='0'
+                padding_inline='0'
+                max_width='var(--max-col-width)'
+            >
                 <AARLinkButton
                     aarlink={fleet.aar_link ? fleet.aar_link : undefined}
                     fleet_id={fleet.id}
                     can_edit={can_remove_fleet}
                 />
-            </div>
+            </Wrapper>
         }
 
         {!history &&
-            <div class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]">
+            <Wrapper
+                padding_block='0'
+                padding_inline='0'
+                max_width='var(--max-col-width)'
+                class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
+            >
                 <FleetRoles
                     volunteers={volunteers}
                     pilots={pilots}
                     fleet_id={fleet.id}
                     readonly={fleet.status === 'cancelled'}
                 />
-            </div>
+            </Wrapper>
         }
 
         {is_fleet_commander &&
-            <div
+        
+            <Wrapper
+                padding_block='0'
+                padding_inline='0'
+                max_width='var(--max-col-width)'
                 class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
                 x-data={`{
                     global_collapse: $persist(false),
@@ -173,11 +188,16 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                         </div>
                     </template>
                 }
-            </div>
+            </Wrapper>
         }
     </BlockList>
 
-    <Wrapper padding_block='0' padding_inline='0' class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]">
+    <Wrapper
+        padding_block='0'
+        padding_inline='0'
+        max_width='var(--max-col-width)'
+        class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
+    >
         <FleetCombatLogTable
             saved_logs={saved_logs}
             fleet_id={fleet.id}

@@ -2,13 +2,15 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { FleetItem, DoctrineType } from '@dtypes/layout_components'
+import type { Contract } from '@dtypes/api.minmatar.org'
+import type { FleetItem, DoctrineType, HeroFittings } from '@dtypes/layout_components'
 
 interface Props {
-    fleet:          FleetItem | undefined;
-    doctrine?:      DoctrineType | undefined;
-    update_cover:   boolean;
-    cover_overlay?: boolean;
+    fleet:                  FleetItem | undefined;
+    doctrine?:              DoctrineType | undefined;
+    update_cover:           boolean;
+    cover_overlay?:         boolean;
+    supply_contracts?:      Contract[];
 }
 
 const {
@@ -16,9 +18,27 @@ const {
     doctrine,
     update_cover,
     cover_overlay = false,
+    supply_contracts = []
 } = Astro.props
 
 const [ system, station ] = fleet?.location?.split(' - ') ?? []
+
+console.log(supply_contracts)
+
+let hero_fittings:HeroFittings[] = [
+    ...doctrine?.primary_fittings ?? [],
+    ...doctrine?.support_fittings ?? [],
+    ...doctrine?.secondary_fittings ?? []
+]
+
+hero_fittings = hero_fittings.map(fitting => {
+    console.log(fitting.id)
+    console.log(supply_contracts.find(contract => contract.fitting_id === fitting.id))
+    return {
+        ...fitting,
+        contracts_count: supply_contracts.find(contract => contract.fitting_id === fitting.id)?.current_quantity ?? 0
+    }
+})
 
 import {
     get_location_video_cover,
@@ -41,6 +61,8 @@ import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 import CorporationBadge from '@components/blocks/CorporationBadge.astro';
 import Markdown from '@components/blocks/Markdown.astro';
+import Marquee from '@components/blocks/Marquee.astro';
+import Square from '@components/blocks/Square.astro';
 
 import FleetIcon from '@components/icons/FleetIcon.astro';
 import MemberIcon from '@components/icons/MemberIcon.astro';
@@ -48,98 +70,128 @@ import ItemBadge from './ItemBadge.astro';
 ---
 
 {fleet &&
-    <VerticalCenter class="[ content-section ][ max-w-[48rem] ]">
-        <Wrapper
-            max_width='100%'
-            padding_inline='0'
-            padding_block='0'
-            class="[ w-full ]"
-        >
-            <Flexblock gap='var(--space-l)'>
-                <FixedFluid width='256px' gap='var(--space-xl)' class="[ items-center! ]">
-                    <div class="[ animate-slide-up-fade animate-delay-100 ]">
-                        <CharacterPicture
-                            character_id={fleet.fleet_commander_id}
-                            character_name={fleet.fleet_commander_name}
-                            size={256}
-                            icon_quality={512}
-                        />
-                    </div>
-                    <Flexblock gap='var(--space-xs)'>
-                        <h2 class="[ animate-slide-up-fade animate-delay-250 ]">{fleet.fleet_commander_name}</h2>
-                        <FlexInline class="[ animate-fade-in animate-duration-250 animate-delay-400 ]">
-                            <CorporationBadge
-                                corporation={{
-                                    id: fleet.corporation_id as number,
-                                    name: fleet.corporation_name as string,
-                                    size: 'sm',
-                                }}
+    <FixedFluid width='48rem'>
+        <VerticalCenter class="[ content-section ]">
+            <Wrapper
+                max_width='100%'
+                padding_inline='0'
+                padding_block='0'
+                class="[ w-full ]"
+            >
+                <Flexblock gap='var(--space-l)'>
+                    <FixedFluid width='256px' gap='var(--space-xl)' class="[ items-center! ]">
+                        <div class="[ animate-slide-up-fade animate-delay-100 ]">
+                            <CharacterPicture
+                                character_id={fleet.fleet_commander_id}
+                                character_name={fleet.fleet_commander_name}
+                                size={256}
+                                icon_quality={512}
                             />
-                            {fleet.fleet_commander_fleet_count &&
+                        </div>
+                        <Flexblock gap='var(--space-xs)'>
+                            <h2 class="[ animate-slide-up-fade animate-delay-250 ]">{fleet.fleet_commander_name}</h2>
+                            <FlexInline class="[ animate-fade-in animate-duration-250 animate-delay-400 ]">
+                                <CorporationBadge
+                                    corporation={{
+                                        id: fleet.corporation_id as number,
+                                        name: fleet.corporation_name as string,
+                                        size: 'sm',
+                                    }}
+                                />
+                                {fleet.fleet_commander_fleet_count &&
+                                    <FlexInline gap='var(--space-3xs)' class="[ items-center! ]">
+                                        <div
+                                            class="[ text-highlight h-[16px] ]"
+                                            data-tippy-content={t('fleet_commander_fleets')}
+                                            x-init={update_cover ? 'tippy($el, tippy_options)' : undefined}
+                                        >
+                                            <FleetIcon size={16} />
+                                        </div>
+                                        <span>{fleet.fleet_commander_fleet_count}</span>
+                                    </FlexInline>
+                                }
+                            </FlexInline>
+                        </Flexblock>
+                    </FixedFluid>
+
+                    {(fleet.description !== undefined || fleet.objective !== undefined) &&
+                        <div class="[ wrap-break-word max-w-full pr-1.5 max-h-[130px] overflow-y-auto animate-fade-in animate-duration-250 animate-delay-550 ]">
+                            <Markdown markdown={(fleet.description ?? fleet.objective) as string} />
+                        </div>
+                    }
+
+                    <Flexblock gap='var(--space-m)'>
+                        <FlexInline class="[ flex-nowrap! items-center! animate-fade-in animate-duration-250 animate-delay-700 ]" gap='var(--space-l)'>
+                            <Flexblock gap='0'>
+                                <b class="[ text-highlight ]">{system}</b>
+                                <small>{station}</small>
+                            </Flexblock>
+
+                            {doctrine &&
+                                <StylessButton href={translatePath(`/ships/doctrines/${doctrine.id}`)}>
+                                    <ItemBadge
+                                        type_id={doctrine.primary_fittings[0].ship_id}
+                                        item_name={doctrine.name}
+                                        size={32}
+                                    >
+                                        <small class="[ text-foreground ]">{t('doctrine')}</small>
+                                    </ItemBadge>
+                                </StylessButton>
+                            }
+                                    
+                            <span>{t(`${fleet.type}_fleet` as any) ?? fleet.type}</span>
+
+                            {fleet.members_count !== undefined &&
                                 <FlexInline gap='var(--space-3xs)' class="[ items-center! ]">
                                     <div
                                         class="[ text-highlight h-[16px] ]"
-                                        data-tippy-content={t('fleet_commander_fleets')}
+                                        data-tippy-content={t('characters_in_fleet')}
                                         x-init={update_cover ? 'tippy($el, tippy_options)' : undefined}
                                     >
-                                        <FleetIcon size={16} />
+                                        <MemberIcon size={16} />
                                     </div>
-                                    <span>{fleet.fleet_commander_fleet_count}</span>
+                                    
+                                    <span>{fleet.members_count}</span>
                                 </FlexInline>
                             }
                         </FlexInline>
+
+                        <FlexInline
+                            class="[ component items-center! animate-fade-in animate-duration-250 animate-delay-850 ]"
+                            gap='var(--space-l)'
+                        >
+                            <slot />
+                        </FlexInline>
                     </Flexblock>
-                </FixedFluid>
-
-                {(fleet.description !== undefined || fleet.objective !== undefined) &&
-                    <div class="[ wrap-break-word max-w-full pr-1.5 max-h-[130px] overflow-y-auto animate-fade-in animate-duration-250 animate-delay-550 ]">
-                        <Markdown markdown={(fleet.description ?? fleet.objective) as string} />
-                    </div>
-                }
-
-                <Flexblock gap='var(--space-m)'>
-                    <FlexInline class="[ flex-nowrap! items-center! animate-fade-in animate-duration-250 animate-delay-700 ]" gap='var(--space-l)'>
-                        <Flexblock gap='0'>
-                            <b class="[ text-highlight ]">{system}</b>
-                            <small>{station}</small>
-                        </Flexblock>
-
-                        {doctrine &&
-                            <StylessButton href={translatePath(`/ships/doctrines/${doctrine.id}`)}>
-                                <ItemBadge
-                                    type_id={doctrine.primary_fittings[0].ship_id}
-                                    item_name={doctrine.name}
-                                    size={32}
-                                >
-                                    <small class="[ text-foreground ]">{t('doctrine')}</small>
-                                </ItemBadge>
-                            </StylessButton>
-                        }
-                                
-                        <span>{t(`${fleet.type}_fleet` as any) ?? fleet.type}</span>
-
-                        {fleet.members_count !== undefined &&
-                            <FlexInline gap='var(--space-3xs)' class="[ items-center! ]">
-                                <div
-                                    class="[ text-highlight h-[16px] ]"
-                                    data-tippy-content={t('characters_in_fleet')}
-                                    x-init={update_cover ? 'tippy($el, tippy_options)' : undefined}
-                                >
-                                    <MemberIcon size={16} />
-                                </div>
-                                
-                                <span>{fleet.members_count}</span>
-                            </FlexInline>
-                        }
-                    </FlexInline>
-
-                    <FlexInline class="[ component items-center! animate-fade-in animate-duration-250 animate-delay-850 ]" gap='var(--space-l)'>
-                        <slot />
-                    </FlexInline>
                 </Flexblock>
-            </Flexblock>
-        </Wrapper>
-    </VerticalCenter>
+            </Wrapper>
+        </VerticalCenter>
+        {doctrine &&
+            <div class="[ !flex !items-end animate-slide-up-fade animate-delay-1000 ]">
+                <Marquee separator_width='200px'>
+                    {hero_fittings.map((fitting) => (
+                        <StylessButton href={translatePath(`/ships/fittings/${fitting.id}/`)}>
+                            <ItemBadge
+                                type_id={fitting.ship_id}
+                                item_name={fitting.fitting_name}
+                                size={32}
+                            >
+                                {supply_contracts.length > 0 ?
+                                    <FlexInline gap='var(--space-3xs)'>
+                                        <Square color={!fitting.contracts_count ? 'fleet-red' : 'green'} />
+                                        <small class="[ text-foreground ]">
+                                            {t('in_contracts_template').replace('{count}', (fitting.contracts_count ?? 0).toString())}
+                                        </small>
+                                    </FlexInline> :
+                                    <small class="[ text-foreground ]">{t('primary_fitting')}</small>
+                                }
+                            </ItemBadge>
+                        </StylessButton>
+                    ))}
+                </Marquee>
+            </div>
+        }
+    </FixedFluid>
 }
 
 {update_cover && fleet &&

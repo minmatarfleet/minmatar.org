@@ -649,6 +649,10 @@ export interface DoctrineType {
     location_ids:           number[];
 }
 
+export interface HeroFittings extends FittingItem {
+    contracts_count?:   number;
+}
+
 export interface FittingGroup {
     name:       string;
     modules:    CargoItem[];
