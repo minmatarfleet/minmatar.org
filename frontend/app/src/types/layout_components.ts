@@ -700,7 +700,7 @@ export interface FleetUI {
 export interface Tracking {
     id:             number;
     start_time:     Date;
-    end_time:       Date;
+    end_time:       Date | null;
     is_registered:  boolean;
 }
 

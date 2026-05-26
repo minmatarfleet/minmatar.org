@@ -38,14 +38,13 @@ const FLEET_ROLES_PARTIAL_URL = translatePath(`/partials/fleet_role_component?${
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import FleetRoleItem from '@components/blocks/FleetRoleItem.astro'
 import Button from '@components/blocks/Button.astro'
 
 import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
 ---
 
-<ComponentBlock id="fleet-roles">
+<div id="fleet-roles">
     <Flexblock gap='var(--space-l)'>
         <FlexInline justification='space-between'>
             <h2>{t('fleet_roles')}</h2>
@@ -178,4 +177,4 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
             </FlexInline>
         </Flexblock>
     </Flexblock>
-</ComponentBlock>
+</div>

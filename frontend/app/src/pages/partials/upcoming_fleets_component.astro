@@ -22,16 +22,23 @@ const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_e
 if (!can_view_fleets)
     return HTTP_403_Forbidden()
 
-import type { FleetItem } from '@dtypes/layout_components'
+import type { FleetItem, DoctrineType } from '@dtypes/layout_components'
 import { fetch_fleets_auth } from '@helpers/fetching/fleets'
+import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
 
 let fleets:FleetItem[] | null = null
+let active_fleet:FleetItem | undefined = undefined
+let active_doctrine:DoctrineType | undefined = undefined
 
 try {
     fleets = await fetch_fleets_auth(auth_token as string)
     fleets.sort(function(a, b) {
         return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
     });
+
+    active_fleet = fleets.find(fleet => fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time)
+    if (active_fleet)
+        active_doctrine = await fetch_doctrine_by_id(active_fleet.doctrine_id)
 } catch (error) {
     return HTTP_500_Server_Error()
 }
@@ -77,6 +84,8 @@ import FleetList from '@components/blocks/FleetList.astro';
 
     <FleetList
         fleets={fleets as FleetItem[]}
+        active_fleet={active_fleet}
+        active_doctrine={active_doctrine}
         init_tooltips={true}
     />
 

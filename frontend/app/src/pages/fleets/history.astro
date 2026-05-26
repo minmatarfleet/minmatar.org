@@ -44,6 +44,9 @@ const AUTH_FLEET_SUBHINT = (marked.parseInline(t('authenticate_fleet_subhint')) 
         'AUTH_LINK', AUTH_REDIRECT_URL
     )
 
+const count_text = t(fleets.length !== 1 ? 'fleets_in_the_past_30_days_plural' : 'fleets_in_the_past_30_days_singular')
+    .replace('{count}', String(fleets.length))
+
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
@@ -83,9 +86,7 @@ const page_description = t('page_finder.fleets.history.description');
                     <PageTitle>
                         {page_title}
                     </PageTitle>
-                    <small x-text={`\`\${fleets_count} \${fleets_count != 1 ? '${t('fleets').toLowerCase()}' : '${t('fleet').toLowerCase()}'} ${t('in_past_30_days').toLowerCase()}\``}>
-                        {fleets.length} {fleets.length != 1 ? t('fleets').toLowerCase() : t('fleet').toLowerCase()} {t('in_past_30_days').toLowerCase()}
-                    </small>
+                    <small id="count-text-oob">{count_text}</small>
                 </Flexblock>
             </FlexInline>
             <FlexInline>

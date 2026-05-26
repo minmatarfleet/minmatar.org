@@ -2,58 +2,135 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { FleetItem } from '@dtypes/layout_components'
+import type { FleetItem, DoctrineType } from '@dtypes/layout_components'
 
 interface Props {
-    fleets:         FleetItem[];
-    history?:       boolean;
-    init_tooltips:  boolean;
+    fleets:             FleetItem[];
+    active_fleet?:      FleetItem;
+    active_doctrine?:   DoctrineType;
+    history?:           boolean;
+    init_tooltips:      boolean;
 }
 
 const {
     fleets,
+    active_fleet,
+    active_doctrine,
     history = false,
     init_tooltips,
 } = Astro.props
 
+const fleet_list = fleets.filter(fleet => fleet.id !== active_fleet?.id)
+
 import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
 import Grid from '@components/compositions/Grid.astro';
+import BlockList from '@components/compositions/BlockList.astro';
 
 import FleetListItem from '@components/blocks/FleetListItem.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
+import FleetHero from '@components/blocks/FleetHero.astro';
+import Countdown from '@components/blocks/Countdown.astro';
+import Tag from '@components/blocks/Tag.astro';
+import Button from '@components/blocks/Button.astro';
 ---
 
-<Grid
-    class="[ w-full grid-fill ]"
-    row_gap="var(--space-3xs)"
-    column_gap="var(--space-3xs)"
-    min_item_width="350px"
-    x-data={`{
-        init() {
-            const timer = setInterval(() => {
-                $dispatch('tick')
-            }, 5000)
+<BlockList gap='var(--space-xl)'>
+    <FleetHero
+        fleet={active_fleet}
+        doctrine={active_doctrine}
+        update_cover={init_tooltips}
+        cover_overlay={true}
+    >
+        {active_fleet &&
+            <Tag class="[ blink-animation ]" text={t('in_development')}></Tag>
 
-            function clearTimer(event) {
-                clearInterval(timer)
-                event.currentTarget.removeEventListener('astro:after-swap', clearTimer)
-            }
-
-            document.addEventListener('astro:after-swap', clearTimer)
+            <Countdown
+                date={active_fleet.start_time}
+                id={active_fleet.id}
+                expired_class={false}
+                tag='countdown-fleet'
+            />
         }
-    }`}
->
-    {fleets.map((fleet) =>
-        <FleetListItem
-            role="listitem"
-            fleet={fleet}
-            history={history}
-            init_tooltips={init_tooltips}
-        />
-    )}
-</Grid>
+    </FleetHero>
+    {active_fleet &&
+        <FlexInline class="[ !w-auto item animate-slide-up-fade animate-delay-1000 ]">
+            <Button href={translatePath(`/fleets/${history ? 'history' : 'upcoming'}/${active_fleet.id}`)}>
+                {t('view_details')}
+            </Button>
 
-{fleets.length == 0 &&
-    <Flexblock gap='var(--space-xl)' centered={true}>
-        <p>{t('fleets.upcoming.empty_message')}</p>
+            <Button
+                href={translatePath(`/fleets/${history ? 'history' : 'upcoming'}/${active_fleet.id}/volunteer`)}
+                color='green'
+            >
+                {t('volunteer')}
+            </Button>
+        </FlexInline>
+    }
+
+    {active_fleet && fleet_list.length > 0 &&
+        <FlexInline justification='center'>
+            <StylessButton href='#other-fleets' class="[ caret-down ]" />
+        </FlexInline>
+    }
+
+    <Flexblock>
+        {active_fleet && fleet_list.length > 0 &&
+            <h4>{t('other_fleets')}</h4>
+        }
+
+        <Grid
+            id="other-fleets"
+            class="[ w-full grid-fill ]"
+            row_gap="var(--space-3xs)"
+            column_gap="var(--space-3xs)"
+            min_item_width="350px"
+            x-data={`{
+                init() {
+                    const timer = setInterval(() => {
+                        $dispatch('tick')
+                    }, 5000)
+
+                    function clearTimer(event) {
+                        clearInterval(timer)
+                        event.currentTarget.removeEventListener('astro:after-swap', clearTimer)
+                    }
+
+                    document.addEventListener('astro:after-swap', clearTimer)
+                }
+            }`}
+        >
+            {fleet_list.map((fleet) =>
+                <FleetListItem
+                    role="listitem"
+                    fleet={fleet}
+                    history={history}
+                    init_tooltips={init_tooltips}
+                />
+            )}
+        </Grid>
     </Flexblock>
-}
+
+    {fleets.length == 0 &&
+        <Flexblock gap='var(--space-xl)' centered={true}>
+            <p>{t('fleets.upcoming.empty_message')}</p>
+        </Flexblock>
+    }
+</BlockList>
+
+<style lang="scss">
+	.caret-down {
+		transform: rotate(90deg);
+
+		&:before {
+			content: 'next';
+			color: var(--highlight);
+			font-family: swiper-icons;
+			font-size: var(--swiper-navigation-size);
+			text-transform: none !important;
+			letter-spacing: 0;
+			font-variant: initial;
+			line-height: 1;
+		}
+	}
+</style>
