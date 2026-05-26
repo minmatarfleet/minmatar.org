@@ -1,0 +1,171 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { FleetItem, DoctrineType } from '@dtypes/layout_components'
+
+interface Props {
+    fleet:          FleetItem | undefined;
+    doctrine?:      DoctrineType | undefined;
+    update_cover:   boolean;
+    cover_overlay?: boolean;
+}
+
+const {
+    fleet,
+    doctrine,
+    update_cover,
+    cover_overlay = false,
+} = Astro.props
+
+const [ system, station ] = fleet?.location?.split(' - ') ?? []
+
+import {
+    get_location_video_cover,
+    get_location_video_cover_thumb,
+    get_location_cover,
+    get_location_cover_990,
+} from '@helpers/covers'
+
+const is_video_cover = Boolean(get_location_video_cover(fleet?.location ?? ''))
+
+import PageCover from '@components/page/partials/PageCover.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+
+import StylessButton from '@components/blocks/StylessButton.astro';
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+import CharacterPicture from '@components/blocks/CharacterPicture.astro';
+import CorporationBadge from '@components/blocks/CorporationBadge.astro';
+import Markdown from '@components/blocks/Markdown.astro';
+
+import FleetIcon from '@components/icons/FleetIcon.astro';
+import MemberIcon from '@components/icons/MemberIcon.astro';
+import ItemBadge from './ItemBadge.astro';
+---
+
+{fleet ?
+    <>{update_cover &&
+        <PageCover
+            video={get_location_video_cover(fleet?.location ?? '') ?? undefined}
+            video_thumb={get_location_video_cover_thumb(fleet?.location ?? '') ?? undefined}
+            image={get_location_cover(fleet?.location ?? '') ?? '/images/fleets-cover.jpg'}
+            image_990={get_location_cover_990(fleet?.location ?? '') ?? '/images/fleets-cover.jpg'}
+            animated={false}
+            scrollable={cover_overlay || !is_video_cover}
+            overlay={cover_overlay || !is_video_cover}
+            hx-swap-oob="true"
+        />
+    }</>
+
+    <VerticalCenter class="[ content-section ][ max-w-[48rem] ]">
+        <Wrapper
+            max_width='100%'
+            padding_inline='0'
+            padding_block='0'
+            class="[ w-full ]"
+        >
+            <Flexblock gap='var(--space-l)'>
+                <FixedFluid width='256px' gap='var(--space-xl)' class="[ items-center! ]">
+                    <div class="[ animate-slide-up-fade animate-delay-100 ]">
+                        <CharacterPicture
+                            character_id={fleet.fleet_commander_id}
+                            character_name={fleet.fleet_commander_name}
+                            size={256}
+                            icon_quality={256}
+                        />
+                    </div>
+                    <Flexblock gap='var(--space-xs)'>
+                        <h2 class="[ animate-slide-up-fade animate-delay-250 ]">{fleet.fleet_commander_name}</h2>
+                        <FlexInline class="[ animate-fade-in animate-duration-250 animate-delay-400 ]">
+                            <CorporationBadge
+                                corporation={{
+                                    id: fleet.corporation_id as number,
+                                    name: fleet.corporation_name as string,
+                                    size: 'sm',
+                                }}
+                            />
+                            {fleet.fleet_commander_fleet_count &&
+                                <FlexInline gap='var(--space-3xs)' class="[ items-center! ]">
+                                    <div
+                                        class="[ text-highlight h-[16px] ]"
+                                        data-tippy-content={t('fleet_commander_fleets')}
+                                        x-init={update_cover ? 'tippy($el, tippy_options)' : undefined}
+                                    >
+                                        <FleetIcon size={16} />
+                                    </div>
+                                    <span>{fleet.fleet_commander_fleet_count}</span>
+                                </FlexInline>
+                            }
+                        </FlexInline>
+                    </Flexblock>
+                </FixedFluid>
+
+                {(fleet.description !== undefined || fleet.objective !== undefined) &&
+                    <div class="[ wrap-break-word max-w-full pr-1.5 max-h-[130px] overflow-y-auto animate-fade-in animate-duration-250 animate-delay-550 ]">
+                        <Markdown markdown={(fleet.description ?? fleet.objective) as string} />
+                    </div>
+                }
+
+                <Flexblock gap='var(--space-m)'>
+                    <FlexInline class="[ flex-nowrap! items-center! animate-fade-in animate-duration-250 animate-delay-700 ]" gap='var(--space-l)'>
+                        <Flexblock gap='0'>
+                            <b class="[ text-highlight ]">{system}</b>
+                            <small>{station}</small>
+                        </Flexblock>
+
+                        {doctrine &&
+                            <StylessButton href={translatePath(`/ships/doctrines/${doctrine.id}`)}>
+                                <ItemBadge
+                                    type_id={doctrine.primary_fittings[0].ship_id}
+                                    item_name={doctrine.name}
+                                    size={32}
+                                >
+                                    <small class="[ text-foreground ]">{t('doctrine')}</small>
+                                </ItemBadge>
+                            </StylessButton>
+                        }
+                                
+                        <span>{t(`${fleet.type}_fleet` as any) ?? fleet.type}</span>
+
+                        {fleet.members_count !== undefined &&
+                            <FlexInline gap='var(--space-3xs)' class="[ flex-nowrap! items-center! ]">
+                                <div
+                                    class="[ text-highlight h-[16px] ]"
+                                    data-tippy-content={t('characters_in_fleet')}
+                                    x-init={update_cover ? 'tippy($el, tippy_options)' : undefined}
+                                >
+                                    <MemberIcon size={16} />
+                                </div>
+                                
+                                <span>{fleet.members_count}</span>
+                            </FlexInline>
+                        }
+                    </FlexInline>
+
+                    <FlexInline class="[ component flex-nowrap! items-center! animate-fade-in animate-duration-250 animate-delay-850 ]" gap='var(--space-l)'>
+                        <slot />
+                    </FlexInline>
+                </Flexblock>
+            </Flexblock>
+        </Wrapper>
+    </VerticalCenter> :
+    <>{update_cover &&
+        <PageCover
+            image="/images/fleets-cover.jpg"
+            image_990="/images/fleets-cover.jpg"
+            scrollable={true}
+            overlay={true}
+            hx-swap-oob="true"
+        />
+    }</>
+}
+
+<style lang="scss">
+    h2 {
+        font-size: var(--step-5);
+    }
+</style>

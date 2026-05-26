@@ -29,19 +29,30 @@ if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
 
 import type { FleetUI, FleetCombatLog } from '@dtypes/layout_components'
-import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
+import type { EveCharacterProfile, FleetMetrics, FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
 import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 import { get_user_character } from '@helpers/fetching/characters'
 import { get_fleet_combatlogs } from '@helpers/fetching/combatlog'
+import {
+    get_fleets_metrics,
+    get_fleet_commander_metrics,
+} from '@helpers/api.minmatar.org/fleets'
 
 let fetch_fleets_error: Error | false = false
 let fleet:FleetUI | null = null
 let user_character:EveCharacterProfile | null = null
 let saved_logs:FleetCombatLog[] = []
+let fleet_metrics: FleetMetrics | undefined
+let fleet_commander_metrics: FleetCommanderMetrics | undefined
 
 try {
     fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
     user_character = await get_user_character(user.user_id)
+
+    const fleets_metrics = await get_fleets_metrics(auth_token as string)
+    fleet_metrics = fleets_metrics.find(metric => metric.fleet_id === fleet_id)
+    const fleet_commanders_metrics = await get_fleet_commander_metrics(auth_token as string)
+    fleet_commander_metrics = fleet_commanders_metrics.find(metric => metric.primary_character_id === fleet?.fleet_commander_id)
 } catch (error) {
     if (error.message === 'Error fetching fleet: HTTP error! Status: 403')
         return HTTP_403_Forbidden()
@@ -60,6 +71,13 @@ const can_remove_fleet = is_superuser ||
                          user_character?.character_id === fleet?.fleet_commander_id
 
 const FLEET_DETAIL_PARTIAL_URL = translatePath(`/partials/fleet_detail_component?fleet_id=${fleet_id}&upcoming=${JSON.stringify(false)}`)
+
+import {
+    get_location_video_cover,
+    get_location_video_cover_thumb,
+    get_location_cover,
+    get_location_cover_990,
+} from '@helpers/covers'
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -87,8 +105,10 @@ const page_title = `${t('fleet')} ${fleet_id}`;
 >
     <PageDefault
         cover={{
-            image: "/images/fleets-cover.jpg",
-            image_990: "/images/fleets-cover.jpg",
+            video: get_location_video_cover(fleet?.location ?? '') ?? undefined,
+            video_thumb: get_location_video_cover_thumb(fleet?.location ?? '') ?? undefined,
+            image: get_location_cover(fleet?.location ?? '') ?? '/images/fleets-cover.jpg',
+            image_990: get_location_cover_990(fleet?.location ?? '') ?? '/images/fleets-cover.jpg',
             animated: false,
             scrollable: true,
             overlay: true
@@ -128,6 +148,9 @@ const page_title = `${t('fleet')} ${fleet_id}`;
                 saved_logs={saved_logs}
                 pilots={[]}
                 volunteers={[]}
+                update_cover={false}
+                fleet_metrics={fleet_metrics}
+                fleet_commander_metrics={fleet_commander_metrics}   
             />
         }
     </PageDefault>

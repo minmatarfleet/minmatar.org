@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { translatePath } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
@@ -22,11 +22,14 @@ const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_e
 if (!can_view_fleets)
     return HTTP_403_Forbidden()
 
-import type { FleetItem } from '@dtypes/layout_components'
+import type { FleetItem, DoctrineType } from '@dtypes/layout_components'
 import { fetch_fleets_auth } from '@helpers/fetching/fleets'
+import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
 
 let fetch_fleets_error: Error | false = false
-let fleets:FleetItem[] | null = null
+let fleets:FleetItem[] = []
+let active_fleet:FleetItem | undefined = undefined
+let active_doctrine:DoctrineType | undefined = undefined
 
 const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming') as string)
 
@@ -35,9 +38,25 @@ try {
     fleets.sort(function(a, b) {
         return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
     });
+
+    if (upcoming) {
+        active_fleet = fleets.find(fleet => fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time)
+
+        active_fleet = fleets.find(fleet => fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time)
+        if (active_fleet)
+            active_doctrine = await fetch_doctrine_by_id(active_fleet.doctrine_id)
+    }
 } catch (error) {
     fetch_fleets_error = error
 }
+
+let count_text = ''
+if (upcoming)
+    count_text = t(fleets.length !== 1 ? 'fleets_on_schedule_plural' : 'fleets_on_schedule_singular')
+        .replace('{count}', String(fleets.length))
+else
+    count_text = t(fleets.length !== 1 ? 'fleets_in_the_past_30_days_plural' : 'fleets_in_the_past_30_days_singular')
+        .replace('{count}', String(fleets.length))
 
 const FLEET_LIST_PARTIAL_URL = translatePath(`/partials/fleet_list_component?upcoming=${JSON.stringify(upcoming)}`)
 
@@ -56,8 +75,14 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         }}
     />
     :
+    <small id="count-text-oob" hx-swap-oob="true">
+        {count_text}
+    </small>
+
     <FleetList
-        fleets={fleets as FleetItem[]}
+        fleets={fleets}
+        active_fleet={upcoming ? active_fleet : undefined}
+        active_doctrine={upcoming ? active_doctrine : undefined}
         history={!upcoming}
         init_tooltips={true}
     />

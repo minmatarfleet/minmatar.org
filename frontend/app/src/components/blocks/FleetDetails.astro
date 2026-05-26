@@ -4,19 +4,22 @@ const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { FleetUI, FleetCompositionUI, FleetRadarUI, SRPUI, FleetCombatLog } from '@dtypes/layout_components'
 
-import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import type { SummaryCharacter, FleetMetrics, FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
 import type { FleetRoleVolunteer } from '@helpers/api.minmatar.org/fleets'
 
 interface Props {
-    fleet:                  FleetUI;
-    history?:               boolean;
-    can_remove_fleet:       boolean;
-    is_fleet_commander?:    boolean;
-    fleet_composition?:     FleetCompositionUI[];
-    fleet_radar?:           FleetRadarUI[];
-    saved_logs?:            FleetCombatLog[];
-    volunteers:             FleetRoleVolunteer[],
-    pilots:                 SummaryCharacter[],
+    fleet:                      FleetUI;
+    history?:                   boolean;
+    can_remove_fleet:           boolean;
+    is_fleet_commander?:        boolean;
+    fleet_composition?:         FleetCompositionUI[];
+    fleet_radar?:               FleetRadarUI[];
+    saved_logs?:                FleetCombatLog[];
+    volunteers:                 FleetRoleVolunteer[],
+    pilots:                     SummaryCharacter[],
+    update_cover:               boolean;
+    fleet_metrics:              FleetMetrics | undefined;
+    fleet_commander_metrics:    FleetCommanderMetrics | undefined;
 }
 
 const {
@@ -29,7 +32,12 @@ const {
     saved_logs = [],
     volunteers,
     pilots,
+    update_cover,
+    fleet_metrics,
+    fleet_commander_metrics,
 } = Astro.props
+
+console.log(fleet)
 
 const FLEET_COMPOSITION_PARTIAL_URL = `${translatePath('/partials/fleet_composition')}?id=${fleet.id}`
 
@@ -42,26 +50,16 @@ const pre_pingable = minutes_to_fleet >= 30
 import { get_fleet_tracking_texts } from '@helpers/fetching/fleets'
 const fleet_tracking_texts = get_fleet_tracking_texts(lang, fleet.tracking)
 
-import { marked } from 'marked';
-import { renderer } from '@helpers/marked';
-
-import TextBox from '@components/layout/TextBox.astro';
-
 import Flexblock from '@components/compositions/Flexblock.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
+import BlockList from '@components/compositions/BlockList.astro';
 
 import FleetCompositionBlock from '@components/blocks/FleetCompositionBlock.astro';
-import Button from '@components/blocks/Button.astro';
 // import RemoveFleetButton from '@components/blocks/RemoveFleetButton.astro';
-import CancelFleetButton from '@components/blocks/CancelFleetButton.astro';
-import RestoreFleetButton from '@components/blocks/RestoreFleetButton.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
-import DoctrineItem from '@components/blocks/DoctrineItem.astro';
-import ComponentBlock from '@components/blocks/ComponentBlock.astro';
-import PilotBadge from '@components/blocks/PilotBadge.astro';
 import FleetStatus from '@components/blocks/FleetStatus.astro';
 import SRPTable from '@components/blocks/SRPTable.astro';
+import FleetHero from '@components/blocks/FleetHero.astro';
 import FleetCombatLogTable from '@components/blocks/FleetCombatLogTable.astro';
 import LocalTimeGroup from '@components/blocks/LocalTimeGroup.astro';
 import AARLinkButton from '@components/blocks/AARLinkButton.astro';
@@ -79,122 +77,51 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
     @tracking_started="tracking_started = true"
     @is_fleet_time="document.getElementById('preping-button').remove()"
 >
-    <Flexblock gap="var(--space-3xs)">
-        <ComponentBlock>
-            <Flexblock class="[ w-full ]" gap='var(--space-xl)'>
-                <FlexInline class="[ grow !items-start ]" justification='space-between'>
-                    <Flexblock gap='var(--space-3xs)'>
-                        <PilotBadge
-                            character_id={fleet.fleet_commander_id}
-                            character_name={fleet.fleet_commander_name}
-                            size={64}
-                            heading={true}
-                        >
-                            <small>{t('fleet_commander')}</small>
-                        </PilotBadge>
-                    </Flexblock>
-                    {can_remove_fleet &&
-                        <FlexInline>
-                            {!history && fleet.status !== 'cancelled' &&
-                                <Button
-                                    size='sm'
-                                    href={translatePath(`/fleets/upcoming/edit/${fleet.id}`)}
-                                >
-                                    {t('edit')}
-                                </Button>
-                            }
+    <BlockList gap="var(--space-xl)">
+        <FleetHero
+            fleet={{
+                audience: fleet.audience,
+                doctrine_id: fleet?.doctrine?.id,
+                fleet_commander_id: fleet.fleet_commander_id,
+                fleet_commander_name: fleet.fleet_commander_name,
+                id: fleet.id,
+                start_time: fleet.start_time,
+                description: fleet.description,
+                location: fleet.location,
+                objective: fleet.objective,
+                status: fleet.status,
+                tracking: fleet.tracking,
+                type: fleet.type,
+                corporation_id: fleet_commander_metrics?.corporation_id ?? 0,
+                corporation_name: fleet_commander_metrics?.corporation_name ?? t('unknown_corporation'),
+                fleet_commander_fleet_count: fleet_commander_metrics?.fleet_count,
+                members_count: fleet_metrics?.members ?? 0,
+            }}
+            doctrine={fleet.doctrine}
+            update_cover={update_cover}
+            cover_overlay={true}
+        >
+            <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
+                {eve_time_text}
+            </TextGroup>
+            <LocalTimeGroup eve_time={eve_time} />
+        </FleetHero>
 
-                            {!history && fleet?.tracking && !fleet?.tracking?.end_time &&
-                                <form method="post" action={translatePath(`/fleets/upcoming/${fleet.id}/refresh-motd`)} class="inline">
-                                    <Button type="submit" size="sm">
-                                        {t('refresh_motd')}
-                                    </Button>
-                                </form>
-                            }
+        <FleetStatus
+            fleet_id={fleet.id}
+            start_time={fleet.start_time}
+            fleet_tracking={fleet.tracking}
+            fleet_status={fleet.status}
+            is_fleet_commander={is_fleet_commander}
+            fleet_tracking_texts={fleet_tracking_texts}
+        />
 
-                            {!history && fleet.tracking === null &&
-                                <>{fleet.status !== 'cancelled' ?
-                                    <CancelFleetButton fleet_id={fleet.id} /> :
-                                    <RestoreFleetButton fleet_id={fleet.id} />
-                                }</>
-                            }
-                        </FlexInline>
-                    }
-                </FlexInline>
-
-                <FlexInline class="[ !items-start ]">
-                    <div class="[ basis-[220px] ]">
-                        <Flexblock>
-                            <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
-                                {eve_time_text}
-                            </TextGroup>
-                            <LocalTimeGroup eve_time={eve_time} />
-                        </Flexblock>
-                    </div>
-                    <div class="[ basis-[200px] ]">
-                        <Flexblock>
-                            <TextGroup title={t('audience')} class="[ sentence-cap ]">
-                                {fleet.audience}
-                            </TextGroup>
-                            <TextGroup title={t('type')} class="[ sentence-cap ]">
-                                {t(fleet.type as any) ?? fleet.type}
-                            </TextGroup>
-                        </Flexblock>
-                    </div>
-                    <div class="[ basis-[450px] ]">
-                        <Flexblock>
-                            <TextGroup title={t('location')} class="[ sentence-cap ]">
-                                {fleet.location}
-                            </TextGroup>
-                        </Flexblock>
-                    </div>
-                </FlexInline>
-
-                {fleet.objective &&
-                    <Flexblock gap='var(--space-3xs)'>
-                        <h4 class="[ sentence-cap ]">{t('objective')}</h4>
-                        <TextBox max_width='40rem'>
-                            <Flexblock>{fleet.objective}</Flexblock>
-                        </TextBox>
-                    </Flexblock>
-                }
-
-                <Flexblock gap='var(--space-3xs)'>
-                    <h4 class="[ sentence-cap ]">{t('description')}</h4>
-                    <TextBox max_width='40rem'>
-                        <Flexblock set:html={marked.parse(fleet.description, { renderer })} />
-                    </TextBox>
-                </Flexblock>
-
-                <FleetStatus
-                    fleet_id={fleet.id}
-                    start_time={fleet.start_time}
-                    fleet_tracking={fleet.tracking}
-                    fleet_status={fleet.status}
-                    is_fleet_commander={is_fleet_commander}
-                    fleet_tracking_texts={fleet_tracking_texts}
-                />
-
-                {history &&
-                    <AARLinkButton
-                        aarlink={fleet.aar_link ? fleet.aar_link : undefined}
-                        fleet_id={fleet.id}
-                        can_edit={can_remove_fleet}
-                    />
-                }
-
-                <!--<VerticalCenter>
-                    <TextGroup title={t('tracking')} class:list={[ { loading: (fleet.tracking == t('forming')) } ]}>
-                        {fleet.tracking}
-                    </TextGroup>
-                </VerticalCenter> -->
-            </Flexblock>
-        </ComponentBlock>
-
-        {fleet.doctrine !== null &&
-            <ComponentBlock>
-                <DoctrineItem doctrine={fleet.doctrine} />
-            </ComponentBlock>
+        {history &&
+            <AARLinkButton
+                aarlink={fleet.aar_link ? fleet.aar_link : undefined}
+                fleet_id={fleet.id}
+                can_edit={can_remove_fleet}
+            />
         }
 
         {!history &&
@@ -213,20 +140,18 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                 }`}
             >
                 {fleet?.tracking &&
-                    <ComponentBlock>
-                        <FleetCompositionBlock
-                            composition={fleet_composition ?? []}
-                            fleet_radar={fleet_radar ?? []}
-                            fleet_id={fleet.id}
-                        />
-                    </ComponentBlock>
+                    <FleetCompositionBlock
+                        composition={fleet_composition ?? []}
+                        fleet_radar={fleet_radar ?? []}
+                        fleet_id={fleet.id}
+                    />
                 }
 
                 {!fleet?.tracking &&
                     <template
                         x-if="tracking_started"
                     >
-                        <ComponentBlock
+                        <div
                             x-data={`{
                                 init() {
                                     htmx.process($el)
@@ -238,14 +163,14 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                             hx-swap="innerHTML transition:true"
                         >
                             <p class="[ loading ]">{t('loading_fleet_composition')}</p>
-                        </ComponentBlock>
+                        </div>
                     </template>
                 }
             </div>
         }
-    </Flexblock>
+    </BlockList>
 
-    <Wrapper padding_block='0' padding_inline='var(--space-l-xl)'>
+    <Wrapper padding_block='0' padding_inline='0'>
         <FleetCombatLogTable
             saved_logs={saved_logs}
             fleet_id={fleet.id}

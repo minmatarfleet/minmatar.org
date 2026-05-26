@@ -59,10 +59,7 @@ import CompletedStatus from '@components/blocks/CompletedStatus.astro';
     hx-swap={!fleet_tracking?.end_time ? 'outerHTML transition:true' : undefined}
     hx-indicator={!fleet_tracking?.end_time ? '.loader' : undefined}
 >
-    <Flexblock
-        class="[ grow text-center ]"
-        centered={true}
-    >
+    <Flexblock>
         {fleet_tracking === null && fleet_status !== 'cancelled' &&
             <Countdown
                 date={start_time}

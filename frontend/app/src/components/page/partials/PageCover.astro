@@ -20,6 +20,7 @@ const {
     animated = true, // deprecated
     scrollable = false,
     overlay = false,
+    attributes,
 } = Astro.props
 
 const optional_attributes = {
@@ -30,6 +31,8 @@ const optional_attributes = {
 <div
     class:list={['wrapper', { scrollable: scrollable }, { overlay: overlay }, { 'fix-pixel': video }, Astro.props.class]}
     class="[ viewport-cover ]"
+    id="viewport-cover-oob"
+    {...attributes}
 >
     {!video ?
         <picture

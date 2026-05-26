@@ -22,17 +22,24 @@ const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_e
 if (!can_view_fleets)
     return HTTP_403_Forbidden()
 
-import type { FleetItem, Alert } from '@dtypes/layout_components'
+import type { FleetItem, Alert, DoctrineType } from '@dtypes/layout_components'
 import { fetch_fleets_auth } from '@helpers/fetching/fleets'
+import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
 
 let fetch_fleets_error: Error | false = false
 let fleets:FleetItem[] = []
+let active_fleet:FleetItem | undefined = undefined
+let active_doctrine:DoctrineType | undefined = undefined
 
 try {
     fleets = await fetch_fleets_auth(auth_token as string)
     fleets.sort(function(a, b) {
         return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
     });
+
+    active_fleet = fleets.find(fleet => fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time)
+    if (active_fleet)
+        active_doctrine = await fetch_doctrine_by_id(active_fleet.doctrine_id)
 } catch (error) {
     fetch_fleets_error = error
 }
@@ -65,6 +72,16 @@ const AUTH_FLEET_SUBHINT = (marked.parseInline(t('authenticate_fleet_subhint')) 
     .replace(
         'AUTH_LINK', AUTH_REDIRECT_URL
     )
+
+import {
+    get_location_video_cover,
+    get_location_video_cover_thumb,
+    get_location_cover,
+    get_location_cover_990,
+} from '@helpers/covers'
+
+const count_text = t(fleets.length !== 1 ? 'fleets_on_schedule_plural' : 'fleets_on_schedule_singular')
+    .replace('{count}', String(fleets.length))
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -99,8 +116,11 @@ const page_title = t('fleets.upcoming.page_title');
 >
     <PageWide
         cover={{
-            image: "/images/fleets-cover.jpg",
-            image_990: "/images/fleets-cover.jpg",
+            video: get_location_video_cover(active_fleet?.location ?? '') ?? undefined,
+            video_thumb: get_location_video_cover_thumb(active_fleet?.location ?? '') ?? undefined,
+            image: get_location_cover(active_fleet?.location ?? '') ?? '/images/fleets-cover.jpg',
+            image_990: get_location_cover_990(active_fleet?.location ?? '') ?? '/images/fleets-cover.jpg',
+            animated: false,
             scrollable: true,
             overlay: true
         }}
@@ -114,9 +134,7 @@ const page_title = t('fleets.upcoming.page_title');
                     <PageTitle>
                         {page_title}
                     </PageTitle>
-                    <small x-text={`\`\${fleets_count} \${fleets_count != 1 ? '${t('fleets').toLowerCase()}' : '${t('fleet').toLowerCase()}'} ${t('on_schedule').toLowerCase()}\``}>
-                        {`${fleets.length} ${fleets.length != 1 ? t('fleets').toLowerCase() : t('fleet').toLowerCase()} ${t('on_schedule').toLowerCase()}`}
-                    </small>
+                    <small id="count-text-oob">{count_text}</small>
                 </Flexblock>
             </FlexInline>
             <FlexInline>
@@ -139,23 +157,23 @@ const page_title = t('fleets.upcoming.page_title');
             </Button>
         </PageSubheader>
         
-        <Flexblock gap='var(--space-xl)'>
-            <UpcomingFleetsUpdater refresh_rate_seconds={300}>
-                {fetch_fleets_error ?
-                    <ErrorRefetch
-                        args={{
-                            partial: FLEET_LIST_PARTIAL_URL,
-                            error: fetch_fleets_error,
-                            delay: 0,
-                        }}
-                    />
-                    :
-                    <FleetList
-                        fleets={fleets}
-                        init_tooltips={false}
-                    />
-                }
-            </UpcomingFleetsUpdater>
-        </Flexblock>
+        <UpcomingFleetsUpdater refresh_rate_seconds={300}>
+            {fetch_fleets_error ?
+                <ErrorRefetch
+                    args={{
+                        partial: FLEET_LIST_PARTIAL_URL,
+                        error: fetch_fleets_error,
+                        delay: 0,
+                    }}
+                />
+                :
+                <FleetList
+                    fleets={fleets}
+                    active_fleet={active_fleet}
+                    active_doctrine={active_doctrine}
+                    init_tooltips={false}
+                />
+            }
+        </UpcomingFleetsUpdater>
 	</PageWide>
 </Viewport>
