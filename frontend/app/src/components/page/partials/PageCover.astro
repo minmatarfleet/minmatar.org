@@ -1,13 +1,14 @@
 ---
 interface Props {
-    image: string;
-    image_990: string;
-    video?: string;
-    video_thumb?: string;
-    alt?: string;
-    animated?: boolean; // deprecated
-    scrollable?: boolean;
-    overlay?: boolean;
+    image:          string;
+    image_990:      string;
+    video?:         string;
+    video_thumb?:   string;
+    alt?:           string;
+    animated?:      boolean; // deprecated
+    scrollable?:    boolean;
+    overlay?:       boolean;
+    oob_swap?:      boolean;
     [propName: string]: any;
 }
 
@@ -20,6 +21,7 @@ const {
     animated = true, // deprecated
     scrollable = false,
     overlay = false,
+    oob_swap = false,
     attributes,
 } = Astro.props
 
@@ -32,6 +34,7 @@ const optional_attributes = {
     class:list={['wrapper', { scrollable: scrollable }, { overlay: overlay }, { 'fix-pixel': video }, Astro.props.class]}
     class="[ viewport-cover ]"
     id="viewport-cover-oob"
+    hx-swap-oob={oob_swap ? 'true' : undefined}
     {...attributes}
 >
     {!video ?

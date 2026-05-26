@@ -47,20 +47,7 @@ import MemberIcon from '@components/icons/MemberIcon.astro';
 import ItemBadge from './ItemBadge.astro';
 ---
 
-{fleet ?
-    <>{update_cover &&
-        <PageCover
-            video={get_location_video_cover(fleet?.location ?? '') ?? undefined}
-            video_thumb={get_location_video_cover_thumb(fleet?.location ?? '') ?? undefined}
-            image={get_location_cover(fleet?.location ?? '') ?? '/images/fleets-cover.jpg'}
-            image_990={get_location_cover_990(fleet?.location ?? '') ?? '/images/fleets-cover.jpg'}
-            animated={false}
-            scrollable={cover_overlay || !is_video_cover}
-            overlay={cover_overlay || !is_video_cover}
-            hx-swap-oob="true"
-        />
-    }</>
-
+{fleet &&
     <VerticalCenter class="[ content-section ][ max-w-[48rem] ]">
         <Wrapper
             max_width='100%'
@@ -75,7 +62,7 @@ import ItemBadge from './ItemBadge.astro';
                             character_id={fleet.fleet_commander_id}
                             character_name={fleet.fleet_commander_name}
                             size={256}
-                            icon_quality={256}
+                            icon_quality={512}
                         />
                     </div>
                     <Flexblock gap='var(--space-xs)'>
@@ -152,16 +139,30 @@ import ItemBadge from './ItemBadge.astro';
                 </Flexblock>
             </Flexblock>
         </Wrapper>
-    </VerticalCenter> :
-    <>{update_cover &&
-        <PageCover
-            image="/images/fleets-cover.jpg"
-            image_990="/images/fleets-cover.jpg"
-            scrollable={true}
-            overlay={true}
-            hx-swap-oob="true"
-        />
-    }</>
+    </VerticalCenter>
+}
+
+{update_cover && fleet &&
+    <PageCover
+        video={get_location_video_cover(fleet?.location ?? '') ?? undefined}
+        video_thumb={get_location_video_cover_thumb(fleet?.location ?? '') ?? undefined}
+        image={get_location_cover(fleet?.location ?? '') ?? '/images/fleets-cover.jpg'}
+        image_990={get_location_cover_990(fleet?.location ?? '') ?? '/images/fleets-cover.jpg'}
+        animated={false}
+        scrollable={cover_overlay || !is_video_cover}
+        overlay={cover_overlay || !is_video_cover}
+        oob_swap={true}
+    />
+}
+
+{update_cover && !fleet &&
+    <PageCover
+        image="/images/fleets-cover.jpg"
+        image_990="/images/fleets-cover.jpg"
+        scrollable={true}
+        overlay={true}
+        oob_swap={true}
+    />
 }
 
 <style lang="scss">
