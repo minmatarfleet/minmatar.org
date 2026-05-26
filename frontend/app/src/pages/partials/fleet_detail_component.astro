@@ -98,7 +98,7 @@ import { get_locations } from '@helpers/api.minmatar.org/locations'
 import type { Contract } from '@dtypes/api.minmatar.org'
 let supply_contracts: Contract[] = []
 
-if (fleet?.doctrine) {
+if (fleet?.doctrine && upcoming) {
     try {
         const locations = await get_locations()
         const fleet_location = locations.find(location => location.location_name === fleet?.location)
