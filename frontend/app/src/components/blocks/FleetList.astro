@@ -69,12 +69,12 @@ import Button from '@components/blocks/Button.astro';
     }
 
     {active_fleet && fleet_list.length > 0 &&
-        <FlexInline justification='center'>
+        <FlexInline justification='center' class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]">
             <StylessButton href='#other-fleets' class="[ caret-down ]" />
         </FlexInline>
     }
 
-    <Flexblock>
+    <Flexblock class:list={[ { 'animate-fade-in animate-duration-250 animate-delay-1000': Boolean(active_fleet) } ]}>
         {active_fleet && fleet_list.length > 0 &&
             <h4>{t('other_fleets')}</h4>
         }
