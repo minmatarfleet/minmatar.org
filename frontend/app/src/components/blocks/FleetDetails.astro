@@ -107,34 +107,41 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
             <LocalTimeGroup eve_time={eve_time} />
         </FleetHero>
 
-        <FleetStatus
-            fleet_id={fleet.id}
-            start_time={fleet.start_time}
-            fleet_tracking={fleet.tracking}
-            fleet_status={fleet.status}
-            is_fleet_commander={is_fleet_commander}
-            fleet_tracking_texts={fleet_tracking_texts}
-        />
+        <div class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]">
+            <FleetStatus
+                fleet_id={fleet.id}
+                start_time={fleet.start_time}
+                fleet_tracking={fleet.tracking}
+                fleet_status={fleet.status}
+                is_fleet_commander={is_fleet_commander}
+                fleet_tracking_texts={fleet_tracking_texts}
+            />
+        </div>
 
         {history &&
-            <AARLinkButton
-                aarlink={fleet.aar_link ? fleet.aar_link : undefined}
-                fleet_id={fleet.id}
-                can_edit={can_remove_fleet}
-            />
+            <div class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]">
+                <AARLinkButton
+                    aarlink={fleet.aar_link ? fleet.aar_link : undefined}
+                    fleet_id={fleet.id}
+                    can_edit={can_remove_fleet}
+                />
+            </div>
         }
 
         {!history &&
-            <FleetRoles
-                volunteers={volunteers}
-                pilots={pilots}
-                fleet_id={fleet.id}
-                readonly={fleet.status === 'cancelled'}
-            />
+            <div class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]">
+                <FleetRoles
+                    volunteers={volunteers}
+                    pilots={pilots}
+                    fleet_id={fleet.id}
+                    readonly={fleet.status === 'cancelled'}
+                />
+            </div>
         }
 
         {is_fleet_commander &&
             <div
+                class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
                 x-data={`{
                     global_collapse: $persist(false),
                 }`}
@@ -170,7 +177,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
         }
     </BlockList>
 
-    <Wrapper padding_block='0' padding_inline='0'>
+    <Wrapper padding_block='0' padding_inline='0' class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]">
         <FleetCombatLogTable
             saved_logs={saved_logs}
             fleet_id={fleet.id}
