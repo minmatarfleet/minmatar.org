@@ -132,7 +132,7 @@ import ItemBadge from './ItemBadge.astro';
                         <span>{t(`${fleet.type}_fleet` as any) ?? fleet.type}</span>
 
                         {fleet.members_count !== undefined &&
-                            <FlexInline gap='var(--space-3xs)' class="[ flex-nowrap! items-center! ]">
+                            <FlexInline gap='var(--space-3xs)' class="[ items-center! ]">
                                 <div
                                     class="[ text-highlight h-[16px] ]"
                                     data-tippy-content={t('characters_in_fleet')}
@@ -146,7 +146,7 @@ import ItemBadge from './ItemBadge.astro';
                         }
                     </FlexInline>
 
-                    <FlexInline class="[ component flex-nowrap! items-center! animate-fade-in animate-duration-250 animate-delay-850 ]" gap='var(--space-l)'>
+                    <FlexInline class="[ component items-center! animate-fade-in animate-duration-250 animate-delay-850 ]" gap='var(--space-l)'>
                         <slot />
                     </FlexInline>
                 </Flexblock>

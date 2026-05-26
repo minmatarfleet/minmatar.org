@@ -7,6 +7,7 @@ interface Props {
     date:           Date;
     expired_text?:  string;
     expired_class?: boolean;
+    big_font?:      boolean;
     [propName: string]: any;
 }
 
@@ -16,6 +17,7 @@ const {
     date,
     expired_text,
     expired_class = true,
+    big_font = false,
 } = Astro.props;
 
 const timestamp = new Date().getTime()
@@ -72,7 +74,15 @@ const {
             this.countdown_text = new_text
         }
     }`}
-    class:list={[ 'countdown', { expired: expired && expired_class, 'expired-text': expired && expired_text } ]} id={`${tag}-${id}-${timestamp}`}
+    class:list={[
+        'countdown',
+        {
+            expired: expired && expired_class,
+            'expired-text': expired && expired_text,
+            'big-font': big_font
+        }
+    ]}
+    id={`${tag}-${id}-${timestamp}`}
     x-text="countdown_text"
 >
     {text}
@@ -87,6 +97,10 @@ const {
 		line-height: 1;
         white-space: nowrap;
         text-transform: uppercase;
+
+        &.big-font {
+            font-size: var(--step-4);
+        }
 	}
 
     .expired:not(.expired-text) {
