@@ -69,129 +69,127 @@ const eve_time = new Date(fleet.start_time);
 const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
 ---
 
-<Flexblock
-    gap="var(--space-2xl)"
+<BlockList
+    gap="var(--space-xl)"
     x-data={`{
         tracking_started: false,
     }`}
     @tracking_started="tracking_started = true"
     @is_fleet_time="document.getElementById('preping-button').remove()"
 >
-    <BlockList gap="var(--space-xl)">
-        <FleetHero
-            fleet={{
-                audience: fleet.audience,
-                doctrine_id: fleet?.doctrine?.id,
-                fleet_commander_id: fleet.fleet_commander_id,
-                fleet_commander_name: fleet.fleet_commander_name,
-                id: fleet.id,
-                start_time: fleet.start_time,
-                description: fleet.description,
-                location: fleet.location,
-                objective: fleet.objective,
-                status: fleet.status,
-                tracking: fleet.tracking,
-                type: fleet.type,
-                corporation_id: fleet_commander_metrics?.corporation_id ?? 0,
-                corporation_name: fleet_commander_metrics?.corporation_name ?? t('unknown_corporation'),
-                fleet_commander_fleet_count: fleet_commander_metrics?.fleet_count,
-                members_count: fleet_metrics?.members ?? 0,
-            }}
-            doctrine={fleet.doctrine}
-            supply_contracts={supply_contracts}
-            update_cover={update_cover}
-            cover_overlay={true}
+    <FleetHero
+        fleet={{
+            audience: fleet.audience,
+            doctrine_id: fleet?.doctrine?.id,
+            fleet_commander_id: fleet.fleet_commander_id,
+            fleet_commander_name: fleet.fleet_commander_name,
+            id: fleet.id,
+            start_time: fleet.start_time,
+            description: fleet.description,
+            location: fleet.location,
+            objective: fleet.objective,
+            status: fleet.status,
+            tracking: fleet.tracking,
+            type: fleet.type,
+            corporation_id: fleet_commander_metrics?.corporation_id ?? 0,
+            corporation_name: fleet_commander_metrics?.corporation_name ?? t('unknown_corporation'),
+            fleet_commander_fleet_count: fleet_commander_metrics?.fleet_count,
+            members_count: fleet_metrics?.members ?? 0,
+        }}
+        doctrine={!history ? fleet.doctrine : undefined}
+        supply_contracts={!history ? supply_contracts : undefined}
+        update_cover={update_cover}
+        cover_overlay={true}
+    >
+        <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
+            {eve_time_text}
+        </TextGroup>
+        <LocalTimeGroup eve_time={eve_time} />
+    </FleetHero>
+
+    <div class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]">
+        <FleetStatus
+            fleet_id={fleet.id}
+            start_time={fleet.start_time}
+            fleet_tracking={fleet.tracking}
+            fleet_status={fleet.status}
+            is_fleet_commander={is_fleet_commander}
+            fleet_tracking_texts={fleet_tracking_texts}
+        />
+    </div>
+
+    {history &&
+        <Wrapper
+            class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
+            padding_block='0'
+            padding_inline='0'
+            max_width='var(--max-col-width)'
         >
-            <TextGroup title={t('eve_time')} class="[ sentence-cap ]">
-                {eve_time_text}
-            </TextGroup>
-            <LocalTimeGroup eve_time={eve_time} />
-        </FleetHero>
-
-        <div class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]">
-            <FleetStatus
+            <AARLinkButton
+                aarlink={fleet.aar_link ? fleet.aar_link : undefined}
                 fleet_id={fleet.id}
-                start_time={fleet.start_time}
-                fleet_tracking={fleet.tracking}
-                fleet_status={fleet.status}
-                is_fleet_commander={is_fleet_commander}
-                fleet_tracking_texts={fleet_tracking_texts}
+                can_edit={can_remove_fleet}
             />
-        </div>
+        </Wrapper>
+    }
+    
+    <hr class="[ border-bottom ]" />
 
-        {history &&
-            <Wrapper
-                class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
-                padding_block='0'
-                padding_inline='0'
-                max_width='var(--max-col-width)'
-            >
-                <AARLinkButton
-                    aarlink={fleet.aar_link ? fleet.aar_link : undefined}
+    {!history &&
+        <Wrapper
+            padding_block='0'
+            padding_inline='0'
+            max_width='var(--max-col-width)'
+            class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
+        >
+            <FleetRoles
+                volunteers={volunteers}
+                pilots={pilots}
+                fleet_id={fleet.id}
+                readonly={fleet.status === 'cancelled'}
+            />
+        </Wrapper>
+    }
+
+    {is_fleet_commander &&
+        <Wrapper
+            padding_block='0'
+            padding_inline='0'
+            max_width='var(--max-col-width)'
+            class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
+            x-data={`{
+                global_collapse: $persist(false),
+            }`}
+        >
+            {fleet?.tracking &&
+                <FleetCompositionBlock
+                    composition={fleet_composition ?? []}
+                    fleet_radar={fleet_radar ?? []}
                     fleet_id={fleet.id}
-                    can_edit={can_remove_fleet}
                 />
-            </Wrapper>
-        }
-        
-        <hr class="[ border-bottom ]" />
+            }
 
-        {!history &&
-            <Wrapper
-                padding_block='0'
-                padding_inline='0'
-                max_width='var(--max-col-width)'
-                class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
-            >
-                <FleetRoles
-                    volunteers={volunteers}
-                    pilots={pilots}
-                    fleet_id={fleet.id}
-                    readonly={fleet.status === 'cancelled'}
-                />
-            </Wrapper>
-        }
-
-        {is_fleet_commander &&
-            <Wrapper
-                padding_block='0'
-                padding_inline='0'
-                max_width='var(--max-col-width)'
-                class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
-                x-data={`{
-                    global_collapse: $persist(false),
-                }`}
-            >
-                {fleet?.tracking &&
-                    <FleetCompositionBlock
-                        composition={fleet_composition ?? []}
-                        fleet_radar={fleet_radar ?? []}
-                        fleet_id={fleet.id}
-                    />
-                }
-
-                {!fleet?.tracking &&
-                    <template
-                        x-if="tracking_started"
+            {!fleet?.tracking &&
+                <template
+                    x-if="tracking_started"
+                >
+                    <div
+                        x-data={`{
+                            init() {
+                                htmx.process($el)
+                            }
+                        }`}
+                        hx-get={FLEET_COMPOSITION_PARTIAL_URL}
+                        hx-trigger="load delay:30s once"
+                        hx-indicator=".loader"
+                        hx-swap="innerHTML transition:true"
                     >
-                        <div
-                            x-data={`{
-                                init() {
-                                    htmx.process($el)
-                                }
-                            }`}
-                            hx-get={FLEET_COMPOSITION_PARTIAL_URL}
-                            hx-trigger="load delay:30s once"
-                            hx-indicator=".loader"
-                            hx-swap="innerHTML transition:true"
-                        >
-                            <p class="[ loading ]">{t('loading_fleet_composition')}</p>
-                        </div>
-                    </template>
-                }
-            </Wrapper>
-        }
-    </BlockList>
+                        <p class="[ loading ]">{t('loading_fleet_composition')}</p>
+                    </div>
+                </template>
+            }
+        </Wrapper>
+    }
 
     <Wrapper
         padding_block='0'
@@ -205,4 +203,4 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
             disabled={fleet.status === 'cancelled'}
         />
     </Wrapper>
-</Flexblock>
+</BlockList>
