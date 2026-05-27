@@ -14,6 +14,7 @@ interface Props {
     alert?:                     false | Alert;
     start_tracking?:            boolean;
     fleet_tracking_texts?:      FleetTrackingTexts | false;
+    init_tooltips:              boolean;
 }
 
 const {
@@ -25,6 +26,7 @@ const {
     alert = false,
     start_tracking = false,
     fleet_tracking_texts = false,
+    init_tooltips,
 } = Astro.props
 
 import { minutes_to } from '@helpers/date';
@@ -91,7 +93,7 @@ import CompletedStatus from '@components/blocks/CompletedStatus.astro';
         }
 
         {fleet_status !== 'cancelled' && fleet_tracking && fleet_tracking?.end_time &&
-            <CompletedStatus fleet_tracking_texts={fleet_tracking_texts} />
+            <CompletedStatus fleet_tracking_texts={fleet_tracking_texts} init_tooltips={init_tooltips} />
         }
 
         {is_fleet_commander && is_fleet_time && !fleet_tracking && fleet_status !== 'cancelled' &&

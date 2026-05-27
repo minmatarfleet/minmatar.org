@@ -6,10 +6,12 @@ import type { FleetTrackingTexts } from '@dtypes/layout_components'
 
 interface Props {
     fleet_tracking_texts:   FleetTrackingTexts | false;
+    init_tooltips:          boolean;
 }
 
 const {
     fleet_tracking_texts,
+    init_tooltips,
 } = Astro.props
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -18,7 +20,9 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 <Flexblock gap='var(--space-2xs)'>
     <p class="[ fleet-status-text ]">{t('completed')}</p>
     {fleet_tracking_texts &&
-        <small class="[ text-highlight ]">{fleet_tracking_texts.fleet_end_eve_time_text} (<span data-tippy-content={fleet_tracking_texts.fleet_tracking_hint}>{fleet_tracking_texts.fleet_duration_text}</span>)</small>
+        <small class="[ text-highlight ]">
+            {fleet_tracking_texts.fleet_end_eve_time_text} (<span data-tippy-content={fleet_tracking_texts.fleet_tracking_hint} x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}>{fleet_tracking_texts.fleet_duration_text}</span>)
+        </small>
     }
 </Flexblock>
 

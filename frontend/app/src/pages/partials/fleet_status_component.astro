@@ -106,6 +106,7 @@ import DebugTag from '@components/blocks/DebugTag.astro';
             alert={alert}
             start_tracking={start_tracking === true}
             fleet_tracking_texts={fleet_tracking_texts}
+            init_tooltips={true}
         />
         :
         <DebugTag>{t('no_fleet_unexpected_error')}</DebugTag>

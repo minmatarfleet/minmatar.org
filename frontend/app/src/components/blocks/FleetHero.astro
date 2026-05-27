@@ -38,6 +38,8 @@ hero_fittings = hero_fittings.map(fitting => {
     }
 })
 
+const supply_contracts_copy = hero_fittings.map(fitting => `${fitting.fitting_name}: ${fitting.contracts_count} on contracts`).join('\n')
+
 import {
     get_location_video_cover,
     get_location_video_cover_thumb,
@@ -65,6 +67,8 @@ import Square from '@components/blocks/Square.astro';
 import FleetIcon from '@components/icons/FleetIcon.astro';
 import MemberIcon from '@components/icons/MemberIcon.astro';
 import ItemBadge from './ItemBadge.astro';
+import ClipboardButton from './ClipboardButton.astro';
+import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro';
 ---
 
 {fleet &&
@@ -166,27 +170,36 @@ import ItemBadge from './ItemBadge.astro';
         </VerticalCenter>
         {doctrine &&
             <div class="[ !flex !items-end animate-slide-up-fade animate-delay-1000 ]">
-                <Marquee separator_width='200px'>
-                    {hero_fittings.map((fitting) => (
-                        <StylessButton href={translatePath(`/ships/fittings/${fitting.id}/`)}>
-                            <ItemBadge
-                                type_id={fitting.ship_id}
-                                item_name={fitting.fitting_name}
-                                size={32}
-                            >
-                                {supply_contracts.length > 0 ?
-                                    <FlexInline gap='var(--space-3xs)'>
-                                        <Square color={!fitting.contracts_count ? 'fleet-red' : 'green'} />
-                                        <small class="[ text-foreground ]">
-                                            {t('in_contracts_template').replace('{count}', (fitting.contracts_count ?? 0).toString())}
-                                        </small>
-                                    </FlexInline> :
-                                    <small class="[ text-foreground ]">{t('primary_fitting')}</small>
-                                }
-                            </ItemBadge>
-                        </StylessButton>
-                    ))}
-                </Marquee>
+                <FlexInlineSiblings
+                    class="[ w-full ]"
+                    min-shink-width='250px'
+                    shrinkable-sibbling='first'
+                >
+                    <Marquee separator_width='200px'>
+                        {hero_fittings.map((fitting) => (
+                            <StylessButton href={translatePath(`/ships/fittings/${fitting.id}/`)}>
+                                <ItemBadge
+                                    type_id={fitting.ship_id}
+                                    item_name={fitting.fitting_name}
+                                    size={32}
+                                >
+                                    {supply_contracts.length > 0 ?
+                                        <FlexInline gap='var(--space-3xs)'>
+                                            <Square color={!fitting.contracts_count ? 'fleet-red' : 'green'} />
+                                            <small class="[ text-foreground ]">
+                                                {t('in_contracts_template').replace('{count}', (fitting.contracts_count ?? 0).toString())}
+                                            </small>
+                                        </FlexInline> :
+                                        <small class="[ text-foreground ]">{t('primary_fitting')}</small>
+                                    }
+                                </ItemBadge>
+                            </StylessButton>
+                        ))}
+                    </Marquee>
+                    {supply_contracts.length > 0 &&
+                        <ClipboardButton id="supply-contracts">{supply_contracts_copy}</ClipboardButton>
+                    }
+                </FlexInlineSiblings>
             </div>
         }
     </FixedFluid>

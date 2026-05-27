@@ -21,6 +21,7 @@ interface Props {
     fleet_metrics:              FleetMetrics | undefined;
     fleet_commander_metrics:    FleetCommanderMetrics | undefined;
     supply_contracts?:          Contract[];
+    init_tooltips:              boolean;
 }
 
 const {
@@ -37,6 +38,7 @@ const {
     fleet_metrics,
     fleet_commander_metrics,
     supply_contracts = [],
+    init_tooltips,
 } = Astro.props
 
 const FLEET_COMPOSITION_PARTIAL_URL = `${translatePath('/partials/fleet_composition')}?id=${fleet.id}`
@@ -115,6 +117,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
             fleet_status={fleet.status}
             is_fleet_commander={is_fleet_commander}
             fleet_tracking_texts={fleet_tracking_texts}
+            init_tooltips={init_tooltips}
         />
     </div>
 
@@ -133,7 +136,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
         </Wrapper>
     }
     
-    <hr class="[ border-bottom ]" />
+    <hr class="[ border-bottom animate-fade-in animate-duration-250 animate-delay-1000 ]" />
 
     {!history &&
         <Wrapper

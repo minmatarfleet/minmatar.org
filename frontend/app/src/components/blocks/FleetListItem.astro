@@ -192,7 +192,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                         }</>
                         <p class="[ fleet-status-text blink-animation ]">{t('active')}</p> :
                     fleet?.tracking && fleet?.tracking?.end_time ?
-                        <CompletedStatus fleet_tracking_texts={fleet_tracking_texts} /> :
+                        <CompletedStatus fleet_tracking_texts={fleet_tracking_texts} init_tooltips={init_tooltips} /> :
                     !history && !fleet?.tracking ?
                         <TextGroup
                             title={t('eve_time')}
