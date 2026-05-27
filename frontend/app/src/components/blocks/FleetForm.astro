@@ -282,7 +282,13 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                             <Context>
                                 <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
                                     <label for="description">{t('description')}</label>
-                                    <MarkdownTextArea id="description" name="description" rows="5" required>{fleet?.description}</MarkdownTextArea>
+                                    <MarkdownTextArea
+                                        id="description"
+                                        name="description"
+                                        rows="5"
+                                        required
+                                        placeholder={t('fleet_description_placeholder')}
+                                    >{fleet?.description}</MarkdownTextArea>
                                 </Flexblock>
                             </Context>
                         </Flexblock>

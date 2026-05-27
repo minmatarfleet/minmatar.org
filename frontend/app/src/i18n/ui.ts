@@ -2292,5 +2292,6 @@ export const ui = {
         'restore_fleet': 'Restore fleet',
         'other_fleets': 'Other fleets',
         'in_contracts_template': '{count} in contracts',
+        'fleet_description_placeholder': 'What are we killing? Where are we going? What are the ship/clone requirements? (ideally 20+ words).',
     },
 } as const;
