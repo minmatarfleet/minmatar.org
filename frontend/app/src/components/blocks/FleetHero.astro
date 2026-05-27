@@ -23,8 +23,6 @@ const {
 
 const [ system, station ] = fleet?.location?.split(' - ') ?? []
 
-console.log(supply_contracts)
-
 let hero_fittings:HeroFittings[] = [
     ...doctrine?.primary_fittings ?? [],
     ...doctrine?.support_fittings ?? [],
@@ -165,7 +163,10 @@ import ItemBadge from './ItemBadge.astro';
             </Wrapper>
         </VerticalCenter>
         {doctrine &&
-            <div class="[ !flex !items-end animate-slide-up-fade animate-delay-1000 ]">
+            <div
+                class="[ !flex !items-end hidden! animate-slide-up-fade animate-delay-1000 ]"
+                x-on:marquee-started="$el.classList.remove('hidden!')"
+            >
                 <Marquee separator_width='200px'>
                     {hero_fittings.map((fitting) => (
                         <StylessButton href={translatePath(`/ships/fittings/${fitting.id}/`)}>
