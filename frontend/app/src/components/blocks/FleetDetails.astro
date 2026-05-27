@@ -133,6 +133,8 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                 />
             </Wrapper>
         }
+        
+        <hr class="[ border-bottom ]" />
 
         {!history &&
             <Wrapper
@@ -151,7 +153,6 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
         }
 
         {is_fleet_commander &&
-        
             <Wrapper
                 padding_block='0'
                 padding_inline='0'
