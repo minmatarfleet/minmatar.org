@@ -114,11 +114,19 @@ import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astr
                         </Flexblock>
                     </FixedFluid>
 
-                    {(fleet.description !== undefined || fleet.objective !== undefined) &&
-                        <div class="[ wrap-break-word max-w-full pr-1.5 max-h-[130px] overflow-y-auto animate-fade-in animate-duration-250 animate-delay-550 ]">
-                            <Markdown markdown={(fleet.description ?? fleet.objective) as string} />
-                        </div>
-                    }
+                    <Flexblock gap='var(--space-xs)'>
+                        {fleet.objective !== undefined &&
+                            <h4 class="[ animate-fade-in animate-duration-250 animate-delay-550 ]">
+                                {fleet.objective as string}
+                            </h4>
+                        }
+
+                        {fleet.description &&
+                            <div class="[ component wrap-break-word max-w-full pr-1.5 max-h-[130px] overflow-y-auto animate-fade-in animate-duration-250 animate-delay-550 ]">
+                                <Markdown markdown={fleet.description as string} />
+                            </div>
+                        }
+                    </Flexblock>
 
                     <Flexblock gap='var(--space-m)'>
                         <FlexInline class="[ items-center! animate-fade-in animate-duration-250 animate-delay-700 ]" gap='var(--space-l)'>
