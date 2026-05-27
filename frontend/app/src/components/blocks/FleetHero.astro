@@ -23,8 +23,6 @@ const {
 
 const [ system, station ] = fleet?.location?.split(' - ') ?? []
 
-console.log(supply_contracts)
-
 let hero_fittings:HeroFittings[] = [
     ...doctrine?.primary_fittings ?? [],
     ...doctrine?.support_fittings ?? [],
@@ -169,7 +167,10 @@ import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astr
             </Wrapper>
         </VerticalCenter>
         {doctrine &&
-            <div class="[ !flex !items-end animate-slide-up-fade animate-delay-1000 ]">
+            <div
+                class="[ !flex !items-end hidden! animate-slide-up-fade animate-delay-1000 ]"
+                x-on:marquee-started="$el.classList.remove('hidden!')"
+            >
                 <FlexInlineSiblings
                     class="[ w-full ]"
                     min-shink-width='250px'
