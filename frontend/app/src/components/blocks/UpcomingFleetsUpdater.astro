@@ -4,11 +4,13 @@ const { translatePath } = i18n(Astro.url)
 
 interface Props {
     refresh_rate_seconds:   number;
+    current_cover?:         string;
     [propName: string]:     any;
 }
 
 const {
     refresh_rate_seconds,
+    current_cover,
     ...attributes
 } = Astro.props
 
@@ -20,6 +22,7 @@ const FLEET_LIST_PARTIAL_URL = translatePath('/partials/upcoming_fleets_componen
     hx-trigger={`every ${refresh_rate_seconds}s`}
     hx-swap="innerHTML transition:true"
     hx-indicator=".loader"
+    hx-headers={`js:{"X-Page-Cover": sessionStorage.getItem("current_bg") || '${current_cover ?? ''}'}`}
     {...attributes}
 >
     <slot />
