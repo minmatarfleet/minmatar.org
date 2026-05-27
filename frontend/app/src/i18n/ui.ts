@@ -1847,7 +1847,7 @@ export const ui = {
         'comics_title': 'Comics',
         'comic_widget_description': 'Follow the adventures of the warzone characters and waifus thru our serialized publications.',
         'fleet_roles': 'Fleet roles',
-        'volunteer': 'Volunteer',
+        'volunteer': 'Pick a role',
         'logi_anchor_label': 'Logi Anchor',
         'dps_anchor_label': 'DPS Anchor',
         'cyno_label': 'Cynos',

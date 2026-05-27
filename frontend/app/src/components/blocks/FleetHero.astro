@@ -32,8 +32,6 @@ let hero_fittings:HeroFittings[] = [
 ]
 
 hero_fittings = hero_fittings.map(fitting => {
-    console.log(fitting.id)
-    console.log(supply_contracts.find(contract => contract.fitting_id === fitting.id))
     return {
         ...fitting,
         contracts_count: supply_contracts.find(contract => contract.fitting_id === fitting.id)?.current_quantity ?? 0
@@ -121,7 +119,7 @@ import ItemBadge from './ItemBadge.astro';
                     }
 
                     <Flexblock gap='var(--space-m)'>
-                        <FlexInline class="[ flex-nowrap! items-center! animate-fade-in animate-duration-250 animate-delay-700 ]" gap='var(--space-l)'>
+                        <FlexInline class="[ items-center! animate-fade-in animate-duration-250 animate-delay-700 ]" gap='var(--space-l)'>
                             <Flexblock gap='0'>
                                 <b class="[ text-highlight ]">{system}</b>
                                 <small>{station}</small>

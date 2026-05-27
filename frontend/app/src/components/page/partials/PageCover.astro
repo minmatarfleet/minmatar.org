@@ -28,6 +28,9 @@ const {
 const optional_attributes = {
     ...(alt && { "alt": alt }),
 }
+
+const old_cover = oob_swap ? Astro.request.headers.get('X-Page-Cover') : ''
+const animate_cover = !oob_swap || (old_cover !== image)
 ---
 
 <div
@@ -35,14 +38,15 @@ const optional_attributes = {
     class="[ viewport-cover ]"
     id="viewport-cover-oob"
     hx-swap-oob={oob_swap ? 'true' : undefined}
+    x-init={`sessionStorage.setItem("current_bg", '${image ?? ''}')`}
     {...attributes}
 >
     {!video ?
         <picture
-            class="[ !hidden animate-fade-in ]"
-            x-data="{ loaded: false }"
-            x-init="loaded = $refs.img.complete"
-            x-bind:class="{ '!hidden': !loaded }"
+            class:list={[ { '!hidden animate-fade-in': animate_cover } ]}
+            x-data={animate_cover ? '{ loaded: false }' : undefined}
+            x-init={animate_cover ? 'loaded = $refs.img.complete' : undefined}
+            x-bind:class={animate_cover ? "{ '!hidden': !loaded }" : undefined}
         >
             <source srcset={image_990} media="(max-width: 990px)" />
             <img
@@ -55,7 +59,7 @@ const optional_attributes = {
         </picture>
         :
         <video
-            class="[ animate-fade-in ]"
+            class={animate_cover ? "[ animate-fade-in ]" : undefined}
             width="1920"
             height="1080"
             poster={video_thumb}

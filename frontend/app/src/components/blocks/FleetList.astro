@@ -59,12 +59,16 @@ import Button from '@components/blocks/Button.astro';
     </FleetHero>
     {active_fleet &&
         <FlexInline class="[ !w-auto item animate-slide-up-fade animate-delay-1000 ]">
-            <Button href={translatePath(`/fleets/${history ? 'history' : 'upcoming'}/${active_fleet.id}`)}>
+            <Button
+                href={translatePath(`/fleets/${history ? 'history' : 'upcoming'}/${active_fleet.id}`)}
+                size='sm'
+            >
                 {t('view_details')}
             </Button>
 
             <Button
                 href={translatePath(`/fleets/${history ? 'history' : 'upcoming'}/${active_fleet.id}/volunteer`)}
+                size='sm'
                 color='green'
             >
                 {t('volunteer')}
