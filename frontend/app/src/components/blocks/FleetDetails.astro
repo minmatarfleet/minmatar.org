@@ -96,8 +96,8 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
             fleet_commander_fleet_count: fleet_commander_metrics?.fleet_count,
             members_count: fleet_metrics?.members ?? 0,
         }}
-        doctrine={!history ? fleet.doctrine : undefined}
-        supply_contracts={!history ? supply_contracts : undefined}
+        doctrine={fleet.doctrine}
+        supply_contracts={supply_contracts}
         update_cover={update_cover}
         cover_overlay={true}
     >
