@@ -50,7 +50,7 @@ import Button from '@components/blocks/Button.astro';
             <Tag class="[ blink-animation ]" text={t('in_development')}></Tag>
 
             <Countdown
-                date={active_fleet.start_time}
+                date={active_fleet.tracking?.start_time ?? active_fleet.start_time}
                 id={active_fleet.id}
                 expired_class={false}
                 tag='countdown-fleet'
