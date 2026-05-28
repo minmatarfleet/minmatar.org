@@ -138,9 +138,9 @@ import Button from '@components/blocks/Button.astro';
     <PageSubheader
         id="subheader-oob"
         hx-swap-oob="true"
-        is_empty={!fleet || !upcoming}
+        is_empty={!is_fleet_commander || !fleet || !upcoming}
     >
-        {fleet &&
+        {fleet && is_fleet_commander &&
             <>{upcoming && fleet.status !== 'cancelled' &&
                 <Button
                     size='sm'
