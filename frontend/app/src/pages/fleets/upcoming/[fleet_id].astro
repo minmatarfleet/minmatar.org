@@ -194,9 +194,9 @@ const page_title = `${t('fleet')} ${fleet_id}`;
         <PageSubheader
             id="subheader-oob"
             slot="subheader"
-            is_empty={!fleet || history}
+            is_empty={!is_fleet_commander || !fleet || history}
         >
-            {fleet &&
+            {fleet && is_fleet_commander &&
                 <>{!history && fleet.status !== 'cancelled' &&
                     <Button
                         size='sm'
