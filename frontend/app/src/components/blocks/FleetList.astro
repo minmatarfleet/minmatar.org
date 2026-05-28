@@ -82,11 +82,7 @@ import Button from '@components/blocks/Button.astro';
         </FlexInline>
     }
 
-    <Flexblock class:list={[ { 'animate-fade-in animate-duration-250 animate-delay-1000': Boolean(active_fleet) } ]}>
-        {active_fleet && fleet_list.length > 0 &&
-            <h4>{t('other_fleets')}</h4>
-        }
-
+    <div class:list={[ { 'animate-fade-in animate-duration-250 animate-delay-1000': Boolean(active_fleet) } ]}>
         <Grid
             id="other-fleets"
             class="[ w-full grid-fill ]"
@@ -117,7 +113,7 @@ import Button from '@components/blocks/Button.astro';
                 />
             )}
         </Grid>
-    </Flexblock>
+    </div>
 
     {fleets.length == 0 &&
         <Flexblock gap='var(--space-xl)' centered={true}>
