@@ -37,7 +37,7 @@ try {
     });
 
     active_fleet = fleets.find(fleet => fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time)
-    if (active_fleet)
+    if (active_fleet && active_fleet.doctrine_id)
         active_doctrine = await fetch_doctrine_by_id(active_fleet.doctrine_id)
 } catch (error) {
     return HTTP_500_Server_Error()
