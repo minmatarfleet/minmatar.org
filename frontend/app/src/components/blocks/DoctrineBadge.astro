@@ -1,0 +1,27 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { DoctrineType } from '@dtypes/layout_components'
+
+interface Props {
+    doctrine:   DoctrineType;
+}
+
+const {
+    doctrine,
+} = Astro.props
+
+import StylessButton from '@components/blocks/StylessButton.astro';
+import ItemBadge from '@components/blocks/ItemBadge.astro';
+---
+
+<StylessButton id="doctrine-badge" href={translatePath(`/ships/doctrines/${doctrine.id}`)}>
+    <ItemBadge
+        type_id={doctrine.primary_fittings[0].ship_id}
+        item_name={doctrine.name}
+        size={32}
+    >
+        <small class="[ text-foreground ]">{t('doctrine')}</small>
+    </ItemBadge>
+</StylessButton>

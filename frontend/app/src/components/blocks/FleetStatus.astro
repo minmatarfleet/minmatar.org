@@ -132,7 +132,7 @@ import CompletedStatus from '@components/blocks/CompletedStatus.astro';
 
         {fleet_tracking && !fleet_tracking?.is_registered && !fleet_tracking?.end_time &&
             <TextBox max_width='40rem'>
-                <Flexblock gap='var(--space-xs)' class="[ text-left ]">
+                <Flexblock gap='var(--space-xs)' class="[ component text-left ]">
                     <p>{t('missing_advert')}</p>
                     <small>{t('missing_advert_subtext')}</small>
                 </Flexblock>
