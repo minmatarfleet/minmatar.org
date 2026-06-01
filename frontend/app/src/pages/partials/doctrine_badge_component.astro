@@ -1,0 +1,43 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import type { DoctrineType } from '@dtypes/layout_components'
+import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
+
+let doctrine:DoctrineType | null = null
+
+const doctrine_id = parseInt(Astro.url.searchParams.get('doctrine_id') ?? '0')
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+let fetch_doctrines_error: Error | false = false
+
+try {
+    if (doctrine_id > 0)
+        doctrine = await fetch_doctrine_by_id(doctrine_id)
+} catch (error) {
+    fetch_doctrines_error = error
+}
+
+console.log(doctrine)
+
+const DOCTRINE_PARTIAL_URL = `${translatePath('/partials/doctrine_badge_component')}?doctrine_id=${doctrine_id}`
+
+import DoctrineBadge from '@components/blocks/DoctrineBadge.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+---
+
+{fetch_doctrines_error ?
+    <ErrorRefetch
+        args={{
+            partial: DOCTRINE_PARTIAL_URL,
+            error: fetch_doctrines_error,
+            delay: delay,
+        }}
+    />
+    :
+    <>{doctrine ?
+        <DoctrineBadge doctrine={doctrine} />
+        :
+        <div id="doctrine-badge" style="display: none;" />
+    }</>
+}

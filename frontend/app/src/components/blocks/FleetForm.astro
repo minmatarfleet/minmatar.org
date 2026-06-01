@@ -80,8 +80,6 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 import Grid from '@components/compositions/Grid.astro';
 
 import Button from '@components/blocks/Button.astro';
-import ThumbCard from '@components/blocks/ThumbCard.astro';
-import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import Select from '@components/blocks/Select.astro';
@@ -91,11 +89,9 @@ import StylessButton from '@components/blocks/StylessButton.astro';
 import CountdownConverter from '@components/blocks/CountdownConverter.astro';
 import Input from '@components/blocks/Input.astro'
 import MarkdownTextArea from '@components/blocks/MarkdownTextArea.astro'
+import DoctrineBadge from '@components/blocks/DoctrineBadge.astro'
+import PilotBadge from '@components/blocks/PilotBadge.astro'
 
-import StratopIcon from '@components/icons/StratopIcon.astro';
-import NonStrategicIcon from '@components/icons/NonStrategicIcon.astro';
-import TrainingIcon from '@components/icons/TrainingIcon.astro';
-import RifterIcon from '@components/icons/RifterIcon.astro';
 import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
 ---
 
@@ -127,7 +123,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                     height: 64,
                 }];
 
-                document.querySelectorAll('#doctrine-hx-target picture img').forEach((img) => {
+                document.querySelectorAll('#doctrine-badge picture img').forEach((img) => {
                     images.push({
                         src: img.getAttribute('src'),
                         width: 64,
@@ -164,6 +160,11 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                     {audiences.map((option) =>
                                         <StylessButton
                                             x-on:click={`audience = ${option.id}`}
+                                            hx-get={translatePath(`/partials/fleet_cover?audience_id=${option.id}`)}
+                                            hx-target="#viewport-cover-oob"
+                                            hx-trigger="click"
+                                            hx-swap="outerHTML transition:true"
+                                            hx-indicator=".loader"
                                             type="button"
                                             data-tippy-content={option.display_name}
                                         >
@@ -203,17 +204,17 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                     name="doctrine_id"
                                     x-model="doctrine_id"
                                     hx-validate="true"
-                                    hx-get={translatePath('/partials/doctrine_component')}
-                                    hx-target="#doctrine-hx-target"
+                                    hx-get={translatePath('/partials/doctrine_badge_component')}
+                                    hx-target="#doctrine-badge"
                                     hx-on--after-request="this.removeAttribute('disabled')"
                                     hx-trigger="load, change"
-                                    hx-swap="innerHTML transition:true"
+                                    hx-swap="outerHTML transition:true"
                                     hx-indicator=".loader"
                                 >
                                     {doctrines_select_options.map((option) => 
                                         option.value === default_doctrine ?
-                                        <option value={option.value}>{option.label}</option> :
-                                        <option value={option.value} selected>{option.label}</option>
+                                        <option value={option.value} selected>{option.label}</option> :
+                                        <option value={option.value}>{option.label}</option>
                                     )}
                                 </Select>
                             </FixedFluid>
@@ -295,89 +296,65 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                     </Flexblock>
                 </ComponentBlock>
 
-                <Flexblock gap='1px' class="[ collapse-borders ]">
-                    <ComponentBlock width='narrow'>
+                <ComponentBlock width='narrow'>
+                    <Flexblock gap='var(--space-m)'>
                         <h2>{t('confirm')} (2/3)</h2>
-                    </ComponentBlock>
 
-                    <ThumbCard
-                        thumb_name={fleet_commander?.character_name ?? t('unknown_character')}
-                        thumb_image={get_player_icon(fleet_commander?.character_id ?? 0, 512)}
-                        thumb_image_small={get_player_icon(fleet_commander?.character_id ?? 0, 512)}
-                        thumb_image_alt={fleet_commander?.character_name ?? t('unknown_character')}
-                        thumb_title={t('fleet_commander')}
-                        class="[ max-w-[var(--max-text-width)] ]"
-                    >
-                        <div
-                            class="[ absolute top-0 left-0 ]"
-                            x-effect="fleet_type && $nextTick(() => tippy('[ data-fleet-tip]', tippy_options))"
-                        >
+                        <FlexInline class="[ items-center! ]" gap='var(--space-l)'>
+                            <PilotBadge
+                                character_id={fleet_commander?.character_id ?? 0}
+                                character_name={fleet_commander?.character_name ?? t('unknown_character')}
+                                centered={true}
+                                size={32}
+                            >
+                                <small>{t('fleet_commander')}</small>
+                            </PilotBadge>
+
+                            {fleet?.doctrine ?
+                                <DoctrineBadge doctrine={fleet?.doctrine} />
+                                :
+                                <div id="doctrine-badge" style="display: none;" />
+                            }
+
                             <template x-if="fleet_type === 'strategic'">
-                                <div data-fleet-tip data-tippy-content={t('strategic_fleet')}>
-                                    <StratopIcon />
-                                </div>
+                                <p>{t('strategic_fleet')}</p>
                             </template>
                             <template x-if="fleet_type === 'non_strategic'">
-                                <div data-fleet-tip data-tippy-content={t('non_strategic_fleet')}>
-                                    <NonStrategicIcon />
-                                </div>
+                                <p>{t('non_strategic_fleet')}</p>
                             </template>
                             <template x-if="fleet_type === 'training'">
-                                <div data-fleet-tip data-tippy-content={t('training_fleet')}>
-                                    <TrainingIcon />
-                                </div>
+                                <p>{t('training_fleet')}</p>
                             </template>
-                        </div>
+                        </FlexInline>
                         
-                        <VerticalCenter>
-                            <Flexblock gap="var(--space-s-m)">
-                                <TextGroup
-                                    title={t('eve_time')}
-                                    class="[ sentence-cap ]"
-                                    x-text="fleet_datetime()"
-                                >    
-                                    {t('waiting_fleet_time')}
-                                </TextGroup>
-                                <TextGroup
-                                    title={t('local_time')}
-                                    class="[ sentence-cap ]"
-                                    x-text="fleet_datetime(true)"
-                                >
-                                    {t('waiting_fleet_time')}
-                                </TextGroup>
-                            </Flexblock>
-                        </VerticalCenter>
+                        <FlexInline gap='var(--space-l)'>
+                            <TextGroup
+                                title={t('eve_time')}
+                                class="[ sentence-cap ]"
+                                x-text="fleet_datetime()"
+                            >    
+                                {t('waiting_fleet_time')}
+                            </TextGroup>
 
-                        <VerticalCenter>
-                            <Flexblock gap="var(--space-s-m)">
-                                <TextGroup
-                                    class:list={{ 'text-red': default_audience < 1 }}
-                                    x-bind:class="{ 'text-red': audience < 1 }"
-                                    title={t('audience')}
-                                    x-text={`audience > 0 ? audiences[audience] : '${t('no_audience_selected')}'`}
-                                >
-                                    {default_audience > 0 ? AUDIENCES[default_audience] : t('no_audience_selected')}
-                                </TextGroup>
-                                <TextGroup
-                                    title={t('objective')}
-                                    x-bind:class="{ 'text-red': objective === '' }"
-                                    x-text={`objective ? objective : '${t('no_objective')}'`}
-                                >
-                                    {fleet?.objective ?? t('no_objective')}
-                                </TextGroup>
-                            </Flexblock>
-                        </VerticalCenter>
-                    </ThumbCard>
+                            <TextGroup
+                                title={t('local_time')}
+                                class="[ sentence-cap ]"
+                                x-text="fleet_datetime(true)"
+                            >
+                                {t('waiting_fleet_time')}
+                            </TextGroup>
 
-                    <template x-if="doctrine_id !== '-1'">
-                        <ComponentBlock id="doctrine-hx-target" width='narrow'>
-                            <FlexInline class="[ items-center ]">
-                                <RifterIcon/>
-                                <p class="[ loading ]">{t('updating')}</p>
-                            </FlexInline>
-                        </ComponentBlock>
-                    </template>
-                </Flexblock>
+                            <TextGroup
+                                class:list={{ 'text-red': default_audience < 1 }}
+                                x-bind:class="{ 'text-red': audience < 1 }"
+                                title={t('audience')}
+                                x-text={`audience > 0 ? audiences[audience] : '${t('no_audience_selected')}'`}
+                            >
+                                {default_audience > 0 ? AUDIENCES[default_audience] : t('no_audience_selected')}
+                            </TextGroup>
+                        </FlexInline>
+                    </Flexblock>
+                </ComponentBlock>
 
                 <ComponentBlock width='narrow'>
                     <Flexblock

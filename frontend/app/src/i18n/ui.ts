@@ -1117,7 +1117,7 @@ export const ui = {
         'members_location': 'Members location',
         'fleet_composition': 'Fleet composition',
         'loading_fleet_composition': 'Loading fleet composition in the next 30 seconds',
-        'missing_advert': 'You don’t have a Fleet Finder advert. Please make sure create one on the Advert tab of the fleet window in-game.',
+        'missing_advert': '⚠️ You don’t have a Fleet Finder advert. Please make sure create one on the Advert tab of the fleet window in-game.',
         'missing_advert_subtext': 'This message will disappear a few moment after you add one.',
         'no_route': 'No route',
         'strategic_fleet': 'Strategic fleet',

@@ -1,0 +1,32 @@
+---
+import { HTTP_400_Bad_Request } from '@helpers/http_responses'
+
+const audience = parseInt(Astro.url.searchParams.get('audience_id') ?? '0')
+
+if (![1, 2].includes(audience))
+    return HTTP_400_Bad_Request()
+
+const STAGING_BY_AUDIENCE = {
+    1: 'r6_2',
+    2: 'amamake'
+}
+
+import {
+    get_location_video_cover,
+    get_location_video_cover_thumb,
+    get_location_cover,
+    get_location_cover_990,
+} from '@helpers/covers'
+
+import PageCover from "@components/page/partials/PageCover.astro";
+---
+
+<PageCover
+    video={get_location_video_cover(STAGING_BY_AUDIENCE[audience]) ?? undefined}
+    video_thumb={get_location_video_cover_thumb(STAGING_BY_AUDIENCE[audience]) ?? undefined}
+    image={get_location_cover(STAGING_BY_AUDIENCE[audience]) ?? '/images/fleets-cover.jpg'}
+    image_990={get_location_cover_990(STAGING_BY_AUDIENCE[audience]) ?? '/images/fleets-cover.jpg'}
+    animated={false}
+    scrollable={true}
+    overlay={true}
+/>

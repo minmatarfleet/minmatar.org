@@ -36,6 +36,8 @@ if (Astro.request.method === "POST") {
     try {
         const doctrine = data.get('doctrine_id') as string
         const doctrine_id = doctrine !== '-1' ? parseInt(doctrine) : null
+        console.log('1 - doctrine_id')
+        console.log(doctrine_id)
         const start_time = is_flash_form ?
             new Date(new Date().getTime()) :
             new Date(`${data.get('eve_date')} ${data.get('eve_time')}`)
