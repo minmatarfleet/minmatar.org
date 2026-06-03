@@ -1,0 +1,36 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    place:              number;
+    fleet_commander:    FleetCommanderMetrics;
+}
+
+const {
+    place,
+    fleet_commander,
+} = Astro.props
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+
+---
+
+<FlexInline
+    class="[ items-center! ]"
+    gap='var(--space-xs)'
+>
+    <h2>{place}</h2>
+    <PilotBadge
+        class="[ items-center! ]"
+        character_id={fleet_commander.primary_character_id}
+        character_name={fleet_commander.primary_character_name}
+        size={32}
+    >
+        <small>{t(fleet_commander.fleet_count != 1 ? 'fleets_plural' : 'fleets_singular').replace('{count}', String(fleet_commander.fleet_count))}</small>
+    </PilotBadge>
+</FlexInline>

@@ -23,18 +23,22 @@ if (!can_view_fleets)
     return HTTP_403_Forbidden()
 
 import type { FleetItem, DoctrineType } from '@dtypes/layout_components'
+import type { FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
 import { fetch_fleets_auth } from '@helpers/fetching/fleets'
+import { get_fleet_commander_metrics } from '@helpers/api.minmatar.org/fleets'
 import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
 
 let fetch_fleets_error: Error | false = false
 let fleets:FleetItem[] = []
 let active_fleet:FleetItem | undefined = undefined
 let active_doctrine:DoctrineType | undefined = undefined
+let fc_metrics:FleetCommanderMetrics[] = []
 
 const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming') as string)
 
 try {
-    fleets = await fetch_fleets_auth(auth_token as string, upcoming)
+    fc_metrics = await get_fleet_commander_metrics(auth_token as string)
+    fleets = await fetch_fleets_auth(auth_token as string, upcoming, false, fc_metrics)
     fleets.sort(function(a, b) {
         return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
     });
@@ -101,6 +105,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         active_doctrine={upcoming ? active_doctrine : undefined}
         supply_contracts={upcoming ? supply_contracts : undefined}
         history={!upcoming}
+        fc_metrics={fc_metrics}
         init_tooltips={true}
     />
 }

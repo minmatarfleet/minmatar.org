@@ -23,16 +23,20 @@ if (!can_view_fleets)
     return HTTP_403_Forbidden()
 
 import type { FleetItem, Alert, DoctrineType } from '@dtypes/layout_components'
+import type { FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
 import { fetch_fleets_auth } from '@helpers/fetching/fleets'
+import { get_fleet_commander_metrics } from '@helpers/api.minmatar.org/fleets'
 import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
 
 let fetch_fleets_error: Error | false = false
 let fleets:FleetItem[] = []
 let active_fleet:FleetItem | undefined = undefined
 let active_doctrine:DoctrineType | undefined = undefined
+let fc_metrics:FleetCommanderMetrics[] = []
 
 try {
-    fleets = await fetch_fleets_auth(auth_token as string)
+    fc_metrics = await get_fleet_commander_metrics(auth_token as string)
+    fleets = await fetch_fleets_auth(auth_token as string, true, false, fc_metrics)
     fleets.sort(function(a, b) {
         return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
     });
@@ -191,6 +195,7 @@ const page_title = t('fleets.upcoming.page_title');
                     active_fleet={active_fleet}
                     active_doctrine={active_doctrine}
                     supply_contracts={supply_contracts}
+                    fc_metrics={fc_metrics}
                     init_tooltips={false}
                 />
             }

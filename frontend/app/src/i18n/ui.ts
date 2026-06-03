@@ -2156,7 +2156,7 @@ export const ui = {
         'view_active_contracts': 'View active contracts',
         'date_completed': 'Completed on {date}',
         'date_issued': 'Issued on {date}',
-        'fleet_commander_fleets': 'Fleets commanded',
+        'fleet_commander_fleets': 'Fleets commanded (current month)',
         'characters_in_fleet': 'Characters in the fleet',
         'objective': 'Objective',
         'no_objective': 'No objective',
@@ -2293,5 +2293,9 @@ export const ui = {
         'other_fleets': 'Other fleets',
         'in_contracts_template': '{count} in contracts',
         'fleet_description_placeholder': 'Fleet plan and context. What are we killing? Where are we going? What are the clone requirements? (ideally 20+ words).',
+        'fleet_commanders_ranking': 'Fleet Commanders ranking',
+        'current_calendar_month': 'Current calendar month',
+        'fleets_plural': '{count} fleets',
+        'fleets_singular': '1 fleet',
     },
 } as const;

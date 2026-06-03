@@ -30,7 +30,12 @@ import { time_diff_text } from '@helpers/date'
 const SOSALA_SYSTEM_ID = 30003070
 const DEFAULT_STAGGERING_SYSTEM = SOSALA_SYSTEM_ID
 
-export async function fetch_fleets_auth(access_token:string, upcoming:boolean = true, simplified:boolean = false) {
+export async function fetch_fleets_auth(
+    access_token:string,
+    upcoming:boolean = true,
+    simplified:boolean = false,
+    fc_metrics:FleetCommanderMetrics[] | null = null,
+) {
     let api_fleets:Fleet[]
 
     api_fleets = await get_fleets_v3(access_token, upcoming ? 'active' : 'recent')
@@ -45,7 +50,7 @@ export async function fetch_fleets_auth(access_token:string, upcoming:boolean = 
     if (!simplified) {
         const fleets_metrics = await get_fleets_metrics(access_token)
         const fleets_metrics_filtered = fleets_metrics.filter(metric => fleet_ids.includes(metric.fleet_id))
-        const fleet_commander_metrics = await get_fleet_commander_metrics(access_token)
+        const fleet_commander_metrics = fc_metrics ? fc_metrics : await get_fleet_commander_metrics(access_token)
 
         return api_fleets.map( fleet => add_fleet_info(
             fleet,
