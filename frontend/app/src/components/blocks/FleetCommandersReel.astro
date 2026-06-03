@@ -1,0 +1,68 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    fc_metrics:     FleetCommanderMetrics[];
+}
+
+const {
+    fc_metrics,
+} = Astro.props
+
+import Wrapper from '@components/compositions/Wrapper.astro';
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Marquee from '@components/blocks/Marquee.astro';
+import FleetCommanderBadge from '@components/blocks/FleetCommanderBadge.astro';
+import TextBadge from '@components/blocks/TextBadge.astro';
+---
+
+<div
+    class="[ bottom-bar ][ card component light-transparency hidden! animate-slide-in-bottom ]"
+    x-on:marquee-started="$el.classList.add('lg:block!')"
+>
+    <Wrapper
+        class="[ fleet-commanders-reel ]"
+        neocom={true}
+        max_width='var(--max-content-width)'
+        centered={true}
+        padding_block='var(--space-2xs)'
+    >
+        <FixedFluid width='210px' class="[ items-center! ]">
+            <TextBadge title={t('fleet_commanders_ranking')}>
+                <small>{t('current_calendar_month')}</small>
+            </TextBadge>
+            
+            {fc_metrics.length >= 4 ?
+                <Marquee>
+                    {fc_metrics.map((fleet_commander, index) =>
+                        <FleetCommanderBadge place={index + 1} fleet_commander={fleet_commander} />
+                    )}
+                </Marquee> :
+                <FlexInline gap='var(--space-l)' x-init="$dispatch('marquee-started')">
+                    {fc_metrics.map((fleet_commander, index) =>
+                        <FleetCommanderBadge place={index + 1} fleet_commander={fleet_commander} />
+                    )}
+                </FlexInline>
+            }
+        </FixedFluid>
+    </Wrapper>
+</div>
+
+<style lang="scss">
+    .bottom-bar {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        z-index: var(--sticky-z-index);
+    }
+
+    .fleet-commanders-reel {
+        position: relative;
+    }
+</style>

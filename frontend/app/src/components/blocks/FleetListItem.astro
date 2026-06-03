@@ -44,10 +44,10 @@ import Tile from '@components/blocks/Tile.astro';
 import LocalTimeGroup from '@components/blocks/LocalTimeGroup.astro';
 import TimeAlternator from '@components/blocks/TimeAlternator.astro'
 import CompletedStatus from '@components/blocks/CompletedStatus.astro'
+import CorporationBadge from '@components/blocks/CorporationBadge.astro'
 
 import FleetIcon from '@components/icons/FleetIcon.astro';
 import MemberIcon from '@components/icons/MemberIcon.astro';
-import CorporationBadge from './CorporationBadge.astro'
 
 import StratopIcon from '@components/icons/StratopIcon.astro';
 import NonStrategicIcon from '@components/icons/NonStrategicIcon.astro';
@@ -96,6 +96,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                             name: fleet.corporation_name,
                             size: 'xs'
                         }}
+                        show_modal={true}
                     >
                         <small>{t('fleet_commander')}</small>
                     </CorporationBadge>

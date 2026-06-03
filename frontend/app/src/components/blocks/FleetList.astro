@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { FleetItem, DoctrineType } from '@dtypes/layout_components'
-import type { Contract } from '@dtypes/api.minmatar.org'
+import type { Contract, FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
 
 interface Props {
     fleets:             FleetItem[];
@@ -12,6 +12,7 @@ interface Props {
     history?:           boolean;
     init_tooltips:      boolean;
     supply_contracts?:  Contract[];
+    fc_metrics?:        FleetCommanderMetrics[] | null;
 }
 
 const {
@@ -21,9 +22,11 @@ const {
     history = false,
     init_tooltips,
     supply_contracts = [],
+    fc_metrics,
 } = Astro.props
 
 const fleet_list = fleets.filter(fleet => fleet.id !== active_fleet?.id)
+const show_fleet_commanders_bar = fc_metrics && fc_metrics.length > 0 && !active_fleet
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -36,9 +39,13 @@ import FleetHero from '@components/blocks/FleetHero.astro';
 import Countdown from '@components/blocks/Countdown.astro';
 import Tag from '@components/blocks/Tag.astro';
 import Button from '@components/blocks/Button.astro';
+import FleetCommandersReel from '@components/blocks/FleetCommandersReel.astro';
 ---
 
-<BlockList gap='var(--space-xl)'>
+<BlockList
+    gap='var(--space-xl)'
+    class={show_fleet_commanders_bar ? 'compensate-bottom-bar' : undefined}
+>
     <FleetHero
         fleet={active_fleet}
         doctrine={active_doctrine}
@@ -121,6 +128,10 @@ import Button from '@components/blocks/Button.astro';
         </Flexblock>
     }
 </BlockList>
+
+{show_fleet_commanders_bar &&
+    <FleetCommandersReel fc_metrics={fc_metrics}    />
+}
 
 <style lang="scss">
 	.caret-down {

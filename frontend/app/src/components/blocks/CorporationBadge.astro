@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { translatePath } = i18n(Astro.url)
 
 import type { CorporationBadgeProps, EvEImageServiceSize } from '@dtypes/layout_components'
 import { get_corporation_by_id } from '@helpers/api.eveonline/corporations'
@@ -10,12 +10,14 @@ interface Props {
     corporation:    CorporationBadgeProps;
     border?:        boolean;
     highlight?:     boolean;
+    show_modal?:    boolean;
 }
 
 const {
     corporation,
     border = false,
     highlight = true,
+    show_modal = false,
 } = Astro.props
 
 let corporation_eve:CorporationEvE | null = null
@@ -53,30 +55,49 @@ const logo_qlty = LOGO_QLTY[size] ?? 32
 const description:string | false = corporation?.description ?? false
 const gap = GAPS[size] ?? 'var(--space-2xs)'
 
+const Element = show_modal ? StylessButton : 'div'
+
 import { get_corporation_logo } from '@helpers/eve_image_server';
+
 import FixedFluid from '@components/compositions/FixedFluid.astro'
 import Flexblock from '@components/compositions/Flexblock.astro';
+
+import StylessButton from '@components/blocks/StylessButton.astro';
 ---
-<FixedFluid
-    width={`${logo_size}px`}
-    gap={gap}
-    class="[ items-center ]"
+
+<Element
+    x-data={show_modal ? `{
+            show_corporation_modal() {
+                show_modal({
+                    partial: '${translatePath('/partials/corporation_modal_component/')}?corporation_id=${corporation.id}',
+                })
+            }
+        }` :
+        undefined
+    }
+    x-on:click.stop.prevent={show_modal ? 'show_corporation_modal()' : undefined}
 >
-    <picture class:list={{ border: border }}>
-        <img loading="lazy" src={get_corporation_logo(corporation.id, logo_qlty as EvEImageServiceSize)} width={logo_size} height={logo_size} />
-    </picture>
-    <Flexblock gap='0' class="[ w-full ]">
-        {size == 'lg' ?
-            <span>
-                <span class:list={[ { 'text-[var(--highlight)]': highlight }, 'max-w-fit' ]}>{corporation_name}</span>
-            </span>
-            <slot>
-                <small>{description}</small>
-            </slot>
-            :
-            <small class="[ max-w-fit ]">
-                <a class:list={{ 'text-[var(--highlight)]': highlight }}>{corporation_name}</a>
-            </small>
-        }
-    </Flexblock>
-</FixedFluid>
+    <FixedFluid
+        width={`${logo_size}px`}
+        gap={gap}
+        class="[ items-center ]"
+    >
+        <picture class:list={{ border: border }}>
+            <img loading="lazy" src={get_corporation_logo(corporation.id, logo_qlty as EvEImageServiceSize)} width={logo_size} height={logo_size} />
+        </picture>
+        <Flexblock gap='0' class="[ w-full ]">
+            {size == 'lg' ?
+                <span>
+                    <span class:list={[ { 'text-[var(--highlight)]': highlight }, 'max-w-fit' ]}>{corporation_name}</span>
+                </span>
+                <slot>
+                    <small>{description}</small>
+                </slot>
+                :
+                <small class="[ max-w-fit ]">
+                    <a class:list={{ 'text-[var(--highlight)]': highlight }}>{corporation_name}</a>
+                </small>
+            }
+        </Flexblock>
+    </FixedFluid>
+</Element>

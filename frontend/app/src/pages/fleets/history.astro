@@ -23,13 +23,17 @@ if (!can_view_fleets)
     return HTTP_403_Forbidden()
 
 import type { FleetItem } from '@dtypes/layout_components'
+import type { FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
 import { fetch_fleets_auth } from '@helpers/fetching/fleets'
+import { get_fleet_commander_metrics } from '@helpers/api.minmatar.org/fleets'
 
 let fetch_fleets_error: Error | false = false
 let fleets:FleetItem[] = []
+let fc_metrics:FleetCommanderMetrics[] = []
 
 try {
-    fleets = await fetch_fleets_auth(auth_token as string, false)
+    fc_metrics = await get_fleet_commander_metrics(auth_token as string)
+    fleets = await fetch_fleets_auth(auth_token as string, false, false, fc_metrics)
 } catch (error) {
     fetch_fleets_error = error
 }
@@ -121,6 +125,7 @@ const page_description = t('page_finder.fleets.history.description');
                 <FleetList
                     fleets={fleets}
                     history={true}
+                    fc_metrics={fc_metrics}
                     init_tooltips={false}
                 />
             }
