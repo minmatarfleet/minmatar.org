@@ -129,7 +129,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                     <small>{station}</small>
                 </Flexblock>
 
-                {fleet.members_count !== undefined &&
+                {fleet.members_count !== undefined && fleet.members_count > 0 &&
                     <FlexInline gap='var(--space-3xs)' class="[ flex-nowrap! items-center! ]">
                         <div
                             class="[ text-highlight h-[16px] ]"

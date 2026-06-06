@@ -5,7 +5,8 @@ interface Props {
     gap?:               number;
     initial_slide?:     number;
     align?:             'start' | 'center' | 'end';
-    delay?:             number;
+    delay_ms?:          number;
+    effect?:            'slide' | 'fade' | 'cube' | 'coverflow' | 'flip' | 'cards' | 'creative';
 }
 
 const {
@@ -14,7 +15,8 @@ const {
     gap = 5,
     initial_slide = 0,
     align = 'start',
-    delay = 0,
+    delay_ms = 0,
+    effect = 'slide',
 } = Astro.props
 
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -45,10 +47,11 @@ import FlexInline from '@components/compositions/FlexInline.astro';
                         el: ".swiper-pagination",
                     }) : JSON.stringify(false)},
                     loop: false,
-                    ${delay > 0 ? `
+                    ${delay_ms > 0 ? `
                     autoplay: {
-                        delay: ${delay},
+                        delay: ${delay_ms},
                     },` : ''}
+                    effect: '${effect}',
                     fadeEffect: {
                         crossFade: true
                     },

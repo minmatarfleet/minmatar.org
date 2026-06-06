@@ -30,8 +30,8 @@ import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
 
 let fetch_fleets_error: Error | false = false
 let fleets:FleetItem[] = []
-let active_fleet:FleetItem | undefined = undefined
-let active_doctrine:DoctrineType | undefined = undefined
+let active_fleets:FleetItem[] = []
+let active_doctrines:(DoctrineType | null)[] = []
 let fc_metrics:FleetCommanderMetrics[] = []
 
 const upcoming = JSON.parse(Astro.url.searchParams.get('upcoming') as string)
@@ -44,11 +44,9 @@ try {
     });
 
     if (upcoming) {
-        active_fleet = fleets.find(fleet => fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time)
-
-        active_fleet = fleets.find(fleet => fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time)
-        if (active_fleet && active_fleet.doctrine_id)
-            active_doctrine = await fetch_doctrine_by_id(active_fleet.doctrine_id)
+        active_fleets = fleets.filter(fleet => fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time)
+        if (active_fleets && active_fleets.length > 0)
+            active_doctrines = await Promise.all(active_fleets.map(fleet => fleet.doctrine_id ? fetch_doctrine_by_id(fleet.doctrine_id) : null))
     }
 } catch (error) {
     fetch_fleets_error = error
@@ -57,14 +55,14 @@ try {
 import { get_market_contracts } from '@helpers/api.minmatar.org/market'
 import { get_locations } from '@helpers/api.minmatar.org/locations'
 import type { Contract } from '@dtypes/api.minmatar.org'
-let supply_contracts: Contract[] = []
+let supply_contracts: Contract[][] = []
 
-if (active_fleet && active_doctrine) {
+if (active_fleets && active_fleets.length > 0) {
     try {
         const locations = await get_locations()
-        const fleet_location = locations.find(location => location.location_name === active_fleet?.location)
-        
-        supply_contracts = fleet_location?.location_id ? await get_market_contracts(fleet_location?.location_id) : []
+        const fleet_locations = active_fleets.map(fleet => locations.find(location => location.location_name === fleet?.location))
+
+        supply_contracts = await Promise.all(fleet_locations.map(location => location?.location_id ? get_market_contracts(location.location_id) : []))
     } catch (error) {
         console.error('Error fetching supply contracts:', error)
     }
@@ -101,8 +99,8 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 
     <FleetList
         fleets={fleets}
-        active_fleet={upcoming ? active_fleet : undefined}
-        active_doctrine={upcoming ? active_doctrine : undefined}
+        active_fleets={upcoming ? active_fleets : undefined}
+        active_doctrines={upcoming ? active_doctrines : undefined}
         supply_contracts={upcoming ? supply_contracts : undefined}
         history={!upcoming}
         fc_metrics={fc_metrics}
