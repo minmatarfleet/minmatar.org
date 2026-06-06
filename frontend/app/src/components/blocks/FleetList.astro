@@ -7,31 +7,38 @@ import type { Contract, FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
 
 interface Props {
     fleets:             FleetItem[];
-    active_fleet?:      FleetItem;
-    active_doctrine?:   DoctrineType;
+    active_fleets?:     FleetItem[];
+    active_doctrines?:  (DoctrineType | null)[];
     history?:           boolean;
     init_tooltips:      boolean;
-    supply_contracts?:  Contract[];
+    supply_contracts?:  Contract[][];
     fc_metrics?:        FleetCommanderMetrics[] | null;
 }
 
 const {
     fleets,
-    active_fleet,
-    active_doctrine,
+    active_fleets = [],
+    active_doctrines = [],
     history = false,
     init_tooltips,
     supply_contracts = [],
     fc_metrics,
 } = Astro.props
 
-const fleet_list = fleets.filter(fleet => fleet.id !== active_fleet?.id)
-const show_fleet_commanders_bar = fc_metrics && fc_metrics.length > 0 && !active_fleet
+const active_fleets_ids = active_fleets ? active_fleets.map(fleet => fleet.id) : []
+const fleet_list = fleets.filter(fleet => !active_fleets_ids.includes(fleet.id))
+const show_fleet_commanders_bar = fc_metrics && fc_metrics.length > 0 && !active_fleets?.length
+
+const AUDIENCE_IDS = {
+    'Etherium Reach': 1,
+    'Warzone': 2,
+}
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Grid from '@components/compositions/Grid.astro';
 import BlockList from '@components/compositions/BlockList.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
 
 import FleetListItem from '@components/blocks/FleetListItem.astro';
 import StylessButton from '@components/blocks/StylessButton.astro';
@@ -40,56 +47,89 @@ import Countdown from '@components/blocks/Countdown.astro';
 import Tag from '@components/blocks/Tag.astro';
 import Button from '@components/blocks/Button.astro';
 import FleetCommandersReel from '@components/blocks/FleetCommandersReel.astro';
+import LandingSwiper from '@components/blocks/LandingSwiper.astro';
 ---
 
 <BlockList
     gap='var(--space-xl)'
     class={show_fleet_commanders_bar ? 'compensate-bottom-bar' : undefined}
 >
-    <FleetHero
-        fleet={active_fleet}
-        doctrine={active_doctrine}
-        supply_contracts={supply_contracts}
-        update_cover={init_tooltips}
-        cover_overlay={true}
-    >
-        {active_fleet &&
-            <Tag class="[ blink-animation ]" text={t('in_development')}></Tag>
+    <Flexblock gap='0'>
+        {active_fleets.length > 0 &&
+            <Wrapper
+                class="[ relative ]"
+                max_width='100%'
+                padding_block='0'
+                padding_inline='0'
+            >
+                <div class="[ swiper ][ w-full ]">
+                    <LandingSwiper gap={5} pagination={false} delay_ms={60000} effect='fade'>
+                        {active_fleets.map((fleet, index) =>
+                            <div
+                                class:list={[ 'swiper-slide', { 'wide': true }, { 'swiper-slide-active': index === 0} ]}
+                                style="margin-right: 5px"
+                                hx-get={translatePath(`/partials/fleet_cover?audience_id=${AUDIENCE_IDS[fleet.audience] ?? 2}`)}
+                                hx-target="#viewport-cover-oob"
+                                hx-trigger="intersect delay:2000ms"
+                                hx-swap="outerHTML transition:true"
+                                hx-indicator=".loader"
+                            >
+                                <Flexblock gap='var(--space-xl)'>
+                                    <FleetHero
+                                        fleet={fleet}
+                                        doctrine={active_doctrines[index] ?? undefined}
+                                        supply_contracts={supply_contracts[index]}
+                                        update_cover={init_tooltips}
+                                        cover_overlay={true}
+                                    >
+                                        {fleet &&
+                                            <Tag class="[ blink-animation ]" text={t('in_development')}></Tag>
 
-            <Countdown
-                date={active_fleet.tracking?.start_time ?? active_fleet.start_time}
-                id={active_fleet.id}
-                expired_class={false}
-                tag='countdown-fleet'
-            />
+                                            <Countdown
+                                                date={fleet.tracking?.start_time ?? fleet.start_time}
+                                                id={fleet.id}
+                                                expired_class={false}
+                                                tag='countdown-fleet'
+                                            />
+                                        }
+                                    </FleetHero>
+                                    {fleet &&
+                                        <FlexInline class="[ !w-auto item animate-slide-up-fade animate-delay-1000 ]">
+                                            <Button
+                                                href={translatePath(`/fleets/${history ? 'history' : 'upcoming'}/${fleet.id}`)}
+                                                size='sm'
+                                            >
+                                                {t('view_details')}
+                                            </Button>
+
+                                            <Button
+                                                href={translatePath(`/fleets/${history ? 'history' : 'upcoming'}/${fleet.id}/volunteer`)}
+                                                size='sm'
+                                                color='green'
+                                            >
+                                                {t('volunteer')}
+                                            </Button>
+                                        </FlexInline>
+                                    }
+                                </Flexblock>
+                            </div>
+                        )}
+                    </LandingSwiper>
+                </div>
+
+                <div class="[ swiper-button-prev ]"></div>
+                <div class="[ swiper-button-next ]"></div>
+            </Wrapper>
         }
-    </FleetHero>
-    {active_fleet &&
-        <FlexInline class="[ !w-auto item animate-slide-up-fade animate-delay-1000 ]">
-            <Button
-                href={translatePath(`/fleets/${history ? 'history' : 'upcoming'}/${active_fleet.id}`)}
-                size='sm'
-            >
-                {t('view_details')}
-            </Button>
 
-            <Button
-                href={translatePath(`/fleets/${history ? 'history' : 'upcoming'}/${active_fleet.id}/volunteer`)}
-                size='sm'
-                color='green'
-            >
-                {t('volunteer')}
-            </Button>
-        </FlexInline>
-    }
+        {active_fleets.length > 0 && fleet_list.length > 0 &&
+            <FlexInline justification='center' class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]">
+                <StylessButton href='#other-fleets' class="[ caret-down ]" />
+            </FlexInline>
+        }
+    </Flexblock>
 
-    {active_fleet && fleet_list.length > 0 &&
-        <FlexInline justification='center' class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]">
-            <StylessButton href='#other-fleets' class="[ caret-down ]" />
-        </FlexInline>
-    }
-
-    <div class:list={[ { 'animate-fade-in animate-duration-250 animate-delay-1000': Boolean(active_fleet) } ]}>
+    <div class:list={[ { 'animate-fade-in animate-duration-250 animate-delay-1000': active_fleets.length > 0 } ]}>
         <Grid
             id="other-fleets"
             class="[ w-full grid-fill ]"
@@ -148,4 +188,43 @@ import FleetCommandersReel from '@components/blocks/FleetCommandersReel.astro';
 			line-height: 1;
 		}
 	}
+
+    .swiper-slide {
+        padding-bottom: var(--space-xl);
+    }
+
+    :global(.swiper-initialized .swiper-slide > div) {
+        display: none;
+    }
+
+    :global(.swiper-initialized .swiper-slide-active > div) {
+        display: block !important;
+    }
+
+     .swiper-button-prev,
+    .swiper-button-next {
+        --swiper-navigation-color: var(--highlight);
+        --swiper-navigation-sides-offset: calc(-1 * var(--space-m-l));
+
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        opacity: 0;
+    }
+
+    .swiper-initialized ~ .swiper-button-prev,
+    .swiper-initialized ~ .swiper-button-next {
+        opacity: 1;
+    }
+
+    .swiper-initialized ~ .swiper-button-next.swiper-button-disabled,
+    .swiper-initialized ~ .swiper-button-prev.swiper-button-disabled {
+        opacity: 0;
+    }
+
+    .swiper-button-next.swiper-button-disabled,
+    .swiper-button-prev.swiper-button-disabled {
+        --swiper-navigation-color: var(--fleet-yellow);
+        opacity: 1;
+    }
 </style>
