@@ -1,0 +1,18 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang } = i18n(Astro.url)
+
+interface Props {
+    number:     number;
+}
+
+const {
+    number,
+} = Astro.props
+
+import { number_thousand_separator, number_name } from '@helpers/numbers'
+---
+
+<span data-tippy-content={number_name(number, lang)}>
+    {number_thousand_separator(number, lang)}
+</span>

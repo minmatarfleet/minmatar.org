@@ -2297,5 +2297,7 @@ export const ui = {
         'current_calendar_month': 'Current calendar month',
         'fleets_plural': '{count} fleets',
         'fleets_singular': '1 fleet',
+        'killmails_pending_plural': '{count} killmails pending',
+        'killmails_pending_singular': '1 killmails pending',
     },
 } as const;
