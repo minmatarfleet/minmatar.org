@@ -13,7 +13,6 @@ from eveonline.helpers.characters.clones import (
 )
 from eveonline.models import EveCharacter, EveCharacterClone
 
-
 CLONES_RESPONSE = {
     "home_location": {
         "location_id": 60003760,
