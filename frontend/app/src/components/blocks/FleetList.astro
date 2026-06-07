@@ -27,7 +27,8 @@ const {
 
 const active_fleets_ids = active_fleets ? active_fleets.map(fleet => fleet.id) : []
 const fleet_list = fleets.filter(fleet => !active_fleets_ids.includes(fleet.id))
-const show_fleet_commanders_bar = fc_metrics && fc_metrics.length > 0 && !active_fleets?.length
+const show_fleet_commanders_bar = fc_metrics && fc_metrics.length > 0
+const skip_hero = active_fleets?.length > 0
 
 const AUDIENCE_IDS = {
     'Etherium Reach': 1,
@@ -54,13 +55,15 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
     gap='var(--space-xl)'
     class={show_fleet_commanders_bar ? 'compensate-bottom-bar' : undefined}
 >
-    <Flexblock gap='0'>
-        {active_fleets.length > 0 &&
+    {active_fleets.length > 0 &&
+        <Flexblock gap='0'>
             <Wrapper
                 class="[ relative ]"
                 max_width='100%'
                 padding_block='0'
                 padding_inline='0'
+                x-intersect:enter="show_fc_ranking = false"
+                x-intersect:leave="show_fc_ranking = true"
             >
                 <div class="[ swiper ][ w-full ]">
                     <LandingSwiper gap={5} pagination={false} delay_ms={60000} effect='fade'>
@@ -77,7 +80,7 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
                                 <Flexblock gap='var(--space-xl)'>
                                     <FleetHero
                                         fleet={fleet}
-                                        doctrine={active_doctrines[index] ?? undefined}
+                                        doctrine={active_doctrines[index] ?? null}
                                         supply_contracts={supply_contracts[index]}
                                         update_cover={init_tooltips}
                                         cover_overlay={true}
@@ -120,14 +123,14 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
                 <div class="[ swiper-button-prev ]"></div>
                 <div class="[ swiper-button-next ]"></div>
             </Wrapper>
-        }
-
-        {active_fleets.length > 0 && fleet_list.length > 0 &&
-            <FlexInline justification='center' class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]">
-                <StylessButton href='#other-fleets' class="[ caret-down ]" />
-            </FlexInline>
-        }
-    </Flexblock>
+        
+            {fleet_list.length > 0 &&
+                <FlexInline justification='center' class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]">
+                    <StylessButton href='#other-fleets' class="[ caret-down ]" />
+                </FlexInline>
+            }
+        </Flexblock>
+    }
 
     <div class:list={[ { 'animate-fade-in animate-duration-250 animate-delay-1000': active_fleets.length > 0 } ]}>
         <Grid
@@ -170,7 +173,17 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
 </BlockList>
 
 {show_fleet_commanders_bar &&
-    <FleetCommandersReel fc_metrics={fc_metrics}    />
+    <div
+        x-data={`{
+            initialized: false,
+        }`}
+        x-show={skip_hero ? "show_fc_ranking || !initialized" : undefined}
+        x-on:marquee-started={skip_hero ? "$nextTick(() => { initialized = true; })" : undefined}
+    >
+        <FleetCommandersReel
+            fc_metrics={fc_metrics}
+        />
+    </div>
 }
 
 <style lang="scss">
