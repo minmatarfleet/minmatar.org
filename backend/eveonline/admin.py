@@ -12,6 +12,7 @@ from .models import (
     EveAlliance,
     EveCharacter,
     EveCharacterBlueprint,
+    EveCharacterClone,
     EveCharacterContract,
     EveCharacterIndustryJob,
     EveCharacterMiningEntry,
@@ -166,6 +167,40 @@ class EveCharacterBlueprintAdmin(admin.ModelAdmin):
     search_fields = ("character__character_name", "item_id", "type_id")
     readonly_fields = ("updated_at",)
     autocomplete_fields = ("character",)
+
+
+class EveCharacterCloneInline(admin.TabularInline):
+    model = EveCharacterClone
+    extra = 0
+    readonly_fields = (
+        "clone_id",
+        "name",
+        "location_id",
+        "location_name",
+        "implants",
+        "total_value_isk",
+        "is_active",
+    )
+    can_delete = False
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(EveCharacterClone)
+class EveCharacterCloneAdmin(admin.ModelAdmin):
+    list_display = (
+        "character",
+        "name",
+        "clone_id",
+        "location_name",
+        "total_value_isk",
+        "is_active",
+    )
+    list_filter = ("is_active",)
+    search_fields = ("character__character_name", "name", "location_name")
+    autocomplete_fields = ("character",)
+    readonly_fields = ("implants", "total_value_isk")
 
 
 @admin.register(EveCharacterMiningEntry)
@@ -458,6 +493,7 @@ _CHARACTER_MODELS = {
     "evecharacterskill",
     "evecharactercontract",
     "evecharacterindustryjob",
+    "evecharacterclone",
     "evecharacterminingentry",
     "evecharacterplanet",
     "evecharacterplanetoutput",

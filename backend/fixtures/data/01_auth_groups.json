@@ -1,0 +1,213 @@
+[
+  {
+    "model": "auth.group",
+    "pk": 39,
+    "fields": {
+      "name": "Guest",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 41,
+    "fields": {
+      "name": "Alliance",
+      "permissions": [
+        241,
+        242,
+        243,
+        244,
+        485,
+        486,
+        488,
+        77,
+        78,
+        79,
+        80,
+        305,
+        308,
+        257,
+        253,
+        409,
+        412,
+        413,
+        272,
+        473,
+        476,
+        300,
+        365,
+        368,
+        633,
+        636
+      ]
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 42,
+    "fields": {
+      "name": "Militia",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 135,
+    "fields": {
+      "name": "Tribe - Capitals",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 136,
+    "fields": {
+      "name": "Tribe - Industry",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 137,
+    "fields": {
+      "name": "Tribe - Market",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 143,
+    "fields": {
+      "name": "Tribe - Pulse",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 146,
+    "fields": {
+      "name": "Tribe Group - Carriers",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 147,
+    "fields": {
+      "name": "Tribe Group - Dreads",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 148,
+    "fields": {
+      "name": "Tribe Group - Faxes",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 149,
+    "fields": {
+      "name": "Tribe Group - Capital Production",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 150,
+    "fields": {
+      "name": "Tribe Group - Mining",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 151,
+    "fields": {
+      "name": "Tribe Group - Planetary Interaction",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 152,
+    "fields": {
+      "name": "Tribe Group - Subcapital Production",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 153,
+    "fields": {
+      "name": "Tribe Group - Contracts",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 154,
+    "fields": {
+      "name": "Tribe Group - Freighters",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 155,
+    "fields": {
+      "name": "Tribe Group - Loyalty Points",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 156,
+    "fields": {
+      "name": "Tribe Group - Market Orders",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 157,
+    "fields": {
+      "name": "Tribe Group - Advocates",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 158,
+    "fields": {
+      "name": "Tribe Group - Readiness",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 159,
+    "fields": {
+      "name": "Tribe Group - Technology",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 160,
+    "fields": {
+      "name": "Tribe Group - Thinkspeak",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 161,
+    "fields": {
+      "name": "Tribe Group - Tournaments",
+      "permissions": []
+    }
+  }
+]

@@ -550,6 +550,30 @@ class EveFleetInstanceMember(models.Model):
         ]
 
 
+class EveFleetInstanceMemberImplantSnapshot(models.Model):
+    """Append-only record of a fleet member's active implants at poll time."""
+
+    member = models.ForeignKey(
+        EveFleetInstanceMember,
+        on_delete=models.CASCADE,
+        related_name="implant_snapshots",
+    )
+    implants = models.JSONField(default=dict, blank=True)
+    estimated_value_isk = models.BigIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["member", "created_at"]),
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return (
+            f"{self.member.character_name} @ {self.created_at:%Y-%m-%d %H:%M}"
+        )
+
+
 class EveFleetInstanceMemberRole(models.Model):
     """
     Optional role assigned to a fleet instance member for critical fleet positions.

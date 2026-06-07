@@ -86,6 +86,34 @@ class ShipReimbursementProgram(models.Model):
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
 
 
+class PodReimbursementProgram(models.Model):
+    """Reimbursement program for one EveFittingPod."""
+
+    fitting_pod = models.ForeignKey(
+        "fittings.EveFittingPod",
+        on_delete=models.CASCADE,
+        related_name="pod_reimbursement_programs",
+    )
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+
+    def __str__(self):
+        return f"Pod SRP — {self.fitting_pod.name}"
+
+
+class PodReimbursementProgramAmount(models.Model):
+    """Time series of reimbursement amounts for one pod program."""
+
+    program = models.ForeignKey(
+        PodReimbursementProgram,
+        on_delete=models.CASCADE,
+        related_name="amounts",
+    )
+    srp_value = models.BigIntegerField()
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+
+
 class ShipReimbursementProgramAmount(models.Model):
     """
     Time series of reimbursement amounts for one program.

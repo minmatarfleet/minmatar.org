@@ -207,6 +207,13 @@ CELERYBEAT_OTHER = [
         },
     ),
     (
+        "[Misc] Poll Active Fleet Implants",
+        {
+            "task": "fleets.tasks.poll_active_fleet_implants",
+            "schedule": schedule(timedelta(minutes=10)),
+        },
+    ),
+    (
         "[Misc] ESI Cleanup Callback Redirect",
         {
             "task": "esi.tasks.cleanup_callbackredirect",

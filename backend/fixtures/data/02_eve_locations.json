@@ -1,0 +1,233 @@
+[
+  {
+    "model": "eveonline.evelocation",
+    "pk": 60003760,
+    "fields": {
+      "deleted": null,
+      "deleted_by_cascade": false,
+      "location_name": "Jita IV - Moon 4 - Caldari Navy Assembly Plant",
+      "solar_system_id": 30000142,
+      "solar_system_name": "Jita",
+      "short_name": "Jita",
+      "region_id": 10000002,
+      "is_structure": false,
+      "market_active": false,
+      "prices_active": true,
+      "price_baseline": true,
+      "freight_active": true,
+      "staging_active": false,
+      "created_at": "2025-08-04T15:47:09.314Z",
+      "updated_at": "2026-02-27T23:49:02.434Z"
+    }
+  },
+  {
+    "model": "eveonline.evelocation",
+    "pk": 60013948,
+    "fields": {
+      "deleted": null,
+      "deleted_by_cascade": false,
+      "location_name": "Goudiyah VIII - Moon 1 - Royal Khanid Navy Logistic Support",
+      "solar_system_id": 30003930,
+      "solar_system_name": "Goudiyah",
+      "short_name": "Goudiyah",
+      "region_id": null,
+      "is_structure": false,
+      "market_active": false,
+      "prices_active": false,
+      "price_baseline": false,
+      "freight_active": false,
+      "staging_active": false,
+      "created_at": "2025-08-04T15:47:09.314Z",
+      "updated_at": "2025-08-04T15:47:09.364Z"
+    }
+  },
+  {
+    "model": "eveonline.evelocation",
+    "pk": 1022167642188,
+    "fields": {
+      "deleted": null,
+      "deleted_by_cascade": false,
+      "location_name": "Amamake - 5 times nearly AT winners",
+      "solar_system_id": 30002537,
+      "solar_system_name": "Amamake",
+      "short_name": "Amamake",
+      "region_id": 10000030,
+      "is_structure": true,
+      "market_active": true,
+      "prices_active": true,
+      "price_baseline": false,
+      "freight_active": true,
+      "staging_active": true,
+      "created_at": "2025-12-14T18:14:56.355Z",
+      "updated_at": "2026-02-28T05:29:41.031Z"
+    }
+  },
+  {
+    "model": "eveonline.evelocation",
+    "pk": 1030612828257,
+    "fields": {
+      "deleted": null,
+      "deleted_by_cascade": false,
+      "location_name": "LXQ2-T",
+      "solar_system_id": 30002355,
+      "solar_system_name": "LXQ2-T",
+      "short_name": "LXQ2-T",
+      "region_id": 10000027,
+      "is_structure": false,
+      "market_active": false,
+      "prices_active": false,
+      "price_baseline": false,
+      "freight_active": false,
+      "staging_active": false,
+      "created_at": "2025-11-19T04:58:12.165Z",
+      "updated_at": "2026-02-27T04:44:47.156Z"
+    }
+  },
+  {
+    "model": "eveonline.evelocation",
+    "pk": 1043601200296,
+    "fields": {
+      "deleted": null,
+      "deleted_by_cascade": false,
+      "location_name": "Auga - Minmatar Militia HQ",
+      "solar_system_id": 30002542,
+      "solar_system_name": "Auga",
+      "short_name": "Auga",
+      "region_id": 10000030,
+      "is_structure": false,
+      "market_active": false,
+      "prices_active": false,
+      "price_baseline": false,
+      "freight_active": false,
+      "staging_active": false,
+      "created_at": "2025-08-04T15:47:09.314Z",
+      "updated_at": "2025-12-14T18:16:33.711Z"
+    }
+  },
+  {
+    "model": "eveonline.evelocation",
+    "pk": 1043817963096,
+    "fields": {
+      "deleted": null,
+      "deleted_by_cascade": false,
+      "location_name": "Sosala - WATERMELLON",
+      "solar_system_id": 30003070,
+      "solar_system_name": "Sosala",
+      "short_name": "Sosala",
+      "region_id": 10000030,
+      "is_structure": false,
+      "market_active": false,
+      "prices_active": false,
+      "price_baseline": false,
+      "freight_active": false,
+      "staging_active": false,
+      "created_at": "2025-08-04T15:47:09.314Z",
+      "updated_at": "2025-12-14T18:16:50.609Z"
+    }
+  },
+  {
+    "model": "eveonline.evelocation",
+    "pk": 1048941545923,
+    "fields": {
+      "deleted": null,
+      "deleted_by_cascade": false,
+      "location_name": "Evati - Scurry Tzu's House of Wisdom",
+      "solar_system_id": 30002060,
+      "solar_system_name": "Evati",
+      "short_name": "Evati",
+      "region_id": 10000030,
+      "is_structure": false,
+      "market_active": false,
+      "prices_active": false,
+      "price_baseline": false,
+      "freight_active": false,
+      "staging_active": false,
+      "created_at": "2025-08-04T15:47:09.314Z",
+      "updated_at": "2025-12-14T18:16:16.186Z"
+    }
+  },
+  {
+    "model": "eveonline.evelocation",
+    "pk": 1049037316814,
+    "fields": {
+      "deleted": null,
+      "deleted_by_cascade": false,
+      "location_name": "Vard - Rickety Roost",
+      "solar_system_id": 30002538,
+      "solar_system_name": "Vard",
+      "short_name": "Vard",
+      "region_id": 10000030,
+      "is_structure": false,
+      "market_active": false,
+      "prices_active": false,
+      "price_baseline": false,
+      "freight_active": false,
+      "staging_active": false,
+      "created_at": "2025-08-04T15:47:09.314Z",
+      "updated_at": "2025-12-14T18:16:07.613Z"
+    }
+  },
+  {
+    "model": "eveonline.evelocation",
+    "pk": 1049700249624,
+    "fields": {
+      "deleted": null,
+      "deleted_by_cascade": false,
+      "location_name": "SUMMERCAMP '25",
+      "solar_system_id": 30004722,
+      "solar_system_name": "319-3D",
+      "short_name": "Summercamp",
+      "region_id": null,
+      "is_structure": false,
+      "market_active": false,
+      "prices_active": false,
+      "price_baseline": false,
+      "freight_active": false,
+      "staging_active": false,
+      "created_at": "2025-08-04T15:47:09.314Z",
+      "updated_at": "2025-08-04T15:47:09.364Z"
+    }
+  },
+  {
+    "model": "eveonline.evelocation",
+    "pk": 1051465618860,
+    "fields": {
+      "deleted": null,
+      "deleted_by_cascade": false,
+      "location_name": "R-6KYM - DO NOT USE",
+      "solar_system_id": 30002324,
+      "solar_system_name": "R-6KYM",
+      "short_name": "R-6KYM",
+      "region_id": 10000027,
+      "is_structure": true,
+      "market_active": false,
+      "prices_active": false,
+      "price_baseline": false,
+      "freight_active": false,
+      "staging_active": false,
+      "created_at": "2025-12-14T19:10:05.723Z",
+      "updated_at": "2026-04-01T11:40:19.322Z"
+    }
+  },
+  {
+    "model": "eveonline.evelocation",
+    "pk": 1053229023468,
+    "fields": {
+      "deleted": null,
+      "deleted_by_cascade": false,
+      "location_name": "R-6KYM - Casper Anchored It",
+      "solar_system_id": 30002324,
+      "solar_system_name": "R-6KYM",
+      "short_name": "R-6KYM",
+      "region_id": 10000027,
+      "is_structure": true,
+      "market_active": true,
+      "prices_active": true,
+      "price_baseline": false,
+      "freight_active": true,
+      "staging_active": true,
+      "created_at": "2026-04-01T11:39:38.455Z",
+      "updated_at": "2026-04-01T11:39:38.455Z"
+    }
+  }
+]

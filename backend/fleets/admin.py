@@ -7,6 +7,7 @@ from .models import (
     EveFleetAudience,
     EveFleetInstance,
     EveFleetInstanceMember,
+    EveFleetInstanceMemberImplantSnapshot,
 )
 
 
@@ -77,3 +78,19 @@ admin.site.register(EveFleet, FleetAdmin)
 admin.site.register(EveFleetAudience)
 admin.site.register(EveFleetInstance)
 admin.site.register(EveFleetInstanceMember)
+
+
+@admin.register(EveFleetInstanceMemberImplantSnapshot)
+class EveFleetInstanceMemberImplantSnapshotAdmin(admin.ModelAdmin):
+    list_display = (
+        "member",
+        "estimated_value_isk",
+        "created_at",
+    )
+    list_filter = ("created_at",)
+    search_fields = (
+        "member__character_name",
+        "member__character_id",
+    )
+    readonly_fields = ("implants", "estimated_value_isk", "created_at")
+    date_hierarchy = "created_at"

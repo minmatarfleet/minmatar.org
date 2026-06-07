@@ -94,6 +94,11 @@ class EveFitting(MinmatarSoftDeleteModel):
 
     minimum_pod = models.TextField(blank=True)
     recommended_pod = models.TextField(blank=True)
+    pods = models.ManyToManyField(
+        "EveFittingPod",
+        blank=True,
+        related_name="fittings",
+    )
     tags = models.JSONField(default=list, blank=True)
 
     class Meta:
@@ -199,6 +204,48 @@ class EveFitting(MinmatarSoftDeleteModel):
         if fitting_name.endswith("]"):
             fitting_name = fitting_name[:-1].strip()
         return fitting_name
+
+
+class EveFittingPod(MinmatarSoftDeleteModel):
+    """Named implant loadout linked to ship fittings."""
+
+    name = models.CharField(max_length=255)
+    priority = models.PositiveSmallIntegerField(
+        default=100,
+        help_text="Lower numbers are higher precedence when multiple pods apply.",
+    )
+    description = models.TextField(blank=True, default="")
+    pod_format = models.TextField(
+        blank=True,
+        default="",
+        help_text="Newline-separated implant names.",
+    )
+    escape_frigate_fittings = models.ManyToManyField(
+        EveFitting,
+        blank=True,
+        related_name="escape_pod_configs",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["priority", "name"]
+
+    def __str__(self):
+        return self.name
+
+    def clean(self):
+        super().clean()
+        invalid = [
+            fitting.name
+            for fitting in self.escape_frigate_fittings.all()
+            if FittingTag.ESCAPE_FRIGATE not in (fitting.tags or [])
+        ]
+        if invalid:
+            raise ValidationError(
+                "Escape frigate fittings must have the escape_frigate tag: "
+                + ", ".join(invalid)
+            )
 
 
 class EveFittingHistory(models.Model):

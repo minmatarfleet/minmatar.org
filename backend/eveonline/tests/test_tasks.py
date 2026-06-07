@@ -369,3 +369,20 @@ class EveOnlineTaskTests(TestCase):
         update_character(char.character_id)
 
         self.assertEqual(1, EveCharacterKillmail.objects.count())
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("eveonline.tasks.characters.refresh_character_clones")
+    @patch("eveonline.tasks.characters.Token.get_token")
+    def test_update_character_calls_clone_sync_when_scopes_present(
+        self, token_mock, clones_mock
+    ):
+        token_mock.side_effect = lambda char_id, scopes: scopes in (
+            ["esi-clones.read_clones.v1"],
+            ["esi-clones.read_implants.v1"],
+        )
+        char = EveCharacter.objects.create(
+            character_id=2001,
+            character_name="Clone Pilot",
+        )
+        update_character(char.character_id)
+        clones_mock.assert_called_once_with(2001)

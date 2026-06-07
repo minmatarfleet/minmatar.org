@@ -2,6 +2,7 @@ import json
 
 from django.contrib import admin, messages
 from django.core.exceptions import PermissionDenied
+from django.db import models
 from django.db.models import Count, Exists, OuterRef, Subquery
 from django.http import HttpResponseRedirect
 from django.urls import reverse
@@ -43,6 +44,7 @@ from fittings.models import (
     EveFitting,
     EveFittingChangeRequest,
     EveFittingHistory,
+    EveFittingPod,
     EveFittingRefit,
     FittingTag,
 )
@@ -50,6 +52,7 @@ from fittings.tasks import (
     notify_doctrine_change_request_proposed,
     notify_fitting_change_request_proposed,
 )
+from srp.models import PodReimbursementProgram
 
 from .forms import EveDoctrineForm, EveFittingAdminForm
 
@@ -166,6 +169,31 @@ class FittingTagListFilter(admin.SimpleListFilter):
         return queryset
 
 
+class HasFittingPodsListFilter(admin.SimpleListFilter):
+    title = "fitting pods"
+    parameter_name = "has_fitting_pods"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("yes", "Yes"),
+            ("no", "No"),
+            ("legacy", "Legacy text only"),
+        )
+
+    def queryset(self, request, queryset):
+        has_pods = EveFittingPod.objects.filter(fittings=OuterRef("pk"))
+        has_legacy = models.Q(minimum_pod__gt="") | models.Q(
+            recommended_pod__gt=""
+        )
+        if self.value() == "yes":
+            return queryset.filter(Exists(has_pods))
+        if self.value() == "no":
+            return queryset.filter(~Exists(has_pods)).exclude(has_legacy)
+        if self.value() == "legacy":
+            return queryset.filter(~Exists(has_pods)).filter(has_legacy)
+        return queryset
+
+
 class HasRefitsListFilter(admin.SimpleListFilter):
     title = "has refits"
     parameter_name = "has_refits"
@@ -238,9 +266,11 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
     form = EveFittingAdminForm
     field_to_highlight = "name"
 
+    filter_horizontal = ("pods",)
     list_display = (
         "highlight_deleted_field",
         "ship_name",
+        "pod_count",
         "refit_count",
         "description",
         "deleted",
@@ -248,6 +278,7 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
     search_fields = ("name", "description", "aliases")
     list_filter = (
         SafeDeleteAdminFilter,
+        HasFittingPodsListFilter,
         HasRefitsListFilter,
         InDoctrineListFilter,
         FittingTagListFilter,
@@ -294,7 +325,11 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
         (
             "Pods",
             {
-                "fields": ("minimum_pod", "recommended_pod"),
+                "description": (
+                    "Link EveFittingPod loadouts here. Legacy text fields remain "
+                    "for reference during migration."
+                ),
+                "fields": ("pods", "minimum_pod", "recommended_pod"),
             },
         ),
     )
@@ -306,6 +341,7 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
             "name"
         )[:1]
         return qs.annotate(
+            _pod_count=Count("pods", distinct=True),
             _refit_count=Count("refits"),
             _ship_name=Subquery(ship_sq),
         )
@@ -317,6 +353,10 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
     @admin.display(description="Refits", ordering="_refit_count")
     def refit_count(self, obj):
         return getattr(obj, "_refit_count", 0)
+
+    @admin.display(description="Pods", ordering="_pod_count")
+    def pod_count(self, obj):
+        return getattr(obj, "_pod_count", 0)
 
     @admin.display(description="Protection tier")
     def protection_tier_display(self, obj):
@@ -818,3 +858,115 @@ class EveDoctrineAdmin(ApprovalQueuedAdminMixin, admin.ModelAdmin):
                 ),
             )
             _mark_change_request_queued(request, url)
+
+
+class HasFittingsPodFilter(admin.SimpleListFilter):
+    title = "has fittings"
+    parameter_name = "has_fittings"
+
+    def lookups(self, request, model_admin):
+        return (("yes", "Yes"), ("no", "No"))
+
+    def queryset(self, request, queryset):
+        has_fittings = EveFitting.objects.filter(pods=OuterRef("pk"))
+        if self.value() == "yes":
+            return queryset.filter(Exists(has_fittings))
+        if self.value() == "no":
+            return queryset.filter(~Exists(has_fittings))
+        return queryset
+
+
+class HasEscapeFrigatesPodFilter(admin.SimpleListFilter):
+    title = "has escape frigates"
+    parameter_name = "has_escape_frigates"
+
+    def lookups(self, request, model_admin):
+        return (("yes", "Yes"), ("no", "No"))
+
+    def queryset(self, request, queryset):
+        if self.value() == "yes":
+            return queryset.filter(
+                escape_frigate_fittings__isnull=False
+            ).distinct()
+        if self.value() == "no":
+            return queryset.filter(escape_frigate_fittings__isnull=True)
+        return queryset
+
+
+@admin.register(EveFittingPod)
+class EveFittingPodAdmin(SafeDeleteAdmin):
+    list_display = (
+        "highlight_deleted_field",
+        "name",
+        "priority",
+        "fitting_count",
+        "escape_frigate_count",
+        "current_srp_value",
+        "deleted",
+    )
+    search_fields = ("name", "description", "pod_format")
+    list_filter = (
+        SafeDeleteAdminFilter,
+        HasFittingsPodFilter,
+        HasEscapeFrigatesPodFilter,
+    )
+    filter_horizontal = ("escape_frigate_fittings",)
+    readonly_fields = ("linked_fittings", "current_srp_value")
+    fields = (
+        "name",
+        "priority",
+        "description",
+        "pod_format",
+        "escape_frigate_fittings",
+        "linked_fittings",
+        "current_srp_value",
+    )
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.annotate(
+            _fitting_count=Count("fittings", distinct=True),
+            _escape_frigate_count=Count(
+                "escape_frigate_fittings", distinct=True
+            ),
+        )
+
+    @admin.display(description="Fittings", ordering="_fitting_count")
+    def fitting_count(self, obj):
+        return getattr(obj, "_fitting_count", 0)
+
+    @admin.display(
+        description="Escape frigates", ordering="_escape_frigate_count"
+    )
+    def escape_frigate_count(self, obj):
+        return getattr(obj, "_escape_frigate_count", 0)
+
+    @admin.display(description="Linked fittings")
+    def linked_fittings(self, obj):
+        if not obj.pk:
+            return "Save pod first."
+        names = obj.fittings.order_by("name").values_list("name", flat=True)
+        if not names:
+            return "None"
+        return format_html("<br>".join(names))
+
+    @admin.display(description="Current SRP value")
+    def current_srp_value(self, obj):
+        if not obj.pk:
+            return None
+        program = (
+            PodReimbursementProgram.objects.filter(fitting_pod=obj)
+            .order_by("-id")
+            .first()
+        )
+        if not program:
+            return None
+        latest = program.amounts.order_by("-created_at", "-id").first()
+        return latest.srp_value if latest else None
+
+    def formfield_for_manytomany(self, db_field, request, **kwargs):
+        if db_field.name == "escape_frigate_fittings":
+            kwargs["queryset"] = EveFitting.objects.filter(
+                tags__contains=[FittingTag.ESCAPE_FRIGATE]
+            )
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
