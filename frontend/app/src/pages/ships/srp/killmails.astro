@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { lang, t, translatePath } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
@@ -25,15 +25,16 @@ if (!can_view_srp)
 
 import { should_redirect_to_srp_onboarding } from '@helpers/onboarding/srpRedirect'
 
-
-
 import type { FleetSRPUI } from '@dtypes/layout_components'
 import { fetch_srps } from '@helpers/fetching/srp'
+import type { SRPStatsOverview } from '@dtypes/api.minmatar.org'
+import { get_srp_stats } from '@helpers/api.minmatar.org/srp'
 
 let fetch_srp_error: Error | false = false
 let fleets_srps:FleetSRPUI[] = []
 let srps_count:number = 0
 let fleetless:boolean = false
+let stats_overview:SRPStatsOverview | null = null
 let ship_types:string[] = []
 
 try {
@@ -47,11 +48,18 @@ try {
     fleets_srps = fleets_srps_data.fleets_srps
     fleetless = fleets_srps.find(srp => srp.fleet_id === 0) !== undefined
     srps_count = fleets_srps.reduce((c, v) => c + v.srps.length, 0)
+
+    stats_overview = await get_srp_stats( auth_token as string)
 } catch (error) {
     fetch_srp_error = error
 }
 
+const killmails_text = t(srps_count !== 1 ? 'killmails_pending_plural' : 'killmails_pending_singular')
+    .replace('{count}', number_thousand_separator(srps_count, lang))
+
 const FLEETS_SRPS_PARTIAL_URL = translatePath(`/partials/fleets_srps_component`)
+
+import { number_thousand_separator } from '@helpers/numbers'
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -67,6 +75,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import SRPTable from '@components/blocks/SRPTable.astro';
 import SRPFiltersSwiper from '@components/blocks/SRPFiltersSwiper.astro'
 import Input from '@components/blocks/Input.astro'
+import NumberNameTooltip from '@components/blocks/NumberNameTooltip.astro'
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
@@ -104,8 +113,8 @@ const page_title = t('ships.srp.killmails.page_title');
                     <PageTitle>
                         {page_title}
                     </PageTitle>
-                    <small x-text={`\`\${srps_count} \${srps_count != 1 ? '${t('killmails_pending').toLowerCase()}' : '${t('killmail_pending').toLowerCase()}'}\``}>
-                        {srps_count} {srps_count != 1 ? t('killmails_pending').toLowerCase() : t('killmail_pending').toLowerCase()}
+                    <small id="killmails-text-oob">
+                        {killmails_text} (<NumberNameTooltip number={stats_overview?.pending_total ?? 0} /> ISK)
                     </small>
                 </Flexblock>
             </FlexInline>

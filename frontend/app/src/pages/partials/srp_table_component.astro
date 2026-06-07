@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { lang, t, translatePath } = i18n(Astro.url)
 
 import { HTTP_403_Forbidden } from '@helpers/http_responses'
 
@@ -147,7 +147,11 @@ if (Astro.request.method === "PATCH") {
     }
 }
 
+import type { SRPStatsOverview } from '@dtypes/api.minmatar.org'
+import { get_srp_stats } from '@helpers/api.minmatar.org/srp'
+
 let is_fleet_commander:boolean = false
+let stats_overview:SRPStatsOverview | null = null
 
 try {
     if (fleet_id > 0) {
@@ -160,6 +164,8 @@ try {
     } else {
         throw new Error(t('invalid_fleet_id'), { cause: 400 })
     }
+
+    stats_overview = await get_srp_stats( auth_token as string)
 } catch (error) {
     data_fetching_error = error
 }
@@ -179,15 +185,20 @@ const options = query_string({
     filterable: filterable,
 })
 
+const killmails_text = t(fleet_srps.length !== 1 ? 'killmails_pending_plural' : 'killmails_pending_singular')
+    .replace('{count}', number_thousand_separator(fleet_srps.length, lang))
+
 const SRP_TABLE_PARTIAL_URL = `${translatePath('/partials/srp_table_component')}?${options}`
+
+import { number_thousand_separator } from '@helpers/numbers'
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import SRPTable from '@components/blocks/SRPTable.astro';
 import ShowAlert from '@components/blocks/ShowAlert.astro';
+import NumberNameTooltip from '@components/blocks/NumberNameTooltip.astro'
 ---
 
 {alert && <ShowAlert alert={alert} /> }
-<div x-init="typeof update_srp_count === 'function' && update_srp_count(); $el.remove()" class="[ hidden ]" />
 
 {data_fetching_error ?
     <ErrorRefetch
@@ -198,7 +209,11 @@ import ShowAlert from '@components/blocks/ShowAlert.astro';
         }}
     />
     :
-    fleet_srps.length > 0 ?
+    <small id="killmails-text-oob" hx-swap-oob="true">
+        {killmails_text} (<NumberNameTooltip number={stats_overview?.pending_total ?? 0} /> ISK)
+    </small>
+
+    <>{fleet_srps.length > 0 ?
         <SRPTable
             fleet_id={fleet_id}
             fleet_srps={fleet_srps as SRPUI[]}
@@ -217,4 +232,5 @@ import ShowAlert from '@components/blocks/ShowAlert.astro';
             can_add_srp={can_add_srp}
             filterable={filterable}
         />
+    }</>
 }
