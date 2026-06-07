@@ -24,10 +24,12 @@ from fleets.models import (
     EveFleetInstanceMemberImplantSnapshot,
 )
 from fleets.tasks import poll_active_fleet_implants
+from fleets.tests import disconnect_fleet_signals
 
 
 class ActiveFleetImplantPollTest(TestCase):
     def setUp(self):
+        disconnect_fleet_signals()
         super().setUp()
         self.audience = EveFleetAudience.objects.create(name="Test Audience")
         self.fleet = EveFleet.objects.create(
