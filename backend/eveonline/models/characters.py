@@ -59,6 +59,11 @@ class EveCharacter(models.Model):
     esi_token_level = models.CharField(max_length=40, null=True, blank=True)
     esi_scope_groups = models.JSONField(default=list, blank=True)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    medical_clone_location_id = models.BigIntegerField(null=True, blank=True)
+    medical_clone_location_name = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    clones_synced_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 
@@ -373,6 +378,35 @@ class EveCharacterPlanetOutput(models.Model):
 
     def __str__(self):
         return f"{self.planet} -> {self.eve_type.name} ({self.output_type})"
+
+
+class EveCharacterClone(models.Model):
+    """One jump clone for a character, synced from ESI /clones/."""
+
+    character = models.ForeignKey(
+        "EveCharacter",
+        on_delete=models.CASCADE,
+        related_name="jump_clones",
+    )
+    clone_id = models.BigIntegerField()
+    name = models.CharField(max_length=255, blank=True, default="")
+    location_id = models.BigIntegerField(null=True, blank=True)
+    location_name = models.CharField(max_length=255, blank=True, default="")
+    implants = models.JSONField(default=list, blank=True)
+    total_value_isk = models.BigIntegerField(default=0)
+    is_active = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ("character", "clone_id")
+        indexes = [
+            models.Index(fields=["character"]),
+            models.Index(fields=["is_active"]),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.character.character_name} — {self.name or self.clone_id}"
+        )
 
 
 class EveCharacterMiningEntry(models.Model):

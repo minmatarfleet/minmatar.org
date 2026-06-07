@@ -125,6 +125,31 @@ coverage run -m manage test --testrunner="testrunner.Runner"  && cat testresults
 ./manage.py shell --command="from tech.testdata import setup_test_data; setup_test_data()"
 ```
 
+### Reference fixtures
+
+Production-like reference data (tribes, fittings, doctrines, locations, market config) lives in committed JSON under `fixtures/data/`. Sensitive fields (Discord IDs, chiefs, memberships) are stripped at export time.
+
+**Prerequisites:**
+
+1. `pipenv run python manage.py migrate`
+2. Load EVE universe types: `pipenv run python manage.py eveuniverse_load_types`
+
+**Load:**
+
+```bash
+pipenv run python manage.py load_reference_fixtures
+```
+
+Use `--clear` to remove existing reference rows before loading. Use `--skip-eve-type-check` only if you know referenced types exist locally.
+
+**Regenerate (maintainers with `production_readonly` access):**
+
+```bash
+pipenv run python manage.py export_reference_fixtures
+```
+
+`setup_test_data()` remains useful for test users and mock characters/fleets; reference fixtures replace its synthetic fittings/org config.
+
 ### Create a test admin user and display JWT
 ```
 ./manage.py shell --command="from authentication import make_test_user; make_test_user(101, 'Tester 1', True)"

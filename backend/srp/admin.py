@@ -9,6 +9,8 @@ from eveuniverse.models import EveType
 from .helpers import recalculate_reimbursement_amount
 from .models import (
     EveFleetShipReimbursement,
+    PodReimbursementProgram,
+    PodReimbursementProgramAmount,
     ShipReimbursementProgram,
     ShipReimbursementProgramAmount,
 )
@@ -197,6 +199,67 @@ class SrpValuesAdmin(admin.ModelAdmin):
         new_srp_value = form.cleaned_data.get("new_srp_value")
         if new_srp_value is not None:
             ShipReimbursementProgramAmount.objects.create(
+                program=obj,
+                srp_value=new_srp_value,
+            )
+
+
+class PodReimbursementProgramAdminForm(forms.ModelForm):
+    new_srp_value = forms.IntegerField(
+        required=False,
+        min_value=0,
+        help_text="Enter a value and save to append a new price history row.",
+        label="New SRP value",
+    )
+
+    class Meta:
+        model = PodReimbursementProgram
+        fields = "__all__"
+
+
+@admin.register(PodReimbursementProgram)
+class PodReimbursementProgramAdmin(admin.ModelAdmin):
+    form = PodReimbursementProgramAdminForm
+    list_display = (
+        "id",
+        "fitting_pod",
+        "current_srp_value",
+    )
+    search_fields = ("fitting_pod__name",)
+    autocomplete_fields = ("fitting_pod",)
+    readonly_fields = ("current_srp_value", "price_history")
+    fields = (
+        "fitting_pod",
+        "current_srp_value",
+        "new_srp_value",
+        "price_history",
+    )
+
+    @admin.display(description="Current SRP Value")
+    def current_srp_value(self, obj):
+        if not obj or not obj.pk:
+            return None
+        latest = obj.amounts.order_by("-created_at", "-id").first()
+        return latest.srp_value if latest else None
+
+    @admin.display(description="Price history")
+    def price_history(self, obj):
+        if not obj or not obj.pk:
+            return "Save program first to see history."
+        rows = obj.amounts.order_by("-created_at", "-id")[:25]
+        if not rows:
+            return "No history yet."
+        lines = [
+            f"{row.created_at:%Y-%m-%d %H:%M:%S} - {row.srp_value:,} ISK"
+            for row in rows
+        ]
+        return mark_safe("<br>".join(lines))
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        new_srp_value = form.cleaned_data.get("new_srp_value")
+        if new_srp_value is not None:
+            PodReimbursementProgramAmount.objects.create(
                 program=obj,
                 srp_value=new_srp_value,
             )

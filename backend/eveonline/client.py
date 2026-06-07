@@ -815,6 +815,36 @@ class EsiClient:
             return EsiResponse(response_code=SUCCESS, data=response.json())
         return EsiResponse(response_code=response.status_code)
 
+    def get_character_clones(self) -> EsiResponse:
+        """Returns jump clones and medical clone location for the character."""
+        token, status = self._valid_token(["esi-clones.read_clones.v1"])
+        if status > 0:
+            return EsiResponse(status)
+
+        response = requests.get(
+            url=f"{ESI_BASE_URL}/characters/{self.character_id}/clones/",
+            timeout=30,
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        if response.status_code == 200:
+            return EsiResponse(response_code=SUCCESS, data=response.json())
+        return EsiResponse(response_code=response.status_code)
+
+    def get_character_implants(self) -> EsiResponse:
+        """Returns active implant type IDs for the character."""
+        token, status = self._valid_token(["esi-clones.read_implants.v1"])
+        if status > 0:
+            return EsiResponse(status)
+
+        response = requests.get(
+            url=f"{ESI_BASE_URL}/characters/{self.character_id}/implants/",
+            timeout=30,
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        if response.status_code == 200:
+            return EsiResponse(response_code=SUCCESS, data=response.json())
+        return EsiResponse(response_code=response.status_code)
+
     def get_character_mining_ledger(self) -> EsiResponse:
         """Returns the personal mining ledger for the character (last 30 days)."""
         token, status = self._valid_token(

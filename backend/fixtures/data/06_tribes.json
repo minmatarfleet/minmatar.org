@@ -1,0 +1,1660 @@
+[
+  {
+    "model": "tribes.tribe",
+    "pk": 1,
+    "fields": {
+      "name": "Capitals",
+      "slug": "capitals",
+      "description": "Dreadnoughts, carriers, and force auxiliaries- when the ping goes out, we answer in capital letters.",
+      "content": "",
+      "image_url": null,
+      "banner_url": "https://i.ytimg.com/vi/Mk6o-T6fJRE/maxresdefault.jpg",
+      "group": null,
+      "discord_channel_id": null,
+      "chief": null,
+      "is_active": true,
+      "created_at": "2026-03-01T05:08:32.648Z",
+      "updated_at": "2026-03-05T03:36:05.371Z"
+    }
+  },
+  {
+    "model": "tribes.tribe",
+    "pk": 2,
+    "fields": {
+      "name": "Industry",
+      "slug": "industry",
+      "description": "Ore to wreck in record time. Keeping our supply chain alive and aligned to our war machine.",
+      "content": "",
+      "image_url": null,
+      "banner_url": "https://content.eveonline.com/www/newssystem/media/73327/1/ReactionIndustryWindowInGame.png",
+      "group": null,
+      "discord_channel_id": null,
+      "chief": null,
+      "is_active": true,
+      "created_at": "2026-03-01T05:53:58.612Z",
+      "updated_at": "2026-03-05T03:36:44.572Z"
+    }
+  },
+  {
+    "model": "tribes.tribe",
+    "pk": 3,
+    "fields": {
+      "name": "Market",
+      "slug": "market",
+      "description": "If it's on the market or your wallet, we probably had a hand in getting it there.",
+      "content": "",
+      "image_url": null,
+      "banner_url": "https://global.discourse-cdn.com/eveonline/original/3X/c/8/c8d28912f6ba116a96044f802a32711dc720433a.gif",
+      "group": null,
+      "discord_channel_id": null,
+      "chief": null,
+      "is_active": true,
+      "created_at": "2026-03-01T05:58:42.370Z",
+      "updated_at": "2026-03-05T20:31:31.066Z"
+    }
+  },
+  {
+    "model": "tribes.tribe",
+    "pk": 4,
+    "fields": {
+      "name": "Pulse",
+      "slug": "pulse",
+      "description": "Keeping our pilots informed, equipped, and connected.",
+      "content": "",
+      "image_url": null,
+      "banner_url": "https://cdn2.unrealengine.com/eve-online-1920x1080-63abdd7114f4.png",
+      "group": null,
+      "discord_channel_id": null,
+      "chief": null,
+      "is_active": true,
+      "created_at": "2026-03-01T06:03:36.102Z",
+      "updated_at": "2026-03-05T03:35:23.500Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroup",
+    "pk": 1,
+    "fields": {
+      "tribe": 1,
+      "name": "Dreads",
+      "description": "Siege green. Dreadnoughts are the alliance's hard answer to anything the enemy puts on field.",
+      "group": null,
+      "chief": null,
+      "discord_channel_id": null,
+      "is_active": true
+    }
+  },
+  {
+    "model": "tribes.tribegroup",
+    "pk": 2,
+    "fields": {
+      "tribe": 1,
+      "name": "Carriers",
+      "description": "You're coming along. Carriers move the fleet's assets across the map, keeping pilots and their hulls exactly where the fight needs them.",
+      "group": null,
+      "chief": null,
+      "discord_channel_id": null,
+      "is_active": true
+    }
+  },
+  {
+    "model": "tribes.tribegroup",
+    "pk": 3,
+    "fields": {
+      "tribe": 1,
+      "name": "Faxes",
+      "description": "Nobody dies on our watch. Force auxiliaries are the capital logistics backbone that keeps FL33T fighting when others would break.",
+      "group": null,
+      "chief": null,
+      "discord_channel_id": null,
+      "is_active": true
+    }
+  },
+  {
+    "model": "tribes.tribegroup",
+    "pk": 4,
+    "fields": {
+      "tribe": 2,
+      "name": "Subcapital Production",
+      "description": "Ships are ammo. Subcapital Production ensures the alliance always has ships in hangars and pilots ready to undock.",
+      "group": null,
+      "chief": null,
+      "discord_channel_id": null,
+      "is_active": true
+    }
+  },
+  {
+    "model": "tribes.tribegroup",
+    "pk": 5,
+    "fields": {
+      "tribe": 2,
+      "name": "Capital Production",
+      "description": "Bigger hulls, bigger feeds. Capital Production handles the most resource-intensive manufacturing the alliance undertakes \u2014 the ships that decide wars.",
+      "group": null,
+      "chief": null,
+      "discord_channel_id": null,
+      "is_active": true
+    }
+  },
+  {
+    "model": "tribes.tribegroup",
+    "pk": 6,
+    "fields": {
+      "tribe": 2,
+      "name": "Mining",
+      "description": "Rock and stone. Mining supplies the raw materials that feed every production chain the alliance depends on.",
+      "group": null,
+      "chief": null,
+      "discord_channel_id": null,
+      "is_active": true
+    }
+  },
+  {
+    "model": "tribes.tribegroup",
+    "pk": 7,
+    "fields": {
+      "tribe": 2,
+      "name": "Planetary Interaction",
+      "description": "Brick by brick. Planetary Interaction generates the steady stream of materials that quietly underpins alliance logistics.",
+      "group": null,
+      "chief": null,
+      "discord_channel_id": null,
+      "is_active": true
+    }
+  },
+  {
+    "model": "tribes.tribegroup",
+    "pk": 9,
+    "fields": {
+      "tribe": 3,
+      "name": "Freighters",
+      "description": "If it needs to move, we move it. Freighters handle the logistics runs that keep every corner of the alliance stocked and operational.",
+      "group": null,
+      "chief": null,
+      "discord_channel_id": null,
+      "is_active": true
+    }
+  },
+  {
+    "model": "tribes.tribegroup",
+    "pk": 10,
+    "fields": {
+      "tribe": 3,
+      "name": "Contracts",
+      "description": "Right ship, right pilot, right price. Contracts makes doctrine fits and key assets available to alliance members without the headache.",
+      "group": null,
+      "chief": null,
+      "discord_channel_id": null,
+      "is_active": true
+    }
+  },
+  {
+    "model": "tribes.tribegroup",
+    "pk": 11,
+    "fields": {
+      "tribe": 3,
+      "name": "Market Orders",
+      "description": "Supply meets demand. Orders manages the market pipeline from raw material to undock-ready hulls.",
+      "group": null,
+      "chief": null,
+      "discord_channel_id": null,
+      "is_active": true
+    }
+  },
+  {
+    "model": "tribes.tribegroup",
+    "pk": 12,
+    "fields": {
+      "tribe": 4,
+      "name": "Technology",
+      "description": "The systems that keep us sharp. Technology builds and maintains the tools that reduce overhead and give FL33T an edge inside and outside the game.",
+      "group": null,
+      "chief": null,
+      "discord_channel_id": null,
+      "is_active": true
+    }
+  },
+  {
+    "model": "tribes.tribegroup",
+    "pk": 13,
+    "fields": {
+      "tribe": 4,
+      "name": "Thinkspeak",
+      "description": "Win the narrative, win the war. Thinkspeak shapes our public image and erodes the enemy's before a single shot is fired.",
+      "group": null,
+      "chief": null,
+      "discord_channel_id": null,
+      "is_active": true
+    }
+  },
+  {
+    "model": "tribes.tribegroup",
+    "pk": 14,
+    "fields": {
+      "tribe": 4,
+      "name": "Readiness",
+      "description": "No excuses come fleet time. Readiness ensures every pilot is trained, fitted, and ready to perform when it counts.",
+      "group": null,
+      "chief": null,
+      "discord_channel_id": null,
+      "is_active": true
+    }
+  },
+  {
+    "model": "tribes.tribegroup",
+    "pk": 15,
+    "fields": {
+      "tribe": 4,
+      "name": "Advocates",
+      "description": "Every great pilot started somewhere. Advocates make the new player experience welcoming, approachable, and worth sticking around for.",
+      "group": null,
+      "chief": null,
+      "discord_channel_id": null,
+      "is_active": true
+    }
+  },
+  {
+    "model": "tribes.tribegroup",
+    "pk": 16,
+    "fields": {
+      "tribe": 3,
+      "name": "Loyalty Points",
+      "description": "Warzones pay dividends. Loyalty Points converts alliance military activity into ISK and gear that flows back to our pilots.",
+      "group": null,
+      "chief": null,
+      "discord_channel_id": null,
+      "is_active": true
+    }
+  },
+  {
+    "model": "tribes.tribegroup",
+    "pk": 17,
+    "fields": {
+      "tribe": 4,
+      "name": "Tournaments",
+      "description": "Because sometimes war has rules. Tournaments represent FL33T in structured competitive play and keep our pilots sharp between conflicts.",
+      "group": null,
+      "chief": null,
+      "discord_channel_id": null,
+      "is_active": true
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirement",
+    "pk": 1,
+    "fields": {
+      "tribe_group": 1
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirement",
+    "pk": 2,
+    "fields": {
+      "tribe_group": 2
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirement",
+    "pk": 5,
+    "fields": {
+      "tribe_group": 3
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirement",
+    "pk": 6,
+    "fields": {
+      "tribe_group": 6
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirement",
+    "pk": 7,
+    "fields": {
+      "tribe_group": 7
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirement",
+    "pk": 8,
+    "fields": {
+      "tribe_group": 4
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirement",
+    "pk": 9,
+    "fields": {
+      "tribe_group": 5
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirement",
+    "pk": 10,
+    "fields": {
+      "tribe_group": 10
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirement",
+    "pk": 11,
+    "fields": {
+      "tribe_group": 11
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirement",
+    "pk": 12,
+    "fields": {
+      "tribe_group": 9
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 1,
+    "fields": {
+      "requirement": 1,
+      "eve_type": 21611,
+      "minimum_level": 5
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 2,
+    "fields": {
+      "requirement": 2,
+      "eve_type": 83094,
+      "minimum_level": 4
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 3,
+    "fields": {
+      "requirement": 2,
+      "eve_type": 21611,
+      "minimum_level": 5
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 6,
+    "fields": {
+      "requirement": 2,
+      "eve_type": 21610,
+      "minimum_level": 3
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 7,
+    "fields": {
+      "requirement": 1,
+      "eve_type": 22043,
+      "minimum_level": 5
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 8,
+    "fields": {
+      "requirement": 5,
+      "eve_type": 27906,
+      "minimum_level": 5
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 9,
+    "fields": {
+      "requirement": 5,
+      "eve_type": 21611,
+      "minimum_level": 5
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 10,
+    "fields": {
+      "requirement": 5,
+      "eve_type": 21610,
+      "minimum_level": 4
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 11,
+    "fields": {
+      "requirement": 7,
+      "eve_type": 2406,
+      "minimum_level": 3
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 12,
+    "fields": {
+      "requirement": 7,
+      "eve_type": 2505,
+      "minimum_level": 3
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 13,
+    "fields": {
+      "requirement": 7,
+      "eve_type": 13279,
+      "minimum_level": 3
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 14,
+    "fields": {
+      "requirement": 7,
+      "eve_type": 2495,
+      "minimum_level": 4
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 15,
+    "fields": {
+      "requirement": 8,
+      "eve_type": 3380,
+      "minimum_level": 1
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 16,
+    "fields": {
+      "requirement": 9,
+      "eve_type": 22242,
+      "minimum_level": 3
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 17,
+    "fields": {
+      "requirement": 9,
+      "eve_type": 3388,
+      "minimum_level": 5
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 18,
+    "fields": {
+      "requirement": 9,
+      "eve_type": 3392,
+      "minimum_level": 5
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 19,
+    "fields": {
+      "requirement": 9,
+      "eve_type": 3380,
+      "minimum_level": 5
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 20,
+    "fields": {
+      "requirement": 10,
+      "eve_type": 25233,
+      "minimum_level": 3
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 21,
+    "fields": {
+      "requirement": 11,
+      "eve_type": 16622,
+      "minimum_level": 5
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 22,
+    "fields": {
+      "requirement": 12,
+      "eve_type": 29029,
+      "minimum_level": 4
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 23,
+    "fields": {
+      "requirement": 12,
+      "eve_type": 21611,
+      "minimum_level": 5
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 24,
+    "fields": {
+      "requirement": 12,
+      "eve_type": 21610,
+      "minimum_level": 4
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 1,
+    "fields": {
+      "requirement": 1,
+      "eve_type": 19720,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 2,
+    "fields": {
+      "requirement": 1,
+      "eve_type": 73790,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 4,
+    "fields": {
+      "requirement": 2,
+      "eve_type": 23911,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 5,
+    "fields": {
+      "requirement": 2,
+      "eve_type": 23757,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 6,
+    "fields": {
+      "requirement": 2,
+      "eve_type": 24483,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 9,
+    "fields": {
+      "requirement": 1,
+      "eve_type": 52907,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 12,
+    "fields": {
+      "requirement": 5,
+      "eve_type": 37604,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 13,
+    "fields": {
+      "requirement": 5,
+      "eve_type": 37606,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 14,
+    "fields": {
+      "requirement": 5,
+      "eve_type": 37607,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 15,
+    "fields": {
+      "requirement": 6,
+      "eve_type": 89240,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 16,
+    "fields": {
+      "requirement": 6,
+      "eve_type": 17478,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 17,
+    "fields": {
+      "requirement": 6,
+      "eve_type": 17476,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 18,
+    "fields": {
+      "requirement": 6,
+      "eve_type": 17480,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 19,
+    "fields": {
+      "requirement": 6,
+      "eve_type": 22544,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 20,
+    "fields": {
+      "requirement": 6,
+      "eve_type": 22546,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 21,
+    "fields": {
+      "requirement": 6,
+      "eve_type": 22548,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 22,
+    "fields": {
+      "requirement": 7,
+      "eve_type": 655,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 23,
+    "fields": {
+      "requirement": 7,
+      "eve_type": 81008,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 24,
+    "fields": {
+      "requirement": 12,
+      "eve_type": 28846,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 25,
+    "fields": {
+      "requirement": 12,
+      "eve_type": 28850,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 26,
+    "fields": {
+      "requirement": 12,
+      "eve_type": 28844,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 27,
+    "fields": {
+      "requirement": 12,
+      "eve_type": 28848,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 1,
+    "fields": {
+      "tribe_group": 2,
+      "activity_type": "killmail",
+      "source_eve_type_id": 23757,
+      "target_eve_type_id": null,
+      "description": "Kills (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 2,
+    "fields": {
+      "tribe_group": 2,
+      "activity_type": "lossmail",
+      "source_eve_type_id": 23757,
+      "target_eve_type_id": null,
+      "description": "Losses (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 3,
+    "fields": {
+      "tribe_group": 2,
+      "activity_type": "fleet_participation",
+      "source_eve_type_id": 23757,
+      "target_eve_type_id": null,
+      "description": "Fleet (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 4,
+    "fields": {
+      "tribe_group": 2,
+      "activity_type": "killmail",
+      "source_eve_type_id": 24483,
+      "target_eve_type_id": null,
+      "description": "Kills (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 5,
+    "fields": {
+      "tribe_group": 2,
+      "activity_type": "lossmail",
+      "source_eve_type_id": 24483,
+      "target_eve_type_id": null,
+      "description": "Losses (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 6,
+    "fields": {
+      "tribe_group": 2,
+      "activity_type": "fleet_participation",
+      "source_eve_type_id": 24483,
+      "target_eve_type_id": null,
+      "description": "Fleet (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 7,
+    "fields": {
+      "tribe_group": 2,
+      "activity_type": "killmail",
+      "source_eve_type_id": 23911,
+      "target_eve_type_id": null,
+      "description": "Kills (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 8,
+    "fields": {
+      "tribe_group": 2,
+      "activity_type": "lossmail",
+      "source_eve_type_id": 23911,
+      "target_eve_type_id": null,
+      "description": "Losses (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 9,
+    "fields": {
+      "tribe_group": 2,
+      "activity_type": "fleet_participation",
+      "source_eve_type_id": 23911,
+      "target_eve_type_id": null,
+      "description": "Fleet (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 11,
+    "fields": {
+      "tribe_group": 1,
+      "activity_type": "killmail",
+      "source_eve_type_id": 19720,
+      "target_eve_type_id": null,
+      "description": "Kills (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 12,
+    "fields": {
+      "tribe_group": 1,
+      "activity_type": "lossmail",
+      "source_eve_type_id": 19720,
+      "target_eve_type_id": null,
+      "description": "Losses (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 13,
+    "fields": {
+      "tribe_group": 1,
+      "activity_type": "fleet_participation",
+      "source_eve_type_id": 19720,
+      "target_eve_type_id": null,
+      "description": "Fleet (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 14,
+    "fields": {
+      "tribe_group": 1,
+      "activity_type": "killmail",
+      "source_eve_type_id": 73790,
+      "target_eve_type_id": null,
+      "description": "Kills (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 15,
+    "fields": {
+      "tribe_group": 1,
+      "activity_type": "lossmail",
+      "source_eve_type_id": 73790,
+      "target_eve_type_id": null,
+      "description": "Losses (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 16,
+    "fields": {
+      "tribe_group": 1,
+      "activity_type": "fleet_participation",
+      "source_eve_type_id": 73790,
+      "target_eve_type_id": null,
+      "description": "Fleet (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 17,
+    "fields": {
+      "tribe_group": 1,
+      "activity_type": "killmail",
+      "source_eve_type_id": 52907,
+      "target_eve_type_id": null,
+      "description": "Kills (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 18,
+    "fields": {
+      "tribe_group": 1,
+      "activity_type": "lossmail",
+      "source_eve_type_id": 52907,
+      "target_eve_type_id": null,
+      "description": "Losses (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 19,
+    "fields": {
+      "tribe_group": 1,
+      "activity_type": "fleet_participation",
+      "source_eve_type_id": 52907,
+      "target_eve_type_id": null,
+      "description": "Fleet (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 21,
+    "fields": {
+      "tribe_group": 3,
+      "activity_type": "killmail",
+      "source_eve_type_id": 37604,
+      "target_eve_type_id": null,
+      "description": "Kills (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 22,
+    "fields": {
+      "tribe_group": 3,
+      "activity_type": "lossmail",
+      "source_eve_type_id": 37604,
+      "target_eve_type_id": null,
+      "description": "Losses (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 23,
+    "fields": {
+      "tribe_group": 3,
+      "activity_type": "fleet_participation",
+      "source_eve_type_id": 37604,
+      "target_eve_type_id": null,
+      "description": "Fleet (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 24,
+    "fields": {
+      "tribe_group": 3,
+      "activity_type": "killmail",
+      "source_eve_type_id": 37606,
+      "target_eve_type_id": null,
+      "description": "Kills (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 25,
+    "fields": {
+      "tribe_group": 3,
+      "activity_type": "lossmail",
+      "source_eve_type_id": 37606,
+      "target_eve_type_id": null,
+      "description": "Losses (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 26,
+    "fields": {
+      "tribe_group": 3,
+      "activity_type": "fleet_participation",
+      "source_eve_type_id": 37606,
+      "target_eve_type_id": null,
+      "description": "Fleet (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 27,
+    "fields": {
+      "tribe_group": 3,
+      "activity_type": "killmail",
+      "source_eve_type_id": 37607,
+      "target_eve_type_id": null,
+      "description": "Kills (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 28,
+    "fields": {
+      "tribe_group": 3,
+      "activity_type": "lossmail",
+      "source_eve_type_id": 37607,
+      "target_eve_type_id": null,
+      "description": "Losses (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 29,
+    "fields": {
+      "tribe_group": 3,
+      "activity_type": "fleet_participation",
+      "source_eve_type_id": 37607,
+      "target_eve_type_id": null,
+      "description": "Fleet (ship)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 34,
+    "fields": {
+      "tribe_group": 5,
+      "activity_type": "industry",
+      "source_eve_type_id": 688,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (blueprint)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 35,
+    "fields": {
+      "tribe_group": 5,
+      "activity_type": "industry",
+      "source_eve_type_id": 693,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (blueprint)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 36,
+    "fields": {
+      "tribe_group": 5,
+      "activity_type": "industry",
+      "source_eve_type_id": 994,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (blueprint)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 37,
+    "fields": {
+      "tribe_group": 5,
+      "activity_type": "industry",
+      "source_eve_type_id": 996,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (blueprint)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 38,
+    "fields": {
+      "tribe_group": 5,
+      "activity_type": "industry",
+      "source_eve_type_id": 998,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (blueprint)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 39,
+    "fields": {
+      "tribe_group": 5,
+      "activity_type": "industry",
+      "source_eve_type_id": 17727,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (blueprint)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 40,
+    "fields": {
+      "tribe_group": 5,
+      "activity_type": "industry",
+      "source_eve_type_id": 17733,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (blueprint)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 41,
+    "fields": {
+      "tribe_group": 5,
+      "activity_type": "industry",
+      "source_eve_type_id": 19721,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (blueprint)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 42,
+    "fields": {
+      "tribe_group": 5,
+      "activity_type": "industry",
+      "source_eve_type_id": 23758,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (blueprint)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 43,
+    "fields": {
+      "tribe_group": 5,
+      "activity_type": "industry",
+      "source_eve_type_id": 32312,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (blueprint)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 44,
+    "fields": {
+      "tribe_group": 5,
+      "activity_type": "industry",
+      "source_eve_type_id": 41582,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (blueprint)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 45,
+    "fields": {
+      "tribe_group": 5,
+      "activity_type": "industry",
+      "source_eve_type_id": 72923,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (blueprint)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 46,
+    "fields": {
+      "tribe_group": 5,
+      "activity_type": "industry",
+      "source_eve_type_id": null,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (all)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 48,
+    "fields": {
+      "tribe_group": 6,
+      "activity_type": "mining",
+      "source_eve_type_id": null,
+      "target_eve_type_id": null,
+      "description": "Mining ledger (m\u00b3)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 53,
+    "fields": {
+      "tribe_group": 7,
+      "activity_type": "planetary_interaction",
+      "source_eve_type_id": null,
+      "target_eve_type_id": null,
+      "description": "PI tax",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 57,
+    "fields": {
+      "tribe_group": 4,
+      "activity_type": "industry",
+      "source_eve_type_id": 688,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (blueprint)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 58,
+    "fields": {
+      "tribe_group": 4,
+      "activity_type": "industry",
+      "source_eve_type_id": 693,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (blueprint)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 59,
+    "fields": {
+      "tribe_group": 4,
+      "activity_type": "industry",
+      "source_eve_type_id": 994,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (blueprint)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 60,
+    "fields": {
+      "tribe_group": 4,
+      "activity_type": "industry",
+      "source_eve_type_id": 996,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (blueprint)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 61,
+    "fields": {
+      "tribe_group": 4,
+      "activity_type": "industry",
+      "source_eve_type_id": 998,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (blueprint)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 62,
+    "fields": {
+      "tribe_group": 4,
+      "activity_type": "industry",
+      "source_eve_type_id": 17727,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (blueprint)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 63,
+    "fields": {
+      "tribe_group": 4,
+      "activity_type": "industry",
+      "source_eve_type_id": 17733,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (blueprint)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 64,
+    "fields": {
+      "tribe_group": 4,
+      "activity_type": "industry",
+      "source_eve_type_id": 19721,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (blueprint)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 65,
+    "fields": {
+      "tribe_group": 4,
+      "activity_type": "industry",
+      "source_eve_type_id": 32312,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (blueprint)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 66,
+    "fields": {
+      "tribe_group": 4,
+      "activity_type": "industry",
+      "source_eve_type_id": 41582,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (blueprint)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 67,
+    "fields": {
+      "tribe_group": 4,
+      "activity_type": "industry",
+      "source_eve_type_id": 72923,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (blueprint)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 68,
+    "fields": {
+      "tribe_group": 4,
+      "activity_type": "industry",
+      "source_eve_type_id": null,
+      "target_eve_type_id": null,
+      "description": "Industry jobs (all)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 71,
+    "fields": {
+      "tribe_group": 10,
+      "activity_type": "contract",
+      "source_eve_type_id": null,
+      "target_eve_type_id": null,
+      "description": "Contracts posted",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 72,
+    "fields": {
+      "tribe_group": 9,
+      "activity_type": "courier_contract",
+      "source_eve_type_id": null,
+      "target_eve_type_id": null,
+      "description": "Courier deliveries (m\u00b3)",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroupactivity",
+    "pk": 75,
+    "fields": {
+      "tribe_group": 11,
+      "activity_type": "market_order",
+      "source_eve_type_id": null,
+      "target_eve_type_id": null,
+      "description": "Market sales",
+      "is_active": true,
+      "points_per_record": null,
+      "points_per_unit": null,
+      "created_at": "2026-03-06T04:58:23Z",
+      "updated_at": "2026-03-06T04:58:23Z"
+    }
+  }
+]

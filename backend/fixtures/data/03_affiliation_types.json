@@ -1,0 +1,56 @@
+[
+  {
+    "model": "groups.affiliationtype",
+    "pk": 1,
+    "fields": {
+      "name": "Guest",
+      "description": "A guest of the Minmatar Fleet.",
+      "image_url": null,
+      "group": 39,
+      "priority": 0,
+      "default": true,
+      "requires_trial": false,
+      "corporations": [],
+      "alliances": [],
+      "factions": []
+    }
+  },
+  {
+    "model": "groups.affiliationtype",
+    "pk": 2,
+    "fields": {
+      "name": "Militia",
+      "description": "A member of the Minmatar Militia",
+      "image_url": null,
+      "group": 42,
+      "priority": 5,
+      "default": false,
+      "requires_trial": false,
+      "corporations": [],
+      "alliances": [],
+      "factions": [
+        500002
+      ]
+    }
+  },
+  {
+    "model": "groups.affiliationtype",
+    "pk": 4,
+    "fields": {
+      "name": "Alliance",
+      "description": "Member of Minmatar Fleet Alliance",
+      "image_url": null,
+      "group": 41,
+      "priority": 15,
+      "default": false,
+      "requires_trial": true,
+      "corporations": [
+        98550601
+      ],
+      "alliances": [
+        1
+      ],
+      "factions": []
+    }
+  }
+]

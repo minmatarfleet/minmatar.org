@@ -24,8 +24,11 @@ from onboarding.models import (
     UserOnboardingAcknowledgment,
 )
 from onboarding.seed import ensure_onboarding_programs
+from fittings.models import EveFittingPod
 from srp.models import (
     EveFleetShipReimbursement,
+    PodReimbursementProgram,
+    PodReimbursementProgramAmount,
     ShipReimbursementProgram,
     ShipReimbursementProgramAmount,
 )
@@ -881,3 +884,18 @@ class SrpRouterTestCase(TestCase):
         data = response.json()
         self.assertEqual("dps", data["category"])
         self.assertEqual("Testing FTW", data["comments"])
+
+
+class PodReimbursementProgramTest(TestCase):
+    def test_pod_program_amount_history(self):
+        pod = EveFittingPod.objects.create(
+            name="Test Pod",
+            pod_format="Implant A",
+        )
+        program = PodReimbursementProgram.objects.create(fitting_pod=pod)
+        PodReimbursementProgramAmount.objects.create(
+            program=program,
+            srp_value=25_000_000,
+        )
+        latest = program.amounts.order_by("-created_at", "-id").first()
+        self.assertEqual(latest.srp_value, 25_000_000)

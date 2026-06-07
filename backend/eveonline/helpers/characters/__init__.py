@@ -23,6 +23,9 @@ from eveonline.helpers.characters.skills import (
     upsert_character_skill,
     upsert_character_skills,
 )
+from eveonline.helpers.characters.clones import (
+    update_character_clones,
+)
 from eveonline.helpers.characters.mining import (
     update_character_mining,
 )
@@ -52,6 +55,7 @@ __all__ = [
     "update_character_contracts",
     "update_character_industry_jobs",
     "update_character_killmails",
+    "update_character_clones",
     "update_character_mining",
     "update_character_planets",
     "update_character_skills",

@@ -1,0 +1,1152 @@
+[
+  {
+    "model": "fittings.evedoctrine",
+    "pk": 3,
+    "fields": {
+      "name": "Rail ENI",
+      "type": "non_strategic",
+      "created_at": "2024-04-18T21:45:53.616Z",
+      "updated_at": "2026-04-05T16:22:34.830Z",
+      "description": "A midrange, versatile fleet capable of punching into close range fights or midrange fights. Emphasizes speed and high damage to catch enemies off-guard. Meta gun refit in cargo.",
+      "latest_version": "c57766e9-6e43-4e71-8c44-b5b2cea7d08f",
+      "locations": [
+        1022167642188
+      ]
+    }
+  },
+  {
+    "model": "fittings.evedoctrine",
+    "pk": 13,
+    "fields": {
+      "name": "AC Tempest Fleet Issue",
+      "type": "strategic",
+      "created_at": "2024-09-03T14:28:41.863Z",
+      "updated_at": "2026-04-30T18:47:18.998Z",
+      "description": "Close range armor battleship doctrine focused on grinding down enemy ships.",
+      "latest_version": "9c72b320-8099-4141-b833-59f31da8cb94",
+      "locations": [
+        1022167642188
+      ]
+    }
+  },
+  {
+    "model": "fittings.evedoctrine",
+    "pk": 19,
+    "fields": {
+      "name": "Scram AF",
+      "type": "non_strategic",
+      "created_at": "2024-11-13T06:26:37.394Z",
+      "updated_at": "2026-02-04T02:11:10.827Z",
+      "description": "An assortment of scram-fit Assault Frigates designed to abuse their fast speed and high damage to catch kitey and evasive fleets off-guard.",
+      "latest_version": "c37e267c-65cc-45ce-a372-0f2b4df82db1",
+      "locations": [
+        1022167642188
+      ]
+    }
+  },
+  {
+    "model": "fittings.evedoctrine",
+    "pk": 40,
+    "fields": {
+      "name": "HML NOsprey",
+      "type": "non_strategic",
+      "created_at": "2025-11-24T15:59:45.677Z",
+      "updated_at": "2026-04-04T22:25:15.699Z",
+      "description": "A long-range, agile fleet.",
+      "latest_version": "d7eb0d1d-fab7-4f04-85fb-97d77e4947b4",
+      "locations": []
+    }
+  },
+  {
+    "model": "fittings.evedoctrine",
+    "pk": 41,
+    "fields": {
+      "name": "Destroyers",
+      "type": "non_strategic",
+      "created_at": "2026-01-23T00:54:25.572Z",
+      "updated_at": "2026-04-04T22:24:29.986Z",
+      "description": "Basic destroyer fleet, can bring any armor destroyers like Algos or Coercer Navy Issue. Leads into assault frigates.",
+      "latest_version": "acddc376-697f-45c9-9c65-5aab324b445b",
+      "locations": []
+    }
+  },
+  {
+    "model": "fittings.evedoctrine",
+    "pk": 42,
+    "fields": {
+      "name": "HML DNI",
+      "type": "non_strategic",
+      "created_at": "2026-01-23T01:00:44.088Z",
+      "updated_at": "2026-02-04T02:06:08.958Z",
+      "description": "Heavy missile composition focused on mid-range fights.",
+      "latest_version": "004ae5ee-2974-4f0f-9b31-111c046d7396",
+      "locations": [
+        1051465618860
+      ]
+    }
+  },
+  {
+    "model": "fittings.evedoctrine",
+    "pk": 45,
+    "fields": {
+      "name": "Pulse NApoc",
+      "type": "strategic",
+      "created_at": "2026-02-04T02:25:23.382Z",
+      "updated_at": "2026-02-04T02:25:23.382Z",
+      "description": "An apex short-mid ranged armor fleet that excels at holding grid applying strong damage.",
+      "latest_version": "fe57292c-7f5e-42a1-87c3-958f3a2df668",
+      "locations": [
+        1051465618860
+      ]
+    }
+  },
+  {
+    "model": "fittings.evedoctrine",
+    "pk": 49,
+    "fields": {
+      "name": "Beam NOmen",
+      "type": "non_strategic",
+      "created_at": "2026-02-06T03:13:54.268Z",
+      "updated_at": "2026-03-01T17:56:42.530Z",
+      "description": "A very agile long-range fleet meant for fighting outnumbered or harassing immobile objectives.",
+      "latest_version": "62fbe294-038a-4a39-917f-2d9c619eeecd",
+      "locations": [
+        1051465618860
+      ]
+    }
+  },
+  {
+    "model": "fittings.evedoctrine",
+    "pk": 51,
+    "fields": {
+      "name": "RHML Typhoon Fleet Issue",
+      "type": "strategic",
+      "created_at": "2026-04-30T18:46:48.565Z",
+      "updated_at": "2026-04-30T18:47:31.829Z",
+      "description": "A versatile fleet that focuses on aggressive engagements and extremely high initial burst.",
+      "latest_version": "eae2df23-ac3b-49f7-862a-8d8ca3e59e29",
+      "locations": [
+        1022167642188,
+        1051465618860
+      ]
+    }
+  },
+  {
+    "model": "fittings.evedoctrine",
+    "pk": 52,
+    "fields": {
+      "name": "Cruise Typhoon",
+      "type": "non_strategic",
+      "created_at": "2026-04-30T18:46:55.939Z",
+      "updated_at": "2026-04-30T18:46:55.939Z",
+      "description": "A mid-long range skirmishing fleet that leverages EWAR and ECM to engage hostile fleets.",
+      "latest_version": "4b2e1cf2-363c-415c-a0ea-ec4d3638520b",
+      "locations": [
+        1022167642188
+      ]
+    }
+  },
+  {
+    "model": "fittings.evedoctrine",
+    "pk": 53,
+    "fields": {
+      "name": "Cruise Raven Fleet Issue",
+      "type": "non_strategic",
+      "created_at": "2026-04-30T18:50:50.791Z",
+      "updated_at": "2026-05-06T16:37:10.362Z",
+      "description": "A long-range fleet that excels at matching other long-range fleets.",
+      "latest_version": "ad9fedea-5bce-4416-92e2-63fcd83b61f0",
+      "locations": [
+        1022167642188,
+        1051465618860
+      ]
+    }
+  },
+  {
+    "model": "fittings.evedoctrine",
+    "pk": 54,
+    "fields": {
+      "name": "100mn Cyclone Fleet Issue",
+      "type": "non_strategic",
+      "created_at": "2026-04-30T18:52:31.058Z",
+      "updated_at": "2026-04-30T20:03:12.969Z",
+      "description": "A mid-range skirmish fleet that focuses on mitigation and speed.",
+      "latest_version": "54aa4ba0-5e45-430a-bf69-aeb60c7f256f",
+      "locations": [
+        1022167642188
+      ]
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 13,
+    "fields": {
+      "doctrine": 3,
+      "fitting": 69,
+      "role": "primary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 111,
+    "fields": {
+      "doctrine": 13,
+      "fitting": 201,
+      "role": "primary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 114,
+    "fields": {
+      "doctrine": 13,
+      "fitting": 177,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 116,
+    "fields": {
+      "doctrine": 13,
+      "fitting": 203,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 117,
+    "fields": {
+      "doctrine": 13,
+      "fitting": 204,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 197,
+    "fields": {
+      "doctrine": 19,
+      "fitting": 241,
+      "role": "primary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 199,
+    "fields": {
+      "doctrine": 19,
+      "fitting": 243,
+      "role": "primary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 200,
+    "fields": {
+      "doctrine": 19,
+      "fitting": 59,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 203,
+    "fields": {
+      "doctrine": 13,
+      "fitting": 57,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 225,
+    "fields": {
+      "doctrine": 19,
+      "fitting": 246,
+      "role": "primary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 234,
+    "fields": {
+      "doctrine": 13,
+      "fitting": 170,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 296,
+    "fields": {
+      "doctrine": 13,
+      "fitting": 292,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 313,
+    "fields": {
+      "doctrine": 19,
+      "fitting": 279,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 314,
+    "fields": {
+      "doctrine": 19,
+      "fitting": 283,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 348,
+    "fields": {
+      "doctrine": 19,
+      "fitting": 296,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 349,
+    "fields": {
+      "doctrine": 19,
+      "fitting": 297,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 356,
+    "fields": {
+      "doctrine": 19,
+      "fitting": 10,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 357,
+    "fields": {
+      "doctrine": 19,
+      "fitting": 11,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 387,
+    "fields": {
+      "doctrine": 3,
+      "fitting": 279,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 399,
+    "fields": {
+      "doctrine": 13,
+      "fitting": 278,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 401,
+    "fields": {
+      "doctrine": 13,
+      "fitting": 176,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 403,
+    "fields": {
+      "doctrine": 13,
+      "fitting": 205,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 404,
+    "fields": {
+      "doctrine": 13,
+      "fitting": 227,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 480,
+    "fields": {
+      "doctrine": 40,
+      "fitting": 324,
+      "role": "primary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 481,
+    "fields": {
+      "doctrine": 40,
+      "fitting": 86,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 482,
+    "fields": {
+      "doctrine": 40,
+      "fitting": 212,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 485,
+    "fields": {
+      "doctrine": 40,
+      "fitting": 295,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 486,
+    "fields": {
+      "doctrine": 40,
+      "fitting": 298,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 487,
+    "fields": {
+      "doctrine": 3,
+      "fitting": 211,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 488,
+    "fields": {
+      "doctrine": 3,
+      "fitting": 278,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 489,
+    "fields": {
+      "doctrine": 41,
+      "fitting": 28,
+      "role": "primary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 494,
+    "fields": {
+      "doctrine": 42,
+      "fitting": 341,
+      "role": "primary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 495,
+    "fields": {
+      "doctrine": 42,
+      "fitting": 301,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 496,
+    "fields": {
+      "doctrine": 42,
+      "fitting": 20,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 497,
+    "fields": {
+      "doctrine": 42,
+      "fitting": 73,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 498,
+    "fields": {
+      "doctrine": 42,
+      "fitting": 179,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 500,
+    "fields": {
+      "doctrine": 42,
+      "fitting": 189,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 502,
+    "fields": {
+      "doctrine": 41,
+      "fitting": 280,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 505,
+    "fields": {
+      "doctrine": 42,
+      "fitting": 188,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 511,
+    "fields": {
+      "doctrine": 41,
+      "fitting": 33,
+      "role": "primary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 512,
+    "fields": {
+      "doctrine": 41,
+      "fitting": 37,
+      "role": "primary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 513,
+    "fields": {
+      "doctrine": 41,
+      "fitting": 10,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 514,
+    "fields": {
+      "doctrine": 41,
+      "fitting": 11,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 515,
+    "fields": {
+      "doctrine": 41,
+      "fitting": 279,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 516,
+    "fields": {
+      "doctrine": 41,
+      "fitting": 283,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 517,
+    "fields": {
+      "doctrine": 40,
+      "fitting": 124,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 519,
+    "fields": {
+      "doctrine": 41,
+      "fitting": 31,
+      "role": "primary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 520,
+    "fields": {
+      "doctrine": 41,
+      "fitting": 36,
+      "role": "primary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 521,
+    "fields": {
+      "doctrine": 41,
+      "fitting": 38,
+      "role": "primary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 522,
+    "fields": {
+      "doctrine": 41,
+      "fitting": 342,
+      "role": "primary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 529,
+    "fields": {
+      "doctrine": 45,
+      "fitting": 343,
+      "role": "primary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 530,
+    "fields": {
+      "doctrine": 45,
+      "fitting": 170,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 531,
+    "fields": {
+      "doctrine": 45,
+      "fitting": 211,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 532,
+    "fields": {
+      "doctrine": 45,
+      "fitting": 57,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 533,
+    "fields": {
+      "doctrine": 45,
+      "fitting": 176,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 534,
+    "fields": {
+      "doctrine": 45,
+      "fitting": 177,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 535,
+    "fields": {
+      "doctrine": 45,
+      "fitting": 203,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 536,
+    "fields": {
+      "doctrine": 45,
+      "fitting": 204,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 537,
+    "fields": {
+      "doctrine": 45,
+      "fitting": 205,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 538,
+    "fields": {
+      "doctrine": 45,
+      "fitting": 227,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 559,
+    "fields": {
+      "doctrine": 49,
+      "fitting": 325,
+      "role": "primary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 560,
+    "fields": {
+      "doctrine": 49,
+      "fitting": 84,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 564,
+    "fields": {
+      "doctrine": 49,
+      "fitting": 59,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 565,
+    "fields": {
+      "doctrine": 49,
+      "fitting": 296,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 566,
+    "fields": {
+      "doctrine": 49,
+      "fitting": 156,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 576,
+    "fields": {
+      "doctrine": 49,
+      "fitting": 86,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 577,
+    "fields": {
+      "doctrine": 51,
+      "fitting": 338,
+      "role": "primary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 578,
+    "fields": {
+      "doctrine": 51,
+      "fitting": 339,
+      "role": "primary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 579,
+    "fields": {
+      "doctrine": 51,
+      "fitting": 170,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 580,
+    "fields": {
+      "doctrine": 51,
+      "fitting": 278,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 581,
+    "fields": {
+      "doctrine": 51,
+      "fitting": 279,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 582,
+    "fields": {
+      "doctrine": 51,
+      "fitting": 292,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 583,
+    "fields": {
+      "doctrine": 51,
+      "fitting": 122,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 584,
+    "fields": {
+      "doctrine": 51,
+      "fitting": 176,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 585,
+    "fields": {
+      "doctrine": 51,
+      "fitting": 177,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 586,
+    "fields": {
+      "doctrine": 51,
+      "fitting": 205,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 587,
+    "fields": {
+      "doctrine": 51,
+      "fitting": 211,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 588,
+    "fields": {
+      "doctrine": 51,
+      "fitting": 227,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 589,
+    "fields": {
+      "doctrine": 51,
+      "fitting": 326,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 590,
+    "fields": {
+      "doctrine": 52,
+      "fitting": 333,
+      "role": "primary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 591,
+    "fields": {
+      "doctrine": 52,
+      "fitting": 278,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 592,
+    "fields": {
+      "doctrine": 52,
+      "fitting": 279,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 593,
+    "fields": {
+      "doctrine": 52,
+      "fitting": 122,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 594,
+    "fields": {
+      "doctrine": 52,
+      "fitting": 176,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 595,
+    "fields": {
+      "doctrine": 52,
+      "fitting": 177,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 596,
+    "fields": {
+      "doctrine": 52,
+      "fitting": 205,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 597,
+    "fields": {
+      "doctrine": 52,
+      "fitting": 211,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 598,
+    "fields": {
+      "doctrine": 52,
+      "fitting": 227,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 599,
+    "fields": {
+      "doctrine": 52,
+      "fitting": 326,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 600,
+    "fields": {
+      "doctrine": 51,
+      "fitting": 57,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 601,
+    "fields": {
+      "doctrine": 53,
+      "fitting": 191,
+      "role": "primary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 602,
+    "fields": {
+      "doctrine": 53,
+      "fitting": 245,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 603,
+    "fields": {
+      "doctrine": 53,
+      "fitting": 282,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 605,
+    "fields": {
+      "doctrine": 53,
+      "fitting": 123,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 606,
+    "fields": {
+      "doctrine": 53,
+      "fitting": 178,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 607,
+    "fields": {
+      "doctrine": 53,
+      "fitting": 179,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 608,
+    "fields": {
+      "doctrine": 53,
+      "fitting": 182,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 609,
+    "fields": {
+      "doctrine": 53,
+      "fitting": 189,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 610,
+    "fields": {
+      "doctrine": 54,
+      "fitting": 150,
+      "role": "primary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 611,
+    "fields": {
+      "doctrine": 54,
+      "fitting": 245,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 612,
+    "fields": {
+      "doctrine": 54,
+      "fitting": 282,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 614,
+    "fields": {
+      "doctrine": 54,
+      "fitting": 123,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 615,
+    "fields": {
+      "doctrine": 54,
+      "fitting": 179,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 616,
+    "fields": {
+      "doctrine": 54,
+      "fitting": 182,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 617,
+    "fields": {
+      "doctrine": 54,
+      "fitting": 189,
+      "role": "support"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 618,
+    "fields": {
+      "doctrine": 53,
+      "fitting": 86,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 619,
+    "fields": {
+      "doctrine": 54,
+      "fitting": 86,
+      "role": "secondary"
+    }
+  },
+  {
+    "model": "fittings.evedoctrinefitting",
+    "pk": 620,
+    "fields": {
+      "doctrine": 53,
+      "fitting": 361,
+      "role": "primary"
+    }
+  }
+]
