@@ -127,7 +127,7 @@ coverage run -m manage test --testrunner="testrunner.Runner"  && cat testresults
 
 ### Reference fixtures
 
-Production-like reference data (tribes, fittings, doctrines, locations, market/industry config) lives in committed JSON under `fixtures/data/`. Sensitive fields (Discord IDs, chiefs, memberships) are stripped at export time.
+Production-like reference data (tribes, fittings, doctrines, locations, market config) lives in committed JSON under `fixtures/data/`. Sensitive fields (Discord IDs, chiefs, memberships) are stripped at export time.
 
 **Prerequisites:**
 

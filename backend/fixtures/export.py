@@ -26,7 +26,6 @@ from fittings.models import (
 )
 from fleets.models import EveFleetAudience
 from groups.models import AffiliationType
-from industry.models import IndustryProduct
 from market.models import (
     EveMarketContractExpectation,
     EveMarketFittingExpectation,
@@ -50,7 +49,6 @@ FIXTURE_FILES = (
     "06_tribes.json",
     "07_fleet_audiences.json",
     "08_market_expectations.json",
-    "09_industry_products.json",
 )
 
 SANITIZE_FIELDS: dict[str, set[str]] = {
@@ -100,7 +98,6 @@ class ExportBundle:
     market_contract_expectations: list[EveMarketContractExpectation] = field(
         default_factory=list
     )
-    industry_products: list[IndustryProduct] = field(default_factory=list)
 
 
 def collect_reference_data(
@@ -226,12 +223,6 @@ def collect_reference_data(
         .order_by("pk")
     )
 
-    bundle.industry_products = list(
-        IndustryProduct.objects.using(source_db)
-        .prefetch_related("supplied_for")
-        .order_by("pk")
-    )
-
     return bundle
 
 
@@ -267,7 +258,6 @@ def bundle_counts(bundle: ExportBundle) -> dict[str, int]:
         "market.EveMarketContractExpectation": len(
             bundle.market_contract_expectations
         ),
-        "industry.IndustryProduct": len(bundle.industry_products),
     }
 
 
@@ -283,9 +273,6 @@ def collect_eve_type_ids(bundle: ExportBundle) -> set[int]:
     for row in bundle.market_item_expectations:
         if row.item_id:
             type_ids.add(row.item_id)
-    for row in bundle.industry_products:
-        if row.eve_type_id:
-            type_ids.add(row.eve_type_id)
     return type_ids
 
 
@@ -366,9 +353,6 @@ def serialize_bundle(bundle: ExportBundle) -> dict[str, list[dict]]:
             _serialize_queryset(bundle.fleet_audiences)
         ),
         "08_market_expectations.json": _serialize_queryset(market_objects),
-        "09_industry_products.json": _serialize_queryset(
-            bundle.industry_products
-        ),
     }
 
 

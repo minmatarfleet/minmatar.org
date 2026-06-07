@@ -19,7 +19,6 @@ from fittings.models import (
 )
 from fleets.models import EveFleetAudience
 from groups.models import AffiliationType
-from industry.models import IndustryProduct
 from market.models import (
     EveMarketContractExpectation,
     EveMarketFittingExpectation,
@@ -46,7 +45,6 @@ def clear_reference_data() -> dict[str, int]:
         deleted[label] = count
         return count
 
-    _delete("IndustryProduct", IndustryProduct.objects)
     _delete(
         "EveMarketContractExpectation", EveMarketContractExpectation.objects
     )

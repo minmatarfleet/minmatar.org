@@ -21,4 +21,4 @@ Use `--clear` to remove existing reference rows before loading.
 pipenv run python manage.py export_reference_fixtures
 ```
 
-Files load in numeric order (`01_` … `09_`). Do not reorder without updating `fixtures/export.py` and `load_reference_fixtures`.
+Files load in numeric order (`01_` … `08_`). Do not reorder without updating `fixtures/export.py` and `load_reference_fixtures`.

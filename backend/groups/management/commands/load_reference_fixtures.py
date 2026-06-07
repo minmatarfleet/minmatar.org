@@ -73,12 +73,11 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("Reference fixtures loaded."))
 
     def _check_eve_types(self, fixture_dir: Path):
-        """Parse tribe/market/industry fixtures for EveType FKs and validate."""
+        """Parse tribe/market fixtures for EveType FKs and validate."""
         type_ids: set[int] = set()
         for name in (
             "06_tribes.json",
             "08_market_expectations.json",
-            "09_industry_products.json",
         ):
             path = fixture_dir / name
             if not path.exists():
@@ -96,9 +95,6 @@ class Command(BaseCommand):
                 elif model == "market.evemarketitemexpectation":
                     if fields.get("item"):
                         type_ids.add(fields["item"])
-                elif model == "industry.industryproduct":
-                    if fields.get("eve_type"):
-                        type_ids.add(fields["eve_type"])
 
         missing = missing_eve_type_ids(type_ids)
         if missing:
