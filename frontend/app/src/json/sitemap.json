@@ -252,6 +252,7 @@
         "publish": true,
         "icon": "/images/icons/48px-Fleet.png",
         "description": "page_finder.fleets.upcoming.description",
+        "keywords": [ "upcoming", "schedule" ],
         "permissions" : {
             "user": [ "fleets.view_evefleet" ]
         }

@@ -177,7 +177,7 @@ export const ui = {
 
         'fleets.description': 'Schedule fleets and check those yet to come.',
 
-        'fleets.upcoming.page_title': 'Upcoming fleets',
+        'fleets.upcoming.page_title': 'Fleets',
         'fleets.upcoming.empty_message': 'There are no fleets on schedule. Be the one adding the first one.',
         'page_finder.fleets.upcoming.description': 'List of upcoming fleets.',
         'page_finder.fleets.upcoming.meta_description': 'Wondering when the next fleet is? We’ve got you covered.',
