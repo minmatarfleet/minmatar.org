@@ -84,13 +84,15 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
                             <div
                                 class:list={[ 'swiper-slide', { 'wide': true }, { 'swiper-slide-active': index === 0} ]}
                                 style="margin-right: 5px"
-                                hx-get={translatePath(`/partials/fleet_cover?audience_id=${AUDIENCE_IDS[fleet.audience] ?? 2}`)}
-                                hx-target="#viewport-cover-oob"
-                                hx-trigger="intersect delay:2000ms"
-                                hx-swap="outerHTML transition:true"
-                                hx-indicator=".loader"
                             >
-                                <Flexblock gap='var(--space-xl)'>
+                                <Flexblock
+                                    gap='var(--space-xl)'
+                                    hx-get={translatePath(`/partials/fleet_cover?audience_id=${AUDIENCE_IDS[fleet.audience] ?? 2}`)}
+                                    hx-target="#viewport-cover-oob"
+                                    hx-trigger="intersect delay:2000ms"
+                                    hx-swap="outerHTML transition:true"
+                                    hx-indicator=".loader"
+                                >
                                     <FleetHero
                                         fleet={fleet}
                                         doctrine={active_doctrines[index] ?? null}
