@@ -138,7 +138,10 @@ try {
     approved = await get_memberships(auth_token as string, tribe_id, tribe_group.id, 'active')
     pending = await get_memberships(auth_token as string, tribe_id, tribe_group.id, 'pending')
 
-    chief_membership = [ ...approved, ...pending ].find(m => m.user_id === user.user_id) ?? null
+    if (is_chief)
+        chief_membership = [ ...approved, ...pending ].find(m => m.user_id === user.user_id) ?? null
+    else
+        user_characters = []
 } catch (error) {
     fetch_membership_error = error
 }
