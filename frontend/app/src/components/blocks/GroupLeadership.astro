@@ -43,7 +43,7 @@ import ButtonAddTribeCharacter from '@components/blocks/ButtonAddTribeCharacter.
             >
                 <small>{t('group_chief')}</small>
             </PilotBadge>
-            {chief_membership &&
+            {chief_membership && available_characters.length > 0 &&
                 <ButtonAddTribeCharacter
                     id='leader-add-character'
                     title={tribe_group.name}
