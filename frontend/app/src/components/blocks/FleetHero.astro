@@ -6,18 +6,16 @@ import type { Contract } from '@dtypes/api.minmatar.org'
 import type { FleetItem, DoctrineType, HeroFittings } from '@dtypes/layout_components'
 
 interface Props {
-    fleet:                  FleetItem | undefined;
+    fleet:                  FleetItem;
     doctrine?:              DoctrineType | null;
-    update_cover:           boolean;
-    cover_overlay?:         boolean;
+    init_tooltips:          boolean;
     supply_contracts?:      Contract[];
 }
 
 const {
     fleet,
     doctrine,
-    update_cover,
-    cover_overlay = false,
+    init_tooltips,
     supply_contracts = []
 } = Astro.props
 
@@ -37,17 +35,6 @@ hero_fittings = hero_fittings.map(fitting => {
 })
 
 const supply_contracts_copy = hero_fittings.map(fitting => `${fitting.fitting_name}: ${fitting.contracts_count} on contracts`).join('\n')
-
-import {
-    get_location_video_cover,
-    get_location_video_cover_thumb,
-    get_location_cover,
-    get_location_cover_990,
-} from '@helpers/covers'
-
-const is_video_cover = Boolean(get_location_video_cover(fleet?.location ?? ''))
-
-import PageCover from '@components/page/partials/PageCover.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
@@ -69,178 +56,153 @@ import ClipboardButton from './ClipboardButton.astro';
 import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro';
 ---
 
-{fleet &&
-    <FixedFluid
-        width='50rem'
-        gap='var(--space-xl)'
-        breakpoint='34%'
-    >
-        <VerticalCenter class="[ content-section ][ max-w-[50rem] ]">
-            <Wrapper
-                max_width='100%'
-                padding_inline='0'
-                padding_block='0'
-                class="[ w-full ]"
-            >
-                <Flexblock gap='var(--space-l)'>
-                    <FixedFluid width='256px' gap='var(--space-xl)' class="[ items-center! ]">
-                        <div class="[ animate-slide-up-fade animate-delay-100 ]">
-                            <CharacterPicture
-                                character_id={fleet.fleet_commander_id}
-                                character_name={fleet.fleet_commander_name}
-                                size={256}
-                                icon_quality={512}
-                            />
-                        </div>
-                        <Flexblock gap='var(--space-xs)'>
-                            <h2 class="[ animate-slide-up-fade animate-delay-250 ]">{fleet.fleet_commander_name}</h2>
-                            <FlexInline class="[ animate-fade-in animate-duration-250 animate-delay-400 ]">
-                                <CorporationBadge
-                                    corporation={{
-                                        id: fleet.corporation_id as number,
-                                        name: fleet.corporation_name as string,
-                                        size: 'sm',
-                                    }}
-                                    show_modal={true}
-                                />
-                                {fleet.fleet_commander_fleet_count &&
-                                    <FlexInline gap='var(--space-3xs)' class="[ items-center! ]">
-                                        <div
-                                            class="[ text-highlight h-[16px] ]"
-                                            data-tippy-content={t('fleet_commander_fleets')}
-                                            x-init={update_cover ? 'tippy($el, tippy_options)' : undefined}
-                                        >
-                                            <FleetIcon size={16} />
-                                        </div>
-                                        <span>{fleet.fleet_commander_fleet_count}</span>
-                                    </FlexInline>
-                                }
-                            </FlexInline>
-                        </Flexblock>
-                    </FixedFluid>
-
+<FixedFluid
+    width='50rem'
+    gap='var(--space-xl)'
+    breakpoint='34%'
+>
+    <VerticalCenter class="[ content-section ][ max-w-[50rem] ]">
+        <Wrapper
+            max_width='100%'
+            padding_inline='0'
+            padding_block='0'
+            class="[ w-full ]"
+        >
+            <Flexblock gap='var(--space-l)'>
+                <FixedFluid width='256px' gap='var(--space-xl)' class="[ items-center! ]">
+                    <div class="[ animate-slide-up-fade animate-delay-100 ]">
+                        <CharacterPicture
+                            character_id={fleet.fleet_commander_id}
+                            character_name={fleet.fleet_commander_name}
+                            size={256}
+                            icon_quality={512}
+                        />
+                    </div>
                     <Flexblock gap='var(--space-xs)'>
-                        {fleet.objective !== undefined &&
-                            <h4 class="[ animate-fade-in animate-duration-250 animate-delay-550 ]">
-                                {fleet.objective as string}
-                            </h4>
-                        }
-
-                        {fleet.description &&
-                            <div class="[ component wrap-break-word max-w-full pr-1.5 max-h-[130px] overflow-y-auto animate-fade-in animate-duration-250 animate-delay-550 ]">
-                                <Markdown markdown={fleet.description as string} />
-                            </div>
-                        }
-                    </Flexblock>
-
-                    <Flexblock gap='var(--space-m)'>
-                        <FlexInline class="[ items-center! animate-fade-in animate-duration-250 animate-delay-700 ]" gap='var(--space-l)'>
-                            <Flexblock gap='0'>
-                                <b class="[ text-highlight ]">{system}</b>
-                                <small>{station}</small>
-                            </Flexblock>
-
-                            {doctrine &&
-                                <StylessButton href={translatePath(`/ships/doctrines/${doctrine.id}`)}>
-                                    <ItemBadge
-                                        type_id={doctrine.primary_fittings[0].ship_id}
-                                        item_name={doctrine.name}
-                                        size={32}
-                                    >
-                                        <small class="[ text-foreground ]">{t('doctrine')}</small>
-                                    </ItemBadge>
-                                </StylessButton>
-                            }
-                                    
-                            <span>{t(`${fleet.type}_fleet` as any) ?? fleet.type}</span>
-
-                            {fleet.members_count !== undefined &&
+                        <h2 class="[ animate-slide-up-fade animate-delay-250 ]">{fleet.fleet_commander_name}</h2>
+                        <FlexInline class="[ animate-fade-in animate-duration-250 animate-delay-400 ]">
+                            <CorporationBadge
+                                corporation={{
+                                    id: fleet.corporation_id as number,
+                                    name: fleet.corporation_name as string,
+                                    size: 'sm',
+                                }}
+                                show_modal={true}
+                            />
+                            {fleet.fleet_commander_fleet_count &&
                                 <FlexInline gap='var(--space-3xs)' class="[ items-center! ]">
                                     <div
                                         class="[ text-highlight h-[16px] ]"
-                                        data-tippy-content={t('characters_in_fleet')}
-                                        x-init={update_cover ? 'tippy($el, tippy_options)' : undefined}
+                                        data-tippy-content={t('fleet_commander_fleets')}
+                                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
                                     >
-                                        <MemberIcon size={16} />
+                                        <FleetIcon size={16} />
                                     </div>
-                                    
-                                    <span>{fleet.members_count}</span>
+                                    <span>{fleet.fleet_commander_fleet_count}</span>
                                 </FlexInline>
                             }
                         </FlexInline>
-
-                        <FlexInline
-                            class="[ component items-center! animate-fade-in animate-duration-250 animate-delay-850 ]"
-                            gap='var(--space-l)'
-                        >
-                            <slot />
-                        </FlexInline>
                     </Flexblock>
+                </FixedFluid>
+
+                <Flexblock gap='var(--space-xs)'>
+                    {fleet.objective !== undefined &&
+                        <h4 class="[ animate-fade-in animate-duration-250 animate-delay-550 ]">
+                            {fleet.objective as string}
+                        </h4>
+                    }
+
+                    {fleet.description &&
+                        <div class="[ component wrap-break-word max-w-full pr-1.5 max-h-[130px] overflow-y-auto animate-fade-in animate-duration-250 animate-delay-550 ]">
+                            <Markdown markdown={fleet.description as string} />
+                        </div>
+                    }
                 </Flexblock>
-            </Wrapper>
-        </VerticalCenter>
-        {doctrine &&
-            <div
-                class="[ !flex !items-end hidden! animate-slide-up-fade animate-delay-1000 ]"
-                x-on:marquee-started="$el.classList.remove('hidden!')"
-            >
-                <FlexInlineSiblings
-                    class="[ w-full ]"
-                    min-shink-width='250px'
-                    shrinkable-sibbling='first'
-                >
-                    <Marquee separator_width='200px'>
-                        {hero_fittings.map((fitting) => (
-                            <StylessButton href={translatePath(`/ships/fittings/${fitting.id}/`)}>
+
+                <Flexblock gap='var(--space-m)'>
+                    <FlexInline class="[ items-center! animate-fade-in animate-duration-250 animate-delay-700 ]" gap='var(--space-l)'>
+                        <Flexblock gap='0'>
+                            <b class="[ text-highlight ]">{system}</b>
+                            <small>{station}</small>
+                        </Flexblock>
+
+                        {doctrine &&
+                            <StylessButton href={translatePath(`/ships/doctrines/${doctrine.id}`)}>
                                 <ItemBadge
-                                    type_id={fitting.ship_id}
-                                    item_name={fitting.fitting_name}
+                                    type_id={doctrine.primary_fittings[0].ship_id}
+                                    item_name={doctrine.name}
                                     size={32}
                                 >
-                                    {supply_contracts.length > 0 ?
-                                        <FlexInline gap='var(--space-3xs)'>
-                                            <Square color={!fitting.contracts_count ? 'fleet-red' : 'green'} />
-                                            <small class="[ text-foreground ]">
-                                                {t('in_contracts_template').replace('{count}', (fitting.contracts_count ?? 0).toString())}
-                                            </small>
-                                        </FlexInline> :
-                                        <small class="[ text-foreground ]">{t('primary_fitting')}</small>
-                                    }
+                                    <small class="[ text-foreground ]">{t('doctrine')}</small>
                                 </ItemBadge>
                             </StylessButton>
-                        ))}
-                    </Marquee>
-                    {supply_contracts.length > 0 &&
-                        <ClipboardButton id="supply-contracts">{supply_contracts_copy}</ClipboardButton>
-                    }
-                </FlexInlineSiblings>
-            </div>
-        }
-    </FixedFluid>
-}
+                        }
+                                
+                        <span>{t(`${fleet.type}_fleet` as any) ?? fleet.type}</span>
 
-{update_cover && fleet &&
-    <PageCover
-        video={get_location_video_cover(fleet?.location ?? '') ?? undefined}
-        video_thumb={get_location_video_cover_thumb(fleet?.location ?? '') ?? undefined}
-        image={get_location_cover(fleet?.location ?? '') ?? '/images/fleets-cover.jpg'}
-        image_990={get_location_cover_990(fleet?.location ?? '') ?? '/images/fleets-cover.jpg'}
-        animated={false}
-        scrollable={cover_overlay || !is_video_cover}
-        overlay={cover_overlay || !is_video_cover}
-        oob_swap={true}
-    />
-}
+                        {fleet.members_count !== undefined &&
+                            <FlexInline gap='var(--space-3xs)' class="[ items-center! ]">
+                                <div
+                                    class="[ text-highlight h-[16px] ]"
+                                    data-tippy-content={t('characters_in_fleet')}
+                                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                                >
+                                    <MemberIcon size={16} />
+                                </div>
+                                
+                                <span>{fleet.members_count}</span>
+                            </FlexInline>
+                        }
+                    </FlexInline>
 
-{update_cover && !fleet &&
-    <PageCover
-        image="/images/fleets-cover.jpg"
-        image_990="/images/fleets-cover.jpg"
-        scrollable={true}
-        overlay={true}
-        oob_swap={true}
-    />
-}
+                    <FlexInline
+                        class="[ component items-center! animate-fade-in animate-duration-250 animate-delay-850 ]"
+                        gap='var(--space-l)'
+                    >
+                        <slot />
+                    </FlexInline>
+                </Flexblock>
+            </Flexblock>
+        </Wrapper>
+    </VerticalCenter>
+    {doctrine &&
+        <div
+            class="[ !flex !items-end hidden! animate-slide-up-fade animate-delay-1000 ]"
+            x-on:marquee-started="$el.classList.remove('hidden!')"
+        >
+            <FlexInlineSiblings
+                class="[ w-full ]"
+                min-shink-width='250px'
+                shrinkable-sibbling='first'
+            >
+                <Marquee separator_width='200px'>
+                    {hero_fittings.map((fitting) => (
+                        <StylessButton href={translatePath(`/ships/fittings/${fitting.id}/`)}>
+                            <ItemBadge
+                                type_id={fitting.ship_id}
+                                item_name={fitting.fitting_name}
+                                size={32}
+                            >
+                                {supply_contracts.length > 0 ?
+                                    <FlexInline gap='var(--space-3xs)'>
+                                        <Square color={!fitting.contracts_count ? 'fleet-red' : 'green'} />
+                                        <small class="[ text-foreground ]">
+                                            {t('in_contracts_template').replace('{count}', (fitting.contracts_count ?? 0).toString())}
+                                        </small>
+                                    </FlexInline> :
+                                    <small class="[ text-foreground ]">{t('primary_fitting')}</small>
+                                }
+                            </ItemBadge>
+                        </StylessButton>
+                    ))}
+                </Marquee>
+                {supply_contracts.length > 0 &&
+                    <ClipboardButton id="supply-contracts">{supply_contracts_copy}</ClipboardButton>
+                }
+            </FlexInlineSiblings>
+        </div>
+    }
+</FixedFluid>
 
 <style lang="scss">
     h2 {

@@ -35,6 +35,19 @@ const AUDIENCE_IDS = {
     'Warzone': 2,
 }
 
+import {
+    get_location_video_cover,
+    get_location_video_cover_thumb,
+    get_location_cover,
+    get_location_cover_990,
+} from '@helpers/covers'
+
+const is_video_cover = active_fleets.length > 0 ?
+    Boolean(get_location_video_cover(active_fleets[0]?.location ?? '')) :
+    false
+
+import PageCover from '@components/page/partials/PageCover.astro';
+
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Grid from '@components/compositions/Grid.astro';
@@ -55,7 +68,7 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
     gap='var(--space-xl)'
     class={show_fleet_commanders_bar ? 'compensate-bottom-bar' : undefined}
 >
-    {active_fleets.length > 0 &&
+    {active_fleets.length > 0 ?
         <Flexblock gap='0'>
             <Wrapper
                 class="[ relative ]"
@@ -82,8 +95,7 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
                                         fleet={fleet}
                                         doctrine={active_doctrines[index] ?? null}
                                         supply_contracts={supply_contracts[index]}
-                                        update_cover={init_tooltips}
-                                        cover_overlay={true}
+                                        init_tooltips={init_tooltips}
                                     >
                                         {fleet &&
                                             <Tag class="[ blink-animation ]" text={t('in_development')}></Tag>
@@ -130,6 +142,29 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
                 </FlexInline>
             }
         </Flexblock>
+        
+        <>{init_tooltips &&
+            <PageCover
+                video={get_location_video_cover(active_fleets[0].location ?? '') ?? undefined}
+                video_thumb={get_location_video_cover_thumb(active_fleets[0].location ?? '') ?? undefined}
+                image={get_location_cover(active_fleets[0].location ?? '') ?? '/images/fleets-cover.jpg'}
+                image_990={get_location_cover_990(active_fleets[0].location ?? '') ?? '/images/fleets-cover.jpg'}
+                animated={false}
+                scrollable={true}
+                overlay={true}
+                oob_swap={true}
+            />
+        }</>
+        :
+        <>{init_tooltips &&
+            <PageCover
+                image="/images/fleets-cover.jpg"
+                image_990="/images/fleets-cover.jpg"
+                scrollable={true}
+                overlay={true}
+                oob_swap={true}
+            />
+        }</>
     }
 
     <div class:list={[ { 'animate-fade-in animate-duration-250 animate-delay-1000': active_fleets.length > 0 } ]}>
