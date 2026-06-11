@@ -100,7 +100,11 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
                                         init_tooltips={init_tooltips}
                                     >
                                         {fleet &&
-                                            <Tag class="[ blink-animation ]" text={t('in_development')}></Tag>
+                                            <Tag
+                                                color='fleet-yellow'
+                                                class="[ blink-animation ]"
+                                                text={t('in_development')}
+                                            />
 
                                             <Countdown
                                                 date={fleet.tracking?.start_time ?? fleet.start_time}
