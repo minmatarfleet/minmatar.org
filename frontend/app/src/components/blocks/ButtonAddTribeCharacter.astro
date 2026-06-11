@@ -1,0 +1,166 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    title:                  string;
+    tribe_id:               number;
+    group_id:               number;
+    pilots:                 SummaryCharacter[];
+    membership_id:          number;
+    hidden?:                boolean;
+    id:                     string;
+}
+
+const {
+    title,
+    tribe_id,
+    group_id,
+    pilots,
+    membership_id,
+    hidden = false,
+    id,
+} = Astro.props
+
+import { query_string } from '@helpers/string';
+
+const TRIBE_GROUP_MEMBERSHIPS_PARTIAL_URL = translatePath(`/partials/tribe_group_memberships_component?tribe_id=${tribe_id}&group_id=${group_id}`)
+
+// Avoid adding a frontmatter line with a string literal (e.g. ?? "" or ?? ''). It triggers
+// esbuild "Unterminated string literal" when compiling this .astro file. Use template for defaults (e.g. data-api-url={import.meta.env.API_URL}).
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import DialogButton from "@components/blocks/DialogButton.astro";
+import Button from '@components/blocks/Button.astro';
+import CharacterCard from '@components/blocks/CharacterCard.astro';
+import LandingSwiper from '@components/blocks/LandingSwiper.astro';
+import CorporationBadge from '@components/blocks/CorporationBadge.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
+---
+
+<DialogButton
+    id={id}
+    color='green'
+    narrow={false}
+    hidden={hidden}
+    max_width='820px'
+    disable_when_open={true}
+    size='sm'
+>
+    {t('add_character')}
+
+    <Flexblock slot="dialog" gap="var(--space-l)">
+        <Flexblock gap="var(--space-s)">
+            <Flexblock gap="var(--space-3xs)">
+                <h3>{title}</h3>
+                <small>{t('manage_membership')}</small>
+            </Flexblock>
+            
+            <Wrapper
+                padding_block='0'
+                padding_inline='var(--space-xl)'
+            >
+                <div id={`${id}-swiper`} class="[ swiper ][ w-full pb-10! ]">
+                    <LandingSwiper swiper_selector={`#${id}-swiper`}>
+                        {pilots.map(pilot =>
+                            <div class="[ swiper-slide ]" style="margin-right: 5px">
+                                <StylessButton
+                                    size='sm'
+                                    hx-post={`${TRIBE_GROUP_MEMBERSHIPS_PARTIAL_URL}&${query_string({
+                                        membership_id: membership_id,
+                                        character_id: pilot.character_id,
+                                    })}`}
+                                    hx-target={`#members`}
+                                    hx-indicator=".loader"
+                                    hx-swap="outerHTML transition:true"
+                                    x-on:click="close_dialog(false)"
+                                >
+                                    <CharacterCard
+                                        character_id={pilot.character_id}
+                                        character_name={pilot.character_name}
+                                        inert={true}
+                                    >
+                                        <Flexblock gap='var(--space-3xs)'>
+                                            <h3>{pilot.character_name}</h3>
+                                            <CorporationBadge
+                                                corporation={{
+                                                    id: pilot.corp_id,
+                                                    name: pilot.corp_name,
+                                                    size: 'xs',
+                                                }}
+                                                highlight={false}
+                                            />
+                                        </Flexblock>
+                                    </CharacterCard>
+                                </StylessButton>
+                            </div>
+                        )}
+                    </LandingSwiper>
+                </div>
+
+                <div id={`${id}-swiper-button-prev`} class="[ swiper-button-prev hidden lg:block! ]"></div>
+                <div id={`${id}-swiper-button-next`} class="[ swiper-button-next hidden lg:block! ]"></div>
+            </Wrapper>
+        </Flexblock>
+
+        <FlexInline justification='flex-end'>
+            <Button
+                type="button"
+                size='sm'
+                x-on:click="close_dialog()"
+            >
+                {t('close')}
+            </Button>
+        </FlexInline>
+    </Flexblock>
+</DialogButton>
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-1);
+    }
+
+    .alliance-reel {
+        position: relative;
+    }
+
+    .swiper-button-prev,
+    .swiper-button-next {
+        --swiper-navigation-color: var(--highlight);
+        --swiper-navigation-sides-offset: var(--space-l);
+
+        opacity: 0;
+    }
+
+    .swiper-initialized ~ .swiper-button-prev,
+    .swiper-initialized ~ .swiper-button-next {
+        opacity: 1;
+    }
+
+    .swiper-initialized ~ .swiper-button-next.swiper-button-disabled,
+    .swiper-initialized ~ .swiper-button-prev.swiper-button-disabled {
+        opacity: 0;
+    }
+
+    .swiper-button-next.swiper-button-disabled,
+    .swiper-button-prev.swiper-button-disabled {
+        --swiper-navigation-color: var(--fleet-yellow);
+        opacity: 1;
+    }
+
+    .swiper-button-prev {
+        transform: translateY(-1.25rem);
+    }
+
+    .swiper-button-next {
+        transform: translateY(-1.25rem);
+    }
+
+    .swiper-slide {
+        width: min(100%, 240px);
+    }
+</style>

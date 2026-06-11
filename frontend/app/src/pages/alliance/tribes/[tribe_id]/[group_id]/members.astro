@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { HTTP_400_Bad_Request } from '@helpers/http_responses'
+import { HTTP_400_Bad_Request, HTTP_403_Forbidden } from '@helpers/http_responses'
 import { get_auth_url } from '@helpers/env'
 
 import type { User } from '@dtypes/jwt'
@@ -10,6 +10,7 @@ import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
 
 if (!auth_token || !user) {
     Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
@@ -24,17 +25,30 @@ if (isNaN(tribe_id) || isNaN(group_id))
 
 import type { TribeGroup, SummaryCharacter, TribeMembership } from '@dtypes/api.minmatar.org'
 import { get_tribe_group, get_memberships } from '@helpers/api.minmatar.org/tribes'
+import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 
 let tribe_group:TribeGroup | null = null
 let approved:TribeMembership[] = []
 let pending:TribeMembership[] = []
+let chief_membership:TribeMembership | null = null
 let fetch_membership_error: Error | false = false
+let user_characters: SummaryCharacter[] = []
 
 try {
     tribe_group = await get_tribe_group(tribe_id, group_id)
+    
+    const summary = await get_characters_summary_sorted(auth_token)
+    user_characters = summary.characters ?? []
+
+    const is_chief = Boolean(user_characters.find(character => character.character_id === tribe_group?.chief?.character_id))
+    
+    if (!is_superuser && !is_chief)
+        return HTTP_403_Forbidden()
 
     approved = await get_memberships(auth_token as string, tribe_id, tribe_group.id, 'active')
     pending = await get_memberships(auth_token as string, tribe_id, tribe_group.id, 'pending')
+
+    chief_membership = [ ...approved, ...pending ].find(m => m.user_id === user.user_id) ?? null
 } catch (error) {
     fetch_membership_error = error
 }
@@ -150,7 +164,13 @@ const page_title = t('tribes.groups.membership.page_title').replace('{group}', t
             tribe_group ?
                 <Flexblock id="members" gap='var(--space-2xl)'>
                     {pending.length > 0 || approved.length > 0 ?
-                        <GroupLeadership chief={tribe_group?.chief} elders={[]} />
+                        <GroupLeadership
+                            chief={tribe_group?.chief}
+                            elders={[]}
+                            user_characters={user_characters}
+                            tribe_group={tribe_group}
+                            chief_membership={chief_membership}
+                        />
                         <MembershipRequests requests={pending} init_tooltips={false} />
                         <MembershipTable memberships={approved} init_tooltips={false} />
                         :

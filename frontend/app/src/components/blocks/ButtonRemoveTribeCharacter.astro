@@ -99,14 +99,12 @@ import StylessButton from '@components/blocks/StylessButton.astro';
                                                 hx-target={`#members`}
                                                 hx-indicator=".loader"
                                                 hx-swap="outerHTML transition:true"
-                                                x-on:click="$el.setAttribute('disabled','')"
+                                                x-on:click="close_dialog(false)"
                                             >
                                                 <CharacterCard
                                                     character_id={pilot.character_id}
                                                     character_name={pilot.character_name}
-                                                    x-model="characters"
-                                                    x-on:change="update_character_ids()"
-                                                    value={pilot.character_id}
+                                                    inert={true}
                                                 >
                                                     <Flexblock gap='var(--space-3xs)'>
                                                         {has_tag &&
