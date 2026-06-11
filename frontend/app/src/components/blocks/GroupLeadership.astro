@@ -2,44 +2,57 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import type { TribeCharacterRef } from '@dtypes/api.minmatar.org'
-
+import type { TribeCharacterRef, TribeGroup, SummaryCharacter, TribeMembership } from '@dtypes/api.minmatar.org'
 interface Props {
     chief:              TribeCharacterRef | null;
     elders:             TribeCharacterRef[];
+    user_characters:    SummaryCharacter[];
+    tribe_group:        TribeGroup;
+    chief_membership:   TribeMembership | null;
 }
 
 const {
     chief,
     elders,
+    user_characters,
+    tribe_group,
+    chief_membership,
 } = Astro.props
 
-const leaders = chief ? [ chief /*, ...(elders ?? [])*/ ] : []
+const membership_character_ids = chief_membership?.characters.map(character => character.character_id)
+const available_characters = user_characters.filter(character => !membership_character_ids?.includes(character.character_id))
 
-import BlockList from '@components/compositions/BlockList.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import PilotBadge from '@components/blocks/PilotBadge.astro';
+import ButtonAddTribeCharacter from '@components/blocks/ButtonAddTribeCharacter.astro';
 ---
 
-{leaders.length > 0 &&
+{chief &&
     <Flexblock gap='var(--space-l)'>
         <h4 class="[ group-title ]">{t('group_leadership')}</h4>
 
         <FlexInline>
-            {leaders.map((tribe_leader, index) =>
-                tribe_leader &&
-                    <PilotBadge
-                        class="[ pr-(--space-l) ]"
-                        character_id={tribe_leader?.character_id}
-                        character_name={tribe_leader?.character_name}
-                        size={32}
-                        centered={true}
-                    >
-                        <small>{chief && index === 0 ? t('group_chief') : t('group_elder')}</small>
-                    </PilotBadge>
-            )}
+            <PilotBadge
+                class="[ pr-(--space-l) ]"
+                character_id={chief?.character_id}
+                character_name={chief?.character_name}
+                size={32}
+                centered={true}
+            >
+                <small>{t('group_chief')}</small>
+            </PilotBadge>
+            {chief_membership &&
+                <ButtonAddTribeCharacter
+                    id='leader-add-character'
+                    title={tribe_group.name}
+                    tribe_id={tribe_group.tribe_id}
+                    group_id={tribe_group.id}
+                    membership_id={chief_membership.id}
+                    pilots={available_characters}
+                />
+            }
         </FlexInline>
     </Flexblock>
 }
