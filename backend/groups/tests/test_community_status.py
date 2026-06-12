@@ -8,13 +8,17 @@ from eveonline.models import EveAlliance, EveCharacter, EveCorporation
 from eveonline.helpers.characters import set_primary_character
 from esi.models import Token
 
-from groups.helpers import sync_user_community_groups
+from groups.helpers import (
+    reconcile_user_community_membership,
+    sync_user_community_groups,
+)
 from groups.models import (
     AffiliationType,
     UserAffiliation,
     UserCommunityStatus,
     UserCommunityStatusHistory,
 )
+from groups.tasks import update_affiliation
 
 
 class SyncUserCommunityGroupsTestCase(TestCase):
@@ -86,6 +90,75 @@ class SyncUserCommunityGroupsTestCase(TestCase):
         group_names = set(self.user.groups.values_list("name", flat=True))
         self.assertIn("Alliance", group_names)
         self.assertNotIn("Trial", group_names)
+
+
+class ReconcileUserCommunityMembershipTestCase(TestCase):
+    """Refresh / update_affiliation must fix Django groups when affiliation is already correct."""
+
+    def setUp(self):
+        signals.m2m_changed.disconnect(
+            sender=User.groups.through,
+            dispatch_uid="user_group_changed",
+        )
+        signals.post_save.disconnect(
+            sender=UserAffiliation,
+            dispatch_uid="user_affiliation_post_save",
+        )
+        signals.post_save.disconnect(
+            sender=Group,
+            dispatch_uid="group_post_save",
+        )
+        super().setUp()
+        self.militia_group = Group.objects.create(name="Militia")
+        self.affiliation_group = Group.objects.create(name="Alliance")
+        self.trial_group = Group.objects.create(name="Trial")
+        AffiliationType.objects.create(
+            name="Militia",
+            description="",
+            image_url="",
+            group=self.militia_group,
+            priority=5,
+        )
+        self.alliance_type = AffiliationType.objects.create(
+            name="Alliance",
+            description="",
+            image_url="",
+            group=self.affiliation_group,
+            priority=15,
+            requires_trial=True,
+        )
+
+    def test_update_affiliation_early_return_fixes_stale_militia_group(self):
+        """Simulates will_21524: Alliance affiliation but Militia group still assigned."""
+        alliance = EveAlliance.objects.create(alliance_id=99011978)
+        self.alliance_type.alliances.add(alliance)
+        character = EveCharacter.objects.create(
+            character_id=2120594124,
+            character_name="Ehto Fife",
+            alliance_id=alliance.alliance_id,
+            user=self.user,
+        )
+        set_primary_character(self.user, character)
+        UserAffiliation.objects.create(
+            user=self.user, affiliation=self.alliance_type
+        )
+        self.user.groups.add(self.militia_group)
+        update_affiliation(self.user.id)
+        group_names = set(self.user.groups.values_list("name", flat=True))
+        self.assertIn("Alliance", group_names)
+        self.assertIn("Trial", group_names)
+        self.assertNotIn("Militia", group_names)
+
+    def test_reconcile_fixes_stale_groups_without_changing_affiliation(self):
+        UserAffiliation.objects.create(
+            user=self.user, affiliation=self.alliance_type
+        )
+        self.user.groups.add(self.militia_group)
+        reconcile_user_community_membership(self.user)
+        group_names = set(self.user.groups.values_list("name", flat=True))
+        self.assertIn("Alliance", group_names)
+        self.assertIn("Trial", group_names)
+        self.assertNotIn("Militia", group_names)
 
 
 class UserCommunityStatusHistoryTestCase(TestCase):

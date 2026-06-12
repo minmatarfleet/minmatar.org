@@ -19,6 +19,7 @@ from discord.tasks import sync_discord_user, sync_discord_nickname
 from audit.models import AuditEntry
 
 # from eveonline.models import EvePlayer
+from groups.helpers import reconcile_user_community_membership
 from groups.tasks import update_affiliation
 
 from .helpers import get_user_profile, get_user_profiles, make_user_objects
@@ -203,6 +204,7 @@ def sync_user(request, user_id: int):
     if request.user.id != user_id:
         return 403, ErrorResponse(detail="You can only sync your own account.")
     update_affiliation(user_id)
+    reconcile_user_community_membership(request.user, run_id="sync_user")
     sync_discord_user(user_id)
     sync_discord_nickname(user_id, True)
     return "User synced successfully"

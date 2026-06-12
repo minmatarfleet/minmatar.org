@@ -1,4 +1,6 @@
+import json
 import logging
+import time
 
 from django.contrib.auth.models import Group as AuthGroup
 from django.contrib.auth.models import User
@@ -13,6 +15,8 @@ from .models import (
     UserCommunityStatus,
     UserCommunityStatusHistory,
 )
+
+DEBUG_LOG_PATH = "/root/minmatar.org/.cursor/debug-730d67.log"
 
 logger = logging.getLogger(__name__)
 
@@ -141,6 +145,92 @@ def process_bulk_community_status_row(
             latest.save(update_fields=["changed_by", "reason"])
     sync_user_community_groups(user)
     return (True, None, None)
+
+
+def ensure_community_status_for_affiliation(user: User) -> None:
+    """Align UserCommunityStatus with the user's current affiliation (mirrors affiliation signal)."""
+    affiliation = (
+        UserAffiliation.objects.filter(user=user)
+        .select_related("affiliation")
+        .first()
+    )
+    if not affiliation:
+        return
+    if affiliation.affiliation.requires_trial:
+        UserCommunityStatus.objects.get_or_create(
+            user=user,
+            defaults={"status": UserCommunityStatus.STATUS_TRIAL},
+        )
+        return
+    try:
+        ucs = UserCommunityStatus.objects.get(user=user)
+        if ucs.status == UserCommunityStatus.STATUS_TRIAL:
+            ucs.status = UserCommunityStatus.STATUS_ACTIVE
+            ucs.save(update_fields=["status"])
+    except UserCommunityStatus.DoesNotExist:
+        pass
+
+
+def reconcile_user_community_membership(
+    user: User, *, run_id: str = "manual"
+) -> None:
+    """
+    Ensure community status and Django groups match UserAffiliation.
+    Safe to call after affiliation is already correct (e.g. refresh Discord roles).
+    """
+    # #region agent log
+    groups_before = list(user.groups.values_list("name", flat=True))
+    affiliation_name = (
+        UserAffiliation.objects.filter(user=user)
+        .values_list("affiliation__name", flat=True)
+        .first()
+    )
+    with open(DEBUG_LOG_PATH, "a", encoding="utf-8") as log_file:
+        log_file.write(
+            json.dumps(
+                {
+                    "sessionId": "730d67",
+                    "runId": run_id,
+                    "hypothesisId": "A",
+                    "location": "groups/helpers.py:reconcile_user_community_membership:entry",
+                    "message": "reconcile entry",
+                    "data": {
+                        "user_id": user.id,
+                        "username": user.username,
+                        "affiliation": affiliation_name,
+                        "groups_before": groups_before,
+                    },
+                    "timestamp": int(time.time() * 1000),
+                }
+            )
+            + "\n"
+        )
+    # #endregion
+    ensure_community_status_for_affiliation(user)
+    sync_user_community_groups(user)
+    user.refresh_from_db()
+    # #region agent log
+    groups_after = list(user.groups.values_list("name", flat=True))
+    with open(DEBUG_LOG_PATH, "a", encoding="utf-8") as log_file:
+        log_file.write(
+            json.dumps(
+                {
+                    "sessionId": "730d67",
+                    "runId": run_id,
+                    "hypothesisId": "A",
+                    "location": "groups/helpers.py:reconcile_user_community_membership:exit",
+                    "message": "reconcile exit",
+                    "data": {
+                        "user_id": user.id,
+                        "groups_after": groups_after,
+                        "changed": groups_before != groups_after,
+                    },
+                    "timestamp": int(time.time() * 1000),
+                }
+            )
+            + "\n"
+        )
+    # #endregion
 
 
 def sync_user_community_groups(user: User) -> None:

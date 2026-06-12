@@ -13,6 +13,7 @@ from eveonline.models import EvePlayer
 
 from .helpers import (
     process_bulk_community_status_row,
+    reconcile_user_community_membership,
     sync_tribe_chief_group_membership,
 )
 from .models import (
@@ -151,6 +152,9 @@ def update_affiliation(user_id: int):
                     user,
                     affiliation,
                 )
+                reconcile_user_community_membership(
+                    user, run_id="update_affiliation"
+                )
                 return
 
             if UserAffiliation.objects.filter(user=user).exists():
@@ -166,6 +170,9 @@ def update_affiliation(user_id: int):
                 affiliation,
             )
             UserAffiliation.objects.create(user=user, affiliation=affiliation)
+            reconcile_user_community_membership(
+                user, run_id="update_affiliation"
+            )
             return
         else:
             logger.info(
