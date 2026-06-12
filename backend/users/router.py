@@ -204,7 +204,7 @@ def sync_user(request, user_id: int):
     if request.user.id != user_id:
         return 403, ErrorResponse(detail="You can only sync your own account.")
     update_affiliation(user_id)
-    reconcile_user_community_membership(request.user, run_id="sync_user")
+    reconcile_user_community_membership(request.user)
     sync_discord_user(user_id)
     sync_discord_nickname(user_id, True)
     return "User synced successfully"

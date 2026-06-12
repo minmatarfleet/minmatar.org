@@ -617,7 +617,7 @@ def force_refresh(request, username: str):
     update_affiliation(user.id)
     response.append(f"Updated affiliations for {username}")
 
-    reconcile_user_community_membership(user, run_id="force_refresh")
+    reconcile_user_community_membership(user)
     response.append(f"Reconciled community groups for {username}")
 
     sync_discord_user(user.id)

@@ -152,9 +152,7 @@ def update_affiliation(user_id: int):
                     user,
                     affiliation,
                 )
-                reconcile_user_community_membership(
-                    user, run_id="update_affiliation"
-                )
+                reconcile_user_community_membership(user)
                 return
 
             if UserAffiliation.objects.filter(user=user).exists():
@@ -170,9 +168,7 @@ def update_affiliation(user_id: int):
                 affiliation,
             )
             UserAffiliation.objects.create(user=user, affiliation=affiliation)
-            reconcile_user_community_membership(
-                user, run_id="update_affiliation"
-            )
+            reconcile_user_community_membership(user)
             return
         else:
             logger.info(
