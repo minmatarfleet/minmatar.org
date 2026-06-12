@@ -4,6 +4,7 @@ from django.contrib.auth.models import Group, User
 from django.db.models import signals
 
 from app.test import TestCase
+from discord.signals import group_post_save
 from eveonline.models import EveAlliance, EveCharacter, EveCorporation
 from eveonline.helpers.characters import set_primary_character
 from esi.models import Token
@@ -18,6 +19,7 @@ from groups.models import (
     UserCommunityStatus,
     UserCommunityStatusHistory,
 )
+from groups.signals import user_affiliation_post_save
 from groups.tasks import update_affiliation
 
 
@@ -127,6 +129,19 @@ class ReconcileUserCommunityMembershipTestCase(TestCase):
             priority=15,
             requires_trial=True,
         )
+
+    def tearDown(self):
+        signals.post_save.connect(
+            user_affiliation_post_save,
+            sender=UserAffiliation,
+            dispatch_uid="user_affiliation_post_save",
+        )
+        signals.post_save.connect(
+            group_post_save,
+            sender=Group,
+            dispatch_uid="group_post_save",
+        )
+        super().tearDown()
 
     def test_update_affiliation_early_return_fixes_stale_militia_group(self):
         """Simulates will_21524: Alliance affiliation but Militia group still assigned."""
