@@ -28,6 +28,7 @@ from tech.router import router as tech_router
 
 from applications.router import router as applications_router
 from combatlog.router import router as combatlog_router
+from discord.router import router as discord_router
 from discord.views import discord_login
 from eveonline.routers import router
 from fittings.router import doctrines_router, fittings_router
@@ -70,6 +71,7 @@ api.add_router("srp", srp_router)
 api.add_router("onboarding", onboarding_router)
 api.add_router("tech", tech_router)
 api.add_router("subscriptions", subscription_router)
+api.add_router("discord", discord_router)
 
 
 @api.exception_handler(UnauthorizedError)

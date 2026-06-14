@@ -270,6 +270,13 @@ CELERYBEAT_OTHER = [
         },
     ),
     (
+        "[Misc] Sync Discord Guilds",
+        {
+            "task": "discord.tasks.sync_discord_guilds_task",
+            "schedule": crontab(minute=0, hour="*/6"),
+        },
+    ),
+    (
         "[Misc] Sync Discord User Nicknames",
         {
             "task": "discord.tasks.sync_discord_user_nicknames",

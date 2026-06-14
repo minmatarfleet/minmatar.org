@@ -18,6 +18,7 @@ from market.models import EveMarketContractExpectation
 from groups.models import AffiliationType, EveCorporationGroup
 from fittings.models import EveDoctrine, EveDoctrineFitting, EveFitting
 from fleets.models import EveFleetAudience, EveLocation
+from discord.channels import fetch_guild_channels
 
 logger = logging.getLogger(__name__)
 
@@ -251,29 +252,22 @@ def seed_fleet_audiences():
         logger.error("Alliance group not found")
         return
 
-    discord_channels = get_discord_channels()  # Call the function!
+    discord_channels = fetch_guild_channels()
 
     alliance_pings_channel_id = None
-    fleet1_voice_channel = None
 
     for channel in discord_channels:
         if channel["name"] == "alliance-pings" and channel["type"] == "text":
             alliance_pings_channel_id = channel["id"]
-        if channel["name"] == "Fleet 1" and channel["type"] == "voice":
-            fleet1_voice_channel = channel["id"]
 
-    if not alliance_pings_channel_id or not fleet1_voice_channel:
-        logger.error(
-            "Discord channels for alliance pings or fleet voice not found"
-        )
+    if not alliance_pings_channel_id:
+        logger.error("Discord channel for alliance pings not found")
         return
     fleet_audience, created = EveFleetAudience.objects.get_or_create(
         name="Alliance",
         defaults={
             "discord_channel_id": alliance_pings_channel_id,
             "discord_channel_name": "alliance-pings",
-            "discord_voice_channel_name": "Fleet 1",
-            "discord_voice_channel": fleet1_voice_channel,
             "add_to_schedule": True,
             "hidden": False,
         },
@@ -431,28 +425,3 @@ def find_discord_channel_id(channel_name, discord_channels):
         ):
             return channel["id"]
     return None
-
-
-def get_discord_channels():
-    """Get all channels from Discord server"""
-    session = requests.Session()
-    access_token = settings.DISCORD_BOT_TOKEN
-    guild_id = settings.DISCORD_GUILD_ID
-
-    response = session.get(
-        f"https://discord.com/api/v9/guilds/{guild_id}/channels",
-        headers={"Authorization": f"Bot {access_token}"},
-        timeout=10,
-    )
-    response.raise_for_status()
-    response_data = response.json()
-
-    type_map = {0: "text", 2: "voice", 4: "category", 13: "stage", 15: "forum"}
-    return [
-        {
-            "name": channel["name"],
-            "type": type_map.get(channel["type"], "unknown"),
-            "id": channel["id"],
-        }
-        for channel in response_data
-    ]

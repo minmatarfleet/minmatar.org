@@ -27,7 +27,7 @@ jobs:
           flake8 .
       - name: Lint with black
         run: |
-          pip install black
+          pip install black==26.5.1
           black --check .
       - name: Run tests
         run: |

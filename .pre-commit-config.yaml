@@ -3,7 +3,7 @@
 # Install hooks: pre-commit install
 repos:
   - repo: https://github.com/psf/black
-    rev: 24.10.0
+    rev: 26.5.1
     hooks:
       - id: black
         name: black (backend)
