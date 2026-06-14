@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch, Mock, MagicMock
 
 from django.contrib.auth.models import User, Group
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, Client
 from django.db.models import signals
 
 from eveonline.models import (
@@ -13,7 +13,15 @@ from eveonline.helpers.characters import set_primary_character
 
 from app.test import TestCase
 from discord.core import DISCORD_NICKNAME_MAX_LENGTH, make_nickname
-from discord.models import DiscordUser, DiscordRole
+from discord.models import (
+    DiscordUser,
+    DiscordRole,
+    DiscordChannelActivityRecord,
+    DiscordChannel,
+    DiscordGuild,
+)
+from discord.forms import DiscordChannelAdminForm
+from discord.guilds import sync_discord_guilds
 from discord.views import discord_login_redirect, fake_login
 
 from discord.tasks import sync_discord_nickname, sync_discord_user
@@ -284,6 +292,199 @@ class DiscordTests(TestCase):
         # Should not raise, should just return
         remove_all_roles_from_guild_member(12345)
         mock_discord.remove_user_role.assert_not_called()
+
+
+class VoiceTrackingRouterTestCase(TestCase):
+    """Test cases for Discord voice tracking ingestion."""
+
+    def setUp(self):
+        self.client = Client()
+        super().setUp()
+        self.guild, _ = DiscordGuild.objects.get_or_create(
+            guild_id=1041384161505722368,
+            defaults={
+                "name": "Minmatar",
+                "is_primary": True,
+                "is_active": True,
+            },
+        )
+        self.channel = DiscordChannel.objects.create(
+            guild=self.guild,
+            channel_id=1306515072650313728,
+            name="Fleet 1",
+            channel_type=DiscordChannel.VOICE,
+            track_voice_activity=True,
+        )
+
+    def test_get_tracked_voice_channels(self):
+        DiscordChannel.objects.create(
+            guild=self.guild,
+            channel_id=999,
+            name="AFK",
+            channel_type=DiscordChannel.VOICE,
+            track_voice_activity=False,
+        )
+
+        response = self.client.get(
+            "/api/discord/voicetracking/channels",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(200, response.status_code)
+        channels = response.json()["channels"]
+        self.assertEqual(1, len(channels))
+        self.assertEqual(1306515072650313728, channels[0]["channel_id"])
+        self.assertEqual("Fleet 1", channels[0]["name"])
+
+    def test_create_voice_tracking_records(self):
+        data = {
+            "minutes": 7,
+            "channel_id": self.channel.channel_id,
+            "channel_name": self.channel.name,
+            "usernames": [self.user.username],
+        }
+
+        response = self.client.post(
+            "/api/discord/voicetracking/records",
+            data,
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(200, response.status_code)
+        ids = response.json()["ids"]
+        self.assertEqual(1, len(ids))
+
+        record = DiscordChannelActivityRecord.objects.get(id=ids[0])
+        self.assertEqual(
+            DiscordChannelActivityRecord.VOICE_MINUTE, record.activity_type
+        )
+        self.assertEqual(7, record.quantity)
+        self.assertEqual(self.channel.channel_id, record.channel_id)
+        self.assertEqual("Fleet 1", record.channel_name)
+
+    def test_create_activity_records(self):
+        data = {
+            "activity_type": DiscordChannelActivityRecord.VOICE_MINUTE,
+            "quantity": 3,
+            "channel_id": self.channel.channel_id,
+            "channel_name": self.channel.name,
+            "usernames": [self.user.username],
+        }
+
+        response = self.client.post(
+            "/api/discord/activity/records",
+            data,
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(200, response.status_code)
+        record = DiscordChannelActivityRecord.objects.get(
+            id=response.json()["ids"][0]
+        )
+        self.assertEqual(
+            DiscordChannelActivityRecord.VOICE_MINUTE, record.activity_type
+        )
+        self.assertEqual(3, record.quantity)
+
+    def test_create_voice_tracking_records_ignores_untracked_channel(self):
+        data = {
+            "minutes": 7,
+            "channel_id": 123456789,
+            "channel_name": "Untracked",
+            "usernames": [self.user.username],
+        }
+
+        response = self.client.post(
+            "/api/discord/voicetracking/records",
+            data,
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual([], response.json()["ids"])
+        self.assertEqual(0, DiscordChannelActivityRecord.objects.count())
+
+
+class DiscordGuildSyncTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        super().setUp()
+
+    @patch("discord.guilds.discord.get_bot_guilds")
+    def test_sync_discord_guilds_from_api(self, mock_get_bot_guilds):
+        mock_get_bot_guilds.return_value = [
+            {"id": 1041384161505722368, "name": "Minmatar"},
+            {"id": 999, "name": "Other Server"},
+        ]
+
+        synced = sync_discord_guilds()
+
+        self.assertEqual(2, synced)
+        self.assertTrue(
+            DiscordGuild.objects.get(guild_id=1041384161505722368).is_primary
+        )
+        self.assertTrue(DiscordGuild.objects.get(guild_id=999).is_active)
+
+        mock_get_bot_guilds.return_value = [
+            {"id": 1041384161505722368, "name": "Minmatar"},
+        ]
+        sync_discord_guilds()
+        self.assertFalse(DiscordGuild.objects.get(guild_id=999).is_active)
+
+    def test_sync_guilds_from_bot_endpoint(self):
+        response = self.client.post(
+            "/api/discord/guilds/sync",
+            {
+                "guilds": [
+                    {"id": 1041384161505722368, "name": "Minmatar"},
+                ]
+            },
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, response.json()["synced"])
+        guild = DiscordGuild.objects.get(guild_id=1041384161505722368)
+        self.assertEqual("Minmatar", guild.name)
+        self.assertTrue(guild.is_active)
+
+
+class DiscordChannelAdminFormTestCase(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.guild = DiscordGuild.objects.create(
+            guild_id=999888777,
+            name="Test Guild",
+            is_active=True,
+        )
+
+    @patch("discord.forms.fetch_active_guild_channels")
+    @patch("discord.forms.get_guild_channel")
+    def test_track_voice_activity_rejected_for_text_channel(
+        self, mock_get_channel, mock_fetch_active
+    ):
+        mock_fetch_active.return_value = [
+            {
+                "id": 123,
+                "name": "general",
+                "type": "text",
+                "guild_id": self.guild.guild_id,
+            },
+        ]
+        mock_get_channel.return_value = mock_fetch_active.return_value[0]
+        form = DiscordChannelAdminForm(
+            data={
+                "discord_channel_pick": "123",
+                "track_voice_activity": True,
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("track_voice_activity", form.errors)
 
 
 if __name__ == "__main__":

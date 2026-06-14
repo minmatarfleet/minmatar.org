@@ -365,3 +365,35 @@ class DiscordClient(DiscordBaseClient):
                 "name": name,
             },
         ).json()
+
+    def get_guild_channels(self, guild_id=None):
+        """Get all channels from a guild."""
+        type_map = {
+            0: "text",
+            2: "voice",
+            4: "category",
+            13: "stage",
+            15: "forum",
+        }
+        target_guild_id = guild_id or self.guild_id
+        channels = self.get(f"{BASE_URL}/guilds/{target_guild_id}/channels")
+        return [
+            {
+                "id": int(channel["id"]),
+                "name": channel["name"],
+                "type": type_map.get(channel["type"], "unknown"),
+                "guild_id": int(target_guild_id),
+            }
+            for channel in channels
+        ]
+
+    def get_bot_guilds(self):
+        """Get all guilds the bot user is a member of."""
+        guilds = self.get(f"{BASE_URL}/users/@me/guilds")
+        return [
+            {
+                "id": int(guild["id"]),
+                "name": guild["name"],
+            }
+            for guild in guilds
+        ]

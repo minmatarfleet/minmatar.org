@@ -65,3 +65,103 @@ class DiscordRole(models.Model):
         indexes = [
             models.Index(fields=["role_id"]),
         ]
+
+
+class DiscordChannelActivityRecord(models.Model):
+    TEXT_MESSAGE = "text_message"
+    VOICE_MINUTE = "voice_minute"
+
+    ACTIVITY_TYPE_CHOICES = [
+        (TEXT_MESSAGE, "Text message"),
+        (VOICE_MINUTE, "Voice minute"),
+    ]
+
+    created_on = models.DateTimeField(auto_now_add=True)
+    activity_type = models.CharField(
+        max_length=32, choices=ACTIVITY_TYPE_CHOICES
+    )
+    username = models.CharField(max_length=255)
+    quantity = models.IntegerField(
+        help_text="Minutes for voice activity, message count for text activity."
+    )
+    channel_id = models.BigIntegerField(null=True, blank=True)
+    channel_name = models.CharField(max_length=255, null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["created_on"], name="created_on_idx"),
+            models.Index(fields=["username"], name="username_idx"),
+            models.Index(
+                fields=["channel_id", "created_on"],
+                name="channel_created_on_idx",
+            ),
+            models.Index(
+                fields=["activity_type", "created_on"],
+                name="activity_type_created_on_idx",
+            ),
+        ]
+
+
+class DiscordGuild(models.Model):
+    guild_id = models.BigIntegerField(unique=True)
+    name = models.CharField(max_length=255)
+    is_primary = models.BooleanField(
+        default=False,
+        help_text="Matches DISCORD_GUILD_ID in application settings.",
+    )
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Bot was present in this guild on the last sync.",
+    )
+    last_seen_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class DiscordChannel(models.Model):
+    TEXT = "text"
+    VOICE = "voice"
+    STAGE = "stage"
+    FORUM = "forum"
+    CATEGORY = "category"
+    UNKNOWN = "unknown"
+
+    CHANNEL_TYPE_CHOICES = [
+        (TEXT, "Text"),
+        (VOICE, "Voice"),
+        (STAGE, "Stage"),
+        (FORUM, "Forum"),
+        (CATEGORY, "Category"),
+        (UNKNOWN, "Unknown"),
+    ]
+
+    channel_id = models.BigIntegerField(unique=True)
+    guild = models.ForeignKey(
+        DiscordGuild,
+        on_delete=models.CASCADE,
+        related_name="channels",
+    )
+    name = models.CharField(max_length=255)
+    channel_type = models.CharField(
+        max_length=32, choices=CHANNEL_TYPE_CHOICES
+    )
+    track_voice_activity = models.BooleanField(
+        default=False,
+        help_text=(
+            "When enabled, the bot records voice presence in this channel each minute."
+        ),
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.get_channel_type_display()})"

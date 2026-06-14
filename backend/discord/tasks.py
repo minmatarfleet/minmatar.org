@@ -12,10 +12,22 @@ from .helpers import (
     notify_technology_team,
     remove_all_roles_from_guild_member,
 )
+from .guilds import sync_discord_guilds
 from .models import DiscordRole, DiscordUser
 
 discord = DiscordClient()
 logger = logging.getLogger(__name__)
+
+
+@app.task()
+def sync_discord_guilds_task():
+    try:
+        count = sync_discord_guilds()
+        logger.info("Synced %s Discord guild(s)", count)
+    except Exception as error:
+        notify_technology_team("sync_discord_guilds")
+        logger.exception("Failed to sync Discord guilds: %s", error)
+        raise
 
 
 @app.task()
