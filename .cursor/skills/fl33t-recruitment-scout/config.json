@@ -1,0 +1,12 @@
+{
+  "api_base_url": "https://api.minmatar.org/api",
+  "corporation_types": ["alliance", "associate"],
+  "discord_invite": "discord.gg/minmatar",
+  "reddit": {
+    "recruitment_account": "MinmatarFleet",
+    "subreddits": ["evejobs", "eve"]
+  },
+  "forums": {
+    "recruitment_center_category": "recruitment-center"
+  }
+}
