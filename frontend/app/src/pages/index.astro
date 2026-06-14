@@ -59,7 +59,6 @@ const STAGINGS_STATIONS:StagingTranslation = {
 	watermellon: 'Sosala - WATERMELLON',
 	amarr: 'Amarr VIII (Oris) - Emperor Family Academy',
 	amamake: 'Amamake - 5 times nearly AT winners',
-	r6: 'R-6KYM - DO NOT USE',
 	r6_2: 'R-6KYM - Casper Anchored It',
 }
 
@@ -67,7 +66,6 @@ const STAGINGS_SYSTEMS:StagingTranslation = {
 	watermellon: 'Sosala',
 	amarr: 'Amarr',
 	amamake: 'Amamake',
-	r6: 'R-6KYM',
 	r6_2: 'R-6KYM',
 }
 
@@ -97,24 +95,21 @@ const STAGING_CORPORATIONS = {
 
 const STAGING_DOCTRINES = {
 	amamake: 1022167642188,
-	r6: 1051465618860,
+	r6_2: 1053229023468,
 }
 
 const STAGING_SELL_ORDERS = {
 	amamake: 'Amamake - 5 times nearly AT winners',
-	r6: 'R-6KYM - DO NOT USE',
 	r6_2: 'R-6KYM - Casper Anchored It',
 }
 
 const FREIGHT_ORDERS = {
 	amamake: 'Amamake - 5 times nearly AT winners',
-	r6: 'R-6KYM - DO NOT USE',
 	r6_2: 'R-6KYM - Casper Anchored It',
 }
 
 const INDUSTRY_ORDERS = {
 	amamake: 'Amamake - 5 times nearly AT winners',
-	r6: 'R-6KYM - DO NOT USE',
 	r6_2: 'R-6KYM - Casper Anchored It',
 }
 
@@ -162,7 +157,6 @@ import FluidFixed from '@components/compositions/FluidFixed.astro';
 import WatermellonInfo from '@components/blocks/WatermellonInfo.astro';
 import AmarrInfo from '@components/blocks/AmarrInfo.astro';
 import AmamakeInfo from '@components/blocks/AmamakeInfo.astro';
-import R6Info from '@components/blocks/R6Info.astro';
 import R6_2Info from '@components/blocks/R6_2Info.astro';
 import HomeCorporations from '@components/blocks/HomeCorporations.astro';
 import FleetFeed from '@components/blocks/FleetFeed.astro';
@@ -231,7 +225,6 @@ const page_description = t('index.leading_text');
 			>
 				{staging === 'amamake' ? <AmamakeInfo is_random={is_random_staging} /> :
 					staging === 'amarr' ? <AmarrInfo /> :
-					staging === 'r6' ? <R6Info is_random={is_random_staging} /> :
 					staging === 'r6_2' ? <R6_2Info is_random={is_random_staging} /> :
 					<WatermellonInfo is_random={is_random_staging} />
 				}
