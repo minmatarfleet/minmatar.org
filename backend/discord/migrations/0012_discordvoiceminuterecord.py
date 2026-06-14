@@ -7,52 +7,40 @@ def adopt_or_create_table(apps, schema_editor):
         return
 
     if schema_editor.connection.vendor == "mysql":
-        schema_editor.execute(
-            """
+        schema_editor.execute("""
             CREATE TABLE standingfleet_standingfleetvoicerecord (
                 id BIGINT AUTO_INCREMENT NOT NULL PRIMARY KEY,
                 created_on datetime(6) NOT NULL,
                 username varchar(255) NOT NULL,
                 minutes integer NOT NULL
             )
-            """
-        )
-        schema_editor.execute(
-            """
+            """)
+        schema_editor.execute("""
             CREATE INDEX created_on_idx
             ON standingfleet_standingfleetvoicerecord (created_on)
-            """
-        )
-        schema_editor.execute(
-            """
+            """)
+        schema_editor.execute("""
             CREATE INDEX username_idx
             ON standingfleet_standingfleetvoicerecord (username)
-            """
-        )
+            """)
         return
 
-    schema_editor.execute(
-        """
+    schema_editor.execute("""
         CREATE TABLE standingfleet_standingfleetvoicerecord (
             id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             created_on datetime NOT NULL,
             username varchar(255) NOT NULL,
             minutes integer NOT NULL
         )
-        """
-    )
-    schema_editor.execute(
-        """
+        """)
+    schema_editor.execute("""
         CREATE INDEX created_on_idx
         ON standingfleet_standingfleetvoicerecord (created_on)
-        """
-    )
-    schema_editor.execute(
-        """
+        """)
+    schema_editor.execute("""
         CREATE INDEX username_idx
         ON standingfleet_standingfleetvoicerecord (username)
-        """
-    )
+        """)
 
 
 class Migration(migrations.Migration):
