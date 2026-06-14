@@ -8,9 +8,9 @@ Setting up a fully functional development environment for the Minmatar.org backe
 Before proceeding, ensure you have completed the following, as described in other documents
 
 1. **Backend Setup:** Follow the instructions in `backend/README.md` to get the backend running with an empty database.
-2. **Discord Integration:** Complete the Discord setup as described in the documentation.
+2. **Discord Integration:** Complete [Discord setup](developer_discord_setup.md).
 3. **ESI Application:** Create and configure an ESI application. Add the credentials to your `.env` file.
-4. **Database & Redis:** Ensure both your database and Redis are running.
+4. **Database & Redis:** From the repo root, run `docker compose up -d`.
 5. **Database Migrations:** Run migrations to create the necessary tables: `python manage.py migrate`
 6. **Stop All Services:** Make sure the backend, Celery, Beat, Bot, and Frontend are **not** running during the seeding process.
 
@@ -80,7 +80,37 @@ Now, seed the database with development data. This step depends on roles being s
 
 ## Step 4: Start All Services
 
-Assuming the data seed completed successfully, you can now start the Backend, Celery, Beat, UI, and Bot as usual.
+Run these on your machine (not in Docker). Use separate terminals as needed.
+
+**Backend** (from `backend/`):
+
+```sh
+pipenv run python manage.py runserver
+```
+
+**Celery worker** (from `backend/`):
+
+```sh
+pipenv run celery -A app worker -l info -Q celery,eveonline,market
+```
+
+**Celery Beat** (from `backend/`):
+
+```sh
+pipenv run celery -A app beat -l info
+```
+
+**Frontend** (from `frontend/app/`):
+
+```sh
+npm run dev
+```
+
+**Discord bot** (from `bot/`, after setting `bot/.env`):
+
+```sh
+pipenv run python main.py
+```
 
 ---
 
