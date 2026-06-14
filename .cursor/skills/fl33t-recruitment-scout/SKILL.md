@@ -37,7 +37,7 @@ cd .cursor/skills/fl33t-recruitment-scout
 pip install -r requirements.txt
 
 # Reddit OAuth — load from backend/.env (do not commit these values)
-set -a && source ../../backend/.env && set +a
+set -a && source ../../../backend/.env && set +a
 
 python scripts/fetch_corporations.py --json
 python scripts/fetch_recruitment_ads.py --days 30 --json
@@ -132,7 +132,8 @@ OpenAPI docs: https://api.minmatar.org/api/docs
 
 Fetch posts from **`u/MinmatarFleet`** for the **past 30 days** (default
 `--pre-scout-days 30`). This is the alliance recruitment Reddit account; it posts
-corp ads on `r/evejobs` (Rattini, Soltech, Dark Tribe, Academy, Straylight, etc.).
+corp ads on `r/evejobs` (Rattini, Soltech, Dark Tribe, Academy, Straylight,
+Administrative Atrocities, etc.).
 
 ```
 https://www.reddit.com/user/MinmatarFleet/submitted/
@@ -212,21 +213,38 @@ primary corp. Skip or note poor fits (e.g. WH-only seekers) in a short bullet li
 - Industry-primary pilots may belong in MFA associate corps; mention PvP corps
   only as an optional side path, not the primary pitch.
 
-One primary corp per prospect. Optional one-liner for a bigger/smaller alt in
-the same alliance (no link needed).
+One primary corp per prospect. Optional one-liner for a graduate path or
+bigger/smaller corp in the same alliance — name only, no ad link. Use
+`(same alliance)` when naming a secondary corp (e.g. `administrative atrocities
+(same alliance)`).
+
+**FL33T routing notes** (verify against API each scout; corps rename):
+
+- **New EU pilots:** Minmatar Fleet Academy first, graduate path to
+  **Administrative Atrocities** (EUTZ, more experienced). Do not default new EU
+  pilots to Rattini. Administrative Atrocities was formerly DHDR — always use
+  the name from the corporations API, not stale external tickers.
+- **Industry-primary:** MFA associate corps primary; PvP corp is a side note.
+- **Alliance positioning:** daily PvP content is lowsec/fw. The alliance **does
+  hold sovereignty** for krabbing and some fights — never say "we're not null" or
+  "mostly lowsec fw not sov null" as if we have no sov.
 
 ### Draft outreach
 
-Read [examples.md](examples.md) before writing messages.
+Read [examples.md](examples.md) before writing messages. **Read several examples
+and vary structure** — do not reuse the same opening trick across messages in one
+scout run.
 
-**Template:**
+**Shape (flexible, not a fixed order):**
 
 ```
-[mirror 1-2 details from their post]
+[weave 1-2 details from their post into the pitch — placement varies]
 
-[one corp, why it fits, plain language]
+[one primary corp, plain language — describe what they do, not "good fit" sales]
 
-[optional: bigger/smaller alt in alliance, no link]
+[optional: graduate path or alt corp (same alliance), no link]
+
+[ad link if reddit + clear single fit]
 
 [{discord_invite} + casual closer]
 ```
@@ -234,7 +252,19 @@ Read [examples.md](examples.md) before writing messages.
 **Voice rules:**
 
 - Sound human, not marketing. No em dashes. No AI filler.
-- Mirror their words first, then pitch. Do not open with "Hey —" or "I saw your post".
+- Do not open with "Hey —" or "I saw your post".
+- **Weave, don't dump.** Work one or two OP details into the pitch naturally.
+  Vary where they land: sometimes lead with corp, sometimes with their situation,
+  sometimes with a direct reply to their question. Never open every message with
+  the same comma-chain mirror (`holland, eu nights, new but wanting pvp?`).
+- **No question-form mirroring.** Do not restate their post as a rhetorical
+  question (`industry, mining ops, pve, null sounds interesting?`).
+- **No salesy fit language.** Avoid "probably the move", "good fit", "worth a
+  look" stacked together, or listing `you want X, Y, Z`. Describe the corp; let
+  them decide.
+- **`tracks` is for negatives only.** Valid: `goons feeling like a number tracks`.
+  Invalid: `sons of bane taking care of people tracks`. Positive nostalgia gets
+  a plain statement (`hard to find another sons of bane since winter co days`).
 - One primary corp. Alliance mention is a footnote, not a second pitch.
 - Stats only when they kill a stated fear (e.g. member count answers "not a 3
   person discord").

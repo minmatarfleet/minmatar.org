@@ -42,7 +42,7 @@ cd .cursor/skills/fl33t-recruitment-scout
 pip install -r requirements.txt
 
 # Load Reddit credentials from backend/.env (local only — never commit)
-set -a && source ../../backend/.env && set +a
+set -a && source ../../../backend/.env && set +a
 
 python scripts/fetch_corporations.py --json
 python scripts/fetch_recruitment_ads.py --days 30 --json
@@ -79,6 +79,7 @@ Load from **`backend/.env`** before running Reddit scripts:
 - `REDDIT_PASSWORD`
 
 ```bash
+# from repo root, or use ../../../backend/.env when cwd is this skill folder
 set -a && source backend/.env && set +a
 python scripts/fetch_reddit.py --json
 ```
