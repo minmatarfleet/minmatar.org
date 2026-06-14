@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "composio": {
+      "url": "https://connect.composio.dev/mcp",
+      "headers": {
+        "x-consumer-api-key": "${env:COMPOSIO_API_KEY}"
+      }
+    },
+    "sentry": {
+      "url": "https://mcp.sentry.dev/mcp"
+    },
+    "discord-mcp": {
+      "command": "bash",
+      "args": ["${workspaceFolder}/mcps/run-discord-mcp.sh"]
+    }
+  }
+}

@@ -178,7 +178,8 @@ artifacts/
 # debugging / script outputs
 backend/scripts/outputs/
 
-# Reddit MCP OAuth config and tokens (JARs under mcps/ are tracked)
+# MCP local secrets and OAuth tokens (JARs under mcps/ are tracked)
+mcps/.env
 mcps/.reddit-mcp/
 
 # EVE Online Static Data for import_sde.py
