@@ -8,16 +8,18 @@
 
 
 ## Quickstart
-1. Create a `.env` file from `.env.example`
-1. Create a `.env.local` file from `.env` and update the database host to `127.0.0.1` (see commands below)
-1. Create a local Python shell environment `pipenv shell`
-1. Install dependencies `pipenv install`
-1. Install developer dependencies `pipenv install --dev`
-1. Run the database and redis `docker-compose up -d`
-1. Migrate the database `python3 manage.py migrate`
-1. Run the application `python3 manage.py runserver`
+
+Local development uses Docker for MariaDB and Redis only. Run Django (and Celery, Beat, etc.) on the host.
+
+1. From the **repo root**, start infrastructure: `docker compose up -d`
+1. Create `backend/.env` from `.env.example` (see root `README.md` for Discord and ESI values)
+1. `pipenv install --dev`
+1. `pipenv run python manage.py migrate`
+1. `pipenv run python manage.py runserver`
 
 Navigate to `/api/docs` for endpoints or `/admin` for the admin panel.
+
+See also [Discord setup](../docs/developer_discord_setup.md) and [data seeding](../docs/developer_data_seeding.md).
 
 ## Setting your user as admin
 ```python
