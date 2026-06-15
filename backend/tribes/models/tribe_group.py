@@ -37,6 +37,16 @@ class TribeGroup(models.Model):
     discord_channel_id = models.BigIntegerField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
 
+    def save(self, *args, **kwargs):
+        if not self.code:
+            # pylint: disable=import-outside-toplevel
+            from tribes.helpers.group_code import (
+                ensure_unique_tribe_group_code,
+            )
+
+            ensure_unique_tribe_group_code(self)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.tribe.name} — {self.name}"
 
