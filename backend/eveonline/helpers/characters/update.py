@@ -109,6 +109,14 @@ def update_character_killmails(eve_character_id: int) -> None:
         response = esi.get_character_killmail(
             killmail_id, killmail["killmail_hash"]
         )
+        if not response.success():
+            logger.warning(
+                "Skipping killmail %s for character %s: %s",
+                killmail_id,
+                eve_character_id,
+                response.error_text(),
+            )
+            continue
         details = response.results()
         if not EveCharacterKillmail.objects.filter(id=killmail_id).exists():
             killmail_obj = EveCharacterKillmail.objects.create(

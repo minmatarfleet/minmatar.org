@@ -29,11 +29,17 @@ def update_character_affilliations() -> int:
     update_count = 0
 
     for character_ids_batch in character_id_batches:
-        results = (
-            EsiClient(None)
-            .get_character_affiliations(character_ids_batch)
-            .results()
+        response = EsiClient(None).get_character_affiliations(
+            character_ids_batch
         )
+        if not response.success():
+            logger.warning(
+                "Skipping affiliations batch of %d characters, ESI error %s",
+                len(character_ids_batch),
+                response.response_code,
+            )
+            continue
+        results = response.results()
         logger.info(
             "Update character affiliations, processing %d characters, %d results",
             len(character_ids_batch),

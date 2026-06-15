@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 
 from app.celery import app
 from discord.client import DiscordClient
+from discord.helpers import handle_discord_guild_member_error
 from eveonline.helpers.characters import (
     user_primary_character,
 )
@@ -194,6 +195,10 @@ def update_affiliation(user_id: int):
 
 
 def log_affiliation_update_error(user: User, e):
+    if handle_discord_guild_member_error(
+        user, e, "update_affiliations", offboard_if_missing=False
+    ):
+        return
     if user_primary_character(user):
         logger.error("Error updating affiliations for user %s: %s", user, e)
     else:

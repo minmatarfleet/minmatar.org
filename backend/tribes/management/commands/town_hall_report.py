@@ -49,6 +49,12 @@ class Command(BaseCommand):
             default=None,
             help="Database alias (e.g. production_readonly). Defaults to default.",
         )
+        parser.add_argument(
+            "--scope",
+            default=None,
+            choices=["roster", "alliance"],
+            help="Override report scope (roster = tribe members, alliance = all pilots).",
+        )
 
     def handle(self, *args, **options):
         if not options["group_code"] and not options["all"]:
@@ -59,6 +65,7 @@ class Command(BaseCommand):
             "view": options["view"],
             "period": options["period"],
             "database": database,
+            "scope": options["scope"],
         }
 
         if options["all"]:

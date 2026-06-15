@@ -24,6 +24,7 @@ def get_tribe_group_report(
     group_id: int,
     view: str,
     period: str = Query("30d"),
+    scope: str | None = Query(None),
 ):
     group = (
         TribeGroup.objects.filter(pk=group_id, tribe_id=tribe_id)
@@ -40,7 +41,7 @@ def get_tribe_group_report(
         return 403, {"detail": "Permission denied."}
 
     try:
-        result = run_group_report(group, view=view, period=period)
+        result = run_group_report(group, view=view, period=period, scope=scope)
     except ReportError as exc:
         return 404, {"detail": str(exc)}
 

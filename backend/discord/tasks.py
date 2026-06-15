@@ -5,10 +5,11 @@ from django.contrib.auth.models import Group, User
 from app.celery import app
 from discord.client import DiscordClient
 
-from .helpers import (
+from discord.helpers import (
     find_unregistered_guild_members,
     get_discord_user,
     get_expected_nickname,
+    handle_discord_guild_member_error,
     notify_technology_team,
     remove_all_roles_from_guild_member,
 )
@@ -91,6 +92,10 @@ def sync_discord_nickname(user: User | int, force_update: bool):
             discord_user.nickname = expected_nickname
             discord_user.save()
         except Exception as e:
+            if handle_discord_guild_member_error(
+                user, e, "sync_discord_nickname"
+            ):
+                return
             logger.error(
                 "Failed to update nickname for user %s: %s",
                 user.username,

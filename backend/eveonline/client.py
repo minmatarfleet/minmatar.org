@@ -884,6 +884,7 @@ class EsiClient:
             return EsiResponse(
                 response_code=response.status_code,
                 data=response.text,
+                response=response,
             )
 
     def get_character_affiliations(self, character_ids) -> EsiResponse:

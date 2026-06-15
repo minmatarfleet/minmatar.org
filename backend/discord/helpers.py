@@ -1,11 +1,14 @@
 import logging
+
 import requests
-from django.contrib.auth.models import User
 from django.conf import settings
+from django.contrib.auth.models import User
+
 from discord.client import DiscordClient
-from eveonline.models import EveCharacter
 from eveonline.helpers.characters import user_primary_character
+from eveonline.models import EveCharacter
 from users.helpers import offboard_user
+
 from .core import make_nickname
 from .models import DiscordRole, DiscordUser
 
@@ -15,6 +18,79 @@ DISCORD_PEOPLE_TEAM_CHANNEL_ID = settings.DISCORD_PEOPLE_TEAM_CHANNEL_ID
 DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID = (
     settings.DISCORD_TECHNOLOGY_TEAM_CHANNEL_ID
 )
+
+
+DISCORD_UNKNOWN_MEMBER_CODE = 10007
+
+
+def _discord_api_error_code(response) -> int | None:
+    try:
+        body = response.json()
+    except ValueError:
+        return None
+    code = body.get("code")
+    return code if isinstance(code, int) else None
+
+
+def is_discord_unknown_guild_member_error(exc: Exception) -> bool:
+    """Return True when Discord returns code 10007 (Unknown Member)."""
+    if not isinstance(exc, requests.exceptions.HTTPError):
+        return False
+    response = exc.response
+    if response is None:
+        return False
+    return _discord_api_error_code(response) == DISCORD_UNKNOWN_MEMBER_CODE
+
+
+def is_discord_permission_denied_error(exc: Exception) -> bool:
+    """Return True for Discord 403 errors that are not unknown-member (10007)."""
+    if not isinstance(exc, requests.exceptions.HTTPError):
+        return False
+    response = exc.response
+    if response is None or response.status_code != 403:
+        return False
+    return _discord_api_error_code(response) != DISCORD_UNKNOWN_MEMBER_CODE
+
+
+def handle_discord_guild_member_error(
+    user: User | None,
+    exc: Exception,
+    context: str,
+    *,
+    offboard_if_missing: bool = True,
+) -> bool:
+    """
+    Handle expected Discord member errors (left guild, missing member, permission).
+
+    Returns True when the error was handled and should not be reported as a failure.
+    """
+    if is_discord_unknown_guild_member_error(exc):
+        username = user.username if user else "unknown"
+        logger.info(
+            "Discord member unavailable during %s for user %s: %s",
+            context,
+            username,
+            exc,
+        )
+        if (
+            offboard_if_missing
+            and user is not None
+            and DiscordUser.objects.filter(user_id=user.id).exists()
+        ):
+            offboard_user(user.id)
+        return True
+
+    if is_discord_permission_denied_error(exc):
+        username = user.username if user else "unknown"
+        logger.warning(
+            "Discord permission denied during %s for user %s: %s",
+            context,
+            username,
+            exc,
+        )
+        return True
+
+    return False
 
 
 def get_expected_nickname(user: User):
@@ -49,10 +125,7 @@ def get_discord_user(user: User, notify=False):
     try:
         external_discord_user = discord.get_user(discord_user.id)
     except requests.exceptions.HTTPError as e:
-        if e.response.json() == {
-            "message": "Unknown Member",
-            "code": 10007,
-        }:
+        if is_discord_unknown_guild_member_error(e):
             characters = ",".join(
                 [
                     char.character_name

@@ -26,6 +26,8 @@ from discord.views import discord_login_redirect, fake_login
 
 from discord.tasks import sync_discord_nickname, sync_discord_user
 from discord.helpers import (
+    handle_discord_guild_member_error,
+    is_discord_unknown_guild_member_error,
     remove_all_roles_from_guild_member,
     find_unregistered_guild_members,
 )
@@ -292,6 +294,54 @@ class DiscordTests(TestCase):
         # Should not raise, should just return
         remove_all_roles_from_guild_member(12345)
         mock_discord.remove_user_role.assert_not_called()
+
+    def test_handle_discord_guild_member_error_unknown_member(self):
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_response.json.return_value = {
+            "message": "Unknown Member",
+            "code": 10007,
+        }
+        exc = HTTPError(response=mock_response)
+        self.assertTrue(is_discord_unknown_guild_member_error(exc))
+
+    def test_bare_404_is_not_unknown_member(self):
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_response.json.side_effect = ValueError("not json")
+        exc = HTTPError(response=mock_response)
+        self.assertFalse(is_discord_unknown_guild_member_error(exc))
+
+    @patch("discord.helpers.offboard_user")
+    def test_handle_discord_guild_member_error_offboards_user(
+        self, mock_offboard
+    ):
+        DiscordUser.objects.create(id=999, user=self.user, discord_tag="x")
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_response.json.return_value = {
+            "message": "Unknown Member",
+            "code": 10007,
+        }
+        exc = HTTPError(response=mock_response)
+        self.assertTrue(
+            handle_discord_guild_member_error(self.user, exc, "test_context")
+        )
+        mock_offboard.assert_called_once_with(self.user.id)
+
+    @patch("discord.helpers.offboard_user")
+    def test_handle_discord_guild_member_error_does_not_offboard_bare_404(
+        self, mock_offboard
+    ):
+        DiscordUser.objects.create(id=998, user=self.user, discord_tag="x")
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_response.json.side_effect = ValueError("not json")
+        exc = HTTPError(response=mock_response)
+        self.assertFalse(
+            handle_discord_guild_member_error(self.user, exc, "test_context")
+        )
+        mock_offboard.assert_not_called()
 
 
 class VoiceTrackingRouterTestCase(TestCase):

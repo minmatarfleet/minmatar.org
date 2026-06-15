@@ -9,8 +9,9 @@ from eveonline.client import EsiResponse
 from eveonline.models import EveAlliance, EveCorporation, EveCharacter
 
 from structures.tasks import (
-    process_structure_notifications,
+    fetch_structure_notifications,
     fetch_structure_notifications_for_character,
+    process_structure_notifications,
     update_corporation_structures,
 )
 from structures.models import (
@@ -91,6 +92,32 @@ class StructureTaskTests(TestCase):
         self.assertEqual("Pilot 2005", ping.reported_by.character_name)
         self.assertEqual("StructureLostArmor", ping.notification_type)
         self.assertEqual(16, ping.event_time.minute)
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch(
+        "structures.tasks.fetch_structure_notifications_for_character.apply_async"
+    )
+    @patch("structures.tasks.EsiClient")
+    def test_fetch_structure_notifications_retries_on_rate_limit(
+        self, esi_mock, apply_async_mock
+    ):
+        mock_response = MagicMock()
+        mock_response.headers = {"Retry-After": "90"}
+        esi_mock.return_value.get_character_notifications.return_value = (
+            EsiResponse(response_code=429, response=mock_response)
+        )
+        character = EveCharacter.objects.create(
+            character_id=3001,
+            character_name="Notifier",
+        )
+
+        found, new = fetch_structure_notifications(character)
+
+        self.assertEqual((0, 0), (found, new))
+        apply_async_mock.assert_called_once_with(
+            args=[3001],
+            countdown=90,
+        )
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("eveonline.utils.get_esi_downtime_countdown", return_value=0)

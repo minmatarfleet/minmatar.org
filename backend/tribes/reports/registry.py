@@ -51,6 +51,9 @@ def _production_binding(code: str) -> ReportBinding:
             ReportView.TOWN_HALL.value: spec,
             ReportView.MEMBER.value: spec,
         },
+        presentation={
+            "town_hall": {"top_n": 5, "sort": "delivered_margin"},
+        },
     )
 
 
@@ -80,6 +83,9 @@ REPORT_BINDINGS: dict[str, ReportBinding] = {
                 ReportScope.ROSTER,
                 {"pi_tax_rate": 0.01},
             ),
+        },
+        presentation={
+            "town_hall": {"top_n": 5, "sort": "isk_pi_30d_estimate"},
         },
     ),
     "industry.subcapital-production": _production_binding(
@@ -138,6 +144,9 @@ for _code in _CAPITALS_CODES:
             ReportView.MEMBER.value: QuerySpec(
                 "capitals_activity", ReportScope.ROSTER
             ),
+        },
+        presentation={
+            "town_hall": {"top_n": 5, "sort": "kill_count"},
         },
     )
 
