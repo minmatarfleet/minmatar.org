@@ -389,6 +389,15 @@ export type FittingTagSlug =
     | 'command_bursts'
     | 'escape_frigate'
 
+export interface Refit {
+    id:             number;
+    name:           string;
+    eft_format:     string;
+    description:    string;
+    created_at:     Date;
+    updated_at:     Date;
+}
+
 export interface Fitting {
     id:                 number;
     name:               string;
@@ -400,6 +409,7 @@ export interface Fitting {
     minimum_pod:        string;
     recommended_pod:    string;
     latest_version:     string;
+    refits:             Refit[];
     tags:               FittingTagSlug[];
 }
 

@@ -2300,5 +2300,6 @@ export const ui = {
         'killmails_pending_plural': '{count} killmails pending',
         'killmails_pending_singular': '1 killmails pending',
         'add_character': 'Add character',
+        'refits': 'Refits',
     },
 } as const;
