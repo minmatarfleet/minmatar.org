@@ -31,7 +31,7 @@ import TextGroup from '@components/blocks/TextGroup.astro';
 ---
 
 {(can_edit || aarlink) &&
-    <FlexInline id="aarlink-button" gap="var(--space-s)">
+    <FlexInline id="aarlink-button" class="[ component ]" gap="var(--space-s)">
         {aarlink &&
             <TextGroup title={t('aar_link')}>
                 <ExternalLink href={aarlink} title={t('aar_title')}>{aarlink}</ExternalLink>
