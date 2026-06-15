@@ -15,7 +15,7 @@ from tribes.reports.registry import (
     REPORT_BINDINGS,
     binding_for_group,
 )
-from tribes.reports.types import ReportResult, ReportView
+from tribes.reports.types import ReportResult, ReportScope, ReportView
 
 
 class ReportError(Exception):
@@ -28,6 +28,7 @@ def run_group_report(
     view: str = ReportView.TOWN_HALL.value,
     period: str = "30d",
     database: str | None = None,
+    scope: str | None = None,
 ) -> ReportResult:
     try:
         validate_report_database(database)
@@ -44,6 +45,7 @@ def run_group_report(
             binding,
             view=view,
             period=period,
+            scope_override=scope,
         )
 
 
@@ -53,6 +55,7 @@ def run_report_by_code(
     view: str = ReportView.TOWN_HALL.value,
     period: str = "30d",
     database: str | None = None,
+    scope: str | None = None,
 ) -> ReportResult:
     try:
         validate_report_database(database)
@@ -69,11 +72,35 @@ def run_report_by_code(
         view=view,
         period=period,
         database=database,
+        scope=scope,
     )
 
 
+def _resolve_scope(spec, scope_override: str | None):
+    if not scope_override:
+        return spec.scope
+    try:
+        override = ReportScope(scope_override)
+    except ValueError as exc:
+        raise ReportError(
+            f"Invalid scope {scope_override!r}; use roster or alliance."
+        ) from exc
+    if override not in (ReportScope.ROSTER, ReportScope.ALLIANCE):
+        raise ReportError("Scope override must be roster or alliance.")
+    if spec.scope == ReportScope.PROGRAM:
+        raise ReportError(
+            "This report uses program scope and cannot be overridden."
+        )
+    return override
+
+
 def _run_binding(
-    tribe_group, binding, *, view: str, period: str
+    tribe_group,
+    binding,
+    *,
+    view: str,
+    period: str,
+    scope_override: str | None = None,
 ) -> ReportResult:
     now = timezone.now()
     bounds = parse_period(period)
@@ -107,8 +134,10 @@ def _run_binding(
     if not runner:
         raise ReportError(f"Unknown query key: {spec.query_key}")
 
+    effective_scope = _resolve_scope(spec, scope_override)
+
     rows, totals, columns = runner(
-        tribe_group, bounds, spec.scope, spec.params
+        tribe_group, bounds, effective_scope, spec.params
     )
 
     pres = binding.presentation.get(view, {})
@@ -124,7 +153,7 @@ def _run_binding(
         group_code=binding.code,
         group_name=tribe_group.name,
         view=view,
-        scope=spec.scope.value,
+        scope=effective_scope.value,
         period=bounds.label,
         period_start=period_start,
         period_end=period_end,

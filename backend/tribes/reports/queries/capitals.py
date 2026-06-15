@@ -1,11 +1,16 @@
-"""Capitals combat activity: kills and fleet participation by qualifying ship types."""
+"""Capitals combat activity: kills, losses, and fleet participation by qualifying ship types."""
 
 from collections import defaultdict
 from datetime import datetime
 
+from django.db.models import F
 from django.utils import timezone
 
-from eveonline.models import EveCharacter, EveCharacterKillmailAttacker
+from eveonline.models import (
+    EveCharacter,
+    EveCharacterKillmail,
+    EveCharacterKillmailAttacker,
+)
 from eveonline.models.characters import EvePlayer
 from fleets.models import EveFleetInstanceMember
 from tribes.models import TribeGroupRequirementAssetType
@@ -54,7 +59,8 @@ def run_capitals_report(
         char_eve_ids = None
         user_ids = None
 
-    kills_by_user, losses_by_user = _kill_loss_counts(
+    kills_by_user = _kill_counts(ship_type_ids, start_dt, end_dt, char_eve_ids)
+    losses_by_user = _loss_counts(
         ship_type_ids, start_dt, end_dt, char_eve_ids
     )
     fleets_by_user = _fleet_counts(
@@ -81,39 +87,62 @@ def run_capitals_report(
     return rows, totals, COLUMNS
 
 
-def _kill_loss_counts(ship_type_ids, start_dt, end_dt, char_eve_ids):
+def _kill_counts(ship_type_ids, start_dt, end_dt, char_eve_ids):
+    """Attacker kills while flying a qualifying ship (excludes victim-side rows)."""
     kills_by_user: dict[int, int] = defaultdict(int)
-    losses_by_user: dict[int, int] = defaultdict(int)
 
-    attacker_qs = EveCharacterKillmailAttacker.objects.filter(
-        ship_type_id__in=ship_type_ids,
-        killmail__killmail_time__gte=start_dt,
-        killmail__killmail_time__lte=end_dt,
-    ).select_related("killmail")
+    attacker_qs = (
+        EveCharacterKillmailAttacker.objects.filter(
+            ship_type_id__in=ship_type_ids,
+            killmail__killmail_time__gte=start_dt,
+            killmail__killmail_time__lte=end_dt,
+        )
+        .exclude(character_id=F("killmail__victim_character_id"))
+        .select_related("killmail")
+    )
 
     if char_eve_ids is not None:
         attacker_qs = attacker_qs.filter(character_id__in=char_eve_ids)
 
-    char_eve_ids_seen = set()
-    for att in attacker_qs.iterator():
-        if att.character_id is None:
-            continue
-        char_eve_ids_seen.add(att.character_id)
-
+    char_eve_ids_seen = {
+        att.character_id
+        for att in attacker_qs.iterator()
+        if att.character_id is not None
+    }
     char_to_user = _char_eve_id_to_user(char_eve_ids_seen)
 
     for att in attacker_qs.iterator():
         if att.character_id is None:
             continue
         user_id = char_to_user.get(att.character_id)
-        if not user_id:
-            continue
-        if att.killmail.victim_character_id == att.character_id:
-            losses_by_user[user_id] += 1
-        else:
+        if user_id:
             kills_by_user[user_id] += 1
 
-    return kills_by_user, losses_by_user
+    return kills_by_user
+
+
+def _loss_counts(ship_type_ids, start_dt, end_dt, char_eve_ids):
+    """Losses of qualifying hulls; member is the killmail victim (matches lossmail ingest)."""
+    losses_by_user: dict[int, int] = defaultdict(int)
+
+    loss_qs = EveCharacterKillmail.objects.filter(
+        ship_type_id__in=ship_type_ids,
+        killmail_time__gte=start_dt,
+        killmail_time__lte=end_dt,
+        victim_character_id=F("character__character_id"),
+    ).select_related("character")
+
+    if char_eve_ids is not None:
+        loss_qs = loss_qs.filter(character__character_id__in=char_eve_ids)
+    else:
+        loss_qs = loss_qs.filter(character__user_id__isnull=False)
+
+    for killmail in loss_qs.iterator():
+        if not killmail.character or not killmail.character.user_id:
+            continue
+        losses_by_user[killmail.character.user_id] += 1
+
+    return losses_by_user
 
 
 def _fleet_counts(ship_type_ids, start_dt, end_dt, char_eve_ids):
@@ -172,7 +201,7 @@ def _build_rows(user_ids, kills_by_user, losses_by_user, fleets_by_user):
             }
         )
     rows.sort(
-        key=lambda r: (r["kill_count"], r["fleet_count"]),
+        key=lambda r: (r["kill_count"], r["fleet_count"], -r["loss_count"]),
         reverse=True,
     )
     return rows

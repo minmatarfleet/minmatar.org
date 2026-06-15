@@ -14,6 +14,7 @@ from eveonline.scopes import scopes_for, TokenType
 from eveonline.helpers.characters import (
     update_character_assets as helper_update_character_assets,
 )
+from eveonline.helpers.characters.update import update_character_killmails
 from eveonline.tasks import (
     update_character,
     update_corporation,
@@ -369,6 +370,34 @@ class EveOnlineTaskTests(TestCase):
         update_character(char.character_id)
 
         self.assertEqual(1, EveCharacterKillmail.objects.count())
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("eveonline.helpers.characters.update.EsiClient")
+    def test_update_character_killmails_skips_failed_detail_fetch(
+        self, update_esi_mock
+    ):
+        esi = update_esi_mock.return_value
+        esi.get_recent_killmails.return_value = EsiResponse(
+            response_code=200,
+            data=[
+                {
+                    "killmail_id": 12345678,
+                    "killmail_hash": "abc123xyz",
+                }
+            ],
+        )
+        esi.get_character_killmail.return_value = EsiResponse(
+            response_code=906,
+        )
+
+        char = EveCharacter.objects.create(
+            character_id=1002,
+            character_name="Killmail Pilot",
+        )
+
+        update_character_killmails(char.character_id)
+
+        self.assertEqual(0, EveCharacterKillmail.objects.count())
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("eveonline.tasks.characters.refresh_character_clones")

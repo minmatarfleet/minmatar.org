@@ -29,7 +29,7 @@ pipenv run python manage.py town_hall_report \
   --all --view town_hall --period 30d --database production_readonly
 ```
 
-API: `GET /api/tribes/{tribe_id}/groups/{group_id}/reports/{view}?period=30d` (group chief / tribe chief auth).
+API: `GET /api/tribes/{tribe_id}/groups/{group_id}/reports/{view}?period=30d&scope=roster` (group chief / tribe chief auth). `scope` overrides the binding default (`roster` = tribe members, `alliance` = all linked pilots); only for reports that support both.
 
 ## Registry
 

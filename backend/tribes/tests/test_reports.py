@@ -17,7 +17,11 @@ from discord.signals import (
 )
 
 from app.test import TestCase
-from eveonline.models import EveCharacter
+from eveonline.models import (
+    EveCharacter,
+    EveCharacterKillmail,
+    EveCharacterKillmailAttacker,
+)
 from eveonline.models.characters import EveCharacterMiningEntry, EvePlayer
 from eveuniverse.models import EveCategory, EveGroup, EveMarketPrice, EveType
 from fleets.models import EveFleet
@@ -32,8 +36,11 @@ from tribes.models import (
     TribeGroup,
     TribeGroupMembership,
     TribeGroupMembershipCharacter,
+    TribeGroupRequirement,
+    TribeGroupRequirementAssetType,
 )
 from tribes.reports.period import parse_period
+from tribes.reports.queries.capitals import run_capitals_report
 from tribes.reports.queries.fleet_commanders import run_fleet_commanders_report
 from tribes.reports.queries.industry_orders import run_industry_orders_report
 from tribes.reports.queries.mining import run_mining_report
@@ -199,6 +206,43 @@ class MiningReportTestCase(TestCase):
         self.assertAlmostEqual(rows[0]["isk_ore_market_estimate"], 100000.0)
         self.assertAlmostEqual(totals["total_volume_m3"], 150.0)
 
+    def test_mining_scope_override_via_runner(self):
+        outsider = User.objects.create_user(username="outsider")
+        outsider_char = EveCharacter.objects.create(
+            character_id=7002,
+            character_name="Outsider Miner",
+            user=outsider,
+        )
+        ore = EveType.objects.get(id=1228)
+        today = timezone.now().date()
+        EveCharacterMiningEntry.objects.create(
+            character=outsider_char,
+            eve_type=ore,
+            date=today - timedelta(days=2),
+            quantity=2000,
+            solar_system_id=30001,
+        )
+
+        period = parse_period("30d")
+        roster_result = run_group_report(
+            self.group,
+            view=ReportView.TOWN_HALL.value,
+            period=period.label,
+            scope="roster",
+        )
+        alliance_result = run_group_report(
+            self.group,
+            view=ReportView.TOWN_HALL.value,
+            period=period.label,
+            scope="alliance",
+        )
+        self.assertEqual(roster_result.scope, "roster")
+        self.assertEqual(alliance_result.scope, "alliance")
+        self.assertAlmostEqual(roster_result.totals["total_volume_m3"], 150.0)
+        self.assertAlmostEqual(
+            alliance_result.totals["total_volume_m3"], 450.0
+        )
+
 
 class FleetCommandersReportTestCase(TestCase):
     @factory.django.mute_signals(
@@ -309,6 +353,123 @@ class IndustryOrdersReportTestCase(TestCase):
         self.assertEqual(totals["delivered_units"], 5)
 
 
+class CapitalsReportTestCase(TestCase):
+    @factory.django.mute_signals(
+        django_signals.pre_save, django_signals.post_save
+    )
+    def setUp(self):
+        super().setUp()
+        self.dread_type_id = 23773
+        _ensure_eve_type(self.dread_type_id, "Naglfar")
+        self.tribe = Tribe.objects.create(name="Capitals", slug="capitals")
+        self.group = TribeGroup.objects.create(
+            tribe=self.tribe,
+            name="Dreads",
+            code="capitals.dreads",
+        )
+        requirement = TribeGroupRequirement.objects.create(
+            tribe_group=self.group,
+        )
+        TribeGroupRequirementAssetType.objects.create(
+            requirement=requirement,
+            eve_type_id=self.dread_type_id,
+        )
+
+        self.killer_user = User.objects.create_user(username="killer")
+        self.loser_user = User.objects.create_user(username="loser")
+        self.killer_char = EveCharacter.objects.create(
+            character_id=11001,
+            character_name="Killer",
+            user=self.killer_user,
+        )
+        self.loser_char = EveCharacter.objects.create(
+            character_id=11002,
+            character_name="Loser",
+            user=self.loser_user,
+        )
+        for user, char in (
+            (self.killer_user, self.killer_char),
+            (self.loser_user, self.loser_char),
+        ):
+            membership = TribeGroupMembership.objects.create(
+                tribe_group=self.group,
+                user=user,
+                status=TribeGroupMembership.STATUS_ACTIVE,
+            )
+            TribeGroupMembershipCharacter.objects.create(
+                membership=membership,
+                character=char,
+            )
+            EvePlayer.objects.create(
+                user=user,
+                primary_character=char,
+                nickname=f"player-{user.username}",
+            )
+
+        kill_time = timezone.now() - timedelta(days=1)
+        killmail = EveCharacterKillmail.objects.create(
+            id=100001,
+            killmail_id=900101,
+            killmail_hash="kill",
+            killmail_time=kill_time,
+            solar_system_id=30001,
+            ship_type_id=587,
+            victim_character_id=99999,
+            victim_corporation_id=1,
+            victim_alliance_id=1,
+            victim_faction_id=None,
+            attackers="[]",
+            items="[]",
+            character=self.killer_char,
+        )
+        EveCharacterKillmailAttacker.objects.create(
+            killmail=killmail,
+            character_id=self.killer_char.character_id,
+            ship_type_id=self.dread_type_id,
+        )
+
+        EveCharacterKillmail.objects.create(
+            id=100002,
+            killmail_id=900102,
+            killmail_hash="loss",
+            killmail_time=kill_time,
+            solar_system_id=30001,
+            ship_type_id=self.dread_type_id,
+            victim_character_id=self.loser_char.character_id,
+            victim_corporation_id=1,
+            victim_alliance_id=1,
+            victim_faction_id=None,
+            attackers="[]",
+            items="[]",
+            character=self.loser_char,
+        )
+
+    def test_counts_kills_and_victim_losses_separately(self):
+        period = parse_period("30d")
+        rows, totals, columns = run_capitals_report(
+            self.group, period, ReportScope.ROSTER, {}
+        )
+        self.assertIn("loss_count", columns)
+        self.assertEqual(totals["total_kills"], 1)
+        self.assertEqual(totals["total_losses"], 1)
+
+        by_name = {r["primary_character_name"]: r for r in rows}
+        self.assertEqual(by_name["Killer"]["kill_count"], 1)
+        self.assertEqual(by_name["Killer"]["loss_count"], 0)
+        self.assertEqual(by_name["Loser"]["kill_count"], 0)
+        self.assertEqual(by_name["Loser"]["loss_count"], 1)
+
+    def test_town_hall_top_n_limits_rows(self):
+        result = run_group_report(
+            self.group,
+            view=ReportView.TOWN_HALL.value,
+            period="30d",
+            scope="roster",
+        )
+        self.assertLessEqual(len(result.rows), 5)
+        self.assertEqual(result.totals["total_kills"], 1)
+
+
 class ReportRunnerTestCase(TestCase):
     @factory.django.mute_signals(
         django_signals.pre_save, django_signals.post_save
@@ -341,3 +502,16 @@ class ReportRunnerTestCase(TestCase):
                 database="does_not_exist",
             )
         self.assertIn("Unknown database alias", str(ctx.exception))
+
+    def test_invalid_scope_override_raises(self):
+        mining_group = TribeGroup.objects.create(
+            tribe=Tribe.objects.create(name="Industry", slug="industry2"),
+            name="Mining",
+            code="industry.mining",
+        )
+        with self.assertRaises(ReportError) as ctx:
+            run_group_report(
+                mining_group,
+                scope="program",
+            )
+        self.assertIn("roster or alliance", str(ctx.exception))

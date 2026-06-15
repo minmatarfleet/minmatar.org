@@ -221,10 +221,37 @@ def fetch_structure_notifications_for_character(character_id: int):
     return fetch_structure_notifications(character)
 
 
+NOTIFICATIONS_RATE_LIMIT_RETRY_SECONDS = 120
+
+
+def _notifications_retry_after_seconds(response) -> int:
+    resp = getattr(response, "response", None)
+    if resp is not None and hasattr(resp, "headers"):
+        retry_after = resp.headers.get("Retry-After")
+        if retry_after:
+            try:
+                return max(int(retry_after), 30)
+            except ValueError:
+                pass
+    return NOTIFICATIONS_RATE_LIMIT_RETRY_SECONDS
+
+
 def fetch_structure_notifications(character):
     response = EsiClient(character).get_character_notifications()
+    if response.response_code == 429:
+        retry_after = _notifications_retry_after_seconds(response)
+        logger.warning(
+            "Rate limited fetching notifications for %s, retrying in %ss",
+            character.character_name,
+            retry_after,
+        )
+        fetch_structure_notifications_for_character.apply_async(
+            args=[character.character_id],
+            countdown=retry_after,
+        )
+        return 0, 0
     if not response.success():
-        logger.error(
+        logger.warning(
             "Error %d fetching notifications for %s : %s",
             response.response_code,
             character.character_name,
