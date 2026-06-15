@@ -258,7 +258,7 @@ import { navigate } from "astro:transitions/client";
                                         item_name={refit.name}
                                         type_id={fitting.ship_id}
                                     >
-                                        {refit.description}
+                                        <small>{refit.description}</small>
                                     </ItemBadge>
                                     <ClipboardButton id={`refit-${refit.id}`}>{refit.eft_format}</ClipboardButton>
                                 </FlexInlineSiblings>
