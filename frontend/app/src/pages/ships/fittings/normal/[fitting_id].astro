@@ -129,6 +129,7 @@ import PageSubheader from '@components/page/PageSubheader.astro';
 
 import TextBox from '@components/layout/TextBox.astro';
 
+import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 
@@ -136,6 +137,8 @@ import Fit from '@components/blocks/Fit.astro';
 import Button from '@components/blocks/Button.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 import CopyPodButton from '@components/blocks/CopyPodButton.astro';
+import ItemBadge from '@components/blocks/ItemBadge.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 
 const render_view = translatePath(`/ships/fittings/render/${fitting_id}`)
 
@@ -247,6 +250,30 @@ import { navigate } from "astro:transitions/client";
             </TextBox>
             
             <Fit fitting_groups={fitting_groups} />
+
+            {fitting && fitting?.refits.length > 0 &&
+                <ComponentBlock width='narrow'>
+                    <Flexblock gap='var(--space-m)'>
+                        <h2>{t('refits')}</h2>
+                        <Flexblock gap='var(--space-3xs)'>
+                            {fitting?.refits.map(refit =>
+                                <FlexInlineSiblings
+                                    min-shink-width='250px'
+                                    shrinkable-sibbling='first'
+                                >
+                                    <ItemBadge
+                                        item_name={refit.name}
+                                        type_id={fitting.ship_id}
+                                    >
+                                        {refit.description}
+                                    </ItemBadge>
+                                    <ClipboardButton id={`refit-${refit.id}`}>{refit.eft_format}</ClipboardButton>
+                                </FlexInlineSiblings>
+                            )}
+                        </Flexblock>
+                    </Flexblock>
+                </ComponentBlock>
+            }
         </Flexblock>
     </PageDefault>
 </Viewport>

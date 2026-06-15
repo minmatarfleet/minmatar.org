@@ -108,6 +108,8 @@ import CopyPodButton from '@components/blocks/CopyPodButton.astro'
 import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
 import AugmentationEvEIcon from '@components/icons/AugmentationEvEIcon.astro'
 import FixedFluid from '@components/compositions/FixedFluid.astro'
+import ItemBadge from '@components/blocks/ItemBadge.astro'
+import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro'
 
 const canonical_url = new URL(translatePath(`/ships/fittings/normal/${fitting_id}`), Astro.url.origin).href
 ---
@@ -149,7 +151,7 @@ import { navigate } from "astro:transitions/client";
             padding_block='var(--space-xl)'
             max_width='650px'
         >
-            <Flexblock gap='var(--space-3xl)'>
+            <Flexblock gap='var(--space-xl)'>
                 <Flexblock gap='var(--space-xl)'>
                     <Flexblock class="[ page-header ]">
                         <PageTitle>
@@ -242,6 +244,28 @@ import { navigate } from "astro:transitions/client";
                         </Cargohold>
                     }
                 </Flexblock>
+
+                {fitting && fitting?.refits.length > 0 &&
+                    <Flexblock>
+                        <h3>{t('refits')}</h3>
+                        <Flexblock gap='var(--space-3xs)'>
+                            {fitting?.refits.map(refit =>
+                                <FlexInlineSiblings
+                                    min-shink-width='250px'
+                                    shrinkable-sibbling='first'
+                                >
+                                    <ItemBadge
+                                        item_name={refit.name}
+                                        type_id={fitting.ship_id}
+                                    >
+                                        {refit.description}
+                                    </ItemBadge>
+                                    <ClipboardButton id={`refit-${refit.id}`}>{refit.eft_format}</ClipboardButton>
+                                </FlexInlineSiblings>
+                            )}
+                        </Flexblock>
+                    </Flexblock>
+                }
 
                 {saved_logs?.length > 0 &&
                     <Flexblock class="[ w-full ]" gap='var(--space-m)'>
