@@ -23,6 +23,10 @@ pipenv run python manage.py town_hall_report \
 
 # All automated bindings
 pipenv run python manage.py town_hall_report --all --view town_hall --period 30d --format json
+
+# Read-only production data (no writes; requires production_readonly in settings)
+pipenv run python manage.py town_hall_report \
+  --all --view town_hall --period 30d --database production_readonly
 ```
 
 API: `GET /api/tribes/{tribe_id}/groups/{group_id}/reports/{view}?period=30d` (group chief / tribe chief auth).

@@ -44,23 +44,29 @@ class Command(BaseCommand):
             default="json",
             choices=["json", "csv"],
         )
+        parser.add_argument(
+            "--database",
+            default=None,
+            help="Database alias (e.g. production_readonly). Defaults to default.",
+        )
 
     def handle(self, *args, **options):
         if not options["group_code"] and not options["all"]:
             raise CommandError("Specify --group CODE or --all")
 
+        database = options["database"]
+        report_kwargs = {
+            "view": options["view"],
+            "period": options["period"],
+            "database": database,
+        }
+
         if options["all"]:
-            groups = all_reportable_groups()
+            groups = all_reportable_groups(database=database)
             results = []
             for tg in groups:
                 try:
-                    results.append(
-                        run_group_report(
-                            tg,
-                            view=options["view"],
-                            period=options["period"],
-                        )
-                    )
+                    results.append(run_group_report(tg, **report_kwargs))
                 except ReportError as exc:
                     self.stderr.write(f"{tg.code}: {exc}")
             payload = [_result_dict(r) for r in results]
@@ -70,8 +76,7 @@ class Command(BaseCommand):
         try:
             result = run_report_by_code(
                 options["group_code"],
-                view=options["view"],
-                period=options["period"],
+                **report_kwargs,
             )
         except ReportError as exc:
             raise CommandError(str(exc)) from exc

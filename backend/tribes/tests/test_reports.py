@@ -333,3 +333,11 @@ class ReportRunnerTestCase(TestCase):
         self.group.save(update_fields=["code"])
         with self.assertRaises(ReportError):
             run_group_report(self.group)
+
+    def test_unknown_database_raises(self):
+        with self.assertRaises(ReportError) as ctx:
+            run_group_report(
+                self.group,
+                database="does_not_exist",
+            )
+        self.assertIn("Unknown database alias", str(ctx.exception))

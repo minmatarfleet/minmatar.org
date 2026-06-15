@@ -33,14 +33,16 @@ def _occurred_at_killmail(ref_id):
 
 
 def _occurred_at_mining(ref_id):
-    parts = ref_id.split("-")
-    if len(parts) < 4:
+    prefix, solar_system_id = ref_id.rsplit("-", 1)
+    prefix_parts = prefix.split("-", 2)
+    if len(prefix_parts) != 3:
         return None
-    char_pk, type_id, date_str = parts[0], parts[1], parts[2]
+    char_pk, type_id, date_str = prefix_parts
     entry = EveCharacterMiningEntry.objects.filter(
         character_id=char_pk,
         eve_type_id=type_id,
         date=date_str,
+        solar_system_id=solar_system_id,
     ).first()
     return _datetime_from_date(entry.date) if entry else None
 

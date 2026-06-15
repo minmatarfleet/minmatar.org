@@ -5,6 +5,10 @@ from datetime import datetime
 from django.utils import timezone
 
 from tribes.models import TribeGroup
+from tribes.reports.database import (
+    use_report_database,
+    validate_report_database,
+)
 from tribes.reports.period import parse_period
 from tribes.reports.registry import (
     QUERY_RUNNERS,
@@ -23,18 +27,24 @@ def run_group_report(
     *,
     view: str = ReportView.TOWN_HALL.value,
     period: str = "30d",
+    database: str | None = None,
 ) -> ReportResult:
-    binding = binding_for_group(tribe_group)
-    if not binding:
-        raise ReportError(
-            f"No report binding for group code {tribe_group.code!r}"
+    try:
+        validate_report_database(database)
+    except ValueError as exc:
+        raise ReportError(str(exc)) from exc
+    with use_report_database(database):
+        binding = binding_for_group(tribe_group)
+        if not binding:
+            raise ReportError(
+                f"No report binding for group code {tribe_group.code!r}"
+            )
+        return _run_binding(
+            tribe_group,
+            binding,
+            view=view,
+            period=period,
         )
-    return _run_binding(
-        tribe_group,
-        binding,
-        view=view,
-        period=period,
-    )
 
 
 def run_report_by_code(
@@ -42,11 +52,24 @@ def run_report_by_code(
     *,
     view: str = ReportView.TOWN_HALL.value,
     period: str = "30d",
+    database: str | None = None,
 ) -> ReportResult:
-    tribe_group = TribeGroup.objects.filter(code=code, is_active=True).first()
+    try:
+        validate_report_database(database)
+    except ValueError as exc:
+        raise ReportError(str(exc)) from exc
+    with use_report_database(database):
+        tribe_group = TribeGroup.objects.filter(
+            code=code, is_active=True
+        ).first()
     if not tribe_group:
         raise ReportError(f"TribeGroup with code {code!r} not found")
-    return run_group_report(tribe_group, view=view, period=period)
+    return run_group_report(
+        tribe_group,
+        view=view,
+        period=period,
+        database=database,
+    )
 
 
 def _run_binding(
@@ -112,11 +135,20 @@ def _run_binding(
     )
 
 
-def all_reportable_groups():
+def all_reportable_groups(database: str | None = None):
     """Active groups that have a registry binding."""
-    codes = {
-        code for code, binding in REPORT_BINDINGS.items() if not binding.manual
-    }
-    return TribeGroup.objects.filter(is_active=True, code__in=codes).order_by(
-        "tribe__name", "name"
-    )
+    try:
+        validate_report_database(database)
+    except ValueError as exc:
+        raise ReportError(str(exc)) from exc
+    with use_report_database(database):
+        codes = {
+            code
+            for code, binding in REPORT_BINDINGS.items()
+            if not binding.manual
+        }
+        return list(
+            TribeGroup.objects.filter(is_active=True, code__in=codes).order_by(
+                "tribe__name", "name"
+            )
+        )
