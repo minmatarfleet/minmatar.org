@@ -26,6 +26,7 @@ from tribes.endpoints.groups.schemas import (
     TribeMemberActivitySchema,
 )
 from tribes.helpers import user_is_tribe_chief
+from tribes.helpers.activity_record_filters import filter_records_by_period
 from tribes.models import Tribe, TribeGroupActivityRecord, TribeGroupMembership
 
 PATH = "/{tribe_id}/members/{member_id}/activity"
@@ -86,10 +87,7 @@ def get_tribe_member_activity(
         user_id=member_id,
     )
     start, end = _parse_since_until(since, until)
-    if start:
-        qs = qs.filter(created_at__gte=start)
-    if end:
-        qs = qs.filter(created_at__lte=end)
+    qs = filter_records_by_period(qs, start, end)
 
     points_expr = ExpressionWrapper(
         Coalesce(F("tribe_group_activity__points_per_record"), Value(0.0))

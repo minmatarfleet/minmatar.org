@@ -4,7 +4,10 @@ for tribe members when their activity matches an active TribeGroupActivity confi
 """
 
 from django.db import transaction
-from django.db.models import Exists, F, OuterRef
+from django.db.models import F
+from django.utils import timezone
+
+from datetime import datetime as dt_datetime, time as dt_time
 
 from eveonline.models import (
     EveCharacterContract,
@@ -15,7 +18,8 @@ from eveonline.models import (
     EveCorporationContract,
     EveCorporationWalletJournalEntry,
 )
-from fleets.models import EveFleetInstanceMember
+from fleets.models import EveFleet, EveFleetInstanceMember
+from industry.models import IndustryOrderItemAssignment
 from market.models import EveMarketItemTransaction
 
 from tribes.models import (
@@ -58,6 +62,7 @@ def _create_record(
     target_type_id=None,
     quantity=None,
     unit="",
+    occurred_at=None,
 ):
     """Create a TribeGroupActivityRecord if one does not exist (dedupe by ref)."""
     defaults = {
@@ -67,6 +72,7 @@ def _create_record(
         "target_type_id": target_type_id,
         "quantity": quantity,
         "unit": unit or "",
+        "occurred_at": occurred_at,
     }
     _, created = TribeGroupActivityRecord.objects.get_or_create(
         tribe_group_activity=activity,
@@ -75,6 +81,12 @@ def _create_record(
         defaults=defaults,
     )
     return created
+
+
+def _datetime_from_date(d):
+    if d is None:
+        return None
+    return timezone.make_aware(dt_datetime.combine(d, dt_time.min))
 
 
 # ---------------------------------------------------------------------------
@@ -88,49 +100,42 @@ def process_killmail(activity):
     if not members:
         return 0
 
-    # EveCharacterKillmail.character_id is FK to EveCharacter (Django pk), not EVE character_id
-    char_pks = {c.id for c, _ in members}
-    char_user = {c.id: u for c, u in members}
+    char_eve_ids = {c.character_id for c, _ in members}
+    char_by_eve_id = {c.character_id: c for c, _ in members}
+    user_by_eve_id = {c.character_id: u for c, u in members}
 
-    # Killmails where our members' characters are linked (character FK = owner of killboard).
-    # It's a kill when victim_character_id != character.character_id.
-    qs = (
-        EveCharacterKillmail.objects.filter(character_id__in=char_pks)
-        .exclude(victim_character_id=F("character__character_id"))
-        .select_related("character")
-    )
-
-    if activity.target_eve_type_id is not None:
-        qs = qs.filter(ship_type_id=activity.target_eve_type_id)
+    attacker_qs = EveCharacterKillmailAttacker.objects.filter(
+        character_id__in=char_eve_ids,
+    ).select_related("killmail")
 
     if activity.source_eve_type_id is not None:
-        # Restrict to killmails where this character was an attacker in the configured ship
-        attacker_subq = EveCharacterKillmailAttacker.objects.filter(
-            killmail_id=OuterRef("pk"),
-            character_id=OuterRef("character__character_id"),
-            ship_type_id=activity.source_eve_type_id,
+        attacker_qs = attacker_qs.filter(
+            ship_type_id=activity.source_eve_type_id
         )
-        qs = qs.filter(Exists(attacker_subq))
+
+    if activity.target_eve_type_id is not None:
+        attacker_qs = attacker_qs.filter(
+            killmail__ship_type_id=activity.target_eve_type_id
+        )
 
     created = 0
-    for killmail in qs:
-        source_type_id = None
-        if activity.source_eve_type_id is not None:
-            att = EveCharacterKillmailAttacker.objects.filter(
-                killmail=killmail,
-                character_id=killmail.character.character_id,
-            ).first()
-            source_type_id = att.ship_type_id if att else None
-        if activity.source_eve_type_id is not None and source_type_id is None:
+    for att in attacker_qs:
+        killmail = att.killmail
+        if killmail.victim_character_id == att.character_id:
             continue
+        character = char_by_eve_id.get(att.character_id)
+        if not character:
+            continue
+        ref_id = f"{killmail.pk}-{att.character_id}"
         if _create_record(
             activity,
             "EveCharacterKillmail",
-            str(killmail.pk),
-            character=killmail.character,
-            user=char_user.get(killmail.character_id),
-            source_type_id=source_type_id,
+            ref_id,
+            character=character,
+            user=user_by_eve_id.get(att.character_id),
+            source_type_id=att.ship_type_id,
             target_type_id=killmail.ship_type_id,
+            occurred_at=killmail.killmail_time,
         ):
             created += 1
     return created
@@ -164,6 +169,7 @@ def process_lossmail(activity):
             user=char_user.get(killmail.character_id),
             source_type_id=killmail.ship_type_id,
             target_type_id=None,
+            occurred_at=killmail.killmail_time,
         ):
             created += 1
     return created
@@ -197,6 +203,7 @@ def process_fleet_participation(activity):
             user=user,
             source_type_id=member.ship_type_id,
             target_type_id=None,
+            occurred_at=member.join_time,
         ):
             created += 1
     return created
@@ -237,6 +244,7 @@ def process_mining(activity):
             target_type_id=None,
             quantity=quantity_m3,
             unit="m3",
+            occurred_at=_datetime_from_date(entry.date),
         ):
             created += 1
     return created
@@ -274,6 +282,7 @@ def process_planetary_interaction(activity):
             target_type_id=None,
             quantity=amount,
             unit="ISK",
+            occurred_at=entry.date,
         ):
             created += 1
     return created
@@ -308,6 +317,7 @@ def process_industry(activity):
             target_type_id=None,
             quantity=float(job.runs),
             unit="runs",
+            occurred_at=job.end_date,
         ):
             created += 1
     return created
@@ -341,6 +351,7 @@ def process_contract(activity):
             target_type_id=None,
             quantity=price,
             unit="ISK",
+            occurred_at=contract.date_completed or contract.date_issued,
         ):
             created += 1
     return created
@@ -379,6 +390,7 @@ def process_courier_contract(activity):
             target_type_id=None,
             quantity=volume,
             unit="m3",
+            occurred_at=contract.date_completed or contract.date_accepted,
         ):
             created += 1
 
@@ -405,6 +417,7 @@ def process_courier_contract(activity):
             target_type_id=None,
             quantity=volume,
             unit="m3",
+            occurred_at=contract.date_completed or contract.date_accepted,
         ):
             created += 1
 
@@ -448,6 +461,78 @@ def process_market_order(activity):
             target_type_id=None,
             quantity=isk_value,
             unit="ISK",
+            occurred_at=txn.sell_date,
+        ):
+            created += 1
+    return created
+
+
+def process_industry_order(activity):
+    """Delivered industry order assignments tagged to this tribe group."""
+    members = _get_member_characters(activity)
+    if not members:
+        return 0
+
+    char_pks = [c.id for c, _ in members]
+    char_user = {c.id: u for c, u in members}
+
+    qs = IndustryOrderItemAssignment.objects.filter(
+        character_id__in=char_pks,
+        order_item__order__tribe_groups=activity.tribe_group,
+        delivered_at__isnull=False,
+    ).select_related("order_item", "order_item__order", "character")
+
+    if activity.source_eve_type_id is not None:
+        qs = qs.filter(order_item__eve_type_id=activity.source_eve_type_id)
+
+    created = 0
+    for assignment in qs:
+        occurred_at = (
+            assignment.delivered_at or assignment.order_item.order.fulfilled_at
+        )
+        if _create_record(
+            activity,
+            "IndustryOrderItemAssignment",
+            str(assignment.pk),
+            character=assignment.character,
+            user=char_user.get(assignment.character_id),
+            source_type_id=assignment.order_item.eve_type_id,
+            target_type_id=None,
+            quantity=float(assignment.quantity),
+            unit="units",
+            occurred_at=occurred_at,
+        ):
+            created += 1
+    return created
+
+
+def process_fleet_commanded(activity):
+    """Fleets led by roster members (created_by), excluding cancelled."""
+    members = _get_member_characters(activity)
+    if not members:
+        return 0
+
+    user_ids = {u.id for _, u in members}
+    user_by_id = {u.id: u for _, u in members}
+
+    qs = EveFleet.objects.filter(
+        created_by_id__in=user_ids,
+    ).exclude(status="cancelled")
+
+    created = 0
+    for fleet in qs:
+        user = user_by_id.get(fleet.created_by_id)
+        if not user:
+            continue
+        if _create_record(
+            activity,
+            "EveFleet",
+            str(fleet.pk),
+            character=None,
+            user=user,
+            source_type_id=None,
+            target_type_id=None,
+            occurred_at=fleet.start_time,
         ):
             created += 1
     return created
@@ -457,9 +542,11 @@ PROCESSORS = {
     TribeGroupActivity.KILLMAIL: process_killmail,
     TribeGroupActivity.LOSSMAIL: process_lossmail,
     TribeGroupActivity.FLEET_PARTICIPATION: process_fleet_participation,
+    TribeGroupActivity.FLEET_COMMANDED: process_fleet_commanded,
     TribeGroupActivity.MINING: process_mining,
     TribeGroupActivity.PLANETARY_INTERACTION: process_planetary_interaction,
     TribeGroupActivity.INDUSTRY: process_industry,
+    TribeGroupActivity.INDUSTRY_ORDER: process_industry_order,
     TribeGroupActivity.CONTRACT: process_contract,
     TribeGroupActivity.COURIER_CONTRACT: process_courier_contract,
     TribeGroupActivity.MARKET_ORDER: process_market_order,

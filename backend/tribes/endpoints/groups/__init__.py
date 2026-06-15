@@ -8,6 +8,9 @@ from tribes.endpoints.groups.get_tribe_group import (
 from tribes.endpoints.groups.get_tribe_group_activity import (
     router as get_tribe_group_activity_router,
 )
+from tribes.endpoints.groups.get_tribe_group_report import (
+    router as get_tribe_group_report_router,
+)
 from tribes.endpoints.groups.get_tribe_groups import (
     router as get_tribe_groups_router,
 )
@@ -16,5 +19,6 @@ router = Router(tags=["Tribes - Groups"])
 router.add_router("", get_tribe_groups_router)
 router.add_router("", get_tribe_group_router)
 router.add_router("", get_tribe_group_activity_router)
+router.add_router("", get_tribe_group_report_router)
 
 __all__ = ["router"]

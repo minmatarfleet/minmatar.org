@@ -13,6 +13,8 @@ class TribeGroupActivity(models.Model):
     MINING = "mining"
     PLANETARY_INTERACTION = "planetary_interaction"
     INDUSTRY = "industry"
+    INDUSTRY_ORDER = "industry_order"
+    FLEET_COMMANDED = "fleet_commanded"
     CONTRACT = "contract"
     COURIER_CONTRACT = "courier_contract"
     MARKET_ORDER = "market_order"
@@ -21,9 +23,11 @@ class TribeGroupActivity(models.Model):
         (KILLMAIL, "Killmail"),
         (LOSSMAIL, "Lossmail"),
         (FLEET_PARTICIPATION, "Fleet participation"),
+        (FLEET_COMMANDED, "Fleet commanded"),
         (MINING, "Mining"),
         (PLANETARY_INTERACTION, "Planetary interaction"),
         (INDUSTRY, "Industry"),
+        (INDUSTRY_ORDER, "Industry order"),
         (CONTRACT, "Contract"),
         (COURIER_CONTRACT, "Courier contract"),
         (MARKET_ORDER, "Market order"),

@@ -66,6 +66,9 @@ class TribeGroupModelTestCase(TestCase):
     def test_str(self):
         self.assertEqual(str(self.group), "Capitals — Dreads")
 
+    def test_code_auto_generated_on_save(self):
+        self.assertEqual(self.group.code, "capitals.dreads")
+
     def test_unique_together_tribe_name(self):
         with self.assertRaises(IntegrityError):
             TribeGroup.objects.create(tribe=self.tribe, name="Dreads")

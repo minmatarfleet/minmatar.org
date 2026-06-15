@@ -61,9 +61,9 @@ class TribeGroupRequirementInline(admin.TabularInline):
 
 @admin.register(TribeGroup)
 class TribeGroupAdmin(admin.ModelAdmin):
-    list_display = ("name", "tribe", "chief", "is_active")
+    list_display = ("name", "code", "tribe", "chief", "is_active")
     list_filter = ("is_active", "tribe")
-    search_fields = ("name", "tribe__name")
+    search_fields = ("name", "code", "tribe__name")
     raw_id_fields = ("tribe", "chief", "group")
     inlines = [TribeGroupRequirementInline]
 

@@ -209,5 +209,13 @@
       "name": "Tribe Group - Tournaments",
       "permissions": []
     }
+  },
+  {
+    "model": "auth.group",
+    "pk": 162,
+    "fields": {
+      "name": "Tribe Group - Fleet Commanders",
+      "permissions": []
+    }
   }
 ]
