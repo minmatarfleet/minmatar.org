@@ -81,7 +81,8 @@
       "group": null,
       "chief": null,
       "discord_channel_id": null,
-      "is_active": true
+      "is_active": true,
+      "code": "capitals.dreads"
     }
   },
   {
@@ -94,7 +95,8 @@
       "group": null,
       "chief": null,
       "discord_channel_id": null,
-      "is_active": true
+      "is_active": true,
+      "code": "capitals.carriers"
     }
   },
   {
@@ -107,7 +109,8 @@
       "group": null,
       "chief": null,
       "discord_channel_id": null,
-      "is_active": true
+      "is_active": true,
+      "code": "capitals.faxes"
     }
   },
   {
@@ -120,7 +123,8 @@
       "group": null,
       "chief": null,
       "discord_channel_id": null,
-      "is_active": true
+      "is_active": true,
+      "code": "industry.subcapital-production"
     }
   },
   {
@@ -133,7 +137,8 @@
       "group": null,
       "chief": null,
       "discord_channel_id": null,
-      "is_active": true
+      "is_active": true,
+      "code": "industry.capital-production"
     }
   },
   {
@@ -146,7 +151,8 @@
       "group": null,
       "chief": null,
       "discord_channel_id": null,
-      "is_active": true
+      "is_active": true,
+      "code": "industry.mining"
     }
   },
   {
@@ -159,7 +165,8 @@
       "group": null,
       "chief": null,
       "discord_channel_id": null,
-      "is_active": true
+      "is_active": true,
+      "code": "industry.planetary-interaction"
     }
   },
   {
@@ -172,7 +179,8 @@
       "group": null,
       "chief": null,
       "discord_channel_id": null,
-      "is_active": true
+      "is_active": true,
+      "code": "market.freighters"
     }
   },
   {
@@ -185,7 +193,8 @@
       "group": null,
       "chief": null,
       "discord_channel_id": null,
-      "is_active": true
+      "is_active": true,
+      "code": "market.contracts"
     }
   },
   {
@@ -198,7 +207,8 @@
       "group": null,
       "chief": null,
       "discord_channel_id": null,
-      "is_active": true
+      "is_active": true,
+      "code": "market.market-orders"
     }
   },
   {
@@ -211,7 +221,8 @@
       "group": null,
       "chief": null,
       "discord_channel_id": null,
-      "is_active": true
+      "is_active": true,
+      "code": "pulse.technology"
     }
   },
   {
@@ -224,7 +235,8 @@
       "group": null,
       "chief": null,
       "discord_channel_id": null,
-      "is_active": true
+      "is_active": true,
+      "code": "pulse.thinkspeak"
     }
   },
   {
@@ -237,7 +249,8 @@
       "group": null,
       "chief": null,
       "discord_channel_id": null,
-      "is_active": true
+      "is_active": true,
+      "code": "pulse.readiness"
     }
   },
   {
@@ -250,7 +263,8 @@
       "group": null,
       "chief": null,
       "discord_channel_id": null,
-      "is_active": true
+      "is_active": true,
+      "code": "pulse.advocates"
     }
   },
   {
@@ -263,7 +277,8 @@
       "group": null,
       "chief": null,
       "discord_channel_id": null,
-      "is_active": true
+      "is_active": true,
+      "code": "market.loyalty-points"
     }
   },
   {
@@ -276,7 +291,8 @@
       "group": null,
       "chief": null,
       "discord_channel_id": null,
-      "is_active": true
+      "is_active": true,
+      "code": "pulse.tournaments"
     }
   },
   {
@@ -1655,6 +1671,20 @@
       "points_per_unit": null,
       "created_at": "2026-03-06T04:58:23Z",
       "updated_at": "2026-03-06T04:58:23Z"
+    }
+  },
+  {
+    "model": "tribes.tribegroup",
+    "pk": 18,
+    "fields": {
+      "tribe": 4,
+      "name": "Fleet Commanders",
+      "code": "pulse.fleet-commanders",
+      "description": "FC development, fleet coverage, and commander recognition.",
+      "group": null,
+      "chief": null,
+      "discord_channel_id": null,
+      "is_active": true
     }
   }
 ]

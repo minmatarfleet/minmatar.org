@@ -19,6 +19,7 @@ from tribes.endpoints.groups.schemas import (
     TribeActivityLeaderboardListSchema,
 )
 from tribes.helpers import user_is_tribe_chief
+from tribes.helpers.activity_record_filters import filter_records_by_period
 from tribes.models import Tribe, TribeGroupActivityRecord
 
 PATH = "/{tribe_id}/activity/leaderboard"
@@ -148,10 +149,7 @@ def get_tribe_activity_leaderboard(
     if activity_type:
         qs = qs.filter(tribe_group_activity__activity_type=activity_type)
     start, end = _parse_since_until(since, until)
-    if start:
-        qs = qs.filter(created_at__gte=start)
-    if end:
-        qs = qs.filter(created_at__lte=end)
+    qs = filter_records_by_period(qs, start, end)
 
     points_expr = ExpressionWrapper(
         Coalesce(F("tribe_group_activity__points_per_record"), Value(0.0))

@@ -63,6 +63,7 @@ def get_tribe_groups(request, tribe_id: int):
                 tribe_id=tribe.pk,
                 tribe_name=tribe.name,
                 name=tg.name,
+                code=tg.code or "",
                 description=tg.description,
                 discord_channel_id=tg.discord_channel_id,
                 chief=chief_ref,

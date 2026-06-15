@@ -12,6 +12,11 @@ class TribeGroup(models.Model):
         "tribes.Tribe", on_delete=models.CASCADE, related_name="groups"
     )
     name = models.CharField(max_length=128)
+    code = models.CharField(
+        max_length=64,
+        unique=True,
+        help_text="Stable catalog key for reports and bindings (e.g. industry.mining).",
+    )
     description = models.TextField(blank=True)
     group = models.OneToOneField(
         "auth.Group",

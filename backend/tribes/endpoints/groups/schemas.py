@@ -95,6 +95,7 @@ class TribeGroupSchema(BaseModel):
     id: int
     tribe_id: int
     tribe_name: str
+    code: str = ""
     name: str
     description: str
     discord_channel_id: Optional[int] = None
@@ -158,3 +159,22 @@ class TribeActivityLeaderboardListSchema(BaseModel):
     total: int
     limit: int
     offset: int
+
+
+class TribeGroupReportSchema(BaseModel):
+    """Town hall / member report for one tribe group."""
+
+    group_id: int
+    group_code: str
+    group_name: str = ""
+    view: str
+    scope: str
+    period: str
+    period_start: str
+    period_end: str
+    generated_at: str
+    manual: bool = False
+    message: str = ""
+    columns: List[str] = []
+    rows: List[dict] = []
+    totals: dict = {}

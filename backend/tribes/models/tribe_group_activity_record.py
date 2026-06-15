@@ -63,6 +63,11 @@ class TribeGroupActivityRecord(models.Model):
         max_length=255,
         help_text="Source record PK for deduplication; composite string for mining entries.",
     )
+    occurred_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the source event happened; metrics use this when set, else created_at.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -84,6 +89,10 @@ class TribeGroupActivityRecord(models.Model):
             models.Index(
                 fields=["tribe_group_activity", "created_at"],
                 name="tribes_tgarecord_act_created",
+            ),
+            models.Index(
+                fields=["tribe_group_activity", "occurred_at"],
+                name="tribes_tgarecord_act_occurred",
             ),
             models.Index(
                 fields=["user", "created_at"],

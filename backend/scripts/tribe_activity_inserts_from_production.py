@@ -3,10 +3,7 @@
 Read tribe groups from production_readonly and print SQL INSERTs for
 TribeGroupActivity rows appropriate to each group.
 
-- Killmail/lossmail/fleet: one row per qualifying ship type from the group's
-  asset requirements (TribeGroupRequirementAssetType), so only that ship counts.
-- Industry: one row per blueprint type that appears in industry order item
-  assignments for characters in that group (from IndustryOrderItemAssignment).
+Activity selection uses ``TribeGroup.code`` (catalog keys), not name heuristics.
 
 Usage: pipenv run python manage.py shell < scripts/tribe_activity_inserts_from_production.py
 """
@@ -24,6 +21,28 @@ from tribes.models import (
 
 DB = "production_readonly"
 NOW = timezone.now().strftime("%Y-%m-%d %H:%M:%S")
+
+MANUAL_CODES = frozenset(
+    {
+        "pulse.technology",
+        "pulse.thinkspeak",
+        "pulse.readiness",
+        "pulse.advocates",
+        "pulse.tournaments",
+        "market.contracts",
+        "market.market-orders",
+        "market.loyalty-points",
+    }
+)
+
+PRODUCTION_CODES = frozenset(
+    {
+        "industry.subcapital-production",
+        "industry.capital-production",
+    }
+)
+
+CAPITALS_PREFIX = "capitals."
 
 # Fetch all active tribe groups from production
 groups = list(
@@ -77,7 +96,7 @@ def get_ship_type_ids_for_group(group):
         for at in req.asset_types.all():
             if at.eve_type_id and at.eve_type:
                 type_ids.append(at.eve_type_id)
-    return list(dict.fromkeys(type_ids))  # distinct, preserve order
+    return list(dict.fromkeys(type_ids))
 
 
 def get_blueprint_type_ids_for_group(group):
@@ -92,7 +111,6 @@ def get_blueprint_type_ids_for_group(group):
     )
     if not member_char_ids:
         return []
-    # Order items assigned to these characters -> distinct eve_type (product)
     item_eve_type_ids = set(
         IndustryOrderItemAssignment.objects.using(DB)
         .filter(character_id__in=member_char_ids)
@@ -115,128 +133,101 @@ def get_blueprint_type_ids_for_group(group):
     return list(dict.fromkeys(blueprint_ids))
 
 
+def add_combat_activities(group, inserts):
+    ship_type_ids = get_ship_type_ids_for_group(group)
+    targets = ship_type_ids or [None]
+    for type_id in targets:
+        desc_suffix = " (ship)" if type_id else ""
+        if want_activity(group, TribeGroupActivity.KILLMAIL, type_id):
+            inserts.append(
+                (
+                    group.pk,
+                    row(
+                        group.pk,
+                        TribeGroupActivity.KILLMAIL,
+                        type_id,
+                        None,
+                        f"Kills{desc_suffix}",
+                    ),
+                )
+            )
+        if want_activity(group, TribeGroupActivity.LOSSMAIL, type_id):
+            inserts.append(
+                (
+                    group.pk,
+                    row(
+                        group.pk,
+                        TribeGroupActivity.LOSSMAIL,
+                        type_id,
+                        None,
+                        f"Losses{desc_suffix}",
+                    ),
+                )
+            )
+        if want_activity(group, TribeGroupActivity.FLEET_PARTICIPATION, type_id):
+            inserts.append(
+                (
+                    group.pk,
+                    row(
+                        group.pk,
+                        TribeGroupActivity.FLEET_PARTICIPATION,
+                        type_id,
+                        None,
+                        f"Fleet{desc_suffix}",
+                    ),
+                )
+            )
+
+
+def add_production_order_activities(group, inserts):
+    blueprint_ids = get_blueprint_type_ids_for_group(group)
+    for bp_id in blueprint_ids:
+        if want_activity(group, TribeGroupActivity.INDUSTRY_ORDER, bp_id):
+            inserts.append(
+                (
+                    group.pk,
+                    row(
+                        group.pk,
+                        TribeGroupActivity.INDUSTRY_ORDER,
+                        bp_id,
+                        None,
+                        "Industry order delivery (product type)",
+                    ),
+                )
+            )
+    if want_activity(group, TribeGroupActivity.INDUSTRY_ORDER, None):
+        inserts.append(
+            (
+                group.pk,
+                row(
+                    group.pk,
+                    TribeGroupActivity.INDUSTRY_ORDER,
+                    None,
+                    None,
+                    "Industry order deliveries (all)",
+                ),
+            )
+        )
+
+
 inserts = []
 for g in groups:
-    tribe_name = (g.tribe.name or "").lower()
-    group_name = (g.name or "").lower()
+    code = g.code or ""
 
-    # Mining-focused
-    if "mining" in group_name or "mining" in tribe_name:
+    if code in MANUAL_CODES:
+        continue
+
+    if code == "industry.mining":
         if want_activity(g, TribeGroupActivity.MINING, None):
             inserts.append(
-                (g.pk, row(g.pk, TribeGroupActivity.MINING, None, None, "Mining ledger (m³)"))
-            )
-
-    # Combat / capitals: use asset requirement ship types so only those ships count
-    combat = any(
-        x in group_name or x in tribe_name
-        for x in (
-            "dread",
-            "carrier",
-            "fax",
-            "capital",
-            "super",
-            "titan",
-            "combat",
-            "pvp",
-            "fleet",
-        )
-    )
-    if combat:
-        ship_type_ids = get_ship_type_ids_for_group(g)
-        if ship_type_ids:
-            for type_id in ship_type_ids:
-                if want_activity(g, TribeGroupActivity.KILLMAIL, type_id):
-                    inserts.append(
-                        (g.pk, row(g.pk, TribeGroupActivity.KILLMAIL, type_id, None, "Kills (ship)"))
-                    )
-                if want_activity(g, TribeGroupActivity.LOSSMAIL, type_id):
-                    inserts.append(
-                        (g.pk, row(g.pk, TribeGroupActivity.LOSSMAIL, type_id, None, "Losses (ship)"))
-                    )
-                if want_activity(g, TribeGroupActivity.FLEET_PARTICIPATION, type_id):
-                    inserts.append(
-                        (
-                            g.pk,
-                            row(
-                                g.pk,
-                                TribeGroupActivity.FLEET_PARTICIPATION,
-                                type_id,
-                                None,
-                                "Fleet (ship)",
-                            ),
-                        )
-                    )
-        else:
-            # No ship requirements: track any ship
-            if want_activity(g, TribeGroupActivity.KILLMAIL, None):
-                inserts.append((g.pk, row(g.pk, TribeGroupActivity.KILLMAIL, None, None, "Kills")))
-            if want_activity(g, TribeGroupActivity.LOSSMAIL, None):
-                inserts.append((g.pk, row(g.pk, TribeGroupActivity.LOSSMAIL, None, None, "Losses")))
-            if want_activity(g, TribeGroupActivity.FLEET_PARTICIPATION, None):
-                inserts.append(
-                    (
-                        g.pk,
-                        row(
-                            g.pk,
-                            TribeGroupActivity.FLEET_PARTICIPATION,
-                            None,
-                            None,
-                            "Fleet participation",
-                        ),
-                    )
-                )
-
-    # Freight / hauling
-    if "freight" in group_name or "hauler" in group_name or "freight" in tribe_name or "haul" in group_name:
-        if want_activity(g, TribeGroupActivity.COURIER_CONTRACT, None):
-            inserts.append(
                 (
                     g.pk,
-                    row(
-                        g.pk,
-                        TribeGroupActivity.COURIER_CONTRACT,
-                        None,
-                        None,
-                        "Courier deliveries (m³)",
-                    ),
+                    row(g.pk, TribeGroupActivity.MINING, None, None, "Mining ledger (m³)"),
                 )
             )
+        continue
 
-    # Industry: one activity per blueprint type from orders assigned to this group
-    if "industry" in group_name or "build" in group_name or "industry" in tribe_name or "production" in group_name:
-        blueprint_ids = get_blueprint_type_ids_for_group(g)
-        if blueprint_ids:
-            for bp_id in blueprint_ids:
-                if want_activity(g, TribeGroupActivity.INDUSTRY, bp_id):
-                    inserts.append(
-                        (
-                            g.pk,
-                            row(
-                                g.pk,
-                                TribeGroupActivity.INDUSTRY,
-                                bp_id,
-                                None,
-                                "Industry jobs (blueprint)",
-                            ),
-                        )
-                    )
-        if want_activity(g, TribeGroupActivity.INDUSTRY, None):
-            inserts.append(
-                (
-                    g.pk,
-                    row(
-                        g.pk,
-                        TribeGroupActivity.INDUSTRY,
-                        None,
-                        None,
-                        "Industry jobs (all)",
-                    ),
-                )
-            )
-
-    # PI
-    if "pi" in group_name or "planetary" in group_name or "pi" in tribe_name:
+    if code == "industry.planetary-interaction":
         if want_activity(g, TribeGroupActivity.PLANETARY_INTERACTION, None):
             inserts.append(
                 (
@@ -250,27 +241,54 @@ for g in groups:
                     ),
                 )
             )
+        continue
 
-    # Market
-    if "market" in group_name or "market" in tribe_name:
-        if want_activity(g, TribeGroupActivity.MARKET_ORDER, None):
-            inserts.append(
-                (g.pk, row(g.pk, TribeGroupActivity.MARKET_ORDER, None, None, "Market sales"))
-            )
+    if code in PRODUCTION_CODES:
+        add_production_order_activities(g, inserts)
+        continue
 
-    # Contract (general)
-    if "contract" in group_name or "contract" in tribe_name:
-        if want_activity(g, TribeGroupActivity.CONTRACT, None):
+    if code == "pulse.fleet-commanders":
+        if want_activity(g, TribeGroupActivity.FLEET_COMMANDED, None):
             inserts.append(
-                (g.pk, row(g.pk, TribeGroupActivity.CONTRACT, None, None, "Contracts posted"))
+                (
+                    g.pk,
+                    row(
+                        g.pk,
+                        TribeGroupActivity.FLEET_COMMANDED,
+                        None,
+                        None,
+                        "Fleets commanded",
+                    ),
+                )
             )
+        continue
+
+    if code.startswith(CAPITALS_PREFIX):
+        add_combat_activities(g, inserts)
+        continue
+
+    if code == "market.freighters":
+        # Town hall uses freight program report; courier ingest optional for member stats
+        if want_activity(g, TribeGroupActivity.COURIER_CONTRACT, None):
+            inserts.append(
+                (
+                    g.pk,
+                    row(
+                        g.pk,
+                        TribeGroupActivity.COURIER_CONTRACT,
+                        None,
+                        None,
+                        "Courier deliveries (m³)",
+                    ),
+                )
+            )
+        continue
 
 if not inserts:
     print("-- No new activities to insert.")
 else:
     print("-- TribeGroupActivity INSERTs (from production_readonly)")
-    print("-- Killmail/lossmail/fleet: source_eve_type_id = ship from group asset requirements.")
-    print("-- Industry: source_eve_type_id = blueprint types from order assignments for that group.")
+    print("-- Selection keyed by TribeGroup.code (see tribes/reports/registry.py).")
     print("-- Run against your writable DB (e.g. default), NOT production_readonly.")
     print("")
     print(
