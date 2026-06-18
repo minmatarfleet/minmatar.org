@@ -4,7 +4,7 @@ from django.conf import settings
 from django.db.models import signals
 from django.test import Client
 from django.contrib.auth.models import User
-from esi.models import Token
+from esi.models import CallbackRedirect, Token
 
 from app.test import TestCase
 from discord.models import DiscordUser
@@ -208,3 +208,70 @@ class UserRouterTestCase(TestCase):
         )
 
         settings.FAKE_LOGIN_USER_ID = fake_user
+
+    def test_eve_mobile_complete_linked_character(self):
+        esi_token = Token.objects.create(
+            character_id=634915984,
+            character_name="BearThatCares",
+            user=self.user,
+        )
+        character = EveCharacter.objects.create(
+            character_id=634915984,
+            character_name="BearThatCares",
+            token=esi_token,
+            user=self.user,
+        )
+        set_primary_character(self.user, character)
+
+        session = self.client.session
+        session["authentication_redirect_url"] = "mobile://auth/callback"
+        session.save()
+
+        CallbackRedirect.objects.create(
+            session_key=session.session_key,
+            state="test-state",
+            url="/api/users/eve/complete/",
+            token=esi_token,
+        )
+
+        response = self.client.get("/api/users/eve/complete/")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("mobile://auth/callback?token=", response.url)
+
+    def test_eve_mobile_complete_character_only(self):
+        esi_token = Token.objects.create(
+            character_id=2117059479,
+            character_name="MiniSpartan",
+        )
+
+        session = self.client.session
+        session["authentication_redirect_url"] = "mobile://auth/callback"
+        session.save()
+
+        CallbackRedirect.objects.create(
+            session_key=session.session_key,
+            state="test-state",
+            url="/api/users/eve/complete/",
+            token=esi_token,
+        )
+
+        response = self.client.get("/api/users/eve/complete/")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("mobile://auth/callback?token=", response.url)
+
+    def test_eve_login_start_redirect(self):
+        settings.ESI_SSO_CLIENT_ID = "test-client-id"
+        settings.ESI_SSO_CALLBACK_URL = "http://testserver/sso/callback"
+
+        response = self.client.get(
+            "/api/users/login/eve?redirect_url=mobile://auth/callback"
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("login.eveonline.com/v2/oauth/authorize", response.url)
+        self.assertEqual(
+            "mobile://auth/callback",
+            self.client.session["authentication_redirect_url"],
+        )
