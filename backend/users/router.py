@@ -15,11 +15,15 @@ from discord.client import DiscordClient, DiscordError
 
 # from discord.models import DiscordUser
 from discord.tasks import sync_discord_user, sync_discord_nickname
+from esi.views import sso_redirect
 
 from audit.models import AuditEntry
 
 # from eveonline.models import EvePlayer
 from groups.tasks import update_affiliation
+from users.eve_sso import EVE_LOGIN_SCOPES
+from users.jwt_auth import decode_user_jwt, issue_discord_user_jwt
+from users.redirects import oauth_redirect
 
 from .helpers import get_user_profile, get_user_profiles, make_user_objects
 from .schemas import UserProfileSchema
@@ -92,23 +96,100 @@ def callback(
 
     django_user = make_user_objects(user)
 
-    payload = {
-        "user_id": django_user.id,
-        "username": user["username"],
-        "avatar": f"https://cdn.discordapp.com/avatars/{django_user.discord_user.id}/{django_user.discord_user.avatar}.png",
-        "is_superuser": django_user.is_superuser,
-        "sub": user["username"],
-        "iss": request.get_host(),
-        "iat": timezone.now(),
-    }
-    encoded_jwt_token = jwt.encode(
-        payload, settings.SECRET_KEY, algorithm="HS256"
-    )
+    encoded_jwt_token = issue_discord_user_jwt(request, django_user, user)
     logger.debug("Signed JWT Token: ...%s", encoded_jwt_token[-5:])
 
     logger.info("Login success: %s -> %s", django_user.username, redirect_url)
     redirect_url = redirect_url + "?token=" + encoded_jwt_token
     return redirect(redirect_url)
+
+
+class SessionSchema(BaseModel):
+    character_id: int
+    character_name: str
+    avatar: Optional[str] = None
+    user_id: Optional[int] = None
+    username: Optional[str] = None
+    is_superuser: bool = False
+
+
+@router.get(
+    "/login/eve",
+    summary="Login with EVE Online SSO",
+    description=(
+        "Redirects to EVE Online SSO using the shared /sso/callback URL. "
+        "After authorization, redirects back to redirect_url with ?token= "
+        "containing a JWT with at least character_id (and user_id when linked)."
+    ),
+)
+def login_eve(request, redirect_url: str):
+    if (
+        hasattr(settings, "FAKE_LOGIN_USER_ID")
+        and settings.FAKE_LOGIN_USER_ID
+        and settings.FAKE_LOGIN_USER_ID > ""
+    ):
+        return fake_login(request, redirect_url)
+
+    if not redirect_url:
+        redirect_url = "mobile://auth/callback"
+    if not settings.ESI_SSO_CLIENT_ID or not settings.ESI_SSO_CALLBACK_URL:
+        error_id = create_error_id()
+        logger.error("EVE login not configured (%s)", error_id)
+        return oauth_redirect(
+            f"{redirect_url}?error=NOT_CONFIGURED&id={error_id}"
+        )
+
+    request.session["authentication_redirect_url"] = redirect_url
+
+    return sso_redirect(
+        request,
+        scopes=EVE_LOGIN_SCOPES,
+        return_to="eve_mobile_sso_complete",
+    )
+
+
+@router.get(
+    "/session",
+    summary="Resolve a mobile session JWT",
+    description=(
+        "Decodes the JWT issued after EVE SSO login. Works for character-only "
+        "sessions and fully linked accounts."
+    ),
+    response={200: SessionSchema, 401: ErrorResponse},
+)
+def get_session(request):
+    authorization = request.headers.get("Authorization", "")
+    if not authorization.startswith("Bearer "):
+        return 401, ErrorResponse(detail="Missing bearer token.")
+
+    token = authorization.removeprefix("Bearer ").strip()
+    try:
+        payload = decode_user_jwt(token)
+    except Exception:
+        return 401, ErrorResponse(detail="Invalid token.")
+
+    character_id = payload.get("character_id")
+    if not character_id:
+        return 401, ErrorResponse(detail="Token missing character_id.")
+
+    return SessionSchema(
+        character_id=int(character_id),
+        character_name=str(payload.get("character_name", "")),
+        avatar=payload.get("avatar"),
+        user_id=payload.get("user_id"),
+        username=payload.get("username"),
+        is_superuser=bool(payload.get("is_superuser", False)),
+    )
+
+
+@router.get(
+    "/me",
+    summary="Get the authenticated user profile",
+    auth=AuthBearer(),
+    response={200: UserProfileSchema},
+)
+def get_current_user(request):
+    return get_user_profile(request.user.id)
 
 
 def redirect_url_from_session(request):

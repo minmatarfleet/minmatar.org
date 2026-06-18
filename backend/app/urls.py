@@ -46,6 +46,7 @@ from reminders.router import router as reminders_router
 from srp.router import router as srp_router
 from structures.router import router as structures_router
 from users.router import router as users_router
+from users.eve_views import eve_mobile_sso_complete
 from subscriptions.router import router as subscription_router
 
 api = NinjaAPI(title="Minmatar Fleet API", version="1.0.0")
@@ -81,6 +82,11 @@ def unauthorized(request, exc):
 
 urlpatterns = [
     path("", RedirectView.as_view(url="api/docs")),
+    path(
+        "api/users/eve/complete/",
+        eve_mobile_sso_complete,
+        name="eve_mobile_sso_complete",
+    ),
     path("api/", api.urls),
     path("admin/login/", discord_login, name="discord_login_override"),
     path(
