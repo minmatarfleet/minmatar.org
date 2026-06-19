@@ -46,7 +46,19 @@ def _upsert_event(result: RollupResult) -> FeedEvent:
         "expires_at": result.expires_at,
         "computed_at": timezone.now(),
     }
-    event, _ = FeedEvent.objects.update_or_create(**lookup, defaults=defaults)
+    matches = list(
+        FeedEvent.objects.filter(**lookup).order_by("-occurred_at", "-id")
+    )
+    if not matches:
+        return FeedEvent.objects.create(**lookup, **defaults)
+    event = matches[0]
+    if len(matches) > 1:
+        FeedEvent.objects.filter(
+            pk__in=[row.pk for row in matches[1:]]
+        ).delete()
+    for field, value in defaults.items():
+        setattr(event, field, value)
+    event.save()
     return event
 
 

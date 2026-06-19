@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from feed.constants import FACTION_AMARR, FACTION_MINMATAR
 from feed.helpers.killmail_classify import faction_to_accent_key
@@ -30,7 +30,9 @@ def _accent_for_faction(faction_id: int | None) -> str:
     return FeedEvent.Accent.COMBAT
 
 
-def _collapse_fleet_clusters(clusters) -> list[FeedCluster]:
+def _collapse_fleet_clusters(
+    clusters,
+) -> list[tuple[FeedCluster, datetime]]:
     """Merge adjacent time-bucket splits of the same fight into one cluster."""
     stale_minutes = get_rollup_config("fleet_active").get("stale_minutes", 20)
     stale_delta = timedelta(minutes=stale_minutes)
@@ -58,14 +60,18 @@ def _collapse_fleet_clusters(clusters) -> list[FeedCluster]:
         if not placed:
             chains.append([cluster])
 
-    collapsed: list[FeedCluster] = []
+    collapsed: list[tuple[FeedCluster, datetime]] = []
     for chain in chains:
-        collapsed.append(max(chain, key=lambda row: row.last_kill_at))
+        representative = max(chain, key=lambda row: row.last_kill_at)
+        engagement_start = min(row.started_at for row in chain)
+        collapsed.append((representative, engagement_start))
     return collapsed
 
 
-def _fleet_event_cluster_key(cluster: FeedCluster) -> str:
-    started = cluster.started_at.replace(second=0, microsecond=0)
+def _fleet_event_cluster_key(
+    cluster: FeedCluster, *, engagement_start: datetime
+) -> str:
+    started = engagement_start.replace(second=0, microsecond=0)
     faction = cluster.dominant_faction_id or 0
     return (
         f"fleet_active:{cluster.solar_system_id}:{faction}:"
@@ -81,7 +87,19 @@ def run_fleet_active_rollup(ctx: RollupContext) -> list[RollupResult]:
         last_kill_at__lte=ctx.until,
     )
     results: list[RollupResult] = []
-    for cluster in _collapse_fleet_clusters(clusters):
+    best_by_key: dict[str, FeedCluster] = {}
+    engagement_start_by_key: dict[str, datetime] = {}
+    for cluster, engagement_start in _collapse_fleet_clusters(clusters):
+        key = _fleet_event_cluster_key(
+            cluster, engagement_start=engagement_start
+        )
+        prev = best_by_key.get(key)
+        if prev is None or cluster.last_kill_at > prev.last_kill_at:
+            best_by_key[key] = cluster
+            engagement_start_by_key[key] = engagement_start
+
+    for key, cluster in best_by_key.items():
+        engagement_start = engagement_start_by_key[key]
         system = _system_name(ctx, cluster.solar_system_id)
         faction_label = _faction_label(cluster.dominant_faction_id)
         composition = ""
@@ -113,7 +131,7 @@ def run_fleet_active_rollup(ctx: RollupContext) -> list[RollupResult]:
                 },
                 rollup_code="fleet_active",
                 rollup_version=version,
-                cluster_key=_fleet_event_cluster_key(cluster),
+                cluster_key=key,
                 is_active=cluster.is_active,
                 killmail_ids=cluster.killmail_ids or [],
             )

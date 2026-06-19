@@ -29,7 +29,11 @@ class FleetActiveRollupTestCase(TestCase):
         collapsed = _collapse_fleet_clusters(clusters)
 
         self.assertEqual(len(collapsed), 1)
-        self.assertEqual(collapsed[0].last_kill_at, clusters[-1].last_kill_at)
+        representative, engagement_start = collapsed[0]
+        self.assertEqual(
+            representative.last_kill_at, clusters[-1].last_kill_at
+        )
+        self.assertEqual(engagement_start, clusters[0].started_at)
 
     def test_collapse_fleet_clusters_keeps_separate_engagements(self):
         base = timezone.now()
