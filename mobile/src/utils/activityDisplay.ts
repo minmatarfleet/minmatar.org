@@ -78,21 +78,37 @@ export function kindLabel(kind: ActivityKind): string {
   }
 }
 
+function fallbackSubheader(item: ActivityItem): string {
+  if (item.subheader) return item.subheader;
+  if (item.system) return item.system;
+  if (item.author) return item.author;
+  if (item.join_count != null) return `${item.join_count} pilots`;
+  return 'Warzone';
+}
+
 export function mapActivityToCard(item: ActivityItem): ActivityCardContent {
+  if (item.title) {
+    return {
+      title: item.title,
+      subheader: fallbackSubheader(item),
+      preview: truncate(item.summary ?? item.message ?? item.composition ?? ''),
+    };
+  }
+
   switch (item.kind) {
     case 'fleet_active':
       return {
-        title: `${factionLabel[item.faction!]} fleet active`,
-        subheader: [item.system, `${item.kills} kills`, `${item.pilots} pilots`].filter(Boolean).join(' · '),
+        title: `${factionLabel[item.faction ?? 'pirate']} fleet active`,
+        subheader: [item.system, item.kills != null ? `${item.kills} kills` : null, item.pilots != null ? `${item.pilots} pilots` : null]
+          .filter(Boolean)
+          .join(' · '),
         preview: truncate(item.composition ?? 'Active on front lines.'),
       };
     case 'killmail_batch':
       return {
-        title: `${item.killmail_count} killmails in ${item.window_minutes} min`,
+        title: `${item.killmail_count ?? 0} killmails in ${item.window_minutes ?? 0} min`,
         subheader: item.system ?? 'Warzone',
-        preview: truncate(
-          item.summary ?? `Kill burst reported in ${item.system ?? 'the warzone'}.`,
-        ),
+        preview: truncate(item.summary ?? `Kill burst reported in ${item.system ?? 'the warzone'}.`),
       };
     case 'communication':
       return {
@@ -102,11 +118,9 @@ export function mapActivityToCard(item: ActivityItem): ActivityCardContent {
       };
     case 'militia_joins':
       return {
-        title: `${item.join_count} pilots joined militia`,
+        title: `${item.join_count ?? 0} pilots newly active in warzone`,
         subheader: 'Minmatar militia',
-        preview: truncate(
-          item.summary ?? 'New recruits enlisted and cleared for front-line duty.',
-        ),
+        preview: truncate(item.summary ?? 'New pilots active in warzone killmails.'),
       };
   }
 }
@@ -126,7 +140,7 @@ export function mapActivityToDetail(item: ActivityItem): ActivityDetail {
           { label: 'System', value: item.system ?? '—' },
           { label: 'Kills', value: String(item.kills ?? 0) },
           { label: 'Pilots', value: String(item.pilots ?? 0) },
-          { label: 'Faction', value: factionLabel[item.faction!] },
+          { label: 'Faction', value: factionLabel[item.faction ?? 'pirate'] },
           { label: 'Composition', value: item.composition ?? '—' },
         ],
       };
@@ -161,7 +175,7 @@ export function mapActivityToDetail(item: ActivityItem): ActivityDetail {
         timestamp: item.timestamp,
         title: card.title,
         subheader: card.subheader,
-        body: item.summary ?? 'New recruits enlisted and cleared for front-line duty.',
+        body: item.summary ?? 'New pilots active in warzone killmails.',
         sections: [
           { label: 'Pilots', value: String(item.join_count ?? 0) },
           { label: 'Faction', value: 'Minmatar militia' },

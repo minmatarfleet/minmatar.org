@@ -19,6 +19,7 @@ CELERY_IMPORTS = (
     "mumble.tasks",
     "reddit.tasks",
     "tribes.tasks",
+    "feed.tasks",
 )
 
 
@@ -86,6 +87,7 @@ INSTALLED_APPS = [
     "audit",
     # Reddit integration
     "reddit",
+    "feed.apps.FeedConfig",
 ]
 
 # Discord Login

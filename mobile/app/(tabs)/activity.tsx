@@ -11,7 +11,7 @@ import { colors } from '@/src/theme';
 import { spacing, typography } from '@/src/theme/spacing';
 
 export default function ActivityScreen() {
-  const items = useActivityFeed();
+  const { items, refreshing, refresh, error } = useActivityFeed();
   const [selected, setSelected] = useState<ActivityItem | null>(null);
 
   const handleView = useCallback((item: ActivityItem) => {
@@ -37,6 +37,11 @@ export default function ActivityScreen() {
           Live fleets, kill bursts, FC comms, and militia movement
         </Text>
       </View>
+      {error ? (
+        <View style={styles.center}>
+          <Text style={styles.error}>{error}</Text>
+        </View>
+      ) : null}
       <FlatList
         data={items}
         keyExtractor={(item) => item.id}
@@ -44,16 +49,18 @@ export default function ActivityScreen() {
         contentContainerStyle={styles.list}
         refreshControl={
           <RefreshControl
-            refreshing={false}
-            onRefresh={() => {}}
+            refreshing={refreshing}
+            onRefresh={() => void refresh()}
             tintColor={colors.fleetYellow}
             colors={[colors.fleetRed]}
           />
         }
         ListEmptyComponent={
-          <View style={styles.center}>
-            <Text style={styles.empty}>No recent activity</Text>
-          </View>
+          !refreshing ? (
+            <View style={styles.center}>
+              <Text style={styles.empty}>No recent activity</Text>
+            </View>
+          ) : null
         }
       />
       <ActivityDetailModal item={selected} onClose={() => setSelected(null)} />
@@ -83,5 +90,11 @@ const styles = StyleSheet.create({
   empty: {
     ...typography.body,
     color: colors.muted,
+  },
+  error: {
+    ...typography.caption,
+    color: colors.fleetRed,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
   },
 });

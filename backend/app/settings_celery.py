@@ -292,6 +292,50 @@ CELERYBEAT_OTHER = [
     ),
 ]
 
+# Feed activity timeline
+CELERYBEAT_FEED = [
+    (
+        "[Feed] Poll zKill R2Z2",
+        {
+            "task": "feed.tasks.poll_zkill_r2z2",
+            "schedule": schedule(timedelta(seconds=15)),
+            "options": {"queue": "celery"},
+        },
+    ),
+    (
+        "[Feed] Detect kill/fleet clusters",
+        {
+            "task": "feed.tasks.detect_feed_clusters",
+            "schedule": schedule(timedelta(minutes=3)),
+            "options": {"queue": "celery"},
+        },
+    ),
+    (
+        "[Feed] Run feed rollups",
+        {
+            "task": "feed.tasks.run_feed_rollups",
+            "schedule": schedule(timedelta(minutes=3)),
+            "options": {"queue": "celery"},
+        },
+    ),
+    (
+        "[Feed] Militia rollups",
+        {
+            "task": "feed.tasks.run_militia_rollups",
+            "schedule": crontab(minute=0, hour="*"),
+            "options": {"queue": "celery"},
+        },
+    ),
+    (
+        "[Feed] Purge old killmails",
+        {
+            "task": "feed.tasks.purge_feed_killmails",
+            "schedule": crontab(minute=30, hour=4),
+            "options": {"queue": "celery"},
+        },
+    ),
+]
+
 CELERYBEAT_SCHEDULE = dict(
     CELERYBEAT_MARKET
     + CELERYBEAT_CHARACTERS
@@ -299,5 +343,6 @@ CELERYBEAT_SCHEDULE = dict(
     + CELERYBEAT_INDUSTRY
     + CELERYBEAT_GROUPS
     + CELERYBEAT_TRIBES
+    + CELERYBEAT_FEED
     + CELERYBEAT_OTHER
 )

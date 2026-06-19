@@ -10,6 +10,10 @@ export interface ActivityItem {
   id: string;
   kind: ActivityKind;
   timestamp: Date;
+  /** Server-rendered copy when available */
+  title?: string;
+  subheader?: string;
+  summary?: string;
   /** fleet_active */
   faction?: ActivityFaction;
   system?: string;
@@ -21,10 +25,7 @@ export interface ActivityItem {
   window_minutes?: number;
   /** communication */
   author?: string;
-  title?: string;
   message?: string;
-  /** Optional longer copy for modal / preview fallback */
-  summary?: string;
   /** militia_joins */
   join_count?: number;
 }
