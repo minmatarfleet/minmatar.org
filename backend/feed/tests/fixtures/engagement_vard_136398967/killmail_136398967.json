@@ -1,0 +1,26 @@
+{
+  "killmail": {
+    "killmail_id": 136398967,
+    "killmail_time": "2026-06-19T17:25:08Z",
+    "solar_system_id": 30002538,
+    "victim": {
+      "character_id": 2112625428,
+      "corporation_id": 98726134,
+      "ship_type_id": 17709,
+      "damage_taken": 4500
+    },
+    "attackers": [
+      {"character_id": 2111111111, "corporation_id": 98000000, "faction_id": 500002, "ship_type_id": 22468, "damage_done": 1200, "final_blow": true},
+      {"character_id": 2111111112, "corporation_id": 98000000, "faction_id": 500002, "ship_type_id": 22468, "damage_done": 1100, "final_blow": false},
+      {"character_id": 2111111113, "corporation_id": 98000000, "faction_id": 500002, "ship_type_id": 22468, "damage_done": 1000, "final_blow": false},
+      {"character_id": 2111111114, "corporation_id": 98000000, "faction_id": 500002, "ship_type_id": 22468, "damage_done": 900, "final_blow": false},
+      {"character_id": 2111111115, "corporation_id": 98000000, "faction_id": 500002, "ship_type_id": 22468, "damage_done": 800, "final_blow": false},
+      {"character_id": 2111111116, "corporation_id": 98000000, "faction_id": 500002, "ship_type_id": 22468, "damage_done": 700, "final_blow": false},
+      {"character_id": 2111111117, "corporation_id": 98000000, "faction_id": 500002, "ship_type_id": 22468, "damage_done": 600, "final_blow": false},
+      {"character_id": 2111111118, "corporation_id": 98000000, "faction_id": 500002, "ship_type_id": 22468, "damage_done": 500, "final_blow": false}
+    ]
+  },
+  "hash": "fa607eb45b4a88c891d422d10f79ff234ef72907",
+  "zkb": {"npc": false, "totalValue": 5000000},
+  "sequence_id": 96088891
+}

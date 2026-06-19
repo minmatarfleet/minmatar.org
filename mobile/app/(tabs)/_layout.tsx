@@ -49,6 +49,18 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="activity"
+          options={{
+            title: 'Activity',
+            tabBarIcon: ({ color, focused }) => (
+              <View style={styles.iconWrap}>
+                {focused && <View style={styles.activeIndicator} />}
+                <MaterialCommunityIcons name="pulse" color={color} size={22} />
+              </View>
+            ),
+          }}
+        />
+        <Tabs.Screen
           name="fleets"
           options={{
             title: 'Fleets',
