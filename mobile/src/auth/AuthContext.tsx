@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { Platform } from 'react-native';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
@@ -44,9 +45,11 @@ function sessionToUser(session: SessionResponse): AuthUser {
 interface AuthContextValue {
   user: AuthUser | null;
   token: string | null;
+  isLinked: boolean;
   isLoading: boolean;
   isAuthenticating: boolean;
   loginWithEve: () => Promise<void>;
+  loginWithToken: (token: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -106,16 +109,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await applySession(nextSession);
   }, [applySession, session]);
 
-  const completeLoginFromUrl = useCallback(
-    async (url: string) => {
-      const { token, error } = parseAuthCallbackUrl(url);
-      if (error) {
-        throw new Error(formatLoginError(error));
-      }
-      if (!token) {
-        throw new Error('Missing token');
-      }
-
+  const loginWithToken = useCallback(
+    async (token: string) => {
       const profile = await apiFetch<SessionResponse>('/api/users/session', { token });
       const nextSession: AuthSession = {
         token,
@@ -126,11 +121,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [applySession],
   );
 
+  const completeLoginFromUrl = useCallback(
+    async (url: string) => {
+      const { token, error } = parseAuthCallbackUrl(url);
+      if (error) {
+        throw new Error(formatLoginError(error));
+      }
+      if (!token) {
+        throw new Error('Missing token');
+      }
+      await loginWithToken(token);
+    },
+    [loginWithToken],
+  );
+
   const loginWithEve = useCallback(async () => {
     setIsAuthenticating(true);
     try {
       const redirectUrl = authRedirectUrl();
       const loginUrl = getEveLoginUrl(redirectUrl);
+
+      if (Platform.OS === 'web') {
+        window.location.assign(loginUrl);
+        return;
+      }
+
       const result = await WebBrowser.openAuthSessionAsync(loginUrl, redirectUrl);
 
       if (result.type === 'success') {
@@ -169,17 +184,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const isLinked = Boolean(session?.user?.userId);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user: session?.user ?? null,
       token: session?.token ?? null,
+      isLinked,
       isLoading,
       isAuthenticating,
       loginWithEve,
+      loginWithToken,
       logout,
       refreshProfile,
     }),
-    [session, isLoading, isAuthenticating, loginWithEve, logout, refreshProfile],
+    [session, isLinked, isLoading, isAuthenticating, loginWithEve, loginWithToken, logout, refreshProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

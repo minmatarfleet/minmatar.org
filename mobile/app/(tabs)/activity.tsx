@@ -1,8 +1,9 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 
 import { ActivityCard } from '@/src/components/ActivityCard';
+import { ActivityDetailModal } from '@/src/components/ActivityDetailModal';
 import { Screen } from '@/src/components/Screen';
 import { useActivityFeed } from '@/src/hooks/useActivityFeed';
 import type { ActivityItem } from '@/src/types/activity';
@@ -11,10 +12,22 @@ import { spacing, typography } from '@/src/theme/spacing';
 
 export default function ActivityScreen() {
   const { items, refreshing, refresh, error } = useActivityFeed();
+  const [selected, setSelected] = useState<ActivityItem | null>(null);
+
+  const handleView = useCallback((item: ActivityItem) => {
+    setSelected(item);
+  }, []);
 
   const renderItem = useCallback(
-    ({ item }: { item: ActivityItem }) => <ActivityCard item={item} />,
-    [],
+    ({ item, index }: { item: ActivityItem; index: number }) => (
+      <ActivityCard
+        item={item}
+        isFirst={index === 0}
+        isLast={index === items.length - 1}
+        onView={handleView}
+      />
+    ),
+    [handleView, items.length],
   );
 
   return (
@@ -50,6 +63,7 @@ export default function ActivityScreen() {
           ) : null
         }
       />
+      <ActivityDetailModal item={selected} onClose={() => setSelected(null)} />
     </Screen>
   );
 }
@@ -65,7 +79,8 @@ const styles = StyleSheet.create({
     color: colors.muted,
   },
   list: {
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.xs,
     paddingBottom: spacing.xxxl,
   },
   center: {

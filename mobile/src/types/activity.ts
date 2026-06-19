@@ -12,6 +12,7 @@ export interface ActivityItem {
   timestamp: Date;
   /** Server-rendered copy when available */
   title?: string;
+  subheader?: string;
   summary?: string;
   /** fleet_active */
   faction?: ActivityFaction;

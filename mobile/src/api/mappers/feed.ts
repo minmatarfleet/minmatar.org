@@ -16,6 +16,7 @@ export function mapApiFeedItemToActivity(item: ApiFeedEventItem): ActivityItem {
     kind,
     timestamp: new Date(item.occurred_at),
     title: item.title,
+    subheader: item.subheader,
     summary: item.preview || item.body || undefined,
   };
 

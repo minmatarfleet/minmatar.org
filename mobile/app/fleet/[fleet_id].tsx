@@ -1,14 +1,21 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import Markdown from 'react-native-markdown-display';
 import { Text } from 'react-native-paper';
+
+import { getDoctrine } from '@/src/api/doctrines';
+import type { ApiDoctrine } from '@/src/api/types';
+import { RequireAuth } from '@/src/auth/RequireAuth';
+import { useAuth } from '@/src/auth/AuthContext';
 import { Countdown } from '@/src/components/Countdown';
 import { FleetTypeIcon } from '@/src/components/FleetTypeIcon';
 import { MinmatarButton } from '@/src/components/MinmatarButton';
+import { SectionLabel } from '@/src/components/SectionLabel';
 import { StatusPill } from '@/src/components/StatusPill';
-import { getFleetById } from '@/src/data/mockFleets';
+import { fetchFleetById } from '@/src/hooks/useFleets';
 import type { FleetItem } from '@/src/types/fleets';
 import { colors } from '@/src/theme';
 import { markdownStyles } from '@/src/theme/markdown';
@@ -33,10 +40,64 @@ function getStatus(fleet: FleetItem): { variant: 'active' | 'completed' | 'cance
   return { variant: 'upcoming', label: 'Scheduled' };
 }
 
-export default function FleetDetailScreen() {
+function DoctrineSection({ doctrine }: { doctrine: ApiDoctrine }) {
+  const shipNames = [
+    ...doctrine.primary_fittings.map((f) => f.fitting_name),
+    ...doctrine.secondary_fittings.map((f) => f.fitting_name),
+    ...doctrine.support_fittings.map((f) => f.fitting_name),
+  ];
+
+  return (
+    <View style={styles.doctrine}>
+      <SectionLabel title="Doctrine" />
+      <Text style={styles.doctrineName}>{doctrine.name}</Text>
+      {doctrine.description ? (
+        <Text style={styles.description}>{doctrine.description}</Text>
+      ) : null}
+      {shipNames.length > 0 ? (
+        <Text style={styles.metaLine}>{shipNames.join(' · ')}</Text>
+      ) : null}
+    </View>
+  );
+}
+
+function FleetDetailContent() {
   const router = useRouter();
+  const { token } = useAuth();
   const { fleet_id } = useLocalSearchParams<{ fleet_id: string }>();
-  const fleet = getFleetById(Number(fleet_id));
+  const [fleet, setFleet] = useState<FleetItem | null>(null);
+  const [doctrine, setDoctrine] = useState<ApiDoctrine | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+    (async () => {
+      const item = await fetchFleetById(token, Number(fleet_id));
+      if (!active) return;
+      setFleet(item);
+      if (item?.doctrine_id) {
+        try {
+          const doc = await getDoctrine(item.doctrine_id);
+          if (active) setDoctrine(doc);
+        } catch {
+          // doctrine optional
+        }
+      }
+      setLoading(false);
+    })();
+    return () => {
+      active = false;
+    };
+  }, [fleet_id, token]);
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={colors.fleetYellow} />
+      </View>
+    );
+  }
 
   if (!fleet) {
     return (
@@ -51,13 +112,7 @@ export default function FleetDetailScreen() {
   const status = getStatus(fleet);
   const isUpcoming = status.variant === 'upcoming';
 
-  const metaParts = [
-    system,
-    station,
-    fleet.audience,
-    fleet.members_count && fleet.members_count > 0 ? `${fleet.members_count} pilots` : null,
-    fleet.fleet_commander_fleet_count ? `${fleet.fleet_commander_fleet_count} FC fleets` : null,
-  ].filter(Boolean);
+  const metaParts = [system, station, fleet.audience].filter(Boolean);
 
   return (
     <>
@@ -80,38 +135,52 @@ export default function FleetDetailScreen() {
           </View>
           <View style={styles.heroBottom}>
             <Text style={styles.fcName}>{fleet.fleet_commander_name}</Text>
-            {fleet.corporation_name && (
-              <Text style={styles.corpName}>{fleet.corporation_name}</Text>
-            )}
           </View>
         </View>
 
         <View style={styles.body}>
-          {fleet.objective && (
-            <Markdown style={markdownStyles}>{fleet.objective}</Markdown>
-          )}
+          {fleet.objective ? <Markdown style={markdownStyles}>{fleet.objective}</Markdown> : null}
 
-          {fleet.description && fleet.description !== fleet.objective && (
+          {fleet.description && fleet.description !== fleet.objective ? (
             <Text style={styles.description}>{fleet.description}</Text>
-          )}
+          ) : null}
 
-          {metaParts.length > 0 && (
+          {metaParts.length > 0 ? (
             <Text style={styles.metaLine}>{metaParts.join('  ·  ')}</Text>
-          )}
+          ) : null}
 
-          {isUpcoming && (
+          {doctrine ? <DoctrineSection doctrine={doctrine} /> : null}
+
+          {isUpcoming ? (
             <View style={styles.schedule}>
               <Text style={styles.scheduleTime}>{formatEveTime(fleet.start_time)} UTC</Text>
               <Countdown date={fleet.start_time} />
             </View>
-          )}
+          ) : null}
 
-          {isUpcoming && (
+          {fleet.aar_link ? (
+            <MinmatarButton
+              label="Open AAR"
+              variant="secondary"
+              fullWidth
+              onPress={() => void Linking.openURL(fleet.aar_link!)}
+            />
+          ) : null}
+
+          {isUpcoming ? (
             <MinmatarButton label="Volunteer" variant="success" fullWidth onPress={() => {}} />
-          )}
+          ) : null}
         </View>
       </ScrollView>
     </>
+  );
+}
+
+export default function FleetDetailScreen() {
+  return (
+    <RequireAuth>
+      <FleetDetailContent />
+    </RequireAuth>
   );
 }
 
@@ -122,6 +191,12 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: spacing.xxxl,
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
   },
   hero: {
     height: 200,
@@ -155,14 +230,20 @@ const styles = StyleSheet.create({
     fontSize: 22,
     lineHeight: 26,
   },
-  corpName: {
-    ...typography.caption,
-    color: colors.faded,
-  },
   body: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
     gap: spacing.lg,
+  },
+  doctrine: {
+    gap: spacing.sm,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  doctrineName: {
+    ...typography.bodyStrong,
+    color: colors.fleetYellow,
   },
   description: {
     ...typography.body,
