@@ -13,5 +13,6 @@ export async function listFeed(params: ListFeedParams = {}): Promise<ApiFeedList
   if (params.limit != null) query.set('limit', String(params.limit));
   if (params.days != null) query.set('days', String(params.days));
   const qs = query.toString();
-  return apiFetch<ApiFeedListResponse>(`/api/feed/${qs ? `?${qs}` : ''}`);
+  const path = qs ? `/api/feed/?${qs}` : '/api/feed/';
+  return apiFetch<ApiFeedListResponse>(path);
 }

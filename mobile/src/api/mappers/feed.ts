@@ -56,6 +56,6 @@ export function mapApiFeedItemToActivity(item: ApiFeedEventItem): ActivityItem {
   }
 }
 
-export function mapApiFeedToActivity(items: ApiFeedEventItem[]): ActivityItem[] {
-  return items.map(mapApiFeedItemToActivity);
+export function mapApiFeedToActivity(items: ApiFeedEventItem[] | null | undefined): ActivityItem[] {
+  return (items ?? []).map(mapApiFeedItemToActivity);
 }

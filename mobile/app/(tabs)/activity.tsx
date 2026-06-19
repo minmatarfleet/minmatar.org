@@ -11,7 +11,7 @@ import { colors } from '@/src/theme';
 import { spacing, typography } from '@/src/theme/spacing';
 
 export default function ActivityScreen() {
-  const { items, refreshing, refresh, error } = useActivityFeed();
+  const { items, refreshing, refresh, error, isPreview } = useActivityFeed();
   const [selected, setSelected] = useState<ActivityItem | null>(null);
 
   const handleView = useCallback((item: ActivityItem) => {
@@ -36,8 +36,13 @@ export default function ActivityScreen() {
         <Text style={styles.subtitle}>
           Live fleets, kill bursts, FC comms, and militia movement
         </Text>
+        {isPreview ? (
+          <Text style={styles.previewHint}>
+            Preview data — live warzone feed is empty or still rolling out.
+          </Text>
+        ) : null}
       </View>
-      {error ? (
+      {error && !isPreview ? (
         <View style={styles.center}>
           <Text style={styles.error}>{error}</Text>
         </View>
@@ -77,6 +82,11 @@ const styles = StyleSheet.create({
   subtitle: {
     ...typography.caption,
     color: colors.muted,
+  },
+  previewHint: {
+    ...typography.caption,
+    color: colors.fleetYellow,
+    marginTop: spacing.xs,
   },
   list: {
     paddingHorizontal: spacing.md,
