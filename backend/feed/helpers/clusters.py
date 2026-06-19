@@ -104,12 +104,7 @@ def _build_cluster_stats(killmails: list[FeedKillmail]) -> dict[str, Any]:
             if char_id:
                 attacker_ids.add(char_id)
 
-    dominant = dominant_attacker_faction(
-        raw_kms,
-        threshold=get_rollup_config("fleet_active").get(
-            "dominant_faction_threshold", 0.4
-        ),
-    )
+    dominant = dominant_attacker_faction(raw_kms)
     started_at = min(km.killmail_time for km in killmails)
     last_kill_at = max(km.killmail_time for km in killmails)
 

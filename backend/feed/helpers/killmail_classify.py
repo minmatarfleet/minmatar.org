@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections import Counter
+from collections import Counter, defaultdict
 from typing import Any
 
 from feed.constants import FACTION_AMARR, FACTION_MINMATAR, MILITIA_FACTION_IDS
@@ -48,24 +48,52 @@ def extract_militia_character_ids(
     return results
 
 
+def _unique_attacker_character_ids(
+    killmails: list[dict[str, Any]],
+) -> set[int]:
+    ids: set[int] = set()
+    for km in killmails:
+        for attacker in _attacker_rows(km):
+            char_id = attacker.get("character_id")
+            if not char_id or attacker.get("corporation_id") == 1000125:
+                continue
+            ids.add(char_id)
+    return ids
+
+
 def dominant_attacker_faction(
     killmails: list[dict[str, Any]],
     *,
-    threshold: float = 0.4,
+    threshold: float = 0.5,
 ) -> int | None:
-    """Plurality militia faction across killmails; None if below threshold."""
-    counts: Counter[int] = Counter()
-    total = 0
+    """Return militia faction only if a majority of unique attackers are enlisted."""
+    all_attackers = _unique_attacker_character_ids(killmails)
+    if not all_attackers:
+        return None
+
+    char_faction_counts: dict[int, Counter[int]] = defaultdict(Counter)
     for km in killmails:
         for attacker in _attacker_rows(km):
+            char_id = attacker.get("character_id")
+            if not char_id or attacker.get("corporation_id") == 1000125:
+                continue
             faction_id = attacker.get("faction_id")
             if faction_id in MILITIA_FACTION_IDS:
-                counts[faction_id] += 1
-                total += 1
-    if total == 0:
+                char_faction_counts[char_id][faction_id] += 1
+
+    faction_pilots: Counter[int] = Counter()
+    for char_id in all_attackers:
+        counts = char_faction_counts.get(char_id)
+        if not counts:
+            continue
+        faction_id, _ = counts.most_common(1)[0]
+        faction_pilots[faction_id] += 1
+
+    if not faction_pilots:
         return None
-    faction_id, count = counts.most_common(1)[0]
-    if count / total >= threshold:
+
+    faction_id, pilot_count = faction_pilots.most_common(1)[0]
+    if pilot_count / len(all_attackers) > threshold:
         return faction_id
     return None
 

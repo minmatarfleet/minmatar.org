@@ -44,7 +44,7 @@ DEFAULT_ROLLUP_CONFIG: dict[str, dict] = {
         "min_kills": 5,
         "min_pilots": 8,
         "stale_minutes": 20,
-        "dominant_faction_threshold": 0.4,
+        "dominant_faction_threshold": 0.5,
     },
     "militia_joins": {
         "hourly_min_count": 5,
