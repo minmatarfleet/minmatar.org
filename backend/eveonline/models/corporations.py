@@ -65,9 +65,16 @@ class EveCorporation(models.Model):
         logger.info(
             "Fetching external corporation details for %s", self.corporation_id
         )
-        esi_corporation = (
-            EsiClient(None).get_corporation(self.corporation_id).results()
-        )
+        response = EsiClient(None).get_corporation(self.corporation_id)
+        if not response.success():
+            logger.warning(
+                "ESI error %s fetching corporation %s: %s",
+                response.response_code,
+                self.corporation_id,
+                response.error_text(),
+            )
+            return
+        esi_corporation = response.results()
         self.name = esi_corporation["name"]
         self.ticker = esi_corporation["ticker"]
         self.member_count = esi_corporation["member_count"]

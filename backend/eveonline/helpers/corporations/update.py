@@ -9,6 +9,7 @@ from django.utils import timezone
 from esi.models import Token
 
 from eveonline.client import EsiClient
+from eveonline.helpers.db_sync import replace_with_bulk_create
 from eveonline.models import (
     EveAlliance,
     EveCharacter,
@@ -93,15 +94,40 @@ def get_director_with_scope(corporation, scope_list):
     Return a corporation director or CEO that has a valid token with the given
     scope, or None. Checks CEO first, then directors.
     """
+    return resolve_directors_by_scope(corporation, [scope_list])[
+        tuple(scope_list)
+    ]
+
+
+def resolve_directors_by_scope(corporation, scope_lists):
+    """
+    Return a dict mapping tuple(scope_list) -> EveCharacter | None for each
+    scope list, checking CEO and directors once per candidate.
+    """
     candidate_ids = set()
-    if corporation.ceo_id:
+    if corporation.ceo_id and corporation.ceo:
         candidate_ids.add(corporation.ceo.character_id)
     for director in corporation.directors.all():
         candidate_ids.add(director.character_id)
+
+    results = {tuple(scope_list): None for scope_list in scope_lists}
+    if not candidate_ids:
+        return results
+
+    characters_by_id = {
+        character.character_id: character
+        for character in EveCharacter.objects.filter(
+            character_id__in=candidate_ids
+        )
+    }
     for character_id in candidate_ids:
-        if Token.get_token(character_id, scope_list):
-            return EveCharacter.objects.get(character_id=character_id)
-    return None
+        for scope_list in scope_lists:
+            key = tuple(scope_list)
+            if results[key] is not None:
+                continue
+            if Token.get_token(character_id, scope_list):
+                results[key] = characters_by_id.get(character_id)
+    return results
 
 
 def sync_alliance_corporations_from_esi() -> int:
@@ -219,8 +245,14 @@ def update_corporation_members_and_roles(corporation_id: int) -> None:
         )
         return
 
-    for member_id in esi_members.results():
-        if not EveCharacter.objects.filter(character_id=member_id).exists():
+    member_ids = esi_members.results()
+    existing_member_ids = set(
+        EveCharacter.objects.filter(character_id__in=member_ids).values_list(
+            "character_id", flat=True
+        )
+    )
+    for member_id in member_ids:
+        if member_id not in existing_member_ids:
             logger.info(
                 "Creating character %s for corporation %s",
                 member_id,
@@ -475,9 +507,8 @@ def update_corporation_blueprints(corporation_id: int) -> int:
         return 0
 
     blueprints_data = response.results() or []
-    EveCorporationBlueprint.objects.filter(corporation=corporation).delete()
-    for raw in blueprints_data:
-        EveCorporationBlueprint.objects.create(
+    instances = [
+        EveCorporationBlueprint(
             corporation=corporation,
             item_id=raw["item_id"],
             type_id=raw["type_id"],
@@ -488,6 +519,14 @@ def update_corporation_blueprints(corporation_id: int) -> int:
             quantity=raw["quantity"],
             runs=raw["runs"],
         )
+        for raw in blueprints_data
+    ]
+    replace_with_bulk_create(
+        delete_queryset=EveCorporationBlueprint.objects.filter(
+            corporation=corporation
+        ),
+        instances=instances,
+    )
     logger.info(
         "Synced %s blueprint(s) for corporation %s (%s)",
         len(blueprints_data),

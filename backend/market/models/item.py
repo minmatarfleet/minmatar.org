@@ -271,3 +271,47 @@ def get_effective_item_expectations(location):
             effective[name] = max(effective[name], total)
 
     return dict(effective)
+
+
+def get_effective_item_expectations_bulk(locations):
+    """
+    Like get_effective_item_expectations but for many locations at once.
+    Returns {location.pk: {item_name: quantity}}.
+    """
+    location_list = list(locations)
+    if not location_list:
+        return {}
+
+    location_pks = [location.pk for location in location_list]
+    effective_by_location = {
+        location_pk: defaultdict(int) for location_pk in location_pks
+    }
+
+    for exp in EveMarketItemExpectation.objects.filter(
+        location_id__in=location_pks
+    ).select_related("item"):
+        location_effective = effective_by_location[exp.location_id]
+        location_effective[exp.item.name] = max(
+            location_effective[exp.item.name], exp.quantity
+        )
+
+    for fexp in EveMarketFittingExpectation.objects.filter(
+        location_id__in=location_pks
+    ).select_related("fitting"):
+        location_effective = effective_by_location[fexp.location_id]
+        for name, qty in fexp.get_item_quantities().items():
+            location_effective[name] = max(location_effective[name], qty)
+
+    for cexp in EveMarketContractExpectation.objects.filter(
+        location_id__in=location_pks
+    ).select_related("fitting"):
+        location_effective = effective_by_location[cexp.location_id]
+        consumables = _get_consumable_items(cexp.fitting)
+        for name, qty in consumables.items():
+            total = qty * cexp.quantity
+            location_effective[name] = max(location_effective[name], total)
+
+    return {
+        location_pk: dict(effective)
+        for location_pk, effective in effective_by_location.items()
+    }

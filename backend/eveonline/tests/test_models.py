@@ -19,6 +19,7 @@ from eveonline.models import (
     EveCharacterSkill,
     EveSkillset,
     EveLocation,
+    EveCorporation,
 )
 from eveonline.signals import populate_eve_character_public_data
 from eveonline.helpers.characters import upsert_character_skill
@@ -360,6 +361,22 @@ class EveLocationTestCase(TestCase):
         )
 
         self.assertEqual(1, EveLocation.objects.count())
+
+
+class EveCorporationPopulateTestCase(TestCase):
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("eveonline.models.corporations.EsiClient")
+    def test_populate_handles_failed_esi(self, esi_client_cls):
+        esi_client_cls.return_value.get_corporation.return_value = EsiResponse(
+            response_code=906
+        )
+        corporation = EveCorporation.objects.create(corporation_id=98835783)
+        original_name = corporation.name
+
+        corporation.populate()
+
+        corporation.refresh_from_db()
+        self.assertEqual(original_name, corporation.name)
 
 
 class EveCharacterTestCase(TestCase):

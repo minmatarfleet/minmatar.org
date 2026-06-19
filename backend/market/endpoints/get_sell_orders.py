@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from ninja import Router
 from pydantic import BaseModel
 
@@ -14,7 +16,7 @@ from market.models.item import (
     EveMarketFittingExpectation,
     EveMarketItemExpectation,
     EveMarketItemOrder,
-    get_effective_item_expectations,
+    get_effective_item_expectations_bulk,
 )
 
 router = Router(tags=["Market"])
@@ -89,6 +91,47 @@ class SellOrderLocationResponse(BaseModel):
     items: list[SellOrderItemResponse]
 
 
+def _bulk_current_stock_by_location(location_pks):
+    stock_by_location = defaultdict(dict)
+    for row in (
+        EveMarketItemOrder.objects.filter(location_id__in=location_pks)
+        .values("location_id", "item__name")
+        .annotate(total=Sum("quantity"))
+    ):
+        stock_by_location[row["location_id"]][row["item__name"]] = row["total"]
+    return stock_by_location
+
+
+def _bulk_lowest_prices_by_location(location_pks):
+    lowest_by_location = defaultdict(dict)
+    for row in (
+        EveMarketItemOrder.objects.filter(location_id__in=location_pks)
+        .values("location_id", "item__name")
+        .annotate(lowest=Min("price"))
+    ):
+        lowest_by_location[row["location_id"]][row["item__name"]] = row[
+            "lowest"
+        ]
+    return lowest_by_location
+
+
+def _bulk_issuers_by_location(location_pks):
+    issuers_by_location = defaultdict(lambda: defaultdict(list))
+    for location_id, item_name, issuer_id in (
+        EveMarketItemOrder.objects.filter(
+            location_id__in=location_pks,
+            issuer_external_id__isnull=False,
+        )
+        .distinct()
+        .values_list("location_id", "item__name", "issuer_external_id")
+    ):
+        issuer_id_int = int(issuer_id)
+        issuer_list = issuers_by_location[location_id][item_name]
+        if issuer_id_int not in issuer_list:
+            issuer_list.append(issuer_id_int)
+    return issuers_by_location
+
+
 @router.get(
     "/sell-orders",
     description="Get sell order expectations and current stock per location",
@@ -125,64 +168,48 @@ def get_sell_orders(request, location_id: int | None = None):
             location_id__in=all_ids, market_active=True
         ).order_by("location_name")
 
+    location_list = list(locations)
+    if not location_list:
+        return []
+
+    location_pks = [location.pk for location in location_list]
     baseline_prices = _get_baseline_prices()
     baseline_location_prices = _get_baseline_location_prices()
+    effective_by_location = get_effective_item_expectations_bulk(location_list)
+    current_stock_by_location = _bulk_current_stock_by_location(location_pks)
+    lowest_prices_by_location = _bulk_lowest_prices_by_location(location_pks)
+    issuers_by_location = _bulk_issuers_by_location(location_pks)
+
+    all_item_names = set()
+    for location_pk in location_pks:
+        effective = effective_by_location.get(location_pk, {})
+        current_stock = current_stock_by_location.get(location_pk, {})
+        all_item_names |= set(effective.keys()) | set(current_stock.keys())
+
+    type_info = dict(
+        (row[0], (row[1], row[2], row[3] or "", row[4], row[5] or ""))
+        for row in EveType.objects.filter(name__in=all_item_names).values_list(
+            "name",
+            "id",
+            "eve_group__eve_category_id",
+            "eve_group__eve_category__name",
+            "eve_group_id",
+            "eve_group__name",
+        )
+    )
 
     results = []
-    for location in locations:
-        effective = get_effective_item_expectations(location)
+    for location in location_list:
+        effective = effective_by_location.get(location.pk, {})
+        current_stock = current_stock_by_location.get(location.pk, {})
+        lowest_prices = lowest_prices_by_location.get(location.pk, {})
+        issuers_by_name = issuers_by_location.get(location.pk, {})
 
-        current_stock = dict(
-            EveMarketItemOrder.objects.filter(location=location)
-            .values("item__name")
-            .annotate(total=Sum("quantity"))
-            .values_list("item__name", "total")
+        all_names_for_location = set(effective.keys()) | set(
+            current_stock.keys()
         )
-
-        all_item_names = set(effective.keys()) | set(current_stock.keys())
-
-        type_info = dict(
-            (row[0], (row[1], row[2], row[3] or "", row[4], row[5] or ""))
-            for row in EveType.objects.filter(
-                name__in=all_item_names
-            ).values_list(
-                "name",
-                "id",
-                "eve_group__eve_category_id",
-                "eve_group__eve_category__name",
-                "eve_group_id",
-                "eve_group__name",
-            )
-        )
-
-        lowest_prices = dict(
-            EveMarketItemOrder.objects.filter(
-                location=location, item__name__in=all_item_names
-            )
-            .values("item__name")
-            .annotate(lowest=Min("price"))
-            .values_list("item__name", "lowest")
-        )
-
-        order_issuers = (
-            EveMarketItemOrder.objects.filter(
-                location=location,
-                item__name__in=all_item_names,
-                issuer_external_id__isnull=False,
-            )
-            .distinct()
-            .values_list("item__name", "issuer_external_id")
-        )
-        issuers_by_name: dict[str, list[int]] = {}
-        for item_name, issuer_id in order_issuers:
-            issuer_id_int = int(issuer_id)
-            if item_name not in issuers_by_name:
-                issuers_by_name[item_name] = []
-            if issuer_id_int not in issuers_by_name[item_name]:
-                issuers_by_name[item_name].append(issuer_id_int)
-
         items = []
-        for name in sorted(all_item_names):
+        for name in sorted(all_names_for_location):
             expected = effective.get(name, 0)
             current = current_stock.get(name, 0)
             type_id, category_id, category_name, group_id, group_name = (

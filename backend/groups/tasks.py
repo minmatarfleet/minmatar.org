@@ -75,16 +75,64 @@ def bulk_update_community_status(
 
 @app.task
 def update_affiliations():
+    affiliation_rules = _load_affiliation_rules()
     for user in User.objects.all():
         try:
-            update_affiliation(user.id)
+            _update_affiliation_for_user(user, affiliation_rules)
         except Exception as e:
             log_affiliation_update_error(user, e)
 
 
-@app.task
-def update_affiliation(user_id: int):
-    user = User.objects.get(id=user_id)
+def _load_affiliation_rules():
+    affiliations = list(
+        AffiliationType.objects.order_by("-priority").prefetch_related(
+            "corporations", "alliances", "factions"
+        )
+    )
+    rules = []
+    for affiliation in affiliations:
+        rules.append(
+            {
+                "affiliation": affiliation,
+                "corp_ids": {
+                    corporation.corporation_id
+                    for corporation in affiliation.corporations.all()
+                },
+                "alliance_ids": {
+                    alliance.alliance_id
+                    for alliance in affiliation.alliances.all()
+                },
+                "faction_ids": {
+                    faction.id for faction in affiliation.factions.all()
+                },
+            }
+        )
+    return rules
+
+
+def _user_qualifies_for_affiliation(primary_character, rule):
+    affiliation = rule["affiliation"]
+    if affiliation.default:
+        return True
+    if (
+        primary_character.corporation_id
+        and primary_character.corporation_id in rule["corp_ids"]
+    ):
+        return True
+    if (
+        primary_character.alliance_id
+        and primary_character.alliance_id in rule["alliance_ids"]
+    ):
+        return True
+    if (
+        primary_character.faction_id
+        and primary_character.faction_id in rule["faction_ids"]
+    ):
+        return True
+    return False
+
+
+def _update_affiliation_for_user(user, affiliation_rules):
     logger.info("Checking affiliations for user %s", user)
 
     primary_character = user_primary_character(user)
@@ -93,50 +141,12 @@ def update_affiliation(user_id: int):
         UserAffiliation.objects.filter(user=user).delete()
         return
 
-    # loop through affiliations in priority to find highest qualifying
-    for affiliation in AffiliationType.objects.order_by("-priority"):
+    for rule in affiliation_rules:
+        affiliation = rule["affiliation"]
         logger.info("Checking if qualified for affiliation %s", affiliation)
-        is_qualifying = False
-        if affiliation.default:
-            is_qualifying = True
-        if (
-            primary_character.corporation_id
-            and affiliation.corporations.filter(
-                corporation_id=primary_character.corporation_id
-            ).exists()
-        ):
-            logger.info(
-                "User %s is in corporation %s",
-                user,
-                primary_character.corporation_id,
-            )
-            is_qualifying = True
-
-        if (
-            primary_character.alliance_id
-            and affiliation.alliances.filter(
-                alliance_id=primary_character.alliance_id
-            ).exists()
-        ):
-            logger.info(
-                "User %s is in alliance %s",
-                user,
-                primary_character.alliance_id,
-            )
-            is_qualifying = True
-
-        if (
-            primary_character.faction_id
-            and affiliation.factions.filter(
-                id=primary_character.faction_id
-            ).exists()
-        ):
-            logger.info(
-                "User %s is in faction %s",
-                user,
-                primary_character.faction_id,
-            )
-            is_qualifying = True
+        is_qualifying = _user_qualifies_for_affiliation(
+            primary_character, rule
+        )
 
         if is_qualifying:
             logger.info(
@@ -168,30 +178,35 @@ def update_affiliation(user_id: int):
             )
             UserAffiliation.objects.create(user=user, affiliation=affiliation)
             return
-        else:
+
+        logger.info(
+            "User %s does not qualify for affiliation %s",
+            user,
+            affiliation,
+        )
+        if UserAffiliation.objects.filter(
+            user=user, affiliation=affiliation
+        ).exists():
             logger.info(
-                "User %s does not qualify for affiliation %s",
+                "User %s has affiliation %s, removing",
                 user,
                 affiliation,
             )
-            if UserAffiliation.objects.filter(
+            UserAffiliation.objects.filter(
                 user=user, affiliation=affiliation
-            ).exists():
-                logger.info(
-                    "User %s has affiliation %s, removing",
-                    user,
-                    affiliation,
-                )
-                UserAffiliation.objects.filter(
-                    user=user, affiliation=affiliation
-                ).delete()
-            else:
-                logger.info(
-                    "User %s does not have affiliation %s",
-                    user,
-                    affiliation,
-                )
-                continue
+            ).delete()
+        else:
+            logger.info(
+                "User %s does not have affiliation %s",
+                user,
+                affiliation,
+            )
+
+
+@app.task
+def update_affiliation(user_id: int):
+    user = User.objects.get(id=user_id)
+    _update_affiliation_for_user(user, _load_affiliation_rules())
 
 
 def log_affiliation_update_error(user: User, e):
@@ -232,6 +247,33 @@ def _user_qualifies_for_corporation_group(user, corporation_group):
         return corp.stewards.filter(user=user).exists()
 
     return False
+
+
+def _target_user_ids_for_corporation_group(
+    corporation_group,
+    user_primary_corp,
+    recruiter_user_ids,
+    director_user_ids,
+    steward_user_ids,
+):
+    corp = corporation_group.corporation
+    group_type = (
+        corporation_group.group_type or EveCorporationGroup.GROUP_TYPE_MEMBER
+    )
+
+    if group_type == EveCorporationGroup.GROUP_TYPE_MEMBER:
+        return {
+            user_id
+            for user_id, corporation_id in user_primary_corp.items()
+            if corporation_id == corp.corporation_id
+        }
+    if group_type == EveCorporationGroup.GROUP_TYPE_RECRUITER:
+        return set(recruiter_user_ids)
+    if group_type == EveCorporationGroup.GROUP_TYPE_DIRECTOR:
+        return set(director_user_ids)
+    if group_type == EveCorporationGroup.GROUP_TYPE_GUNNER:
+        return set(steward_user_ids)
+    return set()
 
 
 def _user_qualifies_cached(
@@ -294,48 +336,55 @@ def sync_eve_corporation_groups():
         group = corporation_group.group
 
         in_group_user_ids = set(group.user_set.values_list("id", flat=True))
-        recruiter_user_ids = set(
-            corp.recruiters.values_list("user_id", flat=True)
-        )
-        director_user_ids = set(
-            corp.directors.values_list("user_id", flat=True)
-        )
-        steward_user_ids = set(corp.stewards.values_list("user_id", flat=True))
+        recruiter_user_ids = {
+            user_id
+            for user_id in corp.recruiters.values_list("user_id", flat=True)
+            if user_id
+        }
+        director_user_ids = {
+            user_id
+            for user_id in corp.directors.values_list("user_id", flat=True)
+            if user_id
+        }
+        steward_user_ids = {
+            user_id
+            for user_id in corp.stewards.values_list("user_id", flat=True)
+            if user_id
+        }
 
-        for user in User.objects.all():
-            try:
-                in_group = user.id in in_group_user_ids
-                qualifies = _user_qualifies_cached(
-                    user.id,
-                    corporation_group,
-                    user_primary_corp,
-                    recruiter_user_ids,
-                    director_user_ids,
-                    steward_user_ids,
-                )
+        target_user_ids = _target_user_ids_for_corporation_group(
+            corporation_group,
+            user_primary_corp,
+            recruiter_user_ids,
+            director_user_ids,
+            steward_user_ids,
+        )
+        to_add = target_user_ids - in_group_user_ids
+        to_remove = in_group_user_ids - target_user_ids
 
-                if qualifies and not in_group:
+        try:
+            if to_add:
+                group.user_set.add(*User.objects.filter(id__in=to_add))
+                for user_id in to_add:
                     logger.info(
                         "User %s qualifies for corporation group %s, adding",
-                        user,
+                        user_id,
                         group.name,
                     )
-                    user.groups.add(group)
-                elif not qualifies and in_group:
+            if to_remove:
+                group.user_set.remove(*User.objects.filter(id__in=to_remove))
+                for user_id in to_remove:
                     logger.info(
                         "User %s no longer qualifies for corporation group %s, removing",
-                        user,
+                        user_id,
                         group.name,
                     )
-                    user.groups.remove(group)
-            except Exception as e:
-                logger.error(
-                    "Error syncing corporation group %s for user %s: %s",
-                    corporation_group,
-                    user,
-                    e,
-                )
-                continue
+        except Exception as e:
+            logger.error(
+                "Error syncing corporation group %s: %s",
+                corporation_group,
+                e,
+            )
 
 
 @app.task
