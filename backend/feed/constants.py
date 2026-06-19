@@ -42,9 +42,9 @@ DEFAULT_ROLLUP_CONFIG: dict[str, dict] = {
     "fleet_active": {
         "window_minutes": 20,
         "min_kills": 5,
-        "min_pilots": 8,
+        "min_pilots": 6,
         "stale_minutes": 20,
-        "dominant_faction_threshold": 0.5,
+        "dominant_faction_threshold": 0.75,
     },
     "militia_joins": {
         "hourly_min_count": 5,

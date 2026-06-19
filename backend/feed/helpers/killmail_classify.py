@@ -64,9 +64,9 @@ def _unique_attacker_character_ids(
 def dominant_attacker_faction(
     killmails: list[dict[str, Any]],
     *,
-    threshold: float = 0.5,
+    threshold: float = 0.75,
 ) -> int | None:
-    """Return militia faction only if a majority of unique attackers are enlisted."""
+    """Return militia faction only if enough unique attackers are enlisted."""
     all_attackers = _unique_attacker_character_ids(killmails)
     if not all_attackers:
         return None
@@ -93,7 +93,7 @@ def dominant_attacker_faction(
         return None
 
     faction_id, pilot_count = faction_pilots.most_common(1)[0]
-    if pilot_count / len(all_attackers) > threshold:
+    if pilot_count / len(all_attackers) >= threshold:
         return faction_id
     return None
 
