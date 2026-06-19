@@ -5,6 +5,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import Markdown from 'react-native-markdown-display';
 import { Text } from 'react-native-paper';
 import { Countdown } from '@/src/components/Countdown';
+import { RequireAuth } from '@/src/auth/RequireAuth';
 import { FleetTypeIcon } from '@/src/components/FleetTypeIcon';
 import { MinmatarButton } from '@/src/components/MinmatarButton';
 import { StatusPill } from '@/src/components/StatusPill';
@@ -40,10 +41,12 @@ export default function FleetDetailScreen() {
 
   if (!fleet) {
     return (
-      <View style={styles.notFound}>
-        <Text style={styles.notFoundTitle}>Fleet not found</Text>
-        <MinmatarButton label="Go back" onPress={() => router.back()} />
-      </View>
+      <RequireAuth>
+        <View style={styles.notFound}>
+          <Text style={styles.notFoundTitle}>Fleet not found</Text>
+          <MinmatarButton label="Go back" onPress={() => router.back()} />
+        </View>
+      </RequireAuth>
     );
   }
 
@@ -60,6 +63,7 @@ export default function FleetDetailScreen() {
   ].filter(Boolean);
 
   return (
+    <RequireAuth>
     <>
       <Stack.Screen options={{ title: fleet.fleet_commander_name, headerBackTitle: 'Fleets' }} />
       <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -112,6 +116,7 @@ export default function FleetDetailScreen() {
         </View>
       </ScrollView>
     </>
+    </RequireAuth>
   );
 }
 

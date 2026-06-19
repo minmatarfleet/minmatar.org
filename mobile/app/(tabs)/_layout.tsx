@@ -2,6 +2,7 @@ import { Platform, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { RequireAuth } from '@/src/auth/RequireAuth';
 import { TopBar } from '@/src/components/TopBar';
 import { colors } from '@/src/theme';
 import { spacing, typography } from '@/src/theme/spacing';
@@ -10,6 +11,7 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
 
   return (
+    <RequireAuth>
     <View style={styles.container}>
       <TopBar />
       <Tabs
@@ -36,7 +38,7 @@ export default function TabLayout() {
         }}
       >
         <Tabs.Screen
-          name="index"
+          name="news"
           options={{
             title: 'News',
             tabBarLabel: 'News',
@@ -62,6 +64,7 @@ export default function TabLayout() {
         />
       </Tabs>
     </View>
+    </RequireAuth>
   );
 }
 

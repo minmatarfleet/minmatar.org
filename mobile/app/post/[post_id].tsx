@@ -5,6 +5,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import Markdown from 'react-native-markdown-display';
 import { Text } from 'react-native-paper';
 import { AuthorRow } from '@/src/components/AuthorRow';
+import { RequireAuth } from '@/src/auth/RequireAuth';
 import { MinmatarButton } from '@/src/components/MinmatarButton';
 import { Tag } from '@/src/components/Tag';
 import { getPostById } from '@/src/data/mockPosts';
@@ -37,16 +38,19 @@ export default function PostDetailScreen() {
 
   if (!post) {
     return (
-      <View style={styles.notFound}>
-        <Text style={styles.notFoundTitle}>Article not found</Text>
-        <MinmatarButton label="Go back" onPress={() => router.back()} />
-      </View>
+      <RequireAuth>
+        <View style={styles.notFound}>
+          <Text style={styles.notFoundTitle}>Article not found</Text>
+          <MinmatarButton label="Go back" onPress={() => router.back()} />
+        </View>
+      </RequireAuth>
     );
   }
 
   const imageUri = post.image ?? getPlayerIcon(post.author.character_id, 512);
 
   return (
+    <RequireAuth>
     <>
       <Stack.Screen options={{ title: 'Article', headerBackTitle: 'News' }} />
       <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -84,6 +88,7 @@ export default function PostDetailScreen() {
         </View>
       </ScrollView>
     </>
+    </RequireAuth>
   );
 }
 

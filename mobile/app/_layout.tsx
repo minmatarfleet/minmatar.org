@@ -19,7 +19,7 @@ import { AuthProvider } from '@/src/auth/AuthContext';
 export { ErrorBoundary } from 'expo-router';
 
 export const unstable_settings = {
-  initialRouteName: '(tabs)',
+  initialRouteName: 'index',
 };
 
 SplashScreen.preventAutoHideAsync();
@@ -63,6 +63,7 @@ export default function RootLayout() {
         <PaperProvider theme={minmatarTheme}>
           <StatusBar style="light" />
           <Stack screenOptions={stackScreenOptions}>
+            <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="auth/callback" options={{ headerShown: false }} />
             <Stack.Screen name="post/[post_id]" />

@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { Platform } from 'react-native';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
@@ -47,6 +48,7 @@ interface AuthContextValue {
   isLoading: boolean;
   isAuthenticating: boolean;
   loginWithEve: () => Promise<void>;
+  loginWithToken: (token: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -126,11 +128,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [applySession],
   );
 
+  const loginWithToken = useCallback(
+    async (token: string) => {
+      const profile = await apiFetch<SessionResponse>('/api/users/session', { token });
+      const nextSession: AuthSession = {
+        token,
+        user: sessionToUser(profile),
+      };
+      await applySession(nextSession);
+    },
+    [applySession],
+  );
+
   const loginWithEve = useCallback(async () => {
     setIsAuthenticating(true);
     try {
       const redirectUrl = authRedirectUrl();
       const loginUrl = getEveLoginUrl(redirectUrl);
+
+      if (Platform.OS === 'web') {
+        window.location.assign(loginUrl);
+        return;
+      }
+
       const result = await WebBrowser.openAuthSessionAsync(loginUrl, redirectUrl);
 
       if (result.type === 'success') {
@@ -176,10 +196,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading,
       isAuthenticating,
       loginWithEve,
+      loginWithToken,
       logout,
       refreshProfile,
     }),
-    [session, isLoading, isAuthenticating, loginWithEve, logout, refreshProfile],
+    [session, isLoading, isAuthenticating, loginWithEve, loginWithToken, logout, refreshProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
