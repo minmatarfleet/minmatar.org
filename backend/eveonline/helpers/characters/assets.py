@@ -106,7 +106,7 @@ def create_character_assets(character: EveCharacter, assets_data: List[dict]):
             logger.debug("Found asset %s", type_name)
             type_names[asset.type_id] = type_name
         EveCharacterAsset.objects.create(
-            type_id=eve_type.id,
+            type_id=asset.type_id,
             type_name=type_name,
             location_id=asset.location_id,
             location_name=location_name,
