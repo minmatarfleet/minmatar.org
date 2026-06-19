@@ -834,9 +834,9 @@ def market_expectations_view(request):
 # ----- Market admin index -----
 
 
-def _market_get_app_list(request):
+def _market_get_app_list(request, app_label=None):
     """Show a filtered Market section: model entries from MARKET_INDEX_MODELS plus extra custom links."""
-    app_list = admin.site.get_app_list_original(request)
+    app_list = admin.site.get_app_list_original(request, app_label)
     for app in app_list:
         if app["app_label"] != "market":
             continue

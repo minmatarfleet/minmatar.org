@@ -412,9 +412,9 @@ INDUSTRY_INDEX_MODELS = {
 }
 
 
-def _industry_get_app_list(request):
+def _industry_get_app_list(request, app_label=None):
     """Show industry app with only Orders in the index."""
-    app_list = _industry_previous_get_app_list(request)
+    app_list = _industry_previous_get_app_list(request, app_label)
     for app in app_list:
         if app["app_label"] != "industry":
             continue

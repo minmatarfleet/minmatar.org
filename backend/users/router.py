@@ -71,12 +71,20 @@ def callback(
     # Note that while `code` is marked optional, the endpoint will not work without it
     if code is None:
         error_id = create_error_id()
-        logger.error(
-            "No code returned in Discord redirect: %s, %s (%s)",
-            error,
-            error_description,
-            error_id,
-        )
+        if error == "access_denied":
+            logger.info(
+                "Discord login denied by user: %s, %s (%s)",
+                error,
+                error_description,
+                error_id,
+            )
+        else:
+            logger.error(
+                "No code returned in Discord redirect: %s, %s (%s)",
+                error,
+                error_description,
+                error_id,
+            )
         return redirect(f"{redirect_url}?error=DENIED&id={error_id}")
 
     logger.debug("Recived discord callback with code: ...%s", code[-5:])

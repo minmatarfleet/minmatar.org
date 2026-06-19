@@ -3,7 +3,6 @@
 import logging
 
 from app.celery import app
-from eveonline.helpers.characters import related_characters
 from eveonline.helpers.characters.update import update_character_industry_jobs
 from eveonline.models import EveCharacter
 
@@ -39,13 +38,21 @@ def sync_industry_jobs_for_order_assignees() -> None:
         ).distinct()
     )
 
-    # For each assigned character, add them and all related (same user)
-    character_ids = set()
-    for character in EveCharacter.objects.filter(
+    assigned_rows = EveCharacter.objects.filter(
         pk__in=assigned_character_pks
-    ):
-        for related in related_characters(character):
-            character_ids.add(related.character_id)
+    ).values_list("user_id", "character_id")
+
+    character_ids = set()
+    user_ids = {user_id for user_id, _ in assigned_rows if user_id}
+    for _, character_id in assigned_rows:
+        character_ids.add(character_id)
+
+    if user_ids:
+        character_ids.update(
+            EveCharacter.objects.filter(user_id__in=user_ids).values_list(
+                "character_id", flat=True
+            )
+        )
 
     for character_id in character_ids:
         sync_industry_jobs_for_character.delay(character_id)

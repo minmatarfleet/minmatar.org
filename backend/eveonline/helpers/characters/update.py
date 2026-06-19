@@ -20,6 +20,7 @@ from eveonline.models import (
 )
 
 from eveonline.helpers.characters.assets import create_character_assets
+from eveonline.helpers.db_sync import replace_with_bulk_create
 from eveonline.helpers.characters.skills import (
     create_eve_character_skillset,
     upsert_character_skills,
@@ -358,9 +359,8 @@ def update_character_blueprints(eve_character_id: int) -> int:
         return 0
 
     blueprints_data = response.results() or []
-    EveCharacterBlueprint.objects.filter(character=character).delete()
-    for raw in blueprints_data:
-        EveCharacterBlueprint.objects.create(
+    instances = [
+        EveCharacterBlueprint(
             character=character,
             item_id=raw["item_id"],
             type_id=raw["type_id"],
@@ -371,6 +371,14 @@ def update_character_blueprints(eve_character_id: int) -> int:
             quantity=raw["quantity"],
             runs=raw["runs"],
         )
+        for raw in blueprints_data
+    ]
+    replace_with_bulk_create(
+        delete_queryset=EveCharacterBlueprint.objects.filter(
+            character=character
+        ),
+        instances=instances,
+    )
     logger.info(
         "Synced %s blueprint(s) for character %s",
         len(blueprints_data),

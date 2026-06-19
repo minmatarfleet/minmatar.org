@@ -7,7 +7,7 @@ from eveonline.helpers.corporations import (
     SCOPE_CORPORATION_INDUSTRY_JOBS,
     SCOPE_CORPORATION_MEMBERSHIP,
     SCOPE_CORPORATION_WALLET,
-    get_director_with_scope,
+    resolve_directors_by_scope,
     sync_alliance_corporations_from_esi,
     update_corporation_blueprints as refresh_corporation_blueprints,
     update_corporation_contracts as refresh_corporation_contracts,
@@ -66,22 +66,36 @@ def update_corporation(corporation_id):
         corporation_id,
     )
     refresh_corporation_populate(corporation_id)
-    corporation = EveCorporation.objects.filter(
-        corporation_id=corporation_id
-    ).first()
+    corporation = (
+        EveCorporation.objects.filter(corporation_id=corporation_id)
+        .select_related("ceo")
+        .prefetch_related("directors")
+        .first()
+    )
     if not corporation:
         return
+
+    directors = resolve_directors_by_scope(
+        corporation,
+        [
+            SCOPE_CORPORATION_MEMBERSHIP,
+            SCOPE_CORPORATION_CONTRACTS,
+            SCOPE_CORPORATION_INDUSTRY_JOBS,
+            SCOPE_CORPORATION_BLUEPRINTS,
+            SCOPE_CORPORATION_WALLET,
+        ],
+    )
     if (
         corporation.active
         and corporation.type in ["alliance", "associate"]
-        and get_director_with_scope(corporation, SCOPE_CORPORATION_MEMBERSHIP)
+        and directors[tuple(SCOPE_CORPORATION_MEMBERSHIP)]
     ):
         refresh_corporation_members_and_roles(corporation_id)
-    if get_director_with_scope(corporation, SCOPE_CORPORATION_CONTRACTS):
+    if directors[tuple(SCOPE_CORPORATION_CONTRACTS)]:
         refresh_corporation_contracts(corporation_id)
-    if get_director_with_scope(corporation, SCOPE_CORPORATION_INDUSTRY_JOBS):
+    if directors[tuple(SCOPE_CORPORATION_INDUSTRY_JOBS)]:
         refresh_corporation_industry_jobs(corporation_id)
-    if get_director_with_scope(corporation, SCOPE_CORPORATION_BLUEPRINTS):
+    if directors[tuple(SCOPE_CORPORATION_BLUEPRINTS)]:
         refresh_corporation_blueprints(corporation_id)
-    if get_director_with_scope(corporation, SCOPE_CORPORATION_WALLET):
+    if directors[tuple(SCOPE_CORPORATION_WALLET)]:
         refresh_corporation_wallet_journal(corporation_id)

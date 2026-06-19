@@ -217,6 +217,30 @@ class GroupTasksTestCase(TestCase):
         self.assertEqual(1, self.user.groups.count())
         self.assertEqual(f"{corp.name} group", self.user.groups.all()[0].name)
 
+        other_corp = EveCorporation.objects.create(
+            corporation_id=100002,
+            name="OtherCorp",
+        )
+        EveCorporationGroup.objects.create(
+            corporation=other_corp,
+            group=Group.objects.create(name=f"{other_corp.name} group"),
+        )
+        other_user = User.objects.create_user(username="other_corp_user")
+        other_char = EveCharacter.objects.create(
+            character_id=1002,
+            character_name="Other Pilot",
+            corporation_id=other_corp.corporation_id,
+        )
+        set_primary_character(other_user, other_char)
+
+        sync_eve_corporation_groups()
+
+        self.assertEqual(1, self.user.groups.count())
+        self.assertEqual(1, other_user.groups.count())
+        self.assertEqual(
+            f"{other_corp.name} group", other_user.groups.all()[0].name
+        )
+
 
 class SyncTribeChiefGroupTestCase(TestCase):
     @factory.django.mute_signals(
