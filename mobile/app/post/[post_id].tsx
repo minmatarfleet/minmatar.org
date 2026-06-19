@@ -1,13 +1,19 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import Markdown from 'react-native-markdown-display';
 import { Text } from 'react-native-paper';
+
+import { buildTagMap, mapApiPostToDetail } from '@/src/api/mappers/posts';
+import { getPost, listTags } from '@/src/api/posts';
+import { getUserProfiles } from '@/src/api/users';
+import { RequireAuth } from '@/src/auth/RequireAuth';
 import { AuthorRow } from '@/src/components/AuthorRow';
 import { MinmatarButton } from '@/src/components/MinmatarButton';
 import { Tag } from '@/src/components/Tag';
-import { getPostById } from '@/src/data/mockPosts';
+import type { PostUI } from '@/src/types/posts';
 import { colors } from '@/src/theme';
 import { markdownStyles } from '@/src/theme/markdown';
 import { spacing, typography } from '@/src/theme/spacing';
@@ -30,12 +36,48 @@ function formatDate(date: Date): string {
   });
 }
 
-export default function PostDetailScreen() {
+function PostDetailContent() {
   const router = useRouter();
   const { post_id } = useLocalSearchParams<{ post_id: string }>();
-  const post = getPostById(Number(post_id));
+  const [post, setPost] = useState<PostUI | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [missing, setMissing] = useState(false);
 
-  if (!post) {
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const raw = await getPost(Number(post_id));
+        const tags = await listTags();
+        const tagById = buildTagMap(tags);
+        const profiles = await getUserProfiles([raw.user_id]);
+        const profile = profiles[0];
+        const characterId = profile?.eve_character_profile?.character_id ?? 0;
+        const authorName =
+          profile?.eve_character_profile?.character_name ?? profile?.username ?? 'Unknown';
+        if (active) {
+          setPost(mapApiPostToDetail(raw, tagById, authorName, characterId));
+        }
+      } catch {
+        if (active) setMissing(true);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [post_id]);
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color={colors.fleetYellow} />
+      </View>
+    );
+  }
+
+  if (!post || missing) {
     return (
       <View style={styles.notFound}>
         <Text style={styles.notFoundTitle}>Article not found</Text>
@@ -76,7 +118,7 @@ export default function PostDetailScreen() {
             large
           />
 
-          <Text style={styles.excerpt}>{post.excerpt}</Text>
+          {post.excerpt ? <Text style={styles.excerpt}>{post.excerpt}</Text> : null}
 
           <View style={styles.divider} />
 
@@ -87,6 +129,14 @@ export default function PostDetailScreen() {
   );
 }
 
+export default function PostDetailScreen() {
+  return (
+    <RequireAuth>
+      <PostDetailContent />
+    </RequireAuth>
+  );
+}
+
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
@@ -94,6 +144,12 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: spacing.xxxl,
+  },
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
   },
   hero: {
     height: 220,

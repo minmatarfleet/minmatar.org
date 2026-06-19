@@ -16,7 +16,7 @@ export interface FleetItem {
   members_count?: number;
   description?: string;
   objective?: string;
-  doctrine_id: number;
+  doctrine_id?: number;
   start_time: Date;
   fleet_commander_id: number;
   fleet_commander_name: string;
@@ -26,4 +26,5 @@ export interface FleetItem {
   location?: string;
   tracking?: Tracking;
   status?: TrackingStatus;
+  aar_link?: string;
 }
