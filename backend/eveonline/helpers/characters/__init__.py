@@ -10,6 +10,7 @@ from eveonline.helpers.characters.assets import (
 from eveonline.helpers.characters.characters import (
     character_desired_scopes,
     character_primary,
+    orphan_character,
     player_characters,
     related_characters,
     set_primary_character,
@@ -48,6 +49,7 @@ __all__ = [
     "create_eve_character_skillset",
     "compare_skills_to_skillset",
     "non_ship_location",
+    "orphan_character",
     "related_characters",
     "set_primary_character",
     "update_character_assets",

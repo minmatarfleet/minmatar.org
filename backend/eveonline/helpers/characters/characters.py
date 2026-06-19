@@ -2,11 +2,17 @@ import logging
 from typing import List
 
 from django.contrib.auth.models import User
+from django.utils import timezone
 from pydantic import BaseModel
 
 from audit.models import AuditEntry
+from esi.models import Token
 from eveonline.models import EvePlayer, EveCharacter
 from eveonline.scopes import TokenType, scopes_for, scopes_for_groups
+from tribes.models import (
+    TribeGroupMembershipCharacter,
+    TribeGroupMembershipCharacterHistory,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +99,29 @@ def set_primary_character(user: User, character: EveCharacter):
 
 def user_player(user: User) -> EvePlayer | None:
     return EvePlayer.objects.filter(user=user).first()
+
+
+def orphan_character(
+    character: EveCharacter, *, acting_user: User | None = None
+) -> None:
+    """Detach a character from its user and ESI tokens; keep synced EVE data."""
+    for mc in TribeGroupMembershipCharacter.objects.filter(
+        character=character
+    ).select_related("membership"):
+        TribeGroupMembershipCharacterHistory.objects.create(
+            membership=mc.membership,
+            character=character,
+            action=TribeGroupMembershipCharacterHistory.ACTION_REMOVED,
+            at=timezone.now(),
+            by=acting_user,
+            leave_reason=TribeGroupMembershipCharacterHistory.LEAVE_REASON_VOLUNTARY,
+        )
+        mc.delete()
+
+    character.user = None
+    character.token = None
+    character.save(update_fields=["user", "token"])
+    Token.objects.filter(character_id=character.character_id).delete()
 
 
 def player_characters(player: EvePlayer) -> List[EveCharacter]:
