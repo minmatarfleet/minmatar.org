@@ -11,6 +11,7 @@ from discord.models import DiscordUser
 from eveonline.models import (
     EveCharacter,
     EveCharacterLog,
+    EveCharacterSkill,
     EveCharacterSkillset,
     EveSkillset,
     EveTag,
@@ -555,3 +556,40 @@ class CharacterRouterTestCase(TestCase):
         self.assertEqual("ACTIVE", tokens[0]["token_state"])
         self.assertEqual("Basic", tokens[0]["requested_level"])
         self.assertEqual("Public", tokens[0]["actual_level"])
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    def test_delete_character_orphans_instead_of_hard_delete(self):
+        char = self.make_character(
+            user=self.user,
+            character_id=10002,
+            name="Orphan Pilot",
+            is_primary=True,
+        )
+        EveCharacterSkill.objects.create(
+            character=char,
+            skill_id=1,
+            skill_name="Test Skill",
+            skill_points=1000,
+            skill_level=1,
+        )
+        token_id = char.token_id
+
+        response = self.client.delete(
+            f"{BASE_URL}{char.character_id}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+
+        char.refresh_from_db()
+        self.assertIsNone(char.user)
+        self.assertIsNone(char.token)
+        self.assertFalse(Token.objects.filter(pk=token_id).exists())
+        self.assertTrue(
+            EveCharacterSkill.objects.filter(character=char).exists()
+        )
+        self.assertFalse(
+            EveCharacter.objects.filter(
+                user=self.user, character_id=char.character_id
+            ).exists()
+        )
+        self.assertIsNone(user_primary_character(self.user))
