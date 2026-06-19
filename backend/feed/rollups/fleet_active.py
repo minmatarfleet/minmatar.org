@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from datetime import timedelta
+
 from feed.constants import FACTION_AMARR, FACTION_MINMATAR
 from feed.helpers.killmail_classify import faction_to_accent_key
 from feed.models import FeedCluster, FeedEvent
-from feed.rollups.config import get_rollup_version
+from feed.rollups.config import get_rollup_config, get_rollup_version
 from feed.rollups.types import RollupContext, RollupResult
 
 
@@ -28,6 +30,49 @@ def _accent_for_faction(faction_id: int | None) -> str:
     return FeedEvent.Accent.COMBAT
 
 
+def _collapse_fleet_clusters(clusters) -> list[FeedCluster]:
+    """Merge adjacent time-bucket splits of the same fight into one cluster."""
+    stale_minutes = get_rollup_config("fleet_active").get("stale_minutes", 20)
+    stale_delta = timedelta(minutes=stale_minutes)
+    chains: list[list[FeedCluster]] = []
+    for cluster in sorted(
+        clusters,
+        key=lambda row: (
+            row.solar_system_id,
+            row.dominant_faction_id or 0,
+            row.started_at,
+        ),
+    ):
+        faction = cluster.dominant_faction_id or 0
+        placed = False
+        for chain in chains:
+            last = chain[-1]
+            if (
+                last.solar_system_id == cluster.solar_system_id
+                and (last.dominant_faction_id or 0) == faction
+                and cluster.started_at <= last.last_kill_at + stale_delta
+            ):
+                chain.append(cluster)
+                placed = True
+                break
+        if not placed:
+            chains.append([cluster])
+
+    collapsed: list[FeedCluster] = []
+    for chain in chains:
+        collapsed.append(max(chain, key=lambda row: row.last_kill_at))
+    return collapsed
+
+
+def _fleet_event_cluster_key(cluster: FeedCluster) -> str:
+    started = cluster.started_at.replace(second=0, microsecond=0)
+    faction = cluster.dominant_faction_id or 0
+    return (
+        f"fleet_active:{cluster.solar_system_id}:{faction}:"
+        f"{started.strftime('%Y-%m-%dT%H:%M')}"
+    )
+
+
 def run_fleet_active_rollup(ctx: RollupContext) -> list[RollupResult]:
     version = get_rollup_version("fleet_active")
     clusters = FeedCluster.objects.filter(
@@ -36,7 +81,7 @@ def run_fleet_active_rollup(ctx: RollupContext) -> list[RollupResult]:
         last_kill_at__lte=ctx.until,
     )
     results: list[RollupResult] = []
-    for cluster in clusters:
+    for cluster in _collapse_fleet_clusters(clusters):
         system = _system_name(ctx, cluster.solar_system_id)
         faction_label = _faction_label(cluster.dominant_faction_id)
         composition = ""
@@ -68,7 +113,7 @@ def run_fleet_active_rollup(ctx: RollupContext) -> list[RollupResult]:
                 },
                 rollup_code="fleet_active",
                 rollup_version=version,
-                cluster_key=cluster.cluster_key,
+                cluster_key=_fleet_event_cluster_key(cluster),
                 is_active=cluster.is_active,
                 killmail_ids=cluster.killmail_ids or [],
             )

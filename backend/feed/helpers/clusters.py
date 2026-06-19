@@ -21,7 +21,70 @@ def _cluster_key(
     cluster_type: str, solar_system_id: int, faction_id: int | None, started_at
 ) -> str:
     faction = faction_id if faction_id is not None else 0
+    if hasattr(started_at, "replace"):
+        started_at = started_at.replace(second=0, microsecond=0)
     return f"{cluster_type}:{solar_system_id}:{faction}:{started_at.strftime('%Y-%m-%dT%H:%M')}"
+
+
+def _find_active_fleet_cluster(
+    solar_system_id: int,
+    faction_id: int | None,
+    window_start,
+    *,
+    stale_minutes: int,
+) -> FeedCluster | None:
+    cutoff = window_start - timedelta(minutes=stale_minutes)
+    return (
+        FeedCluster.objects.filter(
+            cluster_type=FeedCluster.ClusterType.FLEET_ENGAGEMENT,
+            solar_system_id=solar_system_id,
+            dominant_faction_id=faction_id,
+            is_active=True,
+            last_kill_at__gte=cutoff,
+        )
+        .order_by("-last_kill_at")
+        .first()
+    )
+
+
+def _merge_fleet_cluster(
+    existing: FeedCluster, killmail_ids: list[int]
+) -> FeedCluster:
+    merged_ids = sorted(set(existing.killmail_ids or []) | set(killmail_ids))
+    killmails = list(FeedKillmail.objects.filter(killmail_id__in=merged_ids))
+    stats = _build_cluster_stats(killmails)
+    existing.dominant_faction_id = stats["dominant_faction_id"]
+    existing.started_at = stats["started_at"]
+    existing.last_kill_at = stats["last_kill_at"]
+    existing.kill_count = stats["kill_count"]
+    existing.pilot_count = stats["pilot_count"]
+    existing.ship_counts = stats["ship_counts"]
+    existing.attacker_ids = stats["attacker_ids"]
+    existing.killmail_ids = stats["killmail_ids"]
+    existing.is_active = True
+    existing.ended_at = None
+    existing.save()
+    return existing
+
+
+def _cluster_defaults(
+    cluster_type: str,
+    solar_system_id: int,
+    stats: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "cluster_type": cluster_type,
+        "solar_system_id": solar_system_id,
+        "dominant_faction_id": stats["dominant_faction_id"],
+        "started_at": stats["started_at"],
+        "last_kill_at": stats["last_kill_at"],
+        "kill_count": stats["kill_count"],
+        "pilot_count": stats["pilot_count"],
+        "ship_counts": stats["ship_counts"],
+        "attacker_ids": stats["attacker_ids"],
+        "killmail_ids": stats["killmail_ids"],
+        "is_active": cluster_type == FeedCluster.ClusterType.FLEET_ENGAGEMENT,
+    }
 
 
 def _build_cluster_stats(killmails: list[FeedKillmail]) -> dict[str, Any]:
@@ -157,29 +220,42 @@ def _sliding_window_clusters(
         if len(window_kills) >= min_kills:
             stats = _build_cluster_stats(window_kills)
             if stats["pilot_count"] >= min_pilots:
-                started_bucket = _window_start(window_start, window_minutes)
-                key = _cluster_key(
-                    cluster_type,
-                    solar_system_id,
-                    stats["dominant_faction_id"],
-                    started_bucket,
-                )
+                if cluster_type == FeedCluster.ClusterType.FLEET_ENGAGEMENT:
+                    stale_minutes = get_rollup_config("fleet_active").get(
+                        "stale_minutes", 20
+                    )
+                    existing = _find_active_fleet_cluster(
+                        solar_system_id,
+                        stats["dominant_faction_id"],
+                        window_start,
+                        stale_minutes=stale_minutes,
+                    )
+                    if existing is not None:
+                        _merge_fleet_cluster(existing, stats["killmail_ids"])
+                        upserted += 1
+                        i = j
+                        continue
+                    key = _cluster_key(
+                        cluster_type,
+                        solar_system_id,
+                        stats["dominant_faction_id"],
+                        stats["started_at"],
+                    )
+                else:
+                    started_bucket = _window_start(
+                        window_start, window_minutes
+                    )
+                    key = _cluster_key(
+                        cluster_type,
+                        solar_system_id,
+                        stats["dominant_faction_id"],
+                        started_bucket,
+                    )
                 FeedCluster.objects.update_or_create(
                     cluster_key=key,
-                    defaults={
-                        "cluster_type": cluster_type,
-                        "solar_system_id": solar_system_id,
-                        "dominant_faction_id": stats["dominant_faction_id"],
-                        "started_at": stats["started_at"],
-                        "last_kill_at": stats["last_kill_at"],
-                        "kill_count": stats["kill_count"],
-                        "pilot_count": stats["pilot_count"],
-                        "ship_counts": stats["ship_counts"],
-                        "attacker_ids": stats["attacker_ids"],
-                        "killmail_ids": stats["killmail_ids"],
-                        "is_active": cluster_type
-                        == FeedCluster.ClusterType.FLEET_ENGAGEMENT,
-                    },
+                    defaults=_cluster_defaults(
+                        cluster_type, solar_system_id, stats
+                    ),
                 )
                 upserted += 1
                 i = j
