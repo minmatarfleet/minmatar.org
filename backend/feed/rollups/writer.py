@@ -4,7 +4,6 @@ from django.utils import timezone
 
 from feed.models import (
     FeedEvent,
-    FeedEventAnnouncementLink,
     FeedEventKillmailLink,
     FeedKillmail,
 )
@@ -76,10 +75,3 @@ def _sync_killmail_links(event: FeedEvent, killmail_ids: list[int]) -> None:
             FeedEventKillmailLink.objects.create(
                 feed_event=event, feed_killmail=km
             )
-
-
-def link_announcement_event(event: FeedEvent, announcement_id: int) -> None:
-    FeedEventAnnouncementLink.objects.update_or_create(
-        feed_event=event,
-        defaults={"feed_announcement_id": announcement_id},
-    )

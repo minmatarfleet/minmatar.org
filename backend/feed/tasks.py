@@ -7,11 +7,15 @@ from django.utils import timezone
 
 from app.celery import app
 from feed.constants import FEED_KILLMAIL_RETENTION_DAYS
+from feed.helpers.affiliations import (
+    populate_pending_character_affiliations_batch,
+    refresh_stale_character_affiliations_batch,
+)
 from feed.helpers.clusters import detect_clusters
 from feed.helpers.r2z2 import poll_r2z2_batch
-from feed.models import FeedEvent, FeedKillmail
+from feed.models import FeedKillmail
 from feed.rollups.registry import build_context, run_all_rollups
-from feed.rollups.writer import link_announcement_event, write_rollup_results
+from feed.rollups.writer import write_rollup_results
 
 logger = logging.getLogger(__name__)
 
@@ -37,17 +41,9 @@ def run_feed_rollups(*, since_hours: int = 48) -> int:
     ctx = build_context(since, now)
     results = run_all_rollups(
         ctx,
-        codes=["kill_burst", "fleet_active", "communication"],
+        codes=["kill_burst", "fleet_active"],
     )
     written = write_rollup_results(results)
-    for result in results:
-        if result.source_type == "announcement" and result.source_id:
-            event = FeedEvent.objects.get(
-                rollup_code=result.rollup_code,
-                source_type=result.source_type,
-                source_id=result.source_id,
-            )
-            link_announcement_event(event, result.source_id)
     logger.info("Wrote %s feed rollup events", written)
     return written
 
@@ -61,6 +57,20 @@ def run_militia_rollups(*, since_hours: int = 48) -> int:
     written = write_rollup_results(results)
     logger.info("Wrote %s militia rollup events", written)
     return written
+
+
+@app.task(queue="celery")
+def populate_feed_affiliations() -> dict:
+    updated = populate_pending_character_affiliations_batch()
+    logger.info("Feed character affiliation populate complete: %s", updated)
+    return {"characters": updated}
+
+
+@app.task(queue="celery")
+def refresh_feed_affiliations() -> dict:
+    updated = refresh_stale_character_affiliations_batch()
+    logger.info("Feed character affiliation refresh complete: %s", updated)
+    return {"characters": updated}
 
 
 @app.task(queue="celery")

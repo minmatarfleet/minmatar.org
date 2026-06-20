@@ -1,10 +1,9 @@
 from django.contrib import admin
 
 from feed.models import (
-    FeedAnnouncement,
+    FeedCharacterAffiliation,
     FeedCluster,
     FeedEvent,
-    FeedEventAnnouncementLink,
     FeedEventFleetLink,
     FeedEventKillmailLink,
     FeedKillmail,
@@ -47,17 +46,16 @@ class FeedMilitiaFirstSeenAdmin(admin.ModelAdmin):
     list_filter = ("faction_id", "role")
 
 
-@admin.register(FeedAnnouncement)
-class FeedAnnouncementAdmin(admin.ModelAdmin):
+@admin.register(FeedCharacterAffiliation)
+class FeedCharacterAffiliationAdmin(admin.ModelAdmin):
     list_display = (
-        "title",
-        "author_display",
-        "is_published",
-        "published_at",
-        "expires_at",
+        "character_id",
+        "faction_id",
+        "corporation_id",
+        "esi_checked_at",
     )
-    list_filter = ("is_published",)
-    search_fields = ("title", "message", "author_display")
+    list_filter = ("faction_id",)
+    search_fields = ("character_id",)
 
 
 @admin.register(FeedCluster)
@@ -102,5 +100,4 @@ class FeedR2z2CursorAdmin(admin.ModelAdmin):
 
 
 admin.site.register(FeedEventKillmailLink)
-admin.site.register(FeedEventAnnouncementLink)
 admin.site.register(FeedEventFleetLink)

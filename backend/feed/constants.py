@@ -39,6 +39,71 @@ DEFAULT_ROLLUP_CONFIG: dict[str, dict] = {
         "window_minutes": 15,
         "min_kills": 8,
     },
+    "engagement_copy": {
+        "tiers": [
+            {
+                "code": "small",
+                "min_kills": 8,
+                "min_pilots": 6,
+                "generic_title": "Small skirmish in {system}",
+                "militia_title": "{faction} patrol clash",
+                "preview": "Light contact on the front.",
+                "previews": {
+                    "generic": "Brief exchange — {ships}.",
+                    "militia": "Militia pilots trading blows — {ships}.",
+                },
+            },
+            {
+                "code": "medium",
+                "min_kills": 14,
+                "min_pilots": 12,
+                "generic_title": "Medium skirmish in {system}",
+                "militia_title": "{faction} skirmish",
+                "preview": "Sustained fighting reported.",
+                "previews": {
+                    "generic": "Skirmish escalating — {ships}.",
+                    "militia": "Enlisted pilots holding the line — {ships}.",
+                },
+            },
+            {
+                "code": "large",
+                "min_kills": 22,
+                "min_pilots": 18,
+                "generic_title": "Large skirmish in {system}",
+                "militia_title": "{faction} fleet engagement",
+                "preview": "Heavy fighting across multiple hull types.",
+                "previews": {
+                    "generic": "Large skirmish brewing — {ships}.",
+                    "militia": "Organized militia presence — {ships}.",
+                },
+            },
+            {
+                "code": "heavy",
+                "min_kills": 35,
+                "min_pilots": 28,
+                "generic_title": "Heavy engagement in {system}",
+                "militia_title": "Large {faction} fleet fight",
+                "preview": "Major fight with broad ship losses.",
+                "previews": {
+                    "generic": "Heavy engagement underway — {ships}.",
+                    "militia": "Large organized militia fight — {ships}.",
+                },
+            },
+            {
+                "code": "major",
+                "min_kills": 50,
+                "min_pilots": 40,
+                "generic_title": "Major engagement in {system}",
+                "militia_title": "Major {faction} operation",
+                "preview": "Significant battle on the warzone front.",
+                "previews": {
+                    "generic": "Major engagement — {ships} among the losses.",
+                    "militia": "Major militia operation — {ships}.",
+                },
+                "militia_active_preview": "Major militia operation underway on the front.",
+            },
+        ],
+    },
     "fleet_active": {
         "window_minutes": 20,
         "min_kills": 5,
@@ -52,11 +117,16 @@ DEFAULT_ROLLUP_CONFIG: dict[str, dict] = {
         "hourly_window_hours": 1,
         "daily_window_hours": 24,
     },
+    "affiliation_sync": {
+        "populate_batch_size": 200,
+        "refresh_batch_size": 150,
+        "refresh_stale_hours": 168,
+        "esi_affiliation_chunk_size": 1000,
+    },
 }
 
 ROLLUP_VERSIONS: dict[str, int] = {
-    "kill_burst": 1,
-    "fleet_active": 1,
+    "kill_burst": 2,
+    "fleet_active": 2,
     "militia_joins": 1,
-    "communication": 1,
 }

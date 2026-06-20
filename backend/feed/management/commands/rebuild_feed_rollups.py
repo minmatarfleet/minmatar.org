@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from feed.models import FeedEvent
 from feed.rollups.registry import ROLLUP_PROCESSORS, build_context, run_rollup
-from feed.rollups.writer import link_announcement_event, write_rollup_results
+from feed.rollups.writer import write_rollup_results
 
 
 class Command(BaseCommand):
@@ -44,14 +44,6 @@ class Command(BaseCommand):
         for code in codes:
             results = run_rollup(code, ctx)
             written = write_rollup_results(results)
-            for result in results:
-                if result.source_type == "announcement" and result.source_id:
-                    event = FeedEvent.objects.get(
-                        rollup_code=result.rollup_code,
-                        source_type=result.source_type,
-                        source_id=result.source_id,
-                    )
-                    link_announcement_event(event, result.source_id)
             total += written
             self.stdout.write(f"{code}: wrote {written} events")
 

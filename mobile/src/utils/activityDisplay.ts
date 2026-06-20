@@ -106,9 +106,9 @@ export function mapActivityToCard(item: ActivityItem): ActivityCardContent {
       };
     case 'killmail_batch':
       return {
-        title: `${item.killmail_count ?? 0} killmails in ${item.window_minutes ?? 0} min`,
-        subheader: item.system ?? 'Warzone',
-        preview: truncate(item.summary ?? `Kill burst reported in ${item.system ?? 'the warzone'}.`),
+        title: item.title ?? `${item.killmail_count ?? 0} killmails in ${item.window_minutes ?? 0} min`,
+        subheader: fallbackSubheader(item),
+        preview: truncate(item.summary ?? `Fighting reported in ${item.system ?? 'the warzone'}.`),
       };
     case 'communication':
       return {
@@ -153,7 +153,8 @@ export function mapActivityToDetail(item: ActivityItem): ActivityDetail {
         body: item.summary,
         sections: [
           { label: 'System', value: item.system ?? '—' },
-          { label: 'Killmails', value: String(item.killmail_count ?? 0) },
+          { label: 'Kills', value: String(item.kills ?? item.killmail_count ?? 0) },
+          { label: 'Pilots', value: String(item.pilots ?? '—') },
           { label: 'Window', value: `${item.window_minutes ?? 0} min` },
         ],
       };

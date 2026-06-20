@@ -89,21 +89,35 @@ class FeedMilitiaFirstSeen(models.Model):
         return f"Char {self.character_id} faction {self.faction_id}"
 
 
-class FeedAnnouncement(models.Model):
-    title = models.CharField(max_length=256)
-    message = models.TextField()
-    author_display = models.CharField(max_length=128, blank=True, default="")
-    published_at = models.DateTimeField(null=True, blank=True)
-    expires_at = models.DateTimeField(null=True, blank=True)
-    is_published = models.BooleanField(default=False)
+class FeedCharacterAffiliation(models.Model):
+    """Cached militia enlistment for characters seen in the feed."""
+
+    character_id = models.BigIntegerField(unique=True, db_index=True)
+    faction_id = models.IntegerField(null=True, blank=True, db_index=True)
+    corporation_id = models.BigIntegerField(null=True, blank=True)
+    alliance_id = models.BigIntegerField(null=True, blank=True)
+    esi_checked_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text="When ESI affiliations last confirmed this row.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["-published_at", "-created_at"]
+        indexes = [
+            models.Index(fields=["created_at"]),
+            models.Index(fields=["esi_checked_at"]),
+        ]
+        ordering = ["character_id"]
+
+    @property
+    def esi_checked(self) -> bool:
+        return self.esi_checked_at is not None
 
     def __str__(self) -> str:
-        return self.title
+        return f"Char {self.character_id} -> {self.faction_id}"
 
 
 class FeedCluster(models.Model):
@@ -156,7 +170,6 @@ class FeedEvent(models.Model):
     class Kind(models.TextChoices):
         FLEET_ACTIVE = "fleet_active", "Fleet active"
         KILLMAIL_BATCH = "killmail_batch", "Killmail batch"
-        COMMUNICATION = "communication", "Communication"
         MILITIA_JOINS = "militia_joins", "Militia joins"
 
     class Accent(models.TextChoices):
@@ -226,15 +239,6 @@ class FeedEventKillmailLink(models.Model):
                 name="feed_event_killmail_unique",
             ),
         ]
-
-
-class FeedEventAnnouncementLink(models.Model):
-    feed_event = models.OneToOneField(
-        FeedEvent, on_delete=models.CASCADE, related_name="announcement_link"
-    )
-    feed_announcement = models.ForeignKey(
-        FeedAnnouncement, on_delete=models.CASCADE, related_name="event_links"
-    )
 
 
 class FeedEventFleetLink(models.Model):

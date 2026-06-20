@@ -3,7 +3,10 @@ from __future__ import annotations
 from django.test import TestCase
 
 from feed.constants import FACTION_AMARR, FACTION_MINMATAR
-from feed.helpers.killmail_classify import dominant_attacker_faction
+from feed.helpers.killmail_classify import (
+    dominant_attacker_faction,
+    resolve_attacker_militia_factions,
+)
 
 
 def _killmail(
@@ -142,4 +145,26 @@ class DominantAttackerFactionTestCase(TestCase):
                 ],
             )
         ]
+        self.assertIsNone(dominant_attacker_faction(killmails))
+
+    def test_untagged_pilot_without_affiliation_is_not_inferred(self):
+        killmails = [
+            _killmail(
+                1,
+                [
+                    {
+                        "character_id": 100,
+                        "corporation_id": 98000001,
+                        "faction_id": FACTION_MINMATAR,
+                    },
+                    {
+                        "character_id": 101,
+                        "corporation_id": 98000001,
+                    },
+                ],
+            )
+        ]
+        factions = resolve_attacker_militia_factions(killmails)
+        self.assertEqual(factions.get(100), FACTION_MINMATAR)
+        self.assertNotIn(101, factions)
         self.assertIsNone(dominant_attacker_faction(killmails))

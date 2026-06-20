@@ -4,7 +4,6 @@ from datetime import datetime
 from typing import Callable
 
 from feed.models import FeedMonitoredSystem, FeedRollupConfig
-from feed.rollups.announcement import run_announcement_rollup
 from feed.rollups.config import get_rollup_config
 from feed.rollups.fleet_active import run_fleet_active_rollup
 from feed.rollups.kill_burst import run_kill_burst_rollup
@@ -17,7 +16,6 @@ ROLLUP_PROCESSORS: dict[str, RollupProcessor] = {
     "kill_burst": run_kill_burst_rollup,
     "fleet_active": run_fleet_active_rollup,
     "militia_joins": run_militia_joins_rollup,
-    "communication": run_announcement_rollup,
 }
 
 

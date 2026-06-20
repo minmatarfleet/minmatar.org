@@ -17,7 +17,6 @@ from feed.management.commands.seed_feed_monitored_systems import (
 from feed.models import (
     FeedCluster,
     FeedEvent,
-    FeedEventAnnouncementLink,
     FeedEventFleetLink,
     FeedEventKillmailLink,
     FeedKillmail,
@@ -136,7 +135,6 @@ class Command(BaseCommand):
 
     def _reset_feed_data(self) -> None:
         FeedEventKillmailLink.objects.all().delete()
-        FeedEventAnnouncementLink.objects.all().delete()
         FeedEventFleetLink.objects.all().delete()
         FeedEvent.objects.all().delete()
         FeedCluster.objects.all().delete()

@@ -36,6 +36,8 @@ export function mapApiFeedItemToActivity(item: ApiFeedEventItem): ActivityItem {
         system: (payload.system_name as string) ?? undefined,
         killmail_count: payload.killmail_count as number | undefined,
         window_minutes: payload.window_minutes as number | undefined,
+        kills: payload.kills as number | undefined,
+        pilots: payload.pilots as number | undefined,
         summary: item.preview || item.body || undefined,
       };
     case 'communication':

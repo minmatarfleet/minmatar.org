@@ -327,6 +327,22 @@ CELERYBEAT_FEED = [
         },
     ),
     (
+        "[Feed] Populate affiliations",
+        {
+            "task": "feed.tasks.populate_feed_affiliations",
+            "schedule": schedule(timedelta(minutes=3)),
+            "options": {"queue": "celery"},
+        },
+    ),
+    (
+        "[Feed] Refresh affiliations",
+        {
+            "task": "feed.tasks.refresh_feed_affiliations",
+            "schedule": crontab(minute=15, hour="*/6"),
+            "options": {"queue": "celery"},
+        },
+    ),
+    (
         "[Feed] Purge old killmails",
         {
             "task": "feed.tasks.purge_feed_killmails",

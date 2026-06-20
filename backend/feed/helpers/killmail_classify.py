@@ -4,6 +4,7 @@ from collections import Counter, defaultdict
 from typing import Any
 
 from feed.constants import FACTION_AMARR, FACTION_MINMATAR, MILITIA_FACTION_IDS
+from feed.helpers.affiliations import lookup_character_militia_factions
 
 
 def is_npc_kill(zkb_meta: dict[str, Any]) -> bool:
@@ -61,16 +62,25 @@ def _unique_attacker_character_ids(
     return ids
 
 
-def dominant_attacker_faction(
+def _attacker_corporation_ids(
     killmails: list[dict[str, Any]],
-    *,
-    threshold: float = 0.75,
-) -> int | None:
-    """Return militia faction only if enough unique attackers are enlisted."""
-    all_attackers = _unique_attacker_character_ids(killmails)
-    if not all_attackers:
-        return None
+) -> dict[int, int]:
+    """Map each attacker to their most common corporation in the kill batch."""
+    char_corps: dict[int, Counter[int]] = defaultdict(Counter)
+    for km in killmails:
+        for attacker in _attacker_rows(km):
+            char_id = attacker.get("character_id")
+            corp_id = attacker.get("corporation_id")
+            if not char_id or not corp_id or corp_id == 1000125:
+                continue
+            char_corps[char_id][corp_id] += 1
+    return {
+        char_id: counts.most_common(1)[0][0]
+        for char_id, counts in char_corps.items()
+    }
 
+
+def _esi_militia_factions(killmails: list[dict[str, Any]]) -> dict[int, int]:
     char_faction_counts: dict[int, Counter[int]] = defaultdict(Counter)
     for km in killmails:
         for attacker in _attacker_rows(km):
@@ -81,21 +91,105 @@ def dominant_attacker_faction(
             if faction_id in MILITIA_FACTION_IDS:
                 char_faction_counts[char_id][faction_id] += 1
 
-    faction_pilots: Counter[int] = Counter()
-    for char_id in all_attackers:
-        counts = char_faction_counts.get(char_id)
-        if not counts:
-            continue
+    resolved: dict[int, int] = {}
+    for char_id, counts in char_faction_counts.items():
         faction_id, _ = counts.most_common(1)[0]
-        faction_pilots[faction_id] += 1
+        resolved[char_id] = faction_id
+    return resolved
+
+
+def resolve_attacker_militia_factions(
+    killmails: list[dict[str, Any]],
+) -> dict[int, int]:
+    """Resolve enlisted pilots from killmail tags and feed character affiliations."""
+    all_attackers = _unique_attacker_character_ids(killmails)
+    if not all_attackers:
+        return {}
+
+    resolved = _esi_militia_factions(killmails)
+    remaining = all_attackers - resolved.keys()
+    if remaining:
+        resolved.update(lookup_character_militia_factions(remaining))
+    return resolved
+
+
+def _dominant_faction_for_pilots(
+    pilot_ids: set[int],
+    char_factions: dict[int, int],
+    *,
+    threshold: float,
+) -> int | None:
+    if not pilot_ids:
+        return None
+
+    faction_pilots: Counter[int] = Counter()
+    for char_id in pilot_ids:
+        faction_id = char_factions.get(char_id)
+        if faction_id in MILITIA_FACTION_IDS:
+            faction_pilots[faction_id] += 1
 
     if not faction_pilots:
         return None
 
     faction_id, pilot_count = faction_pilots.most_common(1)[0]
-    if pilot_count / len(all_attackers) >= threshold:
+    if pilot_count / len(pilot_ids) >= threshold:
         return faction_id
     return None
+
+
+def _dominant_militia_bloc_faction(
+    killmails: list[dict[str, Any]],
+    char_factions: dict[int, int],
+    *,
+    threshold: float,
+    min_bloc_pilots: int = 6,
+) -> int | None:
+    """Find an enlisted corporation bloc even when the wider fight is mixed."""
+    char_corps = _attacker_corporation_ids(killmails)
+    blocs: dict[int, set[int]] = defaultdict(set)
+    for char_id, corp_id in char_corps.items():
+        blocs[corp_id].add(char_id)
+
+    best_faction: int | None = None
+    best_pilot_count = 0
+    for pilots in blocs.values():
+        if len(pilots) < min_bloc_pilots:
+            continue
+        faction_id = _dominant_faction_for_pilots(
+            pilots, char_factions, threshold=threshold
+        )
+        if faction_id is None:
+            continue
+        if len(pilots) > best_pilot_count:
+            best_faction = faction_id
+            best_pilot_count = len(pilots)
+    return best_faction
+
+
+def dominant_attacker_faction(
+    killmails: list[dict[str, Any]],
+    *,
+    threshold: float = 0.75,
+    min_bloc_pilots: int = 6,
+) -> int | None:
+    """Return militia faction when the fight or a corporation bloc is enlisted."""
+    all_attackers = _unique_attacker_character_ids(killmails)
+    if not all_attackers:
+        return None
+
+    char_factions = resolve_attacker_militia_factions(killmails)
+    overall = _dominant_faction_for_pilots(
+        all_attackers, char_factions, threshold=threshold
+    )
+    if overall is not None:
+        return overall
+
+    return _dominant_militia_bloc_faction(
+        killmails,
+        char_factions,
+        threshold=threshold,
+        min_bloc_pilots=min_bloc_pilots,
+    )
 
 
 def top_ship_names(
@@ -108,7 +202,6 @@ def top_ship_names(
         ship_type_id = victim.get("ship_type_id")
         if ship_type_id:
             type_counts[ship_type_id] += 1
-    # Without type name lookup, use type IDs as strings
     return [str(tid) for tid, _ in type_counts.most_common(limit)]
 
 

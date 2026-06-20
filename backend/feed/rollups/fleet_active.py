@@ -9,6 +9,7 @@ from feed.helpers.killmail_classify import (
 )
 from feed.models import FeedCluster, FeedEvent, FeedKillmail
 from feed.rollups.config import get_rollup_config, get_rollup_version
+from feed.rollups.engagement_copy import build_militia_engagement_copy
 from feed.rollups.types import RollupContext, RollupResult
 
 
@@ -129,30 +130,33 @@ def run_fleet_active_rollup(ctx: RollupContext) -> list[RollupResult]:
         if faction_id is None or cluster.pilot_count <= 5:
             continue
         system = _system_name(ctx, cluster.solar_system_id)
-        title = f"{_faction_label(faction_id)} fleet active"
-        composition = ""
-        if cluster.ship_counts:
-            composition = ", ".join(list(cluster.ship_counts.keys())[:5])
-        subheader = f"{system} · {cluster.kill_count} kills · {cluster.pilot_count} pilots"
-        preview = composition or "Active on front lines."
+        engagement_start = engagement_start_by_key[key]
+        copy = build_militia_engagement_copy(
+            faction_label=_faction_label(faction_id),
+            system=system,
+            kills=cluster.kill_count,
+            pilots=cluster.pilot_count,
+            started_at=engagement_start,
+            last_kill_at=cluster.last_kill_at,
+            ship_counts=cluster.ship_counts or {},
+            is_active=cluster.is_active,
+        )
         faction_key = faction_to_accent_key(faction_id)
         results.append(
             RollupResult(
                 kind=FeedEvent.Kind.FLEET_ACTIVE,
                 occurred_at=cluster.last_kill_at,
-                title=title,
-                subheader=subheader,
-                preview=preview,
-                body=composition,
+                title=copy.title,
+                subheader=copy.subheader,
+                preview=copy.preview,
+                body=copy.preview,
                 accent=_accent_for_faction(faction_id),
                 payload={
                     "faction": faction_key,
                     "system_id": cluster.solar_system_id,
                     "system_name": system,
-                    "kills": cluster.kill_count,
-                    "pilots": cluster.pilot_count,
-                    "is_active": cluster.is_active,
                     "related_cluster_key": cluster.cluster_key,
+                    **copy.payload_extra,
                 },
                 rollup_code="fleet_active",
                 rollup_version=version,

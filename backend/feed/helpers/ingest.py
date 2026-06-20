@@ -5,6 +5,7 @@ from typing import Any
 from django.db import transaction
 from django.utils.dateparse import parse_datetime
 
+from feed.helpers.affiliations import apply_killmail_affiliations
 from feed.helpers.killmail_classify import (
     extract_militia_character_ids,
     is_npc_kill,
@@ -82,6 +83,7 @@ def upsert_feed_killmail_from_r2z2(
             },
         )
         _record_militia_first_seen(killmail, raw)
+        apply_killmail_affiliations(raw, confirmed_at=killmail_time)
     return killmail
 
 

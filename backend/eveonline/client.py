@@ -896,6 +896,19 @@ class EsiClient:
         )
         return self._operation_results(operation)
 
+    def get_character_fw_stats(self) -> EsiResponse:
+        """Return FW stats for the authenticated character."""
+        required_scopes = ["esi-characters.read_fw_stats.v1"]
+        token, status = self._valid_token(required_scopes)
+        if status > 0:
+            return EsiResponse(status)
+
+        operation = esi_provider.client.FactionWarfare.get_characters_character_id_fw_stats(
+            character_id=self.character.character_id,
+            token=token,
+        )
+        return self._operation_results(operation)
+
     def get_corp_structures(self, corp_id: int) -> EsiResponse:
         """
         Returns all the structures owned by a corp
