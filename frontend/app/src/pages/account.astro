@@ -47,6 +47,9 @@ try {
     if (readiness_character_id === 0)
         character_errors = character_errors.filter(character_error => character_error.error !== 'NO_TAGS')
 } catch (error) {
+    if (error.cause === 401)
+        return Astro.redirect(translatePath(`/auth/logout?redirect=${translatePath('/redirects/auth_init')}`))
+
     get_characters_error = error
     readonly = true
 }
