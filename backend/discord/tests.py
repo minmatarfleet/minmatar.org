@@ -92,6 +92,25 @@ class DiscordSignalTests(TestCase):
             discord_mock.get_roles.assert_called()
             discord_mock.create_role.assert_called_with("testgroup")
 
+    def test_user_group_change_signals_via_group_user_set(self):
+        with patch("discord.signals.discord") as discord_mock:
+            discord_mock.get_roles.return_value = []
+            discord_mock.create_role.return_value.json.return_value = {
+                "id": 2,
+            }
+
+            DiscordUser.objects.create(
+                id=2,
+                discord_tag="tag2",
+                user=self.user,
+            )
+            group = Group.objects.create(name="reversegroup")
+
+            group.user_set.add(self.user)
+
+            discord_mock.get_roles.assert_called()
+            discord_mock.create_role.assert_called_with("reversegroup")
+
 
 class DiscordTests(TestCase):
     """

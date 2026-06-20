@@ -18,12 +18,84 @@ def _window_start(dt, minutes: int):
 
 
 def _cluster_key(
-    cluster_type: str, solar_system_id: int, faction_id: int | None, started_at
+    cluster_type: str,
+    solar_system_id: int,
+    faction_id: int | None,
+    started_at,
+    *,
+    include_faction: bool = True,
 ) -> str:
     faction = faction_id if faction_id is not None else 0
     if hasattr(started_at, "replace"):
         started_at = started_at.replace(second=0, microsecond=0)
-    return f"{cluster_type}:{solar_system_id}:{faction}:{started_at.strftime('%Y-%m-%dT%H:%M')}"
+    if include_faction:
+        return (
+            f"{cluster_type}:{solar_system_id}:{faction}:"
+            f"{started_at.strftime('%Y-%m-%dT%H:%M')}"
+        )
+    return (
+        f"{cluster_type}:{solar_system_id}:"
+        f"{started_at.strftime('%Y-%m-%dT%H:%M')}"
+    )
+
+
+def _kill_burst_bucket_suffix(started_bucket) -> str:
+    if hasattr(started_bucket, "replace"):
+        started_bucket = started_bucket.replace(second=0, microsecond=0)
+    return started_bucket.strftime("%Y-%m-%dT%H:%M")
+
+
+def _upsert_kill_burst_cluster(
+    solar_system_id: int,
+    started_bucket,
+    stats: dict[str, Any],
+) -> None:
+    """One kill_burst cluster per system/time bucket regardless of faction."""
+    bucket_suffix = _kill_burst_bucket_suffix(started_bucket)
+    prefix = f"{FeedCluster.ClusterType.KILL_BURST}:{solar_system_id}:"
+    siblings = [
+        cluster
+        for cluster in FeedCluster.objects.filter(
+            cluster_type=FeedCluster.ClusterType.KILL_BURST,
+            solar_system_id=solar_system_id,
+        )
+        if cluster.cluster_key.startswith(prefix)
+        and cluster.cluster_key.endswith(f":{bucket_suffix}")
+    ]
+
+    merged_ids = set(stats["killmail_ids"])
+    for sibling in siblings:
+        merged_ids |= set(sibling.killmail_ids or [])
+
+    if len(merged_ids) > len(stats["killmail_ids"]):
+        killmails = list(
+            FeedKillmail.objects.filter(killmail_id__in=merged_ids)
+        )
+        stats = _build_cluster_stats(killmails)
+
+    canonical_key = _cluster_key(
+        FeedCluster.ClusterType.KILL_BURST,
+        solar_system_id,
+        None,
+        started_bucket,
+        include_faction=False,
+    )
+    FeedCluster.objects.update_or_create(
+        cluster_key=canonical_key,
+        defaults=_cluster_defaults(
+            FeedCluster.ClusterType.KILL_BURST,
+            solar_system_id,
+            stats,
+        ),
+    )
+
+    stale_keys = [
+        cluster.pk
+        for cluster in siblings
+        if cluster.cluster_key != canonical_key
+    ]
+    if stale_keys:
+        FeedCluster.objects.filter(pk__in=stale_keys).delete()
 
 
 def _find_active_fleet_cluster(
@@ -240,22 +312,21 @@ def _sliding_window_clusters(
                         stats["dominant_faction_id"],
                         stats["started_at"],
                     )
+                    FeedCluster.objects.update_or_create(
+                        cluster_key=key,
+                        defaults=_cluster_defaults(
+                            cluster_type, solar_system_id, stats
+                        ),
+                    )
                 else:
                     started_bucket = _window_start(
                         window_start, window_minutes
                     )
-                    key = _cluster_key(
-                        cluster_type,
+                    _upsert_kill_burst_cluster(
                         solar_system_id,
-                        stats["dominant_faction_id"],
                         started_bucket,
+                        stats,
                     )
-                FeedCluster.objects.update_or_create(
-                    cluster_key=key,
-                    defaults=_cluster_defaults(
-                        cluster_type, solar_system_id, stats
-                    ),
-                )
                 upserted += 1
                 i = j
                 continue

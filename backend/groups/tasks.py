@@ -364,19 +364,19 @@ def sync_eve_corporation_groups():
 
         try:
             if to_add:
-                group.user_set.add(*User.objects.filter(id__in=to_add))
-                for user_id in to_add:
+                for user in User.objects.filter(id__in=to_add):
+                    user.groups.add(group)
                     logger.info(
                         "User %s qualifies for corporation group %s, adding",
-                        user_id,
+                        user.id,
                         group.name,
                     )
             if to_remove:
-                group.user_set.remove(*User.objects.filter(id__in=to_remove))
-                for user_id in to_remove:
+                for user in User.objects.filter(id__in=to_remove):
+                    user.groups.remove(group)
                     logger.info(
                         "User %s no longer qualifies for corporation group %s, removing",
-                        user_id,
+                        user.id,
                         group.name,
                     )
         except Exception as e:

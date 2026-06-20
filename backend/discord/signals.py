@@ -72,54 +72,75 @@ def _discord_role_call(
     return True
 
 
-def _user_group_pre_add(instance, model, pk_set):
+def _discord_user_for(user):
+    return getattr(user, "discord_user", None)
+
+
+def _add_user_to_group_discord_role(user, group):
     logger.info("User added to group, adding to discord role")
-    discord_user = instance.discord_user
-    for group_id in pk_set:
-        group = model.objects.get(pk=group_id)
-        logger.debug("Checking group %s", group.name)
-        if not DiscordRole.objects.filter(group=group).exists():
-            logger.warning("No discord role for group %s", group.name)
-            continue
-        if discord_user in group.discord_group.members.all():
-            logger.debug("User already in role, skipping")
-            continue
-        role = DiscordRole.objects.get(group=group)
-        logger.info(
-            "Adding user %s to external discord role %s",
-            discord_user,
-            role,
-        )
-        if not _discord_role_call(
-            instance, discord_user, role, add=True, context="add_user_role"
-        ):
-            continue
-        role.members.add(discord_user)
+    discord_user = _discord_user_for(user)
+    if discord_user is None:
+        logger.error("Group change without discord user")
+        return
+    logger.debug("Checking group %s", group.name)
+    if not DiscordRole.objects.filter(group=group).exists():
+        logger.warning("No discord role for group %s", group.name)
+        return
+    if discord_user in group.discord_group.members.all():
+        logger.debug("User already in role, skipping")
+        return
+    role = DiscordRole.objects.get(group=group)
+    logger.info(
+        "Adding user %s to external discord role %s",
+        discord_user,
+        role,
+    )
+    if not _discord_role_call(
+        user, discord_user, role, add=True, context="add_user_role"
+    ):
+        return
+    role.members.add(discord_user)
 
 
-def _user_group_pre_remove(instance, model, pk_set):
+def _remove_user_from_group_discord_role(user, group):
     logger.info("User removed from group, removing from discord role")
-    discord_user = instance.discord_user
+    discord_user = _discord_user_for(user)
+    if discord_user is None:
+        logger.error("Group change without discord user")
+        return
+    if not DiscordRole.objects.filter(group=group).exists():
+        logger.warning("No discord role for group %s", group.name)
+        return
+    role = DiscordRole.objects.get(group=group)
+    if not _discord_role_call(
+        user, discord_user, role, add=False, context="remove_user_role"
+    ):
+        role.members.remove(discord_user)
+        return
+    role.members.remove(discord_user)
+
+
+def _user_group_pre_add(user, model, pk_set):
     for group_id in pk_set:
         group = model.objects.get(pk=group_id)
-        if not DiscordRole.objects.filter(group=group).exists():
-            logger.warning("No discord role for group %s", group.name)
-            continue
-        role = DiscordRole.objects.get(group=group)
-        if not _discord_role_call(
-            instance, discord_user, role, add=False, context="remove_user_role"
-        ):
-            role.members.remove(discord_user)
-            continue
-        role.members.remove(discord_user)
+        _add_user_to_group_discord_role(user, group)
 
 
-def _user_group_pre_clear(instance):
+def _user_group_pre_remove(user, model, pk_set):
+    for group_id in pk_set:
+        group = model.objects.get(pk=group_id)
+        _remove_user_from_group_discord_role(user, group)
+
+
+def _user_group_pre_clear(user):
     logger.info("User removed from all groups, removing from discord roles")
-    discord_user = instance.discord_user
+    discord_user = _discord_user_for(user)
+    if discord_user is None:
+        logger.error("Group change without discord user")
+        return
     for role in discord_user.groups.all():
         if not _discord_role_call(
-            instance,
+            user,
             discord_user,
             role,
             add=False,
@@ -139,15 +160,41 @@ def user_group_changed(
     sender, instance, action, reverse, model, pk_set, **kwargs
 ):  # pylint: disable=unused-argument
     """Adds user to discord role when added to group"""
-    if not instance.discord_user:
-        logger.error("Group change without discord user")
-        return
     if action == "pre_add":
-        _user_group_pre_add(instance, model, pk_set)
+        if reverse:
+            group = instance
+            for user_id in pk_set:
+                user = model.objects.get(pk=user_id)
+                _add_user_to_group_discord_role(user, group)
+        else:
+            user = instance
+            if _discord_user_for(user) is None:
+                logger.error("Group change without discord user")
+                return
+            _user_group_pre_add(user, model, pk_set)
     elif action == "pre_remove":
-        _user_group_pre_remove(instance, model, pk_set)
+        if reverse:
+            group = instance
+            for user_id in pk_set:
+                user = model.objects.get(pk=user_id)
+                _remove_user_from_group_discord_role(user, group)
+        else:
+            user = instance
+            if _discord_user_for(user) is None:
+                logger.error("Group change without discord user")
+                return
+            _user_group_pre_remove(user, model, pk_set)
     elif action == "pre_clear":
-        _user_group_pre_clear(instance)
+        if reverse:
+            group = instance
+            for user in group.user_set.all():
+                _remove_user_from_group_discord_role(user, group)
+        else:
+            user = instance
+            if _discord_user_for(user) is None:
+                logger.error("Group change without discord user")
+                return
+            _user_group_pre_clear(user)
 
 
 @receiver(
