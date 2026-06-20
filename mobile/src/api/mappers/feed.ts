@@ -32,8 +32,13 @@ function mapShips(payload: Record<string, unknown>): ActivityShip[] | undefined 
       const row = entry as Record<string, unknown>;
       const name = row.name;
       const count = row.count;
+      const type_id = row.type_id;
       if (typeof name !== 'string' || typeof count !== 'number') return null;
-      return { name, count };
+      return {
+        name,
+        count,
+        ...(typeof type_id === 'number' ? { type_id } : {}),
+      };
     })
     .filter((entry): entry is ActivityShip => entry != null);
 }

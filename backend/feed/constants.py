@@ -115,7 +115,7 @@ DEFAULT_ROLLUP_CONFIG: dict[str, dict] = {
 }
 
 ROLLUP_VERSIONS: dict[str, int] = {
-    "kill_burst": 4,
-    "fleet_active": 4,
+    "kill_burst": 5,
+    "fleet_active": 5,
     "militia_joins": 1,
 }

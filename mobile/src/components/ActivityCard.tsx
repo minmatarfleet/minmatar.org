@@ -6,6 +6,7 @@ import type { ActivityItem } from '@/src/types/activity';
 import { colors } from '@/src/theme';
 import { spacing, typography } from '@/src/theme/spacing';
 import { formatTimelineTime } from '@/src/utils/eveTime';
+import { ActivityEntityAvatars } from '@/src/components/ActivityEntityAvatars';
 import {
   ACTIVITY_CARD_MIN_HEIGHT,
   ACTIVITY_PREVIEW_LINES,
@@ -39,7 +40,7 @@ interface ActivityCardProps {
 }
 
 export function ActivityCard({ item, isFirst = false, isLast = false, onView }: ActivityCardProps) {
-  const { title, subheader, preview, entityLine } = mapActivityToCard(item);
+  const { title, subheader, preview } = mapActivityToCard(item);
   const { accent, nodeBg } = getActivityAccent(item);
 
   return (
@@ -71,11 +72,7 @@ export function ActivityCard({ item, isFirst = false, isLast = false, onView }: 
           <Text style={styles.subheader} numberOfLines={1}>
             {subheader}
           </Text>
-          {entityLine ? (
-            <Text style={styles.entityLine} numberOfLines={1}>
-              {entityLine}
-            </Text>
-          ) : null}
+          <ActivityEntityAvatars item={item} />
           <Text style={styles.preview} numberOfLines={ACTIVITY_PREVIEW_LINES}>
             {preview}
           </Text>
@@ -169,13 +166,6 @@ const styles = StyleSheet.create({
     color: colors.faded,
     fontSize: 11,
     lineHeight: 14,
-  },
-  entityLine: {
-    ...typography.caption,
-    color: colors.highlight,
-    fontSize: 10,
-    lineHeight: 13,
-    opacity: 0.85,
   },
   preview: {
     ...typography.caption,

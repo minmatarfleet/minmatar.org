@@ -8,6 +8,9 @@ from eveuniverse.models import EveType
 
 from feed.models import FeedCharacterAffiliation
 
+CAPSULE_GROUP_NAME = "Capsule"
+KNOWN_CAPSULE_TYPE_IDS = frozenset({670})
+
 _HULL_CLASS_PLURALS = {
     "Frigate": "frigates",
     "Destroyer": "destroyers",
@@ -95,14 +98,50 @@ def _resolve_universe_names_via_esi(ids: set[int]) -> dict[int, str]:
     return names
 
 
+def _capsule_type_ids(type_ids: Iterable[int]) -> set[int]:
+    ids = {int(type_id) for type_id in type_ids if type_id}
+    if not ids:
+        return set()
+    capsule_ids = set(
+        EveType.objects.filter(
+            id__in=ids,
+            eve_group__name=CAPSULE_GROUP_NAME,
+        ).values_list("id", flat=True)
+    )
+    capsule_ids.update(KNOWN_CAPSULE_TYPE_IDS & ids)
+    return capsule_ids
+
+
+def without_capsule_ship_counts(
+    ship_counts: dict[str, int] | None,
+) -> dict[str, int]:
+    if not ship_counts:
+        return {}
+    parsed: dict[int, int] = {}
+    for key, count in ship_counts.items():
+        try:
+            parsed[int(key)] = count
+        except (TypeError, ValueError):
+            continue
+    capsule_ids = _capsule_type_ids(parsed.keys())
+    return {
+        str(type_id): loss_count
+        for type_id, loss_count in parsed.items()
+        if type_id not in capsule_ids
+    }
+
+
 def top_ships_from_counts(
     ship_counts: dict[str, int] | None,
     *,
     limit: int = 5,
 ) -> list[dict[str, int | str]]:
-    if not ship_counts:
+    filtered_counts = without_capsule_ship_counts(ship_counts)
+    if not filtered_counts:
         return []
-    sorted_rows = sorted(ship_counts.items(), key=lambda row: -row[1])[:limit]
+    sorted_rows = sorted(filtered_counts.items(), key=lambda row: -row[1])[
+        :limit
+    ]
     parsed_rows: list[tuple[int, int]] = []
     for key, count in sorted_rows:
         try:
@@ -139,11 +178,12 @@ def top_hull_classes_from_counts(
     *,
     limit: int = 3,
 ) -> list[str]:
-    if not ship_counts:
+    filtered_counts = without_capsule_ship_counts(ship_counts)
+    if not filtered_counts:
         return []
 
     type_ids: list[int] = []
-    for key in ship_counts:
+    for key in filtered_counts:
         try:
             type_ids.append(int(key))
         except (TypeError, ValueError):
@@ -160,13 +200,13 @@ def top_hull_classes_from_counts(
     }
 
     class_counts: dict[str, int] = {}
-    for key, count in ship_counts.items():
+    for key, count in filtered_counts.items():
         try:
             type_id = int(key)
         except (TypeError, ValueError):
             continue
         group_name = group_by_type.get(type_id)
-        if not group_name:
+        if not group_name or group_name == CAPSULE_GROUP_NAME:
             continue
         label = _pluralize_hull_class(group_name)
         class_counts[label] = class_counts.get(label, 0) + count

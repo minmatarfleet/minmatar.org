@@ -37,7 +37,6 @@ export interface ActivityCardContent {
   title: string;
   subheader: string;
   preview: string;
-  entityLine?: string;
 }
 
 export interface ActivityDetailSection {
@@ -104,19 +103,11 @@ function fallbackSubheader(item: ActivityItem): string {
 }
 
 export function mapActivityToCard(item: ActivityItem): ActivityCardContent {
-  const entityLine =
-    item.kind === 'fleet_active'
-      ? formatRosterLine(item)
-      : item.kind === 'killmail_batch'
-        ? formatShipsLine(item)
-        : undefined;
-
   if (item.title) {
     return {
       title: item.title,
       subheader: fallbackSubheader(item),
       preview: truncate(item.summary ?? item.message ?? item.composition ?? ''),
-      entityLine,
     };
   }
 
@@ -128,14 +119,12 @@ export function mapActivityToCard(item: ActivityItem): ActivityCardContent {
           .filter(Boolean)
           .join(' · '),
         preview: truncate(item.composition ?? 'Active on front lines.'),
-        entityLine,
       };
     case 'killmail_batch':
       return {
         title: item.title ?? `${item.killmail_count ?? 0} killmails in ${item.window_minutes ?? 0} min`,
         subheader: fallbackSubheader(item),
         preview: truncate(item.summary ?? `Fighting reported in ${item.system ?? 'the warzone'}.`),
-        entityLine,
       };
     case 'communication':
       return {

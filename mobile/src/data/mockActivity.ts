@@ -15,6 +15,13 @@ export const mockActivityFeed: ActivityItem[] = [
     kills: 23,
     pilots: 84,
     composition: 'Abaddon, Armageddon, Guardian · armor BS with Scorpion EWAR support',
+    roster: [
+      { character_id: 634915984, name: 'BearThatCares' },
+      { character_id: 2111111111, name: 'Pilot Two' },
+      { character_id: 2111111112, name: 'Pilot Three' },
+      { character_id: 2111111113, name: 'Pilot Four' },
+    ],
+    roster_total: 84,
   },
   {
     id: 'comm-1',
@@ -33,6 +40,11 @@ export const mockActivityFeed: ActivityItem[] = [
     killmail_count: 47,
     window_minutes: 15,
     summary: 'Heavy fighting at Huola gates. Multiple battleship losses on both sides with logi wing trades.',
+    ships: [
+      { type_id: 22468, name: 'Rupture', count: 4 },
+      { type_id: 16229, name: 'Hurricane', count: 3 },
+      { type_id: 12003, name: 'Scythe', count: 2 },
+    ],
   },
   {
     id: 'fleet-minmatar-1',
@@ -43,6 +55,12 @@ export const mockActivityFeed: ActivityItem[] = [
     kills: 31,
     pilots: 112,
     composition: 'Hurricane, Ferox, Scythe · shield BC with Scimitar logi wing',
+    roster: [
+      { character_id: 90000001, name: 'FC Alpha' },
+      { character_id: 90000002, name: 'Logi One' },
+      { character_id: 90000003, name: 'DPS One' },
+    ],
+    roster_total: 112,
   },
   {
     id: 'militia-1',

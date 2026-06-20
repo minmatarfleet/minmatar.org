@@ -9,6 +9,10 @@ export function getPlayerIcon(id: number, size: EveImageSize = 64): string {
   return `https://images.evetech.net/characters/${id}/portrait?size=${size}`;
 }
 
+export function getTypeIcon(typeId: number, size: EveImageSize = 32): string {
+  return `https://images.evetech.net/types/${typeId}/icon?size=${size}`;
+}
+
 export function getTypeRender(typeId: number, size: EveImageSize = 256): string {
   return `https://images.evetech.net/types/${typeId}/render?size=${size}`;
 }

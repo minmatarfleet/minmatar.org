@@ -12,6 +12,7 @@ export interface ActivityPilot {
 }
 
 export interface ActivityShip {
+  type_id?: number;
   name: string;
   count: number;
 }
