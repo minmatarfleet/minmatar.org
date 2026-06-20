@@ -7,7 +7,7 @@ Astro.cookies.delete('avatar', { path: '/' })
 Astro.cookies.delete('primary_pilot', { path: '/' })
 Astro.cookies.delete('subscription_id', { path: '/' })
 
-const redirect = translatePath('/')
+const redirect = translatePath(Astro.url.searchParams.get('redirect') ?? '/')
 ---
 
 <script define:vars={{ redirect }}>
