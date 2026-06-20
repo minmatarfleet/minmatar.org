@@ -4,6 +4,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
+from feed.helpers.eve_names import (
+    format_hull_classes_phrase,
+    top_ships_from_counts,
+)
 from feed.rollups.config import get_rollup_config
 
 
@@ -25,11 +29,13 @@ def _duration_minutes(started_at: datetime, last_kill_at: datetime) -> int:
     return max(1, int(delta.total_seconds() // 60))
 
 
-def _top_ship_phrase(ship_counts: dict[str, int], *, limit: int = 3) -> str:
-    if not ship_counts:
-        return ""
-    top = sorted(ship_counts.items(), key=lambda row: -row[1])[:limit]
-    return ", ".join(name for name, ship_count in top)
+def _ships_payload(
+    ship_counts: dict[str, int] | None,
+) -> list[dict[str, int | str]]:
+    return [
+        {"name": ship["name"], "count": ship["count"]}
+        for ship in top_ships_from_counts(ship_counts)
+    ]
 
 
 def _resolve_tier(kills: int, pilots: int) -> dict[str, Any]:
@@ -58,22 +64,16 @@ def _stats_subheader(
     return " · ".join(parts)
 
 
-def _preview_for_tier(
+def _skirmish_preview(
     tier: dict[str, Any],
     *,
-    ship_phrase: str,
-    militia: bool,
+    ship_counts: dict[str, int] | None,
 ) -> str:
-    previews = tier.get("previews") or {}
-    key = "militia" if militia else "generic"
-    template = previews.get(key) or tier.get(
-        "preview", "Fighting reported on front lines."
-    )
-    if ship_phrase and "{ships}" in template:
-        return template.format(ships=ship_phrase)
-    if ship_phrase:
-        return f"{template.rstrip('.')} — {ship_phrase}."
-    return template
+    size = tier.get("militia_size", tier["code"].title())
+    hull_phrase = format_hull_classes_phrase(ship_counts)
+    if hull_phrase:
+        return f"{size} skirmish involving {hull_phrase}."
+    return tier.get("preview", "Fighting reported on front lines.")
 
 
 def build_warzone_engagement_copy(
@@ -86,7 +86,6 @@ def build_warzone_engagement_copy(
     ship_counts: dict[str, int] | None = None,
 ) -> EngagementCopy:
     tier = _resolve_tier(kills, pilots)
-    ship_phrase = _top_ship_phrase(ship_counts or {})
     title = tier["generic_title"].format(system=system)
     subheader = _stats_subheader(
         system=system,
@@ -95,7 +94,7 @@ def build_warzone_engagement_copy(
         started_at=started_at,
         last_kill_at=last_kill_at,
     )
-    preview = _preview_for_tier(tier, ship_phrase=ship_phrase, militia=False)
+    preview = _skirmish_preview(tier, ship_counts=ship_counts)
     duration = _duration_minutes(started_at, last_kill_at)
     return EngagementCopy(
         tier=tier["code"],
@@ -108,6 +107,7 @@ def build_warzone_engagement_copy(
             "kills": kills,
             "pilots": pilots,
             "duration_minutes": duration,
+            "ships": _ships_payload(ship_counts),
         },
     )
 
@@ -124,8 +124,11 @@ def build_militia_engagement_copy(
     is_active: bool = True,
 ) -> EngagementCopy:
     tier = _resolve_tier(kills, pilots)
-    ship_phrase = _top_ship_phrase(ship_counts or {})
-    title = tier["militia_title"].format(faction=faction_label)
+    size_label = tier.get("militia_size", tier["code"].title())
+    title = tier["militia_title"].format(
+        faction=faction_label,
+        size=size_label,
+    )
     if not is_active and tier["code"] in {"large", "heavy", "major"}:
         title = f"{title} winds down"
     subheader = _stats_subheader(
@@ -135,8 +138,8 @@ def build_militia_engagement_copy(
         started_at=started_at,
         last_kill_at=last_kill_at,
     )
-    preview = _preview_for_tier(tier, ship_phrase=ship_phrase, militia=True)
-    if not ship_phrase and is_active:
+    preview = _skirmish_preview(tier, ship_counts=ship_counts)
+    if not ship_counts and is_active:
         preview = tier.get("militia_active_preview", preview)
     duration = _duration_minutes(started_at, last_kill_at)
     return EngagementCopy(
@@ -161,61 +164,50 @@ def _default_tiers() -> list[dict[str, Any]]:
             "code": "small",
             "min_kills": 8,
             "min_pilots": 6,
+            "militia_size": "Small",
             "generic_title": "Small skirmish in {system}",
-            "militia_title": "{faction} patrol clash",
+            "militia_title": "{size} {faction} fleet active",
             "preview": "Light contact on the front.",
-            "previews": {
-                "generic": "Brief exchange in {ships}.",
-                "militia": "Militia pilots trading blows — {ships}.",
-            },
+            "militia_active_preview": "Small militia fleet active on the front.",
         },
         {
             "code": "medium",
             "min_kills": 14,
             "min_pilots": 12,
+            "militia_size": "Medium",
             "generic_title": "Medium skirmish in {system}",
-            "militia_title": "{faction} skirmish",
+            "militia_title": "{size} {faction} fleet active",
             "preview": "Sustained fighting reported.",
-            "previews": {
-                "generic": "Skirmish escalating — {ships}.",
-                "militia": "Enlisted pilots holding the line — {ships}.",
-            },
+            "militia_active_preview": "Medium militia fleet active on the front.",
         },
         {
             "code": "large",
             "min_kills": 22,
             "min_pilots": 18,
+            "militia_size": "Large",
             "generic_title": "Large skirmish in {system}",
-            "militia_title": "{faction} fleet engagement",
+            "militia_title": "{size} {faction} fleet active",
             "preview": "Heavy fighting across multiple hull types.",
-            "previews": {
-                "generic": "Large skirmish brewing — {ships}.",
-                "militia": "Organized militia presence — {ships}.",
-            },
+            "militia_active_preview": "Large militia fleet active on the front.",
         },
         {
             "code": "heavy",
             "min_kills": 35,
             "min_pilots": 28,
+            "militia_size": "Heavy",
             "generic_title": "Heavy engagement in {system}",
-            "militia_title": "Large {faction} fleet fight",
+            "militia_title": "{size} {faction} fleet active",
             "preview": "Major fight with broad ship losses.",
-            "previews": {
-                "generic": "Heavy engagement underway — {ships}.",
-                "militia": "Large organized militia fight — {ships}.",
-            },
+            "militia_active_preview": "Heavy militia fleet active on the front.",
         },
         {
             "code": "major",
             "min_kills": 50,
             "min_pilots": 40,
+            "militia_size": "Major",
             "generic_title": "Major engagement in {system}",
-            "militia_title": "Major {faction} operation",
+            "militia_title": "{size} {faction} fleet active",
             "preview": "Significant battle on the warzone front.",
-            "previews": {
-                "generic": "Major engagement — {ships} among the losses.",
-                "militia": "Major militia operation — {ships}.",
-            },
-            "militia_active_preview": "Major militia operation underway on the front.",
+            "militia_active_preview": "Major militia fleet active on the front.",
         },
     ]

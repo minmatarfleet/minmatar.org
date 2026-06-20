@@ -1,6 +1,8 @@
 import type { ActivityItem } from '@/src/types/activity';
 
 const minutesAgo = (m: number) => new Date(Date.now() - m * 60 * 1000);
+const hoursAgo = (h: number) => new Date(Date.now() - h * 60 * 60 * 1000);
+const daysAgo = (d: number) => new Date(Date.now() - d * 24 * 60 * 60 * 1000);
 
 /** Mock warzone activity until live feeds exist. */
 export const mockActivityFeed: ActivityItem[] = [
@@ -112,6 +114,41 @@ export const mockActivityFeed: ActivityItem[] = [
     title: 'Ops update',
     message:
       'Amarr fleet stood down in Lantorn. Minmatar still active on front — watch Kourmonen cyno. Next ping expected at form time.',
+  },
+  {
+    id: 'kills-yesterday',
+    kind: 'killmail_batch',
+    timestamp: hoursAgo(26),
+    system: 'Auga',
+    killmail_count: 19,
+    window_minutes: 15,
+    summary: 'Evening USTZ push through Auga with steady cruiser trades on both sides.',
+  },
+  {
+    id: 'fleet-yesterday',
+    kind: 'fleet_active',
+    timestamp: hoursAgo(30),
+    faction: 'minmatar',
+    system: 'Huola',
+    kills: 17,
+    pilots: 58,
+    composition: 'Hurricane, Scythe, Sabre · shield BC with logi escort',
+  },
+  {
+    id: 'kills-week',
+    kind: 'killmail_batch',
+    timestamp: daysAgo(3),
+    system: 'Kourmonen',
+    killmail_count: 34,
+    window_minutes: 20,
+    summary: 'Weekend flashform chain across Kourmonen and adjacent systems.',
+  },
+  {
+    id: 'militia-week',
+    kind: 'militia_joins',
+    timestamp: daysAgo(5),
+    join_count: 27,
+    summary: 'Mid-week enlistment bump ahead of the Huola timer.',
   },
 ];
 

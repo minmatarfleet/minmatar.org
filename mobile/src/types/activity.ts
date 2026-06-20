@@ -6,6 +6,16 @@ export type ActivityKind =
   | 'communication'
   | 'militia_joins';
 
+export interface ActivityPilot {
+  character_id: number;
+  name: string;
+}
+
+export interface ActivityShip {
+  name: string;
+  count: number;
+}
+
 export interface ActivityItem {
   id: string;
   kind: ActivityKind;
@@ -20,9 +30,12 @@ export interface ActivityItem {
   kills?: number;
   pilots?: number;
   composition?: string;
+  roster?: ActivityPilot[];
+  roster_total?: number;
   /** killmail_batch */
   killmail_count?: number;
   window_minutes?: number;
+  ships?: ActivityShip[];
   /** communication */
   author?: string;
   message?: string;

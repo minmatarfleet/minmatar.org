@@ -7,6 +7,7 @@ from feed.helpers.killmail_classify import (
     dominant_attacker_faction,
     faction_to_accent_key,
 )
+from feed.helpers.eve_names import sample_fleet_roster
 from feed.models import FeedCluster, FeedEvent, FeedKillmail
 from feed.rollups.config import get_rollup_config, get_rollup_version
 from feed.rollups.engagement_copy import build_militia_engagement_copy
@@ -141,6 +142,11 @@ def run_fleet_active_rollup(ctx: RollupContext) -> list[RollupResult]:
             ship_counts=cluster.ship_counts or {},
             is_active=cluster.is_active,
         )
+        roster, roster_total = sample_fleet_roster(
+            cluster.attacker_ids,
+            faction_id=faction_id,
+            limit=8,
+        )
         faction_key = faction_to_accent_key(faction_id)
         results.append(
             RollupResult(
@@ -156,6 +162,8 @@ def run_fleet_active_rollup(ctx: RollupContext) -> list[RollupResult]:
                     "system_id": cluster.solar_system_id,
                     "system_name": system,
                     "related_cluster_key": cluster.cluster_key,
+                    "roster": roster,
+                    "roster_total": roster_total,
                     **copy.payload_extra,
                 },
                 rollup_code="fleet_active",

@@ -7,15 +7,15 @@ import { colors } from '@/src/theme';
 import { spacing, typography } from '@/src/theme/spacing';
 import { formatTimelineTime } from '@/src/utils/eveTime';
 import {
-  ACTIVITY_CARD_HEIGHT,
+  ACTIVITY_CARD_MIN_HEIGHT,
   ACTIVITY_PREVIEW_LINES,
   getActivityAccent,
   kindLabel,
   mapActivityToCard,
 } from '@/src/utils/activityDisplay';
 
-const RAIL_WIDTH = 36;
-const NODE_SIZE = 24;
+const RAIL_WIDTH = 28;
+const NODE_SIZE = 18;
 const LINE_WIDTH = 2;
 
 function kindIcon(kind: ActivityItem['kind']): keyof typeof MaterialCommunityIcons.glyphMap {
@@ -39,7 +39,7 @@ interface ActivityCardProps {
 }
 
 export function ActivityCard({ item, isFirst = false, isLast = false, onView }: ActivityCardProps) {
-  const { title, subheader, preview } = mapActivityToCard(item);
+  const { title, subheader, preview, entityLine } = mapActivityToCard(item);
   const { accent, nodeBg } = getActivityAccent(item);
 
   return (
@@ -47,39 +47,39 @@ export function ActivityCard({ item, isFirst = false, isLast = false, onView }: 
       <View style={styles.rail}>
         {!isFirst ? <View style={styles.lineAbove} /> : <View style={styles.railSpacer} />}
         <View style={[styles.node, { borderColor: accent, backgroundColor: nodeBg }]}>
-          <MaterialCommunityIcons name={kindIcon(item.kind)} size={13} color={accent} />
+          <MaterialCommunityIcons name={kindIcon(item.kind)} size={10} color={accent} />
         </View>
         {!isLast ? <View style={styles.lineBelow} /> : null}
       </View>
 
       <View style={styles.content}>
-        <View style={[styles.card, { borderLeftColor: accent }]}>
+        <Pressable
+          onPress={() => onView(item)}
+          style={({ pressed }) => [styles.card, { borderLeftColor: accent }, pressed && styles.cardPressed]}
+        >
           <View style={styles.cardHeader}>
             <Text style={[styles.label, { color: accent }]}>{kindLabel(item.kind)}</Text>
-            <Text style={styles.time}>{formatTimelineTime(item.timestamp)}</Text>
+            <View style={styles.headerMeta}>
+              <Text style={styles.time}>{formatTimelineTime(item.timestamp)}</Text>
+              <MaterialCommunityIcons name="chevron-right" size={14} color={accent} />
+            </View>
           </View>
 
-          <View style={styles.cardBody}>
-            <Text style={styles.title} numberOfLines={1}>
-              {title}
+          <Text style={styles.title} numberOfLines={1}>
+            {title}
+          </Text>
+          <Text style={styles.subheader} numberOfLines={1}>
+            {subheader}
+          </Text>
+          {entityLine ? (
+            <Text style={styles.entityLine} numberOfLines={1}>
+              {entityLine}
             </Text>
-            <Text style={styles.subheader} numberOfLines={1}>
-              {subheader}
-            </Text>
-            <Text style={styles.preview} numberOfLines={ACTIVITY_PREVIEW_LINES}>
-              {preview}
-            </Text>
-          </View>
-
-          <Pressable
-            onPress={() => onView(item)}
-            style={({ pressed }) => [styles.viewBtn, pressed && styles.viewBtnPressed]}
-            hitSlop={4}
-          >
-            <Text style={[styles.viewLabel, { color: accent }]}>View</Text>
-            <MaterialCommunityIcons name="chevron-right" size={16} color={accent} />
-          </Pressable>
-        </View>
+          ) : null}
+          <Text style={styles.preview} numberOfLines={ACTIVITY_PREVIEW_LINES}>
+            {preview}
+          </Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -95,11 +95,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   railSpacer: {
-    height: spacing.sm,
+    height: spacing.xs,
   },
   lineAbove: {
     width: LINE_WIDTH,
-    height: spacing.sm,
+    height: spacing.xs,
     backgroundColor: colors.borderHover,
   },
   node: {
@@ -116,74 +116,72 @@ const styles = StyleSheet.create({
   lineBelow: {
     width: LINE_WIDTH,
     flex: 1,
-    minHeight: ACTIVITY_CARD_HEIGHT + spacing.lg,
+    minHeight: ACTIVITY_CARD_MIN_HEIGHT + spacing.md,
     backgroundColor: colors.borderHover,
   },
   content: {
     flex: 1,
-    paddingLeft: spacing.sm,
-    paddingBottom: spacing.lg,
+    paddingLeft: spacing.xs,
+    paddingBottom: spacing.md,
   },
   card: {
-    height: ACTIVITY_CARD_HEIGHT,
+    minHeight: ACTIVITY_CARD_MIN_HEIGHT,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderLeftWidth: 3,
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    gap: 1,
+  },
+  cardPressed: {
+    opacity: 0.85,
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.sm,
+    marginBottom: 2,
   },
-  cardBody: {
-    flex: 1,
+  headerMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 2,
   },
   label: {
     ...typography.overline,
-    fontSize: 9,
+    fontSize: 8,
   },
   time: {
     ...typography.caption,
     color: colors.muted,
-    fontSize: 11,
+    fontSize: 10,
+    lineHeight: 13,
   },
   title: {
     ...typography.bodyStrong,
     color: colors.highlight,
-    fontSize: 14,
-    lineHeight: 18,
+    fontSize: 13,
+    lineHeight: 17,
   },
   subheader: {
     ...typography.caption,
     color: colors.faded,
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 11,
+    lineHeight: 14,
+  },
+  entityLine: {
+    ...typography.caption,
+    color: colors.highlight,
+    fontSize: 10,
+    lineHeight: 13,
+    opacity: 0.85,
   },
   preview: {
     ...typography.caption,
     color: colors.faded,
-    fontSize: 12,
-    lineHeight: 16,
-    marginTop: spacing.xs,
-  },
-  viewBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-end',
-    gap: 2,
-    marginTop: spacing.xs,
-  },
-  viewBtnPressed: {
-    opacity: 0.7,
-  },
-  viewLabel: {
-    ...typography.bodyStrong,
-    fontSize: 12,
+    fontSize: 11,
+    lineHeight: 14,
+    marginTop: 2,
   },
 });

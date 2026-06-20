@@ -1,5 +1,5 @@
 import type { ApiFeedEventItem } from '@/src/api/types/feed';
-import type { ActivityItem, ActivityKind } from '@/src/types/activity';
+import type { ActivityItem, ActivityKind, ActivityPilot, ActivityShip } from '@/src/types/activity';
 
 const KIND_MAP: Record<string, ActivityKind> = {
   fleet_active: 'fleet_active',
@@ -7,6 +7,36 @@ const KIND_MAP: Record<string, ActivityKind> = {
   communication: 'communication',
   militia_joins: 'militia_joins',
 };
+
+function mapRoster(payload: Record<string, unknown>): ActivityPilot[] | undefined {
+  const roster = payload.roster;
+  if (!Array.isArray(roster) || roster.length === 0) return undefined;
+  return roster
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object') return null;
+      const row = entry as Record<string, unknown>;
+      const character_id = row.character_id;
+      const name = row.name;
+      if (typeof character_id !== 'number' || typeof name !== 'string') return null;
+      return { character_id, name };
+    })
+    .filter((entry): entry is ActivityPilot => entry != null);
+}
+
+function mapShips(payload: Record<string, unknown>): ActivityShip[] | undefined {
+  const ships = payload.ships;
+  if (!Array.isArray(ships) || ships.length === 0) return undefined;
+  return ships
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object') return null;
+      const row = entry as Record<string, unknown>;
+      const name = row.name;
+      const count = row.count;
+      if (typeof name !== 'string' || typeof count !== 'number') return null;
+      return { name, count };
+    })
+    .filter((entry): entry is ActivityShip => entry != null);
+}
 
 export function mapApiFeedItemToActivity(item: ApiFeedEventItem): ActivityItem {
   const kind = KIND_MAP[item.kind] ?? 'communication';
@@ -29,6 +59,8 @@ export function mapApiFeedItemToActivity(item: ApiFeedEventItem): ActivityItem {
         kills: payload.kills as number | undefined,
         pilots: payload.pilots as number | undefined,
         composition: item.body || item.preview || undefined,
+        roster: mapRoster(payload),
+        roster_total: payload.roster_total as number | undefined,
       };
     case 'killmail_batch':
       return {
@@ -38,6 +70,7 @@ export function mapApiFeedItemToActivity(item: ApiFeedEventItem): ActivityItem {
         window_minutes: payload.window_minutes as number | undefined,
         kills: payload.kills as number | undefined,
         pilots: payload.pilots as number | undefined,
+        ships: mapShips(payload),
         summary: item.preview || item.body || undefined,
       };
     case 'communication':
