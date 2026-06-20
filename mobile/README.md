@@ -55,8 +55,17 @@ Login uses production **`https://api.minmatar.org`** by default (`EXPO_PUBLIC_AP
 | News, post detail | `GET /api/blog/posts` (public) |
 | Fleets, fleet detail | `GET /api/fleets/v3` (auth + linked account) |
 | Doctrine on fleet detail | `GET /api/doctrines/{id}` (public) |
-| Warzone on Pulse | `src/data/mockWarzone.ts` — top 2 Amarr/Minmatar contested + hottest kills (until backend API exists) |
-| Activity feed | `src/data/mockActivity.ts` — fleet snapshots, kill batches, comms, militia joins (until backend API exists) |
+| Warzone on Pulse | `GET /api/feed/warzone` — contested cards + 24h changes table |
+| Activity feed | `GET /api/feed` (public) |
+
+**Warzone data:** requires migration `feed.0007_feed_system_contested_snapshot` and the hourly Celery task `[Feed] Poll FW contested %` (runs at `:50`). The changes table compares the latest reading to the oldest snapshot within the last 24 hours — no full day of history required.
+
+Local dev fake deltas:
+
+```bash
+cd backend
+pipenv run python manage.py seed_warzone_contested_dev --clear
+```
 
 ## Stack
 

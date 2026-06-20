@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import { Text } from 'react-native-paper';
 
 import { PulseSectionCard, PulseSubsection } from '@/src/components/PulseSectionCard';
+import { WarzoneChangesTable } from '@/src/components/WarzoneChangesTable';
 import { WarzoneHotRow } from '@/src/components/WarzoneHotRow';
 import type { WarzoneBriefing } from '@/src/types/warzone';
 import { colors } from '@/src/theme';
@@ -12,16 +13,21 @@ interface WarzonePanelProps {
 }
 
 export function WarzonePanel({ briefing }: WarzonePanelProps) {
-  const { amarrContested, minmatarContested, hotKills } = briefing;
+  const { amarrContested, minmatarContested, hotKills, changes24h, hasFull24hWindow } =
+    briefing;
   const hasContent =
-    amarrContested.length + minmatarContested.length + (hotKills ? 1 : 0) > 0;
+    amarrContested.length +
+      minmatarContested.length +
+      (hotKills ? 1 : 0) +
+      changes24h.length >
+    0;
 
   if (!hasContent) return null;
 
   return (
     <PulseSectionCard
       title="Warzone"
-      subtitle="Contested %, 24h change, and kills per system"
+      subtitle="Current state of the war effort"
       badge="24H"
     >
       {hotKills ? (
@@ -46,6 +52,13 @@ export function WarzonePanel({ briefing }: WarzonePanelProps) {
           ))}
         </PulseSubsection>
       ) : null}
+
+      <PulseSubsection label="What moved">
+        <WarzoneChangesTable
+          systems={changes24h}
+          hasFull24hWindow={hasFull24hWindow}
+        />
+      </PulseSubsection>
     </PulseSectionCard>
   );
 }

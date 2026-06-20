@@ -6,12 +6,9 @@ from django.db import transaction
 from django.utils.dateparse import parse_datetime
 
 from feed.helpers.affiliations import apply_killmail_affiliations
-from feed.helpers.killmail_classify import (
-    extract_militia_character_ids,
-    is_npc_kill,
-)
+from feed.helpers.killmail_classify import is_npc_kill
 from feed.helpers.monitored_systems import is_monitored_system
-from feed.models import FeedKillmail, FeedMilitiaFirstSeen
+from feed.models import FeedKillmail
 
 
 def parse_r2z2_payload(
@@ -82,25 +79,8 @@ def upsert_feed_killmail_from_r2z2(
                 "zkill_sequence_id": sequence_id,
             },
         )
-        _record_militia_first_seen(killmail, raw)
         apply_killmail_affiliations(raw, confirmed_at=killmail_time)
     return killmail
-
-
-def _record_militia_first_seen(
-    killmail: FeedKillmail, raw: dict[str, Any]
-) -> None:
-    for character_id, faction_id, role in extract_militia_character_ids(raw):
-        FeedMilitiaFirstSeen.objects.get_or_create(
-            character_id=character_id,
-            faction_id=faction_id,
-            defaults={
-                "first_seen_at": killmail.killmail_time,
-                "first_seen_killmail_id": killmail.killmail_id,
-                "role": role,
-                "solar_system_id": killmail.solar_system_id,
-            },
-        )
 
 
 def upsert_feed_killmail_from_raw(

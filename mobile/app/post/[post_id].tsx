@@ -8,16 +8,22 @@ import { Text } from 'react-native-paper';
 
 import { buildTagMap, mapApiPostToDetail } from '@/src/api/mappers/posts';
 import { getPost, listTags } from '@/src/api/posts';
-import { getUserProfiles } from '@/src/api/users';
 import { RequireAuth } from '@/src/auth/RequireAuth';
 import { AuthorRow } from '@/src/components/AuthorRow';
+import { MediaViewer } from '@/src/components/MediaViewer';
 import { MinmatarButton } from '@/src/components/MinmatarButton';
 import { Tag } from '@/src/components/Tag';
 import type { PostUI } from '@/src/types/posts';
 import { colors } from '@/src/theme';
 import { markdownStyles } from '@/src/theme/markdown';
 import { spacing, typography } from '@/src/theme/spacing';
-import { getPlayerIcon } from '@/src/utils/eveImage';
+import { getPostCoverImage } from '@/src/utils/postAuthor';
+import {
+  extractYoutubeVideoIds,
+  hasReadableMarkdownContent,
+  isVideoPost,
+  stripMediaEmbeds,
+} from '@/src/utils/postMedia';
 
 const tagColorForTag = (tag: string): 'fleet-red' | 'alliance-blue' | 'militia-purple' | 'green' | 'fleet-yellow' => {
   if (tag === 'Frontlines') return 'fleet-red';
@@ -50,13 +56,8 @@ function PostDetailContent() {
         const raw = await getPost(Number(post_id));
         const tags = await listTags();
         const tagById = buildTagMap(tags);
-        const profiles = await getUserProfiles([raw.user_id]);
-        const profile = profiles[0];
-        const characterId = profile?.eve_character_profile?.character_id ?? 0;
-        const authorName =
-          profile?.eve_character_profile?.character_name ?? profile?.username ?? 'Unknown';
         if (active) {
-          setPost(mapApiPostToDetail(raw, tagById, authorName, characterId));
+          setPost(mapApiPostToDetail(raw, tagById));
         }
       } catch {
         if (active) setMissing(true);
@@ -86,22 +87,30 @@ function PostDetailContent() {
     );
   }
 
-  const imageUri = post.image ?? getPlayerIcon(post.author.character_id, 512);
+  const imageUri = getPostCoverImage(post);
+  const videoIds = extractYoutubeVideoIds(post.content);
+  const isVideo = isVideoPost(post.content);
+  const markdownContent = stripMediaEmbeds(post.content);
+  const showMarkdown = hasReadableMarkdownContent(post.content);
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Article', headerBackTitle: 'News' }} />
+      <Stack.Screen options={{ title: isVideo ? 'Video' : 'Article', headerBackTitle: 'News' }} />
       <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-        <View style={styles.hero}>
-          <Image source={{ uri: imageUri }} style={styles.heroImage} contentFit="cover" />
-          <LinearGradient
-            colors={['transparent', colors.scrim, colors.background]}
-            locations={[0.3, 0.7, 1]}
-            style={styles.heroScrim}
-          />
-        </View>
+        {isVideo ? (
+          <MediaViewer videoIds={videoIds} />
+        ) : (
+          <View style={styles.hero}>
+            <Image source={{ uri: imageUri }} style={styles.heroImage} contentFit="cover" />
+            <LinearGradient
+              colors={['transparent', colors.scrim, colors.background]}
+              locations={[0.3, 0.7, 1]}
+              style={styles.heroScrim}
+            />
+          </View>
+        )}
 
-        <View style={styles.body}>
+        <View style={[styles.body, isVideo && styles.bodyVideo]}>
           <Text style={styles.date}>{formatDate(post.date_posted)}</Text>
           <Text style={styles.title}>{post.title}</Text>
 
@@ -120,9 +129,12 @@ function PostDetailContent() {
 
           {post.excerpt ? <Text style={styles.excerpt}>{post.excerpt}</Text> : null}
 
-          <View style={styles.divider} />
-
-          <Markdown style={markdownStyles}>{post.content}</Markdown>
+          {showMarkdown ? (
+            <>
+              <View style={styles.divider} />
+              <Markdown style={markdownStyles}>{markdownContent}</Markdown>
+            </>
+          ) : null}
         </View>
       </ScrollView>
     </>
@@ -166,6 +178,9 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg,
     gap: spacing.lg,
     marginTop: -spacing.xxl,
+  },
+  bodyVideo: {
+    marginTop: 0,
   },
   date: {
     ...typography.overline,

@@ -4,7 +4,7 @@ export type ActivityKind =
   | 'fleet_active'
   | 'killmail_batch'
   | 'communication'
-  | 'militia_joins';
+  | 'contested_change';
 
 export interface ActivityPilot {
   character_id: number;
@@ -27,6 +27,7 @@ export interface ActivityItem {
   summary?: string;
   /** fleet_active */
   faction?: ActivityFaction;
+  formation?: 'fleet' | 'gang';
   system?: string;
   kills?: number;
   pilots?: number;
@@ -40,6 +41,7 @@ export interface ActivityItem {
   /** communication */
   author?: string;
   message?: string;
-  /** militia_joins */
-  join_count?: number;
+  /** contested_change */
+  contested_percent?: number;
+  delta_percent?: number;
 }

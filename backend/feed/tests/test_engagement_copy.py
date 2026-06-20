@@ -101,10 +101,32 @@ class EngagementCopyTestCase(TestCase):
         self.assertEqual(copy.title, "Large Minmatar fleet active")
         self.assertEqual(
             copy.preview,
-            "Large skirmish involving destroyers and cruisers.",
+            "Large fleet involving destroyers and cruisers.",
         )
+        self.assertEqual(copy.payload_extra["formation"], "fleet")
+
+        self.assertEqual(copy.payload_extra["formation"], "fleet")
+
+    def test_militia_gang_active_title(self):
+        copy = build_militia_engagement_copy(
+            faction_label="Minmatar",
+            system="Auga",
+            kills=25,
+            pilots=20,
+            started_at=self.started,
+            last_kill_at=self.now,
+            ship_counts={"22468": 2, "11198": 2, "33333": 2},
+        )
+        self.assertEqual(copy.tier, "large")
+        self.assertEqual(copy.title, "Large Minmatar gang active")
+        self.assertEqual(
+            copy.preview,
+            "Large gang involving destroyers and cruisers.",
+        )
+        self.assertEqual(copy.payload_extra["formation"], "gang")
 
     def test_militia_major_fleet_active(self):
+        self.hull_class_patcher.stop()
         copy = build_militia_engagement_copy(
             faction_label="Amarr",
             system="Huola",
@@ -113,8 +135,14 @@ class EngagementCopyTestCase(TestCase):
             started_at=self.started,
             last_kill_at=self.now,
         )
+        self.hull_class_patcher.start()
         self.assertEqual(copy.tier, "major")
-        self.assertEqual(copy.title, "Major Amarr fleet active")
+        self.assertEqual(copy.title, "Major Amarr gang active")
+        self.assertEqual(
+            copy.preview,
+            "Major militia gang active on the front.",
+        )
+        self.assertEqual(copy.payload_extra["formation"], "gang")
 
     def test_preview_falls_back_without_ship_counts(self):
         self.hull_class_patcher.stop()

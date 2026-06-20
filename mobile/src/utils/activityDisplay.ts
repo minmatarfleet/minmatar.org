@@ -24,9 +24,11 @@ export function getActivityAccent(item: ActivityItem): ActivityAccentStyle {
     case 'killmail_batch':
     case 'communication':
       return accentStyles.combat;
-    case 'militia_joins':
-      return accentStyles.militia;
     case 'fleet_active':
+      if (item.faction === 'amarr') return accentStyles.amarr;
+      if (item.faction === 'minmatar') return accentStyles.militia;
+      return accentStyles.combat;
+    case 'contested_change':
       if (item.faction === 'amarr') return accentStyles.amarr;
       if (item.faction === 'minmatar') return accentStyles.militia;
       return accentStyles.combat;
@@ -81,16 +83,20 @@ function truncate(text: string, max = ACTIVITY_PREVIEW_MAX_CHARS): string {
   return `${trimmed.slice(0, max - 1).trimEnd()}…`;
 }
 
-export function kindLabel(kind: ActivityKind): string {
+export function kindLabel(item: ActivityItem | ActivityKind): string {
+  const kind = typeof item === 'string' ? item : item.kind;
+  if (kind === 'fleet_active' && typeof item !== 'string') {
+    return item.formation === 'gang' ? 'Gang activity' : 'Fleet activity';
+  }
   switch (kind) {
     case 'fleet_active':
-      return 'Fleet';
+      return 'Fleet activity';
     case 'killmail_batch':
       return 'Combat activity';
     case 'communication':
       return 'Comms';
-    case 'militia_joins':
-      return 'Militia';
+    case 'contested_change':
+      return 'Contested';
   }
 }
 
@@ -98,7 +104,6 @@ function fallbackSubheader(item: ActivityItem): string {
   if (item.subheader) return item.subheader;
   if (item.system) return item.system;
   if (item.author) return item.author;
-  if (item.join_count != null) return `${item.join_count} pilots`;
   return 'Warzone';
 }
 
@@ -132,11 +137,14 @@ export function mapActivityToCard(item: ActivityItem): ActivityCardContent {
         subheader: item.author ?? 'Fleet command',
         preview: truncate(item.message ?? 'No message content.'),
       };
-    case 'militia_joins':
+    case 'contested_change':
       return {
-        title: `${item.join_count ?? 0} pilots newly active in warzone`,
-        subheader: 'Minmatar militia',
-        preview: truncate(item.summary ?? 'New pilots active in warzone killmails.'),
+        title: item.title ?? `${item.system ?? 'System'} contested shift`,
+        subheader: fallbackSubheader(item),
+        preview: truncate(
+          item.summary ??
+            `${item.system ?? 'System'} moved ${item.delta_percent ?? 0}% contested.`,
+        ),
       };
   }
 }
@@ -190,16 +198,17 @@ export function mapActivityToDetail(item: ActivityItem): ActivityDetail {
           { label: 'Type', value: item.title ?? 'Communication' },
         ],
       };
-    case 'militia_joins':
+    case 'contested_change':
       return {
         kind: item.kind,
         timestamp: item.timestamp,
         title: card.title,
         subheader: card.subheader,
-        body: item.summary ?? 'New pilots active in warzone killmails.',
+        body: item.summary,
         sections: [
-          { label: 'Pilots', value: String(item.join_count ?? 0) },
-          { label: 'Faction', value: 'Minmatar militia' },
+          { label: 'System', value: item.system ?? '—' },
+          { label: 'Contested', value: `${item.contested_percent ?? 0}%` },
+          { label: '1h change', value: `${item.delta_percent ?? 0}%` },
         ],
       };
   }

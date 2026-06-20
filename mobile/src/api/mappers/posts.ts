@@ -8,8 +8,6 @@ function tagsFromIds(tagIds: number[], tagById: Map<number, string>): string[] {
 export function mapApiPostToListItem(
   post: ApiPostListItem,
   tagById: Map<number, string>,
-  authorName: string,
-  characterId: number,
 ): PostListUI {
   return {
     post_id: post.post_id,
@@ -18,20 +16,18 @@ export function mapApiPostToListItem(
     slug: post.slug,
     date_posted: new Date(post.date_posted),
     user_id: post.user_id,
-    author: { character_id: characterId, character_name: authorName },
+    author: {
+      character_id: post.author_character_id,
+      character_name: post.author_character_name,
+    },
     tags: tagsFromIds(post.tag_ids, tagById),
     image: post.image || undefined,
   };
 }
 
-export function mapApiPostToDetail(
-  post: ApiPostDetail,
-  tagById: Map<number, string>,
-  authorName: string,
-  characterId: number,
-): PostUI {
+export function mapApiPostToDetail(post: ApiPostDetail, tagById: Map<number, string>): PostUI {
   return {
-    ...mapApiPostToListItem(post, tagById, authorName, characterId),
+    ...mapApiPostToListItem(post, tagById),
     excerpt: post.seo_description,
     content: post.content,
   };

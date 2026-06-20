@@ -48,9 +48,14 @@ def get_v3_fleets(
             .order_by("-start_time")
         )
     elif fleet_filter == EveFleetFilter.UPCOMING:
-        fleets = EveFleet.objects.filter(
-            start_time__gte=timezone.now()
-        ).order_by("-start_time")
+        fleets = (
+            EveFleet.objects.filter(status="pending")
+            .filter(
+                Q(evefleetinstance__isnull=True)
+                | Q(evefleetinstance__end_time__isnull=False)
+            )
+            .order_by("start_time")
+        )
     else:
         fleets = EveFleet.objects.filter(
             start_time__gte=timezone.now() - timedelta(days=30)

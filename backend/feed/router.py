@@ -11,6 +11,10 @@ from feed.constants import (
     FEED_DEFAULT_PAGE_LIMIT,
     FEED_MAX_HISTORY_DAYS,
 )
+from feed.helpers.warzone_briefing import (
+    WarzoneSystemRow,
+    build_warzone_briefing,
+)
 from feed.models import FeedEvent
 
 router = Router(tags=["Feed"])
@@ -31,6 +35,39 @@ class FeedEventItemSchema(Schema):
 class FeedListResponse(Schema):
     items: list[FeedEventItemSchema]
     next_cursor: str | None = None
+
+
+class WarzoneSystemSchema(Schema):
+    system_id: int
+    system_name: str
+    sun_type_id: int
+    contested_percent: float
+    delta_24h: float
+    kills_24h: int
+    front: str
+    occupier: str | None
+
+
+class WarzoneBriefingResponse(Schema):
+    hot_kills: WarzoneSystemSchema | None
+    amarr_contested: list[WarzoneSystemSchema]
+    minmatar_contested: list[WarzoneSystemSchema]
+    changes_24h: list[WarzoneSystemSchema]
+    updated_at: datetime | None
+    has_full_24h_window: bool
+
+
+def _warzone_system_schema(row: WarzoneSystemRow) -> WarzoneSystemSchema:
+    return WarzoneSystemSchema(
+        system_id=row.system_id,
+        system_name=row.system_name,
+        sun_type_id=row.sun_type_id,
+        contested_percent=row.contested_percent,
+        delta_24h=row.delta_24h,
+        kills_24h=row.kills_24h,
+        front=row.front,
+        occupier=row.occupier,
+    )
 
 
 def _parse_cursor(cursor: str | None) -> tuple[datetime | None, int | None]:
@@ -64,8 +101,10 @@ def list_feed(
     now = timezone.now()
     window_start = now - timedelta(days=days)
 
-    qs = FeedEvent.objects.filter(occurred_at__gte=window_start).filter(
-        Q(expires_at__isnull=True) | Q(expires_at__gte=now)
+    qs = (
+        FeedEvent.objects.filter(occurred_at__gte=window_start)
+        .exclude(kind="militia_joins")
+        .filter(Q(expires_at__isnull=True) | Q(expires_at__gte=now))
     )
 
     cursor_time, cursor_id = _parse_cursor(cursor)
@@ -96,3 +135,26 @@ def list_feed(
     ]
     next_cursor = _encode_cursor(events[-1]) if has_more and events else None
     return FeedListResponse(items=items, next_cursor=next_cursor)
+
+
+@router.get("/warzone", response=WarzoneBriefingResponse)
+def warzone_briefing(request):
+    briefing = build_warzone_briefing()
+    return WarzoneBriefingResponse(
+        hot_kills=(
+            _warzone_system_schema(briefing.hot_kills)
+            if briefing.hot_kills
+            else None
+        ),
+        amarr_contested=[
+            _warzone_system_schema(row) for row in briefing.amarr_contested
+        ],
+        minmatar_contested=[
+            _warzone_system_schema(row) for row in briefing.minmatar_contested
+        ],
+        changes_24h=[
+            _warzone_system_schema(row) for row in briefing.changes_24h
+        ],
+        updated_at=briefing.updated_at,
+        has_full_24h_window=briefing.has_full_24h_window,
+    )

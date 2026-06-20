@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { buildTagMap, mapApiPostToListItem } from '@/src/api/mappers/posts';
 import { listPosts, listTags } from '@/src/api/posts';
-import { getUserProfiles, profilesByUserId } from '@/src/api/users';
 import type { PostListUI } from '@/src/types/posts';
 
 const PAGE_SIZE = 20;
@@ -16,20 +15,22 @@ export function usePostsFeed(filter: NewsFilter) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const [propagandaTagId, setPropagandaTagId] = useState<number | undefined>();
+  const [propagandaTagId, setPropagandaTagId] = useState<number | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    void listTags().then((tags) => {
-      const id = tags.find((t) => t.tag === 'Propaganda')?.tag_id;
-      setPropagandaTagId(id);
-    });
+    void listTags()
+      .then((tags) => {
+        const id = tags.find((t) => t.tag === 'Propaganda')?.tag_id;
+        setPropagandaTagId(id ?? null);
+      })
+      .catch(() => setPropagandaTagId(null));
   }, []);
 
   const loadPage = useCallback(
     async (pageNum: number, replace: boolean) => {
       const tagId = filter === 'propaganda' ? propagandaTagId : undefined;
-      if (filter === 'propaganda' && propagandaTagId === undefined) {
+      if (filter === 'propaganda' && propagandaTagId == null) {
         return;
       }
 
@@ -42,17 +43,8 @@ export function usePostsFeed(filter: NewsFilter) {
 
       const tags = await listTags();
       const tagById = buildTagMap(tags);
-      const userIds = raw.map((p) => p.user_id);
-      const profiles = await getUserProfiles(userIds);
-      const profileMap = profilesByUserId(profiles);
 
-      const mapped = raw.map((post) => {
-        const profile = profileMap.get(post.user_id);
-        const characterId = profile?.eve_character_profile?.character_id ?? 0;
-        const authorName =
-          profile?.eve_character_profile?.character_name ?? profile?.username ?? 'Unknown';
-        return mapApiPostToListItem(post, tagById, authorName, characterId);
-      });
+      const mapped = raw.map((post) => mapApiPostToListItem(post, tagById));
 
       setHasMore(raw.length >= PAGE_SIZE);
       setPosts((prev) => (replace ? mapped : [...prev, ...mapped]));
@@ -62,6 +54,9 @@ export function usePostsFeed(filter: NewsFilter) {
   );
 
   const refresh = useCallback(async () => {
+    if (filter === 'propaganda' && propagandaTagId == null) {
+      return;
+    }
     setRefreshing(true);
     setError(null);
     try {
@@ -75,6 +70,12 @@ export function usePostsFeed(filter: NewsFilter) {
   }, [loadPage]);
 
   useEffect(() => {
+    if (filter === 'propaganda' && propagandaTagId == null) {
+      setLoading(propagandaTagId === undefined);
+      setPosts([]);
+      setPage(1);
+      return;
+    }
     setLoading(true);
     setPosts([]);
     setPage(1);
@@ -110,10 +111,5 @@ export async function fetchLatestPost(): Promise<PostListUI | null> {
   if (raw.length === 0) return null;
   const tags = await listTags();
   const tagById = buildTagMap(tags);
-  const profiles = await getUserProfiles([raw[0].user_id]);
-  const profile = profiles[0];
-  const characterId = profile?.eve_character_profile?.character_id ?? 0;
-  const authorName =
-    profile?.eve_character_profile?.character_name ?? profile?.username ?? 'Unknown';
-  return mapApiPostToListItem(raw[0], tagById, authorName, characterId);
+  return mapApiPostToListItem(raw[0], tagById);
 }

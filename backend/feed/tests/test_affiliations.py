@@ -7,7 +7,7 @@ from django.test import TestCase
 from django.utils import timezone
 
 from eveonline.client import EsiResponse
-from feed.constants import FACTION_MINMATAR
+from feed.constants import FACTION_CALDARI, FACTION_MINMATAR
 from feed.helpers.affiliations import (
     apply_killmail_affiliations,
     lookup_character_militia_factions,
@@ -227,7 +227,7 @@ class FeedCharacterAffiliationTestCase(TestCase):
                     {
                         "character_id": 200,
                         "corporation_id": 98000002,
-                        "faction_id": 500003,
+                        "faction_id": FACTION_CALDARI,
                     },
                 ],
                 "victim": {},
@@ -257,7 +257,7 @@ class FeedCharacterAffiliationTestCase(TestCase):
             {
                 "character_id": 200 + i,
                 "corporation_id": 98000002,
-                "faction_id": 500003,
+                "faction_id": FACTION_CALDARI,
             }
             for i in range(8)
         ]

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from django.test import TestCase
 
-from feed.constants import FACTION_AMARR, FACTION_MINMATAR
+from feed.constants import FACTION_AMARR, FACTION_CALDARI, FACTION_MINMATAR
 from feed.helpers.killmail_classify import (
     dominant_attacker_faction,
     resolve_attacker_militia_factions,
@@ -29,7 +29,7 @@ class DominantAttackerFactionTestCase(TestCase):
                     for i in range(8)
                 ]
                 + [
-                    {"character_id": 200 + i, "faction_id": 500003}
+                    {"character_id": 200 + i, "faction_id": FACTION_CALDARI}
                     for i in range(2)
                 ],
             )
@@ -51,7 +51,7 @@ class DominantAttackerFactionTestCase(TestCase):
                     for i in range(6)
                 ]
                 + [
-                    {"character_id": 200 + i, "faction_id": 500003}
+                    {"character_id": 200 + i, "faction_id": FACTION_CALDARI}
                     for i in range(4)
                 ],
             )
@@ -70,7 +70,7 @@ class DominantAttackerFactionTestCase(TestCase):
                     for i in range(4)
                 ]
                 + [
-                    {"character_id": 200 + i, "faction_id": 500003}
+                    {"character_id": 200 + i, "faction_id": FACTION_CALDARI}
                     for i in range(6)
                 ],
             )
@@ -102,7 +102,7 @@ class DominantAttackerFactionTestCase(TestCase):
                 1,
                 [{"faction_id": FACTION_MINMATAR}]
                 + [
-                    {"character_id": 200 + i, "faction_id": 500003}
+                    {"character_id": 200 + i, "faction_id": FACTION_CALDARI}
                     for i in range(9)
                 ],
             )
@@ -120,7 +120,7 @@ class DominantAttackerFactionTestCase(TestCase):
                     }
                     for i in range(3)
                 ]
-                + [{"character_id": 200, "faction_id": 500003}],
+                + [{"character_id": 200, "faction_id": FACTION_CALDARI}],
             )
         ]
         self.assertEqual(
@@ -140,7 +140,7 @@ class DominantAttackerFactionTestCase(TestCase):
                     for i in range(4)
                 ]
                 + [
-                    {"character_id": 200 + i, "faction_id": 500003}
+                    {"character_id": 200 + i, "faction_id": FACTION_CALDARI}
                     for i in range(4)
                 ],
             )

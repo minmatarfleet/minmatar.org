@@ -45,11 +45,20 @@ import StylessButton from '@components/blocks/StylessButton.astro';
                     width={32}
                     alt={post.tags[0]}
                 /> :
-                <CharacterPicture
-                    character_id={post.author.character_id}
-                    character_name={post.author.character_name}
-                    size={32}
-                />
+                post.author.character_id > 0 ?
+                    <CharacterPicture
+                        character_id={post.author.character_id}
+                        character_name={post.author.character_name}
+                        size={32}
+                    /> :
+                    <img
+                        class="[ w-auto ]"
+                        src="/images/fleet-logo-square.svg"
+                        loading="lazy"
+                        height={32}
+                        width={32}
+                        alt={post.author.character_name}
+                    />
             }
         </picture>
         <small class="[ text-foreground ]">{format_date(lang, post.date_posted)}</small>

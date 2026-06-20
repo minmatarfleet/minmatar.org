@@ -7,10 +7,10 @@ from feed.models import (
     FeedEventFleetLink,
     FeedEventKillmailLink,
     FeedKillmail,
-    FeedMilitiaFirstSeen,
     FeedMonitoredSystem,
     FeedR2z2Cursor,
     FeedRollupConfig,
+    FeedSystemContestedSnapshot,
 )
 
 
@@ -19,6 +19,18 @@ class FeedMonitoredSystemAdmin(admin.ModelAdmin):
     list_display = ("name", "solar_system_id", "source", "is_active")
     list_filter = ("source", "is_active")
     search_fields = ("name", "solar_system_id")
+
+
+@admin.register(FeedSystemContestedSnapshot)
+class FeedSystemContestedSnapshotAdmin(admin.ModelAdmin):
+    list_display = (
+        "solar_system_id",
+        "contested_percent",
+        "occupier_faction_id",
+        "captured_at",
+    )
+    list_filter = ("occupier_faction_id",)
+    search_fields = ("solar_system_id",)
 
 
 @admin.register(FeedKillmail)
@@ -32,18 +44,6 @@ class FeedKillmailAdmin(admin.ModelAdmin):
     list_filter = ("solar_system_id",)
     search_fields = ("killmail_id",)
     readonly_fields = ("raw_killmail", "zkb_meta", "attacker_summary")
-
-
-@admin.register(FeedMilitiaFirstSeen)
-class FeedMilitiaFirstSeenAdmin(admin.ModelAdmin):
-    list_display = (
-        "character_id",
-        "faction_id",
-        "first_seen_at",
-        "role",
-        "solar_system_id",
-    )
-    list_filter = ("faction_id", "role")
 
 
 @admin.register(FeedCharacterAffiliation)

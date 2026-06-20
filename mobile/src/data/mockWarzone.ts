@@ -115,10 +115,19 @@ export function getWarzoneBriefing(): WarzoneBriefing {
   const hotKills =
     [...mockWarzoneHotSystems].sort((a, b) => b.kills_24h - a.kills_24h)[0] ?? null;
 
+  const changes24h = [...mockWarzoneHotSystems].sort(
+    (a, b) =>
+      Math.abs(b.delta_24h) - Math.abs(a.delta_24h) ||
+      b.delta_24h - a.delta_24h ||
+      a.system_name.localeCompare(b.system_name),
+  );
+
   return {
     amarrContested: topContestedByFront('amarr', 2),
     minmatarContested: topContestedByFront('minmatar', 2),
     hotKills,
+    changes24h,
+    hasFull24hWindow: true,
   };
 }
 

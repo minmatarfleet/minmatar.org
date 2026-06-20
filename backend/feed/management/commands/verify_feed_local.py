@@ -20,7 +20,6 @@ from feed.models import (
     FeedEventFleetLink,
     FeedEventKillmailLink,
     FeedKillmail,
-    FeedMilitiaFirstSeen,
     FeedMonitoredSystem,
 )
 from feed.tasks import run_feed_rollups
@@ -139,7 +138,6 @@ class Command(BaseCommand):
         FeedEvent.objects.all().delete()
         FeedCluster.objects.all().delete()
         FeedKillmail.objects.all().delete()
-        FeedMilitiaFirstSeen.objects.all().delete()
 
     def _ingest_fixture_anchor(self) -> None:
         path = (

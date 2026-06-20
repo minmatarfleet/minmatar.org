@@ -3,9 +3,10 @@ import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Text } from 'react-native-paper';
 import type { PostListUI } from '@/src/types/posts';
+import { AuthorRow } from '@/src/components/AuthorRow';
 import { colors } from '@/src/theme';
 import { spacing, typography } from '@/src/theme/spacing';
-import { getPlayerIcon } from '@/src/utils/eveImage';
+import { getPostCoverImage } from '@/src/utils/postAuthor';
 import { Tag } from './Tag';
 
 interface PostCardProps {
@@ -31,7 +32,7 @@ function formatDate(date: Date): string {
 }
 
 export function PostCard({ post, featured = false, onPress }: PostCardProps) {
-  const imageUri = post.image ?? getPlayerIcon(post.author.character_id, 512);
+  const imageUri = getPostCoverImage(post);
 
   if (featured) {
     return (
@@ -56,7 +57,10 @@ export function PostCard({ post, featured = false, onPress }: PostCardProps) {
               <Tag key={tag} text={tag} color={tagColorForTag(tag)} />
             ))}
           </View>
-          <AuthorRow name={post.author.character_name} characterId={post.author.character_id} />
+          <AuthorRow
+            name={post.author.character_name}
+            characterId={post.author.character_id}
+          />
         </View>
       </Pressable>
     );
@@ -75,30 +79,13 @@ export function PostCard({ post, featured = false, onPress }: PostCardProps) {
             <Tag key={tag} text={tag} color={tagColorForTag(tag)} narrow />
           ))}
         </View>
-        <AuthorRow name={post.author.character_name} characterId={post.author.character_id} compact />
+        <AuthorRow
+          name={post.author.character_name}
+          characterId={post.author.character_id}
+          compact
+        />
       </View>
     </Pressable>
-  );
-}
-
-function AuthorRow({
-  name,
-  characterId,
-  compact = false,
-}: {
-  name: string;
-  characterId: number;
-  compact?: boolean;
-}) {
-  return (
-    <View style={styles.authorRow}>
-      <Image
-        source={{ uri: getPlayerIcon(characterId, 64) }}
-        style={[styles.authorAvatar, compact && styles.authorAvatarSm]}
-        contentFit="cover"
-      />
-      <Text style={[styles.authorName, compact && styles.authorNameSm]}>{name}</Text>
-    </View>
   );
 }
 
@@ -181,28 +168,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
-  },
-  authorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  authorAvatar: {
-    width: 24,
-    height: 24,
-    borderWidth: 1,
-    borderColor: colors.borderHover,
-  },
-  authorAvatarSm: {
-    width: 20,
-    height: 20,
-  },
-  authorName: {
-    ...typography.caption,
-    color: colors.fleetYellow,
-  },
-  authorNameSm: {
-    fontSize: 11,
   },
 });

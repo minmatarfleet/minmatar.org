@@ -25,6 +25,29 @@ class FeedMonitoredSystem(models.Model):
         return f"{self.name} ({self.solar_system_id})"
 
 
+class FeedSystemContestedSnapshot(models.Model):
+    """Hourly contested % reading for a monitored FW system."""
+
+    solar_system_id = models.BigIntegerField(db_index=True)
+    contested_percent = models.FloatField()
+    occupier_faction_id = models.IntegerField(null=True, blank=True)
+    victor_faction_id = models.IntegerField(null=True, blank=True)
+    captured_at = models.DateTimeField(db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["solar_system_id", "-captured_at"]),
+        ]
+        ordering = ["-captured_at"]
+
+    def __str__(self) -> str:
+        return (
+            f"System {self.solar_system_id} @ {self.contested_percent:.1f}% "
+            f"({self.captured_at.isoformat()})"
+        )
+
+
 class FeedR2z2Cursor(models.Model):
     """Singleton cursor for R2Z2 poller."""
 
@@ -61,32 +84,6 @@ class FeedKillmail(models.Model):
 
     def __str__(self) -> str:
         return f"Killmail {self.killmail_id}"
-
-
-class FeedMilitiaFirstSeen(models.Model):
-    class Role(models.TextChoices):
-        ATTACKER = "attacker", "Attacker"
-        VICTIM = "victim", "Victim"
-
-    character_id = models.BigIntegerField(db_index=True)
-    faction_id = models.IntegerField(db_index=True)
-    first_seen_at = models.DateTimeField()
-    first_seen_killmail_id = models.BigIntegerField()
-    role = models.CharField(max_length=16, choices=Role.choices)
-    solar_system_id = models.BigIntegerField()
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["character_id", "faction_id"],
-                name="feed_militia_first_seen_char_faction",
-            ),
-        ]
-        ordering = ["-first_seen_at"]
-
-    def __str__(self) -> str:
-        return f"Char {self.character_id} faction {self.faction_id}"
 
 
 class FeedCharacterAffiliation(models.Model):
@@ -170,7 +167,7 @@ class FeedEvent(models.Model):
     class Kind(models.TextChoices):
         FLEET_ACTIVE = "fleet_active", "Fleet active"
         KILLMAIL_BATCH = "killmail_batch", "Killmail batch"
-        MILITIA_JOINS = "militia_joins", "Militia joins"
+        CONTESTED_CHANGE = "contested_change", "Contested change"
 
     class Accent(models.TextChoices):
         COMBAT = "combat", "Combat"

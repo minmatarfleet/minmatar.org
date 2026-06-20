@@ -10,7 +10,7 @@ from feed.helpers.ingest import upsert_feed_killmail_from_r2z2
 from feed.management.commands.seed_feed_monitored_systems import (
     seed_from_fixture,
 )
-from feed.models import FeedCluster, FeedMilitiaFirstSeen, FeedKillmail
+from feed.models import FeedCluster, FeedKillmail
 from feed.rollups.registry import build_context, run_rollup
 from feed.tests.helpers import make_killmail_payload
 
@@ -35,11 +35,6 @@ class ClusterRollupTestCase(TestCase):
             FeedCluster.objects.filter(
                 cluster_type=FeedCluster.ClusterType.KILL_BURST
             ).exists()
-        )
-
-    def test_militia_first_seen_on_ingest(self):
-        self.assertTrue(
-            FeedMilitiaFirstSeen.objects.filter(faction_id=500002).exists()
         )
 
     def test_kill_burst_rollup(self):

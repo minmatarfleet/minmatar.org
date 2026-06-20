@@ -5,7 +5,7 @@ const KIND_MAP: Record<string, ActivityKind> = {
   fleet_active: 'fleet_active',
   killmail_batch: 'killmail_batch',
   communication: 'communication',
-  militia_joins: 'militia_joins',
+  contested_change: 'contested_change',
 };
 
 function mapRoster(payload: Record<string, unknown>): ActivityPilot[] | undefined {
@@ -60,6 +60,10 @@ export function mapApiFeedItemToActivity(item: ApiFeedEventItem): ActivityItem {
       return {
         ...base,
         faction: (payload.faction as ActivityItem['faction']) ?? undefined,
+        formation:
+          payload.formation === 'gang' || payload.formation === 'fleet'
+            ? payload.formation
+            : undefined,
         system: (payload.system_name as string) ?? undefined,
         kills: payload.kills as number | undefined,
         pilots: payload.pilots as number | undefined,
@@ -85,10 +89,13 @@ export function mapApiFeedItemToActivity(item: ApiFeedEventItem): ActivityItem {
         title: item.title,
         message: item.body || item.preview,
       };
-    case 'militia_joins':
+    case 'contested_change':
       return {
         ...base,
-        join_count: payload.join_count as number | undefined,
+        system: (payload.system_name as string) ?? undefined,
+        contested_percent: payload.contested_percent as number | undefined,
+        delta_percent: payload.delta_percent as number | undefined,
+        faction: (payload.occupier as ActivityItem['faction']) ?? undefined,
         summary: item.preview || item.body || undefined,
       };
     default:

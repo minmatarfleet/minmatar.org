@@ -23,10 +23,21 @@ import Tag from '@components/blocks/Tag.astro';
 ---
 
 <FixedFluid width='64px'>
-    <CharacterPicture
-        character_id={post.author.character_id}
-        character_name={post.author.character_name}
-    />
+    {post.author.character_id > 0 ?
+        <CharacterPicture
+            character_id={post.author.character_id}
+            character_name={post.author.character_name}
+        /> :
+        <picture>
+            <img
+                loading="lazy"
+                height={64}
+                width={64}
+                src="/images/fleet-logo-square.svg"
+                alt={post.author.character_name}
+            />
+        </picture>
+    }
     <Flexblock gap='var(--space-xs)'>
         <h3><a href={translatePath(`/alliance/propaganda/${post.post_id}`)}>{post.title}</a></h3>
         <FlexInline>

@@ -5,6 +5,7 @@ from datetime import timedelta
 from django.test import TestCase
 from django.utils import timezone
 
+from feed.constants import FACTION_CALDARI
 from feed.helpers.ingest import upsert_feed_killmail_from_r2z2
 from feed.models import FeedCluster
 from feed.rollups.fleet_active import (
@@ -94,7 +95,7 @@ class FleetActiveRollupTestCase(TestCase):
                     "character_id": 91000000 + j,
                     "corporation_id": 98000000,
                     "alliance_id": 99000000,
-                    "faction_id": 500003,
+                    "faction_id": FACTION_CALDARI,
                     "ship_type_id": 22468,
                     "damage_done": 1000,
                     "final_blow": False,

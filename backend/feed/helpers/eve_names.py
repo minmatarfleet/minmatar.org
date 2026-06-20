@@ -225,6 +225,48 @@ def format_hull_classes_phrase(
     )
 
 
+def detect_formation_type(
+    ship_counts: dict[str, int] | None,
+    *,
+    min_dominant_count: int = 3,
+    min_dominant_ratio: float = 0.35,
+    min_doctrine_ratio: float = 0.55,
+) -> str:
+    """Return ``fleet`` for cohesive ship doctrine, ``gang`` for mixed comps."""
+    filtered = without_capsule_ship_counts(ship_counts)
+    if not filtered:
+        return "gang"
+
+    counts = sorted(filtered.values(), reverse=True)
+    total = sum(counts)
+    if total == 0:
+        return "gang"
+
+    top = counts[0]
+    unique = len(counts)
+
+    if unique >= 3:
+        spread = counts[:3]
+        if spread[-1] >= top - 1 and top / total < 0.45:
+            return "gang"
+
+    if top >= min_dominant_count and top / total >= min_dominant_ratio:
+        return "fleet"
+
+    top2 = counts[1] if unique > 1 else 0
+    if (
+        top2 >= 2
+        and unique <= 3
+        and (top + top2) / total >= min_doctrine_ratio
+    ):
+        return "fleet"
+
+    if top >= 5:
+        return "fleet"
+
+    return "gang"
+
+
 def sample_fleet_roster(
     attacker_ids: list[int] | None,
     *,

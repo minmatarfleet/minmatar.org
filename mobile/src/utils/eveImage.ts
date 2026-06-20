@@ -29,6 +29,10 @@ export function getMinmatarFleetAllianceLogo(size: EveImageSize = 64): string {
   return getAllianceLogo(MINMATAR_FLEET_ALLIANCE_ID, size);
 }
 
+export function getFleetLogoSquareUrl(): string {
+  return `${MY_MINMATAR_URL}/images/fleet-logo-square.svg`;
+}
+
 /** Site card covers (PictureCard / GroupCard pattern on my.minmatar.org). */
 export function getWarzoneCardCover(): string {
   return `${MY_MINMATAR_URL}/images/warzone-card.jpg`;
@@ -36,4 +40,13 @@ export function getWarzoneCardCover(): string {
 
 export function getFrontlinesCover(): string {
   return `${MY_MINMATAR_URL}/images/frontlines-cover.png`;
+}
+
+/** Alliance landing cover — propaganda collage over Auga (PageCover on /alliance). */
+export function getAllianceCover(mobile = true): string {
+  return `${MY_MINMATAR_URL}/images/alliance-cover${mobile ? '-990' : ''}.jpg`;
+}
+
+export function getLoginCover(): string {
+  return getAllianceCover(true);
 }

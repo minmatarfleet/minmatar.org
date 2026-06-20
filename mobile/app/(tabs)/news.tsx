@@ -12,6 +12,7 @@ import { Text } from 'react-native-paper';
 import { PostCard } from '@/src/components/PostCard';
 import { NewsFilterChips, type NewsFilter } from '@/src/components/NewsFilterChips';
 import { Screen } from '@/src/components/Screen';
+import { ScreenHeader } from '@/src/components/ScreenHeader';
 import { usePostsFeed } from '@/src/hooks/usePostsFeed';
 import { colors } from '@/src/theme';
 import { spacing, typography } from '@/src/theme/spacing';
@@ -35,8 +36,14 @@ export default function NewsScreen() {
     [filter, router],
   );
 
+  const newsSubtitle =
+    filter === 'propaganda'
+      ? 'Voice from the front lines'
+      : 'Stories and updates from the alliance';
+
   return (
     <Screen padded={false}>
+      <ScreenHeader title="News" subtitle={newsSubtitle} />
       <NewsFilterChips value={filter} onChange={setFilter} />
       {loading && posts.length === 0 ? (
         <View style={styles.center}>
@@ -48,6 +55,7 @@ export default function NewsScreen() {
         </View>
       ) : (
         <FlatList
+          key={filter}
           data={posts}
           keyExtractor={(item) => String(item.post_id)}
           renderItem={renderItem}

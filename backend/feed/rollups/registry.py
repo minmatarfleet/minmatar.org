@@ -7,7 +7,6 @@ from feed.models import FeedMonitoredSystem, FeedRollupConfig
 from feed.rollups.config import get_rollup_config
 from feed.rollups.fleet_active import run_fleet_active_rollup
 from feed.rollups.kill_burst import run_kill_burst_rollup
-from feed.rollups.militia_joins import run_militia_joins_rollup
 from feed.rollups.types import RollupContext, RollupResult
 
 RollupProcessor = Callable[[RollupContext], list[RollupResult]]
@@ -15,7 +14,6 @@ RollupProcessor = Callable[[RollupContext], list[RollupResult]]
 ROLLUP_PROCESSORS: dict[str, RollupProcessor] = {
     "kill_burst": run_kill_burst_rollup,
     "fleet_active": run_fleet_active_rollup,
-    "militia_joins": run_militia_joins_rollup,
 }
 
 

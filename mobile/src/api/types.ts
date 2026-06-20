@@ -7,6 +7,8 @@ export interface ApiPostListItem {
   image: string;
   date_posted: string;
   user_id: number;
+  author_character_id: number;
+  author_character_name: string;
   tag_ids: number[];
 }
 

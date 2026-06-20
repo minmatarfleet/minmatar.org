@@ -1,8 +1,9 @@
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { BottomSheet } from '@/src/components/BottomSheet';
 import type { ActivityItem } from '@/src/types/activity';
 import { colors } from '@/src/theme';
 import { spacing, typography } from '@/src/theme/spacing';
@@ -23,57 +24,48 @@ export function ActivityDetailModal({ item, onClose }: ActivityDetailModalProps)
   const { accent } = getActivityAccent(item);
 
   return (
-    <Modal visible animationType="slide" transparent onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <Pressable style={styles.scrim} onPress={onClose} accessibilityLabel="Close" />
-        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, spacing.lg), borderTopColor: accent }]}>
-          <View style={styles.sheetHeader}>
-            <View style={styles.sheetHeaderText}>
-              <Text style={[styles.sheetLabel, { color: accent }]}>{kindLabel(item.kind)}</Text>
-              <Text style={styles.sheetTime}>
-                {formatTimelineTime(item.timestamp)} · {formatEveTimeShort(item.timestamp)} EVE
-              </Text>
-            </View>
-            <Pressable onPress={onClose} hitSlop={12} style={styles.closeBtn}>
-              <MaterialCommunityIcons name="close" size={22} color={colors.faded} />
-            </Pressable>
-          </View>
-
-          <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-            <Text style={styles.title}>{detail.title}</Text>
-            <Text style={styles.subheader}>{detail.subheader}</Text>
-
-            {detail.body ? <Text style={[styles.body, { borderLeftColor: accent }]}>{detail.body}</Text> : null}
-
-            <View style={styles.sections}>
-              {detail.sections.map((section) => (
-                <View key={section.label} style={styles.sectionRow}>
-                  <Text style={styles.sectionLabel}>{section.label}</Text>
-                  <Text style={styles.sectionValue}>{section.value}</Text>
-                </View>
-              ))}
-            </View>
-          </ScrollView>
+    <BottomSheet
+      visible
+      onClose={onClose}
+      sheetStyle={{
+        maxHeight: '78%',
+        borderTopWidth: 3,
+        borderTopColor: accent,
+        paddingBottom: Math.max(insets.bottom, spacing.lg),
+      }}
+    >
+      <View style={styles.sheetHeader}>
+        <View style={styles.sheetHeaderText}>
+          <Text style={[styles.sheetLabel, { color: accent }]}>{kindLabel(item)}</Text>
+          <Text style={styles.sheetTime}>
+            {formatTimelineTime(item.timestamp)} · {formatEveTimeShort(item.timestamp)} EVE
+          </Text>
         </View>
+        <Pressable onPress={onClose} hitSlop={12} style={styles.closeBtn}>
+          <MaterialCommunityIcons name="close" size={22} color={colors.faded} />
+        </Pressable>
       </View>
-    </Modal>
+
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.title}>{detail.title}</Text>
+        <Text style={styles.subheader}>{detail.subheader}</Text>
+
+        {detail.body ? <Text style={[styles.body, { borderLeftColor: accent }]}>{detail.body}</Text> : null}
+
+        <View style={styles.sections}>
+          {detail.sections.map((section) => (
+            <View key={section.label} style={styles.sectionRow}>
+              <Text style={styles.sectionLabel}>{section.label}</Text>
+              <Text style={styles.sectionValue}>{section.value}</Text>
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+    </BottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  scrim: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.scrim,
-  },
-  sheet: {
-    maxHeight: '78%',
-    backgroundColor: colors.surface,
-    borderTopWidth: 3,
-  },
   sheetHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',

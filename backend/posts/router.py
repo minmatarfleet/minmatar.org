@@ -10,6 +10,7 @@ from django.core.paginator import Paginator
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 
+from .authors import post_author_fields
 from .models import EvePost, EveTag
 
 
@@ -41,6 +42,8 @@ class EvePostListResponse(BaseModel):
     image: str  # Changed from 'content' to 'image'
     date_posted: datetime
     user_id: int
+    author_character_id: int
+    author_character_name: str
     tag_ids: List[int]
 
 
@@ -53,6 +56,8 @@ class EvePostResponse(BaseModel):
     content: str
     date_posted: datetime
     user_id: int
+    author_character_id: int
+    author_character_name: str
     tag_ids: List[int]
 
 
@@ -90,7 +95,11 @@ def get_posts(
     posts = (
         EvePost.objects.all()
         .order_by("-date_posted")
-        .select_related("user")
+        .select_related(
+            "user",
+            "user__eveplayer",
+            "user__eveplayer__primary_character",
+        )
         .prefetch_related("tags")
     )
 
@@ -98,7 +107,7 @@ def get_posts(
         posts = posts.filter(user_id=user_id)
 
     if tag_id:
-        posts = posts.filter(eveposttag__tag_id=tag_id)
+        posts = posts.filter(tags__id=tag_id)
 
     if status:
         posts = posts.filter(state=status)
@@ -112,6 +121,9 @@ def get_posts(
     for post in posts:
         # Extract the first image link from the content
         image_link = extract_first_image_link(post.content)
+        author_character_id, author_character_name = post_author_fields(
+            post.user
+        )
 
         response.append(
             EvePostListResponse(
@@ -123,6 +135,8 @@ def get_posts(
                 image=image_link,  # Use the extracted image link with the new field name 'image'
                 date_posted=post.date_posted,
                 user_id=post.user.id,
+                author_character_id=author_character_id,
+                author_character_name=author_character_name,
                 tag_ids=[tag.id for tag in post.tags.all()],
             )
         )
@@ -136,12 +150,18 @@ def get_posts(
 def get_post(request, post_id: int):
     post = (
         EvePost.objects.filter(id=post_id)
-        .select_related("user")
+        .select_related(
+            "user",
+            "user__eveplayer",
+            "user__eveplayer__primary_character",
+        )
         .prefetch_related("tags")
         .first()
     )
     if post is None:
         return 404, {"detail": "Post not found"}
+
+    author_character_id, author_character_name = post_author_fields(post.user)
 
     return EvePostResponse(
         post_id=post.id,
@@ -152,6 +172,8 @@ def get_post(request, post_id: int):
         content=post.content,
         date_posted=post.date_posted,
         user_id=post.user.id,
+        author_character_id=author_character_id,
+        author_character_name=author_character_name,
         tag_ids=[tag.id for tag in post.tags.all()],
     )
 
@@ -177,6 +199,7 @@ def create_post(request, payload: CreateEvePostRequest):
         user=request.user,
     )
     post.tags.set(EveTag.objects.filter(id__in=payload.tag_ids))
+    author_character_id, author_character_name = post_author_fields(post.user)
 
     return EvePostResponse(
         post_id=post.id,
@@ -187,6 +210,8 @@ def create_post(request, payload: CreateEvePostRequest):
         user_id=post.user.id,
         state=post.state,
         seo_description=post.seo_description,
+        author_character_id=author_character_id,
+        author_character_name=author_character_name,
         tag_ids=[tag.id for tag in post.tags.all()],
     )
 
@@ -228,6 +253,7 @@ def update_post(request, post_id: int, payload: UpdateEvePostRequest):
         post.tags.set(EveTag.objects.filter(id__in=payload.tag_ids))
 
     post.save()
+    author_character_id, author_character_name = post_author_fields(post.user)
 
     return EvePostResponse(
         post_id=post.id,
@@ -238,6 +264,8 @@ def update_post(request, post_id: int, payload: UpdateEvePostRequest):
         user_id=post.user.id,
         state=post.state,
         seo_description=post.seo_description,
+        author_character_id=author_character_id,
+        author_character_name=author_character_name,
         tag_ids=[tag.id for tag in post.tags.all()],
     )
 

@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-# Faction warfare militia factions
-FACTION_AMARR = 500001
+# ESI empire faction IDs (killmails, affiliations, fw/systems)
+FACTION_CALDARI = 500001
 FACTION_MINMATAR = 500002
+FACTION_AMARR = 500003
+FACTION_GALLENTE = 500004
 MILITIA_FACTION_IDS = frozenset({FACTION_AMARR, FACTION_MINMATAR})
 
 # Amarr–Minmatar warzone regions (ESI region_id)
@@ -27,6 +29,13 @@ R2Z2_POLL_SOFT_TIME_LIMIT_SECONDS = 25
 
 # Retention
 FEED_KILLMAIL_RETENTION_DAYS = 30
+FEED_CONTESTED_SNAPSHOT_RETENTION_DAYS = 8
+
+# ESI faction warfare
+ESI_FW_SYSTEMS_URL = "https://esi.evetech.net/latest/fw/systems/"
+FEED_FW_ESI_USER_AGENT = (
+    "minmatar.org-feed/1.0 (https://minmatar.org; fw contested polling)"
+)
 
 # API defaults
 FEED_DEFAULT_HISTORY_DAYS = 7
@@ -47,9 +56,8 @@ DEFAULT_ROLLUP_CONFIG: dict[str, dict] = {
                 "min_pilots": 6,
                 "militia_size": "Small",
                 "generic_title": "Small skirmish in {system}",
-                "militia_title": "{size} {faction} fleet active",
+                "militia_title": "{size} {faction} {formation} active",
                 "preview": "Light contact on the front.",
-                "militia_active_preview": "Small militia fleet active on the front.",
             },
             {
                 "code": "medium",
@@ -57,9 +65,8 @@ DEFAULT_ROLLUP_CONFIG: dict[str, dict] = {
                 "min_pilots": 12,
                 "militia_size": "Medium",
                 "generic_title": "Medium skirmish in {system}",
-                "militia_title": "{size} {faction} fleet active",
+                "militia_title": "{size} {faction} {formation} active",
                 "preview": "Sustained fighting reported.",
-                "militia_active_preview": "Medium militia fleet active on the front.",
             },
             {
                 "code": "large",
@@ -67,9 +74,8 @@ DEFAULT_ROLLUP_CONFIG: dict[str, dict] = {
                 "min_pilots": 18,
                 "militia_size": "Large",
                 "generic_title": "Large skirmish in {system}",
-                "militia_title": "{size} {faction} fleet active",
+                "militia_title": "{size} {faction} {formation} active",
                 "preview": "Heavy fighting across multiple hull types.",
-                "militia_active_preview": "Large militia fleet active on the front.",
             },
             {
                 "code": "heavy",
@@ -77,9 +83,8 @@ DEFAULT_ROLLUP_CONFIG: dict[str, dict] = {
                 "min_pilots": 28,
                 "militia_size": "Heavy",
                 "generic_title": "Heavy engagement in {system}",
-                "militia_title": "{size} {faction} fleet active",
+                "militia_title": "{size} {faction} {formation} active",
                 "preview": "Major fight with broad ship losses.",
-                "militia_active_preview": "Heavy militia fleet active on the front.",
             },
             {
                 "code": "major",
@@ -87,9 +92,8 @@ DEFAULT_ROLLUP_CONFIG: dict[str, dict] = {
                 "min_pilots": 40,
                 "militia_size": "Major",
                 "generic_title": "Major engagement in {system}",
-                "militia_title": "{size} {faction} fleet active",
+                "militia_title": "{size} {faction} {formation} active",
                 "preview": "Significant battle on the warzone front.",
-                "militia_active_preview": "Major militia fleet active on the front.",
             },
         ],
     },
@@ -100,11 +104,10 @@ DEFAULT_ROLLUP_CONFIG: dict[str, dict] = {
         "stale_minutes": 20,
         "dominant_faction_threshold": 0.75,
     },
-    "militia_joins": {
-        "hourly_min_count": 5,
-        "daily_min_count": 15,
-        "hourly_window_hours": 1,
-        "daily_window_hours": 24,
+    "contested_change": {
+        "min_delta_percent": 5.0,
+        "max_events_per_poll": 15,
+        "window_hours": 1,
     },
     "affiliation_sync": {
         "populate_batch_size": 200,
@@ -115,7 +118,7 @@ DEFAULT_ROLLUP_CONFIG: dict[str, dict] = {
 }
 
 ROLLUP_VERSIONS: dict[str, int] = {
-    "kill_burst": 5,
-    "fleet_active": 5,
-    "militia_joins": 1,
+    "kill_burst": 6,
+    "fleet_active": 9,
+    "contested_change": 1,
 }

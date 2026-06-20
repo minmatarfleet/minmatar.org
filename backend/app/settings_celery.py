@@ -319,10 +319,10 @@ CELERYBEAT_FEED = [
         },
     ),
     (
-        "[Feed] Militia rollups",
+        "[Feed] Poll FW contested %",
         {
-            "task": "feed.tasks.run_militia_rollups",
-            "schedule": crontab(minute=0, hour="*"),
+            "task": "feed.tasks.poll_fw_contested_snapshots",
+            "schedule": crontab(minute=50, hour="*"),
             "options": {"queue": "celery"},
         },
     ),

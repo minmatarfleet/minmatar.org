@@ -63,13 +63,6 @@ export const mockActivityFeed: ActivityItem[] = [
     roster_total: 112,
   },
   {
-    id: 'militia-1',
-    kind: 'militia_joins',
-    timestamp: minutesAgo(35),
-    join_count: 18,
-    summary: 'Fresh enlistments from Metropolis trade hubs. Most flagged for PVP cert tracking.',
-  },
-  {
     id: 'fleet-pirate-1',
     kind: 'fleet_active',
     timestamp: minutesAgo(41),
@@ -106,13 +99,6 @@ export const mockActivityFeed: ActivityItem[] = [
     kills: 14,
     pilots: 67,
     composition: 'Cyclone, Scimitar, Sabre · fast shield with interceptor tackle',
-  },
-  {
-    id: 'militia-2',
-    kind: 'militia_joins',
-    timestamp: minutesAgo(120),
-    join_count: 42,
-    summary: 'Largest enlistment spike this week. Recruits routed to Huola and Kourmonen orientation fleets.',
   },
   {
     id: 'fleet-amarr-2',
@@ -160,13 +146,6 @@ export const mockActivityFeed: ActivityItem[] = [
     killmail_count: 34,
     window_minutes: 20,
     summary: 'Weekend flashform chain across Kourmonen and adjacent systems.',
-  },
-  {
-    id: 'militia-week',
-    kind: 'militia_joins',
-    timestamp: daysAgo(5),
-    join_count: 27,
-    summary: 'Mid-week enlistment bump ahead of the Huola timer.',
   },
 ];
 

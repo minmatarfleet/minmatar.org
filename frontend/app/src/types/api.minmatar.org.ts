@@ -595,6 +595,8 @@ export interface Post {
     image?:             string;
     date_posted:        Date;
     user_id:            number;
+    author_character_id: number;
+    author_character_name: string;
     tag_ids:            number[];
 }
 

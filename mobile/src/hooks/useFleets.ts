@@ -41,8 +41,8 @@ export function useFleetsSchedule(token: string | null) {
         enrichFleets(token, 'recent'),
       ]);
       const byId = new Map<number, FleetItem>();
-      [...active, ...upcoming, ...recent].forEach((f) => byId.set(f.id, f));
-      setFleets([...byId.values()].sort((a, b) => b.start_time.getTime() - a.start_time.getTime()));
+      [...recent, ...upcoming, ...active].forEach((f) => byId.set(f.id, f));
+      setFleets([...byId.values()].sort((a, b) => a.start_time.getTime() - b.start_time.getTime()));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load fleets');
       setFleets([]);

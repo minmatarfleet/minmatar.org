@@ -1,12 +1,12 @@
 import { useEffect } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Redirect, useRouter } from 'expo-router';
 import { Text } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/src/auth/AuthContext';
 import { FleetLogoSquare } from '@/src/components/FleetLogoSquare';
+import { LoginBackground } from '@/src/components/LoginBackground';
 import { MinmatarButton } from '@/src/components/MinmatarButton';
 import { colors } from '@/src/theme';
 import { spacing, typography } from '@/src/theme/spacing';
@@ -24,8 +24,11 @@ export default function LandingScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator color={colors.fleetYellow} size="large" />
+      <View style={styles.root}>
+        <LoginBackground />
+        <View style={styles.loading}>
+          <ActivityIndicator color={colors.fleetYellow} size="large" />
+        </View>
       </View>
     );
   }
@@ -36,11 +39,7 @@ export default function LandingScreen() {
 
   return (
     <View style={styles.root}>
-      <LinearGradient
-        colors={['#1a0808', colors.background, '#0a0a14']}
-        locations={[0, 0.55, 1]}
-        style={StyleSheet.absoluteFill}
-      />
+      <LoginBackground />
       <View
         style={[
           styles.content,
@@ -82,7 +81,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background,
   },
   content: {
     flex: 1,

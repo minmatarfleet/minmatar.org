@@ -4,7 +4,7 @@ import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RequireAuth } from '@/src/auth/RequireAuth';
-import { TopBar } from '@/src/components/TopBar';
+import { AppBanner } from '@/src/components/AppBanner';
 import { colors } from '@/src/theme';
 import { spacing, typography } from '@/src/theme/spacing';
 
@@ -14,7 +14,7 @@ export default function TabLayout() {
   return (
     <RequireAuth>
       <View style={styles.container}>
-        <TopBar />
+        <AppBanner />
         <Tabs
           initialRouteName="pulse"
           screenOptions={{

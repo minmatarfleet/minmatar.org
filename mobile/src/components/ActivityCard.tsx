@@ -27,8 +27,8 @@ function kindIcon(kind: ActivityItem['kind']): keyof typeof MaterialCommunityIco
       return 'skull-crossbones-outline';
     case 'communication':
       return 'bullhorn-outline';
-    case 'militia_joins':
-      return 'account-group-outline';
+    case 'contested_change':
+      return 'map-marker-radius-outline';
   }
 }
 
@@ -59,7 +59,7 @@ export function ActivityCard({ item, isFirst = false, isLast = false, onView }: 
           style={({ pressed }) => [styles.card, { borderLeftColor: accent }, pressed && styles.cardPressed]}
         >
           <View style={styles.cardHeader}>
-            <Text style={[styles.label, { color: accent }]}>{kindLabel(item.kind)}</Text>
+            <Text style={[styles.label, { color: accent }]}>{kindLabel(item)}</Text>
             <View style={styles.headerMeta}>
               <Text style={styles.time}>{formatTimelineTime(item.timestamp)}</Text>
               <MaterialCommunityIcons name="chevron-right" size={14} color={accent} />

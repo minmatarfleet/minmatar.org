@@ -16,4 +16,7 @@ export interface WarzoneBriefing {
   amarrContested: WarzoneSystemHot[];
   minmatarContested: WarzoneSystemHot[];
   hotKills: WarzoneSystemHot | null;
+  changes24h: WarzoneSystemHot[];
+  updatedAt?: string;
+  hasFull24hWindow?: boolean;
 }

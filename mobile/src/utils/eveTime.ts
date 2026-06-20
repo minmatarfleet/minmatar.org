@@ -18,16 +18,6 @@ export function isEveWeekend(date: Date): boolean {
   return day === 'Fri' || day === 'Sat' || day === 'Sun';
 }
 
-/** Mon–Thu in EVE (UTC) — Pulse shows "Tonight". Fri–Sun shows "This weekend". */
-export function isPulseTonightWindow(date: Date = nowInEve()): boolean {
-  const day = getEveWeekdayShort(date);
-  return day === 'Mon' || day === 'Tue' || day === 'Wed' || day === 'Thu';
-}
-
-export function getPulseFleetSectionTitle(date: Date = nowInEve()): 'Tonight' | 'This weekend' {
-  return isPulseTonightWindow(date) ? 'Tonight' : 'This weekend';
-}
-
 export function formatEveTimeShort(date: Date): string {
   return date.toLocaleDateString('en-US', {
     weekday: 'short',

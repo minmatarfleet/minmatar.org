@@ -55,3 +55,13 @@ class FeedApiTestCase(TestCase):
         titles = [item["title"] for item in response.json()["items"]]
         self.assertIn("Old event", titles)
         old.delete()
+
+    def test_warzone_briefing_endpoint(self):
+        response = Client().get("/api/feed/warzone")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("hot_kills", data)
+        self.assertIn("amarr_contested", data)
+        self.assertIn("minmatar_contested", data)
+        self.assertIn("changes_24h", data)
+        self.assertIn("has_full_24h_window", data)
