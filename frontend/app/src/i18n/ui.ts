@@ -61,6 +61,10 @@ export const ui = {
         'alliance.values.page_title': 'Alliance Values',
         'alliance.playstyle.page_title': 'Our playstyle',
 
+        'guides.page_title': 'Guides',
+        'guides.leading_text': 'Alliance guides for faction warfare, PvP, PvE, and everyday fleet tools.',
+        'guides.back_to_guides': 'Back to guides',
+
         'propaganda.page_title': 'Propaganda',
         'propaganda.leading_text': 'All our propaganda in a single place.',
         'propaganda.meta_description': 'All our propaganda in a single place.',
@@ -903,6 +907,7 @@ export const ui = {
         'page_finder.story.description': 'Learn more about our story.',
         'page_finder.values.description': 'What we expect from every FL33T member.',
         'page_finder.playstyle.description': 'Learn more about our playstyle.',
+        'page_finder.guides.description': 'Alliance guides for faction warfare, PvP, PvE, and fleet tools.',
         'page_finder.teams.description': 'Teams landing page.',
         'page_finder.groups.description': 'Special Interest Groups landing page.',
         'page_finder.market.description': 'Market landing page.',

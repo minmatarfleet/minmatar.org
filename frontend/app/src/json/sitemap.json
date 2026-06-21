@@ -161,6 +161,13 @@
         "keywords": [ "groups", "tribes" ]
     },
     {
+        "slug": "guides",
+        "path": "/guides/",
+        "publish": true,
+        "description": "page_finder.guides.description",
+        "keywords": [ "guides", "wiki", "help", "tutorial" ]
+    },
+    {
         "slug": "propaganda",
         "alt": "icon.tv.alt",
         "path": "/alliance/propaganda/",

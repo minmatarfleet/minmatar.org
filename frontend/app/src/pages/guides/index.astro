@@ -1,0 +1,102 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { getGuidesByCategory, guideCategories } from '@/data/guides'
+
+import { strip_markdown } from '@helpers/string'
+
+import Viewport from '@layouts/Viewport.astro'
+
+import PageLanding from '@components/page/PageLanding.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import TextBox from '@components/layout/TextBox.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import BlockList from '@components/compositions/BlockList.astro'
+
+const guidesByCategory = getGuidesByCategory()
+
+const page_title = t('guides.page_title')
+const page_description = t('guides.leading_text')
+---
+
+<Viewport
+    title={page_title}
+    meta_description={await strip_markdown(page_description)}
+    components={{
+        alert_dialog: true,
+    }}
+>
+    <PageLanding
+        wide={true}
+        cover={{
+            image: "/images/alliance-cover.jpg",
+            image_990: "/images/alliance-cover.jpg",
+            scrollable: true,
+            overlay: true
+        }}
+    >
+        <Flexblock gap='var(--space-2xl)'>
+            <TextBox>
+                <Flexblock gap='var(--space-xl)'>
+                    <PageTitle is_landing={true}>{page_title}</PageTitle>
+                    <p class="[ excerpt ]">{page_description}</p>
+                </Flexblock>
+            </TextBox>
+
+            <TextBox>
+                <Flexblock gap='var(--space-2xl)'>
+                    {guideCategories.map((category) => {
+                        const categoryGuides = guidesByCategory[category] ?? []
+                        if (!categoryGuides.length) return null
+
+                        return (
+                            <Flexblock gap='var(--space-m)'>
+                                <h2 class="[ font-bold ]">{category}</h2>
+                                <BlockList gap='var(--space-s)'>
+                                    {categoryGuides.map((guide) => (
+                                        <a
+                                            class="[ guide-link ]"
+                                            href={translatePath(`/guides/${guide.slug}/`)}
+                                        >
+                                            <strong>{guide.title}</strong>
+                                            <span>{guide.excerpt}</span>
+                                        </a>
+                                    ))}
+                                </BlockList>
+                            </Flexblock>
+                        )
+                    })}
+                </Flexblock>
+            </TextBox>
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .excerpt {
+        font-size: var(--step-1);
+    }
+
+    .guide-link {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-s);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-s);
+        text-decoration: none;
+        transition: border-color 0.15s ease;
+
+        &:hover {
+            border-color: var(--highlight);
+        }
+
+        span {
+            color: var(--muted-color);
+            font-size: var(--step--1);
+        }
+    }
+</style>
