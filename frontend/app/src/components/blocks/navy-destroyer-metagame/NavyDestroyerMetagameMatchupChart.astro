@@ -1,0 +1,205 @@
+---
+import type { MatchupChart, MatchupRating } from '@/data/navy-destroyer-metagame'
+
+interface Props {
+    chart: MatchupChart
+}
+
+const { chart } = Astro.props
+
+const ratingLabels: Record<MatchupRating, string> = {
+    '++': 'Very favorable',
+    '+': 'Favorable',
+    '=': 'Even',
+    '-': 'Unfavorable',
+    '--': 'Very unfavorable',
+}
+---
+
+<div class="ndm-chart">
+    <h3 class="ndm-chart__title">{chart.title}</h3>
+    <p class="ndm-chart__labels">
+        <span>{chart.rowLabel}</span>
+        <span aria-hidden="true">→</span>
+        <span>{chart.columnLabel}</span>
+    </p>
+
+    <div class="ndm-chart__scroll" tabindex="0" role="region" aria-label={`${chart.title} interactive table`}>
+        <table class="ndm-chart__table">
+            <thead>
+                <tr>
+                    <th scope="col" class="ndm-chart__corner">
+                        <span class="[ visually-hidden ]">{chart.rowLabel} vs {chart.columnLabel}</span>
+                    </th>
+                    {
+                        chart.columns.map((column) => (
+                            <th scope="col" class="ndm-chart__col-header">
+                                <span>{column}</span>
+                            </th>
+                        ))
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                {
+                    chart.rows.map((row, rowIndex) => (
+                        <tr>
+                            <th scope="row" class="ndm-chart__row-header">{row}</th>
+                            {
+                                chart.matrix[rowIndex].map((rating, colIndex) => (
+                                    <td class="ndm-chart__cell">
+                                        <span
+                                            class:list={['ndm-chart__rating', `ndm-chart__rating--${rating.replace(/\+/g, 'plus').replace(/-/g, 'minus').replace(/=/g, 'even')}`]}
+                                            aria-label={`${row} vs ${chart.columns[colIndex]}: ${ratingLabels[rating]}`}
+                                            title={ratingLabels[rating]}
+                                        >
+                                            {rating}
+                                        </span>
+                                    </td>
+                                ))
+                            }
+                        </tr>
+                    ))
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<style lang="scss">
+    .ndm-chart {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        min-width: 0;
+        padding: var(--component-padding-block);
+        background: color-mix(in srgb, var(--component-background) 65%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+    }
+
+    @media (max-width: 48rem) {
+        .ndm-chart {
+            padding-inline: var(--space-s);
+        }
+    }
+
+    .ndm-chart__title {
+        margin: 0;
+        padding-bottom: var(--space-2xs);
+        border-bottom: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .ndm-chart__labels {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs);
+        margin: 0;
+        font-size: var(--step--1);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-color-secondary, var(--faded));
+    }
+
+    .ndm-chart__scroll {
+        padding: var(--space-xs);
+        background: color-mix(in srgb, var(--component-background) 55%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+    }
+
+    @media (max-width: 40rem) {
+        .ndm-chart__scroll {
+            overflow-x: auto;
+        }
+
+        .ndm-chart__table {
+            min-width: 28rem;
+            table-layout: auto;
+        }
+    }
+
+    .ndm-chart__table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        font-size: var(--step--1);
+    }
+
+    .ndm-chart__corner,
+    .ndm-chart__row-header,
+    .ndm-chart__col-header {
+        padding: var(--space-xs) var(--space-s);
+        text-align: left;
+        vertical-align: middle;
+        background: color-mix(in srgb, var(--component-background) 85%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
+        font-weight: 600;
+        line-height: 1.25;
+    }
+
+    .ndm-chart__col-header span {
+        display: block;
+        line-height: 1.2;
+        hyphens: auto;
+        overflow-wrap: anywhere;
+    }
+
+    .ndm-chart__row-header {
+        width: 8.5rem;
+        white-space: normal;
+        line-height: 1.2;
+    }
+
+    .ndm-chart__cell {
+        padding: var(--space-3xs);
+        text-align: center;
+        border: 1px solid color-mix(in srgb, var(--border-color) 45%, transparent);
+    }
+
+    .ndm-chart__rating {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.65rem;
+        min-height: 1.65rem;
+        border-radius: 999px;
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        font-weight: 700;
+        letter-spacing: 0.02em;
+    }
+
+    .ndm-chart__rating--plusplus {
+        background: color-mix(in srgb, #2ecc71 22%, transparent);
+        color: #7dffb0;
+        border: 1px solid color-mix(in srgb, #2ecc71 45%, transparent);
+    }
+
+    .ndm-chart__rating--plus {
+        background: color-mix(in srgb, #58d68d 18%, transparent);
+        color: #9ef0b8;
+        border: 1px solid color-mix(in srgb, #58d68d 40%, transparent);
+    }
+
+    .ndm-chart__rating--even {
+        background: color-mix(in srgb, #5dade2 18%, transparent);
+        color: #a8d8ff;
+        border: 1px solid color-mix(in srgb, #5dade2 40%, transparent);
+    }
+
+    .ndm-chart__rating--minus {
+        background: color-mix(in srgb, #e74c3c 16%, transparent);
+        color: #ff9f96;
+        border: 1px solid color-mix(in srgb, #e74c3c 38%, transparent);
+    }
+
+    .ndm-chart__rating--minusminus {
+        background: color-mix(in srgb, #c0392b 20%, transparent);
+        color: #ff8a80;
+        border: 1px solid color-mix(in srgb, #c0392b 45%, transparent);
+    }
+</style>

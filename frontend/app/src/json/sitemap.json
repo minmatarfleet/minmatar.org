@@ -224,6 +224,13 @@
         "description": "page_finder.ships.doctrines.description"
     },
     {
+        "slug": "ships.navy_destroyer_metagame",
+        "path": "/ships/navy-destroyer-metagame/",
+        "publish": true,
+        "description": "page_finder.ships.navy_destroyer_metagame.description",
+        "keywords": [ "navy destroyer", "metagame", "faction warfare", "EVE Online", "guide", "fittings", "matchup chart", "Catalyst", "Coercer", "Thrasher", "Cormorant" ]
+    },
+    {
         "slug": "ships.srp",
         "alt": "icon.kill_report.alt",
         "path": "/ships/srp/",

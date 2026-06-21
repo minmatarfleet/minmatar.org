@@ -68,6 +68,7 @@ interface Props {
 	meta_image?: 			string;
 	meta_description?: 		string;
 	canonical_url?:			string;
+	og_type?:               string;
 	neocom?: 				boolean;
 	components?:			ViewportComponents;
 }
@@ -77,6 +78,7 @@ const {
 	meta_image = `${Astro.url.origin}/images/fleet-logo.png`,
 	meta_description = t('generic.meta_description'),
 	canonical_url,
+	og_type = 'website',
 	neocom = true,
 	components = {},
 } = Astro.props
@@ -117,7 +119,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 		<meta property="og:title" content={title}>
 		{meta_description && <meta property="og:description" content={meta_description} />}
 		<meta property="og:image" content={meta_image}>
-		<meta property="og:type" content="website">
+		<meta property="og:type" content={og_type}>
 		<meta property="og:url" content={canonical_url ?? Astro.url}>
 		<meta property="og:site_name" content={t('index.page_title')}>
 		<meta name="twitter:title" content={title}>

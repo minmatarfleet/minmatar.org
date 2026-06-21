@@ -66,6 +66,12 @@
         "description": "Wiki guide"
     },
     {
+        "name": "hosted_navy_destroyer_metagame",
+        "title": "The Navy Destroyer Metagame",
+        "target": "/ships/navy-destroyer-metagame/",
+        "description": "Hosted guide"
+    },
+    {
         "name": "wiki_bookmarks",
         "title": "Bookmarks",
         "target": "https://wiki.minmatar.org/alliance/Academy/Bookmarks",

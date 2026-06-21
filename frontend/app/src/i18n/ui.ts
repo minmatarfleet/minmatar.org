@@ -77,6 +77,12 @@ export const ui = {
         'ships.cover_alt': 'A close up of a black Scimitar with the FLEET logo, docked on a platform at a station',
         'ships.description': 'Discover our doctrines and fittings. You may export them to use in EVE.',
 
+        'ships.navy_destroyer_metagame.page_title': 'The Navy Destroyer Metagame',
+        'ships.navy_destroyer_metagame.leading_text': 'Furl0w\'s faction warfare navy destroyer guide.',
+        'ships.navy_destroyer_metagame.meta_title': 'The Navy Destroyer Metagame | Faction Warfare Guide | {site}',
+        'ships.navy_destroyer_metagame.meta_description': 'EVE Online faction warfare guide by Furl0w (Web Edition): navy destroyer fits, 1v1 matchup charts, and solo plex tactics for Catalyst, Coercer, Thrasher, and Cormorant. Minmatar Fleet Alliance.',
+        'page_finder.ships.navy_destroyer_metagame.description': 'EVE Online faction warfare navy destroyer guide with fits, matchup charts, and 1v1 tactics.',
+
         'ships.srp.page_title': 'Ship Reimbursement Program',
         'ships.srp.leading_text': 'Designed to utilize the alliance\'s resources to reimburse pilots for lost ships.',
         'ships.srp.onboarding_required_message': '⚠️ Before you can interact with this page, you need to accept a few terms and conditions.',
@@ -92,9 +98,9 @@ export const ui = {
         'onboarding.meta_description': 'How Minmatar Fleet Alliance approaches ship reimbursement and what to expect from the program.',
         'onboarding.back_to_srp': 'Back to SRP',
         'onboarding.acknowledgments_group_label': 'SRP expectations',
-        'onboarding.acknowledgment_1': 'I understand that this program is funded by vibes, PLEX coupons, and loot we remembered to contract — **not a guaranteed revenue stream** — and if the money stops, the program stops. I will not post a grief thread about it.',
+        'onboarding.acknowledgment_1': 'I understand that this program is funded by vibes, PLEX coupons, and loot we remembered to contract: **not a guaranteed revenue stream**: and if the money stops, the program stops. I will not post a grief thread about it.',
         'onboarding.acknowledgment_2': 'I understand that if I want a **full SRP with zero questions asked**, there are large nullsec blocs specifically designed for that lifestyle, and I am encouraged to explore them. Complaining will not conjure ISK from thin air, nor will it make our FC team want to play EVE as a full time job.',
-        'onboarding.acknowledgment_3': 'I understand that **self-sufficiency is a feature, not a bug**, and the alliance\'s job is to teach me to feed myself — not to be the cosmic vending machine I push every time I explode.',
+        'onboarding.acknowledgment_3': 'I understand that **self-sufficiency is a feature, not a bug**, and the alliance\'s job is to teach me to feed myself: not to be the cosmic vending machine I push every time I explode.',
         'onboarding.submit_button': 'Agree with SRP terms',
         'onboarding.submit_incomplete_title': 'Almost there',
         'onboarding.submit_incomplete_body': 'Not all terms were selected. Please, select them all and re-submit.',
@@ -108,6 +114,8 @@ export const ui = {
         'fitting.render.cover_alt': 'Open space with a whitish nubula in the background',
 
         'fitting.list.page_title': 'Fittings',
+        'fitting.list.meta_title': 'EVE Online Ship Fittings: FW, Solo & Fleet | {site}',
+        'fitting.list.meta_description': 'Browse {count} Minmatar Fleet ship fittings for EVE Online faction warfare, solo plex, nanogang, and fleet ops. Copy EFT fits for destroyers, battlecruisers, capitals, and more.',
 
         'fitting.tag.highsec': 'Highsec',
         'fitting.tag.industry': 'Industry',
@@ -123,8 +131,10 @@ export const ui = {
         'fitting.tag.command_bursts': 'Command Bursts',
         'fitting.tag.escape_frigate': 'Escape Frigate',
 
-        'fitting.detail.meta_title': '{fitting} — {ship} | {site}',
+        'fitting.detail.meta_title': '{fitting}: {ship} | {site}',
         'fitting.detail.meta_description_fallback': 'EVE Online fitting: {fitting} ({ship}). Minmatar Fleet Alliance.',
+        'fitting.detail.meta_description_enriched': 'EVE Online {fitting} fit for {ship}{tags_suffix}. Copy EFT, view fitted modules, and pod recommendations from Minmatar Fleet Alliance.',
+        'fitting.detail.meta_description_tags_suffix': ': {tags}',
 
         'doctrines.page_title': 'Doctrines',
         'doctrines.leading_text': 'Doctrines are recipes for content, and are the primary way that we organize our fleets. They are a set of ships, fits, and tactics that are designed to be flown by a group of pilots. All doctrines are public.',
@@ -292,7 +302,7 @@ export const ui = {
         'industry.orders.invoice.leading_text': 'Check the in-game contract values are correct.',
 
         'industry.products.page_title': 'Products',
-        'industry.products.leading_text': 'Products are the inputs — everything our alliance needs to keep the supply chain running. Each product is categorized as produced, harvested, or imported, and linked to the people who make or source it. Find a gap and fill it.',
+        'industry.products.leading_text': 'Products are the inputs: everything our alliance needs to keep the supply chain running. Each product is categorized as produced, harvested, or imported, and linked to the people who make or source it. Find a gap and fill it.',
         'industry.products.meta_description': 'Industry products, materials, components, and goods categorized by production strategy with live producer tracking.',
 
         'industry.industrialists.page_title': 'Industrialists',
@@ -379,8 +389,8 @@ export const ui = {
         'teams.list.meta_description': 'Learn more about the various teams of Minmatar Fleet Alliance and the folks who keep everything running smoothly.',
 
         'tribes.page_title': 'Tribes',
-        'tribes.leading_text': 'Tribes are focused communities within Minmatar Fleet built around a shared purpose — from capital warfare to industry and logistics. Each tribe has dedicated sub-groups you can apply to join. Your application will be reviewed by the tribe\'s chief.',
-        'tribes.meta_description': 'Discover the tribes of Minmatar Fleet Alliance — specialized communities with clear leadership, trackable output, and a place for every pilot.',
+        'tribes.leading_text': 'Tribes are focused communities within Minmatar Fleet built around a shared purpose: from capital warfare to industry and logistics. Each tribe has dedicated sub-groups you can apply to join. Your application will be reviewed by the tribe\'s chief.',
+        'tribes.meta_description': 'Discover the tribes of Minmatar Fleet Alliance: specialized communities with clear leadership, trackable output, and a place for every pilot.',
         'page_finder.tribes.description': 'Landing page for Tribes.',
         
         'tribes.groups.membership.page_title': '{group} membership',
@@ -389,7 +399,7 @@ export const ui = {
         'tribes.members': 'members',
         'tribes.detail.groups_section': 'Tribe Groups',
         'tribes.detail.requirements': 'Requirements',
-        'tribes.detail.no_requirements': 'No specific requirements — open to all qualifying members.',
+        'tribes.detail.no_requirements': 'No specific requirements: open to all qualifying members.',
         'tribes.detail.member_count': 'members',
         'tribes.detail.activity': 'Group Activity',
         'tribes.activity.view_more': 'View more',
@@ -860,7 +870,7 @@ export const ui = {
         'completed': 'Completed',
         'skillset_missing_skills_modal_error': 'An error occurred and missing skills cannot be displayed.',
         'no_missing_skills': 'Skillset is fully trained',
-        'skillset_missing_skills': 'Skillset — Missing skills',
+        'skillset_missing_skills': 'Skillset: Missing skills',
         'in_inventory': 'in inventory',
         'credits': 'Credits',
         'regions': 'Regions',
@@ -936,7 +946,7 @@ export const ui = {
         'page_finder.account.referral.troubleshooting': 'Find solutions to common issues while using our website.',
         'page_finder.ships.description': 'Ships landing page.',
         'page_finder.index.description': 'Minmatar.org landing page.',
-        'page_finder.ships.fitting.list.description': 'List of fittings.',
+        'page_finder.ships.fitting.list.description': 'EVE Online ship fittings library with EFT export for faction warfare, solo, and fleet.',
         'page_finder.ships.doctrines.description': 'List of doctrines.',
         'page_finder.posts.description': 'List of your posts to manage.',
         'page_finder.posts.create.description': 'Create propaganda post with WYSWYG editor.',
@@ -988,6 +998,7 @@ export const ui = {
         'cargo_hold': 'Cargo Hold',
         'item_picture': 'Item picture',
         'copy_fitting': 'Copy fitting',
+        'view_fitting': 'View fitting',
         'unregistered_members': 'Unregistered members',
         'mains': 'Mains',
         'unregistered': 'Unregistered',
@@ -2192,6 +2203,7 @@ export const ui = {
         'request': 'Request',
         'browse_fittings': 'Browse fittings',
         'browse_doctrines': 'Browse doctrines',
+        'browse_destroyer_metagame': 'Browse destroyer metagame',
         'select': 'Select',
         'ship_pilot': 'Ship pilot',
         'add_killmail_intro_text': 'Welcome to our **{program} Ship Reimbursement Program**. Let’s start analyzing your killmail for eligibility.',
