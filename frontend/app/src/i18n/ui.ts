@@ -61,6 +61,9 @@ export const ui = {
         'alliance.values.page_title': 'Alliance Values',
         'alliance.playstyle.page_title': 'Our playstyle',
 
+        'brand.page_title': 'Branding',
+        'brand.leading_text': 'Official FL33T fonts, colours, logos, and icons for alliance branding.',
+
         'propaganda.page_title': 'Propaganda',
         'propaganda.leading_text': 'All our propaganda in a single place.',
         'propaganda.meta_description': 'All our propaganda in a single place.',
@@ -913,6 +916,7 @@ export const ui = {
         'page_finder.story.description': 'Learn more about our story.',
         'page_finder.values.description': 'What we expect from every FL33T member.',
         'page_finder.playstyle.description': 'Learn more about our playstyle.',
+        'page_finder.brand.description': 'Official FL33T fonts, colours, logos, and icons.',
         'page_finder.teams.description': 'Teams landing page.',
         'page_finder.groups.description': 'Special Interest Groups landing page.',
         'page_finder.market.description': 'Market landing page.',

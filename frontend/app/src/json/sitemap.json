@@ -64,6 +64,13 @@
         "keywords": [ "playstyle" ]
     },
     {
+        "slug": "brand",
+        "path": "/brand/",
+        "publish": true,
+        "description": "page_finder.brand.description",
+        "keywords": [ "brand", "branding", "logo", "icons" ]
+    },
+    {
         "slug": "corporations.list",
         "alt": "icon.corporation.alt",
         "path": "/alliance/corporations/",

@@ -1,0 +1,142 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import {
+    animatedLogoUrl,
+    brandColors,
+    brandFont,
+    buildAssets,
+    fleetAssets,
+    mascotImage,
+    sigAssets,
+    teamAssets,
+} from '@/data/brand/assets'
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import BrandAssets from '@components/blocks/brand/BrandAssets.astro'
+
+const page_title = t('brand.page_title')
+const page_description = t('brand.leading_text')
+---
+
+<Viewport
+    title={page_title}
+    meta_description={page_description}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <PageLanding
+        wide={true}
+        cover={{
+            image: '/images/alliance-cover.jpg',
+            image_990: '/images/alliance-cover.jpg',
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <Flexblock gap="var(--space-2xl)">
+            <Wrapper
+                max_width="var(--max-text-width)"
+                padding_inline="0"
+                padding_block="0"
+            >
+                <Flexblock gap="var(--space-xl)">
+                    <PageTitle is_landing={true}>{page_title}</PageTitle>
+                    <p class="[ excerpt ]">{page_description}</p>
+                </Flexblock>
+            </Wrapper>
+
+            <TextBox>
+                <Flexblock gap="var(--space-2xl)" class="[ brand-page ]">
+                    <section class="[ brand-section ]">
+                        <h2>Font</h2>
+                        <p>
+                            <a href={brandFont.url} target="_blank" rel="noopener noreferrer">{brandFont.name}</a>
+                        </p>
+                    </section>
+
+                    <section class="[ brand-section ]">
+                        <h2>Colours</h2>
+                        <ul class="[ color-list ]">
+                            {brandColors.map(({ name, hex }) => (
+                                <li>
+                                    <span class="[ color-swatch ]" style={`background-color: ${hex}`} />
+                                    <span>{name} {hex}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+
+                    <BrandAssets title="FL33T" rows={fleetAssets} />
+                    <BrandAssets title="BUILD" rows={buildAssets} />
+                    <BrandAssets title="SIGs" rows={sigAssets} />
+                    <BrandAssets title="Teams" rows={teamAssets} />
+
+                    <section class="[ brand-section ]">
+                        <h2>Mascots</h2>
+                        <a href={mascotImage} download>
+                            <img
+                                src={mascotImage}
+                                alt="Scurry mascot"
+                                data-zoomable
+                                loading="lazy"
+                            />
+                        </a>
+                    </section>
+
+                    <section class="[ brand-section ]">
+                        <h2>GIFs</h2>
+                        <p>
+                            <a href={animatedLogoUrl} target="_blank" rel="noopener noreferrer">Animated Logo</a>
+                        </p>
+                    </section>
+                </Flexblock>
+            </TextBox>
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .excerpt {
+        font-size: var(--step-1);
+    }
+
+    .brand-page {
+        :global(h2) {
+            margin: 0;
+        }
+    }
+
+    .brand-section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+    }
+
+    .color-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .color-swatch {
+        display: inline-block;
+        width: 1.5rem;
+        height: 1.5rem;
+        border: 1px solid var(--border-color);
+        border-radius: 2px;
+        margin-right: var(--space-s);
+        vertical-align: middle;
+    }
+</style>
