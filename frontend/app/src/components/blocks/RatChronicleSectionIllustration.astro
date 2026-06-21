@@ -1,0 +1,59 @@
+---
+import { formatChronicleText } from '@/data/rat-chronicle/format-text'
+
+interface Props {
+    src: string
+    alt: string
+    caption?: string
+}
+
+const { src, alt, caption } = Astro.props
+---
+
+<figure class="chronicle-illustration">
+    <picture>
+        <img
+            src={src}
+            alt={alt}
+            loading="lazy"
+            width="1920"
+            height="1080"
+            data-zoomable
+        />
+    </picture>
+    {caption && <figcaption class="chronicle-illustration__caption" set:html={formatChronicleText(caption)} />}
+</figure>
+
+<style lang="scss">
+    .chronicle-illustration {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 0 0 var(--space-xl);
+        padding: 0;
+    }
+
+    .chronicle-illustration picture {
+        display: block;
+        width: min(100%, 36rem);
+    }
+
+    .chronicle-illustration img {
+        display: block;
+        width: 100%;
+        height: auto;
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 22%, transparent);
+        cursor: zoom-in;
+    }
+
+    .chronicle-illustration__caption {
+        width: min(100%, 36rem);
+        margin-top: var(--space-s);
+        font-family: var(--chronicle-font);
+        font-size: var(--step--1);
+        font-style: italic;
+        line-height: 1.5;
+        text-align: center;
+        color: var(--text-color-secondary, var(--faded));
+    }
+</style>

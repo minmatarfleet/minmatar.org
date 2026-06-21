@@ -1,0 +1,27 @@
+---
+interface Props {
+    months: string
+    yc: string
+    realYear: string
+    class?: string
+}
+
+const { months, yc, realYear, class: className } = Astro.props
+---
+
+<time
+    class:list={['chronicle-date', className]}
+    datetime={realYear}
+    data-tippy-content={realYear}
+    x-init="tippy($el, tippy_options)"
+>
+    {months} {yc}
+</time>
+
+<style lang="scss">
+    .chronicle-date {
+        cursor: help;
+        text-decoration: underline dotted color-mix(in srgb, currentColor 35%, transparent);
+        text-underline-offset: 0.2em;
+    }
+</style>

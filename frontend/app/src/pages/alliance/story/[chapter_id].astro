@@ -1,0 +1,75 @@
+---
+import * as page from '@markdown/story.md';
+
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+import { strip_markdown } from '@helpers/string';
+import { defaultChronicleChapterId, getChronicleChapterById } from '@/data/rat-chronicle';
+
+import Viewport from '@layouts/Viewport.astro';
+
+import PageLanding from '@components/page/PageLanding.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import RatChronicle from '@components/blocks/RatChronicle.astro';
+
+const chapter_id = Astro.params.chapter_id ?? ''
+const chapter = getChronicleChapterById(chapter_id)
+
+if (!chapter) {
+    return Astro.redirect(`/alliance/story/${defaultChronicleChapterId}/`)
+}
+
+const page_title = page.frontmatter.title
+const page_description = page.frontmatter.excerpt
+const viewport_title = `${page_title} · Chapter ${chapter.number}: ${chapter.title}`
+---
+
+<Viewport
+    title={viewport_title}
+    meta_description={await strip_markdown(page_description)}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <PageLanding
+        wide={true}
+        cover={{
+            image: "/images/alliance-cover.jpg",
+            image_990: "/images/alliance-cover.jpg",
+            scrollable: true,
+            overlay: true
+        }}
+    >
+        <Flexblock gap='var(--space-2xl)' class="story-page">
+            <Wrapper
+                max_width="var(--max-content-width)"
+                padding_inline="0"
+                padding_block="0"
+            >
+                <Flexblock gap='var(--space-xl)'>
+                    <PageTitle is_landing={true}>{page_title}</PageTitle>
+                    <p class="[ excerpt ]" set:html={marked.parseInline(page_description as string, { renderer })} />
+                </Flexblock>
+            </Wrapper>
+
+            <RatChronicle activeChapterId={chapter.id} />
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .story-page {
+        width: 100%;
+    }
+
+    .excerpt,
+    :global(.excerpt p) {
+        font-size: var(--step-1);
+    }
+</style>

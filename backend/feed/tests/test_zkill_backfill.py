@@ -16,12 +16,18 @@ class ZkillBackfillTestCase(TestCase):
     def setUp(self):
         seed_from_fixture()
 
+    @patch("feed.helpers.zkill_backfill.timezone.now")
     @patch("feed.helpers.zkill_backfill.time.sleep")
     @patch("feed.helpers.zkill_backfill.requests.get")
     def test_backfill_monitored_systems_ingests_recent_kills(
-        self, mock_get: MagicMock, mock_sleep: MagicMock
+        self,
+        mock_get: MagicMock,
+        mock_sleep: MagicMock,
+        mock_now: MagicMock,
     ):
         del mock_sleep
+        fixed_now = datetime(2026, 6, 20, 12, 0, 0, tzinfo=timezone.utc)
+        mock_now.return_value = fixed_now
         kill_time = datetime(2026, 6, 19, 20, 0, 0, tzinfo=timezone.utc)
 
         def fake_get(url, **kwargs):
