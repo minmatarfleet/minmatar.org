@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { FittingItem } from '@dtypes/layout_components'
 import { fetch_fittings } from '@helpers/fetching/ships'
@@ -9,6 +9,11 @@ import { SHIP_TYPES_SORTED } from '@helpers/eve'
 import { get_ship_type_icon } from '@helpers/eve'
 import { get_ships_meta } from '@helpers/sde/ships'
 import { unique_values } from '@helpers/array'
+import {
+    buildFittingsListJsonLd,
+    buildFittingsListMetaDescription,
+    buildFittingsListMetaTitle,
+} from '@helpers/fitting_seo'
 
 let fittings:FittingItem[] = []
 let get_fittings_error:string | false = false
@@ -81,16 +86,46 @@ import FittingLink from '@components/blocks/FittingLink.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
 const page_title = t('fitting.list.page_title');
+const site_name = t('index.page_title')
+const meta_title = buildFittingsListMetaTitle(site_name, t)
+const meta_description = buildFittingsListMetaDescription(fittings.length, t)
+const canonical_url = new URL(translatePath('/ships/fittings/'), Astro.url.origin).href
+const meta_image = new URL('/images/fits-cover.jpg', Astro.url.origin).href
+const ships_url = new URL(translatePath('/ships/'), Astro.url.origin).href
+
+const structured_data = buildFittingsListJsonLd(
+    {
+        fittings: fittings.map((fitting) => ({
+            id: fitting.id,
+            name: fitting.fitting_name.replace(/^\[[^\]]+\]\s*/, ''),
+            shipName: fitting.ship_name,
+            url: new URL(translatePath(`/ships/fittings/${fitting.id}`), Astro.url.origin).href,
+        })),
+        siteName: site_name,
+        siteOrigin: Astro.url.origin,
+        fittingsListUrl: canonical_url,
+        shipsUrl: ships_url,
+        canonicalUrl: canonical_url,
+        metaImage: meta_image,
+    },
+    meta_title,
+    meta_description,
+)
 ---
 
 <Viewport
-    title={page_title}
-    meta_description={t('fitting.meta_description')}
+    title={meta_title}
+    meta_description={meta_description}
+    meta_image={meta_image}
+    canonical_url={canonical_url}
 >
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(structured_data)} />
+
     <PageWide
         cover={{
             image: "/images/fits-cover.jpg",
             image_990: "/images/fits-cover.jpg",
+            alt: t('fitting.cover_alt'),
             animated: false,
             scrollable: true,
             overlay: true
