@@ -1,0 +1,103 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { getGuideBySlug } from '@/data/guides'
+import { getGuideCoverImage } from '@/data/guides/covers'
+
+import { marked } from 'marked'
+import { renderer } from '@helpers/marked'
+import { strip_markdown } from '@helpers/string'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+
+const slug = Astro.params.name ?? ''
+const guide = getGuideBySlug(slug)
+
+if (!guide) {
+    return HTTP_404_Not_Found()
+}
+
+const { module } = guide
+const page_title = guide.title
+const page_description = guide.excerpt
+
+const guide_cover = getGuideCoverImage(guide)
+
+import Viewport from '@layouts/Viewport.astro'
+
+import PageLanding from '@components/page/PageLanding.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import TextBox from '@components/layout/TextBox.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import BlockList from '@components/compositions/BlockList.astro'
+
+import Button from '@components/blocks/Button.astro'
+---
+
+<Viewport
+    title={page_title}
+    meta_description={await strip_markdown(page_description)}
+    components={{
+        alert_dialog: true,
+    }}
+>
+    <PageLanding
+        wide={true}
+        cover={{
+            image: guide_cover,
+            image_990: guide_cover,
+            scrollable: true,
+            overlay: true
+        }}
+    >
+        <Flexblock gap='var(--space-2xl)'>
+            <TextBox>
+                <Flexblock gap='var(--space-m)'>
+                    <small class="[ text-muted ]">{guide.category}</small>
+                    <PageTitle is_landing={true}>{page_title}</PageTitle>
+                    <p class="[ guide-excerpt ]">{page_description}</p>
+                    <small class="[ text-muted ]">{t('guides.author')}: {guide.author}</small>
+                </Flexblock>
+            </TextBox>
+
+            <TextBox>
+                <BlockList gap='var(--space-xl)'>
+                    <div
+                        class="[ prose ]"
+                        set:html={marked.parse(module.rawContent(), { renderer })}
+                        x-data={`{
+                            init_zoom() {
+                                mediumZoom('.prose img', {
+                                    background: 'var(--solid-transparency-background)',
+                                    scrollOffset: 0,
+                                    margin: 24,
+                                    metaClick: false,
+                                })
+                            }
+                        }`}
+                        x-init="init_zoom()"
+                    />
+
+                    <hr class="[ border-bottom ]" />
+
+                    <Button
+                        class="[ w-fit! ]"
+                        href={translatePath('/guides/')}
+                    >
+                        {t('guides.back_to_guides')}
+                    </Button>
+                </BlockList>
+            </TextBox>
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .guide-excerpt {
+        font-size: var(--step-1);
+        color: var(--muted-color);
+        max-width: 60ch;
+    }
+</style>

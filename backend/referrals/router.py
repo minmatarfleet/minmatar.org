@@ -45,15 +45,11 @@ links = [
     ),
     LinkInfo(
         name="Plexing",
-        target="https://wiki.minmatar.org/alliance/Academy/Faction_Warfare_Plexing",
+        target="https://my.minmatar.org/guides/faction-warfare-plexing/",
     ),
     LinkInfo(
         name="Advantage",
-        target="https://wiki.minmatar.org/alliance/Academy/faction-warfare-advantage",
-    ),
-    LinkInfo(
-        name="Battlefields",
-        target="https://wiki.minmatar.org/guides/battlefields",
+        target="https://my.minmatar.org/guides/faction-warfare-advantage/",
     ),
 ]
 

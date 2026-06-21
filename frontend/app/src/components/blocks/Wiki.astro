@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
@@ -22,11 +22,11 @@ import ButtonStack from '@components/blocks/ButtonStack.astro';
                 <img src="/images/wikilogo.png" width="256" height="256" />
             </picture>
 
-            <p class="[ text-center ]">Welcome to the new wiki!</p>
+            <p class="[ text-center ]">{t('wiki_description')}</p>
             
             <ButtonStack>
-                <Button size='sm' href='https://wiki.minmatar.org/'>
-                    {t('visit')}
+                <Button size='sm' href={translatePath('/guides/')}>
+                    {t('guides.page_title')}
                 </Button>
             </ButtonStack>
         </Flexblock>

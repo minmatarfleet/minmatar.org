@@ -1,0 +1,142 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { getGuidesByCategory, guideCategories, guides } from '@/data/guides'
+import { GUIDES_INDEX_COVER } from '@/data/guides/covers'
+
+import { strip_markdown } from '@helpers/string'
+
+import Viewport from '@layouts/Viewport.astro'
+
+import PageLanding from '@components/page/PageLanding.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import TextBox from '@components/layout/TextBox.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Grid from '@components/compositions/Grid.astro'
+
+import GuideCard from '@components/blocks/GuideCard.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+
+const guidesByCategory = getGuidesByCategory()
+
+const page_title = t('guides.page_title')
+const page_description = t('guides.leading_text')
+---
+
+<Viewport
+    title={page_title}
+    meta_description={await strip_markdown(page_description)}
+    components={{
+        alert_dialog: true,
+    }}
+>
+    <PageLanding
+        wide={true}
+        cover={{
+            image: GUIDES_INDEX_COVER.image,
+            image_990: GUIDES_INDEX_COVER.image_990,
+            scrollable: true,
+            overlay: true
+        }}
+    >
+        <Flexblock gap='var(--space-2xl)'>
+            <TextBox>
+                <Flexblock gap='var(--space-l)'>
+                    <FlexInline class="[ items-center! flex-wrap ]" gap='var(--space-l)'>
+                        <picture class="[ guides-brand ]">
+                            <img
+                                src="/images/wikilogo.png"
+                                width="128"
+                                height="128"
+                                alt=""
+                                loading="eager"
+                            />
+                        </picture>
+                        <Flexblock class="[ grow basis-[280px] ]" gap='var(--space-s)'>
+                            <PageTitle is_landing={true}>{page_title}</PageTitle>
+                            <p class="[ excerpt ]">{page_description}</p>
+                            <small class="[ text-muted ]">
+                                {guides.length} {guides.length === 1 ? 'guide' : 'guides'}
+                            </small>
+                        </Flexblock>
+                    </FlexInline>
+                </Flexblock>
+            </TextBox>
+
+            <TextBox>
+                <Flexblock gap='var(--space-2xl)'>
+                    {guideCategories.map((category) => {
+                        const categoryGuides = guidesByCategory[category] ?? []
+                        if (!categoryGuides.length) return null
+
+                        return (
+                            <Flexblock gap='var(--space-m)'>
+                                <Flexblock gap='var(--space-3xs)'>
+                                    <h2 class="[ font-bold ]">{category}</h2>
+                                    <small class="[ text-muted ]">
+                                        {categoryGuides.length} {categoryGuides.length === 1 ? 'guide' : 'guides'}
+                                    </small>
+                                </Flexblock>
+                                <Grid
+                                    class="[ w-full grid-fill ]"
+                                    min_item_width="280px"
+                                    row_gap="var(--space-s)"
+                                    column_gap="var(--space-s)"
+                                >
+                                    {categoryGuides.map((guide) => (
+                                        <GuideCard guide={guide} />
+                                    ))}
+                                </Grid>
+                            </Flexblock>
+                        )
+                    })}
+                </Flexblock>
+            </TextBox>
+
+            <TextBox>
+                <ComponentBlock width="narrow">
+                    <Flexblock gap="var(--space-m)">
+                        <h2 class="[ font-bold ]">{t('guides.submit_title')}</h2>
+                        <ul class="[ submit-steps ]">
+                            <li>{t('guides.submit_step_1')}</li>
+                            <li>
+                                {t('guides.submit_step_2_before')}{' '}
+                                <a href={translatePath('/alliance/tribes/4/12/')}>
+                                    {t('guides.submit_step_2_link')}
+                                </a>.
+                            </li>
+                            <li>{t('guides.submit_step_3')}</li>
+                        </ul>
+                    </Flexblock>
+                </ComponentBlock>
+            </TextBox>
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .excerpt {
+        font-size: var(--step-1);
+        max-width: 52ch;
+    }
+
+    .guides-brand img {
+        filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.35));
+    }
+
+    .submit-steps {
+        padding-left: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        max-width: 52ch;
+
+        li::marker {
+            color: var(--highlight);
+        }
+    }
+</style>
