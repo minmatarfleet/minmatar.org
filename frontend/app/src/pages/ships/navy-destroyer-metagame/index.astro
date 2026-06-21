@@ -70,15 +70,6 @@ const structured_data = buildNavyDestroyerMetagameJsonLd({
                     </nav>
                     <PageTitle is_landing={true}>{page_title}</PageTitle>
                     <p class="[ excerpt ]">{page_description}</p>
-                    <p class="ndm-page__original">
-                        <a
-                            href={guideMeta.firstEditionUrl}
-                            target="_blank"
-                            rel="nofollow noopener noreferrer"
-                        >
-                            Read Furl0w&apos;s First Edition (YC 126)
-                        </a>
-                    </p>
                 </Flexblock>
             </TextBox>
 
@@ -142,22 +133,5 @@ const structured_data = buildNavyDestroyerMetagameJsonLd({
         font-size: var(--step-1);
         line-height: 1.6;
         max-width: var(--max-text-width);
-    }
-
-    .ndm-page__original {
-        margin: 0;
-        font-size: var(--step--1);
-
-        a {
-            color: var(--highlight);
-            text-decoration: underline;
-            text-decoration-color: color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
-            text-underline-offset: 0.15em;
-
-            &:hover,
-            &:focus-visible {
-                color: var(--fleet-yellow);
-            }
-        }
     }
 </style>

@@ -2,7 +2,7 @@ import type { GlossaryEntry } from './types'
 
 export const guideMeta = {
     title: 'The Navy Destroyer Metagame',
-    edition: 'Second Edition',
+    edition: 'Web Edition',
     yc: 'YC 128',
     originalEdition: 'First Edition · YC 126',
     publisher: 'Minmatar Fleet Alliance Thinkspeak Editions',
@@ -16,8 +16,6 @@ export const guideMeta = {
 export const credits = {
     firstEditionAuthor: 'Furl0w',
     firstEditionLabel: 'First Edition · YC 126',
-    secondEditionNote:
-        'This Second Edition on my.minmatar.org adds searchable fits, matchup charts, and links to live [NVY] fittings in the Fleet library.',
     thanks:
         'The original First Edition owed special thanks to Jakub Tivianne for insightful feedback and discussion, Thehin Zamayid for his comments, the FL33T and BSB discords, and everyone who motivated Furl0w to finish the guide. Faye Vaelent designed and edited that print edition.',
     quotes: [
@@ -26,9 +24,32 @@ export const credits = {
     ],
 }
 
+export const guideHistory = [
+    {
+        id: 'first-edition',
+        dateLabel: '2024',
+        yc: 'YC 126',
+        title: 'First Edition',
+        description:
+            'Furl0w publishes the original guide: fits, matchup notes, and solo plex tactics for faction warfare navy destroyers.',
+        link: {
+            href: guideMeta.firstEditionUrl,
+            label: 'Read PDF',
+        },
+    },
+    {
+        id: 'web-edition',
+        dateLabel: 'June 21, 2026',
+        yc: 'YC 128',
+        title: 'Web Edition',
+        description:
+            'Adapted for my.minmatar.org with searchable fits, matchup charts, and live [NVY] fittings in the Fleet library.',
+    },
+] as const satisfies readonly import('./types').GuideHistoryEntry[]
+
 export const introduction = [
     'After Uprising, faction warfare shifted from frigates to destroyers. Destroyers can run every plex size except Scout, which made them the warzone’s best ISK printer and the ship class everyone else had to answer. Navy destroyers raised the stakes further: more EHP, better projection, and more damage than T1 hulls, at the cost of tracking and price.',
-    'Two years on, they are still the default tool for FW pilots and the most common ship on d-scan when you are plexing or hunting a fight. Furl0w’s First Edition (YC 126) was the first proper write-up of their common fits and how those fits match up in solo 1v1s. This Second Edition carries that analysis forward on my.minmatar.org.',
+    'Two years on, they are still the default tool for FW pilots and the most common ship on d-scan when you are plexing or hunting a fight. Furl0w’s First Edition (YC 126) covers the fits and 1v1 matchups below.',
     'What follows covers the archetypes you will actually see in space, their 1v1 matchups with and without plex high ground, and practical notes on when to commit, when to bail, and where a fit can be upgraded without losing its identity.',
 ]
 
@@ -86,6 +107,7 @@ export const glossary: GlossaryEntry[] = [
 
 export const guideSections = [
     { id: 'credits', title: 'Credits', shortTitle: 'Credits' },
+    { id: 'history', title: 'History', shortTitle: 'History' },
     { id: 'introduction', title: 'Introduction' },
     { id: 'considerations', title: 'Metagame Considerations', shortTitle: 'Considerations' },
     { id: 'disclaimers', title: 'Disclaimers & Summary', shortTitle: 'Summary' },

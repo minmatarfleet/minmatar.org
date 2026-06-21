@@ -78,9 +78,9 @@ export const ui = {
         'ships.description': 'Discover our doctrines and fittings. You may export them to use in EVE.',
 
         'ships.navy_destroyer_metagame.page_title': 'The Navy Destroyer Metagame',
-        'ships.navy_destroyer_metagame.leading_text': 'Second Edition of Furl0w\'s original faction warfare navy destroyer guide, hosted on my.minmatar.org with live fits and charts.',
+        'ships.navy_destroyer_metagame.leading_text': 'Furl0w\'s faction warfare navy destroyer guide.',
         'ships.navy_destroyer_metagame.meta_title': 'The Navy Destroyer Metagame | Faction Warfare Guide | {site}',
-        'ships.navy_destroyer_metagame.meta_description': 'EVE Online faction warfare guide by Furl0w (Second Edition): navy destroyer fits, 1v1 matchup charts, and solo plex tactics for Catalyst, Coercer, Thrasher, and Cormorant. Minmatar Fleet Alliance.',
+        'ships.navy_destroyer_metagame.meta_description': 'EVE Online faction warfare guide by Furl0w (Web Edition): navy destroyer fits, 1v1 matchup charts, and solo plex tactics for Catalyst, Coercer, Thrasher, and Cormorant. Minmatar Fleet Alliance.',
         'page_finder.ships.navy_destroyer_metagame.description': 'EVE Online faction warfare navy destroyer guide with fits, matchup charts, and 1v1 tactics.',
 
         'ships.srp.page_title': 'Ship Reimbursement Program',

@@ -2,6 +2,7 @@
 import {
     guideMeta,
     credits,
+    guideHistory,
     introduction,
     considerations,
     considerationBullets,
@@ -14,6 +15,7 @@ import {
     shipGuides,
 } from '@/data/navy-destroyer-metagame'
 
+import NavyDestroyerMetagameHistoryTimeline from '@components/blocks/navy-destroyer-metagame/NavyDestroyerMetagameHistoryTimeline.astro'
 import NavyDestroyerMetagameMatchupChart from '@components/blocks/navy-destroyer-metagame/NavyDestroyerMetagameMatchupChart.astro'
 import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-metagame/NavyDestroyerMetagameShipSection.astro'
 ---
@@ -44,7 +46,6 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
             <section id="credits" class="ndm-section ndm-panel" aria-labelledby="ndm-credits-title">
                 <div class="ndm-credits">
                     <h2 id="ndm-credits-title" class="ndm-section__title">Credits</h2>
-                    <p class="ndm-credits__edition">{guideMeta.edition} · {guideMeta.yc}</p>
                     <p class="ndm-credits__provenance">
                         The original{' '}
                         <a
@@ -65,7 +66,6 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
                             Reddit announcement
                         </a>
                     </p>
-                    <p class="ndm-credits__note">{credits.secondEditionNote}</p>
                     <p class="ndm-credits__thanks">{credits.thanks}</p>
 
                     <div class="ndm-credits__quotes" aria-label="Reader testimonials from the First Edition">
@@ -82,9 +82,15 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
                     <p class="ndm-credits__publisher">
                         {guideMeta.publisher}<br />
                         {guideMeta.location}<br />
-                        {guideMeta.originalEdition} · {guideMeta.edition} ({guideMeta.yc})
+                        {guideMeta.originalEdition}<br />
+                        {guideMeta.edition} · {guideMeta.yc}
                     </p>
                 </div>
+            </section>
+
+            <section id="history" class="ndm-section ndm-panel" aria-labelledby="ndm-history-title">
+                <h2 id="ndm-history-title" class="ndm-section__title">History</h2>
+                <NavyDestroyerMetagameHistoryTimeline entries={guideHistory} />
             </section>
 
             <section id="introduction" class="ndm-section ndm-panel" aria-labelledby="ndm-intro-title">
@@ -413,13 +419,6 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
         margin: 0 0 var(--space-m);
         font-size: var(--step-0);
         line-height: 1.6;
-    }
-
-    .ndm-credits__note {
-        margin: 0 0 var(--space-m);
-        font-size: var(--step--1);
-        line-height: 1.65;
-        color: var(--text-color-secondary, var(--faded));
     }
 
     .ndm-credits__thanks {

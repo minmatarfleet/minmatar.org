@@ -1,4 +1,4 @@
-export { guideMeta, credits, introduction, considerations, considerationBullets, disclaimers, metagameSummary, glossary, guideSections } from './content'
+export { guideMeta, credits, guideHistory, introduction, considerations, considerationBullets, disclaimers, metagameSummary, glossary, guideSections } from './content'
 export { buildNavyDestroyerMetagameJsonLd } from './seo'
 export { matchupLegend, brawlingChart, kitingChart, matchupCharts } from './matchup-charts'
 export { catalystGuide, coercerGuide, thrasherGuide, cormorantGuide, shipGuides } from './ships'
@@ -14,6 +14,7 @@ export type {
     ShipGuide,
     GlossaryEntry,
     GuideSection,
+    GuideHistoryEntry,
     MatchupChart,
     ParsedFitSection,
 } from './types'
