@@ -1,0 +1,151 @@
+---
+import type { ChronicleCharactersOfTheAge } from '@/data/rat-chronicle'
+import { formatChronicleDescription } from '@/data/rat-chronicle'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+
+interface Props {
+    charactersOfTheAge: ChronicleCharactersOfTheAge
+}
+
+const { charactersOfTheAge } = Astro.props
+---
+
+<aside class="chronicle-closing" aria-label="Characters of the Age">
+    <p class="chronicle-closing__kicker">Characters of the Age</p>
+
+    {
+        charactersOfTheAge.groups.map((group) => (
+            <div class="chronicle-closing__group">
+                <h4 class="chronicle-closing__group-label">{group.label}</h4>
+                <ul
+                    class="chronicle-closing__roster"
+                    style={`--pilot-count: ${group.characters.length}`}
+                >
+                    {
+                        group.characters.map((character) => (
+                            <li class="chronicle-closing__pilot">
+                                <CharacterPicture
+                                    character_id={character.character_id}
+                                    character_name={character.character_name}
+                                    size={96}
+                                    icon_quality={256}
+                                    inert={true}
+                                    centered={true}
+                                />
+                                <div class="chronicle-closing__pilot-text">
+                                    <p class="chronicle-closing__pilot-name">{character.character_name}</p>
+                                    {character.role && (
+                                        <p class="chronicle-closing__pilot-role">{character.role}</p>
+                                    )}
+                                    {character.description && (
+                                        <p class="chronicle-closing__pilot-description" set:html={formatChronicleDescription(character.description)} />
+                                    )}
+                                </div>
+                            </li>
+                        ))
+                    }
+                </ul>
+            </div>
+        ))
+    }
+</aside>
+
+<style lang="scss">
+    .chronicle-closing {
+        margin-top: var(--space-2xl);
+        padding-top: var(--space-xl);
+        border-top: 1px solid color-mix(in srgb, var(--fleet-yellow) 15%, transparent);
+    }
+
+    .chronicle-closing__kicker {
+        margin: 0 0 var(--space-l);
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        letter-spacing: 0.16em;
+        text-align: center;
+        text-transform: uppercase;
+        color: color-mix(in srgb, var(--foreground) 65%, transparent);
+    }
+
+    .chronicle-closing__group {
+        & + & {
+            margin-top: var(--space-xl);
+        }
+    }
+
+    .chronicle-closing__group-label {
+        margin: 0 0 var(--space-m);
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        letter-spacing: 0.1em;
+        text-align: center;
+        text-transform: uppercase;
+        color: var(--fleet-red);
+    }
+
+    .chronicle-closing__roster {
+        display: grid;
+        grid-template-columns: repeat(var(--pilot-count), minmax(0, 1fr));
+        gap: var(--space-l) var(--space-xl);
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .chronicle-closing__pilot {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-s);
+        min-width: 0;
+        text-align: center;
+    }
+
+    .chronicle-closing__pilot :global(picture) {
+        filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.35));
+    }
+
+    .chronicle-closing__pilot :global(img) {
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 25%, transparent);
+    }
+
+    .chronicle-closing__pilot-text {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        width: 100%;
+    }
+
+    .chronicle-closing__pilot-name {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--highlight);
+    }
+
+    .chronicle-closing__pilot-role {
+        margin: 0;
+        font-size: var(--step--2);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--fleet-red);
+    }
+
+    .chronicle-closing__pilot-description {
+        margin: var(--space-2xs) 0 0;
+        font-family: var(--chronicle-font);
+        font-size: var(--step--1);
+        font-style: italic;
+        line-height: 1.5;
+        color: color-mix(in srgb, var(--foreground) 85%, transparent);
+    }
+
+    @media (max-width: 40rem) {
+        .chronicle-closing__roster {
+            grid-template-columns: repeat(min(var(--pilot-count), 2), minmax(0, 1fr));
+        }
+    }
+</style>

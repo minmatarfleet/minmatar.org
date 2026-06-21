@@ -1,9 +1,5 @@
 ---
 title: Our story
 excerpt: >
-  Content coming soon. Stay tuned
+  The Rat Chronicle — a history of Minmatar Fleet Alliance, from the founding of Rattini Tribe through the wars that followed.
 ---
-
-In the meantime you could have fun watching some highlights.
-
-<lite-youtube videoid="-BIQ5UIF3N0" posterquality="maxresdefault" autoload></lite-youtube>

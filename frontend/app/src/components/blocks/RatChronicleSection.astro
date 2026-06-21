@@ -1,0 +1,160 @@
+---
+import type { ChronicleBlock } from '@/data/rat-chronicle'
+import { formatChronicleText } from '@/data/rat-chronicle'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+
+interface Props {
+    blocks: ChronicleBlock[]
+    drop_cap?: boolean
+}
+
+const { blocks, drop_cap = false } = Astro.props
+
+const first_paragraph_index = drop_cap
+    ? blocks.findIndex((block) => block.type === 'paragraph')
+    : -1
+---
+
+{
+    blocks.map((block, index) => {
+        if (block.type === 'paragraph') {
+            return (
+                <p
+                    class:list={['chronicle__paragraph', { 'chronicle__paragraph--drop-cap': index === first_paragraph_index }]}
+                    set:html={formatChronicleText(block.text)}
+                />
+            )
+        }
+
+        if (block.type === 'beat') {
+            return <p class="chronicle__beat" set:html={formatChronicleText(block.text)} />
+        }
+
+        if (block.type === 'quote') {
+            return (
+                <blockquote class="chronicle__quote">
+                    <p set:html={formatChronicleText(block.text)} />
+                    {(block.character_id || block.attribution) && (
+                        <footer class="chronicle__quote-attribution">
+                            {block.character_id && (
+                                <CharacterPicture
+                                    character_id={block.character_id}
+                                    character_name={block.character_name}
+                                    size={64}
+                                    icon_quality={128}
+                                    inert={true}
+                                />
+                            )}
+                            <span class="chronicle__quote-attribution-text">
+                                {block.character_name && (
+                                    <cite class="chronicle__quote-author">{block.character_name}</cite>
+                                )}
+                                {block.attribution && (
+                                    <span class="chronicle__quote-attribution-detail">{block.attribution}</span>
+                                )}
+                            </span>
+                        </footer>
+                    )}
+                </blockquote>
+            )
+        }
+
+        return null
+    })
+}
+
+<style lang="scss">
+    .chronicle__paragraph {
+        margin: 0 0 1.35em;
+        font-size: var(--step-0);
+        line-height: 1.75;
+        color: var(--foreground);
+        text-wrap: pretty;
+    }
+
+    @media (min-width: 56rem) {
+        .chronicle__paragraph {
+            font-size: var(--step-1);
+            line-height: 1.7;
+        }
+
+        .chronicle__beat {
+            font-size: var(--step-1);
+        }
+    }
+
+    .chronicle__paragraph--drop-cap::first-letter {
+        float: left;
+        margin: 0.08em 0.12em 0 0;
+        font-family: var(--heading-font);
+        font-size: 3.4em;
+        line-height: 0.82;
+        color: var(--highlight);
+        text-transform: uppercase;
+    }
+
+    .chronicle__beat {
+        margin: 0.25em 0 1.1em;
+        padding-inline-start: var(--space-l);
+        border-inline-start: 1px solid color-mix(in srgb, var(--fleet-yellow) 35%, transparent);
+        font-family: var(--chronicle-font);
+        font-size: var(--step-0);
+        font-style: italic;
+        line-height: 1.5;
+        color: color-mix(in srgb, var(--foreground) 88%, white);
+    }
+
+    .chronicle__quote {
+        margin: var(--space-l) 0 var(--space-xl);
+        padding: var(--space-m) var(--space-l);
+        border-inline-start: 2px solid var(--fleet-red);
+        background: color-mix(in srgb, var(--component-background) 70%, transparent);
+
+        p {
+            margin: 0;
+            font-family: var(--chronicle-font);
+            font-size: var(--step-1);
+            font-style: italic;
+            line-height: 1.55;
+            color: var(--highlight);
+        }
+    }
+
+    .chronicle__quote-attribution {
+        display: flex;
+        align-items: center;
+        gap: var(--space-m);
+        margin-top: var(--space-m);
+        font-style: normal;
+    }
+
+    .chronicle__quote-attribution :global(picture) {
+        flex-shrink: 0;
+    }
+
+    .chronicle__quote-attribution :global(img) {
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 25%, transparent);
+    }
+
+    .chronicle__quote-attribution-text {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .chronicle__quote-author {
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        font-style: normal;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--highlight);
+    }
+
+    .chronicle__quote-attribution-detail {
+        font-size: var(--step--1);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--text-color-secondary, var(--faded));
+    }
+</style>

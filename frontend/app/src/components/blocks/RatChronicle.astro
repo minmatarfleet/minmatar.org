@@ -1,0 +1,251 @@
+---
+import { ratChronicleChapters } from '@/data/rat-chronicle'
+import RatChronicleChapter from '@components/blocks/RatChronicleChapter.astro'
+import RatChronicleDate from '@components/blocks/RatChronicleDate.astro'
+
+interface Props {
+    activeChapterId: string
+}
+
+const { activeChapterId } = Astro.props
+const chapters = ratChronicleChapters
+const active_chapter = chapters.find((chapter) => chapter.id === activeChapterId) ?? chapters[0]
+---
+
+<div
+    class="rat-chronicle"
+    x-data={`{
+        init_zoom() {
+            mediumZoom('[data-zoomable]', {
+                background: 'var(--solid-transparency-background)',
+                scrollOffset: 0,
+                margin: 24,
+                metaClick: false,
+            })
+        }
+    }`}
+    x-init="init_zoom()"
+>
+    <header class="rat-chronicle__masthead">
+        <p class="rat-chronicle__series">The Rat Chronicle</p>
+        <p class="rat-chronicle__subtitle">A history of Minmatar Fleet Alliance · YC125 — YC128</p>
+    </header>
+
+    <nav class="rat-chronicle__timeline" aria-label="Chapters">
+        <div class="rat-chronicle__track" aria-hidden="true">
+            <span class="rat-chronicle__track-line"></span>
+        </div>
+
+        <ol class="rat-chronicle__tabs">
+            {
+                chapters.map((chapter, index) => (
+                    <li class="rat-chronicle__tab-item">
+                        <a
+                            href={`/alliance/story/${chapter.id}/`}
+                            class:list={[
+                                'rat-chronicle__tab',
+                                { active: chapter.id === activeChapterId },
+                            ]}
+                            aria-current={chapter.id === activeChapterId ? 'page' : undefined}
+                        >
+                            <span class="rat-chronicle__tab-marker" aria-hidden="true"></span>
+                            <span class="rat-chronicle__tab-number">Chapter {chapter.number}</span>
+                            <span class="rat-chronicle__tab-title">{chapter.title}</span>
+                            <RatChronicleDate
+                                class="rat-chronicle__tab-date"
+                                months={chapter.dateRange}
+                                yc={chapter.yc}
+                                realYear={chapter.realYear}
+                            />
+                        </a>
+                        {index < chapters.length - 1 && (
+                            <span class="rat-chronicle__connector" aria-hidden="true"></span>
+                        )}
+                    </li>
+                ))
+            }
+        </ol>
+    </nav>
+
+    <div class="rat-chronicle__content">
+        {active_chapter && <RatChronicleChapter chapter={active_chapter} />}
+    </div>
+</div>
+
+<style lang="scss">
+    @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap');
+
+    .rat-chronicle {
+        --chronicle-font: 'Lora', 'Georgia', 'Times New Roman', serif;
+        width: 100%;
+        padding: var(--space-xl) var(--space-l-xl);
+        background: color-mix(in srgb, var(--component-background) 55%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent);
+
+        :global(.chronicle-mark) {
+            font-weight: 700;
+            font-style: normal;
+            color: var(--fleet-red);
+        }
+    }
+
+    .rat-chronicle__masthead {
+        margin-bottom: var(--space-2xl);
+        text-align: center;
+    }
+
+    .rat-chronicle__series {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: clamp(var(--step-2), 3vw, var(--step-3));
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--highlight);
+    }
+
+    .rat-chronicle__subtitle {
+        margin: var(--space-s) 0 0;
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-color-secondary, var(--faded));
+    }
+
+    .rat-chronicle__timeline {
+        position: relative;
+        margin-bottom: var(--space-2xl);
+    }
+
+    .rat-chronicle__track {
+        display: none;
+    }
+
+    .rat-chronicle__tabs {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: stretch;
+        gap: 0;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .rat-chronicle__tab-item {
+        display: contents;
+    }
+
+    .rat-chronicle__tab {
+        display: flex;
+        flex: 1 1 14rem;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-3xs);
+        min-width: 12rem;
+        padding: var(--space-m) var(--space-l);
+        border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+        border-radius: 0;
+        background: color-mix(in srgb, var(--component-background) 40%, transparent);
+        color: inherit;
+        cursor: pointer;
+        text-align: left;
+        text-decoration: none;
+        transition:
+            border-color 0.2s ease,
+            background 0.2s ease,
+            transform 0.2s ease;
+
+        &:hover {
+            border-color: color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
+            background: color-mix(in srgb, var(--component-background) 75%, transparent);
+        }
+
+        &.active {
+            border-color: var(--fleet-red);
+            background: color-mix(in srgb, var(--fleet-red) 8%, var(--component-background));
+            transform: translateY(-2px);
+
+            .rat-chronicle__tab-marker {
+                background: var(--fleet-red);
+                box-shadow: 0 0 12px color-mix(in srgb, var(--fleet-red) 60%, transparent);
+            }
+
+            .rat-chronicle__tab-number,
+            .rat-chronicle__tab-title {
+                color: var(--highlight);
+            }
+        }
+    }
+
+    .rat-chronicle__tab-marker {
+        width: 0.55rem;
+        height: 0.55rem;
+        margin-bottom: var(--space-2xs);
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--fleet-yellow) 35%, transparent);
+        transition: background 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .rat-chronicle__tab-number {
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--fleet-red);
+    }
+
+    .rat-chronicle__tab-title {
+        font-family: var(--chronicle-font);
+        font-size: var(--step-0);
+        font-weight: 500;
+        line-height: 1.25;
+        color: var(--foreground);
+    }
+
+    .rat-chronicle__tab-date {
+        font-size: var(--step--2);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--text-color-secondary, var(--faded));
+    }
+
+    .rat-chronicle__content {
+        padding-block: var(--space-m);
+    }
+
+    @media (min-width: 48rem) {
+        .rat-chronicle__tabs {
+            flex-wrap: nowrap;
+        }
+
+        .rat-chronicle__tab {
+            flex: 1;
+        }
+
+        .rat-chronicle__track {
+            display: block;
+            position: absolute;
+            inset-inline: var(--space-l);
+            top: calc(var(--space-m) + 0.275rem);
+            height: 1px;
+            pointer-events: none;
+        }
+
+        .rat-chronicle__track-line {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                color-mix(in srgb, var(--fleet-yellow) 30%, transparent) 15%,
+                color-mix(in srgb, var(--fleet-yellow) 30%, transparent) 85%,
+                transparent
+            );
+        }
+
+        .rat-chronicle__tab-marker {
+            position: relative;
+            z-index: 1;
+        }
+    }
+</style>

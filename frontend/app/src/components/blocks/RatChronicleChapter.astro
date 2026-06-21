@@ -1,0 +1,176 @@
+---
+import type { ChronicleChapter } from '@/data/rat-chronicle'
+import RatChronicleSection from '@components/blocks/RatChronicleSection.astro'
+import RatChronicleSectionIllustration from '@components/blocks/RatChronicleSectionIllustration.astro'
+import RatChronicleCharactersOfTheAge from '@components/blocks/RatChronicleCharactersOfTheAge.astro'
+import RatChronicleDate from '@components/blocks/RatChronicleDate.astro'
+
+interface Props {
+    chapter: ChronicleChapter
+}
+
+const { chapter } = Astro.props
+---
+
+<article class="chronicle-chapter">
+    <header class="chronicle-chapter__header">
+        <p class="chronicle-chapter__kicker">Chapter {chapter.number}</p>
+        <h2 class="chronicle-chapter__title">{chapter.title}</h2>
+        <p class="chronicle-chapter__meta">
+            <RatChronicleDate
+                months={chapter.dateRange}
+                yc={chapter.yc}
+                realYear={chapter.realYear}
+            />
+        </p>
+    </header>
+
+    <figure class="chronicle-chapter__epigraph">
+        <blockquote>
+            <p class="chronicle-chapter__epigraph-text">{chapter.epigraph.text}</p>
+            <footer class="chronicle-chapter__epigraph-citation">{chapter.epigraph.citation}</footer>
+        </blockquote>
+    </figure>
+
+    <div class="chronicle-chapter__body">
+        {
+            chapter.sections.map((section) => (
+                <section class="chronicle-chapter__section">
+                    <h3 class="chronicle-chapter__section-title">
+                        <span class="chronicle-chapter__section-roman">{section.roman}.</span>
+                        <span>{section.title}</span>
+                    </h3>
+                    {section.illustration && (
+                        <RatChronicleSectionIllustration {...section.illustration} />
+                    )}
+                    <div class="chronicle-chapter__section-body">
+                        <RatChronicleSection blocks={section.blocks} drop_cap={true} />
+                    </div>
+                </section>
+            ))
+        }
+    </div>
+
+    {chapter.charactersOfTheAge && (
+        <RatChronicleCharactersOfTheAge charactersOfTheAge={chapter.charactersOfTheAge} />
+    )}
+
+    <footer class="chronicle-chapter__end" aria-hidden="true">⁂</footer>
+</article>
+
+<style lang="scss">
+    .chronicle-chapter {
+        width: 100%;
+    }
+
+    .chronicle-chapter__header {
+        margin-bottom: var(--space-2xl);
+        text-align: center;
+    }
+
+    .chronicle-chapter__kicker {
+        margin: 0 0 var(--space-xs);
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--fleet-red);
+    }
+
+    .chronicle-chapter__title {
+        margin: 0;
+        font-size: clamp(var(--step-2), 4vw, var(--step-4));
+        line-height: 1.05;
+        color: var(--highlight);
+    }
+
+    .chronicle-chapter__meta {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: var(--space-xs);
+        margin: var(--space-m) 0 0;
+        font-size: var(--step--1);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-color-secondary, var(--faded));
+    }
+
+    .chronicle-chapter__meta-divider {
+        opacity: 0.5;
+    }
+
+    .chronicle-chapter__meta :global(.chronicle-date) {
+        font-size: inherit;
+        letter-spacing: inherit;
+        text-transform: inherit;
+        color: inherit;
+    }
+
+    .chronicle-chapter__epigraph {
+        margin: 0 0 var(--space-2xl);
+        padding: var(--space-xl) var(--space-2xl);
+        border-block: 1px solid color-mix(in srgb, var(--fleet-yellow) 22%, transparent);
+        text-align: center;
+
+        blockquote {
+            margin: 0;
+            max-width: 52rem;
+            margin-inline: auto;
+        }
+    }
+
+    .chronicle-chapter__epigraph-text {
+        margin: 0;
+        font-family: var(--chronicle-font);
+        font-size: var(--step-1);
+        font-style: italic;
+        line-height: 1.45;
+        color: var(--highlight);
+    }
+
+    .chronicle-chapter__epigraph-citation {
+        margin: var(--space-s) 0 0;
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--fleet-red);
+    }
+
+    .chronicle-chapter__section {
+        & + & {
+            margin-top: var(--space-2xl);
+            padding-top: var(--space-2xl);
+            border-top: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        }
+    }
+
+    .chronicle-chapter__section-title {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: var(--space-s);
+        margin: 0 0 var(--space-l);
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        line-height: 1.2;
+        color: var(--highlight);
+        text-transform: none;
+    }
+
+    .chronicle-chapter__section-roman {
+        color: var(--fleet-red);
+    }
+
+    .chronicle-chapter__section-body {
+        width: 100%;
+    }
+
+    .chronicle-chapter__end {
+        margin-top: var(--space-2xl);
+        text-align: center;
+        font-size: var(--step-2);
+        color: color-mix(in srgb, var(--fleet-yellow) 40%, transparent);
+    }
+</style>
