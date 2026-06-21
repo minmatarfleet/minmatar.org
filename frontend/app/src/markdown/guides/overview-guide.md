@@ -1,18 +1,17 @@
 ---
 title: 'Overview Guide'
-excerpt: 'Minmatar FL33T Alliance Overview Setup Guide Guide originally written by Alesis Wicked Eve online’s UI provides a copious amount of information and while playing this can often lead to information...'
+excerpt: 'FL33T alliance overview setup: tabs, brackets, D-scan filters, standings priority, and backup.'
 category: 'Utility'
-wiki_url: > https://wiki.minmatar.org/en/guides/Alesis-Overview-Guide
 tags: []
+author: 'Alesis Wicked'
 ---
 # Minmatar FL33T Alliance Overview Setup Guide
 
-Guide originally written by **Alesis Wicked**
+EVE Online's UI provides a copious amount of information, and while playing this can often lead to information overload. We use the overview to present information in an orderly fashion, and further augment it with tabs that filter out non-essential information for a given task—hauling, selecting PvP targets, searching for structures, and so on.
 
-Eve online’s UI provides a copious amount of information and while playing this can often lead to information overload. To combat this, something we do is utilise the overview to provide information in an orderly fashion, and we further augment this by setting up a set of tabs to filter out all none essential information for a given task; be it hauling, selecting targets in pvp or searching for structures in a given system to name a few.
- The information here will guide you through setting up these filters for your overview, your dscan window and the brackets you see in space.
+This guide walks you through setting up filters for your overview, D-scan window, and in-space brackets.
 
-## Basic Terminology:
+## Basic Terminology
 
 **Tab**: This is the filtered and listed information on the overview, there are multiple tabs on the overview, selected by clicking their name- much like the folder tabs in a filing cabinet drawer.
  **Overview**: The UI Element where information is listed, filtered and organised
@@ -21,27 +20,27 @@ Eve online’s UI provides a copious amount of information and while playing thi
 ## How to Set-Up an Overview From Scratch, or Modify an Existing One
 
 1. Open overview settings.
-   ![alesis1.jpg](https://wiki.minmatar.org/guides/overview_guide/alesis1.jpg)
+   ![alesis1.jpg](/images/guides/guides/overview_guide/alesis1.jpg)
 2. Reset overview to default *(only needed for replacing a previously modified one)*
-   ![alesis2.jpg](https://wiki.minmatar.org/guides/overview_guide/alesis2.jpg)
+   ![alesis2.jpg](/images/guides/guides/overview_guide/alesis2.jpg)
 3. Delete all the tabs except one *(only needed if building from scratch)*
-   ![alesis3.jpg](https://wiki.minmatar.org/guides/overview_guide/alesis3.jpg)
+   ![alesis3.jpg](/images/guides/guides/overview_guide/alesis3.jpg)
 4. Click the add tab plus sign on the top of the overview.
-   ![alesis4.jpg](https://wiki.minmatar.org/guides/overview_guide/alesis4.jpg)
+   ![alesis4.jpg](/images/guides/guides/overview_guide/alesis4.jpg)
 5. In the pop-up prompt, add a name *(This will be the name of the overview tab header)* and select a default setting close to what you want it to show, leave brackets on default.
-   ![alesis5.jpg](https://wiki.minmatar.org/guides/overview_guide/alesis5.jpg)
+   ![alesis5.jpg](/images/guides/guides/overview_guide/alesis5.jpg)
 6. Select the new tab, and then open overview settings by clicking the “3-dot” icon in the top right of the overview.
-   ![alesis6.jpg](https://wiki.minmatar.org/guides/overview_guide/alesis6.jpg)
+   ![alesis6.jpg](/images/guides/guides/overview_guide/alesis6.jpg)
 7. Navigate to the filters tab and customise the filters by selecting/ deselecting the types of in space ships/ celestials etc that you’d like to see in the tab.
-   ![alesis7.jpg](https://wiki.minmatar.org/guides/overview_guide/alesis7.jpg)
+   ![alesis7.jpg](/images/guides/guides/overview_guide/alesis7.jpg)
 8. Next navigate to the Exceptions tab.
-   ![alesis8.jpg](https://wiki.minmatar.org/guides/overview_guide/alesis8.jpg)
+   ![alesis8.jpg](/images/guides/guides/overview_guide/alesis8.jpg)
 9. Filter out and add exceptions as required, for instance, only wanting to see the ships of players who are not in your fleet and ignore the low sec status pilots who are friendly.
-   ![alesis9.jpg](https://wiki.minmatar.org/guides/overview_guide/alesis9.jpg)
+   ![alesis9.jpg](/images/guides/guides/overview_guide/alesis9.jpg)
 10. Click the “save as” at the bottom of the settings window.
-   ![alesis10.jpg](https://wiki.minmatar.org/guides/overview_guide/alesis10.jpg)
+   ![alesis10.jpg](/images/guides/guides/overview_guide/alesis10.jpg)
 11. When naming add “tab” at the end.
-   ![alesis11.jpg](https://wiki.minmatar.org/guides/overview_guide/alesis11.jpg)
+   ![alesis11.jpg](/images/guides/guides/overview_guide/alesis11.jpg)
 
 You have now created an overview tab! Move on to the brackets if you wish to customise what appears in space.
 
@@ -50,25 +49,25 @@ You have now created an overview tab! Move on to the brackets if you wish to cus
 • In order to customise brackets for the tab you just created, you need to make a new tab via the instructions above.
 
 - Note: It will appear as if you are duplicating the previous tab. This is fine.
-   ![alesis12.jpg](https://wiki.minmatar.org/guides/overview_guide/alesis12.jpg)
+   ![alesis12.jpg](/images/guides/guides/overview_guide/alesis12.jpg)
 
 • Repeat above steps 4 to 10 for creating a tab, however, remember to make selections and filters based on what you’d like to see in space.
  On step 11 however, add “brackets” to the saved name instead of “tab”
- ![alesis13.jpg](https://wiki.minmatar.org/guides/overview_guide/alesis13.jpg)
+ ![alesis13.jpg](/images/guides/guides/overview_guide/alesis13.jpg)
 
 • Delete the brackets tab once you have saved it by right clicking the tab name on the overview.
- ![alesis14.jpg](https://wiki.minmatar.org/guides/overview_guide/alesis14.jpg)
+ ![alesis14.jpg](/images/guides/guides/overview_guide/alesis14.jpg)
 
 • Right click the remaining tab that you created and load in the “brackets” by navigating to it in the right click menu:
- ![alesis15.jpg](https://wiki.minmatar.org/guides/overview_guide/alesis15.jpg)
+ ![alesis15.jpg](/images/guides/guides/overview_guide/alesis15.jpg)
 
 ## Further Customisation:
 
 • In overview settings first tab (top left) you can set name and colour format
- ![alesis16.jpg](https://wiki.minmatar.org/guides/overview_guide/alesis16.jpg)
+ ![alesis16.jpg](/images/guides/guides/overview_guide/alesis16.jpg)
 
 • Using basic code of `<b>` name `</b>` in the name box you can format the tab header (name) into bold. (Google other formatting codes for html for italics or other colours etc as needed)
- ![alesis17.jpg](https://wiki.minmatar.org/guides/overview_guide/alesis17.jpg)
+ ![alesis17.jpg](/images/guides/guides/overview_guide/alesis17.jpg)
 
 ### Other Tabs:
 
@@ -78,11 +77,11 @@ I recommend having a “**utility**” tab (named utility, and default settings 
 ## DSCAN Filters:
 
 For dscan, the process is much the same, name the tab on save as “dscan” instead of tab or brackets,
- ![alesis18.jpg](https://wiki.minmatar.org/guides/overview_guide/alesis18.jpg)
+ ![alesis18.jpg](/images/guides/guides/overview_guide/alesis18.jpg)
 
-and then it the dscan window at the top right, simply find your custom filter in the list and select it.
+and then it in the D-scan window at the top right, simply find your custom filter in the list and select it.
 
-![alesis19.jpg](https://wiki.minmatar.org/guides/overview_guide/alesis19.jpg)
+![alesis19.jpg](/images/guides/guides/overview_guide/alesis19.jpg)
 
 ## Customising Settings:
 
@@ -103,11 +102,11 @@ The colour tag tab will affect the icon you see in the local chat box and beside
 ### Multiple Overviews:
 
 You can right click a tab and move to new window if you would like to separate a particular tab from the overview and display two sets of information at once (often used for friendlies tabs or looting tabs, so you can monitor who is still on grid with you etc, without needing to tab away from crucial information on the main overview.)
- ![alesis20.jpg](https://wiki.minmatar.org/guides/overview_guide/alesis20.jpg)
- ![alesis21.jpg](https://wiki.minmatar.org/guides/overview_guide/alesis21.jpg)
+ ![alesis20.jpg](/images/guides/guides/overview_guide/alesis20.jpg)
+ ![alesis21.jpg](/images/guides/guides/overview_guide/alesis21.jpg)
 
 Be sure to select which overview box you would like to remain as the default for showing brackets in space, which will ignore any brackets tab on the other window.
- ![alesis22.jpg](https://wiki.minmatar.org/guides/overview_guide/alesis22.jpg)
+ ![alesis22.jpg](/images/guides/guides/overview_guide/alesis22.jpg)
 
 ### Gate gun/ standing loss proof suggestion *(advanced player recommended)*
 
@@ -117,12 +116,12 @@ Be sure to select which overview box you would like to remain as the default for
  • Neutrals show at bottom of list
  • **“Has killright available”** above neutrals.
 
-Now all targets with bad standings who you will take gate guns for will show as one colour (red), all targets who you do not take gate guns ot standing loss for (regardless of why) will show as a separate colour (orange).
+Now all targets with bad standings who you will take gate guns for will show as one colour (red), all targets who you do not take gate guns or standing loss for (regardless of why) will show as a separate colour (orange).
 
 ### Overview information display:
 
 • Right click the bar, select change order.
- ![alesis23.jpg](https://wiki.minmatar.org/guides/overview_guide/alesis23.jpg)
+ ![alesis23.jpg](/images/guides/guides/overview_guide/alesis23.jpg)
  • Place in order you want and select which you want.
  • Manually set size of each type, might need to expand the box to see all selected options.
  • Repeat process for each overview tab.
@@ -130,11 +129,11 @@ Now all targets with bad standings who you will take gate guns for will show as 
 ## Overview Standings Settings
 
 - Standings visibility may need to be adjusted in the in-game overview to ensure that targets can be seen on the overview. Notably, pilots who have been set as negative standings by the Alliance but are still in the Minmatar Militia may not show up on some PVP Overviews; this can cause a problem when in combat with such pilots.
-- To fix this, we want to ensure that the standings of the pilot takes priority over the militia status of the pilot. This is done by dragging Bad and Terrible standings to the top of the list in the Overview Settings window.  Open the Overview Settings by clicking the three-dot hamburger menu at the top of the overview window you wish to edit. Under the appearance tab, there are two options; Colortag and Background. Colortag refers to the small tag next to the shiptype icon, and Background refers to the background color of the pilot in the overview. For both of these, drag the **"Pilot has Bad Standing"** and **"Pilot has Terrible Standing"** to be somewhere above **"Pilot is in your militia"**. I reccomend to show the colortag *above* being in fleet, while the Background to be below. Additionally, in the Filter Window, ensure that "Bad Standing" and "Terrible Standing" are set to **Always Show**.
+- To fix this, we want to ensure that the standings of the pilot takes priority over the militia status of the pilot. This is done by dragging Bad and Terrible standings to the top of the list in the Overview Settings window.  Open the Overview Settings by clicking the three-dot hamburger menu at the top of the overview window you wish to edit. Under the appearance tab, there are two options; Colortag and Background. Colortag refers to the small tag next to the shiptype icon, and Background refers to the background color of the pilot in the overview. For both of these, drag the **"Pilot has Bad Standing"** and **"Pilot has Terrible Standing"** to be somewhere above **"Pilot is in your militia"**. I recommend showing the colortag above being in fleet, while the Background to be below. Additionally, in the Filter Window, ensure that "Bad Standing" and "Terrible Standing" are set to **Always Show**.
 - Corp and Alliance standings are always set for a reason. If a group in the militia has been set by the alliance at -5 or -10, there's a high chance they're probably hostile.  Because of this, it's important to be able to see them on PvP Overviews.
-   ![overview_standings_drag.png](https://wiki.minmatar.org/guides/overview_settings/overview_standings_drag.png)
-   ![opening_overview_settings.png](https://wiki.minmatar.org/guides/overview_settings/opening_overview_settings.png)
-   ![overview_filter_window.png](https://wiki.minmatar.org/guides/overview_settings/overview_filter_window.png)
+   ![overview_standings_drag.png](/images/guides/guides/overview_settings/overview_standings_drag.png)
+   ![opening_overview_settings.png](/images/guides/guides/overview_settings/opening_overview_settings.png)
+   ![overview_filter_window.png](/images/guides/guides/overview_settings/overview_filter_window.png)
 
 ### Future proofing:
 

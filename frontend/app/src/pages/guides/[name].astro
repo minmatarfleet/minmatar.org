@@ -3,6 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { getGuideBySlug } from '@/data/guides'
+import { getGuideCoverImage } from '@/data/guides/covers'
 
 import { marked } from 'marked'
 import { renderer } from '@helpers/marked'
@@ -17,8 +18,10 @@ if (!guide) {
 }
 
 const { module } = guide
-const page_title = module.frontmatter.title
-const page_description = module.frontmatter.excerpt
+const page_title = guide.title
+const page_description = guide.excerpt
+
+const guide_cover = getGuideCoverImage(guide)
 
 import Viewport from '@layouts/Viewport.astro'
 
@@ -43,8 +46,8 @@ import Button from '@components/blocks/Button.astro'
     <PageLanding
         wide={true}
         cover={{
-            image: "/images/alliance-cover.jpg",
-            image_990: "/images/alliance-cover.jpg",
+            image: guide_cover,
+            image_990: guide_cover,
             scrollable: true,
             overlay: true
         }}
@@ -54,6 +57,8 @@ import Button from '@components/blocks/Button.astro'
                 <Flexblock gap='var(--space-m)'>
                     <small class="[ text-muted ]">{guide.category}</small>
                     <PageTitle is_landing={true}>{page_title}</PageTitle>
+                    <p class="[ guide-excerpt ]">{page_description}</p>
+                    <small class="[ text-muted ]">{t('guides.author')}: {guide.author}</small>
                 </Flexblock>
             </TextBox>
 
@@ -88,3 +93,11 @@ import Button from '@components/blocks/Button.astro'
         </Flexblock>
     </PageLanding>
 </Viewport>
+
+<style lang="scss">
+    .guide-excerpt {
+        font-size: var(--step-1);
+        color: var(--muted-color);
+        max-width: 60ch;
+    }
+</style>

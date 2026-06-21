@@ -3,6 +3,6 @@ export type GuideMeta = {
     title: string
     excerpt: string
     category: string
-    wiki_url: string
+    author: string
     tags: string[]
 }

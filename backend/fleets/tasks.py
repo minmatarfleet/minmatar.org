@@ -100,7 +100,7 @@ def update_fleet_schedule():
                     {
                         "style": 5,
                         "label": "New Player Instructions",
-                        "url": "https://wiki.minmatar.org/alliance/Academy/new-player-fleet-guide",
+                        "url": "https://my.minmatar.org/guides/new-player-fleet-guide/",
                         "disabled": False,
                         "type": 2,
                     },

@@ -1,15 +1,13 @@
 ---
 title: 'Level 5 Mission Farming'
-excerpt: > Level 5 mission guide Guide written and tested by [FL33T] Buppas This guide is considered incomplete Updated: 2024-02-02 ¶ The Concept This guide is written from the perspective of Minmatar space/a...
+excerpt: 'Level 5 mission blitzing in Minmatar space: tactics, mission walkthroughs, and ship fits.'
 category: 'PVE'
-wiki_url: > https://wiki.minmatar.org/en/guides/level5s
 tags: []
+author: 'Buppas'
 ---
-# Level 5 mission guide
+# Level 5 Mission Guide
 
-Guide written and tested by [FL33T] Buppas
- This guide is considered incomplete
- Updated: 2024-02-02
+This guide is considered incomplete. Updated: 2024-02-02.
 
 ## The Concept
 
@@ -20,8 +18,8 @@ Guide written and tested by [FL33T] Buppas
 ## Requirements
 
 - 7.0+ standing with the faction you want to run with (in this case, I will use Minmatar republic, as that's who we are!)
-   ability to fly Barghest, Golem or Raven, good Cruise missile skills (bonus if you can fly a carrier)
-   ![](https://wiki.minmatar.org/fl33t_logo.png)
+ ability to fly Barghest, Golem or Raven, good Cruise missile skills (bonus if you can fly a carrier)
+ ![](/images/guides/fl33t_logo.png)
 - Tips to get 7.0+ standing if you are below it:  ['The Blood-Stained Stars'; SoE Epic Arc](https://wiki.eveuniversity.org/The_Blood-Stained_Stars) (requires access to all empire space) reward is shareable  ['Wildfire'; Minmatar Epic Arc](https://wiki.eveuniversity.org/Wildfire) (requires 5.0 Minmatar standing) - [extended guide](https://forums.eveonline.com/t/personal-notes-to-all-7-epic-arcs/266217/2), including fits - reward is shareable  [Minmatar COSMOS Missions](https://wiki.eveuniversity.org/Minmatar_COSMOS) (various requirements, one time thing) - reward is unshareable  [Data centers](https://wiki.eveuniversity.org/Data_centers) (various requirements, one time thing) - reward is unshareable  [Career Agents](https://wiki.eveuniversity.org/Career_Agents) (requires access to highsec, one time thing) - reward is unshareable  [Circle Missions](https://wiki.eveuniversity.org/Circle_Missions) (requires access to highsec, one time thing) - reward is unshareable  Tribal Liberation Force Promotions (standing requirement with TLIB, one time thing) - reward is personal, but someone else can boost your standing if needed. Blitzing lvl 1-4 missions and get it via storylines, but doing the above is probably faster.  Derived standings, depending on what your  Minmatar standing is, one option is to do the Gallente equivalents to the above, as most of them give derived standing up to 5.0 Minmatar standing Alternatively, you can pay to have it [Boosted](https://forums.eveonline.com/t/we-raise-npc-standings-lower-broker-relist-fees-access-epic-arcs-mission-r-d-agents-and-more/21688)
 
 ## Initial Investment
@@ -31,9 +29,9 @@ Guide written and tested by [FL33T] Buppas
 ## General Suggestions
 
 - ***Never warp at 0***: I cannot stress this enough, you can get stuck on beacons and lose your ship!
-- Don’t bother blinging your ship more than neccessary, it's generally not needed and if you ever get ganked, people will learn you are worth hunting, I've had people gank me and then simply stop hunting me after seing my fit as it's too much effort.
+- Don’t bother blinging your ship more than necessary, it's generally not needed and if you ever get ganked, people will learn you are worth hunting, I've had people gank me and then simply stop hunting me after seeing my fit as it's too much effort.
 - You never want to drop below -1.89 standing with the agent/corp you are running missions for, if you do, they stop giving missions.
-- "Seeding" every system you get missions in with their own ships(Battleship+carrier) so you can use a ceptor/astero etc to move around in, makes this relatively risk free and alot faster.
+- "Seeding" every system you get missions in with their own ships(Battleship+carrier) so you can use a ceptor/astero etc to move around in, makes this relatively risk free and a lot faster.
 - Until you are able to seed every system, you can use the cloak+MWD trick with the battleships to warp around somewhat safely.
 
 ## General Tactics
@@ -55,40 +53,40 @@ Guide written and tested by [FL33T] Buppas
 ## Level 5 Agents
 
 - There's pros/cons to each agent, some have a smaller system pool they hand missions in (less jumps/less seeded ships needed), others are in lower security so higher LP payouts, others are in quieter system areas, some have a better LP store at the time, pick your poison.
-   ![agent_1.png](https://wiki.minmatar.org/guides/level5s/agent_1.png)
-   ![agent_2.png](https://wiki.minmatar.org/guides/level5s/agent_2.png)
+ ![agent_1.png](/images/guides/guides/level5s/agent_1.png)
+ ![agent_2.png](/images/guides/guides/level5s/agent_2.png)
 
 ## Missions
 
-all images below are in the "blitzable" category, they are ment to be finished within minutes using a single character with any of the fits provided
+All images below are in the "blitzable" category—they are meant to be finished within minutes using a single character with any of the fits provided.
 
 ### Breeding Facility
 
 - Amarr Starbase Control tower. Press “Look at.” There are a bunch of “Breeding Facilities” attached to it. The target is on the side of the tower facing you, on the middle row below an empty slot.  *TIP: the Breeding facilites die in 1-2shots from 1400mm artillery, an arty tornado with SEBO's makes quick work on this mission, careful of frigates as they tackle. Split your guns/Launchers* The Breeding Facility closest to you should be the objective, if you warped in at 0/10km **Barghest** use DPS fit
-   ![breeding_facility.jpg](https://wiki.minmatar.org/guides/level5s/breeding_facility.jpg)
+ ![breeding_facility.jpg](/images/guides/guides/level5s/breeding_facility.jpg)
 
 ### Cleansing Fire
 
 - Destroy the Amarr Cathedral, Kill Imperial Navy Apocalypse, warp out.  **Barghest** use DPS fit
 
-![cleansing_fire.jpg](https://wiki.minmatar.org/guides/level5s/cleansing_fire.jpg)
+![cleansing_fire.jpg](/images/guides/guides/level5s/cleansing_fire.jpg)
 
 ### Cleaning House
 
 - shoot station until wave spawn, MJD so you end up 250km away from closest sentry gun to avoid taking any damage  **Barghest** use Tank fit
 
-![cleaning_house.jpg](https://wiki.minmatar.org/guides/level5s/cleaning_house.jpg)
+![cleaning_house.jpg](/images/guides/guides/level5s/cleaning_house.jpg)
 
 ## Convoy Attack
 
 - Kill the 4 freighters  *TIP: Send in 1 drone to attack a freighter, once it has aggro, start shooting the freighter and call back drone to orbit you, once the freighter dies, pull in the drone, then send it out and repeat for each freighter, do note this is a dangerous mission for golem if you sit bastioned on the warpin, in case of ganks **Barghest** Use DPS fit **Golem** Remove cloak and fit 2x Drone Link Augmentor II
-   ![convoy_attack.jpg](https://wiki.minmatar.org/guides/level5s/convoy_attack.jpg)
+ ![convoy_attack.jpg](/images/guides/guides/level5s/convoy_attack.jpg)
 
 ### Reclamation(Amarr)
 
-- Kill the closest Mining Colony and kill the "Imperial Templar Diviner" battleship that spawns, warp out  *TIP: careful of tackle, I usually warp at 0 so I don't accidently shoot the wrong colony, turn **away** from the rats and activate MJD* **Barghest** use DPS fit
+- Kill the closest Mining Colony and kill the "Imperial Templar Diviner" battleship that spawns, warp out  *TIP: careful of tackle, I usually warp at 0 so I don't accidentally shoot the wrong colony, turn **away** from the rats and activate MJD* **Barghest** use DPS fit
 
-![reclamation.jpg](https://wiki.minmatar.org/guides/level5s/reclamation.jpg)
+![reclamation.jpg](/images/guides/guides/level5s/reclamation.jpg)
 
 ### Rogue Spy (1 of 3)
 
@@ -100,18 +98,18 @@ all images below are in the "blitzable" category, they are ment to be finished w
 
 - Kill the Battletower  **Barghest** use DPS fit
 
-![sansha_acquisition.jpg](https://wiki.minmatar.org/guides/level5s/sansha_acquisition.jpg)
+![sansha_acquisition.jpg](/images/guides/guides/level5s/sansha_acquisition.jpg)
 
 ### Sansha on the Horizon
 
 - Kill Outpost and all ships that spawns it  *TIP: No tackle, but high damage, warp 100, turn in the best direction-> MJD and burn away until your next MJD will place you 250km+ from closest sentry tower while shooting objective* **Barghest** use Tank fit
 
-![sansha_n_the_horizon.jpg](https://wiki.minmatar.org/guides/level5s/sansha_n_the_horizon.jpg)
+![sansha_n_the_horizon.jpg](/images/guides/guides/level5s/sansha_n_the_horizon.jpg)
 
 ### The Big Sting (Part 1 of 3)
 
 - Fly in with small ship to trigger it, warp out, wait 8 minutes, don't get within 10km of the ghost ship, so warp in at 100!
-   alternatively, warp in with golem/barghest, burn off 250km and cloak up, wait for spawn  *TIP: when flying the **Golem** on this mission, make sure you can survive the bastion cycle before you bastion up, the DPS can be quite high depending on how good of an angle you had when warping in on the rats, if you can’t survive the bastion cycle, just keep MWD active and MJD again once you can, when out of neut/sentry range, bastion up and finish the mission* **Barghest** use DPS fit if using cloaking tactic
+ alternatively, warp in with golem/barghest, burn off 250km and cloak up, wait for spawn  *TIP: when flying the **Golem** on this mission, make sure you can survive the bastion cycle before you bastion up, the DPS can be quite high depending on how good of an angle you had when warping in on the rats, if you can’t survive the bastion cycle, just keep MWD active and MJD again once you can, when out of neut/sentry range, bastion up and finish the mission* **Barghest** use DPS fit if using cloaking tactic
 
 ![the_big_sting_(part_1_of_3)_-_frigate.jpg](https://wiki.minmatar.org/guides/level5s/the_big_sting_(part_1_of_3)_-_frigate.jpg)
  ![the_big_sting_(part_1_of_3)_-_golem.jpg](https://wiki.minmatar.org/guides/level5s/the_big_sting_(part_1_of_3)_-_golem.jpg)
@@ -120,21 +118,21 @@ all images below are in the "blitzable" category, they are ment to be finished w
 
 - Kill ship maintenance array (the big boi), warp out  *TIP: this mission is the only scary one, it has high initial damage* **DO NOT SHOOT STRUCTURE INITIALLY**  **Golem** Warp at 100, turn around and MJD away, keep burning until out of cap, once MJD is off CD, inject cap and MJD again, bastion up and kill the structure **Barghest** use Fortress fit (pair your hardener used with mission rat types), warp at 100, turn around and MJD. keep cap injecting.
 
-![the_fortress.jpg](https://wiki.minmatar.org/guides/level5s/the_fortress.jpg)
+![the_fortress.jpg](/images/guides/guides/level5s/the_fortress.jpg)
 
 ### Wrath of Angels
 
 - Kill the “Drug Lab.” Bookmark the can that's dropped, warp out. Turn in the mission, and go back to loot the can which has 2 scientists so you won't need to buy any more.  *TIP: buy 2x scientists on contract before accepting mission, so you don't have to clear the room* **Barghest** use DPS fit
 
-![wrath_of_angels.png](https://wiki.minmatar.org/guides/level5s/wrath_of_angels.png)
+![wrath_of_angels.png](/images/guides/guides/level5s/wrath_of_angels.png)
 
 ### Wyrmsbane
 
 - Destroy stronghold  **Barghest** use DPS fit
 
-![wyrmsbane.jpg](https://wiki.minmatar.org/guides/level5s/wyrmsbane.jpg)
+![wyrmsbane.jpg](/images/guides/guides/level5s/wyrmsbane.jpg)
 
-![wrath_of_angels.png](https://wiki.minmatar.org/guides/level5s/wrath_of_angels.png)
+![wrath_of_angels.png](/images/guides/guides/level5s/wrath_of_angels.png)
 
 ### Wyrmslayer
 
@@ -142,11 +140,12 @@ all images below are in the "blitzable" category, they are ment to be finished w
 
 ## Ships and Fittings
 
-If you have any questions, don't hesitate to ask me, the fits I run are below, refit as needed, just make sure you can still lock/damage the objective when out of range from damage. you want atleast 1,1k dps+ for this to be efficient
+If you have any questions, don't hesitate to ask me, the fits I run are below, refit as needed, just make sure you can still lock/damage the objective when out of range from damage. you want at least 1.1k DPS+ for this to be efficient.
 
 For the **Barghest**, there are multiple fits, the below is what you want to use when buy-all to get all the modules, if you find yourself too squishy in missions, either invest in Amulets, or X-type hardeners+deadspace/faction repper for extra tank.
  When travelling (if you do) make sure you don't have a plate fitted, and you have MWD+cloak online so you can do the cloak+mwd trick
 
+```
 [Barghest, Purchase]
 
 Ballistic Control System II
@@ -187,7 +186,9 @@ Large Armor Repairer II x1
 Heavy F-RX Compact Capacitor Booster x1
 500MN Y-T8 Compact Microwarpdrive x1
 Drone Link Augmentor II x2
+```
 
+```
 [Barghest, Tank]
 
 Thermal Armor Hardener II
@@ -216,7 +217,9 @@ Improved Cloaking Device II
 Large Bay Loading Accelerator II
 Large Hyperspatial Velocity Optimizer I
 [Empty Rig slot]
+```
 
+```
 [Barghest, Fortress]
 
 Ballistic Control System II
@@ -247,7 +250,9 @@ Large Hyperspatial Velocity Optimizer I
 [Empty Rig slot]
 
 [Empty Rig slot]
+```
 
+```
 [Barghest, DPS]
 
 Ballistic Control System II
@@ -276,9 +281,11 @@ Improved Cloaking Device II
 Large Bay Loading Accelerator II
 Large Hyperspatial Velocity Optimizer I
 [Empty Rig slot]
+```
 
 If you aren't running Nirvanas, I suggest getting a second LSE II and refit MWD as needed for it on missions you find yourself going into armour on. I also stash 2x large armor repairer II in each system I have a golem in, to repair any armour damage (Marauders are expensive to repair)
 
+```
 [Golem, Golem 5]
 Ballistic Control System II
 Ballistic Control System II
@@ -311,7 +318,9 @@ Mjolnir Fury Cruise Missile x4376
 Targeting Range Script x1
 Missile Range Script x2
 Navy Cap Booster 3200 x7
+```
 
+```
 [Barghest, Travel]
 
 Ballistic Control System II
@@ -340,9 +349,11 @@ Improved Cloaking Device II
 Large Bay Loading Accelerator II
 Large Hyperspatial Velocity Optimizer I
 [Empty Rig slot]
+```
 
 Never ran the Raven myself, but I've seen it done, if you are on a budget.
 
+```
 [Raven, lvl5]
 Ballistic Control System II
 Ballistic Control System II
@@ -369,9 +380,11 @@ Improved Cloaking Device II
 Large Ionic Field Projector II
 Large Warhead Rigor Catalyst II
 Large Rocket Fuel Cache Partition II
+```
 
 Just an example fit on the Nidhoggur I run with, any carrier works though
 
+```
 [Nidhoggur, lvl5]
 Damage Control II
 Drone Damage Amplifier II
@@ -400,5 +413,6 @@ Tracking Speed Script x2
 Scan Resolution Script x1
 
 Firbolg I x3
+```
 
-TIP: On carrier you can swap out 2x high slots for heavy neuts incase you are worried about being tackled by players, you can also swap to a smartbomb or two for the fortress, I usually just run with firbolgs and will warp out incase the enemy gets too close, then warp in again at 10 instead of 100
+TIP: On carrier you can swap out 2x high slots for heavy neuts in case you are worried about being tackled by players, you can also swap to a smartbomb or two for the fortress, I usually just run with firbolgs and will warp out incase the enemy gets too close, then warp in again at 10 instead of 100

@@ -2,7 +2,8 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { getGuidesByCategory, guideCategories } from '@/data/guides'
+import { getGuidesByCategory, guideCategories, guides } from '@/data/guides'
+import { GUIDES_INDEX_COVER } from '@/data/guides/covers'
 
 import { strip_markdown } from '@helpers/string'
 
@@ -14,7 +15,11 @@ import PageTitle from '@components/page/PageTitle.astro'
 import TextBox from '@components/layout/TextBox.astro'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
-import BlockList from '@components/compositions/BlockList.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Grid from '@components/compositions/Grid.astro'
+
+import GuideCard from '@components/blocks/GuideCard.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 
 const guidesByCategory = getGuidesByCategory()
 
@@ -32,17 +37,33 @@ const page_description = t('guides.leading_text')
     <PageLanding
         wide={true}
         cover={{
-            image: "/images/alliance-cover.jpg",
-            image_990: "/images/alliance-cover.jpg",
+            image: GUIDES_INDEX_COVER.image,
+            image_990: GUIDES_INDEX_COVER.image_990,
             scrollable: true,
             overlay: true
         }}
     >
         <Flexblock gap='var(--space-2xl)'>
             <TextBox>
-                <Flexblock gap='var(--space-xl)'>
-                    <PageTitle is_landing={true}>{page_title}</PageTitle>
-                    <p class="[ excerpt ]">{page_description}</p>
+                <Flexblock gap='var(--space-l)'>
+                    <FlexInline class="[ items-center! flex-wrap ]" gap='var(--space-l)'>
+                        <picture class="[ guides-brand ]">
+                            <img
+                                src="/images/wikilogo.png"
+                                width="128"
+                                height="128"
+                                alt=""
+                                loading="eager"
+                            />
+                        </picture>
+                        <Flexblock class="[ grow basis-[280px] ]" gap='var(--space-s)'>
+                            <PageTitle is_landing={true}>{page_title}</PageTitle>
+                            <p class="[ excerpt ]">{page_description}</p>
+                            <small class="[ text-muted ]">
+                                {guides.length} {guides.length === 1 ? 'guide' : 'guides'}
+                            </small>
+                        </Flexblock>
+                    </FlexInline>
                 </Flexblock>
             </TextBox>
 
@@ -54,22 +75,44 @@ const page_description = t('guides.leading_text')
 
                         return (
                             <Flexblock gap='var(--space-m)'>
-                                <h2 class="[ font-bold ]">{category}</h2>
-                                <BlockList gap='var(--space-s)'>
+                                <Flexblock gap='var(--space-3xs)'>
+                                    <h2 class="[ font-bold ]">{category}</h2>
+                                    <small class="[ text-muted ]">
+                                        {categoryGuides.length} {categoryGuides.length === 1 ? 'guide' : 'guides'}
+                                    </small>
+                                </Flexblock>
+                                <Grid
+                                    class="[ w-full grid-fill ]"
+                                    min_item_width="280px"
+                                    row_gap="var(--space-s)"
+                                    column_gap="var(--space-s)"
+                                >
                                     {categoryGuides.map((guide) => (
-                                        <a
-                                            class="[ guide-link ]"
-                                            href={translatePath(`/guides/${guide.slug}/`)}
-                                        >
-                                            <strong>{guide.title}</strong>
-                                            <span>{guide.excerpt}</span>
-                                        </a>
+                                        <GuideCard guide={guide} />
                                     ))}
-                                </BlockList>
+                                </Grid>
                             </Flexblock>
                         )
                     })}
                 </Flexblock>
+            </TextBox>
+
+            <TextBox>
+                <ComponentBlock width="narrow">
+                    <Flexblock gap="var(--space-m)">
+                        <h2 class="[ font-bold ]">{t('guides.submit_title')}</h2>
+                        <ul class="[ submit-steps ]">
+                            <li>{t('guides.submit_step_1')}</li>
+                            <li>
+                                {t('guides.submit_step_2_before')}{' '}
+                                <a href={translatePath('/alliance/teams/list/')}>
+                                    {t('guides.submit_step_2_link')}
+                                </a>.
+                            </li>
+                            <li>{t('guides.submit_step_3')}</li>
+                        </ul>
+                    </Flexblock>
+                </ComponentBlock>
             </TextBox>
         </Flexblock>
     </PageLanding>
@@ -78,25 +121,22 @@ const page_description = t('guides.leading_text')
 <style lang="scss">
     .excerpt {
         font-size: var(--step-1);
+        max-width: 52ch;
     }
 
-    .guide-link {
+    .guides-brand img {
+        filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.35));
+    }
+
+    .submit-steps {
+        padding-left: 1.25rem;
         display: flex;
         flex-direction: column;
-        gap: var(--space-3xs);
-        padding: var(--space-s);
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius-s);
-        text-decoration: none;
-        transition: border-color 0.15s ease;
+        gap: var(--space-xs);
+        max-width: 52ch;
 
-        &:hover {
-            border-color: var(--highlight);
-        }
-
-        span {
-            color: var(--muted-color);
-            font-size: var(--step--1);
+        li::marker {
+            color: var(--highlight);
         }
     }
 </style>

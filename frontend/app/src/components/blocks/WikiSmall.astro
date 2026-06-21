@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import FlexInline from '@components/compositions/FlexInline.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
@@ -28,10 +28,9 @@ import ButtonStack from '@components/blocks/ButtonStack.astro';
             <ButtonStack>
                 <Button
                     size='sm'
-                    href='https://wiki.minmatar.org/'
-                    external={true}
+                    href={translatePath('/guides/')}
                 >
-                    {t('visit')}
+                    {t('guides.page_title')}
                 </Button>
             </ButtonStack>
         </FlexInline>

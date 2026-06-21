@@ -11,6 +11,10 @@ const linkRenderer = renderer.link
 renderer.link = (href, title, text) => {
 	let replace = ''
 
+	if (href.startsWith('https://my.minmatar.org')) {
+		href = href.replace('https://my.minmatar.org', '')
+	}
+
 	const localLink = href.startsWith(`${get_app_url()}`) || href.startsWith('/')
 
 	if (!localLink) {

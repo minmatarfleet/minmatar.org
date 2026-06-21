@@ -1,13 +1,13 @@
 ---
 title: 'Bookmarks'
-excerpt: 'USING BOOKMARKS ¶ BOOKMARK FUNDAMENTALS A Bookmark is a saved representation of a specific spot in space. They are used for a variety of purposes. You can create your own bookmarks, organise them i...'
+excerpt: 'Bookmark types, creation techniques, and sharing for safespots, gate pings, grid pings, and more.'
 category: 'Utility'
-wiki_url: > https://wiki.minmatar.org/en/alliance/Academy/Bookmarks
 tags: []
+author: 'Minmatar Fleet'
 ---
-# USING BOOKMARKS
+# Using Bookmarks
 
-## BOOKMARK FUNDAMENTALS
+## Bookmark Fundamentals
 
 A ***Bookmark*** is a saved representation of a specific spot in space. They are used for a variety of purposes.
 
@@ -19,11 +19,11 @@ Within the Locations window, the first "folder" will be for locations in your cu
 
 Unfortunately it is not possible to assign a shortcut for aligning or warping to a bookmark.
 
-## BOOKMARK TYPES
+## Bookmark Types
 
 While you can use a bookmark for almost anything, there are several common scenarios for which bookmarks are widely used.
 
-### SAFESPOTS
+### Safespots
 
 A ***safespot*** is a bookmark that is designed to be hard to find a ship or fleet at. They are places to warp to if you don't want to be caught, though it is important to remember that there are limitations to their safety.
 
@@ -37,7 +37,7 @@ Being cloaked a few tens of km from a safespot is generally very safe (though th
 
 If you are not cloaked then you can be probed down with combat probes. If there are combat probers in system then you will need to bounce between multiple safespots, or at least remain aligned out.
 
-### QUICKDOCK
+### Quickdock
 
 Sometimes when you warp to a station you don't land at 0km and have to move before you can dock, giving enemies a chance to catch and kill you. To avoid this you can create a ***quickdock*** bookmark that is at 0km, and warp to that instead. The bookmark should be further away from the station structure than the radius of your largest ship, so that you don't collide with it when you land and bounce off.
 
@@ -45,7 +45,7 @@ When warping to a quickdock you can also set your autopilot destination to the s
 
 You might sometimes have similar "at zero" bookmarks for stargates.
 
-### UNDOCK
+### Undock
 
 While quickdock bookmarks dock at a station more safely, ***undock*** bookmarks (aka "insta undock" or just "insta") allow you to undock more safely. They rely on the fact that when you undock you are already moving, and are invulnerable (unlockable) until you change your speed or direction. If there is something directly ahead of you as you undock then you are already aligned to it, and will enter warp immediately from your invulnerable state.
 
@@ -53,9 +53,9 @@ Note that when undocking you will not be perfectly aligned to your bookmark beca
 
 Undock bookmarks need to be at least 150km from the station, and should ideally be hundreds of km away.
 
-### GATE PINGS
+### Gate Pings
 
-***Gate ping*** bookmarks are used to avoid warping directly to a gate. This is essential in nullsec (and w-space + Pochven) where warp disruption bubbles are possible, but can also be valueable anywhere that you might want to avoid a gate camp. With the introduction of pirate insurgencies you can now have bubbles on lowsec gates in systems at corruption level 5.
+***Gate ping*** bookmarks are used to avoid warping directly to a gate. This is essential in nullsec (and w-space + Pochven) where warp disruption bubbles are possible, but can also be valuable anywhere that you might want to avoid a gate camp. With the introduction of pirate insurgencies you can now have bubbles on lowsec gates in systems at corruption level 5.
 
 Rather than warping directly to the gate, you warp to the gate ping bookmark, and then only warp to and jump through the gate if you can see it is clear.
 
@@ -63,23 +63,23 @@ A gate ping bookmark should be on the same grid as the gate itself, but at least
 
 For particularly dangerous gates it might be advisable to have multiple pings.
 
-### GRID PINGS
+### Grid Pings
 
 Sometimes it is very useful to be able to warp yourself or your fleet around a combat grid, repositioning yourself for maximum advantage. In order to do this you need *a lot* of bookmarks on the grid.
 
 It takes a lot of time to set up these ***grid ping*** bookmarks, so it is generally only worth it on grids that you are likely to be fighting at, such as structures that you will be fighting over.
 
-### WORMHOLES
+### Wormholes
 
 Because wormholes are ephemeral, it is generally necessary to bookmark them once you have probed them down. Wormhole bookmarks should have a 3 day expiry, because the wormhole itself never lasts longer than this.
 
-### LOOT, WRECKS AND CANS
+### Loot, Wrecks and Cans
 
 You can bookmark wrecks and cargo canisters in space, allowing you to return later to collect any contents that remain.
 
-## CREATING BOOKMARKS
+## Creating Bookmarks
 
-### MECHANICS
+### Mechanics
 
 To create a bookmark, use the ***Add Location*** button in the locations window or the ***Save Location*** shortcut key.
 
@@ -87,7 +87,7 @@ Bookmarks can have an expiry time set, which is useful if the bookmark is to som
 
 You can put bookmarks into folders to organise them, and you can also share bookmark folders with others.
 
-### MAKING SAFE SPOTS
+### Making Safe Spots
 
 Because safe spots shouldn't be on a direct line between 2 celestials, you will need an intermediate bookmark to create them.
 
@@ -97,7 +97,7 @@ Next, warp to that temporary bookmark, and from there warp to another distant ce
 
 Try to select celestials, and drop the bookmarks, in such a way as to maximise the distance from the safespot bookmark to any celestial.
 
-### MAKING UNDOCK BOOKMARKS
+### Making Undock Bookmarks
 
 To make undock bookmarks for Minmatar stations, undock in a fast ship (frigate with MWD, an interceptor or maybe a 50MN MWD Punisher) and stop immediately - dock back up if there are hostiles on grid that could catch you. Make sure your tactical overlay is on, rotate and zoom your view so that the distance numbers are in front of you and double click in space exactly on the intersection of the plane of the overlay and the distance numbers. Turn on your MWD, drop a bookmark once you pass 150km, then keep going and drop another when you are comfortably far away; that first 150km bookmark can then be deleted.
 
@@ -105,13 +105,13 @@ To make undock bookmarks for Amarr stations, again undock in a fast ship, but th
 
 It can be helpful to have a cloak equipped on a bookmarking ship; if a hostile lands on grid, you can then cloak up rather than warp off, and then decloak and continue burning out after they leave.
 
-### MAKING GATE PINGS
+### Making Gate Pings
 
 The simplest (though not best) way to make a gate ping is to warp to the gate at 100km, and create a bookmark as you are landing. This does, however, create the ping on a direct line to the gate from whatever you warped from, which is not ideal.
 
 Another option is to use a fast ship to burn away from the gate and drop the bookmark when you are several hundred km away from it. This approach allows you to precisely control the location of the bookmark, but puts you at more risk when making it. Note that after making your bookmark you should continue moving for a good distance so that anyone watching cannot tell where you dropped it. A good option for this kind of ping is to make it directly up or down from the gate, which minimises the chance that someone will put a bubble between the gate and your bookmark.
 
-### MAKING GRID PINGS
+### Making Grid Pings
 
 There are numerous techniques for making grid pings, but the general idea is to fill the space around a structure with regularly-spaced bookmarks in all directions.
 
@@ -127,7 +127,7 @@ It is also technically possible to launch a set of probes and move them in towar
 
 The more bookmarks you have on the grid, the easier it becomes to create new ones in the right places to fill any gaps.
 
-## SHARING BOOKMARKS
+## Sharing Bookmarks
 
 When you create a bookmarks folder you can select between a Personal folder or a Shared folder. A shared folder, as the name suggests, allows you to share bookmarks with others.
 
@@ -139,7 +139,7 @@ You can drag a shared folder into a chat window, or an eve mail.
 
 It is also possible to add a shared folder to a chat MOTD; to do this, first drag it into a note in the in-game `Notepad`, and you can then drag it from there into the `MOTD editor` in the `Channel Configuration`.
 
-## FURTHER INFORMATION
+## Further Information
 
 - [https://wiki.eveuniversity.org/Bookmarks](https://wiki.eveuniversity.org/Bookmarks)
 - [https://www.eveonline.com/news/view/shareable-bookmarks-alliance-bookmarks-and-more](https://www.eveonline.com/news/view/shareable-bookmarks-alliance-bookmarks-and-more)

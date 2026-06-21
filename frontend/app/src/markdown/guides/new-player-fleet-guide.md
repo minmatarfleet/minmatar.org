@@ -1,9 +1,9 @@
 ---
 title: 'New Player Fleet Guide'
-excerpt: 'New Player Fleet Guide New players are a critical part of the Minmatar ecosystem, so we want to make sure you have everything you need to attend your very first militia fleet with our alliance. Fle...'
+excerpt: 'Everything you need for your first militia fleet: doctrines, support ships, fleet UI, and FAQ.'
 category: 'PVP'
-wiki_url: > https://wiki.minmatar.org/en/alliance/Academy/new-player-fleet-guide
 tags: ['onboarding', 'academy']
+author: 'Minmatar Fleet'
 ---
 # New Player Fleet Guide
 
@@ -11,13 +11,13 @@ New players are a critical part of the Minmatar ecosystem, so we want to make su
 
 Fleets can be intimidating, especially if you've never participated in one before. You might be unsure what ship to fly, where to go, and what the objective is.
 
-In this guide, we're going to answer the following questions,
+In this guide, we answer the following questions:
 
 - What ships do I fly? What can I bring if I can't fly the doctrine?
 - Where do I go? What is the objective?
 - What else should I know before coming to a fleet?
 
-Try to read through the guide before undocking in your first fleet, but don't worry if you don't understand or remember it all. Refer back to it as necessary during quieter times during the fleet operaton. Then read through it again after the fleet to see if it makes more sense in light of your new experience.
+Try to read through the guide before undocking in your first fleet, but don't worry if you don't understand or remember it all. Refer back to it during quieter moments in the fleet operation. Then read through it again after the fleet to see if it makes more sense in light of your new experience.
 
 ## SHIPS
 
@@ -27,13 +27,13 @@ Most fleets will have a specific *doctrine*: a doctrine is a set of ships used t
 
 Knowing what ships the fleet members are flying, and how they are fitted out, allows the Fleet Commander (FC) to make better decisions, which means more wins. Importantly, if you are flying the right ship, but not the right fitting for that ship, you may invalidate the FC's decisions (which means more losses).
 
-A list of current doctrines can be found at [https://my.minmatar.org/ships/doctrines/list/](https://my.minmatar.org/ships/doctrines/list/)
+A list of current doctrines can be found at [doctrine list](/ships/doctrines/list/)
 
 Note that doctrines are introduced and/or retired regularly as the nature of the warzone shifts around us.
 
 ### SUPPORT OPTIONS
 
-If you can't fly a doctrine, that's okay. There are more options that can provide valueable support to the fleet.
+If you can't fly a doctrine, that's okay. There are more options that can provide valuable support to the fleet.
 
 There are many roles that can be filled by other non-doctrine ships,
 
@@ -57,7 +57,7 @@ New players are encouraged to attend their first fleet with an electronic warfar
 
 They are extremely fragile, so you will most likely die by the end of the fleet, but over time you’ll learn more and more skills to have even more fun!
 
-See all [Acedemy fittings](https://my.minmatar.org/ships/fitting/list/?type=L3ARN).
+See all [Academy fittings](/ships/fitting/list/?type=L3ARN).
 
 ### OBTAINING A SHIP
 
@@ -75,11 +75,11 @@ Everyone starts somewhere, and in a few months you’ll be just like the rest of
 
 ## OBJECTIVES
 
-The FC will tell you what the objective for the fleet is, but commonly include...
+Common objectives include:
 
 - **Roaming** the warzone for fun
 - **Plexing** to capture systems, or prevent systems being captured, in small to medium gangs - see [plexing guide](/guides/faction-warfare-plexing/)
-- **Battlefields** to be fought over by larger numbers of ships - see [battlefield guide](/guides/battlefields/)
+- **Battlefields** to be fought over by larger numbers of ships - see [battlefield guide](https://wiki.minmatar.org/en/guides/battlefields)
 - **Strategic Operations** to destroy ("bash") or defend structures
 
 There will also generally be a **Standing Fleet** that is active around the clock, without any specific objective.
@@ -88,7 +88,7 @@ There will also generally be a **Standing Fleet** that is active around the cloc
 
 Various elements of the Eve user interface are important for fleet operations.
 
-![fleetui.png](https://wiki.minmatar.org/fleetui.png)
+![fleetui.png](/images/guides/fleetui.png)
 
 ### FLEET FINDER TAB
 
@@ -108,7 +108,7 @@ The `Watchlist` window is a separate window, not part of the Fleet Window, thoug
 
 ### OVERVIEW WINDOWS AND TABS
 
-While the `Overview` itself is not only for fleet operations, you will probably have specific overview windows, tabs and settings for fleets. You should have an overview tab that only shows hostile ships, and another that only shows fleet fleet members and/or friendly ships. It is best to set your overview to move broadcast targets to the top of the overview.
+While the `Overview` itself is not only for fleet operations, you will probably have specific overview windows, tabs and settings for fleets. You should have an overview tab that only shows hostile ships, and another that only shows fleet members and/or friendly ships. It is best to set your overview to move broadcast targets to the top of the overview.
 
 It is very important to make sure that your overview is set up correctly so that you can see the targets you need to shoot, and (just as importantly) see who you should *not* be shooting.
 
@@ -123,7 +123,7 @@ Before you undock your ship, check that you are ready for combat.
 - Do you have some nanite repair paste for repairing modules (if trained into Thermodynamics)?
 - Do you have default Orbit and/or Keep at Range distances set? (These should keep opponents within range of your weapons and tackle module(s), plus ~2km for comfort)
 - Are you in the correct fleet and comms channel?
-- Are you in the correct pod with the correct impants?
+- Are you in the correct pod with the correct implants?
 - If flying a capital ship or black ops, do you have enough jump fuel?
 
 ## FAQ
@@ -162,9 +162,9 @@ The logi channel is an in-game chat channel used for coordinating the activities
 - **Anchor**
    Keeping your ship close to the FC, generally by using the "keep at range 1000m" option on their ship, so that you fly where they fly.
 - **Boosh**
-   Using a Cammand Destroyer's Micro Jump Field to move a group of ships 100km away from where they were. Can be used on friendly ships for mobility, or enemy ships to reposition them to their disadvantage.
+   Using a Command Destroyer's Micro Jump Field to move a group of ships 100km away from where they were. Can be used on friendly ships for mobility, or enemy ships to reposition them to their disadvantage.
 - **Caps**
-   Capital ships (Dreadnaughts or Force Auxillaries, generally).
+   Capital ships (Dreadnoughts or Force Auxiliaries, generally).
 - **FC**
    Fleet Commander, in overall command of the fleet - do what these people tell you.
 - **Feed**
@@ -188,9 +188,9 @@ The logi channel is an in-game chat channel used for coordinating the activities
 - **Plex**
    Short for "faction warfare complex", not to be confused with "PLEX" (Pilot's License Extension, an in-game currency).
 - **Primary**
-   An ememy ship that all primary fleet members should be shooting; should have been broadcast (see Broadcast tab in the fleet window) and called out by the FC.
+   An enemy ship that all primary fleet members should be shooting; should have been broadcast (see Broadcast tab in the fleet window) and called out by the FC.
 - **Props**
-   Propulsion modules: Afterburner ("AB") or MicroWarpDrive ("MWD"). Your FC will tell you whether you should have this active ("props on") or inactive ("props off"). If you are props off when you should be on then you will get separated from the rest of the fleet and die; if you are propos on when you should be off then you will take more damage, use more capacitor, or be less agile than you should be, and you will die.
+   Propulsion modules: Afterburner ("AB") or MicroWarpDrive ("MWD"). Your FC will tell you whether you should have this active ("props on") or inactive ("props off"). If you are props off when you should be on then you will get separated from the rest of the fleet and die; if you are props on when you should be off then you will take more damage, use more capacitor, or be less agile than you should be, and you will die.
 - **Secondary**
    An enemy ship that you should be ready to shoot ("lock up") as soon as the primary is dead. Don't shoot the secondary though; shoot the primary until it dies.
 - **Straggler**

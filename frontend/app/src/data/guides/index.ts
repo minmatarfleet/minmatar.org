@@ -1,24 +1,26 @@
 import type { GuideMeta } from '@/data/guides/types'
 
-import faction_warfare_advantage from '@markdown/guides/faction-warfare-advantage.md'
-import battlefields from '@markdown/guides/battlefields.md'
-import faction_warfare_plexing from '@markdown/guides/faction-warfare-plexing.md'
-import rendezvous_wolf from '@markdown/guides/rendezvous-wolf.md'
-import mumble_setup from '@markdown/guides/mumble-setup.md'
-import new_player_fleet_guide from '@markdown/guides/new-player-fleet-guide.md'
-import abyssals from '@markdown/guides/abyssals.md'
-import level5_missions from '@markdown/guides/level5-missions.md'
-import pochven_standings from '@markdown/guides/pochven-standings.md'
-import zohar_hunting from '@markdown/guides/zohar-hunting.md'
-import bookmarks from '@markdown/guides/bookmarks.md'
-import overview_guide from '@markdown/guides/overview-guide.md'
+import * as faction_warfare_advantage from '@markdown/guides/faction-warfare-advantage.md'
+import * as faction_warfare_plexing from '@markdown/guides/faction-warfare-plexing.md'
+import * as rendezvous_wolf from '@markdown/guides/rendezvous-wolf.md'
+import * as new_player_fleet_guide from '@markdown/guides/new-player-fleet-guide.md'
+import * as abyssals from '@markdown/guides/abyssals.md'
+import * as abyss_duo_jackdaws_t6_dark from '@markdown/guides/abyss-duo-jackdaws-t6-dark.md'
+import * as level5_missions from '@markdown/guides/level5-missions.md'
+import * as abyss_nergal_trio_t6_firestorm from '@markdown/guides/abyss-nergal-trio-t6-firestorm.md'
+import * as pochven_standings from '@markdown/guides/pochven-standings.md'
+import * as abyss_stormbringer_t6_electrical from '@markdown/guides/abyss-stormbringer-t6-electrical.md'
+import * as abyss_trio_hawk_t5_dark from '@markdown/guides/abyss-trio-hawk-t5-dark.md'
+import * as zohar_hunting from '@markdown/guides/zohar-hunting.md'
+import * as bookmarks from '@markdown/guides/bookmarks.md'
+import * as overview_guide from '@markdown/guides/overview-guide.md'
 
 type GuideModule = {
     frontmatter: {
         title: string
         excerpt: string
         category: string
-        wiki_url: string
+        author: string
         tags: string[]
     }
     rawContent: () => string
@@ -26,14 +28,16 @@ type GuideModule = {
 
 const guideModules: Record<string, GuideModule> = {
     'faction-warfare-advantage': faction_warfare_advantage,
-    'battlefields': battlefields,
     'faction-warfare-plexing': faction_warfare_plexing,
     'rendezvous-wolf': rendezvous_wolf,
-    'mumble-setup': mumble_setup,
     'new-player-fleet-guide': new_player_fleet_guide,
     'abyssals': abyssals,
+    'abyss-duo-jackdaws-t6-dark': abyss_duo_jackdaws_t6_dark,
     'level5-missions': level5_missions,
+    'abyss-nergal-trio-t6-firestorm': abyss_nergal_trio_t6_firestorm,
     'pochven-standings': pochven_standings,
+    'abyss-stormbringer-t6-electrical': abyss_stormbringer_t6_electrical,
+    'abyss-trio-hawk-t5-dark': abyss_trio_hawk_t5_dark,
     'zohar-hunting': zohar_hunting,
     'bookmarks': bookmarks,
     'overview-guide': overview_guide,
@@ -45,54 +49,35 @@ export const guides: GuideMeta[] = [
     {
         "slug": "faction-warfare-advantage",
         "title": "Advantage Guide",
-        "excerpt": "Faction Warfare Advantage Advantage is a faction warfare mechanism that increases your victory points per complex capture . Without it, hundreds of extra complexes are needed to capture a system, s...",
+        "excerpt": "How FW advantage works and how to build it via plexing, rendezvous, and battlefields.",
         "category": "Faction Warfare",
-        "wiki_url": "https://wiki.minmatar.org/en/alliance/Academy/faction-warfare-advantage",
-        "tags": []
-    },
-    {
-        "slug": "battlefields",
-        "title": "Battlefield Guide",
-        "excerpt": "The Extensive Battlefield Guide Guide Written By Furl0w, updated by Silvatek for new mechanics ¶ What is a “BF”? Battlefields (BF) are a particular type of Faction Warfare (FW) complex. Circa every...",
-        "category": "Faction Warfare",
-        "wiki_url": "https://wiki.minmatar.org/en/guides/battlefields",
+        "author": "A'Songala",
         "tags": []
     },
     {
         "slug": "faction-warfare-plexing",
         "title": "Faction Warfare Plexing",
-        "excerpt": "Faction Warfare Complexes Faction warfare Complexes, or \"plexes\" for short, are key elements of Minmatar territory control. By capturing complexes, pilots gain loyalty points and contribute to the...",
+        "excerpt": "How faction warfare complexes work: ship limits, O-plex vs D-plex, mechanics, LP payouts, and victory points.",
         "category": "Faction Warfare",
-        "wiki_url": "https://wiki.minmatar.org/en/alliance/Academy/Faction_Warfare_Plexing",
+        "author": "Minmatar Fleet",
         "tags": []
     },
     {
         "slug": "rendezvous-wolf",
         "title": "Rendezvous sites in an AC Wolf",
-        "excerpt": "How to easily run Amarr Rendezvous sites with a PVE-fit autocannon Wolf assault frigate.",
+        "excerpt": "Run Amarr Rendezvous sites with a PvE-fit autocannon Wolf assault frigate.",
         "category": "Faction Warfare",
-        "wiki_url": "https://wiki.minmatar.org/en/guides/rendezvous-wolf",
+        "author": "Buppas",
         "tags": [
             "pve"
         ]
     },
     {
-        "slug": "mumble-setup",
-        "title": "Mumble Setup",
-        "excerpt": "Mumble Setup In mumble open settings, then choose Shortcuts. ¶ Download & Setup Download and install the latest version of Mumble directly from the Mumble website . ¶ Saving the Connection Open you...",
-        "category": "PVP",
-        "wiki_url": "https://wiki.minmatar.org/en/guides/Mumble-Setup",
-        "tags": [
-            "onboarding",
-            "mumble"
-        ]
-    },
-    {
         "slug": "new-player-fleet-guide",
         "title": "New Player Fleet Guide",
-        "excerpt": "New Player Fleet Guide New players are a critical part of the Minmatar ecosystem, so we want to make sure you have everything you need to attend your very first militia fleet with our alliance. Fle...",
+        "excerpt": "Everything you need for your first militia fleet: doctrines, support ships, fleet UI, and FAQ.",
         "category": "PVP",
-        "wiki_url": "https://wiki.minmatar.org/en/alliance/Academy/new-player-fleet-guide",
+        "author": "Minmatar Fleet",
         "tags": [
             "onboarding",
             "academy"
@@ -101,9 +86,9 @@ export const guides: GuideMeta[] = [
     {
         "slug": "abyssals",
         "title": "Abyssals",
-        "excerpt": "Venture into the Abyss ¶ Before you start.. Abyssal is a form of High-skill ceiling PvE content in eve that is on a time limit, each abyssal site takes <20minutes to run, or you die and lose your s...",
+        "excerpt": "Overview of abyssal deadspace: tiers, weather types, and links to solo, duo, and trio fit guides.",
         "category": "PVE",
-        "wiki_url": "https://wiki.minmatar.org/en/guides/Abyss",
+        "author": "Buppas",
         "tags": [
             "abyss",
             "abyssals",
@@ -111,27 +96,79 @@ export const guides: GuideMeta[] = [
         ]
     },
     {
+        "slug": "abyss-duo-jackdaws-t6-dark",
+        "title": "Duo Jackdaws - T6 Dark",
+        "excerpt": "Duo Jackdaw fit and room guide for T6 Dark abyssals.",
+        "category": "PVE",
+        "author": "Buppas",
+        "tags": [
+            "abyss",
+            "abyssal",
+            "jackdaw",
+            "dark"
+        ]
+    },
+    {
         "slug": "level5-missions",
         "title": "Level 5 Mission Farming",
-        "excerpt": "Level 5 mission guide Guide written and tested by [FL33T] Buppas This guide is considered incomplete Updated: 2024-02-02 ¶ The Concept This guide is written from the perspective of Minmatar space/a...",
+        "excerpt": "Level 5 mission blitzing in Minmatar space: tactics, mission walkthroughs, and ship fits.",
         "category": "PVE",
-        "wiki_url": "https://wiki.minmatar.org/en/guides/level5s",
+        "author": "Buppas",
         "tags": []
+    },
+    {
+        "slug": "abyss-nergal-trio-t6-firestorm",
+        "title": "Nergal/Retribution/Deacon - T6 Firestorm",
+        "excerpt": "Trio Nergal, Retribution, and Deacon guide for T6 Firestorm abyssals.",
+        "category": "PVE",
+        "author": "Buppas",
+        "tags": [
+            "abyss",
+            "abyssal",
+            "nergal",
+            "firestorm"
+        ]
     },
     {
         "slug": "pochven-standings",
         "title": "Pochven Standings",
-        "excerpt": "Pochven Standings This is a guide about fixing/setting initial standings - something all of you should be familiar with to some degree I imagine. Thankfully, it’s really simple. ¶ Why do I need to...",
+        "excerpt": "How to fix Triglavian standings for OBS fleets: ship choice, sites to run, and extraction options.",
         "category": "PVE",
-        "wiki_url": "https://wiki.minmatar.org/en/guides/pochven-standings",
+        "author": "Minmatar Fleet",
         "tags": []
+    },
+    {
+        "slug": "abyss-stormbringer-t6-electrical",
+        "title": "Stormbringer - T6 Electrical",
+        "excerpt": "Solo Stormbringer fit and room guide for T6 Electrical abyssals.",
+        "category": "PVE",
+        "author": "Kae2",
+        "tags": [
+            "abyss",
+            "abyssal",
+            "stormbringer",
+            "electrical"
+        ]
+    },
+    {
+        "slug": "abyss-trio-hawk-t5-dark",
+        "title": "x3 Hawk - T5 Dark",
+        "excerpt": "Triple Hawk fit and room guide for T5 Dark abyssals.",
+        "category": "PVE",
+        "author": "Kae2",
+        "tags": [
+            "abyss",
+            "abyssal",
+            "hawk",
+            "dark"
+        ]
     },
     {
         "slug": "zohar-hunting",
         "title": "Zohar's Chosen Angel Hunting",
-        "excerpt": "Hunting Zohar's Chosen Angel NPCs",
+        "excerpt": "Hunt Zohar's Chosen Angel NPCs in insurgency systems: fitting, scanning, tactics, and cashing in.",
         "category": "PVE",
-        "wiki_url": "https://wiki.minmatar.org/en/guides/zohar-hunting",
+        "author": "Bobb Bobbington and Silvatek",
         "tags": [
             "pve"
         ]
@@ -139,17 +176,17 @@ export const guides: GuideMeta[] = [
     {
         "slug": "bookmarks",
         "title": "Bookmarks",
-        "excerpt": "USING BOOKMARKS ¶ BOOKMARK FUNDAMENTALS A Bookmark is a saved representation of a specific spot in space. They are used for a variety of purposes. You can create your own bookmarks, organise them i...",
+        "excerpt": "Bookmark types, creation techniques, and sharing for safespots, gate pings, grid pings, and more.",
         "category": "Utility",
-        "wiki_url": "https://wiki.minmatar.org/en/alliance/Academy/Bookmarks",
+        "author": "Minmatar Fleet",
         "tags": []
     },
     {
         "slug": "overview-guide",
         "title": "Overview Guide",
-        "excerpt": "Minmatar FL33T Alliance Overview Setup Guide Guide originally written by Alesis Wicked Eve online’s UI provides a copious amount of information and while playing this can often lead to information...",
+        "excerpt": "FL33T alliance overview setup: tabs, brackets, D-scan filters, standings priority, and backup.",
         "category": "Utility",
-        "wiki_url": "https://wiki.minmatar.org/en/guides/Alesis-Overview-Guide",
+        "author": "Alesis Wicked",
         "tags": []
     }
 ]
