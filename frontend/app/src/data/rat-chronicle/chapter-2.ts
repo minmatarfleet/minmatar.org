@@ -165,12 +165,12 @@ export const chapter2: ChronicleChapter = {
                     {
                         character_id: 2120307642,
                         character_name: 'Casper Sullivan',
-                        description: 'Right hand — crossed from **Ushra\'Khan** with little history on the record, rose through **FL33T** faster than almost any pilot alive, and became a key member of the **executor team** at **BearThatCares**\'s side.',
+                        description: 'Nothing from his first day\'s record promised legend. He took the ships he was given, left no particular mark in the early logs, and still rose through the ranks faster than any pilot the alliance had ever seen: key **executor team** member, **strategic commander**, and eventually a name every rat knew.',
                     },
                     {
                         character_id: 1978535095,
                         character_name: 'Ibn Khatab',
-                        description: 'Old acquaintance — had known **BearThatCares** years earlier in **nullsec** under **SLYCE**; a key member of the **executor team** who helped raise **FL33T** from nothing, patient where Bear was volcanic, and once spent **seven straight hours** fighting the Amarr in a single day.',
+                        description: 'Old acquaintance — had known **BearThatCares** years earlier in **nullsec** under **SLYCE**; a key member of the **executor team** who helped raise **FL33T** from nothing, patient where Bear was volcanic.',
                     },
                     {
                         character_id: 94335465,
@@ -185,7 +185,7 @@ export const chapter2: ChronicleChapter = {
                     {
                         character_id: 140971074,
                         character_name: 'Buppas',
-                        description: 'Exodus — left **WINMATAR** upon its collapse and brought nearly the entire roster into **Minmatar Fleet**; a sharp skirmish fleet commander who helped fill the warzone with bodies before eventually departing with **Black Omega Security**.',
+                        description: 'The grand recruiter — left **WINMATAR** upon its collapse and brought nearly the entire roster into **Minmatar Fleet**; a sharp skirmish fleet commander who helped fill the warzone with bodies before eventually departing with **Black Omega Security**.',
                     },
                     {
                         character_id: 1698872847,
