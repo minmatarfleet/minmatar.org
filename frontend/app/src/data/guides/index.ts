@@ -13,7 +13,6 @@ import * as abyss_stormbringer_t6_electrical from '@markdown/guides/abyss-stormb
 import * as abyss_trio_hawk_t5_dark from '@markdown/guides/abyss-trio-hawk-t5-dark.md'
 import * as zohar_hunting from '@markdown/guides/zohar-hunting.md'
 import * as bookmarks from '@markdown/guides/bookmarks.md'
-import * as overview_guide from '@markdown/guides/overview-guide.md'
 
 type GuideModule = {
     frontmatter: {
@@ -40,7 +39,6 @@ const guideModules: Record<string, GuideModule> = {
     'abyss-trio-hawk-t5-dark': abyss_trio_hawk_t5_dark,
     'zohar-hunting': zohar_hunting,
     'bookmarks': bookmarks,
-    'overview-guide': overview_guide,
 }
 
 export const guideCategories = ["Faction Warfare","PVP","PVE","Utility"] as const
@@ -179,14 +177,6 @@ export const guides: GuideMeta[] = [
         "excerpt": "Bookmark types, creation techniques, and sharing for safespots, gate pings, grid pings, and more.",
         "category": "Utility",
         "author": "Minmatar Fleet",
-        "tags": []
-    },
-    {
-        "slug": "overview-guide",
-        "title": "Overview Guide",
-        "excerpt": "FL33T alliance overview setup: tabs, brackets, D-scan filters, standings priority, and backup.",
-        "category": "Utility",
-        "author": "Alesis Wicked",
         "tags": []
     }
 ]

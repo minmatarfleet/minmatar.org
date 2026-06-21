@@ -3,7 +3,6 @@ export const GUIDE_SLUG_BY_WIKI_PATH: Record<string, string> = {
     'alliance/Academy/Faction_Warfare_Plexing': 'faction-warfare-plexing',
     'alliance/Academy/new-player-fleet-guide': 'new-player-fleet-guide',
     'guides/Abyss': 'abyssals',
-    'guides/Alesis-Overview-Guide': 'overview-guide',
     'alliance/Academy/faction-warfare-advantage': 'faction-warfare-advantage',
     'guides/pochven-standings': 'pochven-standings',
     'guides/zohar-hunting': 'zohar-hunting',

@@ -79,7 +79,7 @@ Common objectives include:
 
 - **Roaming** the warzone for fun
 - **Plexing** to capture systems, or prevent systems being captured, in small to medium gangs - see [plexing guide](/guides/faction-warfare-plexing/)
-- **Battlefields** to be fought over by larger numbers of ships - see [battlefield guide](https://wiki.minmatar.org/en/guides/battlefields)
+- **Battlefields** to be fought over by larger numbers of ships
 - **Strategic Operations** to destroy ("bash") or defend structures
 
 There will also generally be a **Standing Fleet** that is active around the clock, without any specific objective.

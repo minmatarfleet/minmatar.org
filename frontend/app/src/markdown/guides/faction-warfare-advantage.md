@@ -45,7 +45,7 @@ To avoid being killed or driven away by the NPCs, either kill them before shooti
 
 ## Battlefields
 
-Winning [battlefields](https://wiki.minmatar.org/en/guides/battlefields) gives 15% advantage, equivalent to seven and a half rendezvous points.
+Winning battlefields gives 15% advantage, equivalent to seven and a half rendezvous points.
 
 ## Rendezvous Points
 

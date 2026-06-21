@@ -244,7 +244,7 @@ export const ui = {
         'friend.welcome.leading_text_sub': 'Requires joining [Minmatar Fleet Discord](https://discord.com/invite/3hZfahmkFx)',
 
         'friend.page_title': 'FL33T friend dashboard',
-        'friend.leading_text': 'Hi friend, lets get you set everything for you to partake on Minmatar Fleet Alliance operations. Start by linking your main character. This is a requirement before checking your roles are properly set in our Discord server. You may refresh discord roles to fix them in case they are incorrect. Lastly, set Mumble with the help of the wiki guide.',
+        'friend.leading_text': 'Hi friend, lets get you set everything for you to partake on Minmatar Fleet Alliance operations. Start by linking your main character. This is a requirement before checking your roles are properly set in our Discord server. You may refresh discord roles to fix them in case they are incorrect. Lastly, set up Mumble.',
 
         'market.page_title': 'Market',
         'market.leading_text': 'The Minmatar Republic bleeds nearly half a trillion ISK per month in faction warfare losses. The sheer scale of the conflict has made importing resources logistically impossible, even for the most resourceful capsuleers. This interesting challenge demands a fundamental shift in strategy: local industry must become the backbone of our military strategy.',
@@ -1128,7 +1128,6 @@ export const ui = {
         'mumble_credentials_dialog_title': 'Mumble credentials',
         'mumble_credentials_dialog_text': 'Use the following username and password to keep Mumble authenticated:',
         'exempt': 'Exempt',
-        'mumble_tutorial': 'More info setting up Mumble on this [guide](https://wiki.minmatar.org/en/guides/Mumble-Setup)',
         'loading_assets': 'Loading assets',
         'ping_fleet': 'Ping fleet',
         'start_tracking_dialog_title': 'Ping fleet',

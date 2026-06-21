@@ -26,7 +26,6 @@ const GUIDE_COVERS: Record<string, string> = {
     'pochven-standings': '/images/guides/pochven-map.png',
     'zohar-hunting': '/images/guides/guides/level5s/wrath_of_angels.png',
     'bookmarks': '/images/intel-cover.jpg',
-    'overview-guide': '/images/guides/guides/overview_guide/alesis1.jpg',
 }
 
 export function getGuideCoverImage(guide: Pick<GuideMeta, 'slug' | 'category'>): string {

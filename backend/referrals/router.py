@@ -51,10 +51,6 @@ links = [
         name="Advantage",
         target="https://my.minmatar.org/guides/faction-warfare-advantage/",
     ),
-    LinkInfo(
-        name="Battlefields",
-        target="https://wiki.minmatar.org/en/guides/battlefields",
-    ),
 ]
 
 

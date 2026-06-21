@@ -12,12 +12,6 @@
         "description": "Guide"
     },
     {
-        "name": "wiki_bf_guide",
-        "title": "Battlefield Guide",
-        "target": "https://wiki.minmatar.org/en/guides/battlefields",
-        "description": "Guide"
-    },
-    {
         "name": "wiki_rendezvouz",
         "title": "Rendezvous sites in an AC Wolf",
         "target": "https://my.minmatar.org/guides/rendezvous-wolf/",
@@ -27,12 +21,6 @@
         "name": "wiki_fleet_guide",
         "title": "New Player Fleet Guide",
         "target": "https://my.minmatar.org/guides/new-player-fleet-guide/",
-        "description": "Guide"
-    },
-    {
-        "name": "wiki_mumble",
-        "title": "Mumble Setup",
-        "target": "https://wiki.minmatar.org/en/guides/Mumble-Setup",
         "description": "Guide"
     },
     {
@@ -62,7 +50,7 @@
     {
         "name": "wiki_overview_guide",
         "title": "Overview Guide",
-        "target": "https://my.minmatar.org/guides/overview-guide/",
+        "target": "https://wiki.minmatar.org/en/guides/Alesis-Overview-Guide",
         "description": "Guide"
     },
     {
