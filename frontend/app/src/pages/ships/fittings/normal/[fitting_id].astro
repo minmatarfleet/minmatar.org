@@ -25,6 +25,13 @@ import { parse_eft, parse_pod } from '@helpers/fit_parser.ts';
 import { get_item_id } from '@helpers/sde/items'
 import { strip_markdown } from '@helpers/string'
 import { format_date_short } from '@helpers/date';
+import { format_fitting_tags_line } from '@helpers/fitting_tags'
+import {
+    buildFittingDetailJsonLd,
+    buildFittingDetailMetaDescription,
+    buildFittingDetailMetaTitle,
+    type FittingDetailSeoInput,
+} from '@helpers/fitting_seo'
 
 const fitting_parsed = await parse_eft(fitting?.eft_format ?? '')
 const ship_id = await get_item_id(fitting_parsed?.ship_name as string)
@@ -145,21 +152,33 @@ const render_view = translatePath(`/ships/fittings/render/${fitting_id}`)
 const fitting_display_name = fitting?.name ?? fitting_parsed?.name
 const page_title = fitting_display_name
 const ship_display_name = fitting_parsed?.ship_name ?? ''
+const site_name = t('index.page_title')
+const tag_labels = format_fitting_tags_line(fitting?.tags, t)
 
-const meta_title = t('fitting.detail.meta_title')
-    .replace('{fitting}', fitting_display_name)
-    .replace('{ship}', ship_display_name)
-    .replace('{site}', t('index.page_title'))
+const seo_input: FittingDetailSeoInput = {
+    fittingId: parseInt(fitting_id ?? '0'),
+    fittingName: fitting_display_name,
+    shipName: ship_display_name,
+    shipId: ship_id as number,
+    description: (await strip_markdown(fitting?.description ?? '')).trim(),
+    tagLabels: tag_labels,
+    updatedAt: fitting?.updated_at,
+    siteName: site_name,
+    siteOrigin: Astro.url.origin,
+    fittingsListUrl: new URL(translatePath('/ships/fittings/'), Astro.url.origin).href,
+    shipsUrl: new URL(translatePath('/ships/'), Astro.url.origin).href,
+    canonicalUrl: new URL(translatePath(`/ships/fittings/normal/${fitting_id}`), Astro.url.origin).href,
+    metaImage: ship_id && Number(ship_id) > 0 ? get_item_icon(ship_id as number, 256) : `${Astro.url.origin}/images/fits-cover.jpg`,
+}
 
-let page_description = (await strip_markdown(fitting?.description ?? '')).trim()
-if (!page_description)
-    page_description = t('fitting.detail.meta_description_fallback')
-        .replace('{fitting}', fitting_display_name)
-        .replace('{ship}', ship_display_name)
+const meta_title = buildFittingDetailMetaTitle(seo_input, t)
+const page_description = buildFittingDetailMetaDescription(seo_input, t)
+const structured_data = buildFittingDetailJsonLd(seo_input, meta_title, page_description)
 
-const meta_ship_image = ship_id && Number(ship_id) > 0 ? get_item_icon(ship_id as number, 256) : undefined
-
-const canonical_url = new URL(translatePath(`/ships/fittings/normal/${fitting_id}`), Astro.url.origin).href
+const meta_ship_image = seo_input.metaImage
+const canonical_url = seo_input.canonicalUrl
+const fittings_list_url = seo_input.fittingsListUrl
+const ships_url = seo_input.shipsUrl
 ---
 
 <script define:vars={{ render_view }}>
@@ -176,11 +195,15 @@ import { navigate } from "astro:transitions/client";
     meta_description={page_description}
     meta_image={meta_ship_image}
     canonical_url={canonical_url}
+    og_type="article"
 >
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(structured_data)} />
+
     <PageDefault
         cover={{
             image: "/images/fits-cover.jpg",
             image_990: "/images/fits-cover.jpg",
+            alt: t('fitting.cover_alt'),
             animated: false,
             scrollable: true,
             overlay: true
@@ -192,13 +215,22 @@ import { navigate } from "astro:transitions/client";
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <FlexInline>
-                <FlexInline>
-                    <img loading="lazy" height="64" width="64" src={get_item_icon(ship_id as number)} alt={fitting_parsed?.ship_name} />
-                    <Flexblock gap='var(--space-3xs)'>
-                        <PageTitle>{page_title}</PageTitle>
-                        <small>{t('last_updated')} {format_date_short(lang, fitting?.updated_at ?? '')}</small>
-                    </Flexblock>
-                </FlexInline>
+                <Flexblock gap='var(--space-s)'>
+                    <nav class="fitting-breadcrumb" aria-label="Breadcrumb">
+                        <ol>
+                            <li><a href={ships_url}>Ships</a></li>
+                            <li><a href={fittings_list_url}>Fittings</a></li>
+                            <li aria-current="page">{fitting_display_name}</li>
+                        </ol>
+                    </nav>
+                    <FlexInline>
+                        <img loading="lazy" height="64" width="64" src={get_item_icon(ship_id as number)} alt={fitting_parsed?.ship_name} />
+                        <Flexblock gap='var(--space-3xs)'>
+                            <PageTitle>{page_title}</PageTitle>
+                            <small>{t('last_updated')} {format_date_short(lang, fitting?.updated_at ?? '')}</small>
+                        </Flexblock>
+                    </FlexInline>
+                </Flexblock>
             </FlexInline>
             <FlexInline>
                 <div 
@@ -278,7 +310,41 @@ import { navigate } from "astro:transitions/client";
     </PageDefault>
 </Viewport>
 
-<style>
+<style lang="scss">
+    .fitting-breadcrumb {
+        margin: 0;
+
+        ol {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2xs);
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            font-size: var(--step--1);
+            color: var(--text-color-secondary, var(--faded));
+        }
+
+        li:not(:last-child)::after {
+            content: '/';
+            margin-left: var(--space-2xs);
+        }
+
+        a {
+            color: var(--highlight);
+            text-decoration: none;
+
+            &:hover,
+            &:focus-visible {
+                text-decoration: underline;
+            }
+        }
+
+        [aria-current='page'] {
+            color: var(--foreground);
+        }
+    }
+
     #fit-clipboard {
         display: none;
     }

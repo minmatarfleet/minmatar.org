@@ -45,6 +45,13 @@ import { strip_markdown } from '@helpers/string'
 import { get_item_icon } from '@helpers/eve_image_server';
 import { format_date_short } from '@helpers/date';
 import { parse_eft, parse_pod } from '@helpers/fit_parser.ts';
+import { format_fitting_tags_line } from '@helpers/fitting_tags'
+import {
+    buildFittingDetailJsonLd,
+    buildFittingDetailMetaDescription,
+    buildFittingDetailMetaTitle,
+    type FittingDetailSeoInput,
+} from '@helpers/fitting_seo'
 
 const fitting_parsed = await parse_eft(fitting?.eft_format ?? '')
 
@@ -69,19 +76,33 @@ const normal_view = translatePath(`/ships/fittings/normal/${fitting_id}`)
 const fitting_display_name = fitting?.name ?? fitting_parsed.name
 const page_title = fitting_display_name;
 const ship_display_name = fitting_parsed.ship_name ?? ''
+const site_name = t('index.page_title')
+const tag_labels = format_fitting_tags_line(fitting?.tags, t)
 
-const meta_title = t('fitting.detail.meta_title')
-    .replace('{fitting}', fitting_display_name)
-    .replace('{ship}', ship_display_name)
-    .replace('{site}', t('index.page_title'))
+const seo_input: FittingDetailSeoInput = {
+    fittingId: parseInt(fitting_id ?? '0'),
+    fittingName: fitting_display_name,
+    shipName: ship_display_name,
+    shipId: ship_id as number,
+    description: (await strip_markdown(fitting?.description ?? '')).trim(),
+    tagLabels: tag_labels,
+    updatedAt: fitting?.updated_at,
+    siteName: site_name,
+    siteOrigin: Astro.url.origin,
+    fittingsListUrl: new URL(translatePath('/ships/fittings/'), Astro.url.origin).href,
+    shipsUrl: new URL(translatePath('/ships/'), Astro.url.origin).href,
+    canonicalUrl: new URL(translatePath(`/ships/fittings/normal/${fitting_id}`), Astro.url.origin).href,
+    metaImage: ship_id && Number(ship_id) > 0 ? get_item_icon(ship_id, 256) : `${Astro.url.origin}/images/fits-cover.jpg`,
+}
 
-let page_description = (await strip_markdown(fitting?.description ?? '')).trim()
-if (!page_description)
-    page_description = t('fitting.detail.meta_description_fallback')
-        .replace('{fitting}', fitting_display_name)
-        .replace('{ship}', ship_display_name)
+const meta_title = buildFittingDetailMetaTitle(seo_input, t)
+const page_description = buildFittingDetailMetaDescription(seo_input, t)
+const structured_data = buildFittingDetailJsonLd(seo_input, meta_title, page_description)
 
-const meta_ship_image = ship_id && Number(ship_id) > 0 ? get_item_icon(ship_id, 256) : undefined
+const meta_ship_image = seo_input.metaImage
+const canonical_url = seo_input.canonicalUrl
+const fittings_list_url = seo_input.fittingsListUrl
+const ships_url = seo_input.shipsUrl
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -110,8 +131,6 @@ import AugmentationEvEIcon from '@components/icons/AugmentationEvEIcon.astro'
 import FixedFluid from '@components/compositions/FixedFluid.astro'
 import ItemBadge from '@components/blocks/ItemBadge.astro'
 import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro'
-
-const canonical_url = new URL(translatePath(`/ships/fittings/normal/${fitting_id}`), Astro.url.origin).href
 ---
 
 <script define:vars={{ normal_view }}>
@@ -128,10 +147,13 @@ import { navigate } from "astro:transitions/client";
     meta_description={page_description}
     meta_image={meta_ship_image}
     canonical_url={canonical_url}
+    og_type="article"
     components={{
         alert_dialog: true,
     }}
 >
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(structured_data)} />
+
     <PageLanding
         cover={{
             image: "/images/fitting-cover.jpg",

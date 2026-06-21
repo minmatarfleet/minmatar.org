@@ -1,0 +1,107 @@
+---
+import type { BrandAssetRow } from '@/data/brand/assets'
+
+interface Props {
+    title: string
+    rows: BrandAssetRow[]
+}
+
+const { title, rows } = Astro.props
+
+const sizeColumns: { key: keyof BrandAssetRow; label: string }[] = [
+    { key: 'svg', label: 'SVG' },
+    { key: 'png512', label: '512px' },
+    { key: 'png1080', label: '1080px' },
+    { key: 'png2160', label: '2160px' },
+]
+---
+
+<section class="[ brand-section ]">
+    <h2>{title}</h2>
+    <p class="[ brand-hint ]">Right-click an image and choose “Save image as…” to download it.</p>
+
+    <div class="[ table-container ]">
+        <table>
+            <thead>
+                <tr>
+                    {sizeColumns.map(({ label }) => <th>{label}</th>)}
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                {rows.map((row) => (
+                    <tr>
+                        {sizeColumns.map(({ key }) => (
+                            <td>
+                                {row[key] ? (
+                                    <a href={row[key] as string} download>
+                                        <img src={row[key] as string} alt={row.name} width="64" loading="lazy" />
+                                    </a>
+                                ) : (
+                                    <span class="[ na ]">N/A</span>
+                                )}
+                            </td>
+                        ))}
+                        <td>{row.description}</td>
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<style lang="scss">
+    .brand-section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+    }
+
+    .brand-hint {
+        color: var(--text-color-secondary);
+        margin: 0;
+    }
+
+    .table-container {
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th,
+    td {
+        border: 1px solid var(--border-color);
+        padding: var(--space-s);
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    th {
+        background: var(--solid-transparency-background);
+        font-weight: 600;
+    }
+
+    td:last-child {
+        text-align: left;
+    }
+
+    img {
+        display: block;
+        margin-inline: auto;
+        max-width: 64px;
+        height: auto;
+    }
+
+    a {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .na {
+        color: var(--text-color-secondary);
+    }
+</style>
