@@ -68,7 +68,7 @@ export const ui = {
         'guides.submit_title': 'How to submit a guide',
         'guides.submit_step_1': 'Create your guide in a Google Document.',
         'guides.submit_step_2_before': 'Submit your guide to the',
-        'guides.submit_step_2_link': 'Technology Team',
+        'guides.submit_step_2_link': 'Technology tribe',
         'guides.submit_step_3': 'Guides take time to be converted to the site, so please be patient with edits and updates.',
         'brand.page_title': 'Branding',
         'brand.leading_text': 'Official FL33T fonts, colours, logos, and icons for alliance branding.',
