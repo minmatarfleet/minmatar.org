@@ -58,7 +58,7 @@ export const ui = {
         'alliance.description.directors_officers': 'Browse our corporations, teams and SIGs portfolio and submit your application. Manage your teams and SIGs members and applications. Read about our recent events',
 
         'alliance.story.page_title': 'Our story',
-        'alliance.values.page_title': 'Minmatar FL33T Alliance Tenets',
+        'alliance.values.page_title': 'Alliance Values',
         'alliance.playstyle.page_title': 'Our playstyle',
 
         'propaganda.page_title': 'Propaganda',
@@ -901,7 +901,7 @@ export const ui = {
         'error_loading_content_reload': 'An error occurred fetching the content. You may reload the page to fix it.',
         'page_finder.alliance.description': 'Alliance landing page.',
         'page_finder.story.description': 'Learn more about our story.',
-        'page_finder.values.description': 'Learn more about our values.',
+        'page_finder.values.description': 'What we expect from every FL33T member.',
         'page_finder.playstyle.description': 'Learn more about our playstyle.',
         'page_finder.teams.description': 'Teams landing page.',
         'page_finder.groups.description': 'Special Interest Groups landing page.',
