@@ -507,6 +507,10 @@ def update_corporation_blueprints(corporation_id: int) -> int:
         return 0
 
     blueprints_data = response.results() or []
+    by_item_id: dict[int, dict] = {}
+    for raw in blueprints_data:
+        by_item_id[raw["item_id"]] = raw
+    deduped_blueprints = list(by_item_id.values())
     instances = [
         EveCorporationBlueprint(
             corporation=corporation,
@@ -519,7 +523,7 @@ def update_corporation_blueprints(corporation_id: int) -> int:
             quantity=raw["quantity"],
             runs=raw["runs"],
         )
-        for raw in blueprints_data
+        for raw in deduped_blueprints
     ]
     replace_with_bulk_create(
         delete_queryset=EveCorporationBlueprint.objects.filter(
@@ -529,11 +533,11 @@ def update_corporation_blueprints(corporation_id: int) -> int:
     )
     logger.info(
         "Synced %s blueprint(s) for corporation %s (%s)",
-        len(blueprints_data),
+        len(deduped_blueprints),
         corporation.name,
         corporation_id,
     )
-    return len(blueprints_data)
+    return len(deduped_blueprints)
 
 
 def update_corporation_wallet_journal(corporation_id: int) -> int:

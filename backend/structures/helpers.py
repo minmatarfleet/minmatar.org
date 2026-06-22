@@ -438,7 +438,7 @@ def _attacker_line_from_notification_text(text: str | None) -> str:
 
 
 def discord_message_for_ping(ping: EveStructurePing) -> str:
-    ping_text = "@everyone \n" ":scream: STRUCTURE UNDER ATTACK :scream: \n"
+    ping_text = ":scream: STRUCTURE UNDER ATTACK :scream: \n"
 
     structure = EveStructure.objects.filter(id=ping.structure_id).first()
     if structure:

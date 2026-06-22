@@ -91,6 +91,8 @@ Do this while logged in as the discord user you wish to act as 'admin' (likely y
      - ✅ `Manage Roles`
      - ✅ `Manage Nicknames`
      - ✅ `Create Public Threads`
+     - ✅ `Create Private Threads`
+     - ✅ `Manage Threads`
      - ✅ `Send Messages in Threads`
      - ✅ `Use Slash Commands`
      - The permission bitmask is 311787785216 FYI
@@ -162,6 +164,8 @@ currently features are /timer to post a time.
    DISCORD_BOT_TOKEN=your_bot_token_here
    MINMATAR_API_TOKEN=your_api_token_here
    DISCORD_GUILD_ID=your_guild_id
+   DISCORD_HELP_CHANNEL_ID=your_help_channel_id
+   DISCORD_MODERATOR_ROLE_ID=your_moderator_role_id
    ... plus any channel ids needed
    ```
 

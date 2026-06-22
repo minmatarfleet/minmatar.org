@@ -50,6 +50,7 @@ FIXTURE_FILES = (
     "07_fleet_audiences.json",
     "08_market_expectations.json",
     "09_nvy_navy_destroyer_fittings.json",
+    "10_help_tickets.json",
 )
 
 SANITIZE_FIELDS: dict[str, set[str]] = {

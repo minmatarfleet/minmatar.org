@@ -1,0 +1,44 @@
+[
+  {
+    "model": "help_tickets.helprequestcategory",
+    "pk": 1,
+    "fields": {
+      "title": "Contact the dread team",
+      "description": "Siege green. Dreadnoughts are the alliance's hard answer to anything the enemy puts on field.",
+      "code": "capitals.dreads",
+      "tribe_group": 1,
+      "section": "",
+      "sort_order": 1,
+      "is_active": true,
+      "assignees": []
+    }
+  },
+  {
+    "model": "help_tickets.helprequestcategory",
+    "pk": 2,
+    "fields": {
+      "title": "Contact the freighter team",
+      "description": "If it needs to move, we move it. Freighters handle the logistics runs that keep every corner of the alliance stocked and operational.",
+      "code": "market.freighters",
+      "tribe_group": 9,
+      "section": "",
+      "sort_order": 9,
+      "is_active": true,
+      "assignees": []
+    }
+  },
+  {
+    "model": "help_tickets.helprequestcategory",
+    "pk": 3,
+    "fields": {
+      "title": "Contact the technology team",
+      "description": "The systems that keep us sharp. Technology builds and maintains the tools that reduce overhead and give FL33T an edge inside and outside the game.",
+      "code": "pulse.technology",
+      "tribe_group": 12,
+      "section": "",
+      "sort_order": 12,
+      "is_active": true,
+      "assignees": []
+    }
+  }
+]
