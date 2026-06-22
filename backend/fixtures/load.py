@@ -24,6 +24,11 @@ from market.models import (
     EveMarketFittingExpectation,
     EveMarketItemExpectation,
 )
+from help_tickets.models import (
+    HelpTicket,
+    HelpRequestCategory,
+    HelpTicketPanel,
+)
 from tribes.models import (
     Tribe,
     TribeGroup,
@@ -51,6 +56,9 @@ def clear_reference_data() -> dict[str, int]:
     _delete("EveMarketFittingExpectation", EveMarketFittingExpectation.objects)
     _delete("EveMarketItemExpectation", EveMarketItemExpectation.objects)
     _delete("EveFleetAudience", EveFleetAudience.objects)
+    _delete("HelpTicket", HelpTicket.objects)
+    _delete("HelpRequestCategory", HelpRequestCategory.objects)
+    _delete("HelpTicketPanel", HelpTicketPanel.objects)
     _delete("TribeGroupActivity", TribeGroupActivity.objects)
     _delete("TribeGroupRequirementSkill", TribeGroupRequirementSkill.objects)
     _delete(

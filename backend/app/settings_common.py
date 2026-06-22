@@ -88,6 +88,7 @@ INSTALLED_APPS = [
     # Reddit integration
     "reddit",
     "feed.apps.FeedConfig",
+    "help_tickets.apps.HelpTicketsConfig",
 ]
 
 # Discord Login
