@@ -721,6 +721,39 @@ Caldari Navy Thorium Charge S x2000
 Nanite Repair Paste x120
 Navy Cap Booster 400 x25`,
     },
+    {
+        id: 'talfi-10mn-rocket',
+        fittingId: 382,
+        shipId: 91858,
+        shipGuideId: 'talwar',
+        name: '10mn-rocket',
+        description: '10MN afterburner rocket brawler with MASB burst tank. Early solo meta fit: beats many MWD + scram + web destroyers when you manage the slide and overheats.',
+        eftFormat: `[Talwar Fleet Issue, [NVY] Talwar Fleet Issue — 10mn-rocket]
+
+Navy Micro Auxiliary Power Core
+Ballistic Control System II
+IFFA Compact Damage Control
+
+10MN Y-S8 Compact Afterburner
+Warp Scrambler II
+Medium Ancillary Shield Booster
+Compact Multispectrum Shield Hardener
+
+Rocket Launcher II
+Rocket Launcher II
+Rocket Launcher II
+[Empty High slot]
+Rocket Launcher II
+Rocket Launcher II
+
+Small Bay Loading Accelerator II
+Small EM Shield Reinforcer I
+Small Thermal Shield Reinforcer I
+
+
+Scourge Rage Rocket x250
+Navy Cap Booster 50 x9`,
+    },
 ]
 
 export function getGuideFittingsForShip(shipGuideId: string): GuideFitting[] {

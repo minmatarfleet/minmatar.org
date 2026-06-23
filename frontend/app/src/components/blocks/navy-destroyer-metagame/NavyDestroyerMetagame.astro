@@ -146,7 +146,7 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
                     {
                         matchupLegend.map((item) => (
                             <div class="ndm-legend__item">
-                                <span class:list={['ndm-legend__symbol', `ndm-legend__symbol--${item.rating.replace(/\+/g, 'plus').replace(/-/g, 'minus').replace(/=/g, 'even')}`]}>
+                                <span class:list={['ndm-legend__symbol', `ndm-legend__symbol--${item.rating === '?' ? 'unknown' : item.rating.replace(/\+/g, 'plus').replace(/-/g, 'minus').replace(/=/g, 'even')}`]}>
                                     {item.rating}
                                 </span>
                                 <span class="ndm-legend__label">
@@ -536,6 +536,7 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
     .ndm-legend__symbol--even { background: color-mix(in srgb, #5dade2 18%, transparent); color: #a8d8ff; }
     .ndm-legend__symbol--minus { background: color-mix(in srgb, #e74c3c 16%, transparent); color: #ff9f96; }
     .ndm-legend__symbol--minusminus { background: color-mix(in srgb, #c0392b 20%, transparent); color: #ff8a80; }
+    .ndm-legend__symbol--unknown { background: color-mix(in srgb, var(--faded) 18%, transparent); color: var(--text-color-secondary, var(--faded)); }
 
     .ndm-legend__label {
         display: flex;

@@ -1,7 +1,7 @@
 export { guideMeta, credits, guideHistory, introduction, considerations, considerationBullets, disclaimers, metagameSummary, glossary, guideSections } from './content'
 export { buildNavyDestroyerMetagameJsonLd } from './seo'
 export { matchupLegend, brawlingChart, kitingChart, matchupCharts } from './matchup-charts'
-export { catalystGuide, coercerGuide, thrasherGuide, cormorantGuide, shipGuides } from './ships'
+export { catalystGuide, coercerGuide, thrasherGuide, cormorantGuide, talwarGuide, shipGuides } from './ships'
 export { guideFittings, getGuideFittingsForShip, getGuideFittingById } from './fittings'
 export type {
     MatchupRating,

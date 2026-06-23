@@ -14,6 +14,7 @@ SHIPS = {
     "Coercer Navy Issue": 73789,
     "Thrasher Fleet Issue": 73794,
     "Cormorant Navy Issue": 73795,
+    "Talwar Fleet Issue": 91858,
 }
 
 TAGS = ["faction_warfare", "solo"]
@@ -97,6 +98,10 @@ CARGO = {
         "Caldari Navy Thorium Charge S x2000\r\n"
         "Nanite Repair Paste x120\r\n"
         "Navy Cap Booster 400 x25"
+    ),
+    "rocket": (
+        "Scourge Rage Rocket x250\r\n"
+        "Navy Cap Booster 50 x9"
     ),
 }
 
@@ -763,6 +768,39 @@ FITS = [
             "Small EM Shield Reinforcer II",
             "Small Hybrid Collision Accelerator I",
             "Small Thermal Shield Reinforcer II",
+        ],
+    },
+    {
+        "ship": "Talwar Fleet Issue",
+        "slug": "10mn-rocket",
+        "description": (
+            "10MN afterburner rocket brawler with MASB burst tank. "
+            "Early solo meta fit: beats many MWD + scram + web destroyers when you manage the slide and overheats."
+        ),
+        "cargo": "rocket",
+        "low": [
+            "Navy Micro Auxiliary Power Core",
+            "Ballistic Control System II",
+            "IFFA Compact Damage Control",
+        ],
+        "mid": [
+            "10MN Y-S8 Compact Afterburner",
+            "Warp Scrambler II",
+            "Medium Ancillary Shield Booster",
+            "Compact Multispectrum Shield Hardener",
+        ],
+        "high": [
+            "Rocket Launcher II",
+            "Rocket Launcher II",
+            "Rocket Launcher II",
+            "[Empty High slot]",
+            "Rocket Launcher II",
+            "Rocket Launcher II",
+        ],
+        "rig": [
+            "Small Bay Loading Accelerator II",
+            "Small EM Shield Reinforcer I",
+            "Small Thermal Shield Reinforcer I",
         ],
     },
 ]

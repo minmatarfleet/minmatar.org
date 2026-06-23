@@ -3,6 +3,7 @@ export const navyDestroyerShips = {
     coercer: { shipId: 73789, shipName: 'Coercer Navy Issue' },
     thrasher: { shipId: 73794, shipName: 'Thrasher Fleet Issue' },
     cormorant: { shipId: 73795, shipName: 'Cormorant Navy Issue' },
+    talwar: { shipId: 91858, shipName: 'Talwar Fleet Issue' },
 } as const
 
 export type ResolvedOpponentShip = {
@@ -39,6 +40,10 @@ export function resolveMatchupOpponentShip(
 
     if (lower.includes('corm')) {
         return navyDestroyerShips.cormorant
+    }
+
+    if (lower.includes('talfi') || lower.includes('talwar')) {
+        return navyDestroyerShips.talwar
     }
 
     return null

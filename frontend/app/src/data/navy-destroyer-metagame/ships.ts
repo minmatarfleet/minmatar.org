@@ -356,4 +356,58 @@ export const cormorantGuide: ShipGuide = {
     ],
 }
 
-export const shipGuides = [catalystGuide, coercerGuide, thrasherGuide, cormorantGuide]
+export const talwarGuide: ShipGuide = {
+    id: 'talwar',
+    name: 'Talwar Fleet Issue',
+    shortName: 'TalFI',
+    faction: 'Minmatar',
+    shipId: 91858,
+    tagline: 'Brand-new rocket brawler: scram-range burst with 10MN range control, still finding its place in the metagame.',
+    bonuses: [
+        { label: 'Light Missile and Rocket rate of fire', value: '7.5%' },
+        { label: 'Shield Operation amount', value: '7.5%' },
+        { label: 'Light Missile and Rocket explosion velocity', value: '7.5%' },
+    ],
+    roleBonus: '50% bonus to Light Missile and Rocket max velocity',
+    sections: [
+        {
+            id: 'overview',
+            title: 'Overview',
+            paragraphs: [
+                'Released with Cradle of War (YC 128), the Talwar Fleet Issue is the newest hull in the navy destroyer lineup. Solo meta is still being defined: pilots are experimenting, and most matchup charts below are early reads rather than settled wisdom.',
+                'The standout solo line so far is a 10MN afterburner rocket brawler. Five launchers, MASB burst tank, and scram range control let you stat-check many classic MWD + scram + web destroyers. It is harder to fly than the numbers suggest because 10MN range control takes practice.',
+                'Light-missile fleet fits exist but early reports are poor: the hull wants to be up close with rockets, not orbiting at missile falloff in a gang.',
+            ],
+        },
+        {
+            id: '10mn-rocket',
+            title: '10MN rocket brawl',
+            paragraphs: [
+                'Dato Koppla\'s line: Navy MAPC, BCS, DC in lows; 10MN AB, scram, MASB, and multispec hardener in mids; five rocket launchers with Scourge Rage. Bay loading accelerator and shield resist rigs push alpha.',
+                'Strengths: beats most autocannon TFIs, blaster Catalyst Navy Issues, and Cormorant Navy brawlers if you land scram and manage the 10MN slide. Coercer Navy Issues with projection are awkward: their DPS at range is scary, but only two mids means you can usually bail if the fight turns.',
+                'Weaknesses: beam and locus-pulse Coercer kiters, 10MN rail CatNIs, and artillery TFIs are still open questions. Cap and MASB timing matter; overheating the AB wrong leaves you scrammed at the wrong range.',
+            ],
+        },
+    ],
+    matchups: [
+        {
+            title: '10MN rocket',
+            fitContext: 'Early solo meta. Ratings marked ? are still being tested.',
+            entries: [
+                { opponent: 'AC TFI with web', load: 'Scourge Rage', verdict: 'favoured', advice: 'Classic MWD + scram + web dessie line: you win most of these if you control the 10MN slide.' },
+                { opponent: 'AC TFI without web', load: 'Scourge Rage', verdict: 'favoured', advice: 'Easier than the web variant: less range control against you once scram lands.' },
+                { opponent: 'Blaster CatNI', load: 'Scourge Rage', verdict: 'favoured', advice: 'Another MWD brawler you can stat-check at scram range with good AB heat.' },
+                { opponent: 'Cormorant Navy dual MASB', load: 'Scourge Rage', verdict: 'favoured', advice: 'Win the scram brawl if you keep them from establishing optimal blaster range on the slide.' },
+                { opponent: 'Cormorant Navy buffer', load: 'Scourge Rage', verdict: 'favoured', advice: 'Same story as the MASB line: commit once scram is up.' },
+                { opponent: 'Coercer Navy brawl pulse', load: 'Scourge Rage', verdict: 'skill', advice: 'Tough when they have Scorch projection, but only two mids: heat AB and leave if neut/scram pressure goes wrong.' },
+                { opponent: 'Coercer Navy beam / locus kite', load: 'Scourge Rage', verdict: 'unfavoured', advice: 'Projection hurts. Two mids means you can usually disengage; do not punch into a setup kiter.' },
+                { opponent: 'Coercer Navy dual neut', verdict: 'unknown', advice: 'Cap pressure vs burst tank is untested. Treat as ? until more fights land.' },
+                { opponent: '10MN rail CatNI', verdict: 'unknown', advice: 'Both want range control with 10MN. No settled read yet.' },
+                { opponent: '280 mm TFI kiter', verdict: 'unknown', advice: 'Alpha and web vs your AB and scram. Still collecting data.' },
+                { opponent: 'TalFI mirror', verdict: 'unknown', advice: 'Too new for a reliable mirror line.' },
+            ],
+        },
+    ],
+}
+
+export const shipGuides = [catalystGuide, coercerGuide, thrasherGuide, cormorantGuide, talwarGuide]

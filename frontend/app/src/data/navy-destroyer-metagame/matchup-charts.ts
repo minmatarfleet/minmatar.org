@@ -6,6 +6,7 @@ export const matchupLegend = [
     { rating: '=' as const, label: 'Fifty-Fifty', description: 'Even matchup' },
     { rating: '-' as const, label: 'Bad Idea', description: 'Unfavorable matchup' },
     { rating: '--' as const, label: 'Are you ok bud?', description: 'Very unfavorable matchup' },
+    { rating: '?' as const, label: 'Still figuring it out', description: 'Meta unknown or not yet tested' },
 ]
 
 export const brawlingChart: MatchupChart = {

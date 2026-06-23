@@ -94,6 +94,7 @@ export function buildNavyDestroyerMetagameJsonLd(options: NavyDestroyerMetagameJ
                     'Coercer Navy Issue',
                     'Thrasher Fleet Issue',
                     'Cormorant Navy Issue',
+                    'Talwar Fleet Issue',
                     '1v1',
                     'matchup chart',
                     'ship fittings',

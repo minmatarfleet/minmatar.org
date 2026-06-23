@@ -13,6 +13,28 @@ const ratingLabels: Record<MatchupRating, string> = {
     '=': 'Even',
     '-': 'Unfavorable',
     '--': 'Very unfavorable',
+    '?': 'Unknown',
+}
+
+function ratingClassName(rating: MatchupRating): string {
+    switch (rating) {
+        case '++':
+            return 'ndm-chart__rating--plusplus'
+        case '+':
+            return 'ndm-chart__rating--plus'
+        case '=':
+            return 'ndm-chart__rating--even'
+        case '-':
+            return 'ndm-chart__rating--minus'
+        case '--':
+            return 'ndm-chart__rating--minusminus'
+        case '?':
+            return 'ndm-chart__rating--unknown'
+        default: {
+            const _exhaustive: never = rating
+            return _exhaustive
+        }
+    }
 }
 ---
 
@@ -49,7 +71,7 @@ const ratingLabels: Record<MatchupRating, string> = {
                                 chart.matrix[rowIndex].map((rating, colIndex) => (
                                     <td class="ndm-chart__cell">
                                         <span
-                                            class:list={['ndm-chart__rating', `ndm-chart__rating--${rating.replace(/\+/g, 'plus').replace(/-/g, 'minus').replace(/=/g, 'even')}`]}
+                                            class:list={['ndm-chart__rating', ratingClassName(rating)]}
                                             aria-label={`${row} vs ${chart.columns[colIndex]}: ${ratingLabels[rating]}`}
                                             title={ratingLabels[rating]}
                                         >
@@ -201,5 +223,11 @@ const ratingLabels: Record<MatchupRating, string> = {
         background: color-mix(in srgb, #c0392b 20%, transparent);
         color: #ff8a80;
         border: 1px solid color-mix(in srgb, #c0392b 45%, transparent);
+    }
+
+    .ndm-chart__rating--unknown {
+        background: color-mix(in srgb, var(--faded) 18%, transparent);
+        color: var(--text-color-secondary, var(--faded));
+        border: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
     }
 </style>

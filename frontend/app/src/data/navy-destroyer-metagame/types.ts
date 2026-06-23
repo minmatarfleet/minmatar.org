@@ -1,4 +1,4 @@
-export type MatchupRating = '++' | '+' | '=' | '-' | '--'
+export type MatchupRating = '++' | '+' | '=' | '-' | '--' | '?'
 
 export type GuideFitting = {
     id: string
@@ -17,7 +17,7 @@ export type ShipProseSection = {
     bullets?: string[]
 }
 
-export type MatchupVerdict = 'favoured' | 'unfavoured' | 'even' | 'bail' | 'skill'
+export type MatchupVerdict = 'favoured' | 'unfavoured' | 'even' | 'bail' | 'skill' | 'unknown'
 
 export type MatchupEntry = {
     opponent: string

@@ -12,7 +12,7 @@
       "description": "Versatile blaster brawler with armor plate, web, and scram. High buffer EHP wins most close-range destroyer scram fights; very weak to anything that can kite.",
       "aliases": "",
       "eft_format": "[Catalyst Navy Issue, [NVY] Catalyst Navy Issue \u2014 plate-web-scram]\r\n\r\nDamage Control II\r\n400mm Rolled Tungsten Compact Plates\r\nVortex Compact Magnetic Field Stabilizer\r\n\r\n5MN Y-T8 Compact Microwarpdrive\r\nWarp Scrambler II\r\nFleeting Compact Stasis Webifier\r\n\r\nLight Neutron Blaster II\r\nLight Neutron Blaster II\r\nLight Neutron Blaster II\r\n[Empty High slot]\r\nLight Neutron Blaster II\r\nLight Neutron Blaster II\r\nLight Neutron Blaster II\r\n\r\nSmall Transverse Bulkhead II\r\nSmall Transverse Bulkhead II\r\nSmall Transverse Bulkhead II\r\n\r\n\r\nNull S x2500\r\nVoid S x5000\r\nCaldari Navy Antimatter Charge S x1000\r\nNanite Repair Paste x50",
-      "latest_version": "80f4476b-813e-4749-bcb9-61f0f1bfc71e",
+      "latest_version": "869549db-a469-4a91-8b24-2269319d741d",
       "minimum_pod": "",
       "recommended_pod": "",
       "tags": [
@@ -34,7 +34,7 @@
       "description": "Active armor blaster brawler using a SAAR and nosferatu for sustain. More flexible than the plate variant but with a thinner buffer; still beats most destroyers you can land scram and web on.",
       "aliases": "",
       "eft_format": "[Catalyst Navy Issue, [NVY] Catalyst Navy Issue \u2014 saar-web-scram]\r\n\r\nSmall Ancillary Armor Repairer\r\nDamage Control II\r\nVortex Compact Magnetic Field Stabilizer\r\n\r\n5MN Y-T8 Compact Microwarpdrive\r\nWarp Scrambler II\r\nFleeting Compact Stasis Webifier\r\n\r\nLight Neutron Blaster II\r\nLight Neutron Blaster II\r\nLight Neutron Blaster II\r\nSmall Ghoul Compact Energy Nosferatu\r\nLight Neutron Blaster II\r\nLight Neutron Blaster II\r\nLight Neutron Blaster II\r\n\r\nSmall Transverse Bulkhead II\r\nSmall Transverse Bulkhead II\r\nSmall Transverse Bulkhead II\r\n\r\n\r\nNull S x2500\r\nVoid S x5000\r\nCaldari Navy Antimatter Charge S x1000\r\nNanite Repair Paste x50",
-      "latest_version": "4b254f82-40be-4685-9dea-fb8883fde1e6",
+      "latest_version": "1f1d9774-e2bc-43da-a647-e8fce0dfaea4",
       "minimum_pod": "",
       "recommended_pod": "",
       "tags": [
@@ -56,7 +56,7 @@
       "description": "10MN afterburner rail kiter with 150mm gauss guns. Slippery scram-kite fit that controls range against other destroyers; over-propped, so turn on prey early and avoid slingshots.",
       "aliases": "",
       "eft_format": "[Catalyst Navy Issue, [NVY] Catalyst Navy Issue \u2014 10mn-150mm]\r\n\r\nDamage Control II\r\nVortex Compact Magnetic Field Stabilizer\r\nSmall Ancillary Armor Repairer\r\n\r\n10MN Y-S8 Compact Afterburner\r\nFleeting Compact Stasis Webifier\r\nFaint Scoped Warp Disruptor\r\n\r\n150mm Prototype Gauss Gun\r\n150mm Prototype Gauss Gun\r\n150mm Prototype Gauss Gun\r\n[Empty High slot]\r\n150mm Prototype Gauss Gun\r\n150mm Prototype Gauss Gun\r\n150mm Prototype Gauss Gun\r\n\r\nSmall Transverse Bulkhead II\r\nSmall Transverse Bulkhead II\r\nSmall Transverse Bulkhead II\r\n\r\n\r\nCaldari Navy Antimatter Charge S x2000\r\nCaldari Navy Iridium Charge S x2000\r\nCaldari Navy Iron Charge S x2000\r\nCaldari Navy Thorium Charge S x2000\r\nNanite Repair Paste x120",
-      "latest_version": "e4b9f4ac-5591-4b11-b7b0-ad7885900250",
+      "latest_version": "489bb738-56df-4757-9e76-df57fd78a6ed",
       "minimum_pod": "",
       "recommended_pod": "",
       "tags": [
@@ -78,7 +78,7 @@
       "description": "Faster 10MN rail kiter with T2 125mm rails and a disruptor. Even harder to catch than the 150mm variant but with lower raw DPS; excellent for picking destroyer fights on your terms.",
       "aliases": "",
       "eft_format": "[Catalyst Navy Issue, [NVY] Catalyst Navy Issue \u2014 10mn-125mm]\r\n\r\nDamage Control II\r\nMagnetic Field Stabilizer II\r\nSmall Ancillary Armor Repairer\r\n\r\n10MN Monopropellant Enduring Afterburner\r\nX5 Enduring Stasis Webifier\r\nWarp Disruptor II\r\n\r\n125mm Railgun II\r\n125mm Railgun II\r\n125mm Railgun II\r\n[Empty High slot]\r\n125mm Railgun II\r\n125mm Railgun II\r\n125mm Railgun II\r\n\r\nSmall Transverse Bulkhead II\r\nSmall Transverse Bulkhead II\r\nSmall Transverse Bulkhead II\r\n\r\n\r\nCaldari Navy Antimatter Charge S x2000\r\nCaldari Navy Iridium Charge S x2000\r\nCaldari Navy Iron Charge S x2000\r\nCaldari Navy Thorium Charge S x2000\r\nNanite Repair Paste x120",
-      "latest_version": "f4ec9c4a-1284-413f-8289-e5e532fa04b1",
+      "latest_version": "5cecccac-02c0-452d-902f-e4d02ef05d53",
       "minimum_pod": "",
       "recommended_pod": "",
       "tags": [
@@ -100,7 +100,7 @@
       "description": "Classic dual neut brawler with MWD. Leverages the hull neut bonus to drain cap-reliant targets, then grind them down at scram range. Beware kiters and capless guns.",
       "aliases": "",
       "eft_format": "[Coercer Navy Issue, [NVY] Coercer Navy Issue \u2014 dual-neuts-mwd]\r\n\r\n400mm Rolled Tungsten Compact Plates\r\nDamage Control II\r\nHeat Sink II\r\nMultispectrum Energized Membrane II\r\n\r\n5MN Y-T8 Compact Microwarpdrive\r\nFaint Epsilon Scoped Warp Scrambler\r\n\r\nDual Light Pulse Laser II\r\nDual Light Pulse Laser II\r\nDual Light Pulse Laser II\r\nSmall Infectious Scoped Energy Neutralizer\r\nSmall Infectious Scoped Energy Neutralizer\r\nDual Light Pulse Laser II\r\nDual Light Pulse Laser II\r\n\r\nSmall Ancillary Current Router I\r\nSmall Trimark Armor Pump I\r\nSmall Trimark Armor Pump I\r\n\r\n\r\nConflagration S x5\r\nScorch S x5\r\nImperial Navy Multifrequency S x5\r\nNanite Repair Paste x50",
-      "latest_version": "b9183460-0d07-49d3-a3b8-80e6c5c6724f",
+      "latest_version": "7570a801-feac-451a-93e5-4e3c8116d657",
       "minimum_pod": "",
       "recommended_pod": "",
       "tags": [
@@ -122,7 +122,7 @@
       "description": "Slow brawler with dual neuts, web, and no prop mod. Trades mobility for more tank and control at scram range; ideal when you expect a straight brawl rather than a chase.",
       "aliases": "",
       "eft_format": "[Coercer Navy Issue, [NVY] Coercer Navy Issue \u2014 dual-neuts-no-prop]\r\n\r\n400mm Rolled Tungsten Compact Plates\r\nDamage Control II\r\nHeat Sink II\r\nMultispectrum Coating II\r\n\r\nFaint Epsilon Scoped Warp Scrambler\r\nFleeting Compact Stasis Webifier\r\n\r\nSmall Focused Pulse Laser II\r\nSmall Focused Pulse Laser II\r\nSmall Focused Pulse Laser II\r\nSmall Energy Neutralizer II\r\nSmall Infectious Scoped Energy Neutralizer\r\nSmall Focused Pulse Laser II\r\nSmall Focused Pulse Laser II\r\n\r\nSmall Ancillary Current Router II\r\nSmall Trimark Armor Pump I\r\nSmall Energy Locus Coordinator II\r\n\r\n\r\nConflagration S x5\r\nScorch S x5\r\nImperial Navy Multifrequency S x5\r\nNanite Repair Paste x50",
-      "latest_version": "bc49fc8b-f0fa-4e41-acec-1699322c4998",
+      "latest_version": "26065a83-9bc3-4f8a-b786-74033053a2ce",
       "minimum_pod": "",
       "recommended_pod": "",
       "tags": [
@@ -144,7 +144,7 @@
       "description": "Afterburner pulse brawler for tighter range control without MWD signature penalty. Full dual-pulse rack with a neut for cap warfare in straight scram brawls.",
       "aliases": "",
       "eft_format": "[Coercer Navy Issue, [NVY] Coercer Navy Issue \u2014 ab-scram-brawl]\r\n\r\nDamage Control II\r\nMultispectrum Energized Membrane II\r\n400mm Rolled Tungsten Compact Plates\r\nHeat Sink II\r\n\r\n1MN Afterburner II\r\nWarp Scrambler II\r\n\r\nDual Light Pulse Laser II\r\nDual Light Pulse Laser II\r\nDual Light Pulse Laser II\r\nSmall Infectious Scoped Energy Neutralizer\r\nDual Light Pulse Laser II\r\nDual Light Pulse Laser II\r\nDual Light Pulse Laser II\r\n\r\nSmall Trimark Armor Pump I\r\nSmall Trimark Armor Pump I\r\nSmall Trimark Armor Pump I\r\n\r\n\r\nConflagration S x5\r\nScorch S x5\r\nImperial Navy Multifrequency S x5\r\nNanite Repair Paste x50",
-      "latest_version": "78ccd544-e95c-4848-b140-65a7540345fc",
+      "latest_version": "4001fd04-9b49-4594-b785-6c95cb02f044",
       "minimum_pod": "",
       "recommended_pod": "",
       "tags": [
@@ -166,7 +166,7 @@
       "description": "Focused pulse MWD brawler with a full gun rack and no neut. Pure scram-range DPS for pilots who want to close quickly and brawl.",
       "aliases": "",
       "eft_format": "[Coercer Navy Issue, [NVY] Coercer Navy Issue \u2014 mwd-scram-brawl]\r\n\r\n200mm Steel Plates II\r\nHeat Sink II\r\nMultispectrum Coating II\r\nMultispectrum Energized Membrane II\r\n\r\n5MN Quad LiF Restrained Microwarpdrive\r\nWarp Scrambler II\r\n\r\nSmall Focused Pulse Laser II\r\nSmall Focused Pulse Laser II\r\nSmall Focused Pulse Laser II\r\n[Empty High slot]\r\nSmall Focused Pulse Laser II\r\nSmall Focused Pulse Laser II\r\nSmall Focused Pulse Laser II\r\n\r\nSmall Trimark Armor Pump I\r\nSmall Trimark Armor Pump I\r\nSmall Trimark Armor Pump I\r\n\r\n\r\nConflagration S x5\r\nScorch S x5\r\nImperial Navy Multifrequency S x5\r\nNanite Repair Paste x50",
-      "latest_version": "a01953b5-e989-46e4-afc8-c9ce2350588e",
+      "latest_version": "a8daad08-438f-422f-aa9c-ce758ca1bf71",
       "minimum_pod": "",
       "recommended_pod": "",
       "tags": [
@@ -188,7 +188,7 @@
       "description": "Locus coordinator pulse kiter with SAAR for mid-range pressure. Uses tracking and the hull's neut-adjacent slot layout to fight at pulse falloff while staying mobile.",
       "aliases": "",
       "eft_format": "[Coercer Navy Issue, [NVY] Coercer Navy Issue \u2014 locus-pulse]\r\n\r\nHeat Sink II\r\nExtruded Compact Heat Sink\r\nDamage Control II\r\nSmall Ancillary Armor Repairer\r\n\r\n5MN Y-T8 Compact Microwarpdrive\r\nInitiated Compact Warp Disruptor\r\n\r\nSmall Focused Pulse Laser II\r\nSmall Focused Pulse Laser II\r\nSmall Focused Pulse Laser II\r\n[Empty High slot]\r\nSmall Focused Pulse Laser II\r\nSmall Focused Pulse Laser II\r\nSmall Focused Pulse Laser II\r\n\r\nSmall Transverse Bulkhead II\r\nSmall Energy Locus Coordinator II\r\nSmall Energy Locus Coordinator II\r\n\r\n\r\nConflagration S x5\r\nScorch S x5\r\nImperial Navy Multifrequency S x5\r\nNanite Repair Paste x50",
-      "latest_version": "4941f49e-123b-4851-8d04-ff780053a89c",
+      "latest_version": "b19ce8d4-01cc-4aca-b762-8c3cf4ba2592",
       "minimum_pod": "",
       "recommended_pod": "",
       "tags": [
@@ -210,7 +210,7 @@
       "description": "Beam kiter with tracking enhancer for fighting near falloff. Keeps range with MWD and disruptor while applying steady beam DPS to slower brawlers and other kiters.",
       "aliases": "",
       "eft_format": "[Coercer Navy Issue, [NVY] Coercer Navy Issue \u2014 kite-beams]\r\n\r\nHeat Sink II\r\nExtruded Compact Heat Sink\r\nDamage Control II\r\nFourier Compact Tracking Enhancer\r\n\r\n5MN Y-T8 Compact Microwarpdrive\r\nInitiated Compact Warp Disruptor\r\n\r\nSmall Focused Beam Laser II\r\nSmall Focused Beam Laser II\r\nSmall Focused Beam Laser II\r\n[Empty High slot]\r\nSmall Focused Beam Laser II\r\nSmall Focused Beam Laser II\r\nSmall Focused Beam Laser II\r\n\r\nSmall Processor Overclocking Unit II\r\nSmall Transverse Bulkhead I\r\nSmall Transverse Bulkhead I\r\n\r\n\r\nConflagration S x5\r\nImperial Navy Multifrequency S x5\r\nScorch S x5\r\nNanite Repair Paste x50",
-      "latest_version": "2634fb15-c3ac-473e-8598-f5116d324dd7",
+      "latest_version": "6176a1a9-4316-4076-a0b9-661e6fd56911",
       "minimum_pod": "",
       "recommended_pod": "",
       "tags": [
@@ -232,7 +232,7 @@
       "description": "Double-web beam fit for catching other kiters and holding them in beam range. A niche meme build that punishes pilots who assume every Coercer is a neut brawler.",
       "aliases": "",
       "eft_format": "[Coercer Navy Issue, [NVY] Coercer Navy Issue \u2014 web-beams]\r\n\r\nHeat Sink II\r\nHeat Sink II\r\nDamage Control II\r\nFourier Compact Tracking Enhancer\r\n\r\nStasis Webifier II\r\nFleeting Compact Stasis Webifier\r\n\r\nSmall Focused Beam Laser II\r\nSmall Focused Beam Laser II\r\nSmall Focused Beam Laser II\r\n[Empty High slot]\r\nSmall Focused Beam Laser II\r\nSmall Focused Beam Laser II\r\nSmall Focused Beam Laser II\r\n\r\nSmall Processor Overclocking Unit II\r\nSmall Transverse Bulkhead I\r\nSmall Transverse Bulkhead I\r\n\r\n\r\nConflagration S x5\r\nImperial Navy Multifrequency S x5\r\nScorch S x5\r\nNanite Repair Paste x50",
-      "latest_version": "aca0b9b2-f502-4db6-b0ab-a0ef16d4ef4b",
+      "latest_version": "0afbc984-c166-42c2-9b11-c34436d0cea4",
       "minimum_pod": "",
       "recommended_pod": "",
       "tags": [
@@ -254,7 +254,7 @@
       "description": "Standard 280mm artillery kiter with collision accelerator for alpha and range control. Excellent for fighting on your terms; if you get tackled, you die.",
       "aliases": "",
       "eft_format": "[Thrasher Fleet Issue, [NVY] Thrasher Fleet Issue \u2014 280mm-acr]\r\n\r\nGyrostabilizer II\r\nCounterbalanced Compact Gyrostabilizer\r\nIFFA Compact Damage Control\r\n\r\n5MN Y-T8 Compact Microwarpdrive\r\nFleeting Compact Stasis Webifier\r\nInitiated Compact Warp Disruptor\r\n\r\n280mm Howitzer Artillery II\r\n280mm Howitzer Artillery II\r\n280mm Howitzer Artillery II\r\n[Empty High slot]\r\n280mm Howitzer Artillery II\r\n280mm Howitzer Artillery II\r\n280mm Howitzer Artillery II\r\n\r\nSmall Transverse Bulkhead II\r\nSmall Projectile Collision Accelerator I\r\nSmall Ancillary Current Router I\r\n\r\n\r\nQuake S x1500\r\nTremor S x1500\r\nNanite Repair Paste x50\r\nRepublic Fleet Depleted Uranium S x1000\r\nRepublic Fleet EMP S x1000\r\nRepublic Fleet Fusion S x1000\r\nRepublic Fleet Phased Plasma S x1000",
-      "latest_version": "25b64d50-e92a-4f59-9e19-0c2843a4cb12",
+      "latest_version": "9f4dc31d-862c-453f-b12e-17ba778cb6f7",
       "minimum_pod": "",
       "recommended_pod": "",
       "tags": [
@@ -276,7 +276,7 @@
       "description": "Simpler overdrive artillery kiter with more speed and less alpha than the ACR variant. Good entry 280mm fit for pilots learning Thrasher Fleet Issue kiting.",
       "aliases": "",
       "eft_format": "[Thrasher Fleet Issue, [NVY] Thrasher Fleet Issue \u2014 280-overdrive]\r\n\r\nGyrostabilizer II\r\nOverdrive Injector System II\r\nDamage Control II\r\n\r\n5MN Y-T8 Compact Microwarpdrive\r\nFleeting Compact Stasis Webifier\r\nWarp Disruptor II\r\n\r\n280mm Howitzer Artillery II\r\n280mm Howitzer Artillery II\r\n280mm Howitzer Artillery II\r\n[Empty High slot]\r\n280mm Howitzer Artillery II\r\n280mm Howitzer Artillery II\r\n280mm Howitzer Artillery II\r\n\r\nSmall Transverse Bulkhead II\r\nSmall Transverse Bulkhead II\r\nSmall Transverse Bulkhead II\r\n\r\n\r\nQuake S x1500\r\nTremor S x1500\r\nNanite Repair Paste x50\r\nRepublic Fleet Depleted Uranium S x1000\r\nRepublic Fleet EMP S x1000\r\nRepublic Fleet Fusion S x1000\r\nRepublic Fleet Phased Plasma S x1000",
-      "latest_version": "8e6aea63-486b-449f-9529-b4f91822c05b",
+      "latest_version": "120c8228-acfc-4d64-8034-7dc782ce21db",
       "minimum_pod": "",
       "recommended_pod": "",
       "tags": [
@@ -298,7 +298,7 @@
       "description": "Armor autocannon brawler with a rocket launcher for close-range brawling. Scram, web, and MWD into range then tear down other destroyers with AC alpha.",
       "aliases": "",
       "eft_format": "[Thrasher Fleet Issue, [NVY] Thrasher Fleet Issue \u2014 armour-acs]\r\n\r\nDamage Control II\r\nGyrostabilizer II\r\n400mm Crystalline Carbonide Restrained Plates\r\n\r\nWarp Scrambler II\r\nFleeting Compact Stasis Webifier\r\n5MN Quad LiF Restrained Microwarpdrive\r\n\r\n200mm AutoCannon II\r\n200mm AutoCannon II\r\n200mm AutoCannon II\r\nRocket Launcher II\r\n200mm AutoCannon II\r\n200mm AutoCannon II\r\n200mm AutoCannon II\r\n\r\nSmall Trimark Armor Pump I\r\nSmall Trimark Armor Pump I\r\nSmall Projectile Burst Aerator II\r\n\r\n\r\nBarrage S x2500\r\nHail S x5000\r\nInferno Rage Rocket x1000\r\nNanite Repair Paste x50\r\nRepublic Fleet Depleted Uranium S x1000\r\nRepublic Fleet EMP S x1000\r\nRepublic Fleet Phased Plasma S x1000",
-      "latest_version": "4a29e7ec-4f95-4c0c-9940-fb576600c9d1",
+      "latest_version": "2115a9eb-f81b-4993-9885-8dbe634e3788",
       "minimum_pod": "",
       "recommended_pod": "",
       "tags": [
@@ -320,7 +320,7 @@
       "description": "Shield autocannon brawler with a neut for cap-dependent targets at scram range. More speed and buffer than the armor AC variant; trades some EHP for mobility.",
       "aliases": "",
       "eft_format": "[Thrasher Fleet Issue, [NVY] Thrasher Fleet Issue \u2014 shield-acs]\r\n\r\nGyrostabilizer II\r\nGyrostabilizer II\r\nIFFA Compact Damage Control\r\n\r\n5MN Quad LiF Restrained Microwarpdrive\r\nRepublic Fleet Medium Shield Extender\r\nWarp Scrambler II\r\n\r\n200mm AutoCannon II\r\n200mm AutoCannon II\r\n200mm AutoCannon II\r\nSmall Energy Neutralizer II\r\n200mm AutoCannon II\r\n200mm AutoCannon II\r\n200mm AutoCannon II\r\n\r\nSmall Core Defense Field Extender I\r\nSmall EM Shield Reinforcer II\r\nSmall Thermal Shield Reinforcer II\r\n\r\n\r\nBarrage S x2500\r\nHail S x5000\r\nNanite Repair Paste x50\r\nRepublic Fleet Depleted Uranium S x1000\r\nRepublic Fleet EMP S x1000\r\nRepublic Fleet Phased Plasma S x1000",
-      "latest_version": "bf703a82-3363-4b31-97ee-5804bdc29184",
+      "latest_version": "d08a7df0-4387-4e10-8aa8-a9cf90640172",
       "minimum_pod": "",
       "recommended_pod": "",
       "tags": [
@@ -342,7 +342,7 @@
       "description": "Dual-web afterburner arty fit for catching kiters and controlling range at artillery optimal. A meme build that turns the tables on other 280mm kiters who rely on keeping you at range.",
       "aliases": "",
       "eft_format": "[Thrasher Fleet Issue, [NVY] Thrasher Fleet Issue \u2014 280-double-web]\r\n\r\nDamage Control II\r\nGyrostabilizer II\r\nGyrostabilizer II\r\n\r\n1MN Afterburner II\r\nFleeting Compact Stasis Webifier\r\nFleeting Compact Stasis Webifier\r\n\r\n280mm Howitzer Artillery II\r\n280mm Howitzer Artillery II\r\n280mm Howitzer Artillery II\r\n[Empty High slot]\r\n280mm Howitzer Artillery II\r\n280mm Howitzer Artillery II\r\n280mm Howitzer Artillery II\r\n\r\nSmall Transverse Bulkhead II\r\nSmall Transverse Bulkhead II\r\nSmall Transverse Bulkhead II\r\n\r\n\r\nQuake S x1500\r\nTremor S x1500\r\nNanite Repair Paste x50\r\nRepublic Fleet Depleted Uranium S x1000\r\nRepublic Fleet EMP S x1000\r\nRepublic Fleet Fusion S x1000\r\nRepublic Fleet Phased Plasma S x1000",
-      "latest_version": "83823f48-aa37-4c2c-9b39-fd7d159b65df",
+      "latest_version": "4cebf348-6114-47ed-9934-ec2ffceec132",
       "minimum_pod": "",
       "recommended_pod": "",
       "tags": [
@@ -364,7 +364,7 @@
       "description": "Dual MASB neutron brawler with burst shield tank for winning scram brawls. Pulses XLASB charges and overheats to outlast other destroyers at close range.",
       "aliases": "",
       "eft_format": "[Cormorant Navy Issue, [NVY] Cormorant Navy Issue \u2014 dual-masb-neutrons]\r\n\r\nIFFA Compact Damage Control\r\nVortex Compact Magnetic Field Stabilizer\r\n\r\n1MN Y-S8 Compact Afterburner\r\nInitiated Compact Warp Scrambler\r\nMedium Ancillary Shield Booster\r\nMedium Ancillary Shield Booster\r\n\r\nLight Neutron Blaster II\r\nLight Neutron Blaster II\r\nLight Neutron Blaster II\r\n[Empty High slot]\r\nLight Neutron Blaster II\r\nLight Neutron Blaster II\r\nLight Neutron Blaster II\r\n\r\nSmall EM Shield Reinforcer I\r\nSmall Hybrid Burst Aerator II\r\nSmall Thermal Shield Reinforcer I\r\n\r\n\r\nNull S x2500\r\nVoid S x5000\r\nCaldari Navy Antimatter Charge S x1000\r\nNanite Repair Paste x100\r\nNavy Cap Booster 400 x25",
-      "latest_version": "2f1e47db-7de7-45de-a791-be2fa6f79ec7",
+      "latest_version": "dede9fa3-2bee-49d9-b3e1-9cc78ec015f8",
       "minimum_pod": "",
       "recommended_pod": "",
       "tags": [
@@ -386,7 +386,7 @@
       "description": "Dual MASB ion blaster brawler with slightly longer reach than the neutron variant. Same burst-shield brawl concept for pilots who prefer ion range and tracking tradeoffs.",
       "aliases": "",
       "eft_format": "[Cormorant Navy Issue, [NVY] Cormorant Navy Issue \u2014 dual-masb-ions]\r\n\r\nDamage Control II\r\nMagnetic Field Stabilizer II\r\n\r\n1MN Afterburner II\r\nWarp Scrambler II\r\nMedium Ancillary Shield Booster\r\nMedium Ancillary Shield Booster\r\n\r\nLight Ion Blaster II\r\nLight Ion Blaster II\r\nLight Ion Blaster II\r\n[Empty High slot]\r\nLight Ion Blaster II\r\nLight Ion Blaster II\r\nLight Ion Blaster II\r\n\r\nSmall EM Shield Reinforcer I\r\nSmall Hybrid Burst Aerator II\r\nSmall Thermal Shield Reinforcer I\r\n\r\n\r\nNull S x2500\r\nVoid S x5000\r\nCaldari Navy Antimatter Charge S x1000\r\nNanite Repair Paste x100\r\nNavy Cap Booster 400 x25",
-      "latest_version": "8ed2f23f-e7e2-48e1-b804-cde2cc6378e2",
+      "latest_version": "2392f407-5a84-4341-b4c9-578f2db8e63e",
       "minimum_pod": "",
       "recommended_pod": "",
       "tags": [
@@ -408,7 +408,7 @@
       "description": "Surprise MWD buffer fit with a Republic Fleet medium shield extender. Looks like a kiter until you scram and brawl with strong shield buffer and blaster DPS.",
       "aliases": "",
       "eft_format": "[Cormorant Navy Issue, [NVY] Cormorant Navy Issue \u2014 buffer]\r\n\r\nMagnetic Field Stabilizer II\r\nDamage Control II\r\n\r\n5MN Y-T8 Compact Microwarpdrive\r\nRepublic Fleet Medium Shield Extender\r\nStasis Webifier II\r\nWarp Scrambler II\r\n\r\nLight Neutron Blaster II\r\nLight Neutron Blaster II\r\nLight Neutron Blaster II\r\n[Empty High slot]\r\nLight Neutron Blaster II\r\nLight Neutron Blaster II\r\nLight Neutron Blaster II\r\n\r\nSmall Core Defense Field Extender I\r\nSmall EM Shield Reinforcer II\r\nSmall Hybrid Burst Aerator I\r\n\r\n\r\nNull S x2500\r\nVoid S x5000\r\nCaldari Navy Antimatter Charge S x1000\r\nNanite Repair Paste x50",
-      "latest_version": "077a11ec-b2c3-41fe-b31a-206db1590c52",
+      "latest_version": "91d04ee5-bf3a-4a81-9295-93598f95edfa",
       "minimum_pod": "",
       "recommended_pod": "",
       "tags": [
@@ -430,7 +430,29 @@
       "description": "10MN rail scram-kite with cap booster and shield booster for sustained mid-range pressure. Uses 75mm rails to control range while staying under scram and applying steady DPS.",
       "aliases": "",
       "eft_format": "[Cormorant Navy Issue, [NVY] Cormorant Navy Issue \u2014 10mn]\r\n\r\nDamage Control II\r\nMagnetic Field Stabilizer II\r\n\r\n10MN Afterburner II\r\nWarp Scrambler II\r\nSmall Capacitor Booster II\r\nPithum C-Type Medium Shield Booster\r\n\r\n75mm Gatling Rail II\r\n75mm Gatling Rail II\r\n75mm Gatling Rail II\r\n[Empty High slot]\r\n75mm Gatling Rail II\r\n75mm Gatling Rail II\r\n75mm Gatling Rail II\r\n\r\nSmall EM Shield Reinforcer II\r\nSmall Hybrid Collision Accelerator I\r\nSmall Thermal Shield Reinforcer II\r\n\r\n\r\nCaldari Navy Antimatter Charge S x2000\r\nCaldari Navy Iridium Charge S x2000\r\nCaldari Navy Iron Charge S x2000\r\nCaldari Navy Thorium Charge S x2000\r\nNanite Repair Paste x120\r\nNavy Cap Booster 400 x25",
-      "latest_version": "89665cdd-ca98-4d63-a592-fe3b1bb0a414",
+      "latest_version": "7d0e7932-7485-46a7-83fa-25384fe8b057",
+      "minimum_pod": "",
+      "recommended_pod": "",
+      "tags": [
+        "faction_warfare",
+        "solo"
+      ]
+    }
+  },
+  {
+    "model": "fittings.evefitting",
+    "pk": 382,
+    "fields": {
+      "deleted": null,
+      "deleted_by_cascade": false,
+      "name": "[NVY] Talwar Fleet Issue \u2014 10mn-rocket",
+      "ship_id": 91858,
+      "created_at": "2026-06-21T12:00:00.000Z",
+      "updated_at": "2026-06-21T12:00:00.000Z",
+      "description": "10MN afterburner rocket brawler with MASB burst tank. Early solo meta fit: beats many MWD + scram + web destroyers when you manage the slide and overheats.",
+      "aliases": "",
+      "eft_format": "[Talwar Fleet Issue, [NVY] Talwar Fleet Issue \u2014 10mn-rocket]\r\n\r\nNavy Micro Auxiliary Power Core\r\nBallistic Control System II\r\nIFFA Compact Damage Control\r\n\r\n10MN Y-S8 Compact Afterburner\r\nWarp Scrambler II\r\nMedium Ancillary Shield Booster\r\nCompact Multispectrum Shield Hardener\r\n\r\nRocket Launcher II\r\nRocket Launcher II\r\nRocket Launcher II\r\n[Empty High slot]\r\nRocket Launcher II\r\nRocket Launcher II\r\n\r\nSmall Bay Loading Accelerator II\r\nSmall EM Shield Reinforcer I\r\nSmall Thermal Shield Reinforcer I\r\n\r\n\r\nScourge Rage Rocket x250\r\nNavy Cap Booster 50 x9",
+      "latest_version": "43c1dcbb-3cc8-40c7-aa04-fb14dab25d4c",
       "minimum_pod": "",
       "recommended_pod": "",
       "tags": [
