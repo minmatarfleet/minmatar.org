@@ -5,8 +5,6 @@ category: 'PVE'
 tags: ['abyss', 'abyssal', 'jackdaw', 'dark']
 author: 'Buppas'
 ---
-# Duo Jackdaws - T6 Dark
-
 ## General Overview
 
 - Initial Cost: 350 - 900 million/ship

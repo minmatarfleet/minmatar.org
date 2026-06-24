@@ -5,8 +5,6 @@ category: 'Utility'
 tags: []
 author: 'Minmatar Fleet'
 ---
-# Using Bookmarks
-
 ## Bookmark Fundamentals
 
 A ***Bookmark*** is a saved representation of a specific spot in space. They are used for a variety of purposes.

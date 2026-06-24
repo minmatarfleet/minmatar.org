@@ -5,8 +5,6 @@ category: 'PVE'
 tags: []
 author: 'Minmatar Fleet'
 ---
-# Pochven Standings
-
 This guide covers fixing and setting initial Triglavian standings—something you should all be familiar with to some degree. Thankfully, it is really simple.
 
 ## Why do I need to do this?

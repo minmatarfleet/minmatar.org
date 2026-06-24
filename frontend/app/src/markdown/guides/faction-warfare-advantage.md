@@ -5,8 +5,6 @@ category: 'Faction Warfare'
 tags: []
 author: "A'Songala"
 ---
-# Faction Warfare Advantage
-
 Advantage is a faction warfare mechanism that increases your victory points per [complex capture](/guides/faction-warfare-plexing/). Without it, hundreds of extra complexes are needed to capture a system, so advantage is critical—especially when both sides are actively contesting the same system.
 
 Both sides can build advantage in a system. Net advantage is calculated by subtracting one side's total from the other's. If Minmatar have 58% advantage and Amarr have 36%, the result is 22% net advantage for Minmatar.

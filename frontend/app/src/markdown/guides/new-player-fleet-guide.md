@@ -5,8 +5,6 @@ category: 'PVP'
 tags: ['onboarding', 'academy']
 author: 'Minmatar Fleet'
 ---
-# New Player Fleet Guide
-
 New players are a critical part of the Minmatar ecosystem, so we want to make sure you have everything you need to attend your very first militia fleet with our alliance.
 
 Fleets can be intimidating, especially if you've never participated in one before. You might be unsure what ship to fly, where to go, and what the objective is.

@@ -5,8 +5,6 @@ category: 'PVE'
 tags: ['pve']
 author: 'Bobb Bobbington and Silvatek'
 ---
-# Zohar's Chosen Angel Hunting
-
 ## Before you start
 
 Hunting Zohar's Chosen Machariels is a lucrative but dangerous activity; numerous expensive ships were lost in the making of this guide.

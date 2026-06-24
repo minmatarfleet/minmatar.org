@@ -5,8 +5,6 @@ category: 'PVE'
 tags: ['abyss', 'abyssal', 'nergal', 'firestorm']
 author: 'Buppas'
 ---
-# Triple Frigs - T6 Firestorm
-
 ## General Overview
 
 - Initial Cost: ~1,5b (~500m/ship)
