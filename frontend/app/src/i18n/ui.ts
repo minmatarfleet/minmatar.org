@@ -2326,5 +2326,8 @@ export const ui = {
         'killmails_pending_singular': '1 killmails pending',
         'add_character': 'Add character',
         'refits': 'Refits',
+        'author': 'Author',
+        'guides_plural': '{count} guides',
+        'guides_singular': '1 guide',
     },
 } as const;

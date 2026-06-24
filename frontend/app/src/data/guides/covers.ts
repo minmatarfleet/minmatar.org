@@ -1,8 +1,8 @@
 import type { GuideMeta } from '@/data/guides/types'
 
 export const GUIDES_INDEX_COVER = {
-    image: '/images/metaguide-wide.jpg',
-    image_990: '/images/metaguide-wide.jpg',
+    image: '/images/guides-cover.jpg',
+    image_990: '/images/guides-cover-990.jpg',
 }
 
 const CATEGORY_COVERS: Record<GuideMeta['category'], string> = {
