@@ -21,8 +21,6 @@ const { module } = guide
 const page_title = guide.title
 const page_description = guide.excerpt
 
-const guide_cover = getGuideCoverImage(guide)
-
 import Viewport from '@layouts/Viewport.astro'
 
 import PageLanding from '@components/page/PageLanding.astro'
@@ -46,8 +44,8 @@ import Button from '@components/blocks/Button.astro'
     <PageLanding
         wide={true}
         cover={{
-            image: guide_cover,
-            image_990: guide_cover,
+            image: '/images/guides-cover.jpg',
+            image_990: '/images/guides-cover-990.jpg',
             scrollable: true,
             overlay: true
         }}
