@@ -12,26 +12,95 @@ interface Props {
 const { guide } = Astro.props
 
 import Flexblock from '@components/compositions/Flexblock.astro'
-import PictureCard from '@components/blocks/PictureCard.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+
 import Tag from '@components/blocks/Tag.astro'
+import Tile from '@components/blocks/Tile.astro'
+import PilotBadge from '@components/blocks/PilotBadge.astro'
+import CorporationBadge from '@components/blocks/CorporationBadge.astro'
+import AllianceBadge from '@components/blocks/AllianceBadge.astro'
+import Button from '@components/blocks/Button.astro'
+import ClipboardButton from '@components/blocks/ClipboardButton.astro'
 ---
 
-<a class="[ guide-card-link ]" href={translatePath(`/guides/${guide.slug}/`)}>
-    <PictureCard
-        src={getGuideCoverImage(guide)}
+<Flexblock
+    class="[ card component border light-transparency relative ]"
+    gap='0'
+>
+    <Tile
+        title={guide.title}
+        cover={getGuideCoverImage(guide)}
         alt={guide.title}
+        transparent={true}
+        soft={false}
         narrow={true}
     >
-        <div slot="header">
-            <Tag color="fleet-red" text={guide.category} />
-        </div>
-        <Flexblock gap="var(--space-3xs)">
-            <h3>{guide.title}</h3>
-            <p class="[ excerpt ]">{guide.excerpt}</p>
-            <small class="[ text-muted ]">{t('guides.author')}: {guide.author}</small>
+        <Flexblock slot="subtitle">
+            {guide.tags.length > 0 &&
+                <FlexInline gap='var(--space-3xs)'>
+                    {guide.tags.map(tag =>
+                        <Tag text={t(tag as any) ?? tag} />
+                    )}
+                </FlexInline>
+            }
+            
+            <FlexInline>
+                {guide.authors.map(author =>
+                    <>{author.entity === 'character' &&
+                        <PilotBadge
+                            character_id={author.id}
+                            character_name={author.name}
+                            size={32}
+                            centered={true}
+                        >
+                            <small>{t('author')}</small>
+                        </PilotBadge>
+                    }</>
+                    <>{author.entity === 'corporation' &&
+                        <CorporationBadge
+                            corporation={{
+                                id: author.id,
+                                name: author.name,
+                                size: 'sm'
+                            }}
+                        >
+                            <small>{t('author')}</small>
+                        </CorporationBadge>
+                    }</>
+                    <>{author.entity === 'alliance' &&
+                        <AllianceBadge
+                            alliance={{
+                                id: author.id,
+                                name: author.name,
+                                size: 'sm'
+                            }}
+                        >
+                            <small>{t('author')}</small>
+                        </AllianceBadge>
+                    }</>
+                )}
+            </FlexInline>
         </Flexblock>
-    </PictureCard>
-</a>
+    </Tile>
+    <Wrapper
+        class="[ pb-(--component-padding-block)! grow ]"
+        padding_inline='var(--component-padding-block)'
+        padding_block='0'
+        max_width='100%'
+    >
+         <Flexblock
+            class="[ justify-between! h-full ]"
+            gap='var(--space-l)'
+        >
+            <p class="[ excerpt ]">{guide.excerpt}</p>
+            <FlexInline>
+                <Button size='sm' href={translatePath(`/guides/${guide.slug}/`)}>{t('view')}</Button>
+                <ClipboardButton id={`guide-${guide.slug}`} text={t('share')}>{translatePath(`/guides/${guide.slug}/`)}</ClipboardButton>
+            </FlexInline>
+        </Flexblock>
+    </Wrapper>
+</Flexblock>
 
 <style lang="scss">
     .guide-card-link {
