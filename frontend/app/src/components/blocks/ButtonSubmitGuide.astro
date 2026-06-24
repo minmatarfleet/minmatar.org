@@ -1,0 +1,56 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import DialogButton from "@components/blocks/DialogButton.astro";
+import Button from '@components/blocks/Button.astro';
+---
+
+<DialogButton
+    color='fleet-red'
+    max_width='820px'
+>
+    {t('submit_guide')}
+    
+    <Flexblock gap="var(--space-l)" slot="dialog">
+        <h3>{t('guides.submit_title')}</h3>
+        
+        <ul class="[ submit-steps ]">
+            <li>{t('guides.submit_step_1')}</li>
+            <li>
+                {t('guides.submit_step_2_before')}{' '}
+                <a href={translatePath('/alliance/tribes/4/12/')}>
+                    {t('guides.submit_step_2_link')}
+                </a>.
+            </li>
+            <li>{t('guides.submit_step_3')}</li>
+        </ul>
+
+        <FlexInline justification='flex-end'>
+            <Button
+                type="button"
+                size='sm'
+                x-on:click="close_dialog()"
+            >
+                {t('close')}
+            </Button>
+        </FlexInline>
+    </Flexblock>
+</DialogButton>
+
+<style lang="scss">
+    .submit-steps {
+        padding-left: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        max-width: 52ch;
+
+        li::marker {
+            color: var(--highlight);
+        }
+    }
+</style>
