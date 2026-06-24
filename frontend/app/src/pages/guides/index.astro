@@ -24,6 +24,7 @@ import Grid from '@components/compositions/Grid.astro'
 import GuideCard from '@components/blocks/GuideCard.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import FixedFluid from '@components/compositions/FixedFluid.astro'
+import ButtonSubmitGuide from '@components/blocks/ButtonSubmitGuide.astro'
 
 const guidesByCategory = getGuidesByCategory()
 
@@ -54,6 +55,9 @@ const page_description = t('guides.leading_text')
                 </PageTitle>
                 <small>{count_text}</small>
             </Flexblock>
+            <FlexInline>
+                <ButtonSubmitGuide />
+            </FlexInline>
         </FlexInline>
 
         <Flexblock gap='var(--space-2xl)'>
@@ -99,24 +103,6 @@ const page_description = t('guides.leading_text')
                     )
                 })}
             </Flexblock>
-
-            <TextBox>
-                <ComponentBlock width="narrow">
-                    <Flexblock gap="var(--space-m)">
-                        <h2 class="[ font-bold ]">{t('guides.submit_title')}</h2>
-                        <ul class="[ submit-steps ]">
-                            <li>{t('guides.submit_step_1')}</li>
-                            <li>
-                                {t('guides.submit_step_2_before')}{' '}
-                                <a href={translatePath('/alliance/tribes/4/12/')}>
-                                    {t('guides.submit_step_2_link')}
-                                </a>.
-                            </li>
-                            <li>{t('guides.submit_step_3')}</li>
-                        </ul>
-                    </Flexblock>
-                </ComponentBlock>
-            </TextBox>
         </Flexblock>
     </PageWide>
 </Viewport>
@@ -125,21 +111,5 @@ const page_description = t('guides.leading_text')
     .excerpt {
         font-size: var(--step-1);
         max-width: 52ch;
-    }
-
-    .guides-brand img {
-        filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.35));
-    }
-
-    .submit-steps {
-        padding-left: 1.25rem;
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-xs);
-        max-width: 52ch;
-
-        li::marker {
-            color: var(--highlight);
-        }
     }
 </style>

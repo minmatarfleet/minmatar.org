@@ -2329,5 +2329,6 @@ export const ui = {
         'author': 'Author',
         'guides_plural': '{count} guides',
         'guides_singular': '1 guide',
+        'submit_guide': 'Submit guide',
     },
 } as const;
