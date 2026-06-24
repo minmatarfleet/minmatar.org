@@ -5,8 +5,6 @@ category: 'PVE'
 tags: ['abyss', 'abyssals', 'crabbing']
 author: 'Buppas'
 ---
-# Venture into the Abyss
-
 ## Before you start
 
 Abyssal deadspace is high-skill-ceiling PvE on a time limit: each site takes under 20 minutes to run, or you die and lose your ship and pod. For general background on abyssals, see the [EVE Uni wiki](https://wiki.eveuniversity.org/Abyssal_Deadspace). Some of that information is repeated here to keep the essentials in one place.

@@ -5,8 +5,6 @@ category: 'PVE'
 tags: ['abyss', 'abyssal', 'hawk', 'dark']
 author: 'Kae2'
 ---
-# Triple Frigs - T5 Dark
-
 ## General Overview
 
 - Initial Cost: ~240m (~80m/ship)

@@ -32,6 +32,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import BlockList from '@components/compositions/BlockList.astro'
 
 import Button from '@components/blocks/Button.astro'
+import Tag from '@components/blocks/Tag.astro'
 ---
 
 <Viewport
@@ -53,10 +54,10 @@ import Button from '@components/blocks/Button.astro'
         <Flexblock gap='var(--space-2xl)'>
             <TextBox>
                 <Flexblock gap='var(--space-m)'>
-                    <small class="[ text-muted ]">{guide.category}</small>
+                    <Tag text={guide.category} />
                     <PageTitle is_landing={true}>{page_title}</PageTitle>
                     <p class="[ guide-excerpt ]">{page_description}</p>
-                    <small class="[ text-muted ]">{t('guides.author')}: {guide.author}</small>
+                    <small class="[ text-muted ]">{t('by_template').replace('{name}', guide.author)}</small>
                 </Flexblock>
             </TextBox>
 

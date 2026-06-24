@@ -5,8 +5,6 @@ category: 'Faction Warfare'
 tags: []
 author: 'Minmatar Fleet'
 ---
-# Faction Warfare Complexes
-
 Faction warfare complexes, or **"plexes"** for short, are key to Minmatar territory control. By capturing complexes, pilots gain loyalty points and contribute to flipping systems for the Minmatar Republic—gaining us more territory and increasing our benefits from faction warfare.
 
 To capture a complex, you need a basic understanding of ships and the faction warfare map. This guide focuses on Minmatar vs Amarr space, where we primarily operate; however, the same information applies to the Gallente vs Caldari warzone.

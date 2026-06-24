@@ -5,8 +5,6 @@ category: 'PVE'
 tags: ['abyss', 'abyssal', 'stormbringer', 'electrical']
 author: 'Kae2'
 ---
-# Stormbringer - T6 Electrical
-
 ## General Overview
 
 - Initial Cost: 4 - 5 Billion ISK (Includes fit, implants, drugs and initial filaments)

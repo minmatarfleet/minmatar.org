@@ -5,8 +5,6 @@ category: 'PVE'
 tags: []
 author: 'Buppas'
 ---
-# Level 5 Mission Guide
-
 This guide is considered incomplete. Updated: 2024-02-02.
 
 ## The Concept
