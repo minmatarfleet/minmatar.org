@@ -35,6 +35,7 @@ if (SENTRY_AUTH_TOKEN)
 
 // https://astro.build/config
 export default defineConfig({
+    site: 'https://my.minmatar.org',
     output: 'server',
     adapter: node({
         mode: 'standalone'

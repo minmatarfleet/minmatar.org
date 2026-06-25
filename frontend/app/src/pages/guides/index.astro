@@ -2,13 +2,31 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { getGuidesByCategory, guideCategories, guides } from '@/data/guides'
+import { getGuidesByCategory, guideCategories, getIndexedGuides } from '@/data/guides'
 import { GUIDES_INDEX_COVER } from '@/data/guides/covers'
+import { buildGuidesIndexJsonLd, getGuidesIndexSeo } from '@/data/guides/seo'
 
-import { strip_markdown } from '@helpers/string'
+const indexedGuides = getIndexedGuides()
+const seo = getGuidesIndexSeo({
+    siteName: t('index.page_title'),
+    siteOrigin: Astro.url.origin,
+    translatePath,
+    t,
+    coverImage: GUIDES_INDEX_COVER.image,
+})
+const structured_data = buildGuidesIndexJsonLd({
+    siteName: t('index.page_title'),
+    siteOrigin: Astro.url.origin,
+    metaTitle: seo.metaTitle,
+    metaDescription: seo.metaDescription,
+    canonicalUrl: seo.canonicalUrl,
+    metaImage: seo.metaImage,
+    guides: indexedGuides,
+    translatePath,
+})
 
-const count_text = t(guides.length !== 1 ? 'guides_plural' : 'guides_singular')
-    .replace('{count}', String(guides.length))
+const count_text = t(indexedGuides.length !== 1 ? 'guides_plural' : 'guides_singular')
+    .replace('{count}', String(indexedGuides.length))
 
 import Viewport from '@layouts/Viewport.astro'
 
@@ -33,12 +51,15 @@ const page_description = t('guides.leading_text')
 ---
 
 <Viewport
-    title={page_title}
-    meta_description={await strip_markdown(page_description)}
+    title={seo.metaTitle}
+    meta_description={seo.metaDescription}
+    meta_image={seo.metaImage}
+    canonical_url={seo.canonicalUrl}
     components={{
         alert_dialog: true,
     }}
 >
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(structured_data)} />
     <PageWide
         wide={true}
         cover={{

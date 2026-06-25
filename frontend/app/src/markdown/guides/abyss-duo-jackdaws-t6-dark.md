@@ -2,7 +2,6 @@
 title: 'Duo Jackdaws - T6 Dark'
 excerpt: 'Duo Jackdaw fit and room guide for T6 Dark abyssals.'
 category: 'PVE'
-tags: ['abyss', 'abyssal', 'jackdaw', 'dark']
 author: 'Buppas'
 ---
 ## General Overview

@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import InterContext from '@components/layout/InterContext.astro';
 
@@ -25,6 +25,13 @@ import Markdown from '@components/blocks/Markdown.astro'
                 markdown={t('report_issues_text')}
                 inline={true}
             />
+        </Flexblock>
+
+        <Flexblock>
+            <h2>{t('brand.page_title')}</h2>
+            <p>
+                <a href={translatePath('/brand/')}>{t('brand.leading_text')}</a>
+            </p>
         </Flexblock>
     </InterContext>
 </Wrapper>

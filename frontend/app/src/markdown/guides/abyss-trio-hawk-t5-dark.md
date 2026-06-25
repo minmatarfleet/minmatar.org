@@ -2,7 +2,6 @@
 title: 'x3 Hawk - T5 Dark'
 excerpt: 'Triple Hawk fit and room guide for T5 Dark abyssals.'
 category: 'PVE'
-tags: ['abyss', 'abyssal', 'hawk', 'dark']
 author: 'Kae2'
 ---
 ## General Overview

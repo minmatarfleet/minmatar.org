@@ -2,7 +2,6 @@
 title: 'New Player Fleet Guide'
 excerpt: 'Everything you need for your first militia fleet: doctrines, support ships, fleet UI, and FAQ.'
 category: 'PVP'
-tags: ['onboarding', 'academy']
 author: 'Minmatar Fleet'
 ---
 New players are a critical part of the Minmatar ecosystem, so we want to make sure you have everything you need to attend your very first militia fleet with our alliance.

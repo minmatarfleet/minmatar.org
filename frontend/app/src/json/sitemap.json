@@ -172,7 +172,14 @@
         "path": "/guides/",
         "publish": true,
         "description": "page_finder.guides.description",
-        "keywords": [ "guides", "wiki", "help", "tutorial" ]
+        "keywords": [ "EVE Online guides", "faction warfare", "abyssal deadspace", "navy destroyer", "militia fleet", "Minmatar FW" ]
+    },
+    {
+        "slug": "guides.navy_destroyer_metagame",
+        "path": "/guides/navy-destroyer-metagame/",
+        "publish": true,
+        "description": "page_finder.guides.description",
+        "keywords": [ "EVE Online guides", "faction warfare guide", "abyssal deadspace", "navy destroyer metagame", "FW plexing", "L5 missions" ]
     },
     {
         "slug": "propaganda",
@@ -236,13 +243,6 @@
         "publish": true,
         "icon": "/images/icons/48px-Doctrines.png",
         "description": "page_finder.ships.doctrines.description"
-    },
-    {
-        "slug": "ships.navy_destroyer_metagame",
-        "path": "/ships/navy-destroyer-metagame/",
-        "publish": true,
-        "description": "page_finder.ships.navy_destroyer_metagame.description",
-        "keywords": [ "navy destroyer", "metagame", "faction warfare", "EVE Online", "guide", "fittings", "matchup chart", "Catalyst", "Coercer", "Thrasher", "Cormorant" ]
     },
     {
         "slug": "ships.srp",

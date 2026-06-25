@@ -1,8 +1,7 @@
 ---
-title: 'Advantage Guide'
+title: 'Faction Warfare Advantage'
 excerpt: 'How FW advantage works and how to build it through plexing, rendezvous, and battlefields.'
 category: 'Faction Warfare'
-tags: []
 author: "A'Songala"
 ---
 Advantage is a faction warfare mechanism that increases your victory points per [complex capture](/guides/faction-warfare-plexing/). Without it, hundreds of extra complexes are needed to capture a system, so advantage is critical—especially when both sides are actively contesting the same system.

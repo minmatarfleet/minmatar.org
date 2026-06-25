@@ -2,7 +2,6 @@
 title: 'Rendezvous sites in an AC Wolf'
 excerpt: 'Run Amarr Rendezvous sites with a PvE-fit autocannon Wolf assault frigate.'
 category: 'Faction Warfare'
-tags: ['pve']
 author: 'Buppas'
 ---
 ## Before you start

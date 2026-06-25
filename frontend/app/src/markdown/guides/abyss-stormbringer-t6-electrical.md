@@ -2,7 +2,6 @@
 title: 'Stormbringer - T6 Electrical'
 excerpt: 'Solo Stormbringer fit and room guide for T6 Electrical abyssals.'
 category: 'PVE'
-tags: ['abyss', 'abyssal', 'stormbringer', 'electrical']
 author: 'Kae2'
 ---
 ## General Overview

@@ -2,7 +2,6 @@
 title: 'Bookmarks'
 excerpt: 'Bookmark types, creation techniques, and sharing for safespots, gate pings, grid pings, and more.'
 category: 'Utility'
-tags: []
 author: 'Minmatar Fleet'
 ---
 ## Bookmark Fundamentals

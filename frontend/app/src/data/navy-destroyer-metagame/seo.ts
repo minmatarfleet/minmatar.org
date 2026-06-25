@@ -5,7 +5,7 @@ interface NavyDestroyerMetagameJsonLdOptions {
     metaTitle: string
     metaDescription: string
     metaImage: string
-    shipsUrl: string
+    guidesUrl: string
     authorName: string
     publisherName: string
     editionLabel: string
@@ -20,7 +20,7 @@ export function buildNavyDestroyerMetagameJsonLd(options: NavyDestroyerMetagameJ
         metaTitle,
         metaDescription,
         metaImage,
-        shipsUrl,
+        guidesUrl,
         authorName,
         publisherName,
         editionLabel,
@@ -54,8 +54,8 @@ export function buildNavyDestroyerMetagameJsonLd(options: NavyDestroyerMetagameJ
                     {
                         '@type': 'ListItem',
                         position: 1,
-                        name: 'Ships',
-                        item: shipsUrl,
+                        name: 'Guides',
+                        item: guidesUrl,
                     },
                     {
                         '@type': 'ListItem',

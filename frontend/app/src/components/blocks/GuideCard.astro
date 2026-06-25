@@ -10,12 +10,12 @@ interface Props {
 }
 
 const { guide } = Astro.props
+const guideUrl = guide.path ? translatePath(guide.path) : translatePath(`/guides/${guide.slug}/`)
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Wrapper from '@components/compositions/Wrapper.astro'
 
-import Tag from '@components/blocks/Tag.astro'
 import Tile from '@components/blocks/Tile.astro'
 import PilotBadge from '@components/blocks/PilotBadge.astro'
 import CorporationBadge from '@components/blocks/CorporationBadge.astro'
@@ -37,14 +37,6 @@ import ClipboardButton from '@components/blocks/ClipboardButton.astro'
         narrow={true}
     >
         <Flexblock slot="subtitle">
-            {guide.tags.length > 0 &&
-                <FlexInline gap='var(--space-3xs)'>
-                    {guide.tags.map(tag =>
-                        <Tag text={t(tag as any) ?? tag} />
-                    )}
-                </FlexInline>
-            }
-            
             <FlexInline>
                 {guide.authors.map(author =>
                     <>{author.entity === 'character' &&
@@ -95,8 +87,8 @@ import ClipboardButton from '@components/blocks/ClipboardButton.astro'
         >
             <p class="[ excerpt ]">{guide.excerpt}</p>
             <FlexInline>
-                <Button size='sm' href={translatePath(`/guides/${guide.slug}/`)}>{t('view')}</Button>
-                <ClipboardButton id={`guide-${guide.slug}`} text={t('share')}>{translatePath(`/guides/${guide.slug}/`)}</ClipboardButton>
+                <Button size='sm' href={guideUrl}>{t('view')}</Button>
+                <ClipboardButton id={`guide-${guide.slug}`} text={t('share')}>{guideUrl}</ClipboardButton>
             </FlexInline>
         </Flexblock>
     </Wrapper>

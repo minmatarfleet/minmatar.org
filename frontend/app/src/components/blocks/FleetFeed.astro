@@ -2,8 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { HTTP_403_Forbidden, HTTP_500_Server_Error } from '@helpers/http_responses'
-
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
@@ -16,23 +14,22 @@ const user_permissions = (user ? await get_user_permissions(user?.username) : []
 
 const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_evefleet')
 
-if (!can_view_fleets)
-    return HTTP_403_Forbidden()
-
 import type { FleetItem } from '@dtypes/layout_components'
 import { fetch_fleets_auth } from '@helpers/fetching/fleets'
 
 let fleets:FleetItem[] = []
 let active_fleet_index:number = -1 // No active fleet
 
-try {
-    fleets = await fetch_fleets_auth(auth_token as string, true, true)
-    fleets = fleets.filter((i) => (new Date(i.start_time).getTime() < new Date(Date.now() + 24 * 60 * 60 * 1000).getTime()))
-    fleets = fleets.filter((i) => i.status === 'active' || (new Date(i.start_time).getTime() > new Date(Date.now() - 60 * 60 * 1000).getTime()))
-    fleets.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
-    active_fleet_index = fleets.findIndex(fleet => fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time)
-} catch (error) {
-    return HTTP_500_Server_Error()
+if (can_view_fleets) {
+    try {
+        fleets = await fetch_fleets_auth(auth_token as string, true, true)
+        fleets = fleets.filter((i) => (new Date(i.start_time).getTime() < new Date(Date.now() + 24 * 60 * 60 * 1000).getTime()))
+        fleets = fleets.filter((i) => i.status === 'active' || (new Date(i.start_time).getTime() > new Date(Date.now() - 60 * 60 * 1000).getTime()))
+        fleets.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+        active_fleet_index = fleets.findIndex(fleet => fleet?.status !== 'cancelled' && fleet?.tracking && !fleet?.tracking?.end_time)
+    } catch (error) {
+        console.log('Error fetching fleet feed:', error instanceof Error ? error.message : error)
+    }
 }
 
 import FlexInline from '@components/compositions/FlexInline.astro'
@@ -42,26 +39,30 @@ import Button from '@components/blocks/Button.astro';
 import FleetFeedItem from '@components/blocks/FleetFeedItem.astro';
 ---
 
-<div class="[ fleet-feed swiper ]">
-    <FeedSwiper autoplay={active_fleet_index === -1} initial_slide={active_fleet_index >= 0 ? active_fleet_index : 0}>
-        {fleets.map( (fleet) =>
-            <div class="swiper-slide">
-                <FleetFeedItem fleet={fleet} />
-            </div>
-        )}
-    </FeedSwiper>
-</div>
+{can_view_fleets &&
+    <>
+        <div class="[ fleet-feed swiper ]">
+            <FeedSwiper autoplay={active_fleet_index === -1} initial_slide={active_fleet_index >= 0 ? active_fleet_index : 0}>
+                {fleets.map( (fleet) =>
+                    <div class="swiper-slide">
+                        <FleetFeedItem fleet={fleet} />
+                    </div>
+                )}
+            </FeedSwiper>
+        </div>
 
-{fleets.length > 0 &&
-    <FlexInline justification='flex-end'>
-        <Button
-            href={translatePath('/fleets/upcoming/')}
-            size='sm'
-            narrow={true}
-        >
-            {t('full_schedule')}
-        </Button>
-    </FlexInline>
+        {fleets.length > 0 &&
+            <FlexInline justification='flex-end'>
+                <Button
+                    href={translatePath('/fleets/upcoming/')}
+                    size='sm'
+                    narrow={true}
+                >
+                    {t('full_schedule')}
+                </Button>
+            </FlexInline>
+        }
+    </>
 }
 
 <style lang="scss">

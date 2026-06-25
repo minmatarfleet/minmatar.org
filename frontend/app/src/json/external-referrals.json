@@ -1,13 +1,13 @@
 [
     {
         "name": "wiki_fw_plexing",
-        "title": "Faction Warfare Plexing",
+        "title": "Faction Warfare Complexes",
         "target": "https://my.minmatar.org/guides/faction-warfare-plexing/",
         "description": "Guide"
     },
     {
         "name": "wiki_fw_advantage",
-        "title": "Advantage Guide",
+        "title": "Faction Warfare Advantage",
         "target": "https://my.minmatar.org/guides/faction-warfare-advantage/",
         "description": "Guide"
     },
@@ -25,7 +25,7 @@
     },
     {
         "name": "wiki_abyssals",
-        "title": "Abyssals",
+        "title": "Farming the Abyss",
         "target": "https://my.minmatar.org/guides/abyssals/",
         "description": "Guide"
     },
@@ -43,7 +43,7 @@
     },
     {
         "name": "wiki_lvl_5_missions",
-        "title": "Level 5 Mission Farming",
+        "title": "L5 Mission Farming",
         "target": "https://my.minmatar.org/guides/level5-missions/",
         "description": "Guide"
     },
@@ -56,7 +56,7 @@
     {
         "name": "hosted_navy_destroyer_metagame",
         "title": "The Navy Destroyer Metagame",
-        "target": "/ships/navy-destroyer-metagame/",
+        "target": "/guides/navy-destroyer-metagame/",
         "description": "Hosted guide"
     },
     {

@@ -1,8 +1,7 @@
 ---
-title: 'Level 5 Mission Farming'
+title: 'L5 Mission Farming'
 excerpt: 'Level 5 mission blitzing in Minmatar space: tactics, mission walkthroughs, and ship fits.'
 category: 'PVE'
-tags: []
 author: 'Buppas'
 ---
 This guide is considered incomplete. Updated: 2024-02-02.

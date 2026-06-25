@@ -20,7 +20,6 @@ type GuideModule = {
         excerpt: string
         category: string
         author: string
-        tags: string[]
     }
     rawContent: () => string
 }
@@ -45,9 +44,22 @@ export const guideCategories = ["Faction Warfare","PVP","PVE","Utility"] as cons
 
 export const guides: GuideMeta[] = [
     {
+        slug: "navy-destroyer-metagame",
+        title: "The Navy Destroyer Metagame",
+        excerpt: "Furl0w's EVE Online navy destroyer metagame guide: Navy Issue fits, 1v1 matchup charts, and solo faction warfare plex tactics.",
+        category: "Faction Warfare",
+        author: "Furl0w",
+        authors: [{
+            name: "Furl0w",
+            id: 2120153200,
+            entity: 'character',
+        }],
+        path: "/guides/navy-destroyer-metagame/",
+    },
+    {
         slug: "faction-warfare-advantage",
-        title: "Advantage Guide",
-        excerpt: "How FW advantage works and how to build it via plexing, rendezvous, and battlefields.",
+        title: "Faction Warfare Advantage",
+        excerpt: "How EVE Online faction warfare advantage works and how to build it via plexing, rendezvous sites, and battlefields.",
         category: "Faction Warfare",
         author: "A'Songala",
         authors: [{
@@ -55,12 +67,11 @@ export const guides: GuideMeta[] = [
             id: 2120647389,
             entity: 'character',
         }],
-        tags: []
     },
     {
         slug: "faction-warfare-plexing",
-        title: "Faction Warfare Plexing",
-        excerpt: "How faction warfare complexes work: ship limits, O-plex vs D-plex, mechanics, LP payouts, and victory points.",
+        title: "Faction Warfare Complexes",
+        excerpt: "EVE Online FW plexing guide: complex sizes, O-plex vs D-plex, ship limits, LP payouts, and victory points.",
         category: "Faction Warfare",
         author: "Minmatar Fleet",
         authors: [{
@@ -68,7 +79,6 @@ export const guides: GuideMeta[] = [
             id: 99011978,
             entity: 'alliance',
         }],
-        tags: []
     },
     {
         slug: "rendezvous-wolf",
@@ -81,9 +91,7 @@ export const guides: GuideMeta[] = [
             id: 140971074,
             entity: 'character',
         }],
-        tags: [
-            "pve"
-        ]
+        hiddenFromIndex: true,
     },
     {
         slug: "new-player-fleet-guide",
@@ -96,15 +104,11 @@ export const guides: GuideMeta[] = [
             id: 99011978,
             entity: 'alliance',
         }],
-        tags: [
-            "onboarding",
-            "academy"
-        ]
     },
     {
         slug: "abyssals",
-        title: "Abyssals",
-        excerpt: "Overview of abyssal deadspace: tiers, weather types, and links to solo, duo, and trio fit guides.",
+        title: "Farming the Abyss",
+        excerpt: "EVE Online abyssal deadspace overview: filament tiers, weather types, and links to solo, duo, and trio fit guides.",
         category: "PVE",
         author: "Buppas",
         authors: [{
@@ -112,11 +116,6 @@ export const guides: GuideMeta[] = [
             id: 140971074,
             entity: 'character',
         }],
-        tags: [
-            "abyss",
-            "abyssals",
-            "crabbing"
-        ]
     },
     {
         slug: "abyss-duo-jackdaws-t6-dark",
@@ -129,17 +128,12 @@ export const guides: GuideMeta[] = [
             id: 140971074,
             entity: 'character',
         }],
-        tags: [
-            "abyss",
-            "abyssal",
-            "jackdaw",
-            "dark"
-        ]
+        hiddenFromIndex: true,
     },
     {
         slug: "level5-missions",
-        title: "Level 5 Mission Farming",
-        excerpt: "Level 5 mission blitzing in Minmatar space: tactics, mission walkthroughs, and ship fits.",
+        title: "L5 Mission Farming",
+        excerpt: "Blitz Minmatar level 5 missions in EVE Online: tactics, mission walkthroughs, and ship fits.",
         category: "PVE",
         author: "Buppas",
         authors: [{
@@ -147,7 +141,6 @@ export const guides: GuideMeta[] = [
             id: 140971074,
             entity: 'character',
         }],
-        tags: []
     },
     {
         slug: "abyss-nergal-trio-t6-firestorm",
@@ -160,25 +153,19 @@ export const guides: GuideMeta[] = [
             id: 140971074,
             entity: 'character',
         }],
-        tags: [
-            "abyss",
-            "abyssal",
-            "nergal",
-            "firestorm"
-        ]
+        hiddenFromIndex: true,
     },
     {
         slug: "pochven-standings",
         title: "Pochven Standings",
         excerpt: "How to fix Triglavian standings for OBS fleets: ship choice, sites to run, and extraction options.",
-        category: "PVE",
+        category: "Utility",
         author: "Minmatar Fleet",
         authors: [{
             name: "Minmatar Fleet",
             id: 99011978,
             entity: 'alliance',
         }],
-        tags: []
     },
     {
         slug: "abyss-stormbringer-t6-electrical",
@@ -191,12 +178,7 @@ export const guides: GuideMeta[] = [
             id: 95628204,
             entity: 'character',
         }],
-        tags: [
-            "abyss",
-            "abyssal",
-            "stormbringer",
-            "electrical"
-        ]
+        hiddenFromIndex: true,
     },
     {
         slug: "abyss-trio-hawk-t5-dark",
@@ -209,12 +191,7 @@ export const guides: GuideMeta[] = [
             id: 95628204,
             entity: 'character',
         }],
-        tags: [
-            "abyss",
-            "abyssal",
-            "hawk",
-            "dark"
-        ]
+        hiddenFromIndex: true,
     },
     {
         slug: "zohar-hunting",
@@ -231,9 +208,6 @@ export const guides: GuideMeta[] = [
             id: 2119722788,
             entity: 'character',
         }],
-        tags: [
-            "pve"
-        ]
     },
     {
         slug: "bookmarks",
@@ -246,7 +220,6 @@ export const guides: GuideMeta[] = [
             id: 99011978,
             entity: 'alliance',
         }],
-        tags: []
     }
 ]
 
@@ -257,10 +230,14 @@ export function getGuideBySlug(slug: string): (GuideMeta & { module: GuideModule
     return { ...meta, module }
 }
 
+export function getIndexedGuides(): GuideMeta[] {
+    return guides.filter((guide) => !guide.hiddenFromIndex)
+}
+
 export function getGuidesByCategory(): Record<string, GuideMeta[]> {
     const grouped: Record<string, GuideMeta[]> = {}
     for (const category of guideCategories) {
-        grouped[category] = guides.filter((guide) => guide.category === category)
+        grouped[category] = getIndexedGuides().filter((guide) => guide.category === category)
     }
     return grouped
 }

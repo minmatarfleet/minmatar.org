@@ -4,10 +4,10 @@ const { t, translatePath } = i18n(Astro.url)
 
 import { getGuideBySlug } from '@/data/guides'
 import { getGuideCoverImage } from '@/data/guides/covers'
+import { buildGuideJsonLd, getGuidePageSeo } from '@/data/guides/seo'
 
 import { marked } from 'marked'
 import { renderer } from '@helpers/marked'
-import { strip_markdown } from '@helpers/string'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 const slug = Astro.params.name ?? ''
@@ -18,8 +18,21 @@ if (!guide) {
 }
 
 const { module } = guide
-const page_title = guide.title
-const page_description = guide.excerpt
+const coverImage = getGuideCoverImage(guide)
+const seo = getGuidePageSeo({
+    guide,
+    siteName: t('index.page_title'),
+    siteOrigin: Astro.url.origin,
+    translatePath,
+    t,
+    coverImage,
+})
+const structured_data = buildGuideJsonLd({
+    guide,
+    siteName: t('index.page_title'),
+    siteOrigin: Astro.url.origin,
+    ...seo,
+})
 
 import Viewport from '@layouts/Viewport.astro'
 
@@ -36,17 +49,22 @@ import Tag from '@components/blocks/Tag.astro'
 ---
 
 <Viewport
-    title={page_title}
-    meta_description={await strip_markdown(page_description)}
+    title={seo.metaTitle}
+    meta_description={seo.metaDescription}
+    meta_image={seo.metaImage}
+    canonical_url={seo.canonicalUrl}
+    og_type="article"
     components={{
         alert_dialog: true,
     }}
 >
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(structured_data)} />
+
     <PageLanding
         wide={true}
         cover={{
-            image: '/images/guides-cover.jpg',
-            image_990: '/images/guides-cover-990.jpg',
+            image: coverImage,
+            image_990: coverImage,
             scrollable: true,
             overlay: true
         }}
@@ -54,9 +72,15 @@ import Tag from '@components/blocks/Tag.astro'
         <Flexblock gap='var(--space-2xl)'>
             <TextBox>
                 <Flexblock gap='var(--space-m)'>
+                    <nav class="guide-breadcrumb" aria-label="Breadcrumb">
+                        <ol>
+                            <li><a href={translatePath('/guides/')}>{t('guides.page_title')}</a></li>
+                            <li aria-current="page">{guide.title}</li>
+                        </ol>
+                    </nav>
                     <Tag text={guide.category} />
-                    <PageTitle is_landing={true}>{page_title}</PageTitle>
-                    <p class="[ guide-excerpt ]">{page_description}</p>
+                    <PageTitle is_landing={true}>{guide.title}</PageTitle>
+                    <p class="[ guide-excerpt ]">{guide.excerpt}</p>
                     <small class="[ text-muted ]">{t('by_template').replace('{name}', guide.author)}</small>
                 </Flexblock>
             </TextBox>
@@ -94,6 +118,36 @@ import Tag from '@components/blocks/Tag.astro'
 </Viewport>
 
 <style lang="scss">
+    .guide-breadcrumb {
+        margin: 0;
+
+        ol {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2xs);
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            font-size: var(--step--1);
+            color: var(--muted-color);
+        }
+
+        li:not(:last-child)::after {
+            content: '/';
+            margin-left: var(--space-2xs);
+        }
+
+        a {
+            color: var(--highlight);
+            text-decoration: none;
+
+            &:hover,
+            &:focus-visible {
+                text-decoration: underline;
+            }
+        }
+    }
+
     .guide-excerpt {
         font-size: var(--step-1);
         color: var(--muted-color);

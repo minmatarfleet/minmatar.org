@@ -1,8 +1,7 @@
 ---
 title: 'Pochven Standings'
 excerpt: 'How to fix Triglavian standings for OBS fleets: ship choice, sites to run, and extraction options.'
-category: 'PVE'
-tags: []
+category: 'Utility'
 author: 'Minmatar Fleet'
 ---
 This guide covers fixing and setting initial Triglavian standings—something you should all be familiar with to some degree. Thankfully, it is really simple.

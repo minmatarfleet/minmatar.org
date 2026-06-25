@@ -1,8 +1,7 @@
 ---
-title: 'Faction Warfare Plexing'
+title: 'Faction Warfare Complexes'
 excerpt: 'How faction warfare complexes work: ship limits, O-plex vs D-plex, mechanics, LP payouts, and victory points.'
 category: 'Faction Warfare'
-tags: []
 author: 'Minmatar Fleet'
 ---
 Faction warfare complexes, or **"plexes"** for short, are key to Minmatar territory control. By capturing complexes, pilots gain loyalty points and contribute to flipping systems for the Minmatar Republic—gaining us more territory and increasing our benefits from faction warfare.
@@ -158,7 +157,7 @@ Capturing a complex earns victory points for the system. VP totals are hidden; t
 | Battlefield | 2000 | 2.67% | 30-45 |
 
 - Higher advantage means more victory points per capture. Larger complexes count more and are extremely important for pushing systems.
-- See the [Advantage Guide](/guides/faction-warfare-advantage/) for advantage mechanics.
+- See the [Faction Warfare Advantage](/guides/faction-warfare-advantage/) for advantage mechanics.
 
 ### Infrastructure Hub
 
@@ -169,4 +168,4 @@ After destroying the infrastructure hub, the system flips sides and victory poin
 ## Additional Resources
 
 - [Guides index](/guides/)
-- [Advantage Guide](/guides/faction-warfare-advantage/)
+- [Faction Warfare Advantage](/guides/faction-warfare-advantage/)

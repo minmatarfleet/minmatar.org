@@ -11,5 +11,6 @@ export type GuideMeta = {
     category: string
     author: string
     authors: Author[]
-    tags: string[]
+    path?: string
+    hiddenFromIndex?: boolean
 }
