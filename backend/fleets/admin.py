@@ -8,6 +8,7 @@ from .models import (
     EveFleetInstance,
     EveFleetInstanceMember,
     EveFleetInstanceMemberImplantSnapshot,
+    EveFleetInstanceMemberShipSnapshot,
 )
 
 
@@ -93,4 +94,28 @@ class EveFleetInstanceMemberImplantSnapshotAdmin(admin.ModelAdmin):
         "member__character_id",
     )
     readonly_fields = ("implants", "estimated_value_isk", "created_at")
+    date_hierarchy = "created_at"
+
+
+@admin.register(EveFleetInstanceMemberShipSnapshot)
+class EveFleetInstanceMemberShipSnapshotAdmin(admin.ModelAdmin):
+    list_display = (
+        "member",
+        "ship_name",
+        "solar_system_name",
+        "created_at",
+    )
+    list_filter = ("created_at",)
+    search_fields = (
+        "member__character_name",
+        "member__character_id",
+        "ship_name",
+    )
+    readonly_fields = (
+        "ship_type_id",
+        "ship_name",
+        "solar_system_id",
+        "solar_system_name",
+        "created_at",
+    )
     date_hierarchy = "created_at"

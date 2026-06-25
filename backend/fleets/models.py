@@ -11,6 +11,7 @@ from eveonline.client import EsiClient
 from eveonline.models import EveCharacter, EveLocation
 from eveonline.helpers.characters import user_primary_character
 from fittings.models import EveDoctrine
+from fleets.helpers.member_ships import apply_esi_fleet_member
 from fleets.motd import get_motd
 from fleets.notifications import get_fleet_discord_notification
 
@@ -393,62 +394,7 @@ class EveFleetInstance(models.Model):
         resolved_ids = {x["id"]: x["name"] for x in resolved_ids}
 
         for esi_fleet_member in response:
-            if EveFleetInstanceMember.objects.filter(
-                eve_fleet_instance=self,
-                character_id=esi_fleet_member["character_id"],
-            ).exists():
-                existing_fleet_member = EveFleetInstanceMember.objects.get(
-                    eve_fleet_instance=self,
-                    character_id=esi_fleet_member["character_id"],
-                )
-                existing_fleet_member.join_time = esi_fleet_member["join_time"]
-                existing_fleet_member.role = esi_fleet_member["role"]
-                existing_fleet_member.role_name = esi_fleet_member["role_name"]
-                existing_fleet_member.ship_type_id = esi_fleet_member[
-                    "ship_type_id"
-                ]
-                existing_fleet_member.solar_system_id = esi_fleet_member[
-                    "solar_system_id"
-                ]
-                existing_fleet_member.squad_id = esi_fleet_member["squad_id"]
-                existing_fleet_member.station_id = esi_fleet_member[
-                    "station_id"
-                ]
-                existing_fleet_member.takes_fleet_warp = esi_fleet_member[
-                    "takes_fleet_warp"
-                ]
-                existing_fleet_member.wing_id = esi_fleet_member["wing_id"]
-                existing_fleet_member.character_name = resolved_ids[
-                    esi_fleet_member["character_id"]
-                ]
-                existing_fleet_member.ship_name = resolved_ids[
-                    esi_fleet_member["ship_type_id"]
-                ]
-                existing_fleet_member.solar_system_name = resolved_ids[
-                    esi_fleet_member["solar_system_id"]
-                ]
-                existing_fleet_member.save()
-            else:
-                EveFleetInstanceMember.objects.create(
-                    eve_fleet_instance=self,
-                    character_id=esi_fleet_member["character_id"],
-                    join_time=esi_fleet_member["join_time"],
-                    role=esi_fleet_member["role"],
-                    role_name=esi_fleet_member["role_name"],
-                    ship_type_id=esi_fleet_member["ship_type_id"],
-                    solar_system_id=esi_fleet_member["solar_system_id"],
-                    squad_id=esi_fleet_member["squad_id"],
-                    station_id=esi_fleet_member["station_id"],
-                    takes_fleet_warp=esi_fleet_member["takes_fleet_warp"],
-                    wing_id=esi_fleet_member["wing_id"],
-                    character_name=resolved_ids[
-                        esi_fleet_member["character_id"]
-                    ],
-                    ship_name=resolved_ids[esi_fleet_member["ship_type_id"]],
-                    solar_system_name=resolved_ids[
-                        esi_fleet_member["solar_system_id"]
-                    ],
-                )
+            apply_esi_fleet_member(self, esi_fleet_member, resolved_ids)
 
         self.last_updated = timezone.now()
         self.save()
@@ -571,6 +517,34 @@ class EveFleetInstanceMemberImplantSnapshot(models.Model):
     def __str__(self):
         return (
             f"{self.member.character_name} @ {self.created_at:%Y-%m-%d %H:%M}"
+        )
+
+
+class EveFleetInstanceMemberShipSnapshot(models.Model):
+    """Append-only record of a fleet member's ship at each observed change."""
+
+    member = models.ForeignKey(
+        EveFleetInstanceMember,
+        on_delete=models.CASCADE,
+        related_name="ship_snapshots",
+    )
+    ship_type_id = models.BigIntegerField()
+    ship_name = models.CharField(max_length=255)
+    solar_system_id = models.BigIntegerField()
+    solar_system_name = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["member", "created_at"]),
+            models.Index(fields=["member", "ship_type_id"]),
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return (
+            f"{self.member.character_name} — {self.ship_name} "
+            f"@ {self.created_at:%Y-%m-%d %H:%M}"
         )
 
 
