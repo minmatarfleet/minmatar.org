@@ -143,6 +143,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import Fit from '@components/blocks/Fit.astro';
 import Button from '@components/blocks/Button.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+import FittingShareButton from '@components/blocks/FittingShareButton.astro';
 import CopyPodButton from '@components/blocks/CopyPodButton.astro';
 import ItemBadge from '@components/blocks/ItemBadge.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
@@ -245,6 +246,7 @@ import { navigate } from "astro:transitions/client";
                     </Button>
                 </div>
                 
+                <FittingShareButton fitting_id={parseInt(fitting_id ?? '0')} size="lg" />
                 <ClipboardButton id="fit-clipboard" size='lg' text={t('copy_eft')}>
                     {fitting?.eft_format as string}
                 </ClipboardButton>

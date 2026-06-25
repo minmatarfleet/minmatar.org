@@ -119,6 +119,7 @@ import Button from '@components/blocks/Button.astro';
 import Cargohold from '@components/blocks/CargoHold.astro';
 import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+import FittingShareButton from '@components/blocks/FittingShareButton.astro';
 
 import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
 import CargoHoldEvEIcon from '@components/icons/CargoHoldEvEIcon.astro';
@@ -189,6 +190,7 @@ import { navigate } from "astro:transitions/client";
                         </PageTitle>
                         <small>{t('last_updated')} {format_date_short(lang, fitting?.updated_at as Date)}</small>
                         <FlexInline>                            
+                            <FittingShareButton fitting_id={parseInt(fitting_id ?? '0')} />
                             <ClipboardButton id="fit-clipboard" text={t('copy_eft')}>
                                 {fitting?.eft_format as string}
                             </ClipboardButton>

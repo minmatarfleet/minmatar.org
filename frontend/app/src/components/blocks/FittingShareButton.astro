@@ -1,0 +1,35 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { ButtonSizes } from '@dtypes/layout_components';
+
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+
+interface Props {
+    fitting_id:         number;
+    narrow?:            boolean;
+    size?:              ButtonSizes;
+    [propName: string]: any;
+}
+
+const {
+    fitting_id,
+    narrow = false,
+    size = 'sm',
+    ...attributes
+} = Astro.props
+
+const share_url = new URL(translatePath(`/ships/fittings/${fitting_id}`), Astro.url.origin).href
+---
+
+<ClipboardButton
+    id={`fitting-share-${fitting_id}`}
+    text={t('share')}
+    copied_text={t('copied')}
+    narrow={narrow}
+    size={size}
+    {...attributes}
+>
+    {share_url}
+</ClipboardButton>

@@ -24,6 +24,7 @@ import FlexInline from "@components/compositions/FlexInline.astro";
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import ItemPicture from "@components/blocks/ItemPicture.astro";
 import ClipboardButton from "@components/blocks/ClipboardButton.astro";
+import FittingShareButton from "@components/blocks/FittingShareButton.astro";
 import Tag from "@components/blocks/Tag.astro";
 
 import NavyIcon from '@components/icons/NavyIcon.astro';
@@ -58,7 +59,10 @@ import Tech3Icon from '@components/icons/Tech3Icon.astro';
             </Flexblock>
         </Wrapper>
         <Wrapper class="[ fitting-card-actions ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
-            <ClipboardButton narrow={true} id={fitting.id.toString()}>{fitting.eft_format}</ClipboardButton>
+            <FlexInline gap="var(--space-3xs)">
+                <FittingShareButton fitting_id={fitting.id} narrow={true} />
+                <ClipboardButton narrow={true} id={fitting.id.toString()}>{fitting.eft_format}</ClipboardButton>
+            </FlexInline>
         </Wrapper>
         <div class="[ fitting-card-filters ]">
             <p>{fitting.fitting_name}</p>
