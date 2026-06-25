@@ -1,0 +1,176 @@
+---
+import {
+    EXPLORATION_GROSS_ISK,
+    MINING_GROSS_ISK,
+    MONTHS,
+    PI_GROSS_ISK,
+    RATTING_GROSS_ISK,
+    toBillions,
+} from '@/data/campaigns/etherium-reach'
+
+const width = 640
+const height = 300
+const pad = { l: 52, r: 16, t: 12, b: 32 }
+const plotW = width - pad.l - pad.r
+const plotH = height - pad.t - pad.b
+
+const series = [
+    {
+        name: 'Mining',
+        data: MINING_GROSS_ISK.map(toBillions),
+        color: 'var(--alliance-blue)',
+        dashed: false,
+    },
+    {
+        name: 'Ratting',
+        data: RATTING_GROSS_ISK.map(toBillions),
+        color: 'var(--green)',
+        dashed: false,
+    },
+    {
+        name: 'Planetary interaction',
+        data: PI_GROSS_ISK.map(toBillions),
+        color: 'var(--fleet-yellow)',
+        dashed: false,
+    },
+    {
+        name: 'Exploration (estimated)',
+        data: EXPLORATION_GROSS_ISK.map(toBillions),
+        color: 'var(--faded)',
+        dashed: true,
+    },
+]
+
+const yMax = Math.max(...series.flatMap((entry) => entry.data), 1) * 1.05
+const yTicks = 4
+const xPos = (index: number) => pad.l + (index / (MONTHS.length - 1)) * plotW
+const yPos = (value: number) => pad.t + plotH - (value / yMax) * plotH
+---
+
+<div class="er-chart">
+    <svg viewBox={`0 0 ${width} ${height}`} width="100%" role="img" aria-label="Monthly pilot income by source">
+        {
+            Array.from({ length: yTicks + 1 }, (_, index) => {
+                const value = (yMax / yTicks) * index
+                const y = yPos(value)
+                return (
+                    <g>
+                        <line
+                            x1={pad.l}
+                            x2={width - pad.r}
+                            y1={y}
+                            y2={y}
+                            class="er-chart__grid"
+                        />
+                        <text
+                            x={pad.l - 8}
+                            y={y + 4}
+                            text-anchor="end"
+                            class="er-chart__axis-label"
+                        >
+                            {Math.round(value * 10) / 10} B
+                        </text>
+                    </g>
+                )
+            })
+        }
+        {
+            MONTHS.map((month, index) => (
+                <text
+                    x={xPos(index)}
+                    y={height - 8}
+                    text-anchor="middle"
+                    class="er-chart__axis-label"
+                >
+                    {month}
+                </text>
+            ))
+        }
+        {
+            series.map((entry) => {
+                const points = entry.data.map((value, index) => `${xPos(index)},${yPos(value)}`).join(' ')
+                const area = `${pad.l},${yPos(0)} ${points} ${pad.l + plotW},${yPos(0)}`
+                return (
+                    <g>
+                        {!entry.dashed ? (
+                            <polygon points={area} fill={entry.color} fill-opacity="0.12" />
+                        ) : null}
+                        <polyline
+                            points={points}
+                            fill="none"
+                            stroke={entry.color}
+                            stroke-width="2"
+                            stroke-dasharray={entry.dashed ? '6 4' : undefined}
+                        />
+                        {
+                            entry.data.map((value, index) => (
+                                <circle
+                                    cx={xPos(index)}
+                                    cy={yPos(value)}
+                                    r="3"
+                                    fill={entry.color}
+                                />
+                            ))
+                        }
+                    </g>
+                )
+            })
+        }
+    </svg>
+
+    <ul class="er-chart__legend" aria-hidden="true">
+        {
+            series.map((entry) => (
+                <li>
+                    <svg width="22" height="10" aria-hidden="true">
+                        <line
+                            x1="0"
+                            y1="5"
+                            x2="22"
+                            y2="5"
+                            stroke={entry.color}
+                            stroke-width="2"
+                            stroke-dasharray={entry.dashed ? '4 3' : undefined}
+                        />
+                    </svg>
+                    <span>{entry.name}</span>
+                </li>
+            ))
+        }
+    </ul>
+</div>
+
+<style lang="scss">
+    .er-chart {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        min-width: 0;
+    }
+
+    .er-chart__grid {
+        stroke: color-mix(in srgb, var(--border-color) 90%, transparent);
+    }
+
+    .er-chart__axis-label {
+        fill: var(--faded);
+        font-size: 10px;
+    }
+
+    .er-chart__legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-m);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    .er-chart__legend li {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+    }
+</style>

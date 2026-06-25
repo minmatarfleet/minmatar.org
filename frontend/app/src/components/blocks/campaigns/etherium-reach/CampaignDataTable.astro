@@ -1,0 +1,100 @@
+---
+import type { CampaignTableRow } from '@/data/campaigns/etherium-reach'
+
+interface Props {
+    headers: string[]
+    rows: CampaignTableRow[]
+    striped?: boolean
+}
+
+const { headers, rows, striped = false } = Astro.props
+---
+
+<div class="er-table-wrap" tabindex="0" role="region">
+    <table class:list={['er-table', { 'er-table--striped': striped }]}>
+        <thead>
+            <tr>
+                {
+                    headers.map((header, index) => (
+                        <th
+                            scope="col"
+                            class:list={[
+                                index > 0 && 'er-table__numeric',
+                            ]}
+                        >
+                            {header}
+                        </th>
+                    ))
+                }
+            </tr>
+        </thead>
+        <tbody>
+            {
+                rows.map((row) => (
+                    <tr class:list={[row.tone && `er-table__row--${row.tone}`]}>
+                        {
+                            row.cells.map((cell, index) => (
+                                <td class:list={[index > 0 && 'er-table__numeric']}>
+                                    {cell}
+                                </td>
+                            ))
+                        }
+                    </tr>
+                ))
+            }
+        </tbody>
+    </table>
+</div>
+
+<style lang="scss">
+    .er-table-wrap {
+        overflow-x: auto;
+        min-width: 0;
+    }
+
+    .er-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: var(--step--1);
+    }
+
+    th,
+    td {
+        padding: var(--space-s);
+        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        text-align: left;
+        vertical-align: top;
+    }
+
+    th {
+        background: color-mix(in srgb, var(--component-background) 90%, transparent);
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    td {
+        color: var(--faded);
+    }
+
+    .er-table__numeric {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .er-table--striped tbody tr:nth-child(even) {
+        background: color-mix(in srgb, var(--component-background) 40%, transparent);
+    }
+
+    .er-table__row--info td {
+        color: var(--alliance-blue);
+        font-weight: 600;
+    }
+
+    .er-table__row--success td:first-child {
+        color: var(--green);
+    }
+
+    .er-table__row--warning td:first-child {
+        color: var(--fleet-yellow);
+    }
+</style>

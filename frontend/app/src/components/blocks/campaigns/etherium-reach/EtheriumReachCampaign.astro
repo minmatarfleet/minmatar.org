@@ -1,0 +1,340 @@
+---
+import {
+    DRONELANDS_REGIONS_BY_DESTROYED,
+    FLEET_CHARACTERS,
+    FLEET_PARTICIPATION_PCT,
+    FLEET_PILOTS,
+    formatIsk,
+    GROSS_CORP_ALL,
+    GROSS_CORP_BROKER_FEES,
+    GROSS_CORP_INDUSTRY_TAX,
+    GROSS_CORP_PI_TAX,
+    GROSS_CORP_RATTING_TAX,
+    GROSS_ISK_KILLS,
+    GROSS_ISK_LOSSES,
+    GROSS_PLAYER_COURIER_REWARDS,
+    GROSS_PLAYER_EXPLORATION,
+    GROSS_PLAYER_INDUSTRY_PROFIT,
+    GROSS_PLAYER_MINING,
+    GROSS_PLAYER_PI,
+    GROSS_PLAYER_RATTING,
+    GROSS_PLAYER_TOTAL,
+    ISK_KILLS_BY_REGION,
+    ISK_LOSSES_BY_REGION,
+    OPSEC_PRIVATE_LINE_ITEM,
+    PERIOD_DRONELANDS_FLEETS,
+    PERIOD_DRONELANDS_ISK_KILLS,
+    PERIOD_DRONELANDS_ISK_LOSSES,
+    PERIOD_OUTSIDE_FLEETS,
+    PERIOD_OUTSIDE_ISK_KILLS,
+    PERIOD_OUTSIDE_ISK_LOSSES,
+} from '@/data/campaigns/etherium-reach'
+
+import CampaignCallout from '@components/blocks/campaigns/etherium-reach/CampaignCallout.astro'
+import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
+import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
+import PlayerContentChart from '@components/blocks/campaigns/etherium-reach/PlayerContentChart.astro'
+import PlayerIncomeChart from '@components/blocks/campaigns/etherium-reach/PlayerIncomeChart.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+const playerIncomeRows = [
+    { cells: ['Mining', formatIsk(GROSS_PLAYER_MINING)] as const },
+    { cells: ['Ratting', formatIsk(GROSS_PLAYER_RATTING)] as const },
+    { cells: ['Planetary interaction', formatIsk(GROSS_PLAYER_PI)] as const },
+    { cells: ['Courier rewards', formatIsk(GROSS_PLAYER_COURIER_REWARDS)] as const },
+    { cells: ['Industry (profit)', formatIsk(GROSS_PLAYER_INDUSTRY_PROFIT)] as const },
+    { cells: ['Exploration (estimated)', `~${formatIsk(GROSS_PLAYER_EXPLORATION)}`] as const },
+    { cells: ['Total', formatIsk(GROSS_PLAYER_TOTAL)] as const, tone: 'info' as const },
+]
+
+const allianceIncomeRows = [
+    { cells: ['Ratting tax', formatIsk(GROSS_CORP_RATTING_TAX)] as const },
+    { cells: ['Planetary interaction tax', formatIsk(GROSS_CORP_PI_TAX)] as const },
+    { cells: ['Industry facility tax', formatIsk(GROSS_CORP_INDUSTRY_TAX)] as const },
+    { cells: ['Broker fees', formatIsk(GROSS_CORP_BROKER_FEES)] as const },
+    { cells: ['Private line item (opsec)', `~${formatIsk(OPSEC_PRIVATE_LINE_ITEM)}`] as const },
+    { cells: ['Private line item (opsec)', '—'] as const },
+    { cells: ['Total', `${formatIsk(GROSS_CORP_ALL)} disclosed`] as const, tone: 'info' as const },
+]
+
+const combatRows = [
+    ...DRONELANDS_REGIONS_BY_DESTROYED.map((region) => {
+        let tone: 'warning' | 'success' | undefined
+        if (region === 'Etherium Reach') tone = 'warning'
+        if (region === 'The Kalevala Expanse') tone = 'success'
+        return {
+            cells: [
+                region,
+                formatIsk(ISK_KILLS_BY_REGION[region]),
+                formatIsk(ISK_LOSSES_BY_REGION[region]),
+            ] as const,
+            tone,
+        }
+    }),
+    {
+        cells: [
+            'All dronelands',
+            formatIsk(GROSS_ISK_KILLS),
+            formatIsk(GROSS_ISK_LOSSES),
+        ] as const,
+        tone: 'info' as const,
+    },
+]
+---
+
+<div class="er-campaign">
+    <header class="er-campaign__banner">
+        <p class="er-campaign__eyebrow">Minmatar Fleet Alliance</p>
+        <h2 class="er-campaign__title">Dronelands Campaign Report</h2>
+        <p class="er-campaign__lead">
+            A summary of our nullsec expansion across Etherium Reach, Kalevala,
+            Spire, and Perrigen Falls.
+        </p>
+    </header>
+
+    <CampaignCallout title="Campaign brief">
+        <p>
+            Minmatar Fleet built a real nullsec footprint in the Dronelands —
+            structures, moons, and heavy industry — while keeping the war moving
+            at home and abroad. Most of our pilots took part; over a trillion ISK
+            in spoils went to wallets and the war chest.
+        </p>
+    </CampaignCallout>
+
+    <section class="er-campaign__section">
+        <h3>Alliance participation</h3>
+        <p class="er-campaign__meta">Nov 2025 – Jun 2026</p>
+        <div class="er-campaign__stat-grid er-campaign__stat-grid--3">
+            <CampaignStat label="Pilots" value={FLEET_PILOTS.toLocaleString()} tone="info" />
+            <CampaignStat label="Characters" value={FLEET_CHARACTERS.toLocaleString()} />
+            <CampaignStat label="Participation" value={`${FLEET_PARTICIPATION_PCT}%`} tone="success" />
+        </div>
+    </section>
+
+    <section class="er-campaign__section">
+        <h3>Content summary</h3>
+        <p class="er-campaign__meta">
+            Nov 2025 – Jun 2026 · Etherium Reach, Kalevala, Spire, and Perrigen Falls
+        </p>
+
+        <Flexblock gap="var(--space-l)">
+            <div>
+                <p class="er-campaign__subheading">In the dronelands</p>
+                <div class="er-campaign__stat-grid er-campaign__stat-grid--3">
+                    <CampaignStat
+                        label="ISK destroyed"
+                        value={formatIsk(PERIOD_DRONELANDS_ISK_KILLS)}
+                        tone="success"
+                    />
+                    <CampaignStat
+                        label="ISK lost"
+                        value={formatIsk(PERIOD_DRONELANDS_ISK_LOSSES)}
+                        tone="danger"
+                    />
+                    <CampaignStat
+                        label="Campaign fleets"
+                        value={PERIOD_DRONELANDS_FLEETS.toLocaleString()}
+                    />
+                </div>
+            </div>
+
+            <div>
+                <p class="er-campaign__subheading">Everywhere else</p>
+                <div class="er-campaign__stat-grid er-campaign__stat-grid--3">
+                    <CampaignStat
+                        label="ISK destroyed"
+                        value={formatIsk(PERIOD_OUTSIDE_ISK_KILLS)}
+                        tone="success"
+                    />
+                    <CampaignStat
+                        label="ISK lost"
+                        value={formatIsk(PERIOD_OUTSIDE_ISK_LOSSES)}
+                        tone="danger"
+                    />
+                    <CampaignStat
+                        label="Warzone fleets"
+                        value={PERIOD_OUTSIDE_FLEETS.toLocaleString()}
+                    />
+                </div>
+            </div>
+        </Flexblock>
+    </section>
+
+    <section class="er-campaign__section">
+        <div class="er-campaign__split">
+            <div>
+                <h3>Resource extraction · what pilots earned</h3>
+                <p class="er-campaign__meta">Dronelands theater · Nov 2025 – Jun 2026</p>
+                <CampaignDataTable headers={['Source', 'ISK']} rows={playerIncomeRows} />
+            </div>
+            <div>
+                <h3>Resource extraction · what the alliance earned</h3>
+                <p class="er-campaign__meta">Dronelands theater · Nov 2025 – Jun 2026</p>
+                <CampaignDataTable headers={['Source', 'ISK']} rows={allianceIncomeRows} />
+            </div>
+        </div>
+
+        <div class="er-campaign__chart-card">
+            <h4>Player income over time</h4>
+            <p class="er-campaign__meta">Monthly pilot income · billions ISK</p>
+            <PlayerIncomeChart />
+            <p class="er-campaign__footnote">
+                Dashed lines are estimates. Income tracking begins Jan 2026.
+            </p>
+        </div>
+    </section>
+
+    <section class="er-campaign__section">
+        <h3>Player content over time</h3>
+        <p class="er-campaign__meta">Nov 2025 – Jun 2026</p>
+        <div class="er-campaign__chart-card">
+            <p class="er-campaign__meta">
+                Dronelands ISK destroyed per month and Etherium Reach campaign fleets formed
+            </p>
+            <PlayerContentChart />
+        </div>
+    </section>
+
+    <section class="er-campaign__section">
+        <h3>Combat by region</h3>
+        <p class="er-campaign__meta">Lifetime · all dronelands regions</p>
+        <CampaignDataTable
+            headers={['Region', 'Destroyed', 'Lost']}
+            rows={combatRows}
+            striped={true}
+        />
+    </section>
+
+    <CampaignCallout title="Notes" tone="info">
+        <p>
+            Figures cover Nov 2025 through Jun 2026 unless noted otherwise. June
+            2026 is partial. Combat by region reflects lifetime activity in the
+            four dronelands regions.
+        </p>
+    </CampaignCallout>
+
+    <footer class="er-campaign__footer">
+        <span>Minmatar Fleet Alliance · Dronelands Campaign Report</span>
+        <span>June 2026</span>
+    </footer>
+</div>
+
+<style lang="scss">
+    .er-campaign {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xl);
+        width: 100%;
+        min-width: 0;
+    }
+
+    .er-campaign__banner {
+        padding: var(--space-l) var(--space-xl);
+        background: color-mix(in srgb, var(--component-background) 80%, transparent);
+        border-left: 4px solid var(--fleet-yellow);
+    }
+
+    .er-campaign__eyebrow {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--faded);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .er-campaign__title {
+        margin: var(--space-2xs) 0 0;
+        font-size: var(--step-2);
+        color: var(--highlight);
+        line-height: 1.1;
+    }
+
+    .er-campaign__lead {
+        margin: var(--space-s) 0 0;
+        max-width: var(--max-text-width);
+        font-size: var(--step-0);
+        color: var(--faded);
+        line-height: 1.6;
+    }
+
+    .er-campaign__section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        min-width: 0;
+
+        h3,
+        h4 {
+            margin: 0;
+            color: var(--highlight);
+            line-height: 1.2;
+        }
+
+        h3 {
+            font-size: var(--step-1);
+        }
+
+        h4 {
+            font-size: var(--step-0);
+        }
+    }
+
+    .er-campaign__meta,
+    .er-campaign__subheading,
+    .er-campaign__footnote {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--faded);
+        line-height: 1.5;
+    }
+
+    .er-campaign__subheading {
+        margin-bottom: var(--space-s);
+    }
+
+    .er-campaign__stat-grid {
+        display: grid;
+        gap: var(--space-m);
+        min-width: 0;
+    }
+
+    .er-campaign__stat-grid--3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .er-campaign__split {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-xl);
+        min-width: 0;
+    }
+
+    .er-campaign__chart-card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        padding: var(--space-m);
+        background: color-mix(in srgb, var(--component-background) 70%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        min-width: 0;
+    }
+
+    .er-campaign__footer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: var(--space-s);
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    @media (max-width: 900px) {
+        .er-campaign__stat-grid--3 {
+            grid-template-columns: 1fr;
+        }
+
+        .er-campaign__split {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>

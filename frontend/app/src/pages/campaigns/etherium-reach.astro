@@ -1,0 +1,78 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { COVER_IMAGE } from '@/data/campaigns/etherium-reach'
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import EtheriumReachCampaign from '@components/blocks/campaigns/etherium-reach/EtheriumReachCampaign.astro'
+
+const page_title = t('campaigns.etherium_reach.page_title')
+const page_description = t('campaigns.etherium_reach.leading_text')
+const meta_title = t('campaigns.etherium_reach.meta_title')
+    .replace('{site}', t('index.page_title'))
+const meta_description = t('campaigns.etherium_reach.meta_description')
+const canonical_url = new URL(translatePath('/campaigns/etherium-reach/'), Astro.url.origin).href
+const meta_image = new URL(COVER_IMAGE, Astro.url.origin).href
+---
+
+<Viewport
+    title={meta_title}
+    meta_description={meta_description}
+    meta_image={meta_image}
+    canonical_url={canonical_url}
+    og_type="article"
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <PageLanding
+        wide={true}
+        cover={{
+            image: COVER_IMAGE,
+            image_990: COVER_IMAGE,
+            alt: page_title,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <Flexblock gap="var(--space-2xl)" class="er-page">
+            <TextBox max_width="var(--max-content-width)">
+                <Flexblock gap="var(--space-xl)">
+                    <PageTitle is_landing={true}>{page_title}</PageTitle>
+                    <p class="[ excerpt ]">{page_description}</p>
+                </Flexblock>
+            </TextBox>
+
+            <Wrapper
+                max_width="var(--max-content-width)"
+                padding_inline="0"
+                padding_block="0"
+            >
+                <EtheriumReachCampaign />
+            </Wrapper>
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .er-page {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow-x: clip;
+    }
+
+    .excerpt,
+    :global(.excerpt p) {
+        font-size: var(--step-1);
+        line-height: 1.6;
+        max-width: var(--max-text-width);
+    }
+</style>
