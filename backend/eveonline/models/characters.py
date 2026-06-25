@@ -51,6 +51,7 @@ class EveCharacter(models.Model):
     corporation_id = models.BigIntegerField(null=True, blank=True)
     alliance_id = models.BigIntegerField(null=True, blank=True)
     faction_id = models.BigIntegerField(null=True, blank=True)
+    security_status = models.FloatField(null=True, blank=True)
     token = models.ForeignKey(
         Token, on_delete=models.SET_NULL, null=True, blank=True
     )

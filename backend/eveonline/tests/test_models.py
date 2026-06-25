@@ -385,23 +385,16 @@ class EveCharacterTestCase(TestCase):
     """
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
-    @patch("eveonline.signals.esi_public")
-    def test_populate_eve_character_public_data(self, esi_public):
-        esi_public.return_value.get_character_public_data.return_value = (
-            EsiResponse(
-                response_code=200,
-                data={
-                    "name": "Bob",
-                    "corporation_id": 2001,
-                },
-            )
-        )
+    @patch("eveonline.signals.update_character_public_data")
+    def test_populate_eve_character_public_data(self, update_mock):
+        update_mock.return_value = True
 
         instance = EveCharacter.objects.create(
             character_id=1001,
         )
         populate_eve_character_public_data(MagicMock(), instance, True)
 
+        update_mock.assert_called_once_with(1001)
+
         saved_char = EveCharacter.objects.get(character_id=1001)
-        self.assertEqual("Bob", saved_char.character_name)
-        self.assertEqual(2001, saved_char.corporation_id)
+        self.assertEqual(1001, saved_char.character_id)

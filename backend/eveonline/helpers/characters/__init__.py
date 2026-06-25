@@ -33,6 +33,10 @@ from eveonline.helpers.characters.mining import (
 from eveonline.helpers.characters.planets import (
     update_character_planets,
 )
+from eveonline.helpers.characters.public_data import (
+    apply_character_public_data,
+    update_character_public_data,
+)
 from eveonline.helpers.characters.update import (
     update_character_assets,
     update_character_blueprints,
@@ -60,6 +64,8 @@ __all__ = [
     "update_character_clones",
     "update_character_mining",
     "update_character_planets",
+    "update_character_public_data",
+    "apply_character_public_data",
     "update_character_skills",
     "update_character_with_affiliations",
     "user_characters",

@@ -27,7 +27,7 @@ export const ui = {
 
         'index.page_title': 'Minmatar Fleet',
         'index.title': 'Welcome to Minmatar Fleet',
-        'index.leading_text': 'Minmatar Fleet Alliance is a PVP Alliance with strong connections to Faction Warfare. We are the primary source of public militia fleets, and the number one trade supplier for the Minmatar War effort.',
+        'index.leading_text': 'A content-driven alliance rooted in Minmatar Faction Warfare, with offensive campaigns abroad into nullsec and beyond. We provide military support and economic might for the freedom fighters of the Minmatar militia.',
         'index.incoming_text': 'Next Minmatar fleet in',
         'index.cover_alt': 'View of an space structure.',
         'index.description': 'Outer view of your favorite Minmatar Fleet staging.',

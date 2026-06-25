@@ -5,6 +5,7 @@ from esi.models import Token
 
 from app.celery import app
 from eveonline.helpers.characters import (
+    update_character_public_data as refresh_character_public_data,
     update_character_assets as refresh_character_assets,
     update_character_blueprints as refresh_character_blueprints,
     update_character_clones as refresh_character_clones,
@@ -55,6 +56,7 @@ def update_character(eve_character_id):
         character.character_name,
         eve_character_id,
     )
+    refresh_character_public_data(eve_character_id)
     if character.esi_suspended:
         logger.info(
             "Skipping update for ESI suspended character %s",
@@ -87,6 +89,24 @@ def update_character(eve_character_id):
 def update_character_urgent(eve_character_id):
     """No rate limit for urgent updates."""
     update_character(eve_character_id)
+
+
+@app.task
+def update_all_character_public_data() -> int:
+    """Refresh public ESI fields (including security status) for every character."""
+    character_ids = list(
+        EveCharacter.objects.values_list("character_id", flat=True)
+    )
+    updated = 0
+    for character_id in character_ids:
+        if refresh_character_public_data(character_id):
+            updated += 1
+    logger.info(
+        "Updated public data for %d of %d character(s)",
+        updated,
+        len(character_ids),
+    )
+    return updated
 
 
 @app.task

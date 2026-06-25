@@ -80,6 +80,14 @@ CELERYBEAT_CHARACTERS = [
         },
     ),
     (
+        "[Characters] Update Public Data (security status)",
+        {
+            "task": "eveonline.tasks.characters.update_all_character_public_data",
+            "schedule": crontab(minute=20, hour="*/8"),
+            "options": {"queue": "eveonline"},
+        },
+    ),
+    (
         "[Characters] Update Players",
         {
             "task": "eveonline.tasks.players.update_players",

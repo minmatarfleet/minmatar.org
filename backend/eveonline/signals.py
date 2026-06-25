@@ -7,7 +7,10 @@ from esi.models import Token
 
 from discord.client import DiscordClient
 from eveonline.tasks import update_character_urgent
-from eveonline.client import EsiClient, esi_public
+from eveonline.client import EsiClient
+from eveonline.helpers.characters.public_data import (
+    update_character_public_data,
+)
 from .models import (
     EveAlliance,
     EveCharacter,
@@ -24,26 +27,10 @@ discord = DiscordClient()
 )
 def populate_eve_character_public_data(sender, instance, created, **kwargs):
     if created:
-        logger.debug("Populating name for character %s", instance.character_id)
-        response = esi_public().get_character_public_data(
-            instance.character_id
-        )
-        if not response.success():
-            logger.error(
-                "Error %d fetching public character data %d",
-                response.response_code,
-                instance.character_id,
-            )
-            return
-        esi_character = response.data
-
-        logger.debug("Setting character name to %s", esi_character["name"])
-        instance.character_name = esi_character["name"]
         logger.debug(
-            "Setting corporation_id to %s", esi_character["corporation_id"]
+            "Populating public data for character %s", instance.character_id
         )
-        instance.corporation_id = esi_character["corporation_id"]
-        instance.save()
+        update_character_public_data(instance.character_id)
 
 
 @receiver(
