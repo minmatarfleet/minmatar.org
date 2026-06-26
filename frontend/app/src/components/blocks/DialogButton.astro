@@ -15,6 +15,7 @@ interface Props {
     thin_dialog?:           boolean;
     disable_when_open?:     boolean;
     full_height?:           boolean;
+    styless?:               boolean;
     [propName: string]:     any;
 }
 
@@ -29,6 +30,7 @@ const {
     thin_dialog = false,
     disable_when_open = false,
     full_height = false,
+    styless = false,
     ...attributes
 } = Astro.props
 
@@ -37,9 +39,11 @@ import { marked } from 'marked';
 import Dialog from '@components/blocks/Dialog.astro';
 import Button from '@components/blocks/Button.astro';
 import DebugTag from '@components/blocks/DebugTag.astro';
+import StylessButton from './StylessButton.astro';
 ---
 
 <div
+    class="[ flex ]"
     x-data={`{
         button_dialog_open: false,
         open_dialog() {
@@ -54,20 +58,29 @@ import DebugTag from '@components/blocks/DebugTag.astro';
     @dialog_opened.stop={disable_when_open ? "$el.querySelector('button').setAttribute('disabled', '')" : undefined}
     @dialog_closed.stop={disable_when_open ? "$el.querySelector('button').removeAttribute('disabled')" : undefined}
 >
-    <Button
-        size={size}
-        type="button"
-        color={color}
-        narrow={narrow}
-        x-on:click.stop.prevent="open_dialog()"
-        type="button"
-        id={id ? id : undefined}
-        class={hidden ? '[ hidden! ]' : undefined}
-        {...attributes}
-    >
-        <slot name="icon" />
-        <slot />
-    </Button>
+    {styless ?
+        <StylessButton
+            type="button"
+            x-on:click.stop.prevent="open_dialog()"
+            {...attributes}
+        >
+            <slot />
+        </StylessButton>
+        :
+        <Button
+            size={size}
+            type="button"
+            color={color}
+            narrow={narrow}
+            x-on:click.stop.prevent="open_dialog()"
+            id={id ? id : undefined}
+            class={hidden ? '[ hidden! ]' : undefined}
+            {...attributes}
+        >
+            <slot name="icon" />
+            <slot />
+        </Button>
+    }
 
     <template x-teleport="body">
         <Dialog

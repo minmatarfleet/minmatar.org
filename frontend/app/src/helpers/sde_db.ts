@@ -5,6 +5,7 @@ import * as schema from '../models/sde/schema.ts';
 import { migrate } from 'drizzle-orm/better-sqlite3/migrator';
 
 const SDE_CANDIDATES = [
+    './src/data/sde-3409592.sqlite',
     './src/data/sde-3316380.sqlite',
     './src/data/sqlite-latest-2024-09-20.sqlite',
 ] as const;
