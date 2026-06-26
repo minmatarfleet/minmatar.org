@@ -84,7 +84,6 @@ const fitting_groups = fittings_grouped_by_ship_type.map(fittings_group => {
     } as ShipTypeFittingGroups
 })
 
-console.log(fitting_groups)
 const ships_count = fitting_groups.flatMap(fitting_group => fitting_group.ship_groups).length
 
 const search_tag = Astro.url.searchParams.get('tag')
