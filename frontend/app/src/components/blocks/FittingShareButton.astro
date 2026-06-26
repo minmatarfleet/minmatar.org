@@ -10,6 +10,7 @@ interface Props {
     fitting_id:         number;
     narrow?:            boolean;
     size?:              ButtonSizes;
+    iconed?:            boolean;
     [propName: string]: any;
 }
 
@@ -17,6 +18,7 @@ const {
     fitting_id,
     narrow = false,
     size = 'sm',
+    iconed = true,
     ...attributes
 } = Astro.props
 
@@ -29,6 +31,7 @@ const share_url = new URL(translatePath(`/ships/fittings/${fitting_id}`), Astro.
     copied_text={t('copied')}
     narrow={narrow}
     size={size}
+    iconed={iconed}
     {...attributes}
 >
     {share_url}

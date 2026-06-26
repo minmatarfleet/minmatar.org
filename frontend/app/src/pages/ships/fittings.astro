@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { FittingItem } from '@dtypes/layout_components'
+import type { FittingItem, ShipFittings, ShipTypeFittingGroups } from '@dtypes/layout_components'
 import { fetch_fittings } from '@helpers/fetching/ships'
 import { fitting_tag_label, format_fitting_tags_line } from '@helpers/fitting_tags'
 import { SHIP_TYPES_SORTED } from '@helpers/eve'
@@ -64,6 +64,29 @@ fitting_ship_types.forEach((fitting_ship_type) => {
     )
 })
 
+import { group_by } from '@helpers/array';
+
+const fitting_groups = fittings_grouped_by_ship_type.map(fittings_group => {
+    let _array = Object.values(fittings_group)
+    const fittings_by_ship = group_by(_array, 'ship_name') as Record<string, FittingItem[]>
+
+    return {
+        ship_type: fittings_group[0].ship_type,
+        ship_groups: Object.entries(fittings_by_ship).map(([ship_name, fittings]) => ({
+            ship_name: ship_name,
+            ship_id: fittings[0].ship_id,
+            ship_meta: fittings[0].ship_meta,
+            count: fittings.length,
+            ship_type: fittings[0].ship_type,
+            tags: unique_values(fittings.flatMap(fitting => fitting.tags ?? [])),
+            fittings: fittings.sort((a, b) => a.fitting_name.localeCompare(b.fitting_name)),
+        })),
+    } as ShipTypeFittingGroups
+})
+
+console.log(fitting_groups)
+const ships_count = fitting_groups.flatMap(fitting_group => fitting_group.ship_groups).length
+
 const search_tag = Astro.url.searchParams.get('tag')
 const initial_tag_filter =
     search_tag && tag_options.some((o) => o.value === search_tag) ? search_tag : '-1'
@@ -78,12 +101,11 @@ import BlockList from '@components/compositions/BlockList.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Grid from '@components/compositions/Grid.astro';
 
-import FittingCard from '@components/blocks/FittingCard.astro';
 import Input from '@components/blocks/Input.astro';
 import Select from '@components/blocks/Select.astro';
-import FittingLink from '@components/blocks/FittingLink.astro'
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+import FittingsDialog from '@components/blocks/FittingsDialog.astro'
 
 const page_title = t('fitting.list.page_title');
 const site_name = t('index.page_title')
@@ -135,7 +157,7 @@ const structured_data = buildFittingsListJsonLd(
             fitting_name_filter: '',
             fitting_tag_filter: ${JSON.stringify(initial_tag_filter)},
             ship_type_filter: '-1',
-            fits_count: ${fittings.length},
+            ships_count: ${ships_count},
             countVisibleElements(selector, parent = document) {
                 const elements = parent.querySelectorAll(selector)
                 let visible_count = 0
@@ -168,8 +190,8 @@ const structured_data = buildFittingsListJsonLd(
                     <PageTitle>
                         {page_title}
                     </PageTitle>
-                    <small x-text={'`'+t('showing')+' ${fits_count} '+t('fitting').toLowerCase()+'${fits_count != 1 ? `s` : ``}`'}>
-                        {t('showing')} {fittings.length} {t('fitting').toLowerCase()}{fittings.length != 1 ? 's' : ''}
+                    <small x-text={'`'+t('showing')+' ${ships_count} '+t('ship').toLowerCase()+'${ships_count != 1 ? `s` : ``}`'}>
+                        {t('showing')} {ships_count} {t('ship').toLowerCase()}{ships_count != 1 ? 's' : ''}
                     </small>
                 </Flexblock>
             </FlexInline>
@@ -178,7 +200,7 @@ const structured_data = buildFittingsListJsonLd(
                     type="text"
                     placeholder={t('search')}
                     x-model="fitting_name_filter"
-                    x-on:keyup="setTimeout(function () { fits_count = countVisibleElements('.fitting-card') })"
+                    x-on:keyup="setTimeout(function () { ships_count = countVisibleElements('.fitting-card') })"
                     x-init="$el.focus()"
                     width='250px'
                 >
@@ -188,7 +210,7 @@ const structured_data = buildFittingsListJsonLd(
                 <div class="[ hidden 2xl:!block ]">
                     <Select
                         x-model="fitting_tag_filter"
-                        x-on:change="setTimeout(function () { fits_count = countVisibleElements('.fitting-card') }, 100)"
+                        x-on:change="setTimeout(function () { ships_count = countVisibleElements('.fitting-card') }, 100)"
                     >
                         <option selected value="-1">{t('all_fitting_types')}</option>
                         {tag_options.map(({ value, label }) => 
@@ -200,7 +222,7 @@ const structured_data = buildFittingsListJsonLd(
                 <div class="[ hidden xl:!block ]">
                     <Select
                         x-model="ship_type_filter"
-                        x-on:change="setTimeout(function () { fits_count = countVisibleElements('.fitting-card') }, 100)"
+                        x-on:change="setTimeout(function () { ships_count = countVisibleElements('.fitting-card') }, 100)"
                     >
                         <option selected value="-1">{t('all_ship_type')}</option>
                         {fitting_ship_types.map((option) => 
@@ -212,24 +234,24 @@ const structured_data = buildFittingsListJsonLd(
         </FlexInline>
 
         <BlockList gap='var(--space-2xl)'>
-            {fittings_grouped_by_ship_type.map((group_fittings) =>
-                group_fittings.length > 0 &&
-                    <Flexblock
-                        class="[ fitting-groups ]"
-                        gap='var(--space-m)'
-                    >
-                        <FlexInline gap='var(--space-2xs)'>
-                            {get_ship_type_icon(group_fittings[0].ship_type) !== null &&
-                                <img
-                                    class="[ mt-[2px] ]"
-                                    src={`/images/icons/ships/${get_ship_type_icon(group_fittings[0].ship_type)}`}
-                                    height="32"
-                                    width="32"
-                                    alt={`${group_fittings[0].ship_type} icon`}
-                                />
-                            }
-                            <h2>{group_fittings[0].ship_type}</h2>
-                        </FlexInline>
+            {fitting_groups.map((ship_type_group) =>
+                <Flexblock
+                    class="[ fitting-groups ]"
+                    gap='var(--space-m)'
+                >
+                    <FlexInline gap='var(--space-2xs)'>
+                        {get_ship_type_icon(ship_type_group.ship_type) !== null &&
+                            <img
+                                class="[ mt-[2px] ]"
+                                src={`/images/icons/ships/${get_ship_type_icon(ship_type_group.ship_type)}`}
+                                height="32"
+                                width="32"
+                                alt={`${ship_type_group.ship_type} icon`}
+                            />
+                        }
+                        <h2>{ship_type_group.ship_type}</h2>
+                    </FlexInline>
+                    <BlockList gap='var(--space-m)'>
                         <Grid
                             role="list"
                             class="[ w-full grid-fill ]"
@@ -237,27 +259,21 @@ const structured_data = buildFittingsListJsonLd(
                             row_gap='var(--space-3xs)'
                             column_gap='var(--space-3xs)'
                         >
-                            {group_fittings.map((fitting) =>
-                                <FittingLink
-                                    fitting_id={fitting.id}
-                                    class="[ fitting-card-container ]"
-                                    data-fitting-tags={(fitting.tags ?? []).join(' ')}
+                            {ship_type_group.ship_groups.map((ship_group) =>
+                                <div
+                                    class="[ fitting-card-container ][ flex ]"
+                                    data-fitting-tags={(ship_group.tags ?? []).join(' ')}
                                     x-show="show_item($el)"
                                 >
-                                    <FittingCard
-                                        fitting={fitting}
-                                        title={fitting.fitting_name.replace(/^\[[^\]]+\]\s*/, '')}
-                                        tags={format_fitting_tags_line(fitting.tags, t)}
-                                        subtitle={fitting.fitting_type}
-                                        role="listitem"
-                                    />
-                                </FittingLink>
-                            )}
-                        </Grid>
-                    </Flexblock>
+                                    <FittingsDialog ship_group={ship_group} />
+                                </div>
+                        )}
+                    </Grid>
+                    </BlockList>
+                </Flexblock>
             )}
         </BlockList>
-        <p x-show="fits_count === 0" class="[ text-center ]">{get_fittings_error ? t('error_fetching_fittings') : t('no_results')}</p>
+        <p x-show="ships_count === 0" class="[ text-center ]">{get_fittings_error ? t('error_fetching_fittings') : t('no_results')}</p>
     </PageWide>
 </Viewport>
 

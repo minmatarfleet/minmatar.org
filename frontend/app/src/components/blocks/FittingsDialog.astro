@@ -1,0 +1,195 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { ButtonColors, ButtonSizes, ShipFittings } from '@dtypes/layout_components';
+
+interface Props {
+    ship_group:  ShipFittings;
+    [propName: string]: any;
+}
+
+const {
+    ship_group,
+    ...attributes
+} = Astro.props
+
+import { format_fitting_tags_line } from '@helpers/fitting_tags'
+import { semantic_list } from '@helpers/array';
+
+import Flexblock from "@components/compositions/Flexblock.astro";
+import Wrapper from "@components/compositions/Wrapper.astro";
+import FlexInline from "@components/compositions/FlexInline.astro";
+import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro';
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import ItemPicture from "@components/blocks/ItemPicture.astro";
+import FittingLink from "@components/blocks/FittingLink.astro";
+import Tag from "@components/blocks/Tag.astro";
+import DialogButton from "@components/blocks/DialogButton.astro";
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+import ItemBadge from '@components/blocks/ItemBadge.astro';
+import FittingShareButton from '@components/blocks/FittingShareButton.astro';
+
+import NavyIcon from '@components/icons/NavyIcon.astro';
+import Tech2Icon from '@components/icons/Tech2Icon.astro';
+import Tech3Icon from '@components/icons/Tech3Icon.astro';
+---
+
+<DialogButton
+    max_width='670px'
+    styless={true}
+>
+    <ComponentBlock class="[ fitting-card card-animated ]" padding_block='0' padding_inline='0' {...attributes}>
+        <Flexblock gap="0">
+            <ItemPicture
+                item_id={ship_group.ship_id}
+                item_name={ship_group.ship_name}
+                size={256}
+                narrow={true}
+                icon_quality={512}
+                mask={true}
+            />
+            <div class="[ ship-type-icon ]">
+                {ship_group?.ship_meta === 'Faction' && <NavyIcon />}
+                {ship_group?.ship_meta === 'Tech II' && <Tech2Icon />}
+                {ship_group?.ship_meta === 'Tech III' && <Tech3Icon />}
+            </div>
+            <Wrapper class="[ fitting-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
+                <Flexblock gap='var(--space-3xs)'>
+                    <FlexInline gap='var(--space-3xs)'>
+                        {format_fitting_tags_line(ship_group.tags, t)?.map(tag =>
+                            <Tag text={t(tag as any) ?? tag} />
+                        )}
+                    </FlexInline>
+                    <small>
+                        {t(ship_group.fittings.length !== 1 ? 'fittings_plural' : 'fittings_singular').replace('{count}', String(ship_group.fittings.length))}
+                    </small>
+                    <h3>{ship_group.ship_name}</h3>
+                </Flexblock>
+            </Wrapper>
+            <div class="[ fitting-card-filters ]">
+                <p>{ship_group.ship_name}</p>
+                <p>{ship_group.ship_type}</p>
+            </div>
+        </Flexblock>
+    </ComponentBlock>
+
+    <Flexblock gap="var(--space-l)" slot="dialog">
+        <h3>{t('ship_fittings_template').replace('{name}', ship_group.ship_name)}</h3>
+
+        <Flexblock>
+            {ship_group.fittings.map((fitting) =>
+                <FlexInlineSiblings
+                    min-shink-width='300px'
+                    shrinkable-sibbling='first'
+                >
+                    <FittingLink fitting_id={fitting.id}>
+                        <ItemBadge
+                            item_name={fitting.fitting_name}
+                            type_id={fitting.ship_id}
+                        >
+                            <small>
+                                {semantic_list(lang, format_fitting_tags_line(ship_group.tags, t))}
+                            </small>
+                        </ItemBadge>
+                    </FittingLink>
+                    <FlexInline>
+                        <FittingShareButton fitting_id={fitting.id} narrow={true} iconed={false} />
+                        <ClipboardButton narrow={true} id={fitting.id.toString()}>{fitting.eft_format}</ClipboardButton>
+                    </FlexInline>
+                </FlexInlineSiblings>
+            )}
+        </Flexblock>
+    </Flexblock>
+</DialogButton>
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-1);
+    }
+
+    .alliance-reel {
+        position: relative;
+    }
+
+    .swiper-button-prev,
+    .swiper-button-next {
+        --swiper-navigation-color: var(--highlight);
+        --swiper-navigation-sides-offset: var(--space-l);
+
+        opacity: 0;
+    }
+
+    .swiper-initialized ~ .swiper-button-prev,
+    .swiper-initialized ~ .swiper-button-next {
+        opacity: 1;
+    }
+
+    .swiper-initialized ~ .swiper-button-next.swiper-button-disabled,
+    .swiper-initialized ~ .swiper-button-prev.swiper-button-disabled {
+        opacity: 0;
+    }
+
+    .swiper-button-next.swiper-button-disabled,
+    .swiper-button-prev.swiper-button-disabled {
+        --swiper-navigation-color: var(--fleet-yellow);
+        opacity: 1;
+    }
+
+    .swiper-button-prev {
+        transform: translateY(-1.25rem);
+    }
+
+    .swiper-button-next {
+        transform: translateY(-1.25rem);
+    }
+
+    .swiper-slide {
+        width: min(100%, 240px);
+    }
+</style>
+
+<style lang="scss">
+    .fitting-card {
+        position: relative;
+
+        &:hover {
+            .fitting-card-actions {
+                opacity: 1;
+            }
+        }
+
+        .fitting-card-body {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        .ship-type-icon {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .fitting-card-actions {
+            position: absolute;
+            top: 0;
+            right: 0;
+            opacity: 0;
+        }
+
+        .fitting-card-filters {
+            display: none;
+        }
+    }
+
+    h3 {
+        font-size: var(--step-1);
+    }
+
+    small {
+        color:  var(--fleet-yellow);
+    }
+</style>

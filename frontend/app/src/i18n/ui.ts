@@ -2376,5 +2376,8 @@ export const ui = {
         'guides_singular': '1 guide',
         'submit_guide': 'Submit guide',
         'by_template': 'By: {name}',
+        'fittings_plural': '{count} fittings',
+        'fittings_singular': '1 fitting',
+        'ship_fittings_template': '{name} fittings',
     },
 } as const;

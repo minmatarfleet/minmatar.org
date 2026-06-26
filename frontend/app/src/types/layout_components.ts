@@ -33,6 +33,21 @@ export interface FittingItem {
     ship_meta?:     string;
 }
 
+export interface ShipFittings {
+    ship_name:      string;
+    ship_id:        number;
+    ship_type:      string;
+    ship_meta:      string;
+    tags:           string[];
+    count:          number;
+    fittings:       FittingItem[];
+}
+
+export interface ShipTypeFittingGroups {
+    ship_type:      string;
+    ship_groups:    ShipFittings[];
+}
+
 export interface DoctrineItemObj {
     doctrine_name:  string;
     href:           string;
