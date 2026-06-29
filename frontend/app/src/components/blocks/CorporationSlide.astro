@@ -54,7 +54,7 @@ import { query_string } from '@helpers/string';
         <Flexblock gap='var(--space-xl)' class="[ content ]">
             <Flexblock>
                 <picture class="[ animated ][ h-[128px] animate-slide-up-fade ]">
-                    <img loading="lazy" src={get_corporation_logo(corporation.corporation_id, 256)} width="128" height="128" alt={`${corporation.corporation_name} ${t('corporation_logo')}`} />
+                    <img src={get_corporation_logo(corporation.corporation_id, 256)} width="128" height="128" alt={`${corporation.corporation_name} ${t('corporation_logo')}`} />
                 </picture>
                 <h2 class="[ animated ][ animate-slide-up-fade animate-delay-150 ]">
                     <a href={slide_url}>
