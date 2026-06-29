@@ -86,7 +86,7 @@ def update_affiliations():
 def _load_affiliation_rules():
     affiliations = list(
         AffiliationType.objects.order_by("-priority").prefetch_related(
-            "corporations", "alliances", "factions"
+            "characters", "corporations", "alliances", "factions"
         )
     )
     rules = []
@@ -94,6 +94,10 @@ def _load_affiliation_rules():
         rules.append(
             {
                 "affiliation": affiliation,
+                "character_ids": {
+                    character.character_id
+                    for character in affiliation.characters.all()
+                },
                 "corp_ids": {
                     corporation.corporation_id
                     for corporation in affiliation.corporations.all()
@@ -113,6 +117,8 @@ def _load_affiliation_rules():
 def _user_qualifies_for_affiliation(primary_character, rule):
     affiliation = rule["affiliation"]
     if affiliation.default:
+        return True
+    if primary_character.character_id in rule["character_ids"]:
         return True
     if (
         primary_character.corporation_id

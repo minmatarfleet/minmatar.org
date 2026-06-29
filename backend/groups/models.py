@@ -1,19 +1,20 @@
 from django.db import models
 from eveuniverse.models import EveFaction
 
-from eveonline.models import EveAlliance, EveCorporation
+from eveonline.models import EveAlliance, EveCharacter, EveCorporation
 
 # Create your models here.
 
 
 class AffiliationType(models.Model):
-    """Automatically assigned groups based on corporation, alliance or faction membership."""
+    """Automatically assigned groups based on character, corporation, alliance or faction."""
 
     name = models.CharField(max_length=64)
     description = models.TextField(null=True, blank=True)
     image_url = models.URLField(null=True, blank=True)
     group = models.OneToOneField("auth.Group", on_delete=models.CASCADE)
     priority = models.IntegerField(unique=True)
+    characters = models.ManyToManyField(EveCharacter, blank=True)
     corporations = models.ManyToManyField(EveCorporation, blank=True)
     alliances = models.ManyToManyField(EveAlliance, blank=True)
     factions = models.ManyToManyField(EveFaction, blank=True)
