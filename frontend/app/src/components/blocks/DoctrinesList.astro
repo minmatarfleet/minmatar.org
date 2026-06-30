@@ -14,20 +14,26 @@ const {
     non_active_doctrine_location_ui
 } = Astro.props
 
+const DOCTRINE_TYPE_ORDER = ['strategic', 'non_strategic', 'experimental']
+
+const sorted_doctrines = active_doctrine_location_ui.doctrines
+    .slice()
+    .sort((a, b) => {
+        return DOCTRINE_TYPE_ORDER.indexOf(a.type) - DOCTRINE_TYPE_ORDER.indexOf(b.type)
+    })
+
 import { semantic_list } from '@helpers/array';
 import { query_string } from '@helpers/string';
 
 const REEL_GAP = 80
 
 import Flexblock from '@components/compositions/Flexblock.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
 import Grid from '@components/compositions/Grid.astro';
 
 import DoctrineCard from '@components/blocks/DoctrineCard.astro';
 import LocationsReel from '@components/blocks/LocationsReel.astro';
 import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
 ---
-
 
 <Flexblock class="[ order-table ]" gap='var(--space-xl)'>
     <LocationsReel gap={REEL_GAP}>
@@ -60,7 +66,7 @@ import LocationsReelSlide from '@components/blocks/LocationsReelSlide.astro';
         row_gap='var(--space-3xs)'
         column_gap='var(--space-3xs)'
     >
-        {active_doctrine_location_ui.doctrines.map((doctrine) =>
+        {sorted_doctrines.map((doctrine) =>
             <a
                 class="[ doctrine-card-container ]"
                 href={translatePath(`/ships/doctrines/${doctrine.id}${active_doctrine_location_ui.id ? `?location_id=${active_doctrine_location_ui.id}` : '/' }`)}
