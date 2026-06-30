@@ -42,7 +42,7 @@ class CharacterHelperTests(TestCase):
 
         self.assertEqual(28, len(scope_names(char.token)))
 
-        self.assertEqual(36, len(scopes_for(TokenType.EXECUTOR)))
+        self.assertEqual(37, len(scopes_for(TokenType.EXECUTOR)))
 
     def test_related_characters_returns_same_user_characters(self):
         """related_characters returns all characters for the given character's user."""
