@@ -152,6 +152,26 @@ class FleetHelperTestCase(SimpleTestCase):
         self.assertIn("&amp;", motd)
         mock_choice.assert_called_once()
 
+    @patch(
+        "fleets.motd.random.choice", return_value='Quote with <tags> & "chars"'
+    )
+    def test_get_motd_shows_set_doctrine_link_when_no_doctrine(
+        self, mock_choice
+    ):
+        motd = get_motd(
+            1,
+            "FC Name",
+            None,
+            None,
+            "https://discord.gg/minmatar",
+            "Minmatar Fleet Discord",
+            None,
+            None,
+            fleet_edit_url="https://my.minmatar.org/fleets/upcoming/edit/42",
+        )
+        self.assertIn("Set the doctrine", motd)
+        self.assertIn("https://my.minmatar.org/fleets/upcoming/edit/42", motd)
+
     def test_discord_notification_template(self):
         notification = get_fleet_discord_notification(
             fleet_id=123,
@@ -409,6 +429,30 @@ class FleetRouterTestCase(TestCase):
         updated_fleet = EveFleet.objects.filter(id=fleet.id).first()
 
         self.assertEqual("Updated", updated_fleet.description)
+
+    @patch("fleets.endpoints.fleet.patch_fleet.try_refresh_active_fleet_motd")
+    def test_patch_fleet_doctrine_refreshes_motd(self, refresh_mock):
+        self.user.is_superuser = True
+        self.user.save()
+
+        doctrine = EveDoctrine.objects.create(
+            name="Test Doctrine",
+            type="non_strategic",
+            description="A test doctrine",
+        )
+        fleet = make_test_fleet("Test fleet", self.user)
+
+        response = self.client.patch(
+            f"{BASE_URL}/{fleet.id}",
+            {"doctrine_id": doctrine.id},
+            "application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(doctrine.id, response.json()["doctrine_id"])
+        refresh_mock.assert_called_once()
+        self.assertEqual(fleet.id, refresh_mock.call_args[0][0].id)
 
     def test_fixup_fleet_status(self):
         self.assertEqual(None, fixup_fleet_status(None, None))

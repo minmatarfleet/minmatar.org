@@ -37,9 +37,8 @@ const pilots_to_add = pilots.filter(user_pilot => !volunteers_characters.include
 
 import { get_item_icon } from '@helpers/eve_image_server'
 
-const ICONS_BY_SUBYPE = {
-    armor: get_item_icon(43552, 32),
-    shield: get_item_icon(43555, 32),
+const ICONS_BY_SUBTYPE = {
+    ehp: null,
     info: get_item_icon(43554, 32),
     skirmish: get_item_icon(43556, 32),
 }
@@ -94,7 +93,7 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
                         remove_id: volunteer.id,
                         role: role,
                         ...(subtype && { subtype }),
-                        ...(subtype && { icon: ICONS_BY_SUBYPE[subtype] }),
+                        ...(subtype && subtype !== 'ehp' && ICONS_BY_SUBTYPE[subtype] && { icon: ICONS_BY_SUBTYPE[subtype] }),
                     })}`}
                     hx-target={`#${id}`}
                     hx-indicator=".loader"

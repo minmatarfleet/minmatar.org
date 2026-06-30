@@ -21,11 +21,9 @@ const {
 } = Astro.props
 
 const logi_anchors = volunteers.filter((v) => v.role === 'logi_anchor')
-const dps_anchors = volunteers.filter((v) => v.role === 'dps_anchor')
 const cynos = volunteers.filter((v) => v.role === 'cyno')
 const links = volunteers.filter((v) => v.role === 'links')
-const armor_links = links.filter((v) => v.subtype === 'armor')
-const shield_links = links.filter((v) => v.subtype === 'shield')
+const ehp_links = links.filter((v) => v.subtype === 'ehp' || v.subtype === 'armor' || v.subtype === 'shield')
 const info_links = links.filter((v) => v.subtype === 'info')
 const skirmish_links = links.filter((v) => v.subtype === 'skirmish')
 
@@ -40,6 +38,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 
 import FleetRoleItem from '@components/blocks/FleetRoleItem.astro'
 import Button from '@components/blocks/Button.astro'
+import EhpLinksIcon from '@components/icons/EhpLinksIcon.astro'
 
 import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
 ---
@@ -81,16 +80,6 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
                 />
 
                 <FleetRoleItem
-                    id='dps-anchor-role'
-                    title={t('dps_anchor_label')}
-                    fleet_id={fleet_id}
-                    role='dps_anchor'
-                    volunteers={dps_anchors}
-                    pilots={pilots}
-                    readonly={readonly}
-                />
-
-                <FleetRoleItem
                     id='cynos-role'
                     title={t('cyno_label')}
                     fleet_id={fleet_id}
@@ -107,38 +96,16 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
 
             <FlexInline class="[ items-start! ]" justification='space-between'>
                 <FleetRoleItem
-                    id='armor-links-role'
-                    title={t('armor_links')}
+                    id='ehp-links-role'
+                    title={t('ehp_links')}
                     fleet_id={fleet_id}
                     role='links'
-                    subtype='armor'
-                    volunteers={armor_links}
+                    subtype='ehp'
+                    volunteers={ehp_links}
                     pilots={pilots}
                     readonly={readonly}
                 >
-                    <img
-                        slot="icon"
-                        src={get_item_icon(43552, 32)}
-                        width="32"
-                        height="32"
-                    />
-                </FleetRoleItem>
-                <FleetRoleItem
-                    id='shield-links-role'
-                    title={t('shield_links')}
-                    fleet_id={fleet_id}
-                    role='links'
-                    subtype='shield'
-                    volunteers={shield_links}
-                    pilots={pilots}
-                    readonly={readonly}
-                >
-                    <img
-                        slot="icon"
-                        src={get_item_icon(43555, 32)}
-                        width="32"
-                        height="32"
-                    />
+                    <EhpLinksIcon slot="icon" />
                 </FleetRoleItem>
                 <FleetRoleItem
                     id='info-links-role'

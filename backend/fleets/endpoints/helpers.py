@@ -167,3 +167,18 @@ def update_instance_endtime(fleet: EveFleet) -> None:
         if not instance.end_time:
             instance.end_time = timezone.now()
             instance.save()
+
+
+def try_refresh_active_fleet_motd(fleet: EveFleet) -> None:
+    """Regenerate and push MOTD when the fleet is actively tracked."""
+    if fleet.disable_motd:
+        return
+    instance = EveFleetInstance.objects.filter(
+        eve_fleet=fleet, end_time__isnull=True
+    ).first()
+    if not instance:
+        return
+    try:
+        instance.refresh_motd()
+    except Exception as e:
+        logger.warning("Failed to refresh MOTD for fleet %s: %s", fleet.id, e)
