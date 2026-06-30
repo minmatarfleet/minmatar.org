@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from typing import TextIO
+from typing import Any, TextIO
 
 import requests
-from django.core.management.base import BaseCommand, CommandStyle
+from django.core.management.base import BaseCommand
 from django.db.models import Max, Min
 from django.utils import timezone
 
@@ -82,7 +82,7 @@ def _write_cursor_state(stdout: TextIO, cursor: FeedR2z2Cursor) -> int | None:
 
 
 def _write_allowlist_state(
-    stdout: TextIO, style: CommandStyle, allowlist: frozenset[int]
+    stdout: TextIO, style: Any, allowlist: frozenset[int]
 ) -> None:
     monitored_count = FeedMonitoredSystem.objects.filter(
         is_active=True
@@ -104,7 +104,7 @@ def _fetch_latest_sequence() -> int:
 
 def _write_live_edge(
     stdout: TextIO,
-    style: CommandStyle,
+    style: Any,
     cursor: FeedR2z2Cursor,
     next_sequence: int | None,
     latest: int,
@@ -131,7 +131,7 @@ def _write_live_edge(
 
 def _probe_next_sequence(
     stdout: TextIO,
-    style: CommandStyle,
+    style: Any,
     next_sequence: int,
     allowlist: frozenset[int],
 ) -> None:
@@ -211,7 +211,7 @@ def _scan_sequences(
 
 def _write_scan_results(
     stdout: TextIO,
-    style: CommandStyle,
+    style: Any,
     *,
     scan: int,
     start: int,
