@@ -60,6 +60,7 @@ MARKET_SCOPES = [
 
 EXECUTOR_SCOPES = [
     "esi-mail.send_mail.v1",
+    "esi-access.read_lists.v1",
 ]
 
 

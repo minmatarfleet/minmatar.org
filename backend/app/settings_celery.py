@@ -200,6 +200,13 @@ CELERYBEAT_TRIBES = [
 # Misc (Celery, Fleets, ESI, Reminders, Reddit, Discord, Mumble)
 CELERYBEAT_OTHER = [
     (
+        "[Misc] Sync executor access lists",
+        {
+            "task": "access_lists.tasks.sync_executor_access_lists_task",
+            "schedule": crontab(minute=20, hour="*/6"),
+        },
+    ),
+    (
         "[Misc] Backend Cleanup",
         {
             "task": "celery.backend_cleanup",

@@ -30,6 +30,7 @@ NO_VALID_ESI_TOKEN = 905
 ERROR_CALLING_ESI = 906
 
 ESI_BASE_URL = "https://esi.evetech.net/latest"
+ESI_COMPATIBILITY_DATE = "2026-06-09"
 
 
 class EsiResponse:
@@ -908,6 +909,56 @@ class EsiClient:
             token=token,
         )
         return self._operation_results(operation)
+
+    def _authenticated_esi_get(
+        self, url: str, required_scopes: List[str]
+    ) -> EsiResponse:
+        """GET an authenticated ESI route with the Equinox compatibility date."""
+        token, status = self._valid_token(required_scopes)
+        if status > 0:
+            return EsiResponse(status)
+
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "X-Compatibility-Date": ESI_COMPATIBILITY_DATE,
+        }
+        try:
+            resp = requests.get(url, headers=headers, timeout=30)
+        except Exception as e:
+            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+        if resp.status_code >= 400:
+            return EsiResponse(response_code=resp.status_code)
+        return EsiResponse(
+            response_code=SUCCESS,
+            data=resp.json() if resp.content else None,
+        )
+
+    def get_character_access_lists(self) -> EsiResponse:
+        """
+        List access list IDs managed by this character.
+        Requires esi-access.read_lists.v1.
+        """
+        url = f"{ESI_BASE_URL}/characters/{self.character_id}/access-lists/"
+        return self._authenticated_esi_get(
+            url,
+            ["esi-access.read_lists.v1"],
+        )
+
+    def get_character_access_list_detail(
+        self, access_list_id: int
+    ) -> EsiResponse:
+        """
+        Return membership for a single access list managed by this character.
+        Requires esi-access.read_lists.v1.
+        """
+        url = (
+            f"{ESI_BASE_URL}/characters/{self.character_id}/access-lists/"
+            f"{access_list_id}/"
+        )
+        return self._authenticated_esi_get(
+            url,
+            ["esi-access.read_lists.v1"],
+        )
 
     def get_corp_structures(self, corp_id: int) -> EsiResponse:
         """
