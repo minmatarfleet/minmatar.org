@@ -19,8 +19,7 @@ const DOCTRINE_TYPE_ORDER = ['strategic', 'non_strategic', 'experimental']
 const sorted_doctrines = active_doctrine_location_ui.doctrines
     .slice()
     .sort((a, b) => {
-        const typeDiff = DOCTRINE_TYPE_ORDER.indexOf(a.type) - DOCTRINE_TYPE_ORDER.indexOf(b.type)
-        return typeDiff !== 0 ? typeDiff : a.name.localeCompare(b.name)
+        return DOCTRINE_TYPE_ORDER.indexOf(a.type) - DOCTRINE_TYPE_ORDER.indexOf(b.type)
     })
 
 import { semantic_list } from '@helpers/array';
