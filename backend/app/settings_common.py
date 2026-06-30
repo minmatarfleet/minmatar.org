@@ -8,6 +8,7 @@ BROKER_URL = "redis://localhost:6379/1"  # Allianceauth uses 0
 CELERY_IMPORTS = (
     "eveonline.tasks",
     "structures.tasks",
+    "access_lists.tasks",
     "groups.tasks",
     "discord.tasks",
     "fleets.tasks",
@@ -54,6 +55,7 @@ INSTALLED_APPS = [
     "users.apps.UsersConfig",
     "fittings.apps.FittingsConfig",
     "structures.apps.StructuresConfig",
+    "access_lists.apps.AccessListsConfig",
     "fleets.apps.FleetsConfig",
     # Mumble
     "mumble.apps.MumbleConfig",
