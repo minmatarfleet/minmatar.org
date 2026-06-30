@@ -8,6 +8,7 @@ from authentication import AuthBearer
 from fleets.endpoints.helpers import (
     _fleet_apply_optional_scalar_updates,
     _fleet_patch_audience_location_errors,
+    try_refresh_active_fleet_motd,
     update_instance_endtime,
 )
 from fleets.endpoints.schemas import EveFleetResponse, UpdateEveFleetRequest
@@ -43,6 +44,9 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
     _fleet_apply_optional_scalar_updates(fleet, payload)
 
     fleet.save()
+
+    if payload.doctrine_id:
+        try_refresh_active_fleet_motd(fleet)
 
     if payload.status and (payload.status == "complete"):
         update_instance_endtime(fleet)

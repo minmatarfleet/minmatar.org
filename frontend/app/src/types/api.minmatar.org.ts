@@ -478,6 +478,7 @@ export interface FleetRequest {
 export interface FleetPatchRequest {
     type?:              FleetTypes;
     description?:       string;
+    objective?:         string;
     start_time?:        Date;
     doctrine_id?:       number | null;
     location_id?:       number;

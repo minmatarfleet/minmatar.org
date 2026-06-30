@@ -1019,10 +1019,10 @@ export interface ContractMarketLocationUI {
     fittings:           FittingMarketData[];
 }
 
-export const fleet_roles = ['logi_anchor', 'dps_anchor', 'cyno', 'links'] as const
+export const fleet_roles = ['logi_anchor', 'cyno', 'links'] as const
 export type FleetRoles = typeof fleet_roles[number]
 
-export const fleet_roles_subtypes = ['armor', 'shield', 'info', 'skirmish'] as const
+export const fleet_roles_subtypes = ['ehp', 'info', 'skirmish'] as const
 export type FleetRolesSubtypes = typeof fleet_roles_subtypes[number]
 
 import type { BaseLocation, RootItem, Producer } from '@dtypes/api.minmatar.org'
