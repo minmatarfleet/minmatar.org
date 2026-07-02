@@ -59,7 +59,7 @@ import Tech3Icon from '@components/icons/Tech3Icon.astro';
             </Flexblock>
         </Wrapper>
         <Wrapper class="[ fitting-card-actions ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
-            <FlexInline gap="var(--space-3xs)">
+            <FlexInline>
                 <FittingShareButton fitting_id={fitting.id} narrow={true} />
                 <ClipboardButton narrow={true} id={fitting.id.toString()}>{fitting.eft_format}</ClipboardButton>
             </FlexInline>
