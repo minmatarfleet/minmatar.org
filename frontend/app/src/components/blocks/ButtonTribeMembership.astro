@@ -54,60 +54,102 @@ import Tag from '@components/blocks/Tag.astro';
     color='fleet-red'
     narrow={false}
     hidden={hidden}
-    max_width='820px'
+    max_width='1020px'
     disable_when_open={true}
+    transparent={true}
+    full_screen={true}
+    non_centered={false}
+    close_button={false}
 >
     {t('membership')}
 
-    <Flexblock slot="dialog" gap="var(--space-l)">
-        <Flexblock gap="var(--space-s)">
-            <Flexblock gap="var(--space-3xs)">
-                <h3>{title}</h3>
-                <small>{t('manage_membership')}</small>
-            </Flexblock>
-            
-            <Wrapper
-                padding_block='0'
-                padding_inline='var(--space-xl)'
-            >
-                <div id={`${target_id}-swiper`} class="[ swiper ][ w-full pb-10! ]">
-                    <LandingSwiper swiper_selector={`#${target_id}-swiper`}>
-                        {pilots.map((pilot) => {
-                            const is_member = membership.characters.find(character => character.character_id === pilot.character_id)
+    <FlexInline slot="header" justification='space-between'>
+        <Flexblock gap="var(--space-3xs)">
+            <h3>{title}</h3>
+            <small>{t('manage_membership')}</small>
+        </Flexblock>
 
-                            const available = available_characters?.find(
-                                (a) => a.character_id === pilot.character_id
-                            )
-                            
-                            const cid = pilot.character_id
-                            const hasBar = available != null
-                            const barLabel = hasBar
-                                ? (available.qualifies
-                                    ? t('tribes.detail.qualified')
-                                    : available.missing_skills && available.missing_assets
-                                        ? t('tribes.detail.missing_skills_and_assets')
-                                        : available.missing_skills
-                                            ? t('tribes.detail.missing_skills')
-                                            : available.missing_assets
-                                                ? t('tribes.detail.missing_assets')
-                                                : t('tribes.detail.unqualified'))
-                                : '';
-                            return (
-                                <div class="[ swiper-slide ]" style="margin-right: 5px">
-                                    <div class="[ tribe-apply-character-card ]">
-                                        <div class="[ tribe-apply-card-header ]">
-                                            <CharacterCard
-                                                character_id={pilot.character_id}
-                                                character_name={pilot.character_name}
-                                                value={pilot.character_id}
-                                                inert={true}
-                                            >
-                                                <div slot="visible-actions">
-                                                    {!is_member ?
+        <ButtonConfirm
+            size='sm'
+            label={t('tribes.detail.leave')}
+        >
+            <Button
+                size='sm'
+                hx-delete={`${TRIBE_GROUP_STATUS_PARTIAL_URL}?${query_string({
+                    tribe_id: tribe_id,
+                    group_id: group_id,
+                    membership_id: membership_id,
+                })}`}
+                hx-target={`#${target_id}`}
+                hx-indicator=".loader"
+                hx-swap="outerHTML transition:true"
+                x-on:click="$el.setAttribute('disabled','')"
+            >
+                {t('confirm')}
+            </Button>
+        </ButtonConfirm>
+    </FlexInline>
+
+    <div slot="dialog">
+        <Wrapper
+            padding_block='0'
+            padding_inline='var(--space-xl)'
+        >
+            <div id={`${target_id}-swiper`} class="[ swiper ][ w-full pb-10! ]">
+                <LandingSwiper swiper_selector={`#${target_id}-swiper`}>
+                    {pilots.map((pilot) => {
+                        const is_member = membership.characters.find(character => character.character_id === pilot.character_id)
+
+                        const available = available_characters?.find(
+                            (a) => a.character_id === pilot.character_id
+                        )
+                        
+                        const cid = pilot.character_id
+                        const hasBar = available != null
+                        const barLabel = hasBar
+                            ? (available.qualifies
+                                ? t('tribes.detail.qualified')
+                                : available.missing_skills && available.missing_assets
+                                    ? t('tribes.detail.missing_skills_and_assets')
+                                    : available.missing_skills
+                                        ? t('tribes.detail.missing_skills')
+                                        : available.missing_assets
+                                            ? t('tribes.detail.missing_assets')
+                                            : t('tribes.detail.unqualified'))
+                            : '';
+                        return (
+                            <div class="[ swiper-slide ]" style="margin-right: 5px">
+                                <div class="[ tribe-apply-character-card ]">
+                                    <div class="[ tribe-apply-card-header ]">
+                                        <CharacterCard
+                                            character_id={pilot.character_id}
+                                            character_name={pilot.character_name}
+                                            value={pilot.character_id}
+                                            inert={true}
+                                        >
+                                            <div slot="visible-actions">
+                                                {!is_member ?
+                                                    <Button
+                                                        color='green'
+                                                        size='sm'
+                                                        hx-post={`${TRIBE_GROUP_STATUS_PARTIAL_URL}&${query_string({
+                                                            membership_id: membership_id,
+                                                            character_id: pilot.character_id,
+                                                        })}`}
+                                                        hx-target={`#${target_id}`}
+                                                        hx-indicator=".loader"
+                                                        hx-swap="outerHTML transition:true"
+                                                        x-on:click="close_dialog(false)"
+                                                    >
+                                                        {t('add')}
+                                                    </Button> :
+                                                    <ButtonConfirm
+                                                        size='sm'
+                                                        label={t('remove')}
+                                                    >
                                                         <Button
-                                                            color='green'
                                                             size='sm'
-                                                            hx-post={`${TRIBE_GROUP_STATUS_PARTIAL_URL}&${query_string({
+                                                            hx-delete={`${TRIBE_GROUP_STATUS_PARTIAL_URL}&${query_string({
                                                                 membership_id: membership_id,
                                                                 character_id: pilot.character_id,
                                                             })}`}
@@ -116,90 +158,52 @@ import Tag from '@components/blocks/Tag.astro';
                                                             hx-swap="outerHTML transition:true"
                                                             x-on:click="close_dialog(false)"
                                                         >
-                                                            {t('add')}
-                                                        </Button> :
-                                                        <ButtonConfirm
-                                                            size='sm'
-                                                            label={t('remove')}
-                                                        >
-                                                            <Button
-                                                                size='sm'
-                                                                hx-delete={`${TRIBE_GROUP_STATUS_PARTIAL_URL}&${query_string({
-                                                                    membership_id: membership_id,
-                                                                    character_id: pilot.character_id,
-                                                                })}`}
-                                                                hx-target={`#${target_id}`}
-                                                                hx-indicator=".loader"
-                                                                hx-swap="outerHTML transition:true"
-                                                                x-on:click="close_dialog(false)"
-                                                            >
-                                                                {t('confirm')}
-                                                            </Button>
-                                                        </ButtonConfirm>
-                                                    }
-                                                </div>
-                                                <Flexblock gap='var(--space-3xs)'>
-                                                    {hasBar &&
-                                                        <Tag
-                                                            class="no-desaturate"
-                                                            color={available.qualifies ? 'green' : 'fleet-red'}
-                                                            text={barLabel}
-                                                        />
-                                                    }
-                                                    <h3>{pilot.character_name}</h3>
-                                                    <CorporationBadge
-                                                        corporation={{
-                                                            id: pilot.corp_id,
-                                                            name: pilot.corp_name,
-                                                            size: 'xs',
-                                                        }}
-                                                        highlight={false}
+                                                            {t('confirm')}
+                                                        </Button>
+                                                    </ButtonConfirm>
+                                                }
+                                            </div>
+                                            <Flexblock gap='var(--space-3xs)'>
+                                                {hasBar &&
+                                                    <Tag
+                                                        class="no-desaturate"
+                                                        color={available.qualifies ? 'green' : 'fleet-red'}
+                                                        text={barLabel}
                                                     />
-                                                </Flexblock>
-                                            </CharacterCard>
-                                        </div>
+                                                }
+                                                <h3>{pilot.character_name}</h3>
+                                                <CorporationBadge
+                                                    corporation={{
+                                                        id: pilot.corp_id,
+                                                        name: pilot.corp_name,
+                                                        size: 'xs',
+                                                    }}
+                                                    highlight={false}
+                                                />
+                                            </Flexblock>
+                                        </CharacterCard>
                                     </div>
                                 </div>
-                            )
-                        })}
-                    </LandingSwiper>
-                </div>
+                            </div>
+                        )
+                    })}
+                </LandingSwiper>
+            </div>
 
-                <div id={`${target_id}-swiper-button-prev`} class="[ swiper-button-prev hidden lg:block! ]"></div>
-                <div id={`${target_id}-swiper-button-next`} class="[ swiper-button-next hidden lg:block! ]"></div>
-            </Wrapper>
-        </Flexblock>
+            <div id={`${target_id}-swiper-button-prev`} class="[ swiper-button-prev hidden lg:block! ]"></div>
+            <div id={`${target_id}-swiper-button-next`} class="[ swiper-button-next hidden lg:block! ]"></div>
+        </Wrapper>
+    </div>
 
-        <FlexInline justification='space-between'>
-            <ButtonConfirm
-                size='sm'
-                label={t('tribes.detail.leave')}
-            >
-                <Button
-                    size='sm'
-                    hx-delete={`${TRIBE_GROUP_STATUS_PARTIAL_URL}?${query_string({
-                        tribe_id: tribe_id,
-                        group_id: group_id,
-                        membership_id: membership_id,
-                    })}`}
-                    hx-target={`#${target_id}`}
-                    hx-indicator=".loader"
-                    hx-swap="outerHTML transition:true"
-                    x-on:click="$el.setAttribute('disabled','')"
-                >
-                    {t('confirm')}
-                </Button>
-            </ButtonConfirm>
-
-            <Button
-                type="button"
-                size='sm'
-                x-on:click="close_dialog()"
-            >
-                {t('close')}
-            </Button>
-        </FlexInline>
-    </Flexblock>
+    <FlexInline slot="footer" justification='flex-end'>
+        <Button
+            type="button"
+            size='sm'
+            x-on:click="close_dialog()"
+        >
+            {t('close')}
+        </Button>
+    </FlexInline>
 </DialogButton>
 
 <style lang="scss">

@@ -47,99 +47,100 @@ import StylessButton from '@components/blocks/StylessButton.astro';
     color='fleet-red'
     narrow={false}
     hidden={hidden}
-    max_width='820px'
+    max_width='1020px'
     disable_when_open={true}
+    transparent={true}
+    full_screen={true}
+    non_centered={false}
+    close_button={false}
 >
     {t('remove_character')}
 
-    <Flexblock slot="dialog" gap="var(--space-l)">
-        <Flexblock gap="var(--space-s)">
-            <Flexblock gap="var(--space-3xs)">
-                <h3>{title}</h3>
-                <small>{t('select_character_to_remove')}</small>
-            </Flexblock>
-            
-            <Wrapper
-                padding_block='0'
-                padding_inline='var(--space-xl)'
-            >
-                <div id={`${swiper_id}-swiper`} class="[ swiper ][ w-full pb-10! ]">
-                    <LandingSwiper swiper_selector={`#${swiper_id}-swiper`}>
-                        {membership.characters.map((pilot) => {
-                            const available = available_characters?.find(
-                                (a) => a.character_id === pilot.character_id
-                            )
-                            
-                            const has_tag = available != null
-                            let tag_text = ''
-
-                            if (has_tag) {
-                                if (available?.qualifies)
-                                    tag_text = t('tribes.detail.qualified')
-                                else if (available?.missing_skills && available.missing_assets)
-                                    tag_text = t('tribes.detail.missing_skills_and_assets')
-                                else if (available?.missing_skills)
-                                    tag_text = t('tribes.detail.missing_skills')
-                                else if (available?.missing_assets)
-                                    tag_text = t('tribes.detail.missing_assets')
-                                else
-                                    tag_text = t('tribes.detail.unqualified')
-                            }
-
-                            return (
-                                <div class="[ swiper-slide ]" style="margin-right: 5px">
-                                    <div class="[ tribe-apply-character-card ]">
-                                        <div class="[ tribe-apply-card-header ]">
-                                            <StylessButton
-                                                size='sm'
-                                                hx-delete={`${TRIBE_GROUP_MEMBERSHIPS_PARTIAL_URL}&${query_string({
-                                                    membership_id: membership.id,
-                                                    character_id: pilot.character_id,
-                                                })}`}
-                                                hx-target={`#members`}
-                                                hx-indicator=".loader"
-                                                hx-swap="outerHTML transition:true"
-                                                x-on:click="close_dialog(false)"
-                                            >
-                                                <CharacterCard
-                                                    character_id={pilot.character_id}
-                                                    character_name={pilot.character_name}
-                                                    inert={true}
-                                                >
-                                                    <Flexblock gap='var(--space-3xs)'>
-                                                        {has_tag &&
-                                                            <Tag
-                                                                color={available.qualifies ? 'green' : 'fleet-red'}
-                                                                text={tag_text}
-                                                            />
-                                                        }
-                                                        <h3>{pilot.character_name}</h3>
-                                                    </Flexblock>
-                                                </CharacterCard>
-                                            </StylessButton>
-                                        </div>
-                                    </div>
-                                </div>
-                            )
-                        })}
-                    </LandingSwiper>
-                </div>
-
-                <div id={`${swiper_id}-swiper-button-prev`} class="[ swiper-button-prev hidden lg:block! ]"></div>
-                <div id={`${swiper_id}-swiper-button-next`} class="[ swiper-button-next hidden lg:block! ]"></div>
-            </Wrapper>
-        </Flexblock>
-
-        <FlexInline justification='flex-end'>
-            <Button
-                type="button"
-                size='sm'
-                x-on:click="close_dialog()"
-            >
-                {t('close')}
-            </Button>
-        </FlexInline>
+    <Flexblock slot="header" gap="var(--space-3xs)">
+        <h3>{title}</h3>
+        <small>{t('select_character_to_remove')}</small>
     </Flexblock>
+        
+    <Wrapper
+        padding_block='0'
+        padding_inline='var(--space-xl)'
+        slot="dialog"
+    >
+        <div id={`${swiper_id}-swiper`} class="[ swiper ][ w-full pb-10! ]">
+            <LandingSwiper swiper_selector={`#${swiper_id}-swiper`}>
+                {membership.characters.map((pilot) => {
+                    const available = available_characters?.find(
+                        (a) => a.character_id === pilot.character_id
+                    )
+                    
+                    const has_tag = available != null
+                    let tag_text = ''
+
+                    if (has_tag) {
+                        if (available?.qualifies)
+                            tag_text = t('tribes.detail.qualified')
+                        else if (available?.missing_skills && available.missing_assets)
+                            tag_text = t('tribes.detail.missing_skills_and_assets')
+                        else if (available?.missing_skills)
+                            tag_text = t('tribes.detail.missing_skills')
+                        else if (available?.missing_assets)
+                            tag_text = t('tribes.detail.missing_assets')
+                        else
+                            tag_text = t('tribes.detail.unqualified')
+                    }
+
+                    return (
+                        <div class="[ swiper-slide ]" style="margin-right: 5px">
+                            <div class="[ tribe-apply-character-card ]">
+                                <div class="[ tribe-apply-card-header ]">
+                                    <StylessButton
+                                        size='sm'
+                                        hx-delete={`${TRIBE_GROUP_MEMBERSHIPS_PARTIAL_URL}&${query_string({
+                                            membership_id: membership.id,
+                                            character_id: pilot.character_id,
+                                        })}`}
+                                        hx-target={`#members`}
+                                        hx-indicator=".loader"
+                                        hx-swap="outerHTML transition:true"
+                                        x-on:click="close_dialog(false)"
+                                    >
+                                        <CharacterCard
+                                            character_id={pilot.character_id}
+                                            character_name={pilot.character_name}
+                                            inert={true}
+                                        >
+                                            <Flexblock gap='var(--space-3xs)'>
+                                                {has_tag &&
+                                                    <Tag
+                                                        color={available.qualifies ? 'green' : 'fleet-red'}
+                                                        text={tag_text}
+                                                    />
+                                                }
+                                                <h3>{pilot.character_name}</h3>
+                                            </Flexblock>
+                                        </CharacterCard>
+                                    </StylessButton>
+                                </div>
+                            </div>
+                        </div>
+                    )
+                })}
+            </LandingSwiper>
+        </div>
+
+        <div id={`${swiper_id}-swiper-button-prev`} class="[ swiper-button-prev hidden lg:block! ]"></div>
+        <div id={`${swiper_id}-swiper-button-next`} class="[ swiper-button-next hidden lg:block! ]"></div>
+    </Wrapper>
+
+    <FlexInline slot="footer" justification='flex-end'>
+        <Button
+            type="button"
+            size='sm'
+            x-on:click="close_dialog()"
+        >
+            {t('close')}
+        </Button>
+    </FlexInline>
 </DialogButton>
 
 <style lang="scss">

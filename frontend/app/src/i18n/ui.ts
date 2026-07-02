@@ -2376,5 +2376,6 @@ export const ui = {
         'fittings_singular': '1 fitting',
         'ship_fittings_template': '{name} fittings',
         'atrocities_description_fallback': 'Zigg Omelo: I mean they are clearly brutal and guilty of war crimes.',
+        'select_character_to_add': 'Select character to add',
     },
 } as const;

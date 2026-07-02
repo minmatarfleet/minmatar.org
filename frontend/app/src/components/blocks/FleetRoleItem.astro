@@ -47,6 +47,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import FluidFixed from '@components/compositions/FluidFixed.astro'
 
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import PilotBadge from '@components/blocks/PilotBadge.astro'
 import Button from '@components/blocks/Button.astro'
 import ButtonAddVolunteer from '@components/blocks/ButtonAddVolunteer.astro'
@@ -54,54 +55,58 @@ import ButtonAddVolunteer from '@components/blocks/ButtonAddVolunteer.astro'
 import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
 ---
 
-<Flexblock id={id} class="[ basis-[300px] ]">
-    <FluidFixed width='46px' class="[ items-center! ]">
-        <FlexInline gap='var(--space-3xs)'>
-            <slot name="icon" />
-            <Flexblock gap='var(--space-3xs)'>
-                <h4 class="[ sentence-cap ]" style="margin: 0;">{title}</h4>
-                <small class:list={{ 'text-red': volunteers.length === 0 }}>{volunteers.length !== 1 ? t('volunteer_plural').replace('{count}', volunteers.length.toString()) : t('volunteer_singular')}</small>
-            </Flexblock>
-        </FlexInline>
-        {!readonly && pilots_to_add.length > 0 &&
-            <ButtonAddVolunteer
-                title={title}
-                target={id}
-                fleet_id={fleet_id}
-                pilots={pilots_to_add}
-                role={role}
-                subtype={subtype ? subtype : undefined}
-            />
-        }
-    </FluidFixed>
-    {volunteers.map(volunteer =>
-        <FluidFixed width='46px' class="[ items-center! ]">
-            <PilotBadge
-                character_id={volunteer.character_id}
-                character_name={volunteer.character_name}
-                size={32}
-                icon_quality={32}
-            />
-            {!readonly && pilots.find(user_pilot => user_pilot.character_id === volunteer.character_id) &&
-                <Button
-                    size='sm'
-                    type="button"
-                    narrow={true}
-                    hx-delete={`${FLEET_ROLE_ITEM_PARTIAL_URL}?${query_string({
-                        id: id,
-                        fleet_id: fleet_id,
-                        remove_id: volunteer.id,
-                        role: role,
-                        ...(subtype && { subtype }),
-                        ...(subtype && subtype !== 'ehp' && ICONS_BY_SUBTYPE[subtype] && { icon: ICONS_BY_SUBTYPE[subtype] }),
-                    })}`}
-                    hx-target={`#${id}`}
-                    hx-indicator=".loader"
-                    hx-swap='outerHTML transition:true'
-                >
-                    <TrashIcon slot="icon" />
-                </Button>
-            }
-        </FluidFixed>
-    )}
-</Flexblock>
+<div id={id}>
+    <ComponentBlock padding_block='var(--space-xs)' padding_inline='var(--space-xs)'>
+        <Flexblock class="[ basis-[300px] ]">
+            <FluidFixed width='46px' class="[ items-center! ]">
+                <FlexInline gap='var(--space-3xs)'>
+                    <slot name="icon" />
+                    <Flexblock gap='var(--space-3xs)'>
+                        <h4 class="[ sentence-cap ]" style="margin: 0;">{title}</h4>
+                        <small class:list={{ 'text-red': volunteers.length === 0 }}>{volunteers.length !== 1 ? t('volunteer_plural').replace('{count}', volunteers.length.toString()) : t('volunteer_singular')}</small>
+                    </Flexblock>
+                </FlexInline>
+                {!readonly && pilots_to_add.length > 0 &&
+                    <ButtonAddVolunteer
+                        title={title}
+                        target={id}
+                        fleet_id={fleet_id}
+                        pilots={pilots_to_add}
+                        role={role}
+                        subtype={subtype ? subtype : undefined}
+                    />
+                }
+            </FluidFixed>
+            {volunteers.map(volunteer =>
+                <FluidFixed width='46px' class="[ items-center! ]">
+                    <PilotBadge
+                        character_id={volunteer.character_id}
+                        character_name={volunteer.character_name}
+                        size={32}
+                        icon_quality={32}
+                    />
+                    {!readonly && pilots.find(user_pilot => user_pilot.character_id === volunteer.character_id) &&
+                        <Button
+                            size='sm'
+                            type="button"
+                            narrow={true}
+                            hx-delete={`${FLEET_ROLE_ITEM_PARTIAL_URL}?${query_string({
+                                id: id,
+                                fleet_id: fleet_id,
+                                remove_id: volunteer.id,
+                                role: role,
+                                ...(subtype && { subtype }),
+                                ...(subtype && subtype !== 'ehp' && ICONS_BY_SUBTYPE[subtype] && { icon: ICONS_BY_SUBTYPE[subtype] }),
+                            })}`}
+                            hx-target={`#${id}`}
+                            hx-indicator=".loader"
+                            hx-swap='outerHTML transition:true'
+                        >
+                            <TrashIcon slot="icon" />
+                        </Button>
+                    }
+                </FluidFixed>
+            )}
+        </Flexblock>
+    </ComponentBlock>
+</div>

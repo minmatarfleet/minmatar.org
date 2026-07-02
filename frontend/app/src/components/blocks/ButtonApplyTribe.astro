@@ -47,12 +47,18 @@ import Tag from '@components/blocks/Tag.astro';
     color='green'
     narrow={false}
     hidden={hidden}
-    max_width='820px'
+    max_width='1020px'
     disable_when_open={true}
+    transparent={true}
+    full_screen={true}
+    body_full_h={true}
+    non_centered={false}
+    close_button={false}
 >
     {t('tribes.detail.apply')}
 
     <form
+        class="[ h-full ]"
         slot="dialog" 
         hx-post={TRIBE_GROUP_STATUS_PARTIAL_URL}
         hx-trigger="submit"
@@ -77,80 +83,78 @@ import Tag from '@components/blocks/Tag.astro';
         }`}
         x-init="update_character_ids()"
     >
-        <Flexblock gap="var(--space-l)">
-            <Flexblock gap="var(--space-s)">
-                <Flexblock gap="var(--space-3xs)">
-                    <h3>{title}</h3>
-                    <small>{t('tribes.detail.apply')}</small>
-                </Flexblock>
+        <Flexblock class="[ h-full justify-between! ]" gap="var(--space-l)">
+            <Flexblock gap="var(--space-3xs)">
+                <h3>{title}</h3>
+                <small>{t('tribes.detail.apply')}</small>
+            </Flexblock>
                 
-                <Wrapper
-                    padding_block='0'
-                    padding_inline='var(--space-xl)'
-                >
-                    <div id={`${target_id}-swiper`} class="[ swiper ][ w-full pb-10! ]">
-                        <LandingSwiper swiper_selector={`#${target_id}-swiper`}>
-                            {pilots.map((pilot) => {
-                                const available = available_characters?.find(
-                                    (a) => a.character_id === pilot.character_id
-                                )
-                                
-                                const cid = pilot.character_id
-                                const hasBar = available != null
-                                const barLabel = hasBar
-                                    ? (available.qualifies
-                                        ? t('tribes.detail.qualified')
-                                        : available.missing_skills && available.missing_assets
-                                            ? t('tribes.detail.missing_skills_and_assets')
-                                            : available.missing_skills
-                                                ? t('tribes.detail.missing_skills')
-                                                : available.missing_assets
-                                                    ? t('tribes.detail.missing_assets')
-                                                    : t('tribes.detail.unqualified'))
-                                    : '';
-                                return (
-                                    <div class="[ swiper-slide ]" style="margin-right: 5px">
-                                        <div class="[ tribe-apply-character-card ]">
-                                            <div class="[ tribe-apply-card-header ]">
-                                                <SelectableCharacterCard
-                                                    character_id={pilot.character_id}
-                                                    character_name={pilot.character_name}
-                                                    x-model="characters"
-                                                    x-on:change="update_character_ids()"
-                                                    value={pilot.character_id}
-                                                >
-                                                    <Flexblock gap='var(--space-3xs)'>
-                                                        {hasBar &&
-                                                            <Tag
-                                                                class="no-desaturate"
-                                                                color={available.qualifies ? 'green' : 'fleet-red'}
-                                                                text={barLabel}
-                                                            />
-                                                        }
-                                                        <h3>{pilot.character_name}</h3>
-                                                        <CorporationBadge
-                                                            corporation={{
-                                                                id: pilot.corp_id,
-                                                                name: pilot.corp_name,
-                                                                size: 'xs',
-                                                            }}
-                                                            highlight={false}
+            <Wrapper
+                padding_block='0'
+                padding_inline='var(--space-xl)'
+            >
+                <div id={`${target_id}-swiper`} class="[ swiper ][ w-full pb-10! ]">
+                    <LandingSwiper swiper_selector={`#${target_id}-swiper`}>
+                        {pilots.map((pilot) => {
+                            const available = available_characters?.find(
+                                (a) => a.character_id === pilot.character_id
+                            )
+                            
+                            const cid = pilot.character_id
+                            const hasBar = available != null
+                            const barLabel = hasBar
+                                ? (available.qualifies
+                                    ? t('tribes.detail.qualified')
+                                    : available.missing_skills && available.missing_assets
+                                        ? t('tribes.detail.missing_skills_and_assets')
+                                        : available.missing_skills
+                                            ? t('tribes.detail.missing_skills')
+                                            : available.missing_assets
+                                                ? t('tribes.detail.missing_assets')
+                                                : t('tribes.detail.unqualified'))
+                                : '';
+                            return (
+                                <div class="[ swiper-slide ]" style="margin-right: 5px">
+                                    <div class="[ tribe-apply-character-card ]">
+                                        <div class="[ tribe-apply-card-header ]">
+                                            <SelectableCharacterCard
+                                                character_id={pilot.character_id}
+                                                character_name={pilot.character_name}
+                                                x-model="characters"
+                                                x-on:change="update_character_ids()"
+                                                value={pilot.character_id}
+                                            >
+                                                <Flexblock gap='var(--space-3xs)'>
+                                                    {hasBar &&
+                                                        <Tag
+                                                            class="no-desaturate"
+                                                            color={available.qualifies ? 'green' : 'fleet-red'}
+                                                            text={barLabel}
                                                         />
-                                                    </Flexblock>
-                                                </SelectableCharacterCard>
-                                            </div>
+                                                    }
+                                                    <h3>{pilot.character_name}</h3>
+                                                    <CorporationBadge
+                                                        corporation={{
+                                                            id: pilot.corp_id,
+                                                            name: pilot.corp_name,
+                                                            size: 'xs',
+                                                        }}
+                                                        highlight={false}
+                                                    />
+                                                </Flexblock>
+                                            </SelectableCharacterCard>
                                         </div>
                                     </div>
-                                )
-                            })}
-                        </LandingSwiper>
-                        <input type="hidden" name="character_ids" x-model="character_ids" value="[]" />
-                    </div>
+                                </div>
+                            )
+                        })}
+                    </LandingSwiper>
+                    <input type="hidden" name="character_ids" x-model="character_ids" value="[]" />
+                </div>
 
-                    <div id={`${target_id}-swiper-button-prev`} class="[ swiper-button-prev hidden lg:block! ]"></div>
-                    <div id={`${target_id}-swiper-button-next`} class="[ swiper-button-next hidden lg:block! ]"></div>
-                </Wrapper>
-            </Flexblock>
+                <div id={`${target_id}-swiper-button-prev`} class="[ swiper-button-prev hidden lg:block! ]"></div>
+                <div id={`${target_id}-swiper-button-next`} class="[ swiper-button-next hidden lg:block! ]"></div>
+            </Wrapper>
 
             <FlexInline justification='flex-end'>
                 <div

@@ -35,6 +35,7 @@ const FLEET_ROLES_PARTIAL_URL = translatePath(`/partials/fleet_role_component?${
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
+import Grid from '@components/compositions/Grid.astro'
 
 import FleetRoleItem from '@components/blocks/FleetRoleItem.astro'
 import Button from '@components/blocks/Button.astro'
@@ -68,7 +69,13 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
         <Flexblock>
             <h3>{t('anchor_and_cynos')}</h3>
 
-            <FlexInline class="[ items-start! ]" justification='space-between'>
+
+            <Grid
+                class="[ w-full grid-fill ]"
+                row_gap="var(--space-3xs)"
+                column_gap="var(--space-3xs)"
+                min_item_width="350px"
+            >
                 <FleetRoleItem
                     id='logi-anchor-role'
                     title={t('logi_anchor_label')}
@@ -88,13 +95,18 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
                     pilots={pilots}
                     readonly={readonly}
                 />
-            </FlexInline>
+            </Grid>
         </Flexblock>
 
         <Flexblock>
             <h3>{t('links')}</h3>
 
-            <FlexInline class="[ items-start! ]" justification='space-between'>
+            <Grid
+                class="[ w-full grid-fill ]"
+                row_gap="var(--space-3xs)"
+                column_gap="var(--space-3xs)"
+                min_item_width="350px"
+            >
                 <FleetRoleItem
                     id='ehp-links-role'
                     title={t('ehp_links')}
@@ -141,7 +153,7 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
                         height="32"
                     />
                 </FleetRoleItem>
-            </FlexInline>
+            </Grid>
         </Flexblock>
     </Flexblock>
 </div>

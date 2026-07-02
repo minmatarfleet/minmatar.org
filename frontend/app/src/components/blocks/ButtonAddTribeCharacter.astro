@@ -47,76 +47,77 @@ import StylessButton from '@components/blocks/StylessButton.astro';
     color='green'
     narrow={false}
     hidden={hidden}
-    max_width='820px'
+    max_width='1020px'
     disable_when_open={true}
+    transparent={true}
+    full_screen={true}
+    non_centered={false}
+    close_button={false}
     size='sm'
 >
     {t('add_character')}
 
-    <Flexblock slot="dialog" gap="var(--space-l)">
-        <Flexblock gap="var(--space-s)">
-            <Flexblock gap="var(--space-3xs)">
-                <h3>{title}</h3>
-                <small>{t('manage_membership')}</small>
-            </Flexblock>
-            
-            <Wrapper
-                padding_block='0'
-                padding_inline='var(--space-xl)'
-            >
-                <div id={`${id}-swiper`} class="[ swiper ][ w-full pb-10! ]">
-                    <LandingSwiper swiper_selector={`#${id}-swiper`}>
-                        {pilots.map(pilot =>
-                            <div class="[ swiper-slide ]" style="margin-right: 5px">
-                                <StylessButton
-                                    size='sm'
-                                    hx-post={`${TRIBE_GROUP_MEMBERSHIPS_PARTIAL_URL}&${query_string({
-                                        membership_id: membership_id,
-                                        character_id: pilot.character_id,
-                                    })}`}
-                                    hx-target={`#members`}
-                                    hx-indicator=".loader"
-                                    hx-swap="outerHTML transition:true"
-                                    x-on:click="close_dialog(false)"
-                                >
-                                    <CharacterCard
-                                        character_id={pilot.character_id}
-                                        character_name={pilot.character_name}
-                                        inert={true}
-                                    >
-                                        <Flexblock gap='var(--space-3xs)'>
-                                            <h3>{pilot.character_name}</h3>
-                                            <CorporationBadge
-                                                corporation={{
-                                                    id: pilot.corp_id,
-                                                    name: pilot.corp_name,
-                                                    size: 'xs',
-                                                }}
-                                                highlight={false}
-                                            />
-                                        </Flexblock>
-                                    </CharacterCard>
-                                </StylessButton>
-                            </div>
-                        )}
-                    </LandingSwiper>
-                </div>
-
-                <div id={`${id}-swiper-button-prev`} class="[ swiper-button-prev hidden lg:block! ]"></div>
-                <div id={`${id}-swiper-button-next`} class="[ swiper-button-next hidden lg:block! ]"></div>
-            </Wrapper>
-        </Flexblock>
-
-        <FlexInline justification='flex-end'>
-            <Button
-                type="button"
-                size='sm'
-                x-on:click="close_dialog()"
-            >
-                {t('close')}
-            </Button>
-        </FlexInline>
+    <Flexblock slot="header" gap="var(--space-3xs)">
+        <h3>{title}</h3>
+        <small>{t('select_character_to_add')}</small>
     </Flexblock>
+            
+    <Wrapper
+        padding_block='0'
+        padding_inline='var(--space-xl)'
+        slot="dialog"
+    >
+        <div id={`${id}-swiper`} class="[ swiper ][ w-full pb-10! ]">
+            <LandingSwiper swiper_selector={`#${id}-swiper`}>
+                {pilots.map(pilot =>
+                    <div class="[ swiper-slide ]" style="margin-right: 5px">
+                        <StylessButton
+                            size='sm'
+                            hx-post={`${TRIBE_GROUP_MEMBERSHIPS_PARTIAL_URL}&${query_string({
+                                membership_id: membership_id,
+                                character_id: pilot.character_id,
+                            })}`}
+                            hx-target={`#members`}
+                            hx-indicator=".loader"
+                            hx-swap="outerHTML transition:true"
+                            x-on:click="close_dialog(false)"
+                        >
+                            <CharacterCard
+                                character_id={pilot.character_id}
+                                character_name={pilot.character_name}
+                                inert={true}
+                            >
+                                <Flexblock gap='var(--space-3xs)'>
+                                    <h3>{pilot.character_name}</h3>
+                                    <CorporationBadge
+                                        corporation={{
+                                            id: pilot.corp_id,
+                                            name: pilot.corp_name,
+                                            size: 'xs',
+                                        }}
+                                        highlight={false}
+                                    />
+                                </Flexblock>
+                            </CharacterCard>
+                        </StylessButton>
+                    </div>
+                )}
+            </LandingSwiper>
+        </div>
+
+        <div id={`${id}-swiper-button-prev`} class="[ swiper-button-prev hidden lg:block! ]"></div>
+        <div id={`${id}-swiper-button-next`} class="[ swiper-button-next hidden lg:block! ]"></div>
+    </Wrapper>
+
+    <FlexInline slot="footer" justification='flex-end'>
+        <Button
+            type="button"
+            size='sm'
+            x-on:click="close_dialog()"
+        >
+            {t('close')}
+        </Button>
+    </FlexInline>
 </DialogButton>
 
 <style lang="scss">
