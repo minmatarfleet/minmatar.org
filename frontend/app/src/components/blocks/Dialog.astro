@@ -7,7 +7,10 @@ interface Props {
     fixed?:             boolean;
     thin?:              boolean;
     non_centered?:      boolean;
+    body_full_h?:       boolean;
+    full_screen?:       boolean;
     close_button?:      boolean;
+    transparent?:       boolean;
     [propName: string]: any;
 }
 
@@ -15,8 +18,11 @@ const {
     breakout = false,
     fixed = true,
     thin = false,
-    non_centered = false,
+    non_centered = true,
+    full_screen = false,
+    body_full_h = false,
     close_button = true,
+    transparent = false,
     ...attributes
 } = Astro.props;
 
@@ -25,65 +31,129 @@ delete attributes.class
 import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
 ---
 
-<div
-    role="dialog"
-    class:list={['dialog', { breakout: breakout }, { 'non-centered': non_centered }, { fixed: fixed }, Astro.props.class]}
-    {...attributes}
->
-    {close_button && <button class="[ dialog-close ]" x-on:click="close_dialog()"><TrashIcon /></button>}
-    {thin ?
-        <Wrapper padding_block='var(--space-3xs)' padding_inline='var(--space-3xs)' max_width='100%'>
-            <slot />
-        </Wrapper>
-        :
-        <Wrapper padding_block='var(--space-m)' padding_inline='var(--space-m)' max_width='100%'>
-            <Flexblock gap='var(--space-m)'>
-                <slot name="header" />
-                <div class="[ cover-body ]">
-                    <slot />
-                </div>
-                <slot name="footer" />
-            </Flexblock>
-        </Wrapper>
+<div>
+    <div
+        role="dialog"
+        class:list={[
+            'dialog',
+            { breakout: breakout },
+            { 'non-centered': non_centered },
+            { fixed: fixed },
+            { transparent: transparent },
+            { 'h-full': full_screen },
+            Astro.props.class
+        ]}
+        {...attributes}
+    >
+        {close_button && <button class="[ dialog-close ]" x-on:click="close_dialog()"><TrashIcon /></button>}
+        {thin ?
+            <Wrapper
+                padding_block='var(--space-3xs)'
+                padding_inline='var(--space-3xs)'
+                max_width='100%'
+                class:list={[
+                    { 'h-full': full_screen },
+                ]}
+            >
+                <slot />
+            </Wrapper>
+            :
+            <Wrapper
+                padding_block='var(--space-m)'
+                padding_inline='var(--space-m)'
+                max_width='100%'
+                class:list={[
+                    { 'h-full': full_screen },
+                ]}
+            >
+                <Flexblock
+                    gap='var(--space-l)'
+                    class:list={[
+                        { 'h-full': full_screen },
+                        { 'justify-between!': full_screen },
+                    ]}
+                >
+                    <slot name="header" />
+                    <div class:list={[
+                            'cover-body',
+                            { 'h-full': body_full_h }
+                        ]}
+                    >
+                        <slot />
+                    </div>
+                    <slot name="footer" />
+                </Flexblock>
+            </Wrapper>
+        }
+    </div>
+
+    {transparent &&
+        <div class:list={[ { 'transparent-dialog dark-transparency': transparent } ]} />
     }
 </div>
 
 <style lang="scss" is:global>
+    .transparent-dialog {
+        position: fixed !important;
+        inset: 0;
+        z-index: var(--backdrop-z-index);
+        opacity: 0;
+        pointer-events: none;
+        transition: all cubic-bezier(0.680, -0.550, 0.265, 1.550) 0.25s;
+
+        &:before {
+            backdrop-filter: blur(0px);
+        }
+    }
+
+    .open + .transparent-dialog {
+        opacity: 1;
+        pointer-events: all;
+        backdrop-filter: blur(var(--transparency-backdrop-blur));
+    }
+
     .dialog {
         --pop-up--margin: 0;
         --dialog-max-width: 700px;
         
         position: absolute;
-        top: 75px;
+        top: 50%;
         left: 50%;
-        transform: translate(-50%) scale(0.97);
+        transform: translate(-50%, -50%) scale(0.97);
         border: solid 1px var(--border-color);
-        opacity: 0;
-        transition: all cubic-bezier(0.680, -0.550, 0.265, 1.550) 0.25s;
         pointer-events: none;
         box-shadow: 0 0 5px 0px rgba(0, 0, 0, 0.75);
         z-index: var(--dialog-z-index);
         background-color: var(--light-transparency-background-mobile);
         max-width: var(--dialog-max-width);
+        opacity: 0;
+        transition: all cubic-bezier(0.680, -0.550, 0.265, 1.550) 0.25s;
+
+        &.transparent {
+            box-shadow: none;
+            border: none;
+            background-color: transparent;
+        }
 
         &.non-centered {
             transform: translateX(-50%) scale(0.97);
-        }
-
-        &.open {
-            transform: translate(-50%) scale(1);
-            opacity: 1;
-            pointer-events: all;
-
-            &.non-centered {
-                transform: translateX(-50%) scale(1);
-            }
+            top: 75px;
         }
 
         &:not(.breakout) {
             max-width: calc(100% - ( var(--pop-up--margin) * 2 ));
             max-height: calc(100% - ( var(--pop-up--margin) * 2 ));
             overflow: auto;
+        }
+
+        &.open {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+            pointer-events: all;
+
+            &.non-centered {
+                transform: translateX(-50%) scale(1);
+            }
         }
 
         &.fixed {

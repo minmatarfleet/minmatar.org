@@ -14,8 +14,12 @@ interface Props {
     inside_swiper?:         boolean;
     thin_dialog?:           boolean;
     disable_when_open?:     boolean;
-    full_height?:           boolean;
+    non_centered?:          boolean;
+    close_button?:          boolean;
+    full_screen?:           boolean;
+    body_full_h?:           boolean;
     styless?:               boolean;
+    transparent?:           boolean;
     [propName: string]:     any;
 }
 
@@ -29,8 +33,12 @@ const {
     inside_swiper = false,
     thin_dialog = false,
     disable_when_open = false,
-    full_height = false,
+    non_centered = true,
+    close_button = true,
+    full_screen = false,
+    body_full_h = false,
     styless = false,
+    transparent = false,
     ...attributes
 } = Astro.props
 
@@ -49,10 +57,15 @@ import StylessButton from './StylessButton.astro';
         open_dialog() {
             this.button_dialog_open = true
             ${inside_swiper ? 'swiper.allowTouchMove = false' : ''}
+            $refs.body.classList.add('overflow-hidden')
         },
         close_dialog() {
+            if (!this.button_dialog_open) return
+
             this.button_dialog_open = false
             ${inside_swiper ? 'swiper.allowTouchMove = true' : ''}
+            $refs.body.classList.remove('overflow-hidden')
+            console.log('close dialog')
         }
     }`}
     @dialog_opened.stop={disable_when_open ? "$el.querySelector('button').setAttribute('disabled', '')" : undefined}
@@ -86,7 +99,14 @@ import StylessButton from './StylessButton.astro';
         <Dialog
             breakout={true}
             non_centered={true}
-            class:list={[ 'button-dialog w-full component overflow-y-auto', { 'button-dialog-h-max': full_height } ]}
+            close_button={close_button}
+            non_centered={non_centered}
+            full_screen={full_screen}
+            body_full_h={body_full_h}
+            class:list={[
+                'button-dialog w-full component overflow-y-auto',
+                { 'button-dialog-h-max': full_screen === false },
+            ]}
             x-bind:class="(button_dialog_open ? 'open' : '')"
             x-bind:aria-hidden="button_dialog_open == false"
             x-trap="button_dialog_open"
@@ -95,18 +115,21 @@ import StylessButton from './StylessButton.astro';
             @mousedown.outside="open && close_dialog()"
             style={max_width ? `--dialog-max-width: ${max_width}` : undefined}
             thin={thin_dialog}
+            transparent={transparent}
             x-init="htmx.process($el)"
         >
+            <slot name="header" slot="header" />
             <slot name="dialog">
                 <DebugTag set:html={marked.parse(t('missing_dialog_slot'))} />
             </slot>
+            <slot name="footer" slot="footer" />
         </Dialog>
     </template>
 </div>
 
 <style lang="scss">
     .button-dialog {
-        max-height: min(750px, 88vh);
+        max-height: 100%;
     }
 
     .button-dialog-h-max {

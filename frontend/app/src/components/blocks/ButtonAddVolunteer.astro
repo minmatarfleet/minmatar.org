@@ -53,11 +53,17 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
     color='transparent'
     narrow={true}
     hidden={hidden}
-    max_width='820px'
+    max_width='1020px'
+    transparent={true}
+    full_screen={true}
+    body_full_h={true}
+    non_centered={false}
+    close_button={false}
 >
     <AddIcon slot="icon" />
 
     <form
+        class="[ h-full ]"
         slot="dialog" 
         hx-post={FLEET_ROLE_ITEM_PARTIAL_URL}
         hx-trigger="submit"
@@ -66,62 +72,60 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
         hx-swap="outerHTML transition:true"
         x-on:submit="close_dialog()"
     >
-        <Flexblock gap="var(--space-l)">
-            <Flexblock gap="var(--space-s)">
-                <Flexblock gap="var(--space-3xs)">
-                    <h3>{title}</h3>
-                    <small>{t('add_volunteer')}</small>
-                </Flexblock>
-                
-                <Wrapper
-                    padding_block='0'
-                    padding_inline='var(--space-xl)'
-                >
-                    <div id={`${target}-swiper`} class="[ swiper ][ w-full pb-10! ]">
-                        <LandingSwiper swiper_selector={`#${target}-swiper`}>
-                            {pilots.map(pilot =>
-                                <div class="[ swiper-slide ]" style="margin-right: 5px">
-                                    <StylessButton
-                                        hx-post={`${FLEET_ROLE_ITEM_PARTIAL_URL}?${query_string({
-                                            id: target,
-                                            fleet_id: fleet_id,
-                                            character_id: pilot.character_id,
-                                            role: role,
-                                            ...(subtype && { subtype }),
-                                            ...(icon && { icon }),
-                                        })}`}
-                                        hx-target={`#${target}`}
-                                        hx-indicator=".loader"
-                                        hx-swap='outerHTML transition:true'
-                                        x-on:click="close_dialog()"
-                                    >
-                                        <CharacterCard
-                                            character_id={pilot.character_id}
-                                            character_name={pilot.character_name}
-                                            inert={true}
-                                        >
-                                            <Flexblock gap='var(--space-3xs)'>
-                                                <h3>{pilot.character_name}</h3>
-                                                <CorporationBadge
-                                                    corporation={{
-                                                        id: pilot.corp_id,
-                                                        name: pilot.corp_name,
-                                                        size: 'xs',
-                                                    }}
-                                                    highlight={false}
-                                                />
-                                            </Flexblock>
-                                        </CharacterCard>
-                                    </StylessButton>
-                                </div>
-                            )}
-                        </LandingSwiper>
-                    </div>
-
-                    <div id={`${target}-swiper-button-prev`} class="[ swiper-button-prev hidden lg:block! ]"></div>
-                    <div id={`${target}-swiper-button-next`} class="[ swiper-button-next hidden lg:block! ]"></div>
-                </Wrapper>
+        <Flexblock class="[ h-full justify-between! ]" gap="var(--space-l)">
+            <Flexblock gap="var(--space-3xs)">
+                <h3>{title}</h3>
+                <small>{t('add_volunteer')}</small>
             </Flexblock>
+                
+            <Wrapper
+                padding_block='0'
+                padding_inline='var(--space-xl)'
+            >
+                <div id={`${target}-swiper`} class="[ swiper ][ w-full pb-10! ]">
+                    <LandingSwiper swiper_selector={`#${target}-swiper`}>
+                        {pilots.map(pilot =>
+                            <div class="[ swiper-slide ]" style="margin-right: 5px">
+                                <StylessButton
+                                    hx-post={`${FLEET_ROLE_ITEM_PARTIAL_URL}?${query_string({
+                                        id: target,
+                                        fleet_id: fleet_id,
+                                        character_id: pilot.character_id,
+                                        role: role,
+                                        ...(subtype && { subtype }),
+                                        ...(icon && { icon }),
+                                    })}`}
+                                    hx-target={`#${target}`}
+                                    hx-indicator=".loader"
+                                    hx-swap='outerHTML transition:true'
+                                    x-on:click="close_dialog()"
+                                >
+                                    <CharacterCard
+                                        character_id={pilot.character_id}
+                                        character_name={pilot.character_name}
+                                        inert={true}
+                                    >
+                                        <Flexblock gap='var(--space-3xs)'>
+                                            <h3>{pilot.character_name}</h3>
+                                            <CorporationBadge
+                                                corporation={{
+                                                    id: pilot.corp_id,
+                                                    name: pilot.corp_name,
+                                                    size: 'xs',
+                                                }}
+                                                highlight={false}
+                                            />
+                                        </Flexblock>
+                                    </CharacterCard>
+                                </StylessButton>
+                            </div>
+                        )}
+                    </LandingSwiper>
+                </div>
+
+                <div id={`${target}-swiper-button-prev`} class="[ swiper-button-prev hidden lg:block! ]"></div>
+                <div id={`${target}-swiper-button-next`} class="[ swiper-button-next hidden lg:block! ]"></div>
+            </Wrapper>
 
             <FlexInline justification='flex-end'>
                 <Button
