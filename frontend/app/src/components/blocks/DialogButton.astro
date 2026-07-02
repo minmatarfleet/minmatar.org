@@ -57,15 +57,14 @@ import StylessButton from './StylessButton.astro';
         open_dialog() {
             this.button_dialog_open = true
             ${inside_swiper ? 'swiper.allowTouchMove = false' : ''}
-            $refs.body.classList.add('overflow-hidden')
+            ${transparent && "$refs.body.classList.add('overflow-hidden')"}
         },
         close_dialog() {
             if (!this.button_dialog_open) return
 
             this.button_dialog_open = false
             ${inside_swiper ? 'swiper.allowTouchMove = true' : ''}
-            $refs.body.classList.remove('overflow-hidden')
-            console.log('close dialog')
+            ${transparent && "$refs.body.classList.remove('overflow-hidden')"}
         }
     }`}
     @dialog_opened.stop={disable_when_open ? "$el.querySelector('button').setAttribute('disabled', '')" : undefined}
