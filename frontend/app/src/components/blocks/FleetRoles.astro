@@ -64,12 +64,11 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
             </Button>
         </FlexInline>
         
-        <p>{t('fleet_roles_description')}</p>
+        <div class="component">
+            <p>{t('fleet_roles_description')}</p>
+        </div>
 
-        <Flexblock>
-            <h3>{t('anchor_and_cynos')}</h3>
-
-
+        <Flexblock gap='var(--space-3xs)'>
             <Grid
                 class="[ w-full grid-fill ]"
                 row_gap="var(--space-3xs)"
@@ -96,10 +95,6 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
                     readonly={readonly}
                 />
             </Grid>
-        </Flexblock>
-
-        <Flexblock>
-            <h3>{t('links')}</h3>
 
             <Grid
                 class="[ w-full grid-fill ]"
