@@ -31,6 +31,8 @@ import Markdown from '@components/blocks/Markdown.astro'
     size={size}
     max_width='800px'
     full_screen={true}
+    non_centered={false}
+    transparent={true}
 >
     {t('learn_more')}
 
@@ -49,17 +51,18 @@ import Markdown from '@components/blocks/Markdown.astro'
                 />
             </TextBox>
         </Flexblock>
-
-        <FlexInline justification='flex-end'>
-            <Button
-                type="button"
-                size='sm'
-                x-on:click="close_dialog()"
-            >
-                {t('ok')}
-            </Button>
-        </FlexInline>
     </Flexblock>
+
+    <FlexInline slot="footer" justification='flex-end'>
+        <Button
+            type="button"
+            size='sm'
+            color='transparent'
+            x-on:click="close_dialog()"
+        >
+            {t('close')}
+        </Button>
+    </FlexInline>
 </DialogButton>
 
 <style lang="scss">
