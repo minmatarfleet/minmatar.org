@@ -15,8 +15,8 @@ your alliance already replied, route to the best corp, and draft short human
 outreach.
 
 **This is an agent skill first.** The durable, improving part is this document
-plus [examples.md](examples.md): workflow, judgment, voice. A model gets better at
-recruitment scouting as those improve, not as Python heuristics accumulate.
+plus [examples.md](examples.md): workflow, judgment, voice. `examples.md` starts
+empty — add real outreach there as learnings accumulate.
 
 `scripts/` holds **optional single-purpose fetchers** the agent can mix and match.
 They do not route corps or draft messages. You can also hit endpoints and browse
@@ -65,7 +65,7 @@ Task Progress:
 - [ ] Scout: find player LFC posts (past 7 days) — browse, search, or optional script
 - [ ] Read each thread; decide responded vs open
 - [ ] Route each open prospect to one primary corp (from pre-scout bios)
-- [ ] Draft outreach using voice rules + examples.md
+- [ ] Draft outreach using voice rules below (+ any entries in examples.md)
 - [ ] Present two tables
 ```
 
@@ -80,8 +80,8 @@ Task Progress:
 | When to link ads vs plain discord | Hardcoded per-corp rules |
 | New corp focus or requirements | Config that duplicates the API |
 
-Update [examples.md](examples.md) when real outreach teaches you something new.
-That is the feedback loop.
+Update [examples.md](examples.md) after sending outreach that worked — that is the
+feedback loop. Do not pre-fill templates.
 
 ### Data scripts (pick what you need)
 
@@ -132,8 +132,9 @@ OpenAPI docs: https://api.minmatar.org/api/docs
 
 Fetch posts from **`u/MinmatarFleet`** for the **past 30 days** (default
 `--pre-scout-days 30`). This is the alliance recruitment Reddit account; it posts
-corp ads on `r/evejobs` (Rattini, Soltech, Dark Tribe, Academy, Straylight,
-Administrative Atrocities, etc.).
+corp ads on `r/evejobs` (Rattini, Soltech, Dark Tribe, Academy,
+Administrative Atrocities, etc.). **Only route to corps present in the API**
+and with a recent ad — corps leave the alliance (e.g. Straylight is gone).
 
 ```
 https://www.reddit.com/user/MinmatarFleet/submitted/
@@ -184,7 +185,9 @@ join — read the title and body, do not pattern-match keywords.
 - The pilot explicitly does not want a corporation
 - The post is outside the lookback window
 - It is your own alliance recruitment post (e.g. `Recruiting corporations who want help growing!` from `u/MinmatarFleet`)
-- WH-only seekers, if they are a poor fit for your null/low/fw corps (note in skipped list)
+- WH-only seekers, if they are a poor fit for your FW/lowsec corps (note in skipped list)
+- Sov-null-only seekers (dedicated nullbloc, null ratting, structure defense, ESS
+  in sov space) — poor fit; note in skipped list, do not pitch nullsec
 
 When unsure, open the thread and read it.
 
@@ -210,8 +213,10 @@ primary corp. Skip or note poor fits (e.g. WH-only seekers) in a short bullet li
 - Check each corp's `requirements` before routing. A corp that expects active
   fleet participation or leadership roles is a poor fit for casual or patchy
   playtime unless the pilot explicitly wants that commitment.
-- Industry-primary pilots may belong in MFA associate corps; mention PvP corps
-  only as an optional side path, not the primary pitch.
+- Industry-primary pilots belong in **Minmatar Fleet Associates (MFA)** associate
+  corps, not FW alliance corps. MFA lives in **highsec bulwark systems** with
+  **lowsec excursions** — pitch that, not FW daily life. Mention a PvP corp only
+  as an optional side path, not the primary pitch.
 
 One primary corp per prospect. Optional one-liner for a graduate path or
 bigger/smaller corp in the same alliance — name only, no ad link. Use
@@ -224,30 +229,54 @@ bigger/smaller corp in the same alliance — name only, no ad link. Use
   **Administrative Atrocities** (EUTZ, more experienced). Do not default new EU
   pilots to Rattini. Administrative Atrocities was formerly DHDR — always use
   the name from the corporations API, not stale external tickers.
-- **Industry-primary:** MFA associate corps primary; PvP corp is a side note.
-- **Alliance positioning:** daily PvP content is lowsec/fw. The alliance **does
-  hold sovereignty** for krabbing and some fights — never say "we're not null" or
-  "mostly lowsec fw not sov null" as if we have no sov.
+- **Industry-primary:** MFA associate corps primary. Base in highsec bulwark
+  systems, lowsec excursions when people want out. PvP corp is a side note only.
+- **Blops/caps/lowsec bloodshed:** Rattini Tribe (all TZ, escalates into cap
+  fights) or **Administrative Atrocities** (tight EUTZ skirmish crew). Match TZ
+  and vibe (big pond vs small roster). **Straylight is not in the alliance** —
+  never route or link there.
+- **Alliance positioning:** we are a **faction warfare** alliance. Daily content
+  is FW and lowsec small gang. Do not pitch nullsec, sovereignty, null ratting,
+  structure timers, or bloc null. If OP wants dedicated sov-null, skip or note poor
+  fit — do not redirect with "we have sov too" or similar.
 
 ### Draft outreach
 
-Read [examples.md](examples.md) before writing messages. **Read several examples
-and vary structure** — do not reuse the same opening trick across messages in one
-scout run.
+Read [examples.md](examples.md) for past learnings if any exist. Every recommended
+message is **one short paragraph** — punchy, readable on a phone, no line breaks.
 
-**Shape (flexible, not a fixed order):**
+#### Shape (always)
+
+**One paragraph. 2–4 sentences max.** Weave their detail, name one primary corp,
+what it does, then ad link and/or discord inline at the end. No bullet lists, no
+second paragraph, no wall of text.
 
 ```
-[weave 1-2 details from their post into the pitch — placement varies]
+[hook: their words, a fear, or what the corp does — first sentence grabs attention]
 
-[one primary corp, plain language — describe what they do, not "good fit" sales]
+[corp + one concrete detail tied to their post + optional graduate/alt corp in passing]
 
-[optional: graduate path or alt corp (same alliance), no link]
-
-[ad link if reddit + clear single fit]
-
-[{discord_invite} + casual closer]
+[ad link and/or discord.gg/minmatar woven into the last sentence]
 ```
+
+#### Variety (mandatory per scout run)
+
+Draft all messages, compare side by side. Same rhythm = rewrite. Vary **how the
+paragraph opens**, not how many paragraphs there are:
+
+| Opening | First sentence… |
+|---------|-----------------|
+| Corp-first | What the corp does |
+| OP-first | Their situation in plain words |
+| Direct answer | Answers their question |
+| Blunt | Ultra-tight when thread is saturated |
+| Negative `tracks` | Only when OP vented |
+| Contrast | "not sure X is wrong but…" |
+
+Do not repeat the same opening mode or the same first three words across messages
+in one run. Rotate how link/discord land (end of sentence, after corp name, etc.).
+
+**Self-check:** each message should be scannable in under 5 seconds.
 
 **Voice rules:**
 
@@ -258,7 +287,7 @@ scout run.
   sometimes with a direct reply to their question. Never open every message with
   the same comma-chain mirror (`holland, eu nights, new but wanting pvp?`).
 - **No question-form mirroring.** Do not restate their post as a rhetorical
-  question (`industry, mining ops, pve, null sounds interesting?`).
+  question (`industry, mining ops, pve, fw sounds interesting?`).
 - **No salesy fit language.** Avoid "probably the move", "good fit", "worth a
   look" stacked together, or listing `you want X, Y, Z`. Describe the corp; let
   them decide.
@@ -269,11 +298,12 @@ scout run.
 - Stats only when they kill a stated fear (e.g. member count answers "not a 3
   person discord").
 - No zkill links, no competitor comparisons, no brochure bullet lists.
-- Discord: plain invite with casual closer (`if you wanna yap`, `hit us up`, etc.)
-- **Forums**: usually no reddit ad links; one tight block with newlines.
-- **Reddit**: 1 ad link for clear single fit; 2 links only when offering small
-  corp vs bigger corp.
-- Keep motivational lines only when OP is about to quit EVE.
+- **No nullsec pitch.** Never mention sovereignty, null ratting, null deployment,
+  or "we have sov too" in outreach. We are FW/lowsec; sov-null seekers get skipped
+  or an honest FW pitch only if their ask fits.
+- **One paragraph only.** Reddit and forums use the same shape. Link + discord
+  inline; skip discord when the ad link is enough.
+- Keep motivational lines only when OP is about to quit EVE (still one paragraph).
 
 ### Present output
 
@@ -287,8 +317,7 @@ scout run.
 | Title | Corp fit | Responded | Type | Link | Recommended message |
 |-------|----------|-----------|------|------|---------------------|
 
-Put recommended messages in the table cell with `<br><br>` between paragraphs
-(for readability in the UI).
+Put recommended messages in the table as a **single paragraph** (no line breaks).
 
 Below the tables, optionally list:
 
@@ -311,6 +340,6 @@ markers, or routing. Those live in this skill.
 
 ## Additional resources
 
-- Outreach examples (primary feedback loop): [examples.md](examples.md)
+- Past outreach learnings (add as you go): [examples.md](examples.md)
 - Data scripts: [scripts/](scripts/)
 - Setup: [README.md](README.md)
