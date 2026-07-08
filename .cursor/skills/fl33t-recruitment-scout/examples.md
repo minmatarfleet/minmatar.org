@@ -13,6 +13,11 @@ Real responses that worked. Add entries here after you send outreach — no temp
 
 > Minmatar Fleet Academy teaches by undocking and runs USTZ fleets. You will make billions in your first month of faction warfare, making it easy to replace any fittings you lose. We have lots of abyssal guides, they're a primary source of downtime for our members. [Ad](https://www.reddit.com/r/evejobs/comments/1uowo3f/minmatar_fleet_academy_new_players_that_learn_by/) or discord.gg/minmatar.
 
+**Scout draft (not sent):**
+> Ten years away and gas mining your way back in is a solid plan. Minmatar Fleet Academy runs USTZ fleets where you learn combat by undocking, abyssals fill downtime between pings, and faction warfare pays well enough that replacing a lost fitting stops being a logistics puzzle. [Ad] or discord.gg/minmatar.
+
+*(Scout conflated two threads — that draft was for the 10-year returning player, not this one.)*
+
 **Why it worked:** Corp-first open, not OP schedule mirroring. FW income stat directly answers their self-sufficiency worry about replacing lost fits. Named abyssals from their post instead of listing everything they asked for.
 
 ---
@@ -38,14 +43,14 @@ Real responses that worked. Add entries here after you send outreach — no temp
 > You will learn combat by undocking.  
 > https://discord.gg/minmatar
 
-**Why it worked:** Direct answer to anti-academy stance — frame as alliance academy with a graduate path, not a standalone school. Short. No brochure.
+**Why it worked:** Direct answer to anti-academy stance — frame as alliance academy with a graduate path, not a standalone school. Short. No brochure. Discord only, no ad link — enough for a saturated thread.
 
 ---
 
 ### Cap feeder, 200m SP, wants blops/lowsec bloodshed (matched OP humor)
 **Thread:** [Shit-tier pilot looking for pvp focused corp](https://www.reddit.com/r/evejobs/comments/1unqizq/shittier_pilot_looking_for_pvp_focused_corp_will/)  
 **Routed:** Rattini Tribe  
-**Author:** BearThatCares (score 3)
+**Author:** BearThatCares (score 4)
 
 > Shit tier and looking to feed caps? Oh boy, do I have the perfect corporation for you… [https://www.reddit.com/r/evejobs/s/p1M6dn4xdb](https://www.reddit.com/r/evejobs/s/p1M6dn4xdb)
 >
@@ -57,16 +62,58 @@ Real responses that worked. Add entries here after you send outreach — no temp
 
 ---
 
-## Patterns (this run)
+### Returning veteran (10yr break), ~7M SP, gas → PvE → PvP, USTZ patchy schedule
+**Thread:** [Returning after 10 years Omega Player LFC](https://www.reddit.com/r/evejobs/comments/1uq8ohp/returning_after_10_years_omega_player_lfc/)  
+**Routed:** Minmatar Fleet Academy (industry alts → MFA network)  
+**Author:** BearThatCares
+
+**Scout draft (not sent):**
+> Not sure wormhole corps are the only answer for a returning USTZ pilot — Minmatar Fleet Academy runs faction warfare fleets where you learn by undocking, abyssals fill downtime between pings, and FW income means you are not solving hauling puzzles every time you lose a fitting. People with patchy family schedules are normal here. [Ad](https://www.reddit.com/r/evejobs/comments/1uowo3f/minmatar_fleet_academy_new_players_that_learn_by/) or discord.gg/minmatar
+
+**Sent:**
+> Minmatar Fleet Academy runs faction warfare fleets where you learn by undocking. We have various industrial corporations for your industry alts (mining, production, etc) to supply the war effort while you make billions on your combat character. People with patchy family schedules are normal here. [Ad](https://www.reddit.com/r/evejobs/comments/1uowo3f/minmatar_fleet_academy_new_players_that_learn_by/) or discord.gg/minmatar
+
+**What changed and why:**
+- Dropped contrast opener ("not sure wormhole corps…") — corp-first, no need to swat at the WH reply already in thread.
+- Dropped abyssals — OP mentioned them but gas mining + industry alts was the stronger weave for their mining→PvP path.
+- Added MFA industry-alt angle — answers their mining/hauling interest without routing them industry-primary; keeps Academy as main home.
+- Kept "billions on combat character" instead of "hauling puzzle" framing — same fear-killer, tighter wording.
+- Kept patchy family schedules line — landed in both draft and sent.
+
+---
+
+## Alliance recruiter notes (same run)
+
+Short punches from other FL33T recruiters on threads BearThatCares also hit or routed elsewhere:
+
+| Thread | Author | What they sent | Note |
+|--------|--------|----------------|------|
+| [Experienced low sec PvPer](https://www.reddit.com/r/evejobs/comments/1ukopnf/experienced_low_sec_pvper_looking_for_corp/) | sny_q | "Join us in minmatar. Things are spicy down here ATM." | Vibe hook, no corp name — works when thread is busy |
+| [Experienced low sec PvPer](https://www.reddit.com/r/evejobs/comments/1ukopnf/experienced_low_sec_pvper_looking_for_corp/) | Sycamoria | Soltech ad link + discord.gg/soltech | Fuller corp pitch; routed Soltech for UK/EU experienced PvPer |
+| [FW seeker (Amarr space)](https://www.reddit.com/r/evejobs/comments/1uks70n/not_new_player_but_new_in_pvp_searching_for_a_fw/) | BearThatCares | Link only to Soltech ad | Saturated thread; link enough when Sycamoria already posted fuller pitch |
+| [FW seeker (Amarr space)](https://www.reddit.com/r/evejobs/comments/1uks70n/not_new_player_but_new_in_pvp_searching_for_a_fw/) | Sycamoria | "Don't be an Amarr slave" + Soltech ad + discord | Amarr-side OP — pitch Minmatar FW corps, not Amarr FW |
+| [Bloc-tired nullbloc pilot](https://www.reddit.com/r/evejobs/comments/1uldmxl/looking_for_new_corpalliance/) | Sycamoria | Soltech daily fleets, Amamake, null shenanigans | Good fit for "small gang, not elitist, npc null or lowsec" ask |
+
+---
+
+## Patterns (2026-07-07 run)
 
 | Situation | What landed |
 |-----------|-------------|
-| Self-sufficiency / replacing fits | FW income hook ("billions in your first month") |
-| Industry + patchy hours | MFA bulwark pitch + named contact for routing |
-| Anti-academy new player | Graduate path framing (6 months → main corp) |
-| Cap feeder / humor thread | Match their tone, link recent kill content, offer discord + escape hatch |
-| MFA routing | `discord.gg/minmatar` + "ask for Keldor" beats generic discord alone |
+| Self-sufficiency / replacing fits | FW income hook ("billions" on combat/main character) |
+| Industry + patchy hours | MFA bulwark pitch + named contact (Keldor) |
+| Anti-academy new player | Graduate path framing (6 months → main corp); discord-only OK in busy threads |
+| Cap feeder / humor thread | Match tone, proof link, discord handle + escape hatch |
+| Returning veteran, low SP, mining + eventual PvP | Academy primary + MFA industry alts in same message; corp-first over contrast opener |
+| MFA routing | `discord.gg/minmatar` + "ask for Keldor" |
+| Saturated / multi-replier threads | Link-only or one-liner from second recruiter is fine if another post already has the full pitch |
 
-## Draft vs sent (newish bro)
+## Draft vs sent (summary)
 
-Scout draft led OP-first with family schedule. Sent version corp-first with FW billions + abyssal guides. Prefer corp-first + one concrete fear-killer over schedule mirroring for returning casuals.
+| Thread | Scout leaned | Sent leaned |
+|--------|--------------|-------------|
+| Newish bro | OP schedule mirror (wrong thread) | Corp-first + FW billions + abyssals |
+| Returning 10yr | Contrast vs WH + abyssals + hauling puzzle | Corp-first + MFA alts for mining + billions on main |
+| Anti-academy 11-day | (matched sent) | Short, graduate path, discord only |
+
+**Takeaway:** Corp-first + one concrete fear-killer beats OP mirroring or contrast openers. When OP has an industry side path, mention MFA alts inside an Academy pitch instead of routing industry-primary.
