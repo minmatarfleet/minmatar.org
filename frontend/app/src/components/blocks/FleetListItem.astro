@@ -90,16 +90,18 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
         <Flexblock slot="subtitle">
             <FlexInline class="[ items-center! ]" gap='var(--space-l)'>
                 {fleet.fleet_commander_id && fleet.corporation_id &&
-                    <CorporationBadge
-                        corporation={{
-                            id: fleet.corporation_id,
-                            name: fleet.corporation_name,
-                            size: 'xs'
-                        }}
-                        show_modal={true}
-                    >
-                        <small>{t('fleet_commander')}</small>
-                    </CorporationBadge>
+                    <div class="[ flex max-w-[265px] ]">
+                        <CorporationBadge
+                            corporation={{
+                                id: fleet.corporation_id,
+                                name: fleet.corporation_name,
+                                size: 'xs'
+                            }}
+                            show_modal={true}
+                        >
+                            <small>{t('fleet_commander')}</small>
+                        </CorporationBadge>
+                    </div>
                 }
                 {fleet.fleet_commander_fleet_count &&
                     <FlexInline gap='var(--space-3xs)' class="[ items-center! ]">
