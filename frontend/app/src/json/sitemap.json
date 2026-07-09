@@ -71,6 +71,19 @@
         "keywords": [ "brand", "branding", "logo", "icons" ]
     },
     {
+        "slug": "campaigns.etherium_reach",
+        "path": "/campaigns/etherium-reach/",
+        "publish": true,
+        "description": "page_finder.campaigns.etherium_reach.description",
+        "keywords": [
+            "Etherium Reach",
+            "Dronelands",
+            "nullsec campaign",
+            "Minmatar Fleet",
+            "campaign report"
+        ]
+    },
+    {
         "slug": "corporations.list",
         "alt": "icon.corporation.alt",
         "path": "/alliance/corporations/",

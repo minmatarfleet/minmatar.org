@@ -1,10 +1,13 @@
 ---
 import {
+    CAMPAIGN_ISK_DESTROYED,
+    CAMPAIGN_PILOT_INCOME,
     DRONELANDS_REGIONS_BY_DESTROYED,
     FLEET_CHARACTERS,
     FLEET_PARTICIPATION_PCT,
     FLEET_PILOTS,
     formatIsk,
+    GROSS_ALLIANCE_MOONS_AND_CONTRACTS,
     GROSS_CORP_ALL,
     GROSS_CORP_BROKER_FEES,
     GROSS_CORP_INDUSTRY_TAX,
@@ -12,6 +15,7 @@ import {
     GROSS_CORP_RATTING_TAX,
     GROSS_ISK_KILLS,
     GROSS_ISK_LOSSES,
+    HEADLINES,
     GROSS_PLAYER_COURIER_REWARDS,
     GROSS_PLAYER_EXPLORATION,
     GROSS_PLAYER_INDUSTRY_PROFIT,
@@ -21,20 +25,28 @@ import {
     GROSS_PLAYER_TOTAL,
     ISK_KILLS_BY_REGION,
     ISK_LOSSES_BY_REGION,
-    OPSEC_PRIVATE_LINE_ITEM,
+    OPSEC_CONTRACT_INCOME,
+    OPSEC_MOON_INCOME,
     PERIOD_DRONELANDS_FLEETS,
     PERIOD_DRONELANDS_ISK_KILLS,
     PERIOD_DRONELANDS_ISK_LOSSES,
     PERIOD_OUTSIDE_FLEETS,
     PERIOD_OUTSIDE_ISK_KILLS,
     PERIOD_OUTSIDE_ISK_LOSSES,
+    OTHER_FLEET_COMMANDERS,
+    TOP_FLEET_COMMANDERS,
+    TOP_FLEET_PILOTS,
+    TOP_KRABBERS,
 } from '@/data/campaigns/etherium-reach'
 
-import CampaignCallout from '@components/blocks/campaigns/etherium-reach/CampaignCallout.astro'
+import { get_player_icon } from '@helpers/eve_image_server'
+
 import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
 import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
 import PlayerContentChart from '@components/blocks/campaigns/etherium-reach/PlayerContentChart.astro'
+import PlayerContentChartLegend from '@components/blocks/campaigns/etherium-reach/PlayerContentChartLegend.astro'
 import PlayerIncomeChart from '@components/blocks/campaigns/etherium-reach/PlayerIncomeChart.astro'
+import PlayerIncomeChartLegend from '@components/blocks/campaigns/etherium-reach/PlayerIncomeChartLegend.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 
 const playerIncomeRows = [
@@ -52,10 +64,37 @@ const allianceIncomeRows = [
     { cells: ['Planetary interaction tax', formatIsk(GROSS_CORP_PI_TAX)] as const },
     { cells: ['Industry facility tax', formatIsk(GROSS_CORP_INDUSTRY_TAX)] as const },
     { cells: ['Broker fees', formatIsk(GROSS_CORP_BROKER_FEES)] as const },
-    { cells: ['Private line item (opsec)', `~${formatIsk(OPSEC_PRIVATE_LINE_ITEM)}`] as const },
-    { cells: ['Private line item (opsec)', '—'] as const },
-    { cells: ['Total', `${formatIsk(GROSS_CORP_ALL)} disclosed`] as const, tone: 'info' as const },
+    { cells: ['Moons', formatIsk(OPSEC_MOON_INCOME)] as const },
+    { cells: ['Diplomatic contracts', formatIsk(OPSEC_CONTRACT_INCOME)] as const },
+    { cells: ['Total disclosed', formatIsk(GROSS_CORP_ALL)] as const, tone: 'info' as const },
 ]
+
+function formatHeadlineDate(isoDate: string): string {
+    return new Date(`${isoDate}T00:00:00Z`).toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        timeZone: 'UTC',
+    })
+}
+
+function formatHeadlineViews(views: string | number): string {
+    if (typeof views === 'string') {
+        return `${views} views`
+    }
+    if (views >= 1_000_000) {
+        return `${(views / 1_000_000).toFixed(1)}M views`
+    }
+    if (views >= 1_000) {
+        return `${Math.round(views / 1_000)}K views`
+    }
+    return `${views.toLocaleString()} views`
+}
+
+const HEADLINE_CATEGORY_LABELS = {
+    aar: 'AAR',
+    industry: 'Industry',
+} as const
 
 const combatRows = [
     ...DRONELANDS_REGIONS_BY_DESTROYED.map((region) => {
@@ -83,38 +122,39 @@ const combatRows = [
 ---
 
 <div class="er-campaign">
-    <header class="er-campaign__banner">
-        <p class="er-campaign__eyebrow">Minmatar Fleet Alliance</p>
-        <h2 class="er-campaign__title">Dronelands Campaign Report</h2>
-        <p class="er-campaign__lead">
-            A summary of our nullsec expansion across Etherium Reach, Kalevala,
-            Spire, and Perrigen Falls.
-        </p>
-    </header>
-
-    <CampaignCallout title="Campaign brief">
-        <p>
-            Minmatar Fleet built a real nullsec footprint in the Dronelands —
-            structures, moons, and heavy industry — while keeping the war moving
-            at home and abroad. Most of our pilots took part; over a trillion ISK
-            in spoils went to wallets and the war chest.
-        </p>
-    </CampaignCallout>
-
     <section class="er-campaign__section">
-        <h3>Alliance participation</h3>
-        <p class="er-campaign__meta">Nov 2025 – Jun 2026</p>
-        <div class="er-campaign__stat-grid er-campaign__stat-grid--3">
-            <CampaignStat label="Pilots" value={FLEET_PILOTS.toLocaleString()} tone="info" />
-            <CampaignStat label="Characters" value={FLEET_CHARACTERS.toLocaleString()} />
-            <CampaignStat label="Participation" value={`${FLEET_PARTICIPATION_PCT}%`} tone="success" />
+        <h3>Campaign by the numbers</h3>
+        <p class="er-campaign__meta">
+            Participation, combat, and income
+        </p>
+        <div class="er-campaign__stat-grid er-campaign__stat-grid--4">
+            <CampaignStat
+                label="Participation"
+                value={`${FLEET_PARTICIPATION_PCT}% · ${FLEET_PILOTS.toLocaleString()} pilots`}
+                tone="success"
+            />
+            <CampaignStat
+                label="ISK destroyed"
+                value={formatIsk(CAMPAIGN_ISK_DESTROYED)}
+                tone="success"
+            />
+            <CampaignStat
+                label="Pilot income"
+                value={formatIsk(CAMPAIGN_PILOT_INCOME)}
+                tone="info"
+            />
+            <CampaignStat
+                label="Alliance income"
+                value={formatIsk(GROSS_ALLIANCE_MOONS_AND_CONTRACTS)}
+                tone="info"
+            />
         </div>
     </section>
 
     <section class="er-campaign__section">
         <h3>Content summary</h3>
         <p class="er-campaign__meta">
-            Nov 2025 – Jun 2026 · Etherium Reach, Kalevala, Spire, and Perrigen Falls
+            Combat and fleets in the Dronelands and warzone
         </p>
 
         <Flexblock gap="var(--space-l)">
@@ -139,7 +179,7 @@ const combatRows = [
             </div>
 
             <div>
-                <p class="er-campaign__subheading">Everywhere else</p>
+                <p class="er-campaign__subheading">In the warzone</p>
                 <div class="er-campaign__stat-grid er-campaign__stat-grid--3">
                     <CampaignStat
                         label="ISK destroyed"
@@ -161,43 +201,70 @@ const combatRows = [
     </section>
 
     <section class="er-campaign__section">
+        <h3>Alliance participation</h3>
+        <p class="er-campaign__meta">
+            Who flew and how much of the alliance took part
+        </p>
+        <div class="er-campaign__stat-grid er-campaign__stat-grid--3">
+            <CampaignStat label="Pilots" value={FLEET_PILOTS.toLocaleString()} tone="info" />
+            <CampaignStat label="Characters" value={FLEET_CHARACTERS.toLocaleString()} />
+            <CampaignStat label="Participation" value={`${FLEET_PARTICIPATION_PCT}%`} tone="success" />
+        </div>
+    </section>
+
+    <section class="er-campaign__section">
         <div class="er-campaign__split">
             <div>
-                <h3>Resource extraction · what pilots earned</h3>
-                <p class="er-campaign__meta">Dronelands theater · Nov 2025 – Jun 2026</p>
+                <h3>What pilots earned</h3>
+                <p class="er-campaign__meta">
+                    By activity type
+                </p>
                 <CampaignDataTable headers={['Source', 'ISK']} rows={playerIncomeRows} />
             </div>
             <div>
-                <h3>Resource extraction · what the alliance earned</h3>
-                <p class="er-campaign__meta">Dronelands theater · Nov 2025 – Jun 2026</p>
+                <h3>What the alliance earned</h3>
+                <p class="er-campaign__meta">
+                    By revenue source
+                </p>
                 <CampaignDataTable headers={['Source', 'ISK']} rows={allianceIncomeRows} />
             </div>
         </div>
 
-        <div class="er-campaign__chart-card">
-            <h4>Player income over time</h4>
-            <p class="er-campaign__meta">Monthly pilot income · billions ISK</p>
-            <PlayerIncomeChart />
-            <p class="er-campaign__footnote">
-                Dashed lines are estimates. Income tracking begins Jan 2026.
-            </p>
+        <div class="er-campaign__chart-block">
+            <div class="er-campaign__chart-card">
+                <h3>Player income over time</h3>
+                <p class="er-campaign__meta">Monthly earnings in the Dronelands</p>
+                <div class="er-campaign__chart-plot">
+                    <PlayerIncomeChart />
+                </div>
+                <p class="er-campaign__footnote">
+                    Dashed lines are estimates.
+                </p>
+            </div>
+            <PlayerIncomeChartLegend />
         </div>
     </section>
 
     <section class="er-campaign__section">
         <h3>Player content over time</h3>
-        <p class="er-campaign__meta">Nov 2025 – Jun 2026</p>
-        <div class="er-campaign__chart-card">
-            <p class="er-campaign__meta">
-                Dronelands ISK destroyed per month and Etherium Reach campaign fleets formed
-            </p>
-            <PlayerContentChart />
+        <p class="er-campaign__meta">
+            Monthly ISK destroyed and fleets flown
+        </p>
+        <div class="er-campaign__chart-block">
+            <div class="er-campaign__chart-card">
+                <div class="er-campaign__chart-plot">
+                    <PlayerContentChart />
+                </div>
+            </div>
+            <PlayerContentChartLegend />
         </div>
     </section>
 
     <section class="er-campaign__section">
         <h3>Combat by region</h3>
-        <p class="er-campaign__meta">Lifetime · all dronelands regions</p>
+        <p class="er-campaign__meta">
+            ISK destroyed and lost across the four dronelands regions
+        </p>
         <CampaignDataTable
             headers={['Region', 'Destroyed', 'Lost']}
             rows={combatRows}
@@ -205,17 +272,171 @@ const combatRows = [
         />
     </section>
 
-    <CampaignCallout title="Notes" tone="info">
-        <p>
-            Figures cover Nov 2025 through Jun 2026 unless noted otherwise. June
-            2026 is partial. Combat by region reflects lifetime activity in the
-            four dronelands regions.
+    <section class="er-campaign__section">
+        <div class="er-campaign__subsection">
+            <h4>Fleet commanders</h4>
+            <p class="er-campaign__meta">
+                Top FCs by fleets run
+            </p>
+            <div class="er-campaign__fc-grid">
+                {
+                    TOP_FLEET_COMMANDERS.map((fc) => (
+                        <div
+                            class:list={[
+                                'er-fc-card',
+                                'isAggregate' in fc && fc.isAggregate && 'er-fc-card--other',
+                            ]}
+                        >
+                            {'isAggregate' in fc && fc.isAggregate ? (
+                                <div class="er-fc-card__portraits" aria-hidden="true">
+                                    {
+                                        OTHER_FLEET_COMMANDERS.commanders.map((commander) => (
+                                            <img
+                                                loading="lazy"
+                                                width="32"
+                                                height="32"
+                                                src={get_player_icon(commander.characterId, 32)}
+                                                alt=""
+                                                title={`${commander.name} · ${commander.fleetCount} fleets`}
+                                                class="er-fc-card__portrait-mini"
+                                            />
+                                        ))
+                                    }
+                                </div>
+                            ) : (
+                                <img
+                                    loading="lazy"
+                                    width="64"
+                                    height="64"
+                                    src={get_player_icon(fc.characterId, 64)}
+                                    alt={`${fc.name} portrait`}
+                                    class="er-fc-card__portrait"
+                                />
+                            )}
+                            <div class="er-fc-card__body">
+                                <span class="er-fc-card__name">{fc.name}</span>
+                                <span class="er-fc-card__count">
+                                    {fc.fleetCount.toLocaleString()} fleets
+                                </span>
+                                {'isAggregate' in fc && fc.isAggregate && (
+                                    <span class="er-fc-card__subtext">
+                                        Additional campaign FCs
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    ))
+                }
+            </div>
+        </div>
+
+        <div class="er-campaign__subsection">
+            <h4>Fleet participants</h4>
+            <p class="er-campaign__meta">
+                Top pilots by fleets flown
+            </p>
+            <div class="er-campaign__fc-grid">
+                {
+                    TOP_FLEET_PILOTS.map((pilot) => (
+                        <div class="er-fc-card">
+                            <img
+                                loading="lazy"
+                                width="64"
+                                height="64"
+                                src={get_player_icon(pilot.characterId, 64)}
+                                alt={`${pilot.name} portrait`}
+                                class="er-fc-card__portrait"
+                            />
+                            <div class="er-fc-card__body">
+                                <span class="er-fc-card__name">{pilot.name}</span>
+                                <span class="er-fc-card__count">
+                                    {pilot.fleetCount.toLocaleString()} fleets
+                                </span>
+                            </div>
+                        </div>
+                    ))
+                }
+            </div>
+        </div>
+
+        <div class="er-campaign__subsection">
+            <h4>Top krabbers</h4>
+            <p class="er-campaign__meta">
+                Top pilots by combined mining, ratting, and PI income
+            </p>
+            <div class="er-campaign__fc-grid">
+                {
+                    TOP_KRABBERS.map((krabber) => (
+                        <div class="er-fc-card">
+                            <img
+                                loading="lazy"
+                                width="64"
+                                height="64"
+                                src={get_player_icon(krabber.characterId, 64)}
+                                alt={`${krabber.name} portrait`}
+                                class="er-fc-card__portrait"
+                            />
+                            <div class="er-fc-card__body">
+                                <span class="er-fc-card__name">{krabber.name}</span>
+                                <span class="er-fc-card__count">
+                                    {formatIsk(krabber.totalIsk)}
+                                </span>
+                            </div>
+                        </div>
+                    ))
+                }
+            </div>
+        </div>
+    </section>
+
+    <section class="er-campaign__section">
+        <h3>Headlines</h3>
+        <p class="er-campaign__meta">
+            Stories and updates from the campaign
         </p>
-    </CampaignCallout>
+        <div class="er-headline-cards">
+            {
+                HEADLINES.map((headline) => (
+                    <a
+                        class:list={[
+                            'er-headline-card',
+                            `er-headline-card--${headline.category}`,
+                        ]}
+                        style={`--er-headline-bg: url('${headline.backgroundImage}')`}
+                        href={headline.url}
+                        target="_blank"
+                        rel="noopener noreferrer nofollow"
+                    >
+                        <div class="er-headline-card__body">
+                            <div class="er-headline-card__meta">
+                                <time datetime={headline.date}>
+                                    {formatHeadlineDate(headline.date)}
+                                </time>
+                                <span class="er-headline-card__tag">
+                                    {HEADLINE_CATEGORY_LABELS[headline.category]}
+                                </span>
+                            </div>
+                            <h4 class="er-headline-card__title">{headline.title}</h4>
+                            <p class="er-headline-card__reddit">
+                                <span class="er-headline-card__reddit-upvotes" aria-label={`${headline.upvotes} upvotes`}>
+                                    ▲ {headline.upvotes.toLocaleString()}
+                                </span>
+                                <span aria-hidden="true">·</span>
+                                <span>{headline.comments.toLocaleString()} comments</span>
+                                <span aria-hidden="true">·</span>
+                                <span>{formatHeadlineViews(headline.views)}</span>
+                            </p>
+                        </div>
+                        <span class="er-headline-card__arrow" aria-hidden="true">→</span>
+                    </a>
+                ))
+            }
+        </div>
+    </section>
 
     <footer class="er-campaign__footer">
-        <span>Minmatar Fleet Alliance · Dronelands Campaign Report</span>
-        <span>June 2026</span>
+        <span>Etherium Reach Campaign Report</span>
+        <span>July 2026</span>
     </footer>
 </div>
 
@@ -226,35 +447,6 @@ const combatRows = [
         gap: var(--space-2xl);
         width: 100%;
         min-width: 0;
-    }
-
-    .er-campaign__banner {
-        padding: var(--space-l) var(--space-xl);
-        background: color-mix(in srgb, var(--component-background) 80%, transparent);
-        border-left: 4px solid var(--fleet-yellow);
-    }
-
-    .er-campaign__eyebrow {
-        margin: 0;
-        font-size: var(--step--1);
-        color: var(--faded);
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-    }
-
-    .er-campaign__title {
-        margin: var(--space-2xs) 0 0;
-        font-size: var(--step-2);
-        color: var(--highlight);
-        line-height: 1.1;
-    }
-
-    .er-campaign__lead {
-        margin: var(--space-s) 0 0;
-        max-width: var(--max-text-width);
-        font-size: var(--step-0);
-        color: var(--faded);
-        line-height: 1.6;
     }
 
     .er-campaign__section {
@@ -277,6 +469,20 @@ const combatRows = [
         h4 {
             font-size: var(--step-0);
         }
+
+        h3 + .er-campaign__meta,
+        h4 + .er-campaign__meta {
+            margin-top: calc(var(--space-2xs) - var(--space-m));
+        }
+    }
+
+    .er-campaign__subsection {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        min-width: 0;
+        padding-top: var(--space-l);
+        border-top: 1px solid color-mix(in srgb, var(--border-color) 45%, transparent);
     }
 
     .er-campaign__meta,
@@ -286,6 +492,202 @@ const combatRows = [
         font-size: var(--step--1);
         color: var(--faded);
         line-height: 1.5;
+    }
+
+    .er-headline-cards {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        min-width: 0;
+    }
+
+    .er-headline-card {
+        position: relative;
+        isolation: isolate;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-m);
+        padding: var(--space-m) var(--space-l);
+        min-width: 0;
+        overflow: hidden;
+        text-decoration: none;
+        color: inherit;
+        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        border-left-width: 3px;
+        transition:
+            border-color 0.15s ease,
+            transform 0.15s ease;
+
+        &::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background-image: var(--er-headline-bg);
+            background-size: cover;
+            background-position: center;
+            transition: transform 0.15s ease;
+        }
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            transition: opacity 0.15s ease;
+        }
+
+        > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        &:hover,
+        &:focus-visible {
+            transform: translateX(2px);
+            border-color: color-mix(in srgb, var(--border-color-hover) 80%, transparent);
+        }
+
+        &:hover::before,
+        &:focus-visible::before {
+            transform: scale(1.03);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+
+    .er-headline-card--aar {
+        border-left-color: var(--fleet-yellow);
+
+        &::after {
+            background:
+                linear-gradient(
+                    90deg,
+                    color-mix(in srgb, hsl(0 0% 4%) 94%, var(--fleet-red) 6%) 0%,
+                    color-mix(in srgb, hsl(0 0% 4%) 82%, var(--fleet-red) 5%) 42%,
+                    color-mix(in srgb, hsl(0 0% 4%) 58%, transparent) 100%
+                );
+        }
+
+        &:hover::after,
+        &:focus-visible::after {
+            background:
+                linear-gradient(
+                    90deg,
+                    color-mix(in srgb, hsl(0 0% 4%) 90%, var(--fleet-red) 10%) 0%,
+                    color-mix(in srgb, hsl(0 0% 4%) 78%, var(--fleet-red) 8%) 42%,
+                    color-mix(in srgb, hsl(0 0% 4%) 52%, transparent) 100%
+                );
+        }
+
+        .er-headline-card__tag {
+            color: var(--fleet-yellow);
+            background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+            border-color: color-mix(in srgb, var(--fleet-yellow) 28%, transparent);
+        }
+    }
+
+    .er-headline-card--industry {
+        border-left-color: var(--alliance-blue);
+
+        &::after {
+            background:
+                linear-gradient(
+                    90deg,
+                    color-mix(in srgb, hsl(0 0% 4%) 94%, var(--alliance-blue) 6%) 0%,
+                    color-mix(in srgb, hsl(0 0% 4%) 82%, var(--alliance-blue) 5%) 42%,
+                    color-mix(in srgb, hsl(0 0% 4%) 58%, transparent) 100%
+                );
+        }
+
+        &:hover::after,
+        &:focus-visible::after {
+            background:
+                linear-gradient(
+                    90deg,
+                    color-mix(in srgb, hsl(0 0% 4%) 90%, var(--alliance-blue) 10%) 0%,
+                    color-mix(in srgb, hsl(0 0% 4%) 78%, var(--alliance-blue) 8%) 42%,
+                    color-mix(in srgb, hsl(0 0% 4%) 52%, transparent) 100%
+                );
+        }
+
+        .er-headline-card__tag {
+            color: color-mix(in srgb, var(--alliance-blue) 65%, white);
+            background: color-mix(in srgb, var(--alliance-blue) 18%, transparent);
+            border-color: color-mix(in srgb, var(--alliance-blue) 35%, transparent);
+        }
+    }
+
+    .er-headline-card__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+        flex: 1;
+    }
+
+    .er-headline-card__meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-s);
+        font-size: var(--step--1);
+        color: var(--faded);
+        line-height: 1.4;
+
+        time {
+            white-space: nowrap;
+        }
+    }
+
+    .er-headline-card__tag {
+        padding: 0.1em 0.55em;
+        font-size: 0.85em;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        border: 1px solid transparent;
+        line-height: 1.4;
+    }
+
+    .er-headline-card__title {
+        margin: 0;
+        font-size: var(--step-0);
+        font-weight: 600;
+        color: var(--highlight);
+        line-height: 1.35;
+    }
+
+    .er-headline-card__reddit {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.45em;
+        margin: 0;
+        font-size: var(--step--2);
+        color: color-mix(in srgb, var(--faded) 88%, transparent);
+        line-height: 1.4;
+    }
+
+    .er-headline-card__reddit-upvotes {
+        color: color-mix(in srgb, var(--faded) 95%, var(--fleet-yellow) 5%);
+    }
+
+    .er-headline-card__arrow {
+        flex-shrink: 0;
+        font-size: var(--step-1);
+        color: var(--faded);
+        transition: color 0.15s ease, transform 0.15s ease;
+    }
+
+    .er-headline-card:hover .er-headline-card__arrow,
+    .er-headline-card:focus-visible .er-headline-card__arrow {
+        color: var(--fleet-yellow);
+        transform: translateX(3px);
     }
 
     .er-campaign__subheading {
@@ -302,10 +704,99 @@ const combatRows = [
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
+    .er-campaign__stat-grid--4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .er-campaign__fc-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: var(--space-m);
+        min-width: 0;
+    }
+
+    .er-fc-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-s);
+        padding: var(--space-s);
+        background: color-mix(in srgb, var(--component-background) 80%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        min-width: 0;
+        text-align: center;
+    }
+
+    .er-fc-card__portrait {
+        border-radius: 4px;
+    }
+
+    .er-fc-card--other {
+        justify-content: flex-start;
+    }
+
+    .er-fc-card__portraits {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-content: flex-start;
+        gap: 2px;
+        width: 100%;
+        min-height: 64px;
+        padding: 2px;
+    }
+
+    .er-fc-card__portrait-mini {
+        border-radius: 3px;
+        flex-shrink: 0;
+    }
+
+    .er-fc-card__subtext {
+        font-size: var(--step--2);
+        color: var(--faded);
+        line-height: 1.3;
+    }
+
+    .er-fc-card__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+        width: 100%;
+    }
+
+    .er-fc-card__name {
+        font-size: var(--step-0);
+        font-weight: 600;
+        color: var(--highlight);
+        line-height: 1.2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .er-fc-card__count {
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
     .er-campaign__split {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: var(--space-xl);
+        min-width: 0;
+
+        > div {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-m);
+        }
+    }
+
+    .er-campaign__chart-block {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
         min-width: 0;
     }
 
@@ -319,6 +810,11 @@ const combatRows = [
         min-width: 0;
     }
 
+    .er-campaign__chart-plot {
+        margin-inline: calc(-1 * var(--space-m));
+        min-width: 0;
+    }
+
     .er-campaign__footer {
         display: flex;
         flex-wrap: wrap;
@@ -329,12 +825,31 @@ const combatRows = [
     }
 
     @media (max-width: 900px) {
-        .er-campaign__stat-grid--3 {
+        .er-campaign__stat-grid--3,
+        .er-campaign__stat-grid--4 {
             grid-template-columns: 1fr;
+        }
+
+        .er-campaign__fc-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
         .er-campaign__split {
             grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .er-campaign__fc-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .er-headline-card {
+            padding: var(--space-m);
+        }
+
+        .er-headline-card__arrow {
+            display: none;
         }
     }
 </style>

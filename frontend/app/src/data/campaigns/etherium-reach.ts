@@ -57,9 +57,10 @@ export const EXPLORATION_GROSS_ISK = [
 export const FLEETS_MONTHLY = [20, 7, 17, 28, 21, 12, 9, 8]
 
 export const CAMPAIGN_BEATS = [
-    { monthIndex: 3, label: 'SL0W collapse' },
-    { monthIndex: 5, label: 'B0SS losing ground' },
-    { monthIndex: 6, label: 'RMC wins war' },
+    { monthIndex: 3, label: 'SL0W collapses' },
+    { monthIndex: 5, label: 'B0SS loses region' },
+    { monthIndex: 6, label: 'RMC consolidates space' },
+    { monthIndex: 7, label: 'TRD disbands' },
 ] as const
 
 export const PERIOD_DRONELANDS_ISK_KILLS = 3_487_300_958_894
@@ -81,12 +82,121 @@ export const ISK_DESTROYED_MONTHLY = [
 export const PERIOD_OUTSIDE_FLEETS = 149
 export const PERIOD_DRONELANDS_FLEETS = 122
 
+export type FleetCommanderEntry =
+    | {
+          characterId: number
+          name: string
+          fleetCount: number
+      }
+    | {
+          characterId: null
+          name: string
+          fleetCount: number
+          isAggregate: true
+      }
+
+/** Top FCs by EveFleetInstance count · Etherium Reach · Nov 2025 – Jun 18 2026. */
+export const TOP_FLEET_COMMANDERS: readonly FleetCommanderEntry[] = [
+    { characterId: 634_915_984, name: 'BearThatCares', fleetCount: 46 },
+    { characterId: 2_120_307_642, name: 'Casper Sullivan', fleetCount: 21 },
+    { characterId: 1_907_307_618, name: 'Chad VanGaalen', fleetCount: 16 },
+    { characterId: 2_118_080_229, name: 'Vex Drake', fleetCount: 13 },
+    {
+        characterId: null,
+        name: 'Other commanders',
+        fleetCount: 26,
+        isAggregate: true,
+    },
+]
+
+/** Remaining FCs · rank 5+ · Nov 2025 – Jun 18 2026 · 5 instances have no assigned FC. */
+export const OTHER_FLEET_COMMANDERS = {
+    fleetCount: 26,
+    commanders: [
+        { characterId: 90_146_672, name: 'Khermes', fleetCount: 3 },
+        { characterId: 93_068_254, name: 'Isa Kento', fleetCount: 3 },
+        { characterId: 93_672_441, name: 'Orion Sa-Solo', fleetCount: 2 },
+        { characterId: 2_117_051_187, name: 'Ronoldo Hollentco', fleetCount: 2 },
+        { characterId: 856_157_051, name: 'Angskel Issod', fleetCount: 2 },
+        { characterId: 2_117_059_479, name: 'MiniSpartan', fleetCount: 2 },
+        { characterId: 454_273_965, name: 'Rafaella Carra', fleetCount: 1 },
+        { characterId: 955_656_982, name: 'Tyshalle Fallen', fleetCount: 1 },
+        { characterId: 2_116_242_012, name: 'Sycamoria', fleetCount: 1 },
+        { characterId: 1_771_780_065, name: 'NCC 1701E', fleetCount: 1 },
+        { characterId: 154_198_067, name: 'Barret Smythe', fleetCount: 1 },
+        { characterId: 95_115_998, name: 'Alexander Akachii', fleetCount: 1 },
+        { characterId: 2_122_947_599, name: 'Jozas Djevojka', fleetCount: 1 },
+    ],
+} as const
+
+/** Top pilots by player · distinct fleet instances across alts · excludes TOP_FLEET_COMMANDERS · Nov 2025 – Jun 2026. */
+export const TOP_FLEET_PILOTS = [
+    { characterId: 187_187_113, name: 'Lioane', fleetCount: 62 },
+    { characterId: 762_475_669, name: 'SADIST666', fleetCount: 59 },
+    { characterId: 1_444_365_537, name: 'Tasha Bailey', fleetCount: 52 },
+    { characterId: 92_361_974, name: 'Dima Volenkov', fleetCount: 46 },
+    { characterId: 2_121_103_796, name: 'Beautiful Mim', fleetCount: 43 },
+] as const
+
+export type TopKrabberEntry = {
+    characterId: number
+    name: string
+    totalIsk: number
+    miningIsk?: number
+    rattingIsk?: number
+    piIsk?: number
+}
+
+/** Top pilots by player · mining + PI + ratting in dronelands · Nov 2025 – Jun 2026. */
+export const TOP_KRABBERS: readonly TopKrabberEntry[] = [
+    {
+        characterId: 91_439_324,
+        name: 'Keldor Eternia',
+        totalIsk: 65_184_679_264,
+        miningIsk: 52_415_541_583,
+        piIsk: 12_725_904_800,
+        rattingIsk: 43_232_881,
+    },
+    {
+        characterId: 2_121_855_073,
+        name: 'Bliink Nado',
+        totalIsk: 38_739_211_246,
+        miningIsk: 35_765_584_846,
+        piIsk: 2_973_626_400,
+        rattingIsk: 0,
+    },
+    {
+        characterId: 2_124_070_255,
+        name: 'Maurdakar',
+        totalIsk: 18_101_364_435,
+        miningIsk: 15_250_637_133,
+        piIsk: 2_751_863_600,
+        rattingIsk: 98_863_702,
+    },
+    {
+        characterId: 2_124_076_088,
+        name: 'DudeBroMan',
+        totalIsk: 18_094_581_179,
+        miningIsk: 0,
+        piIsk: 18_094_581_179,
+        rattingIsk: 0,
+    },
+    {
+        characterId: 2_123_699_290,
+        name: 'Lilith Himmelsgaenger',
+        totalIsk: 16_868_910_139,
+        miningIsk: 0,
+        piIsk: 14_954_831_316,
+        rattingIsk: 1_914_078_823,
+    },
+] as const
+
 export const FLEET_PILOTS = 269
 export const FLEET_CHARACTERS = 535
 export const FLEET_PARTICIPATION_PCT = 79
 
-export const GROSS_ISK_KILLS = 1_051_116_941_129
-export const GROSS_ISK_LOSSES = 682_445_654_452
+export const GROSS_ISK_KILLS = PERIOD_DRONELANDS_ISK_KILLS
+export const GROSS_ISK_LOSSES = PERIOD_DRONELANDS_ISK_LOSSES
 
 /** Courier rewards · finished contracts · start or end in dronelands. */
 export const GROSS_PLAYER_COURIER_REWARDS = 35_827_818_505
@@ -125,8 +235,22 @@ export const GROSS_CORP_TAX_TOTAL =
     GROSS_CORP_INDUSTRY_TAX +
     GROSS_CORP_BROKER_FEES
 
-export const OPSEC_PRIVATE_LINE_ITEM = 375_000_000_000
-export const GROSS_CORP_ALL = GROSS_CORP_TAX_TOTAL + OPSEC_PRIVATE_LINE_ITEM
+/** Metenox moon income · opsec. */
+export const OPSEC_MOON_INCOME = 406_250_000_000
+/** Alliance diplomatic contract margin. */
+export const OPSEC_CONTRACT_INCOME = 100_000_000_000
+/** Jul 2026 wind-down announcement · moons and contracts. */
+export const GROSS_ALLIANCE_MOONS_AND_CONTRACTS =
+    OPSEC_MOON_INCOME + OPSEC_CONTRACT_INCOME
+export const GROSS_CORP_ALL =
+    GROSS_CORP_TAX_TOTAL + GROSS_ALLIANCE_MOONS_AND_CONTRACTS
+
+/** Jul 2026 wind-down announcement headline figures. */
+export const CAMPAIGN_ISK_DESTROYED = ISK_DESTROYED_MONTHLY.reduce(
+    (sum, value) => sum + value,
+    0,
+)
+export const CAMPAIGN_PILOT_INCOME = GROSS_PLAYER_TOTAL
 
 export const DRONELANDS_REGIONS = [
     'Etherium Reach',
@@ -135,18 +259,19 @@ export const DRONELANDS_REGIONS = [
     'Perrigen Falls',
 ] as const
 
+/** zKill Nov 25 – Jun 26 × monthly DB regional share within dronelands. */
 export const ISK_KILLS_BY_REGION: Record<string, number> = {
-    'Etherium Reach': 272_473_438_105,
-    'The Kalevala Expanse': 567_846_664_375,
-    'The Spire': 119_501_683_344,
-    'Perrigen Falls': 91_295_155_305,
+    'Etherium Reach': 1_177_496_423_540,
+    'The Kalevala Expanse': 1_742_238_881_766,
+    'The Spire': 522_908_504_868,
+    'Perrigen Falls': 44_657_148_720,
 }
 
 export const ISK_LOSSES_BY_REGION: Record<string, number> = {
-    'Etherium Reach': 319_141_222_701,
-    'The Kalevala Expanse': 223_026_141_112,
-    'The Spire': 123_562_845_349,
-    'Perrigen Falls': 16_715_445_290,
+    'Etherium Reach': 409_194_497_173,
+    'The Kalevala Expanse': 351_203_192_606,
+    'The Spire': 156_025_867_616,
+    'Perrigen Falls': 4_923_930_357,
 }
 
 export const DRONELANDS_REGIONS_BY_DESTROYED = [...DRONELANDS_REGIONS].sort(
@@ -154,6 +279,80 @@ export const DRONELANDS_REGIONS_BY_DESTROYED = [...DRONELANDS_REGIONS].sort(
 )
 
 export const COVER_IMAGE = '/images/etherium-card.jpg'
+
+export type CampaignHeadlineCategory = 'aar' | 'industry'
+
+export const HEADLINE_AAR_BACKGROUNDS = [
+    '/images/combatlog-tile-background.webp',
+    '/images/dread-card.jpg',
+] as const
+
+export const HEADLINE_INDUSTRY_BACKGROUND = '/images/industry-card.jpg'
+
+export type CampaignHeadline = {
+    title: string
+    url: string
+    date: string
+    category: CampaignHeadlineCategory
+    backgroundImage: string
+    upvotes: number
+    comments: number
+    views: string | number
+}
+
+/** u/BearThatCares · r/Eve campaign AARs and updates · Jan–Mar 2026. */
+export const HEADLINES: readonly CampaignHeadline[] = [
+    {
+        title: 'AAR: Dronelands, dreads, destruction (300B dread brawl)',
+        url: 'https://www.reddit.com/r/Eve/comments/1q7jarz/aar_dronelands_dreads_destruction_300b_dread_brawl/',
+        date: '2026-01-08',
+        category: 'aar',
+        backgroundImage: HEADLINE_AAR_BACKGROUNDS[0],
+        upvotes: 128,
+        comments: 81,
+        views: '36K',
+    },
+    {
+        title: 'AAR: 200B DREAD BRAWL IN DRONELANDS',
+        url: 'https://www.reddit.com/r/Eve/comments/1r3qwgt/aar_200b_dread_brawl_in_dronelands/',
+        date: '2026-02-13',
+        category: 'aar',
+        backgroundImage: HEADLINE_AAR_BACKGROUNDS[1],
+        upvotes: 91,
+        comments: 27,
+        views: '27K',
+    },
+    {
+        title: 'How Minmatar Fleet visualizes our industrial supply chain with ESI',
+        url: 'https://www.reddit.com/r/Eve/comments/1r8o0da/how_minmatar_fleet_visualizes_our_industrial/',
+        date: '2026-02-19',
+        category: 'industry',
+        backgroundImage: HEADLINE_INDUSTRY_BACKGROUND,
+        upvotes: 132,
+        comments: 25,
+        views: '25K',
+    },
+    {
+        title: 'AAR: We caught our first supercarrier',
+        url: 'https://www.reddit.com/r/Eve/comments/1rmw8if/aar_we_caught_our_first_supercarrier/',
+        date: '2026-03-07',
+        category: 'aar',
+        backgroundImage: HEADLINE_AAR_BACKGROUNDS[0],
+        upvotes: 85,
+        comments: 25,
+        views: '23K',
+    },
+    {
+        title: 'AAR: 1.3T+ DREAD BRAWL IN DRONELANDS',
+        url: 'https://www.reddit.com/r/Eve/comments/1rsdgg9/aar_13t_dread_brawl_in_dronelands/',
+        date: '2026-03-13',
+        category: 'aar',
+        backgroundImage: HEADLINE_AAR_BACKGROUNDS[1],
+        upvotes: 135,
+        comments: 85,
+        views: '33K',
+    },
+] as const
 
 export function toBillions(isk: number): number {
     return Math.round((isk / 1_000_000_000) * 100) / 100

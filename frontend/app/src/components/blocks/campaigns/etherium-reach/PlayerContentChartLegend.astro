@@ -1,0 +1,57 @@
+<ul class="er-campaign__chart-legend" aria-hidden="true">
+    <li>
+        <svg width="24" height="12" aria-hidden="true">
+            <line x1="0" y1="6" x2="24" y2="6" class="er-chart-legend__isk-line" stroke-width="2.5" />
+            <circle cx="12" cy="6" r="3.5" class="er-chart-legend__isk-point" />
+        </svg>
+        <span>ISK destroyed</span>
+    </li>
+    <li>
+        <svg width="16" height="12" aria-hidden="true">
+            <rect x="2" y="2" width="12" height="8" class="er-chart-legend__fleet-bar" rx="1" />
+        </svg>
+        <span>Campaign fleets</span>
+    </li>
+</ul>
+
+<style lang="scss">
+    .er-campaign__chart-legend {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: var(--space-l);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        font-size: var(--step-0);
+        color: var(--faded);
+    }
+
+    .er-campaign__chart-legend li {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-xs);
+        white-space: nowrap;
+    }
+
+    .er-chart-legend__fleet-bar {
+        fill: var(--alliance-blue);
+        fill-opacity: 0.62;
+        stroke: color-mix(in srgb, var(--alliance-blue) 80%, white 20%);
+        stroke-width: 1;
+        stroke-opacity: 0.35;
+    }
+
+    .er-chart-legend__isk-line {
+        fill: none;
+        stroke: var(--green);
+        stroke-linejoin: round;
+        stroke-linecap: round;
+    }
+
+    .er-chart-legend__isk-point {
+        fill: var(--green);
+        stroke: var(--component-background);
+        stroke-width: 1.5;
+    }
+</style>
