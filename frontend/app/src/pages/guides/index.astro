@@ -5,18 +5,20 @@ const { t, translatePath } = i18n(Astro.url)
 import { getGuidesByCategory, guideCategories, getIndexedGuides } from '@/data/guides'
 import { GUIDES_INDEX_COVER } from '@/data/guides/covers'
 import { buildGuidesIndexJsonLd, getGuidesIndexSeo } from '@/data/guides/seo'
+import { get_site_origin } from '@helpers/seo'
 
+const site_origin = get_site_origin(Astro.url.origin)
 const indexedGuides = getIndexedGuides()
 const seo = getGuidesIndexSeo({
     siteName: t('index.page_title'),
-    siteOrigin: Astro.url.origin,
+    siteOrigin: site_origin,
     translatePath,
     t,
     coverImage: GUIDES_INDEX_COVER.image,
 })
 const structured_data = buildGuidesIndexJsonLd({
     siteName: t('index.page_title'),
-    siteOrigin: Astro.url.origin,
+    siteOrigin: site_origin,
     metaTitle: seo.metaTitle,
     metaDescription: seo.metaDescription,
     canonicalUrl: seo.canonicalUrl,

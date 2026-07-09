@@ -25,12 +25,12 @@ gunicorn = "*"
 sentry-sdk = {extras = ["django","celery"], version = "*"}
 gitpython = "*"
 upsidedown = "*"
-pillow = "*"
 factory-boy = "*"
 coverage = "*"
 black = "*"
 docker = "*"
 django-safedelete = "*"
+pillow = "*"
 
 [dev-packages]
 pylint = "*"

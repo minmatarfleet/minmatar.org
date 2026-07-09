@@ -2,9 +2,8 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { COVER_IMAGE } from '@/data/campaigns/etherium-reach'
-import { buildEtheriumReachCampaignJsonLd } from '@/data/campaigns/etherium-reach-seo'
-import { get_site_origin } from '@helpers/seo'
+import { COVER_IMAGE } from '@/data/campaigns/scalding-pass'
+import { buildScaldingPassCampaignJsonLd } from '@/data/campaigns/scalding-pass-seo'
 
 import Viewport from '@layouts/Viewport.astro'
 import PageLanding from '@components/page/PageLanding.astro'
@@ -12,22 +11,21 @@ import PageTitle from '@components/page/PageTitle.astro'
 import TextBox from '@components/layout/TextBox.astro'
 import Wrapper from '@components/compositions/Wrapper.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
-import EtheriumReachCampaign from '@components/blocks/campaigns/etherium-reach/EtheriumReachCampaign.astro'
+import ScaldingPassCampaign from '@components/blocks/campaigns/scalding-pass/ScaldingPassCampaign.astro'
 
-const page_title = t('campaigns.etherium_reach.page_title')
-const campaign_period = t('campaigns.etherium_reach.campaign_period')
-const page_description = t('campaigns.etherium_reach.leading_text')
-const meta_title = t('campaigns.etherium_reach.meta_title')
+const page_title = t('campaigns.scalding_pass.page_title')
+const campaign_period = t('campaigns.scalding_pass.campaign_period')
+const page_description = t('campaigns.scalding_pass.leading_text')
+const meta_title = t('campaigns.scalding_pass.meta_title')
     .replace('{site}', t('index.page_title'))
-const meta_description = t('campaigns.etherium_reach.meta_description')
-const site_origin = get_site_origin(Astro.url.origin)
-const canonical_url = new URL(translatePath('/campaigns/etherium-reach/'), site_origin).href
-const meta_image = new URL(COVER_IMAGE, site_origin).href
+const meta_description = t('campaigns.scalding_pass.meta_description')
+const canonical_url = new URL(translatePath('/campaigns/scalding-pass/'), Astro.url.origin).href
+const meta_image = new URL(COVER_IMAGE, Astro.url.origin).href
 
-const structured_data = buildEtheriumReachCampaignJsonLd({
+const structured_data = buildScaldingPassCampaignJsonLd({
     canonicalUrl: canonical_url,
     siteName: t('index.page_title'),
-    siteOrigin: site_origin,
+    siteOrigin: Astro.url.origin,
     metaTitle: page_title,
     metaDescription: meta_description,
     metaImage: meta_image,
@@ -57,7 +55,7 @@ const structured_data = buildEtheriumReachCampaignJsonLd({
             overlay: true,
         }}
     >
-        <Flexblock gap="var(--space-2xl)" class="er-page">
+        <Flexblock gap="var(--space-2xl)" class="sp-page">
             <TextBox max_width="var(--max-content-width)">
                 <Flexblock gap="var(--space-xl)">
                     <Flexblock gap="var(--space-3xs)">
@@ -73,14 +71,14 @@ const structured_data = buildEtheriumReachCampaignJsonLd({
                 padding_inline="0"
                 padding_block="0"
             >
-                <EtheriumReachCampaign />
+                <ScaldingPassCampaign />
             </Wrapper>
         </Flexblock>
     </PageLanding>
 </Viewport>
 
 <style lang="scss">
-    .er-page {
+    .sp-page {
         width: 100%;
         max-width: 100%;
         min-width: 0;

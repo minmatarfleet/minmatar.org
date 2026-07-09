@@ -136,6 +136,23 @@ export const ui = {
         'campaigns.providence.meta_description':
             'FL33T\'s war on its ancestral enemy, CVA, in Providence — nullsec structure grinds, capital fleet building, and defending the Watermelon.',
 
+        'campaigns.scalding_pass.page_title': 'Scalding Pass Campaign Report',
+        'campaigns.scalding_pass.campaign_period': 'Feb – May 2024',
+        'campaigns.scalding_pass.leading_text':
+            'A focused nullsec push into Scalding Pass — combat against VAPOR, B0SS, and allies, capital fights in F-5FDA. Enabled by Zarzahk stargates, which were closed during our campaign, ending it.',
+        'campaigns.scalding_pass.meta_title':
+            'Scalding Pass Campaign Report | {site}',
+        'campaigns.scalding_pass.meta_description':
+            'Combat, fleets, and contracted support from Minmatar Fleet\'s 2024 Scalding Pass campaign — 368B ISK destroyed in-region and the pilots who flew it.',
+
+        'campaigns.hek.page_title': 'Hek Campaign Report',
+        'campaigns.hek.campaign_period': 'November 2023',
+        'campaigns.hek.leading_text':
+            'Freeing Metropolis from the Hek Mining Association, Nebula Industries, and allied cartels for crimes against miners and industrialists around the Hek trading hub.',
+        'campaigns.hek.meta_title': 'Hek Campaign Report | {site}',
+        'campaigns.hek.meta_description':
+            'Combat stats, surrender terms, and timeline from Minmatar Fleet\'s 2023 Hek campaign — 65B ISK destroyed in Hek and 20B surrender ISK.',
+
         'propaganda.page_title': 'Propaganda',
         'propaganda.leading_text': 'All our propaganda in a single place.',
         'propaganda.meta_description': 'All our propaganda in a single place.',
@@ -987,6 +1004,10 @@ export const ui = {
             'Etherium Reach Dronelands campaign report — alliance participation, combat, pilot income, and campaign results.',
         'page_finder.campaigns.providence.description':
             'FL33T\'s war on its ancestral enemy, CVA, in Providence — structure grinds, capital fleet building, and the Watermelon.',
+        'page_finder.campaigns.scalding_pass.description':
+            'Scalding Pass campaign report — combat, fleets, contracted support, and campaign results from Feb–May 2024.',
+        'page_finder.campaigns.hek.description':
+            'Hek highsec campaign report — combat stats in Hek, surrender ISK, timeline, and public headlines from November 2023.',
         'page_finder.story.description': 'Learn more about our story.',
         'page_finder.values.description': 'What we expect from every FL33T member.',
         'page_finder.playstyle.description': 'Learn more about our playstyle.',

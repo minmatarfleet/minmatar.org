@@ -5,5 +5,5 @@ const { translatePath } = i18n(Astro.url)
 
 const doctrine_id = Astro.params.doctrine_id ?? '0';
 
-return Astro.redirect(translatePath(`/ships/doctrines/${doctrine_id}`))
+return Astro.redirect(translatePath(`/ships/doctrines/${doctrine_id}`), 301)
 ---

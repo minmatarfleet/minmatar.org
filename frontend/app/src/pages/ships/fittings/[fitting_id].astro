@@ -3,5 +3,5 @@ import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
 const id = Astro.params?.fitting_id ?? '0'
-return Astro.redirect(translatePath(`/ships/fittings/normal/${id}`))
+return Astro.redirect(translatePath(`/ships/fittings/normal/${id}`), 301)
 ---

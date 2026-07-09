@@ -1,0 +1,553 @@
+---
+import {
+    CAMPAIGN_BEATS,
+    ENEMY_STRUCTURE_VALUE_ESTIMATE,
+    formatIsk,
+    HEADLINES,
+    ISK_DESTROYED,
+    ISK_LOST,
+    KEY_PEOPLE,
+    SURRENDER_ISK,
+    STRUCTURES_CLEARED_FROM_TIMERS,
+} from '@/data/campaigns/hek'
+
+import { get_player_icon } from '@helpers/eve_image_server'
+
+import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
+import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
+
+const HEADLINE_CATEGORY_LABELS = {
+    aar: 'AAR',
+    update: 'Update',
+    video: 'Video',
+} as const
+
+const settlementRows = [
+    {
+        cells: ['Surrender ISK accepted', formatIsk(SURRENDER_ISK)] as const,
+        tone: 'success' as const,
+    },
+    {
+        cells: ['Structures spared from conflict', String(STRUCTURES_CLEARED_FROM_TIMERS)] as const,
+    },
+    {
+        cells: ['Spared enemy structure value', `~${formatIsk(ENEMY_STRUCTURE_VALUE_ESTIMATE)}`] as const,
+    },
+]
+
+function formatBeatDate(isoDate: string): string {
+    return new Date(`${isoDate}T00:00:00Z`).toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        timeZone: 'UTC',
+    })
+}
+
+function formatHeadlineDate(isoDate: string): string {
+    return formatBeatDate(isoDate)
+}
+---
+
+<div class="hek-campaign">
+    <section class="hek-campaign__section">
+        <h3>Campaign by the numbers</h3>
+        <p class="hek-campaign__meta">
+            Structure warfare, combat, and settlement
+        </p>
+        <div class="hek-campaign__stat-grid hek-campaign__stat-grid--3">
+            <CampaignStat
+                label="ISK destroyed"
+                value={formatIsk(ISK_DESTROYED)}
+                tone="success"
+            />
+            <CampaignStat
+                label="ISK lost"
+                value={formatIsk(ISK_LOST)}
+                tone="danger"
+            />
+            <CampaignStat
+                label="Surrender ISK"
+                value={formatIsk(SURRENDER_ISK)}
+                tone="info"
+            />
+        </div>
+    </section>
+
+    <section class="hek-campaign__section">
+        <h3>Reparations and settlement</h3>
+        <p class="hek-campaign__meta">
+            Settlement after structure pressure in Hek
+        </p>
+        <CampaignDataTable
+            headers={['Outcome', 'Detail']}
+            rows={settlementRows}
+        />
+    </section>
+
+    <section class="hek-campaign__section">
+        <h3>Campaign timeline</h3>
+        <p class="hek-campaign__meta">
+            How the campaign unfolded
+        </p>
+        <ol class="hek-campaign__timeline">
+            {
+                CAMPAIGN_BEATS.map((beat) => (
+                    <li class="hek-campaign__timeline-item">
+                        <time class="hek-campaign__timeline-date" datetime={beat.date}>
+                            {formatBeatDate(beat.date)}
+                        </time>
+                        <div class="hek-campaign__timeline-body">
+                            <p class="hek-campaign__timeline-label">{beat.label}</p>
+                            <p class="hek-campaign__timeline-source">{beat.source}</p>
+                        </div>
+                    </li>
+                ))
+            }
+        </ol>
+    </section>
+
+    <section class="hek-campaign__section">
+        <h3>Key people</h3>
+        <p class="hek-campaign__meta">
+            Pilots who shaped the campaign
+        </p>
+        <div class="hek-campaign__people-grid">
+            {
+                KEY_PEOPLE.map((person) => (
+                    <div class="hek-person-card">
+                        <img
+                            loading="lazy"
+                            width="64"
+                            height="64"
+                            src={get_player_icon(person.characterId, 64)}
+                            alt={`${person.name} portrait`}
+                            class="hek-person-card__portrait"
+                        />
+                        <div class="hek-person-card__body">
+                            <span class="hek-person-card__name">{person.name}</span>
+                            <span class="hek-person-card__role">{person.role}</span>
+                        </div>
+                    </div>
+                ))
+            }
+        </div>
+    </section>
+
+    <section class="hek-campaign__section">
+        <h3>Headlines</h3>
+        <p class="hek-campaign__meta">
+            Stories and updates from the campaign
+        </p>
+        <div class="hek-headline-cards">
+            {
+                HEADLINES.map((headline) => (
+                    <a
+                        class:list={[
+                            'hek-headline-card',
+                            `hek-headline-card--${headline.category}`,
+                        ]}
+                        style={`--hek-headline-bg: url('${headline.backgroundImage}')`}
+                        href={headline.url}
+                        target="_blank"
+                        rel="noopener noreferrer nofollow"
+                    >
+                        <div class="hek-headline-card__body">
+                            <div class="hek-headline-card__meta">
+                                <time datetime={headline.date}>
+                                    {formatHeadlineDate(headline.date)}
+                                </time>
+                                <span class="hek-headline-card__tag">
+                                    {HEADLINE_CATEGORY_LABELS[headline.category]}
+                                </span>
+                            </div>
+                            <h4 class="hek-headline-card__title">{headline.title}</h4>
+                        </div>
+                        <span class="hek-headline-card__arrow" aria-hidden="true">→</span>
+                    </a>
+                ))
+            }
+        </div>
+    </section>
+
+    <footer class="hek-campaign__footer">
+        <span>Hek Campaign Report</span>
+        <span>November 2023</span>
+    </footer>
+</div>
+
+<style lang="scss">
+    .hek-campaign {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xl);
+        width: 100%;
+        min-width: 0;
+    }
+
+    .hek-campaign__section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        min-width: 0;
+
+        h3,
+        h4 {
+            margin: 0;
+            color: var(--highlight);
+            line-height: 1.2;
+        }
+
+        h3 {
+            font-size: var(--step-1);
+        }
+
+        h4 {
+            font-size: var(--step-0);
+        }
+
+        h3 + .hek-campaign__meta,
+        h4 + .hek-campaign__meta {
+            margin-top: calc(var(--space-2xs) - var(--space-m));
+        }
+    }
+
+    .hek-campaign__subsection {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        min-width: 0;
+        padding-top: var(--space-l);
+        border-top: 1px solid color-mix(in srgb, var(--border-color) 45%, transparent);
+    }
+
+    .hek-campaign__meta {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--faded);
+        line-height: 1.5;
+    }
+
+    .hek-campaign__stat-grid {
+        display: grid;
+        gap: var(--space-m);
+        min-width: 0;
+    }
+
+    .hek-campaign__stat-grid--3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .hek-campaign__people-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: var(--space-m);
+        min-width: 0;
+    }
+
+    .hek-person-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-s);
+        padding: var(--space-s);
+        background: color-mix(in srgb, var(--component-background) 80%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        min-width: 0;
+        text-align: center;
+    }
+
+    .hek-person-card__portrait {
+        flex-shrink: 0;
+        width: 64px;
+        height: 64px;
+        border-radius: 4px;
+    }
+
+    .hek-person-card__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+        width: 100%;
+    }
+
+    .hek-person-card__name {
+        font-size: var(--step-0);
+        font-weight: 600;
+        color: var(--highlight);
+        line-height: 1.2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .hek-person-card__role {
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    .hek-campaign__timeline {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+    }
+
+    .hek-campaign__timeline-item {
+        display: grid;
+        grid-template-columns: 7.5rem minmax(0, 1fr);
+        gap: var(--space-m);
+        padding: var(--space-m) var(--space-l);
+        border-bottom: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
+
+        &:last-child {
+            border-bottom: none;
+        }
+    }
+
+    .hek-campaign__timeline-date {
+        font-size: var(--step--1);
+        font-weight: 600;
+        color: var(--fleet-yellow);
+        white-space: nowrap;
+    }
+
+    .hek-campaign__timeline-body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+    }
+
+    .hek-campaign__timeline-label {
+        margin: 0;
+        font-size: var(--step-0);
+        color: var(--highlight);
+        line-height: 1.35;
+    }
+
+    .hek-campaign__timeline-source {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--faded);
+        line-height: 1.4;
+    }
+
+    .hek-headline-cards {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        min-width: 0;
+    }
+
+    .hek-headline-card {
+        position: relative;
+        isolation: isolate;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-m);
+        padding: var(--space-m) var(--space-l);
+        min-width: 0;
+        overflow: hidden;
+        text-decoration: none;
+        color: inherit;
+        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        border-left-width: 3px;
+        transition:
+            border-color 0.15s ease,
+            transform 0.15s ease;
+
+        &::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background-image: var(--hek-headline-bg);
+            background-size: cover;
+            background-position: center;
+            transition: transform 0.15s ease;
+        }
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            transition: opacity 0.15s ease;
+        }
+
+        > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        &:hover,
+        &:focus-visible {
+            transform: translateX(2px);
+            border-color: color-mix(in srgb, var(--border-color-hover) 80%, transparent);
+        }
+
+        &:hover::before,
+        &:focus-visible::before {
+            transform: scale(1.03);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+
+    .hek-headline-card--aar {
+        border-left-color: var(--fleet-yellow);
+
+        &::after {
+            background:
+                linear-gradient(
+                    90deg,
+                    color-mix(in srgb, hsl(0 0% 4%) 94%, var(--fleet-red) 6%) 0%,
+                    color-mix(in srgb, hsl(0 0% 4%) 82%, var(--fleet-red) 5%) 42%,
+                    color-mix(in srgb, hsl(0 0% 4%) 58%, transparent) 100%
+                );
+        }
+    }
+
+    .hek-headline-card--update {
+        border-left-color: var(--alliance-blue);
+
+        &::after {
+            background:
+                linear-gradient(
+                    90deg,
+                    color-mix(in srgb, hsl(0 0% 4%) 94%, var(--alliance-blue) 6%) 0%,
+                    color-mix(in srgb, hsl(0 0% 4%) 82%, var(--alliance-blue) 5%) 42%,
+                    color-mix(in srgb, hsl(0 0% 4%) 58%, transparent) 100%
+                );
+        }
+    }
+
+    .hek-headline-card--video {
+        border-left-color: var(--fleet-red);
+
+        &::after {
+            background:
+                linear-gradient(
+                    90deg,
+                    color-mix(in srgb, hsl(0 0% 4%) 94%, var(--fleet-red) 6%) 0%,
+                    color-mix(in srgb, hsl(0 0% 4%) 82%, var(--fleet-red) 5%) 42%,
+                    color-mix(in srgb, hsl(0 0% 4%) 58%, transparent) 100%
+                );
+        }
+    }
+
+    .hek-headline-card__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+        flex: 1;
+    }
+
+    .hek-headline-card__meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-s);
+        font-size: var(--step--1);
+        color: var(--faded);
+        line-height: 1.4;
+
+        time {
+            white-space: nowrap;
+        }
+    }
+
+    .hek-headline-card__tag {
+        padding: 0.1em 0.55em;
+        font-size: 0.85em;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        border: 1px solid transparent;
+        line-height: 1.4;
+        color: color-mix(in srgb, var(--alliance-blue) 65%, white);
+        background: color-mix(in srgb, var(--alliance-blue) 18%, transparent);
+        border-color: color-mix(in srgb, var(--alliance-blue) 35%, transparent);
+    }
+
+    .hek-headline-card--aar .hek-headline-card__tag {
+        color: var(--fleet-yellow);
+        background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+        border-color: color-mix(in srgb, var(--fleet-yellow) 28%, transparent);
+    }
+
+    .hek-headline-card--video .hek-headline-card__tag {
+        color: color-mix(in srgb, var(--fleet-red) 75%, white);
+        background: color-mix(in srgb, var(--fleet-red) 18%, transparent);
+        border-color: color-mix(in srgb, var(--fleet-red) 35%, transparent);
+    }
+
+    .hek-headline-card__title {
+        margin: 0;
+        font-size: var(--step-0);
+        font-weight: 600;
+        color: var(--highlight);
+        line-height: 1.35;
+    }
+
+    .hek-headline-card__arrow {
+        flex-shrink: 0;
+        font-size: var(--step-1);
+        color: var(--faded);
+        transition: color 0.15s ease, transform 0.15s ease;
+    }
+
+    .hek-headline-card:hover .hek-headline-card__arrow,
+    .hek-headline-card:focus-visible .hek-headline-card__arrow {
+        color: var(--fleet-yellow);
+        transform: translateX(3px);
+    }
+
+    .hek-campaign__footer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: var(--space-s);
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    @media (max-width: 900px) {
+        .hek-campaign__stat-grid--3 {
+            grid-template-columns: 1fr;
+        }
+
+        .hek-campaign__people-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .hek-campaign__timeline-item {
+            grid-template-columns: 1fr;
+            gap: var(--space-2xs);
+        }
+    }
+
+    @media (max-width: 480px) {
+        .hek-campaign__people-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .hek-headline-card {
+            padding: var(--space-m);
+        }
+
+        .hek-headline-card__arrow {
+            display: none;
+        }
+    }
+</style>

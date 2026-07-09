@@ -14,6 +14,7 @@ import {
     buildFittingsListMetaDescription,
     buildFittingsListMetaTitle,
 } from '@helpers/fitting_seo'
+import { get_site_origin } from '@helpers/seo'
 
 let fittings:FittingItem[] = []
 let get_fittings_error:string | false = false
@@ -110,9 +111,10 @@ const page_title = t('fitting.list.page_title');
 const site_name = t('index.page_title')
 const meta_title = buildFittingsListMetaTitle(site_name, t)
 const meta_description = buildFittingsListMetaDescription(fittings.length, t)
-const canonical_url = new URL(translatePath('/ships/fittings/'), Astro.url.origin).href
-const meta_image = new URL('/images/fits-cover.jpg', Astro.url.origin).href
-const ships_url = new URL(translatePath('/ships/'), Astro.url.origin).href
+const site_origin = get_site_origin(Astro.url.origin)
+const canonical_url = new URL(translatePath('/ships/fittings/'), site_origin).href
+const meta_image = new URL('/images/fits-cover.jpg', site_origin).href
+const ships_url = new URL(translatePath('/ships/'), site_origin).href
 
 const structured_data = buildFittingsListJsonLd(
     {
@@ -120,10 +122,10 @@ const structured_data = buildFittingsListJsonLd(
             id: fitting.id,
             name: fitting.fitting_name.replace(/^\[[^\]]+\]\s*/, ''),
             shipName: fitting.ship_name,
-            url: new URL(translatePath(`/ships/fittings/${fitting.id}`), Astro.url.origin).href,
+            url: new URL(translatePath(`/ships/fittings/${fitting.id}`), site_origin).href,
         })),
         siteName: site_name,
-        siteOrigin: Astro.url.origin,
+        siteOrigin: site_origin,
         fittingsListUrl: canonical_url,
         shipsUrl: ships_url,
         canonicalUrl: canonical_url,
