@@ -4,6 +4,7 @@ const { t, translatePath } = i18n(Astro.url)
 
 import { COVER_IMAGE } from '@/data/campaigns/etherium-reach'
 import { buildEtheriumReachCampaignJsonLd } from '@/data/campaigns/etherium-reach-seo'
+import { get_site_origin } from '@helpers/seo'
 
 import Viewport from '@layouts/Viewport.astro'
 import PageLanding from '@components/page/PageLanding.astro'
@@ -19,13 +20,14 @@ const page_description = t('campaigns.etherium_reach.leading_text')
 const meta_title = t('campaigns.etherium_reach.meta_title')
     .replace('{site}', t('index.page_title'))
 const meta_description = t('campaigns.etherium_reach.meta_description')
-const canonical_url = new URL(translatePath('/campaigns/etherium-reach/'), Astro.url.origin).href
-const meta_image = new URL(COVER_IMAGE, Astro.url.origin).href
+const site_origin = get_site_origin(Astro.url.origin)
+const canonical_url = new URL(translatePath('/campaigns/etherium-reach/'), site_origin).href
+const meta_image = new URL(COVER_IMAGE, site_origin).href
 
 const structured_data = buildEtheriumReachCampaignJsonLd({
     canonicalUrl: canonical_url,
     siteName: t('index.page_title'),
-    siteOrigin: Astro.url.origin,
+    siteOrigin: site_origin,
     metaTitle: page_title,
     metaDescription: meta_description,
     metaImage: meta_image,

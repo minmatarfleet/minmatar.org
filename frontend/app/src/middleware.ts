@@ -1,5 +1,6 @@
 import { i18n } from '@helpers/i18n'
 import { prod_error_messages } from '@helpers/env'
+import { is_noindex_path } from '@helpers/seo'
 import type { Character } from '@dtypes/api.minmatar.org'
 import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
 import { remove_subscription } from '@helpers/api.minmatar.org/notifications'
@@ -51,5 +52,11 @@ export const onRequest = async ({ locals, cookies, request }, next) => {
         }
     }
 
-    return next();
+    const response = await next()
+
+    if (is_noindex_path(url.pathname)) {
+        response.headers.set('X-Robots-Tag', 'noindex, nofollow')
+    }
+
+    return response
 };

@@ -9,6 +9,7 @@ import { buildGuideJsonLd, getGuidePageSeo } from '@/data/guides/seo'
 import { marked } from 'marked'
 import { renderer } from '@helpers/marked'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_site_origin } from '@helpers/seo'
 
 const slug = Astro.params.name ?? ''
 const guide = getGuideBySlug(slug)
@@ -17,12 +18,13 @@ if (!guide) {
     return HTTP_404_Not_Found()
 }
 
+const site_origin = get_site_origin(Astro.url.origin)
 const { module } = guide
 const coverImage = getGuideCoverImage(guide)
 const seo = getGuidePageSeo({
     guide,
     siteName: t('index.page_title'),
-    siteOrigin: Astro.url.origin,
+    siteOrigin: site_origin,
     translatePath,
     t,
     coverImage,
@@ -30,7 +32,7 @@ const seo = getGuidePageSeo({
 const structured_data = buildGuideJsonLd({
     guide,
     siteName: t('index.page_title'),
-    siteOrigin: Astro.url.origin,
+    siteOrigin: site_origin,
     ...seo,
 })
 
