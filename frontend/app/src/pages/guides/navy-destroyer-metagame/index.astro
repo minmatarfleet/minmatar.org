@@ -3,6 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { guideMeta, credits, buildNavyDestroyerMetagameJsonLd } from '@/data/navy-destroyer-metagame'
+import { get_site_origin } from '@helpers/seo'
 
 import Viewport from '@layouts/Viewport.astro'
 import PageLanding from '@components/page/PageLanding.astro'
@@ -17,14 +18,15 @@ const page_description = t('ships.navy_destroyer_metagame.leading_text')
 const meta_title = t('ships.navy_destroyer_metagame.meta_title')
     .replace('{site}', t('index.page_title'))
 const meta_description = t('ships.navy_destroyer_metagame.meta_description')
-const canonical_url = new URL(translatePath('/guides/navy-destroyer-metagame/'), Astro.url.origin).href
-const meta_image = new URL(guideMeta.coverImage, Astro.url.origin).href
-const guides_url = new URL(translatePath('/guides/'), Astro.url.origin).href
+const site_origin = get_site_origin(Astro.url.origin)
+const canonical_url = new URL(translatePath('/guides/navy-destroyer-metagame/'), site_origin).href
+const meta_image = new URL(guideMeta.coverImage, site_origin).href
+const guides_url = new URL(translatePath('/guides/'), site_origin).href
 
 const structured_data = buildNavyDestroyerMetagameJsonLd({
     canonicalUrl: canonical_url,
     siteName: t('index.page_title'),
-    siteOrigin: Astro.url.origin,
+    siteOrigin: site_origin,
     metaTitle: page_title,
     metaDescription: meta_description,
     metaImage: meta_image,
