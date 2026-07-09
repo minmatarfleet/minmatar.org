@@ -84,6 +84,19 @@
         ]
     },
     {
+        "slug": "campaigns.providence",
+        "path": "/campaigns/providence/",
+        "publish": true,
+        "description": "page_finder.campaigns.providence.description",
+        "keywords": [
+            "Providence",
+            "CVA",
+            "nullsec campaign",
+            "Minmatar Fleet",
+            "campaign report"
+        ]
+    },
+    {
         "slug": "campaigns.scalding_pass",
         "path": "/campaigns/scalding-pass/",
         "publish": true,

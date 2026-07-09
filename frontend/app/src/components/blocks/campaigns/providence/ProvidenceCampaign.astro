@@ -1,0 +1,553 @@
+---
+import {
+    CAMPAIGN_ISK_DESTROYED,
+    FLEET_PARTICIPATION_PCT,
+    FLEET_PILOTS,
+    formatIsk,
+    HEADLINES,
+    OTHER_FLEET_COMMANDERS,
+    PERIOD_CAMPAIGN_FLEETS,
+    TOP_FLEET_COMMANDERS,
+    TOP_FLEET_PILOTS,
+} from '@/data/campaigns/providence'
+
+import { get_player_icon } from '@helpers/eve_image_server'
+
+import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
+import PlayerContentChartLegend from '@components/blocks/campaigns/etherium-reach/PlayerContentChartLegend.astro'
+import ProvidenceContentChart from '@components/blocks/campaigns/providence/ProvidenceContentChart.astro'
+
+function formatHeadlineDate(isoDate: string): string {
+    return new Date(`${isoDate}T00:00:00Z`).toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        timeZone: 'UTC',
+    })
+}
+
+function formatHeadlineViews(views: string | number): string {
+    if (typeof views === 'string') {
+        return views === '—' ? views : `${views} views`
+    }
+    if (views >= 1_000_000) {
+        return `${(views / 1_000_000).toFixed(1)}M views`
+    }
+    if (views >= 1_000) {
+        return `${Math.round(views / 1_000)}K views`
+    }
+    return `${views.toLocaleString()} views`
+}
+
+const HEADLINE_CATEGORY_LABELS = {
+    aar: 'AAR',
+    industry: 'Industry',
+} as const
+---
+
+<div class="er-campaign">
+    <section class="er-campaign__section">
+        <h3>Campaign by the numbers</h3>
+        <p class="er-campaign__meta">
+            Participation and combat in the Providence war
+        </p>
+        <div class="er-campaign__stat-grid er-campaign__stat-grid--3">
+            <CampaignStat
+                label="Participation"
+                value={`${FLEET_PARTICIPATION_PCT}% · ${FLEET_PILOTS.toLocaleString()} pilots`}
+                tone="success"
+            />
+            <CampaignStat
+                label="ISK destroyed"
+                value={formatIsk(CAMPAIGN_ISK_DESTROYED)}
+                tone="success"
+            />
+            <CampaignStat
+                label="Campaign fleets"
+                value={PERIOD_CAMPAIGN_FLEETS.toLocaleString()}
+            />
+        </div>
+    </section>
+
+    <section class="er-campaign__section">
+        <h3>Player content over time</h3>
+        <p class="er-campaign__meta">
+            Monthly ISK destroyed and fleets flown
+        </p>
+        <div class="er-campaign__chart-block">
+            <div class="er-campaign__chart-card">
+                <div class="er-campaign__chart-plot">
+                    <ProvidenceContentChart />
+                </div>
+            </div>
+            <PlayerContentChartLegend />
+        </div>
+    </section>
+
+    <section class="er-campaign__section">
+        <div class="er-campaign__subsection">
+            <h4>Top commanders</h4>
+            <p class="er-campaign__meta">
+                Fleet commanders contributing to this campaign
+            </p>
+            <div class="er-campaign__fc-grid">
+                {
+                    TOP_FLEET_COMMANDERS.map((fc) => (
+                        <div class="er-fc-card">
+                            {'isAggregate' in fc && fc.isAggregate ? (
+                                <div class="er-fc-card__portraits" aria-hidden="true">
+                                    {
+                                        OTHER_FLEET_COMMANDERS.commanders.map((commander) => (
+                                            <img
+                                                loading="lazy"
+                                                width="16"
+                                                height="16"
+                                                src={get_player_icon(commander.characterId, 32)}
+                                                alt=""
+                                                title={`${commander.name} · ${commander.fleetCount} fleets`}
+                                                class="er-fc-card__portrait-mini"
+                                            />
+                                        ))
+                                    }
+                                </div>
+                            ) : (
+                                <img
+                                    loading="lazy"
+                                    width="64"
+                                    height="64"
+                                    src={get_player_icon(fc.characterId, 64)}
+                                    alt={`${fc.name} portrait`}
+                                    class="er-fc-card__portrait"
+                                />
+                            )}
+                            <div class="er-fc-card__body">
+                                <span class="er-fc-card__name">{fc.name}</span>
+                                <span class="er-fc-card__count">
+                                    {fc.fleetCount.toLocaleString()} fleets
+                                </span>
+                            </div>
+                        </div>
+                    ))
+                }
+            </div>
+        </div>
+
+        <div class="er-campaign__subsection">
+            <h4>Top pilots</h4>
+            <p class="er-campaign__meta">
+                Fleet participants contributing to this campaign
+            </p>
+            <div class="er-campaign__fc-grid">
+                {
+                    TOP_FLEET_PILOTS.map((pilot) => (
+                        <div class="er-fc-card">
+                            <img
+                                loading="lazy"
+                                width="64"
+                                height="64"
+                                src={get_player_icon(pilot.characterId, 64)}
+                                alt={`${pilot.name} portrait`}
+                                class="er-fc-card__portrait"
+                            />
+                            <div class="er-fc-card__body">
+                                <span class="er-fc-card__name">{pilot.name}</span>
+                                <span class="er-fc-card__count">
+                                    {pilot.fleetCount.toLocaleString()} fleets
+                                </span>
+                            </div>
+                        </div>
+                    ))
+                }
+            </div>
+            <p class="er-campaign__footnote">
+                FC counts use in-game fleet commander when tracked, otherwise who scheduled the fleet. SEDIT, Vard, and other unrelated fights excluded. Instance tracking from late May 2024.
+            </p>
+        </div>
+    </section>
+
+    <section class="er-campaign__section">
+        <h3>Headlines</h3>
+        <p class="er-campaign__meta">
+            Stories and updates from the campaign
+        </p>
+        <div class="er-headline-cards">
+            {
+                HEADLINES.map((headline) => (
+                    <a
+                        class:list={[
+                            'er-headline-card',
+                            `er-headline-card--${headline.category}`,
+                        ]}
+                        style={`--er-headline-bg: url('${headline.backgroundImage}')`}
+                        href={headline.url}
+                        target="_blank"
+                        rel="noopener noreferrer nofollow"
+                    >
+                        <div class="er-headline-card__body">
+                            <div class="er-headline-card__meta">
+                                <time datetime={headline.date}>
+                                    {formatHeadlineDate(headline.date)}
+                                </time>
+                                <span class="er-headline-card__tag">
+                                    {HEADLINE_CATEGORY_LABELS[headline.category]}
+                                </span>
+                            </div>
+                            <h4 class="er-headline-card__title">{headline.title}</h4>
+                            <p class="er-headline-card__reddit">
+                                <span class="er-headline-card__reddit-upvotes" aria-label={`${headline.upvotes} upvotes`}>
+                                    ▲ {headline.upvotes.toLocaleString()}
+                                </span>
+                                <span aria-hidden="true">·</span>
+                                <span>{headline.comments.toLocaleString()} comments</span>
+                                <span aria-hidden="true">·</span>
+                                <span>{formatHeadlineViews(headline.views)}</span>
+                            </p>
+                        </div>
+                        <span class="er-headline-card__arrow" aria-hidden="true">→</span>
+                    </a>
+                ))
+            }
+        </div>
+    </section>
+
+    <footer class="er-campaign__footer">
+        <span>Providence Campaign Report</span>
+        <span>July 2026</span>
+    </footer>
+</div>
+
+<style lang="scss">
+    .er-campaign {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xl);
+        width: 100%;
+        min-width: 0;
+    }
+
+    .er-campaign__section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        min-width: 0;
+
+        h3,
+        h4 {
+            margin: 0;
+            color: var(--highlight);
+            line-height: 1.2;
+        }
+
+        h3 {
+            font-size: var(--step-1);
+        }
+
+        h4 {
+            font-size: var(--step-0);
+        }
+
+        h3 + .er-campaign__meta,
+        h4 + .er-campaign__meta {
+            margin-top: calc(var(--space-2xs) - var(--space-m));
+        }
+    }
+
+    .er-campaign__subsection {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        min-width: 0;
+        padding-top: var(--space-l);
+        border-top: 1px solid color-mix(in srgb, var(--border-color) 45%, transparent);
+    }
+
+    .er-campaign__meta,
+    .er-campaign__footnote {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--faded);
+        line-height: 1.5;
+    }
+
+    .er-campaign__stat-grid {
+        display: grid;
+        gap: var(--space-m);
+        min-width: 0;
+    }
+
+    .er-campaign__stat-grid--3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .er-campaign__fc-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: var(--space-m);
+        min-width: 0;
+    }
+
+    .er-fc-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-s);
+        padding: var(--space-s);
+        background: color-mix(in srgb, var(--component-background) 80%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        min-width: 0;
+        text-align: center;
+    }
+
+    .er-fc-card__portrait {
+        flex-shrink: 0;
+        width: 64px;
+        height: 64px;
+        border-radius: 4px;
+    }
+
+    .er-fc-card__portraits {
+        display: grid;
+        flex-shrink: 0;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1px;
+        width: 64px;
+        height: 64px;
+        overflow: hidden;
+    }
+
+    .er-fc-card__portrait-mini {
+        display: block;
+        width: 100%;
+        height: 100%;
+        border-radius: 2px;
+        object-fit: cover;
+    }
+
+    .er-fc-card__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+        width: 100%;
+    }
+
+    .er-fc-card__name {
+        font-size: var(--step-0);
+        font-weight: 600;
+        color: var(--highlight);
+        line-height: 1.2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .er-fc-card__count {
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    .er-campaign__chart-block {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        min-width: 0;
+    }
+
+    .er-campaign__chart-card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        padding: var(--space-m);
+        background: color-mix(in srgb, var(--component-background) 70%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        min-width: 0;
+    }
+
+    .er-campaign__chart-plot {
+        margin-inline: calc(-1 * var(--space-m));
+        min-width: 0;
+    }
+
+    .er-headline-cards {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        min-width: 0;
+    }
+
+    .er-headline-card {
+        position: relative;
+        isolation: isolate;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-m);
+        padding: var(--space-m) var(--space-l);
+        min-width: 0;
+        overflow: hidden;
+        text-decoration: none;
+        color: inherit;
+        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        border-left-width: 3px;
+        transition:
+            border-color 0.15s ease,
+            transform 0.15s ease;
+
+        &::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background-image: var(--er-headline-bg);
+            background-size: cover;
+            background-position: center;
+            transition: transform 0.15s ease;
+        }
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            transition: opacity 0.15s ease;
+        }
+
+        > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        &:hover,
+        &:focus-visible {
+            transform: translateX(2px);
+            border-color: color-mix(in srgb, var(--border-color-hover) 80%, transparent);
+        }
+
+        &:hover::before,
+        &:focus-visible::before {
+            transform: scale(1.03);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+
+    .er-headline-card--aar {
+        border-left-color: var(--fleet-yellow);
+
+        &::after {
+            background:
+                linear-gradient(
+                    90deg,
+                    color-mix(in srgb, hsl(0 0% 4%) 94%, var(--fleet-red) 6%) 0%,
+                    color-mix(in srgb, hsl(0 0% 4%) 82%, var(--fleet-red) 5%) 42%,
+                    color-mix(in srgb, hsl(0 0% 4%) 58%, transparent) 100%
+                );
+        }
+
+        .er-headline-card__tag {
+            color: var(--fleet-yellow);
+            background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+            border-color: color-mix(in srgb, var(--fleet-yellow) 28%, transparent);
+        }
+    }
+
+    .er-headline-card__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+        flex: 1;
+    }
+
+    .er-headline-card__meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-s);
+        font-size: var(--step--1);
+        color: var(--faded);
+        line-height: 1.4;
+
+        time {
+            white-space: nowrap;
+        }
+    }
+
+    .er-headline-card__tag {
+        padding: 0.1em 0.55em;
+        font-size: 0.85em;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        border: 1px solid transparent;
+        line-height: 1.4;
+    }
+
+    .er-headline-card__title {
+        margin: 0;
+        font-size: var(--step-0);
+        font-weight: 600;
+        color: var(--highlight);
+        line-height: 1.35;
+    }
+
+    .er-headline-card__reddit {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.45em;
+        margin: 0;
+        font-size: var(--step--2);
+        color: color-mix(in srgb, var(--faded) 88%, transparent);
+        line-height: 1.4;
+    }
+
+    .er-headline-card__arrow {
+        flex-shrink: 0;
+        font-size: var(--step-1);
+        color: var(--faded);
+        transition: color 0.15s ease, transform 0.15s ease;
+    }
+
+    .er-headline-card:hover .er-headline-card__arrow,
+    .er-headline-card:focus-visible .er-headline-card__arrow {
+        color: var(--fleet-yellow);
+        transform: translateX(3px);
+    }
+
+    .er-campaign__footer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: var(--space-s);
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    @media (max-width: 900px) {
+        .er-campaign__stat-grid--3 {
+            grid-template-columns: 1fr;
+        }
+
+        .er-campaign__fc-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 480px) {
+        .er-campaign__fc-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .er-headline-card {
+            padding: var(--space-m);
+        }
+
+        .er-headline-card__arrow {
+            display: none;
+        }
+    }
+</style>

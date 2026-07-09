@@ -127,6 +127,15 @@ export const ui = {
         'campaigns.etherium_reach.meta_description':
             'Dig into the numbers and pilots behind one of Minmatar Fleet\'s most successful EVE Online campaigns — 3.49T ISK destroyed and 1.2T ISK earned.',
 
+        'campaigns.providence.page_title': 'Providence Campaign Report',
+        'campaigns.providence.campaign_period': 'Jan 2024 – Mar 2025',
+        'campaigns.providence.leading_text':
+            'FL33T\'s war on its ancestral enemy, CVA, in Providence. Nullsec structure grinds, building a capital fleet, and defending the Watermelon. This is what turned FL33T into a war machine.',
+        'campaigns.providence.meta_title':
+            'Providence Campaign Report | {site}',
+        'campaigns.providence.meta_description':
+            'FL33T\'s war on its ancestral enemy, CVA, in Providence — nullsec structure grinds, capital fleet building, and defending the Watermelon.',
+
         'campaigns.scalding_pass.page_title': 'Scalding Pass Campaign Report',
         'campaigns.scalding_pass.campaign_period': 'Feb – May 2024',
         'campaigns.scalding_pass.leading_text':
@@ -993,6 +1002,8 @@ export const ui = {
         'page_finder.alliance.description': 'Alliance landing page.',
         'page_finder.campaigns.etherium_reach.description':
             'Etherium Reach Dronelands campaign report — alliance participation, combat, pilot income, and campaign results.',
+        'page_finder.campaigns.providence.description':
+            'FL33T\'s war on its ancestral enemy, CVA, in Providence — structure grinds, capital fleet building, and the Watermelon.',
         'page_finder.campaigns.scalding_pass.description':
             'Scalding Pass campaign report — combat, fleets, contracted support, and campaign results from Feb–May 2024.',
         'page_finder.campaigns.hek.description':
