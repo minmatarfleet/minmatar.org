@@ -127,6 +127,15 @@ export const ui = {
         'campaigns.etherium_reach.meta_description':
             'Dig into the numbers and pilots behind one of Minmatar Fleet\'s most successful EVE Online campaigns — 3.49T ISK destroyed and 1.2T ISK earned.',
 
+        'campaigns.providence.page_title': 'Providence Campaign Report',
+        'campaigns.providence.campaign_period': 'Jan 2024 – Mar 2025',
+        'campaigns.providence.leading_text':
+            'FL33T\'s war on its ancestral enemy, CVA, in Providence. Nullsec structure grinds, building a capital fleet, and defending the Watermelon. This is what turned FL33T into a war machine.',
+        'campaigns.providence.meta_title':
+            'Providence Campaign Report | {site}',
+        'campaigns.providence.meta_description':
+            'FL33T\'s war on its ancestral enemy, CVA, in Providence — nullsec structure grinds, capital fleet building, and defending the Watermelon.',
+
         'propaganda.page_title': 'Propaganda',
         'propaganda.leading_text': 'All our propaganda in a single place.',
         'propaganda.meta_description': 'All our propaganda in a single place.',
@@ -976,6 +985,8 @@ export const ui = {
         'page_finder.alliance.description': 'Alliance landing page.',
         'page_finder.campaigns.etherium_reach.description':
             'Etherium Reach Dronelands campaign report — alliance participation, combat, pilot income, and campaign results.',
+        'page_finder.campaigns.providence.description':
+            'FL33T\'s war on its ancestral enemy, CVA, in Providence — structure grinds, capital fleet building, and the Watermelon.',
         'page_finder.story.description': 'Learn more about our story.',
         'page_finder.values.description': 'What we expect from every FL33T member.',
         'page_finder.playstyle.description': 'Learn more about our playstyle.',

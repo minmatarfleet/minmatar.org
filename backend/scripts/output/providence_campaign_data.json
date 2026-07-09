@@ -1,0 +1,287 @@
+{
+  "period": {
+    "start": "2024-01-01T00:00:00+00:00",
+    "end": "2025-04-01T00:00:00+00:00"
+  },
+  "campaign_scope": {
+    "enemy_alliance_ids": [
+      99010240,
+      99010386,
+      99010995,
+      99012827,
+      99012995,
+      1988009451
+    ],
+    "in_scope_fleet_count": 747,
+    "excludes": "SEDIT, Vard, Siseide, Huola, and other unrelated lowsec fights",
+    "fc_counting": "in-game fleet_commander role when tracked; scheduler for pre-instance fleets"
+  },
+  "fleets_monthly": [
+    60,
+    44,
+    61,
+    68,
+    41,
+    38,
+    43,
+    43,
+    39,
+    48,
+    41,
+    52,
+    49,
+    71,
+    49
+  ],
+  "isk_destroyed_monthly": [
+    309159272711,
+    67754022248,
+    94722082579,
+    332150073557,
+    45377563443,
+    274439879389,
+    366561840501,
+    97848990198,
+    25608590227,
+    69014515430,
+    68650368134,
+    86348846139,
+    123409072539,
+    251829053678,
+    130353190855
+  ],
+  "isk_lost_monthly": [
+    361571122091,
+    81961617964,
+    33283151990,
+    180345978934,
+    20192479262,
+    217416825261,
+    300424230336,
+    64212284594,
+    13892408009,
+    47633681456,
+    17165292457,
+    41333757374,
+    25577325627,
+    199255602112,
+    29405844482
+  ],
+  "participation": {
+    "fleet_pilots": 321,
+    "fleet_characters": 598,
+    "participation_pct": 99,
+    "inferred_fleet_links": 1,
+    "top_commanders": [
+      {
+        "characterId": 634915984,
+        "name": "BearThatCares",
+        "fleetCount": 184,
+        "scheduledFleetCount": 182
+      },
+      {
+        "characterId": 2120307642,
+        "name": "Casper Sullivan",
+        "fleetCount": 41,
+        "scheduledFleetCount": 42
+      },
+      {
+        "characterId": 2114993571,
+        "name": "Twan Molenaar",
+        "fleetCount": 36,
+        "scheduledFleetCount": 0
+      },
+      {
+        "characterId": 148717474,
+        "name": "Mazer",
+        "fleetCount": 33,
+        "scheduledFleetCount": 35
+      }
+    ],
+    "other_commanders": {
+      "fleetCount": 117,
+      "commanders": [
+        {
+          "characterId": 140971074,
+          "name": "Buppas",
+          "fleetCount": 13
+        },
+        {
+          "characterId": 94914644,
+          "name": "sin Alarma",
+          "fleetCount": 13
+        },
+        {
+          "characterId": 91434341,
+          "name": "Mortarian Decala",
+          "fleetCount": 11
+        },
+        {
+          "characterId": 301592770,
+          "name": "Gian Bal",
+          "fleetCount": 9
+        },
+        {
+          "characterId": 94335465,
+          "name": "Erik Sinulf",
+          "fleetCount": 8
+        },
+        {
+          "characterId": 2120153200,
+          "name": "Furl0w",
+          "fleetCount": 7
+        },
+        {
+          "characterId": 1333721550,
+          "name": "Inathero",
+          "fleetCount": 6
+        },
+        {
+          "characterId": 2115925566,
+          "name": "johnnieboye II",
+          "fleetCount": 5
+        },
+        {
+          "characterId": 93068254,
+          "name": "Isa Kento",
+          "fleetCount": 5
+        },
+        {
+          "characterId": 2121103796,
+          "name": "Beautiful Mim",
+          "fleetCount": 5
+        },
+        {
+          "characterId": 95263555,
+          "name": "Bora Makar",
+          "fleetCount": 4
+        },
+        {
+          "characterId": 2116877146,
+          "name": "Tarthir Skor",
+          "fleetCount": 4
+        },
+        {
+          "characterId": 92004354,
+          "name": "Teysha Blackblade",
+          "fleetCount": 3
+        },
+        {
+          "characterId": 1184744114,
+          "name": "Ren Setion",
+          "fleetCount": 2
+        },
+        {
+          "characterId": 93613873,
+          "name": "Bobb Bobbington",
+          "fleetCount": 2
+        },
+        {
+          "characterId": 94440400,
+          "name": "Kyle Phat Phatumus",
+          "fleetCount": 2
+        },
+        {
+          "characterId": 537400441,
+          "name": "Sevaru",
+          "fleetCount": 2
+        },
+        {
+          "characterId": 1771780065,
+          "name": "NCC 1701E",
+          "fleetCount": 2
+        },
+        {
+          "characterId": 90146672,
+          "name": "Khermes",
+          "fleetCount": 2
+        },
+        {
+          "characterId": 2117051187,
+          "name": "Ronoldo Hollentco",
+          "fleetCount": 2
+        },
+        {
+          "characterId": 2117683314,
+          "name": "Teirg Askold",
+          "fleetCount": 2
+        },
+        {
+          "characterId": 1566368814,
+          "name": "Tomas Bailey",
+          "fleetCount": 2
+        },
+        {
+          "characterId": 2114499753,
+          "name": "Xadr Twitch",
+          "fleetCount": 1
+        },
+        {
+          "characterId": 2116242012,
+          "name": "Sycamoria",
+          "fleetCount": 1
+        },
+        {
+          "characterId": 146444251,
+          "name": "Chronus",
+          "fleetCount": 1
+        },
+        {
+          "characterId": 94716101,
+          "name": "Vengo Rin",
+          "fleetCount": 1
+        },
+        {
+          "characterId": 2120834555,
+          "name": "Faye Vaelent",
+          "fleetCount": 1
+        },
+        {
+          "characterId": 93672441,
+          "name": "Orion Sa-Solo",
+          "fleetCount": 1
+        }
+      ]
+    },
+    "top_pilots": [
+      {
+        "characterId": 2121103796,
+        "name": "Beautiful Mim",
+        "fleetCount": 276,
+        "altCount": 2
+      },
+      {
+        "characterId": 1444365537,
+        "name": "Tasha Bailey",
+        "fleetCount": 214,
+        "altCount": 1
+      },
+      {
+        "characterId": 187187113,
+        "name": "Lioane",
+        "fleetCount": 209,
+        "altCount": 4
+      },
+      {
+        "characterId": 345180234,
+        "name": "XVSSBR",
+        "fleetCount": 206,
+        "altCount": 1
+      },
+      {
+        "characterId": 1685650958,
+        "name": "Elador",
+        "fleetCount": 196,
+        "altCount": 6
+      }
+    ],
+    "instance_count": 519,
+    "aar_linked_fleets": 98,
+    "campaign_fleet_ids": 747
+  },
+  "notes": {
+    "instance_tracking_from": "2024-05-27",
+    "aar_linked_fleets": 98,
+    "br_api_status": "archived BR battle endpoint returns 404; killmail inference used for non-instanced AAR-linked fleets"
+  }
+}

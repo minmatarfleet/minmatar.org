@@ -84,6 +84,19 @@
         ]
     },
     {
+        "slug": "campaigns.providence",
+        "path": "/campaigns/providence/",
+        "publish": true,
+        "description": "page_finder.campaigns.providence.description",
+        "keywords": [
+            "Providence",
+            "CVA",
+            "nullsec campaign",
+            "Minmatar Fleet",
+            "campaign report"
+        ]
+    },
+    {
         "slug": "corporations.list",
         "alt": "icon.corporation.alt",
         "path": "/alliance/corporations/",
