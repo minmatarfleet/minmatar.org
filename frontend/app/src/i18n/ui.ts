@@ -80,7 +80,7 @@ export const ui = {
         'campaigns.etherium_reach.meta_title':
             'Etherium Reach Campaign Report | {site}',
         'campaigns.etherium_reach.meta_description':
-            'Minmatar Fleet Alliance Dronelands nullsec campaign: 269 pilots, 79% participation, 3.49T ISK destroyed, 684.6B pilot income. Nov 2025–Jun 2026 report.',
+            'Dig into the numbers and pilots behind one of Minmatar Fleet\'s most successful EVE Online campaigns — 3.49T ISK destroyed and 1.2T ISK earned.',
 
         'propaganda.page_title': 'Propaganda',
         'propaganda.leading_text': 'All our propaganda in a single place.',
