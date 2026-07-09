@@ -127,6 +127,15 @@ export const ui = {
         'campaigns.etherium_reach.meta_description':
             'Dig into the numbers and pilots behind one of Minmatar Fleet\'s most successful EVE Online campaigns — 3.49T ISK destroyed and 1.2T ISK earned.',
 
+        'campaigns.scalding_pass.page_title': 'Scalding Pass Campaign Report',
+        'campaigns.scalding_pass.campaign_period': 'Feb – May 2024',
+        'campaigns.scalding_pass.leading_text':
+            'A focused nullsec push into Scalding Pass — combat against VAPOR, B0SS, and allies, capital fights in F-5FDA. Enabled by Zarzahk stargates, which were closed during our campaign, ending it.',
+        'campaigns.scalding_pass.meta_title':
+            'Scalding Pass Campaign Report | {site}',
+        'campaigns.scalding_pass.meta_description':
+            'Combat, fleets, and contracted support from Minmatar Fleet\'s 2024 Scalding Pass campaign — 368B ISK destroyed in-region and the pilots who flew it.',
+
         'campaigns.hek.page_title': 'Hek Campaign Report',
         'campaigns.hek.campaign_period': 'November 2023',
         'campaigns.hek.leading_text':
@@ -984,6 +993,8 @@ export const ui = {
         'page_finder.alliance.description': 'Alliance landing page.',
         'page_finder.campaigns.etherium_reach.description':
             'Etherium Reach Dronelands campaign report — alliance participation, combat, pilot income, and campaign results.',
+        'page_finder.campaigns.scalding_pass.description':
+            'Scalding Pass campaign report — combat, fleets, contracted support, and campaign results from Feb–May 2024.',
         'page_finder.campaigns.hek.description':
             'Hek highsec campaign report — combat stats in Hek, surrender ISK, timeline, and public headlines from November 2023.',
         'page_finder.story.description': 'Learn more about our story.',

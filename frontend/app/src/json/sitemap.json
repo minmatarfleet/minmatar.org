@@ -84,6 +84,19 @@
         ]
     },
     {
+        "slug": "campaigns.scalding_pass",
+        "path": "/campaigns/scalding-pass/",
+        "publish": true,
+        "description": "page_finder.campaigns.scalding_pass.description",
+        "keywords": [
+            "Scalding Pass",
+            "nullsec campaign",
+            "Minmatar Fleet",
+            "campaign report",
+            "F-5FDA"
+        ]
+    },
+    {
         "slug": "campaigns.hek",
         "path": "/campaigns/hek/",
         "publish": true,
