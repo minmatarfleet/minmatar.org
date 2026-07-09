@@ -1,0 +1,203 @@
+---
+import {
+    EXPLORATION_GROSS_ISK,
+    MINING_GROSS_ISK,
+    MONTHS,
+    PI_GROSS_ISK,
+    RATTING_GROSS_ISK,
+    toBillions,
+} from '@/data/campaigns/etherium-reach'
+
+const width = 960
+const height = 290
+const pad = { l: 72, r: 20, t: 28, b: 36 }
+const plotW = width - pad.l - pad.r
+const plotH = height - pad.t - pad.b
+const plotBottom = pad.t + plotH
+const leftAxisTitleX = 12
+const axisTitleY = pad.t + plotH / 2
+
+const series = [
+    {
+        name: 'Mining',
+        data: MINING_GROSS_ISK.map(toBillions),
+        color: 'var(--alliance-blue)',
+        dashed: false,
+        fillOpacity: 0.1,
+    },
+    {
+        name: 'Ratting',
+        data: RATTING_GROSS_ISK.map(toBillions),
+        color: 'var(--green)',
+        dashed: false,
+        fillOpacity: 0.08,
+    },
+    {
+        name: 'Planetary interaction',
+        data: PI_GROSS_ISK.map(toBillions),
+        color: 'var(--fleet-yellow)',
+        dashed: false,
+        fillOpacity: 0.07,
+    },
+    {
+        name: 'Exploration (estimated)',
+        data: EXPLORATION_GROSS_ISK.map(toBillions),
+        color: 'var(--faded)',
+        dashed: true,
+        fillOpacity: 0,
+    },
+]
+
+const yMax = Math.max(...series.flatMap((entry) => entry.data), 1) * 1.05
+const yTicks = 4
+const xPos = (index: number) => pad.l + (index / (MONTHS.length - 1)) * plotW
+const yPos = (value: number) => pad.t + plotH - (value / yMax) * plotH
+---
+
+<svg
+    class="er-chart__svg"
+    viewBox={`0 0 ${width} ${height}`}
+    width="100%"
+    role="img"
+    aria-label="What our pilots earned in the dronelands over time by source"
+>
+        {
+            Array.from({ length: yTicks + 1 }, (_, index) => {
+                const value = (yMax / yTicks) * index
+                const y = yPos(value)
+                return (
+                    <g>
+                        <line
+                            x1={pad.l}
+                            x2={width - pad.r}
+                            y1={y}
+                            y2={y}
+                            class="er-chart__grid"
+                        />
+                        <text
+                            x={pad.l - 10}
+                            y={y + 4}
+                            text-anchor="end"
+                            class="er-chart__axis-label"
+                        >
+                            {Math.round(value * 10) / 10} B
+                        </text>
+                    </g>
+                )
+            })
+        }
+        <line
+            x1={pad.l}
+            x2={width - pad.r}
+            y1={plotBottom}
+            y2={plotBottom}
+            class="er-chart__axis-line"
+        />
+        <text
+            x={leftAxisTitleX}
+            y={axisTitleY}
+            text-anchor="middle"
+            transform={`rotate(-90, ${leftAxisTitleX}, ${axisTitleY})`}
+            class="er-chart__axis-title"
+        >
+            ISK (billions)
+        </text>
+        {
+            MONTHS.map((month, index) => (
+                <g>
+                    <line
+                        x1={xPos(index)}
+                        x2={xPos(index)}
+                        y1={plotBottom}
+                        y2={plotBottom + 5}
+                        class="er-chart__tick"
+                    />
+                    <text
+                        x={xPos(index)}
+                        y={height - 10}
+                        text-anchor="middle"
+                        class="er-chart__month-label"
+                    >
+                        {month}
+                    </text>
+                </g>
+            ))
+        }
+        {
+            series.map((entry) => {
+                const points = entry.data.map((value, index) => `${xPos(index)},${yPos(value)}`).join(' ')
+                const area = `${pad.l},${yPos(0)} ${points} ${pad.l + plotW},${yPos(0)}`
+                return (
+                    <g>
+                        {!entry.dashed && entry.fillOpacity > 0 ? (
+                            <polygon points={area} fill={entry.color} fill-opacity={entry.fillOpacity} />
+                        ) : null}
+                        <polyline
+                            points={points}
+                            fill="none"
+                            stroke={entry.color}
+                            stroke-width={entry.dashed ? 2 : 2.5}
+                            stroke-dasharray={entry.dashed ? '6 4' : undefined}
+                            stroke-linejoin="round"
+                            stroke-linecap="round"
+                        />
+                        {
+                            entry.data.map((value, index) => (
+                                <circle
+                                    cx={xPos(index)}
+                                    cy={yPos(value)}
+                                    r="3.5"
+                                    fill={entry.color}
+                                    stroke="var(--component-background)"
+                                    stroke-width="1.5"
+                                    opacity={entry.dashed ? 0.85 : 1}
+                                />
+                            ))
+                        }
+                    </g>
+                )
+            })
+        }
+</svg>
+
+<style lang="scss">
+    .er-chart__svg {
+        display: block;
+        width: 100%;
+        height: auto;
+        min-width: 0;
+    }
+
+    .er-chart__grid {
+        stroke: color-mix(in srgb, var(--border-color) 55%, white 8%);
+        stroke-width: 1;
+    }
+
+    .er-chart__tick {
+        stroke: color-mix(in srgb, var(--border-color) 70%, white 5%);
+    }
+
+    .er-chart__axis-line {
+        stroke: color-mix(in srgb, var(--border-color) 75%, white 8%);
+        stroke-width: 1;
+    }
+
+    .er-chart__axis-label {
+        fill: color-mix(in srgb, var(--highlight) 70%, var(--faded));
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .er-chart__axis-title {
+        fill: color-mix(in srgb, var(--highlight) 85%, var(--faded));
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+    }
+
+    .er-chart__month-label {
+        font-size: 11px;
+        fill: color-mix(in srgb, var(--highlight) 75%, var(--faded));
+        font-variant-numeric: tabular-nums;
+    }
+</style>

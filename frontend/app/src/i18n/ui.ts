@@ -118,6 +118,15 @@ export const ui = {
         'brand.page_title': 'Branding',
         'brand.leading_text': 'Official FL33T fonts, colours, logos, and icons for alliance branding.',
 
+        'campaigns.etherium_reach.page_title': 'Etherium Reach Campaign Report',
+        'campaigns.etherium_reach.campaign_period': 'Nov 2025 – Jun 2026',
+        'campaigns.etherium_reach.leading_text':
+            'Our most successful nullsec campaign to date — what we built, fought, and earned in the Dronelands before returning to the warzone.',
+        'campaigns.etherium_reach.meta_title':
+            'Etherium Reach Campaign Report | {site}',
+        'campaigns.etherium_reach.meta_description':
+            'Dig into the numbers and pilots behind one of Minmatar Fleet\'s most successful EVE Online campaigns — 3.49T ISK destroyed and 1.2T ISK earned.',
+
         'propaganda.page_title': 'Propaganda',
         'propaganda.leading_text': 'All our propaganda in a single place.',
         'propaganda.meta_description': 'All our propaganda in a single place.',
@@ -965,6 +974,8 @@ export const ui = {
         'view_members': 'Members',
         'error_loading_content_reload': 'An error occurred fetching the content. You may reload the page to fix it.',
         'page_finder.alliance.description': 'Alliance landing page.',
+        'page_finder.campaigns.etherium_reach.description':
+            'Etherium Reach Dronelands campaign report — alliance participation, combat, pilot income, and campaign results.',
         'page_finder.story.description': 'Learn more about our story.',
         'page_finder.values.description': 'What we expect from every FL33T member.',
         'page_finder.playstyle.description': 'Learn more about our playstyle.',

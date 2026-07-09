@@ -1,0 +1,76 @@
+---
+const series = [
+    {
+        name: 'Mining',
+        color: 'var(--alliance-blue)',
+        dashed: false,
+    },
+    {
+        name: 'Ratting',
+        color: 'var(--green)',
+        dashed: false,
+    },
+    {
+        name: 'Planetary interaction',
+        color: 'var(--fleet-yellow)',
+        dashed: false,
+    },
+    {
+        name: 'Exploration (estimated)',
+        color: 'var(--faded)',
+        dashed: true,
+    },
+] as const
+---
+
+<ul class="er-campaign__chart-legend" aria-hidden="true">
+    {
+        series.map((entry) => (
+            <li>
+                <svg width="24" height="12" aria-hidden="true">
+                    <line
+                        x1="0"
+                        y1="6"
+                        x2="24"
+                        y2="6"
+                        stroke={entry.color}
+                        stroke-width={entry.dashed ? 2 : 2.5}
+                        stroke-dasharray={entry.dashed ? '4 3' : undefined}
+                    />
+                    {!entry.dashed ? (
+                        <circle cx="12" cy="6" r="3.5" fill={entry.color} />
+                    ) : null}
+                </svg>
+                <span>{entry.name}</span>
+            </li>
+        ))
+    }
+</ul>
+
+<style lang="scss">
+    .er-campaign__chart-legend {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: var(--space-s) var(--space-xl);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        font-size: var(--step-0);
+        color: var(--faded);
+    }
+
+    .er-campaign__chart-legend li {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-xs);
+        white-space: nowrap;
+    }
+
+    @media (max-width: 640px) {
+        .er-campaign__chart-legend {
+            flex-direction: column;
+            align-items: center;
+        }
+    }
+</style>
