@@ -1,13 +1,11 @@
 ---
 import {
     CAMPAIGN_ISK_DESTROYED,
-    CAMPAIGN_PILOT_INCOME,
+    CAMPAIGN_TOTAL_INCOME,
     DRONELANDS_REGIONS_BY_DESTROYED,
-    FLEET_CHARACTERS,
     FLEET_PARTICIPATION_PCT,
     FLEET_PILOTS,
     formatIsk,
-    GROSS_ALLIANCE_MOONS_AND_CONTRACTS,
     GROSS_CORP_ALL,
     GROSS_CORP_BROKER_FEES,
     GROSS_CORP_INDUSTRY_TAX,
@@ -127,7 +125,7 @@ const combatRows = [
         <p class="er-campaign__meta">
             Participation, combat, and income
         </p>
-        <div class="er-campaign__stat-grid er-campaign__stat-grid--4">
+        <div class="er-campaign__stat-grid er-campaign__stat-grid--3">
             <CampaignStat
                 label="Participation"
                 value={`${FLEET_PARTICIPATION_PCT}% · ${FLEET_PILOTS.toLocaleString()} pilots`}
@@ -139,13 +137,8 @@ const combatRows = [
                 tone="success"
             />
             <CampaignStat
-                label="Pilot income"
-                value={formatIsk(CAMPAIGN_PILOT_INCOME)}
-                tone="info"
-            />
-            <CampaignStat
-                label="Alliance income"
-                value={formatIsk(GROSS_ALLIANCE_MOONS_AND_CONTRACTS)}
+                label="Total income"
+                value={formatIsk(CAMPAIGN_TOTAL_INCOME)}
                 tone="info"
             />
         </div>
@@ -198,18 +191,6 @@ const combatRows = [
                 </div>
             </div>
         </Flexblock>
-    </section>
-
-    <section class="er-campaign__section">
-        <h3>Alliance participation</h3>
-        <p class="er-campaign__meta">
-            Who flew and how much of the alliance took part
-        </p>
-        <div class="er-campaign__stat-grid er-campaign__stat-grid--3">
-            <CampaignStat label="Pilots" value={FLEET_PILOTS.toLocaleString()} tone="info" />
-            <CampaignStat label="Characters" value={FLEET_CHARACTERS.toLocaleString()} />
-            <CampaignStat label="Participation" value={`${FLEET_PARTICIPATION_PCT}%`} tone="success" />
-        </div>
     </section>
 
     <section class="er-campaign__section">
@@ -274,27 +255,22 @@ const combatRows = [
 
     <section class="er-campaign__section">
         <div class="er-campaign__subsection">
-            <h4>Fleet commanders</h4>
+            <h4>Top commanders</h4>
             <p class="er-campaign__meta">
-                Top FCs by fleets run
+                Fleet commanders contributing to this campaign
             </p>
             <div class="er-campaign__fc-grid">
                 {
                     TOP_FLEET_COMMANDERS.map((fc) => (
-                        <div
-                            class:list={[
-                                'er-fc-card',
-                                'isAggregate' in fc && fc.isAggregate && 'er-fc-card--other',
-                            ]}
-                        >
+                        <div class="er-fc-card">
                             {'isAggregate' in fc && fc.isAggregate ? (
                                 <div class="er-fc-card__portraits" aria-hidden="true">
                                     {
                                         OTHER_FLEET_COMMANDERS.commanders.map((commander) => (
                                             <img
                                                 loading="lazy"
-                                                width="32"
-                                                height="32"
+                                                width="16"
+                                                height="16"
                                                 src={get_player_icon(commander.characterId, 32)}
                                                 alt=""
                                                 title={`${commander.name} · ${commander.fleetCount} fleets`}
@@ -318,11 +294,6 @@ const combatRows = [
                                 <span class="er-fc-card__count">
                                     {fc.fleetCount.toLocaleString()} fleets
                                 </span>
-                                {'isAggregate' in fc && fc.isAggregate && (
-                                    <span class="er-fc-card__subtext">
-                                        Additional campaign FCs
-                                    </span>
-                                )}
                             </div>
                         </div>
                     ))
@@ -331,9 +302,9 @@ const combatRows = [
         </div>
 
         <div class="er-campaign__subsection">
-            <h4>Fleet participants</h4>
+            <h4>Top pilots</h4>
             <p class="er-campaign__meta">
-                Top pilots by fleets flown
+                Fleet participants contributing to this campaign
             </p>
             <div class="er-campaign__fc-grid">
                 {
@@ -360,9 +331,9 @@ const combatRows = [
         </div>
 
         <div class="er-campaign__subsection">
-            <h4>Top krabbers</h4>
+            <h4>Top krabs</h4>
             <p class="er-campaign__meta">
-                Top pilots by combined mining, ratting, and PI income
+                Top pilots based on their combined mining, ratting, and PI income
             </p>
             <div class="er-campaign__fc-grid">
                 {
@@ -704,8 +675,20 @@ const combatRows = [
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .er-campaign__stat-grid--4 {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+    .er-campaign__stat-featured {
+        min-width: 0;
+
+        :global(.er-stat) {
+            padding: var(--space-l);
+        }
+
+        :global(.er-stat__label) {
+            font-size: var(--step-0);
+        }
+
+        :global(.er-stat__value) {
+            font-size: var(--step-2);
+        }
     }
 
     .er-campaign__fc-grid {
@@ -728,33 +711,28 @@ const combatRows = [
     }
 
     .er-fc-card__portrait {
+        flex-shrink: 0;
+        width: 64px;
+        height: 64px;
         border-radius: 4px;
     }
 
-    .er-fc-card--other {
-        justify-content: flex-start;
-    }
-
     .er-fc-card__portraits {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        align-content: flex-start;
-        gap: 2px;
-        width: 100%;
-        min-height: 64px;
-        padding: 2px;
+        display: grid;
+        flex-shrink: 0;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1px;
+        width: 64px;
+        height: 64px;
+        overflow: hidden;
     }
 
     .er-fc-card__portrait-mini {
-        border-radius: 3px;
-        flex-shrink: 0;
-    }
-
-    .er-fc-card__subtext {
-        font-size: var(--step--2);
-        color: var(--faded);
-        line-height: 1.3;
+        display: block;
+        width: 100%;
+        height: 100%;
+        border-radius: 2px;
+        object-fit: cover;
     }
 
     .er-fc-card__body {
@@ -825,8 +803,7 @@ const combatRows = [
     }
 
     @media (max-width: 900px) {
-        .er-campaign__stat-grid--3,
-        .er-campaign__stat-grid--4 {
+        .er-campaign__stat-grid--3 {
             grid-template-columns: 1fr;
         }
 

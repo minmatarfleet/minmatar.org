@@ -251,6 +251,8 @@ export const CAMPAIGN_ISK_DESTROYED = ISK_DESTROYED_MONTHLY.reduce(
     0,
 )
 export const CAMPAIGN_PILOT_INCOME = GROSS_PLAYER_TOTAL
+/** Pilot income plus alliance disclosed income · ~1.2T ISK. */
+export const CAMPAIGN_TOTAL_INCOME = CAMPAIGN_PILOT_INCOME + GROSS_CORP_ALL
 
 export const DRONELANDS_REGIONS = [
     'Etherium Reach',
@@ -303,7 +305,7 @@ export type CampaignHeadline = {
 /** u/BearThatCares · r/Eve campaign AARs and updates · Jan–Mar 2026. */
 export const HEADLINES: readonly CampaignHeadline[] = [
     {
-        title: 'AAR: Dronelands, dreads, destruction (300B dread brawl)',
+        title: '300B DREAD BRAWL IN DRONELANDS',
         url: 'https://www.reddit.com/r/Eve/comments/1q7jarz/aar_dronelands_dreads_destruction_300b_dread_brawl/',
         date: '2026-01-08',
         category: 'aar',
@@ -313,7 +315,7 @@ export const HEADLINES: readonly CampaignHeadline[] = [
         views: '36K',
     },
     {
-        title: 'AAR: 200B DREAD BRAWL IN DRONELANDS',
+        title: '200B DREAD BRAWL IN DRONELANDS',
         url: 'https://www.reddit.com/r/Eve/comments/1r3qwgt/aar_200b_dread_brawl_in_dronelands/',
         date: '2026-02-13',
         category: 'aar',
@@ -333,7 +335,7 @@ export const HEADLINES: readonly CampaignHeadline[] = [
         views: '25K',
     },
     {
-        title: 'AAR: We caught our first supercarrier',
+        title: 'We caught our first supercarrier',
         url: 'https://www.reddit.com/r/Eve/comments/1rmw8if/aar_we_caught_our_first_supercarrier/',
         date: '2026-03-07',
         category: 'aar',
@@ -343,7 +345,7 @@ export const HEADLINES: readonly CampaignHeadline[] = [
         views: '23K',
     },
     {
-        title: 'AAR: 1.3T+ DREAD BRAWL IN DRONELANDS',
+        title: '1.3T+ DREAD BRAWL IN DRONELANDS',
         url: 'https://www.reddit.com/r/Eve/comments/1rsdgg9/aar_13t_dread_brawl_in_dronelands/',
         date: '2026-03-13',
         category: 'aar',
