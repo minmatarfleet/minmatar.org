@@ -127,6 +127,15 @@ export const ui = {
         'campaigns.etherium_reach.meta_description':
             'Dig into the numbers and pilots behind one of Minmatar Fleet\'s most successful EVE Online campaigns — 3.49T ISK destroyed and 1.2T ISK earned.',
 
+        'campaigns.providence.page_title': 'Providence Campaign Report',
+        'campaigns.providence.campaign_period': 'Jan 2024 – Mar 2025',
+        'campaigns.providence.leading_text':
+            'FL33T\'s war on CVA, Absolute Honor, and Providence — nullsec structure grinds, lowsec FW flashpoints, and the fights that defined the campaign.',
+        'campaigns.providence.meta_title':
+            'Providence Campaign Report | {site}',
+        'campaigns.providence.meta_description':
+            'Combat report for Minmatar Fleet\'s Providence war against CVA, Absolute Honor, and Providence holders — fleet stats, participation, and campaign headlines.',
+
         'propaganda.page_title': 'Propaganda',
         'propaganda.leading_text': 'All our propaganda in a single place.',
         'propaganda.meta_description': 'All our propaganda in a single place.',
@@ -859,6 +868,24 @@ export const ui = {
         'group_leave_request_dialog_title': 'Leave group',
         'team_leave_request_dialog_title': 'Leave team',
         'corporation_join_request_dialog_text': 'Welcome to the first step of your glorious descent into organized chaos. Fill out your application text to submit your application to our corporation?',
+        'l3arn_application_intro': 'Minmatar Fleet Academy uses a short questionnaire so recruiters can review your application right away. A verbal interview and starter fleet still follow before acceptance.',
+        'l3arn_application_introduction': 'Why do you want to join Minmatar Fleet Academy?',
+        'l3arn_application_timezone': 'What timezone are you in?',
+        'l3arn_application_roles': 'What roles are you interested in? (logi, tackle, DPS, etc.)',
+        'l3arn_application_goals': 'What goals do you have in EVE?',
+        'l3arn_application_comms': 'Are you comfortable asking questions and being on comms?',
+        'l3arn_application_comms_hint': 'Academy learning is hands-on — you get more out of the corp if you can ask questions and fly on voice.',
+        'l3arn_application_how_found': 'How did you find us? (Reddit, forums, friend, etc.)',
+        'l3arn_application_only_l3arn': 'Did you only check L3ARN, or did you consider other alliance corporations too?',
+        'l3arn_application_other_corps_link': 'Browse other Minmatar Fleet corporations',
+        'l3arn_application_requirements_heading': 'Confirm you meet these requirements',
+        'l3arn_application_tenets_hint': 'Read the Alliance Tenets: https://wiki.minmatar.org/en/alliance/Minmatar_Fl33t_Tenets',
+        'l3arn_application_agree_tenets': 'I agree with the Alliance Tenets',
+        'l3arn_application_confirm_omega': 'I am Omega',
+        'l3arn_application_confirm_not_alt': 'I am not an alt of an existing player',
+        'l3arn_application_confirm_not_dual': 'I am not a dual-citizen (no active alts in other alliances)',
+        'l3arn_application_confirm_auth': 'All of my characters (Omega and non-Omega) are added to Auth',
+        'invalid_l3arn_application': 'Please complete all required L3ARN application fields.',
         'group_join_request_dialog_text': 'Proceed with the join request to the following group?',
         'team_join_request_dialog_text': 'Proceed with the join request to the following team?',
         'group_leave_request_dialog_text': 'Proceed leaving the following group?',
@@ -976,6 +1003,8 @@ export const ui = {
         'page_finder.alliance.description': 'Alliance landing page.',
         'page_finder.campaigns.etherium_reach.description':
             'Etherium Reach Dronelands campaign report — alliance participation, combat, pilot income, and campaign results.',
+        'page_finder.campaigns.providence.description':
+            'Providence campaign report — FL33T war on CVA, combat stats, fleet participation, and campaign headlines.',
         'page_finder.story.description': 'Learn more about our story.',
         'page_finder.values.description': 'What we expect from every FL33T member.',
         'page_finder.playstyle.description': 'Learn more about our playstyle.',

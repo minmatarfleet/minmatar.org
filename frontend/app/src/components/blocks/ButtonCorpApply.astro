@@ -3,6 +3,10 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { CorporationObject } from '@dtypes/layout_components'
+import {
+    isL3arnCorporation,
+    l3arnApplicationAlpineState,
+} from '@helpers/corporations/l3arn_application'
 
 interface Props {
     corporation:            CorporationObject;
@@ -13,6 +17,8 @@ const {
     corporation,
     hidden = false,
 } = Astro.props
+
+const is_l3arn = isL3arnCorporation(corporation)
 
 const CORPORATION_REQUEST_STATUS_PARTIAL_URL = `${translatePath('/partials/corporation_slide_request_status_item/')}?corporation_id=${corporation.corporation_id}`
 
@@ -29,6 +35,7 @@ import DialogButton from "@components/blocks/DialogButton.astro";
 import Button from '@components/blocks/Button.astro';
 import CorporationItem from '@components/blocks/CorporationItem.astro';
 import Textarea from '@components/blocks/Textarea.astro';
+import CorporationApplicationFormL3arn from '@components/blocks/CorporationApplicationFormL3arn.astro';
 
 import MarkdownIcon from '@components/icons/buttons/MarkdownIcon.astro';
 ---
@@ -47,7 +54,9 @@ import MarkdownIcon from '@components/icons/buttons/MarkdownIcon.astro';
         hx-target={`#corporation-status-${corporation.corporation_id}`}
         hx-indicator=".loader"
         hx-swap="outerHTML transition:true"
-        x-data={`{
+        x-data={is_l3arn
+            ? l3arnApplicationAlpineState(false)
+            : `{
             application_text: '',
             error: false,
             clear_form() {
@@ -56,7 +65,10 @@ import MarkdownIcon from '@components/icons/buttons/MarkdownIcon.astro';
                 })
             }
         }`}
-        x-on:submit="close_dialog(); clear_form()"
+        x-on:submit={is_l3arn
+            ? "if (error) { $event.preventDefault(); return }; close_dialog(); clearL3arnForm()"
+            : "close_dialog(); clear_form()"}
+        x-init={is_l3arn ? "updateApplicationStatus()" : undefined}
     >
         <Flexblock gap="var(--space-l)">
             <Flexblock gap="var(--space-s)">
@@ -64,34 +76,39 @@ import MarkdownIcon from '@components/icons/buttons/MarkdownIcon.astro';
                 
                 <p>{t('corporation_join_request_dialog_text')}</p>
                 <CorporationItem corporation={corporation} disable_applications={true} />
-                <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
-                    <label for="description">{t('application_text')}</label>
-                    <div class="[ remain-wrapper ]" x-data={`{ limit: $el.dataset.limit }`} data-limit={MAX_APPLICATION_TEXT_LENGTH}>
-                        <Textarea
-                             x-ref="content"
-                             id="description"
-                             name="application_text"
-                             x-model="application_text"
-                             rows="5"
-                             x-on:input={`error = !application_text || application_text.length > ${MAX_APPLICATION_TEXT_LENGTH}`}
-                             required
-                        />
-                        <small
-                            x-show={`application_text.length > ${MAX_APPLICATION_TEXT_LENGTH - 200}`}
-                            x-ref="remaining"
-                            x-text="limit - application_text.length"
-                            x-bind:class="(error ? 'text-red animate-fade-in-up' : '')"
-                        >
-                            {MAX_APPLICATION_TEXT_LENGTH}
-                        </small>
-                    </div>
-                    <a href="https://www.markdownguide.org/" class="[ w-fit ]" target="_blank" rel="noreferrer noopener nofollow">
-                        <FlexInline gap='var(--space-3xs)'>
-                            <MarkdownIcon />
-                            <small>{t('markdown_support')}</small>
-                        </FlexInline>
-                    </a>
-                </Flexblock>
+
+                {is_l3arn ? (
+                    <CorporationApplicationFormL3arn include_field_names={true} />
+                ) : (
+                    <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+                        <label for="description">{t('application_text')}</label>
+                        <div class="[ remain-wrapper ]" x-data={`{ limit: $el.dataset.limit }`} data-limit={MAX_APPLICATION_TEXT_LENGTH}>
+                            <Textarea
+                                 x-ref="content"
+                                 id="description"
+                                 name="application_text"
+                                 x-model="application_text"
+                                 rows="5"
+                                 x-on:input={`error = !application_text || application_text.length > ${MAX_APPLICATION_TEXT_LENGTH}`}
+                                 required
+                            />
+                            <small
+                                x-show={`application_text.length > ${MAX_APPLICATION_TEXT_LENGTH - 200}`}
+                                x-ref="remaining"
+                                x-text="limit - application_text.length"
+                                x-bind:class="(error ? 'text-red animate-fade-in-up' : '')"
+                            >
+                                {MAX_APPLICATION_TEXT_LENGTH}
+                            </small>
+                        </div>
+                        <a href="https://www.markdownguide.org/" class="[ w-fit ]" target="_blank" rel="noreferrer noopener nofollow">
+                            <FlexInline gap='var(--space-3xs)'>
+                                <MarkdownIcon />
+                                <small>{t('markdown_support')}</small>
+                            </FlexInline>
+                        </a>
+                    </Flexblock>
+                )}
             </Flexblock>
 
             <FlexInline justification='flex-end'>
@@ -99,6 +116,7 @@ import MarkdownIcon from '@components/icons/buttons/MarkdownIcon.astro';
                     size='sm'
                     type="submit"
                     color='green'
+                    x-bind:disabled={is_l3arn ? "error" : "error"}
                 >
                     {t('apply')}
                 </Button>
