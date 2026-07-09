@@ -84,6 +84,20 @@
         ]
     },
     {
+        "slug": "campaigns.hek",
+        "path": "/campaigns/hek/",
+        "publish": true,
+        "description": "page_finder.campaigns.hek.description",
+        "keywords": [
+            "Hek",
+            "Metropolis",
+            "highsec campaign",
+            "HMA",
+            "Minmatar Fleet",
+            "campaign report"
+        ]
+    },
+    {
         "slug": "corporations.list",
         "alt": "icon.corporation.alt",
         "path": "/alliance/corporations/",
