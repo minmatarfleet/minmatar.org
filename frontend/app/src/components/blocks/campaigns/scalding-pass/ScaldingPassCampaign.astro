@@ -1,0 +1,586 @@
+---
+import {
+    CONSTELLATIONS_BY_DESTROYED,
+    CONTRACTED_ISK,
+    HEADLINES,
+    ISK_DESTROYED_BY_CONSTELLATION,
+    PERIOD_SCALDING_FLEETS,
+    PERIOD_SCALDING_ISK_KILLS,
+    PERIOD_SCALDING_ISK_LOSSES,
+    TOP_FLEET_COMMANDERS,
+    TOP_FLEET_PILOTS,
+    formatIsk,
+} from '@/data/campaigns/scalding-pass'
+
+import { get_player_icon } from '@helpers/eve_image_server'
+
+import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
+import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
+import PlayerContentChart from '@components/blocks/campaigns/scalding-pass/PlayerContentChart.astro'
+import PlayerContentChartLegend from '@components/blocks/campaigns/scalding-pass/PlayerContentChartLegend.astro'
+
+const disclosureRows = [
+    { cells: ['Diplomatic contract', formatIsk(CONTRACTED_ISK)] as const },
+    {
+        cells: ['Total disclosed', formatIsk(CONTRACTED_ISK)] as const,
+        tone: 'info' as const,
+    },
+]
+
+function formatHeadlineDate(isoDate: string): string {
+    return new Date(`${isoDate}T00:00:00Z`).toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        timeZone: 'UTC',
+    })
+}
+
+function formatHeadlineViews(views: string | number): string {
+    if (typeof views === 'string') {
+        return views === '—' ? views : `${views} views`
+    }
+    if (views >= 1_000_000) {
+        return `${(views / 1_000_000).toFixed(1)}M views`
+    }
+    if (views >= 1_000) {
+        return `${Math.round(views / 1_000)}K views`
+    }
+    return `${views.toLocaleString()} views`
+}
+
+const HEADLINE_CATEGORY_LABELS = {
+    aar: 'AAR',
+} as const
+
+const constellationRows = [
+    ...CONSTELLATIONS_BY_DESTROYED.map((constellation) => ({
+        cells: [constellation, formatIsk(ISK_DESTROYED_BY_CONSTELLATION[constellation])] as const,
+        tone: constellation === '4YFT-F' ? ('warning' as const) : undefined,
+    })),
+    {
+        cells: [
+            'All Scalding Pass',
+            formatIsk(PERIOD_SCALDING_ISK_KILLS),
+        ] as const,
+        tone: 'info' as const,
+    },
+]
+---
+
+<div class="sp-campaign">
+    <section class="sp-campaign__section">
+        <h3>Content summary</h3>
+        <p class="sp-campaign__meta">
+            Combat and fleets in Scalding Pass
+        </p>
+        <div class="sp-campaign__stat-grid sp-campaign__stat-grid--3">
+            <CampaignStat
+                label="ISK destroyed"
+                value={formatIsk(PERIOD_SCALDING_ISK_KILLS)}
+                tone="success"
+            />
+            <CampaignStat
+                label="ISK lost"
+                value={formatIsk(PERIOD_SCALDING_ISK_LOSSES)}
+                tone="danger"
+            />
+            <CampaignStat
+                label="Campaign fleets"
+                value={PERIOD_SCALDING_FLEETS.toLocaleString()}
+            />
+        </div>
+    </section>
+
+    <section class="sp-campaign__section">
+        <h3>Player content over time</h3>
+        <p class="sp-campaign__meta">
+            Monthly ISK destroyed in Scalding Pass and fleets flown there
+        </p>
+        <div class="sp-campaign__chart-block">
+            <div class="sp-campaign__chart-card">
+                <div class="sp-campaign__chart-plot">
+                    <PlayerContentChart />
+                </div>
+            </div>
+            <PlayerContentChartLegend />
+        </div>
+    </section>
+
+    <section class="sp-campaign__section">
+        <h3>Campaign disclosure</h3>
+        <p class="sp-campaign__meta">
+            Public contracted support during the campaign
+        </p>
+        <CampaignDataTable headers={['Source', 'ISK']} rows={disclosureRows} />
+        <p class="sp-campaign__footnote">
+            Pilot income was not tracked during this campaign.
+        </p>
+    </section>
+
+    <section class="sp-campaign__section">
+        <h3>Combat by constellation</h3>
+        <p class="sp-campaign__meta">
+            ISK destroyed across Scalding Pass constellations
+        </p>
+        <CampaignDataTable
+            headers={['Constellation', 'Destroyed']}
+            rows={constellationRows}
+            striped={true}
+        />
+    </section>
+
+    <section class="sp-campaign__section">
+        <div class="sp-campaign__subsection">
+            <h4>Top commanders</h4>
+            <p class="sp-campaign__meta">
+                Fleet commanders in Scalding Pass during this campaign
+            </p>
+            <div class="sp-campaign__fc-grid">
+                {
+                    TOP_FLEET_COMMANDERS.map((fc) => (
+                        <div class="sp-fc-card">
+                            <img
+                                loading="lazy"
+                                width="64"
+                                height="64"
+                                src={get_player_icon(fc.characterId, 64)}
+                                alt={`${fc.name} portrait`}
+                                class="sp-fc-card__portrait"
+                            />
+                            <div class="sp-fc-card__body">
+                                <span class="sp-fc-card__name">{fc.name}</span>
+                                <span class="sp-fc-card__count">
+                                    {fc.fleetCount.toLocaleString()} fleets
+                                </span>
+                            </div>
+                        </div>
+                    ))
+                }
+            </div>
+        </div>
+
+        <div class="sp-campaign__subsection">
+            <h4>Top pilots</h4>
+            <p class="sp-campaign__meta">
+                Fleet participants in Scalding Pass during this campaign
+            </p>
+            <div class="sp-campaign__fc-grid">
+                {
+                    TOP_FLEET_PILOTS.map((pilot) => (
+                        <div class="sp-fc-card">
+                            <img
+                                loading="lazy"
+                                width="64"
+                                height="64"
+                                src={get_player_icon(pilot.characterId, 64)}
+                                alt={`${pilot.name} portrait`}
+                                class="sp-fc-card__portrait"
+                            />
+                            <div class="sp-fc-card__body">
+                                <span class="sp-fc-card__name">{pilot.name}</span>
+                                <span class="sp-fc-card__count">
+                                    {pilot.fleetCount.toLocaleString()} fleets
+                                </span>
+                            </div>
+                        </div>
+                    ))
+                }
+            </div>
+        </div>
+    </section>
+
+    <section class="sp-campaign__section">
+        <h3>Headlines</h3>
+        <p class="sp-campaign__meta">
+            Stories and updates from the campaign
+        </p>
+        <div class="sp-headline-cards">
+            {
+                HEADLINES.map((headline) => (
+                    <a
+                        class:list={[
+                            'sp-headline-card',
+                            `sp-headline-card--${headline.category}`,
+                        ]}
+                        style={`--sp-headline-bg: url('${headline.backgroundImage}')`}
+                        href={headline.url}
+                        target="_blank"
+                        rel="noopener noreferrer nofollow"
+                    >
+                        <div class="sp-headline-card__body">
+                            <div class="sp-headline-card__meta">
+                                <time datetime={headline.date}>
+                                    {formatHeadlineDate(headline.date)}
+                                </time>
+                                <span class="sp-headline-card__tag">
+                                    {HEADLINE_CATEGORY_LABELS[headline.category]}
+                                </span>
+                            </div>
+                            <h4 class="sp-headline-card__title">{headline.title}</h4>
+                            <p class="sp-headline-card__reddit">
+                                <span class="sp-headline-card__reddit-upvotes" aria-label={`${headline.upvotes} upvotes`}>
+                                    ▲ {headline.upvotes.toLocaleString()}
+                                </span>
+                                <span aria-hidden="true">·</span>
+                                <span>{headline.comments.toLocaleString()} comments</span>
+                                {
+                                    headline.views !== '—' && (
+                                        <>
+                                            <span aria-hidden="true">·</span>
+                                            <span>{formatHeadlineViews(headline.views)}</span>
+                                        </>
+                                    )
+                                }
+                            </p>
+                        </div>
+                        <span class="sp-headline-card__arrow" aria-hidden="true">→</span>
+                    </a>
+                ))
+            }
+        </div>
+    </section>
+
+    <footer class="sp-campaign__footer">
+        <span>Scalding Pass Campaign Report</span>
+        <span>July 2026</span>
+    </footer>
+</div>
+
+<style lang="scss">
+    .sp-campaign {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xl);
+        width: 100%;
+        min-width: 0;
+    }
+
+    .sp-campaign__section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        min-width: 0;
+
+        h3,
+        h4 {
+            margin: 0;
+            color: var(--highlight);
+            line-height: 1.2;
+        }
+
+        h3 {
+            font-size: var(--step-1);
+        }
+
+        h4 {
+            font-size: var(--step-0);
+        }
+
+        h3 + .sp-campaign__meta,
+        h4 + .sp-campaign__meta {
+            margin-top: calc(var(--space-2xs) - var(--space-m));
+        }
+    }
+
+    .sp-campaign__subsection {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        min-width: 0;
+        padding-top: var(--space-l);
+        border-top: 1px solid color-mix(in srgb, var(--border-color) 45%, transparent);
+    }
+
+    .sp-campaign__meta,
+    .sp-campaign__subheading,
+    .sp-campaign__footnote {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--faded);
+        line-height: 1.5;
+    }
+
+    .sp-campaign__subheading {
+        margin-bottom: var(--space-s);
+    }
+
+    .sp-campaign__stat-grid {
+        display: grid;
+        gap: var(--space-m);
+        min-width: 0;
+    }
+
+    .sp-campaign__stat-grid--3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .sp-campaign__fc-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: var(--space-m);
+        min-width: 0;
+    }
+
+    .sp-fc-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-s);
+        padding: var(--space-s);
+        background: color-mix(in srgb, var(--component-background) 80%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        min-width: 0;
+        text-align: center;
+    }
+
+    .sp-fc-card__portrait {
+        flex-shrink: 0;
+        width: 64px;
+        height: 64px;
+        border-radius: 4px;
+    }
+
+    .sp-fc-card__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+        width: 100%;
+    }
+
+    .sp-fc-card__name {
+        font-size: var(--step-0);
+        font-weight: 600;
+        color: var(--highlight);
+        line-height: 1.2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .sp-fc-card__count {
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    .sp-campaign__chart-block {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        min-width: 0;
+    }
+
+    .sp-campaign__chart-card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        padding: var(--space-m);
+        background: color-mix(in srgb, var(--component-background) 70%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        min-width: 0;
+    }
+
+    .sp-campaign__chart-plot {
+        margin-inline: calc(-1 * var(--space-m));
+        min-width: 0;
+    }
+
+    .sp-headline-cards {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        min-width: 0;
+    }
+
+    .sp-headline-card {
+        position: relative;
+        isolation: isolate;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-m);
+        padding: var(--space-m) var(--space-l);
+        min-width: 0;
+        overflow: hidden;
+        text-decoration: none;
+        color: inherit;
+        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        border-left-width: 3px;
+        transition:
+            border-color 0.15s ease,
+            transform 0.15s ease;
+
+        &::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background-image: var(--sp-headline-bg);
+            background-size: cover;
+            background-position: center;
+            transition: transform 0.15s ease;
+        }
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            transition: opacity 0.15s ease;
+        }
+
+        > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        &:hover,
+        &:focus-visible {
+            transform: translateX(2px);
+            border-color: color-mix(in srgb, var(--border-color-hover) 80%, transparent);
+        }
+
+        &:hover::before,
+        &:focus-visible::before {
+            transform: scale(1.03);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+
+    .sp-headline-card--aar {
+        border-left-color: var(--fleet-yellow);
+
+        &::after {
+            background:
+                linear-gradient(
+                    90deg,
+                    color-mix(in srgb, hsl(0 0% 4%) 94%, var(--fleet-red) 6%) 0%,
+                    color-mix(in srgb, hsl(0 0% 4%) 82%, var(--fleet-red) 5%) 42%,
+                    color-mix(in srgb, hsl(0 0% 4%) 58%, transparent) 100%
+                );
+        }
+
+        &:hover::after,
+        &:focus-visible::after {
+            background:
+                linear-gradient(
+                    90deg,
+                    color-mix(in srgb, hsl(0 0% 4%) 90%, var(--fleet-red) 10%) 0%,
+                    color-mix(in srgb, hsl(0 0% 4%) 78%, var(--fleet-red) 8%) 42%,
+                    color-mix(in srgb, hsl(0 0% 4%) 52%, transparent) 100%
+                );
+        }
+
+        .sp-headline-card__tag {
+            color: var(--fleet-yellow);
+            background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+            border-color: color-mix(in srgb, var(--fleet-yellow) 28%, transparent);
+        }
+    }
+
+    .sp-headline-card__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+        flex: 1;
+    }
+
+    .sp-headline-card__meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-s);
+        font-size: var(--step--1);
+        color: var(--faded);
+        line-height: 1.4;
+
+        time {
+            white-space: nowrap;
+        }
+    }
+
+    .sp-headline-card__tag {
+        padding: 0.1em 0.55em;
+        font-size: 0.85em;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        border: 1px solid transparent;
+        line-height: 1.4;
+    }
+
+    .sp-headline-card__title {
+        margin: 0;
+        font-size: var(--step-0);
+        font-weight: 600;
+        color: var(--highlight);
+        line-height: 1.35;
+    }
+
+    .sp-headline-card__reddit {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.45em;
+        margin: 0;
+        font-size: var(--step--2);
+        color: color-mix(in srgb, var(--faded) 88%, transparent);
+        line-height: 1.4;
+    }
+
+    .sp-headline-card__reddit-upvotes {
+        color: color-mix(in srgb, var(--faded) 95%, var(--fleet-yellow) 5%);
+    }
+
+    .sp-headline-card__arrow {
+        flex-shrink: 0;
+        font-size: var(--step-1);
+        color: var(--faded);
+        transition: color 0.15s ease, transform 0.15s ease;
+    }
+
+    .sp-headline-card:hover .sp-headline-card__arrow,
+    .sp-headline-card:focus-visible .sp-headline-card__arrow {
+        color: var(--fleet-yellow);
+        transform: translateX(3px);
+    }
+
+    .sp-campaign__footer {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: var(--space-s);
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    @media (max-width: 900px) {
+        .sp-campaign__stat-grid--3 {
+            grid-template-columns: 1fr;
+        }
+
+        .sp-campaign__fc-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 480px) {
+        .sp-campaign__fc-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .sp-headline-card {
+            padding: var(--space-m);
+        }
+
+        .sp-headline-card__arrow {
+            display: none;
+        }
+    }
+</style>
