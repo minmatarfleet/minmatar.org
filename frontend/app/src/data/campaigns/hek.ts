@@ -1,18 +1,20 @@
-/** Hek / Metropolis highsec campaign · metrics window 10 Nov – 30 Nov 2023. */
+/** Hek highsec campaign · metrics window 10 Nov – 30 Nov 2023. */
 
 export const COVER_IMAGE = '/images/combatlog-cover.jpg'
 
-/** zKill · alliance 99011978 · Metropolis region 10000042 · 10 Nov – 30 Nov 2023 UTC. */
+/** zKill · alliance 99011978 · Hek (30002053) · 10 Nov – 30 Nov 2023 UTC. */
 export const METRICS_START = '2023-11-10'
 export const METRICS_END = '2023-11-30'
 
-export const ISK_DESTROYED = 232_474_264_895
-export const ISK_LOST = 50_221_325_563
-export const KILLMAIL_COUNT = 1_963
-export const LOSSMAIL_COUNT = 882
+export const ISK_DESTROYED = 65_088_972_952
+export const ISK_LOST = 81_122_603
+export const KILLMAIL_COUNT = 24
+export const LOSSMAIL_COUNT = 10
+export const STRUCTURE_KILLMAIL_COUNT = 10
+export const STRUCTURE_ISK_DESTROYED = 64_315_502_190
 
 /** Discord announcement · 17 Nov 2023 · [SLUSH] surrender offer accepted. */
-export const HMA_REPARATIONS_ISK = 20_000_000_000
+export const SURRENDER_ISK = 20_000_000_000
 
 /** War declaration estimate · ~150B enemy structures in theater. */
 export const ENEMY_STRUCTURE_VALUE_ESTIMATE = 150_000_000_000
@@ -23,7 +25,7 @@ export const STRUCTURES_CLEARED_FROM_TIMERS = 13
 export const CAMPAIGN_BEATS = [
     {
         date: '2023-10-23',
-        label: 'Security status prep for Metropolis content',
+        label: 'Security status preparation for highsec content',
         source: 'Discord · #archive-announcements',
     },
     {
@@ -38,29 +40,26 @@ export const CAMPAIGN_BEATS = [
     },
     {
         date: '2023-11-17',
-        label: '20B ISK HMA reparations accepted from [SLUSH]',
+        label: '20B ISK surrender accepted from [SLUSH]',
         source: 'Discord · #announcements',
     },
-    {
-        date: '2023-11-18',
-        label: 'Dual-theater day — structure pressure in Hek and caps in Floseswin',
-        source: 'Rat Chronicle · r/Eve',
-    },
-    {
-        date: '2023-11-19',
-        label: 'Ore buyback program announced for freed systems',
-        source: 'Discord · #archive-announcements',
-    },
 ] as const
 
-export const REMAINING_TARGETS = [
-    'Nebula Market & Industry (Azbel)',
-    'HMA Presents — Rogue One (Raitaru)',
-    "Rogue's Gallery (Athanor)",
-    'Nebula Mining Operations (Athanor)',
+export type CampaignKeyPerson = {
+    characterId: number
+    name: string
+    role: string
+}
+
+export const KEY_PEOPLE: readonly CampaignKeyPerson[] = [
+    { characterId: 299_286_127, name: 'Fariius', role: 'Intelligence' },
+    { characterId: 2_120_834_555, name: 'Faye Vaelent', role: 'Propaganda' },
+    { characterId: 2_120_647_389, name: "A'Songala", role: 'Diplomacy' },
+    { characterId: 1_978_535_095, name: 'Ibn Khatab', role: 'Fleet Commander' },
+    { characterId: 634_915_984, name: 'BearThatCares', role: 'Fleet Commander' },
 ] as const
 
-export type CampaignHeadlineCategory = 'aar' | 'update'
+export type CampaignHeadlineCategory = 'aar' | 'update' | 'video'
 
 export const HEADLINE_BACKGROUNDS = [
     '/images/combatlog-tile-background.webp',
@@ -79,9 +78,9 @@ export type CampaignHeadline = {
 export const HEADLINES: readonly CampaignHeadline[] = [
     {
         title: 'FL33T declares war on highsec cartels',
-        url: 'https://www.reddit.com/r/Eve/comments/17s47re/fl33t_declares_war_on_highsec_cartels/',
+        url: 'https://youtu.be/DcxFeYoyTrw?si=13p0TEIybStuOQ98',
         date: '2023-11-10',
-        category: 'update',
+        category: 'video',
         backgroundImage: HEADLINE_BACKGROUNDS[1],
     },
     {
@@ -93,17 +92,10 @@ export const HEADLINES: readonly CampaignHeadline[] = [
     },
     {
         title: 'Hek is... free?',
-        url: 'https://www.reddit.com/r/Eve/comments/17v81hp/hek_is_free/',
+        url: 'https://youtu.be/N2qh4oPhWAM?si=_3Q4N4oTKC9vKWOw',
         date: '2023-11-14',
-        category: 'update',
+        category: 'video',
         backgroundImage: HEADLINE_BACKGROUNDS[2],
-    },
-    {
-        title: 'Capital Ships Down in Floseswin',
-        url: 'https://www.reddit.com/r/Eve/comments/17yhqk1/capital_ships_down_in_floseswin/',
-        date: '2023-11-18',
-        category: 'aar',
-        backgroundImage: HEADLINE_BACKGROUNDS[0],
     },
 ] as const
 

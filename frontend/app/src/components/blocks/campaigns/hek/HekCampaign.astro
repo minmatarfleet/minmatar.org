@@ -4,16 +4,14 @@ import {
     ENEMY_STRUCTURE_VALUE_ESTIMATE,
     formatIsk,
     HEADLINES,
-    HMA_REPARATIONS_ISK,
     ISK_DESTROYED,
     ISK_LOST,
-    KILLMAIL_COUNT,
-    LOSSMAIL_COUNT,
-    METRICS_END,
-    METRICS_START,
-    REMAINING_TARGETS,
+    KEY_PEOPLE,
+    SURRENDER_ISK,
     STRUCTURES_CLEARED_FROM_TIMERS,
 } from '@/data/campaigns/hek'
+
+import { get_player_icon } from '@helpers/eve_image_server'
 
 import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
 import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
@@ -21,25 +19,21 @@ import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignSt
 const HEADLINE_CATEGORY_LABELS = {
     aar: 'AAR',
     update: 'Update',
+    video: 'Video',
 } as const
 
 const settlementRows = [
     {
-        cells: ['HMA reparations accepted', formatIsk(HMA_REPARATIONS_ISK)] as const,
+        cells: ['Surrender ISK accepted', formatIsk(SURRENDER_ISK)] as const,
         tone: 'success' as const,
     },
     {
-        cells: ['Structures cleared from timers', String(STRUCTURES_CLEARED_FROM_TIMERS)] as const,
+        cells: ['Structures spared from conflict', String(STRUCTURES_CLEARED_FROM_TIMERS)] as const,
     },
     {
-        cells: ['Enemy structure value (est.)', `~${formatIsk(ENEMY_STRUCTURE_VALUE_ESTIMATE)}`] as const,
+        cells: ['Spared enemy structure value', `~${formatIsk(ENEMY_STRUCTURE_VALUE_ESTIMATE)}`] as const,
     },
 ]
-
-const remainingTargetRows = REMAINING_TARGETS.map((target) => ({
-    cells: [target, 'Still targeted'] as const,
-    tone: 'warning' as const,
-}))
 
 function formatBeatDate(isoDate: string): string {
     return new Date(`${isoDate}T00:00:00Z`).toLocaleDateString('en-GB', {
@@ -59,7 +53,7 @@ function formatHeadlineDate(isoDate: string): string {
     <section class="hek-campaign__section">
         <h3>Campaign by the numbers</h3>
         <p class="hek-campaign__meta">
-            Combat in Metropolis · {METRICS_START} – {METRICS_END} · zKillboard
+            Structure warfare, combat, and settlement
         </p>
         <div class="hek-campaign__stat-grid hek-campaign__stat-grid--3">
             <CampaignStat
@@ -73,45 +67,28 @@ function formatHeadlineDate(isoDate: string): string {
                 tone="danger"
             />
             <CampaignStat
-                label="HMA reparations"
-                value={formatIsk(HMA_REPARATIONS_ISK)}
+                label="Surrender ISK"
+                value={formatIsk(SURRENDER_ISK)}
                 tone="info"
             />
         </div>
-        <p class="hek-campaign__footnote">
-            {KILLMAIL_COUNT.toLocaleString()} kills and {LOSSMAIL_COUNT.toLocaleString()} losses
-            in Metropolis during the metrics window.
-        </p>
     </section>
 
     <section class="hek-campaign__section">
         <h3>Reparations and settlement</h3>
         <p class="hek-campaign__meta">
-            After a week of structure pressure, [SLUSH] offered 20 billion ISK in surrender terms.
-            Kleenur spearheaded the ISK path; the alliance accepted reparations and stood down
-            timers on roughly a dozen medium structures.
+            Settlement after structure pressure in Hek
         </p>
         <CampaignDataTable
             headers={['Outcome', 'Detail']}
             rows={settlementRows}
         />
-        <div class="hek-campaign__subsection">
-            <h4>Structures still on the list</h4>
-            <p class="hek-campaign__meta">
-                Targets named in the 17 Nov announcement after partial settlement
-            </p>
-            <CampaignDataTable
-                headers={['Structure', 'Status']}
-                rows={remainingTargetRows}
-                striped={true}
-            />
-        </div>
     </section>
 
     <section class="hek-campaign__section">
         <h3>Campaign timeline</h3>
         <p class="hek-campaign__meta">
-            Key beats from Discord archives and public posts
+            How the campaign unfolded
         </p>
         <ol class="hek-campaign__timeline">
             {
@@ -131,9 +108,36 @@ function formatHeadlineDate(isoDate: string): string {
     </section>
 
     <section class="hek-campaign__section">
+        <h3>Key people</h3>
+        <p class="hek-campaign__meta">
+            Pilots who shaped the campaign
+        </p>
+        <div class="hek-campaign__people-grid">
+            {
+                KEY_PEOPLE.map((person) => (
+                    <div class="hek-person-card">
+                        <img
+                            loading="lazy"
+                            width="64"
+                            height="64"
+                            src={get_player_icon(person.characterId, 64)}
+                            alt={`${person.name} portrait`}
+                            class="hek-person-card__portrait"
+                        />
+                        <div class="hek-person-card__body">
+                            <span class="hek-person-card__name">{person.name}</span>
+                            <span class="hek-person-card__role">{person.role}</span>
+                        </div>
+                    </div>
+                ))
+            }
+        </div>
+    </section>
+
+    <section class="hek-campaign__section">
         <h3>Headlines</h3>
         <p class="hek-campaign__meta">
-            Public posts from the Hek theater
+            Stories and updates from the campaign
         </p>
         <div class="hek-headline-cards">
             {
@@ -217,8 +221,7 @@ function formatHeadlineDate(isoDate: string): string {
         border-top: 1px solid color-mix(in srgb, var(--border-color) 45%, transparent);
     }
 
-    .hek-campaign__meta,
-    .hek-campaign__footnote {
+    .hek-campaign__meta {
         margin: 0;
         font-size: var(--step--1);
         color: var(--faded);
@@ -233,6 +236,55 @@ function formatHeadlineDate(isoDate: string): string {
 
     .hek-campaign__stat-grid--3 {
         grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .hek-campaign__people-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: var(--space-m);
+        min-width: 0;
+    }
+
+    .hek-person-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-s);
+        padding: var(--space-s);
+        background: color-mix(in srgb, var(--component-background) 80%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        min-width: 0;
+        text-align: center;
+    }
+
+    .hek-person-card__portrait {
+        flex-shrink: 0;
+        width: 64px;
+        height: 64px;
+        border-radius: 4px;
+    }
+
+    .hek-person-card__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+        width: 100%;
+    }
+
+    .hek-person-card__name {
+        font-size: var(--step-0);
+        font-weight: 600;
+        color: var(--highlight);
+        line-height: 1.2;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .hek-person-card__role {
+        font-size: var(--step--1);
+        color: var(--faded);
     }
 
     .hek-campaign__timeline {
@@ -379,6 +431,20 @@ function formatHeadlineDate(isoDate: string): string {
         }
     }
 
+    .hek-headline-card--video {
+        border-left-color: var(--fleet-red);
+
+        &::after {
+            background:
+                linear-gradient(
+                    90deg,
+                    color-mix(in srgb, hsl(0 0% 4%) 94%, var(--fleet-red) 6%) 0%,
+                    color-mix(in srgb, hsl(0 0% 4%) 82%, var(--fleet-red) 5%) 42%,
+                    color-mix(in srgb, hsl(0 0% 4%) 58%, transparent) 100%
+                );
+        }
+    }
+
     .hek-headline-card__body {
         display: flex;
         flex-direction: column;
@@ -420,6 +486,12 @@ function formatHeadlineDate(isoDate: string): string {
         border-color: color-mix(in srgb, var(--fleet-yellow) 28%, transparent);
     }
 
+    .hek-headline-card--video .hek-headline-card__tag {
+        color: color-mix(in srgb, var(--fleet-red) 75%, white);
+        background: color-mix(in srgb, var(--fleet-red) 18%, transparent);
+        border-color: color-mix(in srgb, var(--fleet-red) 35%, transparent);
+    }
+
     .hek-headline-card__title {
         margin: 0;
         font-size: var(--step-0);
@@ -455,6 +527,10 @@ function formatHeadlineDate(isoDate: string): string {
             grid-template-columns: 1fr;
         }
 
+        .hek-campaign__people-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
         .hek-campaign__timeline-item {
             grid-template-columns: 1fr;
             gap: var(--space-2xs);
@@ -462,6 +538,10 @@ function formatHeadlineDate(isoDate: string): string {
     }
 
     @media (max-width: 480px) {
+        .hek-campaign__people-grid {
+            grid-template-columns: 1fr;
+        }
+
         .hek-headline-card {
             padding: var(--space-m);
         }
