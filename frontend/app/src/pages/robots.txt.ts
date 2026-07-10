@@ -8,6 +8,8 @@ export const GET: APIRoute = ({ request }) => {
     const origin = getSitemapOrigin(request)
     const body = `User-agent: *
 Allow: /
+Disallow: /partials/
+Disallow: /redirects/
 
 Sitemap: ${origin}/sitemap.xml
 `

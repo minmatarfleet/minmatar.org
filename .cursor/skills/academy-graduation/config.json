@@ -1,0 +1,34 @@
+{
+  "api_base_url": "https://api.minmatar.org/api",
+  "academy_corporation_id": 98741376,
+  "academy_ticker": "L3ARN",
+  "graduate_days": 180,
+  "behavior_window_days": 90,
+  "migration_batch_date": "2025-08-04",
+  "graduate_corporations": {
+    "FOSFO": {
+      "name": "The Ministry Of Ungentlemanly Warfare inc.",
+      "corporation_id": 98838034,
+      "timezones": ["EU", "AP_EU"],
+      "profile": "EUTZ skirmish/roam (successor to Administrative Atrocities)"
+    },
+    "TDT": {
+      "name": "The Dark Tribe",
+      "corporation_id": 1413715023,
+      "timezones": ["US", "US_AP"],
+      "profile": "USTZ killers — 30M+ SP, 30d killboard activity, skirmish-dominant"
+    },
+    "SLTAR": {
+      "name": "Soltech Armada",
+      "corporation_id": 98647659,
+      "timezones": ["US", "US_AP", "EU", "EU_US"],
+      "profile": "Fleet/comms FW lifestyle — building pilots, fleet-regulars, IRL-first"
+    },
+    "A-RAT": {
+      "name": "Rattini Tribe",
+      "corporation_id": 98726134,
+      "timezones": ["ALL"],
+      "profile": "All-TZ casual — blob/large-gang, cyno/caps path, flexible hours"
+    }
+  }
+}

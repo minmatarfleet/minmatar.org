@@ -1,0 +1,294 @@
+---
+import {
+    CAMPAIGN_BEATS,
+    FLEETS_MONTHLY,
+    ISK_DESTROYED_MONTHLY,
+    MONTHS,
+    toBillions,
+} from '@/data/campaigns/providence'
+
+const width = 960
+const height = 430
+const pad = { l: 72, r: 60, t: 28, b: 138 }
+const leftAxisTitleX = 12
+const rightAxisTitleX = width - 16
+const axisTitleY = pad.t + (height - pad.t - pad.b) / 2
+const plotW = width - pad.l - pad.r
+const plotH = height - pad.t - pad.b
+const plotBottom = pad.t + plotH
+const monthLabelY = plotBottom + 16
+const beatLabelRowY = (row: number) => plotBottom + 36 + row * 18
+
+const BEAT_LABEL_SHORT = [
+    'War on CVA',
+    'RMC allies CVA',
+    'RMC contracts AO',
+    'Staging Fortizar attacked',
+    'Pochven / Warzone',
+    'Return to Provi',
+    'RMC calls Imperium',
+] as const
+
+const iskData = ISK_DESTROYED_MONTHLY.map(toBillions)
+const fleetData = FLEETS_MONTHLY
+const yMaxIsk = Math.max(...iskData, 1) * 1.05
+const yMaxFleet = Math.max(...fleetData, 1) * 1.05
+const yTicks = 4
+const slotW = plotW / MONTHS.length
+const xPos = (index: number) => pad.l + (index + 0.5) * slotW
+const barWidth = slotW * 0.52
+const yPosIsk = (value: number) => pad.t + plotH - (value / yMaxIsk) * plotH
+const yPosFleet = (value: number) => pad.t + plotH - (value / yMaxFleet) * plotH
+const beatLabelMinGap = 2
+const beatLabelRows = new Map<number, number>()
+CAMPAIGN_BEATS.forEach((beat, beatIndex) => {
+    let row = 0
+    while (
+        CAMPAIGN_BEATS.some((other, otherIndex) => {
+            if (otherIndex >= beatIndex) {
+                return false
+            }
+            return (
+                (beatLabelRows.get(otherIndex) ?? 0) === row &&
+                Math.abs(other.monthIndex - beat.monthIndex) < beatLabelMinGap
+            )
+        })
+    ) {
+        row++
+    }
+    beatLabelRows.set(beatIndex, row)
+})
+const iskPoints = iskData.map((value, index) => `${xPos(index)},${yPosIsk(value)}`).join(' ')
+---
+
+<svg
+    class="er-chart__svg"
+    viewBox={`0 0 ${width} ${height}`}
+    width="100%"
+    role="img"
+    aria-label="Monthly ISK destroyed and campaign fleets"
+>
+        {
+            Array.from({ length: yTicks + 1 }, (_, index) => {
+                const iskValue = (yMaxIsk / yTicks) * index
+                const fleetValue = (yMaxFleet / yTicks) * index
+                const y = yPosIsk(iskValue)
+                return (
+                    <g>
+                        <line
+                            x1={pad.l}
+                            x2={width - pad.r}
+                            y1={y}
+                            y2={y}
+                            class="er-chart__grid"
+                        />
+                        <text
+                            x={pad.l - 10}
+                            y={y + 4}
+                            text-anchor="end"
+                            class="er-chart__axis-label"
+                        >
+                            {Math.round(iskValue * 10) / 10} B
+                        </text>
+                        <text
+                            x={width - pad.r + 10}
+                            y={y + 4}
+                            text-anchor="start"
+                            class="er-chart__axis-label er-chart__axis-label--right"
+                        >
+                            {Math.round(fleetValue)}
+                        </text>
+                    </g>
+                )
+            })
+        }
+        <line
+            x1={pad.l}
+            x2={pad.l + plotW}
+            y1={plotBottom}
+            y2={plotBottom}
+            class="er-chart__axis-line"
+        />
+        <text
+            x={leftAxisTitleX}
+            y={axisTitleY}
+            text-anchor="middle"
+            transform={`rotate(-90, ${leftAxisTitleX}, ${axisTitleY})`}
+            class="er-chart__axis-title er-chart__axis-title--left"
+        >
+            ISK destroyed
+        </text>
+        <text
+            x={rightAxisTitleX}
+            y={axisTitleY}
+            text-anchor="middle"
+            transform={`rotate(90, ${rightAxisTitleX}, ${axisTitleY})`}
+            class="er-chart__axis-title er-chart__axis-title--right"
+        >
+            Fleets
+        </text>
+        {
+            MONTHS.map((month, index) => (
+                <g>
+                    <line
+                        x1={xPos(index)}
+                        x2={xPos(index)}
+                        y1={plotBottom}
+                        y2={plotBottom + 5}
+                        class="er-chart__tick"
+                    />
+                    <text
+                        x={xPos(index)}
+                        y={monthLabelY}
+                        text-anchor="middle"
+                        class="er-chart__month-label"
+                    >
+                        {month}
+                    </text>
+                </g>
+            ))
+        }
+        {
+            CAMPAIGN_BEATS.map(({ monthIndex }, beatIndex) => {
+                const cx = xPos(monthIndex)
+                const row = beatLabelRows.get(beatIndex) ?? 0
+                const labelY = beatLabelRowY(row)
+                const displayLabel = BEAT_LABEL_SHORT[beatIndex] ?? CAMPAIGN_BEATS[beatIndex].label
+                return (
+                    <g>
+                        <line
+                            x1={cx}
+                            x2={cx}
+                            y1={monthLabelY + 4}
+                            y2={labelY - 10}
+                            class="er-chart__beat-line"
+                        />
+                        <text
+                            x={cx}
+                            y={labelY}
+                            text-anchor="middle"
+                            class="er-chart__beat-label"
+                        >
+                            {displayLabel}
+                        </text>
+                    </g>
+                )
+            })
+        }
+        {
+            fleetData.map((value, index) => {
+                const cx = xPos(index)
+                const y0 = yPosFleet(0)
+                const y1 = yPosFleet(value)
+                return (
+                    <rect
+                        x={cx - barWidth / 2}
+                        y={y1}
+                        width={barWidth}
+                        height={y0 - y1}
+                        class="er-chart__fleet-bar"
+                        rx="2"
+                    />
+                )
+            })
+        }
+        <polyline points={iskPoints} class="er-chart__isk-line" />
+        {
+            iskData.map((value, index) => (
+                <circle
+                    cx={xPos(index)}
+                    cy={yPosIsk(value)}
+                    r="3.5"
+                    class="er-chart__isk-point"
+                />
+            ))
+        }
+</svg>
+
+<style lang="scss">
+    .er-chart__svg {
+        display: block;
+        width: 100%;
+        height: auto;
+        min-width: 0;
+    }
+
+    .er-chart__grid {
+        stroke: color-mix(in srgb, var(--border-color) 55%, white 8%);
+        stroke-width: 1;
+    }
+
+    .er-chart__tick {
+        stroke: color-mix(in srgb, var(--border-color) 70%, white 5%);
+    }
+
+    .er-chart__axis-line {
+        stroke: color-mix(in srgb, var(--border-color) 75%, white 8%);
+        stroke-width: 1;
+    }
+
+    .er-chart__axis-label {
+        fill: color-mix(in srgb, var(--highlight) 70%, var(--faded));
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .er-chart__axis-label--right {
+        fill: color-mix(in srgb, var(--alliance-blue) 70%, var(--highlight));
+    }
+
+    .er-chart__axis-title {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+    }
+
+    .er-chart__axis-title--left {
+        fill: color-mix(in srgb, var(--green) 75%, var(--highlight));
+    }
+
+    .er-chart__axis-title--right {
+        fill: color-mix(in srgb, var(--alliance-blue) 80%, var(--highlight));
+    }
+
+    .er-chart__month-label {
+        font-size: 11px;
+        fill: color-mix(in srgb, var(--highlight) 75%, var(--faded));
+        font-variant-numeric: tabular-nums;
+    }
+
+    .er-chart__fleet-bar {
+        fill: var(--alliance-blue);
+        fill-opacity: 0.62;
+        stroke: color-mix(in srgb, var(--alliance-blue) 80%, white 20%);
+        stroke-width: 1;
+        stroke-opacity: 0.35;
+    }
+
+    .er-chart__isk-line {
+        fill: none;
+        stroke: var(--green);
+        stroke-width: 2.5;
+        stroke-linejoin: round;
+        stroke-linecap: round;
+    }
+
+    .er-chart__isk-point {
+        fill: var(--green);
+        stroke: var(--component-background);
+        stroke-width: 1.5;
+    }
+
+    .er-chart__beat-line {
+        stroke: color-mix(in srgb, var(--fleet-yellow) 35%, var(--border-color));
+        stroke-width: 1;
+        stroke-dasharray: 2 3;
+    }
+
+    .er-chart__beat-label {
+        fill: color-mix(in srgb, var(--fleet-yellow) 80%, var(--highlight));
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+    }
+</style>

@@ -21,7 +21,6 @@ if (isNaN(post_id))
     return HTTP_400_Bad_Request()
 
 let post:PostUI | null = null
-let get_post_error: Error | false = false
 let is_user_post:boolean = false
 
 try {
@@ -32,15 +31,16 @@ try {
     if (post?.state !== 'published' && !is_user_post)
         return HTTP_404_Not_Found()
 } catch (error) {
-    get_post_error = error
+    return HTTP_404_Not_Found()
 }
+
+if (!post)
+    return HTTP_404_Not_Found()
 
 import { marked } from 'marked';
 import { renderer } from '@helpers/marked';
 import { strip_markdown } from '@helpers/string';
 import { format_date } from '@helpers/date'
-
-const POST_PARTIAL_URL = translatePath(`/partials/post_component?id=${post_id}`)
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -56,8 +56,6 @@ import BlockList from '@components/compositions/BlockList.astro';
 import PilotBadge from '@components/blocks/PilotBadge.astro';
 import Button from '@components/blocks/Button.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro'
-import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-import DebugTag from '@components/blocks/DebugTag.astro'
 
 const page_title = post?.title ?? t('new_post')
 const page_description = post?.excerpt ?? page_title
@@ -106,46 +104,33 @@ const page_description = post?.excerpt ?? page_title
             </FlexInline>
             <TextBox>
                 <BlockList gap='var(--space-xl)'>
-                    {get_post_error !== false ?
-                        <ErrorRefetch
-                            args={{
-                                partial: POST_PARTIAL_URL,
-                                error: get_post_error,
-                                delay: 0,
-                            }}
-                        />
-                        :
-                        <>{post ?
-                            <PilotBadge
-                                character_id={post?.author?.character_id as number}
-                                character_name={post?.author?.character_name as string}
-                                heading={true}
-                            >
-                                <small>{format_date(lang, post?.date_posted)}</small>
-                            </PilotBadge>
+                    <PilotBadge
+                        character_id={post.author.character_id as number}
+                        character_name={post.author.character_name as string}
+                        heading={true}
+                    >
+                        <small>{format_date(lang, post.date_posted)}</small>
+                    </PilotBadge>
 
-                            <>{post?.excerpt &&
-                                <Flexblock class="[ excerpt ]" gap='var(--space-m)' set:html={marked.parse(post?.excerpt as string, { renderer })}></Flexblock>
-                            }</>
-
-                            <div
-                                class="[ prose ]"
-                                set:html={marked.parse(post?.content as string, { renderer })}
-                                x-data={`{
-                                    init_zoom() {
-                                        mediumZoom('img[data-zoomable]', {
-                                            background: 'var(--solid-transparency-background)',
-                                            scrollOffset: 0,
-                                            margin: 24,
-                                            metaClick: false,
-                                        })
-                                    }
-                                }`}
-                                x-init="init_zoom()"
-                            /> :
-                            <DebugTag>{t('unexpected_error')}</DebugTag>
-                        }</>
+                    {post.excerpt &&
+                        <Flexblock class="[ excerpt ]" gap='var(--space-m)' set:html={marked.parse(post.excerpt as string, { renderer })}></Flexblock>
                     }
+
+                    <div
+                        class="[ prose ]"
+                        set:html={marked.parse(post.content as string, { renderer })}
+                        x-data={`{
+                            init_zoom() {
+                                mediumZoom('img[data-zoomable]', {
+                                    background: 'var(--solid-transparency-background)',
+                                    scrollOffset: 0,
+                                    margin: 24,
+                                    metaClick: false,
+                                })
+                            }
+                        }`}
+                        x-init="init_zoom()"
+                    />
 
                     <hr class="[ border-bottom ]" />
 

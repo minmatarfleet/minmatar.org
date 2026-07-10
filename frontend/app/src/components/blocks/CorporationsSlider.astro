@@ -20,7 +20,7 @@ const CORPORATIONS_WITH_SLIDE = [
     'Minmatar Fleet Academy',
     'Straylight Systems',
     'The Dark Tribe',
-    'Administrative Atrocities',
+    'The Ministry Of Ungentlemanly Warfare inc.',
 ]
 
 let corporations_with_no_slide:CorporationObject[] = []
@@ -63,7 +63,7 @@ import L34RnSlide from '@components/blocks/L34rnSlide.astro';
 import SoltechArmadaSlide from '@components/blocks/SoltechArmadaSlide.astro';
 import StraylightSystemsSlide from '@components/blocks/StraylightSystemsSlide.astro';
 import TheDarkTribeSlide from '@components/blocks/TheDarkTribeSlide.astro';
-import AdministrativeAtrocitiesSlide from '@components/blocks/AdministrativeAtrocitiesSlide.astro';
+import TheMinistryOfUngentlemanlyWarfareincSlide from '@components/blocks/TheMinistryOfUngentlemanlyWarfareincSlide.astro';
 import AssociatesSlide from '@components/blocks/AssociatesSlide.astro';
 import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.astro';
 ---
@@ -112,8 +112,8 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
                             picture_placement={index%2 == 0 ? 'left' : 'right'}
                         />
                     }
-                    {corporation.corporation_name == 'Administrative Atrocities' &&
-                        <AdministrativeAtrocitiesSlide
+                    {corporation.corporation_name == 'The Ministry Of Ungentlemanly Warfare inc.' &&
+                        <TheMinistryOfUngentlemanlyWarfareincSlide
                             corporation={corporation}
                             is_user_corporation={corporation.corporation_id === user_corporation_id}
                             picture_placement={index%2 == 0 ? 'left' : 'right'}
