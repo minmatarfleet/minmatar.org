@@ -27,6 +27,13 @@ class TribeGroupMembership(models.Model):
         on_delete=models.CASCADE,
         related_name="memberships",
     )
+    rank = models.ForeignKey(
+        "tribes.TribeGroupRank",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="memberships",
+    )
     status = models.CharField(
         max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING
     )
@@ -69,9 +76,19 @@ class TribeGroupMembership(models.Model):
     history_inactive_reason = ""
     #: Snapshot of status before save, populated by the pre_save signal.
     history_pre_save_status = None
+    #: Snapshot of rank_id before save, populated by the pre_save signal.
+    history_pre_save_rank_id = None
 
     def __str__(self):
         return f"{self.user} in {self.tribe_group} ({self.status})"
+
+    def save(self, *args, **kwargs):
+        if (
+            self.rank_id is not None
+            and self.rank.tribe_group_id != self.tribe_group_id
+        ):
+            raise ValueError("Rank must belong to the membership tribe group.")
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ["-created_at"]

@@ -9,6 +9,7 @@ from tribes.models import (
     TribeGroupMembershipCharacter,
     TribeGroupMembershipHistory,
     TribeGroupMembershipCharacterHistory,
+    TribeGroupRank,
     TribeGroupRequirement,
     TribeGroupRequirementAssetType,
     TribeGroupRequirementSkill,
@@ -52,6 +53,13 @@ class QualifyingSkillInline(admin.TabularInline):
     verbose_name_plural = "Required Skills (character must have ALL of these at their minimum level)"
 
 
+class TribeGroupRankInline(admin.TabularInline):
+    model = TribeGroupRank
+    extra = 0
+    fields = ("name", "code", "sort_order", "group")
+    raw_id_fields = ("group",)
+
+
 class TribeGroupRequirementInline(admin.TabularInline):
     model = TribeGroupRequirement
     extra = 0
@@ -65,7 +73,7 @@ class TribeGroupAdmin(admin.ModelAdmin):
     list_filter = ("is_active", "tribe")
     search_fields = ("name", "code", "tribe__name")
     raw_id_fields = ("tribe", "chief", "group")
-    inlines = [TribeGroupRequirementInline]
+    inlines = [TribeGroupRankInline, TribeGroupRequirementInline]
 
 
 @admin.register(TribeGroupRequirement)
@@ -99,18 +107,33 @@ class TribeGroupMembershipAdmin(admin.ModelAdmin):
     list_display = (
         "user",
         "tribe_group",
+        "rank",
         "status",
         "created_at",
         "approved_by",
     )
     list_filter = ("status", "tribe_group__tribe")
     search_fields = ("user__username", "tribe_group__name")
-    raw_id_fields = ("user", "tribe_group", "approved_by", "removed_by")
+    raw_id_fields = (
+        "user",
+        "tribe_group",
+        "rank",
+        "approved_by",
+        "removed_by",
+    )
     readonly_fields = ("created_at",)
     inlines = [
         TribeGroupMembershipCharacterInline,
         TribeGroupMembershipHistoryInline,
     ]
+
+
+@admin.register(TribeGroupRank)
+class TribeGroupRankAdmin(admin.ModelAdmin):
+    list_display = ("name", "code", "tribe_group", "sort_order", "group")
+    list_filter = ("tribe_group__tribe",)
+    search_fields = ("name", "code", "tribe_group__name")
+    raw_id_fields = ("tribe_group", "group")
 
 
 @admin.register(TribeGroupMembershipCharacter)

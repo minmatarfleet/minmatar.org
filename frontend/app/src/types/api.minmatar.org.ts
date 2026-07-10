@@ -42,6 +42,13 @@ export interface TribeRequirement {
     qualifying_skills:      TribeQualifyingSkill[];
 }
 
+export interface TribeGroupRank {
+    id:         number;
+    code:       string;
+    name:       string;
+    sort_order: number;
+}
+
 export interface TribeGroup {
     id:                     number;
     tribe_id:               number;
@@ -55,6 +62,7 @@ export interface TribeGroup {
     is_active:              boolean;
     member_count:           number;
     requirements:           TribeRequirement[];
+    ranks?:                 TribeGroupRank[];
 }
 
 export interface Tribe {
@@ -110,6 +118,9 @@ export interface TribeMembership {
     tribe_group_name:       string;
     tribe_id:               number;
     status:                 TribeMembershipStatus;
+    rank_id:                number | null;
+    rank_code:              string | null;
+    rank_name:              string | null;
     inactive_reason:        string | null;
     requirement_snapshot:   Record<string, unknown> | null;
     created_at:             string;

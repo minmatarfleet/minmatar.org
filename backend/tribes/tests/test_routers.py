@@ -14,6 +14,7 @@ from tribes.models import (
     TribeGroupMembership,
     TribeGroupMembershipCharacter,
     TribeGroupMembershipCharacterHistory,
+    TribeGroupRank,
 )
 
 BASE_URL = "/api/tribes"
@@ -435,3 +436,38 @@ class TribeGroupActivityDefinitionsTestCase(TestCase):
             bad_url, HTTP_AUTHORIZATION=f"Bearer {token}"
         )
         self.assertEqual(response.status_code, 404)
+
+
+class TribeGroupRankApiTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.tribe = Tribe.objects.create(name="Pulse", slug="pulse")
+        self.tribe_group = TribeGroup.objects.create(
+            tribe=self.tribe,
+            name="Fleet Commanders",
+            code="pulse.fleet-commanders",
+        )
+        self.rank = TribeGroupRank.objects.create(
+            tribe_group=self.tribe_group,
+            code="strategic",
+            name="Strategic FC",
+            sort_order=0,
+        )
+        self.chief = User.objects.create_user(username="chief")
+        self.member = User.objects.create_user(username="member")
+        self.tribe_group.chief = self.chief
+        self.tribe_group.save()
+        self.membership = TribeGroupMembership.objects.create(
+            user=self.member,
+            tribe_group=self.tribe_group,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+
+    def test_group_detail_includes_ranks(self):
+        response = self.client.get(
+            f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}"
+        )
+        self.assertEqual(response.status_code, 200)
+        ranks = response.json()["ranks"]
+        self.assertEqual(len(ranks), 1)
+        self.assertEqual(ranks[0]["code"], "strategic")

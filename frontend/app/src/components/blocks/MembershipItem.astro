@@ -46,6 +46,9 @@ import MemberIcon from '@components/icons/MemberIcon.astro';
         />
         <Flexblock gap='var(--space-3xs)'>
             <h3>{membership.primary_character_name ?? t('membership_title').replace('{number}', String(membership.id))}</h3>
+            {membership.rank_name &&
+                <small class="text-highlight">{membership.rank_name}</small>
+            }
             <small>{`${format_date_short(lang, membership.approved_at)} (${member_since ? member_since : t('just_now')})`}</small>
         </Flexblock>
     </FixedFluid>
