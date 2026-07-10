@@ -41,6 +41,7 @@ def get_memberships(
     qs = qs.select_related(
         "tribe_group__tribe",
         "user__eveplayer__primary_character",
+        "rank",
     ).prefetch_related(
         "characters__character",
         "tribe_group__requirements__asset_types__eve_type",

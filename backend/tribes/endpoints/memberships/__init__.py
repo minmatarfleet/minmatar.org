@@ -51,6 +51,9 @@ from tribes.endpoints.memberships.get_membership_history import (
 from tribes.endpoints.memberships.get_membership_character_history import (
     router as get_membership_character_history_router,
 )
+from tribes.endpoints.memberships.patch_membership_rank import (
+    router as patch_membership_rank_router,
+)
 
 router = Router(tags=["Tribes - Memberships"])
 
@@ -80,5 +83,6 @@ router.add_router("", delete_membership_character_router)
 # History sub-resources (read-only audit).
 router.add_router("", get_membership_history_router)
 router.add_router("", get_membership_character_history_router)
+router.add_router("", patch_membership_rank_router)
 
 __all__ = ["router"]

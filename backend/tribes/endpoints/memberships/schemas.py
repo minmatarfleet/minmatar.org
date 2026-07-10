@@ -21,6 +21,9 @@ class MembershipSchema(BaseModel):
     tribe_group_name: str
     tribe_id: int
     status: str
+    rank_id: Optional[int] = None
+    rank_code: Optional[str] = None
+    rank_name: Optional[str] = None
     inactive_reason: Optional[str] = None
     requirement_snapshot: Optional[Dict[str, Any]] = None
     created_at: str
@@ -40,6 +43,10 @@ class ApplyToGroupRequest(BaseModel):
 
 class AddCharacterRequest(BaseModel):
     character_id: int
+
+
+class SetMembershipRankRequest(BaseModel):
+    rank_id: Optional[int] = None
 
 
 class RequirementQualificationSchema(BaseModel):
