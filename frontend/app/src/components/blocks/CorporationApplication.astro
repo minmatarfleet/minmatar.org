@@ -181,8 +181,26 @@ import Tag from '@components/blocks/Tag.astro';
 
             <Context>
                 <label>{t('application_text')}</label>
-                <Flexblock set:html={marked.parse(application.description)} />
+                <Flexblock
+                    class="corporation-application-description"
+                    set:html={marked.parse(application.description)}
+                />
             </Context>
         </Flexblock>
     </FixedFluid>
 </Flexblock>
+
+<style>
+    .corporation-application-description {
+        max-width: 100%;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .corporation-application-description :global(p) {
+        margin: 0;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+</style>

@@ -1,0 +1,118 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Textarea from '@components/blocks/Textarea.astro';
+import {
+    L3ARN_APPLICATION_COUNTER_THRESHOLD_OFFSET,
+    L3ARN_APPLICATION_FIELD_LIMITS,
+    L3ARN_FORM_PREFIX,
+} from '@helpers/corporations/l3arn_application';
+import { corporationApplicationFieldName } from './field_names';
+
+interface Props {
+    corporation_name: string;
+    include_field_names?: boolean;
+    form_prefix?: string;
+    id_prefix?: string;
+}
+
+const {
+    corporation_name,
+    include_field_names = false,
+    form_prefix = L3ARN_FORM_PREFIX,
+    id_prefix = 'l3arn',
+} = Astro.props;
+
+const fieldName = (key: string) =>
+    corporationApplicationFieldName(form_prefix, include_field_names, key);
+
+const introductionLabel = t('corporation_application_introduction').replace(
+    '{corporation}',
+    corporation_name,
+);
+
+const introductionLimit = L3ARN_APPLICATION_FIELD_LIMITS.introduction;
+const introductionCounterThreshold =
+    introductionLimit - L3ARN_APPLICATION_COUNTER_THRESHOLD_OFFSET;
+---
+
+<Flexblock class="[ w-full ]" gap="var(--space-2xs)">
+    <label for={`${id_prefix}-introduction`}>{introductionLabel}</label>
+    <div class="intro-links">
+        <ul>
+            <li>
+                <a
+                    class="form-link"
+                    href={translatePath('/alliance/story/')}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                >
+                    {t('our_story')}
+                    <span class="visually-hidden">{t('opens_in_new_tab')}</span>
+                </a>
+            </li>
+            <li>
+                <a
+                    class="form-link"
+                    href={translatePath('/alliance/values/')}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                >
+                    {t('our_values')}
+                    <span class="visually-hidden">{t('opens_in_new_tab')}</span>
+                </a>
+            </li>
+            <li>
+                <a
+                    class="form-link"
+                    href={translatePath('/alliance/playstyle/')}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                >
+                    {t('our_playstyle')}
+                    <span class="visually-hidden">{t('opens_in_new_tab')}</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+    <div class="intro-textarea remain-wrapper" data-limit={introductionLimit}>
+        <Textarea
+            id={`${id_prefix}-introduction`}
+            name={fieldName('introduction')}
+            x-model="introduction"
+            rows="4"
+            maxlength={introductionLimit}
+            required
+            x-on:input="updateApplicationStatus()"
+        />
+        <small
+            x-show={`introduction.length > ${introductionCounterThreshold}`}
+            x-text={`${introductionLimit} - introduction.length`}
+            x-bind:class="(!fieldWithinLimit('introduction') ? 'text-red animate-fade-in-up' : '')"
+        >
+            {introductionLimit}
+        </small>
+    </div>
+</Flexblock>
+
+<style lang="scss">
+    @import './_shared.scss';
+
+    .intro-links {
+        ul {
+            margin: 0;
+            padding-inline-start: 1.25em;
+            line-height: 1.45;
+        }
+
+        li + li {
+            margin-block-start: var(--space-3xs);
+        }
+    }
+
+    .intro-textarea {
+        margin-block-start: var(--space-xs);
+    }
+</style>

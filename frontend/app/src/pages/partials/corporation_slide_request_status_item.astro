@@ -18,6 +18,12 @@ if (!auth_token || !user) {
 import type { CorporationObject, Alert, CorporationStatusType } from '@dtypes/layout_components'
 import { create_corporation_application } from '@helpers/api.minmatar.org/applications'
 import type { CorporationApplication } from '@dtypes/api.minmatar.org'
+import {
+    descriptionFromL3arnFormData,
+    descriptionFromL3arnPayload,
+    isL3arnApplicationPayload,
+    isL3arnCorporation,
+} from '@helpers/corporations/l3arn_application'
 import { get_corporation_list_by_id_auth } from '@helpers/fetching/corporations'
 
 let corporation:CorporationObject | null = null
@@ -28,10 +34,18 @@ if (Astro.request.method === "POST") {
     try {
         const corporation_id = parseInt(Astro.url.searchParams.get('corporation_id') as string)
         corporation = await get_corporation_list_by_id_auth(auth_token, corporation_id, user.user_id)
-        console.log(corporation)
         const data = await Astro.request.formData()
-        const description = data.get('application_text') as string
-        console.log(description)
+        let description: string
+
+        if (isL3arnCorporation(corporation)) {
+            try {
+                description = descriptionFromL3arnFormData(data)
+            } catch {
+                throw new Error(t('invalid_l3arn_application'));
+            }
+        } else {
+            description = data.get('application_text') as string
+        }
 
         if (!description)
             throw new Error(t('invalid_description'));

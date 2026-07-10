@@ -1,0 +1,96 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Input from '@components/blocks/Input.astro';
+import { L3ARN_APPLICATION_FIELD_LIMITS, L3ARN_FORM_PREFIX } from '@helpers/corporations/l3arn_application';
+import { corporationApplicationFieldName } from './field_names';
+
+interface Props {
+    corporation_name: string;
+    include_field_names?: boolean;
+    form_prefix?: string;
+    id_prefix?: string;
+}
+
+const {
+    corporation_name,
+    include_field_names = false,
+    form_prefix = L3ARN_FORM_PREFIX,
+    id_prefix = 'l3arn',
+} = Astro.props;
+
+const fieldName = (key: string) =>
+    corporationApplicationFieldName(form_prefix, include_field_names, key);
+
+const dualCitizenHint = t('corporation_application_dual_citizen_hint').replace(
+    '{corporation}',
+    corporation_name,
+);
+---
+
+<Flexblock class="[ w-full ]" gap="var(--space-xs)">
+    <span id={`${id_prefix}-dual-citizen-label`} class="field-label">
+        {t('corporation_application_dual_citizen_heading')}
+    </span>
+    <p class="form-subtext">{dualCitizenHint}</p>
+
+    <label class="choice-row" for={`${id_prefix}-existing-player-alt`}>
+        <input
+            id={`${id_prefix}-existing-player-alt`}
+            type="checkbox"
+            name={fieldName('is_existing_player_alt')}
+            x-model="is_existing_player_alt"
+            x-on:change="onExistingPlayerAltChange()"
+        />
+        <span>{t('l3arn_application_is_existing_player_alt')}</span>
+    </label>
+    <Flexblock
+        class="[ w-full ] nested-field"
+        gap="var(--space-2xs)"
+        x-show="is_existing_player_alt"
+        x-cloak
+    >
+        <label for={`${id_prefix}-main-character`}>{t('l3arn_application_main_character_name')}</label>
+        <Input
+            id={`${id_prefix}-main-character`}
+            name={fieldName('main_character_name')}
+            x-model="main_character_name"
+            maxlength={L3ARN_APPLICATION_FIELD_LIMITS.main_character_name}
+            x-on:input="updateApplicationStatus()"
+        />
+    </Flexblock>
+
+    <label class="choice-row" for={`${id_prefix}-other-alliance-member`}>
+        <input
+            id={`${id_prefix}-other-alliance-member`}
+            type="checkbox"
+            name={fieldName('is_other_alliance_member')}
+            x-model="is_other_alliance_member"
+            x-on:change="onOtherAllianceMemberChange()"
+        />
+        <span>{t('l3arn_application_is_other_alliance_member')}</span>
+    </label>
+    <Flexblock
+        class="[ w-full ] nested-field"
+        gap="var(--space-2xs)"
+        x-show="is_other_alliance_member"
+        x-cloak
+    >
+        <label for={`${id_prefix}-other-alliance-affiliation`}>
+            {t('l3arn_application_other_alliance_affiliation')}
+        </label>
+        <Input
+            id={`${id_prefix}-other-alliance-affiliation`}
+            name={fieldName('other_alliance_affiliation')}
+            x-model="other_alliance_affiliation"
+            maxlength={L3ARN_APPLICATION_FIELD_LIMITS.other_alliance_affiliation}
+            x-on:input="updateApplicationStatus()"
+        />
+    </Flexblock>
+</Flexblock>
+
+<style lang="scss">
+    @import './_shared.scss';
+</style>

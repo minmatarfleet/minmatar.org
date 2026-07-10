@@ -1,0 +1,144 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import {
+    L3ARN_APPLICATION_ACTIVITY_PERIODS,
+    L3ARN_FORM_PREFIX,
+} from '@helpers/corporations/l3arn_application';
+import { corporationApplicationFieldName } from './field_names';
+
+interface Props {
+    include_field_names?: boolean;
+    form_prefix?: string;
+    id_prefix?: string;
+}
+
+const {
+    include_field_names = false,
+    form_prefix = L3ARN_FORM_PREFIX,
+    id_prefix = 'l3arn',
+} = Astro.props;
+
+const fieldName = (key: string) =>
+    corporationApplicationFieldName(form_prefix, include_field_names, key);
+---
+
+<Flexblock class="[ w-full ]" gap="var(--space-2xs)">
+    <input
+        type="hidden"
+        id={`${id_prefix}-activity-region`}
+        name={fieldName('activity_region')}
+        x-bind:value="activity_region"
+    />
+    <input
+        type="hidden"
+        name={fieldName('timezone')}
+        x-bind:value="timezone"
+    />
+    <input
+        type="hidden"
+        name={fieldName('user_timezone')}
+        x-bind:value="user_timezone"
+    />
+
+    <aside
+        class="timezone-detected"
+        x-show="userTimezoneLabel()"
+        x-cloak
+        aria-live="polite"
+        aria-labelledby={`${id_prefix}-user-timezone`}
+    >
+        <p
+            class="timezone-detected-label"
+            id={`${id_prefix}-user-timezone`}
+            x-text="userTimezoneLabel()"
+        ></p>
+    </aside>
+
+    <span id={`${id_prefix}-activity-period-label`} class="field-label">
+        {t('l3arn_application_activity_period')}
+    </span>
+    <div
+        class="period-options"
+        role="radiogroup"
+        aria-labelledby={`${id_prefix}-activity-period-label`}
+    >
+        {L3ARN_APPLICATION_ACTIVITY_PERIODS.map((period) => (
+            <label class="choice-row" for={`${id_prefix}-activity-period-${period}`}>
+                <input
+                    id={`${id_prefix}-activity-period-${period}`}
+                    type="radio"
+                    name={fieldName('activity_period') ?? `${id_prefix}_activity_period`}
+                    value={period}
+                    x-model="activity_period"
+                    required
+                    x-on:change="updateApplicationStatus()"
+                />
+                <span>{t(`l3arn_application_activity_period_${period}` as any)}</span>
+            </label>
+        ))}
+    </div>
+
+    <aside
+        class="timezone-result"
+        x-show="timezone"
+        x-cloak
+        aria-live="polite"
+        aria-labelledby={`${id_prefix}-timezone-bucket`}
+    >
+        <p
+            class="timezone-bucket"
+            id={`${id_prefix}-timezone-bucket`}
+            x-text="timezoneBucketLabel()"
+        ></p>
+        <small class="form-subtext form-subtext--compact timezone-eve-window" x-text="timezoneEveWindow()"></small>
+        <small class="form-subtext form-subtext--compact timezone-hint">{t('l3arn_application_timezone_bucket_hint')}</small>
+    </aside>
+</Flexblock>
+
+<style lang="scss">
+    @import './_shared.scss';
+
+    .timezone-detected {
+        margin-block-start: var(--space-3xs);
+    }
+
+    .timezone-detected-label {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--faded);
+        line-height: 1.35;
+    }
+
+    .period-options {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        margin-block-start: var(--space-3xs);
+    }
+
+    .timezone-result {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        margin-block-start: var(--space-xs);
+        padding: var(--space-s) var(--space-m);
+        border: 1px solid color-mix(in srgb, var(--border-color) 90%, transparent);
+        background: color-mix(in srgb, var(--component-background) 80%, transparent);
+    }
+
+    .timezone-bucket {
+        margin: 0;
+        font-size: var(--step--1);
+        font-weight: 500;
+        color: color-mix(in srgb, var(--highlight) 55%, var(--faded));
+        line-height: 1.35;
+    }
+
+    .timezone-eve-window,
+    .timezone-hint {
+        display: block;
+    }
+</style>

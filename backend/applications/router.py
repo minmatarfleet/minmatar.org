@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from authentication import AuthBearer
 from eveonline.models import EveCharacter, EveCorporation
 
+from .l3arn import is_l3arn_corporation, validate_l3arn_application_description
 from .models import EveCorporationApplication
 
 router = Router(tags=["Applications"])
@@ -70,7 +71,11 @@ def get_corporation_applications(request, corporation_id: int):
     "/corporations/{corporation_id}/applications",
     summary="Create a corporation application",
     auth=AuthBearer(),
-    response={200: CorporationApplicationResponse, 404: ErrorResponse},
+    response={
+        200: CorporationApplicationResponse,
+        400: ErrorResponse,
+        404: ErrorResponse,
+    },
 )
 def create_corporation_application(
     request, corporation_id: int, payload: CorporationApplicationRequest
@@ -80,6 +85,13 @@ def create_corporation_application(
     ).first()
     if not corporation:
         return 404, {"detail": "Corporation not found."}
+
+    if is_l3arn_corporation(corporation):
+        validation_error = validate_l3arn_application_description(
+            payload.description
+        )
+        if validation_error:
+            return 400, {"detail": validation_error}
 
     application = EveCorporationApplication.objects.create(
         corporation_id=corporation_id,
