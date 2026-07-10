@@ -1,0 +1,81 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { getCampaigns } from '@/data/campaigns'
+
+import Grid from '@components/compositions/Grid.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+import Tile from '@components/blocks/Tile.astro'
+import CampaignSubcard from '@components/blocks/CampaignSubcard.astro'
+
+const campaigns = getCampaigns()
+---
+
+<Tile
+    class="[ alliance-campaign-tile ]"
+    title={t('campaigns.section_title')}
+    cover='/images/blackops-cover.jpg'
+    soft={false}
+>
+    <Flexblock slot="subtitle" gap='var(--space-m)' class="[ w-full ]">
+        <p class="[ campaign-tile-lead ]">{t('campaigns.section_leading_text')}</p>
+        <Grid
+            class="[ w-full grid-fill campaign-subcard-grid ]"
+            row_gap="var(--space-3xs)"
+            column_gap="var(--space-3xs)"
+            min_item_width="300px"
+            role="list"
+        >
+            {campaigns.map((campaign) => (
+                <div role="listitem">
+                    <CampaignSubcard campaign={campaign} />
+                </div>
+            ))}
+        </Grid>
+    </Flexblock>
+</Tile>
+
+<style lang="scss">
+    .alliance-campaign-tile {
+        &::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background:
+                linear-gradient(
+                    to bottom,
+                    color-mix(in srgb, hsl(0 0% 2%) 72%, transparent) 0%,
+                    color-mix(in srgb, hsl(0 0% 2%) 88%, transparent) 55%,
+                    color-mix(in srgb, hsl(0 0% 2%) 94%, transparent) 100%
+                );
+        }
+
+        :global(img) {
+            filter: brightness(0.42) saturate(0.85);
+            mask-image: linear-gradient(
+                to bottom,
+                rgba(0, 0, 0, 0.55) 0%,
+                rgba(0, 0, 0, 0.12) 62%,
+                transparent 88%
+            );
+        }
+
+        :global(.campaign-subcard-grid > [role='listitem']) {
+            display: flex;
+            min-width: 0;
+            align-self: stretch;
+        }
+    }
+
+    .campaign-tile-lead {
+        margin: 0;
+        max-width: 72ch;
+        font-size: var(--step--1);
+        color: var(--faded);
+        line-height: 1.5;
+    }
+</style>
