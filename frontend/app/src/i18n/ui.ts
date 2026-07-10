@@ -118,37 +118,46 @@ export const ui = {
         'brand.page_title': 'Branding',
         'brand.leading_text': 'Official FL33T fonts, colours, logos, and icons for alliance branding.',
 
+        'campaigns.section_title': 'Our campaigns',
+        'campaigns.section_leading_text': 'After-action reports from our wars — combat stats, headlines, and the pilots who flew them.',
+        'campaigns.isk_destroyed': 'ISK destroyed',
+        'campaigns.view_report': 'View report',
+
+        'campaigns.etherium_reach.name': 'Etherium Reach',
         'campaigns.etherium_reach.page_title': 'Etherium Reach Campaign Report',
         'campaigns.etherium_reach.campaign_period': 'Nov 2025 – Jun 2026',
         'campaigns.etherium_reach.leading_text':
-            'Our most successful nullsec campaign to date — what we built, fought, and earned in the Dronelands before returning to the warzone.',
+            'Our most successful nullsec campaign to date. What we built, fought, and earned in the dronelands before returning to the warzone.',
         'campaigns.etherium_reach.meta_title':
             'Etherium Reach Campaign Report | {site}',
         'campaigns.etherium_reach.meta_description':
             'Dig into the numbers and pilots behind one of Minmatar Fleet\'s most successful EVE Online campaigns — 3.49T ISK destroyed and 1.2T ISK earned.',
 
+        'campaigns.providence.name': 'Providence',
         'campaigns.providence.page_title': 'Providence Campaign Report',
         'campaigns.providence.campaign_period': 'Jan 2024 – Mar 2025',
         'campaigns.providence.leading_text':
-            'FL33T\'s war on its ancestral enemy, CVA, in Providence. Nullsec structure grinds, building a capital fleet, and defending the Watermelon. This is what turned FL33T into a war machine.',
+            'Minmatar Fleet\'s war against its ancestral enemy in Providence. Burning the Amarr, building a capital fleet, and defending our homeland.',
         'campaigns.providence.meta_title':
             'Providence Campaign Report | {site}',
         'campaigns.providence.meta_description':
             'FL33T\'s war on its ancestral enemy, CVA, in Providence — nullsec structure grinds, capital fleet building, and defending the Watermelon.',
 
+        'campaigns.scalding_pass.name': 'Scalding Pass',
         'campaigns.scalding_pass.page_title': 'Scalding Pass Campaign Report',
         'campaigns.scalding_pass.campaign_period': 'Feb – May 2024',
         'campaigns.scalding_pass.leading_text':
-            'A focused nullsec push into Scalding Pass — combat against VAPOR, B0SS, and allies, capital fights in F-5FDA. Enabled by Zarzahk stargates, which were closed during our campaign, ending it.',
+            'A short nullsec push into Scalding pass, enabled by Zarzahk stargates. Combat against VAPOR, B0SS, and their allies.',
         'campaigns.scalding_pass.meta_title':
             'Scalding Pass Campaign Report | {site}',
         'campaigns.scalding_pass.meta_description':
             'Combat, fleets, and contracted support from Minmatar Fleet\'s 2024 Scalding Pass campaign — 368B ISK destroyed in-region and the pilots who flew it.',
 
+        'campaigns.hek.name': 'Hek',
         'campaigns.hek.page_title': 'Hek Campaign Report',
         'campaigns.hek.campaign_period': 'November 2023',
         'campaigns.hek.leading_text':
-            'Freeing Metropolis from the Hek Mining Association, Nebula Industries, and allied cartels for crimes against miners and industrialists around the Hek trading hub.',
+            'Freeing Metropolis from the Hek Mining Association cartel for crimes against industrialists around the Hek trading hub.',
         'campaigns.hek.meta_title': 'Hek Campaign Report | {site}',
         'campaigns.hek.meta_description':
             'Combat stats, surrender terms, and timeline from Minmatar Fleet\'s 2023 Hek campaign — 65B ISK destroyed in Hek and 20B surrender ISK.',

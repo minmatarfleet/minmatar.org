@@ -7,6 +7,7 @@ import Grid from '@components/compositions/Grid.astro';
 
 import Button from '@components/blocks/Button.astro';
 import Tile from '@components/blocks/Tile.astro';
+import AllianceCampaignStrip from '@components/blocks/AllianceCampaignStrip.astro';
 ---
 
 <Wrapper
@@ -58,12 +59,20 @@ import Tile from '@components/blocks/Tile.astro';
                 {t('guides.page_title')}
             </Button>
         </Tile>
+
+        <div class="[ span-all ]">
+            <AllianceCampaignStrip />
+        </div>
     </Grid>
 </Wrapper>
 
 <style lang="scss">
     .alliance-reel {
         position: relative;
+    }
+
+    .span-all {
+        grid-column: 1 / -1;
     }
 
     .swiper-button-prev,
