@@ -5,6 +5,7 @@ from django.dispatch import receiver
 
 from tribes.helpers.tribe_auth_groups import (
     remove_tribe_auth_groups_for_inactive_membership,
+    sync_membership_rank_auth_groups,
 )
 from tribes.models import (
     TribeGroupMembership,
@@ -21,18 +22,20 @@ logger = logging.getLogger(__name__)
 )
 def tribe_group_membership_pre_save(sender, instance, **kwargs):
     """
-    Cache the previous status before save so post_save can detect changes
-    and write a TribeGroupMembershipHistory row.
+    Cache the previous status and rank before save so post_save can detect
+    changes and write a TribeGroupMembershipHistory row.
     """
     if instance.pk:
         try:
-            instance.history_pre_save_status = (
-                TribeGroupMembership.objects.get(pk=instance.pk).status
-            )
+            previous = TribeGroupMembership.objects.get(pk=instance.pk)
+            instance.history_pre_save_status = previous.status
+            instance.history_pre_save_rank_id = previous.rank_id
         except TribeGroupMembership.DoesNotExist:
             instance.history_pre_save_status = None
+            instance.history_pre_save_rank_id = None
     else:
         instance.history_pre_save_status = None
+        instance.history_pre_save_rank_id = None
 
 
 @receiver(
@@ -47,6 +50,7 @@ def tribe_group_membership_post_save(sender, instance, created, **kwargs):
        - active  → add user to tribe_group.group AND parent tribe.group
        - inactive → remove user from tribe_group.group;
                     remove from tribe.group only if no other active memberships remain
+    3. Sync rank auth groups when active; strip rank groups when inactive.
     """
     tribe_group = instance.tribe_group
     tribe = tribe_group.tribe
@@ -90,6 +94,7 @@ def tribe_group_membership_post_save(sender, instance, created, **kwargs):
                 user,
                 tribe.group,
             )
+        sync_membership_rank_auth_groups(instance)
 
     elif instance.status == TribeGroupMembership.STATUS_INACTIVE:
         remove_tribe_auth_groups_for_inactive_membership(instance)

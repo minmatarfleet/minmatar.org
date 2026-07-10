@@ -45,10 +45,6 @@ class AddCharacterRequest(BaseModel):
     character_id: int
 
 
-class SetMembershipRankRequest(BaseModel):
-    rank_id: Optional[int] = None
-
-
 class RequirementQualificationSchema(BaseModel):
     """Per-requirement qualification result for one character."""
 

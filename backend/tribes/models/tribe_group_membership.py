@@ -76,6 +76,8 @@ class TribeGroupMembership(models.Model):
     history_inactive_reason = ""
     #: Snapshot of status before save, populated by the pre_save signal.
     history_pre_save_status = None
+    #: Snapshot of rank_id before save, populated by the pre_save signal.
+    history_pre_save_rank_id = None
 
     def __str__(self):
         return f"{self.user} in {self.tribe_group} ({self.status})"

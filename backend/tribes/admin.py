@@ -56,7 +56,8 @@ class QualifyingSkillInline(admin.TabularInline):
 class TribeGroupRankInline(admin.TabularInline):
     model = TribeGroupRank
     extra = 0
-    fields = ("name", "code", "sort_order")
+    fields = ("name", "code", "sort_order", "group")
+    raw_id_fields = ("group",)
 
 
 class TribeGroupRequirementInline(admin.TabularInline):
@@ -129,10 +130,10 @@ class TribeGroupMembershipAdmin(admin.ModelAdmin):
 
 @admin.register(TribeGroupRank)
 class TribeGroupRankAdmin(admin.ModelAdmin):
-    list_display = ("name", "code", "tribe_group", "sort_order")
+    list_display = ("name", "code", "tribe_group", "sort_order", "group")
     list_filter = ("tribe_group__tribe",)
     search_fields = ("name", "code", "tribe_group__name")
-    raw_id_fields = ("tribe_group",)
+    raw_id_fields = ("tribe_group", "group")
 
 
 @admin.register(TribeGroupMembershipCharacter)

@@ -471,34 +471,3 @@ class TribeGroupRankApiTestCase(TestCase):
         ranks = response.json()["ranks"]
         self.assertEqual(len(ranks), 1)
         self.assertEqual(ranks[0]["code"], "strategic")
-
-    def test_chief_can_set_membership_rank(self):
-        token = _make_token(self.chief)
-        url = (
-            f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}/"
-            f"memberships/{self.membership.pk}/rank"
-        )
-        response = self.client.patch(
-            url,
-            data='{"rank_id": %d}' % self.rank.pk,
-            content_type="application/json",
-            HTTP_AUTHORIZATION=f"Bearer {token}",
-        )
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["rank_code"], "strategic")
-        self.membership.refresh_from_db()
-        self.assertEqual(self.membership.rank_id, self.rank.pk)
-
-    def test_member_cannot_set_rank(self):
-        token = _make_token(self.member)
-        url = (
-            f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}/"
-            f"memberships/{self.membership.pk}/rank"
-        )
-        response = self.client.patch(
-            url,
-            data='{"rank_id": %d}' % self.rank.pk,
-            content_type="application/json",
-            HTTP_AUTHORIZATION=f"Bearer {token}",
-        )
-        self.assertEqual(response.status_code, 403)

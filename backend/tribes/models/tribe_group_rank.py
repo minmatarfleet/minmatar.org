@@ -21,6 +21,14 @@ class TribeGroupRank(models.Model):
         default=0,
         help_text="Lower values sort first in UI lists.",
     )
+    group = models.OneToOneField(
+        "auth.Group",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="tribe_group_rank",
+        help_text="Auth group applied when a member holds this rank (e.g. Strategic FC).",
+    )
 
     def __str__(self):
         return f"{self.tribe_group} — {self.name}"
