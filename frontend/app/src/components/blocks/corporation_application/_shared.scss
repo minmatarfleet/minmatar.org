@@ -1,0 +1,94 @@
+.field-label,
+label {
+    font-weight: 600;
+}
+
+.form-subtext {
+    margin: 0;
+    font-size: var(--step--1);
+    font-weight: 400;
+    color: var(--faded);
+    line-height: 1.5;
+
+    &--compact {
+        font-size: var(--step--2);
+        line-height: 1.4;
+    }
+
+    &--after-list {
+        margin-block-start: var(--space-2xs);
+    }
+}
+
+.choice-row {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-xs);
+    cursor: pointer;
+    line-height: 1.45;
+
+    span {
+        font-weight: 400;
+    }
+
+    input {
+        flex-shrink: 0;
+        margin-top: 0.2em;
+        width: auto;
+    }
+}
+
+.nested-field {
+    margin-block-start: var(--space-2xs);
+    padding-inline-start: var(--space-m);
+}
+
+.browse-corps-link {
+    color: var(--faded);
+    text-decoration-color: color-mix(in srgb, var(--faded) 55%, transparent);
+
+    @media (hover: hover) {
+        &:hover {
+            color: color-mix(in srgb, var(--faded) 75%, white);
+        }
+    }
+
+    &:focus-visible {
+        color: color-mix(in srgb, var(--faded) 75%, white);
+        outline-color: var(--faded);
+    }
+}
+
+.remain-wrapper {
+    position: relative;
+
+    small {
+        position: absolute;
+        right: var(--space-2xs);
+        bottom: var(--space-3xs);
+
+        &.text-red {
+            font-weight: 600;
+        }
+    }
+}
+
+.form-link {
+    color: var(--fleet-yellow);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--fleet-yellow) 55%, transparent);
+    text-underline-offset: 0.15em;
+
+    @media (hover: hover) {
+        &:hover {
+            color: color-mix(in srgb, var(--fleet-yellow) 75%, white);
+            text-decoration-color: currentColor;
+        }
+    }
+
+    &:focus-visible {
+        color: color-mix(in srgb, var(--fleet-yellow) 75%, white);
+        outline-color: var(--fleet-yellow);
+        text-decoration-color: currentColor;
+    }
+}

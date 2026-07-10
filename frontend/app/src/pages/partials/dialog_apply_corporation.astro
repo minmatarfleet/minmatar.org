@@ -50,10 +50,10 @@ const MAX_APPLICATION_TEXT_LENGTH = 2000
             confirm_dialog_set_accept_disable(this.error)
         }
     }`}
-    x-init={is_l3arn ? "updateApplicationStatus()" : "update_status()"}
+    x-init={is_l3arn ? "initL3arnForm()" : "update_status()"}
     x-effect={is_l3arn ? "updateApplicationStatus()" : "update_status()"}
 >
-    <p set:html={message} />
+    {!is_l3arn && message && <p set:html={message} />}
     <CorporationItem corporation={corporation} />
 
     {is_l3arn ? (

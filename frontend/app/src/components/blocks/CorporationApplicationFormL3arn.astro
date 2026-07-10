@@ -3,182 +3,144 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import Flexblock from '@components/compositions/Flexblock.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
 import Input from '@components/blocks/Input.astro';
-import Textarea from '@components/blocks/Textarea.astro';
-import { L3ARN_FORM_PREFIX } from '@helpers/corporations/l3arn_application';
+import Select from '@components/blocks/Select.astro';
+import type { CorporationObject } from '@dtypes/layout_components';
+import {
+    L3ARN_APPLICATION_HOW_FOUND_OPTIONS,
+    L3ARN_APPLICATION_FIELD_LIMITS,
+    L3ARN_CORPORATION_NAME,
+    L3ARN_FORM_PREFIX,
+} from '@helpers/corporations/l3arn_application';
+import { corporationApplicationFieldName } from '@components/blocks/corporation_application/field_names';
+import CorporationApplicationGoals from '@components/blocks/corporation_application/CorporationApplicationGoals.astro';
+import CorporationApplicationIntroduction from '@components/blocks/corporation_application/CorporationApplicationIntroduction.astro';
+import CorporationApplicationTimezone from '@components/blocks/corporation_application/CorporationApplicationTimezone.astro';
+import CorporationApplicationRoles from '@components/blocks/corporation_application/CorporationApplicationRoles.astro';
+import CorporationApplicationOtherCorporations from '@components/blocks/corporation_application/CorporationApplicationOtherCorporations.astro';
+import CorporationApplicationDualCitizen from '@components/blocks/corporation_application/CorporationApplicationDualCitizen.astro';
+import CorporationApplicationRequirements from '@components/blocks/corporation_application/CorporationApplicationRequirements.astro';
 
 interface Props {
     include_field_names?: boolean;
+    alliance_corporations?: CorporationObject[];
 }
 
-const { include_field_names = false } = Astro.props;
+const { include_field_names = false, alliance_corporations } = Astro.props;
 
 const fieldName = (key: string) =>
-    include_field_names ? `${L3ARN_FORM_PREFIX}${key}` : undefined;
+    corporationApplicationFieldName(L3ARN_FORM_PREFIX, include_field_names, key);
 ---
 
-<Flexblock gap="var(--space-m)">
-    <p>{t('l3arn_application_intro')}</p>
+<Flexblock class="l3arn-application-form" gap="var(--space-m)">
+    <Flexblock gap="var(--space-s)">
+        <aside class="alpha-warning" role="alert">
+            <p>{t('l3arn_application_alpha_warning')}</p>
+        </aside>
 
-    <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
-        <label for="l3arn-introduction">{t('l3arn_application_introduction')}</label>
-        <Textarea
-            id="l3arn-introduction"
-            name={fieldName('introduction')}
-            x-model="introduction"
-            rows="4"
-            required
-            x-on:input="updateApplicationStatus()"
-        />
+        <p class="form-lead">{t('l3arn_application_intro')}</p>
+
+        <aside class="draft-notice" role="note">
+            <p class="form-subtext">{t('l3arn_application_draft_notice')}</p>
+        </aside>
+
+        <small class="form-subtext" role="note">
+            {t('l3arn_application_links_new_tab_hint')}
+        </small>
     </Flexblock>
 
-    <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
-        <label for="l3arn-timezone">{t('l3arn_application_timezone')}</label>
-        <Input
-            id="l3arn-timezone"
-            name={fieldName('timezone')}
-            x-model="timezone"
-            required
-            x-on:input="updateApplicationStatus()"
-        />
-    </Flexblock>
+    <CorporationApplicationGoals include_field_names={include_field_names} />
 
-    <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
-        <label for="l3arn-roles">{t('l3arn_application_roles')}</label>
-        <Input
-            id="l3arn-roles"
-            name={fieldName('roles')}
-            x-model="roles"
-            required
-            x-on:input="updateApplicationStatus()"
-        />
-    </Flexblock>
+    <CorporationApplicationIntroduction
+        corporation_name={L3ARN_CORPORATION_NAME}
+        include_field_names={include_field_names}
+    />
 
-    <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
-        <label for="l3arn-goals">{t('l3arn_application_goals')}</label>
-        <Textarea
-            id="l3arn-goals"
-            name={fieldName('goals')}
-            x-model="goals"
-            rows="3"
-            required
-            x-on:input="updateApplicationStatus()"
-        />
-    </Flexblock>
+    <CorporationApplicationTimezone include_field_names={include_field_names} />
 
-    <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
-        <label for="l3arn-comms">{t('l3arn_application_comms')}</label>
-        <Textarea
-            id="l3arn-comms"
-            name={fieldName('comfortable_comms')}
-            x-model="comfortable_comms"
-            rows="2"
-            required
-            x-on:input="updateApplicationStatus()"
-        />
-        <small>{t('l3arn_application_comms_hint')}</small>
-    </Flexblock>
+    <CorporationApplicationRoles include_field_names={include_field_names} />
 
-    <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+    <CorporationApplicationOtherCorporations
+        include_field_names={include_field_names}
+        alliance_corporations={alliance_corporations}
+    />
+
+    <CorporationApplicationDualCitizen
+        corporation_name={L3ARN_CORPORATION_NAME}
+        include_field_names={include_field_names}
+    />
+
+    <CorporationApplicationRequirements include_field_names={include_field_names} />
+
+    <Flexblock class="[ w-full ]" gap="var(--space-2xs)">
         <label for="l3arn-how-found">{t('l3arn_application_how_found')}</label>
-        <Input
+        <Select
             id="l3arn-how-found"
             name={fieldName('how_found')}
             x-model="how_found"
             required
-            x-on:input="updateApplicationStatus()"
-        />
-    </Flexblock>
-
-    <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
-        <label for="l3arn-only-l3arn">{t('l3arn_application_only_l3arn')}</label>
-        <Textarea
-            id="l3arn-only-l3arn"
-            name={fieldName('only_l3arn')}
-            x-model="only_l3arn"
-            rows="2"
-            required
-            x-on:input="updateApplicationStatus()"
-        />
-        <small>
-            <a href="https://my.minmatar.org/alliance/corporations/list/" target="_blank" rel="noreferrer noopener">
-                {t('l3arn_application_other_corps_link')}
-            </a>
-        </small>
-    </Flexblock>
-
-    <Flexblock gap="var(--space-xs)">
-        <strong>{t('l3arn_application_requirements_heading')}</strong>
-        <small>{t('l3arn_application_tenets_hint')}</small>
-
-        <FlexInline gap="var(--space-xs)">
-            <input
-                id="l3arn-agree-tenets"
-                type="checkbox"
-                name={fieldName('agree_tenets')}
-                x-model="agree_tenets"
-                x-on:change="updateApplicationStatus()"
+            x-on:change="updateApplicationStatus()"
+        >
+            <option value="" disabled selected>{t('l3arn_application_how_found_select')}</option>
+            {L3ARN_APPLICATION_HOW_FOUND_OPTIONS.map((option) => (
+                <option value={option}>
+                    {option === 'other'
+                        ? t('l3arn_application_how_found_other_option')
+                        : t(`l3arn_application_how_found_${option}` as any)}
+                </option>
+            ))}
+        </Select>
+        <Flexblock
+            class="[ w-full ] nested-field"
+            gap="var(--space-2xs)"
+            x-show="how_found === 'other'"
+            x-cloak
+        >
+            <label for="l3arn-how-found-other">{t('l3arn_application_how_found_other')}</label>
+            <Input
+                id="l3arn-how-found-other"
+                name={fieldName('how_found_other')}
+                x-model="how_found_other"
+                maxlength={L3ARN_APPLICATION_FIELD_LIMITS.how_found_other}
+                x-bind:required="how_found === 'other'"
+                x-on:input="updateApplicationStatus()"
             />
-            <label for="l3arn-agree-tenets">{t('l3arn_application_agree_tenets')}</label>
-        </FlexInline>
-
-        <FlexInline gap="var(--space-xs)">
-            <input
-                id="l3arn-confirm-omega"
-                type="checkbox"
-                name={fieldName('confirm_omega')}
-                x-model="confirm_omega"
-                x-on:change="updateApplicationStatus()"
-            />
-            <label for="l3arn-confirm-omega">{t('l3arn_application_confirm_omega')}</label>
-        </FlexInline>
-
-        <FlexInline gap="var(--space-xs)">
-            <input
-                id="l3arn-confirm-not-alt"
-                type="checkbox"
-                name={fieldName('confirm_not_alt')}
-                x-model="confirm_not_alt"
-                x-on:change="updateApplicationStatus()"
-            />
-            <label for="l3arn-confirm-not-alt">{t('l3arn_application_confirm_not_alt')}</label>
-        </FlexInline>
-
-        <FlexInline gap="var(--space-xs)">
-            <input
-                id="l3arn-confirm-not-dual"
-                type="checkbox"
-                name={fieldName('confirm_not_dual_citizen')}
-                x-model="confirm_not_dual_citizen"
-                x-on:change="updateApplicationStatus()"
-            />
-            <label for="l3arn-confirm-not-dual">{t('l3arn_application_confirm_not_dual')}</label>
-        </FlexInline>
-
-        <FlexInline gap="var(--space-xs)">
-            <input
-                id="l3arn-confirm-auth"
-                type="checkbox"
-                name={fieldName('confirm_auth_chars')}
-                x-model="confirm_auth_chars"
-                x-on:change="updateApplicationStatus()"
-            />
-            <label for="l3arn-confirm-auth">{t('l3arn_application_confirm_auth')}</label>
-        </FlexInline>
+        </Flexblock>
     </Flexblock>
 </Flexblock>
 
 <style lang="scss">
-    label {
+    @import './corporation_application/_shared.scss';
+
+    .form-lead {
+        margin: 0;
+        line-height: 1.6;
+    }
+
+    .alpha-warning {
+        padding: var(--space-s) var(--space-m);
+        border: 1px solid color-mix(in srgb, var(--fleet-red) 35%, transparent);
+        border-left: 4px solid var(--fleet-red);
+        background: color-mix(in srgb, var(--fleet-red) 8%, var(--component-background));
+        font-size: var(--step--1);
         font-weight: 600;
+        color: var(--fleet-red);
+        line-height: 1.5;
+
+        p {
+            margin: 0;
+        }
     }
 
-    small {
-        color: var(--highlight);
+    .draft-notice {
+        padding: var(--space-s) var(--space-m);
+        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        border-left: 4px solid var(--alliance-blue);
+        background: color-mix(in srgb, var(--component-background) 70%, transparent);
+
+        p {
+            margin: 0;
+        }
     }
 
-    input[type='checkbox'] {
-        width: auto;
-    }
 </style>

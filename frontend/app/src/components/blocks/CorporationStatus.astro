@@ -3,6 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { Alert, CorporationObject } from '@dtypes/layout_components'
+import { isL3arnCorporation } from '@helpers/corporations/l3arn_application'
 
 interface Props {
     corporation:            CorporationObject;
@@ -20,6 +21,7 @@ const {
 
 const primary_character = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot')?.value as string) : null
 const primary_character_id = primary_character ? parseInt(primary_character.character_id) : null
+const is_l3arn = isL3arnCorporation(corporation)
 
 import { query_string } from '@helpers/string';
 const CORPORATION_REQUEST_STATUS_PARTIAL_URL = translatePath('/partials/corporation_request_status_item/')
@@ -100,7 +102,7 @@ import ButtonCeoToken from '@components/blocks/ButtonCeoToken.astro';
                                         alliance_name: corporation.alliance_name,
                                         corporation_type: corporation.corporation_type,
                                         status: corporation.status,
-                                        message: t('corporation_join_request_dialog_text')
+                                        message: is_l3arn ? '' : t('corporation_join_request_dialog_text')
                                     })}',
                                     return_on_accept: ${corporation.corporation_id},
                                     hx: {

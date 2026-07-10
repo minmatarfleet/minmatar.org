@@ -66,15 +66,15 @@ import MarkdownIcon from '@components/icons/buttons/MarkdownIcon.astro';
             }
         }`}
         x-on:submit={is_l3arn
-            ? "if (error) { $event.preventDefault(); return }; close_dialog(); clearL3arnForm()"
+            ? "if (error) { $event.preventDefault(); return }; close_dialog(); $nextTick(() => clearL3arnForm())"
             : "close_dialog(); clear_form()"}
-        x-init={is_l3arn ? "updateApplicationStatus()" : undefined}
+        x-init={is_l3arn ? "initL3arnForm()" : undefined}
     >
         <Flexblock gap="var(--space-l)">
             <Flexblock gap="var(--space-s)">
                 <h3>{t('corporation_join_request_dialog_title')}</h3>
-                
-                <p>{t('corporation_join_request_dialog_text')}</p>
+
+                {!is_l3arn && <p>{t('corporation_join_request_dialog_text')}</p>}
                 <CorporationItem corporation={corporation} disable_applications={true} />
 
                 {is_l3arn ? (

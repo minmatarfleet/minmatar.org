@@ -1,0 +1,55 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import {
+    L3ARN_APPLICATION_ROLES,
+    L3ARN_FORM_PREFIX,
+} from '@helpers/corporations/l3arn_application';
+import { corporationApplicationFieldName } from './field_names';
+
+interface Props {
+    include_field_names?: boolean;
+    form_prefix?: string;
+    id_prefix?: string;
+}
+
+const {
+    include_field_names = false,
+    form_prefix = L3ARN_FORM_PREFIX,
+    id_prefix = 'l3arn',
+} = Astro.props;
+
+const fieldName = (key: string) =>
+    corporationApplicationFieldName(form_prefix, include_field_names, key);
+---
+
+<Flexblock class="[ w-full ]" gap="var(--space-2xs)">
+    <span id={`${id_prefix}-roles-label`} class="field-label">
+        {t('l3arn_application_roles')}
+    </span>
+    <Flexblock
+        gap="var(--space-xs)"
+        role="group"
+        aria-labelledby={`${id_prefix}-roles-label`}
+    >
+        {L3ARN_APPLICATION_ROLES.map((role) => (
+            <label class="choice-row" for={`${id_prefix}-role-${role}`}>
+                <input
+                    id={`${id_prefix}-role-${role}`}
+                    type="checkbox"
+                    name={fieldName('roles')}
+                    value={role}
+                    x-model="roles"
+                    x-on:change="updateApplicationStatus()"
+                />
+                <span>{t(`l3arn_application_role_${role}` as any)}</span>
+            </label>
+        ))}
+    </Flexblock>
+</Flexblock>
+
+<style lang="scss">
+    @import './_shared.scss';
+</style>

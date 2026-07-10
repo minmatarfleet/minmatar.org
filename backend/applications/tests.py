@@ -5,6 +5,12 @@ from django.db.models import signals
 from django.test import Client
 
 from app.test import TestCase
+from applications.l3arn import (
+    L3ARN_APPLICATION_DESCRIPTION_MAX_LENGTH,
+    L3ARN_CORPORATION_NAME,
+    l3arn_discord_description,
+    validate_l3arn_application_description,
+)
 from applications.models import EveCorporationApplication
 from discord.models import DiscordUser
 from eveonline.models import EveCharacter, EveCorporation
@@ -144,6 +150,92 @@ class EveCorporationApplicationTestCase(TestCase):
         self.assertEqual(response.status_code, 403)
         application = EveCorporationApplication.objects.get(id=application.id)
         self.assertEqual(application.status, "pending")
+
+
+class L3arnCorporationApplicationValidationTest(TestCase):
+    """L3ARN application description length validation."""
+
+    def setUp(self):
+        signals.post_save.disconnect(
+            sender=EveCharacter,
+            dispatch_uid="populate_eve_character_public_data",
+        )
+        signals.post_save.disconnect(
+            sender=EveCorporationApplication,
+            dispatch_uid="eve_corporation_application_post_save",
+        )
+        signals.post_save.disconnect(
+            sender=EveCorporation,
+            dispatch_uid="eve_corporation_post_save",
+        )
+        self.client = Client()
+        super().setUp()
+
+    def test_validate_l3arn_application_description_rejects_over_limit(self):
+        over_limit = "x" * (L3ARN_APPLICATION_DESCRIPTION_MAX_LENGTH + 1)
+        self.assertIsNotNone(
+            validate_l3arn_application_description(over_limit)
+        )
+
+        within_limit = "x" * L3ARN_APPLICATION_DESCRIPTION_MAX_LENGTH
+        self.assertIsNone(validate_l3arn_application_description(within_limit))
+
+    def test_validate_l3arn_application_description_ignores_web_only_how_found_line(
+        self,
+    ):
+        how_found_line = (
+            "\n- How I found you: I saw a Reddit post by Minmatar Fleet"
+        )
+        within_limit = (
+            "x"
+            * (L3ARN_APPLICATION_DESCRIPTION_MAX_LENGTH - len(how_found_line))
+            + how_found_line
+        )
+        self.assertIsNone(validate_l3arn_application_description(within_limit))
+
+        over_limit = (
+            "x" * (L3ARN_APPLICATION_DESCRIPTION_MAX_LENGTH + 1)
+            + how_found_line
+        )
+        self.assertIsNotNone(
+            validate_l3arn_application_description(over_limit)
+        )
+
+    def test_l3arn_discord_description_strips_how_found_line(self):
+        description = (
+            "Questionnaire:\n"
+            "- Goals in EVE: FW\n"
+            "- How I found you: Other (friend)\n"
+            "- Other corps considered: none"
+        )
+        self.assertEqual(
+            l3arn_discord_description(description),
+            "Questionnaire:\n"
+            "- Goals in EVE: FW\n"
+            "- Other corps considered: none",
+        )
+
+    def test_create_l3arn_application_rejects_over_limit_description(self):
+        corporation = EveCorporation.objects.create(
+            corporation_id=98696436,
+            name=L3ARN_CORPORATION_NAME,
+        )
+        over_limit = "x" * (L3ARN_APPLICATION_DESCRIPTION_MAX_LENGTH + 1)
+
+        response = self.client.post(
+            f"{BASE_URL}corporations/{corporation.corporation_id}/applications",
+            data={"description": over_limit},
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            EveCorporationApplication.objects.filter(
+                corporation_id=corporation.corporation_id
+            ).count(),
+            0,
+        )
 
 
 class EveCorporationApplicationSignalTest(TestCase):
