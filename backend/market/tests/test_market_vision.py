@@ -719,6 +719,33 @@ class SellOrderRowsTestCase(TestCase):
         )
         self.assertEqual([row["item_name"] for row in markup_rows], [])
 
+    def test_build_rows_skips_unreferenced_stock_when_not_requested(self):
+        EveMarketItemOrder.objects.create(
+            location=self.location,
+            item=self.ammo_type,
+            quantity=99,
+            price=100,
+            is_buy_order=False,
+        )
+        referenced_rows = build_unified_sell_order_rows(
+            self.location,
+            include_unreferenced=False,
+        )
+        all_rows = build_unified_sell_order_rows(
+            self.location,
+            include_unreferenced=True,
+        )
+        self.assertNotIn(
+            "Fusion S",
+            {row["item_name"] for row in referenced_rows},
+        )
+        self.assertIn(
+            "Fusion S",
+            {row["item_name"] for row in all_rows},
+        )
+        fusion_row = {row["item_name"]: row for row in all_rows}["Fusion S"]
+        self.assertEqual(fusion_row["current_qty"], 99)
+
     def test_pricing_columns_use_lowest_sell_and_jita_markup(self):
         self.assertEqual(
             _format_reference_display(["Alpha"]),

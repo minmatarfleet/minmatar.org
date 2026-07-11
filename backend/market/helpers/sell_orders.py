@@ -119,6 +119,8 @@ def _aggregate_order_rows(
 def _fetch_sell_order_stats(
     location,
     jita_sell_by_type: dict[int, int],
+    *,
+    type_ids: set[int] | list[int] | None = None,
 ) -> tuple[
     set[int],
     dict[int, int],
@@ -127,10 +129,11 @@ def _fetch_sell_order_stats(
     dict[int, object],
 ]:
     """Fetch sell orders for a location and aggregate in one DB round-trip."""
+    queryset = _sell_orders_queryset(location)
+    if type_ids is not None:
+        queryset = queryset.filter(item_id__in=type_ids)
     order_rows = list(
-        _sell_orders_queryset(location).values(
-            "item_id", "price", "quantity", "created_at"
-        )
+        queryset.values("item_id", "price", "quantity", "created_at")
     )
     return _aggregate_order_rows(order_rows, jita_sell_by_type)
 
@@ -322,7 +325,11 @@ def save_sell_order_desired_quantities(
     return updated
 
 
-def build_unified_sell_order_rows(location) -> list[dict]:  # noqa: C901
+def build_unified_sell_order_rows(  # noqa: C901
+    location,
+    *,
+    include_unreferenced: bool = True,
+) -> list[dict]:
     """Merge expectations, doctrine recommendations, and live stock into one table."""
     rows_by_name: dict[str, dict] = {}
 
@@ -378,14 +385,21 @@ def build_unified_sell_order_rows(location) -> list[dict]:  # noqa: C901
         row["references"].add(rec["fitting_name"])
         row["sources"].add(rec["kind"])
 
-    order_rows = list(
-        _sell_orders_queryset(location).values(
-            "item_id", "price", "quantity", "created_at"
+    if include_unreferenced:
+        stock_type_ids = set(
+            _sell_orders_queryset(location).values_list("item_id", flat=True)
         )
-    )
-    order_type_ids = {row["item_id"] for row in order_rows}
+    else:
+        stock_type_ids = {
+            tid
+            for tid in EveType.objects.filter(
+                name__in=rows_by_name.keys()
+            ).values_list("pk", flat=True)
+            if tid is not None
+        }
+    stock_type_ids = {int(tid) for tid in stock_type_ids}
     jita_for_orders = (
-        get_prices_by_type_id(list(order_type_ids)) if order_type_ids else {}
+        get_prices_by_type_id(list(stock_type_ids)) if stock_type_ids else {}
     )
     (
         _,
@@ -393,19 +407,36 @@ def build_unified_sell_order_rows(location) -> list[dict]:  # noqa: C901
         reasonable_by_type,
         lowest_sell_by_type,
         last_synced_by_type,
-    ) = _aggregate_order_rows(order_rows, jita_for_orders)
-    type_names_by_id = dict(
-        EveType.objects.filter(pk__in=current_by_type.keys()).values_list(
-            "pk", "name"
-        )
+    ) = _fetch_sell_order_stats(
+        location,
+        jita_for_orders,
+        type_ids=stock_type_ids,
     )
-    for type_id, current_qty in current_by_type.items():
-        item_name = type_names_by_id.get(type_id)
-        if not item_name:
-            continue
-        row = row_for(item_name)
-        row["current_qty"] = current_qty
-        row["reasonable_qty"] = reasonable_by_type.get(type_id, 0)
+    if include_unreferenced:
+        type_names_by_id = dict(
+            EveType.objects.filter(pk__in=current_by_type.keys()).values_list(
+                "pk", "name"
+            )
+        )
+        for type_id, current_qty in current_by_type.items():
+            item_name = type_names_by_id.get(type_id)
+            if not item_name:
+                continue
+            row = row_for(item_name)
+            row["current_qty"] = current_qty
+            row["reasonable_qty"] = reasonable_by_type.get(type_id, 0)
+    else:
+        type_ids_by_name = dict(
+            EveType.objects.filter(name__in=rows_by_name.keys()).values_list(
+                "name", "pk"
+            )
+        )
+        for item_name, type_id in type_ids_by_name.items():
+            if not type_id:
+                continue
+            row = row_for(item_name)
+            row["current_qty"] = current_by_type.get(type_id, 0)
+            row["reasonable_qty"] = reasonable_by_type.get(type_id, 0)
 
     effective = get_effective_item_expectations(location)
     type_ids_by_name = dict(
@@ -541,8 +572,6 @@ def _sell_order_query_params(
 
 def build_location_sell_orders_context(location, request=None) -> dict:
     """Build admin context for sell orders at a location."""
-    all_rows = build_unified_sell_order_rows(location)
-
     search = ""
     source_filter = ""
     stock_filter = ""
@@ -559,15 +588,21 @@ def build_location_sell_orders_context(location, request=None) -> dict:
             request.GET.get(SellOrderMarkupListFilter.parameter_name) or ""
         ).strip()
 
+    include_unreferenced = bool(
+        search or source_filter or stock_filter or markup_filter
+    )
+    all_rows = build_unified_sell_order_rows(
+        location,
+        include_unreferenced=include_unreferenced,
+    )
+
     filtered_rows = filter_sell_order_rows(
         all_rows,
         search=search,
         source_filter=source_filter,
         stock_filter=stock_filter,
         markup_filter=markup_filter,
-        hide_unreferenced=not bool(
-            search or source_filter or stock_filter or markup_filter
-        ),
+        hide_unreferenced=not include_unreferenced,
     )
     model_admin = LocationSellOrdersModelAdmin(EveType, admin.site)
     cl = (
