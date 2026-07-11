@@ -2,7 +2,6 @@ from collections import defaultdict
 
 from django.contrib import admin
 from django.contrib.admin.views.main import PAGE_VAR, SEARCH_VAR
-from django.db.models import Max, Min, Sum
 from django.urls import reverse
 from django.utils.http import urlencode
 
@@ -48,6 +47,93 @@ MARKUP_UNDERPRICED_MAX = -5
 MARKUP_NORMAL_MAX = 5
 MARKUP_OVERPRICED_MAX = 20
 
+# Listed-within-reason: exclude sell orders priced >20% above Jita when
+# computing actionable stock. Cheap items (Jita sell < 1M ISK) always count.
+REASONABLE_MARKUP_MAX_PCT = 20
+REASONABLE_JITA_PRICE_FLOOR = 1_000_000
+
+
+def _order_quantity_counts_as_reasonable(
+    order_price,
+    jita_sell_price: int | None,
+) -> bool:
+    """Return True if this sell order counts toward within-reason listed stock."""
+    if jita_sell_price is None or jita_sell_price <= 0:
+        return True
+    if jita_sell_price < REASONABLE_JITA_PRICE_FLOOR:
+        return True
+    price = int(order_price)
+    max_reasonable = jita_sell_price * (100 + REASONABLE_MARKUP_MAX_PCT) // 100
+    return price <= max_reasonable
+
+
+def _aggregate_order_rows(
+    order_rows: list[dict],
+    jita_sell_by_type: dict[int, int],
+) -> tuple[
+    set[int],
+    dict[int, int],
+    dict[int, int],
+    dict[int, int],
+    dict[int, object],
+]:
+    """Aggregate pre-fetched sell order rows in one Python pass."""
+    type_ids: set[int] = set()
+    total_by_type: dict[int, int] = defaultdict(int)
+    reasonable_by_type: dict[int, int] = defaultdict(int)
+    min_price_by_type: dict[int, int] = {}
+    last_synced_by_type: dict[int, object] = {}
+
+    for order in order_rows:
+        item_id = order["item_id"]
+        quantity = order["quantity"]
+        price = order["price"]
+        created_at = order["created_at"]
+        type_ids.add(item_id)
+        total_by_type[item_id] += quantity
+        if _order_quantity_counts_as_reasonable(
+            price, jita_sell_by_type.get(item_id)
+        ):
+            reasonable_by_type[item_id] += quantity
+        price_int = int(price)
+        if (
+            item_id not in min_price_by_type
+            or price_int < min_price_by_type[item_id]
+        ):
+            min_price_by_type[item_id] = price_int
+        if (
+            item_id not in last_synced_by_type
+            or created_at > last_synced_by_type[item_id]
+        ):
+            last_synced_by_type[item_id] = created_at
+
+    return (
+        type_ids,
+        dict(total_by_type),
+        dict(reasonable_by_type),
+        min_price_by_type,
+        last_synced_by_type,
+    )
+
+
+def _fetch_sell_order_stats(
+    location,
+    jita_sell_by_type: dict[int, int],
+) -> tuple[
+    set[int],
+    dict[int, int],
+    dict[int, int],
+    dict[int, int],
+    dict[int, object],
+]:
+    """Fetch sell orders for a location and aggregate in one DB round-trip."""
+    order_rows = list(
+        _sell_orders_queryset(location).values(
+            "item_id", "price", "quantity", "created_at"
+        )
+    )
+    return _aggregate_order_rows(order_rows, jita_sell_by_type)
+
 
 def _fitting_ship_name(eft_format: str) -> str | None:
     """Ship hull name from the first line of an EFT fitting string."""
@@ -60,7 +146,9 @@ def _fitting_ship_name(eft_format: str) -> str | None:
 
 
 def _stock_level(row: dict) -> str | None:
-    current = row.get("current_qty") or 0
+    current = row.get("reasonable_qty")
+    if current is None:
+        current = row.get("current_qty") or 0
     target = row.get("desired_qty") or 0
     if target <= 0:
         return None
@@ -131,6 +219,7 @@ def _new_row(item_name: str) -> dict:
     return {
         "item_name": item_name,
         "current_qty": 0,
+        "reasonable_qty": 0,
         "desired_qty": 0,
         "recommended_qty": 0,
         "references": set(),
@@ -242,12 +331,13 @@ def build_unified_sell_order_rows(location) -> list[dict]:  # noqa: C901
             rows_by_name[item_name] = _new_row(item_name)
         return rows_by_name[item_name]
 
-    pinned = {
-        exp.item.name: exp.quantity
-        for exp in EveMarketItemExpectation.objects.filter(
-            location=location
-        ).select_related("item")
-    }
+    pinned: dict[str, int] = {}
+    pinned_expectations = {}
+    for exp in EveMarketItemExpectation.objects.filter(
+        location=location
+    ).select_related("item"):
+        pinned[exp.item.name] = exp.quantity
+        pinned_expectations[exp.item_id] = exp.pk
     pinned_names = set(pinned.keys())
 
     for fexp in EveMarketFittingExpectation.objects.filter(
@@ -288,33 +378,34 @@ def build_unified_sell_order_rows(location) -> list[dict]:  # noqa: C901
         row["references"].add(rec["fitting_name"])
         row["sources"].add(rec["kind"])
 
-    type_ids_on_orders = list(
-        _sell_orders_queryset(location)
-        .values_list("item_id", flat=True)
-        .distinct()
+    order_rows = list(
+        _sell_orders_queryset(location).values(
+            "item_id", "price", "quantity", "created_at"
+        )
     )
+    order_type_ids = {row["item_id"] for row in order_rows}
+    jita_for_orders = (
+        get_prices_by_type_id(list(order_type_ids)) if order_type_ids else {}
+    )
+    (
+        _,
+        current_by_type,
+        reasonable_by_type,
+        lowest_sell_by_type,
+        last_synced_by_type,
+    ) = _aggregate_order_rows(order_rows, jita_for_orders)
     type_names_by_id = dict(
-        EveType.objects.filter(pk__in=type_ids_on_orders).values_list(
+        EveType.objects.filter(pk__in=current_by_type.keys()).values_list(
             "pk", "name"
         )
     )
-    current_by_type = {
-        row["item_id"]: row["total"]
-        for row in _sell_orders_queryset(location)
-        .values("item_id")
-        .annotate(total=Sum("quantity"))
-    }
-    last_synced_by_type = {
-        row["item_id"]: row["last_synced"]
-        for row in _sell_orders_queryset(location)
-        .values("item_id")
-        .annotate(last_synced=Max("created_at"))
-    }
     for type_id, current_qty in current_by_type.items():
         item_name = type_names_by_id.get(type_id)
         if not item_name:
             continue
-        row_for(item_name)["current_qty"] = current_qty
+        row = row_for(item_name)
+        row["current_qty"] = current_qty
+        row["reasonable_qty"] = reasonable_by_type.get(type_id, 0)
 
     effective = get_effective_item_expectations(location)
     type_ids_by_name = dict(
@@ -322,16 +413,13 @@ def build_unified_sell_order_rows(location) -> list[dict]:  # noqa: C901
             "name", "pk"
         )
     )
-    pinned_expectations = {
-        exp.item_id: exp.pk
-        for exp in EveMarketItemExpectation.objects.filter(location=location)
-    }
     all_type_ids = [tid for tid in type_ids_by_name.values() if tid]
-    lowest_sell_by_type = {
-        row["item_id"]: row["price"]
-        for row in _sell_orders_queryset(location)
-        .values("item_id")
-        .annotate(price=Min("price"))
+    extra_type_ids = [
+        tid for tid in all_type_ids if tid not in jita_for_orders
+    ]
+    jita_sell_by_type = {
+        **jita_for_orders,
+        **(get_prices_by_type_id(extra_type_ids) if extra_type_ids else {}),
     }
     location_sell_by_type = {
         row.item_id: row.sell_price
@@ -340,9 +428,6 @@ def build_unified_sell_order_rows(location) -> list[dict]:  # noqa: C901
         )
         if row.sell_price is not None
     }
-    jita_sell_by_type = (
-        get_prices_by_type_id(all_type_ids) if all_type_ids else {}
-    )
     volume_90d_by_type = (
         get_volume_90d_by_type_id(all_type_ids) if all_type_ids else {}
     )
@@ -373,6 +458,9 @@ def build_unified_sell_order_rows(location) -> list[dict]:  # noqa: C901
                 "item_name": item_name,
                 "type_id": type_id,
                 "current_qty": row["current_qty"],
+                "reasonable_qty": row.get(
+                    "reasonable_qty", row["current_qty"]
+                ),
                 "desired_qty": effective.get(item_name, row["desired_qty"]),
                 "recommended_qty": row["recommended_qty"],
                 "list_price": list_price,

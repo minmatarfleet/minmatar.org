@@ -1,0 +1,88 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  {% include "admin/industry/_styles.html" %}
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate "Home" %}</a>
+  &rsaquo; <a href="{% url 'admin:industry_orders_home' %}">{% translate "Industry orders" %}</a>
+  &rsaquo; #{{ order.pk }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <header class="industry-hub-header">
+    <h1 class="industry-hub-header__title">
+      {% blocktranslate with order_id=order.pk trimmed %}
+      Order #{{ order_id }}
+      {% endblocktranslate %}
+    </h1>
+    <p class="industry-hub-header__subtitle">
+      {{ order.character.character_name }}
+      {% if order.public_short_code %}&middot; {{ order.public_short_code }}{% endif %}
+      &middot; {% translate "needed by" %} {{ order.needed_by }}
+    </p>
+    <p class="industry-hub-header__desc">
+      {% blocktranslate trimmed %}
+      Edit order settings here, then use the cards below to manage line items
+      and builder assignments scoped to this order.
+      {% endblocktranslate %}
+    </p>
+  </header>
+
+  <section class="industry-section">
+    <h2>{% translate "Order settings" %}</h2>
+    <div class="industry-settings-panel">
+      <div class="industry-settings-panel__item">
+        <span class="industry-settings-panel__label">{% translate "Character" %}</span>
+        <span class="industry-settings-panel__value">{{ order.character.character_name }}</span>
+      </div>
+      <div class="industry-settings-panel__item">
+        <span class="industry-settings-panel__label">{% translate "Location" %}</span>
+        <span class="industry-settings-panel__value">{{ order.location|default:"—" }}</span>
+      </div>
+      <div class="industry-settings-panel__item">
+        <span class="industry-settings-panel__label">{% translate "Needed by" %}</span>
+        <span class="industry-settings-panel__value">{{ order.needed_by }}</span>
+      </div>
+      <div class="industry-settings-panel__item">
+        <span class="industry-settings-panel__label">{% translate "Status" %}</span>
+        <span class="industry-settings-panel__value{% if order.fulfilled_at %} industry-settings-panel__value--ok{% else %} industry-settings-panel__value--warn{% endif %}">
+          {% if order.fulfilled_at %}{% translate "Fulfilled" %}{% else %}{% translate "Open" %}{% endif %}
+        </span>
+      </div>
+      {% if order.contract_to %}
+      <div class="industry-settings-panel__item">
+        <span class="industry-settings-panel__label">{% translate "Contract to" %}</span>
+        <span class="industry-settings-panel__value">{{ order.contract_to }}</span>
+      </div>
+      {% endif %}
+    </div>
+    <div class="industry-card__actions">
+      <a href="{{ sections.settings.edit_url }}" class="industry-btn industry-btn--primary">
+        {% translate "Edit order" %}
+      </a>
+      {% if not order.fulfilled_at %}
+      <a href="{{ sections.settings.mark_fulfilled_url }}" class="industry-btn industry-btn--secondary">
+        {% translate "Mark fulfilled" %}
+      </a>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="industry-section">
+    <h2>{% translate "Line items & assignments" %}</h2>
+    <div class="industry-card-grid">
+      {% include "admin/industry/_hub_card.html" with title=_("Order items") count=sections.items.count description=_("Eve types and quantities to build for this order. Each item can have its own target pricing and self-assign limits.") list_url=sections.items.list_url list_label=_("View items") add_url=sections.items.add_url add_label=_("Add item") %}
+      {% include "admin/industry/_hub_card.html" with title=_("Assignments") count=sections.assignments.count description=_("Which characters are building which quantities. Filtered to assignments on items belonging to this order.") list_url=sections.assignments.list_url list_label=_("View assignments") add_url=sections.assignments.add_url add_label=_("Add assignment") %}
+    </div>
+  </section>
+</div>
+{% endblock %}

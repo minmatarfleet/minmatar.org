@@ -208,3 +208,150 @@ class EveCharacterAdminTestCase(TestCase):
     def test_character_tag_inline_present(self):
         inline_models = [inline.model for inline in self.model_admin.inlines]
         self.assertIn(EveCharacterTag, inline_models)
+
+
+class AdminAppListGroupingTestCase(TestCase):
+    def setUp(self):
+        self.factory = RequestFactory()
+        self.admin_user = User.objects.create_superuser(
+            username="admin",
+            email="admin@example.com",
+            password="password",
+        )
+
+    def _model_names(self, app_list, section_name):
+        section = next(app for app in app_list if app["name"] == section_name)
+        return {model["object_name"].lower() for model in section["models"]}
+
+    def _section_names(self, app_list):
+        return [app["name"] for app in app_list]
+
+    def test_audit_entries_under_system_not_community(self):
+        request = self.factory.get("/admin/")
+        request.user = self.admin_user
+        app_list = admin.site.get_app_list(request)
+
+        system_models = self._model_names(app_list, "System")
+        community_models = self._model_names(app_list, "Community")
+
+        self.assertIn("auditentry", system_models)
+        self.assertNotIn("auditentry", community_models)
+
+    def test_mumble_access_under_system_not_community(self):
+        request = self.factory.get("/admin/")
+        request.user = self.admin_user
+        app_list = admin.site.get_app_list(request)
+
+        system_models = self._model_names(app_list, "System")
+        community_models = self._model_names(app_list, "Community")
+
+        self.assertIn("mumbleaccess", system_models)
+        self.assertNotIn("mumbleaccess", community_models)
+
+    def test_fleets_under_alliance_not_standalone(self):
+        request = self.factory.get("/admin/")
+        request.user = self.admin_user
+        app_list = admin.site.get_app_list(request)
+
+        alliance_models = self._model_names(app_list, "Alliance")
+        section_names = self._section_names(app_list)
+
+        self.assertIn("evefleet", alliance_models)
+        self.assertIn("evefleetaudience", alliance_models)
+        self.assertNotIn("fleets", section_names)
+
+    def test_readiness_and_supply_follow_staging_systems(self):
+        request = self.factory.get("/admin/")
+        request.user = self.admin_user
+        app_list = admin.site.get_app_list(request)
+        section_names = self._section_names(app_list)
+
+        self.assertLess(
+            section_names.index("Staging Systems"),
+            section_names.index("Readiness"),
+        )
+        self.assertLess(
+            section_names.index("Readiness"),
+            section_names.index("Supply"),
+        )
+        self.assertLess(
+            section_names.index("Supply"),
+            section_names.index("Characters"),
+        )
+
+    def test_fleet_instances_hidden_from_alliance(self):
+        request = self.factory.get("/admin/")
+        request.user = self.admin_user
+        app_list = admin.site.get_app_list(request)
+
+        alliance_models = self._model_names(app_list, "Alliance")
+
+        self.assertIn("evefleet", alliance_models)
+        self.assertNotIn("evefleetinstance", alliance_models)
+        self.assertNotIn("evefleetinstancemember", alliance_models)
+        self.assertNotIn("evefleetshipreimbursement", alliance_models)
+
+    def test_srp_reimbursements_hidden_from_alliance(self):
+        request = self.factory.get("/admin/")
+        request.user = self.admin_user
+        app_list = admin.site.get_app_list(request)
+
+        alliance_models = self._model_names(app_list, "Alliance")
+
+        self.assertIn("shipreimbursementprogram", alliance_models)
+        self.assertNotIn("evefleetshipreimbursement", alliance_models)
+
+    def test_experimental_section_at_bottom(self):
+        request = self.factory.get("/admin/")
+        request.user = self.admin_user
+        app_list = admin.site.get_app_list(request)
+        section_names = self._section_names(app_list)
+
+        self.assertIn("Experimental", section_names)
+        self.assertLess(
+            section_names.index("System"),
+            section_names.index("Experimental"),
+        )
+
+        experimental_models = self._model_names(app_list, "Experimental")
+        experimental_names = self._display_names(app_list, "Experimental")
+        self.assertIn("eveaccesslist", experimental_models)
+        self.assertIn("industryproduct", experimental_models)
+        self.assertIn("miningupgradecompletion", experimental_models)
+        self.assertIn("systemsovereigntyconfig", experimental_models)
+        self.assertIn("products", experimental_names)
+        self.assertIn("mining completions", experimental_names)
+        self.assertNotIn("eveaccesslistmember", experimental_models)
+
+    def test_hidden_models_not_in_sidebar(self):
+        request = self.factory.get("/admin/")
+        request.user = self.admin_user
+        app_list = admin.site.get_app_list(request)
+
+        all_models = set()
+        for section in app_list:
+            all_models.update(self._model_names(app_list, section["name"]))
+
+        self.assertNotIn("evepost", all_models)
+        self.assertNotIn("evepostimage", all_models)
+        self.assertNotIn("evecorporationcontract", all_models)
+        self.assertNotIn("evecorporationindustryjob", all_models)
+        self.assertNotIn("evefleetshipreimbursement", all_models)
+        self.assertNotIn("industryorderitem", all_models)
+        self.assertNotIn("industryorderitemassignment", all_models)
+
+    def _display_names(self, app_list, section_name):
+        section = next(app for app in app_list if app["name"] == section_name)
+        return {model["name"].lower() for model in section["models"]}
+
+    def test_supply_shows_industry_orders_hub_only(self):
+        request = self.factory.get("/admin/")
+        request.user = self.admin_user
+        app_list = admin.site.get_app_list(request)
+
+        supply_objects = self._model_names(app_list, "Supply")
+        supply_names = self._display_names(app_list, "Supply")
+        self.assertIn("industry orders", supply_names)
+        self.assertNotIn("industryorder", supply_objects)
+        self.assertNotIn("industryproduct", supply_objects)
+        self.assertNotIn("miningupgradecompletion", supply_objects)

@@ -16,6 +16,13 @@ from market.helpers.in_memory_changelist import (
 
 SELL_ORDER_PAGE_SIZE = 50
 
+
+def _format_listed_qty_display(reasonable_qty: int, total_qty: int) -> str:
+    if reasonable_qty == total_qty:
+        return str(total_qty)
+    return f"{reasonable_qty} ({total_qty})"
+
+
 PINNED_ITEM_ICON = mark_safe(
     '<svg class="pinned-icon" viewBox="0 0 16 16" width="14" height="14" '
     'aria-hidden="true" focusable="false">'
@@ -33,6 +40,7 @@ class SellOrderListItem:
         self.item_name = row["item_name"]
         self.type_id = row.get("type_id")
         self.current_qty = row["current_qty"]
+        self.reasonable_qty = row.get("reasonable_qty", row["current_qty"])
         self.desired_qty = row["desired_qty"]
         self.recommended_qty = row["recommended_qty"]
         self.list_price = row.get("list_price")
@@ -149,9 +157,9 @@ class LocationSellOrdersModelAdmin(admin.ModelAdmin):
             obj.item_name,
         )
 
-    @admin.display(description=_("Listed now"), ordering="current_qty")
+    @admin.display(description=_("Listed now"), ordering="reasonable_qty")
     def display_current_qty(self, obj: SellOrderListItem):
-        return obj.current_qty
+        return _format_listed_qty_display(obj.reasonable_qty, obj.current_qty)
 
     @admin.display(description=_("Last synced"), ordering="last_synced_at")
     def display_last_synced(self, obj: SellOrderListItem):

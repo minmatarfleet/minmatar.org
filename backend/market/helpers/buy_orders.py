@@ -1,6 +1,5 @@
 from collections import defaultdict
 
-from django.db.models import Max, Sum
 from django.urls import reverse
 
 from market.helpers.pricing import get_prices_by_type_id
@@ -19,30 +18,23 @@ def build_location_buy_orders_context(location) -> dict:
     )
     type_ids = [exp.item_id for exp in expectations]
 
-    current_by_type = {
-        row["item_id"]: row["total"]
-        for row in EveMarketItemOrder.objects.filter(
-            location=location, is_buy_order=True, item_id__in=type_ids
-        )
-        .values("item_id")
-        .annotate(total=Sum("quantity"))
-    }
-    highest_buy_by_type = {
-        row["item_id"]: row["price"]
-        for row in EveMarketItemOrder.objects.filter(
-            location=location, is_buy_order=True, item_id__in=type_ids
-        )
-        .values("item_id")
-        .annotate(price=Max("price"))
-    }
-    issuers_by_type = defaultdict(set)
+    current_by_type: dict[int, int] = defaultdict(int)
+    highest_buy_by_type: dict[int, int] = {}
+    issuers_by_type: dict[int, set] = defaultdict(set)
     for row in EveMarketItemOrder.objects.filter(
-        location=location,
-        is_buy_order=True,
-        item_id__in=type_ids,
-        issuer_external_id__isnull=False,
-    ).values("item_id", "issuer_external_id"):
-        issuers_by_type[row["item_id"]].add(row["issuer_external_id"])
+        location=location, is_buy_order=True, item_id__in=type_ids
+    ).values("item_id", "price", "quantity", "issuer_external_id"):
+        item_id = row["item_id"]
+        current_by_type[item_id] += row["quantity"]
+        price = int(row["price"])
+        if (
+            item_id not in highest_buy_by_type
+            or price > highest_buy_by_type[item_id]
+        ):
+            highest_buy_by_type[item_id] = price
+        issuer_id = row["issuer_external_id"]
+        if issuer_id is not None:
+            issuers_by_type[item_id].add(issuer_id)
 
     location_prices = {
         row.item_id: row

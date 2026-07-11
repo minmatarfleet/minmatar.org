@@ -672,9 +672,10 @@ EveLocationAdmin.highlight_deleted_field.short_description = "Location name"
 #
 # Split the single "eveonline" app section on the admin index page into logical
 # groups. Other apps are folded in: applications → Corporations,
-# access_lists/sovereignty/structures/srp → Alliance, community-related apps →
-# Community, fittings → Readiness, industry/freight → Supply, market/evelocation →
-# Staging Systems (first on the index), auth/django_celery_beat → System (last).
+# structures/srp/fleets → Alliance, community-related apps → Community,
+# fittings → Readiness, industry/freight → Supply, market/evelocation →
+# Staging Systems (first on the index), auth/django_celery_beat → System,
+# access_lists/sovereignty/industry extras → Experimental (last).
 # ---------------------------------------------------------------------------
 
 _CHARACTER_MODELS = {
@@ -695,15 +696,11 @@ _SYSTEM_EVEONLINE_MODELS = {
 _CORPORATION_MODELS = {
     "evecorporation",
     "evecorporationapplication",
-    "evecorporationcontract",
-    "evecorporationindustryjob",
 }
 
 _ALLIANCE_MODELS = {
     "evealliance",
     "eveskillset",
-    "eveaccesslist",
-    "eveaccesslistmember",
 }
 
 _STAGING_SYSTEMS_APPS = {"market"}
@@ -712,21 +709,62 @@ _STAGING_SYSTEMS_EVEONLINE_MODELS = {
     "evelocation",
 }
 
-_ALLIANCE_EXTRA_APPS = {"access_lists", "sovereignty", "structures", "srp"}
-
-_COMMUNITY_APPS = {
-    "audit",
-    "discord",
-    "groups",
-    "help_tickets",
-    "mumble",
-    "onboarding",
-    "posts",
-    "reddit",
-    "referrals",
+_ALLIANCE_EXTRA_APPS = {
+    "fleets",
+    "structures",
+    "srp",
 }
 
-_SYSTEM_APPS = {"auth", "django_celery_beat", "subscriptions"}
+_COMMUNITY_APPS = {
+    "groups",
+    "help_tickets",
+    "reddit",
+    "referrals",
+    "tribes",
+}
+
+_EXPERIMENTAL_APPS = {
+    "access_lists",
+    "sovereignty",
+}
+
+_HIDDEN_ABSORBED_APPS = {
+    "posts",
+}
+
+_HIDDEN_NAV_MODELS = {
+    "evefleetinstance",
+    "evefleetinstancemember",
+    "evefleetinstancememberimplantsnapshot",
+    "evefleetinstancemembershipsnapshot",
+    "evefleetshipreimbursement",
+    "evecorporationcontract",
+    "evecorporationindustryjob",
+    "industryorderitem",
+    "industryorderitemassignment",
+    "eveaccesslistmember",
+}
+
+_EXPERIMENTAL_MODELS = {
+    "eveaccesslist",
+    "industryproduct",
+    "miningupgradecompletion",
+    "systemsovereigntyconfig",
+}
+
+_SUPPLY_INDUSTRY_MODELS = {
+    "industryorder",
+}
+
+_SYSTEM_APPS = {
+    "audit",
+    "auth",
+    "discord",
+    "django_celery_beat",
+    "mumble",
+    "onboarding",
+    "subscriptions",
+}
 
 _READINESS_APPS = {"fittings"}
 
@@ -739,6 +777,8 @@ _ABSORBED_APPS = (
     | _STAGING_SYSTEMS_APPS
     | _SUPPLY_APPS
     | _ALLIANCE_EXTRA_APPS
+    | _EXPERIMENTAL_APPS
+    | _HIDDEN_ABSORBED_APPS
     | {"applications"}
 )
 
@@ -748,14 +788,103 @@ _SYNTHETIC_APP_GROUPS = {
     "Supply": ("industry", _SUPPLY_APPS),
 }
 
-_GROUPS = [
+_MAIN_GROUPS = [
     ("Characters", _CHARACTER_MODELS),
     ("Corporations", _CORPORATION_MODELS),
     ("Alliance", _ALLIANCE_MODELS),
     ("Community", None),
+]
+
+_STAGING_AREA_GROUPS = [
     ("Readiness", None),
     ("Supply", None),
 ]
+
+
+def _filter_nav_models(models):
+    return [
+        model
+        for model in models
+        if model["object_name"].lower() not in _HIDDEN_NAV_MODELS
+    ]
+
+
+def _build_synthetic_group(
+    group_name,
+    *,
+    absorbed,
+    eveonline_app,
+):
+    base_label, app_labels = _SYNTHETIC_APP_GROUPS[group_name]
+    group_models = []
+    for group_app_label in sorted(app_labels):
+        app_models = absorbed.get(group_app_label, {}).get("models", [])
+        if group_name == "Supply" and group_app_label == "industry":
+            app_models = [
+                model
+                for model in app_models
+                if model["object_name"].lower() in _SUPPLY_INDUSTRY_MODELS
+            ]
+        group_models.extend(app_models)
+    group_models = _filter_nav_models(group_models)
+    if not group_models:
+        return None
+    base_app = absorbed.get(base_label) or eveonline_app
+    return {**base_app, "name": group_name, "models": group_models}
+
+
+def _build_named_model_group(
+    group_name,
+    model_names,
+    *,
+    absorbed,
+    eveonline_app,
+    all_eveonline_models,
+):
+    group_models = [
+        m
+        for m in all_eveonline_models
+        if m["object_name"].lower() in model_names
+    ]
+    if group_name == "Corporations":
+        group_models.extend(
+            m
+            for m in absorbed.get("applications", {}).get("models", [])
+            if m["object_name"].lower() in model_names
+        )
+    elif group_name == "Alliance":
+        for extra_app_label in sorted(_ALLIANCE_EXTRA_APPS):
+            group_models.extend(
+                absorbed.get(extra_app_label, {}).get("models", [])
+            )
+    group_models = _filter_nav_models(group_models)
+    if not group_models:
+        return None
+    return {**eveonline_app, "name": group_name, "models": group_models}
+
+
+def _build_experimental_section(*, absorbed, eveonline_app):
+    experimental_models = []
+    for app_label in sorted(_EXPERIMENTAL_APPS):
+        experimental_models.extend(
+            model
+            for model in absorbed.get(app_label, {}).get("models", [])
+            if model["object_name"].lower() in _EXPERIMENTAL_MODELS
+        )
+    experimental_models.extend(
+        model
+        for model in absorbed.get("industry", {}).get("models", [])
+        if model["object_name"].lower() in _EXPERIMENTAL_MODELS
+    )
+    experimental_models = _filter_nav_models(experimental_models)
+    if not experimental_models:
+        return None
+    return {
+        **(absorbed.get("access_lists") or eveonline_app),
+        "name": "Experimental",
+        "models": experimental_models,
+    }
+
 
 _original_get_app_list = admin.AdminSite.get_app_list
 
@@ -779,39 +908,34 @@ def _grouped_get_app_list(self, request, app_label=None):  # noqa: C901
         return result
 
     all_eveonline_models = eveonline_app["models"]
-    grouped_sections = []
-    for group_name, model_names in _GROUPS:
+    main_sections = []
+    for group_name, model_names in _MAIN_GROUPS:
         if model_names is None:
-            base_label, app_labels = _SYNTHETIC_APP_GROUPS[group_name]
-            group_models = []
-            for group_app_label in sorted(app_labels):
-                group_models.extend(
-                    absorbed.get(group_app_label, {}).get("models", [])
-                )
-            base_app = absorbed.get(base_label) or eveonline_app
-        else:
-            group_models = [
-                m
-                for m in all_eveonline_models
-                if m["object_name"].lower() in model_names
-            ]
-            base_app = eveonline_app
-            if group_name == "Corporations":
-                group_models.extend(
-                    m
-                    for m in absorbed.get("applications", {}).get("models", [])
-                    if m["object_name"].lower() in model_names
-                )
-            elif group_name == "Alliance":
-                for extra_app_label in sorted(_ALLIANCE_EXTRA_APPS):
-                    group_models.extend(
-                        absorbed.get(extra_app_label, {}).get("models", [])
-                    )
-
-        if group_models:
-            grouped_sections.append(
-                {**base_app, "name": group_name, "models": group_models}
+            section = _build_synthetic_group(
+                group_name,
+                absorbed=absorbed,
+                eveonline_app=eveonline_app,
             )
+        else:
+            section = _build_named_model_group(
+                group_name,
+                model_names,
+                absorbed=absorbed,
+                eveonline_app=eveonline_app,
+                all_eveonline_models=all_eveonline_models,
+            )
+        if section:
+            main_sections.append(section)
+
+    staging_area_sections = []
+    for group_name, _ in _STAGING_AREA_GROUPS:
+        section = _build_synthetic_group(
+            group_name,
+            absorbed=absorbed,
+            eveonline_app=eveonline_app,
+        )
+        if section:
+            staging_area_sections.append(section)
 
     staging_models = [
         m
@@ -835,7 +959,7 @@ def _grouped_get_app_list(self, request, app_label=None):  # noqa: C901
     )
 
     final = list(result)
-    final.extend(grouped_sections)
+    final.extend(main_sections)
     if system_models:
         final.append(
             {
@@ -844,16 +968,25 @@ def _grouped_get_app_list(self, request, app_label=None):  # noqa: C901
                 "models": system_models,
             }
         )
+
+    experimental_section = _build_experimental_section(
+        absorbed=absorbed,
+        eveonline_app=eveonline_app,
+    )
+    if experimental_section:
+        final.append(experimental_section)
+
+    prefix_sections = []
     if staging_models:
-        final.insert(
-            0,
+        prefix_sections.append(
             {
                 **(absorbed.get("market") or eveonline_app),
                 "name": "Staging Systems",
                 "models": staging_models,
-            },
+            }
         )
-    return final
+    prefix_sections.extend(staging_area_sections)
+    return prefix_sections + final
 
 
 admin.AdminSite.get_app_list = _grouped_get_app_list

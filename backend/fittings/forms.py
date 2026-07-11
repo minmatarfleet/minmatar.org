@@ -3,7 +3,14 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 
 from eveonline.models import EveLocation
 
-from .models import EveDoctrine, EveDoctrineFitting, EveFitting, FittingTag
+from .models import (
+    EveDoctrine,
+    EveDoctrineChangeRequest,
+    EveDoctrineFitting,
+    EveFitting,
+    EveFittingChangeRequest,
+    FittingTag,
+)
 
 
 def normalize_fitting_aliases(raw: str) -> str:
@@ -137,3 +144,31 @@ class EveDoctrineForm(forms.ModelForm):
             "type",
             "description",
         ]
+
+
+class ChangeRequestReviewForm(forms.ModelForm):
+    REVIEW_ACTION_NONE = ""
+    REVIEW_ACTION_APPROVE = "approve"
+    REVIEW_ACTION_REJECT = "reject"
+    REVIEW_ACTION_CANCEL = "cancel"
+
+    review_action = forms.ChoiceField(
+        label="Review action",
+        required=False,
+        choices=[(REVIEW_ACTION_NONE, "— No action —")],
+        help_text="Choose an action, then click Save.",
+        widget=forms.Select(attrs={"style": "min-width:16em;"}),
+    )
+
+    class Meta:
+        fields = []
+
+
+class EveDoctrineChangeRequestAdminForm(ChangeRequestReviewForm):
+    class Meta(ChangeRequestReviewForm.Meta):
+        model = EveDoctrineChangeRequest
+
+
+class EveFittingChangeRequestAdminForm(ChangeRequestReviewForm):
+    class Meta(ChangeRequestReviewForm.Meta):
+        model = EveFittingChangeRequest

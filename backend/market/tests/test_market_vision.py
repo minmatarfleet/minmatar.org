@@ -43,8 +43,12 @@ from market.helpers.qualification import (
     get_qualified_sell_fittings,
 )
 from market.helpers.sell_orders import (
+    REASONABLE_JITA_PRICE_FLOOR,
+    REASONABLE_MARKUP_MAX_PCT,
     _calculate_markup_pct,
     _format_reference_display,
+    _order_quantity_counts_as_reasonable,
+    _stock_level,
     build_unified_sell_order_rows,
     filter_sell_order_rows,
     save_sell_order_desired_quantities,
@@ -52,6 +56,7 @@ from market.helpers.sell_orders import (
 from market.helpers.sell_orders_changelist import (
     LocationSellOrdersModelAdmin,
     SellOrderListItem,
+    _format_listed_qty_display,
     _sort_sell_order_rows,
 )
 from market.models import (
@@ -486,6 +491,74 @@ class SellOrderRowsTestCase(TestCase):
             ["Overstocked Hull"],
         )
 
+    def test_stock_level_uses_reasonable_qty_when_present(self):
+        row = {
+            "current_qty": 150,
+            "reasonable_qty": 10,
+            "desired_qty": 100,
+        }
+        self.assertEqual(_stock_level(row), "very_understocked")
+
+        overstocked_row = {
+            "current_qty": 250,
+            "reasonable_qty": 150,
+            "desired_qty": 100,
+        }
+        self.assertEqual(_stock_level(overstocked_row), "overstocked")
+
+    def test_reasonable_listing_thresholds(self):
+        self.assertTrue(
+            _order_quantity_counts_as_reasonable(2_400_000, 2_000_000)
+        )
+        self.assertFalse(
+            _order_quantity_counts_as_reasonable(2_400_001, 2_000_000)
+        )
+        self.assertTrue(_order_quantity_counts_as_reasonable(500_000, 50_000))
+        self.assertTrue(_order_quantity_counts_as_reasonable(1_000_000, None))
+        self.assertEqual(REASONABLE_MARKUP_MAX_PCT, 20)
+        self.assertEqual(REASONABLE_JITA_PRICE_FLOOR, 1_000_000)
+
+    def test_format_listed_qty_display(self):
+        self.assertEqual(_format_listed_qty_display(11, 100), "11 (100)")
+        self.assertEqual(_format_listed_qty_display(12, 12), "12")
+
+    def test_reasonable_qty_excludes_overpriced_orders(self):
+        EveMarketItemOrder.objects.filter(
+            location=self.location, item=self.ammo_type
+        ).delete()
+        EveMarketItemOrder.objects.create(
+            location=self.location,
+            item=self.ammo_type,
+            quantity=11,
+            price=2_200_000,
+            is_buy_order=False,
+        )
+        EveMarketItemOrder.objects.create(
+            location=self.location,
+            item=self.ammo_type,
+            quantity=89,
+            price=3_000_000,
+            is_buy_order=False,
+        )
+        with patch(
+            "market.helpers.sell_orders.get_prices_by_type_id",
+            return_value={self.ammo_type.pk: 2_000_000},
+        ), patch(
+            "market.helpers.sell_orders.get_volume_90d_by_type_id",
+            return_value={},
+        ):
+            rows = {
+                row["item_name"]: row
+                for row in build_unified_sell_order_rows(self.location)
+            }
+        fusion = rows["Fusion S"]
+        self.assertEqual(fusion["current_qty"], 100)
+        self.assertEqual(fusion["reasonable_qty"], 11)
+
+        model_admin = LocationSellOrdersModelAdmin(EveType, admin.site)
+        display = model_admin.display_current_qty(SellOrderListItem(fusion))
+        self.assertEqual(display, "11 (100)")
+
     def test_filter_source_and_markup_filters(self):
         rows = [
             {
@@ -714,9 +787,24 @@ class SellOrderRowsTestCase(TestCase):
 
     def test_sort_sell_order_rows_by_current_qty_and_markup(self):
         rows = [
-            {"item_name": "A", "current_qty": 10, "markup_pct": 50},
-            {"item_name": "B", "current_qty": 2, "markup_pct": None},
-            {"item_name": "C", "current_qty": 25, "markup_pct": 10},
+            {
+                "item_name": "A",
+                "current_qty": 10,
+                "reasonable_qty": 3,
+                "markup_pct": 50,
+            },
+            {
+                "item_name": "B",
+                "current_qty": 2,
+                "reasonable_qty": 2,
+                "markup_pct": None,
+            },
+            {
+                "item_name": "C",
+                "current_qty": 25,
+                "reasonable_qty": 15,
+                "markup_pct": 10,
+            },
         ]
         model_admin = LocationSellOrdersModelAdmin(EveType, admin.site)
         list_display = list(model_admin.get_list_display(None))

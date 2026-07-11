@@ -90,6 +90,18 @@ class EveMarketContract(models.Model):
     def __str__(self):
         return str(f"{self.title} - {self.location}")
 
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=["location", "status"],
+                name="market_contract_loc_status",
+            ),
+            models.Index(
+                fields=["location", "status", "fitting"],
+                name="market_contract_loc_stat_fit",
+            ),
+        ]
+
 
 class EveMarketContractItem(models.Model):
     contract = models.ForeignKey(

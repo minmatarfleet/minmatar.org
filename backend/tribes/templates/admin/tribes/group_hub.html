@@ -1,0 +1,95 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  {% include "admin/tribes/_tribes_styles.html" %}
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate "Home" %}</a>
+  &rsaquo; <a href="{% url 'admin:tribes_home' %}">{% translate "Tribes" %}</a>
+  &rsaquo; {{ tribe_group.name }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <header class="tribes-hub-header">
+    <h1 class="tribes-hub-header__title">{{ tribe_group.name }}</h1>
+    <p class="tribes-hub-header__subtitle">{{ tribe_group.tribe.name }} &middot; {{ tribe_group.code }}</p>
+    <p class="tribes-hub-header__desc">
+      {% blocktranslate with tribe_name=tribe_group.tribe.name trimmed %}
+      This is the joinable unit within {{ tribe_name }} — where
+      membership, qualification rules, and activity tracking are managed.
+      {% endblocktranslate %}
+    </p>
+  </header>
+
+  {% include "admin/tribes/_learn_more_start.html" %}
+    <p>
+      {% blocktranslate trimmed %}
+      Everything for this group lives here: settings, ranks, who can join,
+      qualification rules, and activity tracking. Each card opens a filtered
+      list scoped to this group.
+      {% endblocktranslate %}
+    </p>
+  {% include "admin/tribes/_learn_more_end.html" %}
+
+  <section class="tribes-section">
+    <h2>{% translate "Group settings" %}</h2>
+    <div class="tribes-settings-panel">
+      <div class="tribes-settings-panel__item">
+        <span class="tribes-settings-panel__label">{% translate "Tribe" %}</span>
+        <span class="tribes-settings-panel__value">{{ tribe_group.tribe.name }}</span>
+      </div>
+      <div class="tribes-settings-panel__item">
+        <span class="tribes-settings-panel__label">{% translate "Code" %}</span>
+        <span class="tribes-settings-panel__value">{{ tribe_group.code }}</span>
+      </div>
+      <div class="tribes-settings-panel__item">
+        <span class="tribes-settings-panel__label">{% translate "Chief" %}</span>
+        <span class="tribes-settings-panel__value">{{ tribe_group.chief|default:"—" }}</span>
+      </div>
+      <div class="tribes-settings-panel__item">
+        <span class="tribes-settings-panel__label">{% translate "Active" %}</span>
+        <span class="tribes-settings-panel__value{% if tribe_group.is_active %} tribes-settings-panel__value--active{% else %} tribes-settings-panel__value--inactive{% endif %}">
+          {% if tribe_group.is_active %}{% translate "yes" %}{% else %}{% translate "no" %}{% endif %}
+        </span>
+      </div>
+    </div>
+    <a href="{{ sections.settings.edit_url }}" class="tribes-btn tribes-btn--primary">
+      {% translate "Edit group settings" %}
+    </a>
+  </section>
+
+  <section class="tribes-section">
+    <h2>{% translate "Structure" %}</h2>
+    <div class="tribes-card-grid">
+      {% include "admin/tribes/_hub_card.html" with title=_("Ranks") count=sections.ranks.count description=_("Rank tiers within this group (e.g. member, veteran). Each rank can map to a Discord role.") list_url=sections.ranks.list_url list_label=_("View ranks") add_url=sections.ranks.add_url add_label=_("Add rank") %}
+      {% include "admin/tribes/_hub_card.html" with title=_("Requirements") count=sections.requirements.count description=_("Qualification rules members must meet — required skills and qualifying asset types.") list_url=sections.requirements.list_url list_label=_("View requirements") add_url=sections.requirements.add_url add_label=_("Add requirement") %}
+    </div>
+  </section>
+
+  <section class="tribes-section">
+    <h2>{% translate "Membership" %}</h2>
+    <div class="tribes-card-grid">
+      {% include "admin/tribes/_hub_card.html" with title=_("Memberships") count=sections.memberships.count description=_("Users who have applied to or belong to this group, including pending and active members.") list_url=sections.memberships.list_url list_label=_("View memberships") add_url=sections.memberships.add_url add_label=_("Add membership") %}
+      {% include "admin/tribes/_hub_card.html" with title=_("Membership characters") count=sections.membership_characters.count description=_("EVE characters linked to memberships in this group.") list_url=sections.membership_characters.list_url list_label=_("View characters") add_url=sections.membership_characters.add_url add_label=_("Add character") %}
+      {% include "admin/tribes/_hub_card.html" with title=_("Membership history") count=sections.membership_history.count description=_("Audit log of status changes (applied, approved, removed, etc.) for members of this group.") list_url=sections.membership_history.list_url list_label=_("View history") readonly=True %}
+      {% include "admin/tribes/_hub_card.html" with title=_("Character history") count=sections.character_history.count description=_("When characters were added or removed from memberships in this group.") list_url=sections.character_history.list_url list_label=_("View history") readonly=True %}
+    </div>
+  </section>
+
+  <section class="tribes-section">
+    <h2>{% translate "Activities" %}</h2>
+    <div class="tribes-card-grid">
+      {% include "admin/tribes/_hub_card.html" with title=_("Activities") count=sections.activities.count description=_("Activity definitions for this group — what to track and how points are awarded.") list_url=sections.activities.list_url list_label=_("View activities") add_url=sections.activities.add_url add_label=_("Add activity") %}
+      {% include "admin/tribes/_hub_card.html" with title=_("Activity records") count=sections.activity_records.count description=_("Individual activity events logged against this group's activity definitions.") list_url=sections.activity_records.list_url list_label=_("View records") add_url=sections.activity_records.add_url add_label=_("Add record") %}
+    </div>
+  </section>
+</div>
+{% endblock %}

@@ -8,10 +8,15 @@ from django.utils.safestring import mark_safe
 
 from eveuniverse.models import EveGroup
 
+from industry.admin_views import (
+    industry_order_hub_view,
+    industry_orders_home_view,
+)
 from industry.forms import (
     IndustryOrderAdminForm,
     MiningUpgradeCompletionAdminForm,
 )
+from industry.helpers.admin_permissions import industry_orders_index_link_perms
 from industry.helpers.type_breakdown import get_breakdown_for_industry_product
 from industry.models import (
     IndustryOrder,
@@ -161,7 +166,9 @@ class IndustryOrderAdmin(admin.ModelAdmin):
         obj.fulfilled_at = timezone.now()
         obj.save(update_fields=["fulfilled_at"])
         messages.success(request, "Order marked as fulfilled.")
-        return HttpResponseRedirect("../")
+        return HttpResponseRedirect(
+            reverse("admin:industry_order_hub", args=[obj.pk])
+        )
 
     @admin.display(description="Mark as fulfilled")
     def mark_fulfilled_button(self, obj):
@@ -260,24 +267,26 @@ class IndustryOrderItemAdmin(admin.ModelAdmin):
     inlines = [IndustryOrderItemAssignmentInline]
     search_fields = ("order__id", "eve_type__name")
 
+    def get_changeform_initial_data(self, request):
+        initial = super().get_changeform_initial_data(request)
+        order_id = request.GET.get("order")
+        if order_id:
+            initial["order"] = order_id
+        return initial
+
+    def _redirect_to_order_hub(self, order_id):
+        return HttpResponseRedirect(
+            reverse("admin:industry_order_hub", args=[order_id])
+        )
+
     def response_add(self, request, obj, post_url_continue=None):
-        """After adding an order item, redirect back to the order if we have one."""
         if obj.order_id:
-            return HttpResponseRedirect(
-                reverse(
-                    "admin:industry_industryorder_change", args=[obj.order_id]
-                )
-            )
+            return self._redirect_to_order_hub(obj.order_id)
         return super().response_add(request, obj, post_url_continue)
 
     def response_change(self, request, obj):
-        """After changing an order item (e.g. editing assignments), redirect back to the order."""
         if obj.order_id:
-            return HttpResponseRedirect(
-                reverse(
-                    "admin:industry_industryorder_change", args=[obj.order_id]
-                )
-            )
+            return self._redirect_to_order_hub(obj.order_id)
         return super().response_change(request, obj)
 
 
@@ -291,8 +300,15 @@ class IndustryOrderItemAssignmentAdmin(admin.ModelAdmin):
         "target_estimated_margin",
         "delivered_at",
     )
-    list_filter = ("character",)
+    list_filter = ("character", "order_item__order")
     autocomplete_fields = ("order_item", "character")
+
+    def get_changeform_initial_data(self, request):
+        initial = super().get_changeform_initial_data(request)
+        order_item_id = request.GET.get("order_item")
+        if order_item_id:
+            initial["order_item"] = order_item_id
+        return initial
 
 
 @admin.register(IndustryProduct)
@@ -385,9 +401,6 @@ class IndustryProductAdmin(admin.ModelAdmin):
                 pass
 
 
-# ----- Industry admin index: only Orders -----
-
-
 @admin.register(MiningUpgradeCompletion)
 class MiningUpgradeCompletionAdmin(admin.ModelAdmin):
     form = MiningUpgradeCompletionAdminForm
@@ -405,32 +418,104 @@ class MiningUpgradeCompletionAdmin(admin.ModelAdmin):
     fields = ("sov_system", "site_name", "completed_at", "completed_by")
 
 
-INDUSTRY_INDEX_MODELS = {
-    "industryorder": "Orders",
+INDUSTRY_ORDERS_HIDDEN_MODELS = {
+    "industryorder",
+    "industryorderitem",
+    "industryorderitemassignment",
+}
+
+INDUSTRY_SUPPLY_EXCLUDED_MODELS = INDUSTRY_ORDERS_HIDDEN_MODELS | {
+    "industryproduct",
+    "miningupgradecompletion",
+}
+
+INDUSTRY_EXPERIMENTAL_VISIBLE_RENAMES = {
     "industryproduct": "Products",
     "miningupgradecompletion": "Mining completions",
 }
 
+INDUSTRY_ORDERS_EXTRA_INDEX_LINKS = [
+    {
+        "name": "Industry orders",
+        "admin_url": "admin:industry_orders_home",
+    },
+]
 
 _INDUSTRY_ADMIN_PATCHED_ATTR = "industry_admin_patched"
-industry_previous_get_app_list = admin.site.get_app_list
 
 
-def _industry_get_app_list(request, app_label=None):
-    """Rename industry index models in place without dropping co-located entries."""
-    app_list = industry_previous_get_app_list(request, app_label)
+def _build_industry_orders_index_link(request) -> dict:
+    extra = INDUSTRY_ORDERS_EXTRA_INDEX_LINKS[0]
+    return {
+        "name": extra["name"],
+        "object_name": extra["name"],
+        "perms": industry_orders_index_link_perms(request.user),
+        "admin_url": reverse(extra["admin_url"]),
+        "view_only": extra.get("view_only", False),
+    }
+
+
+def _rename_industry_experimental_models(models: list[dict]) -> list[dict]:
+    renamed = []
+    for model in models:
+        key = model.get("object_name", "").lower()
+        if key in INDUSTRY_EXPERIMENTAL_VISIBLE_RENAMES:
+            renamed.append(
+                {**model, "name": INDUSTRY_EXPERIMENTAL_VISIBLE_RENAMES[key]}
+            )
+        else:
+            renamed.append(model)
+    return renamed
+
+
+def _apply_industry_app_list(app_list: list[dict], request) -> list[dict]:
     for app in app_list:
-        for index, model in enumerate(app["models"]):
-            key = model["object_name"].lower()
-            if key in INDUSTRY_INDEX_MODELS:
-                app["models"][index] = {
-                    **model,
-                    "name": INDUSTRY_INDEX_MODELS[key],
-                }
+        if app["name"] == "Supply":
+            models = [
+                model
+                for model in app["models"]
+                if model.get("object_name", "").lower()
+                not in INDUSTRY_SUPPLY_EXCLUDED_MODELS
+            ]
+            models.insert(0, _build_industry_orders_index_link(request))
+            app["models"] = models
+        elif app["name"] == "Experimental":
+            app["models"] = _rename_industry_experimental_models(app["models"])
     return app_list
 
 
-if not getattr(admin.site, _INDUSTRY_ADMIN_PATCHED_ATTR, False):
+def _get_custom_industry_admin_urls():
+    return [
+        path(
+            "industry/orders/",
+            admin.site.admin_view(industry_orders_home_view),
+            name="industry_orders_home",
+        ),
+        path(
+            "industry/order/<int:order_id>/",
+            admin.site.admin_view(industry_order_hub_view),
+            name="industry_order_hub",
+        ),
+    ]
+
+
+def apply_industry_admin_customizations():
+    """Chain industry orders hub URLs and Supply sidebar entry."""
+    if getattr(admin.site, _INDUSTRY_ADMIN_PATCHED_ATTR, False):
+        return
+
     industry_previous_get_app_list = admin.site.get_app_list
+
+    def _industry_get_app_list(request, app_label=None):
+        app_list = industry_previous_get_app_list(request, app_label)
+        return _apply_industry_app_list(app_list, request)
+
     admin.site.get_app_list = _industry_get_app_list
+
+    industry_previous_get_urls = admin.site.get_urls
+
+    def _industry_get_urls():
+        return _get_custom_industry_admin_urls() + industry_previous_get_urls()
+
+    admin.site.get_urls = _industry_get_urls
     setattr(admin.site, _INDUSTRY_ADMIN_PATCHED_ATTR, True)

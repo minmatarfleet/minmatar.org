@@ -239,11 +239,9 @@ class EveFleetInstanceMemberAdmin(admin.ModelAdmin):
         return False
 
 
-def _fleets_get_app_list(request, app_label=None):
-    """Hide fleet instance models from the admin sidebar; manage them on Eve fleets."""
-    app_list = fleets_previous_get_app_list(request, app_label)
+def _filter_fleet_sidebar_models(app_list):
     for app in app_list:
-        if app["app_label"] == "fleets":
+        if app["app_label"] == "fleets" or app.get("name") == "Alliance":
             app["models"] = [
                 model
                 for model in app["models"]
@@ -251,6 +249,12 @@ def _fleets_get_app_list(request, app_label=None):
                 not in _HIDDEN_FLEETS_INDEX_MODELS
             ]
     return app_list
+
+
+def _fleets_get_app_list(request, app_label=None):
+    """Hide fleet instance models from the admin sidebar; manage them on Eve fleets."""
+    app_list = fleets_previous_get_app_list(request, app_label)
+    return _filter_fleet_sidebar_models(app_list)
 
 
 fleets_previous_get_app_list = admin.site.get_app_list

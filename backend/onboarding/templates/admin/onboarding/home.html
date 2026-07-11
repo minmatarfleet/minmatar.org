@@ -1,0 +1,76 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  {% include "admin/onboarding/_styles.html" %}
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate "Home" %}</a>
+  &rsaquo; {% translate "Onboarding" %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <section class="onboarding-section">
+    <div class="onboarding-section-header">
+      <h2>{% translate "Programs" %}</h2>
+      <a href="{{ add_program_url }}" class="onboarding-btn onboarding-btn--primary">{% translate "Add program" %}</a>
+    </div>
+    <p class="onboarding-section-desc">
+      {% blocktranslate trimmed %}
+      Each program has a version UUID. Bumping the version requires pilots to
+      re-acknowledge before using gated features (e.g. SRP). Open a program to
+      view its acknowledgments.
+      {% endblocktranslate %}
+    </p>
+    <table class="onboarding-data-table">
+      <thead>
+        <tr>
+          <th>{% translate "Program" %}</th>
+          <th>{% translate "Version" %}</th>
+          <th>{% translate "Current acks" %}</th>
+          <th>{% translate "Total acks" %}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in program_rows %}
+        <tr>
+          <td><strong>{{ row.program.get_program_type_display }}</strong></td>
+          <td><code>{{ row.program.version }}</code></td>
+          <td>{{ row.ack_current }}</td>
+          <td>{{ row.ack_total }}</td>
+          <td>
+            <a href="{{ row.hub_url }}" class="onboarding-btn onboarding-btn--primary">{% translate "Open" %}</a>
+            <a href="{{ row.edit_url }}" class="onboarding-btn onboarding-btn--secondary">{% translate "Edit" %}</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5">{% translate "No programs yet." %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="onboarding-section">
+    <div class="onboarding-section-header">
+      <h2>{% translate "Acknowledgments" %}</h2>
+      <a href="{{ all_acks_url }}" class="onboarding-btn onboarding-btn--secondary">{% translate "View all" %}</a>
+    </div>
+    <p class="onboarding-section-desc">
+      {% blocktranslate trimmed %}
+      Records of which users acknowledged which program version. Filter by
+      program from a program hub, or view all acknowledgments here.
+      {% endblocktranslate %}
+    </p>
+  </section>
+</div>
+{% endblock %}

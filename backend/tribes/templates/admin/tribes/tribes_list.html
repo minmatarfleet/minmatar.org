@@ -1,0 +1,110 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  {% include "admin/tribes/_tribes_styles.html" %}
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate "Home" %}</a>
+  &rsaquo; {% translate "Tribes" %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  {% include "admin/tribes/_learn_more_start.html" %}
+    <p>
+      {% blocktranslate trimmed %}
+      Use this page to manage alliance tribes and the groups pilots actually join.
+      Tribes are the umbrella; tribe groups are where membership, requirements,
+      and activity tracking live.
+      {% endblocktranslate %}
+    </p>
+  {% include "admin/tribes/_learn_more_end.html" %}
+
+  <section class="tribes-section">
+    <div class="tribes-section-header">
+      <h2>{% translate "Tribes" %}</h2>
+      <a href="{{ add_tribe_url }}" class="tribes-btn tribes-btn--primary">{% translate "Add tribe" %}</a>
+    </div>
+    <p class="tribes-section-desc">
+      {% blocktranslate trimmed %}
+      A tribe is the top-level community (e.g. Capitals, Industry, Mining).
+      Pilots do not join a tribe directly — they join one of its groups.
+      Set the tribe chief, Discord role, and announcement channel here; the chief
+      can approve membership across all groups in the tribe.
+      {% endblocktranslate %}
+    </p>
+    <table class="tribes-data-table">
+      <thead>
+        <tr>
+          <th>{% translate "Tribe" %}</th>
+          <th>{% translate "Chief" %}</th>
+          <th>{% translate "Active" %}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in tribe_rows %}
+        <tr>
+          <td><strong>{{ row.tribe.name }}</strong></td>
+          <td>{{ row.tribe.chief|default:"—" }}</td>
+          <td>{% if row.tribe.is_active %}{% translate "yes" %}{% else %}{% translate "no" %}{% endif %}</td>
+          <td><a href="{{ row.edit_url }}" class="tribes-btn tribes-btn--secondary">{% translate "Edit" %}</a></td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4">{% translate "No tribes yet." %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="tribes-section">
+    <div class="tribes-section-header">
+      <h2>{% translate "Tribe groups" %}</h2>
+      <a href="{{ add_group_url }}" class="tribes-btn tribes-btn--primary">{% translate "Add group" %}</a>
+    </div>
+    <p class="tribes-section-desc">
+      {% blocktranslate trimmed %}
+      A tribe group is what pilots actually join (e.g. Dreads within Capitals).
+      A focused tribe like Mining usually has one group; a broad tribe like
+      Capitals may have several. Open a group to manage ranks, requirements,
+      memberships, and activities.
+      {% endblocktranslate %}
+    </p>
+    <table class="tribes-data-table">
+      <thead>
+        <tr>
+          <th>{% translate "Group" %}</th>
+          <th>{% translate "Tribe" %}</th>
+          <th>{% translate "Chief" %}</th>
+          <th>{% translate "Active" %}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in group_rows %}
+        <tr>
+          <td><strong>{{ row.tribe_group.name }}</strong></td>
+          <td>{{ row.tribe_group.tribe.name }}</td>
+          <td>{{ row.tribe_group.chief|default:"—" }}</td>
+          <td>{% if row.tribe_group.is_active %}{% translate "yes" %}{% else %}{% translate "no" %}{% endif %}</td>
+          <td><a href="{{ row.hub_url }}" class="tribes-btn tribes-btn--primary">{% translate "Open" %}</a></td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5">{% translate "No tribe groups yet." %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+{% endblock %}

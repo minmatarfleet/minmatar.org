@@ -1,0 +1,17 @@
+<div class="help-card{% if readonly %} help-card--readonly{% endif %}">
+  <div class="help-card__header">
+    <h3>{{ title }}</h3>
+    {% if count is not None %}
+    <span class="help-card__badge">{{ count }}</span>
+    {% endif %}
+  </div>
+  <p class="help-card__desc">{{ description }}</p>
+  <div class="help-card__actions">
+    {% if list_url %}
+    <a href="{{ list_url }}" class="help-btn help-btn--primary">{{ list_label }}</a>
+    {% endif %}
+    {% if add_url %}
+    <a href="{{ add_url }}" class="help-btn help-btn--secondary">{{ add_label }}</a>
+    {% endif %}
+  </div>
+</div>

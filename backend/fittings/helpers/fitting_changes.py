@@ -9,12 +9,27 @@ from fittings.models import (
     EveFitting,
     EveFittingChangeRequest,
     EveFittingRefit,
+    PROTECTION_TIER_NON_STRATEGIC,
+    _eve_fitting_versioned_field_equal,
 )
 from fittings.helpers.permissions import (
     can_propose_fitting_change,
-    can_publish_fitting_change,
     effective_protection_tier,
 )
+
+
+def fitting_change_request_tier(fitting: EveFitting) -> str:
+    """Tier for fitting approvals; unlinked fittings use non_strategic."""
+    return effective_protection_tier(fitting) or PROTECTION_TIER_NON_STRATEGIC
+
+
+def fitting_payload_changed(fitting: EveFitting, payload: dict) -> bool:
+    for field in EVE_FITTING_VERSIONED_FIELDS:
+        current = getattr(fitting, field)
+        proposed = payload.get(field, current)
+        if not _eve_fitting_versioned_field_equal(field, current, proposed):
+            return True
+    return False
 
 
 def build_fitting_payload_from_instance(fitting: EveFitting) -> dict:
@@ -22,6 +37,21 @@ def build_fitting_payload_from_instance(fitting: EveFitting) -> dict:
         field: getattr(fitting, field)
         for field in EVE_FITTING_VERSIONED_FIELDS
     }
+
+
+def build_fitting_payload_from_form(
+    form, original: EveFitting | None = None
+) -> dict:
+    """Proposed versioned values from admin form vs optional DB original."""
+    payload = {}
+    for field in EVE_FITTING_VERSIONED_FIELDS:
+        if field in form.cleaned_data:
+            payload[field] = form.cleaned_data[field]
+        elif original is not None:
+            payload[field] = getattr(original, field)
+        else:
+            payload[field] = getattr(form.instance, field)
+    return payload
 
 
 def build_refit_payload(refit: EveFittingRefit) -> dict:
@@ -85,28 +115,7 @@ def submit_fitting_change_request(
     user,
     refit=None,
 ) -> EveFittingChangeRequest | None:
-    tier = effective_protection_tier(fitting)
-    if tier is None:
-        if change_kind == "fitting_versioned":
-            apply_fitting_payload(fitting, payload)
-        elif change_kind == "refit_create":
-            apply_refit_payload(None, fitting, payload)
-        elif change_kind == "refit_update" and refit:
-            apply_refit_payload(refit, fitting, payload)
-        elif change_kind == "refit_delete" and refit:
-            apply_refit_payload(refit, fitting, payload, delete=True)
-        return None
-
-    if can_publish_fitting_change(user, tier):
-        if change_kind == "fitting_versioned":
-            apply_fitting_payload(fitting, payload)
-        elif change_kind == "refit_create":
-            apply_refit_payload(None, fitting, payload)
-        elif change_kind == "refit_update" and refit:
-            apply_refit_payload(refit, fitting, payload)
-        elif change_kind == "refit_delete" and refit:
-            apply_refit_payload(refit, fitting, payload, delete=True)
-        return None
+    tier = fitting_change_request_tier(fitting)
 
     if not can_propose_fitting_change(user, tier):
         raise PermissionError(

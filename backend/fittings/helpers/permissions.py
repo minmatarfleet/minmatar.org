@@ -39,12 +39,8 @@ def effective_protection_tier(fitting) -> str | None:
     return None
 
 
-def _user_is_superuser(user) -> bool:
-    return bool(user and user.is_superuser)
-
-
 def can_approve_doctrine_request(user, tier: str) -> bool:
-    if _user_is_superuser(user):
+    if user and user.is_superuser:
         return True
     if tier == PROTECTION_TIER_NON_STRATEGIC:
         return user.has_perm(
@@ -56,7 +52,7 @@ def can_approve_doctrine_request(user, tier: str) -> bool:
 
 
 def can_approve_fitting_request(user, tier: str) -> bool:
-    if _user_is_superuser(user):
+    if user and user.is_superuser:
         return True
     if tier == PROTECTION_TIER_NON_STRATEGIC:
         return user.has_perm(
@@ -68,23 +64,19 @@ def can_approve_fitting_request(user, tier: str) -> bool:
 
 
 def can_propose_doctrine_change(user, tier: str) -> bool:
-    if _user_is_superuser(user):
+    if user and user.is_superuser:
         return True
     return user.has_perm(f"fittings.change_doctrine_{tier}")
 
 
 def can_propose_fitting_change(user, tier: str) -> bool:
-    if _user_is_superuser(user):
+    if user and user.is_superuser:
         return True
     return user.has_perm(f"fittings.change_doctrine_fitting_{tier}")
 
 
-def can_publish_doctrine_change(user, tier: str) -> bool:
-    return can_approve_doctrine_request(user, tier)
-
-
-def can_publish_fitting_change(user, tier: str) -> bool:
-    return can_approve_fitting_request(user, tier)
+can_publish_doctrine_change = can_propose_doctrine_change
+can_publish_fitting_change = can_propose_fitting_change
 
 
 def protection_tier_for_doctrine_type(doctrine_type: str) -> str | None:

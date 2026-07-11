@@ -8,6 +8,7 @@ from app.test import TestCase
 from fittings.models import (
     EveDoctrine,
     EveFitting,
+    EveFittingChangeRequest,
     EveFittingHistory,
     EveFittingRefit,
 )
@@ -186,9 +187,56 @@ class EveFittingAdminRefitInlineTestCase(TestCase):
             302,
             response.content.decode()[:4000],
         )
-        refit = EveFittingRefit.objects.get(base_fitting=fitting)
-        self.assertEqual(refit.name, "Scanning refit")
-        self.assertEqual(refit.base_fitting_id, fitting.pk)
+        self.assertFalse(
+            EveFittingRefit.objects.filter(base_fitting=fitting).exists()
+        )
+        req = EveFittingChangeRequest.objects.get(fitting=fitting)
+        self.assertEqual("refit_create", req.change_kind)
+        self.assertEqual("Scanning refit", req.payload["name"])
+
+    def test_eft_change_queues_change_request(self):
+        fitting = EveFitting.objects.create(
+            name="[ADV-5] Retribution",
+            eft_format="[Retribution, [ADV-5] Retribution]",
+            ship_id=608,
+            description="Base",
+        )
+        url = reverse("admin:fittings_evefitting_change", args=[fitting.pk])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        csrf = re.search(
+            r'name="csrfmiddlewaretoken" value="([^"]+)"',
+            response.content.decode(),
+        ).group(1)
+        new_eft = "[Retribution, [ADV-5] Retribution v2]"
+        post = {
+            "csrfmiddlewaretoken": csrf,
+            "name": fitting.name,
+            "eft_format": new_eft,
+            "description": fitting.description,
+            "aliases": "",
+            "minimum_pod": "",
+            "recommended_pod": "",
+            "refits-TOTAL_FORMS": "0",
+            "refits-INITIAL_FORMS": "0",
+            "refits-MIN_NUM_FORMS": "0",
+            "refits-MAX_NUM_FORMS": "1000",
+            "_save": "Save",
+        }
+        response = self.client.post(url, post)
+        self.assertEqual(
+            response.status_code,
+            302,
+            response.content.decode()[:4000],
+        )
+        fitting.refresh_from_db()
+        self.assertEqual(
+            "[Retribution, [ADV-5] Retribution]",
+            fitting.eft_format,
+        )
+        req = EveFittingChangeRequest.objects.get(fitting=fitting)
+        self.assertEqual("fitting_versioned", req.change_kind)
+        self.assertEqual(new_eft, req.payload["eft_format"])
 
 
 class EveFittingVersionHistoryTestCase(TestCase):

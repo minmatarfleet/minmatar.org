@@ -1,0 +1,254 @@
+<style>
+  .industry-hub-header {
+    margin: 0 0 1.75em;
+    padding-bottom: 1.25em;
+    border-bottom: 1px solid var(--hairline-color, #ccc);
+  }
+  .industry-hub-header__title {
+    margin: 0 0 0.2em;
+    font-size: 1.5em;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  .industry-hub-header__subtitle {
+    margin: 0;
+    color: var(--body-quiet-color, #888);
+    font-size: 0.95em;
+  }
+  .industry-hub-header__desc {
+    margin: 0.65em 0 0;
+    max-width: 52em;
+    color: var(--body-quiet-color, #888);
+    font-size: 0.9em;
+    line-height: 1.55;
+  }
+
+  .industry-section {
+    margin-bottom: 2.25em;
+  }
+  .industry-section-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75em;
+    margin-bottom: 0.55em;
+  }
+  .industry-section-header h2 {
+    margin: 0;
+    font-size: 0.78em;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--body-quiet-color, #888);
+  }
+  .industry-section > h2 {
+    margin: 0 0 0.85em;
+    font-size: 0.78em;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--body-quiet-color, #888);
+  }
+  .industry-section-desc {
+    margin: 0 0 1em;
+    max-width: 52em;
+    color: var(--body-quiet-color, #888);
+    font-size: 0.9em;
+    line-height: 1.55;
+  }
+
+  .industry-settings-panel {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(11em, 1fr));
+    gap: 0.85em 1.5em;
+    margin-bottom: 1em;
+    padding: 1.1em 1.25em;
+    border: 1px solid var(--hairline-color, #ccc);
+    border-radius: 8px;
+    background: var(--darkened-bg, #f8f8f8);
+  }
+  .industry-settings-panel__item {
+    min-width: 0;
+  }
+  .industry-settings-panel__label {
+    display: block;
+    margin-bottom: 0.15em;
+    font-size: 0.75em;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--body-quiet-color, #888);
+  }
+  .industry-settings-panel__value {
+    font-size: 0.95em;
+    word-break: break-word;
+  }
+  .industry-settings-panel__value--ok {
+    color: #2e8b57;
+  }
+  .industry-settings-panel__value--warn {
+    color: #c9a227;
+  }
+  .industry-settings-panel__value--inactive {
+    color: var(--body-quiet-color, #888);
+  }
+
+  .industry-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(20em, 1fr));
+    gap: 1em;
+    align-items: stretch;
+  }
+  .industry-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 10em;
+    border: 1px solid var(--hairline-color, #ccc);
+    border-radius: 8px;
+    padding: 1.1em 1.2em;
+    background: var(--darkened-bg, #f8f8f8);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .industry-card:hover {
+    border-color: var(--link-fg, #447e9b);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  }
+  .industry-card--readonly {
+    opacity: 0.92;
+  }
+  .industry-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75em;
+    margin-bottom: 0.55em;
+  }
+  .industry-card h3 {
+    margin: 0;
+    font-size: 1em;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .industry-card__badge {
+    flex-shrink: 0;
+    padding: 0.15em 0.55em;
+    border-radius: 999px;
+    background: var(--selected-bg, rgba(68, 126, 155, 0.18));
+    color: var(--link-fg, #447e9b);
+    font-size: 0.78em;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .industry-card__desc {
+    flex: 1;
+    margin: 0 0 1em;
+    color: var(--body-quiet-color, #888);
+    font-size: 0.88em;
+    line-height: 1.5;
+  }
+  .industry-card__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45em;
+    margin-top: auto;
+  }
+
+  .industry-btn {
+    display: inline-block;
+    padding: 0.4em 0.85em;
+    border-radius: 5px;
+    text-decoration: none;
+    font-size: 0.88em;
+    font-weight: 500;
+    line-height: 1.3;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .industry-btn--primary {
+    background: var(--button-bg, #417690);
+    border: 1px solid var(--button-bg, #417690);
+    color: var(--button-fg, #fff);
+  }
+  .industry-btn--primary:hover {
+    filter: brightness(1.08);
+    color: var(--button-fg, #fff);
+  }
+  .industry-btn--secondary {
+    background: transparent;
+    border: 1px solid var(--hairline-color, #ccc);
+    color: var(--body-fg, inherit);
+  }
+  .industry-btn--secondary:hover {
+    border-color: var(--link-fg, #447e9b);
+    color: var(--link-fg, #447e9b);
+  }
+
+  .industry-learn-more {
+    max-width: 52em;
+    margin: 0 0 1.25rem;
+  }
+  .industry-learn-more__toggle {
+    cursor: pointer;
+    color: var(--link-fg, #447e9b);
+    font-weight: 500;
+    list-style: none;
+    user-select: none;
+  }
+  .industry-learn-more__toggle::-webkit-details-marker {
+    display: none;
+  }
+  .industry-learn-more__toggle::before {
+    content: "▸ ";
+    display: inline-block;
+    width: 1em;
+  }
+  .industry-learn-more[open] > .industry-learn-more__toggle::before {
+    content: "▾ ";
+  }
+  .industry-learn-more__body {
+    margin-top: 0.6em;
+    padding: 0.75em 1em;
+    border-left: 3px solid var(--link-fg, #447e9b);
+    background: var(--darkened-bg, #f8f8f8);
+    line-height: 1.5;
+  }
+  .industry-learn-more__body > :first-child {
+    margin-top: 0;
+  }
+  .industry-learn-more__body > :last-child {
+    margin-bottom: 0;
+  }
+
+  .industry-data-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .industry-data-table th {
+    text-align: left;
+    padding: 0.55em 0.75em;
+    font-size: 0.78em;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--body-quiet-color, #888);
+    border-bottom: 1px solid var(--hairline-color, #ccc);
+  }
+  .industry-data-table td {
+    padding: 0.65em 0.75em;
+    border-bottom: 1px solid var(--hairline-color, #ccc);
+    vertical-align: middle;
+  }
+  .industry-data-table tr:last-child td {
+    border-bottom: none;
+  }
+  .industry-data-table tbody tr:hover td {
+    background: var(--darkened-bg, #f8f8f8);
+  }
+  .industry-status--fulfilled {
+    color: #2e8b57;
+    font-weight: 600;
+  }
+  .industry-status--open {
+    color: var(--link-fg, #447e9b);
+    font-weight: 600;
+  }
+</style>
