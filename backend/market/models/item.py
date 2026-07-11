@@ -60,6 +60,7 @@ class EveMarketItemExpectation(models.Model):
         result = EveMarketItemOrder.objects.filter(
             item=self.item,
             location=self.location,
+            is_buy_order=False,
         ).aggregate(total=Sum("quantity"))
         return result["total"] or 0
 
@@ -91,6 +92,45 @@ class EveMarketItemResponsibility(models.Model):
         return str(f"{self.entity_id} - {self.expectation.item.name}")
 
 
+class EveMarketBuyOrderExpectation(models.Model):
+    """Target quantity of a buy order for an item at a location."""
+
+    item = models.ForeignKey(EveType, on_delete=models.CASCADE)
+    location = models.ForeignKey(EveLocation, on_delete=models.RESTRICT)
+    quantity = models.IntegerField(default=1)
+
+    class Meta:
+        unique_together = [["item", "location"]]
+
+    def __str__(self):
+        return str(f"{self.item.name} buy - {self.location.location_name}")
+
+    @property
+    def current_quantity(self):
+        result = EveMarketItemOrder.objects.filter(
+            item=self.item,
+            location=self.location,
+            is_buy_order=True,
+        ).aggregate(total=Sum("quantity"))
+        return result["total"] or 0
+
+    @property
+    def desired_quantity(self):
+        return self.quantity
+
+    @property
+    def is_fulfilled(self):
+        return self.current_quantity >= self.desired_quantity
+
+    @property
+    def is_understocked(self):
+        understocked_percentage = 0.5
+        return (
+            self.current_quantity
+            < self.desired_quantity * understocked_percentage
+        )
+
+
 class EveMarketItemOrder(models.Model):
     """One row per market order; order_id from ESI (when present) avoids duplicate imports."""
 
@@ -104,6 +144,10 @@ class EveMarketItemOrder(models.Model):
     location = models.ForeignKey(EveLocation, on_delete=models.CASCADE)
     price = models.DecimalField(max_digits=32, decimal_places=2)
     quantity = models.IntegerField()
+    is_buy_order = models.BooleanField(
+        default=False,
+        help_text="True if this is a buy order, False for sell order.",
+    )
     issuer_external_id = models.BigIntegerField(null=True, blank=True)
     imported_by_task_uid = models.CharField(
         max_length=64, null=True, blank=True
@@ -124,6 +168,10 @@ class EveMarketItemOrder(models.Model):
             models.Index(
                 fields=["location", "item"],
                 name="market_itemorder_loc_item",
+            ),
+            models.Index(
+                fields=["location", "item", "is_buy_order"],
+                name="market_itemorder_loc_item_buy",
             ),
         ]
 
@@ -236,30 +284,25 @@ def _get_consumable_items(fitting):
 
 def get_effective_item_expectations(location):
     """
-    Combine individual ``EveMarketItemExpectation`` rows, all
-    ``EveMarketFittingExpectation`` rows, and consumable items from
-    ``EveMarketContractExpectation`` rows for *location* into a single
-    dict of ``{item_name: quantity}``.
-
-    Contract fitting expectations contribute only their consumable items
-    (charges, drones, etc.) because the hull and modules are delivered
-    via the contract itself.
-
-    For each item the effective quantity is the **maximum** across every
-    independent source, because a larger stock requirement covers the
-    smaller ones.
+    Combine fitting-derived expectations and contract consumables, with manual
+    item expectations (pinned) overriding fitting-derived quantities for those
+    items. Pinned items are excluded from fitting piggyback.
     """
-    effective = defaultdict(int)
-
+    pinned = {}
     for exp in EveMarketItemExpectation.objects.filter(
         location=location
     ).select_related("item"):
-        effective[exp.item.name] = max(effective[exp.item.name], exp.quantity)
+        pinned[exp.item.name] = exp.quantity
+
+    pinned_names = set(pinned.keys())
+    effective = defaultdict(int)
 
     for fexp in EveMarketFittingExpectation.objects.filter(
         location=location
     ).select_related("fitting"):
         for name, qty in fexp.get_item_quantities().items():
+            if name in pinned_names:
+                continue
             effective[name] = max(effective[name], qty)
 
     for cexp in EveMarketContractExpectation.objects.filter(
@@ -267,8 +310,13 @@ def get_effective_item_expectations(location):
     ).select_related("fitting"):
         consumables = _get_consumable_items(cexp.fitting)
         for name, qty in consumables.items():
+            if name in pinned_names:
+                continue
             total = qty * cexp.quantity
             effective[name] = max(effective[name], total)
+
+    for name, qty in pinned.items():
+        effective[name] = qty
 
     return dict(effective)
 
@@ -286,30 +334,39 @@ def get_effective_item_expectations_bulk(locations):
     effective_by_location = {
         location_pk: defaultdict(int) for location_pk in location_pks
     }
+    pinned_by_location = {location_pk: {} for location_pk in location_pks}
 
     for exp in EveMarketItemExpectation.objects.filter(
         location_id__in=location_pks
     ).select_related("item"):
-        location_effective = effective_by_location[exp.location_id]
-        location_effective[exp.item.name] = max(
-            location_effective[exp.item.name], exp.quantity
-        )
+        pinned_by_location[exp.location_id][exp.item.name] = exp.quantity
 
     for fexp in EveMarketFittingExpectation.objects.filter(
         location_id__in=location_pks
     ).select_related("fitting"):
         location_effective = effective_by_location[fexp.location_id]
+        pinned_names = pinned_by_location[fexp.location_id]
         for name, qty in fexp.get_item_quantities().items():
+            if name in pinned_names:
+                continue
             location_effective[name] = max(location_effective[name], qty)
 
     for cexp in EveMarketContractExpectation.objects.filter(
         location_id__in=location_pks
     ).select_related("fitting"):
         location_effective = effective_by_location[cexp.location_id]
+        pinned_names = pinned_by_location[cexp.location_id]
         consumables = _get_consumable_items(cexp.fitting)
         for name, qty in consumables.items():
+            if name in pinned_names:
+                continue
             total = qty * cexp.quantity
             location_effective[name] = max(location_effective[name], total)
+
+    for location_pk, pinned in pinned_by_location.items():
+        location_effective = effective_by_location[location_pk]
+        for name, qty in pinned.items():
+            location_effective[name] = qty
 
     return {
         location_pk: dict(effective)

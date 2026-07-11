@@ -20,14 +20,13 @@ from market.helpers import (
     create_or_update_contract_from_db_contract,
     fetch_and_update_market_location_prices,
     get_character_with_structure_markets_scope,
+    known_contract_issuer_ids,
     process_structure_sell_orders_page,
     update_completed_contracts,
     update_expired_contracts,
     update_region_market_history_for_type,
 )
-from market.helpers.contract_fetch import (
-    known_contract_issuer_ids,
-)
+from market.helpers.contract_items import fetch_and_match_contract_items
 from market.models import (
     EveMarketContract,
     EveMarketContractExpectation,
@@ -447,8 +446,20 @@ def fetch_eve_market_contracts():
     logger.info("Updating expired contract statuses (since %s)", start_time)
     update_expired_contracts(start_time)
 
+    outstanding_without_items = EveMarketContract.objects.filter(
+        items_fetched=False,
+        status="outstanding",
+    ).values_list("id", flat=True)
+    for contract_id in outstanding_without_items:
+        fetch_contract_items_task.delay(contract_id)
+
     duration = (timezone.now() - start_time).total_seconds()
     logger.info("fetch_eve_market_contracts complete in %.1fs", duration)
+
+
+@app.task(rate_limit="1/s")
+def fetch_contract_items_task(contract_id: int) -> bool:
+    return fetch_and_match_contract_items(contract_id)
 
 
 @app.task(rate_limit="1/s")

@@ -487,6 +487,42 @@ class EsiClient:
 
         return self._operation_results(operation)
 
+    def get_public_contract_items(self, contract_id: int) -> EsiResponse:
+        operation = esi_provider.client.Contracts.get_contracts_public_items_contract_id(
+            contract_id=contract_id,
+        )
+        return self._operation_results(operation)
+
+    def get_character_contract_items(self, contract_id: int) -> EsiResponse:
+        token, status = self._valid_token(
+            ["esi-contracts.read_character_contracts.v1"]
+        )
+        if status > 0:
+            return EsiResponse(status)
+
+        operation = esi_provider.client.Contracts.get_characters_character_id_contracts_contract_id_items(
+            character_id=self.character_id,
+            contract_id=contract_id,
+            token=token,
+        )
+        return self._operation_results(operation)
+
+    def get_corporation_contract_items(
+        self, corporation_id: int, contract_id: int
+    ) -> EsiResponse:
+        token, status = self._valid_token(
+            ["esi-contracts.read_corporation_contracts.v1"]
+        )
+        if status > 0:
+            return EsiResponse(status)
+
+        operation = esi_provider.client.Contracts.get_corporations_corporation_id_contracts_contract_id_items(
+            corporation_id=corporation_id,
+            contract_id=contract_id,
+            token=token,
+        )
+        return self._operation_results(operation)
+
     def get_region_market_history(
         self, region_id: int, type_id: int
     ) -> EsiResponse:

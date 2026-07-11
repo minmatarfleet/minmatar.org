@@ -20,6 +20,12 @@ from market.helpers.contracts import (
     update_completed_contracts,
     update_expired_contracts,
 )
+from market.helpers.qualification import (
+    get_all_doctrine_fittings,
+    get_non_doctrine_fittings,
+    get_qualified_contract_fittings,
+    get_qualified_sell_fittings,
+)
 from market.helpers.entity_resolution import entity_name_by_id
 
 __all__ = [
@@ -33,6 +39,10 @@ __all__ = [
     "get_historical_quantity",
     "get_historical_quantity_for_fitting",
     "get_character_with_structure_markets_scope",
+    "get_all_doctrine_fittings",
+    "get_non_doctrine_fittings",
+    "get_qualified_contract_fittings",
+    "get_qualified_sell_fittings",
     "known_contract_issuer_ids",
     "process_structure_sell_orders_page",
     "update_completed_contracts",

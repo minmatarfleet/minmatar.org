@@ -3,10 +3,10 @@ from datetime import datetime, timedelta
 from typing import List
 
 import pytz
-from django.db.models import Q
 from django.utils import timezone
 
 from eveonline.models import EveCharacter, EveCorporation, EveLocation
+from fittings.forms import normalize_fitting_aliases
 from fittings.models import EveFitting
 
 from market.models import (
@@ -81,28 +81,27 @@ def get_fitting_for_contract(contract_summary: str) -> EveFitting | None:
         return fitting_cache[contract_summary]
 
     contract_summary = contract_summary.replace("[FLEET]", "[FL33T]")
+    normalized_title = contract_summary.lower().strip()
 
-    fitting = None
+    fitting = EveFitting.all_objects.filter(
+        name__iexact=contract_summary
+    ).first()
+    if fitting:
+        fitting_cache[contract_summary] = fitting
+        return fitting
 
-    possible_matches = EveFitting.objects.filter(
-        Q(name__iexact=contract_summary)
-        | Q(aliases__contains=contract_summary)
-    )
+    for candidate in EveFitting.all_objects.exclude(
+        aliases__isnull=True
+    ).exclude(aliases=""):
+        aliases = normalize_fitting_aliases(candidate.aliases)
+        if not aliases:
+            continue
+        for alias in aliases.split(","):
+            if alias.strip().lower() == normalized_title:
+                fitting_cache[contract_summary] = candidate
+                return candidate
 
-    for candidate in possible_matches:
-        if candidate.name.lower() == contract_summary.lower():
-            fitting = candidate
-            break
-        for alias in candidate.aliases.lower().split(","):
-            if alias.strip() == contract_summary.lower():
-                fitting = candidate
-                break
-
-    if not fitting:
-        return None
-
-    fitting_cache[contract_summary] = fitting
-    return fitting
+    return None
 
 
 def _map_contract_status(esi_status: str) -> str:

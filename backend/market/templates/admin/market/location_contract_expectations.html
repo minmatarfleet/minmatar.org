@@ -1,0 +1,68 @@
+{% extends "admin/market/location_expectations_changelist.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <style>
+    #changelist .results,
+    #changelist #result_list,
+    #changelist #result_list table,
+    #changelist #result_list tbody,
+    #changelist #result_list tr,
+    #changelist #result_list td {
+      overflow: visible;
+    }
+    #changelist #result_list tbody tr {
+      position: relative;
+    }
+    #changelist #result_list tbody tr:hover {
+      z-index: 10;
+    }
+    .doctrines-hover {
+      position: relative;
+      display: inline-block;
+      cursor: help;
+      border-bottom: 1px dotted var(--body-quiet-color, #666);
+    }
+    .doctrines-hover .doctrines-tooltip {
+      display: none;
+      position: absolute;
+      z-index: 30;
+      right: 0;
+      bottom: calc(100% + 6px);
+      top: auto;
+      min-width: 16em;
+      max-width: min(32em, 90vw);
+      padding: 8px 10px;
+      background: var(--body-bg, #fff);
+      color: var(--body-fg, #333);
+      border: 1px solid var(--hairline-color, #ccc);
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      white-space: pre-line;
+      overflow: visible;
+      word-break: break-word;
+      line-height: 1.4;
+      font-weight: normal;
+      text-align: left;
+    }
+    .doctrines-hover:hover .doctrines-tooltip,
+    .doctrines-hover:focus-within .doctrines-tooltip {
+      display: block;
+    }
+  </style>
+{% endblock %}
+
+{% block expectations_extra_help %}
+  {% if mismatched_contract_count %}
+  <p class="help">
+    <a href="{{ mismatched_contracts_url }}">
+      {% blocktranslate count counter=mismatched_contract_count %}
+      {{ counter }} individual contract with mismatched contents
+      {% plural %}
+      {{ counter }} individual contracts with mismatched contents
+      {% endblocktranslate %}
+    </a>
+  </p>
+  {% endif %}
+{% endblock %}

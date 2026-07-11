@@ -1,0 +1,211 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static "admin/css/changelists.css" %}">
+  {{ media.css }}
+  {% include "admin/market/_market_styles.html" %}
+  <style>
+    #changelist .changelist-form-container,
+    #changelist .results,
+    #changelist #result_list,
+    #changelist #result_list table,
+    #changelist #result_list tbody,
+    #changelist #result_list tr,
+    #changelist #result_list td {
+      overflow: visible;
+    }
+    #changelist #result_list tbody tr {
+      position: relative;
+    }
+    #changelist #result_list tbody tr:hover {
+      z-index: 10;
+    }
+    .references-hover {
+      position: relative;
+      display: inline-block;
+      cursor: help;
+      border-bottom: 1px dotted var(--body-quiet-color, #666);
+    }
+    .item-name-with-pin {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35em;
+    }
+    .pinned-hover {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      cursor: help;
+      color: var(--link-fg, #447e9b);
+      flex-shrink: 0;
+    }
+    .pinned-icon {
+      display: block;
+    }
+    .pinned-hover .pinned-tooltip {
+      display: none;
+      position: absolute;
+      z-index: 30;
+      left: 0;
+      bottom: calc(100% + 6px);
+      top: auto;
+      min-width: 14em;
+      max-width: min(24em, 90vw);
+      padding: 8px 10px;
+      background: var(--body-bg, #fff);
+      color: var(--body-fg, #333);
+      border: 1px solid var(--hairline-color, #ccc);
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      white-space: normal;
+      overflow: visible;
+      word-break: break-word;
+      line-height: 1.4;
+      font-weight: normal;
+      text-align: left;
+    }
+    .pinned-hover:hover .pinned-tooltip,
+    .pinned-hover:focus-within .pinned-tooltip {
+      display: block;
+    }
+    .references-hover .references-tooltip {
+      display: none;
+      position: absolute;
+      z-index: 30;
+      left: 0;
+      bottom: calc(100% + 6px);
+      top: auto;
+      min-width: 16em;
+      max-width: min(32em, 90vw);
+      padding: 8px 10px;
+      background: var(--body-bg, #fff);
+      color: var(--body-fg, #333);
+      border: 1px solid var(--hairline-color, #ccc);
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      white-space: pre-line;
+      overflow: visible;
+      word-break: break-word;
+      line-height: 1.4;
+      font-weight: normal;
+      text-align: left;
+    }
+    .references-hover:hover .references-tooltip,
+    .references-hover:focus-within .references-tooltip {
+      display: block;
+    }
+    #changelist .submit-row {
+      margin-top: 12px;
+      padding: 12px 0 0;
+    }
+    #changelist-form .vIntegerField {
+      width: 8em;
+    }
+  </style>
+{% endblock %}
+
+{% block extrahead %}
+  {{ block.super }}
+  {{ media.js }}
+  <script src="{% static 'admin/js/filters.js' %}" defer></script>
+{% endblock %}
+
+{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-list{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate "Home" %}</a>
+  &rsaquo; <a href="{% url 'admin:market_locations' %}">{% translate "Market locations" %}</a>
+  &rsaquo; <a href="{% url 'admin:market_location_hub' location.pk %}">{{ location.location_name }}</a>
+  &rsaquo; {% translate "View market status" %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <p class="help">
+    {% translate "Configure" %}:
+    <a href="{{ manage_fitting_expectations_url }}">{% translate "Non-doctrine fittings for sale" %}</a>
+    ·
+    <a href="{{ manage_contract_expectations_url }}">{% translate "Doctrine fittings for sale" %}</a>
+  </p>
+
+  {% include "admin/market/_learn_more_start.html" %}
+    <p>{% translate "Items to keep stocked at this structure, based on your configuration." %}</p>
+    <ul class="market-help-list">
+      <li>
+        <strong>{% translate "Listed now" %}</strong> —
+        {% translate "sell order volume from the last market import." %}
+      </li>
+      <li>
+        <strong>{% translate "Last synced" %}</strong> —
+        {% translate "how long ago that import ran for this item (hover for exact time)." %}
+      </li>
+      <li>
+        <strong>{% translate "Target stock" %}</strong> —
+        {% translate "how many you want listed; edit here and save, or set via the configure pages above. A pin on the item name means you set it manually on this page." %}
+      </li>
+      <li>
+        <strong>{% translate "Suggested stock" %}</strong> —
+        {% translate "ammo, charges, and refit modules for doctrine fittings for sale, based on how many doctrine ships you configured. Hover the number for details." %}
+      </li>
+      <li>
+        <strong>{% translate "Needed for" %}</strong> —
+        {% translate "which ship fits drive this item's target or suggestion. Hover to see names." %}
+      </li>
+    </ul>
+  {% include "admin/market/_learn_more_end.html" %}
+
+  {% if not location.market_categories %}
+  <p class="help">
+    <strong>{% translate "No ship types configured." %}</strong>
+    {% blocktranslate trimmed %}
+    Edit this location and set <em>market categories</em> so non-doctrine fittings
+    apply here.
+    {% endblocktranslate %}
+  </p>
+  {% else %}
+  <p class="help">
+    {% translate "Non-doctrine fitting categories for this location:" %}
+    {{ location.market_categories|join:", " }}
+  </p>
+  {% endif %}
+
+  <div class="module{% if cl.has_filters %} filtered{% endif %}" id="changelist">
+    <div class="changelist-form-container">
+      {% search_form cl %}
+
+      <form method="post" id="changelist-form" action="{{ form_action }}">
+        {% csrf_token %}
+        {% result_list cl %}
+        {% pagination cl %}
+
+        {% if cl.result_count %}
+        <div class="submit-row">
+          <p class="help">{% translate "Only the rows on this page are saved when you click Save." %}</p>
+          <input type="submit" value="{% translate 'Save target stock' %}" class="default">
+        </div>
+        {% endif %}
+      </form>
+    </div>
+
+    {% if cl.has_filters %}
+    <nav id="changelist-filter" aria-labelledby="changelist-filter-header">
+      <h2 id="changelist-filter-header">{% translate "Filter" %}</h2>
+      {% if cl.has_active_filters %}
+      <div id="changelist-filter-extra-actions">
+        <h3>
+          <a href="{{ cl.clear_all_filters_qs }}">&#10006; {% translate "Clear all filters" %}</a>
+        </h3>
+      </div>
+      {% endif %}
+      {% for spec in cl.filter_specs %}{% admin_list_filter cl spec %}{% endfor %}
+    </nav>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
