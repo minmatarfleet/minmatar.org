@@ -82,9 +82,35 @@ class EveMarketContract(models.Model):
     fitting = models.ForeignKey(
         EveFitting, on_delete=models.SET_NULL, null=True, blank=True
     )
+    items_fetched = models.BooleanField(default=False)
+    items_fetched_at = models.DateTimeField(null=True, blank=True)
+    match_score = models.FloatField(null=True, blank=True)
+    match_is_flagged = models.BooleanField(default=False)
 
     def __str__(self):
         return str(f"{self.title} - {self.location}")
+
+
+class EveMarketContractItem(models.Model):
+    contract = models.ForeignKey(
+        EveMarketContract,
+        on_delete=models.CASCADE,
+        related_name="items",
+    )
+    type_id = models.IntegerField()
+    quantity = models.IntegerField(default=1)
+    is_included = models.BooleanField(default=True)
+    is_singleton = models.BooleanField(null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=["contract", "type_id"], name="market_contractitem_ct"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.type_id} x{self.quantity}"
 
 
 class EveMarketContractError(models.Model):

@@ -1,9 +1,13 @@
 from django.contrib import admin
 from django.contrib import messages
+from django import forms
+from django.db.models import F, Q
 from django.http import HttpResponseRedirect
 from django.urls import path, reverse
 
 from safedelete.admin import SafeDeleteAdmin, SafeDeleteAdminFilter
+
+from fittings.models import FittingTag
 
 from esi.models import CallbackRedirect, Scope, Token
 
@@ -15,7 +19,6 @@ from .models import (
     EveCharacterClone,
     EveCharacterContract,
     EveCharacterIndustryJob,
-    EveCharacterMiningEntry,
     EveCharacterPlanet,
     EveCharacterPlanetOutput,
     EveCorporation,
@@ -68,17 +71,179 @@ class EvePlayerAdmin(admin.ModelAdmin):
         return [c.character_name for c in instance.characters()]
 
 
+class EveCharacterTagInline(admin.TabularInline):
+    model = EveCharacterTag
+    extra = 1
+    autocomplete_fields = ("tag",)
+
+
+def _format_corp_label(name, ticker, corp_id):
+    if name and ticker:
+        return f"{name} ({ticker})"
+    if name:
+        return name
+    return str(corp_id)
+
+
+MINMATAR_FLEET_ALLIANCE_ID = 99011978
+
+
+def _minmatar_fleet_corporations():
+    return EveCorporation.objects.filter(
+        alliance__alliance_id=MINMATAR_FLEET_ALLIANCE_ID
+    )
+
+
+class EveCharacterCorporationFilter(admin.SimpleListFilter):
+    title = "corporation"
+    parameter_name = "corporation"
+
+    def lookups(self, request, model_admin):
+        corp_ids = (
+            EveCharacter.objects.exclude(corporation_id__isnull=True)
+            .values_list("corporation_id", flat=True)
+            .distinct()
+        )
+        corps = (
+            _minmatar_fleet_corporations()
+            .filter(corporation_id__in=corp_ids)
+            .order_by("name")
+            .values_list("corporation_id", "name", "ticker")
+        )
+        return [
+            (corp_id, _format_corp_label(name, ticker, corp_id))
+            for corp_id, name, ticker in corps
+        ]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(corporation_id=self.value())
+        return queryset
+
+
+class EveCharacterAllianceFilter(admin.SimpleListFilter):
+    title = "alliance"
+    parameter_name = "alliance"
+
+    def lookups(self, request, model_admin):
+        alliance_ids = (
+            EveCharacter.objects.exclude(alliance_id__isnull=True)
+            .filter(alliance_id=MINMATAR_FLEET_ALLIANCE_ID)
+            .values_list("alliance_id", flat=True)
+            .distinct()
+        )
+        alliances = (
+            EveAlliance.objects.filter(alliance_id__in=alliance_ids)
+            .order_by("name")
+            .values_list("alliance_id", "name", "ticker")
+        )
+        return [
+            (
+                alliance_id,
+                _format_corp_label(name, ticker, alliance_id),
+            )
+            for alliance_id, name, ticker in alliances
+        ]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(alliance_id=self.value())
+        return queryset
+
+
+class EveCharacterPrimaryFilter(admin.SimpleListFilter):
+    title = "primary character"
+    parameter_name = "is_primary"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("yes", "Yes"),
+            ("no", "No"),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == "yes":
+            return queryset.filter(
+                user__eveplayer__primary_character_id=F("pk")
+            )
+        if self.value() == "no":
+            return queryset.exclude(
+                user__eveplayer__primary_character_id=F("pk")
+            )
+        return queryset
+
+
+class EveCharacterDiscordFilter(admin.SimpleListFilter):
+    title = "discord"
+    parameter_name = "discord"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("linked", "Linked"),
+            ("not_linked", "Not linked"),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == "linked":
+            return queryset.filter(user__discord_user__isnull=False)
+        if self.value() == "not_linked":
+            return queryset.filter(
+                Q(user__isnull=True) | Q(user__discord_user__isnull=True)
+            )
+        return queryset
+
+
 @admin.register(EveCharacter)
 class EveCharacterAdmin(admin.ModelAdmin):
     list_display = (
         "character_name",
-        "corporation_id",
-        "alliance_id",
+        "corporation_display",
+        "alliance_display",
         "primary_eve_character",
+        "user",
     )
-    search_fields = ("character_name",)
-    list_filter = ("corporation_id", "alliance_id")
+    search_fields = (
+        "character_name",
+        "=character_id",
+        "user__username",
+        "user__eveplayer__primary_character__character_name",
+        "user__discord_user__discord_tag",
+        "user__discord_user__nickname",
+    )
+    list_filter = (
+        EveCharacterCorporationFilter,
+        EveCharacterAllianceFilter,
+        EveCharacterPrimaryFilter,
+        EveCharacterDiscordFilter,
+    )
+    list_per_page = 50
+    inlines = [EveCharacterTagInline]
 
+    @admin.display(description="Corporation")
+    def corporation_display(self, obj):
+        if not obj.corporation_id:
+            return "-"
+        corp = EveCorporation.objects.filter(
+            corporation_id=obj.corporation_id
+        ).first()
+        if not corp:
+            return obj.corporation_id
+        return _format_corp_label(corp.name, corp.ticker, obj.corporation_id)
+
+    @admin.display(description="Alliance")
+    def alliance_display(self, obj):
+        if not obj.alliance_id:
+            return "-"
+        alliance = EveAlliance.objects.filter(
+            alliance_id=obj.alliance_id
+        ).first()
+        if not alliance:
+            return obj.alliance_id
+        return _format_corp_label(
+            alliance.name, alliance.ticker, obj.alliance_id
+        )
+
+    @admin.display(description="Primary character")
     def primary_eve_character(self, obj):
         if obj.user:
             return user_primary_character(obj.user)
@@ -107,9 +272,10 @@ class EveCharacterSkillAdmin(admin.ModelAdmin):
     search_fields = ("character__character_name", "skill_name")
 
 
-admin.site.register(EveSkillset)
-admin.site.register(EveTag)
-admin.site.register(EveCharacterTag)
+@admin.register(EveTag)
+class EveTagAdmin(admin.ModelAdmin):
+    list_display = ("title", "description")
+    search_fields = ("title", "description")
 
 
 @admin.register(EveCharacterContract)
@@ -203,25 +369,6 @@ class EveCharacterCloneAdmin(admin.ModelAdmin):
     readonly_fields = ("implants", "total_value_isk")
 
 
-@admin.register(EveCharacterMiningEntry)
-class EveCharacterMiningEntryAdmin(admin.ModelAdmin):
-    list_display = (
-        "character",
-        "eve_type",
-        "quantity",
-        "date",
-        "solar_system_id",
-    )
-    list_filter = ("date",)
-    search_fields = (
-        "character__character_name",
-        "eve_type__name",
-    )
-    autocomplete_fields = ("character",)
-    date_hierarchy = "date"
-    ordering = ("-date",)
-
-
 class EveCharacterPlanetOutputInline(admin.TabularInline):
     model = EveCharacterPlanetOutput
     extra = 0
@@ -252,21 +399,6 @@ class EveCharacterPlanetAdmin(admin.ModelAdmin):
     autocomplete_fields = ("character",)
     readonly_fields = ("last_update",)
     inlines = [EveCharacterPlanetOutputInline]
-
-
-@admin.register(EveCharacterPlanetOutput)
-class EveCharacterPlanetOutputAdmin(admin.ModelAdmin):
-    list_display = (
-        "planet",
-        "eve_type",
-        "output_type",
-        "daily_quantity",
-    )
-    list_filter = ("output_type",)
-    search_fields = (
-        "planet__character__character_name",
-        "eve_type__name",
-    )
 
 
 @admin.register(EveUniverseSchematic)
@@ -447,9 +579,29 @@ class EveAllianceAdmin(admin.ModelAdmin):
     search_fields = ("name",)
 
 
+@admin.register(EveSkillset)
+class EveSkillsetAdmin(admin.ModelAdmin):
+    list_display = ("name", "total_skill_points")
+
+
 @admin.register(EveLocation)
 class EveLocationAdmin(SafeDeleteAdmin):
     field_to_highlight = "location_name"
+
+    class EveLocationAdminForm(forms.ModelForm):
+        market_categories = forms.MultipleChoiceField(
+            choices=FittingTag.choices,
+            required=False,
+            widget=forms.CheckboxSelectMultiple,
+            label="Market order categories",
+            help_text="Fittings sharing ANY of these tags qualify for sell orders.",
+        )
+
+        class Meta:
+            model = EveLocation
+            fields = "__all__"
+
+    form = EveLocationAdminForm
 
     list_display = (
         "highlight_deleted_field",
@@ -474,6 +626,42 @@ class EveLocationAdmin(SafeDeleteAdmin):
         "staging_active",
     )
     ordering = ("location_name",)
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "location_id",
+                    "location_name",
+                    "short_name",
+                    "solar_system_id",
+                    "solar_system_name",
+                    "region_id",
+                    "is_structure",
+                )
+            },
+        ),
+        (
+            "Market",
+            {
+                "fields": (
+                    "market_active",
+                    "prices_active",
+                    "price_baseline",
+                    "market_categories",
+                )
+            },
+        ),
+        (
+            "Other",
+            {
+                "fields": (
+                    "freight_active",
+                    "staging_active",
+                )
+            },
+        ),
+    )
 
 
 EveLocationAdmin.highlight_deleted_field.short_description = "Location name"
@@ -482,8 +670,11 @@ EveLocationAdmin.highlight_deleted_field.short_description = "Location name"
 # ---------------------------------------------------------------------------
 # Admin index grouping
 #
-# Split the single "eveonline" app section on the admin index page into three
-# logical groups: Characters, Corporations, and Alliances.
+# Split the single "eveonline" app section on the admin index page into logical
+# groups. Other apps are folded in: applications → Corporations,
+# access_lists/sovereignty/structures/srp → Alliance, community-related apps →
+# Community, fittings → Readiness, industry/freight → Supply, market/evelocation →
+# Staging Systems (first on the index), auth/django_celery_beat → System (last).
 # ---------------------------------------------------------------------------
 
 _CHARACTER_MODELS = {
@@ -494,53 +685,175 @@ _CHARACTER_MODELS = {
     "evecharactercontract",
     "evecharacterindustryjob",
     "evecharacterclone",
-    "evecharacterminingentry",
     "evecharacterplanet",
-    "evecharacterplanetoutput",
+}
+
+_SYSTEM_EVEONLINE_MODELS = {
     "evetag",
-    "evecharactertag",
-    "eveskillset",
 }
 
 _CORPORATION_MODELS = {
     "evecorporation",
+    "evecorporationapplication",
     "evecorporationcontract",
     "evecorporationindustryjob",
 }
 
 _ALLIANCE_MODELS = {
     "evealliance",
+    "eveskillset",
+    "eveaccesslist",
+    "eveaccesslistmember",
+}
+
+_STAGING_SYSTEMS_APPS = {"market"}
+
+_STAGING_SYSTEMS_EVEONLINE_MODELS = {
     "evelocation",
+}
+
+_ALLIANCE_EXTRA_APPS = {"access_lists", "sovereignty", "structures", "srp"}
+
+_COMMUNITY_APPS = {
+    "audit",
+    "discord",
+    "groups",
+    "help_tickets",
+    "mumble",
+    "onboarding",
+    "posts",
+    "reddit",
+    "referrals",
+}
+
+_SYSTEM_APPS = {"auth", "django_celery_beat", "subscriptions"}
+
+_READINESS_APPS = {"fittings"}
+
+_SUPPLY_APPS = {"industry", "freight"}
+
+_ABSORBED_APPS = (
+    _COMMUNITY_APPS
+    | _SYSTEM_APPS
+    | _READINESS_APPS
+    | _STAGING_SYSTEMS_APPS
+    | _SUPPLY_APPS
+    | _ALLIANCE_EXTRA_APPS
+    | {"applications"}
+)
+
+_SYNTHETIC_APP_GROUPS = {
+    "Community": ("groups", _COMMUNITY_APPS),
+    "Readiness": ("fittings", _READINESS_APPS),
+    "Supply": ("industry", _SUPPLY_APPS),
 }
 
 _GROUPS = [
     ("Characters", _CHARACTER_MODELS),
     ("Corporations", _CORPORATION_MODELS),
-    ("Alliances & Locations", _ALLIANCE_MODELS),
+    ("Alliance", _ALLIANCE_MODELS),
+    ("Community", None),
+    ("Readiness", None),
+    ("Supply", None),
 ]
 
 _original_get_app_list = admin.AdminSite.get_app_list
 
 
-def _grouped_get_app_list(self, request, app_label=None):
+def _grouped_get_app_list(self, request, app_label=None):  # noqa: C901
     app_list = _original_get_app_list(self, request, app_label)
-    result = []
+    absorbed = {}
+    eveonline_app = None
+    other_apps = []
     for app in app_list:
-        if app["app_label"] != "eveonline":
-            result.append(app)
-            continue
-        all_models = app["models"]
-        for group_name, model_names in _GROUPS:
+        label = app["app_label"]
+        if label == "eveonline":
+            eveonline_app = app
+        elif label in _ABSORBED_APPS:
+            absorbed[label] = app
+        else:
+            other_apps.append(app)
+
+    result = list(other_apps)
+    if not eveonline_app:
+        return result
+
+    all_eveonline_models = eveonline_app["models"]
+    grouped_sections = []
+    for group_name, model_names in _GROUPS:
+        if model_names is None:
+            base_label, app_labels = _SYNTHETIC_APP_GROUPS[group_name]
+            group_models = []
+            for group_app_label in sorted(app_labels):
+                group_models.extend(
+                    absorbed.get(group_app_label, {}).get("models", [])
+                )
+            base_app = absorbed.get(base_label) or eveonline_app
+        else:
             group_models = [
                 m
-                for m in all_models
+                for m in all_eveonline_models
                 if m["object_name"].lower() in model_names
             ]
-            if group_models:
-                result.append(
-                    {**app, "name": group_name, "models": group_models}
+            base_app = eveonline_app
+            if group_name == "Corporations":
+                group_models.extend(
+                    m
+                    for m in absorbed.get("applications", {}).get("models", [])
+                    if m["object_name"].lower() in model_names
                 )
-    return result
+            elif group_name == "Alliance":
+                for extra_app_label in sorted(_ALLIANCE_EXTRA_APPS):
+                    group_models.extend(
+                        absorbed.get(extra_app_label, {}).get("models", [])
+                    )
+
+        if group_models:
+            grouped_sections.append(
+                {**base_app, "name": group_name, "models": group_models}
+            )
+
+    staging_models = [
+        m
+        for m in all_eveonline_models
+        if m["object_name"].lower() in _STAGING_SYSTEMS_EVEONLINE_MODELS
+    ]
+    for staging_app_label in sorted(_STAGING_SYSTEMS_APPS):
+        staging_models.extend(
+            absorbed.get(staging_app_label, {}).get("models", [])
+        )
+
+    system_models = []
+    for system_app_label in sorted(_SYSTEM_APPS):
+        system_models.extend(
+            absorbed.get(system_app_label, {}).get("models", [])
+        )
+    system_models.extend(
+        m
+        for m in all_eveonline_models
+        if m["object_name"].lower() in _SYSTEM_EVEONLINE_MODELS
+    )
+
+    final = list(result)
+    final.extend(grouped_sections)
+    if system_models:
+        final.append(
+            {
+                **(absorbed.get("auth") or eveonline_app),
+                "name": "System",
+                "models": system_models,
+            }
+        )
+    if staging_models:
+        final.insert(
+            0,
+            {
+                **(absorbed.get("market") or eveonline_app),
+                "name": "Staging Systems",
+                "models": staging_models,
+            },
+        )
+    return final
 
 
 admin.AdminSite.get_app_list = _grouped_get_app_list

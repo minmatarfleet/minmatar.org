@@ -412,22 +412,25 @@ INDUSTRY_INDEX_MODELS = {
 }
 
 
+_INDUSTRY_ADMIN_PATCHED_ATTR = "industry_admin_patched"
+industry_previous_get_app_list = admin.site.get_app_list
+
+
 def _industry_get_app_list(request, app_label=None):
-    """Show industry app with only Orders in the index."""
-    app_list = _industry_previous_get_app_list(request, app_label)
+    """Rename industry index models in place without dropping co-located entries."""
+    app_list = industry_previous_get_app_list(request, app_label)
     for app in app_list:
-        if app["app_label"] != "industry":
-            continue
-        models = [
-            {**m, "name": INDUSTRY_INDEX_MODELS[m["object_name"].lower()]}
-            for m in app["models"]
-            if m["object_name"].lower() in INDUSTRY_INDEX_MODELS
-        ]
-        if models:
-            app["models"] = models
-        break
+        for index, model in enumerate(app["models"]):
+            key = model["object_name"].lower()
+            if key in INDUSTRY_INDEX_MODELS:
+                app["models"][index] = {
+                    **model,
+                    "name": INDUSTRY_INDEX_MODELS[key],
+                }
     return app_list
 
 
-_industry_previous_get_app_list = admin.site.get_app_list
-admin.site.get_app_list = _industry_get_app_list
+if not getattr(admin.site, _INDUSTRY_ADMIN_PATCHED_ATTR, False):
+    industry_previous_get_app_list = admin.site.get_app_list
+    admin.site.get_app_list = _industry_get_app_list
+    setattr(admin.site, _INDUSTRY_ADMIN_PATCHED_ATTR, True)

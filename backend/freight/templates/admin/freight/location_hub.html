@@ -1,0 +1,119 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  {% include "admin/market/_market_styles.html" %}
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate "Home" %}</a>
+  &rsaquo; <a href="{% url 'admin:freight_locations' %}">{% translate "Freight locations" %}</a>
+  &rsaquo; {{ location.location_name }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  {% include "admin/market/_learn_more_start.html" %}
+    <p>
+      {% blocktranslate trimmed %}
+      A <strong>route</strong> is one direction only (A → B). Set up the return
+      trip as a separate route. Members see active routes on the freight page;
+      pricing is ISK per m³ plus an optional collateral surcharge.
+      {% endblocktranslate %}
+    </p>
+  {% include "admin/market/_learn_more_end.html" %}
+
+  <h2>{% translate "Location settings" %}</h2>
+  <ul class="market-config-list">
+    <li>{% translate "Short name" %}: {{ location.short_name|default:"—" }}</li>
+    <li>{% translate "Freight active" %}: {% if location.freight_active %}{% translate "yes" %}{% else %}{% translate "no" %}{% endif %}</li>
+    <li>
+      {% translate "Active routes" %}:
+      {% blocktranslate trimmed count counter=outbound_active_count %}
+      {{ counter }} outbound
+      {% plural %}
+      {{ counter }} outbound
+      {% endblocktranslate %},
+      {% blocktranslate trimmed count counter=inbound_active_count %}
+      {{ counter }} inbound
+      {% plural %}
+      {{ counter }} inbound
+      {% endblocktranslate %}
+    </li>
+  </ul>
+  <p>
+    <a href="{% url 'admin:eveonline_evelocation_change' location.pk %}">
+      {% translate "Edit location settings" %}
+    </a>
+  </p>
+
+  <h2>{% translate "Configure routes" %}</h2>
+  <div class="market-card-grid">
+    <div class="market-card">
+      <h3>{% translate "Outbound routes" %}</h3>
+      <p>
+        {% blocktranslate trimmed %}
+        Routes <em>from</em> this location to other freight hubs — ISK/m³,
+        collateral modifier, expiration, and days to complete.
+        {% endblocktranslate %}
+      </p>
+      <p class="help">
+        {% blocktranslate trimmed %}
+        {{ outbound_active_count }} active of {{ outbound_total_count }} total.
+        {% endblocktranslate %}
+      </p>
+      <a href="{{ outbound_routes_url }}" class="button">
+        {% translate "Manage outbound routes" %}
+      </a>
+    </div>
+
+    <div class="market-card">
+      <h3>{% translate "Add outbound route" %}</h3>
+      <p>
+        {% blocktranslate trimmed %}
+        Create a new one-way route starting at this location. Pick the
+        destination and set pricing.
+        {% endblocktranslate %}
+      </p>
+      <a href="{{ add_outbound_route_url }}" class="button">
+        {% translate "Add outbound route" %}
+      </a>
+    </div>
+
+    <div class="market-card">
+      <h3>{% translate "Inbound routes" %}</h3>
+      <p>
+        {% blocktranslate trimmed %}
+        Routes <em>to</em> this location from other hubs. Useful when adjusting
+        return-trip pricing or disabling a lane into this structure.
+        {% endblocktranslate %}
+      </p>
+      <p class="help">
+        {% blocktranslate trimmed %}
+        {{ inbound_active_count }} active of {{ inbound_total_count }} total.
+        {% endblocktranslate %}
+      </p>
+      <a href="{{ inbound_routes_url }}" class="button">
+        {% translate "Manage inbound routes" %}
+      </a>
+    </div>
+
+    <div class="market-card">
+      <h3>{% translate "Add inbound route" %}</h3>
+      <p>
+        {% blocktranslate trimmed %}
+        Create a route ending at this location (another hub as origin).
+        {% endblocktranslate %}
+      </p>
+      <a href="{{ add_inbound_route_url }}" class="button">
+        {% translate "Add inbound route" %}
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

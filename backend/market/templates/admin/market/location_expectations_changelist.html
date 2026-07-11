@@ -1,0 +1,102 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static "admin/css/changelists.css" %}">
+  {{ media.css }}
+  {% include "admin/market/_market_styles.html" %}
+  <style>
+    #changelist .changelist-form-container,
+    #changelist .results,
+    #changelist #result_list,
+    #changelist #result_list table,
+    #changelist #result_list tbody,
+    #changelist #result_list tr,
+    #changelist #result_list td {
+      overflow: visible;
+    }
+    #changelist .submit-row {
+      margin-top: 12px;
+      padding: 12px 0 0;
+    }
+    #changelist-form .vIntegerField {
+      width: 8em;
+    }
+  </style>
+{% endblock %}
+
+{% block extrahead %}
+  {{ block.super }}
+  {{ media.js }}
+  <script src="{% static 'admin/js/filters.js' %}" defer></script>
+{% endblock %}
+
+{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-list{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate "Home" %}</a>
+  &rsaquo; <a href="{% url 'admin:market_locations' %}">{% translate "Market locations" %}</a>
+  &rsaquo; <a href="{% url 'admin:market_location_hub' location.pk %}">{{ location.location_name }}</a>
+  &rsaquo; {{ page_title }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  {% if page_help_bullets %}
+  {% include "admin/market/_learn_more_start.html" %}
+    {% if page_intro %}<p>{{ page_intro }}</p>{% endif %}
+    <ul class="market-help-list">
+      {% for label, description in page_help_bullets %}
+      <li><strong>{{ label }}</strong> — {{ description }}</li>
+      {% endfor %}
+    </ul>
+  {% include "admin/market/_learn_more_end.html" %}
+  {% elif page_intro %}
+  {% include "admin/market/_learn_more_start.html" %}
+    <p>{{ page_intro }}</p>
+  {% include "admin/market/_learn_more_end.html" %}
+  {% endif %}
+
+  <p class="help">{{ help_text }}</p>
+
+  {% block expectations_extra_help %}{% endblock %}
+
+  <div class="module{% if cl.has_filters %} filtered{% endif %}" id="changelist">
+    <div class="changelist-form-container">
+      {% search_form cl %}
+
+      <form method="post" id="changelist-form" action="{{ form_action }}">
+        {% csrf_token %}
+        {% result_list cl %}
+        {% pagination cl %}
+
+        {% if cl.result_count %}
+        <div class="submit-row">
+          <p class="help">{% translate "Only the rows on this page are saved when you click Save." %}</p>
+          <input type="submit" value="{{ save_button_label }}" class="default">
+        </div>
+        {% endif %}
+      </form>
+    </div>
+
+    {% if cl.has_filters %}
+    <nav id="changelist-filter" aria-labelledby="changelist-filter-header">
+      <h2 id="changelist-filter-header">{% translate "Filter" %}</h2>
+      {% if cl.has_active_filters %}
+      <div id="changelist-filter-extra-actions">
+        <h3>
+          <a href="{{ cl.clear_all_filters_qs }}">&#10006; {% translate "Clear all filters" %}</a>
+        </h3>
+      </div>
+      {% endif %}
+      {% for spec in cl.filter_specs %}{% admin_list_filter cl spec %}{% endfor %}
+    </nav>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

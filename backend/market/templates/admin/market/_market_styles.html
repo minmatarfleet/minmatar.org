@@ -1,0 +1,102 @@
+<style>
+  .market-intro {
+    max-width: 52em;
+    margin: 0 0 1.5em;
+    line-height: 1.5;
+  }
+  .market-intro p {
+    margin: 0.5em 0;
+  }
+  .market-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(18em, 1fr));
+    gap: 1em;
+    margin: 1em 0 2em;
+    align-items: stretch;
+  }
+  .market-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border: 1px solid var(--hairline-color, #ccc);
+    border-radius: 6px;
+    padding: 1em 1.1em;
+    background: var(--body-bg, #fff);
+  }
+  .market-card h3 {
+    margin: 0 0 0.4em;
+    font-size: 1.05em;
+  }
+  .market-card p {
+    margin: 0 0 0.75em;
+    color: var(--body-quiet-color, #666);
+    font-size: 0.92em;
+    line-height: 1.45;
+  }
+  .market-card a.button {
+    display: inline-block;
+    margin-top: auto;
+    align-self: flex-start;
+    padding: 0.35em 0.75em;
+    border: 1px solid var(--hairline-color, #ccc);
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.92em;
+  }
+  .market-section-help {
+    max-width: 52em;
+    margin: 0 0 1.25em;
+    padding: 0.75em 1em;
+    border-left: 3px solid var(--link-fg, #447e9b);
+    background: var(--darkened-bg, #f8f8f8);
+    line-height: 1.5;
+  }
+  .market-learn-more {
+    max-width: 52em;
+    margin: 0 0 1rem;
+  }
+  .market-learn-more__toggle {
+    cursor: pointer;
+    color: var(--link-fg, #447e9b);
+    font-weight: 500;
+    list-style: none;
+    user-select: none;
+  }
+  .market-learn-more__toggle::-webkit-details-marker {
+    display: none;
+  }
+  .market-learn-more__toggle::before {
+    content: "▸ ";
+    display: inline-block;
+    width: 1em;
+  }
+  .market-learn-more[open] > .market-learn-more__toggle::before {
+    content: "▾ ";
+  }
+  .market-learn-more__body {
+    margin-top: 0.6em;
+    padding: 0.75em 1em;
+    border-left: 3px solid var(--link-fg, #447e9b);
+    background: var(--darkened-bg, #f8f8f8);
+    line-height: 1.5;
+  }
+  .market-learn-more__body > :first-child {
+    margin-top: 0;
+  }
+  .market-learn-more__body > :last-child {
+    margin-bottom: 0;
+  }
+  .market-help-list {
+    margin: 0.5em 0 0;
+    padding-left: 1.25em;
+    line-height: 1.55;
+  }
+  .market-help-list li {
+    margin: 0.35em 0;
+  }
+  .market-config-list {
+    margin: 0.5em 0 1.5em;
+    padding-left: 1.25em;
+    line-height: 1.6;
+  }
+</style>

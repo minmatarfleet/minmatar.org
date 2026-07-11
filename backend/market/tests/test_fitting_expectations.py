@@ -207,9 +207,9 @@ class GetEffectiveItemExpectationsTestCase(TestCase):
         self.assertEqual(result["Damage Control II"], 15)
         self.assertEqual(result["Rifter"], 15)
 
-    def test_max_across_sources(self):
+    def test_pinned_overrides_fitting_max(self):
         """
-        individual=10, fitting_a=10, fitting_b=15 → max is 15 for DC2.
+        Pinned item expectation overrides fitting-derived quantity for that item.
         """
         EveMarketItemExpectation.objects.create(
             item=self.dc2_type, location=self.location, quantity=10
@@ -221,7 +221,7 @@ class GetEffectiveItemExpectationsTestCase(TestCase):
             fitting=self.fitting_b, location=self.location, quantity=15
         )
         result = get_effective_item_expectations(self.location)
-        self.assertEqual(result["Damage Control II"], 15)
+        self.assertEqual(result["Damage Control II"], 10)
 
     def test_individual_larger_than_fittings(self):
         EveMarketItemExpectation.objects.create(
@@ -386,7 +386,7 @@ class ContractExpectationConsumablesTestCase(TestCase):
         self.assertEqual(result["Fusion S"], 15000)
 
     def test_contract_consumable_larger_than_item_expectation(self):
-        """Contract gives 10 000 Fusion S; item expectation gives 5 000 → contract wins."""
+        """Pinned item expectation overrides contract consumable contribution."""
         fusion_type = EveType.objects.get(name="Fusion S")
         EveMarketItemExpectation.objects.create(
             item=fusion_type, location=self.location, quantity=5000
@@ -397,7 +397,7 @@ class ContractExpectationConsumablesTestCase(TestCase):
             quantity=5,
         )
         result = get_effective_item_expectations(self.location)
-        self.assertEqual(result["Fusion S"], 10000)
+        self.assertEqual(result["Fusion S"], 5000)
 
     def test_multiple_contract_expectations_max(self):
         """Two contract expectations for different fittings; max per item wins."""

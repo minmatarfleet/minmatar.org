@@ -23,8 +23,9 @@ from market.tasks import fetch_eve_market_contracts
 
 
 class MarketTaskTestCase(TestCase):
+    @patch("market.tasks.fetch_contract_items_task")
     @patch("market.tasks.EsiClient")
-    def test_fetch_eve_market_contracts(self, esi_mock):
+    def test_fetch_eve_market_contracts(self, esi_mock, items_task_mock):
         location = EveLocation.objects.create(
             location_id=1001,
             location_name="Home base",

@@ -78,16 +78,15 @@ def process_structure_sell_orders_page(
         return 0, 0
 
     page_data = response.results() or []
-    sell_orders = [o for o in page_data if not o.get("is_buy_order", True)]
-    if not sell_orders:
+    if not page_data:
         return 0, 0
 
-    type_ids_page = {o["type_id"] for o in sell_orders}
+    type_ids_page = {o["type_id"] for o in page_data}
     types_cache = {}
     _ensure_eve_types(type_ids_page, types_cache)
 
     to_create = []
-    for o in sell_orders:
+    for o in page_data:
         if o["type_id"] not in types_cache:
             continue
         order_id = o.get("order_id")
@@ -98,7 +97,8 @@ def process_structure_sell_orders_page(
                 location=location,
                 price=Decimal(str(o["price"])),
                 quantity=int(o.get("volume_remain", o.get("volume_total", 0))),
-                issuer_external_id=o.get("issuer"),  # ESI may provide issuer
+                is_buy_order=bool(o.get("is_buy_order", False)),
+                issuer_external_id=o.get("issuer"),
                 imported_by_task_uid=task_uid,
                 imported_page=page,
             )
@@ -122,7 +122,7 @@ def process_structure_sell_orders_page(
 
     total_volume = sum(obj.quantity for obj in to_create)
     logger.info(
-        "Structure sell orders page complete: location_id=%s page=%s "
+        "Structure market orders page complete: location_id=%s page=%s "
         "orders_created=%s total_volume=%s task_uid=%s",
         location_id,
         page,
