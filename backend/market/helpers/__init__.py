@@ -24,6 +24,7 @@ from market.helpers.qualification import (
     get_all_doctrine_fittings,
     get_non_doctrine_fittings,
     get_qualified_contract_fittings,
+    get_qualified_non_doctrine_sell_fittings,
     get_qualified_sell_fittings,
 )
 from market.helpers.entity_resolution import entity_name_by_id
@@ -42,6 +43,7 @@ __all__ = [
     "get_all_doctrine_fittings",
     "get_non_doctrine_fittings",
     "get_qualified_contract_fittings",
+    "get_qualified_non_doctrine_sell_fittings",
     "get_qualified_sell_fittings",
     "known_contract_issuer_ids",
     "process_structure_sell_orders_page",

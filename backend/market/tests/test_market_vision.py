@@ -39,6 +39,7 @@ from market.helpers.orders import process_structure_sell_orders_page
 from market.helpers.pricing import get_volume_90d_by_type_id
 from market.helpers.qualification import (
     get_qualified_contract_fittings,
+    get_qualified_non_doctrine_sell_fittings,
     get_qualified_sell_fittings,
 )
 from market.helpers.sell_orders import (
@@ -104,6 +105,23 @@ class QualificationTestCase(TestCase):
     def test_sell_fittings_any_tag_match(self):
         qualified = list(get_qualified_sell_fittings(self.location))
         self.assertEqual([self.matching], qualified)
+
+    def test_qualified_non_doctrine_sell_fittings_exclude_doctrine(self):
+        doctrine = EveDoctrine.objects.create(
+            name="Test Doctrine",
+            type=DOCTRINE_TYPE_NON_STRATEGIC,
+            description="test",
+        )
+        EveDoctrineFitting.objects.create(
+            doctrine=doctrine,
+            fitting=self.matching,
+            role="primary",
+        )
+        qualified = list(
+            get_qualified_non_doctrine_sell_fittings(self.location)
+        )
+        self.assertEqual(qualified, [])
+        self.assertNotIn(self.matching, qualified)
 
     def test_contract_fittings_from_doctrine_location(self):
         doctrine = EveDoctrine.objects.create(
@@ -799,6 +817,8 @@ class ExpectationsAdminViewsTestCase(TestCase):
             quantity=4,
         )
         rows = build_fitting_expectation_rows(self.location)
+        fitting_ids = {row["fitting_id"] for row in rows}
+        self.assertNotIn(self.fitting.pk, fitting_ids)
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["fitting_id"], non_doctrine.pk)
         self.assertEqual(rows[0]["quantity"], 4)

@@ -72,3 +72,20 @@ def get_non_doctrine_fittings():
         .exclude(pk__in=doctrine_fitting_ids)
         .order_by("name")
     )
+
+
+def get_qualified_non_doctrine_sell_fittings(location):
+    """
+    Return non-doctrine fittings qualified for sell orders at this location.
+
+    When market categories are configured, only tag-qualified fittings are
+    returned and doctrine fittings are excluded even if they share tags.
+    """
+    doctrine_fitting_ids = EveDoctrineFitting.objects.values_list(
+        "fitting_id", flat=True
+    ).distinct()
+    if not (location.market_categories or []):
+        return get_non_doctrine_fittings()
+    return get_qualified_sell_fittings(location).exclude(
+        pk__in=doctrine_fitting_ids
+    )

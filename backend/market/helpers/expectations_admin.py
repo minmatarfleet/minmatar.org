@@ -15,7 +15,7 @@ from market.helpers.expectations_changelist import (
 from market.helpers.qualification import (
     get_all_doctrine_fittings,
     get_doctrine_names_by_fitting_id,
-    get_non_doctrine_fittings,
+    get_qualified_non_doctrine_sell_fittings,
 )
 from market.models import (
     EveMarketContract,
@@ -154,7 +154,9 @@ def save_contract_expectation_quantities(
 
 
 def build_fitting_expectation_rows(location) -> list[dict]:
-    qualified_fittings = list(get_non_doctrine_fittings())
+    qualified_fittings = list(
+        get_qualified_non_doctrine_sell_fittings(location)
+    )
     expectations = {
         row.fitting_id: row
         for row in EveMarketFittingExpectation.objects.filter(
