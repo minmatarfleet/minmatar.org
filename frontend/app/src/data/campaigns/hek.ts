@@ -1,6 +1,6 @@
 /** Hek highsec campaign · metrics window 10 Nov – 30 Nov 2023. */
 
-export const COVER_IMAGE = '/images/combatlog-cover.jpg'
+export const COVER_IMAGE = '/images/hek-campaign.webp'
 
 /** zKill · alliance 99011978 · Hek (30002053) · 10 Nov – 30 Nov 2023 UTC. */
 export const METRICS_START = '2023-11-10'

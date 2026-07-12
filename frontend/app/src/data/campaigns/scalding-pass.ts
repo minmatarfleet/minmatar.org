@@ -66,7 +66,7 @@ export const TOP_FLEET_PILOTS = [
     { characterId: 94_329_280, name: 'Ninereid Deninard', fleetCount: 19 },
 ] as const
 
-export const COVER_IMAGE = '/images/dread-card.jpg'
+export const COVER_IMAGE = '/images/scalding-campaign.webp'
 
 export type CampaignHeadlineCategory = 'aar'
 
