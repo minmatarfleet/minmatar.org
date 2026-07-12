@@ -5,6 +5,8 @@ from datetime import timedelta
 
 from django.utils import timezone
 
+from celery_once import QueueOnce
+
 from app.celery import app
 from feed.constants import (
     FEED_CONTESTED_SNAPSHOT_RETENTION_DAYS,
@@ -24,7 +26,7 @@ from feed.rollups.writer import write_rollup_results
 logger = logging.getLogger(__name__)
 
 
-@app.task(queue="celery")
+@app.task(base=QueueOnce, once={"graceful": True}, queue="celery")
 def poll_zkill_r2z2() -> dict:
     stats = poll_r2z2_batch()
     logger.info("R2Z2 poll complete: %s", stats)

@@ -17,7 +17,10 @@ FW_WARZONE_REGIONS: dict[int, str] = {
     10000042: "Metropolis",
 }
 
-# R2Z2
+# R2Z2 — https://github.com/zKillboard/zKillboard/wiki/API-(R2Z2)
+# Live edge: sleep >= 6s after 404 (avg ~1 killmail / 5.5s). Catch-up: 100ms
+# between 200s (<= 10/s; limit is 15/s per IP). Rate-limit violators are
+# banned for 1 hour (403); transient overload may return 429.
 R2Z2_BASE_URL = "https://r2z2.zkillboard.com/ephemeral"
 R2Z2_SEQUENCE_URL = f"{R2Z2_BASE_URL}/sequence.json"
 R2Z2_USER_AGENT = (
@@ -25,6 +28,8 @@ R2Z2_USER_AGENT = (
 )
 R2Z2_SUCCESS_SLEEP_MS = 100
 R2Z2_NOT_FOUND_SLEEP_MS = 6000
+R2Z2_RATE_LIMIT_SLEEP_SECONDS = 3600
+R2Z2_BANNED_SLEEP_SECONDS = 3600
 R2Z2_POLL_SOFT_TIME_LIMIT_SECONDS = 25
 
 # Retention
