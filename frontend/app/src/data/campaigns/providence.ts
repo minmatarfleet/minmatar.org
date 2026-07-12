@@ -102,7 +102,7 @@ export const GROSS_ISK_KILLS = PERIOD_PROVIDENCE_ISK_KILLS
 export const GROSS_ISK_LOSSES = PERIOD_PROVIDENCE_ISK_LOSSES
 export const CAMPAIGN_ISK_DESTROYED = GROSS_ISK_KILLS
 
-export const COVER_IMAGE = '/images/dread-card.jpg'
+export const COVER_IMAGE = '/images/providence-campaign.webp'
 
 export type CampaignHeadlineCategory = 'aar' | 'industry'
 

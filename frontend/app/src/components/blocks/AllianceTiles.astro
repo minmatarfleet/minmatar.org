@@ -10,104 +10,49 @@ import Tile from '@components/blocks/Tile.astro';
 import AllianceCampaignStrip from '@components/blocks/AllianceCampaignStrip.astro';
 ---
 
-<Wrapper
-    class="[ alliance-reel ]"
-    padding_block='0'
-    padding_inline='0'
-    max_width='100%'
+<Grid
+    class="[ w-full grid-fill ]"
+    row_gap="var(--space-3xs)"
+    column_gap="var(--space-3xs)"
+    min_item_width="580px"
 >
-    <Grid
-        class="[ w-full grid-fill ]"
-        row_gap="var(--space-3xs)"
-        column_gap="var(--space-3xs)"
-        min_item_width="580px"
-    >
-        <Tile
-            title={t('our_dna')}
-            description={t('dna.leading_text')}
-            cover='/images/corporations-tile-background.webp'
-        >               
-            <Button size='sm' href={translatePath('/alliance/story/')}>
-                {t('our_story')}
-            </Button>
-            <Button size='sm' href={translatePath('/alliance/values/')}>
-                {t('our_values')}
-            </Button>
-            <Button size='sm' href={translatePath('/alliance/playstyle/')}>
-                {t('our_playstyle')}
-            </Button>
-        </Tile>
-    
-        <Tile
-            title={t('our_community')}
-            description={t('community.leading_text')}
-            cover='/images/sigs-tile-background.webp'
-        >                        
-            <Button size='sm' href={translatePath('/alliance/corporations/')}>
-                {t('corporations')}
-            </Button>
+    <Tile
+        title={t('our_dna')}
+        description={t('dna.leading_text')}
+        cover='/images/corporations-tile-background.webp'
+    >               
+        <Button size='sm' href={translatePath('/alliance/story/')}>
+            {t('our_story')}
+        </Button>
+        <Button size='sm' href={translatePath('/alliance/values/')}>
+            {t('our_values')}
+        </Button>
+        <Button size='sm' href={translatePath('/alliance/playstyle/')}>
+            {t('our_playstyle')}
+        </Button>
+    </Tile>
 
-            <Button size='sm' href={translatePath('/alliance/tribes/')}>
-                {t('tribes.page_title')}
-            </Button>
+    <Tile
+        title={t('our_community')}
+        description={t('community.leading_text')}
+        cover='/images/sigs-tile-background.webp'
+    >                        
+        <Button size='sm' href={translatePath('/alliance/corporations/')}>
+            {t('corporations')}
+        </Button>
 
-            <Button size='sm' href={translatePath('/alliance/propaganda/')}>
-                {t('propaganda.page_title')}
-            </Button>
+        <Button size='sm' href={translatePath('/alliance/tribes/')}>
+            {t('tribes.page_title')}
+        </Button>
 
-            <Button size='sm' href={translatePath('/guides/')}>
-                {t('guides.page_title')}
-            </Button>
-        </Tile>
+        <Button size='sm' href={translatePath('/alliance/propaganda/')}>
+            {t('propaganda.page_title')}
+        </Button>
 
-        <div class="[ span-all ]">
-            <AllianceCampaignStrip />
-        </div>
-    </Grid>
-</Wrapper>
+        <Button size='sm' href={translatePath('/guides/')}>
+            {t('guides.page_title')}
+        </Button>
+    </Tile>
+</Grid>
 
-<style lang="scss">
-    .alliance-reel {
-        position: relative;
-    }
-
-    .span-all {
-        grid-column: 1 / -1;
-    }
-
-    .swiper-button-prev,
-    .swiper-button-next {
-        --swiper-navigation-color: var(--highlight);
-        --swiper-navigation-sides-offset: -46px;
-
-        opacity: 0;
-    }
-
-    .swiper-initialized ~ .swiper-button-prev,
-    .swiper-initialized ~ .swiper-button-next {
-        opacity: 1;
-    }
-
-    .swiper-initialized ~ .swiper-button-next.swiper-button-disabled,
-    .swiper-initialized ~ .swiper-button-prev.swiper-button-disabled {
-        opacity: 0;
-    }
-
-    .swiper-button-next.swiper-button-disabled,
-    .swiper-button-prev.swiper-button-disabled {
-        --swiper-navigation-color: var(--fleet-yellow);
-        opacity: 1;
-    }
-
-    .swiper-button-prev {
-        transform: translateY(-1.25rem);
-    }
-
-    .swiper-button-next {
-        transform: translateY(-1.25rem);
-    }
-
-    .swiper-slide {
-        width: min(100%, 700px);
-    }
-</style>
+<AllianceCampaignStrip />
