@@ -34,6 +34,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://minmatar.org",
 ]
 BROKER_URL = os.environ.get("BROKER_URL", "redis://localhost:6379/1")
+TESTING = True
 CELERYBEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"
 
 WEB_LINK_URL = os.environ.get("WEB_LINK_URL", "https://my.minmatar.org")

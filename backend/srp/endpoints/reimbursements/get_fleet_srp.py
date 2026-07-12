@@ -1,5 +1,7 @@
 """GET \"\" — list SRP requests (deprecated; use GET /api/srp/v2/requests)."""
 
+
+from groups.helpers.feature_access import require_feature
 from typing import List
 
 from app.errors import ErrorResponse
@@ -27,10 +29,9 @@ def get_fleet_srp(
     status: str | None = None,
     user_id: int | None = None,
 ):
-    if not request.user.has_perm("srp.view_evefleetshipreimbursement"):
-        return 403, {
-            "detail": "User missing permission srp.view_evefleetshipreimbursement"
-        }
+    denied = require_feature(request.user, "srp.view")
+    if denied:
+        return denied
 
     denied = require_current_srp_onboarding(request)
     if denied:

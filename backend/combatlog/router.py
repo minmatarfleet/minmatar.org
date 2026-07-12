@@ -15,6 +15,7 @@ from fleets.models import EveFleet
 from .combatlog import LogAnalysis, analyze_parsed_log
 
 from .models import CombatLog
+from groups.helpers.feature_access import can_use_feature, require_feature
 
 router = Router(tags=["Combat Logs"])
 
@@ -245,6 +246,4 @@ def can_view(
 
 
 def is_srp_admin(current_user):
-    return current_user and current_user.has_perm(
-        "srp.change_evefleetshipreimbursement"
-    )
+    return current_user and can_use_feature(current_user, "srp.process")

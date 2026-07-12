@@ -2,11 +2,13 @@
 
 from django.core.exceptions import PermissionDenied
 
+from groups.helpers.feature_access import user_has_legacy_perm
+
 VIEW_FREIGHT_LOCATIONS = "freight.view_evefreightroute"
 
 
 def user_has_perm(user, perm: str) -> bool:
-    return user.is_active and (user.is_superuser or user.has_perm(perm))
+    return user_has_legacy_perm(user, perm)
 
 
 def require_view_perm(user, perm: str) -> None:

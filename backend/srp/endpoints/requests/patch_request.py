@@ -1,5 +1,7 @@
 """PATCH /{int:request_id} — update SRP request status."""
 
+
+from groups.helpers.feature_access import can_use_feature
 from django.utils import timezone
 
 from app.errors import ErrorResponse
@@ -39,7 +41,7 @@ def patch_srp_request(request, request_id: int, payload: UpdateSrpRequest):
     if denied:
         return denied
 
-    if not request.user.has_perm("srp.change_evefleetshipreimbursement"):
+    if not can_use_feature(request.user, "srp.process"):
         if payload.status != "withdrawn":
             return 403, {"detail": "Permission denied"}
 

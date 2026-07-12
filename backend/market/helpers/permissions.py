@@ -2,6 +2,8 @@
 
 from django.core.exceptions import PermissionDenied
 
+from groups.helpers.feature_access import user_has_legacy_perm
+
 VIEW_MARKET_LOCATIONS = "market.view_evemarketitemexpectation"
 VIEW_MARKET_CONTRACTS = "market.view_evemarketcontract"
 VIEW_BUY_ORDER_EXPECTATIONS = "market.view_evemarketbuyorderexpectation"
@@ -14,7 +16,7 @@ CHANGE_ITEM_EXPECTATIONS = "market.change_evemarketitemexpectation"
 
 
 def user_has_perm(user, perm: str) -> bool:
-    return user.is_active and (user.is_superuser or user.has_perm(perm))
+    return user_has_legacy_perm(user, perm)
 
 
 def require_perm(user, perm: str) -> None:

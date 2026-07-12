@@ -4,6 +4,7 @@ import logging
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from groups.helpers.feature_access import require_feature
 from onboarding.srp_gate import require_current_srp_onboarding
 from fleets.models import EveFleet
 from srp.endpoints.requests.helpers import duplicate_kill
@@ -46,10 +47,13 @@ def create_srp_request(request, payload: CreateSrpRequest):
     if denied:
         return denied
 
+    fleet = None
     if payload.fleet_id:
         fleet = EveFleet.objects.get(id=payload.fleet_id)
-    else:
-        fleet = None
+
+    denied = require_feature(request.user, "srp.submit", fleet=fleet)
+    if denied:
+        return denied
 
     try:
         details = get_killmail_details(

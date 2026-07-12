@@ -4,6 +4,7 @@ import logging
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from groups.helpers.feature_access import can_use_feature
 
 from fleets.endpoints.helpers import (
     _fleet_apply_optional_scalar_updates,
@@ -32,7 +33,7 @@ ROUTE_SPEC = {
 def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
     if not (
         request.user.is_superuser
-        or request.user.has_perm("fleets.add_evefleet")
+        or can_use_feature(request.user, "fleets.create")
     ):
         return 403, {"detail": "User missing permission fleets.add_evefleet"}
 

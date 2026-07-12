@@ -152,6 +152,16 @@ pipenv run python manage.py export_reference_fixtures
 
 `setup_test_data()` remains useful for test users and mock characters/fleets; reference fixtures replace its synthetic fittings/org config.
 
+### Authorization (PilotFeature)
+
+Product capabilities are gated via `can_use_feature()` with legacy Django-permission fallback. See [../docs/authorization.md](../docs/authorization.md).
+
+After deploy / migrate:
+
+```bash
+pipenv run python manage.py sync_pilot_features
+```
+
 ### Create a test admin user and display JWT
 ```
 ./manage.py shell --command="from authentication import make_test_user; make_test_user(101, 'Tester 1', True)"

@@ -796,17 +796,18 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual(403, response.status_code)
 
     def test_get_fleet_requires_view_evefleet(self):
-        fc_only = User.objects.create(username="fc_only")
-        fleet = make_test_fleet("FC fleet", fc_only)
+        viewer = User.objects.create(username="viewer")
+        fc = User.objects.create(username="fc")
+        fleet = make_test_fleet("FC fleet", fc)
 
-        fc_token = jwt.encode(
-            {"user_id": fc_only.id},
+        viewer_token = jwt.encode(
+            {"user_id": viewer.id},
             settings.SECRET_KEY,
             algorithm="HS256",
         )
         response = self.client.get(
             f"{BASE_URL}/{fleet.id}",
-            HTTP_AUTHORIZATION=f"Bearer {fc_token}",
+            HTTP_AUTHORIZATION=f"Bearer {viewer_token}",
         )
         self.assertEqual(403, response.status_code)
 

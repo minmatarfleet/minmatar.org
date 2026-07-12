@@ -12,6 +12,7 @@ from authentication import AuthBearer
 
 from .authors import post_author_fields
 from .models import EvePost, EveTag
+from groups.helpers.feature_access import can_use_feature, require_feature
 
 
 def extract_first_image_link(content: str) -> str:
@@ -184,7 +185,7 @@ def get_post(request, post_id: int):
     auth=AuthBearer(),
 )
 def create_post(request, payload: CreateEvePostRequest):
-    if not request.user.has_perm("posts.add_evepost"):
+    if not can_use_feature(request.user, "posts.create"):
         return 403, {"detail": "You do not have permission to create a post."}
 
     if EvePost.objects.filter(title=payload.title).exists():
@@ -227,7 +228,7 @@ def create_post(request, payload: CreateEvePostRequest):
     auth=AuthBearer(),
 )
 def update_post(request, post_id: int, payload: UpdateEvePostRequest):
-    if not request.user.has_perm("posts.change_evepost"):
+    if not can_use_feature(request.user, "posts.edit"):
         return 403, {"detail": "You do not have permission to update a post."}
 
     post = EvePost.objects.filter(id=post_id).first()
@@ -276,7 +277,7 @@ def update_post(request, post_id: int, payload: UpdateEvePostRequest):
     auth=AuthBearer(),
 )
 def delete_post(request, post_id: int):
-    if not request.user.has_perm("posts.delete_evepost"):
+    if not can_use_feature(request.user, "posts.delete"):
         return 403, {"detail": "You do not have permission to delete a post."}
 
     post = EvePost.objects.filter(id=post_id).first()

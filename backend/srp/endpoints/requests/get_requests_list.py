@@ -1,5 +1,7 @@
 """GET \"\" — list SRP requests (filtered, paginated)."""
 
+
+from groups.helpers.feature_access import require_feature
 from ninja import Query
 
 from app.errors import ErrorResponse
@@ -34,10 +36,9 @@ def list_srp_requests(
     limit: int = Query(DEFAULT_LIMIT, ge=1, le=MAX_LIMIT),
     offset: int = Query(0, ge=0),
 ):
-    if not request.user.has_perm("srp.view_evefleetshipreimbursement"):
-        return 403, {
-            "detail": "User missing permission srp.view_evefleetshipreimbursement"
-        }
+    denied = require_feature(request.user, "srp.view")
+    if denied:
+        return denied
 
     denied = require_current_srp_onboarding(request)
     if denied:

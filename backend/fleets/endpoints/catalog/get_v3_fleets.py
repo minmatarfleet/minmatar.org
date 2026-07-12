@@ -8,6 +8,7 @@ from django.utils import timezone
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from groups.helpers.feature_access import require_feature
 
 from fleets.endpoints.helpers import make_fleet_response
 from fleets.endpoints.schemas import EveFleetFilter, EveFleetResponse
@@ -29,8 +30,9 @@ ROUTE_SPEC = {
 def get_v3_fleets(
     request, fleet_filter: EveFleetFilter = EveFleetFilter.RECENT
 ) -> Union[List[EveFleetResponse], tuple[int, dict]]:
-    if not request.user.has_perm("fleets.view_evefleet"):
-        return 403, {"detail": "User missing permission fleets.view_evefleet"}
+    denied = require_feature(request.user, "fleets.view")
+    if denied:
+        return denied
 
     if fleet_filter == EveFleetFilter.ACTIVE:
         fleets = (

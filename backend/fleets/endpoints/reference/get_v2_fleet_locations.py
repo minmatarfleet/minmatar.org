@@ -6,6 +6,7 @@ from django.db.models import Count
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from groups.helpers.feature_access import require_feature
 from eveonline.models import EveLocation
 
 from fleets.endpoints.schemas import EveFleetLocationResponse
@@ -19,8 +20,9 @@ ROUTE_SPEC = {
 
 
 def get_v2_fleet_locations(request):
-    if not request.user.has_perm("fleets.add_evefleet"):
-        return 403, {"detail": "User missing permission fleets.add_evefleet"}
+    denied = require_feature(request.user, "fleets.create")
+    if denied:
+        return denied
     response = []
     locations = (
         EveLocation.objects.all()

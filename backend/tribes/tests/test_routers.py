@@ -2,7 +2,8 @@
 
 import jwt
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, Permission, User
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import signals as django_signals
 from django.test import Client, TestCase
 
@@ -101,6 +102,13 @@ class MembershipApplyTestCase(TestCase):
             tribe=self.tribe, name="Mining"
         )
         self.user = User.objects.create_user(username="miner")
+        content_type = ContentType.objects.get(
+            app_label="tribes", model="tribegroupmembership"
+        )
+        perm = Permission.objects.get(
+            codename="add_tribegroupmembership", content_type=content_type
+        )
+        self.user.user_permissions.add(perm)
         self.token = _make_token(self.user)
         self.character = EveCharacter.objects.create(
             character_id=10001, character_name="Miner One", user=self.user

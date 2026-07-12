@@ -4,15 +4,14 @@ from django.contrib.auth.models import Group as AuthGroup
 from django.contrib.auth.models import User
 
 from eveonline.models import EveCorporation
-from tribes.models import Tribe, TribeGroup
-from users.helpers import offboard_group
-
-from .models import (
+from groups.models import (
     EveCorporationGroup,
     UserAffiliation,
     UserCommunityStatus,
     UserCommunityStatusHistory,
 )
+from tribes.models import Tribe, TribeGroup
+from users.helpers import offboard_group
 
 logger = logging.getLogger(__name__)
 

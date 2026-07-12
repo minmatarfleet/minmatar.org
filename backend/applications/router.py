@@ -11,6 +11,7 @@ from eveonline.models import EveCharacter, EveCorporation
 
 from .l3arn import is_l3arn_corporation, validate_l3arn_application_description
 from .models import EveCorporationApplication
+from groups.helpers.feature_access import can_use_feature, require_feature
 
 router = Router(tags=["Applications"])
 logger = logging.getLogger(__name__)
@@ -132,9 +133,7 @@ def get_corporation_application_by_id(
     if not application:
         return 404, ErrorResponse(detail="Application not found.")
     is_applicant = application.user_id == request.user.id
-    has_view_perm = request.user.has_perm(
-        "applications.view_evecorporationapplication"
-    )
+    has_view_perm = can_use_feature(request.user, "applications.view")
     if not is_applicant and not has_view_perm:
         return 403, ErrorResponse(
             detail="You do not have permission to view this application."
@@ -172,9 +171,7 @@ def get_corporation_application_by_id(
 def accept_corporation_application(
     request, corporation_id: int, application_id: int
 ):
-    if not request.user.has_perm(
-        "applications.change_evecorporationapplication"
-    ):
+    if not can_use_feature(request.user, "applications.manage"):
         return 403, {
             "detail": "You do not have permission to accept applications."
         }
@@ -211,9 +208,7 @@ def accept_corporation_application(
 def reject_corporation_application(
     request, corporation_id: int, application_id: int
 ):
-    if not request.user.has_perm(
-        "applications.change_evecorporationapplication"
-    ):
+    if not can_use_feature(request.user, "applications.manage"):
         return 403, {
             "detail": "You do not have permission to accept applications."
         }

@@ -4,6 +4,7 @@ from django.db.models import signals
 from django.dispatch import receiver
 
 from groups.helpers import sync_user_community_groups
+from tribes.helpers.offboarding import offboard_tribe_memberships_without_feature
 from groups.models import (
     UserAffiliation,
     UserCommunityStatus,
@@ -24,6 +25,7 @@ _previous_status_cache = {}
 def user_affiliation_pre_delete(sender, instance, **kwargs):
     logger.info("User affiliation deleted, syncing user community groups")
     sync_user_community_groups(instance.user)
+    offboard_tribe_memberships_without_feature(instance.user)
 
 
 @receiver(
@@ -50,6 +52,7 @@ def user_affiliation_post_save(sender, instance, created, **kwargs):
     logger.info("User affiliation saved, syncing user community groups")
     instance.user.refresh_from_db()
     sync_user_community_groups(instance.user)
+    offboard_tribe_memberships_without_feature(instance.user)
 
 
 @receiver(

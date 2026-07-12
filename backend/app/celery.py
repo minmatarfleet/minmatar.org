@@ -19,6 +19,10 @@ app = Celery("app")
 # the configuration object to child processes.
 app.config_from_object("django.conf:settings")
 
+if getattr(settings, "TESTING", False):
+    app.conf.task_always_eager = True
+    app.conf.task_eager_propagates = True
+
 # Queue and routing: set here so workers and producers (beat, admin) use the same queues.
 app.conf.task_queues = (
     Queue("celery", routing_key="celery"),

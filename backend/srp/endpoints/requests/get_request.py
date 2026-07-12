@@ -1,5 +1,7 @@
 """GET /{int:request_id} — single SRP request."""
 
+
+from groups.helpers.feature_access import require_feature
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from onboarding.srp_gate import require_current_srp_onboarding
@@ -23,10 +25,9 @@ ROUTE_SPEC = {
 
 
 def get_srp_request(request, request_id: int):
-    if not request.user.has_perm("srp.view_evefleetshipreimbursement"):
-        return 403, {
-            "detail": "User missing permission srp.view_evefleetshipreimbursement"
-        }
+    denied = require_feature(request.user, "srp.view")
+    if denied:
+        return denied
 
     denied = require_current_srp_onboarding(request)
     if denied:

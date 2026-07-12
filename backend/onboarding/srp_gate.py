@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from django.contrib.auth.models import AnonymousUser
 
+from groups.helpers.feature_access import can_use_feature
 from onboarding.models import (
     OnboardingProgram,
     OnboardingProgramType,
@@ -20,7 +21,7 @@ def bypass_srp_onboarding(user) -> bool:
     # Superusers have all perms in Django; only explicit assignees skip pilot onboarding.
     if getattr(user, "is_superuser", False):
         return False
-    return user.has_perm("srp.change_evefleetshipreimbursement")
+    return can_use_feature(user, "srp.process")
 
 
 def user_has_current_srp_onboarding(user) -> bool:

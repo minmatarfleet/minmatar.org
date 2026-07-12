@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from groups.helpers.feature_access import can_use_feature
 from industry.endpoints.mining.schemas import (
     MINING_LEVEL_DURATION_MINUTES,
     PostCompletionRequest,
@@ -32,7 +33,7 @@ ROUTE_SPEC = {
 
 
 def post_completion(request, system_id: int, payload: PostCompletionRequest):
-    if not request.user.has_perm("industry.add_miningupgradecompletion"):
+    if not can_use_feature(request.user, "industry.mining.submit"):
         return 403, ErrorResponse(
             detail="You do not have permission to record mining completions."
         )

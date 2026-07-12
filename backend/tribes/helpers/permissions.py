@@ -1,5 +1,6 @@
 """Permission-check helpers for the tribes app."""
 
+from groups.helpers.feature_access import can_use_feature
 from tribes.models import TribeGroup, TribeGroupMembership
 
 
@@ -9,7 +10,7 @@ def user_is_tribe_chief(user, tribe) -> bool:
         return True
     if tribe.chief_id and tribe.chief_id == user.pk:
         return True
-    return user.has_perm("tribes.change_tribegroupmembership")
+    return can_use_feature(user, "tribes.manage_memberships", tribe=tribe)
 
 
 def user_can_manage_group(user, tribe_group: TribeGroup) -> bool:
@@ -19,7 +20,9 @@ def user_can_manage_group(user, tribe_group: TribeGroup) -> bool:
     """
     if user.is_superuser:
         return True
-    if user.has_perm("tribes.change_tribegroupmembership"):
+    if can_use_feature(
+        user, "tribes.manage_memberships", tribe_group=tribe_group
+    ):
         return True
     tribe = tribe_group.tribe
     if tribe.chief_id and tribe.chief_id == user.pk:
