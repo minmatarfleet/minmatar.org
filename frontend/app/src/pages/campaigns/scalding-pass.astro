@@ -22,6 +22,13 @@ const meta_description = t('campaigns.scalding_pass.meta_description')
 const canonical_url = new URL(translatePath('/campaigns/scalding-pass/'), Astro.url.origin).href
 const meta_image = new URL(COVER_IMAGE, Astro.url.origin).href
 
+import {
+    get_location_video_cover,
+    get_location_video_cover_thumb,
+    get_location_cover,
+    get_location_cover_990,
+} from '@helpers/covers'
+
 const structured_data = buildScaldingPassCampaignJsonLd({
     canonicalUrl: canonical_url,
     siteName: t('index.page_title'),
@@ -48,9 +55,11 @@ const structured_data = buildScaldingPassCampaignJsonLd({
     <PageLanding
         wide={true}
         cover={{
-            image: COVER_IMAGE,
-            image_990: COVER_IMAGE,
-            alt: page_title,
+            video: get_location_video_cover('watermellon') ?? undefined,
+			video_thumb: get_location_video_cover_thumb('watermellon') ?? undefined,
+            image: get_location_cover('watermellon') ?? COVER_IMAGE,
+            image_990: get_location_cover_990('watermellon') ?? COVER_IMAGE,
+            animated: false,
             scrollable: true,
             overlay: true,
         }}
