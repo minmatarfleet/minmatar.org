@@ -251,3 +251,19 @@ class FeedEventFleetLink(models.Model):
                 name="feed_event_fleet_unique",
             ),
         ]
+
+
+class FeedCapitalPing(models.Model):
+    """Discord capital-kill pings sent from the R2Z2 poller."""
+
+    killmail_id = models.BigIntegerField(unique=True, db_index=True)
+    solar_system_id = models.BigIntegerField()
+    distance_ly = models.FloatField()
+    discord_message_id = models.BigIntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Capital ping {self.killmail_id}"

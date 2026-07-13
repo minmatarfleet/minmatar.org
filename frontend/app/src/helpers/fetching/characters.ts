@@ -206,6 +206,9 @@ export async function get_characters_summary_sorted(auth_token: string) {
     character_summary.characters = await Promise.all(character_summary.characters.map(async (character) => {
         const toknes_info = await get_character_esi_token(auth_token, character.character_id)
         character.requested_groups = toknes_info.at(0)?.requested_groups ?? []
+        character.actual_groups = [
+            ...new Set(toknes_info.flatMap(token => token.actual_groups ?? [])),
+        ]
         return character
     }))
     

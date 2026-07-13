@@ -16,6 +16,7 @@ from feed.constants import (
     R2Z2_USER_AGENT,
 )
 from feed.helpers.ingest import upsert_feed_killmail_from_r2z2
+from feed.helpers.capital_pings import maybe_notify_capital_kill
 from feed.helpers.monitored_systems import get_monitored_system_ids
 from feed.models import FeedR2z2Cursor
 
@@ -112,6 +113,7 @@ def poll_r2z2_batch(*, max_seconds: float | None = None) -> dict[str, int]:
         "errors": 0,
         "rate_limited": 0,
         "banned": 0,
+        "capital_pings": 0,
     }
 
     while (time.monotonic() - started) < budget:
@@ -153,6 +155,13 @@ def poll_r2z2_batch(*, max_seconds: float | None = None) -> dict[str, int]:
 
         stats["processed"] += 1
         if payload:
+            try:
+                if maybe_notify_capital_kill(payload):
+                    stats["capital_pings"] += 1
+            except Exception:
+                logger.exception(
+                    "Capital ping evaluation failed at sequence %s", sequence
+                )
             result = upsert_feed_killmail_from_r2z2(
                 payload, allowlist=allowlist
             )

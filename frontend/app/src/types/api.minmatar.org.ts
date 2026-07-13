@@ -923,6 +923,7 @@ export interface SummaryCharacter {
     token_status:       ESITokenStatus;
     flags:              CharacterErrors[];
     requested_groups:   string[];
+    actual_groups:      string[];
 }
 
 export interface CharacterESITokens {

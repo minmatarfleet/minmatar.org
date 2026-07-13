@@ -127,3 +127,18 @@ ROLLUP_VERSIONS: dict[str, int] = {
     "fleet_active": 9,
     "contested_change": 1,
 }
+
+# Capital kill Discord pings (radius from Amamake)
+AMAMAKE_SOLAR_SYSTEM_ID = 30002537
+CAPITAL_PING_MAX_LIGHT_YEARS = 8.0
+METERS_PER_LIGHT_YEAR = 9_460_528_400_000_000
+CAPITAL_SHIP_GROUPS = frozenset(
+    {
+        "Capital Ship",
+        "Dreadnought",
+        "Carrier",
+        "Supercarrier",
+        "Titan",
+        "Force Auxiliary",
+    }
+)
