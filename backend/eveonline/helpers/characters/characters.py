@@ -8,7 +8,11 @@ from pydantic import BaseModel
 from audit.models import AuditEntry
 from esi.models import Token
 from eveonline.models import EvePlayer, EveCharacter
-from eveonline.scopes import TokenType, scopes_for, scopes_for_groups
+from eveonline.scopes import (
+    TokenType,
+    scopes_for_groups,
+    token_type_str,
+)
 from tribes.models import (
     TribeGroupMembershipCharacter,
     TribeGroupMembershipCharacterHistory,
@@ -134,17 +138,44 @@ def _normalize_token_level(level: str) -> str:
     return legacy.get(level, level)
 
 
+def merge_scope_groups(
+    existing: List[str] | None, *groups: str | None
+) -> List[str]:
+    """Return scope groups with duplicates removed, preserving order."""
+    result = list(existing or [])
+    for group in groups:
+        normalized = _normalize_token_level((group or "").strip())
+        if normalized and normalized not in result:
+            result.append(normalized)
+    return result
+
+
+def character_configured_scope_groups(character: EveCharacter) -> List[str]:
+    """Scope groups explicitly configured for a character."""
+    groups = merge_scope_groups(getattr(character, "esi_scope_groups", None))
+    if not groups and character.esi_token_level:
+        return merge_scope_groups([], character.esi_token_level)
+    if character.esi_token_level:
+        groups = merge_scope_groups(
+            groups, _normalize_token_level(character.esi_token_level)
+        )
+    return groups
+
+
 def character_desired_scopes(character: EveCharacter) -> List[str]:
     """Union of scopes for all of the character's scope groups."""
-    groups = getattr(character, "esi_scope_groups", None)
-    if groups:
-        return scopes_for_groups(groups)
-    if not character.esi_token_level:
+    groups = character_configured_scope_groups(character)
+    if not groups:
         return []
-    normalized = _normalize_token_level(character.esi_token_level)
-    try:
-        token_type = TokenType(normalized)
-    except ValueError:
-        return []
-    scopes = scopes_for(token_type)
-    return list(scopes) if scopes else []
+    return scopes_for_groups(groups)
+
+
+def scope_groups_for_token_add(
+    character: EveCharacter | None,
+    token_type: TokenType,
+) -> List[str]:
+    """Scope groups to request in SSO when adding token_type to a character."""
+    existing: List[str] = []
+    if character is not None:
+        existing = character_configured_scope_groups(character)
+    return merge_scope_groups(existing, token_type_str(token_type))

@@ -6,7 +6,10 @@ from app.errors import ErrorResponse
 from authentication import AuthBearer
 from esi.models import Token
 from eveonline.endpoints.characters.schemas import CharacterTokenInfo
-from eveonline.helpers.characters import character_desired_scopes
+from eveonline.helpers.characters import (
+    character_configured_scope_groups,
+    character_desired_scopes,
+)
 from eveonline.models import EveCharacter
 from eveonline.scopes import scope_names, scope_group
 from groups.helpers import PEOPLE_TEAM, TECH_TEAM, user_in_team
@@ -33,10 +36,7 @@ def get_character_tokens(request, character_id: int):
         or user_in_team(request.user, PEOPLE_TEAM)
         or user_in_team(request.user, TECH_TEAM)
     )
-    requested_groups = getattr(character, "esi_scope_groups", None)
-    if not requested_groups and character.esi_token_level:
-        requested_groups = [character.esi_token_level.strip()]
-    requested_groups = requested_groups or []
+    requested_groups = character_configured_scope_groups(character)
 
     response = []
     for token in Token.objects.filter(character_id=character.character_id):

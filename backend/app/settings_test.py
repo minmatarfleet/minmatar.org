@@ -36,6 +36,10 @@ CSRF_TRUSTED_ORIGINS = [
 BROKER_URL = os.environ.get("BROKER_URL", "redis://localhost:6379/1")
 CELERYBEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"
 
+# Run Celery tasks inline in tests — no Redis broker or worker required.
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
+
 WEB_LINK_URL = os.environ.get("WEB_LINK_URL", "https://my.minmatar.org")
 
 # DISCORD

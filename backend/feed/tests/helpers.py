@@ -11,6 +11,7 @@ def make_killmail_payload(
     faction_id: int = 500002,
     attacker_count: int = 8,
     ship_type_id: int = 22468,
+    attacker_ship_type_id: int = 22468,
 ) -> dict:
     """Build R2Z2-style payload for tests."""
     if killmail_time is None:
@@ -22,7 +23,7 @@ def make_killmail_payload(
             "corporation_id": 98000000,
             "alliance_id": 99000000,
             "faction_id": faction_id,
-            "ship_type_id": 22468,
+            "ship_type_id": attacker_ship_type_id,
             "damage_done": 1000,
             "final_blow": i == 0,
         }

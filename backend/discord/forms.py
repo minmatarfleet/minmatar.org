@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 
 from discord.channels import (
     ADMIN_PICKER_CHANNEL_TYPES,
+    CAPITAL_PING_CHANNEL_TYPES,
     VOICE_TRACKING_CHANNEL_TYPES,
     fetch_active_guild_channels,
     get_guild_channel,
@@ -20,7 +21,7 @@ class DiscordChannelAdminForm(forms.ModelForm):
 
     class Meta:
         model = DiscordChannel
-        fields = ("track_voice_activity",)
+        fields = ("track_voice_activity", "receive_capital_pings")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -73,6 +74,9 @@ class DiscordChannelAdminForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
         track_voice_activity = cleaned_data.get("track_voice_activity", False)
+        receive_capital_pings = cleaned_data.get(
+            "receive_capital_pings", False
+        )
 
         if self.instance.pk:
             channel_type = self.instance.channel_type
@@ -112,6 +116,18 @@ class DiscordChannelAdminForm(forms.ModelForm):
                 {
                     "track_voice_activity": (
                         "Voice activity tracking is only supported for voice and stage channels."
+                    )
+                }
+            )
+
+        if (
+            receive_capital_pings
+            and channel_type not in CAPITAL_PING_CHANNEL_TYPES
+        ):
+            raise ValidationError(
+                {
+                    "receive_capital_pings": (
+                        "Capital pings are only supported for text and forum channels."
                     )
                 }
             )

@@ -17,7 +17,7 @@ from eveonline.models import (
     EveTag,
     EveCharacterTag,
 )
-from eveonline.scopes import TokenType, token_type_str
+from eveonline.scopes import TokenType, token_type_str, add_scopes
 from eveonline.helpers.characters import (
     user_primary_character,
     user_characters,
@@ -298,6 +298,67 @@ class CharacterRouterTestCase(TestCase):
         self.assertFalse(new_char.esi_suspended)
         self.assertEqual(char_id, new_char.token.character_id)
         self.assertEqual("Old hash", new_char.token.character_owner_hash)
+
+    def test_add_industry_token_replaces_director_with_upgraded_token(self):
+        char_id = 99001
+        char = self.make_character(self.user, char_id, f"TestChar {char_id}")
+        add_scopes(TokenType.DIRECTOR, char.token)
+        char.esi_token_level = "Director"
+        char.esi_scope_groups = ["Basic"]
+        char.save()
+        director_token_id = char.token_id
+
+        upgraded_token = self.make_token(char_id)
+        add_scopes(TokenType.DIRECTOR, upgraded_token)
+        add_scopes(TokenType.INDUSTRY, upgraded_token)
+
+        req = self.make_request("/", char_id)
+        handle_add_character_esi_callback(
+            req, upgraded_token, TokenType.INDUSTRY
+        )
+
+        new_char = EveCharacter.objects.filter(character_id=char_id).first()
+        self.assertEqual(upgraded_token.pk, new_char.token_id)
+        self.assertIn("Industry", new_char.esi_scope_groups)
+        self.assertFalse(Token.objects.filter(pk=director_token_id).exists())
+        self.assertEqual(1, Token.objects.filter(character_id=char_id).count())
+
+    def test_add_industry_token_rejects_downgrade(self):
+        char_id = 99003
+        char = self.make_character(self.user, char_id, f"TestChar {char_id}")
+        add_scopes(TokenType.DIRECTOR, char.token)
+        char.esi_token_level = "Director"
+        char.save()
+        director_token_id = char.token_id
+
+        industry_only_token = self.make_token(char_id)
+        add_scopes(TokenType.INDUSTRY, industry_only_token)
+
+        req = self.make_request("/", char_id)
+        handle_add_character_esi_callback(
+            req, industry_only_token, TokenType.INDUSTRY
+        )
+
+        new_char = EveCharacter.objects.filter(character_id=char_id).first()
+        self.assertEqual(director_token_id, new_char.token_id)
+        self.assertFalse(
+            Token.objects.filter(pk=industry_only_token.pk).exists()
+        )
+
+    def test_add_industry_token_merges_scope_groups_on_same_token(self):
+        char_id = 99002
+        char = self.make_character(self.user, char_id, f"TestChar {char_id}")
+        add_scopes(TokenType.BASIC, char.token)
+        char.esi_scope_groups = ["Basic"]
+        char.save()
+
+        req = self.make_request("/", char_id)
+        add_scopes(TokenType.INDUSTRY, char.token)
+        handle_add_character_esi_callback(req, char.token, TokenType.INDUSTRY)
+
+        new_char = EveCharacter.objects.filter(character_id=char_id).first()
+        self.assertIn("Industry", new_char.esi_scope_groups)
+        self.assertIn("Basic", new_char.esi_scope_groups)
 
     def test_get_skillsets(self):
         char_id = 5678
