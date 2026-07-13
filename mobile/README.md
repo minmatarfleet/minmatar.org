@@ -18,6 +18,8 @@ cp .env.example .env
 npm run start:tunnel
 ```
 
+Or from the repo root, `./dev.sh` (or `make dev`) starts mobile along with the API, Celery, Beat, and frontend.
+
 Then open in **Expo Go** on your phone (scan the QR code). The project targets **Expo SDK 54**.
 
 Use `npm run web` for browser testing. On **WSL2**, use `start:tunnel` so your phone can reach the dev server.
