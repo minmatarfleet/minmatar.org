@@ -13,12 +13,14 @@ import TextBox from '@components/layout/TextBox.astro'
 const campaigns = getCampaigns()
 ---
 
-<Flexblock gap='var(--space-m)'>
-    <h2>{t('campaigns.section_title')}</h2>
+<Flexblock gap='var(--space-l)'>
+    <Flexblock gap='var(--space-m)'>
+        <h2>{t('campaigns.section_title')}</h2>
 
-    <TextBox>
-        <p>{t('campaigns.section_leading_text')}</p>
-    </TextBox>
+        <TextBox>
+            <p>{t('campaigns.section_leading_text')}</p>
+        </TextBox>
+    </Flexblock>
 
     <Grid
         class="[ w-full grid-fill ]"
@@ -32,5 +34,11 @@ const campaigns = getCampaigns()
                 <CampaignSubcard campaign={campaign} />
             </div>
         ))}
-</Grid>
+    </Grid>
 </Flexblock>
+
+<style lang="scss">
+    h2 {
+        font-size: var(--step-4);
+    }
+</style>
