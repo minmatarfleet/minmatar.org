@@ -208,7 +208,7 @@
     },
     {
         "slug": "tribes_market",
-        "path": "/alliance/tribes/3/",
+        "path": "/alliance/tribes/2/",
         "description": "page_finder.tribes.market.description",
         "publish": true,
         "keywords": [ "groups", "tribes" ]

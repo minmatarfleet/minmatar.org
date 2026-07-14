@@ -21,9 +21,9 @@
     "model": "tribes.tribe",
     "pk": 2,
     "fields": {
-      "name": "Industry",
-      "slug": "industry",
-      "description": "Ore to wreck in record time. Keeping our supply chain alive and aligned to our war machine.",
+      "name": "Supply",
+      "slug": "supply",
+      "description": "Ore to hangar to market. Keeping the alliance supply chain alive — mining, industry, freight, and market.",
       "content": "",
       "image_url": null,
       "banner_url": "https://content.eveonline.com/www/newssystem/media/73327/1/ReactionIndustryWindowInGame.png",
@@ -48,7 +48,7 @@
       "group": null,
       "discord_channel_id": null,
       "chief": null,
-      "is_active": true,
+      "is_active": false,
       "created_at": "2026-03-01T05:58:42.370Z",
       "updated_at": "2026-03-05T20:31:31.066Z"
     }
@@ -124,7 +124,7 @@
       "chief": null,
       "discord_channel_id": null,
       "is_active": true,
-      "code": "industry.subcapital-production"
+      "code": "supply.subcapital-production"
     }
   },
   {
@@ -138,7 +138,7 @@
       "chief": null,
       "discord_channel_id": null,
       "is_active": true,
-      "code": "industry.capital-production"
+      "code": "supply.capital-production"
     }
   },
   {
@@ -152,7 +152,7 @@
       "chief": null,
       "discord_channel_id": null,
       "is_active": true,
-      "code": "industry.mining"
+      "code": "supply.mining"
     }
   },
   {
@@ -166,48 +166,48 @@
       "chief": null,
       "discord_channel_id": null,
       "is_active": true,
-      "code": "industry.planetary-interaction"
+      "code": "supply.planetary-interaction"
     }
   },
   {
     "model": "tribes.tribegroup",
     "pk": 9,
     "fields": {
-      "tribe": 3,
+      "tribe": 2,
       "name": "Freighters",
       "description": "If it needs to move, we move it. Freighters handle the logistics runs that keep every corner of the alliance stocked and operational.",
       "group": null,
       "chief": null,
       "discord_channel_id": null,
       "is_active": true,
-      "code": "market.freighters"
+      "code": "supply.freighters"
     }
   },
   {
     "model": "tribes.tribegroup",
     "pk": 10,
     "fields": {
-      "tribe": 3,
-      "name": "Contracts",
-      "description": "Right ship, right pilot, right price. Contracts makes doctrine fits and key assets available to alliance members without the headache.",
+      "tribe": 2,
+      "name": "Market",
+      "description": "Contracts and market orders — doctrine fits, seed stock, and the alliance market pipeline.",
       "group": null,
       "chief": null,
       "discord_channel_id": null,
       "is_active": true,
-      "code": "market.contracts"
+      "code": "supply.market"
     }
   },
   {
     "model": "tribes.tribegroup",
     "pk": 11,
     "fields": {
-      "tribe": 3,
+      "tribe": 2,
       "name": "Market Orders",
-      "description": "Supply meets demand. Orders manages the market pipeline from raw material to undock-ready hulls.",
+      "description": "Merged into Supply — Market. Kept inactive for historical membership rows.",
       "group": null,
       "chief": null,
       "discord_channel_id": null,
-      "is_active": true,
+      "is_active": false,
       "code": "market.market-orders"
     }
   },
@@ -271,14 +271,14 @@
     "model": "tribes.tribegroup",
     "pk": 16,
     "fields": {
-      "tribe": 3,
+      "tribe": 2,
       "name": "Loyalty Points",
       "description": "Warzones pay dividends. Loyalty Points converts alliance military activity into ISK and gear that flows back to our pilots.",
       "group": null,
       "chief": null,
       "discord_channel_id": null,
       "is_active": true,
-      "code": "market.loyalty-points"
+      "code": "supply.loyalty-points"
     }
   },
   {

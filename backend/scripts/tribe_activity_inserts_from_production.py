@@ -29,16 +29,15 @@ MANUAL_CODES = frozenset(
         "pulse.readiness",
         "pulse.advocates",
         "pulse.tournaments",
-        "market.contracts",
-        "market.market-orders",
-        "market.loyalty-points",
+        "supply.market",
+        "supply.loyalty-points",
     }
 )
 
 PRODUCTION_CODES = frozenset(
     {
-        "industry.subcapital-production",
-        "industry.capital-production",
+        "supply.subcapital-production",
+        "supply.capital-production",
     }
 )
 
@@ -217,7 +216,7 @@ for g in groups:
     if code in MANUAL_CODES:
         continue
 
-    if code == "industry.mining":
+    if code == "supply.mining":
         if want_activity(g, TribeGroupActivity.MINING, None):
             inserts.append(
                 (
@@ -227,7 +226,7 @@ for g in groups:
             )
         continue
 
-    if code == "industry.planetary-interaction":
+    if code == "supply.planetary-interaction":
         if want_activity(g, TribeGroupActivity.PLANETARY_INTERACTION, None):
             inserts.append(
                 (
@@ -267,7 +266,7 @@ for g in groups:
         add_combat_activities(g, inserts)
         continue
 
-    if code == "market.freighters":
+    if code == "supply.freighters":
         # Town hall uses freight program report; courier ingest optional for member stats
         if want_activity(g, TribeGroupActivity.COURIER_CONTRACT, None):
             inserts.append(

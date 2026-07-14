@@ -134,7 +134,7 @@ class ReportRegistryTestCase(TestCase):
         for code in (
             "pulse.technology",
             "pulse.readiness",
-            "market.contracts",
+            "supply.market",
         ):
             binding = get_binding(code)
             self.assertTrue(binding.manual)
@@ -507,7 +507,7 @@ class ReportRunnerTestCase(TestCase):
         mining_group = TribeGroup.objects.create(
             tribe=Tribe.objects.create(name="Industry", slug="industry2"),
             name="Mining",
-            code="industry.mining",
+            code="supply.mining",
         )
         with self.assertRaises(ReportError) as ctx:
             run_group_report(

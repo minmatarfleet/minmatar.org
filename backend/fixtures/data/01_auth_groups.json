@@ -62,7 +62,7 @@
     "model": "auth.group",
     "pk": 136,
     "fields": {
-      "name": "Tribe - Industry",
+      "name": "Tribe - Supply",
       "permissions": []
     }
   },
@@ -142,7 +142,7 @@
     "model": "auth.group",
     "pk": 153,
     "fields": {
-      "name": "Tribe Group - Contracts",
+      "name": "Tribe Group - Market",
       "permissions": []
     }
   },
