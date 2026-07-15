@@ -75,10 +75,18 @@ def pending_fitting_request_exists(
     )
 
 
+def _name_from_eft_or_payload(payload: dict) -> str:
+    eft = payload.get("eft_format") or ""
+    return EveFitting.fitting_name_from_eft(eft) or payload.get("name") or ""
+
+
 @transaction.atomic
 def apply_fitting_payload(fitting: EveFitting, payload: dict):
     for field in EVE_FITTING_VERSIONED_FIELDS:
         setattr(fitting, field, payload.get(field, getattr(fitting, field)))
+    derived_name = EveFitting.fitting_name_from_eft(fitting.eft_format)
+    if derived_name:
+        fitting.name = derived_name
     fitting.save()
 
 
@@ -93,15 +101,16 @@ def apply_refit_payload(
     if delete and refit and refit.pk:
         refit.delete()
         return
+    name = _name_from_eft_or_payload(payload)
     if refit is None:
         EveFittingRefit.objects.create(
             base_fitting=base_fitting,
-            name=payload["name"],
+            name=name,
             eft_format=payload["eft_format"],
             description=payload.get("description", ""),
         )
         return
-    refit.name = payload["name"]
+    refit.name = name
     refit.eft_format = payload["eft_format"]
     refit.description = payload.get("description", "")
     refit.save()
@@ -138,6 +147,15 @@ def submit_fitting_change_request(
     )
 
 
+def _load_fitting_for_change_request(
+    change_request: EveFittingChangeRequest,
+) -> EveFitting:
+    """Include soft-deleted rows (pending creates are soft-deleted until approved)."""
+    return EveFitting.all_objects.select_for_update().get(
+        pk=change_request.fitting_id
+    )
+
+
 def _require_pending_change_request(change_request) -> None:
     if change_request.status != ChangeRequestStatus.PENDING:
         raise ValueError(
@@ -156,12 +174,18 @@ def approve_fitting_change_request(
         pk=change_request.pk
     )
     _require_pending_change_request(change_request)
-    fitting = change_request.fitting
+    fitting = _load_fitting_for_change_request(change_request)
     kind = change_request.change_kind
     payload = change_request.payload
 
-    if kind == "fitting_versioned":
+    if kind == "fitting_create":
+        if fitting.deleted:
+            fitting.undelete()
         apply_fitting_payload(fitting, payload)
+    elif kind == "fitting_versioned":
+        apply_fitting_payload(fitting, payload)
+    elif kind == "fitting_delete":
+        fitting.delete()
     elif kind == "refit_create":
         apply_refit_payload(None, fitting, payload)
     elif kind == "refit_update":
@@ -170,6 +194,8 @@ def approve_fitting_change_request(
         apply_refit_payload(
             change_request.refit, fitting, payload, delete=True
         )
+    else:
+        raise ValueError(f"Unknown fitting change kind: {kind}")
 
     change_request.status = ChangeRequestStatus.APPROVED
     change_request.reviewed_by = user

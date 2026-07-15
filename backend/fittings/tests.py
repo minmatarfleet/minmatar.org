@@ -3,6 +3,8 @@ import re
 from django.test import Client
 from django.urls import reverse
 
+from eveuniverse.models import EveCategory, EveGroup, EveType
+
 from app.test import TestCase
 
 from fittings.models import (
@@ -158,13 +160,14 @@ class EveFittingAdminRefitInlineTestCase(TestCase):
         url = reverse("admin:fittings_evefitting_change", args=[fitting.pk])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn("cannot be edited separately", html)
         csrf = re.search(
             r'name="csrfmiddlewaretoken" value="([^"]+)"',
-            response.content.decode(),
+            html,
         ).group(1)
         post = {
             "csrfmiddlewaretoken": csrf,
-            "name": fitting.name,
             "eft_format": fitting.eft_format,
             "description": fitting.description,
             "aliases": "",
@@ -174,7 +177,6 @@ class EveFittingAdminRefitInlineTestCase(TestCase):
             "refits-INITIAL_FORMS": "0",
             "refits-MIN_NUM_FORMS": "0",
             "refits-MAX_NUM_FORMS": "1000",
-            "refits-0-name": "Scanning refit",
             "refits-0-eft_format": (
                 "[Retribution, Scanning refit]\n\n[empty high slot]"
             ),
@@ -211,7 +213,6 @@ class EveFittingAdminRefitInlineTestCase(TestCase):
         new_eft = "[Retribution, [ADV-5] Retribution v2]"
         post = {
             "csrfmiddlewaretoken": csrf,
-            "name": fitting.name,
             "eft_format": new_eft,
             "description": fitting.description,
             "aliases": "",
@@ -234,9 +235,139 @@ class EveFittingAdminRefitInlineTestCase(TestCase):
             "[Retribution, [ADV-5] Retribution]",
             fitting.eft_format,
         )
+        self.assertEqual("[ADV-5] Retribution", fitting.name)
         req = EveFittingChangeRequest.objects.get(fitting=fitting)
         self.assertEqual("fitting_versioned", req.change_kind)
         self.assertEqual(new_eft, req.payload["eft_format"])
+
+    def test_mismatched_name_syncs_from_eft_without_approval(self):
+        fitting = EveFitting.objects.create(
+            name="Legacy display name",
+            eft_format="[Retribution, [ADV-5] Retribution]",
+            ship_id=608,
+            description="Base",
+        )
+        url = reverse("admin:fittings_evefitting_change", args=[fitting.pk])
+        response = self.client.get(url)
+        csrf = re.search(
+            r'name="csrfmiddlewaretoken" value="([^"]+)"',
+            response.content.decode(),
+        ).group(1)
+        post = {
+            "csrfmiddlewaretoken": csrf,
+            "eft_format": fitting.eft_format,
+            "description": fitting.description,
+            "aliases": "",
+            "minimum_pod": "",
+            "recommended_pod": "",
+            "refits-TOTAL_FORMS": "0",
+            "refits-INITIAL_FORMS": "0",
+            "refits-MIN_NUM_FORMS": "0",
+            "refits-MAX_NUM_FORMS": "1000",
+            "_save": "Save",
+        }
+        response = self.client.post(url, post)
+        self.assertEqual(response.status_code, 302)
+        fitting.refresh_from_db()
+        self.assertEqual("[ADV-5] Retribution", fitting.name)
+        self.assertFalse(
+            EveFittingChangeRequest.objects.filter(fitting=fitting).exists()
+        )
+
+
+class EveFittingAdminCreateDeleteApprovalTestCase(TestCase):
+    """Admin create/delete queue fitting change requests."""
+
+    def setUp(self):
+        super().setUp()
+        self.make_superuser()
+        self.user.is_staff = True
+        self.user.save()
+        self.client.force_login(self.user)
+        category, _ = EveCategory.objects.get_or_create(
+            id=6,
+            defaults={"name": "Ship", "published": True},
+        )
+        group, _ = EveGroup.objects.get_or_create(
+            id=25,
+            defaults={
+                "name": "Frigate",
+                "eve_category": category,
+                "published": True,
+            },
+        )
+        EveType.objects.get_or_create(
+            id=587,
+            defaults={
+                "name": "Rifter",
+                "eve_group": group,
+                "published": True,
+            },
+        )
+
+    def test_add_queues_fitting_create(self):
+        url = reverse("admin:fittings_evefitting_add")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        csrf = re.search(
+            r'name="csrfmiddlewaretoken" value="([^"]+)"',
+            response.content.decode(),
+        ).group(1)
+        post = {
+            "csrfmiddlewaretoken": csrf,
+            "eft_format": "[Rifter, [TEST] New Fit]",
+            "description": "brand new",
+            "aliases": "",
+            "minimum_pod": "",
+            "recommended_pod": "",
+            "refits-TOTAL_FORMS": "0",
+            "refits-INITIAL_FORMS": "0",
+            "refits-MIN_NUM_FORMS": "0",
+            "refits-MAX_NUM_FORMS": "1000",
+            "_save": "Save",
+        }
+        response = self.client.post(url, post)
+        self.assertEqual(
+            response.status_code,
+            302,
+            response.content.decode()[:4000],
+        )
+        self.assertFalse(
+            EveFitting.objects.filter(name="[TEST] New Fit").exists()
+        )
+        draft = EveFitting.all_objects.get(name="[TEST] New Fit")
+        self.assertIsNotNone(draft.deleted)
+        req = EveFittingChangeRequest.objects.get(fitting=draft)
+        self.assertEqual("fitting_create", req.change_kind)
+        self.assertEqual("[Rifter, [TEST] New Fit]", req.payload["eft_format"])
+
+    def test_delete_queues_fitting_delete(self):
+        fitting = EveFitting.objects.create(
+            name="[TEST] Delete Me",
+            eft_format="[Rifter, [TEST] Delete Me]",
+            ship_id=587,
+            description="live",
+        )
+        url = reverse("admin:fittings_evefitting_delete", args=[fitting.pk])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        csrf = re.search(
+            r'name="csrfmiddlewaretoken" value="([^"]+)"',
+            response.content.decode(),
+        ).group(1)
+        response = self.client.post(
+            url,
+            {"csrfmiddlewaretoken": csrf, "post": "yes"},
+        )
+        self.assertEqual(
+            response.status_code,
+            302,
+            response.content.decode()[:4000],
+        )
+        fitting.refresh_from_db()
+        self.assertIsNone(fitting.deleted)
+        req = EveFittingChangeRequest.objects.get(fitting=fitting)
+        self.assertEqual("fitting_delete", req.change_kind)
 
 
 class EveFittingVersionHistoryTestCase(TestCase):
@@ -268,6 +399,37 @@ class EveFittingVersionHistoryTestCase(TestCase):
         self.assertEqual(
             0, EveFittingHistory.objects.filter(fitting=fitting).count()
         )
+
+    def test_save_syncs_name_from_eft_without_version_bump(self):
+        fitting = EveFitting.objects.create(
+            name="Legacy display name",
+            eft_format="[Retribution, [ADV-5] Retribution]",
+            ship_id=608,
+            description="",
+        )
+        # create() already syncs; force a mismatch via update bypassing save().
+        EveFitting.objects.filter(pk=fitting.pk).update(
+            name="Legacy display name"
+        )
+        fitting.refresh_from_db()
+        version_before = fitting.latest_version
+        fitting.save()
+        fitting.refresh_from_db()
+        self.assertEqual("[ADV-5] Retribution", fitting.name)
+        self.assertEqual(version_before, fitting.latest_version)
+        self.assertEqual(
+            0, EveFittingHistory.objects.filter(fitting=fitting).count()
+        )
+
+    def test_create_derives_name_from_eft(self):
+        fitting = EveFitting(
+            name="ignored",
+            eft_format="[Rifter, From EFT]",
+            ship_id=587,
+            description="",
+        )
+        fitting.save()
+        self.assertEqual("From EFT", fitting.name)
 
     def test_versioned_change_writes_history_and_new_version(self):
         eft_v1 = "[Retribution, [ADV-5] Retribution]"
@@ -318,3 +480,54 @@ class EveFittingVersionHistoryTestCase(TestCase):
         self.assertEqual(1, history.count())
         row = history.get()
         self.assertEqual(["solo"], row.tags)
+
+
+class FittingsManageSearchTestCase(TestCase):
+    """Custom fittings hub: search bar filters the list."""
+
+    def setUp(self):
+        super().setUp()
+        self.make_superuser()
+        self.user.is_staff = True
+        self.user.save()
+        self.client.force_login(self.user)
+        EveFitting.objects.create(
+            name="[ADV-5] Retribution",
+            eft_format="[Retribution, [ADV-5] Retribution]",
+            ship_id=608,
+            description="pulse laser kite",
+            aliases="[FL33T] Retribution",
+        )
+        EveFitting.objects.create(
+            name="[NVY-30] Tornado",
+            eft_format="[Tornado, [NVY-30] Tornado]",
+            ship_id=12038,
+            description="artillery doctrine",
+        )
+
+    def test_manage_page_includes_search_form(self):
+        url = reverse("admin:fittings_manage_fittings")
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn('name="q"', html)
+        self.assertIn("Search fittings", html)
+        self.assertIn("[ADV-5] Retribution", html)
+        self.assertIn("[NVY-30] Tornado", html)
+
+    def test_manage_page_filters_by_query(self):
+        url = reverse("admin:fittings_manage_fittings")
+        response = self.client.get(url, {"q": "Tornado"})
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn("[NVY-30] Tornado", html)
+        self.assertNotIn("[ADV-5] Retribution", html)
+        self.assertIn('value="Tornado"', html)
+
+    def test_manage_page_filters_by_alias(self):
+        url = reverse("admin:fittings_manage_fittings")
+        response = self.client.get(url, {"q": "FL33T"})
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn("[ADV-5] Retribution", html)
+        self.assertNotIn("[NVY-30] Tornado", html)

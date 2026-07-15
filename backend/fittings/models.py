@@ -143,6 +143,12 @@ class EveFitting(MinmatarSoftDeleteModel):
 
     def save(self, *args, **kwargs):
         self.tags = self.coerce_tags(self.tags)
+        derived_name = self.fitting_name_from_eft(self.eft_format)
+        if derived_name and derived_name != self.name:
+            self.name = derived_name
+            update_fields = kwargs.get("update_fields")
+            if update_fields is not None:
+                kwargs["update_fields"] = {*update_fields, "name"}
 
         if self.pk is None:
             if not self.latest_version:
@@ -302,6 +308,13 @@ class EveFittingRefit(models.Model):
         return f"{self.base_fitting.name} — {self.name}"
 
     def save(self, *args, **kwargs):
+        derived_name = EveFitting.fitting_name_from_eft(self.eft_format)
+        if derived_name and derived_name != self.name:
+            self.name = derived_name
+            update_fields = kwargs.get("update_fields")
+            if update_fields is not None:
+                kwargs["update_fields"] = {*update_fields, "name"}
+
         base_ship = EveFitting.ship_name_from_eft(self.base_fitting.eft_format)
         refit_ship = EveFitting.ship_name_from_eft(self.eft_format)
         if base_ship != refit_ship:

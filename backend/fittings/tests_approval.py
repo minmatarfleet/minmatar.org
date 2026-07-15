@@ -422,10 +422,12 @@ class FittingChangeRequestTestCase(TestCase):
         self.proposer = self.user
         self.proposer.user_permissions.add(
             _perm("change_doctrine_fitting_strategic"),
+            _perm("change_doctrine_fitting_non_strategic"),
         )
         self.approver = self._create_user("fc")
         self.approver.user_permissions.add(
             _perm("approve_doctrine_fitting_strategic"),
+            _perm("approve_doctrine_fitting_non_strategic"),
         )
 
     def _create_user(self, username):
@@ -497,10 +499,66 @@ class FittingChangeRequestTestCase(TestCase):
         approve_fitting_change_request(req, self.approver)
         fitting.refresh_from_db()
         self.assertEqual("d2", fitting.description)
+        self.assertEqual("Fit v2", fitting.name)
         self.assertNotEqual(version_before, fitting.latest_version)
         self.assertEqual(
             1, EveFittingHistory.objects.filter(fitting=fitting).count()
         )
+
+    def test_approve_fitting_create_publishes(self):
+        fitting = EveFitting.objects.create(
+            name="New Fit",
+            eft_format="[Rifter, New Fit]",
+            ship_id=587,
+            description="pending create",
+        )
+        fitting.delete()
+        self.assertFalse(EveFitting.objects.filter(pk=fitting.pk).exists())
+        payload = {
+            "eft_format": "[Rifter, New Fit]",
+            "description": "live description",
+            "aliases": "",
+            "minimum_pod": "",
+            "recommended_pod": "",
+            "tags": [],
+        }
+        req = submit_fitting_change_request(
+            fitting,
+            change_kind="fitting_create",
+            payload=payload,
+            user=self.proposer,
+        )
+        approve_fitting_change_request(req, self.approver)
+        live = EveFitting.objects.get(pk=fitting.pk)
+        self.assertIsNone(live.deleted)
+        self.assertEqual("live description", live.description)
+        self.assertEqual("New Fit", live.name)
+
+    def test_approve_fitting_delete_removes_live(self):
+        fitting = EveFitting.objects.create(
+            name="Doomed Fit",
+            eft_format="[Rifter, Doomed Fit]",
+            ship_id=587,
+            description="bye",
+        )
+        payload = {
+            "eft_format": fitting.eft_format,
+            "description": fitting.description,
+            "aliases": "",
+            "minimum_pod": "",
+            "recommended_pod": "",
+            "tags": [],
+        }
+        req = submit_fitting_change_request(
+            fitting,
+            change_kind="fitting_delete",
+            payload=payload,
+            user=self.proposer,
+        )
+        self.assertTrue(EveFitting.objects.filter(pk=fitting.pk).exists())
+        approve_fitting_change_request(req, self.approver)
+        self.assertFalse(EveFitting.objects.filter(pk=fitting.pk).exists())
+        self.assertTrue(EveFitting.all_objects.filter(pk=fitting.pk).exists())
 
     def test_api_unaffected_by_pending(self):
         doctrine = EveDoctrine.objects.create(
