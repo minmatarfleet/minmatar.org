@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone as dt_tz
 from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
+from django.utils import timezone as dj_tz
 from discord.models import DiscordChannel, DiscordGuild
 from eveuniverse.models import (
     EveCategory,
@@ -318,6 +320,34 @@ class CapitalPingTestCase(TestCase):
         )
         self.assertFalse(maybe_notify_capital_kill(payload))
         mock_send.assert_not_called()
+
+    @patch("feed.helpers.capital_pings.send_capital_ping_discord")
+    def test_maybe_notify_age_gate_skips_old_kill(self, mock_send):
+        payload = make_killmail_payload(
+            136500008,
+            solar_system_id=AMAMAKE_SOLAR_SYSTEM_ID,
+            ship_type_id=73790,
+            killmail_time=datetime(2026, 6, 1, 12, 0, 0, tzinfo=dt_tz.utc),
+        )
+        self.assertIsNone(
+            maybe_notify_capital_kill(payload, apply_age_gate=True)
+        )
+        mock_send.assert_not_called()
+        self.assertEqual(FeedCapitalPing.objects.count(), 0)
+
+    @patch("feed.helpers.capital_pings.send_capital_ping_discord")
+    def test_maybe_notify_age_gate_allows_fresh_kill(self, mock_send):
+        mock_send.return_value = [999888779]
+        payload = make_killmail_payload(
+            136500009,
+            solar_system_id=AMAMAKE_SOLAR_SYSTEM_ID,
+            ship_type_id=73790,
+            killmail_time=dj_tz.now() - timedelta(minutes=5),
+        )
+        self.assertTrue(
+            maybe_notify_capital_kill(payload, apply_age_gate=True)
+        )
+        mock_send.assert_called_once()
 
     @patch("feed.helpers.capital_pings.DiscordClient")
     def test_send_capital_ping_discord(self, mock_client_cls):

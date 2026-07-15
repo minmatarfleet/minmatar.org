@@ -4,6 +4,7 @@ import logging
 from collections import Counter
 from typing import Any
 
+from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from discord.client import DiscordClient
@@ -13,6 +14,7 @@ from eveuniverse.models import EveSolarSystem
 
 from feed.constants import (
     AMAMAKE_SOLAR_SYSTEM_ID,
+    CAPITAL_PING_MAX_AGE_SECONDS,
     CAPITAL_PING_MAX_LIGHT_YEARS,
 )
 from feed.helpers.capital_ships import (
@@ -405,8 +407,13 @@ def maybe_notify_capital_kill(
     payload: dict[str, Any],
     *,
     discord_client: DiscordClient | None = None,
-) -> bool:
-    """Evaluate an R2Z2 payload and post a Discord ping when criteria match."""
+    apply_age_gate: bool = False,
+) -> bool | None:
+    """Evaluate an R2Z2 payload and post a Discord ping when criteria match.
+
+    Returns True if a ping was sent, False if skipped (not eligible), and
+    None if skipped solely due to the killmail age gate.
+    """
     if not _capital_ping_channel_ids():
         return False
 
@@ -431,6 +438,16 @@ def maybe_notify_capital_kill(
     )
     if distance_ly is None or distance_ly > CAPITAL_PING_MAX_LIGHT_YEARS:
         return False
+
+    if apply_age_gate:
+        killmail_time_str = raw.get("killmail_time")
+        killmail_time = (
+            parse_datetime(killmail_time_str) if killmail_time_str else None
+        )
+        if killmail_time is not None:
+            age_seconds = (timezone.now() - killmail_time).total_seconds()
+            if age_seconds > CAPITAL_PING_MAX_AGE_SECONDS:
+                return None
 
     try:
         message_ids = send_capital_ping_discord(

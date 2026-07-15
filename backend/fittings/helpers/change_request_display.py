@@ -41,7 +41,9 @@ FITTING_FIELD_LABELS = {
 
 CHANGE_KIND_LABELS = {
     "full": "Full doctrine update",
+    "fitting_create": "Create fitting",
     "fitting_versioned": "Fitting update",
+    "fitting_delete": "Delete fitting",
     "refit_create": "Create refit",
     "refit_update": "Update refit",
     "refit_delete": "Delete refit",
@@ -502,6 +504,34 @@ def format_fitting_change_request_html(
             header + "<p style='margin:0;color:#c33;font-weight:600;'>"
             f"This request deletes refit “{escape(refit_name)}”."
             "</p>"
+        )
+
+    if kind == "fitting_delete":
+        fitting_name = (
+            change_request.fitting.name if change_request.fitting else "—"
+        )
+        return mark_safe(
+            header + "<p style='margin:0;color:#c33;font-weight:600;'>"
+            f"This request deletes fitting “{escape(fitting_name)}”."
+            "</p>"
+        )
+
+    if kind == "fitting_create":
+        field_parts = [
+            (
+                "<p style='margin:0 0 1em;color:#a07000;font-weight:600;'>"
+                "This fitting is not live until the request is approved."
+                "</p>"
+            )
+        ]
+        for field in EVE_FITTING_VERSIONED_FIELDS:
+            proposed = payload.get(field, "")
+            field_parts.append(_fitting_field_diff_html(field, "", proposed))
+        return mark_safe(
+            header
+            + '<div style="max-width:960px;">'
+            + "".join(field_parts)
+            + "</div>"
         )
 
     if kind in {"refit_create", "refit_update"}:

@@ -164,7 +164,7 @@ class MiningReportTestCase(TestCase):
     )
     def setUp(self):
         super().setUp()
-        self.tribe = Tribe.objects.create(name="Industry", slug="industry")
+        self.tribe = Tribe.objects.create(name="Supply", slug="supply")
         self.group = _make_group(self.tribe, "Mining")
         self.user = User.objects.create_user(username="miner")
         self.character = EveCharacter.objects.create(

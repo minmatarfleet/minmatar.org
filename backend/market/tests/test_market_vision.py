@@ -69,9 +69,9 @@ from market.models import (
 )
 from market.models.history import EveMarketItemHistory
 from market.tests.test_fitting_expectations import (
-    RIFTER_EFT,
     _make_eve_type,
     _make_typed_eve_type,
+    rifter_eft,
 )
 
 
@@ -96,13 +96,13 @@ class QualificationTestCase(TestCase):
         )
         self.matching = EveFitting.objects.create(
             name="[FL33T] Nanogang Rifter",
-            eft_format=RIFTER_EFT,
+            eft_format=rifter_eft("[FL33T] Nanogang Rifter"),
             ship_id=587,
             tags=[FittingTag.NANOGANG],
         )
         self.non_matching = EveFitting.objects.create(
             name="[FL33T] Highsec Venture",
-            eft_format="[Venture, Mine]\nMiner I",
+            eft_format="[Venture, [FL33T] Highsec Venture]\nMiner I",
             ship_id=32880,
             tags=[FittingTag.HIGHSEC],
         )
@@ -151,7 +151,7 @@ class PinningExpectationsTestCase(TestCase):
         self.ammo_type = _make_eve_type(12773, "Fusion S")
         self.fitting = EveFitting.objects.create(
             name="[FL33T] Rifter",
-            eft_format=RIFTER_EFT,
+            eft_format=rifter_eft("[FL33T] Rifter"),
             ship_id=587,
         )
         EveMarketFittingExpectation.objects.create(
@@ -250,7 +250,7 @@ class ContractMatchTestCase(TestCase):
     def setUp(self):
         self.fitting = EveFitting.objects.create(
             name="[FL33T] Sabre",
-            eft_format="""[Sabre, Test]
+            eft_format="""[Sabre, [FL33T] Sabre]
 Nanofiber Internal Structure II
 Nanofiber Internal Structure II
 125mm Gatling AutoCannon II
@@ -304,7 +304,9 @@ Hail S x2000
     def test_match_contract_picks_best_fitting(self):
         other = EveFitting.objects.create(
             name="[FL33T] Sabre v2",
-            eft_format=self.fitting.eft_format,
+            eft_format=self.fitting.eft_format.replace(
+                "[FL33T] Sabre]", "[FL33T] Sabre v2]", 1
+            ),
             ship_id=22456,
         )
         contract_items = {
@@ -328,7 +330,11 @@ class SellOrderRowsTestCase(TestCase):
         _make_typed_eve_type(2203, "Acolyte I", 8, "Charge")
         self.fitting = EveFitting.objects.create(
             name="[FL33T] Augoror",
-            eft_format="[Augoror, Support]\n\nLight Missile Launcher II\n\nAcolyte I x50\n",
+            eft_format=(
+                "[Augoror, [FL33T] Augoror]\n\n"
+                "Light Missile Launcher II\n\n"
+                "Acolyte I x50\n"
+            ),
             ship_id=19720,
         )
         doctrine = EveDoctrine.objects.create(
@@ -666,7 +672,7 @@ class SellOrderRowsTestCase(TestCase):
     def test_fitting_expectation_tags_ship_hull_source(self):
         fitting = EveFitting.objects.create(
             name="[FL33T] Rifter",
-            eft_format=RIFTER_EFT,
+            eft_format=rifter_eft("[FL33T] Rifter"),
             ship_id=587,
         )
         _make_typed_eve_type(587, "Rifter", 6, "Ship")
@@ -901,7 +907,11 @@ class ExpectationsAdminViewsTestCase(TestCase):
         )
         self.fitting = EveFitting.objects.create(
             name="[FL33T] Augoror",
-            eft_format="[Augoror, Support]\n\nLight Missile Launcher II\n\nAcolyte I x50\n",
+            eft_format=(
+                "[Augoror, [FL33T] Augoror]\n\n"
+                "Light Missile Launcher II\n\n"
+                "Acolyte I x50\n"
+            ),
             ship_id=19720,
             tags=[FittingTag.NANOGANG],
         )
@@ -922,7 +932,7 @@ class ExpectationsAdminViewsTestCase(TestCase):
     def test_fitting_expectations_lists_non_doctrine_fits(self):
         non_doctrine = EveFitting.objects.create(
             name="[FL33T] Rifter",
-            eft_format=RIFTER_EFT,
+            eft_format=rifter_eft("[FL33T] Rifter"),
             ship_id=587,
             tags=[FittingTag.NANOGANG],
         )
@@ -968,7 +978,7 @@ class ExpectationsAdminViewsTestCase(TestCase):
     def test_save_expectation_quantities_from_post_data(self):
         non_doctrine = EveFitting.objects.create(
             name="[FL33T] Rifter",
-            eft_format=RIFTER_EFT,
+            eft_format=rifter_eft("[FL33T] Rifter"),
             ship_id=587,
         )
         save_fitting_expectation_quantities(
@@ -1000,7 +1010,7 @@ class ExpectationsAdminViewsTestCase(TestCase):
         )
         other_fitting = EveFitting.objects.create(
             name="[FL33T] Other Ship",
-            eft_format=RIFTER_EFT,
+            eft_format=rifter_eft("[FL33T] Other Ship"),
             ship_id=587,
         )
         EveDoctrineFitting.objects.create(
@@ -1018,7 +1028,7 @@ class ExpectationsAdminViewsTestCase(TestCase):
     def test_fitting_expectation_filters(self):
         non_doctrine = EveFitting.objects.create(
             name="[FL33T] Rifter",
-            eft_format=RIFTER_EFT,
+            eft_format=rifter_eft("[FL33T] Rifter"),
             ship_id=587,
             tags=[FittingTag.NANOGANG],
         )
@@ -1077,7 +1087,7 @@ class ExpectationsAdminViewsTestCase(TestCase):
         )
         other_fitting = EveFitting.objects.create(
             name="[FL33T] Other Ship",
-            eft_format=RIFTER_EFT,
+            eft_format=rifter_eft("[FL33T] Other Ship"),
             ship_id=587,
         )
         EveDoctrineFitting.objects.create(
@@ -1121,7 +1131,9 @@ class MismatchedContractsViewsTestCase(TestCase):
         self.location = _make_location(location_id=9021)
         self.fitting = EveFitting.objects.create(
             name="[FL33T] Augoror",
-            eft_format="[Augoror, Support]\n\nLight Missile Launcher II\n",
+            eft_format=(
+                "[Augoror, [FL33T] Augoror]\n\nLight Missile Launcher II\n"
+            ),
             ship_id=19720,
         )
 

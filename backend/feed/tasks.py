@@ -26,10 +26,11 @@ from feed.rollups.writer import write_rollup_results
 logger = logging.getLogger(__name__)
 
 
-@app.task(base=QueueOnce, once={"graceful": True}, queue="celery")
+@app.task(
+    base=QueueOnce, once={"graceful": True, "timeout": 60}, queue="celery"
+)
 def poll_zkill_r2z2() -> dict:
     stats = poll_r2z2_batch()
-    logger.info("R2Z2 poll complete: %s", stats)
     return stats
 
 

@@ -49,9 +49,15 @@ class FeedSystemContestedSnapshot(models.Model):
 
 
 class FeedR2z2Cursor(models.Model):
-    """Singleton cursor for R2Z2 poller."""
+    """Singleton cursor for R2Z2 poller (live + catch-up)."""
 
+    # Kept in sync with live_sequence_id for backward compatibility.
     last_sequence_id = models.BigIntegerField(default=0)
+    live_sequence_id = models.BigIntegerField(default=0)
+    catchup_sequence_id = models.BigIntegerField(default=0)
+    paused_until = models.DateTimeField(null=True, blank=True)
+    live_idle_until = models.DateTimeField(null=True, blank=True)
+    last_request_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
