@@ -73,6 +73,12 @@ Republic Fleet EMP S x720
 """
 
 
+def rifter_eft(fit_name: str = "AC Rifter") -> str:
+    """RIFTER_EFT with a unique EFT header name (required since name == EFT name)."""
+    body = RIFTER_EFT.split("\n", 1)[1]
+    return f"[Rifter, {fit_name}]\n{body}"
+
+
 class ParseEftItemsTestCase(TestCase):
     def test_parses_ship(self):
         items = parse_eft_items(RIFTER_EFT)

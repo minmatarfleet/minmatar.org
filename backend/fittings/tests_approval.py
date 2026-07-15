@@ -850,7 +850,7 @@ class ChangeRequestDisplayTestCase(TestCase):
         fitting = EveFitting.objects.create(
             name="Hurricane Fleet",
             ship_id=123,
-            eft_format="[Hurricane, Fleet]\n",
+            eft_format="[Hurricane, Hurricane Fleet]\n",
             description="",
         )
         location = EveLocation.objects.create(
@@ -895,11 +895,11 @@ class ChangeRequestDisplayTestCase(TestCase):
         fitting = EveFitting.objects.create(
             name="Rifter SK",
             ship_id=587,
-            eft_format="[Rifter, SK]\nHigh Slot A\nMid Slot B\n",
+            eft_format="[Rifter, Rifter SK]\nHigh Slot A\nMid Slot B\n",
             description="",
         )
         payload = {
-            "eft_format": "[Rifter, SK]\nHigh Slot A\nMid Slot C\n",
+            "eft_format": "[Rifter, Rifter SK]\nHigh Slot A\nMid Slot C\n",
             "description": "",
             "aliases": "",
             "minimum_pod": "",
@@ -1019,7 +1019,7 @@ class HistoryDisplayTestCase(TestCase):
         fitting = EveFitting.objects.create(
             name="Barghest Fleet",
             ship_id=33820,
-            eft_format="[Barghest, Fleet]\n",
+            eft_format="[Barghest, Barghest Fleet]\n",
             description="",
         )
         history = EveDoctrineHistory.objects.create(
@@ -1044,7 +1044,7 @@ class HistoryDisplayTestCase(TestCase):
         fitting = EveFitting.objects.create(
             name="Rifter SK",
             ship_id=587,
-            eft_format="[Rifter, SK]\nHigh Slot\n",
+            eft_format="[Rifter, Rifter SK]\nHigh Slot\n",
             description="old desc",
             tags=["solo"],
         )
@@ -1053,7 +1053,7 @@ class HistoryDisplayTestCase(TestCase):
             superseded_version_id="fit-version",
             name="Rifter SK",
             ship_id=587,
-            eft_format="[Rifter, SK]\nHigh Slot\n",
+            eft_format="[Rifter, Rifter SK]\nHigh Slot\n",
             description="old desc",
             tags=["solo"],
         )
