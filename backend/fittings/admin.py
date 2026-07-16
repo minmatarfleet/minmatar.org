@@ -62,6 +62,7 @@ from fittings.models import (
     EveFitting,
     EveFittingChangeRequest,
     EveFittingHistory,
+    EveFittingModuleSubstitution,
     EveFittingPod,
     EveFittingRefit,
     FittingTag,
@@ -78,6 +79,7 @@ from .forms import (
     EveDoctrineForm,
     EveFittingAdminForm,
     EveFittingChangeRequestAdminForm,
+    EveFittingModuleSubstitutionInlineForm,
     EveFittingRefitInlineForm,
 )
 
@@ -308,6 +310,53 @@ class EveFittingRefitInline(admin.StackedInline):
     readonly_fields = ("name", "created_at", "updated_at")
 
 
+class EveFittingModuleSubstitutionInline(admin.TabularInline):
+    """Row-based seeder fallbacks: if preferred is unavailable, buy substitute."""
+
+    model = EveFittingModuleSubstitution
+    form = EveFittingModuleSubstitutionInlineForm
+    extra = 1
+    fields = ("preferred_module", "substitute_module", "notes")
+    autocomplete_fields = ("preferred_module", "substitute_module")
+    verbose_name = "module substitution"
+    verbose_name_plural = (
+        "Module substitutions — if preferred is unavailable, buy substitute"
+    )
+    ordering = ("preferred_module__name",)
+
+    class Media:
+        js = (
+            "admin/js/vendor/jquery/jquery.js",
+            "admin/js/vendor/select2/select2.full.js",
+            "admin/js/jquery.init.js",
+            "admin/js/autocomplete.js",
+            "fittings/admin/module_substitution_autocomplete.js",
+        )
+
+    def get_formset(self, request, obj=None, **kwargs):
+        # Stash fitting so formfield_for_foreignkey can scope autocomplete.
+        request._module_sub_fitting = obj  # pylint: disable=protected-access
+        BaseForm = self.form
+
+        class FittedForm(BaseForm):
+            def __init__(self, *args, **form_kwargs):
+                form_kwargs["fitting"] = obj
+                super().__init__(*args, **form_kwargs)
+
+        kwargs["form"] = FittedForm
+        return super().get_formset(request, obj, **kwargs)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        formfield = super().formfield_for_foreignkey(
+            db_field, request, **kwargs
+        )
+        if db_field.name in ("preferred_module", "substitute_module"):
+            fitting = getattr(request, "_module_sub_fitting", None)
+            if fitting is not None and formfield is not None:
+                formfield.widget.attrs["data-fitting-id"] = str(fitting.pk)
+        return formfield
+
+
 @admin.register(EveFitting)
 class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
     """Admin for EveFitting. Ship and display name are inferred from EFT."""
@@ -321,6 +370,7 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
         "ship_name",
         "pod_count",
         "refit_count",
+        "substitution_count",
         "description",
         "deleted",
     )
@@ -387,7 +437,7 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
             },
         ),
     )
-    inlines = (EveFittingRefitInline,)
+    inlines = (EveFittingModuleSubstitutionInline, EveFittingRefitInline)
 
     def changelist_view(self, request, extra_context=None):
         return HttpResponseRedirect(reverse("admin:fittings_manage_fittings"))
@@ -400,6 +450,7 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
         return qs.annotate(
             _pod_count=Count("pods", distinct=True),
             _refit_count=Count("refits"),
+            _substitution_count=Count("module_substitutions"),
             _ship_name=Subquery(ship_sq),
         )
 
@@ -410,6 +461,10 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
     @admin.display(description="Refits", ordering="_refit_count")
     def refit_count(self, obj):
         return getattr(obj, "_refit_count", 0)
+
+    @admin.display(description="Subs", ordering="_substitution_count")
+    def substitution_count(self, obj):
+        return getattr(obj, "_substitution_count", 0)
 
     @admin.display(description="Pods", ordering="_pod_count")
     def pod_count(self, obj):
@@ -503,10 +558,7 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
                     f"Fitting name updated to match EFT: {obj.name}",
                 )
                 return
-            messages.info(
-                request,
-                "No approval-required fitting fields were changed.",
-            )
+            # Inlines (module substitutions, etc.) still save via save_formset.
             return
 
         try:
@@ -1408,4 +1460,17 @@ def apply_fittings_admin_customizations():
         return _get_custom_fittings_admin_urls() + fittings_previous_get_urls()
 
     admin.site.get_urls = _fittings_get_urls
+
+    # Scope module-substitution FK autocomplete without replacing the widget.
+    # pylint: disable-next=import-outside-toplevel
+    from fittings.admin_autocomplete import (
+        ModuleSubstitutionAutocompleteJsonView,
+    )
+
+    def _module_sub_autocomplete_view(request):
+        return ModuleSubstitutionAutocompleteJsonView.as_view(
+            admin_site=admin.site
+        )(request)
+
+    admin.site.autocomplete_view = _module_sub_autocomplete_view
     setattr(admin.site, _FITTINGS_ADMIN_PATCHED_ATTR, True)

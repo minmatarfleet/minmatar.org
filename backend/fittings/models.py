@@ -6,6 +6,7 @@ from django.db import models
 
 from app.models import MinmatarSoftDeleteModel
 from eveonline.models import EveLocation
+from eveuniverse.models import EveType
 
 
 class FittingTag(models.TextChoices):
@@ -322,6 +323,72 @@ class EveFittingRefit(models.Model):
                 f"Refit ship '{refit_ship}' must match base fitting ship '{base_ship}'"
             )
         super().save(*args, **kwargs)
+
+
+class EveFittingModuleSubstitution(models.Model):
+    """
+    Per-fitting seeder fallback: if the preferred module cannot be sourced,
+    buy/stock the substitute instead.
+    """
+
+    fitting = models.ForeignKey(
+        EveFitting,
+        on_delete=models.CASCADE,
+        related_name="module_substitutions",
+    )
+    preferred_module = models.ForeignKey(
+        EveType,
+        on_delete=models.CASCADE,
+        related_name="+",
+        verbose_name="If unavailable",
+    )
+    substitute_module = models.ForeignKey(
+        EveType,
+        on_delete=models.CASCADE,
+        related_name="+",
+        verbose_name="Buy instead",
+    )
+    notes = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Optional context for seeders (e.g. why this swap is acceptable).",
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["fitting", "preferred_module"],
+                name="unique_fitting_preferred_module_substitution",
+            ),
+        ]
+        ordering = ["preferred_module__name"]
+        verbose_name = "module substitution"
+        verbose_name_plural = "module substitutions"
+
+    def __str__(self):
+        preferred = (
+            self.preferred_module.name if self.preferred_module_id else "?"
+        )
+        substitute = (
+            self.substitute_module.name if self.substitute_module_id else "?"
+        )
+        return f"{preferred} → {substitute}"
+
+    def clean(self):
+        super().clean()
+        if (
+            self.preferred_module_id
+            and self.substitute_module_id
+            and self.preferred_module_id == self.substitute_module_id
+        ):
+            raise ValidationError(
+                {
+                    "substitute_module": (
+                        "Substitute must be a different module than the preferred one."
+                    )
+                }
+            )
 
 
 class EveDoctrine(models.Model):

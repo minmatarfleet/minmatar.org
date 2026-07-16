@@ -3,6 +3,11 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 
 from eveonline.models import EveLocation
 
+from fittings.helpers.module_substitutions import (
+    fitting_item_types,
+    types_are_variants,
+)
+
 from .models import (
     ChangeRequestStatus,
     EveDoctrine,
@@ -10,6 +15,7 @@ from .models import (
     EveDoctrineFitting,
     EveFitting,
     EveFittingChangeRequest,
+    EveFittingModuleSubstitution,
     EveFittingRefit,
     FittingTag,
 )
@@ -158,6 +164,55 @@ class EveFittingRefitInlineForm(forms.ModelForm):
                         f"A refit named {derived!r} already exists "
                         "for this fitting.",
                     )
+        return cleaned
+
+
+class EveFittingModuleSubstitutionInlineForm(forms.ModelForm):
+    """Validate preferred is on the fit and substitute is a real variant."""
+
+    class Meta:
+        model = EveFittingModuleSubstitution
+        fields = ("preferred_module", "substitute_module", "notes")
+
+    def __init__(self, *args, fitting=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if fitting is None and getattr(self.instance, "fitting_id", None):
+            fitting = self.instance.fitting
+        self._fitting = fitting
+        if "preferred_module" in self.fields:
+            self.fields["preferred_module"].help_text = (
+                "Only items present on this fitting’s EFT."
+            )
+        if "substitute_module" in self.fields:
+            self.fields["substitute_module"].help_text = (
+                "Meta / faction / T1–T2 variants of the preferred module."
+            )
+
+    def clean(self):
+        cleaned = super().clean()
+        preferred = cleaned.get("preferred_module")
+        substitute = cleaned.get("substitute_module")
+        fitting = self._fitting
+        if fitting is not None and preferred is not None:
+            allowed = set(
+                fitting_item_types(fitting).values_list("pk", flat=True)
+            )
+            if preferred.pk not in allowed:
+                self.add_error(
+                    "preferred_module",
+                    "Must be an item from this fitting’s EFT.",
+                )
+        if preferred is not None and substitute is not None:
+            if preferred.pk == substitute.pk:
+                self.add_error(
+                    "substitute_module",
+                    "Substitute must differ from the preferred module.",
+                )
+            elif not types_are_variants(preferred, substitute):
+                self.add_error(
+                    "substitute_module",
+                    "Must be a variant of the preferred module.",
+                )
         return cleaned
 
 
