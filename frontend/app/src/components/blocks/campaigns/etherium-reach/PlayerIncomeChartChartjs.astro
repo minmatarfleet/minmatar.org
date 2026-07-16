@@ -1,0 +1,159 @@
+---
+import {
+    EXPLORATION_GROSS_ISK,
+    MINING_GROSS_ISK,
+    MONTHS,
+    PI_GROSS_ISK,
+    RATTING_GROSS_ISK,
+    toBillions,
+} from '@/data/campaigns/etherium-reach'
+
+const miningData = MINING_GROSS_ISK.map(toBillions)
+const rattingData = RATTING_GROSS_ISK.map(toBillions)
+const piData = PI_GROSS_ISK.map(toBillions)
+const explorationData = EXPLORATION_GROSS_ISK.map(toBillions)
+---
+
+<div
+    class="[ h-screen ]"
+    x-data={`{
+        MONTHS: ${JSON.stringify(MONTHS)},
+        miningData: ${JSON.stringify(miningData)},
+        rattingData: ${JSON.stringify(rattingData)},
+        piData: ${JSON.stringify(piData)},
+        explorationData: ${JSON.stringify(explorationData)},
+        init() {
+            const ctx = document.getElementById('player-income-chart').getContext('2d')
+
+            Chart.defaults.borderColor = 'rgb(255, 255, 255, 0.05)'
+            Chart.defaults.color = '#ffffff'
+            Chart.defaults.font.family = 'Montserrat Variable'
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: this.MONTHS,
+                    datasets: [
+                        {
+                            label: 'Ratting',
+                            data: this.rattingData,
+                            borderColor: '#b53620',
+                            borderWidth: 2.5,
+                            fill: true,
+                            tension: 0,
+                            pointRadius: 3.5,
+                            pointBackgroundColor: '#b53620',
+                            pointBorderColor: '#1a1a2e',
+                            pointBorderWidth: 1.5,
+                        },
+                        {
+                            label: 'Mining',
+                            data: this.miningData,
+                            borderColor: '#2051B5',
+                            borderWidth: 2.5,
+                            fill: true,
+                            tension: 0,
+                            pointRadius: 3.5,
+                            pointBackgroundColor: '#2051B5',
+                            pointBorderColor: '#1a1a2e',
+                            pointBorderWidth: 1.5,
+                        },
+                        {
+                            label: 'Planetary Interaction',
+                            data: this.piData,
+                            borderColor: '#7342B2',
+                            borderWidth: 2.5,
+                            fill: true,
+                            tension: 0,
+                            pointRadius: 3.5,
+                            pointBackgroundColor: '#7342B2',
+                            pointBorderColor: '#1a1a2e',
+                            pointBorderWidth: 1.5,
+                        },
+                        {
+                            label: 'Exploration (estimated)',
+                            data: this.explorationData,
+                            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                            borderColor: 'rgba(255, 255, 255, 0.5)',
+                            borderWidth: 2,
+                            borderDash: [6, 4],
+                            fill: false,
+                            tension: 0,
+                            pointRadius: 3.5,
+                            pointBackgroundColor: 'rgba(255, 255, 255, 0.5)',
+                            pointBorderColor: '#1a1a2e',
+                            pointBorderWidth: 1.5,
+                            pointStyle: 'rectRot',
+                        },
+                    ],
+                },
+                plugins: [{
+                    id: 'areaGradients',
+                    afterLayout: function(chart) {
+                        var ctx = chart.ctx
+                        var top = chart.chartArea.top
+                        var bottom = chart.chartArea.bottom
+                        var colors = [
+                            [181, 54, 32],
+                            [32, 81, 181],
+                            [115, 66, 178],
+                        ]
+                        chart.data.datasets.forEach(function(dataset, i) {
+                            if (!dataset.fill || i >= colors.length) return
+                            var c = colors[i]
+                            var gradient = ctx.createLinearGradient(0, top, 0, bottom)
+                            gradient.addColorStop(0, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',1)')
+                            gradient.addColorStop(1, 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',0)')
+                            dataset.backgroundColor = gradient
+                        })
+                    }
+                }],
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false,
+                            },
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'ISK (billions)',
+                            },
+                            grid: {
+                                display: false,
+                            },
+                            ticks: {
+                                callback: function(value) { return value + ' B' },
+                            },
+                        },
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: false,
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) { return context.dataset.label + ': ' + context.parsed.y + ' B ISK' },
+                            },
+                        },
+                    },
+                },
+            })
+        }
+    }`}
+>
+    <canvas id="player-income-chart"></canvas>
+</div>
+
+<style lang="scss">
+    div {
+        max-height: min(700px, 90vh);
+    }
+</style>

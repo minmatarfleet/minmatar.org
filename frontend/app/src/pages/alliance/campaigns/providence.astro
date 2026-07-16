@@ -1,0 +1,91 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { COVER_IMAGE } from '@/data/campaigns/providence'
+import { buildProvidenceCampaignJsonLd } from '@/data/campaigns/providence-seo'
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import ProvidenceCampaign from '@components/blocks/campaigns/providence/ProvidenceCampaign.astro'
+import Tag from '@components/blocks/Tag.astro'
+
+const page_title = t('campaigns.providence.page_title')
+const campaign_period = t('campaigns.providence.campaign_period')
+const page_description = t('campaigns.providence.leading_text')
+const meta_title = t('campaigns.providence.meta_title')
+    .replace('{site}', t('index.page_title'))
+const meta_description = t('campaigns.providence.meta_description')
+const canonical_url = new URL(translatePath('/campaigns/providence/'), Astro.url.origin).href
+const meta_image = new URL(COVER_IMAGE, Astro.url.origin).href
+
+import {
+    get_location_video_cover,
+    get_location_video_cover_thumb,
+    get_location_cover,
+    get_location_cover_990,
+} from '@helpers/covers'
+
+const structured_data = buildProvidenceCampaignJsonLd({
+    canonicalUrl: canonical_url,
+    siteName: t('index.page_title'),
+    siteOrigin: Astro.url.origin,
+    metaTitle: page_title,
+    metaDescription: meta_description,
+    metaImage: meta_image,
+})
+---
+
+<Viewport
+    title={meta_title}
+    meta_description={meta_description}
+    meta_image={meta_image}
+    canonical_url={canonical_url}
+    og_type="article"
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(structured_data)} />
+
+    <PageLanding
+        wide={true}
+        cover={{
+            video: get_location_video_cover('watermellon') ?? undefined,
+			video_thumb: get_location_video_cover_thumb('watermellon') ?? undefined,
+            image: get_location_cover('watermellon') ?? COVER_IMAGE,
+            image_990: get_location_cover_990('watermellon') ?? COVER_IMAGE,
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <Flexblock gap="var(--space-2xl)">
+            <TextBox>
+                <Flexblock gap="var(--space-xl)">
+                    <Flexblock gap="var(--space-3xs)">
+                        <PageTitle is_landing={true}>{page_title}</PageTitle>
+                        <Tag text={campaign_period} color='fleet-yellow' />
+                    </Flexblock>
+                    <p class="[ excerpt ]">{page_description}</p>
+                </Flexblock>
+            </TextBox>
+
+            <ProvidenceCampaign />
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .excerpt,
+    :global(.excerpt p) {
+        font-size: var(--step-1);
+        line-height: 1.6;
+        max-width: 100%;
+    }
+</style>

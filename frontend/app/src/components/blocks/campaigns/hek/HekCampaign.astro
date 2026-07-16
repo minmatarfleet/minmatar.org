@@ -1,4 +1,7 @@
 ---
+import { i18n } from '@helpers/i18n'
+const { lang } = i18n(Astro.url)
+
 import {
     CAMPAIGN_BEATS,
     ENEMY_STRUCTURE_VALUE_ESTIMATE,
@@ -13,8 +16,16 @@ import {
 
 import { get_player_icon } from '@helpers/eve_image_server'
 
+import Flexblock from '@components/compositions/Flexblock.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import Grid from '@components/compositions/Grid.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
 import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
 import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
+import CharacterCard from '@components/blocks/CharacterCard.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import CountUpAnimation from '@components/blocks/CountUpAnimation.astro'
 
 const HEADLINE_CATEGORY_LABELS = {
     aar: 'AAR',
@@ -47,49 +58,79 @@ function formatBeatDate(isoDate: string): string {
 function formatHeadlineDate(isoDate: string): string {
     return formatBeatDate(isoDate)
 }
+
+import { number_name } from '@helpers/numbers'
 ---
 
-<div class="hek-campaign">
-    <section class="hek-campaign__section">
-        <h3>Campaign by the numbers</h3>
-        <p class="hek-campaign__meta">
-            Structure warfare, combat, and settlement
-        </p>
-        <div class="hek-campaign__stat-grid hek-campaign__stat-grid--3">
+<TextBox>
+    <Flexblock gap='var(--space-m)'>
+        <Flexblock gap='var(--space-3xs)'>
+            <h2>Campaign by the numbers</h2>
+            <small>Structure warfare, combat, and settlement</small>
+        </Flexblock>
+
+        <Grid
+            class="[ w-full grid-fill ]"
+            row_gap="var(--space-3xs)"
+            column_gap="var(--space-3xs)"
+            min_item_width="300px"
+        >
             <CampaignStat
                 label="ISK destroyed"
-                value={formatIsk(ISK_DESTROYED)}
                 tone="success"
-            />
+            >
+                <CountUpAnimation
+                    element='span' 
+                    target={ISK_DESTROYED}
+                    data-tippy-content={number_name(ISK_DESTROYED, lang)}
+                />
+            </CampaignStat>
+            
             <CampaignStat
                 label="ISK lost"
-                value={formatIsk(ISK_LOST)}
-                tone="danger"
-            />
+                tone='danger'
+            >
+                <CountUpAnimation
+                    element='span' 
+                    target={ISK_LOST}
+                    data-tippy-content={number_name(ISK_LOST, lang)}
+                />
+            </CampaignStat>
+
             <CampaignStat
                 label="Surrender ISK"
-                value={formatIsk(SURRENDER_ISK)}
-                tone="info"
-            />
-        </div>
-    </section>
+            >
+                <CountUpAnimation
+                    element='span' 
+                    target={SURRENDER_ISK}
+                    data-tippy-content={number_name(SURRENDER_ISK, lang)}
+                />
+            </CampaignStat>
+        </Grid>
+    </Flexblock>
+</TextBox>
 
-    <section class="hek-campaign__section">
-        <h3>Reparations and settlement</h3>
-        <p class="hek-campaign__meta">
-            Settlement after structure pressure in Hek
-        </p>
+<TextBox>
+    <Flexblock gap='var(--space-m)'>
+        <Flexblock gap='var(--space-3xs)'>
+            <h2>Reparations and settlement</h2>
+            <small>Settlement after structure pressure in Hek</small>
+        </Flexblock>
+
         <CampaignDataTable
             headers={['Outcome', 'Detail']}
             rows={settlementRows}
         />
-    </section>
+    </Flexblock>
+</TextBox>
 
-    <section class="hek-campaign__section">
-        <h3>Campaign timeline</h3>
-        <p class="hek-campaign__meta">
-            How the campaign unfolded
-        </p>
+<TextBox>
+    <Flexblock gap='var(--space-m)'>
+        <Flexblock gap='var(--space-3xs)'>
+            <h2>Campaign timeline</h2>
+            <small>How the campaign unfolded</small>
+        </Flexblock>
+
         <ol class="hek-campaign__timeline">
             {
                 CAMPAIGN_BEATS.map((beat) => (
@@ -99,82 +140,88 @@ function formatHeadlineDate(isoDate: string): string {
                         </time>
                         <div class="hek-campaign__timeline-body">
                             <p class="hek-campaign__timeline-label">{beat.label}</p>
-                            <p class="hek-campaign__timeline-source">{beat.source}</p>
+                            <small>{beat.source}</p>
                         </div>
                     </li>
                 ))
             }
         </ol>
-    </section>
+    </Flexblock>
+</TextBox>
 
-    <section class="hek-campaign__section">
-        <h3>Key people</h3>
-        <p class="hek-campaign__meta">
-            Pilots who shaped the campaign
-        </p>
-        <div class="hek-campaign__people-grid">
+<Flexblock gap='var(--space-l)'>
+    <Flexblock>
+        <Flexblock gap='var(--space-3xs)'>
+            <h4>Key people</h4>
+            <small>Pilots who shaped the campaign</small>
+        </Flexblock>
+
+        <Grid
+            class="[ w-full grid-fill ]"
+            row_gap="var(--space-3xs)"
+            column_gap="var(--space-3xs)"
+            min_item_width="324px"
+        >
             {
                 KEY_PEOPLE.map((person) => (
-                    <div class="hek-person-card">
-                        <img
-                            loading="lazy"
-                            width="64"
-                            height="64"
-                            src={get_player_icon(person.characterId, 64)}
-                            alt={`${person.name} portrait`}
-                            class="hek-person-card__portrait"
-                        />
-                        <div class="hek-person-card__body">
-                            <span class="hek-person-card__name">{person.name}</span>
-                            <span class="hek-person-card__role">{person.role}</span>
-                        </div>
-                    </div>
-                ))
-            }
-        </div>
-    </section>
-
-    <section class="hek-campaign__section">
-        <h3>Headlines</h3>
-        <p class="hek-campaign__meta">
-            Stories and updates from the campaign
-        </p>
-        <div class="hek-headline-cards">
-            {
-                HEADLINES.map((headline) => (
-                    <a
-                        class:list={[
-                            'hek-headline-card',
-                            `hek-headline-card--${headline.category}`,
-                        ]}
-                        style={`--hek-headline-bg: url('${headline.backgroundImage}')`}
-                        href={headline.url}
-                        target="_blank"
-                        rel="noopener noreferrer nofollow"
+                    <CharacterCard
+                        character_id={person.characterId ?? 0}
+                        character_name={person.name}
+                        alt={`${person.name} portrait`}
+                        narrow={false}
                     >
-                        <div class="hek-headline-card__body">
-                            <div class="hek-headline-card__meta">
-                                <time datetime={headline.date}>
-                                    {formatHeadlineDate(headline.date)}
-                                </time>
-                                <span class="hek-headline-card__tag">
-                                    {HEADLINE_CATEGORY_LABELS[headline.category]}
-                                </span>
-                            </div>
-                            <h4 class="hek-headline-card__title">{headline.title}</h4>
-                        </div>
-                        <span class="hek-headline-card__arrow" aria-hidden="true">→</span>
-                    </a>
+                        <Flexblock gap='var(--space-3xs)'>
+                            <h3>{person.name}</h3>
+                            <small>{person.role}</small>
+                        </Flexblock>
+                    </CharacterCard>
                 ))
             }
-        </div>
-    </section>
+        </Grid>
+    </Flexblock>
+</Flexblock>
 
-    <footer class="hek-campaign__footer">
-        <span>Hek Campaign Report</span>
-        <span>November 2023</span>
-    </footer>
-</div>
+<Flexblock>
+    <Flexblock gap='var(--space-3xs)'>
+        <h2>Headlines</h2>
+        <small>Stories and updates from the campaign</small>
+    </Flexblock>
+
+    <div class="hek-headline-cards">
+        {
+            HEADLINES.map((headline) => (
+                <a
+                    class:list={[
+                        'hek-headline-card',
+                        `hek-headline-card--${headline.category}`,
+                    ]}
+                    style={`--hek-headline-bg: url('${headline.backgroundImage}')`}
+                    href={headline.url}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow"
+                >
+                    <div class="hek-headline-card__body">
+                        <div class="hek-headline-card__meta">
+                            <time datetime={headline.date}>
+                                {formatHeadlineDate(headline.date)}
+                            </time>
+                            <span class="hek-headline-card__tag">
+                                {HEADLINE_CATEGORY_LABELS[headline.category]}
+                            </span>
+                        </div>
+                        <h4 class="hek-headline-card__title">{headline.title}</h4>
+                    </div>
+                    <span class="hek-headline-card__arrow" aria-hidden="true">→</span>
+                </a>
+            ))
+        }
+    </div>
+</Flexblock>
+
+<FlexInline justification='space-between'>
+    <span>Hek Campaign Report</span>
+    <span>November 2023</span>
+</FlexInline>
 
 <style lang="scss">
     .hek-campaign {
