@@ -12,8 +12,25 @@ from fittings.models import (
     EveFitting,
     EveFittingChangeRequest,
     EveFittingHistory,
+    EveFittingModuleSubstitution,
     EveFittingRefit,
 )
+
+
+def _empty_fitting_inline_formsets(**overrides):
+    """Management form fields for EveFittingAdmin inlines."""
+    data = {
+        "refits-TOTAL_FORMS": "0",
+        "refits-INITIAL_FORMS": "0",
+        "refits-MIN_NUM_FORMS": "0",
+        "refits-MAX_NUM_FORMS": "1000",
+        "module_substitutions-TOTAL_FORMS": "0",
+        "module_substitutions-INITIAL_FORMS": "0",
+        "module_substitutions-MIN_NUM_FORMS": "0",
+        "module_substitutions-MAX_NUM_FORMS": "1000",
+    }
+    data.update(overrides)
+    return data
 
 
 class FittingsRouterTestCase(TestCase):
@@ -173,14 +190,15 @@ class EveFittingAdminRefitInlineTestCase(TestCase):
             "aliases": "",
             "minimum_pod": "",
             "recommended_pod": "",
-            "refits-TOTAL_FORMS": "1",
-            "refits-INITIAL_FORMS": "0",
-            "refits-MIN_NUM_FORMS": "0",
-            "refits-MAX_NUM_FORMS": "1000",
-            "refits-0-eft_format": (
-                "[Retribution, Scanning refit]\n\n[empty high slot]"
+            **_empty_fitting_inline_formsets(
+                **{
+                    "refits-TOTAL_FORMS": "1",
+                    "refits-0-eft_format": (
+                        "[Retribution, Scanning refit]\n\n[empty high slot]"
+                    ),
+                    "refits-0-description": "",
+                }
             ),
-            "refits-0-description": "",
             "_save": "Save",
         }
         response = self.client.post(url, post)
@@ -218,10 +236,7 @@ class EveFittingAdminRefitInlineTestCase(TestCase):
             "aliases": "",
             "minimum_pod": "",
             "recommended_pod": "",
-            "refits-TOTAL_FORMS": "0",
-            "refits-INITIAL_FORMS": "0",
-            "refits-MIN_NUM_FORMS": "0",
-            "refits-MAX_NUM_FORMS": "1000",
+            **_empty_fitting_inline_formsets(),
             "_save": "Save",
         }
         response = self.client.post(url, post)
@@ -260,10 +275,7 @@ class EveFittingAdminRefitInlineTestCase(TestCase):
             "aliases": "",
             "minimum_pod": "",
             "recommended_pod": "",
-            "refits-TOTAL_FORMS": "0",
-            "refits-INITIAL_FORMS": "0",
-            "refits-MIN_NUM_FORMS": "0",
-            "refits-MAX_NUM_FORMS": "1000",
+            **_empty_fitting_inline_formsets(),
             "_save": "Save",
         }
         response = self.client.post(url, post)
@@ -320,10 +332,7 @@ class EveFittingAdminCreateDeleteApprovalTestCase(TestCase):
             "aliases": "",
             "minimum_pod": "",
             "recommended_pod": "",
-            "refits-TOTAL_FORMS": "0",
-            "refits-INITIAL_FORMS": "0",
-            "refits-MIN_NUM_FORMS": "0",
-            "refits-MAX_NUM_FORMS": "1000",
+            **_empty_fitting_inline_formsets(),
             "_save": "Save",
         }
         response = self.client.post(url, post)
@@ -531,3 +540,200 @@ class FittingsManageSearchTestCase(TestCase):
         html = response.content.decode()
         self.assertIn("[ADV-5] Retribution", html)
         self.assertNotIn("[NVY-30] Tornado", html)
+
+
+class EveFittingModuleSubstitutionTestCase(TestCase):
+    """Per-fitting seeder module fallbacks."""
+
+    def setUp(self):
+        super().setUp()
+        category, _ = EveCategory.objects.get_or_create(
+            id=7,
+            defaults={"name": "Module", "published": True},
+        )
+        group, _ = EveGroup.objects.get_or_create(
+            id=55,
+            defaults={
+                "name": "Propulsion Module",
+                "eve_category": category,
+                "published": True,
+            },
+        )
+        self.preferred, _ = EveType.objects.get_or_create(
+            id=440,
+            defaults={
+                "name": "5MN Microwarpdrive II",
+                "eve_group": group,
+                "published": True,
+            },
+        )
+        self.substitute, _ = EveType.objects.get_or_create(
+            id=434,
+            defaults={
+                "name": "5MN Y-T8 Compact Microwarpdrive",
+                "eve_group": group,
+                "published": True,
+            },
+        )
+        self.fitting = EveFitting.objects.create(
+            name="[TEST] Sub Fit",
+            eft_format="[Rifter, [TEST] Sub Fit]",
+            ship_id=587,
+            description="Base",
+        )
+
+    def test_str_and_create(self):
+        row = EveFittingModuleSubstitution.objects.create(
+            fitting=self.fitting,
+            preferred_module=self.preferred,
+            substitute_module=self.substitute,
+            notes="meta fallback",
+        )
+        self.assertEqual(
+            "5MN Microwarpdrive II → 5MN Y-T8 Compact Microwarpdrive",
+            str(row),
+        )
+        self.assertEqual(1, self.fitting.module_substitutions.count())
+
+    def test_clean_rejects_identical_modules(self):
+        row = EveFittingModuleSubstitution(
+            fitting=self.fitting,
+            preferred_module=self.preferred,
+            substitute_module=self.preferred,
+        )
+        with self.assertRaises(Exception) as ctx:
+            row.full_clean()
+        self.assertIn("substitute_module", ctx.exception.message_dict)
+
+    def test_unique_preferred_per_fitting(self):
+        EveFittingModuleSubstitution.objects.create(
+            fitting=self.fitting,
+            preferred_module=self.preferred,
+            substitute_module=self.substitute,
+        )
+        with self.assertRaises(Exception):
+            EveFittingModuleSubstitution.objects.create(
+                fitting=self.fitting,
+                preferred_module=self.preferred,
+                substitute_module=self.substitute,
+            )
+
+
+class EveFittingModuleSubstitutionAdminTestCase(TestCase):
+    """Admin inline for module substitutions saves without approval queue."""
+
+    def setUp(self):
+        super().setUp()
+        self.make_superuser()
+        self.user.is_staff = True
+        self.user.save()
+        self.client.force_login(self.user)
+        category, _ = EveCategory.objects.get_or_create(
+            id=7,
+            defaults={"name": "Module", "published": True},
+        )
+        group, _ = EveGroup.objects.get_or_create(
+            id=55,
+            defaults={
+                "name": "Propulsion Module",
+                "eve_category": category,
+                "published": True,
+            },
+        )
+        self.preferred, _ = EveType.objects.get_or_create(
+            id=440,
+            defaults={
+                "name": "5MN Microwarpdrive II",
+                "eve_group": group,
+                "published": True,
+            },
+        )
+        self.substitute, _ = EveType.objects.get_or_create(
+            id=434,
+            defaults={
+                "name": "5MN Y-T8 Compact Microwarpdrive",
+                "eve_group": group,
+                "published": True,
+            },
+        )
+        # Ensure shared group even if types already existed from other suites.
+        EveType.objects.filter(pk__in=[440, 434]).update(eve_group=group)
+        self.preferred.refresh_from_db()
+        self.substitute.refresh_from_db()
+        self.fitting = EveFitting.objects.create(
+            name="[TEST] Sub Fit",
+            eft_format=("[Rifter, [TEST] Sub Fit]\n" "5MN Microwarpdrive II"),
+            ship_id=587,
+            description="Base",
+        )
+
+    def test_change_page_shows_substitution_inline(self):
+        url = reverse(
+            "admin:fittings_evefitting_change", args=[self.fitting.pk]
+        )
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn("Module substitutions", html)
+        self.assertIn("If unavailable", html)
+        self.assertIn("Buy instead", html)
+        self.assertIn("admin-autocomplete", html)
+        self.assertIn(f'data-fitting-id="{self.fitting.pk}"', html)
+        self.assertIn("module_substitution_autocomplete.js", html)
+
+    def test_change_page_preferred_only_lists_fit_items(self):
+        # Autocomplete options come from AJAX; widget must be scoped to fitting.
+        url = reverse(
+            "admin:fittings_evefitting_change", args=[self.fitting.pk]
+        )
+        response = self.client.get(url)
+        html = response.content.decode()
+        self.assertIn(f'data-fitting-id="{self.fitting.pk}"', html)
+        self.assertIn('data-field-name="preferred_module"', html)
+        self.assertIn('data-field-name="substitute_module"', html)
+
+    def test_save_substitution_via_inline(self):
+        url = reverse(
+            "admin:fittings_evefitting_change", args=[self.fitting.pk]
+        )
+        response = self.client.get(url)
+        csrf = re.search(
+            r'name="csrfmiddlewaretoken" value="([^"]+)"',
+            response.content.decode(),
+        ).group(1)
+        post = {
+            "csrfmiddlewaretoken": csrf,
+            "eft_format": self.fitting.eft_format,
+            "description": self.fitting.description,
+            "aliases": "",
+            "minimum_pod": "",
+            "recommended_pod": "",
+            **_empty_fitting_inline_formsets(
+                **{
+                    "module_substitutions-TOTAL_FORMS": "1",
+                    "module_substitutions-0-preferred_module": (
+                        self.preferred.pk
+                    ),
+                    "module_substitutions-0-substitute_module": (
+                        self.substitute.pk
+                    ),
+                    "module_substitutions-0-notes": "buy meta if T2 dry",
+                }
+            ),
+            "_save": "Save",
+        }
+        response = self.client.post(url, post)
+        self.assertEqual(
+            response.status_code,
+            302,
+            response.content.decode()[:4000],
+        )
+        row = EveFittingModuleSubstitution.objects.get(fitting=self.fitting)
+        self.assertEqual(self.preferred.pk, row.preferred_module_id)
+        self.assertEqual(self.substitute.pk, row.substitute_module_id)
+        self.assertEqual("buy meta if T2 dry", row.notes)
+        self.assertFalse(
+            EveFittingChangeRequest.objects.filter(
+                fitting=self.fitting
+            ).exists()
+        )
