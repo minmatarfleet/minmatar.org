@@ -21,6 +21,22 @@ export async function get_item_id(item_name:string) {
     }
 }
 
+export async function get_item_name(type_id: number) {
+    const q = await sde_db.select({
+        typeName: schema.invTypes.typeName,
+    })
+    .from(schema.invTypes)
+    .where(
+        eq(schema.invTypes.typeId, type_id),
+    )
+    .limit(1)
+
+    if (q.length > 0) {
+        return q[0].typeName
+    }
+    return null
+}
+
 export async function get_item_category(item_id:number) {
     console.log(`Requesting: sde_db.get_item_category(${item_id})`)
 

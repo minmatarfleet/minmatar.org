@@ -15,12 +15,20 @@ if (!user || !auth_token) return HTTP_403_Forbidden()
 import { get_order_by_id, get_planner_facilities } from '@helpers/api.minmatar.org/industry'
 import { get_characters } from '@helpers/api.minmatar.org/characters'
 import { get_ship_info } from '@helpers/sde/ships'
+import { get_item_name } from '@helpers/sde/items'
 import type { IndustrySingleOrder, RootSingleItem, Character } from '@dtypes/api.minmatar.org'
 import type { PlannerFacility } from '@helpers/api.minmatar.org/industry'
 import type { Alert } from '@dtypes/layout_components'
 
+type PlannerProduct = {
+    type_id: number
+    type_name: string
+    quantity: number
+}
+
 let order: IndustrySingleOrder | null = null
 let item: RootSingleItem | undefined = undefined
+let product: PlannerProduct | null = null
 let facilities: PlannerFacility[] = []
 let characters: Character[] = []
 let data_fetching_error: Error | false = false
@@ -29,20 +37,39 @@ let alert: Alert | null = null
 let default_blueprint_me = 10
 let default_blueprint_te = 20
 
+const type_id_param = parseInt(Astro.url.searchParams.get('type_id') ?? '0')
+const quantity_param = parseInt(Astro.url.searchParams.get('quantity') ?? '0')
 const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '0')
 const item_id = parseInt(Astro.url.searchParams.get('item_id') ?? '0')
 
+const has_type_id = !isNaN(type_id_param) && type_id_param > 0
+const has_order_item = !isNaN(order_id) && order_id > 0 && !isNaN(item_id) && item_id > 0
+
 try {
-    if (isNaN(order_id) || order_id < 1)
-        throw new Error(t('industry.orders.planner.invalid_params'), { cause: 400 })
+    if (has_type_id) {
+        const type_name = await get_item_name(type_id_param)
+        if (!type_name)
+            throw new Error(t('industry.orders.planner.invalid_params'), { cause: 400 })
 
-    if (isNaN(item_id) || item_id < 1)
-        throw new Error(t('industry.orders.planner.invalid_params'), { cause: 400 })
+        product = {
+            type_id: type_id_param,
+            type_name,
+            quantity: !isNaN(quantity_param) && quantity_param > 0 ? quantity_param : 1,
+        }
+    } else if (has_order_item) {
+        order = await get_order_by_id(order_id)
+        item = order.items.find(row => row.id === item_id)
+        if (!item)
+            throw new Error(t('industry.orders.planner.invalid_params'), { cause: 400 })
 
-    order = await get_order_by_id(order_id)
-    item = order.items.find(row => row.id === item_id)
-    if (!item)
+        product = {
+            type_id: item.eve_type_id,
+            type_name: item.eve_type_name,
+            quantity: item.quantity,
+        }
+    } else {
         throw new Error(t('industry.orders.planner.invalid_params'), { cause: 400 })
+    }
 
     ;[facilities, characters] = await Promise.all([
         get_planner_facilities(auth_token),
@@ -54,16 +81,16 @@ try {
         return HTTP_400_Bad_Request()
 }
 
-if (item) {
+if (product) {
     try {
-        const ship_info = await get_ship_info(item.eve_type_id)
-        const navy_name = /(?:Navy|Fleet) Issue$/i.test(item.eve_type_name ?? '')
+        const ship_info = await get_ship_info(product.type_id)
+        const navy_name = /(?:Navy|Fleet) Issue$/i.test(product.type_name ?? '')
         if (ship_info?.meta === 'Faction' || navy_name) {
             default_blueprint_me = 0
             default_blueprint_te = 0
         }
     } catch {
-        const navy_name = /(?:Navy|Fleet) Issue$/i.test(item.eve_type_name ?? '')
+        const navy_name = /(?:Navy|Fleet) Issue$/i.test(product.type_name ?? '')
         if (navy_name) {
             default_blueprint_me = 0
             default_blueprint_te = 0
@@ -106,9 +133,28 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 
-const page_title = t('industry.orders.planner.page_title')
+const page_title = product
+    ? (product.quantity > 1
+        ? `${product.type_name} × ${number_thousand_separator(product.quantity)}`
+        : product.type_name)
+    : t('industry.orders.planner.page_title')
+const viewport_title = product
+    ? `${page_title} · ${t('industry.orders.planner.page_title')}`
+    : t('industry.orders.planner.page_title')
 const default_facility = facilities[0]?.key ?? 'amamake'
 const default_refine = facilities[0]?.reprocessing?.refine_rate ?? 0
+
+const refetch_query = product
+    ? (has_type_id
+        ? query_string({
+            type_id: product.type_id,
+            ...(product.quantity !== 1 ? { quantity: product.quantity } : {}),
+        })
+        : query_string({ order_id, item_id }))
+    : query_string({
+        ...(has_type_id ? { type_id: type_id_param } : {}),
+        ...(has_order_item ? { order_id, item_id } : {}),
+    })
 
 const bucket_labels = JSON.stringify({
     end_products: t('industry.orders.planner.bucket.end_products'),
@@ -120,7 +166,7 @@ const bucket_labels = JSON.stringify({
 ---
 
 <Viewport
-    title={page_title}
+    title={viewport_title}
     meta_description={t('industry.orders.planner.meta_description')}
     components={{
         alert_dialog: true,
@@ -156,16 +202,13 @@ const bucket_labels = JSON.stringify({
             {data_fetching_error !== false ?
                 <ErrorRefetch
                     args={{
-                        partial: translatePath(`/industry/orders/planner?${query_string({
-                            order_id,
-                            item_id,
-                        })}`),
+                        partial: translatePath(`/industry/orders/planner?${refetch_query}`),
                         error: data_fetching_error,
                         delay: 0,
                     }}
                 />
                 :
-                <>{order && item &&
+                <>{product &&
                     <aside class="[ planner-beta ]" role="note">
                         <p class="[ planner-beta__title ]">{t('industry.orders.planner.beta_title')}</p>
                         <Markdown
@@ -182,7 +225,7 @@ const bucket_labels = JSON.stringify({
                     <div
                         class="[ planner ]"
                         x-data={`{
-                            quantity: ${item.quantity},
+                            quantity: ${product.quantity},
                             blueprint_me: ${default_blueprint_me},
                             blueprint_te: ${default_blueprint_te},
                             facility_key: '${default_facility}',
@@ -205,7 +248,7 @@ const bucket_labels = JSON.stringify({
                             jobs: [],
                             subitem_catalog: [],
                             build_toggles: {},
-                            product_type_id: ${item.eve_type_id},
+                            product_type_id: ${product.type_id},
                             cost_breakdown: null,
                             _replan_timer: null,
                             _suspend_watch: false,
@@ -740,14 +783,22 @@ const bucket_labels = JSON.stringify({
                             <ComponentBlock>
                                 <Flexblock gap='var(--space-m)'>
                                     <ItemBadge
-                                        item_name={item.eve_type_name}
-                                        type_id={item.eve_type_id}
+                                        item_name={product.type_name}
+                                        type_id={product.type_id}
                                         size={64}
                                     >
-                                        <small>
-                                            Order #{order.id}
-                                            · {number_thousand_separator(item.quantity)} ordered
-                                        </small>
+                                        {order && item ?
+                                            <small>
+                                                Order #{order.id}
+                                                · {t('industry.orders.planner.ordered_quantity').replace('{n}', number_thousand_separator(item.quantity))}
+                                            </small>
+                                            :
+                                            product.quantity > 1 ?
+                                                <small>
+                                                    {t('industry.orders.planner.quantity_badge').replace('{n}', number_thousand_separator(product.quantity))}
+                                                </small>
+                                                : null
+                                        }
                                     </ItemBadge>
 
                                     <div class="[ planner-settings-row ]">
