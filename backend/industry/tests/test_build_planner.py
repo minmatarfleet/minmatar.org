@@ -29,6 +29,7 @@ from industry.helpers.facility_profiles import (
     get_facility_system_id,
 )
 from industry.helpers.industry_formulas import (
+    estimated_item_value,
     job_installation_cost,
     material_efficiency_total,
     required_material_quantity,
@@ -128,6 +129,42 @@ class IndustryFormulasTestCase(TestCase):
         self.assertEqual(cost.tax, 4_000_000)
         self.assertEqual(cost.total, 6_375_000)
         self.assertEqual(cost.system_cost_bonus, -0.50)
+
+    def test_eiv_uses_me0_base_quantities_times_adjusted_price(self):
+        # ME-adjusted shopping qty must not feed EIV; only blueprint base × runs.
+        eiv = estimated_item_value(
+            [
+                (100, 10.0),  # base ME0 qty per run
+                (50, 20.0),
+            ],
+            runs=10,
+        )
+        self.assertEqual(eiv, (100 * 10.0 + 50 * 20.0) * 10)
+
+    def test_job_cost_matches_ccp_screenshot_structure(self):
+        """
+        Steve Ronuken / in-game UI shape (synthetic SCI matching displayed ISK):
+
+        EIV 114,894,884; SCI portion 5,898,934 (~5.13%); −5% Sotiyo role →
+        gross 5,603,987; +0.75% facility + 4% SCC on EIV.
+
+        Client display total may round to 11,061,494; floored components sum
+        to 11,061,493 (facility tax floors to 861,711).
+        """
+        eiv = 114_894_884.0
+        sci_portion = 5_898_934.0
+        cost = job_installation_cost(
+            eiv=eiv,
+            system_cost_index=sci_portion / eiv,
+            structure_isk_bonus=0.05,
+            facility_tax=0.0075,
+            scc_surcharge=0.04,
+        )
+        self.assertEqual(cost.gross_cost, 5_603_987)
+        self.assertEqual(cost.facility_tax_isk, 861_711)
+        self.assertEqual(cost.scc_tax_isk, 4_595_795)
+        self.assertEqual(cost.tax, 5_457_506)
+        self.assertEqual(cost.total, 11_061_493)
 
 
 class FacilityProfilesTestCase(TestCase):

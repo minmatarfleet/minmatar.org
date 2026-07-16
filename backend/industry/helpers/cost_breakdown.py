@@ -181,8 +181,9 @@ def build_plan_cost_breakdown(
     """
     Full build cost:
 
-    materials (Jita sell) + job installation (gross) + facility tax + SCC
-    + reprocessing tax (when compressed ore is used)
+    materials (Jita sell) + job installation gross (system cost index × EIV,
+    after structure/FW role bonuses) + facility tax + SCC (both on EIV from
+    ESI adjusted prices at ME0) + reprocessing tax (when compressed ore is used)
     + alliance freight (hub→facility) when a priced route exists.
     """
     mfg_gross = 0
@@ -240,7 +241,7 @@ def build_plan_cost_breakdown(
     line_items: List[CostLineItem] = [
         CostLineItem(
             "materials_jita_sell",
-            "Materials (Jita sell)",
+            "Materials",
             materials_isk,
         ),
         CostLineItem(

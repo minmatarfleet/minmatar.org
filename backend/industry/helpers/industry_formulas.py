@@ -132,6 +132,8 @@ def job_installation_cost(
     system_cost_bonus: float = 0.0,
 ) -> JobCostBreakdown:
     """
+    CCP job install cost (Steve Ronuken / in-game Industry UI):
+
     gross = floor(
         EIV * systemCostIndex * (1 - structureIskBonus) * (1 + systemCostBonus)
     )
@@ -140,8 +142,9 @@ def job_installation_cost(
     tax = facility_tax_isk + scc_tax_isk
     total = gross + tax
 
-    system_cost_bonus is typically the FW facility-pricing bonus (e.g. -0.5).
-    It applies only to the system-index gross; SCC / facility tax are unchanged.
+    EIV uses ME0 material quantities × ESI adjusted_price (not Jita sell/buy).
+    Structure role bonus and system_cost_bonus (e.g. FW −50%) apply only to the
+    cost-index gross; facility tax and SCC are always on EIV.
     """
     if eiv <= 0 or system_cost_index < 0:
         return JobCostBreakdown(

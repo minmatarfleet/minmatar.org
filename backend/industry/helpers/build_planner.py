@@ -326,6 +326,7 @@ def resolve_cost_indices(
 
 
 def _adjusted_prices(type_ids: Iterable[int]) -> Dict[int, float]:
+    """ESI markets/prices adjusted_price values used for job-install EIV."""
     ids = list(set(type_ids))
     if not ids:
         return {}
