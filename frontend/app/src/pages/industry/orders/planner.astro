@@ -2,15 +2,14 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { HTTP_400_Bad_Request, HTTP_403_Forbidden } from '@helpers/http_responses'
+import { HTTP_400_Bad_Request } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-
-if (!user || !auth_token) return HTTP_403_Forbidden()
+const is_logged_in = !!(user && auth_token)
 
 import { get_order_by_id, get_planner_facilities } from '@helpers/api.minmatar.org/industry'
 import { get_characters } from '@helpers/api.minmatar.org/characters'
@@ -71,10 +70,9 @@ try {
         throw new Error(t('industry.orders.planner.invalid_params'), { cause: 400 })
     }
 
-    ;[facilities, characters] = await Promise.all([
-        get_planner_facilities(auth_token),
-        get_characters(auth_token),
-    ])
+    facilities = await get_planner_facilities(auth_token || undefined)
+    if (is_logged_in)
+        characters = await get_characters(auth_token as string)
 } catch (error) {
     data_fetching_error = error
     if (error?.cause === 400)
@@ -132,6 +130,7 @@ import ShowAlert from '@components/blocks/ShowAlert.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
+import ButtonAuth from '@components/blocks/ButtonAuth.astro';
 
 const page_title = product
     ? (product.quantity > 1
@@ -170,6 +169,7 @@ const bucket_labels = JSON.stringify({
     meta_description={t('industry.orders.planner.meta_description')}
     components={{
         alert_dialog: true,
+        confirm_dialog: true,
     }}
 >
     <PageDefault
@@ -868,36 +868,63 @@ const bucket_labels = JSON.stringify({
 
                                         <Flexblock gap='var(--space-3xs)' class="[ planner-settings-field ]">
                                             <label for="planner-character">{t('industry.orders.planner.character')}</label>
-                                            <div class="[ planner-settings-control-row ]">
-                                                <div
-                                                    class="[ planner-character-portrait ]"
-                                                    x-show="character_id"
-                                                    x-cloak
-                                                >
-                                                    <CharacterPicture
-                                                        character_id={characters[0]?.character_id ?? 1}
-                                                        character_name={characters[0]?.character_name}
-                                                        x_character_id="character_id"
-                                                        size={24}
-                                                        icon_quality={64}
-                                                    />
-                                                </div>
-                                                <div class="[ planner-settings-control ]">
-                                                    <Select
-                                                        id="planner-character"
-                                                        size="sm"
-                                                        width="100%"
-                                                        x-model="character_id"
+                                            {is_logged_in ?
+                                                <div class="[ planner-settings-control-row ]">
+                                                    <div
+                                                        class="[ planner-character-portrait ]"
+                                                        x-show="character_id"
+                                                        x-cloak
                                                     >
-                                                        <option value="">{t('industry.orders.planner.character_none')}</option>
-                                                        {characters.map(c =>
-                                                            <option value={c.character_id}>
-                                                                {c.character_name}
-                                                            </option>
-                                                        )}
-                                                    </Select>
+                                                        <CharacterPicture
+                                                            character_id={characters[0]?.character_id ?? 1}
+                                                            character_name={characters[0]?.character_name}
+                                                            x_character_id="character_id"
+                                                            size={24}
+                                                            icon_quality={64}
+                                                        />
+                                                    </div>
+                                                    <div class="[ planner-settings-control ]">
+                                                        <Select
+                                                            id="planner-character"
+                                                            size="sm"
+                                                            width="100%"
+                                                            x-model="character_id"
+                                                        >
+                                                            <option value="">{t('industry.orders.planner.character_none')}</option>
+                                                            {characters.map(c =>
+                                                                <option value={c.character_id}>
+                                                                    {c.character_name}
+                                                                </option>
+                                                            )}
+                                                        </Select>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                                :
+                                                <Flexblock gap='var(--space-2xs)'>
+                                                    <div class="[ planner-settings-control ]">
+                                                        <Select
+                                                            id="planner-character"
+                                                            size="sm"
+                                                            width="100%"
+                                                            disabled
+                                                        >
+                                                            <option value="" selected>{t('industry.orders.planner.character_none')}</option>
+                                                        </Select>
+                                                    </div>
+                                                    <FlexInline gap='var(--space-2xs)' class="[ items-center flex-wrap ]">
+                                                        <p class="[ text-gray planner-character-login-hint ]">
+                                                            {t('industry.orders.planner.character_login_prompt')}
+                                                        </p>
+                                                        <ButtonAuth
+                                                            color='fleet-red'
+                                                            size='sm'
+                                                            dialog_title={t('industry.orders.planner.character')}
+                                                        >
+                                                            {t('industry.orders.planner.character_log_in')}
+                                                        </ButtonAuth>
+                                                    </FlexInline>
+                                                </Flexblock>
+                                            }
                                         </Flexblock>
                                     </div>
 
@@ -1396,6 +1423,11 @@ const bucket_labels = JSON.stringify({
             width: 24px;
             height: 24px;
         }
+    }
+
+    .planner-character-login-hint {
+        margin: 0;
+        font-size: var(--step--1);
     }
 
     .planner-settings-toggles {

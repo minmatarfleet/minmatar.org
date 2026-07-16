@@ -3,8 +3,9 @@
 from eveuniverse.models import EveMarketPrice, EveType
 
 from app.errors import ErrorResponse
-from authentication import AuthBearer
+from authentication import AuthOptional
 from eveonline.models import EveCharacter
+from industry.endpoints.planner.auth_helpers import auth_required_for_character
 from industry.endpoints.planner.schemas import (
     PlanLeafMaterialSchema,
     PlanRequestSchema,
@@ -35,9 +36,11 @@ METHOD = "post"
 ROUTE_SPEC = {
     "summary": (
         "Plan manufacture + reaction jobs for a product at an alliance freeport "
-        "(live ESI cost indices); optional compressed-ore conversion"
+        "(live ESI cost indices); optional compressed-ore conversion. "
+        "Anonymous callers get max-skill refine assumptions; character_id "
+        "requires authentication."
     ),
-    "auth": AuthBearer(),
+    "auth": AuthOptional(),
     "response": {
         200: PlanResponseSchema,
         400: ErrorResponse,
@@ -212,7 +215,7 @@ def _plan_response_body(
     }
 
 
-def _resolve_plan_request(payload: PlanRequestSchema):
+def _resolve_plan_request(request, payload: PlanRequestSchema):
     """Validate payload and resolve entities.
 
     Returns ((key, eve_type, character, me, te, exclude_type_ids), None)
@@ -236,6 +239,10 @@ def _resolve_plan_request(payload: PlanRequestSchema):
                 detail=f"Unknown product_type_id {payload.product_type_id}"
             ),
         )
+
+    auth_error = auth_required_for_character(request, payload.character_id)
+    if auth_error is not None:
+        return None, auth_error
 
     character = None
     if payload.character_id is not None:
@@ -298,7 +305,7 @@ def _execute_plan_build(eve_type, payload, key, me, te, exclude_type_ids):
 
 
 def post_plan(request, payload: PlanRequestSchema):
-    resolved, error = _resolve_plan_request(payload)
+    resolved, error = _resolve_plan_request(request, payload)
     if error is not None:
         return error
     key, eve_type, character, me, te, exclude_type_ids = resolved

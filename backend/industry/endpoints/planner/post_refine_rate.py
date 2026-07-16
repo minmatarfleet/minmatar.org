@@ -1,8 +1,9 @@
 """POST /refine-rate - resolve facility refine yield for character/implants."""
 
 from app.errors import ErrorResponse
-from authentication import AuthBearer
+from authentication import AuthOptional
 from eveonline.models import EveCharacter
+from industry.endpoints.planner.auth_helpers import auth_required_for_character
 from industry.endpoints.planner.schemas import (
     RefineRateRequestSchema,
     RefineRateResponseSchema,
@@ -19,9 +20,10 @@ METHOD = "post"
 ROUTE_SPEC = {
     "summary": (
         "Resolve reprocessing yield for a facility using optional character "
-        "skills and implant toggle (no full build plan)"
+        "skills and implant toggle (no full build plan). Anonymous callers "
+        "get max-skill assumptions; character_id requires authentication."
     ),
-    "auth": AuthBearer(),
+    "auth": AuthOptional(),
     "response": {
         200: RefineRateResponseSchema,
         400: ErrorResponse,
@@ -55,6 +57,10 @@ def post_refine_rate(request, payload: RefineRateRequestSchema):
         return 400, ErrorResponse(
             detail=f"Unknown facility {payload.facility_key!r}"
         )
+
+    auth_error = auth_required_for_character(request, payload.character_id)
+    if auth_error is not None:
+        return auth_error
 
     character = None
     if payload.character_id is not None:

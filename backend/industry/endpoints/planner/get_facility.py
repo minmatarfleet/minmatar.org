@@ -1,7 +1,6 @@
 """GET /facilities/{facility_key} - facility detail with live ESI cost indices."""
 
 from app.errors import ErrorResponse
-from authentication import AuthBearer
 from industry.endpoints.planner.schemas import FacilityDetailSchema
 from industry.helpers.facility_api import facility_detail
 from industry.helpers.facility_profiles import FACILITY_PROFILES
@@ -13,10 +12,8 @@ ROUTE_SPEC = {
         "Facility profile detail: structures, job-class bonuses, "
         "and live ESI cost indices for the facility system"
     ),
-    "auth": AuthBearer(),
     "response": {
         200: FacilityDetailSchema,
-        401: ErrorResponse,
         404: ErrorResponse,
         502: ErrorResponse,
     },

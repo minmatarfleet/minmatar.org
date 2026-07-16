@@ -45,9 +45,11 @@ class PlannerFacilitiesEndpointTestCase(TestCase):
         self.user = User.objects.create_user(username="planner", password="x")
         self.auth = {"HTTP_AUTHORIZATION": f"Bearer {_token(self.user)}"}
 
-    def test_facilities_requires_auth(self):
+    def test_facilities_public_without_auth(self):
         response = self.client.get(f"{BASE}/facilities")
-        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.status_code, 200)
+        keys = {row["key"] for row in response.json()}
+        self.assertEqual(keys, {"amamake", "basgerin"})
 
     def test_facilities_list_contains_amamake_and_basgerin(self):
         response = self.client.get(f"{BASE}/facilities", **self.auth)
@@ -212,10 +214,36 @@ class PlannerPlanEndpointTestCase(TestCase):
             eve_type=self.trit, adjusted_price=5.0, average_price=6.0
         )
 
-    def test_plan_requires_auth(self):
+    def test_plan_public_without_auth_uses_max_skills(self):
+        with patch(
+            "industry.helpers.build_planner.resolve_cost_indices"
+        ) as resolve_indices:
+            resolve_indices.return_value = (0.05, 0.04, AMAMAKE_SYSTEM_ID)
+            response = self.client.post(
+                f"{BASE}/plans",
+                data={
+                    "product_type_id": self.hull.id,
+                    "quantity": 1,
+                    "blueprint_me": 0,
+                    "blueprint_te": 0,
+                    "facility_key": "amamake",
+                    "compressed": True,
+                },
+                content_type="application/json",
+            )
+        self.assertEqual(response.status_code, 200, response.content)
+        ore = response.json()["compressed_ore"]
+        self.assertEqual(ore["refine_rate_source"], "facility_default")
+        self.assertIsNone(ore["character_skills"])
+
+    def test_plan_character_id_requires_auth(self):
         response = self.client.post(
             f"{BASE}/plans",
-            data={"product_type_id": self.hull.id, "quantity": 1},
+            data={
+                "product_type_id": self.hull.id,
+                "quantity": 1,
+                "character_id": 2122999001,
+            },
             content_type="application/json",
         )
         self.assertEqual(response.status_code, 401)

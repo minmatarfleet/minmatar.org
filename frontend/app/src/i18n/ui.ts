@@ -412,6 +412,8 @@ export const ui = {
         'industry.orders.planner.character': 'Who reprocesses ore',
         'industry.orders.planner.character_tip': 'Uses that character’s reprocessing skills for ore yield. Leave blank to assume all skills at V. Implant bonus is a separate toggle.',
         'industry.orders.planner.character_none': 'Assume max skills',
+        'industry.orders.planner.character_login_prompt': 'Log in to use your character’s reprocessing skills.',
+        'industry.orders.planner.character_log_in': 'Log in',
         'industry.orders.planner.use_implants': 'Include reprocessing implant',
         'industry.orders.planner.use_implants_tip': 'Uses the best RX implant found on any of the selected character’s jump clones (or active implants). If none / max skills, assumes RX-804 (+4%). Off means no implant bonus.',
         'industry.orders.planner.implant_fitted': 'Implant fitted',
