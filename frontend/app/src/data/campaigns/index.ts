@@ -18,7 +18,7 @@ export type CampaignMeta = {
 export const campaigns: CampaignMeta[] = [
     {
         slug: 'etherium-reach',
-        path: '/campaigns/etherium-reach/',
+        path: '/alliance/campaigns/etherium-reach/',
         nameKey: 'campaigns.etherium_reach.name',
         periodKey: 'campaigns.etherium_reach.campaign_period',
         excerptKey: 'campaigns.etherium_reach.leading_text',
@@ -28,7 +28,7 @@ export const campaigns: CampaignMeta[] = [
     },
     {
         slug: 'providence',
-        path: '/campaigns/providence/',
+        path: '/alliance/campaigns/providence/',
         nameKey: 'campaigns.providence.name',
         periodKey: 'campaigns.providence.campaign_period',
         excerptKey: 'campaigns.providence.leading_text',
@@ -38,7 +38,7 @@ export const campaigns: CampaignMeta[] = [
     },
     {
         slug: 'scalding-pass',
-        path: '/campaigns/scalding-pass/',
+        path: '/alliance/campaigns/scalding-pass/',
         nameKey: 'campaigns.scalding_pass.name',
         periodKey: 'campaigns.scalding_pass.campaign_period',
         excerptKey: 'campaigns.scalding_pass.leading_text',
@@ -48,7 +48,7 @@ export const campaigns: CampaignMeta[] = [
     },
     {
         slug: 'hek',
-        path: '/campaigns/hek/',
+        path: '/alliance/campaigns/hek/',
         nameKey: 'campaigns.hek.name',
         periodKey: 'campaigns.hek.campaign_period',
         excerptKey: 'campaigns.hek.leading_text',

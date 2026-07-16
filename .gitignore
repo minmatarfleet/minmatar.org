@@ -184,3 +184,5 @@ mcps/.reddit-mcp/
 
 # EVE Online Static Data for import_sde.py
 sde/*.zip
+
+*:Zone.Identifier

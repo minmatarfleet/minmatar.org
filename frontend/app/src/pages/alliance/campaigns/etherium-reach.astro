@@ -1,0 +1,92 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { COVER_IMAGE } from '@/data/campaigns/etherium-reach'
+import { buildEtheriumReachCampaignJsonLd } from '@/data/campaigns/etherium-reach-seo'
+import { get_site_origin } from '@helpers/seo'
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import EtheriumReachCampaign from '@components/blocks/campaigns/etherium-reach/EtheriumReachCampaign.astro'
+import Tag from '@components/blocks/Tag.astro'
+
+const page_title = t('campaigns.etherium_reach.page_title')
+const campaign_period = t('campaigns.etherium_reach.campaign_period')
+const page_description = t('campaigns.etherium_reach.leading_text')
+const meta_title = t('campaigns.etherium_reach.meta_title')
+    .replace('{site}', t('index.page_title'))
+const meta_description = t('campaigns.etherium_reach.meta_description')
+const site_origin = get_site_origin(Astro.url.origin)
+const canonical_url = new URL(translatePath('/campaigns/etherium-reach/'), site_origin).href
+const meta_image = new URL(COVER_IMAGE, site_origin).href
+
+import {
+    get_location_video_cover,
+    get_location_video_cover_thumb,
+    get_location_cover,
+    get_location_cover_990,
+} from '@helpers/covers'
+
+const structured_data = buildEtheriumReachCampaignJsonLd({
+    canonicalUrl: canonical_url,
+    siteName: t('index.page_title'),
+    siteOrigin: site_origin,
+    metaTitle: page_title,
+    metaDescription: meta_description,
+    metaImage: meta_image,
+})
+---
+
+<Viewport
+    title={meta_title}
+    meta_description={meta_description}
+    meta_image={meta_image}
+    canonical_url={canonical_url}
+    og_type="article"
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(structured_data)} />
+
+    <PageLanding
+        wide={true}
+        cover={{
+            video: get_location_video_cover('R-6KYM - Casper Anchored It') ?? undefined,
+			video_thumb: get_location_video_cover_thumb('R-6KYM - Casper Anchored It') ?? undefined,
+            image: get_location_cover('R-6KYM - Casper Anchored It') ?? COVER_IMAGE,
+            image_990: get_location_cover_990('R-6KYM - Casper Anchored It') ?? COVER_IMAGE,
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <Flexblock gap="var(--space-2xl)">
+            <TextBox>
+                <Flexblock gap="var(--space-xl)">
+                    <Flexblock gap="var(--space-3xs)">
+                        <PageTitle is_landing={true}>{page_title}</PageTitle>
+                        <Tag text={campaign_period} color='fleet-yellow' />
+                    </Flexblock>
+                    <p class="[ excerpt ]">{page_description}</p>
+                </Flexblock>
+            </TextBox>
+
+            <EtheriumReachCampaign />
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .excerpt,
+    :global(.excerpt p) {
+        font-size: var(--step-1);
+        line-height: 1.6;
+        max-width: 100%;
+    }
+</style>
