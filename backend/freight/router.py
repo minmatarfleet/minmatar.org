@@ -1,10 +1,10 @@
-import math
 from typing import List
 
 from ninja import Router
 from pydantic import BaseModel
 
 from freight.endpoints import router as endpoints_router
+from freight.helpers.pricing import route_cost_isk
 from .models import EveFreightRoute
 
 router = Router(tags=["Freight"])
@@ -66,7 +66,5 @@ def get_route_cost(request, route_id: int, m3: int, collateral: int = 0):
     route = EveFreightRoute.objects.filter(id=route_id, active=True).first()
     if not route:
         return 404, {"detail": "Route not found."}
-    cost = (route.isk_per_m3 * m3) + math.ceil(
-        route.collateral_modifier * collateral
-    )
+    cost = route_cost_isk(route, m3, collateral)
     return EveFreightRouteCostResponse(route_id=route.id, cost=cost)

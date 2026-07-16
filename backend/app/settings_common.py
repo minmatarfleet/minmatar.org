@@ -99,6 +99,8 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",  # static files
     "django.middleware.security.SecurityMiddleware",
+    # Answer browser CORS preflight (OPTIONS) before URL routing → 405.
+    "app.cors.SimpleCorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
