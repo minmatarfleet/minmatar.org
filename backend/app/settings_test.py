@@ -42,6 +42,13 @@ CELERY_TASK_EAGER_PROPAGATES = True
 
 WEB_LINK_URL = os.environ.get("WEB_LINK_URL", "https://my.minmatar.org")
 
+CORS_ALLOWED_ORIGINS = [
+    WEB_LINK_URL.rstrip("/"),
+    "http://localhost:4321",
+    "https://my.minmatar.org",
+    "https://minmatar.org",
+]
+
 # DISCORD
 DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
 DISCORD_CLIENT_ID = os.environ.get("DISCORD_CLIENT_ID", "")

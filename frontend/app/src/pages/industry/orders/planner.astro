@@ -1,0 +1,1512 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_400_Bad_Request, HTTP_403_Forbidden } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!user || !auth_token) return HTTP_403_Forbidden()
+
+import { get_order_by_id, get_planner_facilities } from '@helpers/api.minmatar.org/industry'
+import { get_characters } from '@helpers/api.minmatar.org/characters'
+import { get_ship_info } from '@helpers/sde/ships'
+import type { IndustrySingleOrder, RootSingleItem, Character } from '@dtypes/api.minmatar.org'
+import type { PlannerFacility } from '@helpers/api.minmatar.org/industry'
+import type { Alert } from '@dtypes/layout_components'
+
+let order: IndustrySingleOrder | null = null
+let item: RootSingleItem | undefined = undefined
+let facilities: PlannerFacility[] = []
+let characters: Character[] = []
+let data_fetching_error: Error | false = false
+let alert: Alert | null = null
+/** Default researched BPO; faction/navy hulls use ME 0 / TE 0. */
+let default_blueprint_me = 10
+let default_blueprint_te = 20
+
+const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '0')
+const item_id = parseInt(Astro.url.searchParams.get('item_id') ?? '0')
+
+try {
+    if (isNaN(order_id) || order_id < 1)
+        throw new Error(t('industry.orders.planner.invalid_params'), { cause: 400 })
+
+    if (isNaN(item_id) || item_id < 1)
+        throw new Error(t('industry.orders.planner.invalid_params'), { cause: 400 })
+
+    order = await get_order_by_id(order_id)
+    item = order.items.find(row => row.id === item_id)
+    if (!item)
+        throw new Error(t('industry.orders.planner.invalid_params'), { cause: 400 })
+
+    ;[facilities, characters] = await Promise.all([
+        get_planner_facilities(auth_token),
+        get_characters(auth_token),
+    ])
+} catch (error) {
+    data_fetching_error = error
+    if (error?.cause === 400)
+        return HTTP_400_Bad_Request()
+}
+
+if (item) {
+    try {
+        const ship_info = await get_ship_info(item.eve_type_id)
+        const navy_name = /(?:Navy|Fleet) Issue$/i.test(item.eve_type_name ?? '')
+        if (ship_info?.meta === 'Faction' || navy_name) {
+            default_blueprint_me = 0
+            default_blueprint_te = 0
+        }
+    } catch {
+        const navy_name = /(?:Navy|Fleet) Issue$/i.test(item.eve_type_name ?? '')
+        if (navy_name) {
+            default_blueprint_me = 0
+            default_blueprint_te = 0
+        }
+    }
+}
+
+import { query_string } from '@helpers/string'
+import { number_thousand_separator } from '@helpers/numbers'
+
+import {
+    get_location_video_cover,
+    get_location_video_cover_thumb,
+    get_location_cover,
+    get_location_cover_990,
+} from '@helpers/covers'
+
+const location_name = order?.location?.location_name
+
+import Viewport from '@layouts/Viewport.astro';
+import PageDefault from '@components/page/PageDefault.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import TextBox from '@components/layout/TextBox.astro';
+import Markdown from '@components/blocks/Markdown.astro';
+
+import BlockList from '@components/compositions/BlockList.astro'
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import Button from '@components/blocks/Button.astro';
+import Input from '@components/blocks/Input.astro';
+import Select from '@components/blocks/Select.astro';
+import Switch from '@components/blocks/Switch.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+import ItemBadge from '@components/blocks/ItemBadge.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import ShowAlert from '@components/blocks/ShowAlert.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import TextGroup from '@components/blocks/TextGroup.astro';
+import CharacterPicture from '@components/blocks/CharacterPicture.astro';
+
+const page_title = t('industry.orders.planner.page_title')
+const default_facility = facilities[0]?.key ?? 'amamake'
+const default_refine = facilities[0]?.reprocessing?.refine_rate ?? 0
+
+const bucket_labels = JSON.stringify({
+    end_products: t('industry.orders.planner.bucket.end_products'),
+    advanced_components: t('industry.orders.planner.bucket.advanced_components'),
+    first_stage_reactions: t('industry.orders.planner.bucket.first_stage_reactions'),
+    second_stage_reactions: t('industry.orders.planner.bucket.second_stage_reactions'),
+    other: t('industry.orders.planner.bucket.other'),
+})
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('industry.orders.planner.meta_description')}
+    components={{
+        alert_dialog: true,
+    }}
+>
+    <PageDefault
+        cover={{
+			video: location_name ? get_location_video_cover(location_name) : undefined,
+			video_thumb: location_name ? get_location_video_cover_thumb(location_name) : undefined,
+            image: location_name ? get_location_cover(location_name) : '/images/industry-cover.jpg',
+            image_990: location_name ? get_location_cover_990(location_name) : '/images/industry-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        {alert && <ShowAlert alert={alert} />}
+
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <FlexInline>
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
+            </FlexInline>
+            <FlexInline>
+                <Button class="[ !hidden sm:block! ]" href={translatePath(`/industry/orders/`)}>
+                    {t('back_to_orders')}
+                </Button>
+            </FlexInline>
+        </FlexInline>
+
+        <BlockList gap='var(--space-xl)'>
+            {data_fetching_error !== false ?
+                <ErrorRefetch
+                    args={{
+                        partial: translatePath(`/industry/orders/planner?${query_string({
+                            order_id,
+                            item_id,
+                        })}`),
+                        error: data_fetching_error,
+                        delay: 0,
+                    }}
+                />
+                :
+                <>{order && item &&
+                    <aside class="[ planner-beta ]" role="note">
+                        <p class="[ planner-beta__title ]">{t('industry.orders.planner.beta_title')}</p>
+                        <Markdown
+                            class="[ planner-beta__body ]"
+                            markdown={t('industry.orders.planner.beta_warning')}
+                            inline={true}
+                        />
+                    </aside>
+
+                    <TextBox>
+                        <p>{t('industry.orders.planner.leading_text')}</p>
+                    </TextBox>
+
+                    <div
+                        class="[ planner ]"
+                        x-data={`{
+                            quantity: ${item.quantity},
+                            blueprint_me: ${default_blueprint_me},
+                            blueprint_te: ${default_blueprint_te},
+                            facility_key: '${default_facility}',
+                            compressed: true,
+                            character_id: '',
+                            use_reprocessing_implants: false,
+                            build_fuel_blocks: false,
+                            loading: false,
+                            facility_loading: false,
+                            rate_loading: false,
+                            error: '',
+                            materials_tsv: '',
+                            effective_refine: ${default_refine},
+                            refine_source: 'facility_default',
+                            skill_summary: '',
+                            implant_status: '${t('industry.orders.planner.implant_off')}',
+                            ore_yields: [],
+                            character_skills: null,
+                            facility_detail: null,
+                            jobs: [],
+                            subitem_catalog: [],
+                            build_toggles: {},
+                            product_type_id: ${item.eve_type_id},
+                            cost_breakdown: null,
+                            _replan_timer: null,
+                            _suspend_watch: false,
+                            _plan_generation: 0,
+                            _loaded_facility_key: '',
+                            _loaded_refine_key: '',
+                            bucket_labels: ${bucket_labels},
+                            // Auto-replan watches plannerInputSnapshot() only (user inputs).
+                            // To add a new control: x-model it onto this component and include
+                            // that field in plannerInputSnapshot() — no per-control @change.
+                            // Do not put plan response fields (jobs, materials_tsv, etc.) here.
+                            plannerInputSnapshot() {
+                                const toggles = this.build_toggles
+                                const toggle_entries = Object.keys(toggles)
+                                    .sort()
+                                    .map(k => k + ':' + toggles[k])
+                                return [
+                                    this.quantity,
+                                    this.blueprint_me,
+                                    this.blueprint_te,
+                                    this.facility_key,
+                                    this.character_id,
+                                    this.compressed,
+                                    this.use_reprocessing_implants,
+                                    this.build_fuel_blocks,
+                                    toggle_entries.join(','),
+                                ].join('|')
+                            },
+                            initPlannerAutoReplan() {
+                                this.$watch(
+                                    () => this.plannerInputSnapshot(),
+                                    () => this.scheduleReplan()
+                                )
+                                this.applyPlannerInputs()
+                            },
+                            scheduleReplan() {
+                                if (this._suspend_watch)
+                                    return
+                                clearTimeout(this._replan_timer)
+                                this._replan_timer = setTimeout(
+                                    () => this.applyPlannerInputs(),
+                                    300
+                                )
+                            },
+                            withSuspendedWatch(fn) {
+                                this._suspend_watch = true
+                                try {
+                                    return fn()
+                                } finally {
+                                    this._suspend_watch = false
+                                }
+                            },
+                            async applyPlannerInputs() {
+                                clearTimeout(this._replan_timer)
+                                const gen = ++this._plan_generation
+                                const facility_changed =
+                                    this.facility_key !== this._loaded_facility_key
+                                const refine_key = [
+                                    this.facility_key,
+                                    this.character_id,
+                                    !!this.use_reprocessing_implants,
+                                ].join('|')
+                                const refine_changed =
+                                    refine_key !== this._loaded_refine_key
+
+                                if (facility_changed) {
+                                    this.withSuspendedWatch(() => {
+                                        this.subitem_catalog = []
+                                        this.build_toggles = {}
+                                    })
+                                    this._loaded_facility_key = this.facility_key
+                                    await this.loadFacility()
+                                    if (gen !== this._plan_generation)
+                                        return
+                                }
+                                if (refine_changed || facility_changed) {
+                                    this._loaded_refine_key = refine_key
+                                    await this.refreshRefineRate()
+                                    if (gen !== this._plan_generation)
+                                        return
+                                }
+                                await this.runPlan(gen)
+                            },
+                            pct(v) {
+                                return ((Number(v) || 0) * 100).toFixed(2) + '%'
+                            },
+                            escapeHtml(s) {
+                                return String(s ?? '')
+                                    .replace(/&/g, '&amp;')
+                                    .replace(/</g, '&lt;')
+                                    .replace(/>/g, '&gt;')
+                                    .replace(/"/g, '&quot;')
+                            },
+                            fittingTooltip(item) {
+                                if (!item) return ''
+                                const name = this.escapeHtml(item.name)
+                                const effects = (item.effects || [])
+                                    .map((line) => '<div>' + this.escapeHtml(line) + '</div>')
+                                    .join('')
+                                return '<strong>' + name + '</strong>' + effects
+                            },
+                            fittingTippy($el) {
+                                if (!$el || typeof tippy === 'undefined')
+                                    return
+                                const opts = (typeof tippy_options !== 'undefined')
+                                    ? Object.assign({}, tippy_options, { allowHTML: true })
+                                    : { delay: [100, 200], arrow: true, allowHTML: true }
+                                tippy($el, opts)
+                            },
+                            formatIsk(v) {
+                                return Number(v || 0).toLocaleString()
+                            },
+                            costBreakdownTipHtml(mode) {
+                                const breakdown = this.cost_breakdown
+                                if (!breakdown || !breakdown.line_items)
+                                    return ''
+                                const qty = Math.max(
+                                    Number(breakdown.output_quantity) || 1,
+                                    1
+                                )
+                                const perUnit = mode === 'per_unit'
+                                const lines = [
+                                    perUnit
+                                        ? '${t('industry.orders.planner.per_unit_cost_tip')}'
+                                        : '${t('industry.orders.planner.total_cost_tip')}',
+                                    '',
+                                ]
+                                // Show every backend line (incl. reprocessing tax
+                                // when compression is on, and freight if present).
+                                for (const row of breakdown.line_items) {
+                                    const amount = Number(row.amount_isk) || 0
+                                    const shown = perUnit
+                                        ? Math.round(amount / qty)
+                                        : amount
+                                    lines.push(
+                                        this.escapeHtml(row.label)
+                                        + ': '
+                                        + this.formatIsk(shown)
+                                        + ' ISK'
+                                    )
+                                }
+                                if (Number(breakdown.freight_volume_m3) > 0) {
+                                    lines.push(
+                                        '${t('industry.orders.planner.freight_volume')}: '
+                                        + Number(breakdown.freight_volume_m3).toLocaleString(
+                                            undefined,
+                                            { maximumFractionDigits: 2 }
+                                        )
+                                        + ' m³'
+                                    )
+                                }
+                                if (
+                                    !breakdown.freight_route_id
+                                    && Number(breakdown.freight_volume_m3) > 0
+                                ) {
+                                    lines.push(
+                                        '${t('industry.orders.planner.freight_none')}'
+                                    )
+                                }
+                                if (perUnit) {
+                                    lines.push(
+                                        '<strong>${t('industry.orders.planner.per_unit_cost')}: '
+                                        + this.formatIsk(
+                                            Math.round(breakdown.per_unit_isk)
+                                        )
+                                        + ' ISK</strong>'
+                                    )
+                                    lines.push(
+                                        '${t('industry.orders.planner.per_unit_equals_total')}'
+                                            .replace('{n}', String(qty))
+                                    )
+                                } else {
+                                    lines.push(
+                                        '<strong>${t('industry.orders.planner.total_cost')}: '
+                                        + this.formatIsk(
+                                            breakdown.grand_total_isk
+                                        )
+                                        + ' ISK</strong>'
+                                    )
+                                }
+                                return lines.join('<br>')
+                            },
+                            bindCostTooltip() {
+                                this.$nextTick(() => {
+                                    if (typeof tippy === 'undefined')
+                                        return
+                                    const pairs = [
+                                        [
+                                            this.$refs.cost_total,
+                                            this.costBreakdownTipHtml('total'),
+                                        ],
+                                        [
+                                            this.$refs.cost_per_unit,
+                                            this.costBreakdownTipHtml('per_unit'),
+                                        ],
+                                    ]
+                                    for (const [el, content] of pairs) {
+                                        if (!el)
+                                            continue
+                                        if (!content) {
+                                            if (el._tippy)
+                                                el._tippy.destroy()
+                                            continue
+                                        }
+                                        if (el._tippy) {
+                                            el._tippy.setContent(content)
+                                        } else {
+                                            tippy(el, {
+                                                delay: [100, 200],
+                                                arrow: true,
+                                                allowHTML: true,
+                                                content,
+                                            })
+                                        }
+                                    }
+                                })
+                            },
+                            defaultBuildForBucket(_bucket) {
+                                // Intermediates default to buy/import (buy all).
+                                // Root product is never in build_toggles / exclude_type_ids.
+                                return false
+                            },
+                            excludeTypeIds() {
+                                return Object.entries(this.build_toggles)
+                                    .filter(([, on]) => !on)
+                                    .map(([id]) => parseInt(id))
+                            },
+                            syncSubitemsFromJobs(jobs) {
+                                let needs_replan = false
+                                // Suspend watch so buy-all default toggles do not
+                                // schedule a second debounced replan; runPlan re-runs
+                                // inline when needs_replan is true.
+                                return this.withSuspendedWatch(() => {
+                                    const by_id = {}
+                                    for (const row of this.subitem_catalog)
+                                        by_id[row.product_type_id] = row
+                                    for (const job of jobs || []) {
+                                        if (job.product_type_id === this.product_type_id)
+                                            continue
+                                        const id = job.product_type_id
+                                        const key = String(id)
+                                        if (by_id[id]) {
+                                            by_id[id].product_name = job.product_name
+                                            by_id[id].bucket = job.bucket
+                                            by_id[id].runs = job.runs
+                                        } else {
+                                            this.subitem_catalog.push({
+                                                product_type_id: id,
+                                                product_name: job.product_name,
+                                                bucket: job.bucket,
+                                                runs: job.runs,
+                                            })
+                                            by_id[id] = this.subitem_catalog[
+                                                this.subitem_catalog.length - 1
+                                            ]
+                                        }
+                                        if (this.build_toggles[key] === undefined) {
+                                            const build = this.defaultBuildForBucket(
+                                                job.bucket
+                                            )
+                                            this.build_toggles[key] = build
+                                            if (!build)
+                                                needs_replan = true
+                                        }
+                                    }
+                                    return needs_replan
+                                })
+                            },
+                            subitemBuckets() {
+                                const order = [
+                                    'advanced_components',
+                                    'first_stage_reactions',
+                                    'second_stage_reactions',
+                                    'other',
+                                ]
+                                const grouped = {}
+                                for (const row of this.subitem_catalog) {
+                                    const bucket = row.bucket || 'other'
+                                    if (!grouped[bucket]) grouped[bucket] = []
+                                    grouped[bucket].push(row)
+                                }
+                                return order
+                                    .filter(key => (grouped[key] || []).length)
+                                    .map(key => ({
+                                        key,
+                                        label: this.bucket_labels[key] || key,
+                                        rows: grouped[key].sort((a, b) =>
+                                            a.product_name.localeCompare(b.product_name)
+                                        ),
+                                    }))
+                            },
+                            async loadFacility() {
+                                this.facility_loading = true
+                                try {
+                                    const response = await fetch(
+                                        '/api/industry/planner/facilities/' + encodeURIComponent(this.facility_key),
+                                        { credentials: 'same-origin' }
+                                    )
+                                    if (!response.ok) throw new Error('facility')
+                                    this.facility_detail = await response.json()
+                                } catch (e) {
+                                    this.facility_detail = null
+                                } finally {
+                                    this.facility_loading = false
+                                }
+                            },
+                            async refreshRefineRate() {
+                                this.rate_loading = true
+                                try {
+                                    const body = {
+                                        facility_key: this.facility_key,
+                                        use_reprocessing_implants: !!this.use_reprocessing_implants,
+                                    }
+                                    if (this.character_id)
+                                        body.character_id = parseInt(this.character_id)
+                                    const response = await fetch('/api/industry/planner/refine-rate', {
+                                        method: 'POST',
+                                        credentials: 'same-origin',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify(body),
+                                    })
+                                    if (!response.ok) throw new Error('refine')
+                                    const data = await response.json()
+                                    this.effective_refine = data.refine_rate
+                                    this.refine_source = data.refine_rate_source
+                                    this.ore_yields = data.ore_yields || []
+                                    this.applySkillSummary(data.character_skills)
+                                } catch (e) {
+                                    this.skill_summary = ''
+                                    this.implant_status = ''
+                                    this.ore_yields = []
+                                    this.character_skills = null
+                                    this.bindRefineTooltip()
+                                } finally {
+                                    this.rate_loading = false
+                                }
+                            },
+                            romanLevel(level) {
+                                const n = Math.max(0, Math.min(5, Number(level) || 0))
+                                return ['0', 'I', 'II', 'III', 'IV', 'V'][n]
+                            },
+                            applySkillSummary(s) {
+                                this.character_skills = s || null
+                                if (!this.use_reprocessing_implants) {
+                                    this.skill_summary = s
+                                        ? ('R' + s.reprocessing_level +
+                                            '/RE' + s.reprocessing_efficiency_level +
+                                            '/Ore' + s.ore_processing_level)
+                                        : ''
+                                    this.implant_status = '${t('industry.orders.planner.implant_off')}'
+                                    this.bindRefineTooltip()
+                                    return
+                                }
+                                if (!s) {
+                                    this.skill_summary = ''
+                                    this.implant_status = (!this.character_id)
+                                        ? '${t('industry.orders.planner.implant_assumed_max')}'
+                                        : ''
+                                    this.bindRefineTooltip()
+                                    return
+                                }
+                                this.skill_summary =
+                                    'R' + s.reprocessing_level +
+                                    '/RE' + s.reprocessing_efficiency_level +
+                                    '/Ore' + s.ore_processing_level
+                                if (s.implant_type_id && s.implant_bonus > 0) {
+                                    const name = s.implant_name || ('type ' + s.implant_type_id)
+                                    const pct = (s.implant_bonus * 100).toFixed(0) + '%'
+                                    this.implant_status =
+                                        '${t('industry.orders.planner.implant_fitted')}: ' +
+                                        name + ' (+' + pct + ')'
+                                } else {
+                                    // Toggle ON with no RX found → backend assumes RX-804.
+                                    this.implant_status =
+                                        '${t('industry.orders.planner.implant_assumed_max')}'
+                                }
+                                this.bindRefineTooltip()
+                            },
+                            refineYieldTipHtml() {
+                                const lines = [
+                                    '${t('industry.orders.planner.effective_refine_tip')}',
+                                    '',
+                                    '<strong>${t('industry.orders.planner.refine_core')}</strong>',
+                                ]
+                                const s = this.character_skills
+                                const rep = s ? s.reprocessing_level : 5
+                                const re = s ? s.reprocessing_efficiency_level : 5
+                                lines.push(
+                                    this.escapeHtml('Reprocessing ' + this.romanLevel(rep))
+                                )
+                                lines.push(
+                                    this.escapeHtml(
+                                        'Reprocessing Efficiency ' + this.romanLevel(re)
+                                    )
+                                )
+                                const yields = this.ore_yields || []
+                                if (yields.length) {
+                                    lines.push('')
+                                    lines.push(
+                                        '<strong>${t('industry.orders.planner.refine_per_ore')}</strong>'
+                                    )
+                                    for (const row of yields) {
+                                        const pct = (
+                                            (Number(row.refine_rate) || 0) * 100
+                                        ).toFixed(2) + '%'
+                                        lines.push(
+                                            this.escapeHtml(
+                                                row.ore_name
+                                                + ' — '
+                                                + row.skill_name
+                                                + ' '
+                                                + this.romanLevel(row.skill_level)
+                                                + ' → '
+                                                + pct
+                                            )
+                                        )
+                                    }
+                                } else if (this.skill_summary) {
+                                    lines.push('')
+                                    lines.push(this.escapeHtml(this.skill_summary))
+                                }
+                                if (this.implant_status)
+                                    lines.push(this.escapeHtml(this.implant_status))
+                                return lines.join('<br>')
+                            },
+                            bindRefineTooltip() {
+                                this.$nextTick(() => {
+                                    if (typeof tippy === 'undefined')
+                                        return
+                                    const el = this.$refs.refine_yield
+                                    if (!el)
+                                        return
+                                    const content = this.refineYieldTipHtml()
+                                    el.setAttribute('data-tippy-content', content)
+                                    if (el._tippy) {
+                                        el._tippy.setContent(content)
+                                    } else {
+                                        tippy(el, {
+                                            delay: [100, 200],
+                                            arrow: true,
+                                            allowHTML: true,
+                                            content,
+                                        })
+                                    }
+                                })
+                            },
+                            async runPlan(gen) {
+                                if (gen === undefined)
+                                    gen = ++this._plan_generation
+                                this.loading = true
+                                this.error = ''
+                                try {
+                                    const body = {
+                                        product_type_id: this.product_type_id,
+                                        quantity: Math.max(1, parseInt(this.quantity) || 1),
+                                        blueprint_me: Math.max(0, parseInt(this.blueprint_me) || 0),
+                                        blueprint_te: Math.max(0, parseInt(this.blueprint_te) || 0),
+                                        facility_key: this.facility_key,
+                                        compressed: this.compressed,
+                                        build_fuel_blocks: this.build_fuel_blocks,
+                                        use_reprocessing_implants: !!this.use_reprocessing_implants,
+                                        exclude_type_ids: this.excludeTypeIds(),
+                                    }
+                                    if (this.character_id)
+                                        body.character_id = parseInt(this.character_id)
+
+                                    const response = await fetch('/api/industry/planner/plans', {
+                                        method: 'POST',
+                                        credentials: 'same-origin',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify(body),
+                                    })
+                                    if (gen !== this._plan_generation)
+                                        return
+                                    if (!response.ok) {
+                                        let detail = '${t('industry.orders.planner.error')}'
+                                        try {
+                                            const err = await response.json()
+                                            if (err.detail) detail = err.detail
+                                        } catch (e) {}
+                                        throw new Error(detail)
+                                    }
+                                    const data = await response.json()
+                                    if (gen !== this._plan_generation)
+                                        return
+                                    this.jobs = data.jobs || []
+                                    const needs_replan = this.syncSubitemsFromJobs(this.jobs)
+                                    if (needs_replan) {
+                                        // Re-run once so buy-all defaults apply to the BOM.
+                                        await this.runPlan(gen)
+                                        return
+                                    }
+                                    this.cost_breakdown = data.cost_breakdown || null
+                                    this.materials_tsv = data.materials_tsv || ''
+                                    this.bindCostTooltip()
+                                    if (data.compressed_ore) {
+                                        this.effective_refine = data.compressed_ore.refine_rate
+                                        this.refine_source = data.compressed_ore.refine_rate_source
+                                        this.materials_tsv = data.compressed_ore.materials_tsv || data.materials_tsv
+                                        this.ore_yields = data.compressed_ore.ore_yields || []
+                                        this.applySkillSummary(data.compressed_ore.character_skills)
+                                    }
+                                } catch (e) {
+                                    if (gen !== this._plan_generation)
+                                        return
+                                    this.error = e.message || '${t('industry.orders.planner.error')}'
+                                    this.materials_tsv = ''
+                                    this.cost_breakdown = null
+                                } finally {
+                                    if (gen === this._plan_generation)
+                                        this.loading = false
+                                }
+                            },
+                            setBucketSubitemToggles(bucket, on) {
+                                for (const row of this.subitem_catalog) {
+                                    if ((row.bucket || 'other') === bucket)
+                                        this.build_toggles[String(row.product_type_id)] = on
+                                }
+                                if (bucket === 'other')
+                                    this.build_fuel_blocks = on
+                            },
+                            selectBucketSubitems(bucket) {
+                                this.setBucketSubitemToggles(bucket, true)
+                            },
+                            deselectBucketSubitems(bucket) {
+                                this.setBucketSubitemToggles(bucket, false)
+                            },
+                        }`}
+                        x-init="initPlannerAutoReplan()"
+                    >
+                        <BlockList gap='var(--space-l)'>
+                            <ComponentBlock>
+                                <Flexblock gap='var(--space-m)'>
+                                    <ItemBadge
+                                        item_name={item.eve_type_name}
+                                        type_id={item.eve_type_id}
+                                        size={64}
+                                    >
+                                        <small>
+                                            Order #{order.id}
+                                            · {number_thousand_separator(item.quantity)} ordered
+                                        </small>
+                                    </ItemBadge>
+
+                                    <div class="[ planner-settings-row ]">
+                                        <Flexblock gap='var(--space-3xs)' class="[ planner-settings-field ]">
+                                            <label for="planner-qty">{t('industry.orders.planner.quantity')}</label>
+                                            <div class="[ planner-settings-control ]">
+                                                <Input
+                                                    id="planner-qty"
+                                                    type="number"
+                                                    min="1"
+                                                    size="sm"
+                                                    width="100%"
+                                                    x-model="quantity"
+                                                />
+                                            </div>
+                                        </Flexblock>
+
+                                        <Flexblock gap='var(--space-3xs)' class="[ planner-settings-field planner-settings-field--compact ]">
+                                            <label for="planner-me">{t('industry.orders.planner.blueprint_me')}</label>
+                                            <div class="[ planner-settings-control ]">
+                                                <Select
+                                                    id="planner-me"
+                                                    size="sm"
+                                                    width="100%"
+                                                    x-model="blueprint_me"
+                                                >
+                                                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(level =>
+                                                        <option value={level}>{level}</option>
+                                                    )}
+                                                </Select>
+                                            </div>
+                                        </Flexblock>
+
+                                        <Flexblock gap='var(--space-3xs)' class="[ planner-settings-field planner-settings-field--compact ]">
+                                            <label for="planner-te">{t('industry.orders.planner.blueprint_te')}</label>
+                                            <div class="[ planner-settings-control ]">
+                                                <Select
+                                                    id="planner-te"
+                                                    size="sm"
+                                                    width="100%"
+                                                    x-model="blueprint_te"
+                                                >
+                                                    {[0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20].map(level =>
+                                                        <option value={level}>{level}</option>
+                                                    )}
+                                                </Select>
+                                            </div>
+                                        </Flexblock>
+
+                                        <Flexblock gap='var(--space-3xs)' class="[ planner-settings-field ]">
+                                            <label for="planner-facility">{t('industry.orders.planner.facility')}</label>
+                                            <div class="[ planner-settings-control ]">
+                                                <Select
+                                                    id="planner-facility"
+                                                    size="sm"
+                                                    width="100%"
+                                                    x-model="facility_key"
+                                                >
+                                                    {facilities.map(f =>
+                                                        <option value={f.key}>
+                                                            {f.system_name}
+                                                        </option>
+                                                    )}
+                                                </Select>
+                                            </div>
+                                        </Flexblock>
+
+                                        <Flexblock gap='var(--space-3xs)' class="[ planner-settings-field ]">
+                                            <label for="planner-character">{t('industry.orders.planner.character')}</label>
+                                            <div class="[ planner-settings-control-row ]">
+                                                <div
+                                                    class="[ planner-character-portrait ]"
+                                                    x-show="character_id"
+                                                    x-cloak
+                                                >
+                                                    <CharacterPicture
+                                                        character_id={characters[0]?.character_id ?? 1}
+                                                        character_name={characters[0]?.character_name}
+                                                        x_character_id="character_id"
+                                                        size={24}
+                                                        icon_quality={64}
+                                                    />
+                                                </div>
+                                                <div class="[ planner-settings-control ]">
+                                                    <Select
+                                                        id="planner-character"
+                                                        size="sm"
+                                                        width="100%"
+                                                        x-model="character_id"
+                                                    >
+                                                        <option value="">{t('industry.orders.planner.character_none')}</option>
+                                                        {characters.map(c =>
+                                                            <option value={c.character_id}>
+                                                                {c.character_name}
+                                                            </option>
+                                                        )}
+                                                    </Select>
+                                                </div>
+                                            </div>
+                                        </Flexblock>
+                                    </div>
+
+                                    <FlexInline gap='var(--space-m)' class="[ w-full flex-wrap items-center planner-settings-toggles ]">
+                                        <span
+                                            class="[ planner-tip ]"
+                                            data-tippy-content={t('industry.orders.planner.compression_tip')}
+                                        >
+                                            <Switch x-model="compressed">
+                                                {t('industry.orders.planner.compression')}
+                                            </Switch>
+                                        </span>
+                                        <span
+                                            class="[ planner-tip ]"
+                                            data-tippy-content={t('industry.orders.planner.use_implants_tip')}
+                                        >
+                                            <Switch x-model="use_reprocessing_implants">
+                                                {t('industry.orders.planner.use_implants')}
+                                            </Switch>
+                                        </span>
+                                        <span class="[ planner-settings-refine ]">
+                                            <span class="[ planner-settings-refine__label ]">
+                                                {t('industry.orders.planner.effective_refine')}
+                                            </span>
+                                            <span
+                                                class="[ planner-tip ]"
+                                                x-ref="refine_yield"
+                                                x-text="(effective_refine * 100).toFixed(2) + '%' + (rate_loading ? ' …' : '')"
+                                            ></span>
+                                        </span>
+                                    </FlexInline>
+                                </Flexblock>
+                            </ComponentBlock>
+
+                            <ComponentBlock x-show="facility_detail" x-cloak class="[ planner-location ]">
+                                <Flexblock gap='var(--space-2xs)'>
+                                    <h2>{t('industry.orders.planner.facility_summary')}</h2>
+                                    <p class="[ text-gray ]" x-show="facility_loading">{t('industry.orders.planner.facility_loading')}</p>
+                                    <template x-if="facility_detail">
+                                        <div class="[ planner-location-content ]">
+                                            <div class="[ planner-stats ]">
+                                                <div
+                                                    class="[ planner-stat planner-tip ]"
+                                                    data-tippy-content={t('industry.orders.planner.cost_index_mfg_tip')}
+                                                    x-init="tippy($el, tippy_options)"
+                                                >
+                                                    <TextGroup title={t('industry.orders.planner.cost_index_mfg')} gap='var(--space-3xs)'>
+                                                        <span
+                                                            class="[ planner-tip__mark ]"
+                                                            x-text="pct(facility_detail.cost_indices?.manufacturing)"
+                                                        ></span>
+                                                    </TextGroup>
+                                                </div>
+                                                <div
+                                                    class="[ planner-stat planner-tip ]"
+                                                    data-tippy-content={t('industry.orders.planner.cost_index_rxn_tip')}
+                                                    x-init="tippy($el, tippy_options)"
+                                                >
+                                                    <TextGroup title={t('industry.orders.planner.cost_index_rxn')} gap='var(--space-3xs)'>
+                                                        <span
+                                                            class="[ planner-tip__mark ]"
+                                                            x-text="pct(facility_detail.cost_indices?.reaction)"
+                                                        ></span>
+                                                    </TextGroup>
+                                                </div>
+                                                <div
+                                                    class="[ planner-stat planner-tip ]"
+                                                    data-tippy-content={t('industry.orders.planner.facility_tax_tip')}
+                                                    x-init="tippy($el, tippy_options)"
+                                                >
+                                                    <TextGroup title={t('industry.orders.planner.facility_tax')} gap='var(--space-3xs)'>
+                                                        <span
+                                                            class="[ planner-tip__mark ]"
+                                                            x-text="pct(facility_detail.facility_tax)"
+                                                        ></span>
+                                                    </TextGroup>
+                                                </div>
+                                                <div
+                                                    class="[ planner-stat planner-tip ]"
+                                                    data-tippy-content={t('industry.orders.planner.scc_surcharge_tip')}
+                                                    x-init="tippy($el, tippy_options)"
+                                                >
+                                                    <TextGroup title={t('industry.orders.planner.scc_surcharge')} gap='var(--space-3xs)'>
+                                                        <span
+                                                            class="[ planner-tip__mark ]"
+                                                            x-text="pct(facility_detail.scc_surcharge)"
+                                                        ></span>
+                                                    </TextGroup>
+                                                </div>
+                                                <div
+                                                    class="[ planner-stat planner-tip ]"
+                                                    data-tippy-content={t('industry.orders.planner.system_cost_bonus_tip')}
+                                                    x-show="facility_detail.system_cost_bonus"
+                                                    x-init="tippy($el, tippy_options)"
+                                                >
+                                                    <TextGroup title={t('industry.orders.planner.system_cost_bonus')} gap='var(--space-3xs)'>
+                                                        <span
+                                                            class="[ planner-tip__mark ]"
+                                                            x-text="pct(facility_detail.system_cost_bonus)"
+                                                        ></span>
+                                                    </TextGroup>
+                                                </div>
+                                                <div
+                                                    class="[ planner-stat planner-tip ]"
+                                                    data-tippy-content={t('industry.orders.planner.reprocessing_tax_tip')}
+                                                    x-init="tippy($el, tippy_options)"
+                                                >
+                                                    <TextGroup title={t('industry.orders.planner.reprocessing_tax')} gap='var(--space-3xs)'>
+                                                        <span
+                                                            class="[ planner-tip__mark ]"
+                                                            x-text="pct(facility_detail.reprocessing?.facility_tax)"
+                                                        ></span>
+                                                    </TextGroup>
+                                                </div>
+                                            </div>
+
+                                            <div class="[ planner-structures ]">
+                                                <h4>{t('industry.orders.planner.structures')}</h4>
+                                                <p class="[ text-gray planner-section-hint ]">{t('industry.orders.planner.structures_hint')}</p>
+                                                <div class="[ planner-fittings ]">
+                                                    <template x-for="structure in (facility_detail.structures || [])" :key="structure.name">
+                                                        <div class="[ planner-fitting-row ]">
+                                                            <button
+                                                                type="button"
+                                                                class="[ planner-fitting-piece planner-fitting-structure planner-tip ]"
+                                                                x-bind:data-tippy-content="fittingTooltip(structure)"
+                                                                data-tippy-allowhtml="true"
+                                                                x-init="fittingTippy($el)"
+                                                            >
+                                                                <img
+                                                                    loading="lazy"
+                                                                    width="40"
+                                                                    height="40"
+                                                                    x-bind:src="get_item_icon(structure.type_id, 64)"
+                                                                    x-bind:alt="structure.name"
+                                                                />
+                                                                <small class="[ planner-tip__label ]" x-text="structure.kind"></small>
+                                                            </button>
+                                                            <div class="[ planner-fitting-rigs ]">
+                                                                <template x-for="rig in (structure.rigs || [])" :key="rig.type_id">
+                                                                    <button
+                                                                        type="button"
+                                                                        class="[ planner-fitting-piece planner-tip ]"
+                                                                        x-bind:data-tippy-content="fittingTooltip(rig)"
+                                                                        data-tippy-allowhtml="true"
+                                                                        x-init="fittingTippy($el)"
+                                                                    >
+                                                                        <img
+                                                                            loading="lazy"
+                                                                            width="40"
+                                                                            height="40"
+                                                                            x-bind:src="get_item_icon(rig.type_id, 64)"
+                                                                            x-bind:alt="rig.name"
+                                                                        />
+                                                                        <small
+                                                                            class="[ planner-tip__label ]"
+                                                                            x-text="rig.name"
+                                                                        ></small>
+                                                                    </button>
+                                                                </template>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </Flexblock>
+                            </ComponentBlock>
+
+                            <ComponentBlock x-show="subitemBuckets().length > 0" x-cloak>
+                                <Flexblock gap='var(--space-s)'>
+                                    <h2>{t('industry.orders.planner.subitems')}</h2>
+                                    <p class="[ text-gray planner-section-hint ]">{t('industry.orders.planner.subitems_hint')}</p>
+                                    <template x-for="group in subitemBuckets()" :key="group.key">
+                                        <Flexblock gap='var(--space-2xs)' class="[ planner-bucket ]">
+                                            <FlexInline justification='space-between' class="[ w-full flex-wrap ]">
+                                                <h4 x-text="group.label"></h4>
+                                                <FlexInline gap='var(--space-s)' class="[ planner-bucket-actions ]">
+                                                    <button
+                                                        type="button"
+                                                        class="[ planner-bucket-action ]"
+                                                        x-on:click="selectBucketSubitems(group.key)"
+                                                        x-bind:disabled="loading"
+                                                    >{t('industry.orders.planner.select_all')}</button>
+                                                    <button
+                                                        type="button"
+                                                        class="[ planner-bucket-action ]"
+                                                        x-on:click="deselectBucketSubitems(group.key)"
+                                                        x-bind:disabled="loading"
+                                                    >{t('industry.orders.planner.deselect_all')}</button>
+                                                </FlexInline>
+                                            </FlexInline>
+                                            <p
+                                                class="[ text-gray planner-section-hint ]"
+                                                x-show="group.key === 'other'"
+                                            >{t('industry.orders.planner.other_hint')}</p>
+                                            <template x-for="job in group.rows" :key="job.product_type_id">
+                                                <label class="[ planner-subitem ]">
+                                                    <input
+                                                        type="checkbox"
+                                                        x-model="build_toggles[String(job.product_type_id)]"
+                                                    />
+                                                    <img
+                                                        class="[ planner-subitem-icon ]"
+                                                        loading="lazy"
+                                                        width="28"
+                                                        height="28"
+                                                        x-bind:src="get_item_icon(job.product_type_id, 32)"
+                                                        x-bind:alt="job.product_name"
+                                                    />
+                                                    <span class="[ text-highlight ]" x-text="job.product_name"></span>
+                                                    <small
+                                                        class="[ text-gray ]"
+                                                        x-text="build_toggles[String(job.product_type_id)]
+                                                            ? ((job.runs || '?') + ' runs')
+                                                            : '${t('industry.orders.planner.subitem_import').trim()}'"
+                                                    ></small>
+                                                </label>
+                                            </template>
+                                        </Flexblock>
+                                    </template>
+                                </Flexblock>
+                            </ComponentBlock>
+
+                            <ComponentBlock class="[ planner-shopping ]">
+                                <Flexblock gap='var(--space-s)'>
+                                    <FlexInline
+                                        justification='space-between'
+                                        gap='var(--space-s)'
+                                        class="[ w-full flex-wrap items-center planner-shopping__header ]"
+                                    >
+                                        <h2>
+                                            {t('industry.orders.planner.materials')}
+                                            <span
+                                                class="[ text-gray ]"
+                                                x-show="loading"
+                                                x-cloak
+                                            >…</span>
+                                        </h2>
+                                        <ClipboardButton
+                                            id="planner-materials-clipboard"
+                                            text={t('industry.orders.planner.copy_materials')}
+                                            x_value="materials_tsv"
+                                            data-tippy-content={t('industry.orders.planner.copy_materials_tip')}
+                                            data-tippy-delay="[1000, 200]"
+                                        />
+                                    </FlexInline>
+
+                                    <p
+                                        class="[ text-gray planner-section-hint planner-shopping__status ]"
+                                        x-show="loading"
+                                        x-cloak
+                                    >{t('industry.orders.planner.calculating')}</p>
+
+                                    <p class="[ text-[var(--fleet-red)] ]" x-show="error" x-text="error"></p>
+
+                                    <div
+                                        class="[ planner-results ]"
+                                        x-bind:class="{ 'planner-results--loading': loading }"
+                                    >
+                                    <Flexblock
+                                        gap='var(--space-3xs)'
+                                        class="[ planner-shopping__costs ]"
+                                        x-show="cost_breakdown"
+                                        x-cloak
+                                    >
+                                        <div class="[ planner-cost-summary ]">
+                                            <TextGroup title={t('industry.orders.planner.total_cost')}>
+                                                <span
+                                                    class="[ planner-tip ]"
+                                                    x-ref="cost_total"
+                                                    x-text="formatIsk(cost_breakdown.grand_total_isk) + ' ISK'"
+                                                ></span>
+                                            </TextGroup>
+                                            <TextGroup title={t('industry.orders.planner.per_unit_cost')}>
+                                                <span
+                                                    class="[ planner-tip ]"
+                                                    x-ref="cost_per_unit"
+                                                    x-text="formatIsk(Math.round(cost_breakdown.per_unit_isk)) + ' ISK'"
+                                                ></span>
+                                            </TextGroup>
+                                            <div
+                                                class="[ planner-cost-summary__cell ]"
+                                                x-show="cost_breakdown.freight_volume_m3 > 0"
+                                                x-cloak
+                                            >
+                                                <TextGroup title={t('industry.orders.planner.freight')}>
+                                                    <span
+                                                        class="[ planner-tip ]"
+                                                        data-tippy-content={t('industry.orders.planner.freight_tip')}
+                                                        x-text="cost_breakdown.freight_route_id
+                                                            ? (formatIsk(cost_breakdown.freight_isk) + ' ISK · '
+                                                                + Number(cost_breakdown.freight_volume_m3).toLocaleString(undefined, { maximumFractionDigits: 2 })
+                                                                + ' m³')
+                                                            : '—'"
+                                                    ></span>
+                                                </TextGroup>
+                                            </div>
+                                        </div>
+                                    </Flexblock>
+
+                                    <textarea
+                                        class="[ planner-tsv ]"
+                                        readonly
+                                        rows="12"
+                                        x-model="materials_tsv"
+                                        x-show="materials_tsv"
+                                    ></textarea>
+                                    </div>
+                                </Flexblock>
+                            </ComponentBlock>
+                        </BlockList>
+                    </div>
+                </>}
+            }
+        </BlockList>
+    </PageDefault>
+</Viewport>
+
+<style lang="scss">
+    .planner-beta {
+        padding: var(--space-s) var(--space-m);
+        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        border-left: 4px solid var(--fleet-yellow, #c9a227);
+        background: color-mix(in srgb, var(--fleet-yellow, #c9a227) 8%, var(--component-background));
+        font-size: var(--step--1);
+        line-height: 1.5;
+        max-width: var(--max-text-width);
+    }
+
+    .planner-beta__title {
+        margin: 0 0 var(--space-3xs);
+        font-weight: 600;
+        color: var(--highlight);
+        font-size: var(--step-0);
+    }
+
+    .planner-beta__body {
+        margin: 0;
+        color: var(--faded);
+    }
+
+    .planner {
+        width: 100%;
+    }
+
+    .planner-tsv {
+        width: 100%;
+        box-sizing: border-box;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: var(--step--1);
+        line-height: 1.45;
+        padding: var(--space-s) var(--space-m);
+        background: rgba(0, 0, 0, 0.35);
+        border: 1px solid var(--border-color);
+        color: var(--highlight);
+        resize: vertical;
+    }
+
+    .planner-results {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        width: 100%;
+    }
+
+    .planner-results--loading {
+        opacity: 0.55;
+        pointer-events: none;
+        transition: opacity 0.15s ease;
+    }
+
+    .planner-shopping__header {
+        h2 {
+            margin: 0;
+        }
+    }
+
+    .planner-shopping__status {
+        margin-block: calc(var(--space-3xs) * -1) 0;
+    }
+
+    .planner-shopping__costs {
+        width: 100%;
+    }
+
+    .planner-cost-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+        gap: var(--space-m) var(--space-l);
+        width: 100%;
+        align-items: start;
+
+        :global(.flex-block) {
+            min-width: 0;
+        }
+
+        :global(h4) {
+            margin: 0;
+        }
+
+        :global(p) {
+            margin: 0;
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    .planner-cost-summary__cell {
+        min-width: 0;
+    }
+
+    label {
+        font-size: var(--step--1);
+        color: var(--highlight);
+    }
+
+    /* Shared hoverable / tippy affordance: gold + dotted underline */
+    .planner-tip {
+        cursor: help;
+        color: var(--foreground);
+        border-bottom: dotted 2px color-mix(in srgb, currentColor 30%, transparent);
+    }
+
+    /* Block tip targets: underline the value / label, not the whole card */
+    .planner-stat.planner-tip,
+    .planner-fitting-piece.planner-tip {
+        border-bottom: none;
+        color: inherit;
+    }
+
+    .planner-tip__mark,
+    .planner-tip__label {
+        color: var(--foreground);
+        border-bottom: dotted 2px color-mix(in srgb, currentColor 30%, transparent);
+    }
+
+    .planner-settings-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) repeat(2, minmax(4.5rem, 0.55fr)) repeat(2, minmax(0, 1.3fr));
+        gap: var(--space-m);
+        align-items: start;
+        width: 100%;
+    }
+
+    @media (max-width: 56rem) {
+        .planner-settings-row {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 30rem) {
+        .planner-settings-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .planner-settings-field {
+        min-width: 0;
+    }
+
+    .planner-settings-field--compact {
+        max-width: 6rem;
+    }
+
+    .planner-settings-control-row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        width: 100%;
+        min-width: 0;
+    }
+
+    .planner-settings-control {
+        flex: 1 1 auto;
+        min-width: 0;
+        width: 100%;
+
+        :global(.input-group),
+        :global(.input-group input),
+        :global(select) {
+            width: 100%;
+            max-width: none;
+        }
+    }
+
+    .planner-character-portrait {
+        flex: 0 0 auto;
+        width: 24px;
+        height: 24px;
+        overflow: hidden;
+
+        :global(picture),
+        :global(img) {
+            display: block;
+            width: 24px;
+            height: 24px;
+        }
+    }
+
+    .planner-settings-toggles {
+        width: 100%;
+        min-height: 1.75rem;
+    }
+
+    .planner-settings-refine {
+        display: inline-flex;
+        align-items: baseline;
+        gap: var(--space-2xs);
+        margin-inline-start: auto;
+        font-size: var(--step--1);
+        white-space: nowrap;
+    }
+
+    .planner-settings-refine__label {
+        color: inherit;
+    }
+
+    .planner-section-hint {
+        font-size: var(--step--1);
+        max-width: 52rem;
+        margin: 0;
+    }
+
+    .planner-location-content {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .planner-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+        column-gap: var(--space-m);
+        row-gap: var(--space-xs);
+        align-items: start;
+    }
+
+    .planner-stat {
+        min-width: 0;
+
+        :global(h4) {
+            font-size: var(--step--1);
+            line-height: 1.25;
+        }
+    }
+
+    .planner-structures {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .planner-subitem {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        cursor: pointer;
+        padding-block: 0.15rem;
+    }
+
+    .planner-subitem-icon {
+        flex-shrink: 0;
+        width: 28px;
+        height: 28px;
+        object-fit: contain;
+    }
+
+    .planner-bucket {
+        padding-block: var(--space-2xs);
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .planner-bucket-action {
+        appearance: none;
+        background: none;
+        border: none;
+        padding: 0;
+        margin: 0;
+        cursor: pointer;
+        font: inherit;
+        font-size: var(--step--1);
+        color: var(--highlight);
+        text-decoration: underline;
+        text-underline-offset: 0.15em;
+
+        &:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        &:hover:not(:disabled),
+        &:focus-visible:not(:disabled) {
+            color: var(--fleet-yellow, #c9a227);
+        }
+    }
+
+    .planner-fittings {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+    }
+
+    .planner-fitting-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: var(--space-xs);
+    }
+
+    .planner-fitting-rigs {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: var(--space-2xs);
+        min-height: 40px;
+    }
+
+    .planner-fitting-piece {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.15rem;
+        margin: 0;
+        padding: 0.15rem;
+        border: 1px solid transparent;
+        background: transparent;
+        color: inherit;
+        cursor: help;
+        border-radius: 2px;
+        max-width: 4.5rem;
+
+        img {
+            display: block;
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            background: rgba(0, 0, 0, 0.25);
+        }
+
+        &:hover,
+        &:focus-visible {
+            border-color: rgba(255, 255, 255, 0.25);
+            outline: none;
+        }
+
+        .planner-tip__label {
+            font-size: var(--step--2);
+            text-transform: capitalize;
+            line-height: 1.15;
+            text-align: center;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    .planner-fitting-structure {
+        flex: 0 0 auto;
+    }
+
+</style>
