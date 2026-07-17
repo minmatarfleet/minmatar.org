@@ -4,7 +4,7 @@ from django.core.exceptions import PermissionDenied
 
 from groups.helpers.feature_access import user_has_legacy_perm
 
-VIEW_HELP_TICKETS = "help_tickets.view_helpticket"
+VIEW_HELP_TICKETS = "help_tickets.view_helprequestcategory"
 
 
 def user_has_perm(user, perm: str) -> bool:

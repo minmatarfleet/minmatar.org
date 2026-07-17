@@ -14,12 +14,18 @@ from eveonline.models import EveCharacter, EveLocation
 from eveuniverse.models import EveCategory, EveGroup, EveType
 
 from app.test import TestCase as AppTestCase
+from groups.helpers.feature_access import clear_feature_cache
+from groups.management.commands.sync_pilot_features import (
+    Command as SyncPilotFeaturesCommand,
+)
+from groups.models import PilotFeature
 from industry.models import (
     IndustryOrder,
     IndustryOrderItem,
     IndustryOrderItemAssignment,
 )
 from industry.test_utils import create_industry_order
+from tribes.models import Tribe, TribeGroup
 
 
 class OrdersEndpointTestCase(AppTestCase):
@@ -326,6 +332,20 @@ class OrdersEndpointTestCase(AppTestCase):
 
 class OrderMutationApiTests(OrdersEndpointTestCase):
     """Authenticated POST/PATCH/DELETE on industry orders."""
+
+    def setUp(self):
+        super().setUp()
+        # POST /orders requires industry.order.submit (industry tribe chief).
+        tribe = Tribe.objects.create(
+            name="Industry", slug="industry", chief=self.user
+        )
+        tribe_group = TribeGroup.objects.create(
+            tribe=tribe, name="Mining", code="industry.mining"
+        )
+        SyncPilotFeaturesCommand().handle()
+        feature = PilotFeature.objects.get(code="industry.order.submit")
+        feature.tribe_groups.set([tribe_group])
+        clear_feature_cache()
 
     def test_post_assignment_creates_row(self):
         order = create_industry_order(
