@@ -236,7 +236,7 @@ class FacilityProfilesTestCase(TestCase):
 class LiveCostIndexResolutionTestCase(TestCase):
     @patch("industry.helpers.build_planner.esi_provider")
     def test_resolve_cost_indices_fetches_amamake_from_esi(self, esi_provider):
-        esi_provider.client.Industry.get_industry_systems.return_value = (
+        esi_provider.client.Industry.GetIndustrySystems.return_value = (
             MagicMock(
                 results=MagicMock(
                     return_value=[
@@ -258,7 +258,7 @@ class LiveCostIndexResolutionTestCase(TestCase):
         self.assertEqual(system_id, AMAMAKE_SYSTEM_ID)
         self.assertAlmostEqual(mfg, 0.1238)
         self.assertAlmostEqual(rxn, 0.1155)
-        esi_provider.client.Industry.get_industry_systems.assert_called_once()
+        esi_provider.client.Industry.GetIndustrySystems.assert_called_once()
 
     @patch("industry.helpers.build_planner.esi_provider")
     def test_resolve_cost_indices_skips_esi_when_both_overridden(
@@ -272,7 +272,7 @@ class LiveCostIndexResolutionTestCase(TestCase):
         self.assertEqual(system_id, AMAMAKE_SYSTEM_ID)
         self.assertEqual(mfg, 0.05)
         self.assertEqual(rxn, 0.04)
-        esi_provider.client.Industry.get_industry_systems.assert_not_called()
+        esi_provider.client.Industry.GetIndustrySystems.assert_not_called()
 
     @patch("industry.helpers.build_planner.resolve_cost_indices")
     def test_plan_build_uses_resolved_live_indices(self, resolve_indices):

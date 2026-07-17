@@ -97,6 +97,14 @@ ESI_USER_CONTACT_EMAIL = os.environ.get(
     "ESI_USER_CONTACT_EMAIL", "admin@minmatar.org"
 )
 
+# Keep LocMem so tests do not require Redis for django-esi caching
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "test-unique-snowflake",
+    }
+}
+
 # MUMBLE
 MUMBLE_MURMUR_HOST = os.environ.get("MUMBLE_MURMUR_HOST", "")
 MUMBLE_MURMUR_PORT = os.environ.get("MUMBLE_MURMUR_PORT", "")

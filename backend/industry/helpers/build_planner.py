@@ -22,7 +22,7 @@ from eveuniverse.models import (
     EveType,
 )
 
-from eveonline.client import esi_provider
+from eveonline.client import _esi_to_python, esi_provider
 from industry.helpers.facility_profiles import (
     AMAMAKE_SYSTEM_ID,
     FacilityBonuses,
@@ -259,7 +259,9 @@ def fetch_system_cost_indices(
     Index values are fractions (e.g. 0.1238 for 12.38%).
     """
     try:
-        rows = esi_provider.client.Industry.get_industry_systems().results()
+        rows = _esi_to_python(
+            esi_provider.client.Industry.GetIndustrySystems().results()
+        )
     except Exception as exc:
         raise ValueError(
             f"Failed to fetch ESI industry cost indices: {exc}"
