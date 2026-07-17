@@ -20,6 +20,7 @@ from eveuniverse.models import (
 from eveonline.models import EveCharacter, EveCharacterSkill
 from industry.helpers.facility_profiles import (
     AMAMAKE_SYSTEM_ID,
+    AUNER_SYSTEM_ID,
     BASGERIN_SYSTEM_ID,
 )
 from industry.helpers.reprocessing_skills import (
@@ -49,14 +50,14 @@ class PlannerFacilitiesEndpointTestCase(TestCase):
         response = self.client.get(f"{BASE}/facilities")
         self.assertEqual(response.status_code, 200)
         keys = {row["key"] for row in response.json()}
-        self.assertEqual(keys, {"amamake", "basgerin"})
+        self.assertEqual(keys, {"amamake", "auner", "basgerin"})
 
     def test_facilities_list_contains_amamake_and_basgerin(self):
         response = self.client.get(f"{BASE}/facilities", **self.auth)
         self.assertEqual(response.status_code, 200)
         data = response.json()
         keys = {row["key"] for row in data}
-        self.assertEqual(keys, {"amamake", "basgerin"})
+        self.assertEqual(keys, {"amamake", "auner", "basgerin"})
         amamake = next(r for r in data if r["key"] == "amamake")
         self.assertEqual(amamake["system_id"], AMAMAKE_SYSTEM_ID)
         self.assertEqual(amamake["system_cost_bonus"], -0.5)
@@ -96,6 +97,15 @@ class PlannerFacilitiesEndpointTestCase(TestCase):
             basgerin["reprocessing"]["refine_rate"], expected_refine, places=6
         )
         self.assertAlmostEqual(basgerin["reprocessing"]["facility_tax"], 0.025)
+        auner = next(r for r in data if r["key"] == "auner")
+        self.assertEqual(auner["system_id"], AUNER_SYSTEM_ID)
+        self.assertEqual(auner["system_cost_bonus"], 0.0)
+        self.assertEqual(auner["facility_tax"], 0.01)
+        self.assertAlmostEqual(
+            auner["reprocessing"]["refine_rate"], expected_refine, places=6
+        )
+        self.assertAlmostEqual(auner["reprocessing"]["facility_tax"], 0.03)
+        self.assertIn("Guru Forge", auner["structures"][0]["name"])
 
     @patch("industry.helpers.facility_api.fetch_system_cost_indices")
     def test_facility_detail_includes_live_indexes(self, fetch_indices):

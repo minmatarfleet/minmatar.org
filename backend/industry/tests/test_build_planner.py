@@ -11,7 +11,7 @@ from eveuniverse.models import (
     EveMarketPrice,
     EveType,
 )
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from industry.helpers.build_planner import (
     JobBucket,
@@ -21,6 +21,7 @@ from industry.helpers.build_planner import (
 )
 from industry.helpers.facility_profiles import (
     AMAMAKE_SYSTEM_ID,
+    AUNER_SYSTEM_ID,
     BASGERIN_SYSTEM_ID,
     JobClass,
     get_facility_profile,
@@ -35,6 +36,7 @@ from industry.helpers.industry_formulas import (
     required_material_quantity,
     time_efficiency_multiplier,
 )
+from industry.models import IndustrySystemCostIndex
 
 # Ravworks Typhoon ME0 plan 0XLRST5 reference (facility may differ slightly).
 RAVWORKS_ME0 = {
@@ -214,10 +216,35 @@ class FacilityProfilesTestCase(TestCase):
             "The Forgery", basgerin[JobClass.SHIP_MANUFACTURING].structure_name
         )
 
+    def test_auner_same_fittings_eveguru_taxes(self):
+        amamake = get_facility_profile("amamake")
+        auner = get_facility_profile("auner")
+        for job_class in JobClass:
+            a = amamake[job_class]
+            u = auner[job_class]
+            self.assertAlmostEqual(a.role_me, u.role_me, places=10)
+            self.assertAlmostEqual(a.role_te, u.role_te, places=10)
+            self.assertAlmostEqual(a.rig_me, u.rig_me, places=10)
+            self.assertAlmostEqual(a.rig_te, u.rig_te, places=10)
+            self.assertAlmostEqual(
+                a.structure_isk_bonus, u.structure_isk_bonus, places=10
+            )
+            self.assertEqual(u.system_cost_bonus, 0.0)
+            self.assertEqual(u.facility_tax, 0.01)
+        self.assertEqual(get_facility_system_id("auner"), AUNER_SYSTEM_ID)
+        self.assertIn(
+            "Guru Forge", auner[JobClass.SHIP_MANUFACTURING].structure_name
+        )
+        self.assertIn("Guru Foundry", auner[JobClass.REACTION].structure_name)
+
     def test_tatara_reprocessing_monitor_ii_lowsec_yield(self):
         # Tatara + T2 Monitor in lowsec: (50+3)*1.06*1.055 / 100
         expected_base = (53.0 * 1.06 * 1.055) / 100.0
-        for key in ("amamake", "basgerin"):
+        for key, tax in (
+            ("amamake", 0.025),
+            ("basgerin", 0.025),
+            ("auner", 0.03),
+        ):
             rp = get_facility_reprocessing(key)
             self.assertIn("Reprocessing Monitor II", rp.rig_name)
             self.assertAlmostEqual(
@@ -228,41 +255,42 @@ class FacilityProfilesTestCase(TestCase):
             self.assertAlmostEqual(
                 get_facility_refine_rate(key), expected, places=10
             )
-            self.assertAlmostEqual(rp.facility_tax, 0.025, places=10)
-            # floor(5060 * 0.025) = 126
-            self.assertEqual(rp.tax_isk(5060.0), 126)
+            self.assertAlmostEqual(rp.facility_tax, tax, places=10)
+            self.assertEqual(rp.tax_isk(5060.0), int(5060.0 * tax))
 
 
 class LiveCostIndexResolutionTestCase(TestCase):
-    @patch("industry.helpers.build_planner.esi_provider")
-    def test_resolve_cost_indices_fetches_amamake_from_esi(self, esi_provider):
-        esi_provider.client.Industry.GetIndustrySystems.return_value = (
-            MagicMock(
-                results=MagicMock(
-                    return_value=[
-                        {
-                            "solar_system_id": AMAMAKE_SYSTEM_ID,
-                            "cost_indices": [
-                                {
-                                    "activity": "manufacturing",
-                                    "cost_index": 0.1238,
-                                },
-                                {"activity": "reaction", "cost_index": 0.1155},
-                            ],
-                        }
-                    ]
-                )
-            )
+    def test_resolve_cost_indices_reads_cached_amamake(self):
+        IndustrySystemCostIndex.objects.create(
+            solar_system_id=AMAMAKE_SYSTEM_ID,
+            manufacturing=0.1238,
+            reaction=0.1155,
         )
         mfg, rxn, system_id = resolve_cost_indices("amamake")
         self.assertEqual(system_id, AMAMAKE_SYSTEM_ID)
         self.assertAlmostEqual(mfg, 0.1238)
         self.assertAlmostEqual(rxn, 0.1155)
-        esi_provider.client.Industry.GetIndustrySystems.assert_called_once()
 
-    @patch("industry.helpers.build_planner.esi_provider")
-    def test_resolve_cost_indices_skips_esi_when_both_overridden(
-        self, esi_provider
+    @patch("industry.helpers.cost_indices.sync_industry_system_cost_indices")
+    def test_resolve_cost_indices_syncs_when_cache_empty(self, sync_mock):
+        def _seed():
+            IndustrySystemCostIndex.objects.create(
+                solar_system_id=AMAMAKE_SYSTEM_ID,
+                manufacturing=0.11,
+                reaction=0.09,
+            )
+            return 1
+
+        sync_mock.side_effect = _seed
+        mfg, rxn, system_id = resolve_cost_indices("amamake")
+        self.assertEqual(system_id, AMAMAKE_SYSTEM_ID)
+        self.assertAlmostEqual(mfg, 0.11)
+        self.assertAlmostEqual(rxn, 0.09)
+        sync_mock.assert_called_once()
+
+    @patch("industry.helpers.cost_indices.sync_industry_system_cost_indices")
+    def test_resolve_cost_indices_skips_sync_when_both_overridden(
+        self, sync_mock
     ):
         mfg, rxn, system_id = resolve_cost_indices(
             "amamake",
@@ -272,7 +300,7 @@ class LiveCostIndexResolutionTestCase(TestCase):
         self.assertEqual(system_id, AMAMAKE_SYSTEM_ID)
         self.assertEqual(mfg, 0.05)
         self.assertEqual(rxn, 0.04)
-        esi_provider.client.Industry.GetIndustrySystems.assert_not_called()
+        sync_mock.assert_not_called()
 
     @patch("industry.helpers.build_planner.resolve_cost_indices")
     def test_plan_build_uses_resolved_live_indices(self, resolve_indices):

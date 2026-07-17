@@ -1,4 +1,4 @@
-"""Celery tasks for industry: syncing jobs from ESI for order assignees."""
+"""Celery tasks for industry: jobs sync and cost-index cache."""
 
 import logging
 
@@ -6,6 +6,7 @@ from app.celery import app
 from eveonline.helpers.characters.update import update_character_industry_jobs
 from eveonline.models import EveCharacter
 
+from industry.helpers.cost_indices import sync_industry_system_cost_indices
 from industry.models import IndustryOrderItemAssignment
 
 logger = logging.getLogger(__name__)
@@ -61,3 +62,17 @@ def sync_industry_jobs_for_order_assignees() -> None:
         "Scheduled industry job sync for %s character(s) (order assignees and related)",
         len(character_ids),
     )
+
+
+@app.task()
+def sync_industry_system_cost_indices_task() -> int:
+    """
+    Refresh cached ESI industry cost indices for all solar systems.
+
+    Hourly via Celery beat so planner requests read the DB instead of ESI.
+    """
+    try:
+        return sync_industry_system_cost_indices()
+    except Exception:
+        logger.exception("Failed to sync industry system cost indices")
+        raise

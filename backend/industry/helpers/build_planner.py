@@ -22,9 +22,8 @@ from eveuniverse.models import (
     EveType,
 )
 
-from eveonline.client import _esi_to_python, esi_provider
+from industry.helpers.cost_indices import fetch_system_cost_indices
 from industry.helpers.facility_profiles import (
-    AMAMAKE_SYSTEM_ID,
     FacilityBonuses,
     JobClass,
     get_facility_profile,
@@ -250,45 +249,6 @@ def _is_advanced_component(type_id: int) -> bool:
     return eve_type.eve_group_id == GROUP_CONSTRUCTION_COMPONENTS
 
 
-def fetch_system_cost_indices(
-    system_id: int = AMAMAKE_SYSTEM_ID,
-) -> Tuple[float, float]:
-    """
-    Return live (manufacturing_index, reaction_index) for a solar system via ESI.
-
-    Index values are fractions (e.g. 0.1238 for 12.38%).
-    """
-    try:
-        rows = _esi_to_python(
-            esi_provider.client.Industry.GetIndustrySystems().results()
-        )
-    except Exception as exc:
-        raise ValueError(
-            f"Failed to fetch ESI industry cost indices: {exc}"
-        ) from exc
-
-    for row in rows:
-        if int(row.get("solar_system_id", 0)) != int(system_id):
-            continue
-        manufacturing = 0.0
-        reaction = 0.0
-        for entry in row.get("cost_indices", []):
-            activity = entry.get("activity")
-            cost = float(entry.get("cost_index", 0.0))
-            if activity == "manufacturing":
-                manufacturing = cost
-            elif activity == "reaction":
-                reaction = cost
-        logger.info(
-            "Live ESI cost indices for system %s: manufacturing=%.6f reaction=%.6f",
-            system_id,
-            manufacturing,
-            reaction,
-        )
-        return manufacturing, reaction
-    raise ValueError(f"No industry cost indices for system {system_id}")
-
-
 def resolve_cost_indices(
     facility: str,
     *,
@@ -299,9 +259,8 @@ def resolve_cost_indices(
     """
     Resolve manufacturing/reaction indices for a facility.
 
-    Uses the facility profile's solar system (Amamake → 30002537,
-    Basgerin → 30002666) and pulls live ESI values unless both indexes are
-    explicitly overridden.
+    Uses the facility profile's solar system and cached ESI values (unless both
+    indexes are explicitly overridden).
     """
     resolved_system_id = (
         int(system_id)

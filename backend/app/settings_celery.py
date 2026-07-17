@@ -136,13 +136,20 @@ CELERYBEAT_CORPORATIONS = [
     ),
 ]
 
-# Industry (order assignees' jobs from ESI)
+# Industry (order assignees' jobs from ESI + cost-index cache)
 CELERYBEAT_INDUSTRY = [
     (
         "[Industry] Sync Jobs for Order Assignees",
         {
             "task": "industry.tasks.sync_industry_jobs_for_order_assignees",
             "schedule": crontab(minute=5, hour="*/4"),
+        },
+    ),
+    (
+        "[Industry] Sync System Cost Indices",
+        {
+            "task": "industry.tasks.sync_industry_system_cost_indices_task",
+            "schedule": crontab(minute=20),
         },
     ),
 ]

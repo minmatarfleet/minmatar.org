@@ -10,9 +10,15 @@ Amamake (scanned):
       L Reactor Efficiency II
       L Reprocessing Monitor II
   - FW infrastructure (level 5): -50% facility pricing
+  - Facility tax 0.75%; reprocessing tax 2.5%
 
 Basgerin (assumed same Sotiyo/Tatara fittings as Amamake; no FW bonus):
   - The Forgery (Sotiyo) + reactions Tatara
+  - Facility tax 0.75%; reprocessing tax 2.5%
+
+Auner (scanned — EveGuru Industrial Park; same Sotiyo/Tatara fittings):
+  - Guru Forge (Sotiyo) + Guru Foundry (Tatara)
+  - Facility tax 1%; reprocessing tax 3%; no FW system-cost bonus
 
 Lowsec security multiplier for engineering (ship / component) rigs is 1.9.
 Reactor Efficiency II uses lowsec multiplier 1.0 (null/WH is 1.1).
@@ -167,8 +173,19 @@ AMAMAKE_FW_SYSTEM_COST_BONUS = -0.50
 BASGERIN_SYSTEM_ID = 30002666
 BASGERIN_SYSTEM_NAME = "Basgerin"
 
+AUNER_SYSTEM_ID = 30002059
+AUNER_SYSTEM_NAME = "Auner"
 
-def _lowsec_tatara_reprocessing(tatara_name: str) -> ReprocessingProfile:
+# EveGuru Industrial Park (Auner) corp service taxes from structure bio.
+_AUNER_FACILITY_TAX = 0.01
+_AUNER_REPROCESSING_TAX = 0.03
+
+
+def _lowsec_tatara_reprocessing(
+    tatara_name: str,
+    *,
+    facility_tax: float = _FREEPORT_REPROCESSING_TAX,
+) -> ReprocessingProfile:
     return ReprocessingProfile(
         structure_name=tatara_name,
         rig_name="Standup L-Set Reprocessing Monitor II",
@@ -176,7 +193,7 @@ def _lowsec_tatara_reprocessing(tatara_name: str) -> ReprocessingProfile:
         rig_modifier=_REPROCESS_MONITOR_II_RIG_MODIFIER,
         security_modifier=_LOWSEC_REPROCESS_SECURITY_MODIFIER,
         structure_modifier=_TATARA_STRUCTURE_MODIFIER,
-        facility_tax=_FREEPORT_REPROCESSING_TAX,
+        facility_tax=facility_tax,
     )
 
 
@@ -187,7 +204,7 @@ def _lowsec_freeport_bonuses(
     system_cost_bonus: float = 0.0,
     facility_tax: float = _FREEPORT_FACILITY_TAX,
 ) -> Dict[JobClass, FacilityBonuses]:
-    """Shared Sotiyo + Tatara fitting stack used by Amamake / Basgerin."""
+    """Shared Sotiyo + Tatara fitting stack (Amamake / Basgerin / Auner)."""
     ship_rig_me = _SHIP_RIG_ME_BASE * _LOWSEC_ENGINEERING_MULT
     ship_rig_te = _SHIP_RIG_TE_BASE * _LOWSEC_ENGINEERING_MULT
     thukker_me = _THUKKER_RIG_ME_BASE * _LOWSEC_ENGINEERING_MULT
@@ -246,14 +263,29 @@ def _basgerin_bonuses() -> Dict[JobClass, FacilityBonuses]:
     )
 
 
+def _auner_bonuses() -> Dict[JobClass, FacilityBonuses]:
+    # Same fittings as Amamake; EveGuru taxes; no FW system-cost bonus.
+    return _lowsec_freeport_bonuses(
+        sotiyo_name="Auner – Guru Forge (Sotiyo)",
+        tatara_name="Auner – Guru Foundry (Tatara)",
+        system_cost_bonus=0.0,
+        facility_tax=_AUNER_FACILITY_TAX,
+    )
+
+
 FACILITY_PROFILES: Dict[str, Dict[JobClass, FacilityBonuses]] = {
     "amamake": _amamake_bonuses(),
+    "auner": _auner_bonuses(),
     "basgerin": _basgerin_bonuses(),
 }
 
 FACILITY_REPROCESSING: Dict[str, ReprocessingProfile] = {
     "amamake": _lowsec_tatara_reprocessing(
         "Amamake – Reactions & Reprocessing (Tatara)"
+    ),
+    "auner": _lowsec_tatara_reprocessing(
+        "Auner – Guru Foundry (Tatara)",
+        facility_tax=_AUNER_REPROCESSING_TAX,
     ),
     "basgerin": _lowsec_tatara_reprocessing(
         "Basgerin – Reactions & Reprocessing (Tatara)"
@@ -263,6 +295,7 @@ FACILITY_REPROCESSING: Dict[str, ReprocessingProfile] = {
 # Solar system used for live ESI industry cost indices per facility profile.
 FACILITY_SYSTEM_IDS: Dict[str, int] = {
     "amamake": AMAMAKE_SYSTEM_ID,
+    "auner": AUNER_SYSTEM_ID,
     "basgerin": BASGERIN_SYSTEM_ID,
 }
 

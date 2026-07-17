@@ -4,9 +4,10 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from industry.helpers.build_planner import fetch_system_cost_indices
+from industry.helpers.cost_indices import fetch_system_cost_indices
 from industry.helpers.facility_profiles import (
     AMAMAKE_SYSTEM_NAME,
+    AUNER_SYSTEM_NAME,
     BASGERIN_SYSTEM_NAME,
     FACILITY_PROFILES,
     FACILITY_SYSTEM_IDS,
@@ -19,6 +20,7 @@ from industry.helpers.facility_profiles import (
 
 FACILITY_SYSTEM_NAMES: Dict[str, str] = {
     "amamake": AMAMAKE_SYSTEM_NAME,
+    "auner": AUNER_SYSTEM_NAME,
     "basgerin": BASGERIN_SYSTEM_NAME,
 }
 
