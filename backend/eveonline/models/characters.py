@@ -64,6 +64,9 @@ class EveCharacter(models.Model):
     medical_clone_location_name = models.CharField(
         max_length=255, blank=True, default=""
     )
+    # ESI /characters/{id}/implants/ — currently worn (medical or jump body).
+    # Used when no jump clone is marked is_active (home/medical body).
+    active_implants = models.JSONField(default=list, blank=True)
     clones_synced_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)

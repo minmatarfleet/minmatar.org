@@ -208,6 +208,17 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
                         }
 
                         <ButtonFindBlueprint item_name={item.eve_type_name} />
+
+                        <Button
+                            size='sm'
+                            color='fleet-red'
+                            href={translatePath(`/industry/orders/planner?${query_string({
+                                order_id: order_id,
+                                item_id: item.id,
+                            })}`)}
+                        >
+                            {t('planner')}
+                        </Button>
                     </FlexInline>
                 </FlexInline>
             </FixedFluid>

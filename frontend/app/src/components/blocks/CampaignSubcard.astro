@@ -1,200 +1,69 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { CampaignMeta } from '@/data/campaigns'
 import { formatIsk } from '@/data/campaigns'
 
 interface Props {
-    campaign: CampaignMeta
+    campaign:       CampaignMeta;
 }
 
-const { campaign } = Astro.props
+const {
+    campaign,
+} = Astro.props
+
 const href = translatePath(campaign.path)
-const name = t(campaign.nameKey)
-const period = t(campaign.periodKey)
-const excerpt = t(campaign.excerptKey)
+const name = t(campaign.nameKey as any)
+const period = t(campaign.periodKey as any)
+const excerpt = t(campaign.excerptKey as any)
 const isk_label = t('campaigns.isk_destroyed')
 const isk_value = formatIsk(campaign.iskDestroyed)
 const view_label = t('campaigns.view_report')
+
+import { number_thousand_separator, number_name } from '@helpers/numbers'
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+
+import Tile from '@components/blocks/Tile.astro'
+import Button from '@components/blocks/Button.astro'
+import Tag from './Tag.astro';
 ---
 
-<a
-    class="[ campaign-subcard ]"
-    href={href}
-    aria-label={`${name} — ${period}`}
-    style={`--campaign-cover: url('${campaign.coverImage}')`}
+<Flexblock
+    class="[ card component border light-transparency ]"
+    gap='0'
 >
-    <div class="campaign-subcard__body">
-        <span class="campaign-subcard__period">{period}</span>
-        <h3 class="campaign-subcard__title">{name}</h3>
-        <p class="campaign-subcard__excerpt">{excerpt}</p>
-        <div class="campaign-subcard__footer">
-            <div class="campaign-subcard__stat">
-                <span class="campaign-subcard__stat-value">{isk_value}</span>
-                <span class="campaign-subcard__stat-label">{isk_label}</span>
-            </div>
-            <span class="campaign-subcard__cta">
-                {view_label}
-                <span aria-hidden="true">→</span>
-            </span>
-        </div>
-    </div>
-</a>
+    <Tile
+        title={name}
+        description={excerpt}
+        cover={campaign.coverImage}
+        transparent={true}
+    >
+        <Flexblock slot="subtitle" gap='var(--space-m)'>
+            <Tag text={period} color='fleet-yellow' />
 
-<style lang="scss">
-    .campaign-subcard {
-        position: relative;
-        isolation: isolate;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-        width: 100%;
-        height: 100%;
-        min-height: 360px;
-        overflow: hidden;
-        text-decoration: none;
-        color: inherit;
-        border: 1px solid color-mix(in srgb, var(--border-color) 75%, transparent);
-        transition:
-            border-color 0.15s ease,
-            transform 0.15s ease;
+            <Flexblock gap='var(--space-3xs)'>
+                <small>{t('destroyed')}</small>
+                <h3>
+                    <span
+                        data-tippy-content={number_name(campaign.iskDestroyed, lang)}
+                    >{number_thousand_separator(campaign.iskDestroyed)}</span>&nbsp;ISK
+                </h3>
+            </Flexblock>
+            
+        </Flexblock>
+    </Tile>
 
-        &::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            z-index: 0;
-            background-image: var(--campaign-cover);
-            background-size: cover;
-            background-position: center top;
-            transition: transform 0.2s ease;
-            mask-image: linear-gradient(
-                to bottom,
-                rgba(0, 0, 0, 1) 0%,
-                rgba(0, 0, 0, 0.55) 38%,
-                rgba(0, 0, 0, 0.15) 62%,
-                transparent 78%
-            );
-        }
-
-        &::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            z-index: 0;
-            background:
-                linear-gradient(
-                    to top,
-                    color-mix(in srgb, hsl(0 0% 4%) 97%, var(--fleet-red) 3%) 0%,
-                    color-mix(in srgb, hsl(0 0% 4%) 88%, transparent) 52%,
-                    transparent 100%
-                );
-        }
-
-        &:hover,
-        &:focus-visible {
-            transform: translateY(-3px);
-            border-color: color-mix(in srgb, var(--fleet-yellow) 50%, var(--border-color));
-        }
-
-        &:hover::before,
-        &:focus-visible::before {
-            transform: scale(1.05);
-        }
-
-        &:focus-visible {
-            outline: 2px solid var(--fleet-yellow);
-            outline-offset: 2px;
-        }
-    }
-
-    .campaign-subcard__body {
-        position: relative;
-        z-index: 1;
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-2xs);
-        min-width: 0;
-        padding: var(--space-m);
-        padding-top: var(--space-xl);
-    }
-
-    .campaign-subcard__period {
-        align-self: flex-start;
-        padding: 0.15em 0.6em;
-        font-size: var(--step--2);
-        font-weight: 600;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        color: var(--fleet-yellow);
-        background: color-mix(in srgb, var(--fleet-yellow) 10%, transparent);
-        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 25%, transparent);
-        line-height: 1.35;
-    }
-
-    .campaign-subcard__title {
-        margin: 0;
-        font-size: var(--step-1);
-        font-weight: 600;
-        color: var(--highlight);
-        line-height: 1.2;
-    }
-
-    .campaign-subcard__excerpt {
-        margin: 0;
-        font-size: var(--step--1);
-        color: color-mix(in srgb, var(--faded) 92%, transparent);
-        line-height: 1.45;
-    }
-
-    .campaign-subcard__footer {
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        gap: var(--space-s);
-        margin-top: var(--space-2xs);
-        padding-top: var(--space-s);
-        border-top: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
-    }
-
-    .campaign-subcard__stat {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-3xs);
-        min-width: 0;
-    }
-
-    .campaign-subcard__stat-value {
-        font-size: var(--step-1);
-        font-weight: 700;
-        color: var(--fleet-yellow);
-        line-height: 1.1;
-    }
-
-    .campaign-subcard__stat-label {
-        font-size: var(--step--2);
-        color: var(--faded);
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        line-height: 1.3;
-    }
-
-    .campaign-subcard__cta {
-        flex-shrink: 0;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.25em;
-        font-size: var(--step--1);
-        font-weight: 600;
-        color: color-mix(in srgb, var(--faded) 85%, transparent);
-        white-space: nowrap;
-        transition: color 0.15s ease, transform 0.15s ease;
-    }
-
-    .campaign-subcard:hover .campaign-subcard__cta,
-    .campaign-subcard:focus-visible .campaign-subcard__cta {
-        color: var(--fleet-yellow);
-        transform: translateX(2px);
-    }
-</style>
+    <Wrapper
+        class="[ pb-(--component-padding-block)! grow ]"
+        padding_inline='var(--component-padding-block)'
+        padding_block='0'
+        max_width='100%'
+    >
+        <Button href={href}>
+            {view_label}
+        </Button>
+    </Wrapper>
+</Flexblock>

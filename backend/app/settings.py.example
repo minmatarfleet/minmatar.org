@@ -34,6 +34,21 @@ CELERYBEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"
 
 WEB_LINK_URL = os.environ.get("WEB_LINK_URL", "https://my.minmatar.org")
 
+_cors_extra = [
+    o.strip()
+    for o in os.environ.get("CORS_ALLOWED_ORIGINS", "").split(",")
+    if o.strip()
+]
+CORS_ALLOWED_ORIGINS = list(
+    {
+        WEB_LINK_URL.rstrip("/"),
+        "http://localhost:4321",
+        "https://my.minmatar.org",
+        "https://minmatar.org",
+        *[o.rstrip("/") for o in _cors_extra],
+    }
+)
+
 # DISCORD
 DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
 DISCORD_CLIENT_ID = os.environ.get("DISCORD_CLIENT_ID", "")

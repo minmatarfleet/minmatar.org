@@ -53,7 +53,7 @@ def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
             if fleet.formup_location
             else "Ask FC"
         ),
-        "audience": fleet.audience.name,
+        "audience": fleet.audience.name if fleet.audience else None,
         "tracking": tracking,
         "disable_motd": fleet.disable_motd,
         "status": fixup_fleet_status(fleet, tracking),

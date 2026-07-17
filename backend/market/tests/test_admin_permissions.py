@@ -64,7 +64,7 @@ class MarketAdminPermissionsTestCase(TestCase):
         fitting_type = _make_eve_type(587, "Rifter")
         fitting = EveFitting.objects.create(
             name="[FL33T] Rifter",
-            eft_format="[Rifter, Test]",
+            eft_format="[Rifter, [FL33T] Rifter]",
             ship_id=fitting_type.id,
         )
         self.staff.user_permissions.add(self.view_perm)

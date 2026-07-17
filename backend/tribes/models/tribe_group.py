@@ -15,7 +15,7 @@ class TribeGroup(models.Model):
     code = models.CharField(
         max_length=64,
         unique=True,
-        help_text="Stable catalog key for reports and bindings (e.g. industry.mining).",
+        help_text="Stable catalog key for reports and bindings (e.g. supply.mining).",
     )
     description = models.TextField(blank=True)
     group = models.OneToOneField(

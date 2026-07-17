@@ -32,7 +32,7 @@ class HelpTicketsAdminCustomizationsTestCase(TestCase):
         )
         self.category = HelpRequestCategory.objects.create(
             title="Contact the freighter team",
-            code="market.freighters",
+            code="supply.freighters",
             section="Supply",
         )
         self.ticket = HelpTicket.objects.create(

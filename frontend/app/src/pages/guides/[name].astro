@@ -5,9 +5,7 @@ const { t, translatePath } = i18n(Astro.url)
 import { getGuideBySlug } from '@/data/guides'
 import { getGuideCoverImage } from '@/data/guides/covers'
 import { buildGuideJsonLd, getGuidePageSeo } from '@/data/guides/seo'
-
-import { marked } from 'marked'
-import { renderer } from '@helpers/marked'
+import { pageProgressFromMarkdown } from '@helpers/pageProgress'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import { get_site_origin } from '@helpers/seo'
 
@@ -36,6 +34,12 @@ const structured_data = buildGuideJsonLd({
     ...seo,
 })
 
+const { html: guide_html, ...progress } = pageProgressFromMarkdown({
+    page_key: `guides/${guide.slug}`,
+    page_title: guide.title,
+    markdown: module.rawContent(),
+})
+
 import Viewport from '@layouts/Viewport.astro'
 
 import PageLanding from '@components/page/PageLanding.astro'
@@ -48,6 +52,7 @@ import BlockList from '@components/compositions/BlockList.astro'
 
 import Button from '@components/blocks/Button.astro'
 import Tag from '@components/blocks/Tag.astro'
+import PageProgress from '@components/blocks/PageProgress.astro'
 ---
 
 <Viewport
@@ -71,7 +76,7 @@ import Tag from '@components/blocks/Tag.astro'
             overlay: true
         }}
     >
-        <Flexblock gap='var(--space-2xl)'>
+        <Flexblock gap='var(--space-2xl)' data-page-progress-root>
             <TextBox>
                 <Flexblock gap='var(--space-m)'>
                     <nav class="guide-breadcrumb" aria-label="Breadcrumb">
@@ -84,6 +89,7 @@ import Tag from '@components/blocks/Tag.astro'
                     <PageTitle is_landing={true}>{guide.title}</PageTitle>
                     <p class="[ guide-excerpt ]">{guide.excerpt}</p>
                     <small class="[ text-muted ]">{t('by_template').replace('{name}', guide.author)}</small>
+                    <PageProgress {...progress} />
                 </Flexblock>
             </TextBox>
 
@@ -91,7 +97,7 @@ import Tag from '@components/blocks/Tag.astro'
                 <BlockList gap='var(--space-xl)'>
                     <div
                         class="[ prose ]"
-                        set:html={marked.parse(module.rawContent(), { renderer })}
+                        set:html={guide_html}
                         x-data={`{
                             init_zoom() {
                                 mediumZoom('.prose img', {

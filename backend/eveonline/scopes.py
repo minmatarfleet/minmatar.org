@@ -164,3 +164,13 @@ def add_scopes(token_type: TokenType, token: Token):
             name=scope_name,
         )
         token.scopes.add(scope)
+
+
+def token_satisfies_type(token: Token, token_type: TokenType) -> bool:
+    """True when the token includes every scope for the given token type."""
+    if not token:
+        return False
+    required = set(scopes_for(token_type))
+    if not required:
+        return False
+    return required.issubset(set(scope_names(token)))

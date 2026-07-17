@@ -15,11 +15,13 @@ const {
 } = Astro.props
 
 import { get_bpc_icon } from '@helpers/eve_image_server';
+import { query_string } from '@helpers/string';
 
 import FlexInline from '@components/compositions/FlexInline.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import Grid from '@components/compositions/Grid.astro';
 
+import Button from '@components/blocks/Button.astro';
 import ItemBadge from '@components/blocks/ItemBadge.astro';
 import ItemPicture from '@components/blocks/ItemPicture.astro';
 import Picture from '@components/blocks/Picture.astro';
@@ -58,43 +60,60 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
     </div>
 
     <div class="[ alignment-hack ]">
-        <Grid class="[ pl-[64px] ]" min_item_width='250px'>
-            <FixedFluid width='32px' gap='var(--space-2xs)' breakpoint='30%' class="[  items-center! ]">
-                <div
-                    class="[ text-highlight ]"
-                    data-tippy-content={t('manufacturing')}
-                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                >
-                    <IndustryIcon size={32} />
-                </div>
-                
-                {product.supplied_for.length > 0 ?
-                    <FlexInline gap='var(--space-3xs)'>
-                        {product.supplied_for.map(material =>
-                            <div 
-                                data-tippy-content={material.name}
-                                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                            >
-                                <ItemPicture
-                                    item_id={material.type_id}
-                                    size={24}
-                                    icon_quality={32}
-                                />
-                                <div class="[ sr-only ]">{material.name}</div>
-                            </div>
-                        )}
-                    </FlexInline>
-                    :
-                    <small>{t('final_product')}</small>
-                }
-            </FixedFluid>
+        <FlexInline
+            class="[ items-center! flex-nowrap! ]"
+            gap='var(--space-s)'
+            justification='space-between'
+        >
+            <Grid class="[ pl-[64px] grow min-w-0 ]" min_item_width='250px'>
+                <FixedFluid width='32px' gap='var(--space-2xs)' breakpoint='30%' class="[  items-center! ]">
+                    <div
+                        class="[ text-highlight ]"
+                        data-tippy-content={t('manufacturing')}
+                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                    >
+                        <IndustryIcon size={32} />
+                    </div>
+                    
+                    {product.supplied_for.length > 0 ?
+                        <FlexInline gap='var(--space-3xs)'>
+                            {product.supplied_for.map(material =>
+                                <div 
+                                    data-tippy-content={material.name}
+                                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                                >
+                                    <ItemPicture
+                                        item_id={material.type_id}
+                                        size={24}
+                                        icon_quality={32}
+                                    />
+                                    <div class="[ sr-only ]">{material.name}</div>
+                                </div>
+                            )}
+                        </FlexInline>
+                        :
+                        <small>{t('final_product')}</small>
+                    }
+                </FixedFluid>
 
-            <ProducersList
-                character_producers={product.character_producers}
-                corporation_producers={product.corporation_producers}
-                init_tooltips={init_tooltips}
-            />
-        </Grid>
+                <ProducersList
+                    character_producers={product.character_producers}
+                    corporation_producers={product.corporation_producers}
+                    init_tooltips={init_tooltips}
+                />
+            </Grid>
+
+            <Button
+                size='sm'
+                color='fleet-red'
+                class="[ shrink-0 ]"
+                href={translatePath(`/industry/orders/planner?${query_string({
+                    type_id: product.type_id,
+                })}`)}
+            >
+                {t('planner')}
+            </Button>
+        </FlexInline>
     </div>
 </FixedFluid>
 

@@ -460,6 +460,238 @@ export async function get_order_by_id(order_id: number) {
     }
 }
 
+export interface PlannerFacilityFitting {
+    name: string
+    type_id: number
+    effects: string[]
+    job_class?: string | null
+}
+
+export interface PlannerFacilityStructure {
+    role: string
+    name: string
+    kind: string
+    type_id: number
+    effects: string[]
+    rigs: PlannerFacilityFitting[]
+}
+
+export interface PlannerFacility {
+    key: string
+    system_id: number
+    system_name: string
+    structures: PlannerFacilityStructure[]
+    system_cost_bonus: number
+    facility_tax: number
+    scc_surcharge: number
+    reprocessing: {
+        structure_name: string
+        structure_type_id: number
+        rig_name: string
+        rig_type_id: number
+        facility_base_yield: number
+        refine_rate: number
+        facility_tax: number
+        effects: string[]
+    }
+}
+
+export interface PlannerFacilityDetail extends PlannerFacility {
+    job_classes: {
+        job_class: string
+        structure_name: string
+        structure_type_id: number
+        rig_name: string
+        rig_type_id: number
+        role_me: number
+        role_te: number
+        rig_me: number
+        rig_te: number
+        structure_isk_bonus: number
+        effects: string[]
+    }[]
+    cost_indices: {
+        manufacturing: number
+        reaction: number
+    }
+    indices_from_esi: boolean
+}
+
+export interface PlannerImportLine {
+    name: string
+    quantity: number
+}
+
+export interface PlannerCharacterSkills {
+    character_id: number
+    character_name: string
+    reprocessing_level: number
+    reprocessing_efficiency_level: number
+    simple_ore_processing_level: number
+    coherent_ore_processing_level: number
+    ubiquitous_moon_ore_processing_level: number
+    ore_processing_level: number
+    implant_bonus: number
+    implant_type_id: number | null
+    implant_name: string | null
+    use_reprocessing_implants: boolean
+}
+
+export interface PlannerOreRefineYield {
+    ore_name: string
+    skill_id: number
+    skill_name: string
+    skill_level: number
+    refine_rate: number
+}
+
+export interface PlannerCompressedOre {
+    refine_rate: number
+    refine_rate_source: string
+    reprocessing_tax: number
+    materials_tsv: string
+    import_lines: PlannerImportLine[]
+    compression_covered?: string[]
+    belt_ore_compressed?: Record<string, number>
+    moon_ore_compressed?: Record<string, number>
+    mineral_imports?: Record<string, number>
+    pi_other_imports?: Record<string, number>
+    ice_imports?: Record<string, number>
+    other_imports?: Record<string, number>
+    character_skills: PlannerCharacterSkills | null
+    ore_yields?: PlannerOreRefineYield[]
+}
+
+export interface PlannerPlanJob {
+    product_type_id: number
+    product_name: string
+    activity_id: number
+    job_class: string
+    bucket: string
+    runs: number
+    facility: string
+    duration_seconds: number
+    job_cost_isk: number
+}
+
+export interface PlannerPlanRequest {
+    product_type_id: number
+    quantity: number
+    blueprint_me?: number
+    blueprint_te?: number
+    facility_key: string
+    build_fuel_blocks?: boolean
+    exclude_type_ids?: number[]
+    compressed?: boolean
+    refine_rate?: number | null
+    character_id?: number | null
+    use_reprocessing_implants?: boolean
+}
+
+export interface PlannerCostLineItem {
+    key: string
+    label: string
+    amount_isk: number
+}
+
+export interface PlannerCostBreakdown {
+    materials_jita_sell_isk: number
+    manufacturing_job_costs_isk: number
+    reaction_job_costs_isk: number
+    total_job_costs_isk: number
+    facility_tax_isk: number
+    scc_tax_isk: number
+    reprocessing_tax_isk: number
+    taxes_isk: number
+    freight_isk: number
+    freight_volume_m3: number
+    freight_billable_m3: number
+    freight_route_id: number | null
+    freight_route_label: string | null
+    grand_total_isk: number
+    per_unit_isk: number
+    output_quantity: number
+    line_items: PlannerCostLineItem[]
+}
+
+export interface PlannerPlanResponse {
+    product: { type_id: number; name: string; quantity: number }
+    blueprint_me: number
+    blueprint_te: number
+    facility: string
+    total_job_cost_isk: number
+    jobs: PlannerPlanJob[]
+    leaf_materials: { type_id: number; name: string; quantity: number }[]
+    estimated_materials_buy_isk: number
+    materials_tsv: string
+    compressed_ore: PlannerCompressedOre | null
+    cost_breakdown: PlannerCostBreakdown | null
+}
+
+export async function get_planner_facilities(access_token?: string) {
+    const ENDPOINT = `${API_ENDPOINT}/planner/facilities`
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+    }
+    if (access_token)
+        headers.Authorization = `Bearer ${access_token}`
+    const response = await fetch(ENDPOINT, { headers })
+    if (!response.ok) {
+        throw new Error(
+            await parse_response_error(response, `GET ${ENDPOINT}`), {
+                cause: response.status
+            }
+        )
+    }
+    return await response.json() as PlannerFacility[]
+}
+
+export async function get_planner_facility(
+    access_token: string | undefined,
+    facility_key: string,
+) {
+    const ENDPOINT = `${API_ENDPOINT}/planner/facilities/${facility_key}`
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+    }
+    if (access_token)
+        headers.Authorization = `Bearer ${access_token}`
+    const response = await fetch(ENDPOINT, { headers })
+    if (!response.ok) {
+        throw new Error(
+            await parse_response_error(response, `GET ${ENDPOINT}`), {
+                cause: response.status
+            }
+        )
+    }
+    return await response.json() as PlannerFacilityDetail
+}
+
+export async function post_planner_plan(
+    access_token: string | undefined,
+    body: PlannerPlanRequest,
+) {
+    const ENDPOINT = `${API_ENDPOINT}/planner/plans`
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+    }
+    if (access_token)
+        headers.Authorization = `Bearer ${access_token}`
+    const response = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+    })
+    if (!response.ok) {
+        throw new Error(
+            await parse_response_error(response, `POST ${ENDPOINT}`), {
+                cause: response.status
+            }
+        )
+    }
+    return await response.json() as PlannerPlanResponse
+}
+
 export async function mark_assignment(
     access_token: string,
     order_id: number,

@@ -1,5 +1,6 @@
 ---
 import type { ChronicleChapter } from '@/data/rat-chronicle'
+import { getChronicleProgressSections } from '@/data/rat-chronicle'
 import RatChronicleSection from '@components/blocks/RatChronicleSection.astro'
 import RatChronicleSectionIllustration from '@components/blocks/RatChronicleSectionIllustration.astro'
 import RatChronicleCharactersOfTheAge from '@components/blocks/RatChronicleCharactersOfTheAge.astro'
@@ -10,9 +11,18 @@ interface Props {
 }
 
 const { chapter } = Astro.props
+
+const progress_ids = getChronicleProgressSections()
+    .filter((entry) => entry.chapterId === chapter.id)
+    .map((entry) => entry.id)
+
+const section_refs = chapter.sections.map((section, index) => ({
+    section,
+    id: progress_ids[index] ?? `${chapter.id}-section-${index + 1}`,
+}))
 ---
 
-<article class="chronicle-chapter">
+<article class="chronicle-chapter" id={chapter.id}>
     <header class="chronicle-chapter__header">
         <p class="chronicle-chapter__kicker">Chapter {chapter.number}</p>
         <h2 class="chronicle-chapter__title">{chapter.title}</h2>
@@ -34,8 +44,12 @@ const { chapter } = Astro.props
 
     <div class="chronicle-chapter__body">
         {
-            chapter.sections.map((section) => (
-                <section class="chronicle-chapter__section">
+            section_refs.map(({ section, id }) => (
+                <section
+                    class="chronicle-chapter__section"
+                    id={id}
+                    data-section-id={id}
+                >
                     <h3 class="chronicle-chapter__section-title">
                         <span class="chronicle-chapter__section-roman">{section.roman}.</span>
                         <span>{section.title}</span>

@@ -1,4 +1,7 @@
-.PHONY: build build-tests run stop setup test front-end-unit-tests
+.PHONY: build build-tests run stop setup test front-end-unit-tests dev
+
+dev:
+	./dev.sh
 
 build: build-tests
 	docker compose \

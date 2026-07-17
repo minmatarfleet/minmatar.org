@@ -19,7 +19,7 @@
     "fields": {
       "title": "Contact the freighter team",
       "description": "If it needs to move, we move it. Freighters handle the logistics runs that keep every corner of the alliance stocked and operational.",
-      "code": "market.freighters",
+      "code": "supply.freighters",
       "tribe_group": 9,
       "section": "",
       "sort_order": 9,

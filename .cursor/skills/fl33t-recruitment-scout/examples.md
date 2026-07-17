@@ -4,6 +4,74 @@ Real responses that worked. Add entries here after you send outreach — no temp
 
 ---
 
+## 2026-07-15 scout run
+
+### EUTZ returning casual, IRL-first, worst KB, "is this a match?" (40M SP, 1hr/day)
+**Thread:** [Returning player looking for a corp](https://www.reddit.com/r/evejobs/comments/1uwlef3/returning_player_looking_for_a_corp/)  
+**Routed:** Soltech Armada  
+**Author:** BearThatCares
+
+**Scout draft (not sent):**
+> Yes — Soltech Armada runs IRL-first EUTZ evenings out of Amamake in faction warfare, so a one-hour logon and the worst killboard of all time are not interview failures. You undock for real fights without pap homework, and Ishtar spinning plus PI still fund the habit while you learn to click better. [Ad](https://www.reddit.com/r/evejobs/comments/1utji1c/sltar_soltech_armada_if_it_explodes_well_probably/) or discord.gg/minmatar
+
+**Sent:**
+> If you're looking for fun, check out this battle report: [https://www.reddit.com/r/Eve/s/aN4zNTFicO](https://www.reddit.com/r/Eve/s/aN4zNTFicO)
+>
+> Soltech Armada runs IRL-first EUTZ evenings out of Amamake in faction warfare, so a one-hour game session and the worst killboard of all time aren't an issue.
+>
+> [Ad](https://www.reddit.com/r/evejobs/comments/1utji1c/sltar_soltech_armada_if_it_explodes_well_probably/) or [discord.gg/minmatar](http://discord.gg/minmatar)
+
+**What changed and why:**
+- Dropped scout "Yes —" direct-answer open — OP already asked "is this a match?"; answering with a BR proves "fun" better than affirming fit.
+- Lead with proof BR — answers "Did I say fun?" without sales language; same proof-first pattern that worked on the cap-feeder thread.
+- Kept Soltech + IRL-first + EUTZ + Amamake + one-hour + worst KB — that block was the useful part of the scout draft.
+- Softened "aren't interview failures" to "aren't an issue" — less clever, same fear-kill.
+- Dropped Ishtar/PI, pap homework, and "click better" — crowded thread; BR + short corp line is enough.
+- Allowed a short multi-block (BR / corp line / links) when proof comes first — one-paragraph rule still preferred, but proof + one corp sentence scans fine on mobile.
+
+**Routing note:** EUTZ + 1hr/day → Soltech, not Academy (Academy fleets are USTZ on the API). Correct call.
+
+---
+
+### Cap-ready bitter vet, limited hours, late US/AU (already replied before this scout closed)
+**Thread:** [Bitter vet L4Corp](https://www.reddit.com/r/evejobs/comments/1uu6vv0/bitter_vet_l4corp/)  
+**Routed:** alliance FW pitch (ad shortlink, no named corp)  
+**Author:** BearThatCares
+
+> There’s nothing more chill than faction warfare, and no better place to use your dread alts to their full potential. Late US is very busy for militia, we are usually farming FRT during that time.
+>
+> Very easy to plex your account even with your schedule by taking advantage of multi character payouts, and you get content at the same time as you make ISK.
+>
+> [https://www.reddit.com/r/evejobs/s/YnQ6rnkD6M](https://www.reddit.com/r/evejobs/s/YnQ6rnkD6M)
+
+**Why it works as a pattern:** Names their cap alts and schedule, kills the "can't plex on limited hours" fear with multi-char FW payouts, and leaves corp choice to the ad. Good when OP is WH/chill-first and several corps could fit.
+
+---
+
+### Ex-Goons asking for UK Goons specifically (redirect, not corp pitch)
+**Thread:** [2004 player....ex goonswarm...](https://www.reddit.com/r/evejobs/comments/1utmbth/2004_playerex_goonswarmbeen_out_for_5_years/)  
+**Author:** BearThatCares
+
+> Come to lowsec. There’s a reason why so many imperium / init / frt pilots are departing for lowsec groups!
+>
+> https://www.reddit.com/r/Eve/s/SG4qy3pbNc
+
+**Why it works as a pattern:** When OP is locked on a competitor alliance, do not force a corp name. Two-line redirect + proof BR is enough; dense pitch wastes the rebuttal.
+
+---
+
+## Patterns (2026-07-15 run)
+
+| Situation | What landed |
+|-----------|-------------|
+| Casual EUTZ, asks "is this a match?", names fun + bad KB | Proof BR first, then Soltech one-liner that absorbs hour + KB fears |
+| Cap alts + limited hours + need to plex | Multi-char FW income + "content while you make ISK"; ad link OK without naming corp |
+| OP wants Goons/UK Goons specifically | Short lowsec redirect + proof; skip corp brochure |
+| Scout "Yes — match" open | Prefer proof or corp-first over affirming their question |
+| EUTZ short windows | Route Soltech (EUTZ), not Academy (USTZ) |
+
+---
+
 ## 2026-07-07 scout run
 
 ### USTZ returning casual, wants FW/PvP/industry (8m SP, family schedule)

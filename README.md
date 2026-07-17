@@ -14,22 +14,46 @@ The source code is hosted on GitHub, and the CI/CD pipeline is built using GitHu
 
 Docker is used for **infrastructure only**. Application code runs on your machine with normal commands.
 
+## One terminal (recommended)
+
+From the repo root, after completing the [Quickstart](#quickstart) setup once:
+
+```bash
+./dev.sh
+```
+
+Or:
+
+```bash
+make dev
+```
+
+This starts MariaDB and Redis (`docker compose up -d`), then runs the Django API, Celery worker (all queues), Celery Beat, frontend, and mobile dev server in one terminal. Logs are prefixed (`[api]`, `[celery]`, etc.). Press **Ctrl+C** to stop everything.
+
+The Discord bot is not included — run it separately when you need it (see below).
+
+## Individual services
+
+Use these when you only need part of the stack, or when debugging a single process:
+
 | What | Where | Command |
 | --- | --- | --- |
 | MariaDB + Redis | repo root | `docker compose up -d` |
 | Django API | `backend/` | `pipenv run python manage.py runserver` |
+| Celery worker (all queues) | `backend/` | `pipenv run celery -A app worker -l info -Q celery,eveonline,market` |
 | Celery worker (default queue) | `backend/` | `pipenv run celery -A app worker -l info -Q celery` |
 | Celery worker (EVE Online queue) | `backend/` | `pipenv run celery -A app worker -l info -Q eveonline` |
 | Celery worker (market queue) | `backend/` | `pipenv run celery -A app worker -l info -Q market` |
 | Celery Beat | `backend/` | `pipenv run celery -A app beat -l info` |
 | Discord bot | `bot/` | `pipenv run python main.py` |
 | Frontend | `frontend/app/` | `npm run dev` |
+| Mobile | `mobile/` | `npm run start:tunnel` (use `start:lan` if not on WSL) |
 
-Use separate terminals for each process. Celery workers and Beat are only needed when you are testing background jobs or scheduled tasks.
+Celery workers and Beat are only needed when you are testing background jobs or scheduled tasks.
 
 Production deployment uses `docker-compose-prod.yml` and is unchanged.
 
-Further setup: [Discord](docs/developer_discord_setup.md), [data seeding](docs/developer_data_seeding.md), [runtime profiles](docs/runtime-profiles.md). Auth architecture: [docs/auth/](docs/auth/README.md).
+Further setup: [Discord](docs/developer_discord_setup.md), [data seeding](docs/developer_data_seeding.md), [runtime profiles](docs/runtime-profiles.md), [page progress](docs/page-progress/frontend.md). Auth architecture: [docs/auth/](docs/auth/README.md).
 
 # Prerequisites
 
@@ -80,7 +104,6 @@ From the repo root:
 1. `cp frontend/.env.example frontend/app/.env`
 1. `cd frontend/app`
 1. `npm i`
-1. `npm run dev`
 
 ## Backend
 1. `cp backend/.env.example backend/.env`
@@ -98,6 +121,20 @@ From the repo root:
 1. `cd backend/`
 1. `pipenv install --dev`
 1. `pipenv run python manage.py migrate`
-1. `pipenv run python manage.py runserver`
+
+## Mobile (optional)
+1. `cd mobile`
+1. `npm i`
+1. `cp .env.example .env`
+
+## Run everything
+
+From the repo root:
+
+```bash
+./dev.sh
+```
+
+Or `make dev`. See [Local development](#local-development) for individual service commands.
 
 If the database user was never created (e.g. you had an old Docker volume from before init scripts), reset infra with `docker compose down -v` and run `docker compose up -d` again.

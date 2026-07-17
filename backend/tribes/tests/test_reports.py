@@ -134,7 +134,7 @@ class ReportRegistryTestCase(TestCase):
         for code in (
             "pulse.technology",
             "pulse.readiness",
-            "market.contracts",
+            "supply.market",
         ):
             binding = get_binding(code)
             self.assertTrue(binding.manual)
@@ -164,7 +164,7 @@ class MiningReportTestCase(TestCase):
     )
     def setUp(self):
         super().setUp()
-        self.tribe = Tribe.objects.create(name="Industry", slug="industry")
+        self.tribe = Tribe.objects.create(name="Supply", slug="supply")
         self.group = _make_group(self.tribe, "Mining")
         self.user = User.objects.create_user(username="miner")
         self.character = EveCharacter.objects.create(
@@ -507,7 +507,7 @@ class ReportRunnerTestCase(TestCase):
         mining_group = TribeGroup.objects.create(
             tribe=Tribe.objects.create(name="Industry", slug="industry2"),
             name="Mining",
-            code="industry.mining",
+            code="supply.mining",
         )
         with self.assertRaises(ReportError) as ctx:
             run_group_report(

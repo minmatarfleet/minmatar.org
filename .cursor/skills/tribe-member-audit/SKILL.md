@@ -43,7 +43,7 @@ Task Progress:
 
 | Piece | Model / helper | Notes |
 |-------|----------------|-------|
-| Group | `TribeGroup.code` | e.g. `capitals.dreads`, `industry.mining`, `industry.planetary-interaction` |
+| Group | `TribeGroup.code` | e.g. `capitals.dreads`, `supply.mining`, `supply.planetary-interaction` |
 | Membership | `TribeGroupMembership` | `status` = `active` / `inactive` / `pending`; user-scoped |
 | Committed chars | `TribeGroupMembershipCharacter` | Optional; hulls/colonies may live on any linked alt |
 | Hulls | `EveCharacterAsset` | Ships only, ESI-synced; not full asset dump |
@@ -121,17 +121,17 @@ Optionally check other capital groups (`EveType` / `EveGroup` names `Dreadnought
 
 **Generic:** Use `TribeGroupActivityRecord` for the group’s configured activities over a window (e.g. 30/90d). Flag active members with zero (or below-threshold) records. Combine with qualification gaps only when the user asks for both.
 
-**Mining (`industry.mining`):** Prefer the member report (includes zero-activity roster rows; town hall truncates top-N):
+**Mining (`supply.mining`):** Prefer the member report (includes zero-activity roster rows; town hall truncates top-N):
 
 ```bash
 pipenv run python manage.py town_hall_report \
-  --group industry.mining --view member --period 30d \
+  --group supply.mining --view member --period 30d \
   --database production_readonly --format json
 ```
 
 Zero mining = `volume_m3 == 0`. Map primary names → usernames before targeting.
 
-**PI (`industry.planetary-interaction`):** Ask which criterion:
+**PI (`supply.planetary-interaction`):** Ask which criterion:
 
 | Criterion | Source | Use when |
 |-----------|--------|----------|
@@ -145,7 +145,7 @@ from tribes.models import TribeGroup, TribeGroupMembership
 from eveonline.models import EveCharacter, EveCharacterPlanet
 
 DB = "production_readonly"
-tg = TribeGroup.objects.using(DB).get(code="industry.planetary-interaction")
+tg = TribeGroup.objects.using(DB).get(code="supply.planetary-interaction")
 active = list(
     TribeGroupMembership.objects.using(DB)
     .filter(tribe_group=tg, status="active")
@@ -208,8 +208,8 @@ from tribes.models import TribeGroupMembership
 now = timezone.now()
 targets = {
     "capitals.dreads": ["user1", "user2"],
-    "industry.mining": ["user3"],
-    "industry.planetary-interaction": ["user4"],
+    "supply.mining": ["user3"],
+    "supply.planetary-interaction": ["user4"],
 }
 for code, users in targets.items():
     for m in TribeGroupMembership.objects.filter(
@@ -251,8 +251,8 @@ Always load type IDs from `TribeGroupRequirementAssetType` on the DB you query.
 
 | Code | Default audit signal | Notes |
 |------|----------------------|-------|
-| `industry.mining` | Zero `volume_m3` in member report (30d) | `--view member` for full roster; map names → usernames |
-| `industry.planetary-interaction` | No `EveCharacterPlanet` on any linked char | Prefer colonies over tax ISK unless user asks for tax |
+| `supply.mining` | Zero `volume_m3` in member report (30d) | `--view member` for full roster; map names → usernames |
+| `supply.planetary-interaction` | No `EveCharacterPlanet` on any linked char | Prefer colonies over tax ISK unless user asks for tax |
 
 ## Related
 

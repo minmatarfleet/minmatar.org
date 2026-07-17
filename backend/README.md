@@ -11,11 +11,14 @@
 
 Local development uses Docker for MariaDB and Redis only. Run Django (and Celery, Beat, etc.) on the host.
 
-1. From the **repo root**, start infrastructure: `docker compose up -d`
-1. Create `backend/.env` from `.env.example` (see root `README.md` for Discord and ESI values)
-1. `pipenv install --dev`
-1. `pipenv run python manage.py migrate`
-1. `pipenv run python manage.py runserver`
+1. From the **repo root**, complete setup in the root `README.md` (`.env` files, `pipenv install`, `migrate`, frontend/mobile `npm i`)
+1. From the **repo root**, start everything: `./dev.sh` (or `make dev`)
+
+To run only the API from `backend/`:
+
+```bash
+pipenv run python manage.py runserver
+```
 
 Navigate to `/api/docs` for endpoints or `/admin` for the admin panel.
 

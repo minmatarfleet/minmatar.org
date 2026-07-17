@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin, messages
 from django.core.exceptions import PermissionDenied
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Count, Exists, OuterRef, Subquery
 from django.http import HttpResponseRedirect
 from django.urls import path, reverse
@@ -37,6 +37,7 @@ from fittings.helpers.doctrine_changes import (
 from fittings.helpers.fitting_changes import (
     approve_fitting_change_request,
     build_fitting_payload_from_form,
+    build_fitting_payload_from_instance,
     build_refit_payload,
     cancel_fitting_change_request,
     fitting_change_request_tier,
@@ -61,6 +62,7 @@ from fittings.models import (
     EveFitting,
     EveFittingChangeRequest,
     EveFittingHistory,
+    EveFittingModuleSubstitution,
     EveFittingPod,
     EveFittingRefit,
     FittingTag,
@@ -77,6 +79,8 @@ from .forms import (
     EveDoctrineForm,
     EveFittingAdminForm,
     EveFittingChangeRequestAdminForm,
+    EveFittingModuleSubstitutionInlineForm,
+    EveFittingRefitInlineForm,
 )
 
 _SELF_APPROVAL_WARNING = (
@@ -140,11 +144,12 @@ def _queue_refit_upsert_request(
 ) -> tuple[bool, bool]:
     """Return (queued, abort). abort True if user should stop processing."""
     refit = inline_form.instance
+    eft_format = inline_form.cleaned_data.get("eft_format", refit.eft_format)
+    derived_name = EveFitting.fitting_name_from_eft(eft_format)
     payload = {
-        "name": inline_form.cleaned_data.get("name", refit.name),
-        "eft_format": inline_form.cleaned_data.get(
-            "eft_format", refit.eft_format
-        ),
+        "name": derived_name
+        or inline_form.cleaned_data.get("name", refit.name),
+        "eft_format": eft_format,
         "description": inline_form.cleaned_data.get(
             "description", refit.description or ""
         ),
@@ -180,6 +185,11 @@ class ApprovalQueuedAdminMixin:  # pylint: disable=protected-access
             return
         return super().log_change(request, obj, message)
 
+    def log_deletion(self, request, obj, object_repr):
+        if getattr(request, "_change_request_queued", False):
+            return
+        return super().log_deletion(request, obj, object_repr)
+
     def response_add(self, request, obj):
         if getattr(request, "_change_request_queued", False):
             return HttpResponseRedirect(request._change_request_redirect_url)
@@ -189,6 +199,11 @@ class ApprovalQueuedAdminMixin:  # pylint: disable=protected-access
         if getattr(request, "_change_request_queued", False):
             return HttpResponseRedirect(request._change_request_redirect_url)
         return super().response_change(request, obj)
+
+    def response_delete(self, request, obj_display, obj_id):
+        if getattr(request, "_change_request_queued", False):
+            return HttpResponseRedirect(request._change_request_redirect_url)
+        return super().response_delete(request, obj_display, obj_id)
 
 
 class FittingTagListFilter(admin.SimpleListFilter):
@@ -282,6 +297,7 @@ class InDoctrineListFilter(admin.SimpleListFilter):
 
 class EveFittingRefitInline(admin.StackedInline):
     model = EveFittingRefit
+    form = EveFittingRefitInlineForm
     extra = 0
     show_change_link = True
     fields = (
@@ -291,12 +307,59 @@ class EveFittingRefitInline(admin.StackedInline):
         "created_at",
         "updated_at",
     )
-    readonly_fields = ("created_at", "updated_at")
+    readonly_fields = ("name", "created_at", "updated_at")
+
+
+class EveFittingModuleSubstitutionInline(admin.TabularInline):
+    """Row-based seeder fallbacks: if preferred is unavailable, buy substitute."""
+
+    model = EveFittingModuleSubstitution
+    form = EveFittingModuleSubstitutionInlineForm
+    extra = 1
+    fields = ("preferred_module", "substitute_module", "notes")
+    autocomplete_fields = ("preferred_module", "substitute_module")
+    verbose_name = "module substitution"
+    verbose_name_plural = (
+        "Module substitutions — if preferred is unavailable, buy substitute"
+    )
+    ordering = ("preferred_module__name",)
+
+    class Media:
+        js = (
+            "admin/js/vendor/jquery/jquery.js",
+            "admin/js/vendor/select2/select2.full.js",
+            "admin/js/jquery.init.js",
+            "admin/js/autocomplete.js",
+            "fittings/admin/module_substitution_autocomplete.js",
+        )
+
+    def get_formset(self, request, obj=None, **kwargs):
+        # Stash fitting so formfield_for_foreignkey can scope autocomplete.
+        request._module_sub_fitting = obj  # pylint: disable=protected-access
+        BaseForm = self.form
+
+        class FittedForm(BaseForm):
+            def __init__(self, *args, **form_kwargs):
+                form_kwargs["fitting"] = obj
+                super().__init__(*args, **form_kwargs)
+
+        kwargs["form"] = FittedForm
+        return super().get_formset(request, obj, **kwargs)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        formfield = super().formfield_for_foreignkey(
+            db_field, request, **kwargs
+        )
+        if db_field.name in ("preferred_module", "substitute_module"):
+            fitting = getattr(request, "_module_sub_fitting", None)
+            if fitting is not None and formfield is not None:
+                formfield.widget.attrs["data-fitting-id"] = str(fitting.pk)
+        return formfield
 
 
 @admin.register(EveFitting)
 class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
-    """Admin screen for EveFitting entity. Ship is inferred from EFT; display name is editable."""
+    """Admin for EveFitting. Ship and display name are inferred from EFT."""
 
     form = EveFittingAdminForm
     field_to_highlight = "name"
@@ -307,6 +370,7 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
         "ship_name",
         "pod_count",
         "refit_count",
+        "substitution_count",
         "description",
         "deleted",
     )
@@ -321,6 +385,7 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
     list_per_page = 50
     ordering = ("name",)
     readonly_fields = (
+        "name",
         "ship_id",
         "latest_version",
         "created_at",
@@ -331,6 +396,10 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
         (
             "Fitting",
             {
+                "description": (
+                    "Name matches the EFT header ([ShipName, Fitting name]) "
+                    "and cannot be edited separately."
+                ),
                 "fields": (
                     "name",
                     "ship_id",
@@ -368,7 +437,7 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
             },
         ),
     )
-    inlines = (EveFittingRefitInline,)
+    inlines = (EveFittingModuleSubstitutionInline, EveFittingRefitInline)
 
     def changelist_view(self, request, extra_context=None):
         return HttpResponseRedirect(reverse("admin:fittings_manage_fittings"))
@@ -381,6 +450,7 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
         return qs.annotate(
             _pod_count=Count("pods", distinct=True),
             _refit_count=Count("refits"),
+            _substitution_count=Count("module_substitutions"),
             _ship_name=Subquery(ship_sq),
         )
 
@@ -391,6 +461,10 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
     @admin.display(description="Refits", ordering="_refit_count")
     def refit_count(self, obj):
         return getattr(obj, "_refit_count", 0)
+
+    @admin.display(description="Subs", ordering="_substitution_count")
+    def substitution_count(self, obj):
+        return getattr(obj, "_substitution_count", 0)
 
     @admin.display(description="Pods", ordering="_pod_count")
     def pod_count(self, obj):
@@ -412,7 +486,7 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
         )
         if eft_format and eft_format.strip():
             derived_name = EveFitting.fitting_name_from_eft(eft_format)
-            if not (obj.name and str(obj.name).strip()) and derived_name:
+            if derived_name:
                 obj.name = derived_name
             ship_name = EveFitting.ship_name_from_eft(eft_format)
             if ship_name:
@@ -425,17 +499,66 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
 
         if not change:
             obj.description = obj.description or ""
-            super().save_model(request, obj, form, change)
+            if not obj.name:
+                messages.error(
+                    request,
+                    "Could not derive a fitting name from the EFT header.",
+                )
+                return
+            if not obj.ship_id:
+                messages.error(
+                    request,
+                    "Could not resolve ship type from the EFT header.",
+                )
+                return
+            payload = build_fitting_payload_from_form(form)
+            try:
+                with transaction.atomic():
+                    super().save_model(request, obj, form, change)
+                    # Hold soft-deleted until create is approved.
+                    EveFitting.objects.get(pk=obj.pk).delete()
+                    req = submit_fitting_change_request(
+                        obj,
+                        change_kind="fitting_create",
+                        payload=payload,
+                        user=request.user,
+                    )
+            except (PermissionError, ValueError) as exc:
+                messages.error(request, str(exc))
+                return
+
+            if req:
+                notify_fitting_change_request_proposed.delay(req.pk)
+                url = reverse(
+                    "admin:fittings_evefittingchangerequest_change",
+                    args=[req.pk],
+                )
+                messages.warning(
+                    request,
+                    format_html(
+                        "New fitting submitted for approval "
+                        "(not live until approved). "
+                        '<a href="{}">View request</a>.',
+                        url,
+                    ),
+                )
+                _mark_change_request_queued(request, url)
             return
 
         original = EveFitting.objects.get(pk=obj.pk)
         payload = build_fitting_payload_from_form(form, original)
 
         if not fitting_payload_changed(original, payload):
-            messages.info(
-                request,
-                "No approval-required fitting fields were changed.",
-            )
+            # Legacy rows may have name ≠ EFT header; sync without approval.
+            if obj.name and obj.name != original.name:
+                original.name = obj.name
+                original.save(update_fields=["name"])
+                messages.info(
+                    request,
+                    f"Fitting name updated to match EFT: {obj.name}",
+                )
+                return
+            # Inlines (module substitutions, etc.) still save via save_formset.
             return
 
         try:
@@ -464,6 +587,60 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
                 ),
             )
             _mark_change_request_queued(request, url)
+
+    def delete_model(self, request, obj):
+        payload = build_fitting_payload_from_instance(obj)
+        try:
+            req = submit_fitting_change_request(
+                obj,
+                change_kind="fitting_delete",
+                payload=payload,
+                user=request.user,
+            )
+        except (PermissionError, ValueError) as exc:
+            messages.error(request, str(exc))
+            return
+
+        if req:
+            notify_fitting_change_request_proposed.delay(req.pk)
+            url = reverse(
+                "admin:fittings_evefittingchangerequest_change",
+                args=[req.pk],
+            )
+            messages.warning(
+                request,
+                format_html(
+                    "Fitting delete submitted for approval "
+                    "(fitting still live). "
+                    '<a href="{}">View request</a>.',
+                    url,
+                ),
+            )
+            _mark_change_request_queued(request, url)
+
+    def delete_queryset(self, request, queryset):
+        queued = 0
+        for obj in queryset:
+            payload = build_fitting_payload_from_instance(obj)
+            try:
+                req = submit_fitting_change_request(
+                    obj,
+                    change_kind="fitting_delete",
+                    payload=payload,
+                    user=request.user,
+                )
+            except (PermissionError, ValueError) as exc:
+                messages.error(request, str(exc))
+                return
+            if req:
+                notify_fitting_change_request_proposed.delay(req.pk)
+                queued += 1
+        if queued:
+            messages.warning(
+                request,
+                f"{queued} fitting delete request(s) submitted for approval "
+                "(fittings still live).",
+            )
 
     def save_formset(self, request, form, formset, change):
         if formset.model is not EveFittingRefit:
@@ -1283,4 +1460,17 @@ def apply_fittings_admin_customizations():
         return _get_custom_fittings_admin_urls() + fittings_previous_get_urls()
 
     admin.site.get_urls = _fittings_get_urls
+
+    # Scope module-substitution FK autocomplete without replacing the widget.
+    # pylint: disable-next=import-outside-toplevel
+    from fittings.admin_autocomplete import (
+        ModuleSubstitutionAutocompleteJsonView,
+    )
+
+    def _module_sub_autocomplete_view(request):
+        return ModuleSubstitutionAutocompleteJsonView.as_view(
+            admin_site=admin.site
+        )(request)
+
+    admin.site.autocomplete_view = _module_sub_autocomplete_view
     setattr(admin.site, _FITTINGS_ADMIN_PATCHED_ATTR, True)

@@ -43,7 +43,7 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
         </nav>
 
         <div class="ndm-guide__content">
-            <section id="credits" class="ndm-section ndm-panel" aria-labelledby="ndm-credits-title">
+            <section id="credits" data-section-id="credits" class="ndm-section ndm-panel" aria-labelledby="ndm-credits-title">
                 <div class="ndm-credits">
                     <h2 id="ndm-credits-title" class="ndm-section__title">Credits</h2>
                     <p class="ndm-credits__provenance">
@@ -88,12 +88,12 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
                 </div>
             </section>
 
-            <section id="history" class="ndm-section ndm-panel" aria-labelledby="ndm-history-title">
+            <section id="history" data-section-id="history" class="ndm-section ndm-panel" aria-labelledby="ndm-history-title">
                 <h2 id="ndm-history-title" class="ndm-section__title">History</h2>
                 <NavyDestroyerMetagameHistoryTimeline entries={guideHistory} />
             </section>
 
-            <section id="introduction" class="ndm-section ndm-panel" aria-labelledby="ndm-intro-title">
+            <section id="introduction" data-section-id="introduction" class="ndm-section ndm-panel" aria-labelledby="ndm-intro-title">
                 <h2 id="ndm-intro-title" class="ndm-section__title">Introduction</h2>
                 {
                     introduction.map((paragraph) => (
@@ -102,7 +102,7 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
                 }
             </section>
 
-            <section id="considerations" class="ndm-section ndm-panel" aria-labelledby="ndm-considerations-title">
+            <section id="considerations" data-section-id="considerations" class="ndm-section ndm-panel" aria-labelledby="ndm-considerations-title">
                 <h2 id="ndm-considerations-title" class="ndm-section__title">Some considerations of the Metagame</h2>
                 {
                     considerations.map((paragraph) => (
@@ -118,7 +118,7 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
                 </ul>
             </section>
 
-            <section id="disclaimers" class="ndm-section ndm-panel" aria-labelledby="ndm-disclaimers-title">
+            <section id="disclaimers" data-section-id="disclaimers" class="ndm-section ndm-panel" aria-labelledby="ndm-disclaimers-title">
                 <h2 id="ndm-disclaimers-title" class="ndm-section__title">Disclaimers</h2>
                 {
                     disclaimers.map((paragraph) => (
@@ -139,7 +139,7 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
                 </div>
             </section>
 
-            <section id="matchups" class="ndm-section ndm-panel" aria-labelledby="ndm-matchups-title">
+            <section id="matchups" data-section-id="matchups" class="ndm-section ndm-panel" aria-labelledby="ndm-matchups-title">
                 <h2 id="ndm-matchups-title" class="ndm-section__title">Matchup Charts</h2>
 
                 <div class="ndm-legend" aria-label="Matchup rating legend">
@@ -175,7 +175,7 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
                 }
             </div>
 
-            <section id="glossary" class="ndm-section ndm-panel" aria-labelledby="ndm-glossary-title">
+            <section id="glossary" data-section-id="glossary" class="ndm-section ndm-panel" aria-labelledby="ndm-glossary-title">
                 <h2 id="ndm-glossary-title" class="ndm-section__title">Glossary</h2>
                 <dl class="ndm-glossary">
                     {

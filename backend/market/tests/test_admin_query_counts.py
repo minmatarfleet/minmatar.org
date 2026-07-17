@@ -80,7 +80,7 @@ class MarketAdminQueryCountTestCase(TestCase):
         )
         fitting = EveFitting.objects.create(
             name="[FL33T] Admin Perf",
-            eft_format="[Rifter, Test]\nRifter",
+            eft_format="[Rifter, [FL33T] Admin Perf]\nRifter",
             ship_id=self.item_type.id,
             tags=[FittingTag.NANOGANG],
         )

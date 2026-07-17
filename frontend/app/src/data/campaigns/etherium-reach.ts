@@ -280,7 +280,7 @@ export const DRONELANDS_REGIONS_BY_DESTROYED = [...DRONELANDS_REGIONS].sort(
     (a, b) => ISK_KILLS_BY_REGION[b] - ISK_KILLS_BY_REGION[a],
 )
 
-export const COVER_IMAGE = '/images/etherium-card.jpg'
+export const COVER_IMAGE = '/images/etherium-campaign.webp'
 
 export type CampaignHeadlineCategory = 'aar' | 'industry'
 

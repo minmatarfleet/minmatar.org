@@ -157,6 +157,12 @@ class DiscordChannel(models.Model):
             "When enabled, the bot records voice presence in this channel each minute."
         ),
     )
+    receive_capital_pings = models.BooleanField(
+        default=False,
+        help_text=(
+            "When enabled, capital kills within 8 LY of Amamake are posted here."
+        ),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

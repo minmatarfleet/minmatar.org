@@ -11,7 +11,7 @@ const { headers, rows, striped = false } = Astro.props
 ---
 
 <div class="er-table-wrap" tabindex="0" role="region">
-    <table class:list={['er-table', { 'er-table--striped': striped }]}>
+    <table class:list={['er-table' ]}>
         <thead>
             <tr>
                 {
@@ -52,9 +52,9 @@ const { headers, rows, striped = false } = Astro.props
         min-width: 0;
     }
 
-    .er-table {
+    table {
         width: 100%;
-        border-collapse: collapse;
+        border-spacing: var(--space-3xs);
         font-size: var(--step--1);
     }
 
@@ -70,10 +70,14 @@ const { headers, rows, striped = false } = Astro.props
         background: color-mix(in srgb, var(--component-background) 90%, transparent);
         font-weight: 600;
         color: var(--highlight);
+        background-color: var(--light-transparency-background);
+        backdrop-filter: blur(var(--transparency-backdrop-blur-heavier));
     }
 
     td {
-        color: var(--faded);
+        color: var(--foreground);
+        background-color: var(--light-transparency-background);
+        backdrop-filter: blur(var(--transparency-backdrop-blur));
     }
 
     .er-table__numeric {
@@ -81,16 +85,12 @@ const { headers, rows, striped = false } = Astro.props
         font-variant-numeric: tabular-nums;
     }
 
-    .er-table--striped tbody tr:nth-child(even) {
-        background: color-mix(in srgb, var(--component-background) 40%, transparent);
-    }
-
     .er-table__row--info td {
-        color: var(--alliance-blue);
         font-weight: 600;
     }
 
-    .er-table__row--success td:first-child {
+    .er-table__row--success td:first-child:after {
+        content: '▲';
         color: var(--green);
     }
 

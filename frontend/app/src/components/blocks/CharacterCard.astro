@@ -4,6 +4,7 @@ interface Props {
     character_name: string;
     inert?:         boolean;
     size?:          'sm' | 'lg';
+    narrow?:        boolean;
     [propName: string]: any;
 }
 
@@ -12,6 +13,7 @@ const {
     character_name,
     inert = false,
     size =  'lg',
+    narrow = true,
     ...attributes
 } = Astro.props
 
@@ -25,7 +27,7 @@ import Card from "@components/blocks/Card.astro";
         character_id={character_id}
         character_name={character_name}
         size={256}
-        narrow={true}
+        narrow={narrow}
         icon_quality={512}
         mask={true}
         inert={inert}

@@ -4,7 +4,7 @@ from typing import List
 
 from pydantic import BaseModel
 
-from bravado.exception import HTTPError
+from esi.exceptions import HTTPClientError
 
 from eveonline.client import EsiClient
 
@@ -120,7 +120,7 @@ def process_moon_paste(
                 )
 
             result.ids_added.append(eve_moon.id)
-        except HTTPError as e:
+        except HTTPClientError as e:
             msg = (
                 f"Moon ID {parsed_moon.moon_id} not found in ESI "
                 f"(status={e.status_code}). "

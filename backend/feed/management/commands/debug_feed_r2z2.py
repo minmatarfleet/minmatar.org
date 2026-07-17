@@ -72,12 +72,22 @@ def _write_killmail_state(stdout: TextIO) -> None:
 
 def _write_cursor_state(stdout: TextIO, cursor: FeedR2z2Cursor) -> int | None:
     stdout.write("\n=== R2Z2 cursor ===\n")
+    stdout.write(f"  live_sequence_id: {cursor.live_sequence_id}\n")
+    stdout.write(f"  catchup_sequence_id: {cursor.catchup_sequence_id}\n")
     stdout.write(f"  last_sequence_id: {cursor.last_sequence_id}\n")
+    stdout.write(f"  paused_until: {cursor.paused_until}\n")
+    stdout.write(f"  live_idle_until: {cursor.live_idle_until}\n")
+    stdout.write(f"  last_request_at: {cursor.last_request_at}\n")
     stdout.write(f"  updated_at: {cursor.updated_at}\n")
     next_sequence = (
-        cursor.last_sequence_id + 1 if cursor.last_sequence_id else None
+        cursor.live_sequence_id + 1 if cursor.live_sequence_id else None
     )
-    stdout.write(f"  next poll sequence: {next_sequence}\n")
+    stdout.write(f"  next live poll sequence: {next_sequence}\n")
+    if cursor.live_sequence_id and cursor.catchup_sequence_id:
+        stdout.write(
+            f"  catchup_gap: "
+            f"{max(0, cursor.live_sequence_id - cursor.catchup_sequence_id)}\n"
+        )
     return next_sequence
 
 
@@ -113,19 +123,21 @@ def _write_live_edge(
     stdout.write(f"  latest sequence: {latest}\n")
     if next_sequence is None:
         return
-    gap = latest - cursor.last_sequence_id
-    stdout.write(f"  sequences behind live edge: {gap}\n")
-    if gap > 0:
+    live_gap = latest - cursor.live_sequence_id
+    catchup_gap = max(0, cursor.live_sequence_id - cursor.catchup_sequence_id)
+    stdout.write(f"  live_gap (sequence.json - live): {live_gap}\n")
+    stdout.write(f"  catchup_gap (live - catchup): {catchup_gap}\n")
+    if live_gap > 0:
         stdout.write(
             style.WARNING(
-                "  Cursor is behind live edge; poll should process "
-                f"up to {gap} sequences when run.\n"
+                "  Live cursor is behind sequence.json; poll should "
+                f"process up to {live_gap} sequences when run.\n"
             )
         )
-    elif gap == 0:
+    elif live_gap == 0:
         stdout.write(
-            "  Cursor is at live edge — --once with processed=0 is "
-            "expected unless a new kill arrives during the poll.\n"
+            "  Live cursor is at live edge — --once with live_processed=0 "
+            "is expected unless a new kill arrives during the poll.\n"
         )
 
 

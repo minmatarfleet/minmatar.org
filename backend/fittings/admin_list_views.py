@@ -1,7 +1,7 @@
 """Custom fittings/doctrine admin list views."""
 
 from django.contrib import admin
-from django.db.models import Count, OuterRef, Subquery
+from django.db.models import Count, OuterRef, Q, Subquery
 from django.template.response import TemplateResponse
 from django.urls import reverse
 
@@ -39,14 +39,34 @@ def _pending_doctrine_request_ids() -> set[int]:
     )
 
 
+def _filter_fittings_queryset(queryset, search: str):
+    """Match EveFittingAdmin.search_fields, plus ship type name."""
+    term = (search or "").strip()
+    if not term:
+        return queryset
+    ship_ids = EveType.objects.filter(name__icontains=term).values_list(
+        "pk", flat=True
+    )
+    return queryset.filter(
+        Q(name__icontains=term)
+        | Q(description__icontains=term)
+        | Q(aliases__icontains=term)
+        | Q(ship_id__in=ship_ids)
+    )
+
+
 def fittings_manage_view(request):
     require_fittings_admin_view(request.user)
     pending_ids = _pending_fitting_request_ids()
+    search = request.GET.get("q", "")
     ship_sq = EveType.objects.filter(pk=OuterRef("ship_id")).values("name")[:1]
-    fittings = EveFitting.objects.annotate(
-        _ship_name=Subquery(ship_sq),
-        _pod_count=Count("pods", distinct=True),
-        _refit_count=Count("refits"),
+    fittings = _filter_fittings_queryset(
+        EveFitting.objects.annotate(
+            _ship_name=Subquery(ship_sq),
+            _pod_count=Count("pods", distinct=True),
+            _refit_count=Count("refits"),
+        ),
+        search,
     ).order_by("name")
     rows = []
     for fitting in fittings:
@@ -69,6 +89,7 @@ def fittings_manage_view(request):
         **admin.site.each_context(request),
         "title": "Fittings",
         "rows": rows,
+        "search_query": search,
         "add_url": reverse("admin:fittings_evefitting_add"),
         "pending_requests_url": reverse(
             "admin:fittings_evefittingchangerequest_changelist"

@@ -313,7 +313,7 @@ CELERYBEAT_FEED = [
         "[Feed] Poll zKill R2Z2",
         {
             "task": "feed.tasks.poll_zkill_r2z2",
-            "schedule": schedule(timedelta(seconds=15)),
+            "schedule": schedule(timedelta(seconds=7)),
             "options": {"queue": "celery"},
         },
     ),

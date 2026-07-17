@@ -3,12 +3,20 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 
 from eveonline.models import EveLocation
 
+from fittings.helpers.module_substitutions import (
+    fitting_item_types,
+    types_are_variants,
+)
+
 from .models import (
+    ChangeRequestStatus,
     EveDoctrine,
     EveDoctrineChangeRequest,
     EveDoctrineFitting,
     EveFitting,
     EveFittingChangeRequest,
+    EveFittingModuleSubstitution,
+    EveFittingRefit,
     FittingTag,
 )
 
@@ -70,11 +78,142 @@ class EveFittingAdminForm(forms.ModelForm):
         raw = self.initial.get("aliases")
         if raw:
             self.initial["aliases"] = aliases_for_textarea(raw)
+        if "eft_format" in self.fields:
+            self.fields["eft_format"].help_text = (
+                "Fitting name is taken from the EFT header "
+                "([ShipName, Fitting name])."
+            )
 
     def clean_aliases(self):
         return normalize_fitting_aliases(
             self.cleaned_data.get("aliases") or ""
         )
+
+    def clean(self):
+        cleaned = super().clean()
+        eft = cleaned.get("eft_format") or ""
+        derived = EveFitting.fitting_name_from_eft(eft)
+        if eft.strip() and not derived:
+            self.add_error(
+                "eft_format",
+                "EFT header must include a fitting name: "
+                "[ShipName, Fitting name].",
+            )
+        elif derived:
+            dupes = EveFitting.objects.filter(name=derived)
+            if self.instance.pk:
+                dupes = dupes.exclude(pk=self.instance.pk)
+            if dupes.exists():
+                self.add_error(
+                    "eft_format",
+                    f"A fitting named {derived!r} already exists.",
+                )
+            else:
+                pending_create = (
+                    EveFitting.all_objects.filter(
+                        name=derived,
+                        deleted__isnull=False,
+                        change_requests__status=ChangeRequestStatus.PENDING,
+                        change_requests__change_kind="fitting_create",
+                    )
+                    .exclude(pk=self.instance.pk or 0)
+                    .exists()
+                )
+                if pending_create:
+                    self.add_error(
+                        "eft_format",
+                        f"A pending create request already uses the name "
+                        f"{derived!r}.",
+                    )
+        return cleaned
+
+
+class EveFittingRefitInlineForm(forms.ModelForm):
+    """Derive refit name from EFT; name field is readonly in admin."""
+
+    class Meta:
+        model = EveFittingRefit
+        fields = "__all__"
+
+    def clean(self):
+        cleaned = super().clean()
+        eft = cleaned.get("eft_format")
+        if eft is None:
+            eft = getattr(self.instance, "eft_format", "") or ""
+        derived = EveFitting.fitting_name_from_eft(eft)
+        if str(eft).strip() and not derived:
+            self.add_error(
+                "eft_format",
+                "EFT header must include a fitting name: "
+                "[ShipName, Fitting name].",
+            )
+        elif derived:
+            cleaned["name"] = derived
+            base = cleaned.get("base_fitting") or getattr(
+                self.instance, "base_fitting", None
+            )
+            if base is not None:
+                dupes = EveFittingRefit.objects.filter(
+                    base_fitting=base, name=derived
+                )
+                if self.instance.pk:
+                    dupes = dupes.exclude(pk=self.instance.pk)
+                if dupes.exists():
+                    self.add_error(
+                        "eft_format",
+                        f"A refit named {derived!r} already exists "
+                        "for this fitting.",
+                    )
+        return cleaned
+
+
+class EveFittingModuleSubstitutionInlineForm(forms.ModelForm):
+    """Validate preferred is on the fit and substitute is a real variant."""
+
+    class Meta:
+        model = EveFittingModuleSubstitution
+        fields = ("preferred_module", "substitute_module", "notes")
+
+    def __init__(self, *args, fitting=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if fitting is None and getattr(self.instance, "fitting_id", None):
+            fitting = self.instance.fitting
+        self._fitting = fitting
+        if "preferred_module" in self.fields:
+            self.fields["preferred_module"].help_text = (
+                "Only items present on this fitting’s EFT."
+            )
+        if "substitute_module" in self.fields:
+            self.fields["substitute_module"].help_text = (
+                "Meta / faction / T1–T2 variants of the preferred module."
+            )
+
+    def clean(self):
+        cleaned = super().clean()
+        preferred = cleaned.get("preferred_module")
+        substitute = cleaned.get("substitute_module")
+        fitting = self._fitting
+        if fitting is not None and preferred is not None:
+            allowed = set(
+                fitting_item_types(fitting).values_list("pk", flat=True)
+            )
+            if preferred.pk not in allowed:
+                self.add_error(
+                    "preferred_module",
+                    "Must be an item from this fitting’s EFT.",
+                )
+        if preferred is not None and substitute is not None:
+            if preferred.pk == substitute.pk:
+                self.add_error(
+                    "substitute_module",
+                    "Substitute must differ from the preferred module.",
+                )
+            elif not types_are_variants(preferred, substitute):
+                self.add_error(
+                    "substitute_module",
+                    "Must be a variant of the preferred module.",
+                )
+        return cleaned
 
 
 class EveDoctrineForm(forms.ModelForm):

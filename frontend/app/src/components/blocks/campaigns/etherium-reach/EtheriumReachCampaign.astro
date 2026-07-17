@@ -1,4 +1,7 @@
 ---
+import { i18n } from '@helpers/i18n'
+const { lang } = i18n(Astro.url)
+
 import {
     CAMPAIGN_ISK_DESTROYED,
     CAMPAIGN_TOTAL_INCOME,
@@ -37,15 +40,18 @@ import {
     TOP_KRABBERS,
 } from '@/data/campaigns/etherium-reach'
 
-import { get_player_icon } from '@helpers/eve_image_server'
-
 import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
 import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
-import PlayerContentChart from '@components/blocks/campaigns/etherium-reach/PlayerContentChart.astro'
-import PlayerContentChartLegend from '@components/blocks/campaigns/etherium-reach/PlayerContentChartLegend.astro'
-import PlayerIncomeChart from '@components/blocks/campaigns/etherium-reach/PlayerIncomeChart.astro'
-import PlayerIncomeChartLegend from '@components/blocks/campaigns/etherium-reach/PlayerIncomeChartLegend.astro'
+import PlayerContentChartChartjs from '@components/blocks/campaigns/etherium-reach/PlayerContentChartChartjs.astro'
+import PlayerIncomeChartChartjs from '@components/blocks/campaigns/etherium-reach/PlayerIncomeChartChartjs.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import Grid from '@components/compositions/Grid.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import CharacterCard from '@components/blocks/CharacterCard.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import CountUpAnimation from '@components/blocks/CountUpAnimation.astro'
 
 const playerIncomeRows = [
     { cells: ['Mining', formatIsk(GROSS_PLAYER_MINING)] as const },
@@ -117,299 +123,377 @@ const combatRows = [
         tone: 'info' as const,
     },
 ]
+
+import { number_name } from '@helpers/numbers'
 ---
 
-<div class="er-campaign">
-    <section class="er-campaign__section">
-        <h3>Campaign by the numbers</h3>
-        <p class="er-campaign__meta">
-            Participation, combat, and income
-        </p>
-        <div class="er-campaign__stat-grid er-campaign__stat-grid--3">
+<TextBox>
+    <Flexblock gap='var(--space-m)'>
+        <Flexblock gap='var(--space-3xs)'>
+            <h2>Campaign by the numbers</h2>
+            <small>
+                Participation, combat, and income
+            </small>
+        </Flexblock>
+
+        <Grid
+            class="[ w-full grid-fill ]"
+            row_gap="var(--space-3xs)"
+            column_gap="var(--space-3xs)"
+            min_item_width="300px"
+        >
             <CampaignStat
                 label="Participation"
-                value={`${FLEET_PARTICIPATION_PCT}% · ${FLEET_PILOTS.toLocaleString()} pilots`}
                 tone="success"
-            />
+            >
+                <CountUpAnimation
+                    element='span' 
+                    target={FLEET_PARTICIPATION_PCT}
+                />% · <CountUpAnimation
+                    element='span' 
+                    target={FLEET_PILOTS}
+                /> pilots
+            </CampaignStat>
             <CampaignStat
                 label="ISK destroyed"
-                value={formatIsk(CAMPAIGN_ISK_DESTROYED)}
                 tone="success"
-            />
+            >
+                <CountUpAnimation
+                    element='span' 
+                    target={CAMPAIGN_ISK_DESTROYED}
+                    data-tippy-content={number_name(CAMPAIGN_ISK_DESTROYED, lang)}
+                />
+            </CampaignStat>
             <CampaignStat
                 label="Total income"
-                value={formatIsk(CAMPAIGN_TOTAL_INCOME)}
-                tone="info"
-            />
-        </div>
-    </section>
+            >
+                <CountUpAnimation
+                    element='span' 
+                    target={CAMPAIGN_TOTAL_INCOME}
+                    data-tippy-content={number_name(CAMPAIGN_TOTAL_INCOME, lang)}
+                />
+            </CampaignStat>
+        </Grid>
+    </Flexblock>
+</TextBox>
 
-    <section class="er-campaign__section">
-        <h3>Content summary</h3>
-        <p class="er-campaign__meta">
-            Combat and fleets in the Dronelands and warzone
-        </p>
-
-        <Flexblock gap="var(--space-l)">
-            <div>
-                <p class="er-campaign__subheading">In the dronelands</p>
-                <div class="er-campaign__stat-grid er-campaign__stat-grid--3">
-                    <CampaignStat
-                        label="ISK destroyed"
-                        value={formatIsk(PERIOD_DRONELANDS_ISK_KILLS)}
-                        tone="success"
-                    />
-                    <CampaignStat
-                        label="ISK lost"
-                        value={formatIsk(PERIOD_DRONELANDS_ISK_LOSSES)}
-                        tone="danger"
-                    />
-                    <CampaignStat
-                        label="Campaign fleets"
-                        value={PERIOD_DRONELANDS_FLEETS.toLocaleString()}
-                    />
-                </div>
-            </div>
-
-            <div>
-                <p class="er-campaign__subheading">In the warzone</p>
-                <div class="er-campaign__stat-grid er-campaign__stat-grid--3">
-                    <CampaignStat
-                        label="ISK destroyed"
-                        value={formatIsk(PERIOD_OUTSIDE_ISK_KILLS)}
-                        tone="success"
-                    />
-                    <CampaignStat
-                        label="ISK lost"
-                        value={formatIsk(PERIOD_OUTSIDE_ISK_LOSSES)}
-                        tone="danger"
-                    />
-                    <CampaignStat
-                        label="Warzone fleets"
-                        value={PERIOD_OUTSIDE_FLEETS.toLocaleString()}
-                    />
-                </div>
-            </div>
+<TextBox>
+    <Flexblock gap='var(--space-m)'>
+        <Flexblock gap='var(--space-3xs)'>
+            <h2>Content summary</h2>
+            <small>Combat and fleets in the Dronelands and warzone</small>
         </Flexblock>
-    </section>
 
-    <section class="er-campaign__section">
-        <div class="er-campaign__split">
-            <div>
-                <h3>What pilots earned</h3>
-                <p class="er-campaign__meta">
-                    By activity type
-                </p>
-                <CampaignDataTable headers={['Source', 'ISK']} rows={playerIncomeRows} />
-            </div>
-            <div>
-                <h3>What the alliance earned</h3>
-                <p class="er-campaign__meta">
-                    By revenue source
-                </p>
-                <CampaignDataTable headers={['Source', 'ISK']} rows={allianceIncomeRows} />
-            </div>
-        </div>
+        <Flexblock>
+            <h4>In the dronelands</h4>
 
-        <div class="er-campaign__chart-block">
-            <div class="er-campaign__chart-card">
-                <h3>Player income over time</h3>
-                <p class="er-campaign__meta">Monthly earnings in the Dronelands</p>
-                <div class="er-campaign__chart-plot">
-                    <PlayerIncomeChart />
-                </div>
-                <p class="er-campaign__footnote">
-                    Dashed lines are estimates.
-                </p>
-            </div>
-            <PlayerIncomeChartLegend />
-        </div>
-    </section>
+            <Grid
+                class="[ w-full grid-fill ]"
+                row_gap="var(--space-3xs)"
+                column_gap="var(--space-3xs)"
+                min_item_width="300px"
+            >
+                <CampaignStat
+                    label="ISK destroyed"
+                    tone="success"
+                >
+                    <CountUpAnimation
+                        element='span' 
+                        target={PERIOD_DRONELANDS_ISK_KILLS}
+                        data-tippy-content={number_name(PERIOD_DRONELANDS_ISK_KILLS, lang)}
+                    />
+                </CampaignStat>
+                <CampaignStat
+                    label="ISK lost"
+                    tone="danger"
+                >
+                    <CountUpAnimation
+                        element='span' 
+                        target={PERIOD_DRONELANDS_ISK_LOSSES}
+                        data-tippy-content={number_name(PERIOD_DRONELANDS_ISK_LOSSES, lang)}
+                    />
+                </CampaignStat>
+                <CampaignStat label="Campaign fleets">
+                    <CountUpAnimation
+                        element='span' 
+                        target={PERIOD_DRONELANDS_FLEETS}
+                        data-tippy-content={number_name(PERIOD_DRONELANDS_FLEETS, lang)}
+                    />
+                </CampaignStat>
+            </Grid>
+        </Flexblock>
 
-    <section class="er-campaign__section">
-        <h3>Player content over time</h3>
-        <p class="er-campaign__meta">
-            Monthly ISK destroyed and fleets flown
-        </p>
-        <div class="er-campaign__chart-block">
-            <div class="er-campaign__chart-card">
-                <div class="er-campaign__chart-plot">
-                    <PlayerContentChart />
-                </div>
-            </div>
-            <PlayerContentChartLegend />
-        </div>
-    </section>
+        <Flexblock>
+            <h4>In the warzone</h4>
 
-    <section class="er-campaign__section">
-        <h3>Combat by region</h3>
-        <p class="er-campaign__meta">
-            ISK destroyed and lost across the four dronelands regions
-        </p>
-        <CampaignDataTable
-            headers={['Region', 'Destroyed', 'Lost']}
-            rows={combatRows}
-            striped={true}
-        />
-    </section>
+            <Grid
+                class="[ w-full grid-fill ]"
+                row_gap="var(--space-3xs)"
+                column_gap="var(--space-3xs)"
+                min_item_width="300px"
+            >
+                <CampaignStat
+                    label="ISK destroyed"
+                    tone="success"
+                >
+                    <CountUpAnimation
+                        element='span' 
+                        target={PERIOD_OUTSIDE_ISK_KILLS}
+                        data-tippy-content={number_name(PERIOD_OUTSIDE_ISK_KILLS, lang)}
+                    />
+                </CampaignStat>
+                <CampaignStat
+                    label="ISK lost"
+                    tone="danger"
+                >
+                    <CountUpAnimation
+                        element='span' 
+                        target={PERIOD_OUTSIDE_ISK_LOSSES}
+                        data-tippy-content={number_name(PERIOD_OUTSIDE_ISK_LOSSES, lang)}
+                    />
+                </CampaignStat>
+                <CampaignStat label="Warzone fleets">
+                    <CountUpAnimation
+                        element='span' 
+                        target={PERIOD_OUTSIDE_FLEETS}
+                        data-tippy-content={number_name(PERIOD_OUTSIDE_FLEETS, lang)}
+                    />
+                </CampaignStat>
+            </Grid>
+        </Flexblock>
+    </Flexblock>
+</TextBox>
 
-    <section class="er-campaign__section">
-        <div class="er-campaign__subsection">
+<Grid
+    class="[ w-full grid-fill ]"
+    row_gap="var(--space-xl)"
+    column_gap="var(--space-xl)"
+    min_item_width="580px"
+
+>
+    <Flexblock>
+        <Flexblock gap='var(--space-3xs)'>
+            <h2>What pilots earned</h2>
+            <small>By activity type</small>
+        </Flexblock>
+
+        <CampaignDataTable headers={['Source', 'ISK']} rows={playerIncomeRows} />
+    </Flexblock>
+
+    <Flexblock>
+        <Flexblock gap='var(--space-3xs)'>
+            <h2>What the alliance earned</h2>
+            <small>By revenue source</small>
+        </Flexblock>
+
+        <CampaignDataTable headers={['Source', 'ISK']} rows={allianceIncomeRows} />
+    </Flexblock>
+</Grid>
+
+<Flexblock>
+    <Flexblock gap='var(--space-3xs)'>
+        <h2>Player income over time</h2>
+        <small>Monthly earnings in the Dronelands</small>
+    </Flexblock>
+
+    <ComponentBlock>
+        <PlayerIncomeChartChartjs />
+    </ComponentBlock>
+</Flexblock>
+
+<Flexblock>
+    <Flexblock gap='var(--space-3xs)'>
+        <h2>Player content over time</h2>
+        <small>Monthly ISK destroyed and fleets flown</small>
+    </Flexblock>
+
+    <ComponentBlock>
+        <PlayerContentChartChartjs />
+    </ComponentBlock>
+</Flexblock>
+
+<Flexblock>
+    <Flexblock gap='var(--space-3xs)'>
+        <h2>Combat by region</h2>
+        <small>ISK destroyed and lost across the four dronelands regions</small>
+    </Flexblock>
+
+    <CampaignDataTable
+        headers={['Region', 'Destroyed', 'Lost']}
+        rows={combatRows}
+        striped={true}
+    />
+</Flexblock>
+
+<Flexblock gap='var(--space-l)'>
+    <Flexblock>
+        <Flexblock gap='var(--space-3xs)'>
             <h4>Top commanders</h4>
-            <p class="er-campaign__meta">
-                Fleet commanders contributing to this campaign
-            </p>
-            <div class="er-campaign__fc-grid">
-                {
-                    TOP_FLEET_COMMANDERS.map((fc) => (
-                        <div class="er-fc-card">
-                            {'isAggregate' in fc && fc.isAggregate ? (
-                                <div class="er-fc-card__portraits" aria-hidden="true">
-                                    {
-                                        OTHER_FLEET_COMMANDERS.commanders.map((commander) => (
-                                            <img
-                                                loading="lazy"
-                                                width="16"
-                                                height="16"
-                                                src={get_player_icon(commander.characterId, 32)}
-                                                alt=""
-                                                title={`${commander.name} · ${commander.fleetCount} fleets`}
-                                                class="er-fc-card__portrait-mini"
-                                            />
-                                        ))
-                                    }
-                                </div>
-                            ) : (
-                                <img
-                                    loading="lazy"
-                                    width="64"
-                                    height="64"
-                                    src={get_player_icon(fc.characterId, 64)}
-                                    alt={`${fc.name} portrait`}
-                                    class="er-fc-card__portrait"
-                                />
-                            )}
-                            <div class="er-fc-card__body">
-                                <span class="er-fc-card__name">{fc.name}</span>
-                                <span class="er-fc-card__count">
-                                    {fc.fleetCount.toLocaleString()} fleets
-                                </span>
-                            </div>
-                        </div>
-                    ))
-                }
-            </div>
-        </div>
+            <small>Fleet commanders contributing to this campaign</small>
+        </Flexblock>
 
-        <div class="er-campaign__subsection">
-            <h4>Top pilots</h4>
-            <p class="er-campaign__meta">
-                Fleet participants contributing to this campaign
-            </p>
-            <div class="er-campaign__fc-grid">
-                {
-                    TOP_FLEET_PILOTS.map((pilot) => (
-                        <div class="er-fc-card">
-                            <img
-                                loading="lazy"
-                                width="64"
-                                height="64"
-                                src={get_player_icon(pilot.characterId, 64)}
-                                alt={`${pilot.name} portrait`}
-                                class="er-fc-card__portrait"
-                            />
-                            <div class="er-fc-card__body">
-                                <span class="er-fc-card__name">{pilot.name}</span>
-                                <span class="er-fc-card__count">
-                                    {pilot.fleetCount.toLocaleString()} fleets
-                                </span>
-                            </div>
-                        </div>
-                    ))
-                }
-            </div>
-        </div>
-
-        <div class="er-campaign__subsection">
-            <h4>Top krabs</h4>
-            <p class="er-campaign__meta">
-                Top pilots based on their combined mining, ratting, and PI income
-            </p>
-            <div class="er-campaign__fc-grid">
-                {
-                    TOP_KRABBERS.map((krabber) => (
-                        <div class="er-fc-card">
-                            <img
-                                loading="lazy"
-                                width="64"
-                                height="64"
-                                src={get_player_icon(krabber.characterId, 64)}
-                                alt={`${krabber.name} portrait`}
-                                class="er-fc-card__portrait"
-                            />
-                            <div class="er-fc-card__body">
-                                <span class="er-fc-card__name">{krabber.name}</span>
-                                <span class="er-fc-card__count">
-                                    {formatIsk(krabber.totalIsk)}
-                                </span>
-                            </div>
-                        </div>
-                    ))
-                }
-            </div>
-        </div>
-    </section>
-
-    <section class="er-campaign__section">
-        <h3>Headlines</h3>
-        <p class="er-campaign__meta">
-            Stories and updates from the campaign
-        </p>
-        <div class="er-headline-cards">
+        <Grid
+            class="[ w-full grid-fill ]"
+            row_gap="var(--space-3xs)"
+            column_gap="var(--space-3xs)"
+            min_item_width="324px"
+        >
             {
-                HEADLINES.map((headline) => (
-                    <a
-                        class:list={[
-                            'er-headline-card',
-                            `er-headline-card--${headline.category}`,
-                        ]}
-                        style={`--er-headline-bg: url('${headline.backgroundImage}')`}
-                        href={headline.url}
-                        target="_blank"
-                        rel="noopener noreferrer nofollow"
-                    >
-                        <div class="er-headline-card__body">
-                            <div class="er-headline-card__meta">
-                                <time datetime={headline.date}>
-                                    {formatHeadlineDate(headline.date)}
-                                </time>
-                                <span class="er-headline-card__tag">
-                                    {HEADLINE_CATEGORY_LABELS[headline.category]}
-                                </span>
-                            </div>
-                            <h4 class="er-headline-card__title">{headline.title}</h4>
-                            <p class="er-headline-card__reddit">
-                                <span class="er-headline-card__reddit-upvotes" aria-label={`${headline.upvotes} upvotes`}>
-                                    ▲ {headline.upvotes.toLocaleString()}
-                                </span>
-                                <span aria-hidden="true">·</span>
-                                <span>{headline.comments.toLocaleString()} comments</span>
-                                <span aria-hidden="true">·</span>
-                                <span>{formatHeadlineViews(headline.views)}</span>
-                            </p>
-                        </div>
-                        <span class="er-headline-card__arrow" aria-hidden="true">→</span>
-                    </a>
+                TOP_FLEET_COMMANDERS.map((fc) => (
+                    <>{'isAggregate' in fc && fc.isAggregate ? (
+                        <Flexblock class="[ justify-between! h-full ]">
+                            <Grid
+                                class="[ w-full grid-fill ]"
+                                row_gap="0"
+                                column_gap="0"
+                                min_item_width="64px"
+                            >
+                                {OTHER_FLEET_COMMANDERS.commanders.map(commander =>
+                                    <div data-tippy-content={`${commander.name} · ${commander.fleetCount} fleets`}>
+                                        <CharacterPicture
+                                            character_id={commander.characterId}
+                                            character_name={commander.name}
+                                            size={64}
+                                            icon_quality={128}
+                                        />
+                                    </div>
+                                )}
+                            </Grid>
+
+                            <Flexblock gap='var(--space-3xs)'>
+                                <h3>{fc.name}</h3>
+                                <small>{fc.fleetCount.toLocaleString()} fleets</small>
+                            </Flexblock>
+                        </Flexblock>
+                    ) : (
+                        <CharacterCard
+                            character_id={fc.characterId ?? 0}
+                            character_name={fc.name}
+                            alt={`${fc.name} portrait`}
+                            narrow={false}
+                        >
+                            <Flexblock gap='var(--space-3xs)'>
+                                <h3>{fc.name}</h3>
+                                <small>{fc.fleetCount.toLocaleString()} fleets</small>
+                            </Flexblock>
+                        </CharacterCard>
+                    )}</>
                 ))
             }
-        </div>
-    </section>
+        </Grid>
+    </Flexblock>
 
-    <footer class="er-campaign__footer">
-        <span>Etherium Reach Campaign Report</span>
-        <span>July 2026</span>
-    </footer>
-</div>
+    <Flexblock>
+        <Flexblock gap='var(--space-3xs)'>
+            <h4>Top pilots</h4>
+            <small>Fleet participants contributing to this campaign</small>
+        </Flexblock>
+
+        <Grid
+            class="[ w-full grid-fill ]"
+            row_gap="var(--space-3xs)"
+            column_gap="var(--space-3xs)"
+            min_item_width="324px"
+        >
+            {
+                TOP_FLEET_PILOTS.map((pilot) => (
+                    <CharacterCard
+                        character_id={pilot.characterId ?? 0}
+                        character_name={pilot.name}
+                        alt={`${pilot.name} portrait`}
+                        narrow={false}
+                    >
+                        <Flexblock gap='var(--space-3xs)'>
+                            <h3>{pilot.name}</h3>
+                            <small>{pilot.fleetCount.toLocaleString()} fleets</small>
+                        </Flexblock>
+                    </CharacterCard>
+                ))
+            }
+        </Grid>
+    </Flexblock>
+
+    <Flexblock>
+        <Flexblock gap='var(--space-3xs)'>
+            <h4>Top krabs</h4>
+            <small>Top pilots based on their combined mining, ratting, and PI income</small>
+        </Flexblock>
+
+        <Grid
+            class="[ w-full grid-fill ]"
+            row_gap="var(--space-3xs)"
+            column_gap="var(--space-3xs)"
+            min_item_width="324px"
+        >
+            {
+                TOP_KRABBERS.map((krabber) => (
+                    <CharacterCard
+                        character_id={krabber.characterId ?? 0}
+                        character_name={krabber.name}
+                        alt={`${krabber.name} portrait`}
+                        narrow={false}
+                    >
+                        <Flexblock gap='var(--space-3xs)'>
+                            <h3>{krabber.name}</h3>
+                            <small>{formatIsk(krabber.totalIsk)}</small>
+                        </Flexblock>
+                    </CharacterCard>
+                ))
+            }
+        </Grid>
+    </Flexblock>
+</Flexblock>
+
+<Flexblock>
+    <Flexblock gap='var(--space-3xs)'>
+        <h2>Headlines</h2>
+        <small>Stories and updates from the campaign</small>
+    </Flexblock>
+
+    <div class="er-headline-cards">
+        {
+            HEADLINES.map((headline) => (
+                <a
+                    class:list={[
+                        'er-headline-card',
+                        `er-headline-card--${headline.category}`,
+                    ]}
+                    style={`--er-headline-bg: url('${headline.backgroundImage}')`}
+                    href={headline.url}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow"
+                >
+                    <div class="er-headline-card__body">
+                        <div class="er-headline-card__meta">
+                            <time datetime={headline.date}>
+                                {formatHeadlineDate(headline.date)}
+                            </time>
+                            <span class="er-headline-card__tag">
+                                {HEADLINE_CATEGORY_LABELS[headline.category]}
+                            </span>
+                        </div>
+                        <h4 class="er-headline-card__title">{headline.title}</h4>
+                        <p class="er-headline-card__reddit">
+                            <span class="er-headline-card__reddit-upvotes" aria-label={`${headline.upvotes} upvotes`}>
+                                ▲ {headline.upvotes.toLocaleString()}
+                            </span>
+                            <span aria-hidden="true">·</span>
+                            <span>{headline.comments.toLocaleString()} comments</span>
+                            <span aria-hidden="true">·</span>
+                            <span>{formatHeadlineViews(headline.views)}</span>
+                        </p>
+                    </div>
+                    <span class="er-headline-card__arrow" aria-hidden="true">→</span>
+                </a>
+            ))
+        }
+    </div>
+</Flexblock>
+
+<FlexInline justification='space-between'>
+    <span>Etherium Reach Campaign Report</span>
+    <span>July 2026</span>
+</FlexInline>
 
 <style lang="scss">
     .er-campaign {

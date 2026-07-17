@@ -35,7 +35,7 @@ SOURCE_TO_TRIBE_GROUP = {
     "Technology Team": ("Pulse", "Technology"),
     "Thinkspeak Team": ("Pulse", "Thinkspeak"),
     "SIG - Tournaments": ("Pulse", "Tournaments"),
-    "Conversion Team": ("Market", "Loyalty Points"),
+    "Conversion Team": ("Supply", "Loyalty Points"),
 }
 
 MIGRATION_LIST_JSON = "pulse_simple_migration_list.json"
@@ -64,7 +64,7 @@ def run():
 
     # Load tribe groups from Pulse and Market
     tribe_groups_by_key = {}
-    for tribe_name in ("Pulse", "Market"):
+    for tribe_name in ("Pulse", "Supply"):
         print("Loading %s tribe..." % tribe_name)
         try:
             tribe = Tribe.objects.using(DB).get(name=tribe_name)

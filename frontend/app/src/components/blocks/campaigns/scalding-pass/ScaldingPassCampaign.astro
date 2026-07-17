@@ -1,4 +1,7 @@
 ---
+import { i18n } from '@helpers/i18n'
+const { lang } = i18n(Astro.url)
+
 import {
     CONSTELLATIONS_BY_DESTROYED,
     CONTRACTED_ISK,
@@ -14,10 +17,18 @@ import {
 
 import { get_player_icon } from '@helpers/eve_image_server'
 
+import Flexblock from '@components/compositions/Flexblock.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import Grid from '@components/compositions/Grid.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
 import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
 import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
-import PlayerContentChart from '@components/blocks/campaigns/scalding-pass/PlayerContentChart.astro'
+import PlayerContentChartChartjs from '@components/blocks/campaigns/scalding-pass/PlayerContentChartChartjs.astro'
 import PlayerContentChartLegend from '@components/blocks/campaigns/scalding-pass/PlayerContentChartLegend.astro'
+import CountUpAnimation from '@components/blocks/CountUpAnimation.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import CharacterCard from '@components/blocks/CharacterCard.astro'
 
 const disclosureRows = [
     { cells: ['Diplomatic contract', formatIsk(CONTRACTED_ISK)] as const },
@@ -66,186 +77,200 @@ const constellationRows = [
         tone: 'info' as const,
     },
 ]
+
+import { number_name } from '@helpers/numbers'
 ---
 
-<div class="sp-campaign">
-    <section class="sp-campaign__section">
-        <h3>Content summary</h3>
-        <p class="sp-campaign__meta">
-            Combat and fleets in Scalding Pass
-        </p>
-        <div class="sp-campaign__stat-grid sp-campaign__stat-grid--3">
+<TextBox>
+    <Flexblock gap='var(--space-m)'>
+        <Flexblock gap='var(--space-3xs)'>
+            <h2>Content summary</h2>
+            <small>Combat and fleets in Scalding Pass</small>
+        </Flexblock>
+
+        <Grid
+            class="[ w-full grid-fill ]"
+            row_gap="var(--space-3xs)"
+            column_gap="var(--space-3xs)"
+            min_item_width="300px"
+        >
             <CampaignStat
                 label="ISK destroyed"
-                value={formatIsk(PERIOD_SCALDING_ISK_KILLS)}
                 tone="success"
-            />
+            >
+                <CountUpAnimation
+                    element='span' 
+                    target={PERIOD_SCALDING_ISK_KILLS}
+                    data-tippy-content={number_name(PERIOD_SCALDING_ISK_KILLS, lang)}
+                />
+            </CampaignStat>
             <CampaignStat
                 label="ISK lost"
-                value={formatIsk(PERIOD_SCALDING_ISK_LOSSES)}
                 tone="danger"
-            />
+            >
+                <CountUpAnimation
+                    element='span' 
+                    target={PERIOD_SCALDING_ISK_LOSSES}
+                    data-tippy-content={number_name(PERIOD_SCALDING_ISK_LOSSES, lang)}
+                />
+            </CampaignStat>
             <CampaignStat
                 label="Campaign fleets"
-                value={PERIOD_SCALDING_FLEETS.toLocaleString()}
-            />
-        </div>
-    </section>
+            >
+                <CountUpAnimation
+                    element='span' 
+                    target={PERIOD_SCALDING_FLEETS}
+                    data-tippy-content={number_name(PERIOD_SCALDING_FLEETS, lang)}
+                />
+            </CampaignStat>
+        </Grid>
+    </Flexblock>
+</TextBox>
 
-    <section class="sp-campaign__section">
-        <h3>Player content over time</h3>
-        <p class="sp-campaign__meta">
-            Monthly ISK destroyed in Scalding Pass and fleets flown there
-        </p>
-        <div class="sp-campaign__chart-block">
-            <div class="sp-campaign__chart-card">
-                <div class="sp-campaign__chart-plot">
-                    <PlayerContentChart />
-                </div>
-            </div>
-            <PlayerContentChartLegend />
-        </div>
-    </section>
+ <Flexblock>
+    <Flexblock gap='var(--space-3xs)'>
+        <h2>Player content over time</h2>
+        <small>Monthly ISK destroyed in Scalding Pass and fleets flown there</small>
+    </Flexblock>
 
-    <section class="sp-campaign__section">
-        <h3>Campaign disclosure</h3>
-        <p class="sp-campaign__meta">
-            Public contracted support during the campaign
-        </p>
-        <CampaignDataTable headers={['Source', 'ISK']} rows={disclosureRows} />
-        <p class="sp-campaign__footnote">
-            Pilot income was not tracked during this campaign.
-        </p>
-    </section>
+    <ComponentBlock>
+        <PlayerContentChartChartjs />
+    </ComponentBlock>
+</Flexblock>
 
-    <section class="sp-campaign__section">
-        <h3>Combat by constellation</h3>
-        <p class="sp-campaign__meta">
-            ISK destroyed across Scalding Pass constellations
-        </p>
-        <CampaignDataTable
-            headers={['Constellation', 'Destroyed']}
-            rows={constellationRows}
-            striped={true}
-        />
-    </section>
+ <Flexblock gap='var(--space-l)'>
+    <Flexblock gap='var(--space-3xs)'>
+        <h2>Campaign disclosure</h2>
+        <small>Public contracted support during the campaign</small>
+    </Flexblock>
+    
+    <CampaignDataTable headers={['Source', 'ISK']} rows={disclosureRows} />
+    <small>Pilot income was not tracked during this campaign.</small>
 
-    <section class="sp-campaign__section">
-        <div class="sp-campaign__subsection">
+    <Flexblock gap='var(--space-3xs)'>
+        <h2>Combat by constellation</h2>
+        <small>ISK destroyed across Scalding Pass constellations</small>
+    </Flexblock>
+    
+    <CampaignDataTable
+        headers={['Constellation', 'Destroyed']}
+        rows={constellationRows}
+        striped={true}
+    />
+ </Flexblock>
+
+ <Flexblock gap='var(--space-l)'>
+    <Flexblock>
+        <Flexblock gap='var(--space-3xs)'>
             <h4>Top commanders</h4>
-            <p class="sp-campaign__meta">
-                Fleet commanders in Scalding Pass during this campaign
-            </p>
-            <div class="sp-campaign__fc-grid">
-                {
-                    TOP_FLEET_COMMANDERS.map((fc) => (
-                        <div class="sp-fc-card">
-                            <img
-                                loading="lazy"
-                                width="64"
-                                height="64"
-                                src={get_player_icon(fc.characterId, 64)}
-                                alt={`${fc.name} portrait`}
-                                class="sp-fc-card__portrait"
-                            />
-                            <div class="sp-fc-card__body">
-                                <span class="sp-fc-card__name">{fc.name}</span>
-                                <span class="sp-fc-card__count">
-                                    {fc.fleetCount.toLocaleString()} fleets
-                                </span>
-                            </div>
-                        </div>
-                    ))
-                }
-            </div>
-        </div>
+            <small>Fleet commanders in Scalding Pass during this campaign</small>
+        </Flexblock>
 
-        <div class="sp-campaign__subsection">
-            <h4>Top pilots</h4>
-            <p class="sp-campaign__meta">
-                Fleet participants in Scalding Pass during this campaign
-            </p>
-            <div class="sp-campaign__fc-grid">
-                {
-                    TOP_FLEET_PILOTS.map((pilot) => (
-                        <div class="sp-fc-card">
-                            <img
-                                loading="lazy"
-                                width="64"
-                                height="64"
-                                src={get_player_icon(pilot.characterId, 64)}
-                                alt={`${pilot.name} portrait`}
-                                class="sp-fc-card__portrait"
-                            />
-                            <div class="sp-fc-card__body">
-                                <span class="sp-fc-card__name">{pilot.name}</span>
-                                <span class="sp-fc-card__count">
-                                    {pilot.fleetCount.toLocaleString()} fleets
-                                </span>
-                            </div>
-                        </div>
-                    ))
-                }
-            </div>
-        </div>
-    </section>
-
-    <section class="sp-campaign__section">
-        <h3>Headlines</h3>
-        <p class="sp-campaign__meta">
-            Stories and updates from the campaign
-        </p>
-        <div class="sp-headline-cards">
+        <Grid
+            class="[ w-full grid-fill ]"
+            row_gap="var(--space-3xs)"
+            column_gap="var(--space-3xs)"
+            min_item_width="324px"
+        >
             {
-                HEADLINES.map((headline) => (
-                    <a
-                        class:list={[
-                            'sp-headline-card',
-                            `sp-headline-card--${headline.category}`,
-                        ]}
-                        style={`--sp-headline-bg: url('${headline.backgroundImage}')`}
-                        href={headline.url}
-                        target="_blank"
-                        rel="noopener noreferrer nofollow"
+                TOP_FLEET_COMMANDERS.map((fc) => (
+                    <CharacterCard
+                        character_id={fc.characterId ?? 0}
+                        character_name={fc.name}
+                        alt={`${fc.name} portrait`}
+                        narrow={false}
                     >
-                        <div class="sp-headline-card__body">
-                            <div class="sp-headline-card__meta">
-                                <time datetime={headline.date}>
-                                    {formatHeadlineDate(headline.date)}
-                                </time>
-                                <span class="sp-headline-card__tag">
-                                    {HEADLINE_CATEGORY_LABELS[headline.category]}
-                                </span>
-                            </div>
-                            <h4 class="sp-headline-card__title">{headline.title}</h4>
-                            <p class="sp-headline-card__reddit">
-                                <span class="sp-headline-card__reddit-upvotes" aria-label={`${headline.upvotes} upvotes`}>
-                                    ▲ {headline.upvotes.toLocaleString()}
-                                </span>
-                                <span aria-hidden="true">·</span>
-                                <span>{headline.comments.toLocaleString()} comments</span>
-                                {
-                                    headline.views !== '—' && (
-                                        <>
-                                            <span aria-hidden="true">·</span>
-                                            <span>{formatHeadlineViews(headline.views)}</span>
-                                        </>
-                                    )
-                                }
-                            </p>
-                        </div>
-                        <span class="sp-headline-card__arrow" aria-hidden="true">→</span>
-                    </a>
+                        <Flexblock gap='var(--space-3xs)'>
+                            <h3>{fc.name}</h3>
+                            <small>{fc.fleetCount.toLocaleString()} fleets</small>
+                        </Flexblock>
+                    </CharacterCard>
                 ))
             }
-        </div>
-    </section>
+        </Grid>
+    </Flexblock>
 
-    <footer class="sp-campaign__footer">
-        <span>Scalding Pass Campaign Report</span>
-        <span>July 2026</span>
-    </footer>
-</div>
+    <Flexblock>
+        <Flexblock gap='var(--space-3xs)'>
+            <h4>Top pilots</h4>
+            <small>Fleet participants in Scalding Pass during this campaign</small>
+        </Flexblock>
+
+        <Grid
+            class="[ w-full grid-fill ]"
+            row_gap="var(--space-3xs)"
+            column_gap="var(--space-3xs)"
+            min_item_width="324px"
+        >
+            {
+                TOP_FLEET_PILOTS.map((pilot) => (
+                    <CharacterCard
+                        character_id={pilot.characterId ?? 0}
+                        character_name={pilot.name}
+                        alt={`${pilot.name} portrait`}
+                        narrow={false}
+                    >
+                        <Flexblock gap='var(--space-3xs)'>
+                            <h3>{pilot.name}</h3>
+                            <small>{pilot.fleetCount.toLocaleString()} fleets</small>
+                        </Flexblock>
+                    </CharacterCard>
+                ))
+            }
+        </Grid>
+    </Flexblock>
+</Flexblock>
+
+<Flexblock>
+    <Flexblock gap='var(--space-3xs)'>
+        <h2>Headlines</h2>
+        <small>Stories and updates from the campaign</small>
+    </Flexblock>
+
+    <div class="sp-headline-cards">
+        {
+            HEADLINES.map((headline) => (
+                <a
+                    class:list={[
+                        'sp-headline-card',
+                        `sp-headline-card--${headline.category}`,
+                    ]}
+                    style={`--sp-headline-bg: url('${headline.backgroundImage}')`}
+                    href={headline.url}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow"
+                >
+                    <div class="sp-headline-card__body">
+                        <div class="sp-headline-card__meta">
+                            <time datetime={headline.date}>
+                                {formatHeadlineDate(headline.date)}
+                            </time>
+                            <span class="sp-headline-card__tag">
+                                {HEADLINE_CATEGORY_LABELS[headline.category]}
+                            </span>
+                        </div>
+                        <h4 class="sp-headline-card__title">{headline.title}</h4>
+                        <p class="sp-headline-card__reddit">
+                            <span class="sp-headline-card__reddit-upvotes" aria-label={`${headline.upvotes} upvotes`}>
+                                ▲ {headline.upvotes.toLocaleString()}
+                            </span>
+                            <span aria-hidden="true">·</span>
+                            <span>{headline.comments.toLocaleString()} comments</span>
+                            <span aria-hidden="true">·</span>
+                            <span>{formatHeadlineViews(headline.views)}</span>
+                        </p>
+                    </div>
+                    <span class="sp-headline-card__arrow" aria-hidden="true">→</span>
+                </a>
+            ))
+        }
+    </div>
+</Flexblock>
+
+<FlexInline justification='space-between'>
+    <span>Scalding Pass Campaign Report</span>
+    <span>July 2026</span>
+</FlexInline>
 
 <style lang="scss">
     .sp-campaign {

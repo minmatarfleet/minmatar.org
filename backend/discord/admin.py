@@ -75,10 +75,16 @@ class DiscordChannelAdmin(admin.ModelAdmin):
         "guild",
         "channel_type",
         "track_voice_activity",
+        "receive_capital_pings",
         "channel_id",
         "updated_at",
     )
-    list_filter = ("guild", "channel_type", "track_voice_activity")
+    list_filter = (
+        "guild",
+        "channel_type",
+        "track_voice_activity",
+        "receive_capital_pings",
+    )
     search_fields = ("name", "channel_id", "guild__name")
     readonly_fields = (
         "channel_id",
@@ -96,10 +102,15 @@ class DiscordChannelAdmin(admin.ModelAdmin):
                 "name",
                 "channel_type",
                 "track_voice_activity",
+                "receive_capital_pings",
                 "created_at",
                 "updated_at",
             )
-        return ("discord_channel_pick", "track_voice_activity")
+        return (
+            "discord_channel_pick",
+            "track_voice_activity",
+            "receive_capital_pings",
+        )
 
     def save_model(self, request, obj, form, change):
         super().save_model(request, obj, form, change)
