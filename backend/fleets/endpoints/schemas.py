@@ -35,7 +35,7 @@ class EveFleetResponse(BaseModel):
 
     id: int
     type: EveFleetType
-    audience: str
+    audience: Optional[str] = None
     description: str
     objective: Optional[str] = None
     start_time: Optional[datetime] = None

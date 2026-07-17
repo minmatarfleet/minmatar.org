@@ -312,6 +312,19 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual("Take the objective", response.json()["objective"])
 
+    def test_get_fleet_with_null_audience(self):
+        fleet = make_test_fleet("Test fleet", self.user)
+        fleet.audience = None
+        fleet.save()
+
+        response = self.client.get(
+            f"{BASE_URL}/{fleet.id}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertIsNone(response.json()["audience"])
+
     def test_create_fleet_with_objective(self):
         setup_fc(self.user)
         audience = EveFleetAudience.objects.first()

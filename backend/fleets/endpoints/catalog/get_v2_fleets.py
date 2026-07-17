@@ -42,7 +42,7 @@ def get_v2_fleets(request, upcoming: bool = True, active: bool = False):
         response.append(
             {
                 "id": fleet.id,
-                "audience": fleet.audience.name,
+                "audience": fleet.audience.name if fleet.audience else None,
             }
         )
     return response

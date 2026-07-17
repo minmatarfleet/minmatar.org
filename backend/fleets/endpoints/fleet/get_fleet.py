@@ -39,7 +39,7 @@ def get_fleet(request, fleet_id: int):
             if fleet.formup_location
             else "Ask FC"
         ),
-        "audience": fleet.audience.name,
+        "audience": fleet.audience.name if fleet.audience else None,
         "tracking": tracking,
         "disable_motd": fleet.disable_motd,
         "status": fleet.status,
