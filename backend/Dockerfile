@@ -1,7 +1,7 @@
 FROM python:3.10.12-slim-bookworm
 
 # install git for doctine pulling and various other dependencies
-RUN apt-get update && apt-get install -y git libmariadb-dev gcc
+RUN apt-get update && apt-get install -y git libmariadb-dev gcc pkg-config
 
 # add user and set up repos
 WORKDIR /opt/minmatar
