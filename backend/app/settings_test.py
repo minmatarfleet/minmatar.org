@@ -98,8 +98,6 @@ ESI_USER_CONTACT_EMAIL = os.environ.get(
     "ESI_USER_CONTACT_EMAIL", "admin@minmatar.org"
 )
 
-# LocMem for tests (no Redis). Live ESI calls that hit rate limiting need
-# django-redis; tests mock ESI / sync helpers and never exercise nx=.
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",

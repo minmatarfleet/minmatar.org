@@ -5,9 +5,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Celery beat
 BROKER_URL = "redis://localhost:6379/1"  # Allianceauth uses 0
-CACHE_URL = (
-    "redis://localhost:6379/2"  # Django cache (django-esi, celery_once, etc.)
-)
+CACHE_URL = "redis://localhost:6379/2"
 CELERY_IMPORTS = (
     "eveonline.tasks",
     "structures.tasks",
@@ -136,7 +134,6 @@ TEMPLATES = [
     },
 ]
 
-# django-esi rate limiting requires django-redis (cache.set(..., nx=True)).
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
