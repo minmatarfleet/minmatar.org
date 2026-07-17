@@ -254,6 +254,7 @@ class EveCharacterIndustryJob(models.Model):
         ordering = ["-end_date"]
         indexes = [
             models.Index(fields=["character", "status"]),
+            models.Index(fields=["status", "blueprint_id"]),
         ]
 
     def __str__(self):
