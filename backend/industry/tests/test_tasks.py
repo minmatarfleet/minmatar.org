@@ -21,6 +21,7 @@ from industry.models import (
 from industry.tasks import (
     sync_industry_jobs_for_order_assignees,
     sync_industry_system_cost_indices_task,
+    sync_loyalty_store_offers_task,
 )
 from industry.test_utils import create_industry_order
 
@@ -172,4 +173,10 @@ class IndustryCostIndexSyncTestCase(TestCase):
     def test_celery_task_delegates_to_helper(self, sync_mock):
         sync_mock.return_value = 42
         self.assertEqual(sync_industry_system_cost_indices_task(), 42)
+        sync_mock.assert_called_once()
+
+    @patch("industry.tasks.sync_loyalty_store_offers")
+    def test_loyalty_store_celery_task_delegates(self, sync_mock):
+        sync_mock.return_value = 17
+        self.assertEqual(sync_loyalty_store_offers_task(), 17)
         sync_mock.assert_called_once()

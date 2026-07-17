@@ -41,6 +41,7 @@ class PlanCostBreakdown:
     freight_billable_m3: int = 0
     freight_route_id: Optional[int] = None
     freight_route_label: Optional[str] = None
+    navy_bpc_isk: int = 0
     grand_total_isk: int = 0
     per_unit_isk: float = 0.0
     output_quantity: int = 1
@@ -61,6 +62,7 @@ class PlanCostBreakdown:
             "freight_billable_m3": self.freight_billable_m3,
             "freight_route_id": self.freight_route_id,
             "freight_route_label": self.freight_route_label,
+            "navy_bpc_isk": self.navy_bpc_isk,
             "grand_total_isk": self.grand_total_isk,
             "per_unit_isk": self.per_unit_isk,
             "output_quantity": self.output_quantity,
@@ -177,6 +179,7 @@ def build_plan_cost_breakdown(
     plan: BuildPlan,
     *,
     compressed_ore: Optional[CompressedOrePlan] = None,
+    navy_bpc_isk: int = 0,
 ) -> PlanCostBreakdown:
     """
     Full build cost:
@@ -184,7 +187,8 @@ def build_plan_cost_breakdown(
     materials (Jita sell) + job installation gross (system cost index × EIV,
     after structure/FW role bonuses) + facility tax + SCC (both on EIV from
     ESI adjusted prices at ME0) + reprocessing tax (when compressed ore is used)
-    + alliance freight (hub→facility) when a priced route exists.
+    + alliance freight (hub→facility) when a priced route exists
+    + navy BPC LP cost when provided.
     """
     mfg_gross = 0
     rxn_gross = 0
@@ -199,6 +203,7 @@ def build_plan_cost_breakdown(
             mfg_gross += job.job_cost.gross_cost
 
     total_job_costs = mfg_gross + rxn_gross
+    navy_bpc_isk = max(int(navy_bpc_isk), 0)
 
     if compressed_ore is not None:
         import_map = dict(compressed_ore.import_lines())
@@ -230,7 +235,13 @@ def build_plan_cost_breakdown(
 
     taxes_isk = facility_tax_isk + scc_tax_isk + reprocessing_tax_isk
     freight_isk = int(freight.freight_isk)
-    grand_total = materials_isk + total_job_costs + taxes_isk + freight_isk
+    grand_total = (
+        materials_isk
+        + total_job_costs
+        + taxes_isk
+        + freight_isk
+        + navy_bpc_isk
+    )
     output_qty = max(int(plan.quantity), 1)
     per_unit = grand_total / output_qty
 
@@ -277,6 +288,10 @@ def build_plan_cost_breakdown(
     # Only surface freight when a priced route matched (omit invented rates).
     if freight.has_route:
         line_items.append(CostLineItem("freight", freight_label, freight_isk))
+    if navy_bpc_isk > 0:
+        line_items.append(
+            CostLineItem("navy_bpc_lp", "Navy BPC (LP)", navy_bpc_isk)
+        )
 
     return PlanCostBreakdown(
         materials_jita_sell_isk=materials_isk,
@@ -292,6 +307,7 @@ def build_plan_cost_breakdown(
         freight_billable_m3=int(freight.billable_m3),
         freight_route_id=freight.route_id,
         freight_route_label=freight.route_label,
+        navy_bpc_isk=navy_bpc_isk,
         grand_total_isk=grand_total,
         per_unit_isk=per_unit,
         output_quantity=output_qty,

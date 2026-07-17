@@ -47,6 +47,7 @@ esi_provider = ESIClientProvider(
         "Killmails",
         "Mail",
         "Market",
+        "Loyalty",
         "Skills",
         "Universe",
     ],

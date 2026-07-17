@@ -13,6 +13,7 @@ from industry.endpoints.planner.schemas import (
 )
 from industry.helpers.blueprint_efficiency import (
     default_blueprint_me_te_percent,
+    is_faction_navy_hull,
 )
 from industry.helpers.build_planner import plan_build
 from industry.helpers.compressed_ore import (
@@ -25,11 +26,17 @@ from industry.helpers.facility_profiles import (
     FACILITY_PROFILES,
     get_facility_reprocessing_tax,
 )
+from industry.helpers.loyalty_store import (
+    get_offer_for_blueprint_type,
+    navy_bpc_cost_for_plan,
+    resolve_isk_per_lp,
+)
 from industry.helpers.reprocessing_skills import (
     compression_ore_refine_yields,
     ore_refine_yields_payload,
     resolve_refine_rate,
 )
+from industry.helpers.type_breakdown import get_blueprint_or_reaction_type_id
 
 PATH = "plans"
 METHOD = "post"
@@ -160,8 +167,14 @@ def _plan_response_body(
     materials_tsv,
     compressed_payload,
     ore_plan,
+    navy_bpc=None,
 ):
-    cost_breakdown = build_plan_cost_breakdown(plan, compressed_ore=ore_plan)
+    navy_bpc_isk = navy_bpc.total_isk if navy_bpc is not None else 0
+    cost_breakdown = build_plan_cost_breakdown(
+        plan,
+        compressed_ore=ore_plan,
+        navy_bpc_isk=navy_bpc_isk,
+    )
     return {
         "product": {
             "type_id": plan.product_type_id,
@@ -212,7 +225,30 @@ def _plan_response_body(
         "materials_tsv": materials_tsv,
         "compressed_ore": compressed_payload,
         "cost_breakdown": cost_breakdown.to_dict(),
+        "navy_bpc": navy_bpc.to_dict() if navy_bpc is not None else None,
     }
+
+
+def _resolve_navy_bpc(eve_type, payload):
+    """Optional navy BPC LP cost from persisted offers + isk_per_lp."""
+    if not is_faction_navy_hull(eve_type):
+        return None
+    blueprint_type_id = get_blueprint_or_reaction_type_id(eve_type)
+    if blueprint_type_id is None:
+        return None
+    offer = get_offer_for_blueprint_type(blueprint_type_id)
+    corporation_id = offer.corporation_id if offer is not None else None
+    rate = resolve_isk_per_lp(
+        requested=payload.isk_per_lp,
+        corporation_id=corporation_id,
+    )
+    if rate is None:
+        return None
+    return navy_bpc_cost_for_plan(
+        blueprint_type_id,
+        payload.quantity,
+        float(rate),
+    )
 
 
 def _resolve_plan_request(request, payload: PlanRequestSchema):
@@ -328,6 +364,8 @@ def post_plan(request, payload: PlanRequestSchema):
         compressed_payload, ore_plan = result
         materials_tsv = ore_plan.multibuy()
 
+    navy_bpc = _resolve_navy_bpc(eve_type, payload)
+
     return _plan_response_body(
         plan,
         leaf_materials,
@@ -335,4 +373,5 @@ def post_plan(request, payload: PlanRequestSchema):
         materials_tsv,
         compressed_payload,
         ore_plan,
+        navy_bpc=navy_bpc,
     )

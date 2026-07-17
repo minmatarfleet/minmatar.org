@@ -98,6 +98,8 @@ class PlanRequestSchema(Schema):
     character_id: Optional[int] = None
     # When true, apply RX implant bonus (character fitted, or RX-804 if max skills).
     use_reprocessing_implants: bool = False
+    # ISK per LP for navy/faction BPC acquisition cost (omit to skip).
+    isk_per_lp: Optional[float] = None
 
 
 class PlanProductSchema(Schema):
@@ -221,10 +223,23 @@ class PlanCostBreakdownSchema(Schema):
     freight_billable_m3: int = 0
     freight_route_id: Optional[int] = None
     freight_route_label: Optional[str] = None
+    navy_bpc_isk: int = 0
     grand_total_isk: int
     per_unit_isk: float
     output_quantity: int
     line_items: List[PlanCostLineItemSchema]
+
+
+class PlanNavyBpcSchema(Schema):
+    offer_id: int
+    corporation_id: int
+    type_id: int
+    lp_cost: int
+    isk_cost: int
+    quantity: int
+    packs: int
+    isk_per_lp: float
+    total_isk: int
 
 
 class PlanResponseSchema(Schema):
@@ -245,3 +260,4 @@ class PlanResponseSchema(Schema):
     materials_tsv: str = ""
     compressed_ore: Optional[PlanCompressedOreSchema] = None
     cost_breakdown: Optional[PlanCostBreakdownSchema] = None
+    navy_bpc: Optional[PlanNavyBpcSchema] = None

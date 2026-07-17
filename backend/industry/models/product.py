@@ -159,3 +159,19 @@ class IndustryProduct(models.Model):
                     and not comp.supplied_for.exists()
                 ):
                     comp.delete()
+
+        self._schedule_loyalty_offer_ensure()
+
+    def _schedule_loyalty_offer_ensure(self) -> None:
+        """Refresh LP store offers when a navy/faction product is saved."""
+        from industry.helpers.blueprint_efficiency import (  # pylint: disable=import-outside-toplevel
+            is_faction_navy_hull,
+        )
+
+        if not self.eve_type_id or not is_faction_navy_hull(self.eve_type):
+            return
+        from industry.tasks import (  # pylint: disable=import-outside-toplevel
+            ensure_loyalty_store_offers_for_product_task,
+        )
+
+        ensure_loyalty_store_offers_for_product_task.delay(self.pk)

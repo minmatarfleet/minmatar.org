@@ -707,6 +707,38 @@ def _sum_reprocess_outputs(
     return totals
 
 
+def _top_up_floor_coverage(
+    belt_compressed: Dict[str, int],
+    mineral_needs: Dict[str, int],
+    mineral_imports: Dict[str, int],
+    refine_rate: float,
+    *,
+    max_iterations: int = 10_000,
+) -> None:
+    """
+    Add primary belt ore until floored reprocess meets covered mineral needs.
+
+    Continuous blend sizing can undershoot by a few units after Janice-style
+    portion flooring; top up one compressed unit at a time.
+    """
+    for _ in range(max_iterations):
+        expected = _sum_reprocess_outputs(belt_compressed, refine_rate)
+        shortfall: Optional[str] = None
+        for mineral in COMPRESSION_COVERED_MINERALS:
+            need = mineral_needs.get(mineral, 0)
+            got = expected.get(mineral, 0) + mineral_imports.get(mineral, 0)
+            if got < need:
+                shortfall = mineral
+                break
+        if shortfall is None:
+            return
+        ore = PRIMARY_BELT_ORE_FOR_MINERAL.get(shortfall)
+        if not ore:
+            return
+        name = compressed_type_name(ore)
+        belt_compressed[name] = belt_compressed.get(name, 0) + 1
+
+
 def _mineral_delta(
     needs: Dict[str, int],
     expected: Dict[str, int],
@@ -786,6 +818,12 @@ def build_compressed_ore_plan(
         mineral_needs, moon_byproducts, ore_yields
     )
     plan.belt_ore_compressed = to_compressed_units(belt_units)
+    _top_up_floor_coverage(
+        plan.belt_ore_compressed,
+        mineral_needs,
+        mineral_imports,
+        refine_rate,
+    )
     plan.mineral_imports = mineral_imports
     plan.pi_other_imports.update(buckets.pi_other)
     plan.ice_imports.update(buckets.ice)

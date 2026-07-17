@@ -436,6 +436,49 @@ class CompressedOrePlanTestCase(TestCase):
         out = reprocess_output("Veldspar", 100, refine_rate=0.84)
         self.assertEqual(out["Tritanium"], 336)
 
+    def test_floor_top_up_eliminates_covered_mineral_shortfall(self):
+        """Continuous blend can undershoot Trit by 1; top-up closes the gap."""
+        plan = build_compressed_ore_plan(
+            {
+                "Tritanium": 8_000_001,
+                "Pyerite": 4_000_000,
+                "Mexallon": 600_001,
+            },
+            refine_rate=0.84,
+            use_moon_ore=False,
+            require_market=False,
+        )
+        for mineral in COMPRESSION_COVERED_MINERALS:
+            self.assertGreaterEqual(
+                plan.mineral_delta.get(mineral, 0),
+                0,
+                msg=f"{mineral} delta={plan.mineral_delta.get(mineral)}",
+            )
+            self.assertGreaterEqual(
+                plan.expected_minerals.get(mineral, 0)
+                + plan.mineral_imports.get(mineral, 0),
+                plan.mineral_needs.get(mineral, 0),
+            )
+
+    def test_covered_minerals_never_negative_delta(self):
+        plan = build_compressed_ore_plan(
+            {
+                "Tritanium": 8_000_000,
+                "Pyerite": 4_000_000,
+                "Mexallon": 600_000,
+                "Nocxium": 30_000,
+            },
+            refine_rate=0.84,
+            use_moon_ore=False,
+            require_market=False,
+        )
+        for mineral in COMPRESSION_COVERED_MINERALS:
+            self.assertGreaterEqual(
+                plan.expected_minerals.get(mineral, 0)
+                + plan.mineral_imports.get(mineral, 0),
+                plan.mineral_needs.get(mineral, 0),
+            )
+
     def test_lower_refine_needs_more_ore(self):
         mats = {"Tritanium": 4_000_000, "Pyerite": 1_000_000}
         with patch(
