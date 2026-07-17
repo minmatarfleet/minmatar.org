@@ -9,16 +9,19 @@ from industry.helpers.compressed_ore import (
     COMPRESSION_COVERED_MINERALS,
     PRIMARY_BELT_ORE_FOR_MINERAL,
     MaterialBuckets,
+    base_ore_name,
     belt_ore_compressed_volume_m3,
     best_belt_ore_for_mineral,
     build_compressed_ore_plan,
     compression_covered_materials,
     compute_practical_belt_blend,
+    conservative_refine_rate,
     mineral_density,
     moon_ore_for_pi_p0,
     reprocess_output,
     to_compressed_units,
 )
+from industry.helpers.facility_profiles import get_facility_refine_rate
 from industry.helpers.reprocessing_skills import resolve_refine_rate
 
 
@@ -459,6 +462,69 @@ class CompressedOrePlanTestCase(TestCase):
                 + plan.mineral_imports.get(mineral, 0),
                 plan.mineral_needs.get(mineral, 0),
             )
+
+    def test_conservative_refine_rate_matches_ui_percent(self):
+        full = get_facility_refine_rate("amamake", implant=0.04)
+        self.assertAlmostEqual(full, 0.8577302848, places=7)
+        # UI: (full * 100).toFixed(2) → 85.77%
+        self.assertEqual(conservative_refine_rate(full), 0.8577)
+        # Never round above the true rate.
+        self.assertEqual(conservative_refine_rate(0.85775), 0.85775)
+        self.assertEqual(conservative_refine_rate(0.84), 0.84)
+
+    def test_top_up_covers_at_display_refine_rate(self):
+        """
+        Amamake+RX804 plans must still cover Trit/Pye/Mex when refined at the
+        UI/Janice 2-decimal percent (85.77%), not only at full float precision.
+        """
+        full = get_facility_refine_rate("amamake", implant=0.04)
+        display = conservative_refine_rate(full)
+        # Typhoon Fleet Issue ×40 mineral leaves (ME 0) — Discord / Order #38.
+        needs = {
+            "Tritanium": 304_761_600,
+            "Pyerite": 152_380_800,
+            "Mexallon": 22_857_120,
+            "Isogen": 15_238_080,
+            "Nocxium": 1_142_856,
+            "Zydrine": 304_762,
+            "Megacyte": 152_381,
+        }
+        plan = build_compressed_ore_plan(
+            needs,
+            refine_rate=full,
+            use_moon_ore=False,
+            require_market=False,
+        )
+        expected_at_display: dict[str, int] = {}
+        for ore_name, qty in plan.belt_ore_compressed.items():
+            for mat, produced in reprocess_output(
+                base_ore_name(ore_name), qty, refine_rate=display
+            ).items():
+                expected_at_display[mat] = (
+                    expected_at_display.get(mat, 0) + produced
+                )
+        for mineral in COMPRESSION_COVERED_MINERALS:
+            got = expected_at_display.get(
+                mineral, 0
+            ) + plan.mineral_imports.get(mineral, 0)
+            self.assertGreaterEqual(
+                got,
+                needs[mineral],
+                msg=(
+                    f"{mineral}: display refine {display} produced {got}, "
+                    f"need {needs[mineral]}"
+                ),
+            )
+        # Slight overage vs the pre-fix exact stacks from continuous sizing.
+        self.assertGreater(
+            plan.belt_ore_compressed["Compressed Veldspar"], 77_724_433
+        )
+        self.assertGreater(
+            plan.belt_ore_compressed["Compressed Zeolites"], 2_220_699
+        )
+        self.assertGreater(
+            plan.belt_ore_compressed["Compressed Plagioclase"], 25_379_407
+        )
 
     def test_covered_minerals_never_negative_delta(self):
         plan = build_compressed_ore_plan(
