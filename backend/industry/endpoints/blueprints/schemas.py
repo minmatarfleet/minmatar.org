@@ -28,6 +28,8 @@ class BlueprintOriginalResponse(BaseModel):
     time_efficiency: int
     runs: int
     owner: BlueprintOwnerResponse
+    in_job: bool = False
+    activity_id: Optional[int] = None
 
 
 class BlueprintCopyResponse(BaseModel):
@@ -44,6 +46,8 @@ class BlueprintCopyResponse(BaseModel):
     quantity: int
     runs: int
     owner: BlueprintOwnerResponse
+    in_job: bool = False
+    activity_id: Optional[int] = None
 
 
 class BlueprintIndustryJobResponse(BaseModel):
@@ -87,5 +91,7 @@ class BlueprintDetailResponse(BaseModel):
     runs: int
     is_original: bool
     owner: BlueprintOwnerResponse
+    in_job: bool = False
+    activity_id: Optional[int] = None
     current_jobs: List[BlueprintIndustryJobResponse]
     historical_jobs: List[BlueprintIndustryJobResponse]

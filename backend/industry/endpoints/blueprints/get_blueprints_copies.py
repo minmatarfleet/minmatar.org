@@ -13,6 +13,9 @@ from eveonline.models import (
     EveCorporationBlueprint,
     EvePlayer,
 )
+from industry.endpoints.blueprints.job_status import (
+    current_activity_by_item_id,
+)
 from industry.endpoints.blueprints.schemas import (
     BlueprintCopyResponse,
     BlueprintOwnerResponse,
@@ -25,7 +28,8 @@ PATH = "copies"
 METHOD = "get"
 ROUTE_SPEC = {
     "summary": (
-        "List blueprint copies (BPCs) with owner entity and primary character id. "
+        "List blueprint copies (BPCs) with owner entity, primary character id, "
+        "and whether each item is in a current industry job (in_job / activity_id). "
         "Pass query param q (non-empty) to filter by blueprint type name; omit q for an empty list."
     ),
     "response": {200: List[BlueprintCopyResponse]},
@@ -170,6 +174,13 @@ def get_blueprints_copies(
                 ),
             )
         )
+
+    activities = current_activity_by_item_id(r.item_id for r in out)
+    for row in out:
+        activity_id = activities.get(row.item_id)
+        if activity_id is not None:
+            row.in_job = True
+            row.activity_id = activity_id
     return out
 
 

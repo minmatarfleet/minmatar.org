@@ -1143,6 +1143,8 @@ export interface Blueprint {
     time_efficiency:        number;
     runs:                   number;
     owner:                  BlueprintOwner;
+    in_job:                 boolean;
+    activity_id:            number | null;
 }
 
 export type BlueprintIndustryJobSource = 'character' | 'corporation'
