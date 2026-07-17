@@ -421,7 +421,7 @@ export const ui = {
         'industry.orders.planner.use_implants': 'Include reprocessing implant',
         'industry.orders.planner.use_implants_tip': 'Uses the best RX implant found on any of the selected character’s jump clones (or active implants). If none / max skills, assumes RX-804 (+4%). Off means no implant bonus.',
         'industry.orders.planner.isk_per_lp': 'ISK/LP',
-        'industry.orders.planner.isk_per_lp_tip': 'Your ISK-per-LP rate for navy blueprint acquisition. Pure LP+ISK loyalty-store offers only (e.g. Typhoon Fleet Issue = 100k LP + 20M ISK).',
+        'industry.orders.planner.isk_per_lp_tip': 'Optional. Overrides the catalog default ISK/LP for this loyalty store (admin: Industry loyalty points). Pure LP+ISK offers only (e.g. Typhoon Fleet Issue = 100k LP + 20M ISK).',
         'industry.orders.planner.navy_bpc_cost': 'Navy BPC (LP)',
         'industry.orders.planner.navy_bpc_cost_tip': 'Loyalty-store blueprint cost: packs × (LP × ISK/LP + store ISK).',
         'industry.orders.planner.implant_fitted': 'Implant fitted',

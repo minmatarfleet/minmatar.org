@@ -19,6 +19,9 @@ from industry.forms import (
 from industry.helpers.admin_permissions import industry_orders_index_link_perms
 from industry.helpers.type_breakdown import get_breakdown_for_industry_product
 from industry.models import (
+    IndustryLoyaltyPoint,
+    IndustryLoyaltyPointContact,
+    IndustryLpStoreOffer,
     IndustryOrder,
     IndustryOrderItem,
     IndustryOrderItemAssignment,
@@ -26,6 +29,80 @@ from industry.models import (
     MiningUpgradeCompletion,
 )
 from tribes.models import TribeGroup
+
+
+class IndustryLoyaltyPointContactInline(admin.TabularInline):
+    model = IndustryLoyaltyPointContact
+    extra = 0
+    raw_id_fields = ("eve_character", "user")
+    fields = (
+        "character_name",
+        "eve_character",
+        "user",
+        "discord_username",
+        "discord_user_id",
+        "is_active",
+        "notes",
+    )
+
+
+@admin.register(IndustryLoyaltyPoint)
+class IndustryLoyaltyPointAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "corporation_id",
+        "default_isk_per_lp",
+        "is_active",
+        "contact_count",
+    )
+    list_filter = ("is_active",)
+    search_fields = ("name", "corporation_id")
+    inlines = (IndustryLoyaltyPointContactInline,)
+
+    @admin.display(description="contacts")
+    def contact_count(self, obj):
+        return obj.contacts.count()
+
+
+@admin.register(IndustryLoyaltyPointContact)
+class IndustryLoyaltyPointContactAdmin(admin.ModelAdmin):
+    list_display = (
+        "character_name",
+        "loyalty_point",
+        "discord_username",
+        "is_active",
+    )
+    list_filter = ("is_active", "loyalty_point")
+    search_fields = (
+        "character_name",
+        "discord_username",
+        "loyalty_point__name",
+    )
+    raw_id_fields = ("loyalty_point", "eve_character", "user")
+
+
+@admin.register(IndustryLpStoreOffer)
+class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
+    list_display = (
+        "offer_id",
+        "corporation_id",
+        "type_id",
+        "lp_cost",
+        "isk_cost",
+        "quantity",
+        "updated_at",
+    )
+    list_filter = ("corporation_id",)
+    search_fields = ("offer_id", "type_id", "corporation_id")
+    readonly_fields = (
+        "offer_id",
+        "corporation_id",
+        "type_id",
+        "lp_cost",
+        "isk_cost",
+        "quantity",
+        "updated_at",
+    )
 
 
 class IndustryProductEveGroupListFilter(admin.SimpleListFilter):

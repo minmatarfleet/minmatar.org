@@ -5,12 +5,20 @@ from unittest.mock import patch
 from django.test import TestCase
 
 from industry.helpers.loyalty_store import (
+    ensure_loyalty_store_offers_for_product,
     get_offer_for_blueprint_type,
     is_pure_lp_isk_offer,
     navy_bpc_cost_for_plan,
+    resolve_isk_per_lp,
     sync_loyalty_store_offers,
 )
-from industry.models import IndustryLpStoreOffer
+from industry.models import (
+    IndustryLoyaltyPoint,
+    IndustryLpStoreOffer,
+    IndustryProduct,
+    Strategy,
+)
+from eveuniverse.models import EveCategory, EveGroup, EveType
 
 # Typhoon Fleet Issue Blueprint
 TYFI_BP_TYPE_ID = 32312
@@ -68,7 +76,9 @@ class LoyaltyStoreHelperTestCase(TestCase):
             "industry.helpers.loyalty_store.fetch_loyalty_offers_from_esi"
         ) as mock_fetch:
             mock_fetch.side_effect = AssertionError("ESI should not be called")
-            count = sync_loyalty_store_offers(offers=TYFI_OFFERS)
+            count = sync_loyalty_store_offers(
+                corporation_ids=[TLIB_CORP_ID], offers=TYFI_OFFERS
+            )
         self.assertEqual(count, 1)
         row = IndustryLpStoreOffer.objects.get()
         self.assertEqual(row.offer_id, 16343)
@@ -77,7 +87,9 @@ class LoyaltyStoreHelperTestCase(TestCase):
         self.assertEqual(row.quantity, 1)
 
     def test_navy_bpc_cost_at_800_isk_per_lp(self):
-        sync_loyalty_store_offers(offers=TYFI_OFFERS)
+        sync_loyalty_store_offers(
+            corporation_ids=[TLIB_CORP_ID], offers=TYFI_OFFERS
+        )
         cost = navy_bpc_cost_for_plan(TYFI_BP_TYPE_ID, 40, 800.0)
         self.assertIsNotNone(cost)
         assert cost is not None
@@ -87,6 +99,7 @@ class LoyaltyStoreHelperTestCase(TestCase):
 
     def test_pack_quantity_ceil(self):
         sync_loyalty_store_offers(
+            corporation_ids=[TLIB_CORP_ID],
             offers=[
                 {
                     "offer_id": 1,
@@ -97,7 +110,7 @@ class LoyaltyStoreHelperTestCase(TestCase):
                     "quantity": 10,
                     "required_items": [],
                 }
-            ]
+            ],
         )
         cost = navy_bpc_cost_for_plan(999, 40, 800.0)
         self.assertIsNotNone(cost)
@@ -106,7 +119,9 @@ class LoyaltyStoreHelperTestCase(TestCase):
         self.assertEqual(cost.total_isk, 4 * (10_000 * 800 + 1_000_000))
 
     def test_get_offer_skips_esi_when_cached(self):
-        sync_loyalty_store_offers(offers=TYFI_OFFERS)
+        sync_loyalty_store_offers(
+            corporation_ids=[TLIB_CORP_ID], offers=TYFI_OFFERS
+        )
         with patch(
             "industry.helpers.loyalty_store.sync_loyalty_store_offers"
         ) as mock_sync:
@@ -115,3 +130,71 @@ class LoyaltyStoreHelperTestCase(TestCase):
         self.assertIsNotNone(offer)
         assert offer is not None
         self.assertEqual(offer.offer_id, 16343)
+
+    def test_resolve_isk_per_lp_uses_loyalty_point_default(self):
+        IndustryLoyaltyPoint.objects.update_or_create(
+            corporation_id=TLIB_CORP_ID,
+            defaults={
+                "name": "TLIB",
+                "default_isk_per_lp": 750,
+                "is_active": True,
+            },
+        )
+        self.assertEqual(
+            resolve_isk_per_lp(requested=None, corporation_id=TLIB_CORP_ID),
+            750.0,
+        )
+        self.assertEqual(
+            resolve_isk_per_lp(requested=900, corporation_id=TLIB_CORP_ID),
+            900.0,
+        )
+
+    @patch("industry.tasks.ensure_loyalty_store_offers_for_product_task.delay")
+    @patch("industry.helpers.loyalty_store.sync_loyalty_store_offers")
+    def test_ensure_for_product_syncs_when_offer_missing(
+        self, sync_mock, delay_mock
+    ):
+        sync_mock.return_value = 3
+        category = EveCategory.objects.create(
+            id=6, name="Ship", published=True
+        )
+        group = EveGroup.objects.create(
+            id=9001, name="Battleship", published=True, eve_category=category
+        )
+        hull = EveType.objects.create(
+            id=9002,
+            name="Ensure Typhoon Fleet Issue",
+            published=True,
+            eve_group=group,
+        )
+        bp = EveType.objects.create(
+            id=9003,
+            name="Ensure Typhoon Fleet Issue Blueprint",
+            published=True,
+            eve_group=group,
+        )
+        from eveuniverse.models import (  # pylint: disable=import-outside-toplevel
+            EveIndustryActivityDuration,
+            EveIndustryActivityMaterial,
+            EveIndustryActivityProduct,
+        )
+
+        EveIndustryActivityProduct.objects.create(
+            eve_type=bp, activity_id=1, product_eve_type=hull, quantity=1
+        )
+        EveIndustryActivityDuration.objects.create(
+            eve_type=bp, activity_id=1, time=100
+        )
+        EveIndustryActivityMaterial.objects.create(
+            eve_type=bp,
+            activity_id=1,
+            material_eve_type=hull,
+            quantity=1,
+        )
+        product = IndustryProduct.objects.create(
+            eve_type=hull, strategy=Strategy.IMPORTED
+        )
+        delay_mock.assert_called_once_with(product.pk)
+        count = ensure_loyalty_store_offers_for_product(product.pk)
+        self.assertEqual(count, 3)
+        sync_mock.assert_called_once()

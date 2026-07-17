@@ -236,7 +236,7 @@ const bucket_labels = JSON.stringify({
                             character_id: '',
                             use_reprocessing_implants: false,
                             is_navy_hull: ${is_navy_hull ? 'true' : 'false'},
-                            isk_per_lp: ${is_navy_hull ? '800' : "''"},
+                            isk_per_lp: '',
                             build_fuel_blocks: false,
                             loading: false,
                             facility_loading: false,
@@ -879,6 +879,7 @@ const bucket_labels = JSON.stringify({
                                                     step="1"
                                                     size="sm"
                                                     width="100%"
+                                                    placeholder="800"
                                                     x-model="isk_per_lp"
                                                 />
                                             </div>

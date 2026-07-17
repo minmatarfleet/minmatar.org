@@ -7,21 +7,32 @@ import math
 from dataclasses import dataclass
 from typing import Iterable, List, Optional, Sequence
 
+from django.db import transaction
 from django.utils import timezone
 
 from eveonline.client import _esi_to_python, esi_provider
-from eveonline.helpers.db_sync import replace_with_bulk_create
-from industry.models import IndustryLpStoreOffer
+from industry.models import (
+    IndustryLoyaltyPoint,
+    IndustryLpStoreOffer,
+    IndustryProduct,
+)
 
 logger = logging.getLogger(__name__)
 
-# Faction Warfare militia LP stores.
+# Faction Warfare militia LP stores (bootstrap defaults).
 MILITIA_CORPORATION_IDS: tuple[int, ...] = (
     1000182,  # Tribal Liberation Force
     1000179,  # 24th Imperial Crusade
     1000180,  # State Protectorate
     1000181,  # Federal Defense Union
 )
+
+MILITIA_DEFAULT_NAMES: dict[int, str] = {
+    1000182: "Tribal Liberation Force",
+    1000179: "24th Imperial Crusade",
+    1000180: "State Protectorate",
+    1000181: "Federal Defense Union",
+}
 
 
 @dataclass(frozen=True)
@@ -61,12 +72,33 @@ def is_pure_lp_isk_offer(row: dict) -> bool:
     return lp_cost > 0 and isk_cost > 0
 
 
+def corporation_ids_to_sync() -> List[int]:
+    """Active IndustryLoyaltyPoint corps, else FW militia defaults."""
+    ids = list(
+        IndustryLoyaltyPoint.objects.filter(is_active=True).values_list(
+            "corporation_id", flat=True
+        )
+    )
+    return [int(i) for i in ids] if ids else list(MILITIA_CORPORATION_IDS)
+
+
+def default_isk_per_lp_for_corporation(corporation_id: int) -> Optional[int]:
+    row = (
+        IndustryLoyaltyPoint.objects.filter(
+            corporation_id=int(corporation_id), is_active=True
+        )
+        .values_list("default_isk_per_lp", flat=True)
+        .first()
+    )
+    return int(row) if row is not None else None
+
+
 def fetch_loyalty_offers_from_esi(
-    corporation_ids: Sequence[int] = MILITIA_CORPORATION_IDS,
+    corporation_ids: Sequence[int] | None = None,
 ) -> List[dict]:
-    """
-    Fetch loyalty-store offers for each corporation (public ESI, no token).
-    """
+    """Fetch loyalty-store offers for each corporation (public ESI, no token)."""
+    if corporation_ids is None:
+        corporation_ids = corporation_ids_to_sync()
     offers: List[dict] = []
     for corporation_id in corporation_ids:
         try:
@@ -96,23 +128,11 @@ def fetch_loyalty_offers_from_esi(
     return offers
 
 
-def sync_loyalty_store_offers(
-    corporation_ids: Sequence[int] = MILITIA_CORPORATION_IDS,
+def _instances_from_rows(
+    rows: Iterable[dict],
     *,
-    offers: Optional[Iterable[dict]] = None,
-) -> int:
-    """
-    Pull ESI loyalty offers (or use ``offers``) and replace the local cache.
-
-    Only pure LP+ISK rows (no required items) are stored.
-    Returns the number of offers stored.
-    """
-    rows = (
-        list(offers)
-        if offers is not None
-        else fetch_loyalty_offers_from_esi(corporation_ids)
-    )
-    now = timezone.now()
+    now,
+) -> List[IndustryLpStoreOffer]:
     instances: List[IndustryLpStoreOffer] = []
     seen_offer_ids: set[int] = set()
     for row in rows:
@@ -137,12 +157,96 @@ def sync_loyalty_store_offers(
                 updated_at=now,
             )
         )
-    count = replace_with_bulk_create(
-        delete_queryset=IndustryLpStoreOffer.objects.all(),
-        instances=instances,
+    return instances
+
+
+def sync_loyalty_store_offers(
+    corporation_ids: Sequence[int] | None = None,
+    *,
+    offers: Optional[Iterable[dict]] = None,
+    replace_all: bool = False,
+) -> int:
+    """
+    Pull ESI loyalty offers (or use ``offers``) and upsert the local cache.
+
+    Only pure LP+ISK rows (no required items) are stored.
+    By default replaces offers only for the synced corporation IDs.
+    Returns the number of offers stored in this sync.
+    """
+    if corporation_ids is None:
+        corporation_ids = corporation_ids_to_sync()
+    corp_ids = [int(c) for c in corporation_ids]
+    rows = (
+        list(offers)
+        if offers is not None
+        else fetch_loyalty_offers_from_esi(corp_ids)
     )
-    logger.info("Synced %s pure LP+ISK loyalty-store offer(s)", count)
-    return count
+    now = timezone.now()
+    instances = _instances_from_rows(rows, now=now)
+    with transaction.atomic():
+        if replace_all:
+            IndustryLpStoreOffer.objects.all().delete()
+        else:
+            IndustryLpStoreOffer.objects.filter(
+                corporation_id__in=corp_ids
+            ).delete()
+        IndustryLpStoreOffer.objects.bulk_create(instances)
+    logger.info(
+        "Synced %s pure LP+ISK loyalty-store offer(s) for corp(s) %s",
+        len(instances),
+        corp_ids,
+    )
+    return len(instances)
+
+
+def ensure_loyalty_store_offers_for_blueprint(
+    blueprint_type_id: int,
+) -> Optional[IndustryLpStoreOffer]:
+    """
+    Ensure a pure offer exists for ``blueprint_type_id``; sync from ESI if missing.
+    """
+    blueprint_type_id = int(blueprint_type_id)
+    existing = IndustryLpStoreOffer.objects.filter(
+        type_id=blueprint_type_id
+    ).first()
+    if existing is not None:
+        return existing
+    logger.info(
+        "No LP store offer for blueprint type %s; syncing from ESI",
+        blueprint_type_id,
+    )
+    sync_loyalty_store_offers()
+    return IndustryLpStoreOffer.objects.filter(
+        type_id=blueprint_type_id
+    ).first()
+
+
+def ensure_loyalty_store_offers_for_product(product_id: int) -> int:
+    """
+    When a navy/faction IndustryProduct is saved, refresh LP offers if needed.
+    """
+    from industry.helpers.blueprint_efficiency import (  # pylint: disable=import-outside-toplevel
+        is_faction_navy_hull,
+    )
+    from industry.helpers.type_breakdown import (  # pylint: disable=import-outside-toplevel
+        get_blueprint_or_reaction_type_id,
+    )
+
+    product = (
+        IndustryProduct.objects.select_related("eve_type")
+        .filter(pk=product_id)
+        .first()
+    )
+    if product is None or product.eve_type_id is None:
+        return 0
+    if not is_faction_navy_hull(product.eve_type):
+        return 0
+    blueprint_type_id = get_blueprint_or_reaction_type_id(product.eve_type)
+    if blueprint_type_id is None:
+        return 0
+    if IndustryLpStoreOffer.objects.filter(type_id=blueprint_type_id).exists():
+        return 0
+    return sync_loyalty_store_offers()
 
 
 def get_offer_for_blueprint_type(
@@ -153,15 +257,13 @@ def get_offer_for_blueprint_type(
     """
     Best persisted pure offer for a blueprint type_id.
 
-    Reads DB only. If the table is empty (fresh deploy), runs a one-shot
-    ESI sync then re-reads. Steady-state planner traffic does not call ESI.
+    Reads DB first; syncs from ESI only when that type (or the table) is missing.
     """
     type_id = int(type_id)
-    if not IndustryLpStoreOffer.objects.exists():
-        logger.info("No cached LP store offers; syncing from ESI once")
-        sync_loyalty_store_offers()
-
     rows = list(IndustryLpStoreOffer.objects.filter(type_id=type_id))
+    if not rows:
+        ensure_loyalty_store_offers_for_blueprint(type_id)
+        rows = list(IndustryLpStoreOffer.objects.filter(type_id=type_id))
     if not rows:
         return None
 
@@ -204,3 +306,20 @@ def navy_bpc_cost_for_plan(
         isk_per_lp=rate,
         total_isk=packs * per_pack,
     )
+
+
+def resolve_isk_per_lp(
+    *,
+    requested: Optional[float],
+    corporation_id: Optional[int] = None,
+) -> Optional[float]:
+    """
+    Prefer explicit request rate; else IndustryLoyaltyPoint default for corp.
+    """
+    if requested is not None and float(requested) > 0:
+        return float(requested)
+    if corporation_id is not None:
+        default = default_isk_per_lp_for_corporation(int(corporation_id))
+        if default is not None and default > 0:
+            return float(default)
+    return None

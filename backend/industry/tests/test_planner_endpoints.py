@@ -30,7 +30,7 @@ from industry.helpers.reprocessing_skills import (
     SKILL_SIMPLE_ORE_PROCESSING,
     SKILL_UBIQUITOUS_MOON_ORE_PROCESSING,
 )
-from industry.models import IndustryLpStoreOffer
+from industry.models import IndustryLoyaltyPoint, IndustryLpStoreOffer
 
 BASE = "/api/industry/planner"
 
@@ -433,7 +433,7 @@ class PlannerPlanEndpointTestCase(TestCase):
         self.assertIn("navy_bpc_lp", line_keys)
 
     @patch("industry.helpers.build_planner.resolve_cost_indices")
-    def test_post_plan_navy_without_isk_per_lp_skips_bpc_cost(
+    def test_post_plan_navy_without_isk_per_lp_uses_loyalty_point_default(
         self, resolve_indices
     ):
         resolve_indices.return_value = (0.05, 0.04, AMAMAKE_SYSTEM_ID)
@@ -472,6 +472,14 @@ class PlannerPlanEndpointTestCase(TestCase):
             isk_cost=20_000_000,
             quantity=1,
         )
+        IndustryLoyaltyPoint.objects.update_or_create(
+            corporation_id=1000182,
+            defaults={
+                "name": "Tribal Liberation Force",
+                "default_isk_per_lp": 800,
+                "is_active": True,
+            },
+        )
         response = self.client.post(
             f"{BASE}/plans",
             data={
@@ -484,8 +492,9 @@ class PlannerPlanEndpointTestCase(TestCase):
         )
         self.assertEqual(response.status_code, 200, response.content)
         data = response.json()
-        self.assertIsNone(data.get("navy_bpc"))
-        self.assertEqual(data["cost_breakdown"].get("navy_bpc_isk", 0), 0)
+        self.assertIsNotNone(data.get("navy_bpc"))
+        self.assertEqual(data["navy_bpc"]["isk_per_lp"], 800.0)
+        self.assertEqual(data["navy_bpc"]["total_isk"], 100_000_000)
 
     @patch("industry.helpers.build_planner.resolve_cost_indices")
     def test_post_plan_explicit_me_te_overrides_navy_default(

@@ -7,7 +7,10 @@ from eveonline.helpers.characters.update import update_character_industry_jobs
 from eveonline.models import EveCharacter
 
 from industry.helpers.cost_indices import sync_industry_system_cost_indices
-from industry.helpers.loyalty_store import sync_loyalty_store_offers
+from industry.helpers.loyalty_store import (
+    ensure_loyalty_store_offers_for_product,
+    sync_loyalty_store_offers,
+)
 from industry.models import IndustryOrderItemAssignment
 
 logger = logging.getLogger(__name__)
@@ -82,12 +85,25 @@ def sync_industry_system_cost_indices_task() -> int:
 @app.task()
 def sync_loyalty_store_offers_task() -> int:
     """
-    Refresh cached pure LP+ISK loyalty-store offers for militia corps.
+    Refresh cached pure LP+ISK loyalty-store offers.
 
-    Daily via Celery beat so planner navy-BPC costing reads the DB.
+    Manual / admin / product-save driven — not on a beat schedule.
     """
     try:
         return sync_loyalty_store_offers()
     except Exception:
         logger.exception("Failed to sync loyalty store offers")
+        raise
+
+
+@app.task()
+def ensure_loyalty_store_offers_for_product_task(product_id: int) -> int:
+    """Ensure LP store offers exist after a navy IndustryProduct is saved."""
+    try:
+        return ensure_loyalty_store_offers_for_product(int(product_id))
+    except Exception:
+        logger.exception(
+            "Failed to ensure loyalty store offers for product %s",
+            product_id,
+        )
         raise

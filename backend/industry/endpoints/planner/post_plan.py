@@ -26,7 +26,11 @@ from industry.helpers.facility_profiles import (
     FACILITY_PROFILES,
     get_facility_reprocessing_tax,
 )
-from industry.helpers.loyalty_store import navy_bpc_cost_for_plan
+from industry.helpers.loyalty_store import (
+    get_offer_for_blueprint_type,
+    navy_bpc_cost_for_plan,
+    resolve_isk_per_lp,
+)
 from industry.helpers.reprocessing_skills import (
     compression_ore_refine_yields,
     ore_refine_yields_payload,
@@ -227,13 +231,18 @@ def _plan_response_body(
 
 def _resolve_navy_bpc(eve_type, payload):
     """Optional navy BPC LP cost from persisted offers + isk_per_lp."""
-    rate = payload.isk_per_lp
-    if rate is None or float(rate) <= 0:
-        return None
     if not is_faction_navy_hull(eve_type):
         return None
     blueprint_type_id = get_blueprint_or_reaction_type_id(eve_type)
     if blueprint_type_id is None:
+        return None
+    offer = get_offer_for_blueprint_type(blueprint_type_id)
+    corporation_id = offer.corporation_id if offer is not None else None
+    rate = resolve_isk_per_lp(
+        requested=payload.isk_per_lp,
+        corporation_id=corporation_id,
+    )
+    if rate is None:
         return None
     return navy_bpc_cost_for_plan(
         blueprint_type_id,
