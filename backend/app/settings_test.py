@@ -98,7 +98,6 @@ ESI_USER_CONTACT_EMAIL = os.environ.get(
     "ESI_USER_CONTACT_EMAIL", "admin@minmatar.org"
 )
 
-# Keep LocMem so tests do not require Redis for django-esi caching
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
