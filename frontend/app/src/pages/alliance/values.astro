@@ -1,23 +1,30 @@
 ---
-import * as page from '@markdown/values.md';
+import * as page from '@markdown/values.md'
 
-import { marked } from 'marked';
-import { renderer } from '@helpers/marked';
-import { strip_markdown } from '@helpers/string';
+import { marked } from 'marked'
+import { renderer } from '@helpers/marked'
+import { strip_markdown } from '@helpers/string'
+import { pageProgressFromMarkdown } from '@helpers/pageProgress'
 
-import Viewport from '@layouts/Viewport.astro';
+import Viewport from '@layouts/Viewport.astro'
 
-import PageLanding from '@components/page/PageLanding.astro';
-import PageTitle from '@components/page/PageTitle.astro';
+import PageLanding from '@components/page/PageLanding.astro'
+import PageTitle from '@components/page/PageTitle.astro'
 
-import TextBox from '@components/layout/TextBox.astro';
+import TextBox from '@components/layout/TextBox.astro'
 
-import Wrapper from '@components/compositions/Wrapper.astro';
+import Wrapper from '@components/compositions/Wrapper.astro'
 
-import Flexblock from '@components/compositions/Flexblock.astro';
+import Flexblock from '@components/compositions/Flexblock.astro'
+import PageProgress from '@components/blocks/PageProgress.astro'
 
 const page_title = page.frontmatter.title
 const page_description = page.frontmatter.excerpt
+const { html: values_html, ...progress } = pageProgressFromMarkdown({
+    page_key: 'alliance/values',
+    page_title,
+    markdown: page.rawContent(),
+})
 ---
 
 <Viewport
@@ -37,7 +44,7 @@ const page_description = page.frontmatter.excerpt
             overlay: true
         }}
     >
-        <Flexblock gap='var(--space-2xl)'>
+        <Flexblock gap='var(--space-2xl)' data-page-progress-root>
             <Wrapper
                 max_width="var(--max-text-width)"
                 padding_inline="0"
@@ -46,6 +53,7 @@ const page_description = page.frontmatter.excerpt
                 <Flexblock gap='var(--space-xl)'>
                     <PageTitle is_landing={true}>{page_title}</PageTitle>
                     <p class="[ excerpt ]" set:html={marked.parseInline(page_description as string, { renderer })} />
+                    <PageProgress {...progress} />
                 </Flexblock>
             </Wrapper>
 
@@ -53,7 +61,7 @@ const page_description = page.frontmatter.excerpt
                 <Flexblock gap='var(--space-xl)'>
                     <div
                         class="[ prose ]"
-                        set:html={marked.parse(page.rawContent(), { renderer })}
+                        set:html={values_html}
                         x-data={`{
                             init_zoom() {
                                 mediumZoom('img[data-zoomable]', {

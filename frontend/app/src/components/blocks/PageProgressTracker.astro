@@ -1,0 +1,397 @@
+---
+interface Props {
+    page_key: string
+    page_title: string
+    version: string
+    section_ids: string[]
+    /** Empty string when anonymous. */
+    auth_token?: string
+    require_ack?: boolean
+    mark_read_label?: string
+    progress_label?: string
+}
+
+const {
+    page_key,
+    page_title,
+    version,
+    section_ids,
+    auth_token = '',
+    require_ack = false,
+    mark_read_label = 'Mark as read',
+    progress_label = 'Progress',
+} = Astro.props
+
+import Button from '@components/blocks/Button.astro'
+import { DWELL_MS, VISIBLE_RATIO } from '@helpers/pageProgress/dwellObserver'
+
+const config_json = JSON.stringify({
+    pageKey: page_key,
+    pageTitle: page_title,
+    version,
+    sectionIds: section_ids,
+    authToken: auth_token || '',
+    requireAck: require_ack,
+    apiBase: `${import.meta.env.API_URL}/api/page-progress`,
+    visibleRatio: VISIBLE_RATIO,
+    dwellMs: DWELL_MS,
+})
+---
+
+<script>
+    import * as localStore from '@helpers/pageProgress/localStore'
+
+    declare global {
+        interface Window {
+            __pageProgressLocal?: typeof localStore
+        }
+    }
+
+    window.__pageProgressLocal = localStore
+</script>
+
+<div
+    class="[ page-progress-tracker ]"
+    data-config={config_json}
+    x-data={`{
+        pageKey: '',
+        pageTitle: '',
+        version: '',
+        sectionIds: [],
+        authToken: '',
+        requireAck: false,
+        apiBase: '',
+        visibleRatio: 0.5,
+        dwellMs: 1000,
+        readSections: [],
+        percent: 0,
+        isAcknowledged: false,
+        acknowledging: false,
+        ackError: '',
+        pending: {},
+        timerBag: {},
+        observer: null,
+        get isAuthenticated() {
+            return !!this.authToken
+        },
+        localApi() {
+            return window.__pageProgressLocal || null
+        },
+        applyLocalEntry(entry) {
+            if (!entry) return
+            this.readSections = entry.read_sections || []
+            this.isAcknowledged = !!entry.is_acknowledged
+            const total = entry.section_total || this.sectionIds.length
+            const api = this.localApi()
+            this.percent = api
+                ? api.progressPercent(this.readSections.length, total)
+                : 0
+        },
+        async init() {
+            const cfg = JSON.parse(this.$el.getAttribute('data-config') || '{}')
+            this.pageKey = cfg.pageKey || ''
+            this.pageTitle = cfg.pageTitle || ''
+            this.version = cfg.version || ''
+            this.sectionIds = cfg.sectionIds || []
+            this.authToken = cfg.authToken || ''
+            this.requireAck = !!cfg.requireAck
+            this.apiBase = cfg.apiBase || ''
+            this.visibleRatio = cfg.visibleRatio ?? 0.5
+            this.dwellMs = cfg.dwellMs ?? 1000
+            this.timerBag = Object.create(null)
+
+            try {
+                await this.waitForLocalApi()
+                if (this.isAuthenticated) {
+                    await this.mergeLocalThenFetch()
+                } else {
+                    this.loadFromLocal()
+                }
+            } catch (err) {
+                console.error('page progress init failed', err)
+            } finally {
+                this.$nextTick(() => this.observeSections())
+            }
+        },
+        waitForLocalApi() {
+            if (window.__pageProgressLocal) return Promise.resolve()
+            return new Promise((resolve) => {
+                let n = 0
+                const timer = setInterval(() => {
+                    if (window.__pageProgressLocal || ++n > 50) {
+                        clearInterval(timer)
+                        resolve()
+                    }
+                }, 20)
+            })
+        },
+        loadFromLocal() {
+            const api = this.localApi()
+            if (!api) return
+            const entry = api.loadPage(this.pageKey, this.version)
+            this.applyLocalEntry(entry)
+        },
+        async mergeLocalThenFetch() {
+            const api = this.localApi()
+            const pending = api ? api.takePendingForImport() : []
+            if (pending.length > 0) {
+                try {
+                    const response = await fetch(this.apiBase + '/import', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: 'Bearer ' + this.authToken,
+                        },
+                        body: JSON.stringify({ pages: pending }),
+                    })
+                    if (response.ok && api) {
+                        api.clearAll()
+                    }
+                } catch (err) {
+                    console.error('page progress import failed', err)
+                }
+            }
+            await this.fetchStatus()
+        },
+        pageUrl(suffix = '') {
+            const key = String(this.pageKey).replace(/^\\/+|\\/+$/g, '')
+            return this.apiBase + '/' + key + suffix
+        },
+        sectionElement(sectionId) {
+            const root = this.$el.closest('[data-page-progress-root]') || document
+            return root.querySelector('[data-section-id=\"' + sectionId + '\"]')
+                || document.getElementById(sectionId)
+        },
+        clearDwellTimer(sectionId) {
+            if (this.timerBag[sectionId] === undefined) return
+            clearTimeout(this.timerBag[sectionId])
+            delete this.timerBag[sectionId]
+        },
+        clearAllDwellTimers() {
+            for (const sectionId of Object.keys(this.timerBag))
+                this.clearDwellTimer(sectionId)
+        },
+        isSufficientlyVisible(entry) {
+            if (!entry.isIntersecting) return false
+            if (entry.intersectionRatio >= this.visibleRatio) return true
+            const rootHeight = (entry.rootBounds && entry.rootBounds.height)
+                || window.innerHeight
+                || 0
+            if (rootHeight <= 0) return false
+            return entry.boundingClientRect.height > rootHeight
+                && entry.intersectionRect.height >= rootHeight * this.visibleRatio
+        },
+        isElementStillVisible(el) {
+            const rootHeight = window.innerHeight || 0
+            if (rootHeight <= 0 || !el) return false
+            const rect = el.getBoundingClientRect()
+            const visibleTop = Math.max(rect.top, 0)
+            const visibleBottom = Math.min(rect.bottom, rootHeight)
+            const visibleHeight = Math.max(0, visibleBottom - visibleTop)
+            if (visibleHeight <= 0) return false
+            if (visibleHeight / Math.max(rect.height, 1) >= this.visibleRatio) return true
+            return rect.height > rootHeight && visibleHeight >= rootHeight * this.visibleRatio
+        },
+        async fetchStatus() {
+            if (!this.isAuthenticated) {
+                this.loadFromLocal()
+                return
+            }
+            try {
+                const params = new URLSearchParams()
+                params.set('version', this.version)
+                if (this.sectionIds.length) params.set('sections', this.sectionIds.join(','))
+                const response = await fetch(this.pageUrl('?' + params.toString()), {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: 'Bearer ' + this.authToken,
+                    },
+                })
+                if (!response.ok) return
+                const data = await response.json()
+                this.readSections = data.read_sections || []
+                this.percent = data.percent || 0
+                this.isAcknowledged = !!data.is_acknowledged
+            } catch (err) {
+                console.error('page progress status failed', err)
+            }
+        },
+        observeSections() {
+            if (!('IntersectionObserver' in window)) return
+            if (this.observer) {
+                this.observer.disconnect()
+                this.observer = null
+            }
+            this.clearAllDwellTimers()
+
+            this.observer = new IntersectionObserver((entries) => {
+                for (const entry of entries) {
+                    const el = entry.target
+                    const sectionId = el.getAttribute('data-section-id') || el.id
+                    if (!sectionId || !this.sectionIds.includes(sectionId)) continue
+
+                    if (this.readSections.includes(sectionId) || this.pending[sectionId]) {
+                        this.clearDwellTimer(sectionId)
+                        this.observer.unobserve(el)
+                        continue
+                    }
+
+                    if (this.isSufficientlyVisible(entry)) {
+                        if (this.timerBag[sectionId] !== undefined) continue
+                        const capturedId = sectionId
+                        this.timerBag[capturedId] = setTimeout(() => {
+                            delete this.timerBag[capturedId]
+                            const still = this.sectionElement(capturedId)
+                            if (!still || !this.isElementStillVisible(still)) return
+                            if (this.observer) this.observer.unobserve(still)
+                            this.markSection(capturedId)
+                        }, this.dwellMs)
+                        continue
+                    }
+
+                    this.clearDwellTimer(sectionId)
+                }
+            }, { threshold: [0, 0.1, 0.25, 0.5, 0.75, 1] })
+
+            let observed = 0
+            for (const sectionId of this.sectionIds) {
+                if (this.readSections.includes(sectionId)) continue
+                const el = this.sectionElement(sectionId)
+                if (!el) continue
+                this.observer.observe(el)
+                observed += 1
+            }
+            if (observed === 0 && this.sectionIds.length > 0) {
+                console.warn('page progress: no section elements found to observe', this.sectionIds)
+            }
+        },
+        async markSection(sectionId) {
+            if (this.readSections.includes(sectionId) || this.pending[sectionId]) return
+            this.pending[sectionId] = true
+            try {
+                if (!this.isAuthenticated) {
+                    const api = this.localApi()
+                    if (!api) return
+                    const entry = api.markSectionLocal({
+                        page_key: this.pageKey,
+                        version: this.version,
+                        page_title: this.pageTitle,
+                        section_total: this.sectionIds.length,
+                        section_id: sectionId,
+                    })
+                    this.applyLocalEntry(entry)
+                    return
+                }
+
+                const response = await fetch(
+                    this.pageUrl('/sections/' + encodeURIComponent(sectionId) + '/read'),
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: 'Bearer ' + this.authToken,
+                        },
+                        body: JSON.stringify({
+                            version: this.version,
+                            page_title: this.pageTitle,
+                            section_total: this.sectionIds.length,
+                        }),
+                    }
+                )
+                if (!response.ok) {
+                    console.error('page progress section HTTP', response.status)
+                    return
+                }
+                const data = await response.json()
+                if (!this.readSections.includes(sectionId))
+                    this.readSections = [...this.readSections, sectionId]
+                this.percent = data.percent ?? this.percent
+                this.isAcknowledged = !!data.is_acknowledged
+            } catch (err) {
+                console.error('page progress section failed', err)
+            } finally {
+                delete this.pending[sectionId]
+            }
+        },
+        get allSectionsRead() {
+            return this.sectionIds.length > 0 &&
+                this.sectionIds.every((id) => this.readSections.includes(id))
+        },
+        async acknowledge() {
+            if (!this.requireAck || this.isAcknowledged || this.acknowledging) return
+            this.acknowledging = true
+            this.ackError = ''
+            try {
+                if (!this.isAuthenticated) {
+                    const api = this.localApi()
+                    if (!api) return
+                    const entry = api.ackPageLocal({
+                        page_key: this.pageKey,
+                        version: this.version,
+                        page_title: this.pageTitle,
+                        section_ids: this.sectionIds,
+                    })
+                    this.applyLocalEntry(entry)
+                    return
+                }
+
+                const response = await fetch(this.pageUrl('/ack'), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: 'Bearer ' + this.authToken,
+                    },
+                    body: JSON.stringify({
+                        version: this.version,
+                        sections: this.sectionIds,
+                        page_title: this.pageTitle,
+                    }),
+                })
+                if (!response.ok) {
+                    const text = await response.text()
+                    throw new Error(text || 'Acknowledgement failed')
+                }
+                const data = await response.json()
+                this.isAcknowledged = true
+                this.percent = data.percent ?? 100
+            } catch (err) {
+                this.ackError = err instanceof Error ? err.message : String(err)
+            } finally {
+                this.acknowledging = false
+            }
+        },
+    }`}
+>
+    <div class="[ page-progress-tracker__bar ]" aria-live="polite">
+        <span class="[ text-muted ]">{progress_label}: <strong x-text="percent + '%'"></strong></span>
+        <template x-if="requireAck && allSectionsRead && !isAcknowledged">
+            <div class="[ page-progress-tracker__ack ]">
+                <Button
+                    type="button"
+                    class="[ w-fit! ]"
+                    x-bind:disabled="acknowledging"
+                    x-on:click="acknowledge()"
+                >
+                    {mark_read_label}
+                </Button>
+                <p class="[ text-muted ]" x-show="ackError" x-text="ackError"></p>
+            </div>
+        </template>
+        <p class="[ text-muted ]" x-show="requireAck && isAcknowledged">Marked as read</p>
+    </div>
+</div>
+
+<style lang="scss">
+    .page-progress-tracker__bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-s);
+    }
+
+    .page-progress-tracker__ack {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+</style>

@@ -81,6 +81,8 @@ INSTALLED_APPS = [
     "srp",
     # Onboarding acknowledgments (per program version)
     "onboarding",
+    # Generic page/section reading progress
+    "page_progress",
     # Referral links,
     "referrals",
     # User subscriptions

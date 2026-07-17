@@ -2,7 +2,8 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { guideMeta, credits, buildNavyDestroyerMetagameJsonLd } from '@/data/navy-destroyer-metagame'
+import { guideMeta, credits, buildNavyDestroyerMetagameJsonLd, guideSections } from '@/data/navy-destroyer-metagame'
+import { pageProgressFromSections } from '@helpers/pageProgress'
 import { get_site_origin } from '@helpers/seo'
 
 import Viewport from '@layouts/Viewport.astro'
@@ -12,6 +13,7 @@ import TextBox from '@components/layout/TextBox.astro'
 import Wrapper from '@components/compositions/Wrapper.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import NavyDestroyerMetagame from '@components/blocks/navy-destroyer-metagame/NavyDestroyerMetagame.astro'
+import PageProgress from '@components/blocks/PageProgress.astro'
 
 const page_title = t('ships.navy_destroyer_metagame.page_title')
 const page_description = t('ships.navy_destroyer_metagame.leading_text')
@@ -35,6 +37,17 @@ const structured_data = buildNavyDestroyerMetagameJsonLd({
     publisherName: 'Minmatar Fleet Alliance',
     editionLabel: `${guideMeta.edition} · ${guideMeta.yc}`,
     originalEditionUrl: guideMeta.firstEditionUrl,
+})
+
+const progress = pageProgressFromSections({
+    page_key: 'guides/navy-destroyer-metagame',
+    page_title,
+    sections: guideSections,
+    version_source: JSON.stringify({
+        edition: guideMeta.edition,
+        yc: guideMeta.yc,
+        sections: guideSections.map((section) => section.id),
+    }),
 })
 ---
 
@@ -61,7 +74,7 @@ const structured_data = buildNavyDestroyerMetagameJsonLd({
             overlay: true,
         }}
     >
-        <Flexblock gap="var(--space-2xl)" class="ndm-page">
+        <Flexblock gap="var(--space-2xl)" class="ndm-page" data-page-progress-root>
             <TextBox max_width="var(--max-content-width)">
                 <Flexblock gap="var(--space-xl)">
                     <nav class="ndm-page__breadcrumb" aria-label="Breadcrumb">
@@ -72,6 +85,7 @@ const structured_data = buildNavyDestroyerMetagameJsonLd({
                     </nav>
                     <PageTitle is_landing={true}>{page_title}</PageTitle>
                     <p class="[ excerpt ]">{page_description}</p>
+                    <PageProgress {...progress} />
                 </Flexblock>
             </TextBox>
 
