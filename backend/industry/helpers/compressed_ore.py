@@ -717,7 +717,8 @@ def conservative_refine_rate(refine_rate: float) -> float:
     """
     if refine_rate <= 0:
         return refine_rate
-    display = round(refine_rate * 100.0, 2) / 100.0
+    # Round via hundredths-of-a-percent integers to avoid 0.8576999999999999.
+    display = round(refine_rate * 10000) / 10000.0
     return min(display, refine_rate)
 
 
