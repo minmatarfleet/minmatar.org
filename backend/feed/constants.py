@@ -135,6 +135,8 @@ ROLLUP_VERSIONS: dict[str, int] = {
 AMAMAKE_SOLAR_SYSTEM_ID = 30002537
 CAPITAL_PING_MAX_LIGHT_YEARS = 8.0
 CAPITAL_PING_MAX_AGE_SECONDS = 3600
+# Reuse one Discord message for further capital-related kills in the same system.
+CAPITAL_PING_SESSION_SECONDS = 30 * 60
 METERS_PER_LIGHT_YEAR = 9_460_528_400_000_000
 CAPITAL_SHIP_GROUPS = frozenset(
     {
