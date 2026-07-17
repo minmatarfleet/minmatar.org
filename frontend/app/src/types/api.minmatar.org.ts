@@ -1423,6 +1423,62 @@ export interface OnboardingStatusResponse {
     is_current:             boolean;
 }
 
+export interface PageProgressStatusResponse {
+    page_key:           string;
+    version:            string | null;
+    page_title:         string;
+    read_sections:      string[];
+    missing_sections:   string[];
+    read_count:         number;
+    section_total:      number;
+    percent:            number;
+    is_acknowledged:    boolean;
+}
+
+export interface MarkSectionReadResponse {
+    page_key:           string;
+    section_id:         string;
+    version:            string;
+    created:            boolean;
+    read_count:         number;
+    section_total:      number;
+    percent:            number;
+    is_acknowledged:    boolean;
+}
+
+export interface PageAckResponse {
+    page_key:           string;
+    version:            string;
+    read_count:         number;
+    section_total:      number;
+    percent:            number;
+    is_acknowledged:    boolean;
+    missing_sections:   string[];
+}
+
+export interface PageProgressImportPage {
+    page_key:           string;
+    version:            string;
+    page_title?:        string;
+    section_total?:     number;
+    read_sections:      string[];
+    is_acknowledged?:   boolean;
+}
+
+export interface PageProgressImportResult {
+    page_key:           string;
+    version:            string;
+    read_count:         number;
+    section_total:      number;
+    percent:            number;
+    is_acknowledged:    boolean;
+}
+
+export interface PageProgressImportResponse {
+    imported:           PageProgressImportResult[];
+    skipped:            number;
+}
+
 export interface CharacterMembership {
     id:                 number;
     character_id:       number;

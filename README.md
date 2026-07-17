@@ -53,7 +53,7 @@ Celery workers and Beat are only needed when you are testing background jobs or 
 
 Production deployment uses `docker-compose-prod.yml` and is unchanged.
 
-Further setup: [Discord](docs/developer_discord_setup.md), [data seeding](docs/developer_data_seeding.md), [runtime profiles](docs/runtime-profiles.md).
+Further setup: [Discord](docs/developer_discord_setup.md), [data seeding](docs/developer_data_seeding.md), [runtime profiles](docs/runtime-profiles.md), [page progress](docs/page-progress/frontend.md).
 
 # Prerequisites
 

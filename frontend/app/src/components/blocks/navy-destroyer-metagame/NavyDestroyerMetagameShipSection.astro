@@ -22,7 +22,7 @@ const verdictLabels: Record<MatchupVerdict, string> = {
 }
 ---
 
-<section id={ship.id} class="ndm-ship" aria-labelledby={`${ship.id}-title`}>
+<section id={ship.id} data-section-id={ship.id} class="ndm-ship" aria-labelledby={`${ship.id}-title`}>
     <div class="ndm-ship__hero">
         <div class="ndm-ship__hero-visual">
             <ItemPicture

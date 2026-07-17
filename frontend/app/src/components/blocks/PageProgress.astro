@@ -1,0 +1,57 @@
+---
+/**
+ * Drop-in page progress UI for all visitors.
+ *
+ * Anonymous progress is stored in localStorage and merged to the server on login.
+ * Auth cookies and i18n labels are handled here.
+ *
+ * Usage:
+ * ```
+ * const { html, ...progress } = pageProgressFromMarkdown({ page_key, page_title, markdown })
+ * // or: const progress = pageProgressFromSections({ page_key, page_title, sections })
+ *
+ * <div data-page-progress-root>
+ *   <PageProgress {...progress} />
+ *   <!-- markdown: <div set:html={html} /> -->
+ *   <!-- custom: <PageProgressSection id="intro">…</PageProgressSection> -->
+ * </div>
+ * ```
+ */
+import type { PageProgressProps } from '@helpers/pageProgress'
+
+interface Props extends PageProgressProps {
+    require_ack?: boolean
+}
+
+const {
+    page_key,
+    page_title,
+    version,
+    section_ids,
+    require_ack = true,
+} = Astro.props
+
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import PageProgressTracker from '@components/blocks/PageProgressTracker.astro'
+
+const auth_token = Astro.cookies.has('auth_token')
+    ? (Astro.cookies.get('auth_token')?.value as string)
+    : ''
+
+const show = section_ids.length > 0
+---
+
+{show && (
+    <PageProgressTracker
+        page_key={page_key}
+        page_title={page_title}
+        version={version}
+        section_ids={section_ids}
+        auth_token={auth_token}
+        require_ack={require_ack}
+        mark_read_label={t('page_progress.mark_as_read')}
+        progress_label={t('page_progress.progress')}
+    />
+)}
