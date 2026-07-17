@@ -6,7 +6,7 @@ from authentication import AuthBearer
 from eveonline.helpers.characters import user_primary_character
 
 from .models import MumbleAccess
-from groups.helpers.feature_access import can_use_feature, require_feature
+from groups.helpers.feature_access import can_use_feature
 
 router = Router(tags=["Mumble"])
 

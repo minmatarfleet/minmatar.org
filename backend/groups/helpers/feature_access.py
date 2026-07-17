@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from django.contrib.auth.models import AnonymousUser
 
+from groups.features.registry import FEATURE_DEFINITIONS
 from groups.features.types import FeatureScope
 from groups.models import PilotFeature, UserAffiliation, UserCommunityStatus
+from tribes.models import TribeGroupMembership
 
 FEATURE_DENIED_DETAIL = "feature_denied"
 
@@ -22,13 +24,10 @@ def _load_feature_cache() -> dict[str, PilotFeature | None]:
     global _feature_cache  # pylint: disable=global-statement
     if _feature_cache is not None:
         return _feature_cache
-    features = (
-        PilotFeature.objects.filter(is_active=True)
-        .prefetch_related(
-            "affiliations",
-            "tribe_groups",
-            "auth_groups",
-        )
+    features = PilotFeature.objects.filter(is_active=True).prefetch_related(
+        "affiliations",
+        "tribe_groups",
+        "auth_groups",
     )
     _feature_cache = {feature.code: feature for feature in features}
     return _feature_cache
@@ -80,9 +79,9 @@ def _evaluate_affiliation(feature: PilotFeature, user) -> bool:
     return affiliation.pk in wired_ids
 
 
-def _evaluate_tribe_membership(feature: PilotFeature, user, tribe_group=None) -> bool:
-    from tribes.models import TribeGroupMembership
-
+def _evaluate_tribe_membership(
+    feature: PilotFeature, user, tribe_group=None
+) -> bool:
     wired_ids = {row.pk for row in feature.tribe_groups.all()}
     if not wired_ids:
         return False
@@ -96,7 +95,9 @@ def _evaluate_tribe_membership(feature: PilotFeature, user, tribe_group=None) ->
     return qs.exists()
 
 
-def _evaluate_tribe_group_target(feature: PilotFeature, user, tribe_group) -> bool:
+def _evaluate_tribe_group_target(
+    feature: PilotFeature, user, tribe_group
+) -> bool:
     if tribe_group is None:
         return False
     if not _evaluate_affiliation(feature, user):
@@ -107,7 +108,9 @@ def _evaluate_tribe_group_target(feature: PilotFeature, user, tribe_group) -> bo
     return True
 
 
-def _evaluate_tribe_chief(feature: PilotFeature, user, tribe=None, tribe_group=None) -> bool:
+def _evaluate_tribe_chief(
+    feature: PilotFeature, user, tribe=None, tribe_group=None
+) -> bool:
     staff_perm = feature.staff_permission or feature.legacy_permission
     if staff_perm and _has_legacy_permission(user, staff_perm):
         return True
@@ -176,7 +179,9 @@ def _evaluate_scope(
     if scope == FeatureScope.AFFILIATION:
         return _evaluate_affiliation(feature, user)
     if scope == FeatureScope.TRIBE_MEMBERSHIP:
-        return _evaluate_tribe_membership(feature, user, tribe_group=tribe_group)
+        return _evaluate_tribe_membership(
+            feature, user, tribe_group=tribe_group
+        )
     if scope == FeatureScope.TRIBE_GROUP_TARGET:
         return _evaluate_tribe_group_target(feature, user, tribe_group)
     if scope == FeatureScope.TRIBE_CHIEF:
@@ -212,11 +217,11 @@ def can_use_feature(
     feature = _get_feature(code)
     if feature is None:
         if allow_legacy:
-            from groups.features.registry import FEATURE_DEFINITIONS
-
             definition = FEATURE_DEFINITIONS.get(code)
             if definition and definition.legacy_permission:
-                return _has_legacy_permission(user, definition.legacy_permission)
+                return _has_legacy_permission(
+                    user, definition.legacy_permission
+                )
         return False
 
     legacy_permission = feature.legacy_permission

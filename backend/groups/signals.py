@@ -4,11 +4,13 @@ from django.db.models import signals
 from django.dispatch import receiver
 
 from groups.helpers import sync_user_community_groups
-from tribes.helpers.offboarding import offboard_tribe_memberships_without_feature
 from groups.models import (
     UserAffiliation,
     UserCommunityStatus,
     UserCommunityStatusHistory,
+)
+from tribes.helpers.offboarding import (
+    offboard_tribe_memberships_without_feature,
 )
 
 logger = logging.getLogger(__name__)

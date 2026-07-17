@@ -1,6 +1,5 @@
 """GET \"\" — list SRP requests (filtered, paginated)."""
 
-
 from groups.helpers.feature_access import require_feature
 from ninja import Query
 

@@ -2,7 +2,7 @@
 
 import jwt
 from django.conf import settings
-from django.contrib.auth.models import Group, Permission, User
+from django.contrib.auth.models import Permission, User
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import signals as django_signals
 from django.test import Client, TestCase

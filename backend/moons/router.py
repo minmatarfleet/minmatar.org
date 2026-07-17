@@ -8,7 +8,7 @@ from authentication import AuthBearer
 from moons.models import EveMoon
 
 from .parser import MoonParsingResult, process_moon_paste
-from groups.helpers.feature_access import can_use_feature, require_feature
+from groups.helpers.feature_access import can_use_feature
 
 moons_router = Router(tags=["Moons"])
 moons_paste_router = Router(tags=["Moons"])

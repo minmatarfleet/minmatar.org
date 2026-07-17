@@ -47,10 +47,9 @@ def create_srp_request(request, payload: CreateSrpRequest):
     if denied:
         return denied
 
-    fleet = None
-    if payload.fleet_id:
-        fleet = EveFleet.objects.get(id=payload.fleet_id)
-
+    fleet = (
+        EveFleet.objects.get(id=payload.fleet_id) if payload.fleet_id else None
+    )
     denied = require_feature(request.user, "srp.submit", fleet=fleet)
     if denied:
         return denied

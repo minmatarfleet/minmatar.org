@@ -15,7 +15,7 @@ from fleets.models import EveFleet
 from .combatlog import LogAnalysis, analyze_parsed_log
 
 from .models import CombatLog
-from groups.helpers.feature_access import can_use_feature, require_feature
+from groups.helpers.feature_access import can_use_feature
 
 router = Router(tags=["Combat Logs"])
 

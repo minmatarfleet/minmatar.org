@@ -1,6 +1,5 @@
 """GET \"\" — list SRP requests (deprecated; use GET /api/srp/v2/requests)."""
 
-
 from groups.helpers.feature_access import require_feature
 from typing import List
 

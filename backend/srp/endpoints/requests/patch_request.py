@@ -1,6 +1,5 @@
 """PATCH /{int:request_id} — update SRP request status."""
 
-
 from groups.helpers.feature_access import can_use_feature
 from django.utils import timezone
 

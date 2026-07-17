@@ -6,15 +6,16 @@ from django.db.models import signals
 
 from app.test import TestCase
 from fleets.models import EveFleet, EveFleetAudience
-from groups.features.types import FeatureScope
 from groups.helpers.feature_access import (
     can_use_feature,
     clear_feature_cache,
     require_feature,
 )
-from groups.management.commands.sync_pilot_features import Command as SyncCommand
+from groups.management.commands.sync_pilot_features import (
+    Command as SyncCommand,
+)
 from groups.models import AffiliationType, PilotFeature, UserAffiliation
-from tribes.models import Tribe, TribeGroup, TribeGroupMembership
+from tribes.models import Tribe, TribeGroup
 
 
 class FeatureAccessTestCase(TestCase):

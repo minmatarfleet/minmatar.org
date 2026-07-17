@@ -1,6 +1,5 @@
 """GET "" — list SRP programs with current amount per ship type."""
 
-
 from groups.helpers.feature_access import require_feature
 from typing import List
 

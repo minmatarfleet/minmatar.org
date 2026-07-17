@@ -1,12 +1,12 @@
 from datetime import timedelta, timezone as dt_timezone
 from unittest.mock import patch
 
+import jwt
+from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.db.models import signals
 from django.test import Client
 from django.utils import timezone
-import jwt
-from django.conf import settings
 
 from eveuniverse.models import EveType, EveGroup, EveCategory
 
@@ -30,7 +30,9 @@ from onboarding.models import (
 from onboarding.seed import ensure_onboarding_programs
 from fittings.models import EveFittingPod
 from groups.helpers.feature_access import clear_feature_cache
-from groups.management.commands.sync_pilot_features import Command as SyncCommand
+from groups.management.commands.sync_pilot_features import (
+    Command as SyncCommand,
+)
 from groups.models import AffiliationType, UserAffiliation
 from srp.models import (
     EveFleetShipReimbursement,

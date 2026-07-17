@@ -3,7 +3,7 @@
 from django.contrib.auth.models import Group
 from django.core.management.base import BaseCommand
 
-from groups.features.registry import FEATURE_DEFINITIONS
+from groups.features.registry import FEATURE_DEFINITIONS, FeatureDefinition
 from groups.models import AffiliationType, PilotFeature
 from tribes.models import TribeGroup
 
@@ -36,41 +36,7 @@ class Command(BaseCommand):
             else:
                 updated += 1
 
-            if definition.default_affiliation_names and not feature.affiliations.exists():
-                for name in definition.default_affiliation_names:
-                    affiliation = AffiliationType.objects.filter(
-                        name=name
-                    ).first()
-                    if affiliation is None:
-                        warnings.append(
-                            f"AffiliationType '{name}' not found for {definition.code}"
-                        )
-                        continue
-                    feature.affiliations.add(affiliation)
-
-            if definition.default_tribe_group_codes and not feature.tribe_groups.exists():
-                for code in definition.default_tribe_group_codes:
-                    tribe_group = TribeGroup.objects.filter(code=code).first()
-                    if tribe_group is None:
-                        warnings.append(
-                            f"TribeGroup '{code}' not found for {definition.code}"
-                        )
-                        continue
-                    feature.tribe_groups.add(tribe_group)
-
-            if definition.default_auth_group_names and not feature.auth_groups.exists():
-                for group_name in definition.default_auth_group_names:
-                    auth_group = Group.objects.filter(name=group_name).first()
-                    if auth_group is None:
-                        warnings.append(
-                            f"auth.Group '{group_name}' not found for {definition.code}"
-                        )
-                        continue
-                    feature.auth_groups.add(auth_group)
-
-            if definition.code == "tribes.apply" and not feature.tribe_groups.exists():
-                for tribe_group in TribeGroup.objects.filter(is_active=True):
-                    feature.tribe_groups.add(tribe_group)
+            warnings.extend(self._seed_default_wiring(feature, definition))
 
         for warning in warnings:
             self.stdout.write(self.style.WARNING(warning))
@@ -80,3 +46,75 @@ class Command(BaseCommand):
                 f"sync_pilot_features: {created} created, {updated} updated."
             )
         )
+
+    def _seed_default_wiring(
+        self, feature: PilotFeature, definition: FeatureDefinition
+    ) -> list[str]:
+        warnings: list[str] = []
+        warnings.extend(self._seed_affiliations(feature, definition))
+        warnings.extend(self._seed_tribe_groups(feature, definition))
+        warnings.extend(self._seed_auth_groups(feature, definition))
+        if (
+            definition.code == "tribes.apply"
+            and not feature.tribe_groups.exists()
+        ):
+            for tribe_group in TribeGroup.objects.filter(is_active=True):
+                feature.tribe_groups.add(tribe_group)
+        return warnings
+
+    def _seed_affiliations(
+        self, feature: PilotFeature, definition: FeatureDefinition
+    ) -> list[str]:
+        if (
+            not definition.default_affiliation_names
+            or feature.affiliations.exists()
+        ):
+            return []
+        warnings: list[str] = []
+        for name in definition.default_affiliation_names:
+            affiliation = AffiliationType.objects.filter(name=name).first()
+            if affiliation is None:
+                warnings.append(
+                    f"AffiliationType '{name}' not found for {definition.code}"
+                )
+                continue
+            feature.affiliations.add(affiliation)
+        return warnings
+
+    def _seed_tribe_groups(
+        self, feature: PilotFeature, definition: FeatureDefinition
+    ) -> list[str]:
+        if (
+            not definition.default_tribe_group_codes
+            or feature.tribe_groups.exists()
+        ):
+            return []
+        warnings: list[str] = []
+        for code in definition.default_tribe_group_codes:
+            tribe_group = TribeGroup.objects.filter(code=code).first()
+            if tribe_group is None:
+                warnings.append(
+                    f"TribeGroup '{code}' not found for {definition.code}"
+                )
+                continue
+            feature.tribe_groups.add(tribe_group)
+        return warnings
+
+    def _seed_auth_groups(
+        self, feature: PilotFeature, definition: FeatureDefinition
+    ) -> list[str]:
+        if (
+            not definition.default_auth_group_names
+            or feature.auth_groups.exists()
+        ):
+            return []
+        warnings: list[str] = []
+        for group_name in definition.default_auth_group_names:
+            auth_group = Group.objects.filter(name=group_name).first()
+            if auth_group is None:
+                warnings.append(
+                    f"auth.Group '{group_name}' not found for {definition.code}"
+                )
+                continue
+            feature.auth_groups.add(auth_group)
+        return warnings

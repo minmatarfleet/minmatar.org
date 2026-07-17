@@ -1,6 +1,5 @@
 """GET /{int:request_id} — single SRP request."""
 
-
 from groups.helpers.feature_access import require_feature
 from app.errors import ErrorResponse
 from authentication import AuthBearer

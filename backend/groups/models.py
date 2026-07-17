@@ -163,7 +163,9 @@ class PilotFeature(models.Model):
     label = models.CharField(max_length=128)
     description = models.TextField(blank=True)
     scope = models.CharField(max_length=32, choices=FeatureScope.choices)
-    legacy_permission = models.CharField(max_length=100, blank=True, default="")
+    legacy_permission = models.CharField(
+        max_length=100, blank=True, default=""
+    )
     staff_permission = models.CharField(max_length=100, blank=True, default="")
     affiliations = models.ManyToManyField(AffiliationType, blank=True)
     tribe_groups = models.ManyToManyField("tribes.TribeGroup", blank=True)
@@ -177,4 +179,4 @@ class PilotFeature(models.Model):
         ordering = ["code"]
 
     def __str__(self):
-        return self.label or self.code
+        return str(self.label or self.code)

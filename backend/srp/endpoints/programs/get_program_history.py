@@ -1,6 +1,5 @@
 """GET history — chronological SRP program amount changes."""
 
-
 from groups.helpers.feature_access import require_feature
 from typing import List
 

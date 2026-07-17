@@ -1,6 +1,5 @@
 """GET history — counts, ISK totals, and breakdowns by ship group and type."""
 
-
 from groups.helpers.feature_access import require_feature
 from datetime import timedelta
 from typing import Literal

@@ -1,6 +1,5 @@
 """GET overview — pending SRP queue and average approval latency (last 90 days)."""
 
-
 from groups.helpers.feature_access import require_feature
 from typing import Optional
 

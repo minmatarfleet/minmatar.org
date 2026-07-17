@@ -12,7 +12,7 @@ from authentication import AuthBearer
 
 from .authors import post_author_fields
 from .models import EvePost, EveTag
-from groups.helpers.feature_access import can_use_feature, require_feature
+from groups.helpers.feature_access import can_use_feature
 
 
 def extract_first_image_link(content: str) -> str:

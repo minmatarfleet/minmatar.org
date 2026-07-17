@@ -1,6 +1,5 @@
 """POST resolve-killmail — preview killmail and candidate fleets for SRP."""
 
-
 from groups.helpers.feature_access import require_feature
 from app.errors import ErrorResponse
 from authentication import AuthBearer

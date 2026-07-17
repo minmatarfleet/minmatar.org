@@ -11,7 +11,7 @@ from eveonline.models import EveCharacter, EveCorporation
 
 from .l3arn import is_l3arn_corporation, validate_l3arn_application_description
 from .models import EveCorporationApplication
-from groups.helpers.feature_access import can_use_feature, require_feature
+from groups.helpers.feature_access import can_use_feature
 
 router = Router(tags=["Applications"])
 logger = logging.getLogger(__name__)
