@@ -154,7 +154,7 @@ pipenv run python manage.py export_reference_fixtures
 
 ### Authorization (PilotFeature)
 
-Product capabilities are gated via `can_use_feature()` with legacy Django-permission fallback. See [../docs/authorization.md](../docs/authorization.md).
+Product capabilities are gated via `can_use_feature()` with legacy Django-permission fallback. See [../docs/auth/](../docs/auth/README.md) for architecture, feature catalog, and migration docs.
 
 After deploy / migrate:
 

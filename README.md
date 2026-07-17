@@ -29,7 +29,7 @@ Use separate terminals for each process. Celery workers and Beat are only needed
 
 Production deployment uses `docker-compose-prod.yml` and is unchanged.
 
-Further setup: [Discord](docs/developer_discord_setup.md), [data seeding](docs/developer_data_seeding.md), [runtime profiles](docs/runtime-profiles.md).
+Further setup: [Discord](docs/developer_discord_setup.md), [data seeding](docs/developer_data_seeding.md), [runtime profiles](docs/runtime-profiles.md). Auth architecture: [docs/auth/](docs/auth/README.md).
 
 # Prerequisites
 
