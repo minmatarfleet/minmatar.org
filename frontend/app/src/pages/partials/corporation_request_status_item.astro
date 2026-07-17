@@ -23,6 +23,10 @@ import {
     isL3arnApplicationPayload,
     isL3arnCorporation,
 } from '@helpers/corporations/l3arn_application'
+import {
+    descriptionFromCorporationPayload,
+    isCorporationApplicationPayload,
+} from '@helpers/corporations/corporation_application'
 
 let corporation:CorporationObject | null = null
 let create_corporation_application_error:string | false = false
@@ -40,6 +44,12 @@ if (Astro.request.method === "POST") {
                 description = descriptionFromL3arnPayload(rawPayload)
             } catch {
                 throw new Error(t('invalid_l3arn_application'));
+            }
+        } else if (isCorporationApplicationPayload(rawPayload)) {
+            try {
+                description = descriptionFromCorporationPayload(rawPayload)
+            } catch {
+                throw new Error(t('invalid_corporation_application'));
             }
         } else {
             description = typeof rawPayload === 'string' ? rawPayload : String(rawPayload)

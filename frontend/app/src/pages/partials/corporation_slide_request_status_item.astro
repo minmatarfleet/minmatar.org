@@ -20,10 +20,11 @@ import { create_corporation_application } from '@helpers/api.minmatar.org/applic
 import type { CorporationApplication } from '@dtypes/api.minmatar.org'
 import {
     descriptionFromL3arnFormData,
-    descriptionFromL3arnPayload,
-    isL3arnApplicationPayload,
     isL3arnCorporation,
 } from '@helpers/corporations/l3arn_application'
+import {
+    descriptionFromCorporationFormData,
+} from '@helpers/corporations/corporation_application'
 import { get_corporation_list_by_id_auth } from '@helpers/fetching/corporations'
 
 let corporation:CorporationObject | null = null
@@ -44,7 +45,11 @@ if (Astro.request.method === "POST") {
                 throw new Error(t('invalid_l3arn_application'));
             }
         } else {
-            description = data.get('application_text') as string
+            try {
+                description = descriptionFromCorporationFormData(data)
+            } catch {
+                throw new Error(t('invalid_corporation_application'));
+            }
         }
 
         if (!description)

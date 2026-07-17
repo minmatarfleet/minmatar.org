@@ -25,15 +25,15 @@ def is_l3arn_corporation(corporation) -> bool:
     )
 
 
-def l3arn_discord_description(description: str) -> str:
+def application_discord_description(description: str) -> str:
     """Strip web-only questionnaire lines before Discord posting or length checks."""
     return HOW_FOUND_LINE_PATTERN.sub("", description)
 
 
-def validate_l3arn_application_description(description: str) -> str | None:
+def validate_application_description(description: str) -> str | None:
     """Return an error message when the description exceeds Discord-safe limits."""
     if (
-        len(l3arn_discord_description(description))
+        len(application_discord_description(description))
         > L3ARN_APPLICATION_DESCRIPTION_MAX_LENGTH
     ):
         return (
@@ -41,3 +41,13 @@ def validate_l3arn_application_description(description: str) -> str | None:
         )
 
     return None
+
+
+def l3arn_discord_description(description: str) -> str:
+    """Strip web-only questionnaire lines before Discord posting or length checks."""
+    return application_discord_description(description)
+
+
+def validate_l3arn_application_description(description: str) -> str | None:
+    """Return an error message when the description exceeds Discord-safe limits."""
+    return validate_application_description(description)

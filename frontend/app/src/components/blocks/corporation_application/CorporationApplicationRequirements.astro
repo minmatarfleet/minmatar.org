@@ -15,12 +15,14 @@ import { corporationApplicationFieldName } from './field_names';
 
 interface Props {
     include_field_names?: boolean;
+    include_omega?: boolean;
     form_prefix?: string;
     id_prefix?: string;
 }
 
 const {
     include_field_names = false,
+    include_omega = true,
     form_prefix = L3ARN_FORM_PREFIX,
     id_prefix = 'l3arn',
 } = Astro.props;
@@ -49,16 +51,18 @@ const fieldName = (key: string) =>
         </span>
     </label>
 
-    <label class="choice-row" for={`${id_prefix}-confirm-omega`}>
-        <input
-            id={`${id_prefix}-confirm-omega`}
-            type="checkbox"
-            name={fieldName('confirm_omega')}
-            x-model="confirm_omega"
-            x-on:change="updateApplicationStatus()"
-        />
-        <span>{t('l3arn_application_confirm_omega')}</span>
-    </label>
+    {include_omega && (
+        <label class="choice-row" for={`${id_prefix}-confirm-omega`}>
+            <input
+                id={`${id_prefix}-confirm-omega`}
+                type="checkbox"
+                name={fieldName('confirm_omega')}
+                x-model="confirm_omega"
+                x-on:change="updateApplicationStatus()"
+            />
+            <span>{t('l3arn_application_confirm_omega')}</span>
+        </label>
+    )}
 
     <label class="choice-row" for={`${id_prefix}-confirm-auth`}>
         <input

@@ -1,0 +1,89 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import type { CorporationObject } from '@dtypes/layout_components';
+import { CORPORATION_APPLICATION_FORM_PREFIX } from '@helpers/corporations/corporation_application';
+import CorporationApplicationIntroduction from '@components/blocks/corporation_application/CorporationApplicationIntroduction.astro';
+import CorporationApplicationDoctrines from '@components/blocks/corporation_application/CorporationApplicationDoctrines.astro';
+import CorporationApplicationTimezone from '@components/blocks/corporation_application/CorporationApplicationTimezone.astro';
+import CorporationApplicationRoles from '@components/blocks/corporation_application/CorporationApplicationRoles.astro';
+import CorporationApplicationDualCitizen from '@components/blocks/corporation_application/CorporationApplicationDualCitizen.astro';
+import CorporationApplicationRequirements from '@components/blocks/corporation_application/CorporationApplicationRequirements.astro';
+import CorporationApplicationHowFound from '@components/blocks/corporation_application/CorporationApplicationHowFound.astro';
+
+interface Props {
+    corporation: CorporationObject;
+    include_field_names?: boolean;
+}
+
+const { corporation, include_field_names = false } = Astro.props;
+
+const formPrefix = CORPORATION_APPLICATION_FORM_PREFIX;
+const idPrefix = 'corp-app';
+---
+
+<Flexblock class="corp-application-form" gap="var(--space-m)">
+    <Flexblock gap="var(--space-s)">
+        <p class="form-lead">{t('corporation_application_intro')}</p>
+
+        <small class="form-subtext" role="note">
+            {t('l3arn_application_links_new_tab_hint')}
+        </small>
+    </Flexblock>
+
+    <CorporationApplicationIntroduction
+        corporation_name={corporation.corporation_name}
+        include_field_names={include_field_names}
+        form_prefix={formPrefix}
+        id_prefix={idPrefix}
+    />
+
+    <CorporationApplicationDoctrines
+        include_field_names={include_field_names}
+        form_prefix={formPrefix}
+        id_prefix={idPrefix}
+    />
+
+    <CorporationApplicationTimezone
+        include_field_names={include_field_names}
+        form_prefix={formPrefix}
+        id_prefix={idPrefix}
+    />
+
+    <CorporationApplicationRoles
+        include_field_names={include_field_names}
+        form_prefix={formPrefix}
+        id_prefix={idPrefix}
+    />
+
+    <CorporationApplicationDualCitizen
+        corporation_name={corporation.corporation_name}
+        include_field_names={include_field_names}
+        form_prefix={formPrefix}
+        id_prefix={idPrefix}
+    />
+
+    <CorporationApplicationRequirements
+        include_field_names={include_field_names}
+        include_omega={false}
+        form_prefix={formPrefix}
+        id_prefix={idPrefix}
+    />
+
+    <CorporationApplicationHowFound
+        include_field_names={include_field_names}
+        form_prefix={formPrefix}
+        id_prefix={idPrefix}
+    />
+</Flexblock>
+
+<style lang="scss">
+    @import './corporation_application/_shared.scss';
+
+    .form-lead {
+        margin: 0;
+        line-height: 1.6;
+    }
+</style>
