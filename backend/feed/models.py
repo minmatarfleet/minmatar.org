@@ -259,10 +259,43 @@ class FeedEventFleetLink(models.Model):
         ]
 
 
+class FeedCapitalAlert(models.Model):
+    """One Discord message for a capital presence near Amamake.
+
+    Further capital-related kills in the same system (within the session TTL)
+    edit this message instead of posting new ones.
+    """
+
+    solar_system_id = models.BigIntegerField(db_index=True)
+    system_name = models.CharField(max_length=64)
+    distance_ly = models.FloatField()
+    # [{type_id, name, role, count}, ...]
+    capitals = models.JSONField(default=list)
+    # [{killmail_id, ship_name, time_hhmm}, ...]
+    kills = models.JSONField(default=list)
+    # [{channel_id, message_id}, ...]
+    discord_messages = models.JSONField(default=list)
+    last_activity_at = models.DateTimeField(db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-last_activity_at"]
+
+    def __str__(self) -> str:
+        return f"Capital alert {self.system_name} ({self.solar_system_id})"
+
+
 class FeedCapitalPing(models.Model):
-    """Discord capital-kill pings sent from the R2Z2 poller."""
+    """Per-killmail dedup / audit for capital alerts."""
 
     killmail_id = models.BigIntegerField(unique=True, db_index=True)
+    alert = models.ForeignKey(
+        FeedCapitalAlert,
+        on_delete=models.CASCADE,
+        related_name="pings",
+        null=True,
+        blank=True,
+    )
     solar_system_id = models.BigIntegerField()
     distance_ly = models.FloatField()
     discord_message_id = models.BigIntegerField(null=True, blank=True)
