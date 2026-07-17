@@ -4,6 +4,74 @@ Real responses that worked. Add entries here after you send outreach — no temp
 
 ---
 
+## 2026-07-17 scout run
+
+### AUTZ WH vet, open to lowsec, wants pew + bit of everything (100m SP)
+**Thread:** [100m SP pilot looking for new home](https://www.reddit.com/r/evejobs/comments/1uz5x8e/100m_sp_pilot_looking_for_new_home/)  
+**Routed:** Rattini Tribe  
+**Author:** BearThatCares
+
+**Scout draft (not sent):**
+> Rattini Tribe runs AUTZ fleets in Minmatar faction warfare and treats lowsec as the main hunt, not a side hobby after null downtime. After a few years in wormholes you already know how to fly; they need people who show up for pew and will try a bit of everything without the structure-timer lifestyle. [Ad](https://www.reddit.com/r/evejobs/comments/1ux56fs/rattini_tribe_relentlessly_feeding_capitals_in_a/) or discord.gg/minmatar
+
+**Sent:**
+> Rattini Tribe runs AUTZ fleets in Minmatar faction, often shooting FRT over lucrative battlefield sites. After a few years in wormholes you already know how to fly; we need people who show up for pew and will try a bit of everything without the structure-timer lifestyle. [Ad](https://www.reddit.com/r/evejobs/comments/1ux56fs/rattini_tribe_relentlessly_feeding_capitals_in_a/) or [discord.gg/minmatar](http://discord.gg/minmatar)
+
+**What changed and why:**
+- Replaced abstract "lowsec as the main hunt / not a side hobby after null" with a concrete content beat: shooting FRT over battlefield sites — answers "will there be AUTZ pew?" without pitching nullsec.
+- "they need" → "we need" — recruiter voice; corp-first still, but ownership lands better than third-person brochure.
+- Kept wormhole skill acknowledgment + structure-timer contrast + bit of everything — that block matched the OP.
+
+**Routing note:** AUTZ priority + willing lowsec → Rattini (only alliance corp with AUTZ on the API). Correct call; do not pitch sov-null even when OP says "back to null."
+
+---
+
+### Dead null corp, open to non-null, saturated r/Eve thread
+**Thread:** [My null sec Corp has died.](https://www.reddit.com/r/Eve/comments/1uyj4o5/my_null_sec_corp_has_died/)  
+**Routed:** Soltech Armada  
+**Author:** BearThatCares
+
+**Scout draft (not sent):**
+> Dead discord and empty null systems are a fine reason to leave without drama, and lowsec faction warfare is louder on a random weeknight than a forty-person corp that stopped logging in. Soltech Armada flies daily out of Amamake with an IRL-first culture, so activity comes from undocking not from babysitting infrastructure. [Ad](https://www.reddit.com/r/evejobs/comments/1utji1c/sltar_soltech_armada_if_it_explodes_well_probably/) or discord.gg/minmatar
+
+**Sent:**
+> Dead discord and empty null systems are a fine reason to leave without drama, and lowsec faction warfare is louder on a random weeknight than an entire month in nullsec. Soltech Armada flies daily out of Amamake with an IRL-first culture. [Ad](https://www.reddit.com/r/evejobs/comments/1utji1c/sltar_soltech_armada_if_it_explodes_well_probably/) or [discord.gg/minmatar](http://discord.gg/minmatar)
+
+**What changed and why:**
+- "forty-person corp that stopped logging in" → "an entire month in nullsec" — sharper contrast, less tied to OP's roster size, reads faster in a 59-comment thread.
+- Dropped "activity comes from undocking not babysitting infrastructure" — redundant once the weeknight vs month contrast is there; saturated thread wants shorter.
+- Kept OP-first open (dead discord / empty null) — matches the advice-thread vibe without sounding like another corp dump.
+
+**Routing note:** No TZ given, open to non-null, wants activity → Soltech daily Amamake. Fine default when the ask is "alive corp" not a specific doctrine.
+
+---
+
+### Returning player asking which FW faction for late US (friends, small-gang)
+**Thread:** [Returning player looking for best facwar faction…](https://www.reddit.com/r/Eve/comments/1uy7m0l/returning_player_looking_for_best_facwar_faction/)  
+**Routed:** The Dark Tribe  
+**Author:** BearThatCares
+
+**Sent (matched scout draft):**
+> Minmatar militia in the Amarr warzone is the busy seat for small-gang PvP in late US evenings, and The Dark Tribe is the USTZ small-gang crew inside Minmatar Fleet if you and your friends want corpmates for that window instead of flying militia alone. [Ad](https://www.reddit.com/r/evejobs/comments/1uw804x/the_dark_tribe_small_gang_ustz_pilots/) or [discord.gg/minmatar](http://discord.gg/minmatar)
+
+**Why it worked as drafted:** Direct-answer open (which faction → Minmatar WZ) then one corp for the TZ window. Names the friends without mirroring their schedule as a question. Thread already had Amarr/Angel pitches; answering the faction question and offering a corp in one paragraph is enough.
+
+**Routing note:** Late US small-gang FW → The Dark Tribe (USTZ on API). Faction-advice posts still count as open prospects when OP is clearly shopping for a place to fight.
+
+---
+
+## Patterns (2026-07-17 run)
+
+| Situation | What landed |
+|-----------|-------------|
+| AUTZ + WH vet open to lowsec | Corp-first Rattini; swap abstract lowsec pitch for concrete FRT/battlefield content; "we need" over "they need" |
+| Dead null corp, open to anything, crowded thread | OP-first empathy + sharper null contrast; cut the second Soltech clause; keep Amamake + IRL-first |
+| "Which FW faction for my TZ?" | Direct answer (Minmatar WZ) + Dark Tribe for USTZ; scout draft shippable as-is |
+| OP says "back to null" but accepts lowsec | Route FW corp; never pitch sov-null to close the deal |
+| FOSFO / Administrative Atrocities ad live but corp missing from API | Do not route until the corporations API lists them |
+
+---
+
 ## 2026-07-15 scout run
 
 ### EUTZ returning casual, IRL-first, worst KB, "is this a match?" (40M SP, 1hr/day)
