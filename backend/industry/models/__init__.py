@@ -3,6 +3,7 @@
 # continues to work when models are split across files in this package.
 
 from industry.models.cost_index import IndustrySystemCostIndex
+from industry.models.lp_store import IndustryLpStoreOffer
 from industry.models.mining import MiningUpgradeCompletion
 from industry.models.order import (
     IndustryOrder,
@@ -15,6 +16,7 @@ from industry.models.product import (
 )
 
 __all__ = [
+    "IndustryLpStoreOffer",
     "IndustryOrder",
     "IndustryOrderItem",
     "IndustryOrderItemAssignment",

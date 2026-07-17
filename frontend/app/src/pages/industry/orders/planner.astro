@@ -79,6 +79,7 @@ try {
         return HTTP_400_Bad_Request()
 }
 
+let is_navy_hull = false
 if (product) {
     try {
         const ship_info = await get_ship_info(product.type_id)
@@ -86,12 +87,14 @@ if (product) {
         if (ship_info?.meta === 'Faction' || navy_name) {
             default_blueprint_me = 0
             default_blueprint_te = 0
+            is_navy_hull = true
         }
     } catch {
         const navy_name = /(?:Navy|Fleet) Issue$/i.test(product.type_name ?? '')
         if (navy_name) {
             default_blueprint_me = 0
             default_blueprint_te = 0
+            is_navy_hull = true
         }
     }
 }
@@ -232,6 +235,8 @@ const bucket_labels = JSON.stringify({
                             compressed: true,
                             character_id: '',
                             use_reprocessing_implants: false,
+                            is_navy_hull: ${is_navy_hull ? 'true' : 'false'},
+                            isk_per_lp: ${is_navy_hull ? '800' : "''"},
                             build_fuel_blocks: false,
                             loading: false,
                             facility_loading: false,
@@ -273,6 +278,7 @@ const bucket_labels = JSON.stringify({
                                     this.character_id,
                                     this.compressed,
                                     this.use_reprocessing_implants,
+                                    this.isk_per_lp,
                                     this.build_fuel_blocks,
                                     toggle_entries.join(','),
                                 ].join('|')
@@ -714,6 +720,11 @@ const bucket_labels = JSON.stringify({
                                     }
                                     if (this.character_id)
                                         body.character_id = parseInt(this.character_id)
+                                    if (this.is_navy_hull) {
+                                        const rate = parseFloat(this.isk_per_lp)
+                                        if (rate > 0)
+                                            body.isk_per_lp = rate
+                                    }
 
                                     const response = await fetch('/api/industry/planner/plans', {
                                         method: 'POST',
@@ -845,6 +856,31 @@ const bucket_labels = JSON.stringify({
                                                         <option value={level}>{level}</option>
                                                     )}
                                                 </Select>
+                                            </div>
+                                        </Flexblock>
+
+                                        <Flexblock
+                                            gap='var(--space-3xs)'
+                                            class="[ planner-settings-field planner-settings-field--compact ]"
+                                            x-show="is_navy_hull"
+                                            x-cloak
+                                        >
+                                            <label for="planner-isk-per-lp">
+                                                <span
+                                                    class="[ planner-tip ]"
+                                                    data-tippy-content={t('industry.orders.planner.isk_per_lp_tip')}
+                                                >{t('industry.orders.planner.isk_per_lp')}</span>
+                                            </label>
+                                            <div class="[ planner-settings-control ]">
+                                                <Input
+                                                    id="planner-isk-per-lp"
+                                                    type="number"
+                                                    min="1"
+                                                    step="1"
+                                                    size="sm"
+                                                    width="100%"
+                                                    x-model="isk_per_lp"
+                                                />
                                             </div>
                                         </Flexblock>
 
@@ -1221,6 +1257,19 @@ const bucket_labels = JSON.stringify({
                                                                 + Number(cost_breakdown.freight_volume_m3).toLocaleString(undefined, { maximumFractionDigits: 2 })
                                                                 + ' m³')
                                                             : '—'"
+                                                    ></span>
+                                                </TextGroup>
+                                            </div>
+                                            <div
+                                                class="[ planner-cost-summary__cell ]"
+                                                x-show="cost_breakdown.navy_bpc_isk > 0"
+                                                x-cloak
+                                            >
+                                                <TextGroup title={t('industry.orders.planner.navy_bpc_cost')}>
+                                                    <span
+                                                        class="[ planner-tip ]"
+                                                        data-tippy-content={t('industry.orders.planner.navy_bpc_cost_tip')}
+                                                        x-text="formatIsk(cost_breakdown.navy_bpc_isk) + ' ISK'"
                                                     ></span>
                                                 </TextGroup>
                                             </div>

@@ -152,6 +152,13 @@ CELERYBEAT_INDUSTRY = [
             "schedule": crontab(minute=20),
         },
     ),
+    (
+        "[Industry] Sync Loyalty Store Offers",
+        {
+            "task": "industry.tasks.sync_loyalty_store_offers_task",
+            "schedule": crontab(minute=35, hour=6),
+        },
+    ),
 ]
 
 # Groups

@@ -30,6 +30,7 @@ from industry.helpers.reprocessing_skills import (
     SKILL_SIMPLE_ORE_PROCESSING,
     SKILL_UBIQUITOUS_MOON_ORE_PROCESSING,
 )
+from industry.models import IndustryLpStoreOffer
 
 BASE = "/api/industry/planner"
 
@@ -365,6 +366,126 @@ class PlannerPlanEndpointTestCase(TestCase):
         data = response.json()
         self.assertAlmostEqual(data["blueprint_me"], 0.0)
         self.assertAlmostEqual(data["blueprint_te"], 0.0)
+
+    @patch("industry.helpers.build_planner.resolve_cost_indices")
+    @patch("industry.helpers.loyalty_store.sync_loyalty_store_offers")
+    def test_post_plan_navy_isk_per_lp_adds_bpc_cost(
+        self, sync_offers, resolve_indices
+    ):
+        """Seeded pure LP+ISK offer; plan must not call ESI sync when cached."""
+        resolve_indices.return_value = (0.05, 0.04, AMAMAKE_SYSTEM_ID)
+        navy = EveType.objects.create(
+            id=900230,
+            name="Plan Stabber Fleet Issue",
+            published=True,
+            eve_group=self.hull.eve_group,
+        )
+        bp = EveType.objects.create(
+            id=900231,
+            name="Plan Stabber Fleet Issue Blueprint",
+            published=True,
+            eve_group=self.trit.eve_group,
+        )
+        EveIndustryActivityProduct.objects.create(
+            eve_type=bp,
+            activity_id=1,
+            product_eve_type=navy,
+            quantity=1,
+        )
+        EveIndustryActivityDuration.objects.create(
+            eve_type=bp, activity_id=1, time=18000
+        )
+        EveIndustryActivityMaterial.objects.create(
+            eve_type=bp,
+            activity_id=1,
+            material_eve_type=self.trit,
+            quantity=1000,
+        )
+        IndustryLpStoreOffer.objects.create(
+            offer_id=16343,
+            corporation_id=1000182,
+            type_id=bp.id,
+            lp_cost=100_000,
+            isk_cost=20_000_000,
+            quantity=1,
+        )
+        response = self.client.post(
+            f"{BASE}/plans",
+            data={
+                "product_type_id": navy.id,
+                "quantity": 2,
+                "facility_key": "amamake",
+                "isk_per_lp": 800,
+            },
+            content_type="application/json",
+            **self.auth,
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        sync_offers.assert_not_called()
+        data = response.json()
+        self.assertIsNotNone(data["navy_bpc"])
+        self.assertEqual(data["navy_bpc"]["packs"], 2)
+        self.assertEqual(data["navy_bpc"]["total_isk"], 200_000_000)
+        self.assertEqual(data["cost_breakdown"]["navy_bpc_isk"], 200_000_000)
+        line_keys = {
+            row["key"] for row in data["cost_breakdown"]["line_items"]
+        }
+        self.assertIn("navy_bpc_lp", line_keys)
+
+    @patch("industry.helpers.build_planner.resolve_cost_indices")
+    def test_post_plan_navy_without_isk_per_lp_skips_bpc_cost(
+        self, resolve_indices
+    ):
+        resolve_indices.return_value = (0.05, 0.04, AMAMAKE_SYSTEM_ID)
+        navy = EveType.objects.create(
+            id=900240,
+            name="Plan Scythe Fleet Issue",
+            published=True,
+            eve_group=self.hull.eve_group,
+        )
+        bp = EveType.objects.create(
+            id=900241,
+            name="Plan Scythe Fleet Issue Blueprint",
+            published=True,
+            eve_group=self.trit.eve_group,
+        )
+        EveIndustryActivityProduct.objects.create(
+            eve_type=bp,
+            activity_id=1,
+            product_eve_type=navy,
+            quantity=1,
+        )
+        EveIndustryActivityDuration.objects.create(
+            eve_type=bp, activity_id=1, time=18000
+        )
+        EveIndustryActivityMaterial.objects.create(
+            eve_type=bp,
+            activity_id=1,
+            material_eve_type=self.trit,
+            quantity=1000,
+        )
+        IndustryLpStoreOffer.objects.create(
+            offer_id=16344,
+            corporation_id=1000182,
+            type_id=bp.id,
+            lp_cost=100_000,
+            isk_cost=20_000_000,
+            quantity=1,
+        )
+        response = self.client.post(
+            f"{BASE}/plans",
+            data={
+                "product_type_id": navy.id,
+                "quantity": 1,
+                "facility_key": "amamake",
+            },
+            content_type="application/json",
+            **self.auth,
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        data = response.json()
+        self.assertIsNone(data.get("navy_bpc"))
+        self.assertEqual(data["cost_breakdown"].get("navy_bpc_isk", 0), 0)
 
     @patch("industry.helpers.build_planner.resolve_cost_indices")
     def test_post_plan_explicit_me_te_overrides_navy_default(

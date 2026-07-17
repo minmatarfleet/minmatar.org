@@ -7,6 +7,7 @@ from eveonline.helpers.characters.update import update_character_industry_jobs
 from eveonline.models import EveCharacter
 
 from industry.helpers.cost_indices import sync_industry_system_cost_indices
+from industry.helpers.loyalty_store import sync_loyalty_store_offers
 from industry.models import IndustryOrderItemAssignment
 
 logger = logging.getLogger(__name__)
@@ -75,4 +76,18 @@ def sync_industry_system_cost_indices_task() -> int:
         return sync_industry_system_cost_indices()
     except Exception:
         logger.exception("Failed to sync industry system cost indices")
+        raise
+
+
+@app.task()
+def sync_loyalty_store_offers_task() -> int:
+    """
+    Refresh cached pure LP+ISK loyalty-store offers for militia corps.
+
+    Daily via Celery beat so planner navy-BPC costing reads the DB.
+    """
+    try:
+        return sync_loyalty_store_offers()
+    except Exception:
+        logger.exception("Failed to sync loyalty store offers")
         raise
