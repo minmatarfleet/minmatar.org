@@ -1,6 +1,10 @@
 from datetime import timedelta, timezone as dt_timezone
 from unittest.mock import patch
 
+import jwt
+from django.conf import settings
+from django.contrib.auth.models import Group, User
+from django.db.models import signals
 from django.test import Client
 from django.utils import timezone
 
@@ -25,6 +29,11 @@ from onboarding.models import (
 )
 from onboarding.seed import ensure_onboarding_programs
 from fittings.models import EveFittingPod
+from groups.helpers.feature_access import clear_feature_cache
+from groups.management.commands.sync_pilot_features import (
+    Command as SyncCommand,
+)
+from groups.models import AffiliationType, UserAffiliation
 from srp.models import (
     EveFleetShipReimbursement,
     PodReimbursementProgram,
@@ -57,6 +66,14 @@ class SrpRouterTestCase(TestCase):
     """Test cases for the market router."""
 
     def setUp(self):
+        signals.post_save.disconnect(
+            sender=Group,
+            dispatch_uid="group_post_save",
+        )
+        signals.m2m_changed.disconnect(
+            sender=User.groups.through,
+            dispatch_uid="user_group_changed",
+        )
         # create test client
         self.client = Client()
 
@@ -64,6 +81,17 @@ class SrpRouterTestCase(TestCase):
 
         ensure_onboarding_programs()
         acknowledge_srp_onboarding_for_user(self.user)
+        alliance_group = Group.objects.create(name="Alliance")
+        affiliation = AffiliationType.objects.create(
+            name="Alliance",
+            group=alliance_group,
+            priority=10,
+            default=False,
+        )
+        UserAffiliation.objects.create(user=self.user, affiliation=affiliation)
+        self.user.groups.add(alliance_group)
+        SyncCommand().handle()
+        clear_feature_cache()
 
         # Setup fleet stuff
         disconnect_fleet_signals()
@@ -541,11 +569,17 @@ class SrpRouterTestCase(TestCase):
         self.assertEqual(401, public_history.status_code)
 
     def test_get_stats_forbidden_without_permission(self):
+        denied_user = User.objects.create(username="denied_stats")
+        denied_token = jwt.encode(
+            {"user_id": denied_user.id},
+            settings.SECRET_KEY,
+            algorithm="HS256",
+        )
         for path in ("stats/overview", "stats/history"):
             with self.subTest(path=path):
                 response = self.client.get(
                     f"{BASE_URL}/{path}",
-                    HTTP_AUTHORIZATION=f"Bearer {self.token}",
+                    HTTP_AUTHORIZATION=f"Bearer {denied_token}",
                 )
                 self.assertEqual(403, response.status_code)
 

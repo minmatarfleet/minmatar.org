@@ -9,6 +9,7 @@ from django.utils import timezone
 from discord.client import DiscordClient
 from eveonline.models import EveLocation
 from fittings.models import EveDoctrine
+from groups.helpers.feature_access import can_use_feature
 
 from fleets.models import EveFleet, EveFleetAudience, EveFleetInstance
 from fleets.endpoints.schemas import EveFleetResponse, EveFleetTrackingResponse
@@ -79,13 +80,10 @@ def time_region(time: datetime) -> str:
 
 def _fleet_authorized(request, fleet: EveFleet) -> bool:
     """True if user can view this fleet (and thus list/volunteer for roles)."""
-    if request.user.has_perm("fleets.view_evefleet"):
+    if can_use_feature(request.user, "fleets.view", fleet=fleet):
         return True
     if request.user == fleet.created_by:
         return True
-    for group in fleet.audience.groups.all():
-        if group in request.user.groups.all():
-            return True
     return False
 
 

@@ -1,5 +1,6 @@
 """GET history — chronological SRP program amount changes."""
 
+from groups.helpers.feature_access import require_feature
 from typing import List
 
 from app.errors import ErrorResponse
@@ -22,7 +23,8 @@ ROUTE_SPEC = {
 
 
 def get_srp_program_history(request):
-    if not request.user.has_perm("srp.view_evefleetshipreimbursement"):
+    denied = require_feature(request.user, "srp.view")
+    if denied:
         return 403, {
             "detail": "User missing permission srp.view_evefleetshipreimbursement"
         }

@@ -5,6 +5,7 @@ import logging
 from authentication import AuthBearer
 from discord.client import DiscordClient
 from eveonline.models import EveCharacter
+from groups.helpers.feature_access import require_feature
 from tribes.endpoints.memberships.schemas import (
     ApplyToGroupRequest,
     MembershipSchema,
@@ -64,6 +65,10 @@ def post_membership(
     ).first()
     if not tg:
         return 404, {"detail": "TribeGroup not found."}
+
+    denied = require_feature(request.user, "tribes.apply", tribe_group=tg)
+    if denied:
+        return denied
 
     existing = TribeGroupMembership.objects.filter(
         user=request.user, tribe_group=tg

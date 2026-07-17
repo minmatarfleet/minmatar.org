@@ -727,7 +727,8 @@ class EsiClient:
         operation = esi_provider.client.Alliance.GetAlliancesAllianceId(
             alliance_id=alliance_id
         )
-        return self._operation_results(operation)
+        # Single-object endpoint: result(), not results() (which returns a list)
+        return self._operation_result(operation)
 
     def get_alliance_corporations(self, alliance_id: int) -> EsiResponse:
         operation = (
@@ -743,7 +744,8 @@ class EsiClient:
                 corporation_id=corporation_id
             )
         )
-        return self._operation_results(operation)
+        # Single-object endpoint: result(), not results() (which returns a list)
+        return self._operation_result(operation)
 
     def get_corporation_members(self, corporation_id: int) -> EsiResponse:
         required_scopes = ["esi-corporations.read_corporation_membership.v1"]

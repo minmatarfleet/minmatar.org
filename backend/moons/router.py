@@ -8,6 +8,7 @@ from authentication import AuthBearer
 from moons.models import EveMoon
 
 from .parser import MoonParsingResult, process_moon_paste
+from groups.helpers.feature_access import can_use_feature
 
 moons_router = Router(tags=["Moons"])
 moons_paste_router = Router(tags=["Moons"])
@@ -72,7 +73,7 @@ class MoonSummaryResponse(BaseModel):
 def create_moon_from_paste(
     request, moon_paste_request: CreateMoonFromPasteRequest
 ) -> MoonParsingResult:
-    if not request.user.has_perm("moons.add_evemoon"):
+    if not can_use_feature(request.user, "moons.manage"):
         return 403, ErrorResponse(
             detail="You do not have permission to add moons"
         )
@@ -111,7 +112,7 @@ def count_scanned_moons(eve_moons) -> List[MoonSummaryResponse]:
     auth=AuthBearer(),
 )
 def get_moon_summary(request):
-    if not request.user.has_perm("moons.view_evemoon"):
+    if not can_use_feature(request.user, "moons.view"):
         return 403, ErrorResponse(
             detail="You do not have permission to view moons"
         )
@@ -128,9 +129,9 @@ def get_moon_summary(request):
     auth=AuthBearer(),
 )
 def get_moons(request, system: str = None):
-    if request.user.has_perm("moons.view_evemoondistribution"):
+    if can_use_feature(request.user, "moons.view"):
         view_distribution = True
-    elif request.user.has_perm("moons.view_evemoon"):
+    elif can_use_feature(request.user, "moons.view"):
         view_distribution = False
     else:
         return 403, ErrorResponse(

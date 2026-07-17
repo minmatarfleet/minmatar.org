@@ -2,6 +2,7 @@
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from groups.helpers.feature_access import can_use_feature
 from audit.models import AuditEntry
 from esi.models import Token
 from eveonline.helpers.characters import (
@@ -31,7 +32,7 @@ def delete_character_by_id(request, character_id: int):
     if not character:
         return 404, {"detail": "Character not found."}
     if not (
-        request.user.has_perm("eveonline.delete_evecharacter")
+        can_use_feature(request.user, "characters.delete_staff")
         or Token.objects.filter(
             user=request.user, character_id=character_id
         ).exists()

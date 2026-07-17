@@ -6,6 +6,7 @@ from eveuniverse.models import EveType
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from groups.helpers.feature_access import require_feature
 from industry.endpoints.orders.schemas import (
     CreateOrderRequest,
     CreateOrderResponse,
@@ -128,6 +129,10 @@ def _create_order(
 
 
 def post_order(request, payload: CreateOrderRequest):
+    denied = require_feature(request.user, "industry.order.submit")
+    if denied:
+        return denied
+
     character, err = _resolve_order_character(request, payload)
     if err:
         return err

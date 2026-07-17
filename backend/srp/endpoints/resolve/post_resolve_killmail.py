@@ -1,5 +1,6 @@
 """POST resolve-killmail — preview killmail and candidate fleets for SRP."""
 
+from groups.helpers.feature_access import require_feature
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from onboarding.srp_gate import require_current_srp_onboarding
@@ -34,10 +35,9 @@ ROUTE_SPEC = {
 
 
 def resolve_killmail_for_srp(request, payload: ResolveKillmailRequest):
-    if not request.user.has_perm("srp.add_evefleetshipreimbursement"):
-        return 403, {
-            "detail": "User missing permission srp.add_evefleetshipreimbursement"
-        }
+    denied = require_feature(request.user, "srp.resolve")
+    if denied:
+        return denied
 
     denied = require_current_srp_onboarding(request)
     if denied:

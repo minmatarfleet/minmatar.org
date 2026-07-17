@@ -5,6 +5,7 @@ from typing import Optional
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from groups.helpers.feature_access import require_feature
 from django.utils import timezone
 from eveonline.helpers.characters import user_characters
 
@@ -28,8 +29,9 @@ ROUTE_SPEC = {
 
 
 def start_fleet_now(request, payload: Optional[StartFleetNowRequest] = None):
-    if not request.user.has_perm("fleets.add_evefleet"):
-        return 403, {"detail": "User missing permission fleets.add_evefleet"}
+    denied = require_feature(request.user, "fleets.create")
+    if denied:
+        return denied
 
     audience = EveFleetAudience.objects.filter(hidden=False).first()
     if not audience:

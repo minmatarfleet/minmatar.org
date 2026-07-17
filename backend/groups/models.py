@@ -2,6 +2,7 @@ from django.db import models
 from eveuniverse.models import EveFaction
 
 from eveonline.models import EveAlliance, EveCharacter, EveCorporation
+from groups.features.types import FeatureScope
 
 # Create your models here.
 
@@ -153,3 +154,29 @@ class EveCorporationGroup(models.Model):
 
     def __str__(self):
         return str(self.group.name)
+
+
+class PilotFeature(models.Model):
+    """Admin-wired authorization feature synced from the code registry."""
+
+    code = models.CharField(max_length=64, unique=True)
+    label = models.CharField(max_length=128)
+    description = models.TextField(blank=True)
+    scope = models.CharField(max_length=32, choices=FeatureScope.choices)
+    legacy_permission = models.CharField(
+        max_length=100, blank=True, default=""
+    )
+    staff_permission = models.CharField(max_length=100, blank=True, default="")
+    affiliations = models.ManyToManyField(AffiliationType, blank=True)
+    tribe_groups = models.ManyToManyField("tribes.TribeGroup", blank=True)
+    auth_groups = models.ManyToManyField("auth.Group", blank=True)
+    deny_community_statuses = models.JSONField(default=list, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Pilot feature"
+        verbose_name_plural = "Pilot features"
+        ordering = ["code"]
+
+    def __str__(self):
+        return str(self.label or self.code)

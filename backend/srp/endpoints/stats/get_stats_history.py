@@ -1,5 +1,6 @@
 """GET history — counts, ISK totals, and breakdowns by ship group and type."""
 
+from groups.helpers.feature_access import require_feature
 from datetime import timedelta
 from typing import Literal
 
@@ -77,10 +78,9 @@ def _i(v) -> int:
 
 
 def get_srp_stats_history(request, days: str = "90"):
-    if not request.user.has_perm("srp.view_evefleetshipreimbursement"):
-        return 403, {
-            "detail": "User missing permission srp.view_evefleetshipreimbursement"
-        }
+    denied = require_feature(request.user, "srp.view")
+    if denied:
+        return denied
 
     denied = require_current_srp_onboarding(request)
     if denied:

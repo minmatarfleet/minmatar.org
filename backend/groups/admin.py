@@ -15,6 +15,7 @@ from eveonline.models import EveCorporation
 from .models import (
     AffiliationType,
     EveCorporationGroup,
+    PilotFeature,
     UserCommunityStatus,
     UserCommunityStatusHistory,
 )
@@ -25,6 +26,55 @@ User = get_user_model()
 # Register your models here.
 admin.site.register(AffiliationType)
 admin.site.register(EveCorporationGroup)
+
+
+@admin.register(PilotFeature)
+class PilotFeatureAdmin(admin.ModelAdmin):
+    list_display = ("code", "label", "scope", "is_active")
+    list_filter = ("scope", "is_active")
+    search_fields = ("code", "label")
+    readonly_fields = ("code",)
+    filter_horizontal = ("affiliations", "tribe_groups", "auth_groups")
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "code",
+                    "label",
+                    "description",
+                    "scope",
+                    "is_active",
+                )
+            },
+        ),
+        (
+            "Permissions",
+            {
+                "fields": (
+                    "legacy_permission",
+                    "staff_permission",
+                    "deny_community_statuses",
+                )
+            },
+        ),
+        (
+            "Wiring",
+            {
+                "fields": (
+                    "affiliations",
+                    "tribe_groups",
+                    "auth_groups",
+                )
+            },
+        ),
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 def _bulk_upload_context(admin_instance, title, summary=None):

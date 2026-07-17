@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from groups.helpers.feature_access import can_use_feature
 
 from structures.helpers import (
     get_skyhook_details,
@@ -101,7 +102,7 @@ class EveStructureTimerResponse(BaseModel):
     "", auth=AuthBearer(), response={200: List[StructureResponse], 403: None}
 )
 def get_structures(request):
-    if not request.user.has_perm("structures.view_evestructure"):
+    if not can_use_feature(request.user, "structures.view"):
         return 403, None
     structures = EveStructure.objects.all()
     response = []
@@ -123,7 +124,7 @@ def get_structures(request):
     response={200: List[EveStructureTimerResponse], 403: None},
 )
 def get_structure_timers(request, active: bool = True):
-    if not request.user.has_perm("structures.view_evestructuretimer"):
+    if not can_use_feature(request.user, "structures.timers.view"):
         return 403, None
 
     if active:
@@ -177,7 +178,7 @@ def create_structure_timer(request, payload: EveStructureTimerRequest):
 
     Parse this and create an EveStructureTimer
     """
-    if not request.user.has_perm("structures.add_evestructuretimer"):
+    if not can_use_feature(request.user, "structures.timers.manage"):
         return 403, ErrorResponse(message="Permission denied")
 
     # Parse the request
@@ -239,7 +240,7 @@ def create_structure_timer(request, payload: EveStructureTimerRequest):
 def verify_structure_timer(
     request, timer_id: int, payload: EveStructureTimerVerificationRequest
 ):
-    if not request.user.has_perm("structures.change_evestructuretimer"):
+    if not can_use_feature(request.user, "structures.timers.manage"):
         return 403, ErrorResponse(message="Permission denied")
 
     try:

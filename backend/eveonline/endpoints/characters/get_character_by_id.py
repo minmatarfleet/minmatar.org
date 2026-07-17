@@ -2,6 +2,7 @@
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from groups.helpers.feature_access import can_use_feature
 from eveonline.endpoints.characters.schemas import CharacterResponse
 from eveonline.helpers.characters import character_primary
 from eveonline.models import EveCharacter
@@ -38,7 +39,7 @@ def get_character_by_id(request, character_id: int):
                 primary_character.character_name
             )
     if (
-        request.user.has_perm("eveonline.view_evecharacter")
+        can_use_feature(request.user, "characters.view_staff")
         or request.user.is_superuser
         or (character.token and character.token.user == request.user)
     ):

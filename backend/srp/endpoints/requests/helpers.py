@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.db.models import Q, QuerySet
 
+from groups.helpers.feature_access import can_use_feature
 from srp.models import EveFleetShipReimbursement
 
 
@@ -18,7 +19,7 @@ def duplicate_kill(details) -> bool:
 def can_update(user: User, reimbursement: EveFleetShipReimbursement) -> bool:
     if reimbursement.user == user:
         return True
-    if user.has_perm("srp.change_evefleetshipreimbursement"):
+    if can_use_feature(user, "srp.process"):
         return True
     return False
 
@@ -44,7 +45,7 @@ def visible_reimbursements_qs(
         qs = qs.filter(fleet_id=fleet_id)
     if user_id is not None:
         qs = qs.filter(user_id=user_id)
-    if user.has_perm("srp.change_evefleetshipreimbursement"):
+    if can_use_feature(user, "srp.process"):
         return qs
     return qs.filter(Q(user_id=user.id))
 

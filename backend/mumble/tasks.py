@@ -6,6 +6,7 @@ from eveonline.helpers.characters import user_primary_character
 
 from .models import MumbleAccess
 from .router import mumble_username
+from groups.helpers.feature_access import can_use_feature
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +14,7 @@ logger = logging.getLogger(__name__)
 @app.task
 def clear_unauthorized_mumble_access():
     for mumble_access in MumbleAccess.objects.all():
-        if not mumble_access.user.has_perm("mumble.view_mumbleaccess"):
+        if not can_use_feature(mumble_access.user, "mumble.access"):
             logger.info(
                 "Clearing mumble access for user %s", mumble_access.user
             )

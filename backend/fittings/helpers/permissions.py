@@ -11,6 +11,7 @@ from fittings.models import (
     PROTECTION_TIER_NON_STRATEGIC,
     PROTECTION_TIER_STRATEGIC,
 )
+from groups.helpers.feature_access import can_use_feature
 
 user_model = get_user_model()
 
@@ -39,9 +40,7 @@ def effective_protection_tier(fitting) -> str | None:
     return None
 
 
-def can_approve_doctrine_request(user, tier: str) -> bool:
-    if user and user.is_superuser:
-        return True
+def _tier_can_approve_doctrine(user, tier: str) -> bool:
     if tier == PROTECTION_TIER_NON_STRATEGIC:
         return user.has_perm(
             "fittings.approve_doctrine_non_strategic"
@@ -51,9 +50,15 @@ def can_approve_doctrine_request(user, tier: str) -> bool:
     return False
 
 
-def can_approve_fitting_request(user, tier: str) -> bool:
+def can_approve_doctrine_request(user, tier: str) -> bool:
     if user and user.is_superuser:
         return True
+    if _tier_can_approve_doctrine(user, tier):
+        return True
+    return can_use_feature(user, "fittings.doctrine.approve")
+
+
+def _tier_can_approve_fitting(user, tier: str) -> bool:
     if tier == PROTECTION_TIER_NON_STRATEGIC:
         return user.has_perm(
             "fittings.approve_doctrine_fitting_non_strategic"
@@ -63,16 +68,28 @@ def can_approve_fitting_request(user, tier: str) -> bool:
     return False
 
 
+def can_approve_fitting_request(user, tier: str) -> bool:
+    if user and user.is_superuser:
+        return True
+    if _tier_can_approve_fitting(user, tier):
+        return True
+    return can_use_feature(user, "fittings.doctrine.approve")
+
+
 def can_propose_doctrine_change(user, tier: str) -> bool:
     if user and user.is_superuser:
         return True
-    return user.has_perm(f"fittings.change_doctrine_{tier}")
+    if user.has_perm(f"fittings.change_doctrine_{tier}"):
+        return True
+    return can_use_feature(user, "fittings.doctrine.propose")
 
 
 def can_propose_fitting_change(user, tier: str) -> bool:
     if user and user.is_superuser:
         return True
-    return user.has_perm(f"fittings.change_doctrine_fitting_{tier}")
+    if user.has_perm(f"fittings.change_doctrine_fitting_{tier}"):
+        return True
+    return can_use_feature(user, "fittings.doctrine.propose")
 
 
 can_publish_doctrine_change = can_propose_doctrine_change

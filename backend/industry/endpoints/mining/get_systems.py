@@ -5,6 +5,7 @@ from typing import List
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from groups.helpers.feature_access import can_use_feature
 from industry.endpoints.mining.schemas import (
     MINING_LEVEL_DURATION_MINUTES,
     MiningCompletionRecord,
@@ -49,7 +50,7 @@ def _completion_record(c) -> MiningCompletionRecord:
 
 
 def get_systems(request):
-    if not request.user.has_perm("industry.view_miningupgradecompletion"):
+    if not can_use_feature(request.user, "industry.mining.view"):
         return 403, ErrorResponse(
             detail="You do not have permission to view mining completions."
         )
