@@ -75,7 +75,7 @@ export const disclaimers = [
 export const metagameSummary = [
     {
         ship: 'Catalyst Navy Issue',
-        text: 'The most flexible and widely favoured destroyer in both warzones. Its two main lines (blaster brawl and 10MN rail) cover each other’s weaknesses: you do not want to be on top of the blaster fit, but you do want to hug the kiter, so even with high ground the defender faces awkward choices. Probably the best slide-in hull in the class.',
+        text: 'The most flexible and widely favoured destroyer in both warzones. Its two main lines (Blaster Catalyst Navy Issue and 10mn Catalyst Navy Issue) cover each other’s weaknesses: you do not want to be on top of the blaster fit, but you do want to hug the kiter, so even with high ground the defender faces awkward choices. Probably the best slide-in hull in the class.',
     },
     {
         ship: 'Coercer Navy Issue',
@@ -91,7 +91,7 @@ export const metagameSummary = [
     },
     {
         ship: 'Talwar Fleet Issue',
-        text: 'The newest navy destroyer (Cradle of War, YC 128). Early solo play centres on a 10MN rocket brawler that beats many classic MWD + scram + web lines; fleet light-missile fits look weak so far. Meta is still forming.',
+        text: 'The newest navy destroyer (Cradle of War, YC 128). Early solo play centres on the 10mn Rocket Talwar Fleet Issue that beats many classic MWD + scram + web lines; fleet light-missile fits look weak so far. Meta is still forming.',
     },
 ]
 
