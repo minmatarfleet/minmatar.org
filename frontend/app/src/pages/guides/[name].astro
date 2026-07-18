@@ -34,7 +34,7 @@ const structured_data = buildGuideJsonLd({
     ...seo,
 })
 
-const { html: guide_html, ...progress } = pageProgressFromMarkdown({
+const { html: guide_html, sections, ...progress } = pageProgressFromMarkdown({
     page_key: `guides/${guide.slug}`,
     page_title: guide.title,
     markdown: module.rawContent(),
@@ -51,6 +51,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import BlockList from '@components/compositions/BlockList.astro'
 
 import Button from '@components/blocks/Button.astro'
+import GuideContentsLayout from '@components/blocks/GuideContentsLayout.astro'
 import Tag from '@components/blocks/Tag.astro'
 import PageProgress from '@components/blocks/PageProgress.astro'
 ---
@@ -79,55 +80,76 @@ import PageProgress from '@components/blocks/PageProgress.astro'
         <Flexblock gap='var(--space-2xl)' data-page-progress-root>
             <TextBox>
                 <Flexblock gap='var(--space-m)'>
-                    <nav class="guide-breadcrumb" aria-label="Breadcrumb">
-                        <ol>
-                            <li><a href={translatePath('/guides/')}>{t('guides.page_title')}</a></li>
-                            <li aria-current="page">{guide.title}</li>
-                        </ol>
-                    </nav>
+                    <div class="guide-header-top">
+                        <nav class="guide-breadcrumb" aria-label="Breadcrumb">
+                            <ol>
+                                <li><a href={translatePath('/guides/')}>{t('guides.page_title')}</a></li>
+                                <li aria-current="page">{guide.title}</li>
+                            </ol>
+                        </nav>
+                        <div class="guide-header-top__progress">
+                            <PageProgress {...progress} />
+                        </div>
+                    </div>
                     <Tag text={guide.category} />
                     <PageTitle is_landing={true}>{guide.title}</PageTitle>
                     <p class="[ guide-excerpt ]">{guide.excerpt}</p>
                     <small class="[ text-muted ]">{t('by_template').replace('{name}', guide.author)}</small>
-                    <PageProgress {...progress} />
                 </Flexblock>
             </TextBox>
 
-            <TextBox>
-                <BlockList gap='var(--space-xl)'>
-                    <div
-                        class="[ prose ]"
-                        set:html={guide_html}
-                        x-data={`{
-                            init_zoom() {
-                                mediumZoom('.prose img', {
-                                    background: 'var(--solid-transparency-background)',
-                                    scrollOffset: 0,
-                                    margin: 24,
-                                    metaClick: false,
-                                })
-                            }
-                        }`}
-                        x-init="init_zoom()"
-                    />
+            <TextBox max_width="var(--max-content-width)">
+                <GuideContentsLayout sections={sections}>
+                    <BlockList gap='var(--space-xl)'>
+                        <div
+                            class="[ prose ]"
+                            set:html={guide_html}
+                            x-data={`{
+                                init_zoom() {
+                                    mediumZoom('.prose img', {
+                                        background: 'var(--solid-transparency-background)',
+                                        scrollOffset: 0,
+                                        margin: 24,
+                                        metaClick: false,
+                                    })
+                                }
+                            }`}
+                            x-init="init_zoom()"
+                        />
 
-                    <hr class="[ border-bottom ]" />
+                        <hr class="[ border-bottom ]" />
 
-                    <Button
-                        class="[ w-fit! ]"
-                        href={translatePath('/guides/')}
-                    >
-                        {t('guides.back_to_guides')}
-                    </Button>
-                </BlockList>
+                        <Button
+                            class="[ w-fit! ]"
+                            href={translatePath('/guides/')}
+                        >
+                            {t('guides.back_to_guides')}
+                        </Button>
+                    </BlockList>
+                </GuideContentsLayout>
             </TextBox>
         </Flexblock>
     </PageLanding>
 </Viewport>
 
 <style lang="scss">
+    .guide-header-top {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: var(--space-s);
+        width: 100%;
+    }
+
+    .guide-header-top__progress {
+        flex: 0 0 auto;
+        margin-left: auto;
+    }
+
     .guide-breadcrumb {
         margin: 0;
+        min-width: 0;
 
         ol {
             display: flex;
@@ -160,5 +182,9 @@ import PageProgress from '@components/blocks/PageProgress.astro'
         font-size: var(--step-1);
         color: var(--muted-color);
         max-width: 60ch;
+    }
+
+    .prose :global(h2[id]) {
+        scroll-margin-top: calc(var(--header-height, 4rem) + var(--space-l));
     }
 </style>

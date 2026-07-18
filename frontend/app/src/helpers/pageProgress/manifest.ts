@@ -4,18 +4,21 @@ import {
     hashPageVersion,
     normalizeSectionIds,
     type PageProgressProps,
+    type PageProgressSection,
 } from '@helpers/pageProgress/sections'
 
 export type MarkdownPageProgress = PageProgressProps & {
     /** HTML with `##` headings tagged for tracking — render with set:html. */
     html: string
+    /** Top-level `##` sections (ids match heading anchors in `html`). */
+    sections: PageProgressSection[]
 }
 
 /**
  * Build progress props + tagged HTML from markdown that uses `##` sections.
  *
  * @example
- * const { html, ...progress } = pageProgressFromMarkdown({
+ * const { html, sections, ...progress } = pageProgressFromMarkdown({
  *   page_key: 'alliance/values',
  *   page_title: 'Alliance Values',
  *   markdown: raw,
@@ -34,6 +37,7 @@ export function pageProgressFromMarkdown(options: {
         page_title: options.page_title,
         version: hashPageVersion(options.markdown),
         section_ids: sections.map((section) => section.id),
+        sections,
         html: parseMarkdownWithSections(options.markdown),
     }
 }

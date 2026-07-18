@@ -35,21 +35,16 @@ import Viewport from '@layouts/Viewport.astro'
 import PageWide from '@components/page/PageWide.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 
-import TextBox from '@components/layout/TextBox.astro'
-
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Grid from '@components/compositions/Grid.astro'
 
 import GuideCard from '@components/blocks/GuideCard.astro'
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
-import FixedFluid from '@components/compositions/FixedFluid.astro'
 import ButtonSubmitGuide from '@components/blocks/ButtonSubmitGuide.astro'
 
 const guidesByCategory = getGuidesByCategory()
 
 const page_title = t('guides.page_title')
-const page_description = t('guides.leading_text')
 ---
 
 <Viewport
@@ -84,55 +79,31 @@ const page_description = t('guides.leading_text')
         </FlexInline>
 
         <Flexblock gap='var(--space-2xl)'>
-            <TextBox>
-                <FixedFluid class="[ items-center! ]" width='64px'>
-                    <picture>
-                        <img
-                            src="/images/wikilogo.png"
-                            width="64"
-                            height="64"
-                            alt=""
-                            loading="eager"
-                        />
-                    </picture>
-                    <p class="[ excerpt ]">{page_description}</p>
-                </FixedFluid>
-            </TextBox>
+            {guideCategories.map((category) => {
+                const categoryGuides = guidesByCategory[category] ?? []
+                if (!categoryGuides.length) return null
 
-            <Flexblock gap='var(--space-2xl)'>
-                {guideCategories.map((category) => {
-                    const categoryGuides = guidesByCategory[category] ?? []
-                    if (!categoryGuides.length) return null
-
-                    return (
-                        <Flexblock gap='var(--space-m)'>
-                            <Flexblock gap='var(--space-3xs)'>
-                                <h2 class="[ font-bold ]">{category}</h2>
-                                <small class="[ text-muted ]">
-                                    {categoryGuides.length} {categoryGuides.length === 1 ? 'guide' : 'guides'}
-                                </small>
-                            </Flexblock>
-                            <Grid
-                                class="[ w-full grid-fill ]"
-                                row_gap="var(--space-3xs)"
-                                column_gap="var(--space-3xs)"
-                                min_item_width="400px"
-                            >
-                                {categoryGuides.map((guide) => (
-                                    <GuideCard guide={guide} />
-                                ))}
-                            </Grid>
+                return (
+                    <Flexblock gap='var(--space-m)'>
+                        <Flexblock gap='var(--space-3xs)'>
+                            <h2 class="[ font-bold ]">{category}</h2>
+                            <small class="[ text-muted ]">
+                                {categoryGuides.length} {categoryGuides.length === 1 ? 'guide' : 'guides'}
+                            </small>
                         </Flexblock>
-                    )
-                })}
-            </Flexblock>
+                        <Grid
+                            class="[ w-full grid-fill ]"
+                            row_gap="var(--space-3xs)"
+                            column_gap="var(--space-3xs)"
+                            min_item_width="400px"
+                        >
+                            {categoryGuides.map((guide) => (
+                                <GuideCard guide={guide} />
+                            ))}
+                        </Grid>
+                    </Flexblock>
+                )
+            })}
         </Flexblock>
     </PageWide>
 </Viewport>
-
-<style lang="scss">
-    .excerpt {
-        font-size: var(--step-1);
-        max-width: 52ch;
-    }
-</style>

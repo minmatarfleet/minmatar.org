@@ -21,8 +21,8 @@
     --tw-prose-code: var(--highlight);
     --tw-prose-pre-code: var(--highlight);
     --tw-prose-pre-bg: var(--background);
-    --tw-prose-th-borders: var(--border-color);
-    --tw-prose-td-borders: var(--border-color);
+    --tw-prose-th-borders: rgb(255, 255, 255, 0.15);
+    --tw-prose-td-borders: rgb(255, 255, 255, 0.12);
 
     h1 {
         font-weight: 500;
@@ -92,7 +92,23 @@
         padding-bottom: 1px;
     }
 
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        border: solid 1px rgb(255, 255, 255, 0.18);
+    }
+
+    thead th {
+        background-color: var(--component-background);
+    }
+
     th {
         color: var(--highlight);
+    }
+
+    th,
+    td {
+        border: solid 1px rgb(255, 255, 255, 0.12);
+        padding: 0.6em 0.85em;
     }
 }

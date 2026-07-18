@@ -15,6 +15,7 @@ import {
     shipGuides,
 } from '@/data/navy-destroyer-metagame'
 
+import GuideContentsLayout from '@components/blocks/GuideContentsLayout.astro'
 import NavyDestroyerMetagameMatchupChart from '@components/blocks/navy-destroyer-metagame/NavyDestroyerMetagameMatchupChart.astro'
 import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-metagame/NavyDestroyerMetagameShipSection.astro'
 ---
@@ -25,23 +26,7 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
         <p class="ndm-guide__edition">{guideMeta.edition} · {guideMeta.yc}</p>
     </header>
 
-    <div class="ndm-guide__layout">
-        <nav class="ndm-guide__nav ndm-panel" aria-label="Guide sections">
-            <p class="ndm-guide__nav-label">Contents</p>
-            <ol class="ndm-guide__nav-list">
-                {
-                    guideSections.map((section) => (
-                        <li>
-                            <a href={`#${section.id}`} class="ndm-guide__nav-link">
-                                {section.shortTitle ?? section.title}
-                            </a>
-                        </li>
-                    ))
-                }
-            </ol>
-        </nav>
-
-        <div class="ndm-guide__content">
+    <GuideContentsLayout sections={guideSections}>
             <section id="introduction" data-section-id="introduction" class="ndm-section ndm-panel" aria-labelledby="ndm-intro-title">
                 <h2 id="ndm-intro-title" class="ndm-section__title">Introduction</h2>
                 {
@@ -228,8 +213,7 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
                     </p>
                 </div>
             </section>
-        </div>
-    </div>
+    </GuideContentsLayout>
 </div>
 
 <style lang="scss">
@@ -289,76 +273,6 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
         letter-spacing: 0.14em;
         text-transform: uppercase;
         color: var(--text-color-secondary, var(--faded));
-    }
-
-    .ndm-guide__layout {
-        display: grid;
-        gap: var(--space-l);
-        align-items: start;
-    }
-
-    @media (min-width: 56rem) {
-        .ndm-guide__layout {
-            grid-template-columns: 15rem minmax(0, 1fr);
-            gap: var(--space-xl);
-        }
-
-        .ndm-guide__nav {
-            position: sticky;
-            top: calc(var(--header-height, 4rem) + var(--space-m));
-            max-height: calc(100vh - var(--header-height, 4rem) - var(--space-xl));
-            overflow: auto;
-        }
-
-        .ndm-guide__nav-list {
-            flex-direction: column;
-            flex-wrap: nowrap;
-        }
-    }
-
-    .ndm-guide__nav {
-        min-width: 0;
-    }
-
-    .ndm-guide__nav-label {
-        margin: 0 0 var(--space-s);
-        font-family: var(--ndm-display-font);
-        font-size: var(--step--2);
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: var(--fleet-red);
-    }
-
-    .ndm-guide__nav-list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-2xs);
-        margin: 0;
-        padding: 0;
-        list-style: none;
-    }
-
-    .ndm-guide__nav-link {
-        display: block;
-        padding: var(--space-2xs) var(--space-xs);
-        border-left: 2px solid transparent;
-        color: inherit;
-        font-size: var(--step--1);
-        text-decoration: none;
-        transition: border-color 0.2s ease, color 0.2s ease;
-
-        &:hover,
-        &:focus-visible {
-            border-left-color: var(--fleet-yellow);
-            color: var(--highlight);
-        }
-    }
-
-    .ndm-guide__content {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-l);
-        min-width: 0;
     }
 
     .ndm-guide__ships {

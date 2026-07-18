@@ -1,171 +1,168 @@
 ---
 title: 'Faction Warfare Complexes'
-excerpt: 'How faction warfare complexes work: ship limits, O-plex vs D-plex, mechanics, LP payouts, and victory points.'
+excerpt: 'FW plexing in depth: gate and landing mechanics, LP payouts, and victory points by site—including Cradle of War complexes.'
 category: 'Faction Warfare'
-author: 'Minmatar Fleet'
+author: 'BearThatCares'
 ---
-Faction warfare complexes, or **"plexes"** for short, are key to Minmatar territory control. By capturing complexes, pilots gain loyalty points and contribute to flipping systems for the Minmatar Republic—gaining us more territory and increasing our benefits from faction warfare.
+Faction warfare complexes (**plexes**) are where most fights and most LP happen. Capture them to earn loyalty points and push systems toward flipping for the Minmatar Republic.
 
-To capture a complex, you need a basic understanding of ships and the faction warfare map. This guide focuses on Minmatar vs Amarr space, where we primarily operate; however, the same information applies to the Gallente vs Caldari warzone.
+For map colors, system types (frontline / command ops / rearguard), contested vs advantage, and how site names are read, start with [Faction Warfare Basics](/guides/faction-warfare-basics/). This guide covers plexing itself: the deadspace pocket, and the LP / victory point tables.
 
-## Faction Warfare Map
+## Basics
 
-The Minmatar Republic is in a constant struggle against the Amarr Empire. By capturing complexes, we eventually siege systems and bring them under Minmatar control. Pilots also gain loyalty points for every complex they capture; LP is the primary income source for many faction warfare pilots.
+### Outside the plex
 
-The first step is understanding the map. Dotlan can look daunting, but it is extremely useful for warzone information: [Amarr vs Minmatar Dotlan Map](https://evemaps.dotlan.net/map/Amarr_VS_Minmatar#sov)
+Warping to a plex lands you at an acceleration gate (Open plexes have no gate—you land inside at your warp range).
 
-Systems controlled by Amarr and Caldari are offensive targets for Minmatar. Offensively capturing complexes in those systems yields higher LP and adds victory points to the system (0.7% per complex). Once the bar reaches 100%, we can siege the system.
+- Align to the pocket before activating the gate so you don’t sit still on the gate.
+- Gate activation range is ~90km. A warp-to-100 may land you just outside range.
+- A warp disruptor or scram blocks the gate.
+- The gate is collidable—warping to 0 often means bouncing off it when you activate.
+- Longer warps are safer: you always land between the gate and your origin, so distant warpins leave more room.
+- You can warp to objects on the **outside** grid.
 
-## Faction Warfare Complexes
+### Inside the plex
 
-Below is a table of faction warfare complexes and the ship classes that can capture them. The great balancing factor of faction warfare is that complexes only allow certain ship types: each complex has an upper limit on hull class, but any smaller hull under that limit can also enter.
+- You cannot warp to anything on the grid (objects or fleetmates), even after the site finishes.
+- You can always warp out (unless pointed/scrambled); warping back returns you to the acceleration gate.
+- Capture radius is 30km; the pocket itself is much larger.
+- The central structure has no collision.
 
-| Complex Name | Capture Time | Maximum Ship Class | Recommended Solo Ship |
+### Landing beacon
+
+You land within ~3.5km of the landing beacon at a random spot.
+
+- Enable brackets so you can see the beacon.
+- The beacon is a large collidable with a small hitbox—rarely sticky.
+- Sitting on the beacon minimizes distance to anyone entering.
+- Hold the range you want for the next fight relative to the beacon.
+- The NPC spawns from the central structure ~8–12km from the beacon.
+
+### Landing invulnerability
+
+Anyone already inside sees you before you finish landing and can move on you early.
+
+- Landing ships decelerate to 0 m/s.
+- ~10 seconds of invulnerability after landing ends immediately if you do anything other than preheat modules.
+- Use that window to decide: burn in, burn out, or hold.
+- Reinforcements always land on the beacon—they cannot land on a friendly already inside.
+
+## Site Restrictions
+
+Each site name encodes size, ship classification, and how many pilots get a full payout. Anything under the size cap can usually enter.
+
+| Size | Capture time | Maximum ship class |
+| --- | --- | --- |
+| Scout | 10 min (BSC-1: 5 min) | Frigates and below |
+| Interceptor | 10 min | Interceptors only |
+| Small | 10 min | Destroyers and below |
+| Medium | 15 min | Cruisers and below |
+| Moderate | 15 min | Battlecruisers and below |
+| Large | 15 min | Battleships and below |
+| Open | 15 min | Any ship |
+
+| Classification | Allowed ships |
+| --- | --- |
+| BSC | Tech I only |
+| NVY | Navy and Tech I |
+| ADV | Tech II, Pirate, Navy, and Tech I |
+| ELT | Tech III destroyers and below (all ships of that size, including T3s) |
+
+| Payout suffix | Meaning |
+| --- | --- |
+| `-1` | One pilot receives full payout before rewards split |
+| `-2` | Up to two pilots receive full payout before rewards split |
+| `-3` | Up to three pilots receive full payout before rewards split |
+| `-4` | Up to four pilots receive full payout before rewards split |
+| `-X` | Up to X pilots receive full payout before rewards split |
+
+Example: **Minmatar Scout BSC-1** — frigates only, Tech I only, one full payout before splitting.
+
+Other rules:
+
+- The payout number is not a hard entry cap—extra pilots can enter, but LP splits past the cap.
+- Smaller ships can enter larger plexes (e.g. destroyers in a Large).
+- T3 destroyers count as one size larger (Medium ADV+). T3 cruisers only fit Large ADV and Open.
+
+**Where to plex:** Frontlines pay the most LP and VP. Command Ops and rearguards pay less, but are quieter and sometimes useful for surprise contest / advantage work. See [Faction Warfare Basics → Systems](/guides/faction-warfare-basics/#systems).
+
+## Site rewards
+
+Loyalty points depend on site type and system type.
+
+| System type | LP multiplier |
+| --- | --- |
+| Frontline | 1.5× base |
+| Command Operations | 1.0× base |
+| Rearguard | ~0.01× base (almost nothing) |
+
+| Site | Full-payout pilots | Base LP | Frontline LP |
 | --- | --- | --- | --- |
-| Scout Outpost | 10 Minutes | Frigates | Tristan, Breacher, Rifter |
-| Small Outpost | 10 Minutes | Destroyers | Thrasher, Algos |
-| Medium Outpost | 15 Minutes | Cruisers | Vexor, Stabber |
-| Large Outpost | 15 Minutes | Battleships | Cyclone, Hurricane |
-| Open Outpost | 15 Minutes | Anything | Cyclone, Hurricane |
+| Scout BSC-1 | 1 | 7,500 | 11,250 |
+| Scout NVY-1 | 1 | 10,000 | 15,000 |
+| Scout NVY-2 | 2 | 12,500 | 18,750 |
+| Small Interceptor-1 | 1 | 25,000 | 25,000 |
+| Small NVY-1 | 1 | 15,000 | 22,500 |
+| Small NVY-2 | 2 | 18,750 | 28,150 |
+| Small ADV-1 | 1 | 17,500 | 26,250 |
+| Small ADV-2 | 2 | 20,000 | 30,000 |
+| Contested Field Research Facility | up to 5 | 30,000 | 45,000 |
+| Medium NVY-1 | 1 | 20,000 | 30,000 |
+| Medium NVY-3 | 3 | 25,000 | 37,500 |
+| Medium ADV-1 | 1 | 25,000 | 37,500 |
+| Medium ADV-3 | 3 | 30,000 | 45,000 |
+| Moderate NVY-3 | 3 | 35,000 | 52,500 |
+| Large NVY-1 | 1 | 25,000 | 37,500 |
+| Large NVY-4 | 4 | 30,000 | 45,000 |
+| Large ADV-1 | 1 | 25,000 | 37,500 |
+| Large ADV-4 | 4 | 30,000 | 45,000 |
+| Open | up to 5 | 30,000 | 45,000 |
+| Battlefield | up to ~30 | 50,000 | 50,000 |
 
-Aside from Open and Scout complexes, each size can be either **"Navy"** or **"Advanced"**, denoted in the site name along with the maximum number of ships that receive full LP payout.
+Notes:
 
-- **Navy** complexes allow *Navy-class* ships and below. Stabber Fleet Issues, Thrasher Fleet Issues, and Republic Fleet Firetails are examples of ships allowed in **Navy** complexes.
-- **Advanced** complexes allow *Tech-2*, *Tech-3*, and *Pirate* ships. Vagabonds, Stilettos, even *Marauder-class* ships such as the Vargur can enter an **Advanced** complex of sufficient size.
+- Multi-pilot sites pay the listed LP to each pilot up to the cap; past that, the pool splits.
+- Solo (`-1`) versions of a size usually pay a bit less than the multi-pilot variant of the same size/class.
+- Grouping into a `-2` / `-3` / `-4` site is often better ISK than splitting a `-1`.
+- Small Interceptor-1 is listed at the same LP in both columns because it pays frontline-like rates while spawning in Command Ops.
 
-### Examples of Complexes
+CCP is always tweaking these values—numbers above may have changed recently.
 
-| Complex Type | What Can Enter and Receive Full LP |
-| --- | --- |
-| Small NVY-5 | Up to 5 Navy Destroyers or below |
-| Medium ADV-5 | Up to 5 Tech-2 Cruisers or below |
-| Large NVY-1 | Up to one Navy Battleship or below |
+## Site impact
 
-**Remember:** You can take smaller ships into larger plexes. For example, a fleet of 5 Thrashers could capture a Large ADV-5.
+Capturing a plex adds victory points toward contested %. A system needs **75,000 VP** to hit 100% and become vulnerable. Advantage increases VP per capture—see [Faction Warfare Advantage](/guides/faction-warfare-advantage/).
 
-- **Note:** The ship count in a complex name is not a hard cap on entries—it is a cap on how many pilots receive the full LP payout.
-- **Note:** Tech-3 ships (Tactical Destroyers and Strategic Cruisers) count as one size larger than their hull size. A T3 Destroyer can enter Medium and above complexes. A T3 Cruiser can only enter Large and Open complexes.
-
-### Offensive Plexes vs Defensive Plexes
-
-Complexes can be run offensively or defensively. Both are necessary for the Minmatar war effort.
-
-- **Offensive Plexing (O-Plexing)** is done in Amarr-controlled systems. In Amarr systems, you must kill the NPC guarding the site for the timer to tick down. Guardians generally respawn up to 5 times during the plex timer; Amarr NPCs have "Imperial" in their name. The guardian does low DPS but requires minimum DPS to break its tank.
-
-| Complex Type | Minimum DPS |
-| --- | --- |
-| Scout | 50 |
-| Small | 100 |
-| Medium | 200 |
-| Large | 400 |
-| Open | 400 |
-
-- **Defensive Plexing (D-Plexing)** is done in Minmatar-controlled systems. In Minmatar systems, you do not need to kill the guardian NPC—it is friendly. Minmatar NPCs have "Republic" in their name. Because DPS is not required to tick the timer, it is common to D-plex in smaller hulls. However, these plexes are offensive for the Amarr, so expect fights.
-
-### So, Where Do I Plex?
-
-Faction warfare systems fall into three types: **Frontline**, **Command Operations**, and **Rearguard**.
-
-![wiki_frontlines.png](/images/guides/wiki_frontlines.png)
-
-- **Frontline** systems directly border hostile territory. Minmatar frontlines always sit next to Amarr frontlines.
-- **Command Operations** systems border friendly frontline systems.
-- **Rearguard** systems only border Command Operations and other rearguards.
-
-Plexing in **frontlines** generates the most **LP** and **victory points**, so frontlines are the most common plexing grounds. Command Operations and rearguard systems yield much less of each, but sneaking advantage and contest into enemy rearguards can sometimes produce a surprise system capture.
-
-## Important Plex Mechanics
-
-Complex mechanics are straightforward (at least relative to other EVE mechanics), but understanding them greatly improves your success when engaging players inside or around one.
-
-### Outside the Plex
-
-Warping to any plex first lands you near an acceleration gate. Keep the following in mind to avoid dying on the gate.
-
-- Activating the gate works like a normal warp. Pre-align to the deadspace pocket once landed to activate the gate instantly.
-- Gates have a 90km activation distance. Warping to 100km usually puts you at roughly 90km from the gate, but you might land outside activation range.
-- A **warp disruptor or scram** prevents gate activation.
-- The gate is a **collidable object**. Warping to the plex at 0km means a high chance of getting stuck on the gate when activating it.
-- The greater your warp distance, the safer you are. You always land between the gate and your warp origin. Someone warping at 100km from another celestial will end up more than 100km from you.
-- You can warp to items on the grid outside the plex.
-- **Open plexes** have no acceleration gate—you land directly inside at your chosen warp distance.
-
-### Inside the Plex — General
-
-After activating the acceleration gate, you warp into a deadspace pocket. These rules apply inside:
-
-- You cannot warp to anything on the grid, including objects and fleet members.
-- You still cannot warp to anything on the grid even after the plex finishes.
-- You can always warp out (unless scrambled or pointed), but warping back returns you to the acceleration gate.
-- The central structure has no collision hitbox.
-- The capture zone is 30km, but the deadspace pocket is much larger—you can travel several hundred km in any direction.
-
-### Inside the Plex — The Landing Beacon
-
-You land within 3500m of the landing beacon at a random spot. If you are already inside the plex, use the landing beacon to position yourself before a fight starts.
-
-- Turn on all brackets in space to see the beacon.
-- The beacon is a **large collidable object** with a small hitbox. You are unlikely to get stuck on it.
-- Sitting on the beacon at 0m gives the shortest distance to anyone entering the plex.
-- Keep the beacon at the range you want to start any potential fight from.
-- The NPC spawns from the central structure at roughly 8000m–12000m from the landing beacon.
-
-### Inside the Plex — Landing Mechanics
-
-You land at a random spot within 3500m of the landing beacon. These mechanics are critical:
-
-- Any player inside the plex can see you before you land and can approach or orbit you before you come to a standstill.
-- The landing player always decelerates to 0 m/s.
-- The landing player has 10 seconds of invulnerability after landing. Any action aside from preheating modules instantly ends invulnerability.
-- If you are punching into the plex, use the invulnerability period to orient yourself and analyse the fight. Where is the enemy? Do you burn away or towards them?
-- If you control the range of the fight, stay close to the beacon (if you expect help) or burn away (if you expect enemy reinforcements). Allies and enemies always land on the beacon—they cannot choose to land on a friendly already inside.
-
-## Faction Warfare Income
-
-Capturing a complex awards loyalty points based on its size. LP can be converted to items sold on the faction warfare NPC market.
-
-### Offensive vs Defensive LP (Part II)
-
-LP payouts differ between offensive and defensive plexing. Numbers below are for O-plexing in frontline systems.
-
-| Complex Size | LP per Pilot |
-| --- | --- |
-| Scout NVY-1 | 18500 |
-| Small ADV-1 | 28150 |
-| Medium ADV-1 | 37500 |
-| Large ADV-1 | 45000 |
-| Open | 45000 |
-
-- LP from D-plexing in defensive frontlines depends on the system's **Contested** percentage. The closer a system is to being taken by Amarr, the more LP you gain from D-plexing there. D-plexing in a system with very low contested percentage yields much less LP.
-- **NVY-1** complexes yield ~20% less LP than **ADV-1** complexes.
-- **NVY-5** and **ADV-5** complexes yield the same LP per pilot, but can pay the full value to up to 5 pilots inside. For example, if two pilots finish a **Small NVY-1** site, the 28150 LP payout is split. If 5 pilots finish a **Medium ADV-5** complex, all 5 receive 37500 LP. Flying with friends really pays off.
-
-## Victory Points and Contested Percentage
-
-Capturing a complex earns victory points for the system. VP totals are hidden; they are displayed as the **Contested** percentage in system status.
-
-| Size | VP | Capture Percentage | Time |
+| Site | Victory points | ≈ Contested % (no advantage) | Capture time |
 | --- | --- | --- | --- |
-| Scout NVY-1 | 25 | 0.03% | 10 |
-| Small NVY-1/5 | 50 | 0.07% | 10 |
-| Small ADV-1/5 | 75 | 0.10% | 10 |
-| Medium NVY-1/5 | 150 | 0.20% | 15 |
-| Medium ADV-1/5 | 175 | 0.23% | 15 |
-| Large NVY-1/5 | 250 | 0.33% | 15 |
-| Large ADV-1/5 | 300 | 0.40% | 15 |
-| Open | 350 | 0.47% | 15 |
-| Battlefield | 2000 | 2.67% | 30-45 |
+| Scout NVY | 25 | 0.03% | 10 min |
+| Scout BSC-1 | 50 | 0.07% | 5 min |
+| Small NVY | 50 | 0.07% | 10 min |
+| Small ADV | 75 | 0.10% | 10 min |
+| Small Interceptor-1 | 150 | 0.20% | 10 min |
+| Medium NVY | 150 | 0.20% | 15 min |
+| Medium ADV | 175 | 0.23% | 15 min |
+| Contested Field Research Facility | 300 | 0.40% | 10 min |
+| Large NVY | 250 | 0.33% | 15 min |
+| Large ADV | 300 | 0.40% | 15 min |
+| Moderate NVY-3 | 600 | 0.80% | 15 min |
+| Open | 350 | 0.47% | 15 min |
+| Battlefield | 2,000 | 2.67% | ~30–45 min |
 
-- Higher advantage means more victory points per capture. Larger complexes count more and are extremely important for pushing systems.
-- See the [Faction Warfare Advantage](/guides/faction-warfare-advantage/) for advantage mechanics.
+Larger sites move contested much faster. When both sides are pushing the same system, expect the real fight over Mediums, Larges, Moderates, Opens, and Battlefields.
 
-### Infrastructure Hub
+## System Capture
 
-At 100% contested, the infrastructure hub becomes vulnerable. Capture a few complexes past 100% before attacking the i-hub, as the enemy will likely try to bring the system back down.
+At 100% contested the infrastructure hub becomes vulnerable. Push a bit past 100% before committing to the siege—defenders will try to grind contested back down.
 
-After destroying the infrastructure hub, the system flips sides and victory points reset to 0.
+Destroying the i-hub flips the system and resets victory points to 0.
 
 ## Additional Resources
 
-- [Guides index](/guides/)
+- [Faction Warfare Basics](/guides/faction-warfare-basics/)
 - [Faction Warfare Advantage](/guides/faction-warfare-advantage/)
+- [New Player Fleet Guide](/guides/new-player-fleet-guide/)
+- [Guides index](/guides/)
+- [Amarr vs Minmatar Dotlan](https://evemaps.dotlan.net/map/Amarr_VS_Minmatar#sov)
+- [Patch Notes — Version 21.05](https://www.eveonline.com/news/view/patch-notes-version-21-05) (victory point rebalance)
+- [Patch Notes — Version 22.02](https://www.eveonline.com/news/view/patch-notes-version-22-02) (multi-pilot payout caps)
+- [Cradle of War: Expansion Notes](https://www.eveonline.com/news/view/cradle-of-war-expansion-notes) (new sites and battlefield LP)
