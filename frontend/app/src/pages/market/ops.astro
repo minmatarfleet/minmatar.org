@@ -1,0 +1,422 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import { get_ops_monitor } from '@helpers/api.minmatar.org/market'
+import { get_market_locations } from '@helpers/api.minmatar.org/locations'
+import type { OpsMonitor } from '@dtypes/api.minmatar.org'
+import { query_string } from '@helpers/string'
+import { from_now_diff } from '@helpers/date'
+import {
+    ops_params_need_canonicalization,
+    ops_redirect_path,
+    resolve_ops_location_id,
+} from '@helpers/market_ops_redirect'
+
+let monitor: OpsMonitor | null = null
+let fetch_error: Error | false = false
+let locations: Awaited<ReturnType<typeof get_market_locations>> = []
+let location_id: number | undefined
+
+try {
+    locations = await get_market_locations()
+
+    location_id = resolve_ops_location_id(locations, Astro.url.searchParams)
+        ?? locations[0]?.location_id
+
+    if (
+        location_id != null
+        && ops_params_need_canonicalization(Astro.url.searchParams, location_id)
+    ) {
+        return Astro.redirect(ops_redirect_path(translatePath, location_id))
+    }
+
+    monitor = await get_ops_monitor(location_id)
+} catch (error) {
+    fetch_error = error as Error
+}
+
+function health_tone(pct: number | null | undefined): 'good' | 'warn' | 'bad' | 'none' {
+    if (pct == null)
+        return 'none'
+    if (pct >= 80)
+        return 'good'
+    if (pct >= 40)
+        return 'warn'
+    return 'bad'
+}
+
+function format_pct(pct: number | null | undefined): string {
+    if (pct == null)
+        return '—'
+    return `${pct % 1 === 0 ? pct.toFixed(0) : pct.toFixed(1)}%`
+}
+
+function fulfilled_label(fulfilled: number, targets: number): string {
+    if (targets <= 0)
+        return t('ops_health_no_targets')
+    return t('ops_health_fulfilled')
+        .replace('{fulfilled}', String(fulfilled))
+        .replace('{targets}', String(targets))
+}
+
+function format_isk(isk: number): string {
+    const abs = Math.abs(isk)
+    if (abs >= 1_000_000_000_000)
+        return `${(isk / 1_000_000_000_000).toFixed(2)}T`
+    if (abs >= 1_000_000_000)
+        return `${(isk / 1_000_000_000).toFixed(1)}B`
+    if (abs >= 1_000_000)
+        return `${(isk / 1_000_000).toFixed(0)}M`
+    if (abs >= 1_000)
+        return `${(isk / 1_000).toFixed(0)}K`
+    return isk.toFixed(0)
+}
+
+function isk_label(template_key: string, isk: number): string {
+    return t(template_key).replace('{isk}', format_isk(isk))
+}
+
+function count_label(template_key: string, count: number): string {
+    return t(template_key).replace('{count}', String(count))
+}
+
+function sync_age_label(iso: string | null | undefined): string {
+    if (!iso)
+        return '—'
+    return from_now_diff(lang, new Date(iso))
+}
+
+const summary = monitor?.summary
+const overall_tone = health_tone(summary?.overall_health_pct)
+const contracts_tone = health_tone(summary?.contracts_health_pct)
+const sell_tone = health_tone(summary?.sell_orders_health_pct)
+
+import Viewport from '@layouts/Viewport.astro';
+import PageWide from '@components/page/PageWide.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+import TextBox from '@components/layout/TextBox.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Grid from '@components/compositions/Grid.astro';
+import Button from '@components/blocks/Button.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import Markdown from '@components/blocks/Markdown.astro';
+import Progress from '@components/blocks/Progress.astro';
+import OpsUnderstockedGrid from '@components/blocks/OpsUnderstockedGrid.astro';
+import OpsSellGapsList from '@components/blocks/OpsSellGapsList.astro';
+
+const page_title = t('staging_supply.ops.page_title')
+const api_base = import.meta.env.API_URL || ''
+const admin_hub = location_id != null
+    ? `${api_base}/admin/market/location/${location_id}/`
+    : `${api_base}/admin/market/locations/`
+---
+
+<Viewport title={page_title} meta_description={t('staging_supply.ops.meta_description')}>
+    <PageWide
+        cover={{
+            image: '/images/market-cover.jpg',
+            image_990: '/images/market-cover.jpg',
+            overlay: true,
+            scrollable: true,
+        }}
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <PageTitle>{page_title}</PageTitle>
+            <FlexInline>
+                <Button href={admin_hub} size="sm">{t('edit_targets_admin')}</Button>
+            </FlexInline>
+        </FlexInline>
+
+        <Flexblock gap="var(--space-xl)">
+            <TextBox>
+                <Markdown class="[ excerpt ]" markdown={t('staging_supply.ops.leading_text')} />
+            </TextBox>
+
+            {fetch_error ?
+                <ErrorRefetch args={{
+                    partial: translatePath(
+                        location_id != null
+                            ? `/market/ops/?${query_string({ location_id })}`
+                            : '/market/ops/'
+                    ),
+                    error: fetch_error,
+                    delay: 0,
+                }} />
+                : monitor && summary &&
+                <>
+                    <FlexInline gap="var(--space-2xs)">
+                        {locations.map(loc =>
+                            <Button
+                                size="sm"
+                                href={translatePath(`/market/ops/?${query_string({ location_id: loc.location_id })}`)}
+                                color={location_id === loc.location_id ? 'green' : undefined}
+                            >{loc.short_name || loc.location_name}</Button>
+                        )}
+                    </FlexInline>
+
+                    <section class:list={['ops-health', `ops-health--${overall_tone}`]}>
+                        <div class="[ ops-health__overall ]">
+                            <p class="[ ops-health__eyebrow ]">{t('ops_health_overall')}</p>
+                            <p class="[ ops-health__pct ]">{format_pct(summary.overall_health_pct)}</p>
+                            <Progress
+                                class:list={[
+                                    'ops-health__bar',
+                                    {
+                                        success: overall_tone === 'good',
+                                        danger: overall_tone === 'bad',
+                                        disabled: overall_tone === 'none',
+                                    },
+                                ]}
+                                max="100"
+                                value={summary.overall_health_pct != null ? Math.max(summary.overall_health_pct, 0.1) : 0.1}
+                            />
+                            <p class="[ ops-health__isk ]">
+                                {isk_label('ops_health_isk_on_market', summary.total_isk_on_market)}
+                            </p>
+                            <div
+                                class="[ ops-health__sync ]"
+                                title={[
+                                    monitor.contracts_synced_at ? `Contracts: ${monitor.contracts_synced_at}` : null,
+                                    monitor.orders_synced_at ? `Orders: ${monitor.orders_synced_at}` : null,
+                                ].filter(Boolean).join(' · ') || undefined}
+                            >
+                                <small>
+                                    {t('ops_sync_age_contracts')
+                                        .replace('{age}', sync_age_label(monitor.contracts_synced_at))}
+                                </small>
+                                <small>
+                                    {t('ops_sync_age_orders')
+                                        .replace('{age}', sync_age_label(monitor.orders_synced_at))}
+                                </small>
+                            </div>
+                        </div>
+
+                        <Grid
+                            class="[ ops-health__split ]"
+                            min_item_width="280px"
+                            row_gap="var(--space-s)"
+                            column_gap="var(--space-s)"
+                        >
+                            <article class:list={['ops-health__card', `ops-health__card--${contracts_tone}`]}>
+                                <p class="[ ops-health__card-label ]">{t('ops_health_contracts')}</p>
+                                <p class="[ ops-health__card-pct ]">{format_pct(summary.contracts_health_pct)}</p>
+                                <Progress
+                                    class:list={[
+                                        'ops-health__bar',
+                                        {
+                                            success: contracts_tone === 'good',
+                                            danger: contracts_tone === 'bad',
+                                            disabled: contracts_tone === 'none',
+                                        },
+                                    ]}
+                                    max="100"
+                                    value={summary.contracts_health_pct != null ? Math.max(summary.contracts_health_pct, 0.1) : 0.1}
+                                />
+                                <p class="[ ops-health__card-meta ]">
+                                    {fulfilled_label(summary.contract_fulfilled, summary.contract_targets)}
+                                </p>
+                                <p class="[ ops-health__card-meta ops-health__card-meta--isk ]">
+                                    {isk_label('ops_health_isk_in_contracts', summary.contracts_isk)}
+                                </p>
+                                <p class="[ ops-health__card-meta ]">
+                                    {count_label('ops_health_under_target', summary.understocked_contracts)}
+                                </p>
+                            </article>
+
+                            <article class:list={['ops-health__card', `ops-health__card--${sell_tone}`]}>
+                                <p class="[ ops-health__card-label ]">{t('ops_health_sell_orders')}</p>
+                                <p class="[ ops-health__card-pct ]">{format_pct(summary.sell_orders_health_pct)}</p>
+                                <Progress
+                                    class:list={[
+                                        'ops-health__bar',
+                                        {
+                                            success: sell_tone === 'good',
+                                            danger: sell_tone === 'bad',
+                                            disabled: sell_tone === 'none',
+                                        },
+                                    ]}
+                                    max="100"
+                                    value={summary.sell_orders_health_pct != null ? Math.max(summary.sell_orders_health_pct, 0.1) : 0.1}
+                                />
+                                <p class="[ ops-health__card-meta ]">
+                                    {fulfilled_label(summary.sell_order_fulfilled, summary.sell_order_targets)}
+                                </p>
+                                <p class="[ ops-health__card-meta ops-health__card-meta--isk ]">
+                                    {isk_label('ops_health_isk_in_sell_orders', summary.sell_orders_isk)}
+                                </p>
+                                <p class="[ ops-health__card-meta ]">
+                                    {count_label('ops_health_critical_gaps', summary.sell_gaps)}
+                                </p>
+                            </article>
+                        </Grid>
+                    </section>
+
+                    <Flexblock gap="var(--space-l)">
+                        <Flexblock gap="var(--space-s)">
+                            <h2>{t('ops_understocked')} ({monitor.summary.understocked_contracts})</h2>
+                            <OpsUnderstockedGrid
+                                rows={monitor.understocked_contracts}
+                                hide_location={true}
+                            />
+                        </Flexblock>
+
+                        <Flexblock gap="var(--space-s)">
+                            <h2>{t('ops_sell_gaps')} ({monitor.summary.sell_gaps})</h2>
+                            <OpsSellGapsList
+                                rows={monitor.sell_gaps}
+                                hide_location={true}
+                            />
+                        </Flexblock>
+                    </Flexblock>
+                </>
+            }
+        </Flexblock>
+    </PageWide>
+</Viewport>
+
+<style lang="scss">
+    .ops-health {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+        padding: var(--space-l) var(--space-m);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(0, 0, 0, 0.28);
+
+        &--good {
+            border-color: color-mix(in srgb, var(--green) 45%, transparent);
+        }
+
+        &--warn {
+            border-color: color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
+        }
+
+        &--bad {
+            border-color: color-mix(in srgb, var(--fleet-red) 50%, transparent);
+        }
+    }
+
+    .ops-health__overall {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        max-width: 28rem;
+    }
+
+    .ops-health__eyebrow,
+    .ops-health__card-label {
+        margin: 0;
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
+    }
+
+    .ops-health__pct {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: clamp(3.5rem, 8vw, 6rem);
+        font-weight: 400;
+        line-height: 0.9;
+        letter-spacing: -0.03em;
+        color: var(--highlight);
+        text-transform: uppercase;
+    }
+
+    .ops-health--good .ops-health__pct {
+        color: var(--green);
+    }
+
+    .ops-health--warn .ops-health__pct {
+        color: var(--fleet-yellow);
+    }
+
+    .ops-health--bad .ops-health__pct {
+        color: var(--fleet-red);
+    }
+
+    .ops-health__bar {
+        --progress-height: var(--space-2xs);
+        width: 100%;
+        margin-block: var(--space-3xs);
+    }
+
+    .ops-health__sync {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        margin: 0;
+        color: rgba(255, 255, 255, 0.65);
+        font-size: var(--step--1);
+    }
+
+    .ops-health__sync small {
+        margin: 0;
+    }
+
+    .ops-health__card-meta {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.65);
+        font-size: var(--step--1);
+    }
+
+    .ops-health__isk,
+    .ops-health__card-meta--isk {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: var(--highlight);
+    }
+
+    .ops-health__isk {
+        font-size: var(--step-1);
+        margin-block-start: var(--space-3xs);
+    }
+
+    .ops-health__card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-m);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.22);
+    }
+
+    .ops-health__card-pct {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: clamp(2.25rem, 5vw, 3.5rem);
+        line-height: 0.95;
+        letter-spacing: -0.02em;
+        text-transform: uppercase;
+        color: var(--highlight);
+    }
+
+    .ops-health__card--good .ops-health__card-pct {
+        color: var(--green);
+    }
+
+    .ops-health__card--warn .ops-health__card-pct {
+        color: var(--fleet-yellow);
+    }
+
+    .ops-health__card--bad .ops-health__card-pct {
+        color: var(--fleet-red);
+    }
+
+    .ops-qty {
+        font-family: var(--heading-font);
+        text-transform: uppercase;
+        color: var(--highlight);
+        white-space: nowrap;
+    }
+
+    h2 {
+        font-size: var(--step-1);
+    }
+</style>

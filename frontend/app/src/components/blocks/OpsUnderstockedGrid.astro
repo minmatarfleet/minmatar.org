@@ -1,0 +1,224 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import { query_string } from '@helpers/string'
+
+interface UnderstockedContractRow {
+    location_id:        number;
+    location_name:      string;
+    short_name:         string;
+    fitting_id:         number;
+    fitting_name:       string;
+    ship_id:            number;
+    current_quantity:   number;
+    expected_quantity:  number;
+    shortfall:          number;
+    readiness:          string;
+    expectation_id:     number;
+}
+
+interface Props {
+    rows:                   UnderstockedContractRow[];
+    hide_location?:         boolean;
+}
+
+const {
+    rows,
+    hide_location = false,
+} = Astro.props
+
+function fill_pct(current: number, expected: number): number {
+    if (expected <= 0)
+        return 100
+    return Math.min(100, Math.round((current / expected) * 100))
+}
+
+function short_fitting_name(name: string): string {
+    return name.replace(/^\[FL33T\]\s*/i, '').replace(/^\[.*?\]\s*/, '')
+}
+
+function tone_for(readiness: string, pct: number): string {
+    if (readiness === 'empty' || pct <= 20)
+        return 'bad'
+    if (pct < 100)
+        return 'warn'
+    return 'good'
+}
+
+const tiles = rows.map(row => {
+    const pct = fill_pct(row.current_quantity, row.expected_quantity)
+    return {
+        ...row,
+        pct,
+        tone: tone_for(row.readiness, pct),
+        label: short_fitting_name(row.fitting_name),
+        ops_href: translatePath(`/market/ops/?${query_string({
+            location_id: row.location_id,
+        })}`),
+        title: [
+            row.fitting_name,
+            `${row.current_quantity}/${row.expected_quantity}`,
+        ].join(' · '),
+    }
+})
+
+import Grid from '@components/compositions/Grid.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+---
+
+{tiles.length === 0 &&
+    <p>—</p>
+}
+
+{tiles.length > 0 &&
+    <Grid
+        class="[ ops-stock-grid ]"
+        min_item_width="140px"
+        row_gap="var(--space-s)"
+        column_gap="var(--space-s)"
+    >
+        {tiles.map(tile =>
+            <a
+                class:list={['ops-stock-tile', `ops-stock-tile--${tile.tone}`]}
+                href={tile.ops_href}
+                title={tile.title}
+            >
+                <div
+                    class="[ ops-stock-tile__ring ]"
+                    style={`--fill-pct: ${tile.pct}`}
+                >
+                    <div class="[ ops-stock-tile__icon ]">
+                        <ItemPicture
+                            item_id={tile.ship_id}
+                            item_name={tile.fitting_name}
+                            size={128}
+                            icon_quality={128}
+                        />
+                    </div>
+                    <span class="[ ops-stock-tile__pct ]">{tile.pct}%</span>
+                </div>
+                <Flexblock gap="var(--space-3xs)" class="[ ops-stock-tile__meta ]">
+                    <strong class="[ ops-stock-tile__name ]">{tile.label}</strong>
+                    <span class="[ ops-stock-tile__qty ]">{tile.current_quantity}/{tile.expected_quantity}</span>
+                    {!hide_location &&
+                        <small class="[ ops-stock-tile__loc ]">{tile.short_name || tile.location_name}</small>
+                    }
+                </Flexblock>
+            </a>
+        )}
+    </Grid>
+}
+
+<style lang="scss">
+    .ops-stock-tile {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        text-decoration: none;
+        color: inherit;
+        min-width: 0;
+    }
+
+    .ops-stock-tile__ring {
+        --ring-size: 118px;
+        --track: rgba(255, 255, 255, 0.12);
+        --fill: var(--fleet-yellow);
+        position: relative;
+        width: var(--ring-size);
+        height: var(--ring-size);
+        margin-inline: auto;
+        border-radius: 50%;
+        background: conic-gradient(
+            var(--fill) calc(var(--fill-pct) * 1%),
+            var(--track) 0
+        );
+        display: grid;
+        place-items: center;
+    }
+
+    .ops-stock-tile--bad .ops-stock-tile__ring {
+        --fill: var(--fleet-red);
+    }
+
+    .ops-stock-tile--warn .ops-stock-tile__ring {
+        --fill: var(--fleet-yellow);
+    }
+
+    .ops-stock-tile--good .ops-stock-tile__ring {
+        --fill: var(--green);
+    }
+
+    .ops-stock-tile__icon {
+        width: calc(var(--ring-size) - 14px);
+        height: calc(var(--ring-size) - 14px);
+        border-radius: 50%;
+        overflow: hidden;
+        background: #0b0b0b;
+        display: grid;
+        place-items: center;
+
+        :global(picture),
+        :global(img) {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    }
+
+    .ops-stock-tile__pct {
+        position: absolute;
+        right: -2px;
+        bottom: -2px;
+        min-width: 2.4rem;
+        padding: 0.15rem 0.35rem;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: #111;
+        font-family: var(--heading-font);
+        font-size: var(--step--2);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        text-align: center;
+        color: var(--highlight);
+    }
+
+    .ops-stock-tile--bad .ops-stock-tile__pct {
+        color: var(--fleet-red);
+    }
+
+    .ops-stock-tile--warn .ops-stock-tile__pct {
+        color: var(--fleet-yellow);
+    }
+
+    .ops-stock-tile__meta {
+        text-align: center;
+        min-width: 0;
+    }
+
+    .ops-stock-tile__name {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        font-size: var(--step--1);
+        line-height: 1.2;
+        color: var(--fleet-yellow);
+    }
+
+    .ops-stock-tile__qty {
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: var(--highlight);
+    }
+
+    .ops-stock-tile__loc {
+        color: rgba(255, 255, 255, 0.55);
+        font-size: var(--step--2);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+</style>

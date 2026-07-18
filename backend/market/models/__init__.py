@@ -3,7 +3,6 @@ from market.models.contract import (
     EveMarketContractError,
     EveMarketContractExpectation,
     EveMarketContractItem,
-    EveMarketContractResponsibility,
 )
 from market.models.history import EveMarketItemHistory
 from market.models.location_price import EveMarketItemLocationPrice
@@ -12,7 +11,6 @@ from market.models.item import (
     EveMarketFittingExpectation,
     EveMarketItemExpectation,
     EveMarketItemOrder,
-    EveMarketItemResponsibility,
     EveMarketItemTransaction,
     EveTypeWithSellOrders,
     _get_consumable_items,
@@ -25,14 +23,12 @@ __all__ = [
     "EveMarketContractError",
     "EveMarketContractExpectation",
     "EveMarketContractItem",
-    "EveMarketContractResponsibility",
     "EveMarketBuyOrderExpectation",
     "EveMarketFittingExpectation",
     "EveMarketItemExpectation",
     "EveMarketItemHistory",
     "EveMarketItemLocationPrice",
     "EveMarketItemOrder",
-    "EveMarketItemResponsibility",
     "EveMarketItemTransaction",
     "EveTypeWithSellOrders",
     "_get_consumable_items",

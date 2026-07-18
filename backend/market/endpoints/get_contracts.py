@@ -11,16 +11,13 @@ from market.endpoints.schemas import (
     MarketContractDoctrineResponse,
     MarketContractHistoricalQuantityResponse,
     MarketContractResponse,
-    MarketContractResponsibilityResponse,
 )
 from market.helpers import (
-    entity_name_by_id,
     get_historical_quantity_for_fitting,
 )
 from market.models import (
     EveMarketContract,
     EveMarketContractExpectation,
-    EveMarketContractResponsibility,
 )
 
 router = Router(tags=["Market"])
@@ -72,20 +69,6 @@ def fetch_eve_market_contracts(request, location_id: int):
         )
     }
 
-    # Responsibilities only for expectations we have
-    expectation_ids = [e.id for e in expectations]
-    all_responsibilities = list(
-        EveMarketContractResponsibility.objects.filter(
-            expectation_id__in=expectation_ids
-        )
-    )
-    entity_ids = {r.entity_id for r in all_responsibilities}
-    entity_info = entity_name_by_id(entity_ids)
-    resp_by_expectation = defaultdict(list)
-    for r in all_responsibilities:
-        if r.entity_id in entity_info:
-            resp_by_expectation[r.expectation_id].append(r)
-
     # Doctrines per fitting: EveDoctrineFitting for each fitting
     doctrine_fittings = EveDoctrineFitting.objects.filter(
         fitting_id__in=all_fitting_ids
@@ -109,14 +92,6 @@ def fetch_eve_market_contracts(request, location_id: int):
             expectation_id = expectation.id
             title = fitting.name
             desired_quantity = expectation.quantity
-            responsibilities = [
-                MarketContractResponsibilityResponse(
-                    entity_type=entity_info[r.entity_id][0],
-                    entity_id=r.entity_id,
-                    entity_name=entity_info[r.entity_id][1],
-                )
-                for r in resp_by_expectation[expectation.id]
-            ]
         else:
             # Fitting has contracts but no expectation; load fitting from a contract
             sample = contracts_at_location.filter(
@@ -126,7 +101,6 @@ def fetch_eve_market_contracts(request, location_id: int):
             expectation_id = None
             title = fitting.name
             desired_quantity = 0
-            responsibilities = []
 
         count, latest = outstanding_stats.get(fitting_id, (0, None))
         historical_quantity = get_historical_quantity_for_fitting(
@@ -149,7 +123,6 @@ def fetch_eve_market_contracts(request, location_id: int):
                     )
                     for entry in historical_quantity
                 ],
-                responsibilities=responsibilities,
                 doctrines=doctrines_by_fitting.get(fitting_id, []),
             )
         )

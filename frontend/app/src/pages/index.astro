@@ -18,19 +18,13 @@ const can_view_fleets = user_is_superadmin || user_permissions.includes('fleets.
 import type { Alert, StagingType } from '@dtypes/layout_components'
 import type { PostListUI } from '@dtypes/layout_components'
 import { fetch_posts } from '@helpers/fetching/posts'
-import { get_market_locations } from '@helpers/api.minmatar.org/locations'
 import { is_seasonal_date } from '@helpers/date'
 
-let contracts_service_staging:string[] = []
 let posts:PostListUI[] = []
 const PAGE_LENGTH = 3
 let post_fetching_error: Error | false = false
 
 try {
-    const market_locations = await get_market_locations()
-	// Filter to only locations with market_active flag
-	contracts_service_staging = market_locations.map(location => location.location_name)
-
     const paginated_posts = await fetch_posts({
         page_num: 1,
         page_size: PAGE_LENGTH,
@@ -95,11 +89,6 @@ const STAGING_CORPORATIONS = {
 
 const STAGING_DOCTRINES = {
 	amamake: 1022167642188,
-}
-
-const STAGING_SELL_ORDERS = {
-	amamake: 'Amamake - 5 times nearly AT winners',
-	r6_2: 'R-6KYM - Casper Anchored It',
 }
 
 const FREIGHT_ORDERS = {
@@ -176,9 +165,7 @@ import ExternalLink from '@components/blocks/ExternalLink.astro';
 
 import FleetLogo from '@components/icons/FleetLogo.astro';
 import MapEvEIcon from '@components/icons/MapEvEIcon.astro';
-import ContractsServiceEvEIcon from '@components/icons/ContractsServiceEvEIcon.astro';
 import DoctrinesEvEIcon from '@components/icons/DoctrinesEvEIcon.astro';
-import MarketDeliveriesEVEIcon from '@components/icons/MarketDeliveriesEVEIcon.astro';
 import FreightServiceEvEIcon from '@components/icons/FreightServiceEvEIcon.astro';
 import IndustryEVEIcon from '@components/icons/IndustryEVEIcon.astro';
 import FleetFeedUpdater from '@components/blocks/FleetFeedUpdater.astro'
@@ -243,24 +230,6 @@ const page_description = t('index.leading_text');
 							href={translatePath(`/ships/doctrines?${query_string({location_id: STAGING_DOCTRINES[staging]})}`)}
 						>
 							<DoctrinesEvEIcon />
-						</a>
-					}
-					{contracts_service_staging.find(contract_staging => contract_staging === STAGINGS_STATIONS[staging]) &&
-						<a
-							class="[ neocom-button ][ w-[32px] animate-fade-in-up ]"
-							data-tippy-content={t('view_station_market_contracts')}
-							href={translatePath(`/market/contracts/?${query_string({location_name: STAGINGS_STATIONS[staging]})}`)}
-						>
-							<ContractsServiceEvEIcon />
-						</a>
-					}
-					{STAGING_SELL_ORDERS[staging] &&
-						<a
-							class="[ neocom-button ][ w-[32px] animate-fade-in-up ]"
-							data-tippy-content={t('view_station_selling_orders')}
-							href={translatePath(`/market/sell_orders?${query_string({location_name: STAGING_SELL_ORDERS[staging]})}`)}
-						>
-							<MarketDeliveriesEVEIcon />
 						</a>
 					}
 					{FREIGHT_ORDERS[staging] &&

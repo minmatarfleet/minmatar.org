@@ -1,13 +1,24 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
+import { get_market_locations } from '@helpers/api.minmatar.org/locations'
+import {
+    has_ops_deep_link_params,
+    ops_redirect_target,
+} from '@helpers/market_ops_redirect'
 
-const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
+if (has_ops_deep_link_params(Astro.url.searchParams)) {
+    try {
+        const locations = await get_market_locations()
+        return Astro.redirect(
+            ops_redirect_target(translatePath, locations, Astro.url.searchParams),
+            301,
+        )
+    } catch {
+        return Astro.redirect(translatePath('/market/ops/'), 301)
+    }
+}
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -46,7 +57,7 @@ const leading_text = t('market.leading_text');
                 <p class="[ excerpt ]">{leading_text}</p>
             </TextBox>
             
-            <MarketTiles is_superuser={is_superuser} />
+            <MarketTiles />
         </Flexblock>
     </PageLanding>
 </Viewport>

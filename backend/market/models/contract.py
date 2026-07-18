@@ -37,19 +37,6 @@ class EveMarketContractExpectation(models.Model):
         )
 
 
-class EveMarketContractResponsibility(models.Model):
-    expectation = models.ForeignKey(
-        EveMarketContractExpectation, on_delete=models.CASCADE
-    )
-    # character or corporation
-    entity_id = models.BigIntegerField()
-
-    def __str__(self):
-        return str(
-            f"{self.entity_id} - {self.expectation.fitting.name} - {self.expectation.location}"
-        )
-
-
 class EveMarketContract(models.Model):
     esi_contract_type = "item_exchange"
     tracked_statuses = ["outstanding", "finished"]

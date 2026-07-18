@@ -1,0 +1,95 @@
+---
+interface SellGapShip {
+    ship_id:        number;
+    fitting_name:   string;
+}
+
+interface SellGapRow {
+    location_id:        number;
+    location_name:      string;
+    short_name:         string;
+    type_id:            number;
+    item_name:          string;
+    current_quantity:   number;
+    expected_quantity:  number;
+    shortfall:          number;
+    ships:              SellGapShip[];
+}
+
+interface Props {
+    rows:                   SellGapRow[];
+    hide_location?:         boolean;
+}
+
+const {
+    rows,
+    hide_location = false,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+import UsefulForShips from '@components/blocks/UsefulForShips.astro'
+---
+
+{rows.length === 0 &&
+    <p>—</p>
+}
+
+{rows.length > 0 &&
+    <Flexblock gap="var(--space-2xs)">
+        {rows.map(row =>
+            <ComponentBlock padding_block="var(--space-2xs)" padding_inline="var(--space-s)">
+                <FlexInline
+                    gap="var(--space-s)"
+                    justification="space-between"
+                    class="[ w-full ops-sell-gap ]"
+                >
+                    <FlexInline gap="var(--space-s)" class="[ ops-sell-gap__main ]">
+                        <div class="[ ops-sell-gap__item ]">
+                            <ItemPicture
+                                item_id={row.type_id}
+                                item_name={row.item_name}
+                                size={48}
+                                icon_quality={64}
+                            />
+                        </div>
+                        <Flexblock gap="var(--space-3xs)">
+                            <strong>{row.item_name}</strong>
+                            {!hide_location &&
+                                <small>{row.short_name || row.location_name}</small>
+                            }
+                            <UsefulForShips ships={row.ships ?? []} size={28} max={10} />
+                        </Flexblock>
+                    </FlexInline>
+                    <span class="[ ops-qty ]">{row.current_quantity}/{row.expected_quantity}</span>
+                </FlexInline>
+            </ComponentBlock>
+        )}
+    </Flexblock>
+}
+
+<style lang="scss">
+    .ops-sell-gap__main {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .ops-sell-gap__item {
+        flex-shrink: 0;
+
+        :global(picture),
+        :global(img) {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+        }
+    }
+
+    .ops-qty {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+</style>

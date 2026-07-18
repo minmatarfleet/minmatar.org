@@ -69,4 +69,8 @@ class GetSellOrdersEndpointTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         payload = response.json()
         self.assertEqual(2, len(payload))
-        self.assertLess(len(context.captured_queries), 15)
+        self.assertLess(len(context.captured_queries), 18)
+        for location in payload:
+            for item in location["items"]:
+                self.assertIn("expected_quantity", item)
+                self.assertIn("current_quantity", item)

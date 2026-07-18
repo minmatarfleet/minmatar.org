@@ -81,17 +81,6 @@ class EveMarketItemExpectation(models.Model):
         )
 
 
-class EveMarketItemResponsibility(models.Model):
-    expectation = models.ForeignKey(
-        EveMarketItemExpectation, on_delete=models.CASCADE
-    )
-    # character or corporation
-    entity_id = models.BigIntegerField()
-
-    def __str__(self):
-        return str(f"{self.entity_id} - {self.expectation.item.name}")
-
-
 class EveMarketBuyOrderExpectation(models.Model):
     """Target quantity of a buy order for an item at a location."""
 

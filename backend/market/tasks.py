@@ -3,11 +3,9 @@ import uuid
 
 from django.db.models import Q
 from django.utils import timezone
-from django.conf import settings
 from celery import chain, group
 
 from app.celery import app
-from discord.client import DiscordClient
 from eveonline.client import EsiClient
 from eveonline.models import (
     EveCharacterContract,
@@ -29,14 +27,11 @@ from market.helpers import (
 from market.helpers.contract_items import fetch_and_match_contract_items
 from market.models import (
     EveMarketContract,
-    EveMarketContractExpectation,
     EveMarketContractError,
     EveMarketItemOrder,
 )
 
 logger = logging.getLogger(__name__)
-
-discord = DiscordClient()
 
 
 @app.task()
@@ -312,19 +307,6 @@ def fetch_structure_sell_orders():
 
 def fetch_eve_market_transactions():
     pass
-
-
-@app.task()
-def notify_eve_market_contract_warnings():
-    message = "The following contracts are understocked:\n"
-    for expectation in EveMarketContractExpectation.objects.all():
-        if expectation.is_understocked:
-            message += f"**{expectation.fitting.name}** ({expectation.current_quantity}/{expectation.desired_quantity})\n"
-    message += f"\n\n{settings.WEB_LINK_URL}/market/contracts/"
-
-    discord.create_message(
-        channel_id=settings.DISCORD_SUPPLY_CHANNEL_ID, message=message
-    )
 
 
 @app.task()
