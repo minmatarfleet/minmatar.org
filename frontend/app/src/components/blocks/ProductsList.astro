@@ -18,7 +18,7 @@ import ProductItem from '@components/blocks/ProductItem.astro';
 import Table from '@components/blocks/Table.astro';
 ---
 
-<Table>
+<Table id="products-list" width="100%" responsive={false}>
     {products.map(product =>
         <ProductItem product={product} init_tooltips={init_tooltips} />
     )}

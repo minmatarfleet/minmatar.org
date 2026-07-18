@@ -1006,8 +1006,9 @@ export interface Product extends ProductBase {
     blueprint_or_reaction_type_id:  number;
     supplied_for:                   ProductBase[];
     supplies:                       ProductBase[];
-    character_producers:            Producer[];
-    corporation_producers:          Producer[]
+    /** Present on GET /products/{id}; omitted from list responses. */
+    character_producers?:           Producer[];
+    corporation_producers?:         Producer[];
 }
 
 /** Planetary (PI) API types */

@@ -110,10 +110,8 @@ class ProductBreakdownTestCase(AppTestCase):
         self.assertIn("supplies", data[0])
         self.assertEqual(data[0]["supplied_for"], [])
         self.assertEqual(data[0]["supplies"], [])
-        self.assertIn("character_producers", data[0])
-        self.assertIn("corporation_producers", data[0])
-        self.assertEqual(data[0]["character_producers"], [])
-        self.assertEqual(data[0]["corporation_producers"], [])
+        self.assertNotIn("character_producers", data[0])
+        self.assertNotIn("corporation_producers", data[0])
 
     def test_get_product_returns_200_with_detail(self):
         """GET /products/{id} returns full detail including supplied_for and supplies."""
