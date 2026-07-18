@@ -387,9 +387,9 @@ export const talwarGuide: ShipGuide = {
         },
         {
             id: '10mn-rocket',
-            title: '10mn Rocket Talwar Fleet Issue',
+            title: '10mn Talwar Fleet Issue',
             paragraphs: [
-                'Primary fit: 10mn Rocket Talwar Fleet Issue (example fit below). Dato Koppla\'s line: Navy MAPC, BCS, DC in lows; 10MN AB, scram, MASB, and multispec hardener in mids; five rocket launchers with Scourge Rage. Bay loading accelerator and shield resist rigs push alpha.',
+                'Primary fit: 10mn Talwar Fleet Issue (example fit below). Dato Koppla\'s line: Navy MAPC, BCS, DC in lows; 10MN AB, scram, MASB, and multispec hardener in mids; five rocket launchers with Scourge Rage. Bay loading accelerator and shield resist rigs push alpha.',
                 'Strengths: beats most AC Thrasher Fleet Issues, Blaster Catalyst Navy Issues, and Dual MASB Cormorants if you land scram and manage the 10MN slide. Pulse/Beam Coercers with projection are awkward: their DPS at range is scary, but only two mids means you can usually bail if the fight turns.',
                 'Weaknesses: Beam and Locus Pulse Coercers, 10mn Catalyst Navy Issues, and Arty Thrasher Fleet Issues are still open questions. Cap and MASB timing matter; overheating the AB wrong leaves you scrammed at the wrong range.',
             ],
@@ -397,7 +397,7 @@ export const talwarGuide: ShipGuide = {
     ],
     matchups: [
         {
-            title: '10mn Rocket Talwar Fleet Issue',
+            title: '10mn Talwar Fleet Issue',
             fitContext: 'Early solo meta. Ratings marked ? are still being tested.',
             entries: [
                 { opponent: 'AC Thrasher Fleet Issue (web)', load: 'Scourge Rage', verdict: 'favoured', advice: 'Classic MWD + scram + web dessie line: you win most of these if you control the 10MN slide.' },
@@ -410,7 +410,7 @@ export const talwarGuide: ShipGuide = {
                 { opponent: '2X Neut Coercer Navy Issue', verdict: 'unknown', advice: 'Cap pressure vs burst tank is untested. Treat as ? until more fights land.' },
                 { opponent: '10mn Catalyst Navy Issue', verdict: 'unknown', advice: 'Both want range control with 10MN. No settled read yet.' },
                 { opponent: 'Arty Thrasher Fleet Issue', verdict: 'unknown', advice: 'Alpha and web vs your AB and scram. Still collecting data.' },
-                { opponent: '10mn Rocket Talwar Fleet Issue mirror', verdict: 'unknown', advice: 'Too new for a reliable mirror line.' },
+                { opponent: '10mn Talwar Fleet Issue mirror', verdict: 'unknown', advice: 'Too new for a reliable mirror line.' },
             ],
         },
     ],

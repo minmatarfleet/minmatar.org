@@ -91,7 +91,7 @@ export const metagameSummary = [
     },
     {
         ship: 'Talwar Fleet Issue',
-        text: 'The newest navy destroyer (Cradle of War, YC 128). Early solo play centres on the 10mn Rocket Talwar Fleet Issue that beats many classic MWD + scram + web lines; fleet light-missile fits look weak so far. Meta is still forming.',
+        text: 'The newest navy destroyer (Cradle of War, YC 128). Early solo play centres on the 10mn Talwar Fleet Issue that beats many classic MWD + scram + web lines; fleet light-missile fits look weak so far. Meta is still forming.',
     },
 ]
 

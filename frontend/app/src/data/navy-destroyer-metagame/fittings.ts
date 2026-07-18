@@ -381,10 +381,10 @@ Navy Cap Booster 400 x25`,
         fittingId: 382,
         shipId: 91858,
         shipGuideId: 'talwar',
-        name: '10mn Rocket Talwar Fleet Issue',
+        name: '10mn Talwar Fleet Issue',
         description:
             '10MN afterburner rocket brawler with MASB burst tank. Early solo meta: beats many MWD + scram + web destroyers when you manage the slide.',
-        eftFormat: `[Talwar Fleet Issue, [NVY] 10mn Rocket Talwar Fleet Issue]
+        eftFormat: `[Talwar Fleet Issue, [NVY] 10mn Talwar Fleet Issue]
 
 Navy Micro Auxiliary Power Core
 Ballistic Control System II

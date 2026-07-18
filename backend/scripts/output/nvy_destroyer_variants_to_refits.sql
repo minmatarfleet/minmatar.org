@@ -524,14 +524,14 @@ SET name = '[NVY] 10mn Cormorant Navy Issue',
                         SUBSTRING(eft_format, LOCATE('\n', eft_format)))
 WHERE id = 381 AND deleted IS NULL;
 
--- id=382 → [NVY] 10mn Rocket Talwar Fleet Issue
+-- id=382 → [NVY] 10mn Talwar Fleet Issue
 UPDATE fittings_evefitting
-SET name = '[NVY] 10mn Rocket Talwar Fleet Issue',
+SET name = '[NVY] 10mn Talwar Fleet Issue',
     aliases = CASE
       WHEN aliases IS NULL OR TRIM(aliases) = '' THEN '[NVY] Talwar Fleet Issue — 10mn-rocket'
       WHEN LOCATE(LOWER('[NVY] Talwar Fleet Issue — 10mn-rocket'), LOWER(aliases)) > 0 THEN aliases
       ELSE CONCAT(aliases, ', [NVY] Talwar Fleet Issue — 10mn-rocket')
     END,
-    eft_format = CONCAT('[Talwar Fleet Issue, [NVY] 10mn Rocket Talwar Fleet Issue]',
+    eft_format = CONCAT('[Talwar Fleet Issue, [NVY] 10mn Talwar Fleet Issue]',
                         SUBSTRING(eft_format, LOCATE('\n', eft_format)))
 WHERE id = 382 AND deleted IS NULL;
