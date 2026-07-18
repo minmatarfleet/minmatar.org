@@ -20,7 +20,6 @@ const active_location_id = parseInt(Astro.url.searchParams.get('location_id') ??
 try {
     doctrines = await fetch_doctrines()
 
-    // Collect all unique location_ids from all doctrines and count doctrines per location
     doctrines.forEach(doctrine => {
         if (doctrine.location_ids && doctrine.location_ids.length > 0) {
             doctrine.location_ids.forEach(location_id => {
@@ -31,11 +30,9 @@ try {
 
     const all_location_ids = Array.from(location_doctrine_counts_map.keys())
 
-    // Fetch all locations that have doctrines
     if (all_location_ids.length > 0) {
         try {
             const fetched_locations = await get_locations_by_ids(all_location_ids)
-            // Only include locations that have doctrines, have a valid short_name, and sort by name
             all_locations = fetched_locations
                 .filter(loc => 
                     location_doctrine_counts_map.has(loc.location_id) && 
@@ -64,6 +61,7 @@ try {
             doctrines: sorted_location_doctrines
         } as DoctrineLocationUI
     })
+
 } catch (error) {
     fetch_doctrines_error = error
 }

@@ -775,19 +775,12 @@ export interface Contract {
     current_quantity:           number;
     latest_contract_timestamp:  string | null;
     historical_quantity:        History[];
-    responsibilities:           Responsability[];
     doctrines:                  ContractDoctrine[];
 }
 
 export interface History {
     date:       string;
     quantity:   number;
-}
-
-export interface Responsability {
-    entity_type:    string;
-    entity_id:      number;
-    entity_name:    string;
 }
 
 export interface MarketCorporation {
@@ -1181,71 +1174,53 @@ export interface BlueprintDetail extends Blueprint {
     historical_jobs:        BlueprintIndustryJob[];
 }
 
-export interface FittingMarketData {
-    fitting_id:             number;
-    fitting_name:           string
-    ship_id:                number;
-    ship_name:              string;
-    role:                   'primary' | 'secondary' | 'support';
-    expectation_quantity:   number | null;
-    current_quantity:       number;
-    doctrine_name?:         string;
-    eft?:                   string;
+export interface OpsMonitorSummary {
+    understocked_contracts:     number;
+    sell_gaps:                  number;
+    contracts_health_pct:       number | null;
+    sell_orders_health_pct:     number | null;
+    overall_health_pct:         number | null;
+    contract_targets:           number;
+    contract_fulfilled:         number;
+    sell_order_targets:         number;
+    sell_order_fulfilled:       number;
+    contracts_isk:              number;
+    sell_orders_isk:            number;
+    total_isk_on_market:        number;
 }
 
-export interface DoctrineMarketData {
-    doctrine_id:        number;
-    doctrine_name:      string;
-    fittings:           FittingMarketData[];
-}
-
-export interface LocationMarketData {
-    location_id:        number;
-    location_name:      string;
-    solar_system_name:  string;
-    short_name:         string;
-    doctrines:          DoctrineMarketData[];
-}
-
-export interface LocationFittingExpectation {
-    fitting_id:         number;
-    fitting_name:       string;
-    expectation_id:     number;
-    quantity:           number;
-}
-
-export interface LocationExpectations {
-    location_id:            number;
-    location_name:          string;
-    solar_system_name:      string;
-    short_name:             string;
-    expectations:           LocationFittingExpectation[];
-}
-
-export interface SellOrderItem {
-    item_name:              string;
-    type_id:                number | null;
-    category_id:            number | null;
-    category_name:          string;
-    group_id:               number | null;
-    group_name:             string;
-    expected_quantity:      number;
-    current_quantity:       number;
-    fulfilled:              boolean;
-    issuer_ids:             number[];
-    current_lowest_price:   number | null;
-    baseline_price:         number | null;
-    baseline_sell_price:    number | null;
-    baseline_buy_price:     number | null;
-    baseline_split_price:   number | null;
-}
-
-export interface SellOrderLocation {
-    location_id:        number;
-    location_name:      string;
-    short_name:         string;
-    is_price_baseline:  boolean;
-    items:              SellOrderItem[];
+export interface OpsMonitor {
+    synced_at:                  string;
+    contracts_synced_at:        string | null;
+    orders_synced_at:           string | null;
+    understocked_contracts:     {
+        location_id:        number;
+        location_name:      string;
+        short_name:         string;
+        fitting_id:         number;
+        fitting_name:       string;
+        ship_id:            number;
+        current_quantity:   number;
+        expected_quantity:  number;
+        shortfall:          number;
+        readiness:          string;
+        expectation_id:     number;
+    }[];
+    sell_gaps: {
+        location_id:        number;
+        location_name:      string;
+        short_name:         string;
+        type_id:            number;
+        item_name:          string;
+        current_quantity:   number;
+        expected_quantity:  number;
+        shortfall:          number;
+        ships: {
+            ship_id:        number;
+            fitting_name:   string;
+        }[];
+    }[];
+    summary: OpsMonitorSummary;
 }
 
 export interface OrderAssignmentsBreakdownItem {

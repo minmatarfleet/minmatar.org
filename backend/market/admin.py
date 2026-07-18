@@ -13,13 +13,11 @@ from market.models import (
     EveMarketContract,
     EveMarketContractError,
     EveMarketContractExpectation,
-    EveMarketContractResponsibility,
     EveMarketFittingExpectation,
     EveMarketItemExpectation,
     EveMarketItemHistory,
     EveMarketItemLocationPrice,
     EveMarketItemOrder,
-    EveMarketItemResponsibility,
     EveMarketItemTransaction,
     EveTypeWithSellOrders,
 )
@@ -100,11 +98,6 @@ def get_market_item_trends(item_id):
 # ----- Contracts -----
 
 
-class EveMarketContractResponsibilityInline(admin.TabularInline):
-    model = EveMarketContractResponsibility
-    extra = 0
-
-
 @admin.register(EveMarketContractExpectation)
 class EveMarketContractExpectationAdmin(admin.ModelAdmin):
     """Contract expectations: fitting + quantity per location; stock levels from outstanding contracts."""
@@ -135,7 +128,6 @@ class EveMarketContractExpectationAdmin(admin.ModelAdmin):
     )
     autocomplete_fields = ("fitting", "location")
     ordering = ("fitting__name", "location__location_name")
-    inlines = [EveMarketContractResponsibilityInline]
     fieldsets = (
         ("Details", {"fields": ("fitting", "location", "quantity")}),
         (
@@ -178,30 +170,6 @@ class EveMarketContractExpectationAdmin(admin.ModelAdmin):
             + urlencode(query)
         )
         return format_html('<a href="{}">View outstanding contracts</a>', url)
-
-
-@admin.register(EveMarketContractResponsibility)
-class EveMarketContractResponsibilityAdmin(admin.ModelAdmin):
-    """Who is responsible for fulfilling a contract expectation (character or corp ID)."""
-
-    list_display = ("expectation", "entity_id", "get_fitting", "get_location")
-    list_display_links = ("expectation",)
-    search_fields = (
-        "entity_id",
-        "expectation__fitting__name",
-        "expectation__location__location_name",
-    )
-    list_filter = ("expectation__location", "expectation__fitting")
-    list_per_page = 50
-    autocomplete_fields = ("expectation",)
-
-    @admin.display(description="Fitting")
-    def get_fitting(self, obj):
-        return obj.expectation.fitting.name
-
-    @admin.display(description="Location")
-    def get_location(self, obj):
-        return obj.expectation.location.location_name
 
 
 @admin.register(EveMarketContract)
@@ -522,11 +490,6 @@ class EveTypeWithSellOrdersAdmin(admin.ModelAdmin):
 # ----- Items (sell-order seeding; hidden from index) -----
 
 
-class EveMarketItemResponsibilityInline(admin.TabularInline):
-    model = EveMarketItemResponsibility
-    extra = 0
-
-
 @admin.register(EveMarketItemExpectation)
 class EveMarketItemExpectationAdmin(admin.ModelAdmin):
     """Item seeding: EVE type + target quantity per location, tracked on sell orders."""
@@ -556,7 +519,6 @@ class EveMarketItemExpectationAdmin(admin.ModelAdmin):
         "is_understocked",
     )
     ordering = ("item__name", "location__location_name")
-    inlines = [EveMarketItemResponsibilityInline]
     change_form_template = "admin/market/evemarketitemorder/change_form.html"
     fieldsets = (
         ("Details", {"fields": ("item", "location", "quantity")}),
@@ -583,30 +545,6 @@ class EveMarketItemExpectationAdmin(admin.ModelAdmin):
             )
             extra_context["market_item_name"] = str(obj.item)
         return super().change_view(request, object_id, form_url, extra_context)
-
-
-@admin.register(EveMarketItemResponsibility)
-class EveMarketItemResponsibilityAdmin(admin.ModelAdmin):
-    """Who is responsible for fulfilling an item expectation (character or corp ID)."""
-
-    list_display = ("expectation", "entity_id", "get_item", "get_location")
-    list_display_links = ("expectation",)
-    search_fields = (
-        "entity_id",
-        "expectation__item__name",
-        "expectation__location__location_name",
-    )
-    list_filter = ("expectation__location", "expectation__item")
-    list_per_page = 50
-    autocomplete_fields = ("expectation",)
-
-    @admin.display(description="Item")
-    def get_item(self, obj):
-        return obj.expectation.item.name
-
-    @admin.display(description="Location")
-    def get_location(self, obj):
-        return obj.expectation.location.location_name
 
 
 @admin.register(EveMarketItemLocationPrice)

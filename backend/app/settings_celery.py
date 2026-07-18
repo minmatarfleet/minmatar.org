@@ -47,13 +47,6 @@ CELERYBEAT_MARKET = [
         },
     ),
     (
-        "[Market] Low Stock Warnings",
-        {
-            "task": "market.tasks.notify_eve_market_contract_warnings",
-            "schedule": crontab(minute=0, hour=14, day_of_week=1),
-        },
-    ),
-    (
         "[Market] Update Moon Revenue",
         {
             "task": "moons.tasks.update_moon_revenues",

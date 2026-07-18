@@ -1010,15 +1010,6 @@ export interface DoctrineLocationUI {
     doctrines:          DoctrineType[];
 }
 
-import type { FittingMarketData, SellOrderItem } from '@dtypes/api.minmatar.org';
-
-export interface ContractMarketLocationUI {
-    name:               string;
-    doctrine_count:     number;
-    completion:         number;
-    fittings:           FittingMarketData[];
-}
-
 export const fleet_roles = ['logi_anchor', 'cyno', 'links'] as const
 export type FleetRoles = typeof fleet_roles[number]
 
@@ -1053,13 +1044,6 @@ export interface FreightContractLocationDestination {
 export interface FreightContractLocation {
     location_name:  string;
     destinations:   FreightContractLocationDestination[];
-}
-
-export interface MarketLocationUI {
-    name:               string;
-    items_count:        number;
-    completion:         number;
-    items:              SellOrderItem[];
 }
 
 import type { ColonyEntry } from '@dtypes/api.minmatar.org'

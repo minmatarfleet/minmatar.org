@@ -1,0 +1,92 @@
+---
+interface ShipRef {
+    ship_id:        number;
+    fitting_name:   string;
+}
+
+interface Props {
+    ships:          ShipRef[];
+    max?:           number;
+    size?:          number;
+    init_tooltips?: boolean;
+}
+
+const {
+    ships = [],
+    max = 10,
+    size = 24,
+    init_tooltips = false,
+} = Astro.props
+
+const shown = ships.slice(0, max)
+const extra = Math.max(0, ships.length - shown.length)
+const extra_title = ships.slice(max).map(s => s.fitting_name).join(', ')
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+---
+
+{shown.length > 0 &&
+    <FlexInline
+        gap="var(--space-3xs)"
+        class="[ useful-for-ships ]"
+    >
+        {shown.map(ship =>
+            <span
+                class="[ useful-for-ships__icon ]"
+                data-tippy-content={ship.fitting_name}
+                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+            >
+                <ItemPicture
+                    item_id={ship.ship_id}
+                    item_name={ship.fitting_name}
+                    size={size}
+                    icon_quality={32}
+                />
+            </span>
+        )}
+        {extra > 0 &&
+            <span
+                class="[ useful-for-ships__more ]"
+                data-tippy-content={extra_title}
+                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+            >+{extra}</span>
+        }
+    </FlexInline>
+}
+
+<style lang="scss" define:vars={{ size }}>
+    .useful-for-ships {
+        flex-wrap: wrap;
+    }
+
+    .useful-for-ships__icon {
+        display: inline-flex;
+        border-radius: 50%;
+        overflow: hidden;
+        background: rgba(0, 0, 0, 0.35);
+        line-height: 0;
+
+        :global(picture),
+        :global(img) {
+            width: calc(var(--size) * 1px);
+            height: calc(var(--size) * 1px);
+            object-fit: cover;
+        }
+    }
+
+    .useful-for-ships__more {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: calc(var(--size) * 1px);
+        height: calc(var(--size) * 1px);
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.35);
+        font-size: calc(var(--size) * 0.38px);
+        font-weight: 600;
+        line-height: 1;
+        opacity: 0.85;
+        flex-shrink: 0;
+    }
+</style>

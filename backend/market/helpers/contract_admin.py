@@ -4,7 +4,7 @@ from django.utils.html import format_html
 from market.models import EveMarketContract
 
 
-def _contract_needs_attention(contract: EveMarketContract) -> bool:
+def contract_needs_attention(contract: EveMarketContract) -> bool:
     if contract.match_is_flagged:
         return True
     if contract.match_score is None:
@@ -25,7 +25,7 @@ def build_location_contracts_context(location) -> dict:
 
     attention_rows = []
     for contract in outstanding.order_by("match_score", "title"):
-        if not _contract_needs_attention(contract):
+        if not contract_needs_attention(contract):
             continue
         edit_url = reverse(
             "admin:market_evemarketcontract_change", args=[contract.pk]
