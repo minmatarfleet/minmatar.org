@@ -3,6 +3,9 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import Flexblock from '@components/compositions/Flexblock.astro';
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
+import Markdown from '@components/blocks/Markdown.astro'
+
 import {
     L3ARN_APPLICATION_ROLES,
     L3ARN_FORM_PREFIX,
@@ -25,27 +28,27 @@ const fieldName = (key: string) =>
     corporationApplicationFieldName(form_prefix, include_field_names, key);
 ---
 
-<Flexblock class="[ w-full ]" gap="var(--space-2xs)">
-    <span id={`${id_prefix}-roles-label`} class="field-label">
-        {t('l3arn_application_roles')}
-    </span>
+<Flexblock class="[ w-full ]">
+    <h4 id={`${id_prefix}-roles-label`} class="[ text-foreground ]">
+        {t('l3arn_application_activity_period')}
+    </h4>
+
     <Flexblock
         gap="var(--space-xs)"
         role="group"
         aria-labelledby={`${id_prefix}-roles-label`}
     >
         {L3ARN_APPLICATION_ROLES.map((role) => (
-            <label class="choice-row" for={`${id_prefix}-role-${role}`}>
-                <input
-                    id={`${id_prefix}-role-${role}`}
-                    type="checkbox"
-                    name={fieldName('roles')}
-                    value={role}
-                    x-model="roles"
-                    x-on:change="updateApplicationStatus()"
-                />
-                <span>{t(`l3arn_application_role_${role}` as any)}</span>
-            </label>
+            <RadioCheckInput
+                id={`${id_prefix}-role-${role}`}
+                type="checkbox"
+                name={fieldName('roles')}
+                value={role}
+                x-model="roles"
+                x-on:change="updateApplicationStatus()"
+            >
+                <Markdown markdown={t(`l3arn_application_role_${role}` as any)} inline={true} inline_element='span' />
+            </RadioCheckInput>
         ))}
     </Flexblock>
 </Flexblock>

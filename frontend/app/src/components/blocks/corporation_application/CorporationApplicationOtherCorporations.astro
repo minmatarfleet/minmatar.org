@@ -3,6 +3,9 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import Flexblock from '@components/compositions/Flexblock.astro';
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
+import Markdown from '@components/blocks/Markdown.astro'
+
 import { get_corporations_list } from '@helpers/fetching/corporations';
 import type { CorporationObject } from '@dtypes/layout_components';
 import {
@@ -10,6 +13,7 @@ import {
     L3ARN_FORM_PREFIX,
 } from '@helpers/corporations/l3arn_application';
 import { corporationApplicationFieldName } from './field_names';
+import Button from '../Button.astro';
 
 interface Props {
     include_field_names?: boolean;
@@ -37,41 +41,41 @@ const otherAllianceCorporations = alliance_corporations
 
 <Flexblock
     class="[ w-full ]"
-    gap="var(--space-xs)"
     role="group"
     aria-labelledby={`${id_prefix}-other-corps-label`}
 >
-    <span id={`${id_prefix}-other-corps-label`} class="field-label">
+    <h4 id={`${id_prefix}-other-corps-label`} class="[ text-foreground ]">
         {t('l3arn_application_other_corps')}
-    </span>
-    {otherAllianceCorporations.map((corporation) => (
-        <label
-            class="choice-row"
-            for={`${id_prefix}-other-corp-${corporation.corporation_id}`}
-        >
-            <input
+    </h4>
+    
+    <Flexblock
+        class="[ w-full ]"
+        gap="var(--space-xs)"
+    >
+        {otherAllianceCorporations.map((corporation) => (
+            <RadioCheckInput
                 id={`${id_prefix}-other-corp-${corporation.corporation_id}`}
                 type="checkbox"
                 name={fieldName('other_corporations')}
                 value={corporation.corporation_name}
                 x-model="other_corporations"
                 x-on:change="updateApplicationStatus()"
-            />
-            <span>{corporation.corporation_name}</span>
-        </label>
-    ))}
+            >
+                {corporation.corporation_name}
+            </RadioCheckInput>
+        ))}
+    </Flexblock>
 
-    <small class="form-subtext form-subtext--after-list">
-        <a
-            class="browse-corps-link"
-            href="https://my.minmatar.org/alliance/corporations/list/"
-            target="_blank"
-            rel="noreferrer noopener"
-        >
-            {t('l3arn_application_other_corps_link')}
-            <span class="visually-hidden">{t('opens_in_new_tab')}</span>
-        </a>
-    </small>
+    <Button
+        size='sm'
+        href="https://my.minmatar.org/alliance/corporations/list/"
+        target="_blank"
+        rel="noreferrer noopener"
+        class="[ w-fit ]"
+    >
+        {t('l3arn_application_other_corps_link')}
+        <span class="visually-hidden">{t('opens_in_new_tab')}</span>
+    </Button>
 </Flexblock>
 
 <style lang="scss">

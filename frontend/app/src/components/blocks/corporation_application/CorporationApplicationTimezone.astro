@@ -3,6 +3,9 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import Flexblock from '@components/compositions/Flexblock.astro';
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
+import Markdown from '@components/blocks/Markdown.astro'
+
 import {
     L3ARN_APPLICATION_ACTIVITY_PERIODS,
     L3ARN_FORM_PREFIX,
@@ -57,17 +60,19 @@ const fieldName = (key: string) =>
         ></p>
     </aside>
 
-    <span id={`${id_prefix}-activity-period-label`} class="field-label">
-        {t('l3arn_application_activity_period')}
-    </span>
-    <div
-        class="period-options"
-        role="radiogroup"
-        aria-labelledby={`${id_prefix}-activity-period-label`}
-    >
-        {L3ARN_APPLICATION_ACTIVITY_PERIODS.map((period) => (
-            <label class="choice-row" for={`${id_prefix}-activity-period-${period}`}>
-                <input
+    <Flexblock>
+        <h4 id={`${id_prefix}-activity-period-label`} class="[ text-foreground ]">
+            {t('l3arn_application_activity_period')}
+        </h4>
+        
+        <Flexblock
+            class="[ w-full ]"
+            gap="var(--space-xs)"
+            role="radiogroup"
+            aria-labelledby={`${id_prefix}-activity-period-label`}
+        >
+            {L3ARN_APPLICATION_ACTIVITY_PERIODS.map((period) => (
+                <RadioCheckInput
                     id={`${id_prefix}-activity-period-${period}`}
                     type="radio"
                     name={fieldName('activity_period') ?? `${id_prefix}_activity_period`}
@@ -75,11 +80,12 @@ const fieldName = (key: string) =>
                     x-model="activity_period"
                     required
                     x-on:change="updateApplicationStatus()"
-                />
-                <span>{t(`l3arn_application_activity_period_${period}` as any)}</span>
-            </label>
-        ))}
-    </div>
+                >
+                    <Markdown markdown={t(`l3arn_application_activity_period_${period}` as any)} inline={true} inline_element='span' />
+                </RadioCheckInput>
+            ))}
+        </Flexblock>
+    </Flexblock>
 
     <aside
         class="timezone-result"

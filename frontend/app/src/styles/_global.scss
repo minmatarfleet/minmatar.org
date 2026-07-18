@@ -338,3 +338,9 @@ a[disabled] {
 .overflow-hidden {
     overflow: hidden;
 }
+
+label {
+    a:not([class]) {
+        text-decoration: underline;
+    }
+}
