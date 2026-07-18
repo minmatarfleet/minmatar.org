@@ -110,8 +110,6 @@ export const glossary: GlossaryEntry[] = [
 ]
 
 export const guideSections = [
-    { id: 'credits', title: 'Credits', shortTitle: 'Credits' },
-    { id: 'history', title: 'History', shortTitle: 'History' },
     { id: 'introduction', title: 'Introduction' },
     { id: 'considerations', title: 'Considerations of the Metagame', shortTitle: 'Considerations' },
     { id: 'disclaimers', title: 'Disclaimers & Summary', shortTitle: 'Summary' },
@@ -122,4 +120,5 @@ export const guideSections = [
     { id: 'cormorant', title: 'Cormorant Navy Issue' },
     { id: 'talwar', title: 'Talwar Fleet Issue' },
     { id: 'glossary', title: 'Glossary', shortTitle: 'Glossary' },
+    { id: 'credits', title: 'Credits', shortTitle: 'Credits' },
 ]
