@@ -11,7 +11,7 @@ export const guideFittings: GuideFitting[] = [
         fittingId: 37,
         shipId: 73796,
         shipGuideId: 'catalyst',
-        name: 'Blaster',
+        name: 'Blaster Catalyst Navy Issue',
         description:
             'Plate + web + scram blaster brawler. High buffer EHP wins most close-range destroyer scram fights. Refit: SAAR Web Scram (active tank + nos).',
         eftFormat: `[Catalyst Navy Issue, [NVY] Blaster Catalyst Navy Issue]
@@ -47,7 +47,7 @@ Nanite Repair Paste x50`,
         fittingId: 32,
         shipId: 73796,
         shipGuideId: 'catalyst',
-        name: '10mn rail',
+        name: '10mn Catalyst Navy Issue',
         description:
             'Overpropped 10MN rail kiter (150mm gauss). Slippery scram-kite that controls range. Refit: 10mn 125mm (T2 rails, harder to catch, less raw DPS).',
         eftFormat: `[Catalyst Navy Issue, [NVY] 10mn Catalyst Navy Issue]
@@ -84,10 +84,10 @@ Nanite Repair Paste x120`,
         fittingId: 366,
         shipId: 73789,
         shipGuideId: 'coercer',
-        name: 'Dual neuts MWD',
+        name: '2X Neut Coercer Navy Issue',
         description:
-            'Classic dual-neut brawler with MWD. Drain cap-reliant targets, then grind at scram range. Refit: Dual Neuts No Prop (web + locus, slower, more control).',
-        eftFormat: `[Coercer Navy Issue, [NVY] Coercer Navy Issue — dual-neuts-mwd]
+            'Classic 2X neut brawler with MWD. Drain cap-reliant targets, then grind at scram range. Refit: 2X Neut No-Prop (web + locus, slower, more control).',
+        eftFormat: `[Coercer Navy Issue, [NVY] 2X Neut Coercer Navy Issue]
 
 400mm Rolled Tungsten Compact Plates
 Damage Control II
@@ -120,10 +120,10 @@ Nanite Repair Paste x50`,
         fittingId: 369,
         shipId: 73789,
         shipGuideId: 'coercer',
-        name: 'MWD scram brawl',
+        name: 'Pulse Coercer Navy Issue',
         description:
-            'Focused pulse MWD brawler with a full gun rack. Pure scram-range DPS. Refit: AB Scram Brawl (tighter range control, no MWD sig bloom).',
-        eftFormat: `[Coercer Navy Issue, [NVY] Coercer Navy Issue — mwd-scram-brawl]
+            'Pulse MWD brawler with a full gun rack. Pure scram-range DPS. Refit: AB Pulse (tighter range control, no MWD sig bloom).',
+        eftFormat: `[Coercer Navy Issue, [NVY] Pulse Coercer Navy Issue]
 
 200mm Steel Plates II
 Heat Sink II
@@ -156,10 +156,10 @@ Nanite Repair Paste x50`,
         fittingId: 371,
         shipId: 73789,
         shipGuideId: 'coercer',
-        name: 'Kite beams',
+        name: 'Beam Coercer Navy Issue',
         description:
-            'Beam kiter with tracking enhancer for falloff fights. Refits: Locus Pulse (pulse + locus, sit on beacon); Web Beams (dual web meme, no point).',
-        eftFormat: `[Coercer Navy Issue, [NVY] Coercer Navy Issue — kite-beams]
+            'Beam kiter with tracking enhancer for falloff fights. Refits: Locus Pulse Coercer (sit on beacon); Web Beam Coercer (dual web meme, no point).',
+        eftFormat: `[Coercer Navy Issue, [NVY] Beam Coercer Navy Issue]
 
 Heat Sink II
 Extruded Compact Heat Sink
@@ -192,7 +192,7 @@ Nanite Repair Paste x50`,
         fittingId: 28,
         shipId: 73794,
         shipGuideId: 'thrasher',
-        name: 'AC brawl',
+        name: 'AC Thrasher Fleet Issue',
         description:
             'Armor autocannon brawler with rocket launcher. Scram, web, MWD into range. Refit: Shield ACs (MSE + neut, more speed, less buffer).',
         eftFormat: `[Thrasher Fleet Issue, [NVY] AC Thrasher Fleet Issue]
@@ -231,7 +231,7 @@ Republic Fleet Phased Plasma S x1000`,
         fittingId: 41,
         shipId: 73794,
         shipGuideId: 'thrasher',
-        name: '280 mm arty',
+        name: 'Arty Thrasher Fleet Issue',
         description:
             'Default TFI: 280mm artillery kiter. Fight on your terms; if you get tackled, you die. Refits: 280mm ACR (meta MWD/rig); 280 Overdrive (entry/speed); 280 Double Web (AB meme).',
         eftFormat: `[Thrasher Fleet Issue, [NVY] Arty Thrasher Fleet Issue]
@@ -270,10 +270,10 @@ Republic Fleet Phased Plasma S x1000`,
         fittingId: 378,
         shipId: 73795,
         shipGuideId: 'cormorant',
-        name: 'Dual MASB neutrons',
+        name: 'Dual MASB Cormorant Navy Issue',
         description:
-            'Dual MASB neutron brawler for scram brawls. Refit: Dual MASB Ions (slightly more reach, same burst-shield concept).',
-        eftFormat: `[Cormorant Navy Issue, [NVY] Cormorant Navy Issue — dual-masb-neutrons]
+            'Dual MASB neutron brawler for scram brawls. Refit: Dual MASB Ions Cormorant (slightly more reach, same concept).',
+        eftFormat: `[Cormorant Navy Issue, [NVY] Dual MASB Cormorant Navy Issue]
 
 IFFA Compact Damage Control
 Vortex Compact Magnetic Field Stabilizer
@@ -307,10 +307,10 @@ Navy Cap Booster 400 x25`,
         fittingId: 380,
         shipId: 73795,
         shipGuideId: 'cormorant',
-        name: 'Buffer',
+        name: 'Buffer Cormorant Navy Issue',
         description:
             'Surprise MWD buffer with RF MSE. Looks like a kiter until you scram and brawl.',
-        eftFormat: `[Cormorant Navy Issue, [NVY] Cormorant Navy Issue — buffer]
+        eftFormat: `[Cormorant Navy Issue, [NVY] Buffer Cormorant Navy Issue]
 
 Magnetic Field Stabilizer II
 Damage Control II
@@ -343,10 +343,10 @@ Nanite Repair Paste x50`,
         fittingId: 381,
         shipId: 73795,
         shipGuideId: 'cormorant',
-        name: '10mn 75mm',
+        name: '10mn Cormorant Navy Issue',
         description:
             '10MN rail scram-kite with cap booster and Pithum MSB. 75mm rails for mid-range pressure under scram.',
-        eftFormat: `[Cormorant Navy Issue, [NVY] Cormorant Navy Issue — 10mn]
+        eftFormat: `[Cormorant Navy Issue, [NVY] 10mn Cormorant Navy Issue]
 
 Damage Control II
 Magnetic Field Stabilizer II
@@ -381,10 +381,10 @@ Navy Cap Booster 400 x25`,
         fittingId: 382,
         shipId: 91858,
         shipGuideId: 'talwar',
-        name: '10mn rocket',
+        name: '10mn Rocket Talwar Fleet Issue',
         description:
             '10MN afterburner rocket brawler with MASB burst tank. Early solo meta: beats many MWD + scram + web destroyers when you manage the slide.',
-        eftFormat: `[Talwar Fleet Issue, [NVY] Talwar Fleet Issue — 10mn-rocket]
+        eftFormat: `[Talwar Fleet Issue, [NVY] 10mn Rocket Talwar Fleet Issue]
 
 Navy Micro Auxiliary Power Core
 Ballistic Control System II

@@ -105,36 +105,36 @@ export const coercerGuide: ShipGuide = {
         },
         {
             id: 'dual-neut',
-            title: 'Dual-neut brawl',
+            title: '2X Neut',
             paragraphs: [
-                'Primary fit: dual neuts + MWD (example fit below). Double neut trades a gun for cap warfare: with hull bonus, two neuts drain like three unbonused smalls and cap out most destroyers in a couple of heated cycles.',
+                'Primary fit: 2X Neut Coercer Navy Issue (example fit below). Double neut trades a gun for cap warfare: with hull bonus, two neuts drain like three unbonused smalls and cap out most destroyers in a couple of heated cycles.',
             ],
             bullets: [
                 'Do not cap yourself: turn off one neut after 2-3 heated cycles.',
                 'Neut range is short: hug at 2-3 km. If they escape neut range and you are on Scorch, you are probably losing the DPS race.',
-                'Refit — Dual Neuts No Prop: drop prop for web + locus. Scorch reaches point range; kiters slide on you freely. Use when you expect a straight brawl, not a chase.',
+                'Refit — 2X Neut No-Prop: drop prop for web + locus. Scorch reaches point range; kiters slide on you freely. Use when you expect a straight brawl, not a chase.',
             ],
         },
         {
             id: 'brawl-variants',
-            title: 'Pulse scram brawl',
+            title: 'Pulse',
             paragraphs: [
-                'Primary fit: MWD scram brawl with a full pulse rack (example fit below). Pure DPS without the neut trump card: Scorch projection still helps vs kiters at point, but blaster brawlers can win the straight fight.',
+                'Primary fit: Pulse Coercer Navy Issue (example fit below). Pure DPS without the neut trump card: Scorch projection still helps vs kiters at point, but blaster brawlers can win the straight fight.',
                 'Keep at least one neut on any Coercer brawl you invent yourself: otherwise an AB + web frigate orbits you to death.',
             ],
             bullets: [
-                'Refit — AB Scram Brawl: afterburner instead of MWD for tighter range control and no MWD sig bloom. Same brawl role.',
+                'Refit — AB Pulse: afterburner instead of MWD for tighter range control and no MWD sig bloom. Same brawl role.',
             ],
         },
         {
             id: 'kiting',
-            title: 'Kiting (beam primary)',
+            title: 'Beam',
             paragraphs: [
-                'Primary fit: beam kiter with tracking enhancer (example fit below). Better at kiting ranges despite tracking. X-Ray (~20 km), Gamma (~17 km), Multifreq (~13 km) DPS bands. CPU-tight: storyline point, Geno pod, rolled heatsinks, event boosters all help.',
+                'Primary fit: Beam Coercer Navy Issue (example fit below). Better at kiting ranges despite tracking. X-Ray (~20 km), Gamma (~17 km), Multifreq (~13 km) DPS bands. CPU-tight: storyline point, Geno pod, rolled heatsinks, event boosters all help.',
             ],
             bullets: [
                 'Refit — Locus Pulse: pulse guns + locus rigs. Do not punch into a plex to brawl: sit inside and delete entrants at point range.',
-                'Refit — Web Beams: dual web, no point/scram. Hold 8-9 km off the beacon for tracking. Meme build: if they get under your guns you are in trouble.',
+                'Refit — Web Beam: dual web, no point/scram. Hold 8-9 km off the beacon for tracking. Meme build: if they get under your guns you are in trouble.',
             ],
         },
         {
@@ -147,10 +147,10 @@ export const coercerGuide: ShipGuide = {
     ],
     matchups: [
         {
-            title: 'Dual neuts',
+            title: '2X Neut',
             fitContext: 'Ignoring kiting fits.',
             entries: [
-                { opponent: 'Coercer Navy brawl', verdict: 'favoured', advice: 'Heat neuts: win the cap war.' },
+                { opponent: 'Pulse Coercer', verdict: 'favoured', advice: 'Heat neuts: win the cap war.' },
                 { opponent: 'AC TFI (web or not)', verdict: 'skill', advice: 'Heat neuts to stay in range; watch the DPS race; warp if losing.' },
                 { opponent: 'Cormorant Navy (MASB or buffer)', verdict: 'favoured', advice: 'Easy: they cannot fight neuts.' },
                 { opponent: 'Blaster CatNI', verdict: 'favoured', advice: 'Stay in neut range even through a nos.' },
@@ -158,13 +158,13 @@ export const coercerGuide: ShipGuide = {
             ],
         },
         {
-            title: 'Regular brawl',
-            fitContext: 'Pulse brawler: not the dual-neut line.',
+            title: 'Pulse',
+            fitContext: 'Pulse Coercer Navy Issue: not the 2X Neut line.',
             entries: [
-                { opponent: 'Coercer Navy brawl', load: 'Conflag', verdict: 'even', advice: 'Ram, heat, let the dice roll.' },
-                { opponent: 'Coercer Navy dual neuts', verdict: 'unfavoured', advice: 'Probably losing: counterneut, align out; cap pressure makes tackle slip.' },
-                { opponent: 'AC TFI shield, no web', verdict: 'favoured', advice: 'Easy stat check.' },
-                { opponent: 'AC TFI armor + web', verdict: 'even', advice: 'Coinflip on fit. Orbit = Multifrequency; range = Conflag + heat.' },
+                { opponent: 'Pulse Coercer mirror', load: 'Conflag', verdict: 'even', advice: 'Ram, heat, let the dice roll.' },
+                { opponent: '2X Neut Coercer', verdict: 'unfavoured', advice: 'Probably losing: counterneut, align out; cap pressure makes tackle slip.' },
+                { opponent: 'AC TFI shield, no web', load: 'Conflag', verdict: 'favoured', advice: 'Easy stat check.' },
+                { opponent: 'AC TFI armor + web', load: 'Conflag', verdict: 'even', advice: 'Coinflip on fit. Orbit = Multifrequency; range = Conflag + heat.' },
                 { opponent: 'Arty TFI (outside scram)', load: 'Scorch', verdict: 'even', advice: 'You can often force them out with Scorch: keep moving, make them turn risky to hold point.' },
                 { opponent: 'Cormorant dual MASB', load: 'Conflag', verdict: 'unfavoured', advice: 'Lose if they reach blaster range. Start at edge of Conflag range.' },
                 { opponent: 'Cormorant buffer', load: 'Conflag', verdict: 'unfavoured', advice: 'Paper win possible; close orbit = toast. Start away from beacon.' },
@@ -173,8 +173,8 @@ export const coercerGuide: ShipGuide = {
             ],
         },
         {
-            title: 'Kiting',
-            fitContext: 'Beam, pulse, or locus: with high ground.',
+            title: 'Beam',
+            fitContext: 'Beam Coercer Navy Issue (or Locus Pulse / Web Beam refits): with high ground.',
             entries: [
                 { opponent: 'All brawl fits', verdict: 'favoured', advice: 'Kite them: do not get caught; heat prop correctly. Swap ammo as needed.' },
                 { opponent: 'All kiting fits', verdict: 'favoured', advice: 'Nothing matches your DPS/EHP at point range with high ground.' },

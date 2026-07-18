@@ -445,3 +445,93 @@ UPDATE fittings_evefitting SET deleted = NOW(), deleted_by_cascade = 0 WHERE id 
 UPDATE fittings_evefitting SET deleted = NOW(), deleted_by_cascade = 0 WHERE id = 33 AND deleted IS NULL;
 
 COMMIT;
+
+-- ---------------------------------------------------------------------------
+-- Rename primaries to [PREFIX] [VARIANT] [FULL SHIP NAME]
+-- Run after the refit conversion above (or alone if conversion already applied).
+-- Keep old titles as aliases so existing contracts still match.
+-- ---------------------------------------------------------------------------
+
+-- id=366 → [NVY] 2X Neut Coercer Navy Issue
+UPDATE fittings_evefitting
+SET name = '[NVY] 2X Neut Coercer Navy Issue',
+    aliases = CASE
+      WHEN aliases IS NULL OR TRIM(aliases) = '' THEN '[NVY] Coercer Navy Issue — dual-neuts-mwd'
+      WHEN LOCATE(LOWER('[NVY] Coercer Navy Issue — dual-neuts-mwd'), LOWER(aliases)) > 0 THEN aliases
+      ELSE CONCAT(aliases, ', [NVY] Coercer Navy Issue — dual-neuts-mwd')
+    END,
+    eft_format = CONCAT('[Coercer Navy Issue, [NVY] 2X Neut Coercer Navy Issue]',
+                        SUBSTRING(eft_format, LOCATE('\n', eft_format)))
+WHERE id = 366 AND deleted IS NULL;
+
+-- id=369 → [NVY] Pulse Coercer Navy Issue
+UPDATE fittings_evefitting
+SET name = '[NVY] Pulse Coercer Navy Issue',
+    aliases = CASE
+      WHEN aliases IS NULL OR TRIM(aliases) = '' THEN '[NVY] Coercer Navy Issue — mwd-scram-brawl, [NVY] Coercer Navy Issue'
+      WHEN LOCATE(LOWER('[NVY] Coercer Navy Issue — mwd-scram-brawl'), LOWER(aliases)) > 0 THEN aliases
+      ELSE CONCAT(aliases, ', [NVY] Coercer Navy Issue — mwd-scram-brawl')
+    END,
+    eft_format = CONCAT('[Coercer Navy Issue, [NVY] Pulse Coercer Navy Issue]',
+                        SUBSTRING(eft_format, LOCATE('\n', eft_format)))
+WHERE id = 369 AND deleted IS NULL;
+
+-- id=371 → [NVY] Beam Coercer Navy Issue
+UPDATE fittings_evefitting
+SET name = '[NVY] Beam Coercer Navy Issue',
+    aliases = CASE
+      WHEN aliases IS NULL OR TRIM(aliases) = '' THEN '[NVY] Coercer Navy Issue — kite-beams'
+      WHEN LOCATE(LOWER('[NVY] Coercer Navy Issue — kite-beams'), LOWER(aliases)) > 0 THEN aliases
+      ELSE CONCAT(aliases, ', [NVY] Coercer Navy Issue — kite-beams')
+    END,
+    eft_format = CONCAT('[Coercer Navy Issue, [NVY] Beam Coercer Navy Issue]',
+                        SUBSTRING(eft_format, LOCATE('\n', eft_format)))
+WHERE id = 371 AND deleted IS NULL;
+
+-- id=378 → [NVY] Dual MASB Cormorant Navy Issue
+UPDATE fittings_evefitting
+SET name = '[NVY] Dual MASB Cormorant Navy Issue',
+    aliases = CASE
+      WHEN aliases IS NULL OR TRIM(aliases) = '' THEN '[NVY] Cormorant Navy Issue — dual-masb-neutrons'
+      WHEN LOCATE(LOWER('[NVY] Cormorant Navy Issue — dual-masb-neutrons'), LOWER(aliases)) > 0 THEN aliases
+      ELSE CONCAT(aliases, ', [NVY] Cormorant Navy Issue — dual-masb-neutrons')
+    END,
+    eft_format = CONCAT('[Cormorant Navy Issue, [NVY] Dual MASB Cormorant Navy Issue]',
+                        SUBSTRING(eft_format, LOCATE('\n', eft_format)))
+WHERE id = 378 AND deleted IS NULL;
+
+-- id=380 → [NVY] Buffer Cormorant Navy Issue
+UPDATE fittings_evefitting
+SET name = '[NVY] Buffer Cormorant Navy Issue',
+    aliases = CASE
+      WHEN aliases IS NULL OR TRIM(aliases) = '' THEN '[NVY] Cormorant Navy Issue — buffer'
+      WHEN LOCATE(LOWER('[NVY] Cormorant Navy Issue — buffer'), LOWER(aliases)) > 0 THEN aliases
+      ELSE CONCAT(aliases, ', [NVY] Cormorant Navy Issue — buffer')
+    END,
+    eft_format = CONCAT('[Cormorant Navy Issue, [NVY] Buffer Cormorant Navy Issue]',
+                        SUBSTRING(eft_format, LOCATE('\n', eft_format)))
+WHERE id = 380 AND deleted IS NULL;
+
+-- id=381 → [NVY] 10mn Cormorant Navy Issue
+UPDATE fittings_evefitting
+SET name = '[NVY] 10mn Cormorant Navy Issue',
+    aliases = CASE
+      WHEN aliases IS NULL OR TRIM(aliases) = '' THEN '[NVY] Cormorant Navy Issue — 10mn'
+      WHEN LOCATE(LOWER('[NVY] Cormorant Navy Issue — 10mn'), LOWER(aliases)) > 0 THEN aliases
+      ELSE CONCAT(aliases, ', [NVY] Cormorant Navy Issue — 10mn')
+    END,
+    eft_format = CONCAT('[Cormorant Navy Issue, [NVY] 10mn Cormorant Navy Issue]',
+                        SUBSTRING(eft_format, LOCATE('\n', eft_format)))
+WHERE id = 381 AND deleted IS NULL;
+
+-- id=382 → [NVY] 10mn Rocket Talwar Fleet Issue
+UPDATE fittings_evefitting
+SET name = '[NVY] 10mn Rocket Talwar Fleet Issue',
+    aliases = CASE
+      WHEN aliases IS NULL OR TRIM(aliases) = '' THEN '[NVY] Talwar Fleet Issue — 10mn-rocket'
+      WHEN LOCATE(LOWER('[NVY] Talwar Fleet Issue — 10mn-rocket'), LOWER(aliases)) > 0 THEN aliases
+      ELSE CONCAT(aliases, ', [NVY] Talwar Fleet Issue — 10mn-rocket')
+    END,
+    eft_format = CONCAT('[Talwar Fleet Issue, [NVY] 10mn Rocket Talwar Fleet Issue]',
+                        SUBSTRING(eft_format, LOCATE('\n', eft_format)))
+WHERE id = 382 AND deleted IS NULL;
