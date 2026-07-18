@@ -376,6 +376,6 @@ export function formatIsk(isk: number): string {
 export type CampaignRowTone = 'info' | 'success' | 'warning' | 'danger' | undefined
 
 export type CampaignTableRow = {
-    cells: [string, string] | [string, string, string]
+    cells: readonly string[]
     tone?: CampaignRowTone
 }

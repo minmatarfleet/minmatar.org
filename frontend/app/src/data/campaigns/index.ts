@@ -2,7 +2,10 @@ import { COVER_IMAGE as ETHERIUM_COVER, CAMPAIGN_ISK_DESTROYED as ETHERIUM_ISK }
 import { COVER_IMAGE as PROVIDENCE_COVER, CAMPAIGN_ISK_DESTROYED as PROVIDENCE_ISK } from '@/data/campaigns/providence'
 import { COVER_IMAGE as SCALDING_COVER, PERIOD_SCALDING_ISK_KILLS as SCALDING_ISK } from '@/data/campaigns/scalding-pass'
 import { COVER_IMAGE as HEK_COVER, ISK_DESTROYED as HEK_ISK } from '@/data/campaigns/hek'
+import { COVER_IMAGE as AUGA_COVER, CAMPAIGN_ISK_DESTROYED as AUGA_ISK, ALLIANCE_PATH as AUGA_PATH, SLUG as AUGA_SLUG } from '@/data/campaigns/auga'
 import { formatIsk } from '@/data/campaigns/hek'
+
+export type CampaignKind = 'campaign' | 'siege'
 
 export type CampaignMeta = {
     slug: string
@@ -13,6 +16,7 @@ export type CampaignMeta = {
     coverImage: string
     iskDestroyed: number
     sortOrder: number
+    kind: CampaignKind
 }
 
 export const campaigns: CampaignMeta[] = [
@@ -25,6 +29,7 @@ export const campaigns: CampaignMeta[] = [
         coverImage: ETHERIUM_COVER,
         iskDestroyed: ETHERIUM_ISK,
         sortOrder: 1,
+        kind: 'campaign',
     },
     {
         slug: 'providence',
@@ -35,6 +40,7 @@ export const campaigns: CampaignMeta[] = [
         coverImage: PROVIDENCE_COVER,
         iskDestroyed: PROVIDENCE_ISK,
         sortOrder: 2,
+        kind: 'campaign',
     },
     {
         slug: 'scalding-pass',
@@ -45,6 +51,7 @@ export const campaigns: CampaignMeta[] = [
         coverImage: SCALDING_COVER,
         iskDestroyed: SCALDING_ISK,
         sortOrder: 3,
+        kind: 'campaign',
     },
     {
         slug: 'hek',
@@ -55,11 +62,31 @@ export const campaigns: CampaignMeta[] = [
         coverImage: HEK_COVER,
         iskDestroyed: HEK_ISK,
         sortOrder: 4,
+        kind: 'campaign',
+    },
+    {
+        slug: AUGA_SLUG,
+        path: AUGA_PATH,
+        nameKey: 'campaigns.auga.name',
+        periodKey: 'campaigns.auga.campaign_period',
+        excerptKey: 'campaigns.auga.leading_text',
+        coverImage: AUGA_COVER,
+        iskDestroyed: AUGA_ISK,
+        sortOrder: 1,
+        kind: 'siege',
     },
 ]
 
 export function getCampaigns(): CampaignMeta[] {
-    return [...campaigns].sort((a, b) => a.sortOrder - b.sortOrder)
+    return campaigns
+        .filter((c) => c.kind === 'campaign')
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+}
+
+export function getSieges(): CampaignMeta[] {
+    return campaigns
+        .filter((c) => c.kind === 'siege')
+        .sort((a, b) => a.sortOrder - b.sortOrder)
 }
 
 export { formatIsk }

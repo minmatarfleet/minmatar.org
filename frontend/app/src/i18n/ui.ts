@@ -127,6 +127,19 @@ export const ui = {
         'campaigns.isk_destroyed': 'ISK destroyed',
         'campaigns.view_report': 'View report',
 
+        'campaigns.sieges.section_title': 'System sieges',
+        'campaigns.sieges.section_leading_text':
+            'Faction warfare system pushes — contested hubs, plex wars, and the fleets that flipped them.',
+
+        'campaigns.auga.name': 'Auga · YC128',
+        'campaigns.auga.page_title': 'Auga Siege Report · YC128',
+        'campaigns.auga.campaign_period': '12–18 Jul YC128',
+        'campaigns.auga.leading_text':
+            'Minmatar militia takes Auga. Seven days of capturing complexes, running propaganda beacons, and back-to-back fleet fights in the Hed constellation. 95.6B ISK destroyed — the people who say sieges don\'t exist simply aren\'t undocking.',
+        'campaigns.auga.meta_title': 'Auga Siege Report · YC128 | {site}',
+        'campaigns.auga.meta_description':
+            'Auga system siege report (YC128) for Minmatar Fleet — seven days capturing complexes and running propaganda beacons in Hed, 95.6B ISK destroyed, fleet commanders, and militia pilots from 12–18 Jul YC128.',
+
         'campaigns.etherium_reach.name': 'Etherium Reach',
         'campaigns.etherium_reach.page_title': 'Etherium Reach Campaign Report',
         'campaigns.etherium_reach.campaign_period': 'Nov 2025 – Jun 2026',
@@ -1152,6 +1165,8 @@ export const ui = {
         'page_finder.alliance.description': 'Alliance landing page.',
         'page_finder.campaigns.etherium_reach.description':
             'Etherium Reach Dronelands campaign report — alliance participation, combat, pilot income, and campaign results.',
+        'page_finder.campaigns.auga.description':
+            'Auga system siege report (YC128) — capturing complexes, propaganda beacons, and fleet fights in the Hed constellation from July YC128.',
         'page_finder.campaigns.providence.description':
             'FL33T\'s war on its ancestral enemy, CVA, in Providence — structure grinds, capital fleet building, and the Watermelon.',
         'page_finder.campaigns.scalding_pass.description':

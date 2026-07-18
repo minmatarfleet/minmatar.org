@@ -1,0 +1,986 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang } = i18n(Astro.url)
+
+import {
+    AMARR_DESTROYED_ISK,
+    AMARR_DESTROYED_SHIPS,
+    AMARR_PILOTS,
+    ANGEL_PILOTS,
+    CAMPAIGN_ISK_DESTROYED,
+    ENGAGEMENT_MIX,
+    FACTION_CORP,
+    FLEET_COMMANDERS,
+    formatIsk,
+    formatYcDate,
+    HEADLINES,
+    MILITIA_FLEET,
+    MILITIA_GANG,
+    MILITIA_SOLO,
+    MILITIA_TOP_5,
+    MINMATAR_DESTROYED_ISK,
+    MINMATAR_DESTROYED_SHIPS,
+    MINMATAR_PILOTS,
+    NOTABLE_EVENTS,
+    OTHER_DESTROYED_ISK,
+    OTHER_DESTROYED_SHIPS,
+    SHIPS_DESTROYED,
+    SHIPS_DESTROYED_HULLS,
+    MILITIA_SHIPS_FLOWN_HULLS,
+    TOP_ALLIANCES,
+    UNIQUE_PILOTS,
+} from '@/data/campaigns/auga'
+import type { CampaignTableRow } from '@/data/campaigns/etherium-reach'
+import type { PilotKillCount } from '@/data/campaigns/auga'
+
+import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
+import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
+import AugaDailyShipsChartChartjs from '@components/blocks/campaigns/auga/AugaDailyShipsChartChartjs.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import Grid from '@components/compositions/Grid.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import CharacterCard from '@components/blocks/CharacterCard.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+import CountUpAnimation from '@components/blocks/CountUpAnimation.astro'
+import MinmatarLogo from '@components/logos/MinmatarLogo.astro'
+import AmarrLogo from '@components/logos/AmarrLogo.astro'
+import KillReportEVEIcon from '@components/icons/KillReportEVEIcon.astro'
+import WalletEVEIcon from '@components/icons/WalletEVEIcon.astro'
+import PilotsEvEIcon from '@components/icons/PilotsEvEIcon.astro'
+
+import { get_alliance_logo, get_corporation_logo } from '@helpers/eve_image_server'
+import { number_name } from '@helpers/numbers'
+
+const engagementRows: CampaignTableRow[] = ENGAGEMENT_MIX.map((row) => ({
+    cells: [row.label, row.value.toLocaleString()],
+}))
+
+function eventReportLabel(url: string): string {
+    if (url.includes('br.evetools.org')) return 'Battle report'
+    if (url.includes('/kill/')) return 'Killmail'
+    return 'zKill'
+}
+
+const HEADLINE_CATEGORY_LABELS = {
+    propaganda: 'Propaganda',
+    aar: 'AAR',
+    video: 'Video',
+} as const
+
+function formatHeadlineViews(views: string | number): string {
+    if (typeof views === 'string') {
+        return `${views} views`
+    }
+    if (views >= 1_000_000) {
+        return `${(views / 1_000_000).toFixed(1)}M views`
+    }
+    if (views >= 1_000) {
+        return `${Math.round(views / 1_000)}K views`
+    }
+    return `${views.toLocaleString()} views`
+}
+
+const pilotCategories: { title: string; pilots: readonly PilotKillCount[] }[] = [
+    { title: 'Top Solo Pilots', pilots: MILITIA_SOLO.slice(0, 5) },
+    { title: 'Top Small Gang Pilots', pilots: MILITIA_GANG.slice(0, 5) },
+    { title: 'Top Fleet Pilots', pilots: MILITIA_FLEET.slice(0, 5) },
+]
+---
+
+<Flexblock gap="var(--space-2xl)" class="auga-siege">
+    <TextBox>
+        <Flexblock gap="var(--space-m)">
+            <h2>Driving Factor</h2>
+            <div class="auga-siege__prose">
+                <p>
+                    The Cradle of War expansion launched new sites built for system sieges,
+                    letting pilots make meaningful progress. ELT-5 destroyer sites and Moderate
+                    NVY-3 sites draw heavy contest for their victory points, and systems now
+                    flip at a more reasonable pace.
+                </p>
+                <p>
+                    Minmatar Fleet is also driving a southern push to open opportunities against
+                    FRT, CVA, and other Derelik-based entities. Without those systems captured,
+                    Minmatar pilots are not permitted to dock.
+                </p>
+                <p>
+                    Special thanks to FC Kestrel for the new sites, they're fresh and exciting.
+                </p>
+            </div>
+        </Flexblock>
+    </TextBox>
+
+    <Flexblock gap="var(--space-xl)" class="[ w-full ]">
+        <TextBox>
+            <Flexblock gap="var(--space-3xs)">
+                <h2>By the numbers</h2>
+                <small>12–18 Jul YC128, capsule kills ignored</small>
+            </Flexblock>
+        </TextBox>
+
+        <Flexblock gap="var(--space-s)" class="[ w-full ]">
+            <h4>High level summary</h4>
+
+            <div class="auga-stat-row">
+                <CampaignStat label="Ships destroyed">
+                    <div slot="icon" class="auga-stat__icon" aria-hidden="true">
+                        <KillReportEVEIcon />
+                    </div>
+                    <CountUpAnimation
+                        element="span"
+                        target={SHIPS_DESTROYED}
+                        data-tippy-content={number_name(SHIPS_DESTROYED, lang)}
+                    />
+                </CampaignStat>
+                <CampaignStat label="ISK destroyed" tone="success">
+                    <div slot="icon" class="auga-stat__icon" aria-hidden="true">
+                        <WalletEVEIcon />
+                    </div>
+                    <CountUpAnimation
+                        element="span"
+                        target={CAMPAIGN_ISK_DESTROYED}
+                        data-tippy-content={number_name(CAMPAIGN_ISK_DESTROYED, lang)}
+                    />
+                </CampaignStat>
+                <CampaignStat label="Pilots who fought" tone="info">
+                    <div slot="icon" class="auga-stat__icon" aria-hidden="true">
+                        <PilotsEvEIcon />
+                    </div>
+                    <CountUpAnimation
+                        element="span"
+                        target={UNIQUE_PILOTS}
+                        data-tippy-content={number_name(UNIQUE_PILOTS, lang)}
+                    />
+                </CampaignStat>
+            </div>
+        </Flexblock>
+
+        <Flexblock gap="var(--space-s)" class="[ w-full ]">
+            <h4>ISK destroyed</h4>
+
+            <div class="auga-stat-row">
+                <CampaignStat label={`Minmatar · ${MINMATAR_DESTROYED_SHIPS.toLocaleString()} ships`} tone="minmatar">
+                    <div slot="icon" class="auga-faction-stat__logo auga-faction-stat__logo--minmatar" aria-hidden="true">
+                        <MinmatarLogo />
+                    </div>
+                    <CountUpAnimation
+                        element="span"
+                        target={MINMATAR_DESTROYED_ISK}
+                        data-tippy-content={number_name(MINMATAR_DESTROYED_ISK, lang)}
+                    />
+                </CampaignStat>
+                <CampaignStat label={`Amarr · ${AMARR_DESTROYED_SHIPS.toLocaleString()} ships`} tone="amarr">
+                    <div slot="icon" class="auga-faction-stat__logo auga-faction-stat__logo--amarr" aria-hidden="true">
+                        <AmarrLogo />
+                    </div>
+                    <CountUpAnimation
+                        element="span"
+                        target={AMARR_DESTROYED_ISK}
+                        data-tippy-content={number_name(AMARR_DESTROYED_ISK, lang)}
+                    />
+                </CampaignStat>
+                <CampaignStat label={`Third party · ${OTHER_DESTROYED_SHIPS.toLocaleString()} ships`} tone="info">
+                    <img
+                        slot="icon"
+                        class="auga-faction-stat__corp"
+                        src={get_corporation_logo(FACTION_CORP.concord, 64)}
+                        width="40"
+                        height="40"
+                        alt=""
+                        aria-hidden="true"
+                        loading="lazy"
+                    />
+                    <CountUpAnimation
+                        element="span"
+                        target={OTHER_DESTROYED_ISK}
+                        data-tippy-content={number_name(OTHER_DESTROYED_ISK, lang)}
+                    />
+                </CampaignStat>
+            </div>
+        </Flexblock>
+
+        <Flexblock gap="var(--space-s)" class="[ w-full ]">
+            <h4>Pilot breakdown</h4>
+
+            <div class="auga-stat-row">
+                <CampaignStat label="Minmatar pilots" tone="minmatar">
+                    <div slot="icon" class="auga-faction-stat__logo auga-faction-stat__logo--minmatar" aria-hidden="true">
+                        <MinmatarLogo />
+                    </div>
+                    <CountUpAnimation
+                        element="span"
+                        target={MINMATAR_PILOTS}
+                        data-tippy-content={number_name(MINMATAR_PILOTS, lang)}
+                    />
+                </CampaignStat>
+                <CampaignStat label="Amarr pilots" tone="amarr">
+                    <div slot="icon" class="auga-faction-stat__logo auga-faction-stat__logo--amarr" aria-hidden="true">
+                        <AmarrLogo />
+                    </div>
+                    <CountUpAnimation
+                        element="span"
+                        target={AMARR_PILOTS}
+                        data-tippy-content={number_name(AMARR_PILOTS, lang)}
+                    />
+                </CampaignStat>
+                <CampaignStat label="Angel Cartel pilots" tone="angel">
+                    <img
+                        slot="icon"
+                        class="auga-faction-stat__corp"
+                        src={get_corporation_logo(FACTION_CORP.angel, 64)}
+                        width="40"
+                        height="40"
+                        alt="Angel Cartel"
+                        loading="lazy"
+                    />
+                    <CountUpAnimation
+                        element="span"
+                        target={ANGEL_PILOTS}
+                        data-tippy-content={number_name(ANGEL_PILOTS, lang)}
+                    />
+                </CampaignStat>
+            </div>
+        </Flexblock>
+    </Flexblock>
+
+    <Flexblock>
+        <Flexblock gap="var(--space-3xs)">
+            <h2>Daily intensity</h2>
+            <small>Ship kills each day in Auga (capsules not counted)</small>
+        </Flexblock>
+        <ComponentBlock>
+            <AugaDailyShipsChartChartjs />
+        </ComponentBlock>
+    </Flexblock>
+
+    <Flexblock>
+        <Flexblock gap="var(--space-3xs)">
+            <h2>Engagement profiles</h2>
+            <small>The various sizes of content for the duration of the campaign.</small>
+        </Flexblock>
+        <CampaignDataTable headers={['Size', 'Ship kills']} rows={engagementRows} striped={true} />
+    </Flexblock>
+
+    <Flexblock gap="var(--space-l)">
+        <Flexblock gap="var(--space-3xs)">
+            <h2>Fleet commanders</h2>
+            <small>Commanders who stood fleets or held boss during the Auga push</small>
+        </Flexblock>
+
+        <Grid
+            class="[ w-full grid-fill auga-fc-grid ]"
+            row_gap="var(--space-3xs)"
+            column_gap="var(--space-3xs)"
+            min_item_width="324px"
+        >
+            {
+                FLEET_COMMANDERS.map((fc) => (
+                    <div class="auga-fc-item">
+                        <CharacterCard
+                            class="auga-fc-card"
+                            character_id={fc.characterId}
+                            character_name={fc.name}
+                            alt={`${fc.name} portrait`}
+                            narrow={false}
+                        >
+                            <h3>{fc.name}</h3>
+                        </CharacterCard>
+                        <small class="auga-fc-item__note">{fc.note}</small>
+                    </div>
+                ))
+            }
+        </Grid>
+    </Flexblock>
+
+    <Flexblock gap="var(--space-l)">
+        <h2>Top Minmatar militia pilots</h2>
+
+        <div class="er-table-wrap" tabindex="0" role="region" aria-label="Top 5 militia pilots">
+            <table class="er-table auga-pilot-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Pilot</th>
+                        <th scope="col" class="er-table__numeric">Killmails</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {
+                        MILITIA_TOP_5.map((pilot) => (
+                            <tr>
+                                <td>
+                                    <FlexInline gap="var(--space-xs)" class="[ items-center ]">
+                                        <CharacterPicture
+                                            character_id={pilot.characterId}
+                                            character_name={pilot.name}
+                                            size={32}
+                                            icon_quality={64}
+                                        />
+                                        <span>{pilot.name}</span>
+                                    </FlexInline>
+                                </td>
+                                <td class="er-table__numeric">{pilot.killmails.toLocaleString()}</td>
+                            </tr>
+                        ))
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        {
+            pilotCategories.map((category) => (
+                <Flexblock gap="var(--space-s)">
+                    <h3>{category.title}</h3>
+                    <Grid
+                        class="[ w-full grid-fill ]"
+                        row_gap="var(--space-3xs)"
+                        column_gap="var(--space-3xs)"
+                        min_item_width="280px"
+                    >
+                        {category.pilots.map((pilot) => (
+                            <CharacterCard
+                                character_id={pilot.characterId}
+                                character_name={pilot.name}
+                                alt={`${pilot.name} portrait`}
+                                narrow={false}
+                                size="sm"
+                            >
+                                <Flexblock gap="var(--space-3xs)">
+                                    <h3>{pilot.name}</h3>
+                                    <small>{pilot.killmails.toLocaleString()} killmails</small>
+                                </Flexblock>
+                            </CharacterCard>
+                        ))}
+                    </Grid>
+                </Flexblock>
+            ))
+        }
+    </Flexblock>
+
+    <Flexblock>
+        <Flexblock gap="var(--space-3xs)">
+            <h2>Top alliances</h2>
+            <small>
+                Ranked by killmails as attacker. ISK destroyed is value when they helped kill someone else;
+                ISK lost is when they were the victim.
+            </small>
+        </Flexblock>
+        <div class="er-table-wrap" tabindex="0" role="region" aria-label="Top alliances">
+            <table class="er-table auga-alliance-table">
+                <thead>
+                    <tr>
+                        <th scope="col">Alliance</th>
+                        <th scope="col" class="er-table__numeric">Killmails</th>
+                        <th scope="col" class="er-table__numeric">Ships lost</th>
+                        <th scope="col" class="er-table__numeric">ISK destroyed</th>
+                        <th scope="col" class="er-table__numeric">ISK lost</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {
+                        TOP_ALLIANCES.map((alliance) => (
+                            <tr>
+                                <td>
+                                    <FlexInline gap="var(--space-xs)" class="[ items-center ]">
+                                        <img
+                                            src={get_alliance_logo(alliance.allianceId, 64)}
+                                            width="32"
+                                            height="32"
+                                            alt=""
+                                            loading="lazy"
+                                        />
+                                        <span>{alliance.name}</span>
+                                    </FlexInline>
+                                </td>
+                                <td class="er-table__numeric">{alliance.killmails.toLocaleString()}</td>
+                                <td class="er-table__numeric">{alliance.shipsLost.toLocaleString()}</td>
+                                <td class="er-table__numeric">{formatIsk(alliance.iskDestroyed)}</td>
+                                <td class="er-table__numeric">{formatIsk(alliance.iskLost)}</td>
+                            </tr>
+                        ))
+                    }
+                </tbody>
+            </table>
+        </div>
+    </Flexblock>
+
+    <Flexblock gap="var(--space-l)">
+        <Flexblock gap="var(--space-3xs)">
+            <h2>Ship footprint</h2>
+            <small>The ships that primarily made up this campaign.</small>
+        </Flexblock>
+        <div class="auga-ship-split">
+            <Flexblock>
+                <small>Most destroyed hulls</small>
+                <div class="er-table-wrap" tabindex="0" role="region">
+                    <table class="er-table auga-ship-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Hull</th>
+                                <th scope="col" class="er-table__numeric">Destroyed</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {
+                                SHIPS_DESTROYED_HULLS.map((ship) => (
+                                    <tr>
+                                        <td>
+                                            <FlexInline gap="var(--space-xs)" class="[ items-center ]">
+                                                <ItemPicture
+                                                    item_id={ship.typeId}
+                                                    item_name={ship.name}
+                                                    size={32}
+                                                    icon_quality={64}
+                                                />
+                                                <span>{ship.name}</span>
+                                            </FlexInline>
+                                        </td>
+                                        <td class="er-table__numeric">{ship.count.toLocaleString()}</td>
+                                    </tr>
+                                ))
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </Flexblock>
+            <Flexblock>
+                <small>Most common militia hulls</small>
+                <div class="er-table-wrap" tabindex="0" role="region">
+                    <table class="er-table auga-ship-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Hull</th>
+                                <th scope="col" class="er-table__numeric">Appearances</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {
+                                MILITIA_SHIPS_FLOWN_HULLS.map((ship) => (
+                                    <tr>
+                                        <td>
+                                            <FlexInline gap="var(--space-xs)" class="[ items-center ]">
+                                                <ItemPicture
+                                                    item_id={ship.typeId}
+                                                    item_name={ship.name}
+                                                    size={32}
+                                                    icon_quality={64}
+                                                />
+                                                <span>{ship.name}</span>
+                                            </FlexInline>
+                                        </td>
+                                        <td class="er-table__numeric">{ship.count.toLocaleString()}</td>
+                                    </tr>
+                                ))
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </Flexblock>
+        </div>
+    </Flexblock>
+
+    <Flexblock>
+        <Flexblock gap="var(--space-3xs)">
+            <h2>Notable events</h2>
+            <small>High ISK clusters and key campaign moments</small>
+        </Flexblock>
+        <div class="er-table-wrap" tabindex="0" role="region" aria-label="Notable events">
+            <table class="er-table auga-event-table">
+                <thead>
+                    <tr>
+                        <th scope="col">When</th>
+                        <th scope="col" class="er-table__numeric">Ships</th>
+                        <th scope="col" class="er-table__numeric">ISK</th>
+                        <th scope="col" class="er-table__numeric">Pilots</th>
+                        <th scope="col">What happened</th>
+                        <th scope="col">Report</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {
+                        NOTABLE_EVENTS.map((e) => (
+                            <tr>
+                                <td>{e.when}</td>
+                                <td class="er-table__numeric">
+                                    {e.kills != null ? e.kills.toLocaleString() : '—'}
+                                </td>
+                                <td class="er-table__numeric">
+                                    {e.isk != null ? formatIsk(e.isk) : '—'}
+                                </td>
+                                <td class="er-table__numeric">
+                                    {e.pilots != null ? e.pilots.toLocaleString() : '—'}
+                                </td>
+                                <td>{e.note}</td>
+                                <td>
+                                    <a
+                                        class="auga-siege__event-report"
+                                        href={e.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        {eventReportLabel(e.url)}
+                                    </a>
+                                </td>
+                            </tr>
+                        ))
+                    }
+                </tbody>
+            </table>
+        </div>
+    </Flexblock>
+
+    <Flexblock>
+        <Flexblock gap="var(--space-3xs)">
+            <h2>Headlines</h2>
+            <small>Stories and updates from the campaign</small>
+        </Flexblock>
+
+        <div class="er-headline-cards">
+            {
+                HEADLINES.map((headline) => (
+                    <a
+                        class:list={[
+                            'er-headline-card',
+                            `er-headline-card--${headline.category}`,
+                        ]}
+                        style={`--er-headline-bg: url('${headline.backgroundImage}')`}
+                        href={headline.url}
+                        target="_blank"
+                        rel="noopener noreferrer nofollow"
+                    >
+                        <div class="er-headline-card__body">
+                            <div class="er-headline-card__meta">
+                                <time datetime={headline.date}>
+                                    {formatYcDate(headline.date)}
+                                </time>
+                                <span class="er-headline-card__tag">
+                                    {HEADLINE_CATEGORY_LABELS[headline.category]}
+                                </span>
+                            </div>
+                            <h4 class="er-headline-card__title">{headline.title}</h4>
+                            <p class="er-headline-card__reddit">
+                                <span
+                                    class="er-headline-card__reddit-upvotes"
+                                    aria-label={`${headline.upvotes} upvotes`}
+                                >
+                                    ▲ {headline.upvotes.toLocaleString()}
+                                </span>
+                                <span aria-hidden="true">·</span>
+                                <span>{headline.comments.toLocaleString()} comments</span>
+                                {
+                                    headline.views != null && (
+                                        <>
+                                            <span aria-hidden="true">·</span>
+                                            <span>{formatHeadlineViews(headline.views)}</span>
+                                        </>
+                                    )
+                                }
+                            </p>
+                        </div>
+                        <span class="er-headline-card__arrow" aria-hidden="true">→</span>
+                    </a>
+                ))
+            }
+        </div>
+    </Flexblock>
+
+    <p class="auga-siege__footer">
+        Auga Siege Report · YC128 · Sources: zKillboard, my.minmatar.org, Discord
+    </p>
+</Flexblock>
+
+<style lang="scss">
+    .auga-siege {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .auga-siege__prose {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+
+        p {
+            margin: 0;
+            color: var(--foreground);
+            line-height: 1.65;
+            max-width: 65ch;
+        }
+    }
+
+    .auga-fc-grid {
+        align-items: stretch;
+    }
+
+    .auga-fc-item {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+        height: 100%;
+    }
+
+    .auga-fc-item :global(.auga-fc-card),
+    .auga-fc-item :global(.card) {
+        flex: 0 0 auto;
+        width: 100%;
+    }
+
+    .auga-fc-item :global(.card-body) {
+        display: flex;
+        align-items: flex-end;
+        justify-content: flex-start;
+    }
+
+    .auga-fc-item :global(.card-body h3) {
+        margin: 0;
+        line-height: 1.25;
+    }
+
+    .auga-fc-item__note {
+        display: block;
+        color: var(--faded);
+        line-height: 1.4;
+        flex: 1 1 auto;
+        min-height: 4.2em;
+    }
+
+    .auga-stat-row {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--space-3xs);
+        width: 100%;
+        min-width: 0;
+    }
+
+    .auga-stat-row :global(.card),
+    .auga-stat-row :global(.wrapper) {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .auga-ship-split {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-xl);
+        min-width: 0;
+        width: 100%;
+    }
+
+    @media (max-width: 900px) {
+        .auga-stat-row {
+            grid-template-columns: 1fr;
+        }
+
+        .auga-ship-split {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .auga-stat__icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        flex-shrink: 0;
+        margin-top: 0.15em;
+
+        :global(img) {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+    }
+
+    .auga-faction-stat__corp {
+        width: 2.5rem;
+        height: 2.5rem;
+        object-fit: contain;
+        flex-shrink: 0;
+        margin-top: 0.15em;
+    }
+
+    .auga-faction-stat__logo {
+        width: 2.5rem;
+        height: 2.5rem;
+        flex-shrink: 0;
+        margin-top: 0.15em;
+
+        :global(svg) {
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    .auga-faction-stat__logo--minmatar :global(svg path) {
+        fill: var(--fleet-red-blind, var(--fleet-red));
+    }
+
+    .auga-faction-stat__logo--amarr :global(svg path) {
+        fill: var(--fleet-yellow);
+    }
+
+    .er-table-wrap {
+        overflow-x: auto;
+        min-width: 0;
+    }
+
+    .er-table {
+        width: 100%;
+        border-spacing: var(--space-3xs);
+        font-size: var(--step--1);
+
+        th,
+        td {
+            padding: var(--space-s);
+            border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th {
+            background: color-mix(in srgb, var(--component-background) 90%, transparent);
+            font-weight: 600;
+            color: var(--highlight);
+            background-color: var(--light-transparency-background);
+            backdrop-filter: blur(var(--transparency-backdrop-blur-heavier));
+        }
+
+        td {
+            color: var(--foreground);
+            background-color: var(--light-transparency-background);
+            backdrop-filter: blur(var(--transparency-backdrop-blur));
+        }
+    }
+
+    .er-table__numeric {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .auga-siege__footer {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    .auga-siege__event-report {
+        color: var(--faded);
+        text-decoration: underline;
+        text-underline-offset: 0.15em;
+        white-space: nowrap;
+
+        &:hover {
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .er-headline-cards {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        min-width: 0;
+    }
+
+    .er-headline-card {
+        --er-headline-accent: var(--fleet-yellow);
+        --er-headline-tint: var(--fleet-red);
+        --er-headline-tag-fg: var(--fleet-yellow);
+        --er-headline-tag-bg: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+        --er-headline-tag-border: color-mix(in srgb, var(--fleet-yellow) 28%, transparent);
+
+        position: relative;
+        isolation: isolate;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-m);
+        padding: var(--space-m) var(--space-l);
+        min-width: 0;
+        overflow: hidden;
+        text-decoration: none;
+        color: inherit;
+        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        border-left-width: 3px;
+        border-left-color: var(--er-headline-accent);
+        transition:
+            border-color 0.15s ease,
+            transform 0.15s ease;
+
+        &::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background-image: var(--er-headline-bg);
+            background-size: cover;
+            background-position: center;
+            transition: transform 0.15s ease;
+        }
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background: linear-gradient(
+                90deg,
+                color-mix(in srgb, hsl(0 0% 4%) 94%, var(--er-headline-tint) 6%) 0%,
+                color-mix(in srgb, hsl(0 0% 4%) 82%, var(--er-headline-tint) 5%) 42%,
+                color-mix(in srgb, hsl(0 0% 4%) 58%, transparent) 100%
+            );
+            transition: opacity 0.15s ease;
+        }
+
+        > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        &:hover,
+        &:focus-visible {
+            transform: translateX(2px);
+            border-color: color-mix(in srgb, var(--border-color-hover) 80%, transparent);
+            border-left-color: var(--er-headline-accent);
+        }
+
+        &:hover::before,
+        &:focus-visible::before {
+            transform: scale(1.03);
+        }
+
+        &:hover::after,
+        &:focus-visible::after {
+            background: linear-gradient(
+                90deg,
+                color-mix(in srgb, hsl(0 0% 4%) 90%, var(--er-headline-tint) 10%) 0%,
+                color-mix(in srgb, hsl(0 0% 4%) 78%, var(--er-headline-tint) 8%) 42%,
+                color-mix(in srgb, hsl(0 0% 4%) 52%, transparent) 100%
+            );
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--fleet-yellow);
+            outline-offset: 2px;
+        }
+    }
+
+    /* ER AAR chrome (yellow border / red wash / yellow tag) — story posts */
+    .er-headline-card--aar {
+        --er-headline-accent: var(--fleet-yellow);
+        --er-headline-tint: var(--fleet-red);
+        --er-headline-tag-fg: var(--fleet-yellow);
+        --er-headline-tag-bg: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+        --er-headline-tag-border: color-mix(in srgb, var(--fleet-yellow) 28%, transparent);
+    }
+
+    .er-headline-card--propaganda {
+        --er-headline-accent: var(--fleet-yellow);
+        --er-headline-tint: var(--fleet-red);
+        --er-headline-tag-fg: var(--fleet-yellow);
+        --er-headline-tag-bg: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+        --er-headline-tag-border: color-mix(in srgb, var(--fleet-yellow) 28%, transparent);
+    }
+
+    /* ER industry chrome (blue border / blue wash / blue tag) — video */
+    .er-headline-card--video {
+        --er-headline-accent: var(--alliance-blue);
+        --er-headline-tint: var(--alliance-blue);
+        --er-headline-tag-fg: color-mix(in srgb, var(--alliance-blue) 65%, white);
+        --er-headline-tag-bg: color-mix(in srgb, var(--alliance-blue) 18%, transparent);
+        --er-headline-tag-border: color-mix(in srgb, var(--alliance-blue) 35%, transparent);
+    }
+
+    .er-headline-card__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+        flex: 1;
+    }
+
+    .er-headline-card__meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-s);
+        font-size: var(--step--1);
+        color: var(--faded);
+        line-height: 1.4;
+
+        time {
+            white-space: nowrap;
+        }
+    }
+
+    .er-headline-card__tag {
+        padding: 0.1em 0.55em;
+        font-size: 0.85em;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        line-height: 1.4;
+        color: var(--er-headline-tag-fg);
+        background: var(--er-headline-tag-bg);
+        border: 1px solid var(--er-headline-tag-border);
+    }
+
+    .er-headline-card__title {
+        margin: 0;
+        font-size: var(--step-0);
+        font-weight: 600;
+        color: var(--highlight);
+        line-height: 1.35;
+    }
+
+    .er-headline-card__reddit {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.45em;
+        margin: 0;
+        font-size: var(--step--2);
+        color: color-mix(in srgb, var(--faded) 88%, transparent);
+        line-height: 1.4;
+    }
+
+    .er-headline-card__reddit-upvotes {
+        color: color-mix(in srgb, var(--faded) 95%, var(--fleet-yellow) 5%);
+    }
+
+    .er-headline-card__arrow {
+        flex-shrink: 0;
+        font-size: var(--step-1);
+        color: var(--faded);
+        transition: color 0.15s ease, transform 0.15s ease;
+    }
+
+    .er-headline-card:hover .er-headline-card__arrow,
+    .er-headline-card:focus-visible .er-headline-card__arrow {
+        color: var(--fleet-yellow);
+        transform: translateX(3px);
+    }
+
+    h2 {
+        margin: 0;
+        font-size: var(--step-2);
+    }
+
+    h3 {
+        margin: 0;
+        font-size: var(--step-0);
+    }
+
+    h4 {
+        margin: 0;
+        font-size: var(--step-0);
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    small {
+        color: var(--faded);
+    }
+</style>
