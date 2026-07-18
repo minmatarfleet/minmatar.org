@@ -27,6 +27,7 @@ const CORPORATION_REQUEST_STATUS_PARTIAL_URL = `${translatePath('/partials/corpo
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
 
 import DialogButton from "@components/blocks/DialogButton.astro";
 import Button from '@components/blocks/Button.astro';
@@ -38,7 +39,12 @@ import CorporationApplicationForm from '@components/blocks/CorporationApplicatio
 <DialogButton
     color='green'
     hidden={hidden}
+    max_width='100%'
     inside_swiper={true}
+    transparent={true}
+    full_screen={true}
+    non_centered={false}
+    close_button={false}
 >
     {t('enlist_today')}
 
@@ -57,39 +63,47 @@ import CorporationApplicationForm from '@components/blocks/CorporationApplicatio
             : "if (error) { $event.preventDefault(); return }; close_dialog(); $nextTick(() => clearCorpApplicationForm())"}
         x-init={is_l3arn ? "initL3arnForm()" : "initCorpApplicationForm()"}
     >
-        <Flexblock gap="var(--space-l)">
-            <Flexblock gap="var(--space-s)">
-                <h3>{t('corporation_join_request_dialog_title')}</h3>
+        <Wrapper
+            padding_block='var(--space-xl)'
+            padding_inline='var(--space-xl)'
+            max_width='800px'
+            centered={true}
+        >
+            <Flexblock gap="var(--space-l)">
+                <Flexblock gap="var(--space-xl)">
+                    <h2>{t('corporation_join_request_dialog_title')}</h2>
 
-                <CorporationItem corporation={corporation} disable_applications={true} />
+                    <CorporationItem corporation={corporation} disable_applications={true} />
 
-                {is_l3arn ? (
-                    <CorporationApplicationFormL3arn include_field_names={true} />
-                ) : (
-                    <CorporationApplicationForm
-                        corporation={corporation}
-                        include_field_names={true}
-                    />
-                )}
+                    {is_l3arn ? (
+                        <CorporationApplicationFormL3arn include_field_names={true} />
+                    ) : (
+                        <CorporationApplicationForm
+                            corporation={corporation}
+                            include_field_names={true}
+                        />
+                    )}
+                </Flexblock>
+
+                <FlexInline justification='flex-end'>
+                    <Button
+                        size='sm'
+                        type="submit"
+                        color='green'
+                        x-bind:disabled="error"
+                    >
+                        {t('apply')}
+                    </Button>
+                    <Button
+                        type="button"
+                        size='sm'
+                        color='transparent'
+                        x-on:click="close_dialog()"
+                    >
+                        {t('close')}
+                    </Button>
+                </FlexInline>
             </Flexblock>
-
-            <FlexInline justification='flex-end'>
-                <Button
-                    size='sm'
-                    type="submit"
-                    color='green'
-                    x-bind:disabled="error"
-                >
-                    {t('apply')}
-                </Button>
-                <Button
-                    type="button"
-                    size='sm'
-                    x-on:click="close_dialog()"
-                >
-                    {t('close')}
-                </Button>
-            </FlexInline>
-        </Flexblock>
+        </Wrapper>
     </form>
 </DialogButton>

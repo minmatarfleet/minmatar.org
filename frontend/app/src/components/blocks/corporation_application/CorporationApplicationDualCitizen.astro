@@ -4,6 +4,9 @@ const { t } = i18n(Astro.url)
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Input from '@components/blocks/Input.astro';
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
+import Markdown from '@components/blocks/Markdown.astro'
+
 import { L3ARN_APPLICATION_FIELD_LIMITS, L3ARN_FORM_PREFIX } from '@helpers/corporations/l3arn_application';
 import { corporationApplicationFieldName } from './field_names';
 
@@ -30,64 +33,68 @@ const dualCitizenHint = t('corporation_application_dual_citizen_hint').replace(
 );
 ---
 
-<Flexblock class="[ w-full ]" gap="var(--space-xs)">
-    <span id={`${id_prefix}-dual-citizen-label`} class="field-label">
+<Flexblock class="[ w-full ]">
+    <h4 id={`${id_prefix}-dual-citizen-label`} class="[ text-foreground ]">
         {t('corporation_application_dual_citizen_heading')}
-    </span>
-    <p class="form-subtext">{dualCitizenHint}</p>
+    </h4>
 
-    <label class="choice-row" for={`${id_prefix}-existing-player-alt`}>
-        <input
+    <small>{dualCitizenHint}</small>
+
+    
+    <Flexblock class="[ w-full ]" gap='var(--space-xs)'>
+        <RadioCheckInput
             id={`${id_prefix}-existing-player-alt`}
             type="checkbox"
             name={fieldName('is_existing_player_alt')}
             x-model="is_existing_player_alt"
             x-on:change="onExistingPlayerAltChange()"
-        />
-        <span>{t('l3arn_application_is_existing_player_alt')}</span>
-    </label>
-    <Flexblock
-        class="[ w-full ] nested-field"
-        gap="var(--space-2xs)"
-        x-show="is_existing_player_alt"
-        x-cloak
-    >
-        <label for={`${id_prefix}-main-character`}>{t('l3arn_application_main_character_name')}</label>
-        <Input
-            id={`${id_prefix}-main-character`}
-            name={fieldName('main_character_name')}
-            x-model="main_character_name"
-            maxlength={L3ARN_APPLICATION_FIELD_LIMITS.main_character_name}
-            x-on:input="updateApplicationStatus()"
-        />
-    </Flexblock>
+        >
+            <Markdown markdown={t('l3arn_application_is_existing_player_alt')} inline={true} inline_element='span' />
+        </RadioCheckInput>
+        <Flexblock
+            class="[ w-full ] nested-field"
+            gap="var(--space-2xs)"
+            x-show="is_existing_player_alt"
+            x-cloak
+        >
+            <label for={`${id_prefix}-main-character`}>{t('l3arn_application_main_character_name')}</label>
+            <Input
+                id={`${id_prefix}-main-character`}
+                name={fieldName('main_character_name')}
+                x-model="main_character_name"
+                maxlength={L3ARN_APPLICATION_FIELD_LIMITS.main_character_name}
+                x-on:input="updateApplicationStatus()"
+            />
+        </Flexblock>
 
-    <label class="choice-row" for={`${id_prefix}-other-alliance-member`}>
-        <input
-            id={`${id_prefix}-other-alliance-member`}
-            type="checkbox"
-            name={fieldName('is_other_alliance_member')}
-            x-model="is_other_alliance_member"
-            x-on:change="onOtherAllianceMemberChange()"
-        />
-        <span>{t('l3arn_application_is_other_alliance_member')}</span>
-    </label>
-    <Flexblock
-        class="[ w-full ] nested-field"
-        gap="var(--space-2xs)"
-        x-show="is_other_alliance_member"
-        x-cloak
-    >
-        <label for={`${id_prefix}-other-alliance-affiliation`}>
-            {t('l3arn_application_other_alliance_affiliation')}
+        <label class="choice-row" for={`${id_prefix}-other-alliance-member`}>
+            <RadioCheckInput
+                id={`${id_prefix}-other-alliance-member`}
+                type="checkbox"
+                name={fieldName('is_other_alliance_member')}
+                x-model="is_other_alliance_member"
+                x-on:change="onOtherAllianceMemberChange()"
+            >
+                <Markdown markdown={t('l3arn_application_is_other_alliance_member')} inline={true} inline_element='span' />
+            </RadioCheckInput>
         </label>
-        <Input
-            id={`${id_prefix}-other-alliance-affiliation`}
-            name={fieldName('other_alliance_affiliation')}
-            x-model="other_alliance_affiliation"
-            maxlength={L3ARN_APPLICATION_FIELD_LIMITS.other_alliance_affiliation}
-            x-on:input="updateApplicationStatus()"
-        />
+        <Flexblock
+            class="[ w-full ] nested-field"
+            gap="var(--space-2xs)"
+            x-show="is_other_alliance_member"
+            x-cloak
+        >
+            <label for={`${id_prefix}-other-alliance-affiliation`}>
+                {t('l3arn_application_other_alliance_affiliation')}
+            </label>
+            <Input
+                id={`${id_prefix}-other-alliance-affiliation`}
+                name={fieldName('other_alliance_affiliation')}
+                x-model="other_alliance_affiliation"
+                maxlength={L3ARN_APPLICATION_FIELD_LIMITS.other_alliance_affiliation}
+                x-on:input="updateApplicationStatus()"
+            />
+        </Flexblock>
     </Flexblock>
 </Flexblock>
 

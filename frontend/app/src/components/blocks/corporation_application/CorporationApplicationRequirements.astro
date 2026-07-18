@@ -10,6 +10,9 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import Flexblock from '@components/compositions/Flexblock.astro';
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
+import Markdown from '@components/blocks/Markdown.astro'
+
 import { L3ARN_FORM_PREFIX } from '@helpers/corporations/l3arn_application';
 import { corporationApplicationFieldName } from './field_names';
 
@@ -31,49 +34,47 @@ const fieldName = (key: string) =>
     corporationApplicationFieldName(form_prefix, include_field_names, key);
 ---
 
-<Flexblock class="[ w-full ]" gap="var(--space-xs)">
-    <strong class="section-heading">{t('l3arn_application_requirements_heading')}</strong>
+<Flexblock class="[ w-full ]">
+    <h4 class="[ text-foreground ]">{t('l3arn_application_requirements_heading')}</h4>
 
-    <label class="choice-row" for={`${id_prefix}-agree-tenets`}>
-        <input
+    <Flexblock class="[ w-full ]" gap="var(--space-xs)">
+        <RadioCheckInput
             id={`${id_prefix}-agree-tenets`}
             type="checkbox"
             name={fieldName('agree_tenets')}
             x-model="agree_tenets"
             x-on:change="updateApplicationStatus()"
-        />
-        <span>
-            {t('l3arn_application_agree_tenets_before')}{' '}
-            <a class="form-link" href={translatePath('/alliance/values/')} target="_blank" rel="noreferrer noopener">
-                {t('l3arn_application_agree_tenets_link')}
-                <span class="visually-hidden">{t('opens_in_new_tab')}</span>
-            </a>
-        </span>
-    </label>
+        >
+            <Markdown
+                markdown={t('l3arn_application_agree_tenets_before')}
+                inline={true}
+                inline_element='span'
+                open_in_new_tab={true}
+            />
+        </RadioCheckInput>
 
-    {include_omega && (
-        <label class="choice-row" for={`${id_prefix}-confirm-omega`}>
-            <input
+        {include_omega && (
+            <RadioCheckInput
                 id={`${id_prefix}-confirm-omega`}
                 type="checkbox"
                 name={fieldName('confirm_omega')}
                 x-model="confirm_omega"
                 x-on:change="updateApplicationStatus()"
-            />
-            <span>{t('l3arn_application_confirm_omega')}</span>
-        </label>
-    )}
+            >
+                <Markdown markdown={t('l3arn_application_confirm_omega')} inline={true} inline_element='span' />
+            </RadioCheckInput>
+        )}
 
-    <label class="choice-row" for={`${id_prefix}-confirm-auth`}>
-        <input
+        <RadioCheckInput
             id={`${id_prefix}-confirm-auth`}
             type="checkbox"
             name={fieldName('confirm_auth_chars')}
             x-model="confirm_auth_chars"
             x-on:change="updateApplicationStatus()"
-        />
-        <span>{t('l3arn_application_confirm_auth')}</span>
-    </label>
+        >
+            <Markdown markdown={t('l3arn_application_confirm_auth')} inline={true} inline_element='span' />
+        </RadioCheckInput>
+    </Flexblock>
 </Flexblock>
 
 <style lang="scss">
