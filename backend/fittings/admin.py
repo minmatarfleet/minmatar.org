@@ -67,10 +67,6 @@ from fittings.models import (
     EveFittingRefit,
     FittingTag,
 )
-from fittings.tasks import (
-    notify_doctrine_change_request_proposed,
-    notify_fitting_change_request_proposed,
-)
 from srp.models import PodReimbursementProgram
 
 from .forms import (
@@ -131,7 +127,6 @@ def _queue_refit_delete_request(
             refit=inline_form.instance,
         )
         if req:
-            notify_fitting_change_request_proposed.delay(req.pk)
             return True, False
     except (PermissionError, ValueError) as exc:
         messages.error(request, str(exc))
@@ -164,7 +159,6 @@ def _queue_refit_upsert_request(
             refit=refit if refit.pk else None,
         )
         if req:
-            notify_fitting_change_request_proposed.delay(req.pk)
             return True, False
     except (PermissionError, ValueError) as exc:
         messages.error(request, str(exc))
@@ -528,7 +522,6 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
                 return
 
             if req:
-                notify_fitting_change_request_proposed.delay(req.pk)
                 url = reverse(
                     "admin:fittings_evefittingchangerequest_change",
                     args=[req.pk],
@@ -573,7 +566,6 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
             return
 
         if req:
-            notify_fitting_change_request_proposed.delay(req.pk)
             url = reverse(
                 "admin:fittings_evefittingchangerequest_change",
                 args=[req.pk],
@@ -602,7 +594,6 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
             return
 
         if req:
-            notify_fitting_change_request_proposed.delay(req.pk)
             url = reverse(
                 "admin:fittings_evefittingchangerequest_change",
                 args=[req.pk],
@@ -633,7 +624,6 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
                 messages.error(request, str(exc))
                 return
             if req:
-                notify_fitting_change_request_proposed.delay(req.pk)
                 queued += 1
         if queued:
             messages.warning(
@@ -1213,7 +1203,6 @@ class EveDoctrineAdmin(ApprovalQueuedAdminMixin, admin.ModelAdmin):
                 messages.error(request, str(exc))
                 return
             if req:
-                notify_doctrine_change_request_proposed.delay(req.pk)
                 url = reverse(
                     "admin:fittings_evedoctrinechangerequest_change",
                     args=[req.pk],
@@ -1240,7 +1229,6 @@ class EveDoctrineAdmin(ApprovalQueuedAdminMixin, admin.ModelAdmin):
             messages.error(request, str(exc))
             return
         if req:
-            notify_doctrine_change_request_proposed.delay(req.pk)
             url = reverse(
                 "admin:fittings_evedoctrinechangerequest_change",
                 args=[req.pk],

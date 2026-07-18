@@ -1,7 +1,5 @@
 """Tests for doctrine/fitting approval workflow."""
 
-from unittest.mock import patch
-
 from django.contrib.auth.models import Permission, User
 from django.contrib.contenttypes.models import ContentType
 from django.test import Client
@@ -37,7 +35,6 @@ from fittings.helpers.permissions import (
     protection_tier_for_doctrine,
     users_who_can_approve_fitting_request,
 )
-from fittings.tasks import notify_fitting_change_request_proposed
 from fittings.models import (
     ChangeRequestStatus,
     DOCTRINE_TYPE_EXPERIMENTAL,
@@ -765,54 +762,11 @@ class FittingChangeRequestTestCase(TestCase):
         self.assertEqual("before", fitting.description)
 
 
-class NotificationTasksTestCase(TestCase):
-    """Discord notify on propose (mocked)."""
+class ApproverRecipientTestCase(TestCase):
+    """Who receives change-request review eligibility."""
 
     def _create_user(self, username, *, is_staff=False):
         return User.objects.create(username=username, is_staff=is_staff)
-
-    def test_notify_task_sends_dm_to_approvers(self):
-        proposer = self._create_user("proposer")
-        proposer.user_permissions.add(
-            _perm("change_doctrine_fitting_strategic")
-        )
-        approver = self._create_user("approver", is_staff=True)
-        approver.user_permissions.add(
-            _perm("approve_doctrine_fitting_strategic")
-        )
-        doctrine = EveDoctrine.objects.create(
-            name="Strat",
-            type=DOCTRINE_TYPE_STRATEGIC,
-            description="",
-        )
-        fitting = EveFitting.objects.create(
-            name="Fit",
-            eft_format="[Rifter, Fit]",
-            ship_id=587,
-            description="",
-        )
-        EveDoctrineFitting.objects.create(
-            doctrine=doctrine, fitting=fitting, role="primary"
-        )
-        req = submit_fitting_change_request(
-            fitting,
-            change_kind="fitting_versioned",
-            payload={
-                "eft_format": "[Rifter, X]",
-                "description": "x",
-                "aliases": "",
-                "minimum_pod": "",
-                "recommended_pod": "",
-                "tags": [],
-            },
-            user=proposer,
-        )
-        self.assertIsNotNone(req)
-        with patch("fittings.helpers.notifications._send_dm") as mock_dm:
-            notify_fitting_change_request_proposed(req.pk)
-            self.assertGreaterEqual(mock_dm.call_count, 1)
-            dm_users = [call.args[0] for call in mock_dm.call_args_list]
-            self.assertIn(approver, dm_users)
 
     def test_users_who_can_approve_fitting_non_strategic(self):
         skirmish = self._create_user("skirmish", is_staff=True)

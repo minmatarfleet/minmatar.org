@@ -1,13 +1,9 @@
-import logging
-
 from django.contrib.auth import get_user_model
 
 from app.celery import app
 from fittings.helpers.notifications import (
     _send_dm,
     build_daily_reminder_message,
-    notify_doctrine_change_proposed,
-    notify_fitting_change_proposed,
 )
 from fittings.helpers.permissions import (
     can_approve_doctrine_request,
@@ -19,43 +15,7 @@ from fittings.models import (
     EveFittingChangeRequest,
 )
 
-logger = logging.getLogger(__name__)
-
 user_model = get_user_model()
-
-
-@app.task
-def notify_doctrine_change_request_proposed(change_request_id: int):
-    change_request = (
-        EveDoctrineChangeRequest.objects.select_related(
-            "doctrine", "submitted_by"
-        )
-        .filter(pk=change_request_id)
-        .first()
-    )
-    if (
-        not change_request
-        or change_request.status != ChangeRequestStatus.PENDING
-    ):
-        return
-    notify_doctrine_change_proposed(change_request)
-
-
-@app.task
-def notify_fitting_change_request_proposed(change_request_id: int):
-    change_request = (
-        EveFittingChangeRequest.objects.select_related(
-            "fitting", "submitted_by"
-        )
-        .filter(pk=change_request_id)
-        .first()
-    )
-    if (
-        not change_request
-        or change_request.status != ChangeRequestStatus.PENDING
-    ):
-        return
-    notify_fitting_change_proposed(change_request)
 
 
 @app.task
