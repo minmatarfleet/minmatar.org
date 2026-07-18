@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 from django.test import TestCase
 from django.utils import timezone as dj_tz
 from discord.models import DiscordChannel, DiscordGuild
+from eveonline.models import EveCharacter
 from eveuniverse.models import (
     EveCategory,
     EveConstellation,
@@ -18,6 +19,7 @@ from eveuniverse.models import (
 from feed.constants import AMAMAKE_SOLAR_SYSTEM_ID
 from feed.helpers.capital_pings import (
     CAPITAL_ALERT_TITLE,
+    ZKILL_CHARACTER_URL,
     build_capital_alert_payload,
     build_capital_ping_payload,
     maybe_notify_capital_kill,
@@ -209,6 +211,15 @@ class CapitalPingTestCase(TestCase):
 
     def setUp(self):
         make_capital_ping_channel()
+        esi_patcher = patch(
+            "feed.helpers.eve_names._resolve_universe_names_via_esi",
+            side_effect=lambda ids: {
+                int(character_id): f"Pilot {character_id}"
+                for character_id in ids
+            },
+        )
+        esi_patcher.start()
+        self.addCleanup(esi_patcher.stop)
 
     def test_build_capital_alert_payload_omits_kills_for_single_kill(self):
         built = build_capital_alert_payload(
@@ -220,6 +231,12 @@ class CapitalPingTestCase(TestCase):
                     "name": "Revelation Navy Issue",
                     "role": "attacker",
                     "count": 1,
+                    "characters": [
+                        {
+                            "character_id": 2111000001,
+                            "name": "Dread Pilot",
+                        }
+                    ],
                 }
             ],
             kills=[
@@ -233,9 +250,13 @@ class CapitalPingTestCase(TestCase):
         embed = built["embeds"][0]
         self.assertEqual(embed["title"], CAPITAL_ALERT_TITLE)
         self.assertIn("Amamake", embed["description"])
+        self.assertIn("Revelation Navy Issue", embed["description"])
         self.assertIn(
-            "Revelation Navy Issue (attacking)", embed["description"]
+            "[Dread Pilot](https://zkillboard.com/character/2111000001/)",
+            embed["description"],
         )
+        self.assertNotIn("(victim)", embed["description"])
+        self.assertNotIn("(attacking)", embed["description"])
         self.assertNotIn("Kills:", embed["description"])
 
     def test_build_capital_alert_payload_includes_kills_when_multiple(self):
@@ -248,6 +269,12 @@ class CapitalPingTestCase(TestCase):
                     "name": "Revelation Navy Issue",
                     "role": "attacker",
                     "count": 1,
+                    "characters": [
+                        {
+                            "character_id": 2111000001,
+                            "name": "Dread Pilot",
+                        }
+                    ],
                 }
             ],
             kills=[
@@ -270,6 +297,11 @@ class CapitalPingTestCase(TestCase):
         )
 
     def test_build_capital_ping_payload(self):
+        victim_character_id = 80000001
+        EveCharacter.objects.create(
+            character_id=victim_character_id,
+            character_name="Capital Victim",
+        )
         payload = make_killmail_payload(
             136500001,
             solar_system_id=AMAMAKE_SOLAR_SYSTEM_ID,
@@ -284,7 +316,14 @@ class CapitalPingTestCase(TestCase):
         )
         self.assertIn("embeds", built)
         self.assertEqual(built["embeds"][0]["title"], CAPITAL_ALERT_TITLE)
-        self.assertIn("Amamake", built["embeds"][0]["description"])
+        description = built["embeds"][0]["description"]
+        self.assertIn("Amamake", description)
+        self.assertIn("Revelation Navy Issue", description)
+        self.assertIn(
+            f"[Capital Victim]({ZKILL_CHARACTER_URL.format(character_id=victim_character_id)})",
+            description,
+        )
+        self.assertNotIn("(victim)", description)
         self.assertNotIn("content", built)
 
     @patch("feed.helpers.capital_pings.DiscordClient")
@@ -358,9 +397,15 @@ class CapitalPingTestCase(TestCase):
         self.assertTrue(maybe_notify_capital_kill(payload))
         mock_client.create_message.assert_called_once()
         create_payload = mock_client.create_message.call_args.kwargs["payload"]
+        description = create_payload["embeds"][0]["description"]
+        self.assertIn("Revelation Navy Issue ×6", description)
         self.assertIn(
-            "Revelation Navy Issue (attacking ×6)",
-            create_payload["embeds"][0]["description"],
+            "[Pilot 90000000](https://zkillboard.com/character/90000000/)",
+            description,
+        )
+        self.assertIn(
+            "[Pilot 90000005](https://zkillboard.com/character/90000005/)",
+            description,
         )
 
     @patch("feed.helpers.capital_pings.DiscordClient")

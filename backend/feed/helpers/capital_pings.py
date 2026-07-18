@@ -18,10 +18,11 @@ from feed.constants import (
     CAPITAL_PING_SESSION_SECONDS,
 )
 from feed.helpers.capital_ships import (
-    capital_ships_on_killmail,
+    collect_killmail_ship_type_ids,
+    filter_capital_ship_type_ids,
     killmail_involves_capital,
 )
-from feed.helpers.eve_names import resolve_type_names
+from feed.helpers.eve_names import resolve_character_names, resolve_type_names
 from feed.helpers.ingest import parse_r2z2_payload
 from feed.helpers.killmail_classify import is_npc_kill
 from feed.helpers.system_distance import light_years_between_systems
@@ -31,6 +32,9 @@ logger = logging.getLogger(__name__)
 
 CAPITAL_ALERT_TITLE = "Capital ship within jump range spotted"
 CAPITAL_ALERT_COLOR = 0x18ED09
+ZKILL_CHARACTER_URL = "https://zkillboard.com/character/{character_id}/"
+# Concord NPC corp — skip when attributing capital attackers.
+_CONCORD_CORPORATION_ID = 1000125
 
 
 def _capital_ping_channel_ids() -> list[int]:
@@ -60,21 +64,97 @@ def _killmail_time_hhmm(killmail_time: str | None) -> str:
     return parsed.strftime("%H:%M")
 
 
+def _zkill_character_link(character_id: int, name: str) -> str:
+    url = ZKILL_CHARACTER_URL.format(character_id=int(character_id))
+    return f"[{name}]({url})"
+
+
+def _character_entries(
+    character_ids: list[int],
+    names: dict[int, str],
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "character_id": character_id,
+            "name": names.get(character_id, f"Pilot {character_id}"),
+        }
+        for character_id in character_ids
+    ]
+
+
+def _merge_character_lists(
+    existing: list[dict[str, Any]] | None,
+    incoming: list[dict[str, Any]] | None,
+) -> list[dict[str, Any]]:
+    merged: dict[int, dict[str, Any]] = {}
+    for entry in list(existing or []) + list(incoming or []):
+        character_id = entry.get("character_id")
+        if not character_id:
+            continue
+        merged[int(character_id)] = {
+            "character_id": int(character_id),
+            "name": entry.get("name") or f"Pilot {character_id}",
+        }
+    return list(merged.values())
+
+
 def _capital_entries(raw: dict[str, Any]) -> list[dict[str, Any]]:
-    capital_rows = capital_ships_on_killmail(raw)
-    if not capital_rows:
-        return []
-    ship_names = resolve_type_names(
-        [type_id for type_id, _, _ in capital_rows]
+    capital_type_ids = filter_capital_ship_type_ids(
+        collect_killmail_ship_type_ids(raw)
     )
+    if not capital_type_ids:
+        return []
+
+    buckets: dict[tuple[int, str], dict[str, Any]] = {}
+
+    def _bucket(type_id: int, role: str) -> dict[str, Any]:
+        key = (int(type_id), role)
+        bucket = buckets.get(key)
+        if bucket is None:
+            bucket = {"count": 0, "character_ids": []}
+            buckets[key] = bucket
+        return bucket
+
+    victim = raw.get("victim") or {}
+    victim_ship_type_id = victim.get("ship_type_id")
+    if victim_ship_type_id and int(victim_ship_type_id) in capital_type_ids:
+        bucket = _bucket(int(victim_ship_type_id), "victim")
+        bucket["count"] = 1
+        character_id = victim.get("character_id")
+        if character_id:
+            bucket["character_ids"].append(int(character_id))
+
+    for attacker in raw.get("attackers") or []:
+        if attacker.get("corporation_id") == _CONCORD_CORPORATION_ID:
+            continue
+        ship_type_id = attacker.get("ship_type_id")
+        if not ship_type_id or int(ship_type_id) not in capital_type_ids:
+            continue
+        bucket = _bucket(int(ship_type_id), "attacker")
+        bucket["count"] = int(bucket["count"]) + 1
+        character_id = attacker.get("character_id")
+        if character_id and int(character_id) not in bucket["character_ids"]:
+            bucket["character_ids"].append(int(character_id))
+
+    all_character_ids = [
+        character_id
+        for bucket in buckets.values()
+        for character_id in bucket["character_ids"]
+    ]
+    ship_names = resolve_type_names([type_id for type_id, _ in buckets])
+    character_names = resolve_character_names(all_character_ids)
+
     entries: list[dict[str, Any]] = []
-    for type_id, count, role in capital_rows:
+    for (type_id, role), bucket in buckets.items():
         entries.append(
             {
                 "type_id": int(type_id),
                 "name": ship_names.get(int(type_id), f"Type {type_id}"),
                 "role": role,
-                "count": int(count),
+                "count": int(bucket["count"]),
+                "characters": _character_entries(
+                    bucket["character_ids"], character_names
+                ),
             }
         )
     return entries
@@ -89,28 +169,45 @@ def _merge_capitals(
         key = (int(entry["type_id"]), str(entry["role"]))
         prior = merged.get(key)
         if prior is None:
-            merged[key] = dict(entry)
+            merged[key] = {
+                **dict(entry),
+                "characters": list(entry.get("characters") or []),
+            }
             continue
         prior["count"] = max(
             int(prior.get("count") or 1),
             int(entry.get("count") or 1),
         )
         prior["name"] = entry.get("name") or prior.get("name")
+        prior["characters"] = _merge_character_lists(
+            prior.get("characters"),
+            entry.get("characters"),
+        )
     return list(merged.values())
 
 
+def _capital_character_links(entry: dict[str, Any]) -> str:
+    links: list[str] = []
+    for character in entry.get("characters") or []:
+        character_id = character.get("character_id")
+        name = character.get("name")
+        if not character_id or not name:
+            continue
+        links.append(_zkill_character_link(int(character_id), str(name)))
+    return ", ".join(links)
+
+
 def _capital_labels(capitals: list[dict[str, Any]]) -> list[str]:
+    """Label each capital hull with every involved pilot (victim or attacker)."""
     labels: list[str] = []
     for entry in capitals:
         name = entry.get("name") or f"Type {entry.get('type_id')}"
-        role = entry.get("role")
         count = int(entry.get("count") or 1)
-        if role == "victim":
-            labels.append(f"{name} (victim)")
-        elif count > 1:
-            labels.append(f"{name} (attacking ×{count})")
-        else:
-            labels.append(f"{name} (attacking)")
+        label = f"{name} ×{count}" if count > 1 else name
+        character_links = _capital_character_links(entry)
+        if character_links:
+            label = f"{label} — {character_links}"
+        labels.append(label)
     return labels
 
 
