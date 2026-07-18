@@ -1,14 +1,14 @@
 ---
 import TextGroup from '@components/blocks/TextGroup.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
 
 interface Props {
     label: string
-    tone?: 'info' | 'success' | 'danger'
+    tone?: 'info' | 'success' | 'danger' | 'minmatar' | 'amarr' | 'angel'
 }
 
 const { label, tone } = Astro.props
-
-import Wrapper from '@components/compositions/Wrapper.astro';
 ---
 
 <Wrapper
@@ -16,9 +16,14 @@ import Wrapper from '@components/compositions/Wrapper.astro';
     padding_block='var(--space-s)'
     padding_inline='var(--space-s)'
 >
-    <TextGroup title={label}>
-        <b><slot /></b>
-    </TextGroup>
+    <FlexInline gap="var(--space-s)" class="[ items-start ]">
+        <slot name="icon" />
+        <div class="[ grow min-w-0 ]">
+            <TextGroup title={label}>
+                <b><slot /></b>
+            </TextGroup>
+        </div>
+    </FlexInline>
 </Wrapper>
 
 <style lang="scss">
@@ -36,5 +41,18 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 
     .er-stat--danger b {
         color: var(--fleet-red);
+    }
+
+    /* EVE faction tones — reuse site tokens (Minmatar red/orange, Amarr gold) */
+    .er-stat--minmatar b {
+        color: var(--fleet-red-blind, var(--fleet-red));
+    }
+
+    .er-stat--amarr b {
+        color: var(--fleet-yellow);
+    }
+
+    .er-stat--angel b {
+        color: color-mix(in srgb, var(--fleet-yellow) 55%, var(--alliance-blue) 45%);
     }
 </style>

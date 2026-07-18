@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import { getCampaigns } from '@/data/campaigns'
+import { getCampaigns, getSieges } from '@/data/campaigns'
 
 import Grid from '@components/compositions/Grid.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -11,30 +11,59 @@ import CampaignSubcard from '@components/blocks/CampaignSubcard.astro'
 import TextBox from '@components/layout/TextBox.astro'
 
 const campaigns = getCampaigns()
+const sieges = getSieges()
 ---
 
-<Flexblock gap='var(--space-l)'>
-    <Flexblock gap='var(--space-m)'>
-        <h2>{t('campaigns.section_title')}</h2>
+<Flexblock gap='var(--space-2xl)'>
+    <Flexblock gap='var(--space-l)'>
+        <Flexblock gap='var(--space-m)'>
+            <h2>{t('campaigns.section_title')}</h2>
 
-        <TextBox>
-            <p>{t('campaigns.section_leading_text')}</p>
-        </TextBox>
+            <TextBox>
+                <p>{t('campaigns.section_leading_text')}</p>
+            </TextBox>
+        </Flexblock>
+
+        <Grid
+            class="[ w-full grid-fill ]"
+            row_gap="var(--space-3xs)"
+            column_gap="var(--space-3xs)"
+            min_item_width="350px"
+            role="list"
+        >
+            {campaigns.map((campaign) => (
+                <div role="listitem">
+                    <CampaignSubcard campaign={campaign} />
+                </div>
+            ))}
+        </Grid>
     </Flexblock>
 
-    <Grid
-        class="[ w-full grid-fill ]"
-        row_gap="var(--space-3xs)"
-        column_gap="var(--space-3xs)"
-        min_item_width="350px"
-        role="list"
-    >
-        {campaigns.map((campaign) => (
-            <div role="listitem">
-                <CampaignSubcard campaign={campaign} />
-            </div>
-        ))}
-    </Grid>
+    {sieges.length > 0 && (
+        <Flexblock gap='var(--space-l)'>
+            <Flexblock gap='var(--space-m)'>
+                <h2>{t('campaigns.sieges.section_title')}</h2>
+
+                <TextBox>
+                    <p>{t('campaigns.sieges.section_leading_text')}</p>
+                </TextBox>
+            </Flexblock>
+
+            <Grid
+                class="[ w-full grid-fill ]"
+                row_gap="var(--space-3xs)"
+                column_gap="var(--space-3xs)"
+                min_item_width="350px"
+                role="list"
+            >
+                {sieges.map((siege) => (
+                    <div role="listitem">
+                        <CampaignSubcard campaign={siege} />
+                    </div>
+                ))}
+            </Grid>
+        </Flexblock>
+    )}
 </Flexblock>
 
 <style lang="scss">

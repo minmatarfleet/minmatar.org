@@ -84,6 +84,23 @@
         ]
     },
     {
+        "slug": "campaigns.auga",
+        "path": "/campaigns/auga-yc128/",
+        "publish": true,
+        "description": "page_finder.campaigns.auga.description",
+        "keywords": [
+            "Auga",
+            "Auga YC128",
+            "YC128",
+            "Hed",
+            "system siege",
+            "faction warfare",
+            "Minmatar Militia",
+            "Minmatar Fleet",
+            "siege report"
+        ]
+    },
+    {
         "slug": "campaigns.providence",
         "path": "/campaigns/providence/",
         "publish": true,
