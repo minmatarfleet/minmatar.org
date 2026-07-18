@@ -54,16 +54,16 @@ export const introduction = [
 ]
 
 export const considerations = [
-    'The navy destroyer metagame looks different from the frigate metagame described in the frigate yearbook. Scram-kiting matters less: most destroyers, even blaster hulls, can scram-kite when they want to, thanks to the hull’s built-in projection bonus. What you get instead is closer to a binary chart: kiters with high ground beat brawlers, and brawlers with high ground beat kiters.',
-    'Destroyers also run several equally viable archetypes. You cannot read a Comet and know the fit; with a destroyer on d-scan you often cannot tell kite from brawl at all. You lean on local knowledge, scouting, and sometimes assuming the worst before you slide.',
-    'One surprise for frigate pilots: most brawling fits here use a 5MN microwarpdrive, not an afterburner. That trades some range control against other AB brawlers for advantages that tend to win out in FW:',
+    'The destroyer metagame looks quite different from the frigate metagame. Scram-kiting matters less: most destroyers, even blaster hulls, can scram-kite when they want to, thanks to the hull\'s built-in projection bonus. What you get instead is closer to a binary chart: kiters with high ground beat brawlers, and brawlers with high ground beat kiters.',
+    'Destroyers also run several equally viable archetypes. With a destroyer on d-scan, you often cannot tell whether it\'s kite or brawl. You lean on local knowledge, scouting, and sometimes assuming the worst before you slide.',
+    'One surprise for frigate pilots: most brawling fits use microwarpdrives, not an afterburner. That trades some range control against other AB brawlers for advantages that tend to win out:',
 ]
 
 export const considerationBullets = [
     'AB destroyers are slow, and destroyer lock speed is slower than frigate lock speed. A microwarpdrive helps you catch kiters sliding into a plex.',
-    'The same speed lets you reposition inside a plex when someone appears on d-scan while you are killing the NPC 10 km off the beacon.',
+    'The speed lets you reposition inside a plex when someone appears on d-scan while you are killing the NPC 10 km off the beacon.',
     'Overpropped 10MN destroyers are real. Against a 10MN + point fit, running a microwarpdrive keeps you in the range-control fight.',
-    'Post-Uprising FW is group-heavy, and group play expects a microwarpdrive. You do not want to be 60 km behind the fight because you fitted an AB.',
+    'Faction warfare is group-heavy, and group play expects a microwarpdrive. You do not want to be 60 km behind the fight.',
     'The more brawlers fit a microwarpdrive, the less you are punished for fitting one yourself. That becomes a self-reinforcing loop.',
 ]
 
@@ -114,7 +114,7 @@ export const guideSections = [
     { id: 'credits', title: 'Credits', shortTitle: 'Credits' },
     { id: 'history', title: 'History', shortTitle: 'History' },
     { id: 'introduction', title: 'Introduction' },
-    { id: 'considerations', title: 'Metagame Considerations', shortTitle: 'Considerations' },
+    { id: 'considerations', title: 'Considerations of the Metagame', shortTitle: 'Considerations' },
     { id: 'disclaimers', title: 'Disclaimers & Summary', shortTitle: 'Summary' },
     { id: 'matchups', title: 'Matchup Charts', shortTitle: 'Charts' },
     { id: 'catalyst', title: 'Catalyst Navy Issue' },
