@@ -1,0 +1,163 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CorporationObject } from '@dtypes/layout_components'
+
+interface Props {
+    corporation:            CorporationObject;
+    is_user_corporation?:   boolean;
+    picture_placement?:     'left' | 'right';
+    
+}
+
+const {
+    corporation,
+    is_user_corporation = false,
+    picture_placement = 'left',
+} = Astro.props
+
+const KELDAR_ATRAM_ID = 2118840902
+
+import CorporationSlide from '@components/blocks/CorporationSlide.astro';
+---
+
+<CorporationSlide
+    id="extraction-slide"
+    ceo_image='/images/corporations/extraction/ceo.webp'
+    ceo_character_id={KELDAR_ATRAM_ID}
+    corporation={corporation}
+    is_user_corporation={is_user_corporation}
+    picture_placement='left'
+    mirror_slide={picture_placement === 'right'}
+>
+    <img slot="ships" class="[ pioneer ]" src="/images/corporations/extraction/pioneer.png" />
+    <img slot="ships" class="[ porpoise ]" src="/images/corporations/extraction/porpoise.png" />
+    <img slot="ships" class="[ retriever ]" src="/images/corporations/extraction/retriever.png" />
+
+    <p>{corporation.introduction ? corporation.introduction : t('extraction_description_fallback') }</p>
+</CorporationSlide>
+
+<style lang="scss">
+    .pioneer {
+        position: absolute;
+        top: 40%;
+        left: 5%;
+        height: auto;
+        width: 58%;
+        z-index: 2;
+        transform: scale(0);
+    }
+
+    .porpoise {
+        position: absolute;
+        top: 48%;
+        left: -40%;
+        width: 73%;
+        height: auto;
+        z-index: 1;
+        transform: scale(0);
+    }
+
+    .retriever {
+        position: absolute;
+        left: -25%;
+        top: 34%;
+        width: 72%;
+        height: auto;
+        z-index: 1;
+        transform: scale(0);
+    }
+
+    @keyframes pioneer {
+        0% {
+            transform: scale(0);
+            top: 20%;
+            left: -15%;
+        }
+
+        30% {
+            transform: scale(1);
+            top: 33%;
+            left: 46%;
+        }
+
+        100% {
+            transform: scale(1.04);
+            top: 33%;
+            left: 49%;
+        }
+    }
+
+    @keyframes porpoise {
+        0% {
+            transform: scale(0);
+            top: 21%;
+            left: -15%;
+        }
+
+        33% {
+            transform: scale(1);
+            top: 2%;
+            left: 27%;
+        }
+
+        100% {
+            transform: scale(1.03);
+            top: 0%;
+            left: 30%;
+        }
+    }
+
+    @keyframes retriever {
+        0% {
+            transform: scale(0);
+            left: -15%;
+            top: 10%;
+        }
+
+        33% {
+            transform: scale(1);
+            top: 39%;
+            left: 27%;
+        }
+
+        100% {
+            transform: scale(1.03);
+            top: 40%;
+            left: 30%;
+        }
+    }
+</style>
+
+<style lang="scss" is:global>
+    #extraction-slide .ceo {
+        left: -10%;
+    }
+
+    .swiper-slide-active {
+        .pioneer {
+            animation: pioneer cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.7s;
+            animation-delay: 1.3s;
+            animation-iteration-count: 1;
+            transform-origin: center;
+            animation-fill-mode: forwards;
+        }
+        
+        .porpoise {
+            animation: porpoise cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.6s;
+            animation-delay: 1.2s;
+            animation-iteration-count: 1;
+            transform-origin: center;
+            animation-fill-mode: forwards;
+        }
+        
+        .retriever {
+            animation: retriever cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.5s;
+            animation-delay: 1.4s;
+            animation-iteration-count: 1;
+            transform-origin: center;
+            animation-fill-mode: forwards;
+        }
+    }
+</style>
