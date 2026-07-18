@@ -1,5 +1,6 @@
 import type { GuideMeta, Author } from '@/data/guides/types'
 
+import * as faction_warfare_basics from '@markdown/guides/faction-warfare-basics.md'
 import * as faction_warfare_advantage from '@markdown/guides/faction-warfare-advantage.md'
 import * as faction_warfare_plexing from '@markdown/guides/faction-warfare-plexing.md'
 import * as rendezvous_wolf from '@markdown/guides/rendezvous-wolf.md'
@@ -25,6 +26,7 @@ type GuideModule = {
 }
 
 const guideModules: Record<string, GuideModule> = {
+    'faction-warfare-basics': faction_warfare_basics,
     'faction-warfare-advantage': faction_warfare_advantage,
     'faction-warfare-plexing': faction_warfare_plexing,
     'rendezvous-wolf': rendezvous_wolf,
@@ -43,6 +45,18 @@ const guideModules: Record<string, GuideModule> = {
 export const guideCategories = ["Faction Warfare","PVP","PVE","Utility"] as const
 
 export const guides: GuideMeta[] = [
+    {
+        slug: "faction-warfare-basics",
+        title: "Faction Warfare Basics",
+        excerpt: "An overview of EVE Online faction warfare for Minmatar Fleet: the warzone map, system types, complexes, advantage, battlefields, and loyalty points.",
+        category: "Faction Warfare",
+        author: "BearThatCares",
+        authors: [{
+            name: "BearThatCares",
+            id: 634915984,
+            entity: 'character',
+        }],
+    },
     {
         slug: "navy-destroyer-metagame",
         title: "The Navy Destroyer Metagame",
@@ -71,13 +85,13 @@ export const guides: GuideMeta[] = [
     {
         slug: "faction-warfare-plexing",
         title: "Faction Warfare Complexes",
-        excerpt: "EVE Online FW plexing guide: complex sizes, O-plex vs D-plex, ship limits, LP payouts, and victory points.",
+        excerpt: "FW plexing in depth: gate and landing mechanics, LP payouts, and victory points by site—including Cradle of War complexes.",
         category: "Faction Warfare",
-        author: "Minmatar Fleet",
+        author: "BearThatCares",
         authors: [{
-            name: "Minmatar Fleet",
-            id: 99011978,
-            entity: 'alliance',
+            name: "BearThatCares",
+            id: 634915984,
+            entity: 'character',
         }],
     },
     {

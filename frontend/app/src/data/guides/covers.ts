@@ -13,6 +13,7 @@ const CATEGORY_COVERS: Record<GuideMeta['category'], string> = {
 }
 
 const GUIDE_COVERS: Record<string, string> = {
+    'faction-warfare-basics': '/images/guides/faction-warfare-basics-map.png',
     'faction-warfare-advantage': '/images/guides/wiki_frontlines.png',
     'faction-warfare-plexing': '/images/guides/wiki_frontlines.png',
     'navy-destroyer-metagame': '/images/doctrines-cover.jpg',

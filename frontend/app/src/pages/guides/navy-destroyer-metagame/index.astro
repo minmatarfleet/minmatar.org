@@ -77,15 +77,19 @@ const progress = pageProgressFromSections({
         <Flexblock gap="var(--space-2xl)" class="ndm-page" data-page-progress-root>
             <TextBox max_width="var(--max-content-width)">
                 <Flexblock gap="var(--space-xl)">
-                    <nav class="ndm-page__breadcrumb" aria-label="Breadcrumb">
-                        <ol>
-                            <li><a href={translatePath('/guides/')}>{t('guides.page_title')}</a></li>
-                            <li aria-current="page">{page_title}</li>
-                        </ol>
-                    </nav>
+                    <div class="ndm-page__header-top">
+                        <nav class="ndm-page__breadcrumb" aria-label="Breadcrumb">
+                            <ol>
+                                <li><a href={translatePath('/guides/')}>{t('guides.page_title')}</a></li>
+                                <li aria-current="page">{page_title}</li>
+                            </ol>
+                        </nav>
+                        <div class="ndm-page__progress">
+                            <PageProgress {...progress} />
+                        </div>
+                    </div>
                     <PageTitle is_landing={true}>{page_title}</PageTitle>
                     <p class="[ excerpt ]">{page_description}</p>
-                    <PageProgress {...progress} />
                 </Flexblock>
             </TextBox>
 
@@ -108,8 +112,23 @@ const progress = pageProgressFromSections({
         overflow-x: clip;
     }
 
+    .ndm-page__header-top {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: var(--space-s);
+        width: 100%;
+    }
+
+    .ndm-page__progress {
+        flex: 0 0 auto;
+        margin-left: auto;
+    }
+
     .ndm-page__breadcrumb {
         margin: 0;
+        min-width: 0;
 
         ol {
             display: flex;

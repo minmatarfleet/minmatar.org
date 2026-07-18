@@ -38,6 +38,7 @@ describe('sitemap_xml', () => {
         const paths = getPublicSitemapPagePaths()
 
         expect(paths).toContain('/guides/')
+        expect(paths).toContain('/guides/faction-warfare-basics/')
         expect(paths).toContain('/guides/faction-warfare-advantage/')
         expect(paths).toContain('/guides/navy-destroyer-metagame/')
         expect(paths).not.toContain('/account/')

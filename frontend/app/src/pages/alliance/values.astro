@@ -20,7 +20,7 @@ import PageProgress from '@components/blocks/PageProgress.astro'
 
 const page_title = page.frontmatter.title
 const page_description = page.frontmatter.excerpt
-const { html: values_html, ...progress } = pageProgressFromMarkdown({
+const { html: values_html, sections: _sections, ...progress } = pageProgressFromMarkdown({
     page_key: 'alliance/values',
     page_title,
     markdown: page.rawContent(),

@@ -1,0 +1,133 @@
+---
+/**
+ * Sticky Contents sidebar + content body, matching the navy destroyer guide.
+ * Renders children alone when there are no sections.
+ */
+export type GuideContentsSection = {
+    id: string
+    title: string
+    shortTitle?: string
+}
+
+interface Props {
+    sections: GuideContentsSection[]
+    label?: string
+    class?: string
+}
+
+const {
+    sections,
+    label = 'Contents',
+    class: className,
+} = Astro.props
+
+const show_nav = sections.length > 0
+---
+
+{show_nav ? (
+    <div class:list={['guide-contents', className]}>
+        <nav class="guide-contents__nav" aria-label="Guide sections">
+            <p class="guide-contents__label">{label}</p>
+            <ol class="guide-contents__list">
+                {sections.map((section) => (
+                    <li>
+                        <a href={`#${section.id}`} class="guide-contents__link">
+                            {section.shortTitle ?? section.title}
+                        </a>
+                    </li>
+                ))}
+            </ol>
+        </nav>
+        <div class="guide-contents__body">
+            <slot />
+        </div>
+    </div>
+) : (
+    <slot />
+)}
+
+<style lang="scss">
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&display=swap');
+
+    .guide-contents {
+        --guide-contents-display-font: 'Orbitron', var(--heading-font);
+        display: grid;
+        gap: var(--space-l);
+        align-items: start;
+        width: 100%;
+        min-width: 0;
+    }
+
+    @media (min-width: 56rem) {
+        .guide-contents {
+            grid-template-columns: 15rem minmax(0, 1fr);
+            gap: var(--space-xl);
+        }
+
+        .guide-contents__nav {
+            position: sticky;
+            top: calc(var(--header-height, 4rem) + var(--space-m));
+            max-height: calc(100vh - var(--header-height, 4rem) - var(--space-xl));
+            overflow: auto;
+        }
+
+        .guide-contents__list {
+            flex-direction: column;
+            flex-wrap: nowrap;
+        }
+    }
+
+    .guide-contents__nav {
+        min-width: 0;
+        padding: var(--component-padding-block) var(--space-l-xl);
+        background: color-mix(in srgb, var(--component-background) 72%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+    }
+
+    @media (max-width: 48rem) {
+        .guide-contents__nav {
+            padding-inline: var(--space-s);
+        }
+    }
+
+    .guide-contents__label {
+        margin: 0 0 var(--space-s);
+        font-family: var(--guide-contents-display-font);
+        font-size: var(--step--2);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--fleet-red);
+    }
+
+    .guide-contents__list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .guide-contents__link {
+        display: block;
+        padding: var(--space-2xs) var(--space-xs);
+        border-left: 2px solid transparent;
+        color: inherit;
+        font-size: var(--step--1);
+        text-decoration: none;
+        transition: border-color 0.2s ease, color 0.2s ease;
+
+        &:hover,
+        &:focus-visible {
+            border-left-color: var(--fleet-yellow);
+            color: var(--highlight);
+        }
+    }
+
+    .guide-contents__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+        min-width: 0;
+    }
+</style>

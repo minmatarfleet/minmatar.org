@@ -264,7 +264,12 @@ class EveFleetInstance(models.Model):
             self.is_free_move = True
             self.save()
         else:
-            logger.warning("Error updating Eve fleet %d", self.id)
+            logger.warning(
+                "Error updating Eve fleet %d: %s (%s)",
+                self.id,
+                response.response,
+                response.response_code,
+            )
 
     def refresh_motd(self):
         """Regenerate and push the fleet MOTD to ESI. Public API for callers."""
@@ -297,19 +302,16 @@ class EveFleetInstance(models.Model):
             volunteer_url=volunteer_url,
             fleet_edit_url=fleet_edit_url,
         )
-        # token = self.eve_fleet.token
         update = {"motd": motd}
-        response = (
-            EsiClient(self.eve_fleet.fleet_commander)
-            .update_fleet_details(self.id, update)
-            .results()
-        )
-        # response = esi.client.Fleets.put_fleets_fleet_id(
-        #     fleet_id=self.id, new_settings={"motd": motd}, token=token
-        # ).results()
+        response = self.esi_client().update_fleet_details(self.id, update)
+        if not response.success():
+            raise ValueError(
+                f"Cannot return data for failed ESI call ({response.response_code}): "
+                f"{response.response}"
+            )
         self.motd = motd
         self.save()
-        return response
+        return response.results() if response.data is not None else None
 
     def update_free_move(self):
         """
@@ -328,9 +330,16 @@ class EveFleetInstance(models.Model):
         #     token=token,
         # ).results()
         update = {"is_free_move": True}
-        response = (
-            self.esi_client().update_fleet_details(self.id, update).results()
-        )
+        response = self.esi_client().update_fleet_details(self.id, update)
+        if not response.success():
+            logger.warning(
+                "Error setting free move for fleet %d: %s (%s)",
+                self.id,
+                response.response,
+                response.response_code,
+            )
+            return None
+        response = response.results() if response.data is not None else None
 
         self.is_free_move = True
         self.save()
