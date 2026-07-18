@@ -707,28 +707,49 @@ def _sum_reprocess_outputs(
     return totals
 
 
+def conservative_refine_rate(refine_rate: float) -> float:
+    """
+    Yield used for shopping-list coverage checks.
+
+    UI shows refine as ``(rate * 100).toFixed(2)``; Janice users typically
+    enter that rounded percent. Never use a rate above the true facility
+    yield (rounding can bump 85.775% → 85.78%).
+    """
+    if refine_rate <= 0:
+        return refine_rate
+    # Round via hundredths-of-a-percent integers to avoid 0.8576999999999999.
+    display = round(refine_rate * 10000) / 10000.0
+    return min(display, refine_rate)
+
+
 def _top_up_floor_coverage(
     belt_compressed: Dict[str, int],
     mineral_needs: Dict[str, int],
     mineral_imports: Dict[str, int],
     refine_rate: float,
     *,
-    max_iterations: int = 10_000,
+    max_iterations: int = 100_000,
 ) -> None:
     """
     Add primary belt ore until floored reprocess meets covered mineral needs.
 
-    Continuous blend sizing can undershoot by a few units after Janice-style
-    portion flooring; top up one compressed unit at a time.
+    Coverage is checked at ``conservative_refine_rate`` (UI/Janice 2-dp
+    percent) so shopping lists still cover after portion flooring when
+    validated at the displayed yield. Continuous blend sizing alone can
+    undershoot by a few units at full precision, or by more when the
+    displayed rate is slightly below the true facility rate.
     """
+    coverage_rate = conservative_refine_rate(refine_rate)
     for _ in range(max_iterations):
-        expected = _sum_reprocess_outputs(belt_compressed, refine_rate)
+        expected = _sum_reprocess_outputs(belt_compressed, coverage_rate)
         shortfall: Optional[str] = None
+        shortfall_qty = 0
         for mineral in COMPRESSION_COVERED_MINERALS:
             need = mineral_needs.get(mineral, 0)
             got = expected.get(mineral, 0) + mineral_imports.get(mineral, 0)
             if got < need:
                 shortfall = mineral
+                shortfall_qty = need - got
                 break
         if shortfall is None:
             return
@@ -736,7 +757,12 @@ def _top_up_floor_coverage(
         if not ore:
             return
         name = compressed_type_name(ore)
-        belt_compressed[name] = belt_compressed.get(name, 0) + 1
+        base_qty = ore_materials_per_portion(ore).get(shortfall, 0.0)
+        yield_per = (base_qty / ORE_BATCH_SIZE) * coverage_rate
+        if yield_per <= 0:
+            return
+        add = max(1, math.ceil(shortfall_qty / yield_per))
+        belt_compressed[name] = belt_compressed.get(name, 0) + add
 
 
 def _mineral_delta(
@@ -829,6 +855,8 @@ def build_compressed_ore_plan(
     plan.ice_imports.update(buckets.ice)
     plan.other_imports.update(buckets.other)
 
+    # Expected / delta at the true facility rate (in-game). Top-up used the
+    # conservative display rate, so these deltas are typically a small surplus.
     plan.expected_minerals = _sum_reprocess_outputs(
         {**plan.moon_ore_compressed, **plan.belt_ore_compressed},
         refine_rate,
