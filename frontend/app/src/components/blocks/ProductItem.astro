@@ -14,6 +14,13 @@ const {
     init_tooltips,
 } = Astro.props
 
+const has_producers = (
+    product.character_producers !== undefined
+    || product.corporation_producers !== undefined
+)
+
+const PRODUCT_PRODUCERS_PARTIAL_URL = `${translatePath('/partials/product_producers_component')}?product_id=${product.id}`
+
 import { get_bpc_icon } from '@helpers/eve_image_server';
 import { query_string } from '@helpers/string';
 
@@ -28,12 +35,14 @@ import Picture from '@components/blocks/Picture.astro';
 import ProducersList from '@components/blocks/ProducersList.astro';
 
 import IndustryIcon from '@components/icons/IndustryIcon.astro';
+import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
 ---
 
 <FixedFluid
     class="[ product-item ]"
-    width='450px'
+    width='min(450px, 100%)'
     gap='var(--space-3xs)'
+    breakpoint='min(100%, 28rem)'
     x-show="show_item($el)"
 >
     <div>
@@ -61,11 +70,11 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
 
     <div class="[ alignment-hack ]">
         <FlexInline
-            class="[ items-center! flex-nowrap! ]"
+            class="[ items-center! product-item-actions ]"
             gap='var(--space-s)'
             justification='space-between'
         >
-            <Grid class="[ pl-[64px] grow min-w-0 ]" min_item_width='250px'>
+            <Grid class="[ product-item-meta grow min-w-0 ]" min_item_width='200px'>
                 <FixedFluid width='32px' gap='var(--space-2xs)' breakpoint='30%' class="[  items-center! ]">
                     <div
                         class="[ text-highlight ]"
@@ -74,11 +83,11 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
                     >
                         <IndustryIcon size={32} />
                     </div>
-                    
+
                     {product.supplied_for.length > 0 ?
                         <FlexInline gap='var(--space-3xs)'>
                             {product.supplied_for.map(material =>
-                                <div 
+                                <div
                                     data-tippy-content={material.name}
                                     x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
                                 >
@@ -96,11 +105,33 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
                     }
                 </FixedFluid>
 
-                <ProducersList
-                    character_producers={product.character_producers}
-                    corporation_producers={product.corporation_producers}
-                    init_tooltips={init_tooltips}
-                />
+                {has_producers ?
+                    <ProducersList
+                        character_producers={product.character_producers}
+                        corporation_producers={product.corporation_producers}
+                        init_tooltips={init_tooltips}
+                    />
+                    :
+                    <FixedFluid
+                        class="[ loading ]"
+                        width='32px'
+                        breakpoint='30%'
+                        gap='var(--space-2xs)'
+                        hx-get={PRODUCT_PRODUCERS_PARTIAL_URL}
+                        hx-trigger="intersect once"
+                        hx-sync="#products-list:queue all"
+                        hx-indicator=".loader"
+                        hx-swap="outerHTML transition:true"
+                    >
+                        <div
+                            class="[ text-highlight h-[32px] ]"
+                            data-tippy-content={t('industrialists')}
+                        >
+                            <IndustrialistIcon size={32} />
+                        </div>
+                        <small>{t('fetching_producers')}</small>
+                    </FixedFluid>
+                }
             </Grid>
 
             <Button
@@ -120,5 +151,20 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
 <style lang="scss">
     .alignment-hack {
         padding-left: var(--space-s);
+        min-width: 0;
+        width: 100%;
+    }
+
+    .product-item-meta {
+        padding-left: 0;
+
+        @media (min-width: 640px) {
+            padding-left: 64px;
+        }
+    }
+
+    .product-item-actions {
+        flex-wrap: wrap;
+        row-gap: var(--space-2xs);
     }
 </style>

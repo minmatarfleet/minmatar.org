@@ -481,8 +481,8 @@ export const ui = {
         'industry.orders.invoice.page_title': 'Delivery Contract Invoice',
         'industry.orders.invoice.leading_text': 'Check the in-game contract values are correct.',
 
-        'industry.products.page_title': 'Products',
-        'industry.products.leading_text': 'Products are the inputs: everything our alliance needs to keep the supply chain running. Each product is categorized as produced, harvested, or imported, and linked to the people who make or source it. Find a gap and fill it.',
+        'industry.products.page_title': 'Supply Chain',
+        'industry.products.leading_text': 'Our supply chain is what keeps our war machine running. Learn about our various products and their downstream inputs, as well as who is involved in every step.',
         'industry.products.meta_description': 'Industry products, materials, components, and goods categorized by production strategy with live producer tracking.',
 
         'industry.industrialists.page_title': 'Industrialists',
@@ -2130,6 +2130,7 @@ export const ui = {
         'material': 'Material',
         'final_product': 'Final product',
         'no_producers': 'No producers',
+        'fetching_producers': 'Fetching producers',
         'producers': 'Producers',
         'all_strategies': 'All strategies',
         'no_products_to_display': 'No products to display.',
@@ -2332,6 +2333,7 @@ export const ui = {
         'all_resource_types': 'All resource types',
         'planetary_harvest_drilldown': 'Planetary harvest drill down',
         'invalid_resource_type': 'The resource type is not valid.',
+        'invalid_product_id': 'The product id is not valid.',
         'fetching_drilldown': 'Fetching drill down',
         'planetary_production_drilldown': 'Planetary production drill down',
         'colonies': 'Colonies',
