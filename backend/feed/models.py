@@ -262,17 +262,22 @@ class FeedEventFleetLink(models.Model):
 class FeedCapitalAlert(models.Model):
     """One Discord message for a capital presence near Amamake.
 
-    Further capital-related kills in the same system (within the session TTL)
-    edit this message instead of posting new ones.
+    Further capital-related kills in the same system, or the same capital
+    pilot(s) crossing systems (within the session TTL), edit this message
+    instead of posting new ones. ``systems`` holds the ordered chain.
     """
 
     solar_system_id = models.BigIntegerField(db_index=True)
     system_name = models.CharField(max_length=64)
     distance_ly = models.FloatField()
-    # [{type_id, name, role, count}, ...]
+    # [{solar_system_id, system_name, distance_ly}, ...] ordered sighting chain
+    systems = models.JSONField(default=list)
+    # [{type_id, name, role, count, characters}, ...]
     capitals = models.JSONField(default=list)
     # [{killmail_id, ship_name, time_hhmm}, ...]
     kills = models.JSONField(default=list)
+    # {attacker_count, main_group, top_ship, group_counts, ship_counts}
+    composition = models.JSONField(default=dict)
     # [{channel_id, message_id}, ...]
     discord_messages = models.JSONField(default=list)
     last_activity_at = models.DateTimeField(db_index=True)
