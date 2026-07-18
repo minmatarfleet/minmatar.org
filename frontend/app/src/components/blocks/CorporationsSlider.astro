@@ -21,6 +21,7 @@ const CORPORATIONS_WITH_SLIDE = [
     'Straylight Systems',
     'The Dark Tribe',
     'The Ministry Of Ungentlemanly Warfare inc.',
+    'Minmatar Extraction Company',
 ]
 
 let corporations_with_no_slide:CorporationObject[] = []
@@ -53,6 +54,8 @@ CORPORATIONS_WITH_SLIDE.forEach(corp_name => {
     }
 })
 
+const MINMATAR_FLEET_ASSOCIATES_ID = 99012009
+
 import { slugify } from '@helpers/string'
 
 import Wrapper from '@components/compositions/Wrapper.astro';
@@ -64,6 +67,7 @@ import SoltechArmadaSlide from '@components/blocks/SoltechArmadaSlide.astro';
 import StraylightSystemsSlide from '@components/blocks/StraylightSystemsSlide.astro';
 import TheDarkTribeSlide from '@components/blocks/TheDarkTribeSlide.astro';
 import TheMinistryOfUngentlemanlyWarfareincSlide from '@components/blocks/TheMinistryOfUngentlemanlyWarfareincSlide.astro';
+import MinmatarExtractionCompany from '@components/blocks/MinmatarExtractionCompany.astro';
 import AssociatesSlide from '@components/blocks/AssociatesSlide.astro';
 import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.astro';
 ---
@@ -119,6 +123,13 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
                             picture_placement={index%2 == 0 ? 'left' : 'right'}
                         />
                     }
+                    {corporation.corporation_name == 'Minmatar Extraction Company' &&
+                        <MinmatarExtractionCompany
+                            corporation={corporation}
+                            is_user_corporation={corporation.corporation_id === user_corporation_id}
+                            picture_placement={index%2 == 0 ? 'left' : 'right'}
+                        />
+                    }
                 </div>
             )}
             {corporations_with_no_slide.length > 0 &&
@@ -134,7 +145,7 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
             <div class="swiper-slide" data-hash="Minmatar_Fleet_Associates">
                 <AssociatesSlide
                     id="associates-alliance"
-                    picture_placement={(corporations.length + (corporations_with_no_slide.length > 0 ? 1 : 0))%2 == 0 ? 'left' : 'right'}
+                    picture_placement={(corporations.length + (corporations_with_no_slide.length > 0 ? 1 : 0))%2 == 0 ? 'right' : 'left'}
                 />
             </div>
         </CorporationsSwiper>
