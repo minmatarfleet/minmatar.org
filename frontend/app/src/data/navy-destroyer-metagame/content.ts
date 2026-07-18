@@ -48,9 +48,9 @@ export const guideHistory = [
 ] as const satisfies readonly import('./types').GuideHistoryEntry[]
 
 export const introduction = [
-    'After Uprising, faction warfare shifted from frigates to destroyers. Destroyers can run every plex size except Scout, which made them the warzone’s best ISK printer and the ship class everyone else had to answer. Navy destroyers raised the stakes further: more EHP, better projection, and more damage than T1 hulls, at the cost of tracking and price.',
-    'Two years on, they are still the default tool for FW pilots and the most common ship on d-scan when you are plexing or hunting a fight. Furl0w’s First Edition (YC 126) covers the fits and 1v1 matchups below.',
-    'What follows covers the archetypes you will actually see in space, their 1v1 matchups with and without plex high ground, and practical notes on when to commit, when to bail, and where a fit can be upgraded without losing its identity.',
+    'After the <a href="https://www.eveonline.com/news/view/uprising-expansion-now-live">Uprising</a> expansion, the faction warfare meta shifted entirely to destroyers. Scout complexes became largely unimportant, and a destroyer could run nearly every complex, making them the warzone\'s best ISK printer. Navy destroyers raised the stakes even further: more EHP, better projection, and more damage than T1 hulls. They could even take on cruisers.',
+    'Two years later, they are still the default tool for faction warfare pilots, and the most common ship on directional scanners when you are undocked.',
+    'What follows is a living guide that covers the archetypes you\'ll actually see in space, and all of their matchups. It includes details on the complex high ground, practical notes on when to commit, when to bail, and where a fit can be adjusted.',
 ]
 
 export const considerations = [

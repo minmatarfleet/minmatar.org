@@ -97,7 +97,7 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
                 <h2 id="ndm-intro-title" class="ndm-section__title">Introduction</h2>
                 {
                     introduction.map((paragraph) => (
-                        <p class="ndm-section__paragraph">{paragraph}</p>
+                        <p class="ndm-section__paragraph" set:html={paragraph} />
                     ))
                 }
             </section>
