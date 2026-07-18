@@ -112,7 +112,8 @@ export const glossary: GlossaryEntry[] = [
 export const guideSections = [
     { id: 'introduction', title: 'Introduction' },
     { id: 'considerations', title: 'Considerations of the Metagame', shortTitle: 'Considerations' },
-    { id: 'disclaimers', title: 'Disclaimers & Summary', shortTitle: 'Summary' },
+    { id: 'disclaimers', title: 'Disclaimers', shortTitle: 'Disclaimers' },
+    { id: 'summary', title: 'Summary of the Metagame', shortTitle: 'Summary' },
     { id: 'matchups', title: 'Matchup Charts', shortTitle: 'Charts' },
     { id: 'catalyst', title: 'Catalyst Navy Issue' },
     { id: 'coercer', title: 'Coercer Navy Issue' },

@@ -74,13 +74,15 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
                         <p class="ndm-section__paragraph">{paragraph}</p>
                     ))
                 }
+            </section>
 
-                <h3 class="ndm-section__subtitle">Summary of the Metagame</h3>
+            <section id="summary" data-section-id="summary" class="ndm-section ndm-panel" aria-labelledby="ndm-summary-title">
+                <h2 id="ndm-summary-title" class="ndm-section__title">Summary of the Metagame</h2>
                 <div class="ndm-summary-grid">
                     {
                         metagameSummary.map((entry) => (
                             <article class="ndm-summary-card">
-                                <h4 class="ndm-summary-card__ship">{entry.ship}</h4>
+                                <h3 class="ndm-summary-card__ship">{entry.ship}</h3>
                                 <p class="ndm-summary-card__text">{entry.text}</p>
                             </article>
                         ))
