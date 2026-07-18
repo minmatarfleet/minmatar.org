@@ -9,7 +9,11 @@ from pydantic import BaseModel
 from authentication import AuthBearer
 from eveonline.models import EveCharacter, EveCorporation
 
-from .l3arn import is_l3arn_corporation, validate_l3arn_application_description
+from .l3arn import (
+    is_l3arn_corporation,
+    validate_application_description,
+    validate_l3arn_application_description,
+)
 from .models import EveCorporationApplication
 from groups.helpers.feature_access import can_use_feature
 
@@ -89,6 +93,12 @@ def create_corporation_application(
 
     if is_l3arn_corporation(corporation):
         validation_error = validate_l3arn_application_description(
+            payload.description
+        )
+        if validation_error:
+            return 400, {"detail": validation_error}
+    elif "Questionnaire:" in payload.description:
+        validation_error = validate_application_description(
             payload.description
         )
         if validation_error:

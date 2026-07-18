@@ -3,16 +3,8 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import Flexblock from '@components/compositions/Flexblock.astro';
-import Input from '@components/blocks/Input.astro';
-import Select from '@components/blocks/Select.astro';
 import type { CorporationObject } from '@dtypes/layout_components';
-import {
-    L3ARN_APPLICATION_HOW_FOUND_OPTIONS,
-    L3ARN_APPLICATION_FIELD_LIMITS,
-    L3ARN_CORPORATION_NAME,
-    L3ARN_FORM_PREFIX,
-} from '@helpers/corporations/l3arn_application';
-import { corporationApplicationFieldName } from '@components/blocks/corporation_application/field_names';
+import { L3ARN_CORPORATION_NAME } from '@helpers/corporations/l3arn_application';
 import CorporationApplicationGoals from '@components/blocks/corporation_application/CorporationApplicationGoals.astro';
 import CorporationApplicationIntroduction from '@components/blocks/corporation_application/CorporationApplicationIntroduction.astro';
 import CorporationApplicationTimezone from '@components/blocks/corporation_application/CorporationApplicationTimezone.astro';
@@ -20,6 +12,7 @@ import CorporationApplicationRoles from '@components/blocks/corporation_applicat
 import CorporationApplicationOtherCorporations from '@components/blocks/corporation_application/CorporationApplicationOtherCorporations.astro';
 import CorporationApplicationDualCitizen from '@components/blocks/corporation_application/CorporationApplicationDualCitizen.astro';
 import CorporationApplicationRequirements from '@components/blocks/corporation_application/CorporationApplicationRequirements.astro';
+import CorporationApplicationHowFound from '@components/blocks/corporation_application/CorporationApplicationHowFound.astro';
 
 interface Props {
     include_field_names?: boolean;
@@ -27,9 +20,6 @@ interface Props {
 }
 
 const { include_field_names = false, alliance_corporations } = Astro.props;
-
-const fieldName = (key: string) =>
-    corporationApplicationFieldName(L3ARN_FORM_PREFIX, include_field_names, key);
 ---
 
 <Flexblock class="l3arn-application-form" gap="var(--space-m)">
@@ -72,41 +62,7 @@ const fieldName = (key: string) =>
 
     <CorporationApplicationRequirements include_field_names={include_field_names} />
 
-    <Flexblock class="[ w-full ]" gap="var(--space-2xs)">
-        <label for="l3arn-how-found">{t('l3arn_application_how_found')}</label>
-        <Select
-            id="l3arn-how-found"
-            name={fieldName('how_found')}
-            x-model="how_found"
-            required
-            x-on:change="updateApplicationStatus()"
-        >
-            <option value="" disabled selected>{t('l3arn_application_how_found_select')}</option>
-            {L3ARN_APPLICATION_HOW_FOUND_OPTIONS.map((option) => (
-                <option value={option}>
-                    {option === 'other'
-                        ? t('l3arn_application_how_found_other_option')
-                        : t(`l3arn_application_how_found_${option}` as any)}
-                </option>
-            ))}
-        </Select>
-        <Flexblock
-            class="[ w-full ] nested-field"
-            gap="var(--space-2xs)"
-            x-show="how_found === 'other'"
-            x-cloak
-        >
-            <label for="l3arn-how-found-other">{t('l3arn_application_how_found_other')}</label>
-            <Input
-                id="l3arn-how-found-other"
-                name={fieldName('how_found_other')}
-                x-model="how_found_other"
-                maxlength={L3ARN_APPLICATION_FIELD_LIMITS.how_found_other}
-                x-bind:required="how_found === 'other'"
-                x-on:input="updateApplicationStatus()"
-            />
-        </Flexblock>
-    </Flexblock>
+    <CorporationApplicationHowFound include_field_names={include_field_names} />
 </Flexblock>
 
 <style lang="scss">
