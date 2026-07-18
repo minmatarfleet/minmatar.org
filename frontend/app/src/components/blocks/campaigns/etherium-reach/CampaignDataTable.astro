@@ -70,8 +70,12 @@ const { headers, rows, striped = false } = Astro.props
         background: color-mix(in srgb, var(--component-background) 90%, transparent);
         font-weight: 600;
         color: var(--highlight);
-        background-color: var(--light-transparency-background);
-        backdrop-filter: blur(var(--transparency-backdrop-blur-heavier));
+        background-color: var(--light-transparency-background-mobile);
+        
+        @media screen and (min-width: 980px) {
+            background-color: var(--light-transparency-background);
+            backdrop-filter: blur(var(--transparency-backdrop-blur-heavier));
+        }
     }
 
     td {

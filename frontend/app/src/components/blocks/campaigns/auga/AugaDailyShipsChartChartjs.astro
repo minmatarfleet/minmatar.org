@@ -6,7 +6,7 @@ const shipsData = [...SHIPS_DESTROYED_DAILY]
 ---
 
 <div
-    class="[ h-[min(70vh,28rem)] ]"
+    class="[ h-screen ]"
     x-data={`{
         DAYS: ${JSON.stringify(days)},
         shipsData: ${JSON.stringify(shipsData)},
@@ -29,7 +29,7 @@ const shipsData = [...SHIPS_DESTROYED_DAILY]
                             borderColor: 'rgba(32, 81, 181, 0.35)',
                             borderWidth: 1,
                             borderRadius: 2,
-                            barPercentage: 0.55,
+                            barPercentage: 0.2,
                             categoryPercentage: 0.8,
                         },
                     ],
@@ -39,7 +39,7 @@ const shipsData = [...SHIPS_DESTROYED_DAILY]
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            display: true,
+                            display: false,
                             position: 'top',
                             align: 'end',
                             labels: {
@@ -79,3 +79,9 @@ const shipsData = [...SHIPS_DESTROYED_DAILY]
 >
     <canvas id="auga-daily-ships-chart" aria-label="Auga daily ship kills"></canvas>
 </div>
+
+<style lang="scss">
+    div {
+        max-height: min(700px, 90vh);
+    }
+</style>

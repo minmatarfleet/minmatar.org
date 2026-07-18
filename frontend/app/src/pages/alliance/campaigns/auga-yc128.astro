@@ -23,6 +23,13 @@ const site_origin = get_site_origin(Astro.url.origin)
 const canonical_url = new URL(translatePath(CANONICAL_PATH), site_origin).href
 const meta_image = new URL(COVER_IMAGE, site_origin).href
 
+import {
+    get_location_video_cover,
+    get_location_video_cover_thumb,
+    get_location_cover,
+    get_location_cover_990,
+} from '@helpers/covers'
+
 const structured_data = buildAugaSiegeJsonLd({
     canonicalUrl: canonical_url,
     siteName: t('index.page_title'),
@@ -49,19 +56,21 @@ const structured_data = buildAugaSiegeJsonLd({
     <PageLanding
         wide={true}
         cover={{
-            image: COVER_IMAGE,
-            image_990: COVER_IMAGE,
+            video: get_location_video_cover('auga') ?? undefined,
+			video_thumb: get_location_video_cover_thumb('auga') ?? undefined,
+            image: get_location_cover('auga') ?? COVER_IMAGE,
+            image_990: get_location_cover_990('auga') ?? COVER_IMAGE,
             animated: false,
             scrollable: true,
             overlay: true,
         }}
     >
-        <Flexblock gap="var(--space-2xl)" class="auga-page">
+        <Flexblock gap="var(--space-2xl)">
             <TextBox>
                 <Flexblock gap="var(--space-xl)">
                     <Flexblock gap="var(--space-3xs)">
                         <PageTitle is_landing={true}>{page_title}</PageTitle>
-                        <Tag text={campaign_period} color="fleet-yellow" />
+                        <Tag text={campaign_period} color='fleet-yellow' />
                     </Flexblock>
                     <p class="[ excerpt ]">{page_description}</p>
                 </Flexblock>
@@ -73,12 +82,6 @@ const structured_data = buildAugaSiegeJsonLd({
 </Viewport>
 
 <style lang="scss">
-    .auga-page {
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
-        overflow-x: clip;
-    }
 
     .excerpt,
     :global(.excerpt p) {
