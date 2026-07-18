@@ -68,9 +68,8 @@ export const considerationBullets = [
 ]
 
 export const disclaimers = [
-    'This guide is written for soloing. Many of these fits are wrong for structured gang work; there are better options when you are flying with others. The example fits are not meant to be the final word. Module tier, rig choice, and bling all matter, but each one is a solid representation of its archetype and will perform as described.',
-    'Matchup notes describe the optimal line when nothing else is in play. If you know your opponent’s fit, if you have fought the same pilot twice in a row, or if local conditions differ, change the plan. Being predictable is sometimes worse than being slightly suboptimal.',
-    'The Talwar Fleet Issue section covers a ship released after the First Edition. Its matchups are community early reads; entries marked ? are still being tested as the meta settles.',
+    'The guide is primarily written for solo pilots. Many of these fits are wrong for structured gang work; there are better options when you are flying with others. The example fittings are not meant to be the final word. Module tier, rig choice, and bling all matter, but each one is a solid representation of its archetype and will perform as described. Common variants (refits) will be called out, as well.',
+    'Matchup notes describe the optimal line when nothing else is in play. If you know your opponent\'s fit, if you have fought the same pilot twice in a row, or if local conditions differ, change the plan. Being predictable is sometimes worse than being slightly suboptimal.',
 ]
 
 export const metagameSummary = [
