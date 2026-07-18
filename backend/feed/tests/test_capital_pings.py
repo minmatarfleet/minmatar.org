@@ -213,9 +213,9 @@ class CapitalPingTestCase(TestCase):
         make_capital_ping_channel()
         esi_patcher = patch(
             "feed.helpers.eve_names._resolve_universe_names_via_esi",
-            side_effect=lambda ids: {
-                int(character_id): f"Pilot {character_id}"
-                for character_id in ids
+            side_effect=lambda ids, missing_label="Entity": {
+                int(entity_id): f"{missing_label} {entity_id}"
+                for entity_id in ids
             },
         )
         esi_patcher.start()
@@ -239,6 +239,19 @@ class CapitalPingTestCase(TestCase):
                     ],
                 }
             ],
+            composition={
+                "attacker_count": 4,
+                "main_group": {
+                    "id": 99000000,
+                    "name": "Test Alliance",
+                    "kind": "alliance",
+                },
+                "top_ship": {
+                    "type_id": 73790,
+                    "name": "Revelation Navy Issue",
+                    "count": 1,
+                },
+            },
             kills=[
                 {
                     "killmail_id": 1,
@@ -250,6 +263,12 @@ class CapitalPingTestCase(TestCase):
         embed = built["embeds"][0]
         self.assertEqual(embed["title"], CAPITAL_ALERT_TITLE)
         self.assertIn("Amamake", embed["description"])
+        self.assertIn("**Attackers:** 4", embed["description"])
+        self.assertIn("**Main group:** Test Alliance", embed["description"])
+        self.assertIn(
+            "**Top attacking ship:** Revelation Navy Issue",
+            embed["description"],
+        )
         self.assertIn("Revelation Navy Issue", embed["description"])
         self.assertIn(
             "[Dread Pilot](https://zkillboard.com/character/2111000001/)",
@@ -296,6 +315,56 @@ class CapitalPingTestCase(TestCase):
             description,
         )
 
+    def test_build_capital_alert_payload_system_chain(self):
+        built = build_capital_alert_payload(
+            system_name="Amamake",
+            distance_ly=0.0,
+            systems=[
+                {
+                    "solar_system_id": 30002084,
+                    "system_name": "Aset",
+                    "distance_ly": 3.2,
+                },
+                {
+                    "solar_system_id": 30002090,
+                    "system_name": "Frerstorn",
+                    "distance_ly": 3.5,
+                },
+                {
+                    "solar_system_id": AMAMAKE_SOLAR_SYSTEM_ID,
+                    "system_name": "Amamake",
+                    "distance_ly": 0.0,
+                },
+            ],
+            capitals=[
+                {
+                    "type_id": 73790,
+                    "name": "Revelation Navy Issue",
+                    "role": "attacker",
+                    "count": 1,
+                    "characters": [
+                        {
+                            "character_id": 2111000001,
+                            "name": "Dread Pilot",
+                        }
+                    ],
+                }
+            ],
+            kills=[
+                {
+                    "killmail_id": 1,
+                    "ship_name": "Exequror Navy Issue",
+                    "time_hhmm": "17:00",
+                }
+            ],
+        )
+        description = built["embeds"][0]["description"]
+        self.assertIn(
+            "**System:** Aset → Frerstorn → Amamake",
+            description,
+        )
+        self.assertIn("**Distance from Amamake:** 0.0 LY", description)
+
     def test_build_capital_ping_payload(self):
         victim_character_id = 80000001
         EveCharacter.objects.create(
@@ -306,6 +375,7 @@ class CapitalPingTestCase(TestCase):
             136500001,
             solar_system_id=AMAMAKE_SOLAR_SYSTEM_ID,
             ship_type_id=73790,
+            attacker_ship_type_id=17726,
             attacker_count=5,
         )
         raw = payload["killmail"]
@@ -319,6 +389,12 @@ class CapitalPingTestCase(TestCase):
         description = built["embeds"][0]["description"]
         self.assertIn("Amamake", description)
         self.assertIn("Revelation Navy Issue", description)
+        self.assertIn("**Attackers:** 5", description)
+        self.assertIn("**Main group:** Entity 99000000", description)
+        self.assertIn(
+            "**Top attacking ship:** Machariel ×5",
+            description,
+        )
         self.assertIn(
             f"[Capital Victim]({ZKILL_CHARACTER_URL.format(character_id=victim_character_id)})",
             description,
@@ -362,11 +438,110 @@ class CapitalPingTestCase(TestCase):
 
         alert = FeedCapitalAlert.objects.get()
         self.assertEqual(len(alert.kills), 2)
+        self.assertEqual(len(alert.systems), 1)
+        self.assertEqual(alert.systems[0]["system_name"], "Amamake")
         edit_payload = mock_client.update_message.call_args.kwargs["payload"]
         self.assertIn(
             "Kills: Exequror Navy Issue (17:00), Exequror Navy Issue (17:01)",
             edit_payload["embeds"][0]["description"],
         )
+
+    @patch("feed.helpers.capital_pings.DiscordClient")
+    def test_same_capital_crossing_systems_edits_chain(self, mock_client_cls):
+        mock_client = MagicMock()
+        create_response = MagicMock()
+        create_response.json.return_value = {"id": "999888780"}
+        mock_client.create_message.return_value = create_response
+        mock_client_cls.return_value = mock_client
+
+        # ~1 LY from Amamake at origin (METERS_PER_LIGHT_YEAR ≈ 9.46e15).
+        nearby_system_id = 30002084
+        make_test_solar_system(
+            solar_system_id=nearby_system_id,
+            name="Aset",
+            position_x=9.46e15,
+            position_y=0.0,
+            position_z=0.0,
+        )
+
+        first = make_killmail_payload(
+            136500030,
+            solar_system_id=nearby_system_id,
+            ship_type_id=17715,
+            attacker_ship_type_id=73790,
+            attacker_count=1,
+            killmail_time=datetime(2026, 7, 18, 14, 0, 0, tzinfo=dt_tz.utc),
+        )
+        second = make_killmail_payload(
+            136500031,
+            solar_system_id=AMAMAKE_SOLAR_SYSTEM_ID,
+            ship_type_id=17715,
+            attacker_ship_type_id=73790,
+            attacker_count=1,
+            killmail_time=datetime(2026, 7, 18, 14, 10, 0, tzinfo=dt_tz.utc),
+        )
+
+        self.assertTrue(maybe_notify_capital_kill(first))
+        self.assertTrue(maybe_notify_capital_kill(second))
+
+        self.assertEqual(FeedCapitalAlert.objects.count(), 1)
+        self.assertEqual(FeedCapitalPing.objects.count(), 2)
+        mock_client.create_message.assert_called_once()
+        mock_client.update_message.assert_called_once()
+
+        alert = FeedCapitalAlert.objects.get()
+        self.assertEqual(alert.solar_system_id, AMAMAKE_SOLAR_SYSTEM_ID)
+        self.assertEqual(
+            [entry["system_name"] for entry in alert.systems],
+            ["Aset", "Amamake"],
+        )
+        edit_payload = mock_client.update_message.call_args.kwargs["payload"]
+        self.assertIn(
+            "**System:** Aset → Amamake",
+            edit_payload["embeds"][0]["description"],
+        )
+
+    @patch("feed.helpers.capital_pings.DiscordClient")
+    def test_different_capitals_in_different_systems_stay_separate(
+        self, mock_client_cls
+    ):
+        mock_client = MagicMock()
+        create_response = MagicMock()
+        create_response.json.side_effect = [{"id": "111"}, {"id": "222"}]
+        mock_client.create_message.return_value = create_response
+        mock_client_cls.return_value = mock_client
+
+        nearby_system_id = 30002090
+        make_test_solar_system(
+            solar_system_id=nearby_system_id,
+            name="Frerstorn",
+            position_x=9.46e15,
+            position_y=0.0,
+            position_z=0.0,
+        )
+
+        first = make_killmail_payload(
+            136500040,
+            solar_system_id=nearby_system_id,
+            ship_type_id=17715,
+            attacker_ship_type_id=73790,
+            attacker_count=1,
+        )
+        second = make_killmail_payload(
+            136500041,
+            solar_system_id=AMAMAKE_SOLAR_SYSTEM_ID,
+            ship_type_id=17715,
+            attacker_ship_type_id=73790,
+            attacker_count=1,
+        )
+        # Distinct capital pilot so character overlap does not chain alerts.
+        second["killmail"]["attackers"][0]["character_id"] = 91000001
+
+        self.assertTrue(maybe_notify_capital_kill(first))
+        self.assertTrue(maybe_notify_capital_kill(second))
+        self.assertEqual(FeedCapitalAlert.objects.count(), 2)
+        self.assertEqual(mock_client.create_message.call_count, 2)
+        mock_client.update_message.assert_not_called()
 
     @patch("feed.helpers.capital_pings.DiscordClient")
     def test_maybe_notify_ignores_non_capital(self, mock_client_cls):
@@ -399,6 +574,12 @@ class CapitalPingTestCase(TestCase):
         create_payload = mock_client.create_message.call_args.kwargs["payload"]
         description = create_payload["embeds"][0]["description"]
         self.assertIn("Revelation Navy Issue ×6", description)
+        self.assertIn("**Attackers:** 6", description)
+        self.assertIn("**Main group:** Entity 99000000", description)
+        self.assertIn(
+            "**Top attacking ship:** Revelation Navy Issue ×6",
+            description,
+        )
         self.assertIn(
             "[Pilot 90000000](https://zkillboard.com/character/90000000/)",
             description,
@@ -407,6 +588,36 @@ class CapitalPingTestCase(TestCase):
             "[Pilot 90000005](https://zkillboard.com/character/90000005/)",
             description,
         )
+
+    @patch("feed.helpers.capital_pings.DiscordClient")
+    def test_many_capitals_same_system_one_notification(self, mock_client_cls):
+        """Thirty distinct capital pilots in one system still share one alert."""
+        mock_client = MagicMock()
+        create_response = MagicMock()
+        create_response.json.return_value = {"id": "999888790"}
+        mock_client.create_message.return_value = create_response
+        mock_client_cls.return_value = mock_client
+
+        for index in range(30):
+            payload = make_killmail_payload(
+                136500100 + index,
+                solar_system_id=AMAMAKE_SOLAR_SYSTEM_ID,
+                ship_type_id=17715,
+                attacker_ship_type_id=73790,
+                attacker_count=1,
+            )
+            payload["killmail"]["attackers"][0]["character_id"] = (
+                92000000 + index
+            )
+            self.assertTrue(maybe_notify_capital_kill(payload))
+
+        self.assertEqual(FeedCapitalAlert.objects.count(), 1)
+        self.assertEqual(FeedCapitalPing.objects.count(), 30)
+        mock_client.create_message.assert_called_once()
+        self.assertEqual(mock_client.update_message.call_count, 29)
+        alert = FeedCapitalAlert.objects.get()
+        self.assertEqual(len(alert.capitals[0]["characters"]), 30)
+        self.assertEqual(alert.composition["attacker_count"], 1)
 
     @patch("feed.helpers.capital_pings.DiscordClient")
     def test_maybe_notify_ignores_out_of_range(self, mock_client_cls):

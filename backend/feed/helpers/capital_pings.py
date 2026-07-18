@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from collections import Counter
 from datetime import timedelta
 from typing import Any
 
@@ -22,9 +23,14 @@ from feed.helpers.capital_ships import (
     filter_capital_ship_type_ids,
     killmail_involves_capital,
 )
-from feed.helpers.eve_names import resolve_character_names, resolve_type_names
+from feed.helpers.eve_names import (
+    resolve_character_names,
+    resolve_entity_names,
+    resolve_type_names,
+    without_capsule_ship_counts,
+)
 from feed.helpers.ingest import parse_r2z2_payload
-from feed.helpers.killmail_classify import is_npc_kill
+from feed.helpers.killmail_classify import attacker_pilot_count, is_npc_kill
 from feed.helpers.system_distance import light_years_between_systems
 from feed.models import FeedCapitalAlert, FeedCapitalPing
 
@@ -96,6 +102,77 @@ def _merge_character_lists(
             "name": entry.get("name") or f"Pilot {character_id}",
         }
     return list(merged.values())
+
+
+def _capital_character_ids(capitals: list[dict[str, Any]] | None) -> set[int]:
+    character_ids: set[int] = set()
+    for entry in capitals or []:
+        for character in entry.get("characters") or []:
+            character_id = character.get("character_id")
+            if character_id:
+                character_ids.add(int(character_id))
+    return character_ids
+
+
+def _system_entry(
+    *,
+    solar_system_id: int,
+    system_name: str,
+    distance_ly: float,
+) -> dict[str, Any]:
+    return {
+        "solar_system_id": int(solar_system_id),
+        "system_name": system_name,
+        "distance_ly": float(distance_ly),
+    }
+
+
+def _append_system(
+    systems: list[dict[str, Any]] | None,
+    *,
+    solar_system_id: int,
+    system_name: str,
+    distance_ly: float,
+) -> list[dict[str, Any]]:
+    """Extend the sighting chain; refresh tip if still in the same system."""
+    entry = _system_entry(
+        solar_system_id=solar_system_id,
+        system_name=system_name,
+        distance_ly=distance_ly,
+    )
+    chain = list(systems or [])
+    if chain and int(chain[-1]["solar_system_id"]) == int(solar_system_id):
+        chain[-1] = entry
+        return chain
+    chain.append(entry)
+    return chain
+
+
+def _systems_for_alert(alert: FeedCapitalAlert) -> list[dict[str, Any]]:
+    """Return stored chain, or a single-entry fallback for older alerts."""
+    if alert.systems:
+        return list(alert.systems)
+    return [
+        _system_entry(
+            solar_system_id=int(alert.solar_system_id),
+            system_name=alert.system_name,
+            distance_ly=float(alert.distance_ly),
+        )
+    ]
+
+
+def _format_system_line(
+    systems: list[dict[str, Any]] | None,
+    fallback_name: str,
+) -> str:
+    names = [
+        str(entry["system_name"])
+        for entry in systems or []
+        if entry.get("system_name")
+    ]
+    if not names:
+        return fallback_name
+    return " → ".join(names)
 
 
 def _capital_entries(raw: dict[str, Any]) -> list[dict[str, Any]]:
@@ -227,22 +304,181 @@ def _kill_entry(raw: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _attacker_rows_for_composition(
+    raw: dict[str, Any],
+) -> list[dict[str, Any]]:
+    return [
+        attacker
+        for attacker in raw.get("attackers") or []
+        if attacker.get("corporation_id") != _CONCORD_CORPORATION_ID
+    ]
+
+
+def _group_count_key(kind: str, entity_id: int) -> str:
+    return f"{kind}:{int(entity_id)}"
+
+
+def _parse_group_count_key(key: str) -> tuple[str, int] | None:
+    kind, _, raw_id = str(key).partition(":")
+    if kind not in ("alliance", "corporation") or not raw_id:
+        return None
+    try:
+        return kind, int(raw_id)
+    except (TypeError, ValueError):
+        return None
+
+
+def _composition_from_killmail(raw: dict[str, Any]) -> dict[str, Any]:
+    """Summarize attacking fleet size, main group, and top ship for one mail."""
+    attackers = _attacker_rows_for_composition(raw)
+    group_counts: Counter[str] = Counter()
+    ship_counts: Counter[str] = Counter()
+
+    for attacker in attackers:
+        alliance_id = attacker.get("alliance_id")
+        corporation_id = attacker.get("corporation_id")
+        if alliance_id:
+            group_counts[_group_count_key("alliance", int(alliance_id))] += 1
+        elif corporation_id:
+            group_counts[
+                _group_count_key("corporation", int(corporation_id))
+            ] += 1
+        ship_type_id = attacker.get("ship_type_id")
+        if ship_type_id:
+            ship_counts[str(int(ship_type_id))] += 1
+
+    return _finalize_composition(
+        attacker_count=attacker_pilot_count(raw),
+        group_counts=dict(group_counts),
+        ship_counts=dict(ship_counts),
+    )
+
+
+def _finalize_composition(
+    *,
+    attacker_count: int,
+    group_counts: dict[str, int],
+    ship_counts: dict[str, int],
+) -> dict[str, Any]:
+    composition: dict[str, Any] = {
+        "attacker_count": int(attacker_count),
+        "group_counts": {
+            key: int(count) for key, count in group_counts.items() if count
+        },
+        "ship_counts": {
+            key: int(count) for key, count in ship_counts.items() if count
+        },
+    }
+
+    if group_counts:
+        top_key, _ = max(group_counts.items(), key=lambda row: row[1])
+        parsed = _parse_group_count_key(top_key)
+        if parsed is not None:
+            kind, entity_id = parsed
+            names = resolve_entity_names([entity_id])
+            composition["main_group"] = {
+                "id": entity_id,
+                "name": names.get(entity_id, f"Entity {entity_id}"),
+                "kind": kind,
+            }
+
+    filtered_ships = without_capsule_ship_counts(ship_counts)
+    if filtered_ships:
+        top_type_key, top_count = max(
+            filtered_ships.items(), key=lambda row: row[1]
+        )
+        type_id = int(top_type_key)
+        ship_names = resolve_type_names([type_id])
+        composition["top_ship"] = {
+            "type_id": type_id,
+            "name": ship_names.get(type_id, f"Type {type_id}"),
+            "count": int(top_count),
+        }
+
+    return composition
+
+
+def _merge_counts(
+    existing: dict[str, int] | None,
+    incoming: dict[str, int] | None,
+) -> dict[str, int]:
+    merged: Counter[str] = Counter()
+    for key, count in dict(existing or {}).items():
+        merged[str(key)] += int(count)
+    for key, count in dict(incoming or {}).items():
+        merged[str(key)] += int(count)
+    return {key: value for key, value in merged.items() if value}
+
+
+def _merge_composition(
+    existing: dict[str, Any] | None,
+    incoming: dict[str, Any] | None,
+) -> dict[str, Any]:
+    if not existing:
+        return dict(incoming or {})
+    if not incoming:
+        return dict(existing)
+    return _finalize_composition(
+        attacker_count=max(
+            int(existing.get("attacker_count") or 0),
+            int(incoming.get("attacker_count") or 0),
+        ),
+        group_counts=_merge_counts(
+            existing.get("group_counts"),
+            incoming.get("group_counts"),
+        ),
+        ship_counts=_merge_counts(
+            existing.get("ship_counts"),
+            incoming.get("ship_counts"),
+        ),
+    )
+
+
+def _composition_description_lines(
+    composition: dict[str, Any] | None,
+) -> list[str]:
+    if not composition:
+        return []
+    lines: list[str] = []
+    attacker_count = int(composition.get("attacker_count") or 0)
+    if attacker_count:
+        lines.append(f"**Attackers:** {attacker_count}")
+    main_group = composition.get("main_group") or {}
+    main_group_name = main_group.get("name")
+    if main_group_name:
+        lines.append(f"**Main group:** {main_group_name}")
+    top_ship = composition.get("top_ship") or {}
+    top_ship_name = top_ship.get("name")
+    if top_ship_name:
+        top_count = int(top_ship.get("count") or 1)
+        top_label = (
+            f"{top_ship_name} ×{top_count}" if top_count > 1 else top_ship_name
+        )
+        lines.append(f"**Top attacking ship:** {top_label}")
+    return lines
+
+
 def build_capital_alert_payload(
     *,
     system_name: str,
     distance_ly: float,
     capitals: list[dict[str, Any]],
     kills: list[dict[str, Any]],
+    systems: list[dict[str, Any]] | None = None,
+    composition: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build Discord payload for a capital presence alert.
 
     The Kills line is only included once there is more than one killmail
     associated with the alert (follow-up activity edits the original message).
+    ``systems`` is an ordered sighting chain; when present it is shown as
+    ``Aset → Frerstorn → Amamake`` on the System line.
     """
     description_lines = [
-        f"**System:** {system_name}",
+        f"**System:** {_format_system_line(systems, system_name)}",
         f"**Distance from Amamake:** {distance_ly:.1f} LY",
     ]
+    description_lines.extend(_composition_description_lines(composition))
     capital_labels = _capital_labels(capitals)
     if capital_labels:
         description_lines.append(
@@ -282,27 +518,52 @@ def build_capital_ping_payload(
     distance_ly: float,
 ) -> dict[str, Any]:
     del zkb  # presence alerts do not use zkb totals
-    system_name = _system_label(int(raw["solar_system_id"]))
+    solar_system_id = int(raw["solar_system_id"])
+    system_name = _system_label(solar_system_id)
     capitals = _capital_entries(raw)
     kills = [_kill_entry(raw)]
+    systems = [
+        _system_entry(
+            solar_system_id=solar_system_id,
+            system_name=system_name,
+            distance_ly=distance_ly,
+        )
+    ]
     return build_capital_alert_payload(
         system_name=system_name,
         distance_ly=distance_ly,
         capitals=capitals,
         kills=kills,
+        systems=systems,
+        composition=_composition_from_killmail(raw),
     )
 
 
-def _active_alert(solar_system_id: int) -> FeedCapitalAlert | None:
+def _active_alert(
+    solar_system_id: int,
+    capital_character_ids: set[int],
+) -> FeedCapitalAlert | None:
+    """Find a live alert for this system, or the same capital pilot(s) nearby.
+
+    Same-system matches win so unrelated caps in one system still coalesce.
+    Otherwise match on overlapping capital character ids so a pilot crossing
+    systems edits the original message instead of spamming new ones.
+    """
     cutoff = timezone.now() - timedelta(seconds=CAPITAL_PING_SESSION_SECONDS)
-    return (
-        FeedCapitalAlert.objects.filter(
-            solar_system_id=solar_system_id,
-            last_activity_at__gte=cutoff,
+    candidates = list(
+        FeedCapitalAlert.objects.filter(last_activity_at__gte=cutoff).order_by(
+            "-last_activity_at"
         )
-        .order_by("-last_activity_at")
-        .first()
     )
+    for alert in candidates:
+        if int(alert.solar_system_id) == int(solar_system_id):
+            return alert
+    if not capital_character_ids:
+        return None
+    for alert in candidates:
+        if _capital_character_ids(alert.capitals) & capital_character_ids:
+            return alert
+    return None
 
 
 def _post_alert_messages(
@@ -381,13 +642,23 @@ def _create_capital_alert(
     distance_ly: float,
     capitals: list[dict[str, Any]],
     kill: dict[str, Any],
+    composition: dict[str, Any],
     discord_client: DiscordClient,
 ) -> FeedCapitalAlert | None:
+    systems = [
+        _system_entry(
+            solar_system_id=solar_system_id,
+            system_name=system_name,
+            distance_ly=distance_ly,
+        )
+    ]
     discord_payload = build_capital_alert_payload(
         system_name=system_name,
         distance_ly=distance_ly,
         capitals=capitals,
         kills=[kill],
+        systems=systems,
+        composition=composition,
     )
     discord_messages = _post_alert_messages(
         discord_payload, discord_client=discord_client
@@ -398,8 +669,10 @@ def _create_capital_alert(
         solar_system_id=solar_system_id,
         system_name=system_name,
         distance_ly=distance_ly,
+        systems=systems,
         capitals=capitals,
         kills=[kill],
+        composition=composition,
         discord_messages=discord_messages,
         last_activity_at=timezone.now(),
     )
@@ -408,14 +681,24 @@ def _create_capital_alert(
 def _update_capital_alert(
     alert: FeedCapitalAlert,
     *,
+    solar_system_id: int,
     system_name: str,
     distance_ly: float,
     capitals: list[dict[str, Any]],
     kill: dict[str, Any],
+    composition: dict[str, Any],
     discord_client: DiscordClient,
 ) -> FeedCapitalAlert:
     alert.capitals = _merge_capitals(alert.capitals or [], capitals)
     alert.kills = list(alert.kills or []) + [kill]
+    alert.composition = _merge_composition(alert.composition, composition)
+    alert.systems = _append_system(
+        _systems_for_alert(alert),
+        solar_system_id=solar_system_id,
+        system_name=system_name,
+        distance_ly=distance_ly,
+    )
+    alert.solar_system_id = solar_system_id
     alert.distance_ly = distance_ly
     alert.system_name = system_name
     alert.last_activity_at = timezone.now()
@@ -424,12 +707,17 @@ def _update_capital_alert(
         distance_ly=alert.distance_ly,
         capitals=alert.capitals,
         kills=alert.kills,
+        systems=alert.systems,
+        composition=alert.composition,
     )
     _edit_alert_messages(alert, discord_payload, discord_client=discord_client)
     alert.save(
         update_fields=[
+            "solar_system_id",
             "capitals",
             "kills",
+            "composition",
+            "systems",
             "distance_ly",
             "system_name",
             "last_activity_at",
@@ -505,8 +793,12 @@ def maybe_notify_capital_kill(
     client = discord_client or DiscordClient()
     capitals = _capital_entries(raw)
     kill = _kill_entry(raw)
+    composition = _composition_from_killmail(raw)
     system_name = _system_label(int(solar_system_id))
-    existing = _active_alert(int(solar_system_id))
+    existing = _active_alert(
+        int(solar_system_id),
+        _capital_character_ids(capitals),
+    )
     created = existing is None
 
     try:
@@ -517,6 +809,7 @@ def maybe_notify_capital_kill(
                 distance_ly=distance_ly,
                 capitals=capitals,
                 kill=kill,
+                composition=composition,
                 discord_client=client,
             )
             if alert is None:
@@ -524,10 +817,12 @@ def maybe_notify_capital_kill(
         else:
             alert = _update_capital_alert(
                 existing,
+                solar_system_id=int(solar_system_id),
                 system_name=system_name,
                 distance_ly=distance_ly,
                 capitals=capitals,
                 kill=kill,
+                composition=composition,
                 discord_client=client,
             )
     except Exception:

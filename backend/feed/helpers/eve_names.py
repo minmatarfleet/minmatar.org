@@ -64,6 +64,34 @@ def resolve_type_names(type_ids: Iterable[int]) -> dict[int, str]:
     return names
 
 
+def _resolve_universe_names_via_esi(
+    ids: set[int],
+    *,
+    missing_label: str = "Entity",
+) -> dict[int, str]:
+    if not ids:
+        return {}
+
+    client = EsiClient(None)
+    names: dict[int, str] = {}
+    for chunk in _chunks(sorted(ids), 1000):
+        response = client.resolve_universe_names(chunk)
+        if response.success():
+            for row in response.results():
+                names[row["id"]] = row["name"]
+    for entity_id in ids:
+        names.setdefault(entity_id, f"{missing_label} {entity_id}")
+    return names
+
+
+def resolve_entity_names(entity_ids: Iterable[int]) -> dict[int, str]:
+    """Resolve alliance/corporation/character ids to names via ESI."""
+    ids = {int(entity_id) for entity_id in entity_ids if entity_id}
+    if not ids:
+        return {}
+    return _resolve_universe_names_via_esi(ids)
+
+
 def resolve_character_names(character_ids: Iterable[int]) -> dict[int, str]:
     ids = {int(character_id) for character_id in character_ids if character_id}
     if not ids:
@@ -78,23 +106,9 @@ def resolve_character_names(character_ids: Iterable[int]) -> dict[int, str]:
     }
     missing = ids - names.keys()
     if missing:
-        names.update(_resolve_universe_names_via_esi(missing))
-    return names
-
-
-def _resolve_universe_names_via_esi(ids: set[int]) -> dict[int, str]:
-    if not ids:
-        return {}
-
-    client = EsiClient(None)
-    names: dict[int, str] = {}
-    for chunk in _chunks(sorted(ids), 1000):
-        response = client.resolve_universe_names(chunk)
-        if response.success():
-            for row in response.results():
-                names[row["id"]] = row["name"]
-    for entity_id in ids:
-        names.setdefault(entity_id, f"Pilot {entity_id}")
+        names.update(
+            _resolve_universe_names_via_esi(missing, missing_label="Pilot")
+        )
     return names
 
 
