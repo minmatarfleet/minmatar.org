@@ -88,7 +88,13 @@ class ExportSanitizationTestCase(TestCase):
 
 
 class ExportRoundTripTestCase(TestCase):
-    def test_export_clear_load_preserves_fittings_and_doctrines(self):
+    def test_clear_preserves_fittings(self):
+        fitting = EveFitting.objects.create(
+            name="Test Fit",
+            ship_id=587,
+            description="desc",
+            eft_format="[Rifter, Test Fit]\n\n",
+        )
         loc = EveLocation.objects.create(
             location_id=9001,
             location_name="Staging",
@@ -96,12 +102,6 @@ class ExportRoundTripTestCase(TestCase):
             solar_system_name="Test System",
             short_name="STG",
             staging_active=True,
-        )
-        fitting = EveFitting.objects.create(
-            name="Test Fit",
-            ship_id=587,
-            description="desc",
-            eft_format="[Rifter, Test Fit]\n\n",
         )
         doctrine = EveDoctrine.objects.create(
             name="Test Doctrine",
@@ -118,12 +118,15 @@ class ExportRoundTripTestCase(TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
             bundle = collect_reference_data("default")
-            write_fixture_files(bundle, tmp_path)
+            written = write_fixture_files(bundle, tmp_path)
+            self.assertNotIn("04_fittings.json", written)
+            self.assertIn("05_doctrines.json", written)
 
             clear_reference_data()
-            self.assertEqual(0, EveFitting.objects.count())
+            self.assertEqual(1, EveFitting.objects.count())
             self.assertEqual(0, EveDoctrine.objects.count())
 
+            # Doctrine fixture FKs still point at the preserved fitting.
             load_fixture_dir(tmp_path)
             self.assertEqual(1, EveFitting.objects.count())
             self.assertEqual(1, EveDoctrine.objects.count())
@@ -136,7 +139,7 @@ class ExportRoundTripTestCase(TestCase):
                 ).count(),
             )
 
-    def test_write_fixture_files_produces_valid_json(self):
+    def test_write_fixture_files_omits_fittings(self):
         EveFitting.objects.create(
             name="Solo Fit",
             ship_id=587,
@@ -147,9 +150,9 @@ class ExportRoundTripTestCase(TestCase):
             tmp_path = Path(tmp)
             bundle = collect_reference_data("default")
             written = write_fixture_files(bundle, tmp_path)
-            self.assertIn("04_fittings.json", written)
-            rows = json.loads(
-                (tmp_path / "04_fittings.json").read_text(encoding="utf-8")
+            self.assertNotIn("04_fittings.json", written)
+            self.assertNotIn("09_nvy_navy_destroyer_fittings.json", written)
+            doctrines = json.loads(
+                (tmp_path / "05_doctrines.json").read_text(encoding="utf-8")
             )
-            self.assertTrue(rows)
-            self.assertEqual("fittings.evefitting", rows[0]["model"])
+            self.assertIsInstance(doctrines, list)

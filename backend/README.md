@@ -132,7 +132,7 @@ coverage run -m manage test --testrunner="testrunner.Runner"  && cat testresults
 
 ### Reference fixtures
 
-Production-like reference data (tribes, fittings, doctrines, locations, market config) lives in committed JSON under `fixtures/data/`. Sensitive fields (Discord IDs, chiefs, memberships) are stripped at export time.
+Production-like reference data (tribes, doctrines, locations, market config) lives in committed JSON under `fixtures/data/`. Fittings are **not** included — fixture load must not wipe live fits. Sensitive fields (Discord IDs, chiefs, memberships) are stripped at export time.
 
 **Prerequisites:**
 
@@ -153,7 +153,7 @@ Use `--clear` to remove existing reference rows before loading. Use `--skip-eve-
 pipenv run python manage.py export_reference_fixtures
 ```
 
-`setup_test_data()` remains useful for test users and mock characters/fleets; reference fixtures replace its synthetic fittings/org config.
+`setup_test_data()` remains useful for test users and mock characters/fleets; reference fixtures cover org/market config (not fittings).
 
 ### Authorization (PilotFeature)
 

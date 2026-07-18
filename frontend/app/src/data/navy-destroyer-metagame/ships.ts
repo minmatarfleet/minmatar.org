@@ -25,16 +25,23 @@ export const catalystGuide: ShipGuide = {
             id: 'blaster',
             title: 'Blaster brawl',
             paragraphs: [
-                'Plate vs SAAR is the main fork. Plate brings buffer EHP but loses to cap warfare; SAAR plus nos is faster and more flexible but thinner. Reasonable upgrades: plate + SAAR with cap inject and small neut, fewer bulkheads for more damage, or Ion blasters.',
-                'Up close the blaster CatNI wins most scram fights: if you land scram and web on entry. It loses to anything that can kite or scram-kite you (AC Thrasher is the classic example).',
+                'Primary fit: plate + web + scram (example fit below). Plate brings buffer EHP but loses to cap warfare.',
+                'Up close the blaster CatNI wins most scram fights if you land scram and web on entry. It loses to anything that can kite or scram-kite you (AC Thrasher is the classic example).',
+            ],
+            bullets: [
+                'Refit — SAAR Web Scram: swap plate for SAAR + nos. Faster and more flexible, thinner buffer. Same role; pick for cap fights and active-tank preference.',
+                'Optional pocket upgrades (not separate fits): plate + SAAR with cap inject and small neut, fewer bulkheads for more damage, or Ion blasters.',
             ],
         },
         {
             id: 'rail',
             title: '10MN rail kiter',
             paragraphs: [
-                'Overprop lets you slide safely against scrams. You will not outrun everything, but you win many matchups outright: best for pilots who care more about kills than plex efficiency.',
-                'Web-kite at 10-15 km and watch capacitor. Meta 150 mm gauss for range; T2 125 mm rails for tracking and damage. Snake and Genos implants pay for themselves here.',
+                'Primary fit: overpropped 10MN with 150 mm gauss (example fit below). Overprop lets you slide safely against scrams. Best for pilots who care more about kills than plex efficiency.',
+                'Web-kite at 10-15 km and watch capacitor. Snake and Genos implants pay for themselves here.',
+            ],
+            bullets: [
+                'Refit — 10mn 125mm: T2 125 mm rails + disruptor. Harder to catch, lower raw DPS. Same kite role; use when you want tracking and escape over alpha.',
             ],
         },
     ],
@@ -100,36 +107,34 @@ export const coercerGuide: ShipGuide = {
             id: 'dual-neut',
             title: 'Dual-neut brawl',
             paragraphs: [
-                'The main brawl fork: drop a gun for double neut or not. Double neut trades DPS and projection for cap warfare: with hull bonus, two neuts drain like three unbonused smalls and cap out most destroyers in a couple of heated cycles.',
+                'Primary fit: dual neuts + MWD (example fit below). Double neut trades a gun for cap warfare: with hull bonus, two neuts drain like three unbonused smalls and cap out most destroyers in a couple of heated cycles.',
             ],
             bullets: [
                 'Do not cap yourself: turn off one neut after 2-3 heated cycles.',
                 'Neut range is short: hug at 2-3 km. If they escape neut range and you are on Scorch, you are probably losing the DPS race.',
-                'MWD + undersized pulses is cap-tight; Scorch no longer covers point range: kiters hurt you.',
-                'No-prop + locus pushes Scorch to point range: stat-checks arty TFI and kiting frigates, but kiters slide on you freely.',
+                'Refit — Dual Neuts No Prop: drop prop for web + locus. Scorch reaches point range; kiters slide on you freely. Use when you expect a straight brawl, not a chase.',
             ],
         },
         {
             id: 'brawl-variants',
-            title: 'Other brawl lines',
+            title: 'Pulse scram brawl',
             paragraphs: [
-                'Single-neut or no-neut brawlers have poor range control and get stat-checked by blaster brawlers without the neut trump card. Scorch projection still makes them harder to kite at point than other brawl destroyers. Keep at least one neut: otherwise an AB + web frigate orbits you to death.',
+                'Primary fit: MWD scram brawl with a full pulse rack (example fit below). Pure DPS without the neut trump card: Scorch projection still helps vs kiters at point, but blaster brawlers can win the straight fight.',
+                'Keep at least one neut on any Coercer brawl you invent yourself: otherwise an AB + web frigate orbits you to death.',
+            ],
+            bullets: [
+                'Refit — AB Scram Brawl: afterburner instead of MWD for tighter range control and no MWD sig bloom. Same brawl role.',
             ],
         },
         {
             id: 'kiting',
-            title: 'Kiting (pulse, beam, locus)',
+            title: 'Kiting (beam primary)',
             paragraphs: [
-                'Pulse kiter: technically weaker at point than beam but Conflag DPS is real. SAAR vs multispectrum coating; bulkhead vs third locus vs polycarbon are the usual rig forks.',
-                'Locus pulse: do not punch into a plex to brawl: sit inside and delete entrants at point range.',
-                'Beam kiter: better at kiting ranges despite tracking. X-Ray (~20 km), Gamma (~17 km), Multifreq (~13 km) DPS bands. CPU-tight: storyline point, Geno pod, rolled heatsinks, event boosters all help.',
+                'Primary fit: beam kiter with tracking enhancer (example fit below). Better at kiting ranges despite tracking. X-Ray (~20 km), Gamma (~17 km), Multifreq (~13 km) DPS bands. CPU-tight: storyline point, Geno pod, rolled heatsinks, event boosters all help.',
             ],
-        },
-        {
-            id: 'meme',
-            title: 'Double-web meme',
-            paragraphs: [
-                'Two webs, no point/scram. Hold 8-9 km off the beacon for tracking. No tracking bonus: if they get under your guns you are in trouble.',
+            bullets: [
+                'Refit — Locus Pulse: pulse guns + locus rigs. Do not punch into a plex to brawl: sit inside and delete entrants at point range.',
+                'Refit — Web Beams: dual web, no point/scram. Hold 8-9 km off the beacon for tracking. Meme build: if they get under your guns you are in trouble.',
             ],
         },
         {
@@ -204,26 +209,24 @@ export const thrasherGuide: ShipGuide = {
             id: '280-kite',
             title: '280 mm artillery kiter',
             paragraphs: [
-                'The default TFI. 280s are hard to fit but projection wins kiting matchups. You lose to 10MN rail CatNI and beam/pulse CoercerNI on chart: but you are MUCH faster. Disengage losing fights; slide on brawlers with a reasonable (not guaranteed) scram escape.',
+                'Primary fit: Arty TFI (example fit below). The default TFI. 280s are hard to fit but projection wins kiting matchups. You lose to 10MN rail CatNI and beam/pulse CoercerNI on chart: but you are MUCH faster. Disengage losing fights; slide on brawlers with a reasonable (not guaranteed) scram escape.',
             ],
             bullets: [
                 'PG problem: 3 lows + 2 mids + compact MWD needs 0.9 PG you do not have: ACR rig or overdrive/nano in lows.',
                 'TD instead of web helps vs CoercerNI and CatNI (Genos + Pyfa). Sig bonus helps orbit + web.',
+                'Refit — 280mm ACR: meta MWD/gyro/rig polish on the same kite frame. Prefer this once you are comfortable with 280s.',
+                'Refit — 280 Overdrive: simpler/faster entry 280. More speed, less alpha than ACR.',
+                'Refit — 280 Double Web: AB + dual web meme. Punches kiters who assume you are a 5MN kite; no point means they can warp.',
             ],
         },
         {
             id: 'ac-brawl',
             title: 'Autocannon brawl',
             paragraphs: [
-                'Shield AC: higher DPS, common, often worse: loses range control vs CatNI and CormNI; AB + web frigates orbit you unless you run a small neut.',
-                'Armor AC: scram-kite vs blaster-heavy hulls. Both variants: open by kiting, commit to brawl range only when ready.',
+                'Primary fit: armor AC TFI (example fit below). Scram-kite vs blaster-heavy hulls; open by kiting, commit to brawl range only when ready.',
             ],
-        },
-        {
-            id: 'meme',
-            title: 'Dual-web, no point',
-            paragraphs: [
-                'Third mid fits AB: punch most brawlers. Stat-checks CatNI and CormNI variants; loses to most CoercerNI except dual-neut. No point: they warp. Keep at range 8500, F1, chill.',
+            bullets: [
+                'Refit — Shield ACs: MSE + neut instead of plate/rocket. More speed and buffer mobility; loses some EHP and range control vs CatNI/CormNI. AB + web frigates hurt unless the neut lands.',
             ],
         },
     ],
@@ -286,7 +289,10 @@ export const cormorantGuide: ShipGuide = {
             id: 'dual-masb',
             title: 'Dual MASB brawl',
             paragraphs: [
-                'Full compact + neutrons or full T2 + ions. Standard blue pill (or improved) + hardshell. MG-Crystal pod is cost-effective; skip abyssals: tight fit, MASBs are hard to roll.',
+                'Primary fit: dual MASB neutrons (example fit below). Standard blue pill (or improved) + hardshell. MG-Crystal pod is cost-effective; skip abyssals: tight fit, MASBs are hard to roll.',
+            ],
+            bullets: [
+                'Refit — Dual MASB Ions: same burst-shield brawl with ions for slightly more reach. Pick neutrons or ions to taste; not a different role.',
             ],
         },
         {
