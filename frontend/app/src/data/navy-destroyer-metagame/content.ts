@@ -48,35 +48,34 @@ export const guideHistory = [
 ] as const satisfies readonly import('./types').GuideHistoryEntry[]
 
 export const introduction = [
-    'After Uprising, faction warfare shifted from frigates to destroyers. Destroyers can run every plex size except Scout, which made them the warzone’s best ISK printer and the ship class everyone else had to answer. Navy destroyers raised the stakes further: more EHP, better projection, and more damage than T1 hulls, at the cost of tracking and price.',
-    'Two years on, they are still the default tool for FW pilots and the most common ship on d-scan when you are plexing or hunting a fight. Furl0w’s First Edition (YC 126) covers the fits and 1v1 matchups below.',
-    'What follows covers the archetypes you will actually see in space, their 1v1 matchups with and without plex high ground, and practical notes on when to commit, when to bail, and where a fit can be upgraded without losing its identity.',
+    'After the <a href="https://www.eveonline.com/news/view/uprising-expansion-now-live">Uprising</a> expansion, the faction warfare meta shifted entirely to destroyers. Scout complexes became largely unimportant, and a destroyer could run nearly every complex, making them the warzone\'s best ISK printer. Navy destroyers raised the stakes even further: more EHP, better projection, and more damage than T1 hulls. They could even take on cruisers.',
+    'Two years later, they are still the default tool for faction warfare pilots, and the most common ship on directional scanners when you are undocked.',
+    'What follows is a living guide that covers the archetypes you\'ll actually see in space, and all of their matchups. It includes details on the complex high ground, practical notes on when to commit, when to bail, and where a fit can be adjusted.',
 ]
 
 export const considerations = [
-    'The navy destroyer metagame looks different from the frigate metagame described in the frigate yearbook. Scram-kiting matters less: most destroyers, even blaster hulls, can scram-kite when they want to, thanks to the hull’s built-in projection bonus. What you get instead is closer to a binary chart: kiters with high ground beat brawlers, and brawlers with high ground beat kiters.',
-    'Destroyers also run several equally viable archetypes. You cannot read a Comet and know the fit; with a destroyer on d-scan you often cannot tell kite from brawl at all. You lean on local knowledge, scouting, and sometimes assuming the worst before you slide.',
-    'One surprise for frigate pilots: most brawling fits here use a 5MN microwarpdrive, not an afterburner. That trades some range control against other AB brawlers for advantages that tend to win out in FW:',
+    'The destroyer metagame looks quite different from the frigate metagame. Scram-kiting matters less: most destroyers, even blaster hulls, can scram-kite when they want to, thanks to the hull\'s built-in projection bonus. What you get instead is closer to a binary chart: kiters with high ground beat brawlers, and brawlers with high ground beat kiters.',
+    'Destroyers also run several equally viable archetypes. With a destroyer on d-scan, you often cannot tell whether it\'s kite or brawl. You lean on local knowledge, scouting, and sometimes assuming the worst before you slide.',
+    'One surprise for frigate pilots: most brawling fits use microwarpdrives, not an afterburner. That trades some range control against other AB brawlers for advantages that tend to win out:',
 ]
 
 export const considerationBullets = [
     'AB destroyers are slow, and destroyer lock speed is slower than frigate lock speed. A microwarpdrive helps you catch kiters sliding into a plex.',
-    'The same speed lets you reposition inside a plex when someone appears on d-scan while you are killing the NPC 10 km off the beacon.',
+    'The speed lets you reposition inside a plex when someone appears on d-scan while you are killing the NPC 10 km off the beacon.',
     'Overpropped 10MN destroyers are real. Against a 10MN + point fit, running a microwarpdrive keeps you in the range-control fight.',
-    'Post-Uprising FW is group-heavy, and group play expects a microwarpdrive. You do not want to be 60 km behind the fight because you fitted an AB.',
+    'Faction warfare is group-heavy, and group play expects a microwarpdrive. You do not want to be 60 km behind the fight.',
     'The more brawlers fit a microwarpdrive, the less you are punished for fitting one yourself. That becomes a self-reinforcing loop.',
 ]
 
 export const disclaimers = [
-    'This guide is written for soloing. Many of these fits are wrong for structured gang work; there are better options when you are flying with others. The example fits are not meant to be the final word. Module tier, rig choice, and bling all matter, but each one is a solid representation of its archetype and will perform as described.',
-    'Matchup notes describe the optimal line when nothing else is in play. If you know your opponent’s fit, if you have fought the same pilot twice in a row, or if local conditions differ, change the plan. Being predictable is sometimes worse than being slightly suboptimal.',
-    'The Talwar Fleet Issue section covers a ship released after the First Edition. Its matchups are community early reads; entries marked ? are still being tested as the meta settles.',
+    'The guide is primarily written for solo pilots. Many of these fits are wrong for structured gang work; there are better options when you are flying with others. The example fittings are not meant to be the final word. Module tier, rig choice, and bling all matter, but each one is a solid representation of its archetype and will perform as described. Common variants (refits) will be called out, as well.',
+    'Matchup notes describe the optimal line when nothing else is in play. If you know your opponent\'s fit, if you have fought the same pilot twice in a row, or if local conditions differ, change the plan. Being predictable is sometimes worse than being slightly suboptimal.',
 ]
 
 export const metagameSummary = [
     {
         ship: 'Catalyst Navy Issue',
-        text: 'The most flexible and widely favoured destroyer in both warzones. Its two main lines (blaster brawl and 10MN rail) cover each other’s weaknesses: you do not want to be on top of the blaster fit, but you do want to hug the kiter, so even with high ground the defender faces awkward choices. Probably the best slide-in hull in the class.',
+        text: 'The most flexible and widely favoured destroyer in both warzones. Its two main lines (Blaster Catalyst Navy Issue and 10mn Catalyst Navy Issue) cover each other’s weaknesses: you do not want to be on top of the blaster fit, but you do want to hug the kiter, so even with high ground the defender faces awkward choices. Probably the best slide-in hull in the class.',
     },
     {
         ship: 'Coercer Navy Issue',
@@ -92,7 +91,7 @@ export const metagameSummary = [
     },
     {
         ship: 'Talwar Fleet Issue',
-        text: 'The newest navy destroyer (Cradle of War, YC 128). Early solo play centres on a 10MN rocket brawler that beats many classic MWD + scram + web lines; fleet light-missile fits look weak so far. Meta is still forming.',
+        text: 'The newest navy destroyer (Cradle of War, YC 128). Early solo play centres on the 10mn Talwar Fleet Issue that beats many classic MWD + scram + web lines; fleet light-missile fits look weak so far. Meta is still forming.',
     },
 ]
 
@@ -111,11 +110,10 @@ export const glossary: GlossaryEntry[] = [
 ]
 
 export const guideSections = [
-    { id: 'credits', title: 'Credits', shortTitle: 'Credits' },
-    { id: 'history', title: 'History', shortTitle: 'History' },
     { id: 'introduction', title: 'Introduction' },
-    { id: 'considerations', title: 'Metagame Considerations', shortTitle: 'Considerations' },
-    { id: 'disclaimers', title: 'Disclaimers & Summary', shortTitle: 'Summary' },
+    { id: 'considerations', title: 'Considerations of the Metagame', shortTitle: 'Considerations' },
+    { id: 'disclaimers', title: 'Disclaimers', shortTitle: 'Disclaimers' },
+    { id: 'summary', title: 'Summary of the Metagame', shortTitle: 'Summary' },
     { id: 'matchups', title: 'Matchup Charts', shortTitle: 'Charts' },
     { id: 'catalyst', title: 'Catalyst Navy Issue' },
     { id: 'coercer', title: 'Coercer Navy Issue' },
@@ -123,4 +121,5 @@ export const guideSections = [
     { id: 'cormorant', title: 'Cormorant Navy Issue' },
     { id: 'talwar', title: 'Talwar Fleet Issue' },
     { id: 'glossary', title: 'Glossary', shortTitle: 'Glossary' },
+    { id: 'credits', title: 'Credits', shortTitle: 'Credits' },
 ]

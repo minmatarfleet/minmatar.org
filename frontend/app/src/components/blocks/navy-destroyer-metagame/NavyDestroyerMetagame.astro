@@ -15,7 +15,6 @@ import {
     shipGuides,
 } from '@/data/navy-destroyer-metagame'
 
-import NavyDestroyerMetagameHistoryTimeline from '@components/blocks/navy-destroyer-metagame/NavyDestroyerMetagameHistoryTimeline.astro'
 import NavyDestroyerMetagameMatchupChart from '@components/blocks/navy-destroyer-metagame/NavyDestroyerMetagameMatchupChart.astro'
 import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-metagame/NavyDestroyerMetagameShipSection.astro'
 ---
@@ -43,67 +42,17 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
         </nav>
 
         <div class="ndm-guide__content">
-            <section id="credits" data-section-id="credits" class="ndm-section ndm-panel" aria-labelledby="ndm-credits-title">
-                <div class="ndm-credits">
-                    <h2 id="ndm-credits-title" class="ndm-section__title">Credits</h2>
-                    <p class="ndm-credits__provenance">
-                        The original{' '}
-                        <a
-                            href={guideMeta.firstEditionUrl}
-                            target="_blank"
-                            rel="nofollow noopener noreferrer"
-                            class="ndm-guide__link"
-                        >
-                            {credits.firstEditionLabel}
-                        </a>{' '}
-                        was written by {credits.firstEditionAuthor}.{' '}
-                        <a
-                            href={guideMeta.firstEditionRedditUrl}
-                            target="_blank"
-                            rel="nofollow noopener noreferrer"
-                            class="ndm-guide__link"
-                        >
-                            Reddit announcement
-                        </a>
-                    </p>
-                    <p class="ndm-credits__thanks">{credits.thanks}</p>
-
-                    <div class="ndm-credits__quotes" aria-label="Reader testimonials from the First Edition">
-                        {
-                            credits.quotes.map((quote) => (
-                                <blockquote class="ndm-credits__quote">
-                                    <p>"{quote.text}"</p>
-                                    <footer>- {quote.attribution}</footer>
-                                </blockquote>
-                            ))
-                        }
-                    </div>
-
-                    <p class="ndm-credits__publisher">
-                        {guideMeta.publisher}<br />
-                        {guideMeta.location}<br />
-                        {guideMeta.originalEdition}<br />
-                        {guideMeta.edition} · {guideMeta.yc}
-                    </p>
-                </div>
-            </section>
-
-            <section id="history" data-section-id="history" class="ndm-section ndm-panel" aria-labelledby="ndm-history-title">
-                <h2 id="ndm-history-title" class="ndm-section__title">History</h2>
-                <NavyDestroyerMetagameHistoryTimeline entries={guideHistory} />
-            </section>
-
             <section id="introduction" data-section-id="introduction" class="ndm-section ndm-panel" aria-labelledby="ndm-intro-title">
                 <h2 id="ndm-intro-title" class="ndm-section__title">Introduction</h2>
                 {
                     introduction.map((paragraph) => (
-                        <p class="ndm-section__paragraph">{paragraph}</p>
+                        <p class="ndm-section__paragraph" set:html={paragraph} />
                     ))
                 }
             </section>
 
             <section id="considerations" data-section-id="considerations" class="ndm-section ndm-panel" aria-labelledby="ndm-considerations-title">
-                <h2 id="ndm-considerations-title" class="ndm-section__title">Some considerations of the Metagame</h2>
+                <h2 id="ndm-considerations-title" class="ndm-section__title">Considerations of the Metagame</h2>
                 {
                     considerations.map((paragraph) => (
                         <p class="ndm-section__paragraph">{paragraph}</p>
@@ -125,13 +74,15 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
                         <p class="ndm-section__paragraph">{paragraph}</p>
                     ))
                 }
+            </section>
 
-                <h3 class="ndm-section__subtitle">Summary of the Metagame</h3>
+            <section id="summary" data-section-id="summary" class="ndm-section ndm-panel" aria-labelledby="ndm-summary-title">
+                <h2 id="ndm-summary-title" class="ndm-section__title">Summary of the Metagame</h2>
                 <div class="ndm-summary-grid">
                     {
                         metagameSummary.map((entry) => (
                             <article class="ndm-summary-card">
-                                <h4 class="ndm-summary-card__ship">{entry.ship}</h4>
+                                <h3 class="ndm-summary-card__ship">{entry.ship}</h3>
                                 <p class="ndm-summary-card__text">{entry.text}</p>
                             </article>
                         ))
@@ -187,23 +138,96 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
                         ))
                     }
                 </dl>
-
             </section>
 
-            <footer class="ndm-guide__footer ndm-panel">
-                <p>{guideMeta.edition} · {guideMeta.yc}</p>
-                <p>
-                    <a
-                        href={guideMeta.firstEditionUrl}
-                        target="_blank"
-                        rel="nofollow noopener noreferrer"
-                        class="ndm-guide__link"
-                    >
-                        First Edition · {credits.firstEditionAuthor} · YC 126
-                    </a>
-                </p>
-                <p>{guideMeta.publisher}</p>
-            </footer>
+            <section id="credits" data-section-id="credits" class="ndm-section ndm-panel" aria-labelledby="ndm-credits-title">
+                <div class="ndm-credits">
+                    <h2 id="ndm-credits-title" class="ndm-section__title">Credits</h2>
+                    <p class="ndm-credits__provenance">
+                        The original{' '}
+                        <a
+                            href={guideMeta.firstEditionUrl}
+                            target="_blank"
+                            rel="nofollow noopener noreferrer"
+                            class="ndm-guide__link"
+                        >
+                            {credits.firstEditionLabel}
+                        </a>{' '}
+                        was written by {credits.firstEditionAuthor}.{' '}
+                        <a
+                            href={guideMeta.firstEditionRedditUrl}
+                            target="_blank"
+                            rel="nofollow noopener noreferrer"
+                            class="ndm-guide__link"
+                        >
+                            Reddit announcement
+                        </a>
+                    </p>
+                    <p class="ndm-credits__thanks">{credits.thanks}</p>
+
+                    <div class="ndm-credits__quotes" aria-label="Reader testimonials from the First Edition">
+                        {
+                            credits.quotes.map((quote) => (
+                                <blockquote class="ndm-credits__quote">
+                                    <p>"{quote.text}"</p>
+                                    <footer>- {quote.attribution}</footer>
+                                </blockquote>
+                            ))
+                        }
+                    </div>
+
+                    <h3 class="ndm-section__subtitle">History</h3>
+                    <div class="ndm-history-table-wrap">
+                        <table class="ndm-history-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Date</th>
+                                    <th scope="col">Edition</th>
+                                    <th scope="col">Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {
+                                    guideHistory.map((entry) => (
+                                        <tr>
+                                            <td>
+                                                <time>{entry.dateLabel}</time>
+                                                <span class="ndm-history-table__yc">{entry.yc}</span>
+                                            </td>
+                                            <td>
+                                                {entry.title}
+                                                {
+                                                    entry.link && (
+                                                        <>
+                                                            {' · '}
+                                                            <a
+                                                                href={entry.link.href}
+                                                                target="_blank"
+                                                                rel="nofollow noopener noreferrer"
+                                                                class="ndm-guide__link"
+                                                            >
+                                                                {entry.link.label}
+                                                            </a>
+                                                        </>
+                                                    )
+                                                }
+                                            </td>
+                                            <td>{entry.description}</td>
+                                        </tr>
+                                    ))
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <p class="ndm-credits__publisher">
+                        {guideMeta.publisher}<br />
+                        {guideMeta.location}<br />
+                        {guideMeta.originalEdition}<br />
+                        {guideMeta.edition} · {guideMeta.yc}
+                    </p>
+                </div>
+            </section>
         </div>
     </div>
 </div>
@@ -373,6 +397,12 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
         max-width: var(--max-text-width);
     }
 
+    .ndm-section__paragraph :global(a) {
+        color: var(--highlight);
+        text-decoration: underline;
+        text-underline-offset: 0.15em;
+    }
+
     .ndm-section__list {
         margin: 0;
         padding-left: 1.25rem;
@@ -451,12 +481,54 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
     }
 
     .ndm-credits__publisher {
-        margin: 0;
+        margin: var(--space-l) 0 0;
         font-size: var(--step--1);
         letter-spacing: 0.06em;
         text-transform: uppercase;
         color: var(--text-color-secondary, var(--faded));
         line-height: 1.6;
+    }
+
+    .ndm-history-table-wrap {
+        overflow-x: auto;
+        margin: 0 0 var(--space-l);
+    }
+
+    .ndm-history-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: var(--step--1);
+        line-height: 1.5;
+
+        th,
+        td {
+            padding: var(--space-xs) var(--space-s);
+            text-align: left;
+            vertical-align: top;
+            border-bottom: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent);
+        }
+
+        th {
+            font-family: var(--ndm-display-font);
+            font-size: var(--step--2);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-color-secondary, var(--faded));
+            white-space: nowrap;
+        }
+
+        td:first-child {
+            white-space: nowrap;
+        }
+    }
+
+    .ndm-history-table__yc {
+        display: block;
+        margin-top: var(--space-3xs);
+        font-size: var(--step--2);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--fleet-red);
     }
 
     .ndm-guide__link {
@@ -593,22 +665,6 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
     @media (max-width: 40rem) {
         .ndm-glossary {
             grid-template-columns: 1fr;
-        }
-    }
-
-    .ndm-guide__footer {
-        text-align: center;
-        font-size: var(--step--1);
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--text-color-secondary, var(--faded));
-
-        p {
-            margin: 0 0 var(--space-2xs);
-        }
-
-        p:last-child {
-            margin-bottom: 0;
         }
     }
 </style>
