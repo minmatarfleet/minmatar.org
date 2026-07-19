@@ -46,62 +46,70 @@ const fieldName = (key: string) =>
         x-bind:value="user_timezone"
     />
 
-    <aside
-        class="timezone-detected"
-        x-show="userTimezoneLabel()"
-        x-cloak
-        aria-live="polite"
-        aria-labelledby={`${id_prefix}-user-timezone`}
-    >
-        <p
-            class="timezone-detected-label"
-            id={`${id_prefix}-user-timezone`}
-            x-text="userTimezoneLabel()"
-        ></p>
-    </aside>
-
     <Flexblock>
-        <h4 id={`${id_prefix}-activity-period-label`} class="[ text-foreground ]">
-            {t('l3arn_application_activity_period')}
-        </h4>
-        
-        <Flexblock
-            class="[ w-full ]"
-            gap="var(--space-xs)"
-            role="radiogroup"
-            aria-labelledby={`${id_prefix}-activity-period-label`}
-        >
-            {L3ARN_APPLICATION_ACTIVITY_PERIODS.map((period) => (
-                <RadioCheckInput
-                    id={`${id_prefix}-activity-period-${period}`}
-                    type="radio"
-                    name={fieldName('activity_period') ?? `${id_prefix}_activity_period`}
-                    value={period}
-                    x-model="activity_period"
-                    required
-                    x-on:change="updateApplicationStatus()"
-                >
-                    <Markdown markdown={t(`l3arn_application_activity_period_${period}` as any)} inline={true} inline_element='span' />
-                </RadioCheckInput>
-            ))}
-        </Flexblock>
-    </Flexblock>
+        <Flexblock>
+            <label id={`${id_prefix}-activity-period-label`}>
+                {t('l3arn_application_activity_period')}
+            </label>
 
-    <aside
-        class="timezone-result"
-        x-show="timezone"
-        x-cloak
-        aria-live="polite"
-        aria-labelledby={`${id_prefix}-timezone-bucket`}
-    >
-        <p
-            class="timezone-bucket"
-            id={`${id_prefix}-timezone-bucket`}
-            x-text="timezoneBucketLabel()"
-        ></p>
-        <small class="form-subtext form-subtext--compact timezone-eve-window" x-text="timezoneEveWindow()"></small>
-        <small class="form-subtext form-subtext--compact timezone-hint">{t('l3arn_application_timezone_bucket_hint')}</small>
-    </aside>
+            <aside
+                class="timezone-detected"
+                x-show="userTimezoneLabel()"
+                x-cloak
+                aria-live="polite"
+                aria-labelledby={`${id_prefix}-user-timezone`}
+            >
+                <small
+                    id={`${id_prefix}-user-timezone`}
+                    x-text={`\`${t('your_current_timezone')} \${userTimezoneLabel()}\``}
+                ></small>
+            </aside>
+            
+            <Flexblock
+                class="[ w-full ]"
+                gap="var(--space-xs)"
+                role="radiogroup"
+                aria-labelledby={`${id_prefix}-activity-period-label`}
+            >
+                {L3ARN_APPLICATION_ACTIVITY_PERIODS.map((period) => (
+                    <RadioCheckInput
+                        id={`${id_prefix}-activity-period-${period}`}
+                        type="radio"
+                        name={fieldName('activity_period') ?? `${id_prefix}_activity_period`}
+                        value={period}
+                        x-model="activity_period"
+                        required
+                        x-on:change="updateApplicationStatus()"
+                    >
+                        <Markdown markdown={t(`l3arn_application_activity_period_${period}` as any)} inline={true} inline_element='span' />
+                    </RadioCheckInput>
+                ))}
+            </Flexblock>
+        </Flexblock>
+
+        <hr
+            class="[ border-bottom ]"
+            x-show="timezone"
+            x-cloak
+        />
+
+        <aside
+            x-show="timezone"
+            x-cloak
+            aria-live="polite"
+            aria-labelledby={`${id_prefix}-timezone-bucket`}
+        >
+            <Flexblock gap='var(--space-2xs)'>
+                <h4
+                    class="timezone-bucket"
+                    id={`${id_prefix}-timezone-bucket`}
+                    x-text="timezoneBucketLabel()"
+                />
+                <span class="timezone-eve-window" x-text="timezoneEveWindow()" />
+                <small class="timezone-hint">{t('l3arn_application_timezone_bucket_hint')}</small>
+            </Flexblock>
+        </aside>
+    </Flexblock>
 </Flexblock>
 
 <style lang="scss">
