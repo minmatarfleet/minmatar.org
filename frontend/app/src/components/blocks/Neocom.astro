@@ -113,7 +113,7 @@ const page = Astro.url.pathname
                         </NeocomButton>
                     }
                     <NeocomButton
-                        active={page.startsWith(translatePath('/market'))}
+                        active={page.startsWith(translatePath('/market')) || page.startsWith(translatePath('/industry'))}
                         title='neocom.market'
                         description='market.description'
                         href={translatePath('/market/')}
