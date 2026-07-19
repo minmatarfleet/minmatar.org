@@ -42,12 +42,18 @@ const guideModules: Record<string, GuideModule> = {
 
 export const guideCategories = ["Faction Warfare","PVP","PVE","Utility"] as const
 
+/** Preferred subsection order within a category (index page). */
+export const guideSectionsByCategory: Partial<Record<(typeof guideCategories)[number], readonly string[]>> = {
+    "Faction Warfare": ["Mechanics", "Ships"],
+}
+
 export const guides: GuideMeta[] = [
     {
         slug: "faction-warfare-basics",
         title: "Faction Warfare Basics",
         excerpt: "An overview of the basic mechanics of faction warfare in EVE Online.",
         category: "Faction Warfare",
+        section: "Mechanics",
         author: "BearThatCares",
         authors: [{
             name: "BearThatCares",
@@ -60,6 +66,7 @@ export const guides: GuideMeta[] = [
         title: "Faction Warfare Complexes",
         excerpt: "An in-depth breakdown for capturing complexes in faction warfare space",
         category: "Faction Warfare",
+        section: "Mechanics",
         author: "BearThatCares",
         authors: [{
             name: "BearThatCares",
@@ -72,6 +79,7 @@ export const guides: GuideMeta[] = [
         title: "Faction Warfare Advantage",
         excerpt: "An in-depth breakdown for advantage in faction warfare.",
         category: "Faction Warfare",
+        section: "Mechanics",
         author: "A'Songala",
         authors: [{
             name: "A'Songala",
@@ -80,10 +88,25 @@ export const guides: GuideMeta[] = [
         }],
     },
     {
+        slug: "faction-warfare-cruiser-guide",
+        title: "Faction Warfare Cruiser Guide",
+        excerpt: "Fittings, roles, and 1v1 matchups for cruisers in faction warfare.",
+        category: "Faction Warfare",
+        section: "Ships",
+        author: "Dato Koppla",
+        authors: [{
+            name: "Dato Koppla",
+            id: 1761145024,
+            entity: 'character',
+        }],
+        path: "/guides/faction-warfare-cruiser-guide/",
+    },
+    {
         slug: "navy-destroyer-metagame",
         title: "Faction Warfare Destroyer Guide",
         excerpt: "Fittings, roles, and 1v1 matchups for destroyers in faction warfare.",
         category: "Faction Warfare",
+        section: "Ships",
         author: "Furl0w",
         authors: [{
             name: "Furl0w",
@@ -97,6 +120,7 @@ export const guides: GuideMeta[] = [
         title: "Faction Warfare Frigate Guide",
         excerpt: "Fittings, roles, and 1v1 matchups for frigates in faction warfare.",
         category: "Faction Warfare",
+        section: "Ships",
         author: "BearThatCares",
         authors: [{
             name: "BearThatCares",
@@ -215,10 +239,6 @@ export const guides: GuideMeta[] = [
             name: "Bobb Bobbington",
             id: 93613873,
             entity: 'character',
-        }, {
-            name: "Silvatek",
-            id: 2119722788,
-            entity: 'character',
         }],
     },
     {
@@ -252,4 +272,37 @@ export function getGuidesByCategory(): Record<string, GuideMeta[]> {
         grouped[category] = getIndexedGuides().filter((guide) => guide.category === category)
     }
     return grouped
+}
+
+export type GuideCategorySection = {
+    label: string | null
+    guides: GuideMeta[]
+}
+
+/** Split a category's guides into ordered subsections (Mechanics / Ships / …). */
+export function getGuideSectionsForCategory(
+    category: (typeof guideCategories)[number],
+    categoryGuides: GuideMeta[],
+): GuideCategorySection[] {
+    const preferred = guideSectionsByCategory[category]
+    if (!preferred?.length) {
+        return [{ label: null, guides: categoryGuides }]
+    }
+
+    const used = new Set<string>()
+    const sections: GuideCategorySection[] = []
+
+    for (const label of preferred) {
+        const guides = categoryGuides.filter((guide) => guide.section === label)
+        if (!guides.length) continue
+        for (const guide of guides) used.add(guide.slug)
+        sections.push({ label, guides })
+    }
+
+    const remainder = categoryGuides.filter((guide) => !used.has(guide.slug))
+    if (remainder.length) {
+        sections.push({ label: null, guides: remainder })
+    }
+
+    return sections.length ? sections : [{ label: null, guides: categoryGuides }]
 }

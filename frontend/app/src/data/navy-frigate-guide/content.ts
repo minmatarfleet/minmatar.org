@@ -7,7 +7,7 @@ export const guideMeta = {
     originalEdition: 'First Edition · YC 128',
     publisher: 'Minmatar Fleet Alliance Thinkspeak Editions',
     location: 'Sosala, The Bleak Lands',
-    coverImage: '/images/doctrines-cover.jpg',
+    coverImage: '/images/fits-cover.jpg',
     coverAlt: 'EVE Online faction warfare frigates in a Scout complex fight',
     firstEditionUrl: 'https://my.minmatar.org/guides/navy-frigate-guide/',
     firstEditionRedditUrl: 'https://patreon.com/EVEFrigates',
@@ -104,36 +104,20 @@ export const disclaimers = [
 
 export const metagameSummary = [
     {
-        ship: 'Caldari Navy Hookbill',
-        text: 'Dominant if you\'re looking for a control fit. Generous number of mid slots allows for multiple webs, or even cheeky EWAR fittings to punch up.',
+        archetype: 'Brawl',
+        text: 'Win the DPS race at scram range. Federation Navy Comet is the generalist — raw damage wins most straight trades unless double webs control you. Tristan is the cheap drone stand-in when you want Comet lessons without Navy prices.',
     },
     {
-        ship: 'Federation Navy Comet',
-        text: 'Generalist. Wins raw DPS trades against most frigates, but can be controlled by double webs. Start here if you want something that you can use across a wide variety of situations.',
+        archetype: 'Control',
+        text: 'Stack webs and mid-slot tools so the other pilot never gets to play their game. Caldari Navy Hookbill owns this lane: multi-web control fits, cheeky EWAR lines, and the best hull if you want to dictate the fight instead of racing EHP. Breacher is the T1 Hookbill analogue — scram-kite flash tank at 7–10 km when you want the same lessons without Navy prices.',
     },
     {
-        ship: 'Imperial Navy Slicer',
-        text: 'Perfect at kiting. Cheap enough to learn without every loss hurting. Teaches kiting, manual piloting, capacitor management, and every skill you\'ll need for interceptors and nanogang.',
+        archetype: 'Kite',
+        text: 'Hold outside their apply and grind. Imperial Navy Slicer is the pure long-point kite — cheap enough to learn on, and it teaches manual piloting, capacitor, and every habit you need before interceptors and nanogang. Vigil Fleet Issue covers the missile kite band (Javelin web-kite or Rage scram-kite).',
     },
     {
-        ship: 'Republic Fleet Firetail',
-        text: 'Home team… we have to fly it every now and then. Speed plus double web makes it a bit more opportunistic, but it\'s generally not the best hull.',
-    },
-    {
-        ship: 'Vigil Fleet Issue',
-        text: 'Long webs and rockets. Web-kite with Javelin when you want range; scram-kite with Rage when you want a mid-range missile line.',
-    },
-    {
-        ship: 'Rifter',
-        text: 'Practically plays the same as the Firetail in many lineups—learn the lessons for the Firetail before you pay higher prices.',
-    },
-    {
-        ship: 'Tristan',
-        text: 'Less critical these days, where it was the ideal ship for generating income in faction warfare. Still common, though.',
-    },
-    {
-        ship: 'Breacher',
-        text: 'BearThatCares\'s favorite frigate. Great for punishing pilots, and even better if you have a small gang with you.',
+        archetype: 'Opportunist',
+        text: 'Speed, webs, and picking only the fights you want — not the best hull, but the one that creates kills. Republic Fleet Firetail lives here; Rifter practices the same lessons before you pay Fleet prices. Take the free trade, decline the bad one.',
     },
 ]
 

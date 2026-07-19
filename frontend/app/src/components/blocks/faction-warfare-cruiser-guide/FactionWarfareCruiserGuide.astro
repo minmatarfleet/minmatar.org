@@ -1,6 +1,8 @@
 ---
 import {
     guideMeta,
+    credits,
+    additionalResources,
     introduction,
     considerations,
     considerationBullets,
@@ -8,41 +10,40 @@ import {
     metagameSummary,
     glossary,
     guideSections,
-    additionalResources,
     matchupLegend,
     matchupCharts,
     shipGuides,
-} from '@/data/navy-frigate-guide'
+} from '@/data/faction-warfare-cruiser-guide'
 
 import GuideContentsLayout from '@components/blocks/GuideContentsLayout.astro'
-import NavyFrigateGuideMatchupChart from '@components/blocks/navy-frigate-guide/NavyFrigateGuideMatchupChart.astro'
-import NavyFrigateGuideShipSection from '@components/blocks/navy-frigate-guide/NavyFrigateGuideShipSection.astro'
+import FactionWarfareCruiserGuideMatchupChart from '@components/blocks/faction-warfare-cruiser-guide/FactionWarfareCruiserGuideMatchupChart.astro'
+import FactionWarfareCruiserGuideShipSection from '@components/blocks/faction-warfare-cruiser-guide/FactionWarfareCruiserGuideShipSection.astro'
 ---
 
-<div class="nfg-guide card component light-transparency border">
-    <header class="nfg-guide__masthead">
-        <p class="nfg-guide__series">{guideMeta.title}</p>
-        <p class="nfg-guide__edition">{guideMeta.edition} · {guideMeta.yc}</p>
+<div class="fwc-guide card component light-transparency border">
+    <header class="fwc-guide__masthead">
+        <p class="fwc-guide__series">{guideMeta.title}</p>
+        <p class="fwc-guide__edition">{guideMeta.edition} · {guideMeta.yc}</p>
     </header>
 
     <GuideContentsLayout sections={guideSections}>
-            <section id="introduction" data-section-id="introduction" class="nfg-section nfg-panel" aria-labelledby="nfg-intro-title">
-                <h2 id="nfg-intro-title" class="nfg-section__title">Introduction</h2>
+            <section id="introduction" data-section-id="introduction" class="fwc-section fwc-panel" aria-labelledby="fwc-intro-title">
+                <h2 id="fwc-intro-title" class="fwc-section__title">Introduction</h2>
                 {
                     introduction.map((paragraph) => (
-                        <p class="nfg-section__paragraph" set:html={paragraph} />
+                        <p class="fwc-section__paragraph" set:html={paragraph} />
                     ))
                 }
             </section>
 
-            <section id="considerations" data-section-id="considerations" class="nfg-section nfg-panel" aria-labelledby="nfg-considerations-title">
-                <h2 id="nfg-considerations-title" class="nfg-section__title">Considerations of the Metagame</h2>
+            <section id="considerations" data-section-id="considerations" class="fwc-section fwc-panel" aria-labelledby="fwc-considerations-title">
+                <h2 id="fwc-considerations-title" class="fwc-section__title">Considerations of the Metagame</h2>
                 {
                     considerations.map((paragraph) => (
-                        <p class="nfg-section__paragraph">{paragraph}</p>
+                        <p class="fwc-section__paragraph">{paragraph}</p>
                     ))
                 }
-                <ul class="nfg-section__list">
+                <ul class="fwc-section__list">
                     {
                         considerationBullets.map((bullet) => (
                             <li>{bullet}</li>
@@ -51,40 +52,40 @@ import NavyFrigateGuideShipSection from '@components/blocks/navy-frigate-guide/N
                 </ul>
             </section>
 
-            <section id="disclaimers" data-section-id="disclaimers" class="nfg-section nfg-panel" aria-labelledby="nfg-disclaimers-title">
-                <h2 id="nfg-disclaimers-title" class="nfg-section__title">Disclaimers</h2>
+            <section id="disclaimers" data-section-id="disclaimers" class="fwc-section fwc-panel" aria-labelledby="fwc-disclaimers-title">
+                <h2 id="fwc-disclaimers-title" class="fwc-section__title">Disclaimers</h2>
                 {
                     disclaimers.map((paragraph) => (
-                        <p class="nfg-section__paragraph">{paragraph}</p>
+                        <p class="fwc-section__paragraph">{paragraph}</p>
                     ))
                 }
             </section>
 
-            <section id="summary" data-section-id="summary" class="nfg-section nfg-panel" aria-labelledby="nfg-summary-title">
-                <h2 id="nfg-summary-title" class="nfg-section__title">Summary of the Metagame</h2>
-                <div class="nfg-summary-grid">
+            <section id="summary" data-section-id="summary" class="fwc-section fwc-panel" aria-labelledby="fwc-summary-title">
+                <h2 id="fwc-summary-title" class="fwc-section__title">Summary of the Metagame</h2>
+                <div class="fwc-summary-grid">
                     {
                         metagameSummary.map((entry) => (
-                            <article class="nfg-summary-card">
-                                <h3 class="nfg-summary-card__title">{entry.archetype}</h3>
-                                <p class="nfg-summary-card__text">{entry.text}</p>
+                            <article class="fwc-summary-card">
+                                <h3 class="fwc-summary-card__title">{entry.archetype}</h3>
+                                <p class="fwc-summary-card__text">{entry.text}</p>
                             </article>
                         ))
                     }
                 </div>
             </section>
 
-            <section id="matchups" data-section-id="matchups" class="nfg-section nfg-panel" aria-labelledby="nfg-matchups-title">
-                <h2 id="nfg-matchups-title" class="nfg-section__title">Matchup Charts</h2>
+            <section id="matchups" data-section-id="matchups" class="fwc-section fwc-panel" aria-labelledby="fwc-matchups-title">
+                <h2 id="fwc-matchups-title" class="fwc-section__title">Matchup Charts</h2>
 
-                <div class="nfg-legend" aria-label="Matchup rating legend">
+                <div class="fwc-legend" aria-label="Matchup rating legend">
                     {
                         matchupLegend.map((item) => (
-                            <div class="nfg-legend__item">
-                                <span class:list={['nfg-legend__symbol', `nfg-legend__symbol--${item.rating === '?' ? 'unknown' : item.rating.replace(/\+/g, 'plus').replace(/-/g, 'minus').replace(/=/g, 'even')}`]}>
+                            <div class="fwc-legend__item">
+                                <span class:list={['fwc-legend__symbol', `fwc-legend__symbol--${item.rating === '?' ? 'unknown' : item.rating.replace(/\+/g, 'plus').replace(/-/g, 'minus').replace(/=/g, 'even')}`]}>
                                     {item.rating}
                                 </span>
-                                <span class="nfg-legend__label">
+                                <span class="fwc-legend__label">
                                     <strong>{item.label}</strong>
                                     <span>{item.description}</span>
                                 </span>
@@ -93,55 +94,55 @@ import NavyFrigateGuideShipSection from '@components/blocks/navy-frigate-guide/N
                     }
                 </div>
 
-                <div class="nfg-charts-grid">
+                <div class="fwc-charts-grid">
                     {
                         matchupCharts.map((chart) => (
-                            <NavyFrigateGuideMatchupChart chart={chart} />
+                            <FactionWarfareCruiserGuideMatchupChart chart={chart} />
                         ))
                     }
                 </div>
             </section>
 
-            <div class="nfg-guide__ships">
+            <div class="fwc-guide__ships">
                 {
                     shipGuides.map((ship) => (
-                        <NavyFrigateGuideShipSection ship={ship} />
+                        <FactionWarfareCruiserGuideShipSection ship={ship} />
                     ))
                 }
             </div>
 
-            <section id="glossary" data-section-id="glossary" class="nfg-section nfg-panel" aria-labelledby="nfg-glossary-title">
-                <h2 id="nfg-glossary-title" class="nfg-section__title">Glossary</h2>
-                <dl class="nfg-glossary">
+            <section id="glossary" data-section-id="glossary" class="fwc-section fwc-panel" aria-labelledby="fwc-glossary-title">
+                <h2 id="fwc-glossary-title" class="fwc-section__title">Glossary</h2>
+                <dl class="fwc-glossary">
                     {
                         glossary.map((entry) => (
                             <>
-                                <dt class="nfg-glossary__term">{entry.term}</dt>
-                                <dd class="nfg-glossary__definition">{entry.definition}</dd>
+                                <dt class="fwc-glossary__term">{entry.term}</dt>
+                                <dd class="fwc-glossary__definition">{entry.definition}</dd>
                             </>
                         ))
                     }
                 </dl>
             </section>
 
-            <section id="resources" data-section-id="resources" class="nfg-section nfg-panel" aria-labelledby="nfg-resources-title">
-                <h2 id="nfg-resources-title" class="nfg-section__title">Additional Resources</h2>
-                <p class="nfg-section__paragraph">
-                    This guide stands on its own. The links below are where we looked for community practice, plex fundamentals, and deeper yearly data—use them when you want another angle.
+            <section id="resources" data-section-id="resources" class="fwc-section fwc-panel" aria-labelledby="fwc-resources-title">
+                <h2 id="fwc-resources-title" class="fwc-section__title">Additional Resources</h2>
+                <p class="fwc-section__paragraph">
+                    Written by {credits.author}. The links below cover sibling hull guides, plex fundamentals, and deeper yearly data when you want another angle.
                 </p>
-                <ul class="nfg-resources">
+                <ul class="fwc-resources">
                     {
                         additionalResources.map((resource) => (
-                            <li class="nfg-resources__item">
+                            <li class="fwc-resources__item">
                                 <a
                                     href={resource.href}
                                     target={resource.href.startsWith('http') ? '_blank' : undefined}
                                     rel={resource.href.startsWith('http') ? 'nofollow noopener noreferrer' : undefined}
-                                    class="nfg-guide__link"
+                                    class="fwc-guide__link"
                                 >
                                     {resource.title}
                                 </a>
-                                <span class="nfg-resources__note">{resource.note}</span>
+                                <span class="fwc-resources__note">{resource.note}</span>
                             </li>
                         ))
                     }
@@ -153,55 +154,55 @@ import NavyFrigateGuideShipSection from '@components/blocks/navy-frigate-guide/N
 <style lang="scss">
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap');
 
-    .nfg-guide {
-        --nfg-display-font: 'Orbitron', var(--heading-font);
-        --nfg-body-font: 'Source Sans 3', var(--body-font);
-        --nfg-panel-padding-block: var(--component-padding-block);
-        --nfg-panel-padding-inline: var(--space-l-xl);
+    .fwc-guide {
+        --fwc-display-font: 'Orbitron', var(--heading-font);
+        --fwc-body-font: 'Source Sans 3', var(--body-font);
+        --fwc-panel-padding-block: var(--component-padding-block);
+        --fwc-panel-padding-inline: var(--space-l-xl);
         width: 100%;
         max-width: 100%;
         min-width: 0;
         overflow-x: clip;
         padding: var(--space-2xl) var(--space-l-xl);
-        font-family: var(--nfg-body-font);
+        font-family: var(--fwc-body-font);
     }
 
     @media (max-width: 48rem) {
-        .nfg-guide {
+        .fwc-guide {
             padding: var(--space-l) var(--space-s);
         }
     }
 
-    .nfg-panel {
-        padding: var(--nfg-panel-padding-block) var(--nfg-panel-padding-inline);
+    .fwc-panel {
+        padding: var(--fwc-panel-padding-block) var(--fwc-panel-padding-inline);
         background: color-mix(in srgb, var(--component-background) 72%, transparent);
         border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
         min-width: 0;
     }
 
     @media (max-width: 48rem) {
-        .nfg-panel {
-            --nfg-panel-padding-inline: var(--space-s);
+        .fwc-panel {
+            --fwc-panel-padding-inline: var(--space-s);
         }
     }
 
-    .nfg-guide__masthead {
+    .fwc-guide__masthead {
         margin-bottom: var(--space-2xl);
         padding-bottom: var(--space-xl);
         text-align: center;
         border-bottom: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent);
     }
 
-    .nfg-guide__series {
+    .fwc-guide__series {
         margin: 0;
-        font-family: var(--nfg-display-font);
+        font-family: var(--fwc-display-font);
         font-size: clamp(var(--step-1), 3vw, var(--step-3));
         letter-spacing: 0.1em;
         text-transform: uppercase;
         color: var(--highlight);
     }
 
-    .nfg-guide__edition {
+    .fwc-guide__edition {
         margin: var(--space-s) 0 0;
         font-size: var(--step--1);
         letter-spacing: 0.14em;
@@ -209,49 +210,49 @@ import NavyFrigateGuideShipSection from '@components/blocks/navy-frigate-guide/N
         color: var(--text-color-secondary, var(--faded));
     }
 
-    .nfg-guide__ships {
+    .fwc-guide__ships {
         display: flex;
         flex-direction: column;
         gap: var(--space-l);
     }
 
-    .nfg-section {
+    .fwc-section {
         scroll-margin-top: calc(var(--header-height, 4rem) + var(--space-l));
     }
 
-    .nfg-section__title {
+    .fwc-section__title {
         margin: 0 0 var(--space-m);
         padding-bottom: var(--space-s);
         border-bottom: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
-        font-family: var(--nfg-display-font);
+        font-family: var(--fwc-display-font);
         font-size: clamp(var(--step-1), 2.5vw, var(--step-2));
         letter-spacing: 0.08em;
         text-transform: uppercase;
     }
 
-    .nfg-section__subtitle {
+    .fwc-section__subtitle {
         margin: var(--space-l) 0 var(--space-m);
-        font-family: var(--nfg-display-font);
+        font-family: var(--fwc-display-font);
         font-size: var(--step-0);
         letter-spacing: 0.06em;
         text-transform: uppercase;
         color: var(--highlight);
     }
 
-    .nfg-section__paragraph {
+    .fwc-section__paragraph {
         margin: 0 0 var(--space-m);
         font-size: var(--step-0);
         line-height: 1.7;
         max-width: var(--max-text-width);
     }
 
-    .nfg-section__paragraph :global(a) {
+    .fwc-section__paragraph :global(a) {
         color: var(--highlight);
         text-decoration: underline;
         text-underline-offset: 0.15em;
     }
 
-    .nfg-section__list {
+    .fwc-section__list {
         margin: 0;
         padding-left: 1.25rem;
         display: flex;
@@ -261,22 +262,22 @@ import NavyFrigateGuideShipSection from '@components/blocks/navy-frigate-guide/N
         max-width: var(--max-text-width);
     }
 
-    .nfg-section__cover {
+    .fwc-section__cover {
         margin: 0 0 var(--space-xl);
     }
 
-    .nfg-section__cover-image,
-    .nfg-section__figure-image {
+    .fwc-section__cover-image,
+    .fwc-section__figure-image {
         display: block;
         width: 100%;
         border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
     }
 
-    .nfg-section__figure {
+    .fwc-section__figure {
         margin: var(--space-xl) 0 0;
     }
 
-    .nfg-section__figcaption {
+    .fwc-section__figcaption {
         margin-top: var(--space-xs);
         font-size: var(--step--2);
         letter-spacing: 0.06em;
@@ -284,7 +285,29 @@ import NavyFrigateGuideShipSection from '@components/blocks/navy-frigate-guide/N
         color: var(--text-color-secondary, var(--faded));
     }
 
-    .nfg-guide__link {
+    .fwc-resources {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        max-width: var(--max-text-width);
+    }
+
+    .fwc-resources__item {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        line-height: 1.55;
+    }
+
+    .fwc-resources__note {
+        font-size: var(--step--1);
+        color: var(--text-color-secondary, var(--faded));
+    }
+
+    .fwc-guide__link {
         color: var(--highlight);
         text-decoration: underline;
         text-decoration-color: color-mix(in srgb, var(--fleet-yellow) 45%, transparent);
@@ -297,35 +320,35 @@ import NavyFrigateGuideShipSection from '@components/blocks/navy-frigate-guide/N
         }
     }
 
-    .nfg-summary-grid {
+    .fwc-summary-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
         gap: var(--space-m);
         margin-top: var(--space-m);
     }
 
-    .nfg-summary-card {
+    .fwc-summary-card {
         padding: var(--component-padding-block) var(--space-m);
         background: color-mix(in srgb, var(--component-background) 82%, transparent);
         border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
     }
 
-    .nfg-summary-card__title {
+    .fwc-summary-card__title {
         margin: 0 0 var(--space-s);
-        font-family: var(--nfg-display-font);
+        font-family: var(--fwc-display-font);
         font-size: var(--step--1);
         letter-spacing: 0.06em;
         text-transform: uppercase;
         color: var(--fleet-red);
     }
 
-    .nfg-summary-card__text {
+    .fwc-summary-card__text {
         margin: 0;
         font-size: var(--step--1);
         line-height: 1.6;
     }
 
-    .nfg-legend {
+    .fwc-legend {
         display: flex;
         flex-wrap: wrap;
         gap: var(--space-xs);
@@ -335,7 +358,7 @@ import NavyFrigateGuideShipSection from '@components/blocks/navy-frigate-guide/N
         border: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
     }
 
-    .nfg-legend__item {
+    .fwc-legend__item {
         display: flex;
         align-items: center;
         gap: var(--space-xs);
@@ -344,26 +367,26 @@ import NavyFrigateGuideShipSection from '@components/blocks/navy-frigate-guide/N
         border: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
     }
 
-    .nfg-legend__symbol {
+    .fwc-legend__symbol {
         display: inline-flex;
         align-items: center;
         justify-content: center;
         min-width: 1.75rem;
         min-height: 1.75rem;
         border-radius: 999px;
-        font-family: var(--nfg-display-font);
+        font-family: var(--fwc-display-font);
         font-size: var(--step--1);
         font-weight: 700;
     }
 
-    .nfg-legend__symbol--plusplus { background: color-mix(in srgb, #2ecc71 22%, transparent); color: #7dffb0; }
-    .nfg-legend__symbol--plus { background: color-mix(in srgb, #58d68d 18%, transparent); color: #9ef0b8; }
-    .nfg-legend__symbol--even { background: color-mix(in srgb, #5dade2 18%, transparent); color: #a8d8ff; }
-    .nfg-legend__symbol--minus { background: color-mix(in srgb, #e74c3c 16%, transparent); color: #ff9f96; }
-    .nfg-legend__symbol--minusminus { background: color-mix(in srgb, #c0392b 20%, transparent); color: #ff8a80; }
-    .nfg-legend__symbol--unknown { background: color-mix(in srgb, var(--faded) 18%, transparent); color: var(--text-color-secondary, var(--faded)); }
+    .fwc-legend__symbol--plusplus { background: color-mix(in srgb, #2ecc71 22%, transparent); color: #7dffb0; }
+    .fwc-legend__symbol--plus { background: color-mix(in srgb, #58d68d 18%, transparent); color: #9ef0b8; }
+    .fwc-legend__symbol--even { background: color-mix(in srgb, #5dade2 18%, transparent); color: #a8d8ff; }
+    .fwc-legend__symbol--minus { background: color-mix(in srgb, #e74c3c 16%, transparent); color: #ff9f96; }
+    .fwc-legend__symbol--minusminus { background: color-mix(in srgb, #c0392b 20%, transparent); color: #ff8a80; }
+    .fwc-legend__symbol--unknown { background: color-mix(in srgb, var(--faded) 18%, transparent); color: var(--text-color-secondary, var(--faded)); }
 
-    .nfg-legend__label {
+    .fwc-legend__label {
         display: flex;
         flex-direction: column;
         gap: 0.1rem;
@@ -380,65 +403,43 @@ import NavyFrigateGuideShipSection from '@components/blocks/navy-frigate-guide/N
     }
 
     @media (min-width: 48rem) {
-        .nfg-legend__label {
+        .fwc-legend__label {
             flex-direction: row;
             align-items: baseline;
             gap: var(--space-2xs);
         }
 
-        .nfg-legend__label span {
+        .fwc-legend__label span {
             font-size: var(--step--1);
         }
     }
 
-    .nfg-charts-grid {
+    .fwc-charts-grid {
         display: flex;
         flex-direction: column;
         gap: var(--space-2xl);
     }
 
-    .nfg-glossary {
+    .fwc-glossary {
         display: grid;
         grid-template-columns: minmax(6rem, 10rem) 1fr;
         gap: var(--space-s) var(--space-l);
         margin: 0 0 var(--space-xl);
     }
 
-    .nfg-glossary__term {
+    .fwc-glossary__term {
         margin: 0;
         font-weight: 700;
         color: var(--fleet-yellow);
     }
 
-    .nfg-glossary__definition {
+    .fwc-glossary__definition {
         margin: 0;
         line-height: 1.6;
     }
 
-    .nfg-resources {
-        margin: 0;
-        padding: 0;
-        list-style: none;
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-m);
-        max-width: var(--max-text-width);
-    }
-
-    .nfg-resources__item {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-3xs);
-        line-height: 1.55;
-    }
-
-    .nfg-resources__note {
-        font-size: var(--step--1);
-        color: var(--text-color-secondary, var(--faded));
-    }
-
     @media (max-width: 40rem) {
-        .nfg-glossary {
+        .fwc-glossary {
             grid-template-columns: 1fr;
         }
     }

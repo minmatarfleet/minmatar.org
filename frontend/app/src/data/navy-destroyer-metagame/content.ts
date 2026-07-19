@@ -90,40 +90,20 @@ export const disclaimers = [
 
 export const metagameSummary = [
     {
-        ship: 'Catalyst Navy Issue',
-        text: 'The most flexible and widely favoured destroyer in both warzones. Its two main lines (Blaster Catalyst Navy Issue and 10mn Catalyst Navy Issue) cover each other’s weaknesses: you do not want to be on top of the blaster fit, but you do want to hug the kiter, so even with high ground the defender faces awkward choices. Probably the best slide-in hull in the class.',
+        archetype: 'Brawl',
+        text: 'Hug them and win the trade. Blaster Catalyst Navy Issue is the flexible favourite for slide-ins; Cormorant Navy Issue is the one-trick that stat-checks most destroyers once both ships are stuck at zero. Soft into kiters that never let you land. Coercer Navy Issue plate + neuts and Dragoon live here when the job is to turn their tank off and grind.',
     },
     {
-        ship: 'Coercer Navy Issue',
-        text: 'The scariest destroyer to punch into. Kiting variants (beam or locus pulse) deliver unmatched point-range DPS; brawling variants bring enormous EHP and frightening neuts. Slow speed and only two mid slots make it a miserable hunter, but a brutal ambush ship.',
+        archetype: 'Overprop',
+        text: '10MN lines that refuse classic MWD + scram + web opens. Catalyst Navy Issue 10mn is the gold standard; Algos practices the same fights cheap; Cormorant Navy Issue 10mn is a real overprop option with scram rails; Talwar Fleet Issue (Cradle of War) is the new thief stealing those lines while its solo meta is still forming.',
     },
     {
-        ship: 'Thrasher Fleet Issue',
-        text: 'Weak on paper in many 1v1 charts, still a fan favourite. Speed lets clever pilots disengage losing fights and commit only when the kill is there. Strong punching down (280 mm alpha deleting SAAR frigates) and up (MWD sig-bloom reduction for manual piloting).',
+        archetype: 'Kite',
+        text: 'Hold outside their apply — point-range DPS that punishes anyone who punches in. Coercer Navy Issue owns the band with beam or locus pulse: unmatched high-grounds damage, miserable as a pure hunter. Slow and two-mid locked, but the scariest destroyer to slide into cold.',
     },
     {
-        ship: 'Cormorant Navy Issue',
-        text: 'A one-trick pony (slow, awkward active-tank bonus) that stat-checks most other destroyers at brawl range. Alternative fits exist but usually need more bling to justify the hull over a Catalyst.',
-    },
-    {
-        ship: 'Talwar Fleet Issue',
-        text: 'The newest navy destroyer (Cradle of War, YC 128). Early solo play centres on the 10mn Talwar Fleet Issue that beats many classic MWD + scram + web lines; fleet light-missile fits look weak so far. Meta is still forming.',
-    },
-    {
-        ship: 'Algos',
-        text: 'Most common T1 destroyer on d-scan. Flexible drone hull: 10MN rail kite or MASB autocannon brawl. Cheap practice for the same range fights you later take in a Catalyst Navy Issue.',
-    },
-    {
-        ship: 'Thrasher',
-        text: 'Cheap Minmatar destroyer before the Fleet Issue. Artillery deletes frigates; autocannons duel other destroyers. Two mids force the classic double-web or scram choice.',
-    },
-    {
-        ship: 'Coercer',
-        text: 'Two-mid laser destroyer. MWD scram Dual Light Pulse plate is the common duel fit; navy beam boats still delete you at range.',
-    },
-    {
-        ship: 'Dragoon',
-        text: 'Cap warfare destroyer. Three small neuts turn off active tanks and lasers—if they take the fight. Many pilots decline once they see the hull.',
+        archetype: 'Opportunist',
+        text: 'Commit only when the kill is free, abort when it is not. Thrasher Fleet Issue is the fan favourite despite soft 1v1 charts — speed, 280 mm alpha into SAAR frigates, and MWD bloom tricks. T1 Thrasher teaches the same artillery / autocannon choice before Fleet prices.',
     },
 ]
 
