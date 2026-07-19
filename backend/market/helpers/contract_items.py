@@ -13,10 +13,9 @@ from eveonline.models import (
 )
 
 from market.helpers.contract_match import (
-    content_match_candidates,
     is_match_accepted,
-    match_contract_to_fitting,
     normalize_contract_items,
+    score_contract_against_fitting,
 )
 from market.models import EveMarketContract, EveMarketContractItem
 
@@ -50,30 +49,31 @@ def apply_content_match(
     contract: EveMarketContract, contract_items: dict[int, int]
 ):
     """
-    Persist the highest-% market-relevant fit and freeze via items_fetched.
+    Require name AND content: score only against the title-resolved fitting.
 
-    Works with or without a title match: wrong/missing titles still assign a
-    fitting when module-weighted coverage is >= MATCH_THRESHOLD. Below
-    threshold: clear fitting but keep match_score for admin attention.
+    Keep fitting when module-weighted coverage >= MATCH_THRESHOLD; otherwise
+    clear fitting (keep match_score for admin). Freeze via items_fetched.
     """
-    preferred = contract.fitting
-    candidates = content_match_candidates(contract, contract_items)
-    if not candidates and preferred:
-        candidates = [preferred]
+    named = contract.fitting
+    if not named:
+        contract.match_score = 0.0
+        contract.match_is_flagged = True
+        contract.save(
+            update_fields=["fitting", "match_score", "match_is_flagged"]
+        )
+        return None, 0.0, [], []
 
-    fitting, score, missing, extra = match_contract_to_fitting(
-        contract_items,
-        candidates,
-        preferred_fitting=preferred,
+    score, missing, extra = score_contract_against_fitting(
+        contract_items, named
     )
     contract.match_score = score
     contract.match_is_flagged = bool(score < 1.0) if score else True
-    if fitting and is_match_accepted(score):
-        contract.fitting = fitting
+    if is_match_accepted(score):
+        contract.fitting = named
     else:
         contract.fitting = None
     contract.save(update_fields=["fitting", "match_score", "match_is_flagged"])
-    return fitting, score, missing, extra
+    return named if is_match_accepted(score) else None, score, missing, extra
 
 
 def fetch_public_contract_items(contract_id: int) -> tuple[bool, list[dict]]:

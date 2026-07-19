@@ -3,16 +3,10 @@ from __future__ import annotations
 import re
 from collections import defaultdict
 
-from django.db.models import Q
 from eveuniverse.models import EveType
-from fittings.models import EveDoctrineFitting, EveFitting
+from fittings.models import EveFitting
 
 from market.helpers.contract_stock import MATCH_THRESHOLD
-from market.helpers.qualification import get_qualified_contract_fittings
-from market.models.contract import (
-    EveMarketContract,
-    EveMarketContractExpectation,
-)
 from market.models.item import parse_eft_items
 
 # Hull, modules, subsystems, and rigs — exclude charges/drones/paste/fuel.
@@ -183,76 +177,3 @@ def match_contract_to_fitting(
 
 def is_match_accepted(score: float) -> bool:
     return score >= MATCH_THRESHOLD
-
-
-def _market_relevant_fitting_ids() -> set[int]:
-    doctrine_ids = set(
-        EveDoctrineFitting.objects.values_list("fitting_id", flat=True)
-    )
-    expectation_ids = set(
-        EveMarketContractExpectation.objects.values_list(
-            "fitting_id", flat=True
-        )
-    )
-    return doctrine_ids | expectation_ids
-
-
-def market_relevant_same_ship_candidates(
-    name_fitting: EveFitting,
-) -> list[EveFitting]:
-    """
-    Name-resolved fit plus other active same-ship fits that are on a doctrine
-    or have a contract expectation (so Active Apostle is included when named).
-    """
-    if not name_fitting.ship_id:
-        return [name_fitting]
-
-    relevant_ids = _market_relevant_fitting_ids()
-    return list(
-        EveFitting.objects.filter(
-            deleted__isnull=True, ship_id=name_fitting.ship_id
-        )
-        .filter(Q(pk=name_fitting.pk) | Q(pk__in=relevant_ids))
-        .order_by("name")
-    )
-
-
-def content_match_candidates(
-    contract: EveMarketContract,
-    contract_items: dict[int, int],
-) -> list[EveFitting]:
-    """
-    Candidates for content matching.
-
-    Prefer market-relevant fittings whose ship hull appears in the contract
-    items (works when the title is wrong or missing). Fall back to location
-    doctrine fittings, then all market-relevant fittings.
-    """
-    preferred = contract.fitting
-    if preferred:
-        return market_relevant_same_ship_candidates(preferred)
-
-    # No usable title: any active fit for a hull present in the contract.
-    hull_type_ids = set(contract_items.keys())
-    by_hull = list(
-        EveFitting.objects.filter(
-            deleted__isnull=True,
-            ship_id__in=hull_type_ids,
-        ).order_by("name")
-    )
-    if by_hull:
-        return by_hull
-
-    if contract.location_id:
-        location_fits = list(
-            get_qualified_contract_fittings(contract.location)
-        )
-        if location_fits:
-            return location_fits
-
-    relevant_ids = _market_relevant_fitting_ids()
-    return list(
-        EveFitting.objects.filter(
-            deleted__isnull=True, pk__in=relevant_ids
-        ).order_by("name")
-    )

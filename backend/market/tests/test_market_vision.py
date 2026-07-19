@@ -343,6 +343,7 @@ Hail S x2000
         self.assertTrue(missing)
 
     def test_highest_percent_wins_close_fits(self):
+        """Named Buffer only keeps when items match Buffer (not Active)."""
         _make_typed_eve_type(37604, "Apostle", 6, "Ship")
         _make_typed_eve_type(2048, "Damage Control II", 7, "Module")
         _make_typed_eve_type(
@@ -374,33 +375,43 @@ Damage Control II
 Armor Energizing Charge x1000
 """,
         )
-        active_items = {
-            37604: 1,
-            2048: 1,
-            41459: 1,
-            41490: 1000,
-        }
-        fitting, score, _, _ = match_contract_to_fitting(
-            active_items,
-            [active, buffer],
-            preferred_fitting=buffer,
+        location = _make_location(location_id=9105)
+        buffer_contract = EveMarketContract.objects.create(
+            id=50007,
+            title="Buffer Apostle",
+            price=1,
+            issuer_external_id=1,
+            status="outstanding",
+            location=location,
+            fitting=buffer,
+            is_public=False,
         )
-        self.assertEqual(active, fitting)
-        self.assertGreaterEqual(score, MATCH_THRESHOLD)
+        # Active hull modules under a Buffer title → name matches, fit does not
+        apply_content_match(
+            buffer_contract,
+            {37604: 1, 2048: 1, 41459: 1, 41490: 1000},
+        )
+        buffer_contract.refresh_from_db()
+        self.assertIsNone(buffer_contract.fitting_id)
+        self.assertLess(buffer_contract.match_score, MATCH_THRESHOLD)
 
-        buffer_items = {
-            37604: 1,
-            2048: 1,
-            20245: 1,
-            41490: 500,
-        }
-        fitting, score, _, _ = match_contract_to_fitting(
-            buffer_items,
-            [active, buffer],
-            preferred_fitting=buffer,
+        active_contract = EveMarketContract.objects.create(
+            id=50008,
+            title="Active Apostle",
+            price=1,
+            issuer_external_id=1,
+            status="outstanding",
+            location=location,
+            fitting=active,
+            is_public=False,
         )
-        self.assertEqual(buffer, fitting)
-        self.assertGreaterEqual(score, MATCH_THRESHOLD)
+        apply_content_match(
+            active_contract,
+            {37604: 1, 2048: 1, 41459: 1, 41490: 1000},
+        )
+        active_contract.refresh_from_db()
+        self.assertEqual(active.id, active_contract.fitting_id)
+        self.assertGreaterEqual(active_contract.match_score, MATCH_THRESHOLD)
 
     def test_apply_content_match_clears_fitting_below_threshold(self):
         location = _make_location(location_id=9101)
@@ -505,8 +516,8 @@ Armor Energizing Charge x1000
         self.assertIn(verified.id, stock_ids)
         self.assertNotIn(failed.id, stock_ids)
 
-    def test_wrong_title_still_content_matches(self):
-        """Contracts with nonsense titles match by hull/modules after items."""
+    def test_nonsense_title_is_not_content_matched(self):
+        """Wrong/missing title never assigns from contents alone."""
         location = _make_location(location_id=9104)
         _make_typed_eve_type(37604, "Apostle", 6, "Ship")
         _make_typed_eve_type(2048, "Damage Control II", 7, "Module")
@@ -524,9 +535,6 @@ Damage Control II
 25000mm Crystalline Carbonide Restrained Plates
 """,
         )
-        EveMarketContractExpectation.objects.create(
-            fitting=buffer, location=location, quantity=1
-        )
         contract = EveMarketContract.objects.create(
             id=50006,
             title="totally wrong apostle name",
@@ -542,8 +550,23 @@ Damage Control II
             {37604: 1, 2048: 1, 20245: 1},
         )
         contract.refresh_from_db()
-        self.assertEqual(buffer.id, contract.fitting_id)
-        self.assertGreaterEqual(contract.match_score, MATCH_THRESHOLD)
+        self.assertIsNone(contract.fitting_id)
+        self.assertEqual(0.0, contract.match_score)
+
+        named = EveMarketContract.objects.create(
+            id=50009,
+            title="Buffer Apostle",
+            price=1,
+            issuer_external_id=1,
+            status="outstanding",
+            location=location,
+            fitting=buffer,
+            is_public=False,
+        )
+        apply_content_match(named, {37604: 1, 2048: 1, 20245: 1})
+        named.refresh_from_db()
+        self.assertEqual(buffer.id, named.fitting_id)
+        self.assertGreaterEqual(named.match_score, MATCH_THRESHOLD)
 
 
 class SellOrderRowsTestCase(TestCase):
