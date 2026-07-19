@@ -2582,5 +2582,6 @@ export const ui = {
         'remove_order': '⚠️ Remove order',
         'remove_order_hint': 'Open a ticket in our Discord [#help](https://discordapp.com/channels/1041384161505722368/1183401618943791186) with the details.',
         'your_current_timezone': 'Based upon your current timezone',
+        'currently_busy': '⚠️ Currently in use. Come back later to check if the job is completed.',
     },
 } as const;
