@@ -48,7 +48,7 @@ export function pageProgressFromMarkdown(options: {
  * @example
  * const progress = pageProgressFromSections({
  *   page_key: 'guides/navy-destroyer-metagame',
- *   page_title: 'The Navy Destroyer Metagame',
+ *   page_title: 'Navy Destroyer Guide',
  *   sections: ['credits', 'history', 'introduction'],
  * })
  * // Mark DOM: <PageProgressSection id="credits">...</PageProgressSection>

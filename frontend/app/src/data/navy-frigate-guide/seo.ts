@@ -1,4 +1,4 @@
-interface NavyDestroyerMetagameJsonLdOptions {
+interface NavyFrigateGuideJsonLdOptions {
     canonicalUrl: string
     siteName: string
     siteOrigin: string
@@ -13,7 +13,7 @@ interface NavyDestroyerMetagameJsonLdOptions {
     originalEditionUrl: string
 }
 
-export function buildNavyDestroyerMetagameJsonLd(options: NavyDestroyerMetagameJsonLdOptions) {
+export function buildNavyFrigateGuideJsonLd(options: NavyFrigateGuideJsonLdOptions) {
     const {
         canonicalUrl,
         siteName,
@@ -85,36 +85,36 @@ export function buildNavyDestroyerMetagameJsonLd(options: NavyDestroyerMetagameJ
                 },
                 isBasedOn: {
                     '@type': 'CreativeWork',
-                    name: 'Navy Destroyer Metagame Guide (First Edition)',
+                    name: 'Faction Warfare Frigate Guide (First Edition)',
                     url: originalEditionUrl,
                 },
                 genre: 'Video game guide',
                 keywords: [
                     'EVE Online',
                     'faction warfare',
-                    'destroyer guide',
-                    'navy destroyer',
-                    'Catalyst Navy Issue',
-                    'Coercer Navy Issue',
-                    'Thrasher Fleet Issue',
-                    'Cormorant Navy Issue',
-                    'Talwar Fleet Issue',
-                    'Algos',
-                    'Thrasher',
-                    'Coercer',
-                    'Dragoon',
+                    'frigate guide',
+                    'navy frigate',
+                    'Caldari Navy Hookbill',
+                    'Federation Navy Comet',
+                    'Imperial Navy Slicer',
+                    'Republic Fleet Firetail',
+                    'Vigil Fleet Issue',
+                    'Rifter',
+                    'Tristan',
+                    'Breacher',
+                    'Scout complex',
                     '1v1',
                     'matchup chart',
-                    'ship fittings',
+                    'solo PvP',
                     'FW plex',
                 ].join(', '),
                 about: [
                     { '@type': 'Thing', name: 'EVE Online faction warfare' },
-                    { '@type': 'Thing', name: 'Faction warfare destroyers' },
+                    { '@type': 'Thing', name: 'Faction warfare frigates' },
                 ],
                 inLanguage: 'en',
                 mainEntityOfPage: { '@id': `${canonicalUrl}#webpage` },
-                version: editionLabel,
+                creativeWorkStatus: editionLabel,
             },
         ],
     }

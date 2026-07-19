@@ -410,6 +410,265 @@ Small Thermal Shield Reinforcer I
 Scourge Rage Rocket x250
 Navy Cap Booster 50 x9`,
     },
+    {
+        id: 'algos-10mn',
+        fittingId: 0,
+        shipId: 32872,
+        shipGuideId: 'algos',
+        name: '10mn Algos',
+        description:
+            'Overpropped rail/drone web-kite. Hold range, apply rails, let drones work. Refit: AC brawl for close MASB fights.',
+        eftFormat: `[Algos, 10mn Algos]
+
+Damage Control II
+Drone Damage Amplifier II
+Small Ancillary Armor Repairer
+
+10MN Y-S8 Compact Afterburner
+Fleeting Compact Stasis Webifier
+Faint Scoped Warp Disruptor
+
+75mm Gatling Rail II
+75mm Gatling Rail II
+75mm Gatling Rail II
+75mm Gatling Rail II
+75mm Gatling Rail II
+[Empty High slot]
+
+Small Transverse Bulkhead I
+Small Transverse Bulkhead I
+Small Transverse Bulkhead I
+
+
+Hobgoblin II x3
+Hammerhead II x2
+
+Caldari Navy Antimatter Charge S x2000
+Caldari Navy Iridium Charge S x1500
+Caldari Navy Iron Charge S x1500
+Nanite Repair Paste x50`,
+    },
+    {
+        id: 'algos-brawl',
+        fittingId: 0,
+        shipId: 32872,
+        shipGuideId: 'algos',
+        name: 'Brawl Algos',
+        description:
+            'MWD MASB autocannon brawler with plate and SAAR. Close-range T1 duel line.',
+        eftFormat: `[Algos, Brawl Algos]
+
+Damage Control II
+400mm Rolled Tungsten Compact Plates
+Small Ancillary Armor Repairer
+
+5MN Y-T8 Compact Microwarpdrive
+Medium Ancillary Shield Booster
+Warp Scrambler II
+
+200mm AutoCannon II
+200mm AutoCannon II
+200mm AutoCannon II
+200mm AutoCannon II
+200mm AutoCannon II
+[Empty High slot]
+
+Small Ancillary Current Router II
+Small Transverse Bulkhead I
+Small Transverse Bulkhead I
+
+
+Hammerhead II x2
+Hobgoblin II x3
+
+Navy Cap Booster 50 x16
+Nanite Repair Paste x50
+Republic Fleet EMP S x1500
+Republic Fleet Phased Plasma S x2500`,
+    },
+    {
+        id: 'algos-farm',
+        fittingId: 0,
+        shipId: 32872,
+        shipGuideId: 'algos',
+        name: 'Farm Algos',
+        description:
+            'Triple-MSE drone farmer for plex grinding and multi-boxing. Not a duel fit.',
+        eftFormat: `[Algos, Farm Algos]
+
+AE-K Compact Drone Damage Amplifier
+AE-K Compact Drone Damage Amplifier
+Damage Control II
+
+Medium Azeotropic Restrained Shield Extender
+Medium Azeotropic Restrained Shield Extender
+Medium Azeotropic Restrained Shield Extender
+
+125mm Light Carbine Repeating Cannon I
+[Empty High slot]
+[Empty High slot]
+[Empty High slot]
+[Empty High slot]
+[Empty High slot]
+
+Small Core Defense Field Extender I
+Small Core Defense Field Extender I
+Small Core Defense Field Extender I
+
+
+Hammerhead II x2
+Acolyte II x5
+Hobgoblin II x3
+
+EMP S x3000`,
+    },
+    {
+        id: 'thrasher-arty',
+        fittingId: 0,
+        shipId: 16242,
+        shipGuideId: 'thrasher-t1',
+        name: 'Arty Thrasher',
+        description:
+            '280 double-web artillery gank. No scram—volley frigates or leave. Refit: AC scram MSE for destroyer duels.',
+        eftFormat: `[Thrasher, Arty Thrasher]
+
+Damage Control II
+Gyrostabilizer II
+
+5MN Y-T8 Compact Microwarpdrive
+Fleeting Compact Stasis Webifier
+Fleeting Compact Stasis Webifier
+
+280mm Howitzer Artillery II
+280mm Howitzer Artillery II
+280mm Howitzer Artillery II
+280mm Howitzer Artillery II
+280mm Howitzer Artillery II
+280mm Howitzer Artillery II
+280mm Howitzer Artillery II
+[Empty High slot]
+
+Small Transverse Bulkhead I
+Small Transverse Bulkhead I
+Small Transverse Bulkhead I
+
+
+Quake S x1500
+Republic Fleet Titanium Sabot S x1500
+Republic Fleet EMP S x1000
+Republic Fleet Fusion S x1000
+Nanite Repair Paste x40`,
+    },
+    {
+        id: 'thrasher-ac',
+        fittingId: 0,
+        shipId: 16242,
+        shipGuideId: 'thrasher-t1',
+        name: 'AC Thrasher',
+        description:
+            'MWD MSE scram autocannon brawler with a neut. Better destroyer duel than 280 gank.',
+        eftFormat: `[Thrasher, AC Thrasher]
+
+Gyrostabilizer II
+Gyrostabilizer II
+
+5MN Y-T8 Compact Microwarpdrive
+Medium F-S9 Regolith Compact Shield Extender
+Warp Scrambler II
+
+200mm AutoCannon II
+200mm AutoCannon II
+200mm AutoCannon II
+200mm AutoCannon II
+200mm AutoCannon II
+200mm AutoCannon II
+200mm AutoCannon II
+Small Gremlin Compact Energy Neutralizer
+
+Small EM Shield Reinforcer I
+Small Core Defense Field Extender I
+Small Core Defense Field Extender I
+
+
+Republic Fleet Phased Plasma S x2500
+Republic Fleet EMP S x1500
+Hail S x1000
+Nanite Repair Paste x40`,
+    },
+    {
+        id: 'coercer-brawl',
+        fittingId: 0,
+        shipId: 16236,
+        shipGuideId: 'coercer-t1',
+        name: 'Brawl Coercer',
+        description:
+            'MWD scram Dual Light Pulse plate brawler. Close-range T1 duel line.',
+        eftFormat: `[Coercer, Brawl Coercer]
+
+Damage Control II
+400mm Rolled Tungsten Compact Plates
+Multispectrum Coating II
+
+5MN Y-T8 Compact Microwarpdrive
+Warp Scrambler II
+
+Dual Light Pulse Laser II
+Dual Light Pulse Laser II
+Dual Light Pulse Laser II
+Dual Light Pulse Laser II
+Dual Light Pulse Laser II
+Dual Light Pulse Laser II
+Dual Light Pulse Laser II
+Dual Light Pulse Laser II
+
+Small Trimark Armor Pump I
+Small Trimark Armor Pump I
+Small Trimark Armor Pump I
+
+
+Conflagration S x8
+Scorch S x8
+Imperial Navy Multifrequency S x8
+Imperial Navy Radio S x8
+Nanite Repair Paste x40`,
+    },
+    {
+        id: 'dragoon-neut',
+        fittingId: 0,
+        shipId: 32874,
+        shipGuideId: 'dragoon',
+        name: 'Neut Dragoon',
+        description:
+            'Three small neuts, MWD, compact cap booster, scram. Drain active tanks, then grind. Plate + drone amp for longer trades.',
+        eftFormat: `[Dragoon, Neut Dragoon]
+
+Damage Control II
+400mm Rolled Tungsten Compact Plates
+Multispectrum Coating II
+Drone Damage Amplifier II
+
+5MN Y-T8 Compact Microwarpdrive
+Small F-RX Compact Capacitor Booster
+Warp Scrambler II
+
+Small Infectious Scoped Energy Neutralizer
+Small Infectious Scoped Energy Neutralizer
+Small Infectious Scoped Energy Neutralizer
+125mm Gatling AutoCannon II
+125mm Gatling AutoCannon II
+
+Small Ancillary Current Router I
+Small Trimark Armor Pump I
+Small Trimark Armor Pump I
+
+
+Hobgoblin II x5
+Hornet EC-300 x5
+
+Navy Cap Booster 200 x16
+Nanite Repair Paste x40
+Republic Fleet Phased Plasma S x1000`,
+    },
 ]
 
 export function getGuideFittingsForShip(shipGuideId: string): GuideFitting[] {

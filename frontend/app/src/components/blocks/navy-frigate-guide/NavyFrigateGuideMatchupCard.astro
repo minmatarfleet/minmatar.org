@@ -1,0 +1,156 @@
+---
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+import Tag from '@components/blocks/Tag.astro'
+import FixedFluid from '@components/compositions/FixedFluid.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import { resolveMatchupOpponentShip } from '@/data/navy-frigate-guide/opponent-ships'
+import type { MatchupEntry, MatchupVerdict } from '@/data/navy-frigate-guide'
+import type { TagColors } from '@dtypes/layout_components'
+
+interface Props {
+    entry: MatchupEntry
+    verdictLabels: Record<MatchupVerdict, string>
+    selfShipId: number
+    selfShipName: string
+}
+
+const { entry, verdictLabels, selfShipId, selfShipName } = Astro.props
+
+const verdictTagColors: Record<MatchupVerdict, TagColors> = {
+    favoured: 'green',
+    unfavoured: 'fleet-red',
+    even: 'alliance-blue',
+    bail: 'fleet-red',
+    skill: 'fleet-yellow',
+    unknown: 'security-status-null',
+}
+
+const opponentShip = resolveMatchupOpponentShip(entry.opponent, {
+    shipId: selfShipId,
+    shipName: selfShipName,
+})
+---
+
+<li class="nfg-matchup-card">
+    <ComponentBlock
+        class="nfg-matchup-card__panel"
+        padding_block="var(--space-s)"
+        padding_inline="var(--space-s)"
+    >
+        <FixedFluid class="[ items-start ]" width="64px" breakpoint="0">
+            {
+                opponentShip ? (
+                    <ItemPicture
+                        item_id={opponentShip.shipId}
+                        item_name={opponentShip.shipName}
+                        size={64}
+                    />
+                ) : (
+                    <div class="nfg-matchup-card__icon-placeholder" aria-hidden="true" />
+                )
+            }
+            <Flexblock class="[ nfg-matchup-card__content ]" gap="var(--space-3xs)">
+                <FlexInline class="[ w-full nfg-matchup-card__head ]" justification="space-between">
+                    <span class="[ opponent ]">{entry.opponent}</span>
+                    {
+                        entry.verdict && (
+                            <Tag
+                                text={verdictLabels[entry.verdict]}
+                                color={verdictTagColors[entry.verdict]}
+                                narrow={true}
+                            />
+                        )
+                    }
+                </FlexInline>
+                <p class="[ load ]" aria-hidden={!entry.load}>
+                    {
+                        entry.load ? (
+                            <>
+                                <span>Load</span> {entry.load}
+                            </>
+                        ) : (
+                            '\u00a0'
+                        )
+                    }
+                </p>
+                <p class="[ advice ]">{entry.advice}</p>
+            </Flexblock>
+        </FixedFluid>
+    </ComponentBlock>
+</li>
+
+<style lang="scss">
+    .nfg-matchup-card {
+        display: flex;
+        min-height: 100%;
+        list-style: none;
+    }
+
+    .nfg-matchup-card__panel {
+        flex: 1;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .nfg-matchup-card__panel :global(> .wrapper) {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        max-width: none;
+    }
+
+    .nfg-matchup-card__content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .nfg-matchup-card__icon-placeholder {
+        flex: 0 0 64px;
+        width: 64px;
+        height: 64px;
+        background: color-mix(in srgb, var(--component-background) 70%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+    }
+
+    .nfg-matchup-card__head {
+        gap: var(--space-2xs);
+        align-items: flex-start;
+    }
+
+    .opponent {
+        min-width: 0;
+        flex: 1 1 8rem;
+        font-weight: 600;
+        font-size: var(--step--1);
+        line-height: 1.25;
+        color: var(--foreground);
+        overflow-wrap: anywhere;
+    }
+
+    .load {
+        margin: 0;
+        min-height: 1.4em;
+        font-family: var(--mono-font, ui-monospace, monospace);
+        font-size: var(--step--2);
+        line-height: 1.4;
+
+        span {
+            margin-right: var(--space-2xs);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-color-secondary, var(--faded));
+        }
+    }
+
+    .advice {
+        margin: 0;
+        flex: 1;
+        font-size: var(--step--1);
+        line-height: 1.55;
+        color: var(--text-color-secondary, var(--faded));
+    }
+</style>

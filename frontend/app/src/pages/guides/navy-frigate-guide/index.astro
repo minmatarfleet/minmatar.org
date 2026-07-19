@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { guideMeta, credits, buildNavyDestroyerMetagameJsonLd, guideSections } from '@/data/navy-destroyer-metagame'
+import { guideMeta, buildNavyFrigateGuideJsonLd, guideSections } from '@/data/navy-frigate-guide'
 import { pageProgressFromSections } from '@helpers/pageProgress'
 import { get_site_origin } from '@helpers/seo'
 
@@ -12,20 +12,20 @@ import PageTitle from '@components/page/PageTitle.astro'
 import TextBox from '@components/layout/TextBox.astro'
 import Wrapper from '@components/compositions/Wrapper.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
-import NavyDestroyerMetagame from '@components/blocks/navy-destroyer-metagame/NavyDestroyerMetagame.astro'
+import NavyFrigateGuide from '@components/blocks/navy-frigate-guide/NavyFrigateGuide.astro'
 import PageProgress from '@components/blocks/PageProgress.astro'
 
-const page_title = t('ships.navy_destroyer_metagame.page_title')
-const page_description = t('ships.navy_destroyer_metagame.leading_text')
-const meta_title = t('ships.navy_destroyer_metagame.meta_title')
+const page_title = t('ships.navy_frigate_guide.page_title')
+const page_description = t('ships.navy_frigate_guide.leading_text')
+const meta_title = t('ships.navy_frigate_guide.meta_title')
     .replace('{site}', t('index.page_title'))
-const meta_description = t('ships.navy_destroyer_metagame.meta_description')
+const meta_description = t('ships.navy_frigate_guide.meta_description')
 const site_origin = get_site_origin(Astro.url.origin)
-const canonical_url = new URL(translatePath('/guides/navy-destroyer-metagame/'), site_origin).href
+const canonical_url = new URL(translatePath('/guides/navy-frigate-guide/'), site_origin).href
 const meta_image = new URL(guideMeta.coverImage, site_origin).href
 const guides_url = new URL(translatePath('/guides/'), site_origin).href
 
-const structured_data = buildNavyDestroyerMetagameJsonLd({
+const structured_data = buildNavyFrigateGuideJsonLd({
     canonicalUrl: canonical_url,
     siteName: t('index.page_title'),
     siteOrigin: site_origin,
@@ -34,14 +34,14 @@ const structured_data = buildNavyDestroyerMetagameJsonLd({
     metaDescription: meta_description,
     metaImage: meta_image,
     guidesUrl: guides_url,
-    authorName: credits.firstEditionAuthor,
+            authorName: 'BearThatCares',
     publisherName: 'Minmatar Fleet Alliance',
     editionLabel: `${guideMeta.edition} · ${guideMeta.yc}`,
     originalEditionUrl: guideMeta.firstEditionUrl,
 })
 
 const progress = pageProgressFromSections({
-    page_key: 'guides/navy-destroyer-metagame',
+    page_key: 'guides/navy-frigate-guide',
     page_title,
     sections: guideSections,
     version_source: JSON.stringify({
@@ -75,17 +75,17 @@ const progress = pageProgressFromSections({
             overlay: true,
         }}
     >
-        <Flexblock gap="var(--space-2xl)" class="ndm-page" data-page-progress-root>
+        <Flexblock gap="var(--space-2xl)" class="nfg-page" data-page-progress-root>
             <TextBox max_width="var(--max-content-width)">
                 <Flexblock gap="var(--space-xl)">
-                    <div class="ndm-page__header-top">
-                        <nav class="ndm-page__breadcrumb" aria-label="Breadcrumb">
+                    <div class="nfg-page__header-top">
+                        <nav class="nfg-page__breadcrumb" aria-label="Breadcrumb">
                             <ol>
                                 <li><a href={translatePath('/guides/')}>{t('guides.page_title')}</a></li>
                                 <li aria-current="page">{page_title}</li>
                             </ol>
                         </nav>
-                        <div class="ndm-page__progress">
+                        <div class="nfg-page__progress">
                             <PageProgress {...progress} />
                         </div>
                     </div>
@@ -99,21 +99,21 @@ const progress = pageProgressFromSections({
                 padding_inline="0"
                 padding_block="0"
             >
-                <NavyDestroyerMetagame />
+                <NavyFrigateGuide />
             </Wrapper>
         </Flexblock>
     </PageLanding>
 </Viewport>
 
 <style lang="scss">
-    .ndm-page {
+    .nfg-page {
         width: 100%;
         max-width: 100%;
         min-width: 0;
         overflow-x: clip;
     }
 
-    .ndm-page__header-top {
+    .nfg-page__header-top {
         display: flex;
         flex-wrap: wrap;
         justify-content: space-between;
@@ -122,12 +122,12 @@ const progress = pageProgressFromSections({
         width: 100%;
     }
 
-    .ndm-page__progress {
+    .nfg-page__progress {
         flex: 0 0 auto;
         margin-left: auto;
     }
 
-    .ndm-page__breadcrumb {
+    .nfg-page__breadcrumb {
         margin: 0;
         min-width: 0;
 

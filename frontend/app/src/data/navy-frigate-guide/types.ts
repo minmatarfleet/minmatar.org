@@ -61,6 +61,18 @@ export type GuideSection = {
     shortTitle?: string
 }
 
+export type GuideHistoryEntry = {
+    id: string
+    dateLabel: string
+    yc: string
+    title: string
+    description: string
+    link?: {
+        href: string
+        label: string
+    }
+}
+
 export type MatchupChart = {
     id: string
     title: string

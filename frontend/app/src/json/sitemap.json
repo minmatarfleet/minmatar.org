@@ -249,7 +249,14 @@
         "path": "/guides/navy-destroyer-metagame/",
         "publish": true,
         "description": "page_finder.guides.description",
-        "keywords": [ "EVE Online guides", "faction warfare guide", "abyssal deadspace", "navy destroyer metagame", "FW plexing", "L5 missions" ]
+        "keywords": [ "EVE Online destroyer guide", "faction warfare destroyer", "navy destroyer", "Catalyst Navy Issue", "Thrasher Fleet Issue", "Algos", "Coercer", "Dragoon", "1v1 pvp", "FW plex" ]
+    },
+    {
+        "slug": "guides.navy_frigate_guide",
+        "path": "/guides/navy-frigate-guide/",
+        "publish": true,
+        "description": "page_finder.ships.navy_frigate_guide.description",
+        "keywords": [ "EVE Online frigate guide", "faction warfare frigate", "navy frigate", "Hookbill", "Comet", "Slicer", "Firetail", "Vigil Fleet Issue", "Rifter", "Tristan", "Breacher", "Scout complex", "1v1 pvp" ]
     },
     {
         "slug": "propaganda",
