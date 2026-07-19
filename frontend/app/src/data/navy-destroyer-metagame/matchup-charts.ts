@@ -77,4 +77,35 @@ export const kitingChart: MatchupChart = {
     ],
 }
 
-export const matchupCharts = [brawlingChart, kitingChart]
+export const t1Chart: MatchupChart = {
+    id: 't1-destroyers',
+    title: 'T1 Destroyer Matchup Chart',
+    rowLabel: 'High ground',
+    columnLabel: 'Low ground',
+    rows: [
+        '10mn Algos',
+        'Brawl Algos',
+        'Brawl Coercer',
+        'Arty Thrasher',
+        'AC Thrasher',
+        'Neut Dragoon',
+    ],
+    columns: [
+        '10mn Algos',
+        'Brawl Algos',
+        'Brawl Coercer',
+        'Arty Thrasher',
+        'AC Thrasher',
+        'Neut Dragoon',
+    ],
+    matrix: [
+        ['=', '+', '+', '+', '+', '++'],
+        ['-', '=', '=', '=', '=', '-'],
+        ['-', '=', '=', '+', '+', '-'],
+        ['-', '=', '-', '=', '+', '='],
+        ['-', '=', '-', '-', '=', '-'],
+        ['--', '+', '+', '=', '+', '='],
+    ],
+}
+
+export const matchupCharts = [brawlingChart, kitingChart, t1Chart]

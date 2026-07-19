@@ -1,4 +1,7 @@
 import type { ShipGuide } from './types'
+import { algosGuide, thrasherT1Guide, coercerT1Guide, dragoonGuide } from './t1-ships'
+
+export { algosGuide, thrasherT1Guide, coercerT1Guide, dragoonGuide } from './t1-ships'
 
 export const catalystGuide: ShipGuide = {
     id: 'catalyst',
@@ -416,4 +419,14 @@ export const talwarGuide: ShipGuide = {
     ],
 }
 
-export const shipGuides = [catalystGuide, coercerGuide, thrasherGuide, cormorantGuide, talwarGuide]
+export const shipGuides = [
+    catalystGuide,
+    coercerGuide,
+    thrasherGuide,
+    cormorantGuide,
+    talwarGuide,
+    algosGuide,
+    thrasherT1Guide,
+    coercerT1Guide,
+    dragoonGuide,
+]

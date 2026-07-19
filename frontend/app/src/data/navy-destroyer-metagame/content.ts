@@ -1,7 +1,7 @@
 import type { GlossaryEntry } from './types'
 
 export const guideMeta = {
-    title: 'The Navy Destroyer Metagame',
+    title: 'Destroyer Guide',
     edition: 'Web Edition',
     yc: 'YC 128',
     originalEdition: 'First Edition · YC 126',
@@ -17,39 +17,55 @@ export const credits = {
     firstEditionAuthor: 'Furl0w',
     firstEditionLabel: 'First Edition · YC 126',
     thanks:
-        'The original First Edition owed special thanks to Jakub Tivianne for insightful feedback and discussion, Thehin Zamayid for his comments, the FL33T and BSB discords, and everyone who motivated Furl0w to finish the guide. Faye Vaelent designed and edited that print edition.',
+        'Special thanks from the First Edition to Jakub Tivianne, Thehin Zamayid, the FL33T and BSB discords, and Faye Vaelent for design and editing.',
     quotes: [
         { text: 'This is badass', attribution: 'Casper24' },
         { text: "It's a great guide, good work", attribution: 'Dato Koppla' },
     ],
 }
 
-export const guideHistory = [
+export type GuideResource = {
+    title: string
+    href: string
+    note: string
+}
+
+export const additionalResources: GuideResource[] = [
     {
-        id: 'first-edition',
-        dateLabel: '2024',
-        yc: 'YC 126',
-        title: 'First Edition',
-        description:
-            'Furl0w publishes the original guide: fits, matchup notes, and solo plex tactics for faction warfare navy destroyers.',
-        link: {
-            href: guideMeta.firstEditionUrl,
-            label: 'Read PDF',
-        },
+        title: 'Navy Destroyer Metagame — First Edition (Furl0w, YC 126)',
+        href: guideMeta.firstEditionUrl,
+        note: 'Original PDF this web edition grows from—fits, matchup notes, and solo plex tactics for navy destroyers.',
     },
     {
-        id: 'web-edition',
-        dateLabel: 'June 21, 2026',
-        yc: 'YC 128',
-        title: 'Web Edition',
-        description:
-            'Adapted for my.minmatar.org with searchable fits, matchup charts, and live [NVY] fittings in the Fleet library.',
+        title: 'First Edition Reddit announcement',
+        href: guideMeta.firstEditionRedditUrl,
+        note: 'Furl0w’s 2024 announcement thread for the original guide.',
     },
-] as const satisfies readonly import('./types').GuideHistoryEntry[]
+    {
+        title: 'EVE Faction Warfare Yearbook (T Sky / EVE Frigates)',
+        href: 'https://patreon.com/EVEFrigates',
+        note: 'Deeper yearly frigate and destroyer reference when you want more hulls and engagement data than this guide covers.',
+    },
+    {
+        title: 'Faction Warfare Complexes (this site)',
+        href: '/guides/faction-warfare-plexing/',
+        note: 'Landing, gates, site sizes, and LP/VP tables for the plexes you are fighting in.',
+    },
+    {
+        title: 'Faction Warfare Basics (this site)',
+        href: '/guides/faction-warfare-basics/',
+        note: 'Warzone map, system types, contested vs advantage.',
+    },
+    {
+        title: 'Frigate Guide (this site)',
+        href: '/guides/navy-frigate-guide/',
+        note: 'When Scout plexes still matter—navy and T1 frigates, archetypes, and 1v1 charts.',
+    },
+]
 
 export const introduction = [
     'After the <a href="https://www.eveonline.com/news/view/uprising-expansion-now-live">Uprising</a> expansion, the faction warfare meta shifted entirely to destroyers. Scout complexes became largely unimportant, and a destroyer could run nearly every complex, making them the warzone\'s best ISK printer. Navy destroyers raised the stakes even further: more EHP, better projection, and more damage than T1 hulls. They could even take on cruisers.',
-    'Two years later, they are still the default tool for faction warfare pilots, and the most common ship on directional scanners when you are undocked.',
+    'Two years later, navy hulls are still the default tool for faction warfare pilots, and the most common destroyers on directional scanners when you are undocked. T1 destroyers remain everywhere as farm boats and cheap practice hulls—Algos, Thrasher, Coercer, and Dragoon especially.',
     'What follows is a living guide that covers the archetypes you\'ll actually see in space, and all of their matchups. It includes details on the complex high ground, practical notes on when to commit, when to bail, and where a fit can be adjusted.',
 ]
 
@@ -93,6 +109,22 @@ export const metagameSummary = [
         ship: 'Talwar Fleet Issue',
         text: 'The newest navy destroyer (Cradle of War, YC 128). Early solo play centres on the 10mn Talwar Fleet Issue that beats many classic MWD + scram + web lines; fleet light-missile fits look weak so far. Meta is still forming.',
     },
+    {
+        ship: 'Algos',
+        text: 'Most common T1 destroyer on d-scan. Flexible drone hull: 10MN rail kite or MASB autocannon brawl. Cheap practice for the same range fights you later take in a Catalyst Navy Issue.',
+    },
+    {
+        ship: 'Thrasher',
+        text: 'Cheap Minmatar destroyer before the Fleet Issue. Artillery deletes frigates; autocannons duel other destroyers. Two mids force the classic double-web or scram choice.',
+    },
+    {
+        ship: 'Coercer',
+        text: 'Two-mid laser destroyer. MWD scram Dual Light Pulse plate is the common duel fit; navy beam boats still delete you at range.',
+    },
+    {
+        ship: 'Dragoon',
+        text: 'Cap warfare destroyer. Three small neuts turn off active tanks and lasers—if they take the fight. Many pilots decline once they see the hull.',
+    },
 ]
 
 export const glossary: GlossaryEntry[] = [
@@ -120,6 +152,10 @@ export const guideSections = [
     { id: 'thrasher', title: 'Thrasher Fleet Issue' },
     { id: 'cormorant', title: 'Cormorant Navy Issue' },
     { id: 'talwar', title: 'Talwar Fleet Issue' },
+    { id: 'algos', title: 'Algos' },
+    { id: 'thrasher-t1', title: 'Thrasher' },
+    { id: 'coercer-t1', title: 'Coercer' },
+    { id: 'dragoon', title: 'Dragoon' },
     { id: 'glossary', title: 'Glossary', shortTitle: 'Glossary' },
-    { id: 'credits', title: 'Credits', shortTitle: 'Credits' },
+    { id: 'resources', title: 'Additional Resources', shortTitle: 'Resources' },
 ]

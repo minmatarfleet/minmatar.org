@@ -17,7 +17,7 @@ const GUIDE_COVERS: Record<string, string> = {
     'faction-warfare-advantage': '/images/guides/wiki_frontlines.png',
     'faction-warfare-plexing': '/images/guides/wiki_frontlines.png',
     'navy-destroyer-metagame': '/images/doctrines-cover.jpg',
-    'rendezvous-wolf': '/images/combatlog-tile-background.jpg',
+    'navy-frigate-guide': '/images/doctrines-cover.jpg',
     'new-player-fleet-guide': '/images/fleets-cover.jpg',
     'abyssals': '/images/fitting-cover-wormhole.jpg',
     'abyss-stormbringer-t6-electrical': '/images/fitting-cover.jpg',

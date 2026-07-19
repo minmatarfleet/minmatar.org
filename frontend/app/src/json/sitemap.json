@@ -252,6 +252,13 @@
         "keywords": [ "EVE Online guides", "faction warfare guide", "abyssal deadspace", "navy destroyer metagame", "FW plexing", "L5 missions" ]
     },
     {
+        "slug": "guides.navy_frigate_guide",
+        "path": "/guides/navy-frigate-guide/",
+        "publish": true,
+        "description": "page_finder.ships.navy_frigate_guide.description",
+        "keywords": [ "EVE Online guides", "faction warfare guide", "navy frigate", "Hookbill", "Comet", "Slicer", "Firetail", "Vigil Fleet Issue", "1v1 pvp" ]
+    },
+    {
         "slug": "propaganda",
         "alt": "icon.tv.alt",
         "path": "/alliance/propaganda/",

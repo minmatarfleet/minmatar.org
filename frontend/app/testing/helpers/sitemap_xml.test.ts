@@ -41,6 +41,7 @@ describe('sitemap_xml', () => {
         expect(paths).toContain('/guides/faction-warfare-basics/')
         expect(paths).toContain('/guides/faction-warfare-advantage/')
         expect(paths).toContain('/guides/navy-destroyer-metagame/')
+        expect(paths).toContain('/guides/navy-frigate-guide/')
         expect(paths).not.toContain('/account/')
     })
 

@@ -1,6 +1,6 @@
 ---
 title: 'Faction Warfare Basics'
-excerpt: 'An overview of EVE Online faction warfare for Minmatar Fleet: the warzone map, system types, complexes, advantage, battlefields, and loyalty points.'
+excerpt: 'An overview of the basic mechanics of faction warfare in EVE Online.'
 category: 'Faction Warfare'
 author: 'BearThatCares'
 ---

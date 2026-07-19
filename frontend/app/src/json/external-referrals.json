@@ -12,12 +12,6 @@
         "description": "Guide"
     },
     {
-        "name": "wiki_rendezvouz",
-        "title": "Rendezvous sites in an AC Wolf",
-        "target": "https://my.minmatar.org/guides/rendezvous-wolf/",
-        "description": "Guide"
-    },
-    {
         "name": "wiki_fleet_guide",
         "title": "New Player Fleet Guide",
         "target": "https://my.minmatar.org/guides/new-player-fleet-guide/",
@@ -55,8 +49,14 @@
     },
     {
         "name": "hosted_navy_destroyer_metagame",
-        "title": "The Navy Destroyer Metagame",
+        "title": "Destroyer Guide",
         "target": "/guides/navy-destroyer-metagame/",
+        "description": "Hosted guide"
+    },
+    {
+        "name": "hosted_navy_frigate_guide",
+        "title": "Frigate Guide",
+        "target": "/guides/navy-frigate-guide/",
         "description": "Hosted guide"
     },
     {

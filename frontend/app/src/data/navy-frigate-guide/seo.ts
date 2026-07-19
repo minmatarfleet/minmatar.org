@@ -1,4 +1,4 @@
-interface NavyDestroyerMetagameJsonLdOptions {
+interface NavyFrigateGuideJsonLdOptions {
     canonicalUrl: string
     siteName: string
     siteOrigin: string
@@ -12,7 +12,7 @@ interface NavyDestroyerMetagameJsonLdOptions {
     originalEditionUrl: string
 }
 
-export function buildNavyDestroyerMetagameJsonLd(options: NavyDestroyerMetagameJsonLdOptions) {
+export function buildNavyFrigateGuideJsonLd(options: NavyFrigateGuideJsonLdOptions) {
     const {
         canonicalUrl,
         siteName,
@@ -82,31 +82,29 @@ export function buildNavyDestroyerMetagameJsonLd(options: NavyDestroyerMetagameJ
                 },
                 isBasedOn: {
                     '@type': 'CreativeWork',
-                    name: 'Destroyer Guide (First Edition)',
+                    name: 'Frigate Guide (First Edition)',
                     url: originalEditionUrl,
                 },
                 genre: 'Video game guide',
                 keywords: [
                     'EVE Online',
                     'faction warfare',
-                    'destroyer',
-                    'navy destroyer',
-                    'Catalyst Navy Issue',
-                    'Coercer Navy Issue',
-                    'Thrasher Fleet Issue',
-                    'Cormorant Navy Issue',
-                    'Talwar Fleet Issue',
-                    'Algos',
-                    'Thrasher',
-                    'Coercer',
-                    'Dragoon',
+                    'navy frigate',
+                    'Caldari Navy Hookbill',
+                    'Federation Navy Comet',
+                    'Imperial Navy Slicer',
+                    'Republic Fleet Firetail',
+                    'Vigil Fleet Issue',
                     '1v1',
                     'matchup chart',
-                    'ship fittings',
-                ].join(', '),
-                inLanguage: 'en',
-                mainEntityOfPage: { '@id': `${canonicalUrl}#webpage` },
-                version: editionLabel,
+                    'solo PvP',
+                    'Scout complex',
+                ],
+                about: {
+                    '@type': 'Thing',
+                    name: 'Faction warfare navy frigates',
+                },
+                creativeWorkStatus: editionLabel,
             },
         ],
     }

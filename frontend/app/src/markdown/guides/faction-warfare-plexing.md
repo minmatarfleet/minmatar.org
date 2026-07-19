@@ -1,6 +1,6 @@
 ---
 title: 'Faction Warfare Complexes'
-excerpt: 'FW plexing in depth: gate and landing mechanics, LP payouts, and victory points by site—including Cradle of War complexes.'
+excerpt: 'An in-depth breakdown for capturing complexes in faction warfare space'
 category: 'Faction Warfare'
 author: 'BearThatCares'
 ---

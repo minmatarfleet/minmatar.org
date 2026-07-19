@@ -3,7 +3,6 @@ import type { GuideMeta, Author } from '@/data/guides/types'
 import * as faction_warfare_basics from '@markdown/guides/faction-warfare-basics.md'
 import * as faction_warfare_advantage from '@markdown/guides/faction-warfare-advantage.md'
 import * as faction_warfare_plexing from '@markdown/guides/faction-warfare-plexing.md'
-import * as rendezvous_wolf from '@markdown/guides/rendezvous-wolf.md'
 import * as new_player_fleet_guide from '@markdown/guides/new-player-fleet-guide.md'
 import * as abyssals from '@markdown/guides/abyssals.md'
 import * as abyss_duo_jackdaws_t6_dark from '@markdown/guides/abyss-duo-jackdaws-t6-dark.md'
@@ -29,7 +28,6 @@ const guideModules: Record<string, GuideModule> = {
     'faction-warfare-basics': faction_warfare_basics,
     'faction-warfare-advantage': faction_warfare_advantage,
     'faction-warfare-plexing': faction_warfare_plexing,
-    'rendezvous-wolf': rendezvous_wolf,
     'new-player-fleet-guide': new_player_fleet_guide,
     'abyssals': abyssals,
     'abyss-duo-jackdaws-t6-dark': abyss_duo_jackdaws_t6_dark,
@@ -48,7 +46,7 @@ export const guides: GuideMeta[] = [
     {
         slug: "faction-warfare-basics",
         title: "Faction Warfare Basics",
-        excerpt: "An overview of EVE Online faction warfare for Minmatar Fleet: the warzone map, system types, complexes, advantage, battlefields, and loyalty points.",
+        excerpt: "An overview of the basic mechanics of faction warfare in EVE Online.",
         category: "Faction Warfare",
         author: "BearThatCares",
         authors: [{
@@ -58,9 +56,33 @@ export const guides: GuideMeta[] = [
         }],
     },
     {
+        slug: "faction-warfare-plexing",
+        title: "Faction Warfare Complexes",
+        excerpt: "An in-depth breakdown for capturing complexes in faction warfare space",
+        category: "Faction Warfare",
+        author: "BearThatCares",
+        authors: [{
+            name: "BearThatCares",
+            id: 634915984,
+            entity: 'character',
+        }],
+    },
+    {
+        slug: "faction-warfare-advantage",
+        title: "Faction Warfare Advantage",
+        excerpt: "An in-depth breakdown for advantage in faction warfare.",
+        category: "Faction Warfare",
+        author: "A'Songala",
+        authors: [{
+            name: "A'Songala",
+            id: 2120647389,
+            entity: 'character',
+        }],
+    },
+    {
         slug: "navy-destroyer-metagame",
-        title: "The Navy Destroyer Metagame",
-        excerpt: "Furl0w's EVE Online navy destroyer metagame guide: Navy Issue fits, 1v1 matchup charts, and solo faction warfare plex tactics.",
+        title: "Destroyer Guide",
+        excerpt: "Destroyer guide for faction warfare: navy hulls plus Algos, Thrasher, Coercer, and Dragoon—fits, archetypes, and 1v1 matchups.",
         category: "Faction Warfare",
         author: "Furl0w",
         authors: [{
@@ -71,21 +93,9 @@ export const guides: GuideMeta[] = [
         path: "/guides/navy-destroyer-metagame/",
     },
     {
-        slug: "faction-warfare-advantage",
-        title: "Faction Warfare Advantage",
-        excerpt: "How EVE Online faction warfare advantage works and how to build it via plexing, rendezvous sites, and battlefields.",
-        category: "Faction Warfare",
-        author: "A'Songala",
-        authors: [{
-            name: "A'Songala",
-            id: 2120647389,
-            entity: 'character',
-        }],
-    },
-    {
-        slug: "faction-warfare-plexing",
-        title: "Faction Warfare Complexes",
-        excerpt: "FW plexing in depth: gate and landing mechanics, LP payouts, and victory points by site—including Cradle of War complexes.",
+        slug: "navy-frigate-guide",
+        title: "Frigate Guide",
+        excerpt: "Comprehensive frigate guide for faction warfare.",
         category: "Faction Warfare",
         author: "BearThatCares",
         authors: [{
@@ -93,19 +103,7 @@ export const guides: GuideMeta[] = [
             id: 634915984,
             entity: 'character',
         }],
-    },
-    {
-        slug: "rendezvous-wolf",
-        title: "Rendezvous sites in an AC Wolf",
-        excerpt: "Run Amarr Rendezvous sites with a PvE-fit autocannon Wolf assault frigate.",
-        category: "Faction Warfare",
-        author: "Buppas",
-        authors: [{
-            name: "Buppas",
-            id: 140971074,
-            entity: 'character',
-        }],
-        hiddenFromIndex: true,
+        path: "/guides/navy-frigate-guide/",
     },
     {
         slug: "new-player-fleet-guide",

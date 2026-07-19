@@ -2,7 +2,7 @@
 import {
     guideMeta,
     credits,
-    guideHistory,
+    additionalResources,
     introduction,
     considerations,
     considerationBullets,
@@ -125,93 +125,51 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
                 </dl>
             </section>
 
-            <section id="credits" data-section-id="credits" class="ndm-section ndm-panel" aria-labelledby="ndm-credits-title">
-                <div class="ndm-credits">
-                    <h2 id="ndm-credits-title" class="ndm-section__title">Credits</h2>
-                    <p class="ndm-credits__provenance">
-                        The original{' '}
-                        <a
-                            href={guideMeta.firstEditionUrl}
-                            target="_blank"
-                            rel="nofollow noopener noreferrer"
-                            class="ndm-guide__link"
-                        >
-                            {credits.firstEditionLabel}
-                        </a>{' '}
-                        was written by {credits.firstEditionAuthor}.{' '}
-                        <a
-                            href={guideMeta.firstEditionRedditUrl}
-                            target="_blank"
-                            rel="nofollow noopener noreferrer"
-                            class="ndm-guide__link"
-                        >
-                            Reddit announcement
-                        </a>
-                    </p>
-                    <p class="ndm-credits__thanks">{credits.thanks}</p>
+            <section id="resources" data-section-id="resources" class="ndm-section ndm-panel" aria-labelledby="ndm-resources-title">
+                <h2 id="ndm-resources-title" class="ndm-section__title">Additional Resources</h2>
+                <p class="ndm-section__paragraph">
+                    This web edition builds on Furl0w’s{' '}
+                    <a
+                        href={guideMeta.firstEditionUrl}
+                        target="_blank"
+                        rel="nofollow noopener noreferrer"
+                        class="ndm-guide__link"
+                    >
+                        {credits.firstEditionLabel}
+                    </a>
+                    . The links below go deeper—original source, yearly meta references, and related guides on this site.
+                </p>
 
-                    <div class="ndm-credits__quotes" aria-label="Reader testimonials from the First Edition">
-                        {
-                            credits.quotes.map((quote) => (
-                                <blockquote class="ndm-credits__quote">
-                                    <p>"{quote.text}"</p>
-                                    <footer>- {quote.attribution}</footer>
-                                </blockquote>
-                            ))
-                        }
-                    </div>
-
-                    <h3 class="ndm-section__subtitle">History</h3>
-                    <div class="ndm-history-table-wrap">
-                        <table class="ndm-history-table">
-                            <thead>
-                                <tr>
-                                    <th scope="col">Date</th>
-                                    <th scope="col">Edition</th>
-                                    <th scope="col">Notes</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {
-                                    guideHistory.map((entry) => (
-                                        <tr>
-                                            <td>
-                                                <time>{entry.dateLabel}</time>
-                                                <span class="ndm-history-table__yc">{entry.yc}</span>
-                                            </td>
-                                            <td>
-                                                {entry.title}
-                                                {
-                                                    entry.link && (
-                                                        <>
-                                                            {' · '}
-                                                            <a
-                                                                href={entry.link.href}
-                                                                target="_blank"
-                                                                rel="nofollow noopener noreferrer"
-                                                                class="ndm-guide__link"
-                                                            >
-                                                                {entry.link.label}
-                                                            </a>
-                                                        </>
-                                                    )
-                                                }
-                                            </td>
-                                            <td>{entry.description}</td>
-                                        </tr>
-                                    ))
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <p class="ndm-credits__publisher">
-                        {guideMeta.publisher}<br />
-                        {guideMeta.location}<br />
-                        {guideMeta.originalEdition}<br />
-                        {guideMeta.edition} · {guideMeta.yc}
-                    </p>
+                <div class="ndm-credits__quotes" aria-label="Reader testimonials from the First Edition">
+                    {
+                        credits.quotes.map((quote) => (
+                            <blockquote class="ndm-credits__quote">
+                                <p>"{quote.text}"</p>
+                                <footer>- {quote.attribution}</footer>
+                            </blockquote>
+                        ))
+                    }
                 </div>
+
+                <p class="ndm-credits__thanks">{credits.thanks}</p>
+
+                <ul class="ndm-resources">
+                    {
+                        additionalResources.map((resource) => (
+                            <li class="ndm-resources__item">
+                                <a
+                                    href={resource.href}
+                                    target={resource.href.startsWith('http') ? '_blank' : undefined}
+                                    rel={resource.href.startsWith('http') ? 'nofollow noopener noreferrer' : undefined}
+                                    class="ndm-guide__link"
+                                >
+                                    {resource.title}
+                                </a>
+                                <span class="ndm-resources__note">{resource.note}</span>
+                            </li>
+                        ))
+                    }
+                </ul>
             </section>
     </GuideContentsLayout>
 </div>
@@ -350,30 +308,25 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
         color: var(--text-color-secondary, var(--faded));
     }
 
-    .ndm-credits__edition {
-        margin: 0 0 var(--space-s);
-        font-family: var(--ndm-display-font);
-        font-size: var(--step-0);
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--highlight);
-    }
-
-    .ndm-credits__provenance {
-        margin: 0 0 var(--space-m);
-        font-size: var(--step-0);
-        line-height: 1.6;
-    }
-
     .ndm-credits__thanks {
         margin: 0 0 var(--space-l);
+        max-width: var(--max-text-width);
         line-height: 1.65;
+        font-size: var(--step--1);
+        color: var(--text-color-secondary, var(--faded));
     }
 
     .ndm-credits__quotes {
         display: grid;
         gap: var(--space-m);
-        margin-bottom: var(--space-l);
+        margin: var(--space-l) 0;
+        max-width: var(--max-text-width);
+    }
+
+    @media (min-width: 40rem) {
+        .ndm-credits__quotes {
+            grid-template-columns: 1fr 1fr;
+        }
     }
 
     .ndm-credits__quote {
@@ -394,55 +347,26 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
         }
     }
 
-    .ndm-credits__publisher {
-        margin: var(--space-l) 0 0;
+    .ndm-resources {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        max-width: var(--max-text-width);
+    }
+
+    .ndm-resources__item {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .ndm-resources__note {
         font-size: var(--step--1);
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
+        line-height: 1.55;
         color: var(--text-color-secondary, var(--faded));
-        line-height: 1.6;
-    }
-
-    .ndm-history-table-wrap {
-        overflow-x: auto;
-        margin: 0 0 var(--space-l);
-    }
-
-    .ndm-history-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: var(--step--1);
-        line-height: 1.5;
-
-        th,
-        td {
-            padding: var(--space-xs) var(--space-s);
-            text-align: left;
-            vertical-align: top;
-            border-bottom: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent);
-        }
-
-        th {
-            font-family: var(--ndm-display-font);
-            font-size: var(--step--2);
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: var(--text-color-secondary, var(--faded));
-            white-space: nowrap;
-        }
-
-        td:first-child {
-            white-space: nowrap;
-        }
-    }
-
-    .ndm-history-table__yc {
-        display: block;
-        margin-top: var(--space-3xs);
-        font-size: var(--step--2);
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: var(--fleet-red);
     }
 
     .ndm-guide__link {
