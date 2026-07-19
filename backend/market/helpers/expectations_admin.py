@@ -7,6 +7,7 @@ from django.utils.http import urlencode
 from fittings.models import EveDoctrineFitting
 
 from market.helpers.contract_admin import count_mismatched_contracts
+from market.helpers.contract_stock import outstanding_stock_q
 from market.helpers.expectations_changelist import (
     _format_doctrine_display,
     build_contract_expectations_changelist,
@@ -201,9 +202,8 @@ def build_contract_expectation_rows(location) -> list[dict]:
     outstanding_by_fitting = {
         row["fitting_id"]: row["c"]
         for row in EveMarketContract.objects.filter(
+            outstanding_stock_q(),
             location=location,
-            status="outstanding",
-            fitting__isnull=False,
         )
         .values("fitting_id")
         .annotate(c=Count("id"))

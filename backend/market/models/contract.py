@@ -3,6 +3,8 @@ from django.db import models
 from fittings.models import EveFitting
 from eveonline.models import EveLocation
 
+from market.helpers.contract_stock import outstanding_stock_q
+
 
 class EveMarketContractExpectation(models.Model):
     fitting = models.ForeignKey(EveFitting, on_delete=models.CASCADE)
@@ -15,9 +17,9 @@ class EveMarketContractExpectation(models.Model):
     @property
     def current_quantity(self):
         return EveMarketContract.objects.filter(
+            outstanding_stock_q(),
             fitting=self.fitting,
             location=self.location,
-            status="outstanding",
         ).count()
 
     @property

@@ -18,6 +18,7 @@ from market.helpers import (
     update_completed_contracts,
     update_expired_contracts,
 )
+from market.helpers.contracts import fitting_cache
 from market.models import EveMarketContract, EveMarketContractError
 from market.tasks import fetch_eve_market_contracts
 
@@ -111,13 +112,24 @@ class MarketTaskTestCase(TestCase):
         self.assertEqual(
             "Seller", contract_errors.first().issuer.character_name
         )
+        items_task_mock.apply_async.assert_called_once()
+        _, kwargs = items_task_mock.apply_async.call_args
+        self.assertEqual("market", kwargs["queue"])
+        self.assertEqual(0, kwargs["countdown"])
 
     def test_get_fitting_id_for_contract(self):
+        fitting_cache.clear()
         fitting = EveFitting.objects.create(
             name="[FL33T] Thrasher",
             eft_format="[Thrasher, [FL33T] Thrasher]",
             ship_id=1001,
             aliases="[NVY-5] Thrasher,[L3ARN] Thrasher",
+        )
+        # Second tagged fit makes bare "Thrasher" ambiguous.
+        EveFitting.objects.create(
+            name="[NVY] Thrasher",
+            eft_format="[Thrasher, [NVY] Thrasher]",
+            ship_id=1001,
         )
 
         self.assertEqual(fitting, get_fitting_for_contract("[FL33T] Thrasher"))
@@ -129,6 +141,23 @@ class MarketTaskTestCase(TestCase):
         self.assertIsNone(get_fitting_for_contract(""))
         self.assertIsNone(get_fitting_for_contract("[FL33T] Stabber"))
         self.assertIsNone(get_fitting_for_contract("Thrasher"))
+
+        buffer = EveFitting.objects.create(
+            name="[FL33T] Buffer Apostle",
+            eft_format="[Apostle, [FL33T] Buffer Apostle]",
+            ship_id=37604,
+        )
+        EveFitting.objects.create(
+            name="[FL33T] Active Apostle",
+            eft_format="[Apostle, [FL33T] Active Apostle]",
+            ship_id=37604,
+        )
+        fitting_cache.clear()
+        self.assertEqual(buffer, get_fitting_for_contract("Buffer Apostle"))
+        self.assertEqual(
+            EveFitting.objects.get(name="[FL33T] Active Apostle"),
+            get_fitting_for_contract("Active Apostle"),
+        )
 
     def test_update_completed_contracts(self):
         cutoff = timezone.now()

@@ -3,19 +3,20 @@ import logging
 from django.utils import timezone
 
 from eveonline.client import EsiClient
+from eveonline.helpers.corporations import (
+    SCOPE_CORPORATION_CONTRACTS,
+    get_director_with_scope,
+)
 from eveonline.models import (
-    EveCharacter,
     EveCharacterContract,
     EveCorporationContract,
 )
-from fittings.models import EveFitting
 
 from market.helpers.contract_match import (
     is_match_accepted,
-    match_contract_to_fitting,
     normalize_contract_items,
+    score_contract_against_fitting,
 )
-from market.helpers.qualification import get_qualified_contract_fittings
 from market.models import EveMarketContract, EveMarketContractItem
 
 logger = logging.getLogger(__name__)
@@ -47,24 +48,32 @@ def store_contract_items(
 def apply_content_match(
     contract: EveMarketContract, contract_items: dict[int, int]
 ):
-    location = contract.location
-    candidates = (
-        list(get_qualified_contract_fittings(location))
-        if location
-        else list(EveFitting.objects.filter(deleted__isnull=True))
-    )
-    if not candidates and contract.fitting_id:
-        candidates = [contract.fitting]
+    """
+    Require name AND content: score only against the title-resolved fitting.
 
-    fitting, score, missing, extra = match_contract_to_fitting(
-        contract_items, candidates
+    Keep fitting when module-weighted coverage >= MATCH_THRESHOLD; otherwise
+    clear fitting (keep match_score for admin). Freeze via items_fetched.
+    """
+    named = contract.fitting
+    if not named:
+        contract.match_score = 0.0
+        contract.match_is_flagged = True
+        contract.save(
+            update_fields=["fitting", "match_score", "match_is_flagged"]
+        )
+        return None, 0.0, [], []
+
+    score, missing, extra = score_contract_against_fitting(
+        contract_items, named
     )
     contract.match_score = score
-    contract.match_is_flagged = score < 1.0 if score else False
-    if fitting and is_match_accepted(score):
-        contract.fitting = fitting
+    contract.match_is_flagged = bool(score < 1.0) if score else True
+    if is_match_accepted(score):
+        contract.fitting = named
+    else:
+        contract.fitting = None
     contract.save(update_fields=["fitting", "match_score", "match_is_flagged"])
-    return fitting, score, missing, extra
+    return named if is_match_accepted(score) else None, score, missing, extra
 
 
 def fetch_public_contract_items(contract_id: int) -> tuple[bool, list[dict]]:
@@ -100,10 +109,9 @@ def fetch_private_contract_items(
         .first()
     )
     if corp_contract and corp_contract.corporation:
-        character = EveCharacter.objects.filter(
-            corporation_id=corp_contract.corporation.corporation_id,
-            token__isnull=False,
-        ).first()
+        character = get_director_with_scope(
+            corp_contract.corporation, SCOPE_CORPORATION_CONTRACTS
+        )
         if character:
             response = EsiClient(character).get_corporation_contract_items(
                 corp_contract.corporation.corporation_id,
@@ -111,6 +119,13 @@ def fetch_private_contract_items(
             )
             if response.success():
                 return True, response.results() or []
+        else:
+            logger.warning(
+                "No director with corporation contracts scope for corp %s "
+                "(contract %s)",
+                corp_contract.corporation.corporation_id,
+                contract.pk,
+            )
     return False, []
 
 

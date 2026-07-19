@@ -1,4 +1,5 @@
 from datetime import timedelta
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.contrib import admin
@@ -24,6 +25,9 @@ from market.helpers.contract_match import (
     normalize_contract_items,
     score_contract_against_fitting,
 )
+from market.helpers.contract_stock import outstanding_stock_q
+from market.helpers.contracts import create_or_update_contract_from_db_contract
+from market.helpers.contract_items import apply_content_match
 from market.helpers.contract_items import fetch_and_match_contract_items
 from market.helpers.expectations_admin import (
     build_contract_expectation_rows,
@@ -262,10 +266,12 @@ Hail S x2000
 """,
             ship_id=22456,
         )
-        _make_eve_type(22456, "Sabre")
-        _make_eve_type(2605, "Nanofiber Internal Structure II")
-        _make_eve_type(2873, "125mm Gatling AutoCannon II")
-        _make_eve_type(12608, "Hail S")
+        _make_typed_eve_type(22456, "Sabre", 6, "Ship")
+        _make_typed_eve_type(
+            2605, "Nanofiber Internal Structure II", 7, "Module"
+        )
+        _make_typed_eve_type(2873, "125mm Gatling AutoCannon II", 7, "Module")
+        _make_typed_eve_type(12608, "Hail S", 8, "Charge")
 
     def test_normalize_contract_items_aggregates_slots(self):
         raw = [
@@ -316,10 +322,251 @@ Hail S x2000
             12608: 2000,
         }
         fitting, score, _, _ = match_contract_to_fitting(
-            contract_items, [other, self.fitting]
+            contract_items,
+            [other, self.fitting],
+            preferred_fitting=self.fitting,
+        )
+        self.assertEqual(self.fitting, fitting)
+        self.assertEqual(1.0, score)
+
+    def test_match_score_ignores_bulk_charges(self):
+        contract_items = {
+            22456: 1,
+            2605: 2,
+            2873: 5,
+            12608: 50,
+        }
+        score, missing, _ = score_contract_against_fitting(
+            contract_items, self.fitting
         )
         self.assertEqual(1.0, score)
-        self.assertIn(fitting, [self.fitting, other])
+        self.assertTrue(missing)
+
+    def test_highest_percent_wins_close_fits(self):
+        """Named Buffer only keeps when items match Buffer (not Active)."""
+        _make_typed_eve_type(37604, "Apostle", 6, "Ship")
+        _make_typed_eve_type(2048, "Damage Control II", 7, "Module")
+        _make_typed_eve_type(
+            41459, "Capital I-a Enduring Armor Repairer", 7, "Module"
+        )
+        _make_typed_eve_type(
+            20245,
+            "25000mm Crystalline Carbonide Restrained Plates",
+            7,
+            "Module",
+        )
+        _make_typed_eve_type(41490, "Armor Energizing Charge", 8, "Charge")
+
+        active = EveFitting.objects.create(
+            name="[FL33T] Active Apostle",
+            ship_id=37604,
+            eft_format="""[Apostle, [FL33T] Active Apostle]
+Damage Control II
+Capital I-a Enduring Armor Repairer
+Armor Energizing Charge x1000
+""",
+        )
+        buffer = EveFitting.objects.create(
+            name="[FL33T] Buffer Apostle",
+            ship_id=37604,
+            eft_format="""[Apostle, [FL33T] Buffer Apostle]
+Damage Control II
+25000mm Crystalline Carbonide Restrained Plates
+Armor Energizing Charge x1000
+""",
+        )
+        location = _make_location(location_id=9105)
+        buffer_contract = EveMarketContract.objects.create(
+            id=50007,
+            title="Buffer Apostle",
+            price=1,
+            issuer_external_id=1,
+            status="outstanding",
+            location=location,
+            fitting=buffer,
+            is_public=False,
+        )
+        # Active hull modules under a Buffer title → name matches, fit does not
+        apply_content_match(
+            buffer_contract,
+            {37604: 1, 2048: 1, 41459: 1, 41490: 1000},
+        )
+        buffer_contract.refresh_from_db()
+        self.assertIsNone(buffer_contract.fitting_id)
+        self.assertLess(buffer_contract.match_score, MATCH_THRESHOLD)
+
+        active_contract = EveMarketContract.objects.create(
+            id=50008,
+            title="Active Apostle",
+            price=1,
+            issuer_external_id=1,
+            status="outstanding",
+            location=location,
+            fitting=active,
+            is_public=False,
+        )
+        apply_content_match(
+            active_contract,
+            {37604: 1, 2048: 1, 41459: 1, 41490: 1000},
+        )
+        active_contract.refresh_from_db()
+        self.assertEqual(active.id, active_contract.fitting_id)
+        self.assertGreaterEqual(active_contract.match_score, MATCH_THRESHOLD)
+
+    def test_apply_content_match_clears_fitting_below_threshold(self):
+        location = _make_location(location_id=9101)
+        contract = EveMarketContract.objects.create(
+            id=50001,
+            title=self.fitting.name,
+            price=1,
+            issuer_external_id=1,
+            status="outstanding",
+            location=location,
+            fitting=self.fitting,
+            is_public=False,
+        )
+        apply_content_match(contract, {22456: 1})
+        contract.refresh_from_db()
+        self.assertIsNone(contract.fitting_id)
+        self.assertIsNotNone(contract.match_score)
+        self.assertLess(contract.match_score, MATCH_THRESHOLD)
+
+    def test_list_sync_does_not_overwrite_frozen_match(self):
+        location = _make_location(location_id=9102)
+        other = EveFitting.objects.create(
+            name="[FL33T] Sabre Frozen Sync",
+            eft_format=self.fitting.eft_format.replace(
+                "[FL33T] Sabre]", "[FL33T] Sabre Frozen Sync]", 1
+            ),
+            ship_id=22456,
+        )
+        contract = EveMarketContract.objects.create(
+            id=50002,
+            title=other.name,
+            price=1,
+            issuer_external_id=1,
+            status="outstanding",
+            location=location,
+            fitting=self.fitting,
+            is_public=False,
+            items_fetched=True,
+            match_score=0.95,
+        )
+        db_contract = SimpleNamespace(
+            contract_id=50002,
+            type=EveMarketContract.esi_contract_type,
+            start_location_id=location.location_id,
+            title=other.name,
+            status="outstanding",
+            price=1,
+            issuer_id=1,
+            date_issued=timezone.now(),
+            date_expired=timezone.now() + timedelta(days=7),
+            date_completed=None,
+            assignee_id=None,
+            acceptor_id=None,
+        )
+        self.assertTrue(
+            create_or_update_contract_from_db_contract(db_contract, location)
+        )
+        contract.refresh_from_db()
+        self.assertEqual(self.fitting.id, contract.fitting_id)
+        self.assertEqual(0.95, contract.match_score)
+
+    def test_outstanding_stock_q_pending_and_verified(self):
+        location = _make_location(location_id=9103)
+        pending = EveMarketContract.objects.create(
+            id=50003,
+            title="pending",
+            price=1,
+            issuer_external_id=1,
+            status="outstanding",
+            location=location,
+            fitting=self.fitting,
+            items_fetched=False,
+        )
+        verified = EveMarketContract.objects.create(
+            id=50004,
+            title="verified",
+            price=1,
+            issuer_external_id=1,
+            status="outstanding",
+            location=location,
+            fitting=self.fitting,
+            items_fetched=True,
+            match_score=0.9,
+        )
+        failed = EveMarketContract.objects.create(
+            id=50005,
+            title="failed",
+            price=1,
+            issuer_external_id=1,
+            status="outstanding",
+            location=location,
+            fitting=self.fitting,
+            items_fetched=True,
+            match_score=0.5,
+        )
+        stock_ids = set(
+            EveMarketContract.objects.filter(
+                outstanding_stock_q()
+            ).values_list("id", flat=True)
+        )
+        self.assertIn(pending.id, stock_ids)
+        self.assertIn(verified.id, stock_ids)
+        self.assertNotIn(failed.id, stock_ids)
+
+    def test_nonsense_title_is_not_content_matched(self):
+        """Wrong/missing title never assigns from contents alone."""
+        location = _make_location(location_id=9104)
+        _make_typed_eve_type(37604, "Apostle", 6, "Ship")
+        _make_typed_eve_type(2048, "Damage Control II", 7, "Module")
+        _make_typed_eve_type(
+            20245,
+            "25000mm Crystalline Carbonide Restrained Plates",
+            7,
+            "Module",
+        )
+        buffer = EveFitting.objects.create(
+            name="[FL33T] Buffer Apostle",
+            ship_id=37604,
+            eft_format="""[Apostle, [FL33T] Buffer Apostle]
+Damage Control II
+25000mm Crystalline Carbonide Restrained Plates
+""",
+        )
+        contract = EveMarketContract.objects.create(
+            id=50006,
+            title="totally wrong apostle name",
+            price=1,
+            issuer_external_id=1,
+            status="outstanding",
+            location=location,
+            fitting=None,
+            is_public=False,
+        )
+        apply_content_match(
+            contract,
+            {37604: 1, 2048: 1, 20245: 1},
+        )
+        contract.refresh_from_db()
+        self.assertIsNone(contract.fitting_id)
+        self.assertEqual(0.0, contract.match_score)
+
+        named = EveMarketContract.objects.create(
+            id=50009,
+            title="Buffer Apostle",
+            price=1,
+            issuer_external_id=1,
+            status="outstanding",
+            location=location,
+            fitting=buffer,
+            is_public=False,
+        )
+        apply_content_match(named, {37604: 1, 2048: 1, 20245: 1})
+        named.refresh_from_db()
+        self.assertEqual(buffer.id, named.fitting_id)
+        self.assertGreaterEqual(named.match_score, MATCH_THRESHOLD)
 
 
 class SellOrderRowsTestCase(TestCase):

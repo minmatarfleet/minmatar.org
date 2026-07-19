@@ -1,6 +1,7 @@
 import logging
 import uuid
 
+from django.core.cache import cache
 from django.db.models import Q
 from django.utils import timezone
 from celery import chain, group
@@ -32,6 +33,12 @@ from market.models import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Global item-fetch pacing (Celery rate_limit is per-process; prod has multiple
+# market workers). Staggered countdown keeps ~10/m cluster-wide.
+CONTRACT_ITEMS_FETCH_CAP = 60
+CONTRACT_ITEMS_FETCH_INTERVAL_SECONDS = 6
+CONTRACT_ITEMS_SCHEDULE_CACHE_TTL = 3600
 
 
 @app.task()
@@ -428,18 +435,38 @@ def fetch_eve_market_contracts():
     logger.info("Updating expired contract statuses (since %s)", start_time)
     update_expired_contracts(start_time)
 
-    outstanding_without_items = EveMarketContract.objects.filter(
-        items_fetched=False,
-        status="outstanding",
-    ).values_list("id", flat=True)
-    for contract_id in outstanding_without_items:
-        fetch_contract_items_task.delay(contract_id)
+    outstanding_without_items = list(
+        EveMarketContract.objects.filter(
+            items_fetched=False,
+            status="outstanding",
+        )
+        .order_by("issued_at", "id")
+        .values_list("id", flat=True)[:CONTRACT_ITEMS_FETCH_CAP]
+    )
+    scheduled = 0
+    for i, contract_id in enumerate(outstanding_without_items):
+        cache_key = f"market:contract_items_scheduled:{contract_id}"
+        if not cache.add(
+            cache_key, "1", timeout=CONTRACT_ITEMS_SCHEDULE_CACHE_TTL
+        ):
+            continue
+        fetch_contract_items_task.apply_async(
+            args=[contract_id],
+            countdown=i * CONTRACT_ITEMS_FETCH_INTERVAL_SECONDS,
+            queue="market",
+        )
+        scheduled += 1
+    logger.info(
+        "Scheduled %s contract item fetch(es) (capped at %s)",
+        scheduled,
+        CONTRACT_ITEMS_FETCH_CAP,
+    )
 
     duration = (timezone.now() - start_time).total_seconds()
     logger.info("fetch_eve_market_contracts complete in %.1fs", duration)
 
 
-@app.task(rate_limit="1/s")
+@app.task(queue="market")
 def fetch_contract_items_task(contract_id: int) -> bool:
     return fetch_and_match_contract_items(contract_id)
 
