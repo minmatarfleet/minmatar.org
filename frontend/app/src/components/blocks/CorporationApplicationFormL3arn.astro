@@ -24,19 +24,13 @@ const { include_field_names = false, alliance_corporations } = Astro.props;
 
 <Flexblock class="l3arn-application-form" gap="var(--space-xl)">
     <Flexblock gap="var(--space-s)">
-        <aside class="alpha-warning" role="alert">
-            <p>{t('l3arn_application_alpha_warning')}</p>
-        </aside>
+        <p>{t('l3arn_application_alpha_warning')}</p>
 
         <p class="form-lead">{t('l3arn_application_intro')}</p>
 
-        <aside class="draft-notice" role="note">
-            <p class="form-subtext">{t('l3arn_application_draft_notice')}</p>
-        </aside>
-
-        <small role="note">
-            {t('l3arn_application_links_new_tab_hint')}
-        </small>
+        <p role="note">
+            {t('l3arn_application_draft_notice')}
+        </p>
     </Flexblock>
 
     <CorporationApplicationGoals include_field_names={include_field_names} />
@@ -71,6 +65,7 @@ const { include_field_names = false, alliance_corporations } = Astro.props;
     .form-lead {
         margin: 0;
         line-height: 1.6;
+        font-size: var(--step-0);
     }
 
     .alpha-warning {

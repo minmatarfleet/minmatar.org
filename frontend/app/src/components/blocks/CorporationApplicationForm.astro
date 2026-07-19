@@ -28,9 +28,9 @@ const idPrefix = 'corp-app';
     <Flexblock gap="var(--space-s)">
         <p class="form-lead">{t('corporation_application_intro')}</p>
 
-        <small role="note">
+        <p role="note">
             {t('l3arn_application_links_new_tab_hint')}
-        </small>
+        </p>
     </Flexblock>
 
     <CorporationApplicationIntroduction
@@ -85,5 +85,6 @@ const idPrefix = 'corp-app';
     .form-lead {
         margin: 0;
         line-height: 1.6;
+        font-size: var(--step-0);
     }
 </style>

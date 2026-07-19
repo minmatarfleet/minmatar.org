@@ -140,7 +140,7 @@ export const L3ARN_REGION_PERIOD_TO_TIMEZONE: Record<
 > = {
     US: {
         early_morning: 'US_AP',
-        morning: 'US_AP',
+        morning: 'AP_EU',
         afternoon: 'EU_US',
         evening: 'US',
     },
