@@ -508,8 +508,9 @@ def plan_build(
     only for offline/tests.
 
     Types in ``exclude_type_ids`` are treated as imported leaves (subtree not
-    expanded), matching ``build_fuel_blocks=False`` for fuel-block groups.
-    The root product cannot be excluded.
+    expanded), matching ``build_fuel_blocks=False`` for intermediate fuel-block
+    groups. The root product is always expanded when it has a recipe — including
+    when the order itself is a fuel block.
     """
     if quantity <= 0:
         raise ValueError("quantity must be positive")
@@ -536,6 +537,7 @@ def plan_build(
     )
     excluded: Set[int] = {int(tid) for tid in (exclude_type_ids or [])}
     excluded.discard(int(root.id))
+    root_id = int(root.id)
 
     recipe_cache: Dict[int, Optional[Recipe]] = {}
 
@@ -547,7 +549,13 @@ def plan_build(
     def is_buildable(type_id: int) -> bool:
         if type_id in excluded:
             return False
-        if not build_fuel_blocks and type_id in fuel_type_ids:
+        # Always manufacture the root (e.g. fuel-block industry orders).
+        # build_fuel_blocks=False only skips intermediate fuel-block inputs.
+        if (
+            not build_fuel_blocks
+            and type_id in fuel_type_ids
+            and type_id != root_id
+        ):
             return False
         return recipe_for(type_id) is not None
 

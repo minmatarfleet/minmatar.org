@@ -296,11 +296,16 @@ class BeltOreBlendTestCase(TestCase):
 
 
 class CompressionAllowlistTestCase(TestCase):
-    def test_covered_materials_are_trit_pye_mex(self):
+    def test_covered_materials_include_minerals_and_ice(self):
+        covered = compression_covered_materials()
         self.assertEqual(
-            compression_covered_materials(),
+            [m for m in covered if m in COMPRESSION_COVERED_MINERALS],
             ["Mexallon", "Pyerite", "Tritanium"],
         )
+        self.assertIn("Heavy Water", covered)
+        self.assertIn("Liquid Ozone", covered)
+        self.assertIn("Strontium Clathrates", covered)
+        self.assertNotIn("Helium Isotopes", covered)
         self.assertEqual(
             COMPRESSION_COVERED_MINERALS,
             frozenset({"Tritanium", "Pyerite", "Mexallon"}),
@@ -371,12 +376,15 @@ class CompressedOrePlanTestCase(TestCase):
         self.assertEqual(plan.mineral_imports["Nocxium"], 30_000)
         self.assertEqual(plan.mineral_imports["Isogen"], 400_000)
         self.assertEqual(plan.pi_other_imports["Mechanical Parts"], 48)
-        self.assertEqual(plan.ice_imports["Liquid Ozone"], 1000)
+        # Liquid Ozone is covered by Compressed Dark Glitter.
+        self.assertIn("Compressed Dark Glitter", plan.ice_compressed)
+        self.assertNotIn("Liquid Ozone", plan.ice_imports)
         names = {name for name, _ in plan.import_lines()}
         self.assertNotIn("Compressed Bitumens", names)
         self.assertIn("Compressed Zeolites", names)
         self.assertIn("Compressed Plagioclase", names)
         self.assertIn("Compressed Veldspar", names)
+        self.assertIn("Compressed Dark Glitter", names)
         self.assertNotIn("Compressed Scordite", names)
         self.assertNotIn("Mexallon", names)
         self.assertIn("Nocxium", names)
@@ -384,6 +392,7 @@ class CompressedOrePlanTestCase(TestCase):
         self.assertNotIn("Tritanium", names)
         self.assertEqual(plan.reprocessing_tax, 0.0)
         self.assertIn("Tritanium", plan.expected_minerals)
+        self.assertIn("Liquid Ozone", plan.expected_ice_products)
         self.assertGreaterEqual(
             plan.expected_minerals["Tritanium"]
             + plan.mineral_imports.get("Tritanium", 0),
@@ -629,3 +638,95 @@ class CompressedOrePlanTestCase(TestCase):
         qty_with = plan_with.belt_ore_compressed.get("Compressed Zeolites", 0)
         self.assertGreater(qty_without, qty_with)
         self.assertAlmostEqual(plan_with.refine_rate, rate_with, places=10)
+
+
+def _standard_ice_yields(refine: float = 0.84) -> dict:
+    """Per-unit ice yields at refine_rate (portion size 1)."""
+    return {
+        "Glare Crust": {
+            "Heavy Water": 1381 * refine,
+            "Liquid Ozone": 691 * refine,
+            "Strontium Clathrates": 35 * refine,
+        },
+        "Dark Glitter": {
+            "Heavy Water": 691 * refine,
+            "Liquid Ozone": 1381 * refine,
+            "Strontium Clathrates": 69 * refine,
+        },
+        "Gelidus": {
+            "Heavy Water": 345 * refine,
+            "Liquid Ozone": 691 * refine,
+            "Strontium Clathrates": 104 * refine,
+        },
+        "Krystallos": {
+            "Heavy Water": 173 * refine,
+            "Liquid Ozone": 691 * refine,
+            "Strontium Clathrates": 173 * refine,
+        },
+    }
+
+
+class CompressedIcePlanTestCase(TestCase):
+    @patch("industry.helpers.compressed_ore.base_compression_ice_yields")
+    def test_helium_fuel_compresses_hw_lo_sr_not_isotopes(self, mock_yields):
+        refine = 0.84
+        mock_yields.return_value = _standard_ice_yields(refine)
+        # Rough Helium Fuel Block leaf ratio (ME-adjusted-ish).
+        plan = build_compressed_ore_plan(
+            {
+                "Heavy Water": 146_000,
+                "Liquid Ozone": 300_000,
+                "Helium Isotopes": 386_000,
+                "Strontium Clathrates": 18_000,
+            },
+            refine_rate=refine,
+            require_market=False,
+        )
+        self.assertTrue(plan.includes_compressed_ore)
+        # Isotopes stay as direct imports (tiny m3).
+        self.assertEqual(plan.ice_imports["Helium Isotopes"], 386_000)
+        self.assertNotIn("Compressed Clear Icicle", plan.ice_compressed)
+        names = {name for name, _ in plan.import_lines()}
+        self.assertIn("Helium Isotopes", names)
+        self.assertIn("Compressed Glare Crust", names)
+        self.assertIn("Compressed Dark Glitter", names)
+        self.assertIn("Compressed Krystallos", names)
+        expected = plan.expected_ice_products
+        self.assertGreaterEqual(
+            expected.get("Heavy Water", 0)
+            + plan.ice_imports.get("Heavy Water", 0),
+            146_000,
+        )
+        self.assertGreaterEqual(
+            expected.get("Liquid Ozone", 0)
+            + plan.ice_imports.get("Liquid Ozone", 0),
+            300_000,
+        )
+        self.assertGreaterEqual(
+            expected.get("Strontium Clathrates", 0)
+            + plan.ice_imports.get("Strontium Clathrates", 0),
+            18_000,
+        )
+
+    @patch("industry.helpers.compressed_ore.base_compression_ice_yields")
+    def test_liquid_ozone_only_uses_dark_glitter(self, mock_yields):
+        refine = 0.84
+        mock_yields.return_value = _standard_ice_yields(refine)
+        plan = build_compressed_ore_plan(
+            {"Liquid Ozone": 1000},
+            refine_rate=refine,
+            require_market=False,
+        )
+        self.assertIn("Compressed Dark Glitter", plan.ice_compressed)
+        self.assertNotIn("Liquid Ozone", plan.ice_imports)
+        self.assertGreaterEqual(
+            plan.expected_ice_products.get("Liquid Ozone", 0), 1000
+        )
+
+    def test_compression_covered_includes_ice(self):
+        covered = compression_covered_materials()
+        self.assertIn("Heavy Water", covered)
+        self.assertIn("Liquid Ozone", covered)
+        self.assertIn("Strontium Clathrates", covered)
+        self.assertNotIn("Helium Isotopes", covered)
+        self.assertIn("Tritanium", covered)

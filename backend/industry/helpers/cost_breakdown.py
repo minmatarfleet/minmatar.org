@@ -161,17 +161,21 @@ def reprocessing_output_value_isk(
     prices_by_name: Optional[Dict[str, int]] = None,
 ) -> int:
     """
-    Estimated Jita value of materials produced by reprocessing compressed ore.
+    Estimated Jita value of materials produced by reprocessing compressed
+    ore/ice.
 
-    ``expected_minerals`` holds portion-aware reprocess outputs (minerals and
-    any PI P0 from moon ore).
+    ``expected_minerals`` holds portion-aware ore/moon outputs;
+    ``expected_ice_products`` holds ice refine outputs.
     """
-    if not ore_plan.includes_compressed_ore or not ore_plan.expected_minerals:
+    outputs: Dict[str, int] = dict(ore_plan.expected_minerals)
+    for name, qty in ore_plan.expected_ice_products.items():
+        outputs[name] = outputs.get(name, 0) + int(qty)
+    if not ore_plan.includes_compressed_ore or not outputs:
         return 0
     if prices_by_name is None:
-        prices_by_name = _prices_by_name(ore_plan.expected_minerals.keys())
+        prices_by_name = _prices_by_name(outputs.keys())
     return materials_jita_sell_isk_from_named(
-        ore_plan.expected_minerals, prices_by_name=prices_by_name
+        outputs, prices_by_name=prices_by_name
     )
 
 
@@ -207,7 +211,11 @@ def build_plan_cost_breakdown(
 
     if compressed_ore is not None:
         import_map = dict(compressed_ore.import_lines())
-        names = set(import_map) | set(compressed_ore.expected_minerals)
+        names = (
+            set(import_map)
+            | set(compressed_ore.expected_minerals)
+            | set(compressed_ore.expected_ice_products)
+        )
         prices_by_name = _prices_by_name(names)
         materials_isk = materials_jita_sell_isk_from_named(
             import_map, prices_by_name=prices_by_name

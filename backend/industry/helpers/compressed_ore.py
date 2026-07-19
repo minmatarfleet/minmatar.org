@@ -1,20 +1,23 @@
 """
-Convert a leaf bill of materials into compressed ore for Trit / Pye / Mex.
+Convert a leaf bill of materials into compressed ore and compressed ice.
 
-Current scope (see COMPRESSION_COVERED_MINERALS — extend that allowlist later):
-1. Cover Tritanium, Pyerite, and Mexallon with compressed ore at the given
-   refine rate.
-2. Keep all other minerals, PI, ice, and misc leaves as direct imports.
+Current scope:
+1. Cover Tritanium, Pyerite, and Mexallon with compressed belt ore at the given
+   refine rate (see COMPRESSION_COVERED_MINERALS).
+2. Cover Heavy Water, Liquid Ozone, and Strontium Clathrates with compressed
+   ice (see COMPRESSION_COVERED_ICE). Faction isotopes stay as direct imports
+   (tiny m3; not worth Compressed Clear Icicle / etc.).
+3. Keep other minerals, PI, isotopes, and misc leaves as direct imports.
 
 Isolation ranking (100M mineral @ 84% refine, Compressed * volumes):
-- Tritanium → **Veldspar** (≈29.8k m³, zero overage). Scordite is ~4× bulkier
+- Tritanium → **Veldspar** (~29.8k m3, zero overage). Scordite is ~4x bulkier
   and dumps Pyerite.
-- Pyerite → **Zeolites** (≈149k m³, zero Trit overage). Beats Scordite
-  (≈180k m³ + 151M Trit dump). Matches Janice's Compressed Zeolites pick.
+- Pyerite → **Zeolites** (~149k m3, zero Trit overage). Beats Scordite
+  (~180k m3 + 151M Trit dump). Matches Janice's Compressed Zeolites pick.
   Scordite kept as marketable fallback only.
-- Mexallon → **Plagioclase** (≈595k m³). Beats Pyroxeres (≈1.19M m³ + Pye
-  dump), Kernite (≈2.38M m³ + 200M Isogen dump), and sizing moon ore for Mex
-  (≈2.98M m³ + huge Pye dump). Trit overage from Plagioclase is creditable
+- Mexallon → **Plagioclase** (~595k m3). Beats Pyroxeres (~1.19M m3 + Pye
+  dump), Kernite (~2.38M m3 + 200M Isogen dump), and sizing moon ore for Mex
+  (~2.98M m3 + huge Pye dump). Trit overage from Plagioclase is creditable
   against Trit demand. Kylixium is denser but is not a highsec Janice path.
 
 Blend when Trit + Pye + Mex are needed (order matters for byproduct credit):
@@ -23,12 +26,19 @@ Blend when Trit + Pye + Mex are needed (order matters for byproduct credit):
    Never size Zeolites/Scordite/Kernite for Mex when Plagioclase is available.
 3. Size Veldspar for remaining Tritanium (never size Pye/Mex ores for Trit).
 
+Ice blend (all Compressed ice is 100 m3; order matters for byproduct credit):
+1. Size Glare Crust for Heavy Water.
+2. Size Dark Glitter for remaining Liquid Ozone.
+3. Size Krystallos for remaining Strontium Clathrates.
+Isotopes are never sized into compressed ice.
+
 Moon-ore → PI P0 conversion is implemented but gated off until those materials
 are added to COMPRESSION_COVERED_OTHER. Zeolites used for Pyerite still produce
 Atmospheric Gases as refine byproduct (tracked in expected outputs).
 
 Modern CCP compression is 1 uncompressed unit → 1 Compressed unit (volume only
-shrinks). Yields use EveTypeMaterial on the base ore (portion size 100).
+shrinks). Ore yields use EveTypeMaterial on the base ore (portion size 100);
+ice yields use portion size 1.
 
 When EveMarketPrice rows exist, only recommend Compressed types that have a
 positive average_price (proxy for Jita/universe market availability).
@@ -91,6 +101,60 @@ ICE_NAMES = frozenset(
         "Oxygen Isotopes",
     }
 )
+
+# Ice products covered via compressed ice. Isotopes stay as direct imports
+# (very small m3; Compressed Clear Icicle etc. are not worth the freight).
+COMPRESSION_COVERED_ICE: frozenset[str] = frozenset(
+    {
+        "Heavy Water",
+        "Liquid Ozone",
+        "Strontium Clathrates",
+    }
+)
+
+# Ice reprocesses 1 unit at a time (unlike ore's 100-unit batches).
+ICE_BATCH_SIZE = 1
+
+# Highest-yield non-isotope ice per covered product (100 m3 Compressed *).
+PRIMARY_ICE_FOR_PRODUCT: Dict[str, str] = {
+    "Heavy Water": "Glare Crust",
+    "Liquid Ozone": "Dark Glitter",
+    "Strontium Clathrates": "Krystallos",
+}
+
+# Non-isotope ices only — faction isotope ices are intentionally omitted.
+BASE_COMPRESSION_ICES: Tuple[str, ...] = (
+    "Glare Crust",
+    "Dark Glitter",
+    "Gelidus",
+    "Krystallos",
+)
+
+# 100% refine outputs per 1 ice unit (matches EveTypeMaterial / wiki tables).
+FALLBACK_ICE_YIELDS_PER_UNIT: Dict[str, Dict[str, float]] = {
+    "Glare Crust": {
+        "Heavy Water": 1381,
+        "Liquid Ozone": 691,
+        "Strontium Clathrates": 35,
+    },
+    "Dark Glitter": {
+        "Heavy Water": 691,
+        "Liquid Ozone": 1381,
+        "Strontium Clathrates": 69,
+    },
+    "Gelidus": {
+        "Heavy Water": 345,
+        "Liquid Ozone": 691,
+        "Strontium Clathrates": 104,
+    },
+    "Krystallos": {
+        "Heavy Water": 173,
+        "Liquid Ozone": 691,
+        "Strontium Clathrates": 173,
+    },
+}
+
+# All Compressed ice shares 100 m3 (ranking uses yield only — volumes match).
 
 # Highsec moon ores that yield PI P0 (from moons.models.ore_yield_map /
 # EveTypeMaterial). Prefer base Compressed forms that trade on the market.
@@ -172,14 +236,15 @@ class MaterialBuckets:
 
 @dataclass
 class CompressedOrePlan:
-    """Reverse-engineered import plan using compressed ore where possible."""
+    """Reverse-engineered import plan using compressed ore/ice where possible."""
 
     refine_rate: float = DEFAULT_REFINE_RATE
     # Corp tax on estimated reprocessing output value (e.g. 0.025 = 2.5%).
-    # Only set when the plan includes compressed ore that will be reprocessed.
+    # Only set when the plan includes compressed ore/ice that will be reprocessed.
     reprocessing_tax: float = 0.0
     moon_ore_compressed: Dict[str, int] = field(default_factory=dict)
     belt_ore_compressed: Dict[str, int] = field(default_factory=dict)
+    ice_compressed: Dict[str, int] = field(default_factory=dict)
     mineral_imports: Dict[str, int] = field(default_factory=dict)
     pi_other_imports: Dict[str, int] = field(default_factory=dict)
     ice_imports: Dict[str, int] = field(default_factory=dict)
@@ -187,6 +252,8 @@ class CompressedOrePlan:
     moon_mineral_byproducts: Dict[str, int] = field(default_factory=dict)
     # Expected minerals from reprocessing the compressed ore (portion-aware).
     expected_minerals: Dict[str, int] = field(default_factory=dict)
+    # Expected ice products from reprocessing compressed ice (portion size 1).
+    expected_ice_products: Dict[str, int] = field(default_factory=dict)
     # Leaf mineral needs used for the conversion (for reconciliation).
     mineral_needs: Dict[str, int] = field(default_factory=dict)
     # expected - need (positive = surplus from ore refine).
@@ -194,14 +261,18 @@ class CompressedOrePlan:
 
     @property
     def includes_compressed_ore(self) -> bool:
-        """True when belt/moon ore will be reprocessed at the facility."""
-        return bool(self.moon_ore_compressed) or bool(self.belt_ore_compressed)
+        """True when belt/moon ore or ice will be reprocessed at the facility."""
+        return (
+            bool(self.moon_ore_compressed)
+            or bool(self.belt_ore_compressed)
+            or bool(self.ice_compressed)
+        )
 
     def tax_isk(self, output_value: float) -> int:
         """
         ISK fee for reprocessing materials worth ``output_value``.
 
-        Zero when the plan has no compressed ore (nothing to reprocess).
+        Zero when the plan has no compressed ore/ice (nothing to reprocess).
         """
         if (
             not self.includes_compressed_ore
@@ -212,11 +283,12 @@ class CompressedOrePlan:
         return math.floor(output_value * self.reprocessing_tax)
 
     def import_lines(self) -> List[Tuple[str, int]]:
-        """Flat freighter list: compressed ore + items bought as-is."""
+        """Flat freighter list: compressed ore/ice + items bought as-is."""
         lines: Dict[str, int] = {}
         for bucket in (
             self.moon_ore_compressed,
             self.belt_ore_compressed,
+            self.ice_compressed,
             self.mineral_imports,
             self.pi_other_imports,
             self.ice_imports,
@@ -239,7 +311,11 @@ class CompressedOrePlan:
 
 def compression_covered_materials() -> List[str]:
     """Sorted names of materials currently included in compression math."""
-    return sorted(COMPRESSION_COVERED_MINERALS | COMPRESSION_COVERED_OTHER)
+    return sorted(
+        COMPRESSION_COVERED_MINERALS
+        | COMPRESSION_COVERED_OTHER
+        | COMPRESSION_COVERED_ICE
+    )
 
 
 def compressed_type_name(ore_name: str) -> str:
@@ -765,6 +841,228 @@ def _top_up_floor_coverage(
         belt_compressed[name] = belt_compressed.get(name, 0) + add
 
 
+def ice_materials_per_unit(ice_name: str) -> Dict[str, float]:
+    """
+    Base reprocessing outputs per 1 ice unit at 100% yield.
+
+    Prefers TypeMaterials on the base (uncompressed) ice; Compressed * rows are
+    often empty in SDE mirrors. Falls back to FALLBACK_ICE_YIELDS_PER_UNIT.
+    """
+    base = base_ore_name(ice_name)
+    for candidate in (base, compressed_type_name(base)):
+        ice = EveType.objects.filter(name=candidate).first()
+        if ice is None:
+            continue
+        try:
+            _ensure_type_materials_loaded(ice.id)
+        except Exception:
+            pass
+        yields: Dict[str, float] = {}
+        for material in EveTypeMaterial.objects.filter(
+            eve_type_id=ice.id
+        ).select_related("material_eve_type"):
+            mat_name = material.material_eve_type.name
+            if mat_name in ICE_NAMES:
+                yields[mat_name] = float(material.quantity)
+        if yields:
+            return yields
+    return dict(FALLBACK_ICE_YIELDS_PER_UNIT.get(base, {}))
+
+
+def ice_reprocessing_yields(
+    ice_name: str,
+    refine_rate: float = DEFAULT_REFINE_RATE,
+) -> Dict[str, float]:
+    """Ice product yields per 1 ice unit at ``refine_rate``."""
+    if refine_rate <= 0:
+        raise ValueError("refine_rate must be positive")
+    per_unit = ice_materials_per_unit(ice_name)
+    return {
+        name: (qty / ICE_BATCH_SIZE) * refine_rate
+        for name, qty in per_unit.items()
+        if qty > 0
+    }
+
+
+def reprocess_ice_output(
+    ice_name: str,
+    quantity: int,
+    refine_rate: float = DEFAULT_REFINE_RATE,
+) -> Dict[str, int]:
+    """
+    Portion-aware ice refine: floor(qty / portion * base * refine_rate).
+
+    Ice portion size is 1 (unlike ore's 100-unit batches).
+    """
+    if quantity <= 0 or refine_rate <= 0:
+        return {}
+    per_unit = ice_materials_per_unit(ice_name)
+    out: Dict[str, int] = {}
+    for name, base_qty in per_unit.items():
+        produced = math.floor(
+            quantity / ICE_BATCH_SIZE * base_qty * refine_rate
+        )
+        if produced > 0:
+            out[name] = produced
+    return out
+
+
+def base_compression_ice_yields(
+    refine_rate: float = DEFAULT_REFINE_RATE,
+    *,
+    require_market: bool = True,
+) -> Dict[str, Dict[str, float]]:
+    """Per-unit ice-product yields for marketable compression ices."""
+    candidates = list(BASE_COMPRESSION_ICES)
+    if require_market:
+        marketable = marketable_compressed_names(candidates)
+        candidates = marketable if marketable else list(BASE_COMPRESSION_ICES)
+    loaded: Dict[str, Dict[str, float]] = {}
+    for ice_name in candidates:
+        yields = ice_reprocessing_yields(ice_name, refine_rate=refine_rate)
+        if yields:
+            loaded[ice_name] = {
+                k: v for k, v in yields.items() if k in ICE_NAMES
+            }
+    return loaded
+
+
+def _cover_ice_product(
+    remaining: Dict[str, float],
+    ice_units: Dict[str, float],
+    ice_yields: Dict[str, Dict[str, float]],
+    product: str,
+    *,
+    preferred: Optional[str] = None,
+) -> None:
+    """Size ice for one product; credit other ice byproducts to remaining."""
+    if remaining.get(product, 0) <= 0:
+        return
+    if product not in COMPRESSION_COVERED_ICE:
+        return
+    ice = preferred or PRIMARY_ICE_FOR_PRODUCT.get(product)
+    if ice is None or ice not in ice_yields:
+        # Fall back to densest available ice for this product.
+        candidates = [
+            name
+            for name, yields in ice_yields.items()
+            if yields.get(product, 0.0) > 0
+        ]
+        if not candidates:
+            return
+        candidates.sort(
+            key=lambda name: (
+                -ice_yields[name].get(product, 0.0),
+                name,
+            )
+        )
+        ice = candidates[0]
+    ice_yield = ice_yields[ice].get(product, 0.0)
+    if ice_yield <= 0:
+        return
+    units = remaining[product] / ice_yield
+    ice_units[ice] = ice_units.get(ice, 0.0) + units
+    remaining[product] = 0.0
+    for mat, mat_yield in ice_yields[ice].items():
+        if mat == product or mat_yield <= 0 or mat not in remaining:
+            continue
+        remaining[mat] = max(0.0, remaining[mat] - mat_yield * units)
+
+
+def compute_practical_ice_blend(
+    ice_needs: Dict[str, int],
+    ice_yields: Dict[str, Dict[str, float]],
+) -> Tuple[Dict[str, float], Dict[str, int]]:
+    """
+    Uncompressed ice units for allowlisted ice products (HW / LO / Sr only).
+
+    Order (byproduct credit):
+    1. Glare Crust for Heavy Water.
+    2. Dark Glitter for remaining Liquid Ozone.
+    3. Krystallos for remaining Strontium Clathrates.
+
+    Faction isotopes always stay as imports.
+    """
+    remaining = {
+        name: float(max(0, ice_needs.get(name, 0)))
+        for name in COMPRESSION_COVERED_ICE
+    }
+    ice_units: Dict[str, float] = {}
+
+    for product in (
+        "Heavy Water",
+        "Liquid Ozone",
+        "Strontium Clathrates",
+    ):
+        _cover_ice_product(
+            remaining,
+            ice_units,
+            ice_yields,
+            product,
+            preferred=PRIMARY_ICE_FOR_PRODUCT.get(product),
+        )
+
+    imports: Dict[str, int] = {
+        name: int(math.ceil(qty))
+        for name, qty in remaining.items()
+        if qty > 0.5  # float dust from byproduct credit
+    }
+    # Isotopes and any other non-allowlisted ice products stay as imports.
+    for name, qty in ice_needs.items():
+        if name in COMPRESSION_COVERED_ICE or qty <= 0:
+            continue
+        imports[name] = imports.get(name, 0) + int(qty)
+    return ice_units, imports
+
+
+def _sum_ice_reprocess_outputs(
+    compressed: Dict[str, int],
+    refine_rate: float,
+) -> Dict[str, int]:
+    totals: Dict[str, int] = {}
+    for name, qty in compressed.items():
+        for mat, produced in reprocess_ice_output(
+            base_ore_name(name), qty, refine_rate=refine_rate
+        ).items():
+            totals[mat] = totals.get(mat, 0) + produced
+    return totals
+
+
+def _top_up_ice_floor_coverage(
+    ice_compressed: Dict[str, int],
+    ice_needs: Dict[str, int],
+    ice_imports: Dict[str, int],
+    refine_rate: float,
+    *,
+    max_iterations: int = 100_000,
+) -> None:
+    """Add primary ice until floored reprocess meets covered ice needs."""
+    coverage_rate = conservative_refine_rate(refine_rate)
+    for _ in range(max_iterations):
+        expected = _sum_ice_reprocess_outputs(ice_compressed, coverage_rate)
+        shortfall: Optional[str] = None
+        shortfall_qty = 0
+        for product in COMPRESSION_COVERED_ICE:
+            need = ice_needs.get(product, 0)
+            got = expected.get(product, 0) + ice_imports.get(product, 0)
+            if got < need:
+                shortfall = product
+                shortfall_qty = need - got
+                break
+        if shortfall is None:
+            return
+        ice = PRIMARY_ICE_FOR_PRODUCT.get(shortfall)
+        if not ice:
+            return
+        name = compressed_type_name(ice)
+        base_qty = ice_materials_per_unit(ice).get(shortfall, 0.0)
+        yield_per = base_qty * coverage_rate
+        if yield_per <= 0:
+            return
+        add = max(1, math.ceil(shortfall_qty / yield_per))
+        ice_compressed[name] = ice_compressed.get(name, 0) + add
+
+
 def _mineral_delta(
     needs: Dict[str, int],
     expected: Dict[str, int],
@@ -790,7 +1088,8 @@ def build_compressed_ore_plan(
     require_market: bool = True,
 ) -> CompressedOrePlan:
     """
-    Reverse leaf materials into compressed moon/belt ore plus direct imports.
+    Reverse leaf materials into compressed moon/belt ore, compressed ice,
+    plus direct imports.
 
     ``require_market`` limits Compressed types to those with EveMarketPrice > 0
     when any market prices are present in the DB.
@@ -807,6 +1106,7 @@ def build_compressed_ore_plan(
     )
     mineral_needs = dict(buckets.minerals)
     pi_p0_needs = dict(buckets.pi_p0)
+    ice_needs = dict(buckets.ice)
 
     moon_byproducts: Dict[str, int] = {}
     pi_covered_by_compression = bool(COMPRESSION_COVERED_OTHER & PI_P0_NAMES)
@@ -852,14 +1152,34 @@ def build_compressed_ore_plan(
     )
     plan.mineral_imports = mineral_imports
     plan.pi_other_imports.update(buckets.pi_other)
-    plan.ice_imports.update(buckets.ice)
     plan.other_imports.update(buckets.other)
+
+    ice_yields = base_compression_ice_yields(
+        refine_rate=refine_rate, require_market=require_market
+    )
+    if ice_needs and ice_yields:
+        ice_units, ice_imports = compute_practical_ice_blend(
+            ice_needs, ice_yields
+        )
+        plan.ice_compressed = to_compressed_units(ice_units)
+        _top_up_ice_floor_coverage(
+            plan.ice_compressed,
+            ice_needs,
+            ice_imports,
+            refine_rate,
+        )
+        plan.ice_imports = ice_imports
+    elif ice_needs:
+        plan.ice_imports.update(ice_needs)
 
     # Expected / delta at the true facility rate (in-game). Top-up used the
     # conservative display rate, so these deltas are typically a small surplus.
     plan.expected_minerals = _sum_reprocess_outputs(
         {**plan.moon_ore_compressed, **plan.belt_ore_compressed},
         refine_rate,
+    )
+    plan.expected_ice_products = _sum_ice_reprocess_outputs(
+        plan.ice_compressed, refine_rate
     )
     # Expected minerals from ore only (PI P0 counted separately in moon refine).
     plan.mineral_delta = _mineral_delta(
