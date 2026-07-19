@@ -505,6 +505,46 @@ Armor Energizing Charge x1000
         self.assertIn(verified.id, stock_ids)
         self.assertNotIn(failed.id, stock_ids)
 
+    def test_wrong_title_still_content_matches(self):
+        """Contracts with nonsense titles match by hull/modules after items."""
+        location = _make_location(location_id=9104)
+        _make_typed_eve_type(37604, "Apostle", 6, "Ship")
+        _make_typed_eve_type(2048, "Damage Control II", 7, "Module")
+        _make_typed_eve_type(
+            20245,
+            "25000mm Crystalline Carbonide Restrained Plates",
+            7,
+            "Module",
+        )
+        buffer = EveFitting.objects.create(
+            name="[FL33T] Buffer Apostle",
+            ship_id=37604,
+            eft_format="""[Apostle, [FL33T] Buffer Apostle]
+Damage Control II
+25000mm Crystalline Carbonide Restrained Plates
+""",
+        )
+        EveMarketContractExpectation.objects.create(
+            fitting=buffer, location=location, quantity=1
+        )
+        contract = EveMarketContract.objects.create(
+            id=50006,
+            title="totally wrong apostle name",
+            price=1,
+            issuer_external_id=1,
+            status="outstanding",
+            location=location,
+            fitting=None,
+            is_public=False,
+        )
+        apply_content_match(
+            contract,
+            {37604: 1, 2048: 1, 20245: 1},
+        )
+        contract.refresh_from_db()
+        self.assertEqual(buffer.id, contract.fitting_id)
+        self.assertGreaterEqual(contract.match_score, MATCH_THRESHOLD)
+
 
 class SellOrderRowsTestCase(TestCase):
     def setUp(self):

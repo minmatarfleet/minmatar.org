@@ -99,12 +99,14 @@ class MarketTaskTestCase(TestCase):
 
         contracts = EveMarketContract.objects.all()
 
-        self.assertEqual(1, contracts.count())
-        self.assertEqual(10000001, contracts[0].id)
-        self.assertEqual(fitting.id, contracts[0].fitting.id)
-        self.assertEqual(
-            location.location_id, contracts[0].location.location_id
-        )
+        # Matching-title contract + wrong-title contract at the same location
+        # (wrong titles are still ingested for content matching).
+        self.assertEqual(2, contracts.count())
+        matched = EveMarketContract.objects.get(id=10000001)
+        unmatched_title = EveMarketContract.objects.get(id=10000002)
+        self.assertEqual(fitting.id, matched.fitting.id)
+        self.assertIsNone(unmatched_title.fitting_id)
+        self.assertEqual(location.location_id, matched.location.location_id)
 
         contract_errors = EveMarketContractError.objects.all()
         self.assertEqual(1, contract_errors.count())
@@ -113,9 +115,10 @@ class MarketTaskTestCase(TestCase):
             "Seller", contract_errors.first().issuer.character_name
         )
         items_task_mock.apply_async.assert_called()
-        _, kwargs = items_task_mock.apply_async.call_args
-        self.assertEqual("market", kwargs["queue"])
-        self.assertEqual(0, kwargs["countdown"])
+        for call in items_task_mock.apply_async.call_args_list:
+            self.assertEqual("market", call.kwargs["queue"])
+            self.assertIn(call.kwargs["countdown"], (0, 6))
+        self.assertEqual(2, items_task_mock.apply_async.call_count)
 
     def test_get_fitting_id_for_contract(self):
         fitting_cache.clear()

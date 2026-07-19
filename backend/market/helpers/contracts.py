@@ -134,8 +134,9 @@ def create_or_update_contract_from_db_contract(
 ) -> bool:
     """
     Create or update EveMarketContract from an EveCharacterContract or
-    EveCorporationContract. Only stores if type is item_exchange, location
-    matches, and title matches a known fitting. Returns True if stored.
+    EveCorporationContract. Stores item_exchange contracts at the location
+    even when the title does not match a fitting — content matching assigns
+    the fit after items are fetched.
 
     Once items have been fetched and a content match frozen, fitting/match_score
     are not overwritten from the contract title.
@@ -157,13 +158,6 @@ def create_or_update_contract_from_db_contract(
         )
         return False
     fitting = get_fitting_for_contract(db_contract.title or "")
-    if not fitting:
-        logger.info(
-            "Skipping contract %s: no fitting found for title %r",
-            db_contract.contract_id,
-            db_contract.title or "",
-        )
-        return False
     status = _map_contract_status(db_contract.status or "")
     contract, _ = EveMarketContract.objects.get_or_create(
         id=db_contract.contract_id,
@@ -197,8 +191,8 @@ def create_or_update_contract(esi_contract, location: EveLocation):
 
     fitting = get_fitting_for_contract(esi_contract["title"])
     if not fitting:
+        # Still ingest for content matching; keep alliance title errors for admin.
         record_unmatched_contract(esi_contract, location)
-        return
 
     contract, _ = EveMarketContract.objects.get_or_create(
         id=esi_contract["contract_id"],
@@ -210,8 +204,8 @@ def create_or_update_contract(esi_contract, location: EveLocation):
     )
     contract.title = esi_contract["title"]
     contract.status = "outstanding"
-    contract.issued_at = esi_contract["date_issued"]
-    contract.expires_at = esi_contract["date_expired"]
+    contract.issued_at = esi_contract.get("date_issued")
+    contract.expires_at = esi_contract.get("date_expired")
     if not contract.items_fetched:
         contract.fitting = fitting
     contract.location = location

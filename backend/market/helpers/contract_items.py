@@ -11,11 +11,10 @@ from eveonline.models import (
     EveCharacterContract,
     EveCorporationContract,
 )
-from fittings.models import EveFitting
 
 from market.helpers.contract_match import (
+    content_match_candidates,
     is_match_accepted,
-    market_relevant_same_ship_candidates,
     match_contract_to_fitting,
     normalize_contract_items,
 )
@@ -51,21 +50,21 @@ def apply_content_match(
     contract: EveMarketContract, contract_items: dict[int, int]
 ):
     """
-    Persist the highest-% same-ship fit and freeze it via items_fetched.
+    Persist the highest-% market-relevant fit and freeze via items_fetched.
 
-    Below MATCH_THRESHOLD: clear fitting (drops out of verified stock) but keep
-    match_score for admin attention.
+    Works with or without a title match: wrong/missing titles still assign a
+    fitting when module-weighted coverage is >= MATCH_THRESHOLD. Below
+    threshold: clear fitting but keep match_score for admin attention.
     """
-    name_fitting = contract.fitting
-    if name_fitting:
-        candidates = market_relevant_same_ship_candidates(name_fitting)
-    else:
-        candidates = list(EveFitting.objects.filter(deleted__isnull=True))
+    preferred = contract.fitting
+    candidates = content_match_candidates(contract, contract_items)
+    if not candidates and preferred:
+        candidates = [preferred]
 
     fitting, score, missing, extra = match_contract_to_fitting(
         contract_items,
         candidates,
-        preferred_fitting=name_fitting,
+        preferred_fitting=preferred,
     )
     contract.match_score = score
     contract.match_is_flagged = bool(score < 1.0) if score else True
