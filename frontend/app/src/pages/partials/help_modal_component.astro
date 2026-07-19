@@ -6,9 +6,11 @@ import InterContext from '@components/layout/InterContext.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
+import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro';
 
 import Hotkeys from '@components/blocks/Hotkeys.astro'
 import Markdown from '@components/blocks/Markdown.astro'
+import Button from '@components/blocks/Button.astro'
 ---
 
 <Wrapper
@@ -29,9 +31,13 @@ import Markdown from '@components/blocks/Markdown.astro'
 
         <Flexblock>
             <h2>{t('brand.page_title')}</h2>
-            <p>
-                <a href={translatePath('/brand/')}>{t('brand.leading_text')}</a>
-            </p>
+            <FlexInlineSiblings
+                min-shink-width='250px'
+                shrinkable-sibbling='first'
+            >
+                <p>{t('brand.leading_text')}</p>
+                <Button size='sm' href={translatePath('/brand/')}>{t('browse')}</Button>
+            </FlexInlineSiblings>
         </Flexblock>
     </InterContext>
 </Wrapper>
