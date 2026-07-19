@@ -259,6 +259,14 @@
         "keywords": [ "EVE Online frigate guide", "faction warfare frigate", "navy frigate", "Hookbill", "Comet", "Slicer", "Firetail", "Vigil Fleet Issue", "Rifter", "Tristan", "Breacher", "Scout complex", "1v1 pvp" ]
     },
     {
+        "slug": "guides.faction_warfare_cruiser_guide",
+        "path": "/guides/faction-warfare-cruiser-guide/",
+        "publish": true,
+        "description": "page_finder.ships.faction_warfare_cruiser_guide.description",
+        "keywords": [ "EVE Online cruiser guide", "faction warfare cruiser", "navy cruiser", "Exequror Navy Issue", "Vexor Navy Issue", "Stabber Fleet Issue", "Scythe Fleet Issue", "1v1 pvp", "FW plex" ]
+    },
+
+    {
         "slug": "propaganda",
         "alt": "icon.tv.alt",
         "path": "/alliance/propaganda/",

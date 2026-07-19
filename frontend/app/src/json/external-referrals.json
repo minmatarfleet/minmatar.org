@@ -60,6 +60,12 @@
         "description": "Hosted guide"
     },
     {
+        "name": "hosted_faction_warfare_cruiser_guide",
+        "title": "Faction Warfare Cruiser Guide",
+        "target": "/guides/faction-warfare-cruiser-guide/",
+        "description": "Hosted guide"
+    },
+    {
         "name": "wiki_bookmarks",
         "title": "Bookmarks",
         "target": "https://my.minmatar.org/guides/bookmarks/",

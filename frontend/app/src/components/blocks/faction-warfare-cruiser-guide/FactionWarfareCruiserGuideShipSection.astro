@@ -1,0 +1,342 @@
+---
+import FactionWarfareCruiserGuideFitCard from '@components/blocks/faction-warfare-cruiser-guide/FactionWarfareCruiserGuideFitCard.astro'
+import FactionWarfareCruiserGuideMatchupCard from '@components/blocks/faction-warfare-cruiser-guide/FactionWarfareCruiserGuideMatchupCard.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+import { getGuideFittingsForShip } from '@/data/faction-warfare-cruiser-guide'
+import type { MatchupVerdict, ShipGuide } from '@/data/faction-warfare-cruiser-guide'
+
+interface Props {
+    ship: ShipGuide
+}
+
+const { ship } = Astro.props
+const fits = getGuideFittingsForShip(ship.id)
+
+const verdictLabels: Record<MatchupVerdict, string> = {
+    favoured: 'Favoured',
+    unfavoured: 'Unfavoured',
+    even: 'Coinflip',
+    bail: 'Disengage',
+    skill: 'Skill check',
+    unknown: '?',
+}
+---
+
+<section id={ship.id} data-section-id={ship.id} class="fwc-ship" aria-labelledby={`${ship.id}-title`}>
+    <div class="fwc-ship__hero">
+        <div class="fwc-ship__hero-visual">
+            <ItemPicture
+                item_id={ship.shipId}
+                item_name={ship.name}
+                size={512}
+                narrow={true}
+                icon_quality={512}
+                mask={true}
+            />
+        </div>
+        <div class="fwc-ship__stats">
+            <p class="fwc-ship__stats-kicker">{ship.faction} Cruiser · {ship.shortName}</p>
+            <h3 id={`${ship.id}-title`} class="fwc-ship__stats-title">{ship.name}</h3>
+            <p class="fwc-ship__tagline">{ship.tagline}</p>
+            <dl class="fwc-ship__bonuses">
+                <dt class="fwc-ship__bonuses-label">Ship bonuses (per skill level)</dt>
+                {
+                    ship.bonuses.map((bonus) => (
+                        <div class="fwc-ship__bonus-row">
+                            <span class="fwc-ship__bonus-value">{bonus.value}</span>
+                            <span class="fwc-ship__bonus-text">{bonus.label}</span>
+                        </div>
+                    ))
+                }
+                <dt class="fwc-ship__bonuses-label">Role bonus</dt>
+                <dd class="fwc-ship__role-bonus">{ship.roleBonus}</dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="fwc-ship__body">
+        {
+            ship.sections.map((section) => (
+                <section class="fwc-ship__topic" aria-labelledby={`${ship.id}-${section.id}`}>
+                    <h4 id={`${ship.id}-${section.id}`} class="fwc-ship__topic-title">{section.title}</h4>
+                    {
+                        section.paragraphs.map((paragraph) => (
+                            <p class="fwc-ship__paragraph">{paragraph}</p>
+                        ))
+                    }
+                    {
+                        section.bullets && section.bullets.length > 0 && (
+                            <ul class="fwc-ship__bullets">
+                                {section.bullets.map((bullet) => (
+                                    <li>{bullet}</li>
+                                ))}
+                            </ul>
+                        )
+                    }
+                </section>
+            ))
+        }
+
+        <section class="fwc-ship__fits" aria-labelledby={`${ship.id}-fits-title`}>
+            <h4 id={`${ship.id}-fits-title`} class="fwc-ship__fits-title">Example fits</h4>
+            <p class="fwc-ship__fits-lead">Example fittings for each role above. Copy into Pyfa / EFT, then tune for your skills and contracts.</p>
+            <div class="fwc-ship__fits-grid">
+                {
+                    fits.map((fit) => (
+                        <FactionWarfareCruiserGuideFitCard fit={fit} shipName={ship.name} />
+                    ))
+                }
+            </div>
+        </section>
+
+        {
+            ship.matchups.map((group) => {
+                const groupSlug = group.title.replace(/\s+/g, '-').toLowerCase()
+                return (
+                    <section class="fwc-ship__matchups" aria-labelledby={`${ship.id}-matchup-${groupSlug}`}>
+                        <h4 id={`${ship.id}-matchup-${groupSlug}`} class="fwc-ship__section-title">
+                            Matchups · {group.title}
+                        </h4>
+                        {group.fitContext && <p class="fwc-ship__matchup-context">{group.fitContext}</p>}
+                        <ul class="fwc-ship__matchup-cards">
+                            {
+                                group.entries.map((entry) => (
+                                    <FactionWarfareCruiserGuideMatchupCard
+                                        entry={entry}
+                                        verdictLabels={verdictLabels}
+                                        selfShipId={ship.shipId}
+                                        selfShipName={ship.name}
+                                    />
+                                ))
+                            }
+                        </ul>
+                    </section>
+                )
+            })
+        }
+    </div>
+</section>
+
+<style lang="scss">
+    .fwc-ship {
+        scroll-margin-top: calc(var(--header-height, 4rem) + var(--space-l));
+        min-width: 0;
+        overflow-x: clip;
+        padding: var(--component-padding-block) var(--space-l-xl);
+        background: color-mix(in srgb, var(--component-background) 72%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+    }
+
+    @media (max-width: 48rem) {
+        .fwc-ship {
+            padding-inline: var(--space-s);
+        }
+    }
+
+    .fwc-ship__hero {
+        display: grid;
+        gap: var(--space-l);
+        margin-bottom: var(--space-l);
+        padding-bottom: var(--space-l);
+        border-bottom: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+        align-items: stretch;
+    }
+
+    @media (min-width: 48rem) {
+        .fwc-ship__hero {
+            grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+            align-items: end;
+        }
+    }
+
+    .fwc-ship__hero-visual {
+        display: flex;
+        justify-content: center;
+        overflow: hidden;
+        padding: var(--component-padding-block);
+        background:
+            radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--fleet-red) 12%, transparent), transparent 70%),
+            color-mix(in srgb, var(--component-background) 80%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+
+        :global(picture) {
+            width: min(100%, 512px);
+            max-width: 100%;
+        }
+
+        :global(img) {
+            width: 100%;
+            height: auto;
+        }
+    }
+
+    .fwc-ship__stats {
+        min-width: 0;
+        padding: var(--component-padding-block) var(--space-m);
+        background: color-mix(in srgb, var(--component-background) 92%, transparent);
+        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+    }
+
+    .fwc-ship__stats-kicker {
+        margin: 0 0 var(--space-2xs);
+        font-size: var(--step--2);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--fleet-red);
+    }
+
+    .fwc-ship__stats-title {
+        margin: 0 0 var(--space-2xs);
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .fwc-ship__tagline {
+        margin: 0 0 var(--space-m);
+        font-size: var(--step--1);
+        line-height: 1.5;
+        color: var(--text-color-secondary, var(--faded));
+        font-style: italic;
+    }
+
+    .fwc-ship__bonuses {
+        margin: 0;
+    }
+
+    .fwc-ship__bonuses-label {
+        margin: var(--space-s) 0 var(--space-2xs);
+        font-size: var(--step--2);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-color-secondary, var(--faded));
+    }
+
+    .fwc-ship__bonus-row {
+        display: flex;
+        gap: var(--space-xs);
+        align-items: baseline;
+        margin-bottom: var(--space-3xs);
+    }
+
+    .fwc-ship__bonus-value,
+    .fwc-ship__bonus-text,
+    .fwc-ship__role-bonus {
+        margin: 0;
+        font-size: var(--step--1);
+        line-height: 1.35;
+    }
+
+    .fwc-ship__bonus-value {
+        flex-shrink: 0;
+        font-weight: 700;
+        color: var(--highlight);
+        white-space: nowrap;
+    }
+
+    .fwc-ship__bonus-text {
+        min-width: 0;
+    }
+
+    .fwc-ship__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+    }
+
+    .fwc-ship__topic {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        padding-bottom: var(--space-m);
+        border-bottom: 1px solid color-mix(in srgb, var(--border-color) 45%, transparent);
+    }
+
+    .fwc-ship__topic-title {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
+    }
+
+    .fwc-ship__paragraph {
+        margin: 0;
+        font-size: var(--step-0);
+        line-height: 1.65;
+        max-width: var(--max-text-width);
+    }
+
+    .fwc-ship__bullets {
+        margin: 0;
+        padding-left: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        font-size: var(--step--1);
+        line-height: 1.6;
+    }
+
+    .fwc-ship__fits,
+    .fwc-ship__matchups {
+        padding-top: var(--space-s);
+    }
+
+    .fwc-ship__fits-title,
+    .fwc-ship__section-title {
+        margin: 0 0 var(--space-s);
+        padding-bottom: var(--space-2xs);
+        border-bottom: 1px solid color-mix(in srgb, var(--border-color) 50%, transparent);
+        font-family: var(--heading-font);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .fwc-ship__section-title {
+        font-size: var(--step--1);
+        color: var(--highlight);
+    }
+
+    .fwc-ship__fits-title {
+        font-size: var(--step-0);
+        color: var(--fleet-yellow);
+    }
+
+    .fwc-ship__fits-lead,
+    .fwc-ship__matchup-context {
+        margin: 0 0 var(--space-s);
+        font-size: var(--step--1);
+        line-height: 1.5;
+        color: var(--text-color-secondary, var(--faded));
+    }
+
+    .fwc-ship__fits-grid {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .fwc-ship__matchups {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .fwc-ship__matchup-cards {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: var(--space-3xs);
+        align-items: stretch;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    @media (min-width: 36rem) {
+        .fwc-ship__matchup-cards {
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+        }
+    }
+</style>

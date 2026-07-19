@@ -9,6 +9,8 @@ export type GuideMeta = {
     title: string
     excerpt: string
     category: string
+    /** Optional index subsection within a category (e.g. Mechanics / Ships). */
+    section?: string
     author: string
     authors: Author[]
     path?: string

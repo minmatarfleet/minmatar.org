@@ -67,7 +67,7 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
                     {
                         metagameSummary.map((entry) => (
                             <article class="ndm-summary-card">
-                                <h3 class="ndm-summary-card__ship">{entry.ship}</h3>
+                                <h3 class="ndm-summary-card__title">{entry.archetype}</h3>
                                 <p class="ndm-summary-card__text">{entry.text}</p>
                             </article>
                         ))
@@ -395,7 +395,7 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
         border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
     }
 
-    .ndm-summary-card__ship {
+    .ndm-summary-card__title {
         margin: 0 0 var(--space-s);
         font-family: var(--ndm-display-font);
         font-size: var(--step--1);

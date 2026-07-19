@@ -1,12 +1,17 @@
 ---
 /**
- * Sticky Contents sidebar + content body, matching the navy destroyer guide.
- * Renders children alone when there are no sections.
+ * Sticky Contents sidebar + content body for all guides.
+ * Desktop: persistent sticky nav with scroll-spy.
+ * Mobile: collapsible Contents panel.
  */
+import './GuideContentsLayout.scss'
+
 export type GuideContentsSection = {
     id: string
     title: string
     shortTitle?: string
+    /** Optional nav subheader. Shown once above a run of adjacent sections with the same group. */
+    group?: string
 }
 
 interface Props {
@@ -22,23 +27,53 @@ const {
 } = Astro.props
 
 const show_nav = sections.length > 0
+const list_id = 'guide-contents-list'
 ---
 
 {show_nav ? (
-    <div class:list={['guide-contents', className]}>
-        <nav class="guide-contents__nav" aria-label="Guide sections">
-            <p class="guide-contents__label">{label}</p>
-            <ol class="guide-contents__list">
-                {sections.map((section) => (
-                    <li>
-                        <a href={`#${section.id}`} class="guide-contents__link">
-                            {section.shortTitle ?? section.title}
-                        </a>
-                    </li>
-                ))}
+    <div class:list={['guide-contents', className]} data-guide-contents>
+        <nav class="guide-contents__nav" aria-label="Guide sections" data-guide-contents-nav>
+            <div class="guide-contents__chrome">
+                <p class="guide-contents__label guide-contents__label--desktop">{label}</p>
+                <button
+                    type="button"
+                    class="guide-contents__toggle"
+                    data-guide-contents-toggle
+                    aria-controls={list_id}
+                    aria-expanded="false"
+                >
+                    <span class="guide-contents__toggle-copy">
+                        <span class="guide-contents__label">{label}</span>
+                        <span class="guide-contents__toggle-current" data-guide-contents-current></span>
+                    </span>
+                    <span class="guide-contents__chevron" aria-hidden="true"></span>
+                </button>
+            </div>
+
+            <ol id={list_id} class="guide-contents__list" data-guide-contents-list>
+                {sections.map((section, index) => {
+                    const prevGroup = sections[index - 1]?.group
+                    const showGroup = Boolean(section.group) && section.group !== prevGroup
+
+                    return (
+                        <li class:list={['guide-contents__item', { 'guide-contents__item--grouped': showGroup }]}>
+                            {showGroup && (
+                                <p class="guide-contents__group" aria-hidden="true">{section.group}</p>
+                            )}
+                            <a
+                                href={`#${section.id}`}
+                                class="guide-contents__link"
+                                data-guide-contents-link
+                                data-section-target={section.id}
+                            >
+                                {section.shortTitle ?? section.title}
+                            </a>
+                        </li>
+                    )
+                })}
             </ol>
         </nav>
-        <div class="guide-contents__body">
+        <div class="guide-contents__body" data-guide-contents-body>
             <slot />
         </div>
     </div>
@@ -46,88 +81,143 @@ const show_nav = sections.length > 0
     <slot />
 )}
 
-<style lang="scss">
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&display=swap');
-
-    .guide-contents {
-        --guide-contents-display-font: 'Orbitron', var(--heading-font);
-        display: grid;
-        gap: var(--space-l);
-        align-items: start;
-        width: 100%;
-        min-width: 0;
+<script>
+    type GuideContentsRoot = HTMLElement & {
+        __guideContentsCleanup?: () => void
     }
 
-    @media (min-width: 56rem) {
-        .guide-contents {
-            grid-template-columns: 15rem minmax(0, 1fr);
-            gap: var(--space-xl);
+    const DESKTOP_MQ = '(min-width: 56rem)'
+
+    function initGuideContents(root: GuideContentsRoot) {
+        root.__guideContentsCleanup?.()
+
+        const nav = root.querySelector<HTMLElement>('[data-guide-contents-nav]')
+        const toggle = root.querySelector<HTMLButtonElement>('[data-guide-contents-toggle]')
+        const current = root.querySelector<HTMLElement>('[data-guide-contents-current]')
+        const links = [...root.querySelectorAll<HTMLAnchorElement>('[data-guide-contents-link]')]
+        if (!nav || !toggle || links.length === 0) return
+
+        const sectionIds = links
+            .map((link) => link.dataset.sectionTarget)
+            .filter((id): id is string => Boolean(id))
+
+        const sectionEls = sectionIds
+            .map((id) => document.getElementById(id))
+            .filter((el): el is HTMLElement => Boolean(el))
+
+        let activeId = ''
+        const desktopMq = window.matchMedia(DESKTOP_MQ)
+
+        const setOpen = (open: boolean) => {
+            nav.classList.toggle('is-open', open)
+            toggle.setAttribute('aria-expanded', open ? 'true' : 'false')
         }
 
-        .guide-contents__nav {
-            position: sticky;
-            top: calc(var(--header-height, 4rem) + var(--space-m));
-            max-height: calc(100vh - var(--header-height, 4rem) - var(--space-xl));
-            overflow: auto;
+        const syncViewport = () => {
+            if (desktopMq.matches) setOpen(true)
+            else if (!nav.classList.contains('is-open')) setOpen(false)
         }
 
-        .guide-contents__list {
-            flex-direction: column;
-            flex-wrap: nowrap;
+        const setActive = (id: string) => {
+            if (!id || id === activeId) return
+            activeId = id
+
+            for (const link of links) {
+                const isActive = link.dataset.sectionTarget === id
+                link.classList.toggle('is-active', isActive)
+                if (isActive) link.setAttribute('aria-current', 'location')
+                else link.removeAttribute('aria-current')
+            }
+
+            const activeLink = links.find((link) => link.dataset.sectionTarget === id)
+            if (current) current.textContent = activeLink?.textContent?.trim() || ''
+
+            if (desktopMq.matches && activeLink) {
+                const linkRect = activeLink.getBoundingClientRect()
+                const navRect = nav.getBoundingClientRect()
+                if (linkRect.top < navRect.top + 8 || linkRect.bottom > navRect.bottom - 8) {
+                    activeLink.scrollIntoView({ block: 'nearest' })
+                }
+            }
+        }
+
+        const onToggle = () => {
+            if (desktopMq.matches) return
+            setOpen(!nav.classList.contains('is-open'))
+        }
+
+        const onLinkClick = () => {
+            if (!desktopMq.matches) setOpen(false)
+        }
+
+        const onMqChange = () => syncViewport()
+
+        toggle.addEventListener('click', onToggle)
+        for (const link of links) link.addEventListener('click', onLinkClick)
+        desktopMq.addEventListener('change', onMqChange)
+        syncViewport()
+
+        let observer: IntersectionObserver | null = null
+        if ('IntersectionObserver' in window && sectionEls.length > 0) {
+            const visible = new Map<string, number>()
+
+            observer = new IntersectionObserver(
+                (entries) => {
+                    for (const entry of entries) {
+                        const id = entry.target.id
+                        if (!id) continue
+                        if (entry.isIntersecting) visible.set(id, entry.intersectionRatio)
+                        else visible.delete(id)
+                    }
+
+                    let bestId = ''
+                    let bestRatio = 0
+                    for (const [id, ratio] of visible) {
+                        if (ratio >= bestRatio) {
+                            bestRatio = ratio
+                            bestId = id
+                        }
+                    }
+
+                    if (bestId) setActive(bestId)
+                    else {
+                        // Fallback: nearest section above the fold midpoint
+                        const marker = window.innerHeight * 0.28
+                        let fallback = sectionEls[0]?.id || ''
+                        for (const el of sectionEls) {
+                            if (el.getBoundingClientRect().top <= marker) fallback = el.id
+                        }
+                        if (fallback) setActive(fallback)
+                    }
+                },
+                {
+                    root: null,
+                    rootMargin: '-20% 0px -55% 0px',
+                    threshold: [0, 0.1, 0.25, 0.5, 0.75, 1],
+                },
+            )
+
+            for (const el of sectionEls) observer.observe(el)
+            // Seed active state before first intersection callback
+            const hashId = window.location.hash.replace(/^#/, '')
+            if (hashId && sectionIds.includes(hashId)) setActive(hashId)
+            else if (sectionEls[0]) setActive(sectionEls[0].id)
+        }
+
+        root.__guideContentsCleanup = () => {
+            toggle.removeEventListener('click', onToggle)
+            for (const link of links) link.removeEventListener('click', onLinkClick)
+            desktopMq.removeEventListener('change', onMqChange)
+            observer?.disconnect()
         }
     }
 
-    .guide-contents__nav {
-        min-width: 0;
-        padding: var(--component-padding-block) var(--space-l-xl);
-        background: color-mix(in srgb, var(--component-background) 72%, transparent);
-        border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
-    }
-
-    @media (max-width: 48rem) {
-        .guide-contents__nav {
-            padding-inline: var(--space-s);
+    function initAllGuideContents() {
+        for (const root of document.querySelectorAll<GuideContentsRoot>('[data-guide-contents]')) {
+            initGuideContents(root)
         }
     }
 
-    .guide-contents__label {
-        margin: 0 0 var(--space-s);
-        font-family: var(--guide-contents-display-font);
-        font-size: var(--step--2);
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: var(--fleet-red);
-    }
-
-    .guide-contents__list {
-        display: flex;
-        flex-wrap: wrap;
-        gap: var(--space-2xs);
-        margin: 0;
-        padding: 0;
-        list-style: none;
-    }
-
-    .guide-contents__link {
-        display: block;
-        padding: var(--space-2xs) var(--space-xs);
-        border-left: 2px solid transparent;
-        color: inherit;
-        font-size: var(--step--1);
-        text-decoration: none;
-        transition: border-color 0.2s ease, color 0.2s ease;
-
-        &:hover,
-        &:focus-visible {
-            border-left-color: var(--fleet-yellow);
-            color: var(--highlight);
-        }
-    }
-
-    .guide-contents__body {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-l);
-        min-width: 0;
-    }
-</style>
+    document.addEventListener('astro:page-load', initAllGuideContents)
+    if (document.readyState !== 'loading') initAllGuideContents()
+</script>
