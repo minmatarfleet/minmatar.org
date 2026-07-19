@@ -1,14 +1,14 @@
 import type { GlossaryEntry } from './types'
 
 export const guideMeta = {
-    title: 'Destroyer Guide',
+    title: 'Faction Warfare Destroyer Guide',
     edition: 'Web Edition',
     yc: 'YC 128',
     originalEdition: 'First Edition · YC 126',
     publisher: 'Minmatar Fleet Alliance Thinkspeak Editions',
     location: 'Sosala, The Bleak Lands',
     coverImage: '/images/doctrines-cover.jpg',
-    coverAlt: 'Fleet destroyers engaged in faction warfare',
+    coverAlt: 'EVE Online faction warfare destroyers fighting in a plex',
     firstEditionUrl: 'https://drive.google.com/file/d/1Vr3T2Z0pPlDkj8sqsS0EBhDcUbLnol2p/view',
     firstEditionRedditUrl: 'https://www.reddit.com/r/Eve/comments/1c7x1ps/the_navy_destroyer_metagame_guide_2024_edition/',
 }
@@ -57,7 +57,7 @@ export const additionalResources: GuideResource[] = [
         note: 'Warzone map, system types, contested vs advantage.',
     },
     {
-        title: 'Frigate Guide (this site)',
+        title: 'Faction Warfare Frigate Guide (this site)',
         href: '/guides/navy-frigate-guide/',
         note: 'When Scout plexes still matter—navy and T1 frigates, archetypes, and 1v1 charts.',
     },

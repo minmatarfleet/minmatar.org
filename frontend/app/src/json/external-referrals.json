@@ -49,13 +49,13 @@
     },
     {
         "name": "hosted_navy_destroyer_metagame",
-        "title": "Destroyer Guide",
+        "title": "Faction Warfare Destroyer Guide",
         "target": "/guides/navy-destroyer-metagame/",
         "description": "Hosted guide"
     },
     {
         "name": "hosted_navy_frigate_guide",
-        "title": "Frigate Guide",
+        "title": "Faction Warfare Frigate Guide",
         "target": "/guides/navy-frigate-guide/",
         "description": "Hosted guide"
     },

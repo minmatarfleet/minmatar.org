@@ -1,14 +1,14 @@
 import type { GlossaryEntry } from './types'
 
 export const guideMeta = {
-    title: 'Frigate Guide',
+    title: 'Faction Warfare Frigate Guide',
     edition: 'Web Edition',
     yc: 'YC 128',
     originalEdition: 'First Edition · YC 128',
     publisher: 'Minmatar Fleet Alliance Thinkspeak Editions',
     location: 'Sosala, The Bleak Lands',
     coverImage: '/images/doctrines-cover.jpg',
-    coverAlt: 'Frigates engaged in faction warfare',
+    coverAlt: 'EVE Online faction warfare frigates in a Scout complex fight',
     firstEditionUrl: 'https://my.minmatar.org/guides/navy-frigate-guide/',
     firstEditionRedditUrl: 'https://patreon.com/EVEFrigates',
 }
@@ -71,14 +71,14 @@ export const additionalResources: GuideResource[] = [
         note: 'Warzone map, system types, contested vs advantage.',
     },
     {
-        title: 'Destroyer Guide (this site)',
+        title: 'Faction Warfare Destroyer Guide (this site)',
         href: '/guides/navy-destroyer-metagame/',
         note: 'When you graduate Scouts into Smalls and start seeing navy destroyers on d-scan.',
     },
 ]
 
 export const introduction = [
-    'Scout complexes are less common these days for income, but still the ultimate classroom for high-octane player-versus-player content. Frigates are much more intricate and fragile than destroyers and cruisers—as a result, they are very punishing, and any minor mistake can lead to your death in a matchup. This makes them ideal for practicing core mechanics.',
+    'Scout complexes are less common for income these days, but still excellent for high-octane player-versus-player practice. Frigates are more intricate and fragile than destroyers and cruisers—minor mistakes kill you faster, which is why they are ideal for practicing core mechanics.',
     'Navy hulls are fairly dominant, but T1 hulls still show up constantly.',
     'This guide is written for pilots who already know how a complex works and want a practical guide for frigate fittings. It is not as comprehensive as the <a href="https://patreon.com/EVEFrigates">Faction Warfare Yearbook</a>—if you end up diving extremely deep into the frigate world, you will want to earmark that guide as well.',
     'The fits below are examples of archetypes you will actually see. Module tier, bling, and adjustments are expected as you improve over time.',

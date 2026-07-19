@@ -3,6 +3,7 @@ interface NavyFrigateGuideJsonLdOptions {
     siteName: string
     siteOrigin: string
     metaTitle: string
+    headline: string
     metaDescription: string
     metaImage: string
     guidesUrl: string
@@ -18,6 +19,7 @@ export function buildNavyFrigateGuideJsonLd(options: NavyFrigateGuideJsonLdOptio
         siteName,
         siteOrigin,
         metaTitle,
+        headline,
         metaDescription,
         metaImage,
         guidesUrl,
@@ -46,6 +48,7 @@ export function buildNavyFrigateGuideJsonLd(options: NavyFrigateGuideJsonLdOptio
                 primaryImageOfPage: { '@type': 'ImageObject', url: metaImage },
                 breadcrumb: { '@id': `${canonicalUrl}#breadcrumb` },
                 mainEntity: { '@id': `${canonicalUrl}#article` },
+                inLanguage: 'en',
             },
             {
                 '@type': 'BreadcrumbList',
@@ -60,7 +63,7 @@ export function buildNavyFrigateGuideJsonLd(options: NavyFrigateGuideJsonLdOptio
                     {
                         '@type': 'ListItem',
                         position: 2,
-                        name: metaTitle,
+                        name: headline,
                         item: canonicalUrl,
                     },
                 ],
@@ -68,7 +71,7 @@ export function buildNavyFrigateGuideJsonLd(options: NavyFrigateGuideJsonLdOptio
             {
                 '@type': 'Article',
                 '@id': `${canonicalUrl}#article`,
-                headline: metaTitle,
+                headline,
                 description: metaDescription,
                 image: metaImage,
                 author: {
@@ -82,28 +85,35 @@ export function buildNavyFrigateGuideJsonLd(options: NavyFrigateGuideJsonLdOptio
                 },
                 isBasedOn: {
                     '@type': 'CreativeWork',
-                    name: 'Frigate Guide (First Edition)',
+                    name: 'Faction Warfare Frigate Guide (First Edition)',
                     url: originalEditionUrl,
                 },
                 genre: 'Video game guide',
                 keywords: [
                     'EVE Online',
                     'faction warfare',
+                    'frigate guide',
                     'navy frigate',
                     'Caldari Navy Hookbill',
                     'Federation Navy Comet',
                     'Imperial Navy Slicer',
                     'Republic Fleet Firetail',
                     'Vigil Fleet Issue',
+                    'Rifter',
+                    'Tristan',
+                    'Breacher',
+                    'Scout complex',
                     '1v1',
                     'matchup chart',
                     'solo PvP',
-                    'Scout complex',
+                    'FW plex',
+                ].join(', '),
+                about: [
+                    { '@type': 'Thing', name: 'EVE Online faction warfare' },
+                    { '@type': 'Thing', name: 'Faction warfare frigates' },
                 ],
-                about: {
-                    '@type': 'Thing',
-                    name: 'Faction warfare navy frigates',
-                },
+                inLanguage: 'en',
+                mainEntityOfPage: { '@id': `${canonicalUrl}#webpage` },
                 creativeWorkStatus: editionLabel,
             },
         ],

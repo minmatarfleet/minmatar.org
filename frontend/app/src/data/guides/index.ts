@@ -81,8 +81,8 @@ export const guides: GuideMeta[] = [
     },
     {
         slug: "navy-destroyer-metagame",
-        title: "Destroyer Guide",
-        excerpt: "Destroyer guide for faction warfare: navy hulls plus Algos, Thrasher, Coercer, and Dragoon—fits, archetypes, and 1v1 matchups.",
+        title: "Faction Warfare Destroyer Guide",
+        excerpt: "Navy and T1 destroyers for EVE Online FW: CatNI, CoercerNI, TFI, CormNI, Talwar FI, plus Algos, Thrasher, Coercer, and Dragoon—fits and 1v1 matchups.",
         category: "Faction Warfare",
         author: "Furl0w",
         authors: [{
@@ -94,8 +94,8 @@ export const guides: GuideMeta[] = [
     },
     {
         slug: "navy-frigate-guide",
-        title: "Frigate Guide",
-        excerpt: "Comprehensive frigate guide for faction warfare.",
+        title: "Faction Warfare Frigate Guide",
+        excerpt: "Navy and T1 frigates for EVE Online FW: Hookbill, Comet, Slicer, Firetail, Vigil Fleet Issue, Rifter, Tristan, and Breacher—fits and Scout 1v1 matchups.",
         category: "Faction Warfare",
         author: "BearThatCares",
         authors: [{
