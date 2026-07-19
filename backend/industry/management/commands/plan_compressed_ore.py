@@ -173,12 +173,14 @@ class Command(BaseCommand):
                         "includes_compressed_ore": plan.includes_compressed_ore,
                         "moon_ore_compressed": plan.moon_ore_compressed,
                         "belt_ore_compressed": plan.belt_ore_compressed,
+                        "ice_compressed": plan.ice_compressed,
                         "moon_mineral_byproducts": plan.moon_mineral_byproducts,
                         "mineral_imports": plan.mineral_imports,
                         "pi_other_imports": plan.pi_other_imports,
                         "ice_imports": plan.ice_imports,
                         "other_imports": plan.other_imports,
                         "expected_minerals": plan.expected_minerals,
+                        "expected_ice_products": plan.expected_ice_products,
                         "mineral_needs": plan.mineral_needs,
                         "mineral_delta": plan.mineral_delta,
                         "import_lines": [
@@ -287,12 +289,18 @@ class Command(BaseCommand):
         _write_named_qty_section(
             self.stdout,
             self.style,
+            "Compressed ice",
+            plan.ice_compressed,
+        )
+        _write_named_qty_section(
+            self.stdout,
+            self.style,
             "Refined mineral imports",
             plan.mineral_imports,
         )
         for title, bucket in (
             ("PI / other", plan.pi_other_imports),
-            ("Ice / isotopes", plan.ice_imports),
+            ("Ice product imports", plan.ice_imports),
             ("Other", plan.other_imports),
         ):
             _write_named_qty_section(self.stdout, self.style, title, bucket)

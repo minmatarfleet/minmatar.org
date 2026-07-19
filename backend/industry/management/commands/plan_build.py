@@ -96,12 +96,14 @@ def _compressed_ore_to_dict(ore_plan: CompressedOrePlan) -> Dict[str, Any]:
         "includes_compressed_ore": ore_plan.includes_compressed_ore,
         "moon_ore_compressed": ore_plan.moon_ore_compressed,
         "belt_ore_compressed": ore_plan.belt_ore_compressed,
+        "ice_compressed": ore_plan.ice_compressed,
         "moon_mineral_byproducts": ore_plan.moon_mineral_byproducts,
         "mineral_imports": ore_plan.mineral_imports,
         "pi_other_imports": ore_plan.pi_other_imports,
         "ice_imports": ore_plan.ice_imports,
         "other_imports": ore_plan.other_imports,
         "expected_minerals": ore_plan.expected_minerals,
+        "expected_ice_products": ore_plan.expected_ice_products,
         "mineral_needs": ore_plan.mineral_needs,
         "mineral_delta": ore_plan.mineral_delta,
         "import_lines": [
@@ -385,12 +387,15 @@ class Command(BaseCommand):
         if ore_plan.belt_ore_compressed:
             self.stdout.write("  Belt ore:")
             _write_named_qty_lines(self.stdout, ore_plan.belt_ore_compressed)
+        if ore_plan.ice_compressed:
+            self.stdout.write("  Compressed ice:")
+            _write_named_qty_lines(self.stdout, ore_plan.ice_compressed)
         if ore_plan.mineral_imports:
             self.stdout.write("  Refined mineral imports:")
             _write_named_qty_lines(self.stdout, ore_plan.mineral_imports)
         for title, bucket in (
             ("PI / other", ore_plan.pi_other_imports),
-            ("Ice / isotopes", ore_plan.ice_imports),
+            ("Ice product imports", ore_plan.ice_imports),
             ("Other", ore_plan.other_imports),
         ):
             if not bucket:

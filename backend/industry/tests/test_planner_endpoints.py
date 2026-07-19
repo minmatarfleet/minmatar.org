@@ -634,7 +634,15 @@ class PlannerPlanEndpointTestCase(TestCase):
             yields["Zeolites"]["skill_name"], "Ubiquitous Moon Ore Processing"
         )
         self.assertEqual(
-            ore["compression_covered"], ["Mexallon", "Pyerite", "Tritanium"]
+            ore["compression_covered"],
+            [
+                "Heavy Water",
+                "Liquid Ozone",
+                "Mexallon",
+                "Pyerite",
+                "Strontium Clathrates",
+                "Tritanium",
+            ],
         )
         self.assertNotIn("name\tquantity", ore["materials_tsv"])
         self.assertRegex(ore["materials_tsv"], r".+ \d+")
@@ -661,7 +669,15 @@ class PlannerPlanEndpointTestCase(TestCase):
         self.assertEqual(ore["refine_rate_source"], "override")
         self.assertAlmostEqual(ore["refine_rate"], 0.80)
         self.assertEqual(
-            ore["compression_covered"], ["Mexallon", "Pyerite", "Tritanium"]
+            ore["compression_covered"],
+            [
+                "Heavy Water",
+                "Liquid Ozone",
+                "Mexallon",
+                "Pyerite",
+                "Strontium Clathrates",
+                "Tritanium",
+            ],
         )
 
     @patch("industry.helpers.build_planner.resolve_cost_indices")

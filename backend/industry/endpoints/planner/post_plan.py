@@ -43,7 +43,7 @@ METHOD = "post"
 ROUTE_SPEC = {
     "summary": (
         "Plan manufacture + reaction jobs for a product at an alliance freeport "
-        "(live ESI cost indices); optional compressed-ore conversion. "
+        "(live ESI cost indices); optional compressed-ore/ice conversion. "
         "Anonymous callers get max-skill refine assumptions; character_id "
         "requires authentication."
     ),
@@ -146,11 +146,13 @@ def _build_compressed_ore_section(plan, facility_key, character, payload):
         "compression_covered": compression_covered_materials(),
         "belt_ore_compressed": dict(ore_plan.belt_ore_compressed),
         "moon_ore_compressed": dict(ore_plan.moon_ore_compressed),
+        "ice_compressed": dict(ore_plan.ice_compressed),
         "mineral_imports": dict(ore_plan.mineral_imports),
         "pi_other_imports": dict(ore_plan.pi_other_imports),
         "ice_imports": dict(ore_plan.ice_imports),
         "other_imports": dict(ore_plan.other_imports),
         "expected_minerals": dict(ore_plan.expected_minerals),
+        "expected_ice_products": dict(ore_plan.expected_ice_products),
         "mineral_delta": dict(ore_plan.mineral_delta),
         "character_skills": (
             _character_skills_payload(skills) if skills else None

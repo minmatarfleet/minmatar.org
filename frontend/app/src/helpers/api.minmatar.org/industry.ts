@@ -554,10 +554,12 @@ export interface PlannerCompressedOre {
     compression_covered?: string[]
     belt_ore_compressed?: Record<string, number>
     moon_ore_compressed?: Record<string, number>
+    ice_compressed?: Record<string, number>
     mineral_imports?: Record<string, number>
     pi_other_imports?: Record<string, number>
     ice_imports?: Record<string, number>
     other_imports?: Record<string, number>
+    expected_ice_products?: Record<string, number>
     character_skills: PlannerCharacterSkills | null
     ore_yields?: PlannerOreRefineYield[]
 }

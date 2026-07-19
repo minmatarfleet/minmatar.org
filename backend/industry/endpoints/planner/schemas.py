@@ -193,11 +193,13 @@ class PlanCompressedOreSchema(Schema):
     compression_covered: List[str] = []
     belt_ore_compressed: Dict[str, int]
     moon_ore_compressed: Dict[str, int]
+    ice_compressed: Dict[str, int] = {}
     mineral_imports: Dict[str, int]
     pi_other_imports: Dict[str, int] = {}
     ice_imports: Dict[str, int] = {}
     other_imports: Dict[str, int] = {}
     expected_minerals: Dict[str, int]
+    expected_ice_products: Dict[str, int] = {}
     mineral_delta: Dict[str, int]
     character_skills: Optional[PlanCharacterSkillsSchema] = None
     ore_yields: List[OreRefineYieldSchema] = []

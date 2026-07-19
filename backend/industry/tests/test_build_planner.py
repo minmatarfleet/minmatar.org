@@ -646,3 +646,120 @@ class BuildPlannerFixtureTestCase(TestCase):
         ravworks = RAVWORKS_ME0["end_products"]
         self.assertNotEqual(int(round(duration)), ravworks)
         self.assertLess(abs(duration - ravworks) / ravworks, 0.30)
+
+
+class FuelBlockRootPlanTestCase(TestCase):
+    """Fuel-block industry orders must expand even when build_fuel_blocks=False."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cat = EveCategory.objects.create(id=4, name="Material", published=True)
+        cls.group_fuel = EveGroup.objects.create(
+            id=1136, name="Fuel Block", published=True, eve_category=cat
+        )
+        group_mat = EveGroup.objects.create(
+            id=910001, name="Test Mat", published=True, eve_category=cat
+        )
+        cls.fuel = EveType.objects.create(
+            id=910100,
+            name="Test Helium Fuel Block",
+            published=True,
+            eve_group=cls.group_fuel,
+        )
+        cls.heavy_water = EveType.objects.create(
+            id=910101,
+            name="Test Heavy Water",
+            published=True,
+            eve_group=group_mat,
+        )
+        bp = EveType.objects.create(
+            id=910110,
+            name="Test Helium Fuel Block Blueprint",
+            published=True,
+            eve_group=group_mat,
+        )
+        EveIndustryActivityProduct.objects.create(
+            eve_type=bp,
+            activity_id=1,
+            product_eve_type=cls.fuel,
+            quantity=40,
+        )
+        EveIndustryActivityDuration.objects.create(
+            eve_type=bp, activity_id=1, time=900
+        )
+        EveIndustryActivityMaterial.objects.create(
+            eve_type=bp,
+            activity_id=1,
+            material_eve_type=cls.heavy_water,
+            quantity=170,
+        )
+        EveMarketPrice.objects.create(
+            eve_type=cls.heavy_water, adjusted_price=1.0, average_price=1.0
+        )
+
+    @patch("industry.helpers.build_planner.resolve_cost_indices")
+    def test_root_fuel_block_builds_when_flag_false(self, resolve_indices):
+        resolve_indices.return_value = (0.05, 0.04, AMAMAKE_SYSTEM_ID)
+        plan = plan_build(
+            self.fuel.id,
+            quantity=40,
+            build_fuel_blocks=False,
+            manufacturing_index=0.05,
+            reaction_index=0.04,
+        )
+        self.assertEqual(len(plan.jobs), 1)
+        self.assertEqual(plan.jobs[0].product_type_id, self.fuel.id)
+        self.assertEqual(plan.jobs[0].runs, 1)
+        self.assertIn(self.heavy_water.id, plan.leaf_materials)
+        self.assertNotIn(self.fuel.id, plan.leaf_materials)
+
+    @patch("industry.helpers.build_planner.resolve_cost_indices")
+    def test_intermediate_fuel_block_stays_import(self, resolve_indices):
+        resolve_indices.return_value = (0.05, 0.04, AMAMAKE_SYSTEM_ID)
+        # Root is a non-fuel product that consumes the fuel block.
+        cat = EveCategory.objects.get(id=4)
+        group = EveGroup.objects.create(
+            id=910002, name="Other", published=True, eve_category=cat
+        )
+        root = EveType.objects.create(
+            id=910200,
+            name="Test Widget",
+            published=True,
+            eve_group=group,
+        )
+        bp = EveType.objects.create(
+            id=910210,
+            name="Test Widget Blueprint",
+            published=True,
+            eve_group=group,
+        )
+        EveIndustryActivityProduct.objects.create(
+            eve_type=bp,
+            activity_id=1,
+            product_eve_type=root,
+            quantity=1,
+        )
+        EveIndustryActivityDuration.objects.create(
+            eve_type=bp, activity_id=1, time=60
+        )
+        EveIndustryActivityMaterial.objects.create(
+            eve_type=bp,
+            activity_id=1,
+            material_eve_type=self.fuel,
+            quantity=10,
+        )
+        EveMarketPrice.objects.create(
+            eve_type=self.fuel, adjusted_price=1.0, average_price=1.0
+        )
+        plan = plan_build(
+            root.id,
+            quantity=1,
+            build_fuel_blocks=False,
+            manufacturing_index=0.05,
+            reaction_index=0.04,
+        )
+        self.assertEqual(len(plan.jobs), 1)
+        self.assertEqual(plan.jobs[0].product_type_id, root.id)
+        self.assertIn(self.fuel.id, plan.leaf_materials)
+        self.assertNotIn(self.heavy_water.id, plan.leaf_materials)
