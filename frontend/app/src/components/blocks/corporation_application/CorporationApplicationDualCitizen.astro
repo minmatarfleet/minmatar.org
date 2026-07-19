@@ -52,18 +52,18 @@ const dualCitizenHint = t('corporation_application_dual_citizen_hint').replace(
             <Markdown markdown={t('l3arn_application_is_existing_player_alt')} inline={true} inline_element='span' />
         </RadioCheckInput>
         <Flexblock
-            class="[ w-full ] nested-field"
+            class="[ w-full ]"
             gap="var(--space-2xs)"
             x-show="is_existing_player_alt"
             x-cloak
         >
-            <label for={`${id_prefix}-main-character`}>{t('l3arn_application_main_character_name')}</label>
             <Input
                 id={`${id_prefix}-main-character`}
                 name={fieldName('main_character_name')}
                 x-model="main_character_name"
                 maxlength={L3ARN_APPLICATION_FIELD_LIMITS.main_character_name}
                 x-on:input="updateApplicationStatus()"
+                placeholder={t('l3arn_application_main_character_name')}
             />
         </Flexblock>
 
@@ -79,20 +79,18 @@ const dualCitizenHint = t('corporation_application_dual_citizen_hint').replace(
             </RadioCheckInput>
         </label>
         <Flexblock
-            class="[ w-full ] nested-field"
+            class="[ w-full ]"
             gap="var(--space-2xs)"
             x-show="is_other_alliance_member"
             x-cloak
         >
-            <label for={`${id_prefix}-other-alliance-affiliation`}>
-                {t('l3arn_application_other_alliance_affiliation')}
-            </label>
             <Input
                 id={`${id_prefix}-other-alliance-affiliation`}
                 name={fieldName('other_alliance_affiliation')}
                 x-model="other_alliance_affiliation"
                 maxlength={L3ARN_APPLICATION_FIELD_LIMITS.other_alliance_affiliation}
                 x-on:input="updateApplicationStatus()"
+                placeholder={t('l3arn_application_other_alliance_affiliation')}
             />
         </Flexblock>
     </Flexblock>
