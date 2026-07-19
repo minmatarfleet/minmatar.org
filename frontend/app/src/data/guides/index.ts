@@ -82,7 +82,7 @@ export const guides: GuideMeta[] = [
     {
         slug: "navy-destroyer-metagame",
         title: "Faction Warfare Destroyer Guide",
-        excerpt: "Fits, roles, and 1v1 matchups for navy and T1 destroyers in faction warfare.",
+        excerpt: "Fittings, roles, and 1v1 matchups for destroyers in faction warfare.",
         category: "Faction Warfare",
         author: "Furl0w",
         authors: [{
@@ -95,7 +95,7 @@ export const guides: GuideMeta[] = [
     {
         slug: "navy-frigate-guide",
         title: "Faction Warfare Frigate Guide",
-        excerpt: "Fits, roles, and 1v1 matchups for navy and T1 frigates in Scout complexes.",
+        excerpt: "Fittings, roles, and 1v1 matchups for frigates in faction warfare.",
         category: "Faction Warfare",
         author: "BearThatCares",
         authors: [{
