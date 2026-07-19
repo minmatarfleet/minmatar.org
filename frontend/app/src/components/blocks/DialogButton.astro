@@ -115,7 +115,8 @@ import StylessButton from '@components/blocks/StylessButton.astro';
             style={max_width ? `--dialog-max-width: ${max_width}` : undefined}
             thin={thin_dialog}
             transparent={transparent}
-            x-init="htmx.process($el)"
+            x-init="htmx.process($el); $watch('open', v => { if(v) $nextTick(() => $el.focus()) })"
+            tabindex="-1"
         >
             <slot name="header" slot="header" />
             <slot name="dialog">
