@@ -178,6 +178,9 @@ class EsiClient:
         return {"Authorization": f"Bearer {token.valid_access_token()}"}
 
     def _operation_results(self, operation, **kwargs) -> EsiResponse:
+        # django-esi raises HTTPNotModified on 304 instead of returning the
+        # cached body, which surfaces as opaque 906. Default off for sync paths.
+        kwargs.setdefault("use_etag", False)
         try:
             return EsiResponse(
                 response_code=SUCCESS,
@@ -195,6 +198,8 @@ class EsiClient:
             return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
 
     def _operation_result(self, operation, **kwargs) -> EsiResponse:
+        # See _operation_results — same 304/ETag pitfall for single-object ops.
+        kwargs.setdefault("use_etag", False)
         try:
             return EsiResponse(
                 response_code=SUCCESS,
@@ -216,7 +221,8 @@ class EsiClient:
         operation = esi_provider.client.Character.GetCharactersDetail(
             character_id=char_id
         )
-        return self._operation_results(operation)
+        # Single-object endpoint: result(), not results().
+        return self._operation_result(operation)
 
     def get_character_skills(self) -> EsiResponse:
         """Returns the skills for the character this ESI client was created for."""
@@ -231,7 +237,7 @@ class EsiClient:
         )
 
         try:
-            data = _esi_to_python(operation.results())
+            data = _esi_to_python(operation.result(use_etag=False))
             return EsiResponse(
                 data=data["skills"] if data else None,
                 response_code=SUCCESS,
@@ -252,7 +258,7 @@ class EsiClient:
         )
         try:
             return EsiResponse(
-                data=_esi_to_python(operation.results()),
+                data=_esi_to_python(operation.results(use_etag=False)),
                 response_code=SUCCESS,
             )
         except Exception as e:
@@ -281,7 +287,8 @@ class EsiClient:
                 killmail_id=killmail_id, killmail_hash=killmail_hash
             )
         )
-        return self._operation_results(operation)
+        # Single-object endpoint: result(), not results().
+        return self._operation_result(operation)
 
     def get_character_blueprints(self) -> EsiResponse:
         """
@@ -350,7 +357,7 @@ class EsiClient:
             )
         )
         try:
-            jobs = _esi_to_python(operation.results())
+            jobs = _esi_to_python(operation.results(use_etag=False))
         except Exception as e:
             return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
         return EsiResponse(response_code=SUCCESS, data=jobs or [])
@@ -384,7 +391,9 @@ class EsiClient:
             token=token,
         )
 
-        return self._operation_results(operation)
+        # Disable ETag — django-esi raises HTTPNotModified on 304 instead of
+        # returning cached body, which would surface as opaque 906.
+        return self._operation_results(operation, use_etag=False)
 
     def get_corporation_blueprints(self, corporation_id: int) -> EsiResponse:
         """
@@ -597,7 +606,8 @@ class EsiClient:
             contract_id=contract_id,
             token=token,
         )
-        return self._operation_results(operation)
+        # Same 304/ETag pitfall as get_corporation_contracts.
+        return self._operation_results(operation, use_etag=False)
 
     def get_region_market_history(
         self, region_id: int, type_id: int
@@ -716,7 +726,7 @@ class EsiClient:
             structure_id=structure_id,
             token=token,
         )
-        all_orders = _esi_to_python(operation.results())
+        all_orders = _esi_to_python(operation.results(use_etag=False))
         count = len(all_orders) if all_orders else 0
         logger.info(
             "get_structure_market_orders_pages: structure_id=%s — received all pages, orders_count=%s",
@@ -1020,7 +1030,8 @@ class EsiClient:
             character_id=self.character_id,
             token=token,
         )
-        return self._operation_results(operation)
+        # Single-object endpoint: result(), not results().
+        return self._operation_result(operation)
 
     def _authenticated_esi_get(
         self, url: str, required_scopes: List[str]
