@@ -9,6 +9,7 @@ from eveonline.models import EveCharacter, EveCorporation, EveLocation
 from fittings.forms import normalize_fitting_aliases
 from fittings.models import EveFitting
 
+from market.helpers.contract_match import strip_fitting_tag
 from market.models import (
     EveMarketContract,
     EveMarketContractError,
@@ -101,6 +102,19 @@ def get_fitting_for_contract(contract_summary: str) -> EveFitting | None:
                 fitting_cache[contract_summary] = candidate
                 return candidate
 
+    # Unique tag-stripped match: "Buffer Apostle" -> "[FL33T] Buffer Apostle"
+    bare_title = strip_fitting_tag(contract_summary)
+    if not bare_title:
+        return None
+    matches = [
+        candidate
+        for candidate in EveFitting.all_objects.filter(deleted__isnull=True)
+        if strip_fitting_tag(candidate.name) == bare_title
+    ]
+    if len(matches) == 1:
+        fitting_cache[contract_summary] = matches[0]
+        return matches[0]
+
     return None
 
 
@@ -122,6 +136,9 @@ def create_or_update_contract_from_db_contract(
     Create or update EveMarketContract from an EveCharacterContract or
     EveCorporationContract. Only stores if type is item_exchange, location
     matches, and title matches a known fitting. Returns True if stored.
+
+    Once items have been fetched and a content match frozen, fitting/match_score
+    are not overwritten from the contract title.
     """
     if db_contract.type != EveMarketContract.esi_contract_type:
         logger.info(
@@ -153,6 +170,7 @@ def create_or_update_contract_from_db_contract(
         defaults={
             "price": db_contract.price or 0,
             "issuer_external_id": db_contract.issuer_id,
+            "fitting": fitting,
         },
     )
     contract.title = db_contract.title or ""
@@ -160,7 +178,8 @@ def create_or_update_contract_from_db_contract(
     contract.issued_at = db_contract.date_issued
     contract.expires_at = db_contract.date_expired
     contract.completed_at = db_contract.date_completed
-    contract.fitting = fitting
+    if not contract.items_fetched:
+        contract.fitting = fitting
     contract.location = location
     contract.is_public = False
     contract.assignee_id = db_contract.assignee_id
@@ -186,13 +205,15 @@ def create_or_update_contract(esi_contract, location: EveLocation):
         defaults={
             "price": esi_contract["price"],
             "issuer_external_id": esi_contract["issuer_id"],
+            "fitting": fitting,
         },
     )
     contract.title = esi_contract["title"]
     contract.status = "outstanding"
     contract.issued_at = esi_contract["date_issued"]
     contract.expires_at = esi_contract["date_expired"]
-    contract.fitting = fitting
+    if not contract.items_fetched:
+        contract.fitting = fitting
     contract.location = location
     contract.is_public = True
     contract.last_updated = timezone.now()

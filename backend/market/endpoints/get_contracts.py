@@ -15,6 +15,7 @@ from market.endpoints.schemas import (
 from market.helpers import (
     get_historical_quantity_for_fitting,
 )
+from market.helpers.contract_stock import outstanding_stock_q
 from market.models import (
     EveMarketContract,
     EveMarketContractExpectation,
@@ -58,10 +59,10 @@ def fetch_eve_market_contracts(request, location_id: int):
     if not all_fitting_ids:
         return []
 
-    # Outstanding contract stats per fitting at this location
+    # Outstanding contract stats per fitting at this location (verified stock)
     outstanding_stats = {
         row["fitting_id"]: (row["count"], row["latest"])
-        for row in contracts_at_location.filter(status="outstanding")
+        for row in contracts_at_location.filter(outstanding_stock_q())
         .values("fitting_id")
         .annotate(
             count=Count("id"),

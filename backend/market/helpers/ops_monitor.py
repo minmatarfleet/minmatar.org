@@ -8,6 +8,7 @@ from django.utils import timezone
 from eveonline.models import EveLocation
 from eveuniverse.models import EveType
 
+from market.helpers.contract_stock import outstanding_stock_q
 from market.helpers.item_ships import item_ships_by_location
 from market.helpers.readiness import fitting_readiness, shortfall
 from market.models import (
@@ -116,9 +117,8 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
     outstanding = {
         (row["location_id"], row["fitting_id"]): row["count"]
         for row in EveMarketContract.objects.filter(
+            outstanding_stock_q(),
             location_id__in=location_pks,
-            status="outstanding",
-            fitting_id__isnull=False,
         )
         .values("location_id", "fitting_id")
         .annotate(count=Count("id"))
