@@ -113,7 +113,7 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
                     />
                     :
                     <FixedFluid
-                        class="[ loading ]"
+                        class="[ items-center! ]"
                         width='32px'
                         breakpoint='30%'
                         gap='var(--space-2xs)'
@@ -129,7 +129,7 @@ import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
                         >
                             <IndustrialistIcon size={32} />
                         </div>
-                        <small>{t('fetching_producers')}</small>
+                        <small class="[ loading ]">{t('fetching_producers')}</small>
                     </FixedFluid>
                 }
             </Grid>
