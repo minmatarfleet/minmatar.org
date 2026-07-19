@@ -72,9 +72,14 @@ const otherAllianceCorporations = alliance_corporations
         target="_blank"
         rel="noreferrer noopener"
         class="[ w-fit ]"
+        data-tippy-content={t('opens_in_a_new_tab')}
+        x-data={`{
+            init() {
+                tippy($el, tippy_options)
+            }
+        }`}
     >
         {t('l3arn_application_other_corps_link')}
-        <span class="visually-hidden">{t('opens_in_new_tab')}</span>
     </Button>
 </Flexblock>
 
