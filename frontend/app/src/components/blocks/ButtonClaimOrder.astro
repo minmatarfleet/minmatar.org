@@ -56,6 +56,8 @@ import DialogButton from "@components/blocks/DialogButton.astro";
 import Button from '@components/blocks/Button.astro';
 import Input from '@components/blocks/Input.astro';
 import ItemBadge from '@components/blocks/ItemBadge.astro';
+import Markdown from './Markdown.astro';
+import TextGroup from './TextGroup.astro';
 ---
 
 <DialogButton
@@ -158,6 +160,12 @@ import ItemBadge from '@components/blocks/ItemBadge.astro';
                     </Flexblock>
                 </Flexblock>
             </Flexblock>
+
+            {reclaim &&
+                <TextGroup title={t('remove_order')}>
+                    <Markdown markdown={t('remove_order_hint')} inline={true} inline_element='small' />
+                </TextGroup>
+            }
 
             <FlexInline justification='flex-end'>
                 <Button

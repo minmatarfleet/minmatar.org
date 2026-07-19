@@ -2572,5 +2572,7 @@ export const ui = {
         'destroyed': 'Destroyed',
         'ISK_template': '{amount} ISK',
         'extraction_description_fallback': 'A collective of Minmatar industrialists who believe the asteroid belts are simply scrap metal that hasn’t been liberated yet. Rust doesn’t scare us, we invented half of it. If it can be strip-mined, refined, or reduced to component ore, we are already on our way there in a rifter with a mining laser bolted on with duct tape and spite.',
+        'remove_order': '⚠️ Remove order',
+        'remove_order_hint': 'Open a ticket in our Discord [#help](https://discordapp.com/channels/1041384161505722368/1183401618943791186) with the details.',
     },
 } as const;
