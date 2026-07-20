@@ -71,13 +71,16 @@ class EveFittingAdminForm(forms.ModelForm):
 
     class Meta:
         model = EveFitting
-        fields = "__all__"
+        # tags is a slug MultipleChoiceField; M2M is applied via change requests.
+        exclude = ("tags",)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         raw = self.initial.get("aliases")
         if raw:
             self.initial["aliases"] = aliases_for_textarea(raw)
+        if self.instance and self.instance.pk:
+            self.initial["tags"] = self.instance.tag_slugs()
         if "eft_format" in self.fields:
             self.fields["eft_format"].help_text = (
                 "Fitting name is taken from the EFT header "

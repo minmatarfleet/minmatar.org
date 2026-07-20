@@ -6,6 +6,7 @@ from django.utils import timezone
 from fittings.models import (
     ChangeRequestStatus,
     EVE_FITTING_VERSIONED_FIELDS,
+    EVE_FITTING_VERSIONED_SCALAR_FIELDS,
     EveFitting,
     EveFittingChangeRequest,
     EveFittingRefit,
@@ -25,7 +26,10 @@ def fitting_change_request_tier(fitting: EveFitting) -> str:
 
 def fitting_payload_changed(fitting: EveFitting, payload: dict) -> bool:
     for field in EVE_FITTING_VERSIONED_FIELDS:
-        current = getattr(fitting, field)
+        if field == "tags":
+            current = fitting.tag_slugs()
+        else:
+            current = getattr(fitting, field)
         proposed = payload.get(field, current)
         if not _eve_fitting_versioned_field_equal(field, current, proposed):
             return True
@@ -33,10 +37,13 @@ def fitting_payload_changed(fitting: EveFitting, payload: dict) -> bool:
 
 
 def build_fitting_payload_from_instance(fitting: EveFitting) -> dict:
-    return {
-        field: getattr(fitting, field)
-        for field in EVE_FITTING_VERSIONED_FIELDS
-    }
+    payload = {}
+    for field in EVE_FITTING_VERSIONED_FIELDS:
+        if field == "tags":
+            payload[field] = fitting.tag_slugs()
+        else:
+            payload[field] = getattr(fitting, field)
+    return payload
 
 
 def build_fitting_payload_from_form(
@@ -46,11 +53,21 @@ def build_fitting_payload_from_form(
     payload = {}
     for field in EVE_FITTING_VERSIONED_FIELDS:
         if field in form.cleaned_data:
-            payload[field] = form.cleaned_data[field]
+            value = form.cleaned_data[field]
+            if field == "tags":
+                payload[field] = list(value or [])
+            else:
+                payload[field] = value
         elif original is not None:
-            payload[field] = getattr(original, field)
+            if field == "tags":
+                payload[field] = original.tag_slugs()
+            else:
+                payload[field] = getattr(original, field)
         else:
-            payload[field] = getattr(form.instance, field)
+            if field == "tags":
+                payload[field] = form.instance.tag_slugs()
+            else:
+                payload[field] = getattr(form.instance, field)
     return payload
 
 
@@ -82,12 +99,22 @@ def _name_from_eft_or_payload(payload: dict) -> str:
 
 @transaction.atomic
 def apply_fitting_payload(fitting: EveFitting, payload: dict):
-    for field in EVE_FITTING_VERSIONED_FIELDS:
+    old_tags = fitting.tag_slugs()
+    new_tags = EveFitting.coerce_tags(payload.get("tags", old_tags))
+    version_before = fitting.latest_version
+
+    for field in EVE_FITTING_VERSIONED_SCALAR_FIELDS:
         setattr(fitting, field, payload.get(field, getattr(fitting, field)))
     derived_name = EveFitting.fitting_name_from_eft(fitting.eft_format)
     if derived_name:
         fitting.name = derived_name
     fitting.save()
+
+    scalar_bumped = fitting.latest_version != version_before
+    fitting.set_tag_slugs(
+        new_tags,
+        write_history=not scalar_bumped,
+    )
 
 
 @transaction.atomic

@@ -14,7 +14,7 @@ ROUTE_SPEC = {
 
 
 def get_fittings(request):
-    fittings = EveFitting.objects.prefetch_related("refits")
+    fittings = EveFitting.objects.prefetch_related("refits", "tags")
     response = []
     for fitting in fittings:
         fitting_response = make_fitting_response(fitting)

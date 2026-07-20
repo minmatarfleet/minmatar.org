@@ -209,7 +209,7 @@ class FittingTagListFilter(admin.SimpleListFilter):
 
     def queryset(self, request, queryset):
         if self.value():
-            return queryset.filter(tags__contains=[self.value()])
+            return queryset.filter(tags__slug=self.value())
         return queryset
 
 
@@ -1351,7 +1351,7 @@ class EveFittingPodAdmin(SafeDeleteAdmin):
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         if db_field.name == "escape_frigate_fittings":
             kwargs["queryset"] = EveFitting.objects.filter(
-                tags__contains=[FittingTag.ESCAPE_FRIGATE]
+                tags__slug=FittingTag.ESCAPE_FRIGATE
             )
         return super().formfield_for_manytomany(db_field, request, **kwargs)
 

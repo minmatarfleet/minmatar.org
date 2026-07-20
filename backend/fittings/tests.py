@@ -116,13 +116,13 @@ class FittingsRouterTestCase(TestCase):
         self.assertEqual([], fitting["tags"])
 
     def test_get_fittings_includes_tags_when_set(self):
-        EveFitting.objects.create(
+        fitting = EveFitting.objects.create(
             name="[ADV-5] Retribution",
             eft_format="[Retribution, [ADV-5] Retribution]",
             ship_id=608,
             description="",
-            tags=["nanogang", "nullsec"],
         )
+        fitting.set_tag_slugs(["nanogang", "nullsec"], write_history=False)
         response = self.client.get(
             "/api/fittings/",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
@@ -475,12 +475,11 @@ class EveFittingVersionHistoryTestCase(TestCase):
             eft_format="[Retribution, [ADV-5] Retribution]",
             ship_id=608,
             description="d",
-            tags=["nullsec"],
         )
+        fitting.set_tag_slugs(["nullsec"], write_history=False)
         version_v1 = fitting.latest_version
 
-        fitting.tags = ["nanogang", "nullsec"]
-        fitting.save()
+        fitting.set_tag_slugs(["nanogang", "nullsec"])
 
         fitting.refresh_from_db()
         self.assertNotEqual(version_v1, fitting.latest_version)

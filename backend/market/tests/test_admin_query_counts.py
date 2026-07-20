@@ -82,8 +82,8 @@ class MarketAdminQueryCountTestCase(TestCase):
             name="[FL33T] Admin Perf",
             eft_format="[Rifter, [FL33T] Admin Perf]\nRifter",
             ship_id=self.item_type.id,
-            tags=[FittingTag.NANOGANG],
         )
+        fitting.set_tag_slugs([FittingTag.NANOGANG], write_history=False)
         EveMarketFittingExpectation.objects.create(
             fitting=fitting,
             location=self.location,

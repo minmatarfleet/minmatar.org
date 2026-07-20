@@ -26,7 +26,7 @@ def get_doctrine(request, doctrine_id: int):
     fittings = (
         EveDoctrineFitting.objects.filter(doctrine=doctrine)
         .select_related("fitting")
-        .prefetch_related("fitting__refits")
+        .prefetch_related("fitting__refits", "fitting__tags")
     )
     for doctrine_fitting in fittings:
         fitting = doctrine_fitting.fitting

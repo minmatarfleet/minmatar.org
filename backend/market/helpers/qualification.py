@@ -9,16 +9,14 @@ def get_qualified_sell_fittings(location):
     if not categories:
         return EveFitting.objects.none()
 
-    category_set = set(categories)
-    fitting_ids = []
-    for fitting in EveFitting.objects.filter(deleted__isnull=True).only(
-        "pk", "tags"
-    ):
-        tags = fitting.tags or []
-        if category_set.intersection(tags):
-            fitting_ids.append(fitting.pk)
-
-    return EveFitting.objects.filter(pk__in=fitting_ids).order_by("name")
+    return (
+        EveFitting.objects.filter(
+            deleted__isnull=True,
+            tags__slug__in=categories,
+        )
+        .distinct()
+        .order_by("name")
+    )
 
 
 def get_qualified_contract_fittings(location):

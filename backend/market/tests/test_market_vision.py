@@ -102,13 +102,15 @@ class QualificationTestCase(TestCase):
             name="[FL33T] Nanogang Rifter",
             eft_format=rifter_eft("[FL33T] Nanogang Rifter"),
             ship_id=587,
-            tags=[FittingTag.NANOGANG],
         )
+        self.matching.set_tag_slugs([FittingTag.NANOGANG], write_history=False)
         self.non_matching = EveFitting.objects.create(
             name="[FL33T] Highsec Venture",
             eft_format="[Venture, [FL33T] Highsec Venture]\nMiner I",
             ship_id=32880,
-            tags=[FittingTag.HIGHSEC],
+        )
+        self.non_matching.set_tag_slugs(
+            [FittingTag.HIGHSEC], write_history=False
         )
 
     def test_sell_fittings_any_tag_match(self):
@@ -1160,8 +1162,8 @@ class ExpectationsAdminViewsTestCase(TestCase):
                 "Acolyte I x50\n"
             ),
             ship_id=19720,
-            tags=[FittingTag.NANOGANG],
         )
+        self.fitting.set_tag_slugs([FittingTag.NANOGANG], write_history=False)
         doctrine = EveDoctrine.objects.create(
             name="Test Doctrine",
             type=DOCTRINE_TYPE_NON_STRATEGIC,
@@ -1181,8 +1183,8 @@ class ExpectationsAdminViewsTestCase(TestCase):
             name="[FL33T] Rifter",
             eft_format=rifter_eft("[FL33T] Rifter"),
             ship_id=587,
-            tags=[FittingTag.NANOGANG],
         )
+        non_doctrine.set_tag_slugs([FittingTag.NANOGANG], write_history=False)
         EveMarketFittingExpectation.objects.create(
             fitting=non_doctrine,
             location=self.location,
@@ -1277,8 +1279,8 @@ class ExpectationsAdminViewsTestCase(TestCase):
             name="[FL33T] Rifter",
             eft_format=rifter_eft("[FL33T] Rifter"),
             ship_id=587,
-            tags=[FittingTag.NANOGANG],
         )
+        non_doctrine.set_tag_slugs([FittingTag.NANOGANG], write_history=False)
         rows = build_fitting_expectation_rows(self.location)
         EveMarketFittingExpectation.objects.create(
             fitting=non_doctrine,

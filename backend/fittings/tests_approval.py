@@ -1000,8 +1000,8 @@ class HistoryDisplayTestCase(TestCase):
             ship_id=587,
             eft_format="[Rifter, Rifter SK]\nHigh Slot\n",
             description="old desc",
-            tags=["nanogang"],
         )
+        fitting.set_tag_slugs(["nanogang"], write_history=False)
         history = EveFittingHistory.objects.create(
             fitting=fitting,
             superseded_version_id="fit-version",

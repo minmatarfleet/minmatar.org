@@ -156,7 +156,9 @@ def save_contract_expectation_quantities(
 
 def build_fitting_expectation_rows(location) -> list[dict]:
     qualified_fittings = list(
-        get_qualified_non_doctrine_sell_fittings(location)
+        get_qualified_non_doctrine_sell_fittings(location).prefetch_related(
+            "tags"
+        )
     )
     expectations = {
         row.fitting_id: row
@@ -172,7 +174,7 @@ def build_fitting_expectation_rows(location) -> list[dict]:
             {
                 "fitting_id": fitting.pk,
                 "fitting_name": fitting.name,
-                "fitting_tags": fitting.tags or [],
+                "fitting_tags": fitting.tag_slugs(),
                 "quantity": expectation.quantity if expectation else None,
                 "item_count": len(parse_eft_items(fitting.eft_format)),
             }
@@ -181,7 +183,9 @@ def build_fitting_expectation_rows(location) -> list[dict]:
 
 
 def build_contract_expectation_rows(location) -> list[dict]:
-    qualified_fittings = list(get_all_doctrine_fittings())
+    qualified_fittings = list(
+        get_all_doctrine_fittings().prefetch_related("tags")
+    )
     fitting_ids = [fitting.pk for fitting in qualified_fittings]
     doctrine_names_by_fitting = get_doctrine_names_by_fitting_id(fitting_ids)
     doctrine_ids_by_fitting: dict[int, list[int]] = {}
@@ -228,7 +232,7 @@ def build_contract_expectation_rows(location) -> list[dict]:
             {
                 "fitting_id": fitting.pk,
                 "fitting_name": fitting.name,
-                "fitting_tags": fitting.tags or [],
+                "fitting_tags": fitting.tag_slugs(),
                 "doctrine_names": ", ".join(doctrine_names),
                 "doctrine_names_list": doctrines_names,
                 "doctrines_display": doctrines_display,

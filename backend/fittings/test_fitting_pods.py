@@ -45,7 +45,9 @@ class EveFittingPodTest(TestCase):
             ship_id=670,
             description="desc",
             eft_format="[Slasher, Escape]\n",
-            tags=[FittingTag.ESCAPE_FRIGATE],
+        )
+        escape_fit.set_tag_slugs(
+            [FittingTag.ESCAPE_FRIGATE], write_history=False
         )
         ship_fit = EveFitting.objects.create(
             name="Main Fit",
