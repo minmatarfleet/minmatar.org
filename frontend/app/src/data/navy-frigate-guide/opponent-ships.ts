@@ -4,7 +4,6 @@ export const navyFrigateShips = {
     slicer: { shipId: 17703, shipName: 'Imperial Navy Slicer' },
     firetail: { shipId: 17812, shipName: 'Republic Fleet Firetail' },
     vigil: { shipId: 37454, shipName: 'Vigil Fleet Issue' },
-    rifter: { shipId: 587, shipName: 'Rifter' },
     tristan: { shipId: 593, shipName: 'Tristan' },
     breacher: { shipId: 598, shipName: 'Breacher' },
 } as const
@@ -43,10 +42,6 @@ export function resolveMatchupOpponentShip(
 
     if (lower.includes('vigil')) {
         return navyFrigateShips.vigil
-    }
-
-    if (lower.includes('rifter')) {
-        return navyFrigateShips.rifter
     }
 
     if (lower.includes('tristan')) {

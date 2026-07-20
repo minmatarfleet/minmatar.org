@@ -79,7 +79,6 @@ const verdictLabels: Record<MatchupVerdict, string> = {
 
         <section class="ndm-ship__fits" aria-labelledby={`${ship.id}-fits-title`}>
             <h4 id={`${ship.id}-fits-title`} class="ndm-ship__fits-title">Example fits</h4>
-            <p class="ndm-ship__fits-lead">Primary [NVY] fittings. Pocket variants are refits on these fits in the library — see each role section above.</p>
             <div class="ndm-ship__fits-grid">
                 {
                     fits.map((fit) => (
@@ -304,7 +303,6 @@ const verdictLabels: Record<MatchupVerdict, string> = {
         color: var(--fleet-yellow);
     }
 
-    .ndm-ship__fits-lead,
     .ndm-ship__matchup-context {
         margin: 0 0 var(--space-s);
         font-size: var(--step--1);

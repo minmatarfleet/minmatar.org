@@ -1,10 +1,6 @@
 import type { GuideFitting } from './types'
 
-/**
- * Primary [NVY] example fits shown on the metagame guide.
- * Pocket variants live as EveFittingRefit rows on these primaries in the
- * fitting library (see ship guide sections for what each refit is for).
- */
+/** Example fits for the navy destroyer metagame guide. */
 export const guideFittings: GuideFitting[] = [
     {
         id: 'cat-blaster',

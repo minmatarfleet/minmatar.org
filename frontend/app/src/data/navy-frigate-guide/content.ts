@@ -85,16 +85,15 @@ export const introduction = [
 ]
 
 export const considerations = [
-    'The frigate metagame looks quite different from the destroyer metagame. Scram-kiting matters more: hull projection bonuses are weaker, so the range you hold decides most 1v1s. Instead of a binary high-ground chart, you get several viable archetypes at once—brawl under ~5 km, scram-kite at 7–10 km, web-kite around 10–13 km, and pure kite past ~16 km. Kiters with high ground beat brawlers at the wrong range; brawlers with high ground beat kiters who land on zero.',
-    'Frigates also run several equally viable archetypes. With a frigate on d-scan, you often cannot tell whether it is kite, scram-kite, or brawl. You lean on local knowledge, scouting, and sometimes assuming the worst before you slide.',
-    'One surprise if you only know destroyers: most solo frigate brawlers use an afterburner with scram, not a microwarpdrive. That keeps prop active under scram. MWD + disruptor lines still exist—especially on Slicers and some Hookbills—but they are a different ship story from the AB + scram default.',
+    'The frigate metagame operates quite a bit different than the destroyer and cruiser metagame. Hull projection bonuses are weaker, so the range you hold often decides the engagement. Kiters with high ground beat brawlers at the wrong range; brawlers with high ground beat kiters who land on zero.',
+    'One surprise if you only know destroyers: most frigate brawlers use an afterburner. Microwarpdrives are often seen with warp disruptors instead of scram fits.',
 ]
 
 export const considerationBullets = [
-    'Scram-kiting is the center of the meta. Most navy fights resolve at the edge of scram, not at zero.',
-    'Ammo choice matters more than on destroyers. Matchups are often close; the wrong crystal or rocket type flips them.',
-    'T1 frigates still appear constantly and still teach the same archetypes, but navy hulls out-control and out-tank them in fair trades.',
-    'Anti-kite fits are real here. Dual-prop or MWD answers that barely matter in destroyer charts show up often in Scout plexes.',
+    'Scram-kiting is the center of the meta. Most navy fights resolve at the edge of scram range.',
+    'Ammo choice matters, and the margins are much thinner than destroyer engagements.',
+    'T1 frigates appear constantly and teach the archetypes, but are often dominated by navy hulls.',
+    'Anti-kite is a real thing with frigates, whereas destroyers it doesn\'t matter as much.',
 ]
 
 export const disclaimers = [
@@ -105,19 +104,19 @@ export const disclaimers = [
 export const metagameSummary = [
     {
         archetype: 'Brawl',
-        text: 'Win the DPS race at scram range. Federation Navy Comet is the generalist — raw damage wins most straight trades unless double webs control you. Tristan is the cheap drone stand-in when you want Comet lessons without Navy prices.',
+        text: 'Win the DPS race at scram range. Ships like the Federation Navy Comet are ideal here — raw damage wins most straight trades. There are some cheeky options like the Tristan that will allow you to learn the archetype.',
     },
     {
         archetype: 'Control',
-        text: 'Stack webs and mid-slot tools so the other pilot never gets to play their game. Caldari Navy Hookbill owns this lane: multi-web control fits, cheeky EWAR lines, and the best hull if you want to dictate the fight instead of racing EHP. Breacher is the T1 Hookbill analogue — scram-kite flash tank at 7–10 km when you want the same lessons without Navy prices.',
+        text: 'Stack webs and other tools so that the other pilot doesn\'t get to play. Caldari Navy Hookbill dominates here, as it has the mid slots to run multiple webs or even some electronic warfare. Breacher is a great way to learn this archetype.',
     },
     {
         archetype: 'Kite',
-        text: 'Hold outside their apply and grind. Imperial Navy Slicer is the pure long-point kite — cheap enough to learn on, and it teaches manual piloting, capacitor, and every habit you need before interceptors and nanogang. Vigil Fleet Issue covers the missile kite band (Javelin web-kite or Rage scram-kite).',
+        text: 'Hold outside of their apply range and grind away. The Imperial Navy Slicer is king here, and it\'s cheap enough to learn on. Manual piloting, capacitor management, and grid awareness are key here.',
     },
     {
         archetype: 'Opportunist',
-        text: 'Speed, webs, and picking only the fights you want — not the best hull, but the one that creates kills. Republic Fleet Firetail lives here; Rifter practices the same lessons before you pay Fleet prices. Take the free trade, decline the bad one.',
+        text: 'If you know what someone is flying, there are a few direct counters that you can simply run them down in. Things like Slicers easily get clapped by anti-kite ships.',
     },
 ]
 
@@ -146,7 +145,6 @@ export const guideSections = [
     { id: 'slicer', title: 'Imperial Navy Slicer' },
     { id: 'firetail', title: 'Republic Fleet Firetail' },
     { id: 'vigil', title: 'Vigil Fleet Issue' },
-    { id: 'rifter', title: 'Rifter' },
     { id: 'tristan', title: 'Tristan' },
     { id: 'breacher', title: 'Breacher' },
     { id: 'glossary', title: 'Glossary', shortTitle: 'Glossary' },
