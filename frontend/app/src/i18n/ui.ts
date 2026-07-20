@@ -2584,5 +2584,6 @@ export const ui = {
         'your_current_timezone': 'Based upon your current timezone',
         'currently_busy': '⚠️ Currently in use. Come back later to check if the job is completed.',
         'opens_in_a_new_tab': 'Opens in a new tab',
+        'swipe_left_for_history': 'Swipe left to see past CEOs.',
     },
 } as const;
