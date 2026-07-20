@@ -7,6 +7,7 @@ export const guideMeta = {
     publisher: 'Minmatar Fleet Alliance Thinkspeak Editions',
     location: 'Sosala, The Bleak Lands',
     coverImage: '/images/warzone-cover.jpg',
+    seoImage: '/images/guides/seo/faction-warfare-cruiser-guide.png',
     coverAlt: 'Cruisers engaged in faction warfare',
 }
 

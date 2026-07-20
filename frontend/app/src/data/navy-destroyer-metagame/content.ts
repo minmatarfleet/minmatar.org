@@ -8,6 +8,7 @@ export const guideMeta = {
     publisher: 'Minmatar Fleet Alliance Thinkspeak Editions',
     location: 'Sosala, The Bleak Lands',
     coverImage: '/images/doctrines-cover.jpg',
+    seoImage: '/images/guides/seo/navy-destroyer-metagame.png',
     coverAlt: 'EVE Online faction warfare destroyers fighting in a plex',
     firstEditionUrl: 'https://drive.google.com/file/d/1Vr3T2Z0pPlDkj8sqsS0EBhDcUbLnol2p/view',
     firstEditionRedditUrl: 'https://www.reddit.com/r/Eve/comments/1c7x1ps/the_navy_destroyer_metagame_guide_2024_edition/',

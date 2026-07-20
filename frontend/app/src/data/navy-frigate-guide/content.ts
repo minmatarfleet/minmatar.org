@@ -8,6 +8,7 @@ export const guideMeta = {
     publisher: 'Minmatar Fleet Alliance Thinkspeak Editions',
     location: 'Sosala, The Bleak Lands',
     coverImage: '/images/fits-cover.jpg',
+    seoImage: '/images/guides/seo/navy-frigate-guide.png',
     coverAlt: 'EVE Online faction warfare frigates in a Scout complex fight',
     firstEditionUrl: 'https://my.minmatar.org/guides/navy-frigate-guide/',
     firstEditionRedditUrl: 'https://patreon.com/EVEFrigates',

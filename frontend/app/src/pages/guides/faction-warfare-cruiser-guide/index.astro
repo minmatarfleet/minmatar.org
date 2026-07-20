@@ -22,7 +22,7 @@ const meta_title = t('ships.faction_warfare_cruiser_guide.meta_title')
 const meta_description = t('ships.faction_warfare_cruiser_guide.meta_description')
 const site_origin = get_site_origin(Astro.url.origin)
 const canonical_url = new URL(translatePath('/guides/faction-warfare-cruiser-guide/'), site_origin).href
-const meta_image = new URL(guideMeta.coverImage, site_origin).href
+const meta_image = new URL(guideMeta.seoImage, site_origin).href
 const guides_url = new URL(translatePath('/guides/'), site_origin).href
 
 const structured_data = buildFactionWarfareCruiserGuideJsonLd({

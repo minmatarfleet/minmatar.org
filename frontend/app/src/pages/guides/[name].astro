@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { getGuideBySlug } from '@/data/guides'
-import { getGuideCoverImage } from '@/data/guides/covers'
+import { getGuideSeoImage } from '@/data/guides/covers'
 import { buildGuideJsonLd, getGuidePageSeo } from '@/data/guides/seo'
 import { pageProgressFromMarkdown } from '@helpers/pageProgress'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
@@ -18,14 +18,13 @@ if (!guide) {
 
 const site_origin = get_site_origin(Astro.url.origin)
 const { module } = guide
-const coverImage = getGuideCoverImage(guide)
 const seo = getGuidePageSeo({
     guide,
     siteName: t('index.page_title'),
     siteOrigin: site_origin,
     translatePath,
     t,
-    coverImage,
+    coverImage: getGuideSeoImage(guide),
 })
 const structured_data = buildGuideJsonLd({
     guide,
