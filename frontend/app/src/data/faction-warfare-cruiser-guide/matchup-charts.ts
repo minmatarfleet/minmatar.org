@@ -29,7 +29,7 @@ const kiteRows = [
     'Pulse Augoror Navy Issue',
     'Kite Omen Navy Issue',
     '250mm Rail Exequror Navy Issue',
-    'RHML Osprey Navy Issue',
+    'RLML Osprey Navy Issue',
     'Armor RLML Scythe Fleet Issue',
     'Vulcan Stabber',
 ]
@@ -71,7 +71,7 @@ const kiteMatrix: MatchupRating[][] = [
     ['+', '=', '=', '=', '+', '-', '+'],
     // 250mm Rail Exequror Navy Issue high
     ['+', '=', '=', '=', '+', '=', '+'],
-    // RHML Osprey Navy Issue high
+    // RLML Osprey Navy Issue high
     ['=', '-', '=', '-', '=', '--', '-'],
     // Armor RLML Scythe Fleet Issue high
     ['+', '+', '+', '=', '++', '=', '+'],

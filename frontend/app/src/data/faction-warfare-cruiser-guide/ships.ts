@@ -127,7 +127,7 @@ export const augniGuide: ShipGuide = {
             entries: [
                 { opponent: 'Dual Rep Vexor Navy Issue', load: 'Scorch', verdict: 'favoured', advice: 'You are faster; do not get webbed down at zero.' },
                 { opponent: 'HAM Caracal Navy Issue', load: 'Scorch', verdict: 'favoured', advice: 'Hold mid-band; they want scramble.' },
-                { opponent: 'RHML Osprey Navy Issue', load: 'Scorch', verdict: 'favoured', advice: 'Similar job — your neuts help if the race closes.' },
+                { opponent: 'RLML Osprey Navy Issue', load: 'Scorch', verdict: 'favoured', advice: 'Similar job — your neuts help if the race closes.' },
                 { opponent: 'Long Point Arbitrator', load: 'Scorch', verdict: 'skill', advice: 'Range discipline. Do not greed into their drones.' },
                 { opponent: 'Blaster Exequror Navy Issue', load: 'Scorch', verdict: 'unfavoured', advice: 'Catch tools and speed will find you.' },
                 { opponent: 'Dual Prop Scythe Fleet Issue', load: 'Scorch', verdict: 'unfavoured', advice: 'They run you down. Leave early.' },
@@ -317,7 +317,7 @@ export const omenniGuide: ShipGuide = {
                 { opponent: 'Dual Rep Vexor Navy Issue', load: 'Scorch', verdict: 'favoured', advice: 'Bleed them if you never enter web range.' },
                 { opponent: 'Polarized Augoror Navy Issue', load: 'Scorch', verdict: 'favoured', advice: 'They are a beacon brick. Stay out.' },
                 { opponent: 'Long Point Arbitrator', load: 'Scorch', verdict: 'skill', advice: 'Mid-band versus long-point drones. Range discipline.' },
-                { opponent: 'RHML Osprey Navy Issue', load: 'Scorch', verdict: 'skill', advice: 'Close fight — who holds band first.' },
+                { opponent: 'RLML Osprey Navy Issue', load: 'Scorch', verdict: 'skill', advice: 'Close fight — who holds band first.' },
                 { opponent: 'Blaster Exequror Navy Issue', load: 'Scorch', verdict: 'unfavoured', advice: 'Catch tools win. Leave early.' },
                 { opponent: 'Dual Prop Scythe Fleet Issue', load: 'Scorch', verdict: 'unfavoured', advice: 'Speed and leave tools. Warp before the ram.' },
                 { opponent: 'Armor RLML Scythe Fleet Issue', load: 'Scorch', verdict: 'unfavoured', advice: 'Low-commit catcher. Do not sit forever.' },
@@ -400,7 +400,7 @@ export const ospreyniGuide: ShipGuide = {
     shortName: 'OspreyNI',
     faction: 'Caldari',
     shipId: 29340,
-    tagline: 'Mixed hardpoints: double-neut HAM and RHML kite.',
+    tagline: 'Mixed hardpoints: double-neut HAM and RLML kite.',
     bonuses: [
         { label: 'Heavy Assault Missile and Heavy Missile damage', value: '5%' },
         { label: 'Shield boost amount', value: '7.5%' },
@@ -423,7 +423,7 @@ export const ospreyniGuide: ShipGuide = {
         },
         {
             id: 'rhml-kite',
-            title: 'RHML Osprey Navy Issue',
+            title: 'RLML Osprey Navy Issue',
             paragraphs: [
                 'Damage-per-level clip into kiting cruisers with a very large XLASB tank. Anything that catches you is scary — leave early.',
             ],
@@ -444,8 +444,8 @@ export const ospreyniGuide: ShipGuide = {
             ],
         },
         {
-            title: 'RHML Osprey Navy Issue',
-            fitContext: 'RHML long-point kite with XLASB.',
+            title: 'RLML Osprey Navy Issue',
+            fitContext: 'RLML long-point kite with XLASB.',
             entries: [
                 { opponent: 'HAM Caracal Navy Issue', load: 'Fury', verdict: 'favoured', advice: 'Clip into the brawler if you hold point.' },
                 { opponent: 'Polarized Augoror Navy Issue', load: 'Fury', verdict: 'favoured', advice: 'Same — deny zero.' },
@@ -511,7 +511,7 @@ export const eniGuide: ShipGuide = {
                 { opponent: 'Pulse Augoror Navy Issue', load: 'Void', verdict: 'favoured', advice: 'You have the speed. Close, scram, apply.' },
                 { opponent: 'Kite Omen Navy Issue', load: 'Void', verdict: 'favoured', advice: 'Catch tools win. Punch in before they leave.' },
                 { opponent: 'Long Point Arbitrator', load: 'Void', verdict: 'favoured', advice: 'Ram the kite. Do not orbit at their drone comfort.' },
-                { opponent: 'RHML Osprey Navy Issue', load: 'Void', verdict: 'favoured', advice: 'Close hard. Their XLASB only buys time.' },
+                { opponent: 'RLML Osprey Navy Issue', load: 'Void', verdict: 'favoured', advice: 'Close hard. Their XLASB only buys time.' },
                 { opponent: 'Dual Prop Scythe Fleet Issue', load: 'Void', verdict: 'favoured', advice: 'You are the harder trade — force the scram.' },
                 { opponent: 'Dual Prop Stabber Fleet Issue', load: 'Void', verdict: 'favoured', advice: 'They cannot speed-tank Neutrons cleanly.' },
                 { opponent: 'HAM Caracal Navy Issue', load: 'Void', verdict: 'even', advice: 'Buffer race. High ground and heat decide it.' },
@@ -769,7 +769,7 @@ export const scythefiGuide: ShipGuide = {
             entries: [
                 { opponent: 'HAM Caracal Navy Issue', load: 'Hail', verdict: 'favoured', advice: 'Punch in; leave if the trade turns.' },
                 { opponent: '2X Neut HAM Osprey Navy Issue', load: 'Hail', verdict: 'favoured', advice: 'Comfortable if you pick the trade and AB out.' },
-                { opponent: 'RHML Osprey Navy Issue', load: 'Hail', verdict: 'favoured', advice: 'You are the catcher. Run them down.' },
+                { opponent: 'RLML Osprey Navy Issue', load: 'Hail', verdict: 'favoured', advice: 'You are the catcher. Run them down.' },
                 { opponent: 'Kite Omen Navy Issue', load: 'Hail', verdict: 'favoured', advice: 'Close the kite; leave if wrong.' },
                 { opponent: 'Pulse Augoror Navy Issue', load: 'Hail', verdict: 'favoured', advice: 'Same — speed is the identity.' },
                 { opponent: 'Polarized Augoror Navy Issue', load: 'Hail', verdict: 'favoured', advice: 'Punch the beacon brick and AB out if polarized wins.' },
@@ -784,7 +784,7 @@ export const scythefiGuide: ShipGuide = {
             title: 'Armor RLML Scythe Fleet Issue',
             fitContext: 'Low-commit ~60 km RLML with medium neut. Refit: RLML XLASB Scythe Fleet Issue.',
             entries: [
-                { opponent: 'RHML Osprey Navy Issue', load: 'Fury', verdict: 'favoured', advice: 'You are the catcher in this matchup.' },
+                { opponent: 'RLML Osprey Navy Issue', load: 'Fury', verdict: 'favoured', advice: 'You are the catcher in this matchup.' },
                 { opponent: 'Long Point Arbitrator', load: 'Fury', verdict: 'favoured', advice: 'Low-commit pressure with speed.' },
                 { opponent: 'Kite Omen Navy Issue', load: 'Fury', verdict: 'favoured', advice: 'Same mid-band story — you usually force the leave.' },
                 { opponent: 'Pulse Augoror Navy Issue', load: 'Fury', verdict: 'favoured', advice: 'Faster than almost everything on this line.' },
@@ -870,7 +870,7 @@ export const stabberGuide: ShipGuide = {
                 { opponent: 'Kite Omen Navy Issue', load: 'Barrage', verdict: 'unfavoured', advice: 'Navy mid-band. Die for the kill only when you choose to.' },
                 { opponent: 'Blaster Exequror Navy Issue', load: 'Barrage', verdict: 'bail', advice: 'They catch you. Warp.' },
                 { opponent: 'Armor RLML Scythe Fleet Issue', load: 'Barrage', verdict: 'unfavoured', advice: 'Low-commit catcher. Leave early.' },
-                { opponent: 'RHML Osprey Navy Issue', load: 'Barrage', verdict: 'unfavoured', advice: 'Fatter kite with XLASB. Decline fair trades.' },
+                { opponent: 'RLML Osprey Navy Issue', load: 'Barrage', verdict: 'unfavoured', advice: 'Fatter kite with XLASB. Decline fair trades.' },
             ],
         },
     ],
