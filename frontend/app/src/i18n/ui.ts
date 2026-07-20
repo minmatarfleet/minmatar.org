@@ -213,6 +213,8 @@ export const ui = {
 
         'ships.faction_warfare_cruiser_guide.page_title': 'Faction Warfare Cruiser Guide',
         'ships.faction_warfare_cruiser_guide.leading_text': 'Fittings, roles, and 1v1 matchups for cruisers in faction warfare.',
+        'ships.faction_warfare_cruiser_guide.wip_alert_title': 'Work in progress',
+        'ships.faction_warfare_cruiser_guide.wip_alert_text': 'This guide is still being written. Expect incomplete sections, rough fits, and matchup notes that may change.',
         'ships.faction_warfare_cruiser_guide.meta_title': 'EVE Online FW Cruiser Guide | Fits & 1v1 Matchups | {site}',
         'ships.faction_warfare_cruiser_guide.meta_description': 'EVE Online faction warfare cruiser guide: Arbitrator, Augoror Navy, Omen Navy, Exequror Navy, Vexor Navy, Caracal Navy, Osprey Navy, Scythe Fleet, Stabber Fleet, and supporting T1 hulls—example fits, archetypes, and 1v1 matchup charts.',
         'page_finder.ships.faction_warfare_cruiser_guide.description': 'Fittings, roles, and 1v1 matchups for cruisers in faction warfare.',
