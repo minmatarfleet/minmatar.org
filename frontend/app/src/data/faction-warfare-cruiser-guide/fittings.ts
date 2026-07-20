@@ -4,6 +4,7 @@ import type { GuideFitting } from './types'
  * Example fits for the Faction Warfare Cruiser Guide.
  * fittingId 0 = copy-only (not yet linked in the Fleet library).
  * Names follow navy-destroyer-metagame style: `{Role/Weapon/Prop} {Ship}`.
+ * EFTs from Dato Koppla (YC 128) where available; others stay header-only until filled.
  */
 export const guideFittings: GuideFitting[] = [
     {
@@ -13,8 +14,45 @@ export const guideFittings: GuideFitting[] = [
         shipGuideId: 'arbitrator',
         name: 'Long Point Arbitrator',
         description:
-            'Shield XLASB long-point drone kite with light missiles and a medium neut.',
-        eftFormat: `[Arbitrator, Long Point Arbitrator]`,
+            'MAAR long-point drone kite with RLMLs, medium neut, and a tracking disruptor.',
+        eftFormat: `[Arbitrator, Long Point Arbitrator]
+
+Damage Control II
+Drone Damage Amplifier II
+Drone Damage Amplifier II
+Multispectrum Energized Membrane II
+Medium Ancillary Armor Repairer
+
+50MN Quad LiF Restrained Microwarpdrive
+Warp Disruptor II
+Medium F-RX Compact Capacitor Booster
+Tracking Disruptor II
+
+Medium Energy Neutralizer II
+Rapid Light Missile Launcher II
+Rapid Light Missile Launcher II
+Rapid Light Missile Launcher II
+
+Medium Auxiliary Nano Pump I
+Medium Drone Speed Augmentor I
+Medium Polycarbon Engine Housing I
+
+
+Warrior II x5
+Hammerhead II x5
+Valkyrie II x5
+Hornet EC-300 x5
+
+Inferno Fury Light Missile x500
+Mjolnir Fury Light Missile x500
+Nova Fury Light Missile x500
+Navy Cap Booster 800 x12
+Caldari Navy Inferno Light Missile x500
+Caldari Navy Mjolnir Light Missile x500
+Caldari Navy Nova Light Missile x500
+Nanite Repair Paste x120
+Optimal Range Disruption Script x1
+Tracking Speed Disruption Script x1`,
     },
     {
         id: 'arby-brawl',
@@ -23,8 +61,36 @@ export const guideFittings: GuideFitting[] = [
         shipGuideId: 'arbitrator',
         name: 'Brawl Arbitrator',
         description:
-            '100MN AB shield brawler with light missiles, small neut, and drones.',
-        eftFormat: `[Arbitrator, Brawl Arbitrator]`,
+            'AB 1600 plate brawler with dual medium neuts, dual nos, and a tracking disruptor.',
+        eftFormat: `[Arbitrator, Brawl Arbitrator]
+
+Drone Damage Amplifier II
+Multispectrum Energized Membrane II
+Multispectrum Energized Membrane II
+1600mm Rolled Tungsten Compact Plates
+Damage Control II
+
+10MN Afterburner II
+Warp Scrambler II
+Stasis Webifier II
+Balmer Series Compact Tracking Disruptor I
+
+Medium Gremlin Compact Energy Neutralizer
+Medium Gremlin Compact Energy Neutralizer
+Small Ghoul Compact Energy Nosferatu
+Small Ghoul Compact Energy Nosferatu
+
+Medium Trimark Armor Pump I
+Medium Trimark Armor Pump I
+Medium Trimark Armor Pump I
+
+
+Hobgoblin II x5
+Warrior II x5
+Hammerhead II x5
+
+Republic Fleet Phased Plasma S x320
+Tracking Speed Disruption Script x1`,
     },
     {
         id: 'arby-td-support',
@@ -54,7 +120,38 @@ export const guideFittings: GuideFitting[] = [
         name: 'Pulse Augoror Navy Issue',
         description:
             'MAAR pulse kite with Scorch, double medium neuts, and long point.',
-        eftFormat: `[Augoror Navy Issue, Pulse Augoror Navy Issue]`,
+        eftFormat: `[Augoror Navy Issue, Pulse Augoror Navy Issue]
+
+Medium Ancillary Armor Repairer
+Multispectrum Energized Membrane II
+IFFA Compact Damage Control
+Heat Sink II
+Heat Sink II
+Extruded Compact Heat Sink
+Nanofiber Internal Structure II
+
+50MN Cold-Gas Enduring Microwarpdrive
+Warp Disruptor II
+Medium F-RX Compact Capacitor Booster
+
+Heavy Pulse Laser II
+Heavy Pulse Laser II
+Heavy Pulse Laser II
+Medium Energy Neutralizer II
+Medium Energy Neutralizer II
+
+Medium Energy Locus Coordinator II
+Medium Energy Locus Coordinator II
+Medium Polycarbon Engine Housing I
+
+
+Hornet II x3
+
+Conflagration M x3
+Scorch M x6
+Navy Cap Booster 800 x19
+Imperial Navy Multifrequency M x3
+Nanite Repair Paste x120`,
     },
     {
         id: 'maller-pulse',
@@ -63,8 +160,36 @@ export const guideFittings: GuideFitting[] = [
         shipGuideId: 'maller',
         name: 'Pulse Maller',
         description:
-            'AB 800mm plate pulse brick for plex defense and small gang.',
-        eftFormat: `[Maller, Pulse Maller]`,
+            'MWD 800mm plate pulse brick for plex defense and small gang.',
+        eftFormat: `[Maller, Pulse Maller]
+
+800mm Steel Plates II
+IFFA Compact Damage Control
+Multispectrum Coating II
+Extruded Compact Heat Sink
+Heat Sink II
+Heat Sink II
+
+50MN Quad LiF Restrained Microwarpdrive
+Warp Scrambler II
+Fleeting Compact Stasis Webifier
+
+Heavy Pulse Laser II
+Heavy Pulse Laser II
+Heavy Pulse Laser II
+Heavy Pulse Laser II
+Heavy Pulse Laser II
+
+Medium Energy Collision Accelerator II
+Medium Trimark Armor Pump I
+Medium Trimark Armor Pump I
+
+
+Hobgoblin II x3
+
+Conflagration M x5
+Scorch M x5
+Imperial Navy Multifrequency M x5`,
     },
     {
         id: 'omen-quad-light',
@@ -73,8 +198,37 @@ export const guideFittings: GuideFitting[] = [
         shipGuideId: 'omen',
         name: 'Beam Omen',
         description:
-            '1600 plate with five Quad Light Beam Lasers for short-range DPS.',
-        eftFormat: `[Omen, Beam Omen]`,
+            'MWD 1600 plate with five Quad Light Beam Lasers for short-range DPS.',
+        eftFormat: `[Omen, Beam Omen]
+
+Damage Control II
+1600mm Steel Plates II
+Multispectrum Energized Membrane II
+Heat Sink II
+Heat Sink II
+Heat Sink II
+
+50MN Quad LiF Restrained Microwarpdrive
+Stasis Webifier II
+Warp Scrambler II
+
+Quad Light Beam Laser II
+Quad Light Beam Laser II
+Quad Light Beam Laser II
+Quad Light Beam Laser II
+Quad Light Beam Laser II
+
+Medium Trimark Armor Pump I
+Medium Trimark Armor Pump I
+Medium Energy Collision Accelerator II
+
+
+Hobgoblin II x2
+Hammerhead II x3
+
+Aurora M x5
+Gleam M x5
+Imperial Navy Multifrequency M x5`,
     },
     {
         id: 'omen-kite-pulse',
@@ -104,7 +258,39 @@ export const guideFittings: GuideFitting[] = [
         name: 'Kite Omen Navy Issue',
         description:
             'MAAR Scorch pulse kite with long point and a small neut.',
-        eftFormat: `[Omen Navy Issue, Kite Omen Navy Issue]`,
+        eftFormat: `[Omen Navy Issue, Kite Omen Navy Issue]
+
+Heat Sink II
+Heat Sink II
+Heat Sink II
+Nanofiber Internal Structure II
+Damage Control II
+Medium Ancillary Armor Repairer
+Multispectrum Energized Membrane II
+
+50MN Microwarpdrive II
+Warp Disruptor II
+Medium Capacitor Booster II
+
+Heavy Pulse Laser II
+Heavy Pulse Laser II
+Heavy Pulse Laser II
+Heavy Pulse Laser II
+Small Energy Neutralizer II
+
+Medium Energy Locus Coordinator II
+Medium Energy Locus Coordinator II
+Medium Ancillary Current Router I
+
+
+Warrior II x5
+Hornet EC-300 x5
+
+Conflagration M x4
+Scorch M x4
+Navy Cap Booster 800 x16
+Imperial Navy Multifrequency M x4
+Nanite Repair Paste x150`,
     },
     {
         id: 'omenni-mid-sniper',
@@ -113,8 +299,37 @@ export const guideFittings: GuideFitting[] = [
         shipGuideId: 'omenni',
         name: 'Beam Omen Navy Issue',
         description:
-            'Heavy beam mid-range sniper with long point for plex flex and kite opens.',
-        eftFormat: `[Omen Navy Issue, Beam Omen Navy Issue]`,
+            'Heavy beam mid-range kite with long point for plex flex.',
+        eftFormat: `[Omen Navy Issue, Beam Omen Navy Issue]
+
+Heat Sink II
+Heat Sink II
+Extruded Compact Heat Sink
+Medium Ancillary Armor Repairer
+Damage Control II
+F-89 Compact Signal Amplifier
+Multispectrum Energized Membrane II
+
+50MN Quad LiF Restrained Microwarpdrive
+Warp Disruptor II
+Medium Capacitor Booster II
+
+Heavy Beam Laser II
+Heavy Beam Laser II
+Heavy Beam Laser II
+Heavy Beam Laser II
+[Empty High slot]
+
+Medium Energy Locus Coordinator II
+Medium Ionic Field Projector II
+Medium Ancillary Current Router II
+
+
+Warrior II x5
+Hornet EC-300 x5
+
+Navy Cap Booster 800 x15
+Nanite Repair Paste x214`,
     },
     {
         id: 'omenni-pulse',
@@ -134,7 +349,40 @@ export const guideFittings: GuideFitting[] = [
         name: 'HAM Caracal Navy Issue',
         description:
             'Idiot-proof six-HAM shield brawler with scram/web.',
-        eftFormat: `[Caracal Navy Issue, HAM Caracal Navy Issue]`,
+        eftFormat: `[Caracal Navy Issue, HAM Caracal Navy Issue]
+
+Damage Control II
+Ballistic Control System II
+Ballistic Control System II
+
+50MN Quad LiF Restrained Microwarpdrive
+Large Shield Extender II
+Large Shield Extender II
+Warp Scrambler II
+Fleeting Compact Stasis Webifier
+Multispectrum Shield Hardener II
+
+Heavy Assault Missile Launcher II
+Heavy Assault Missile Launcher II
+Heavy Assault Missile Launcher II
+Heavy Assault Missile Launcher II
+Heavy Assault Missile Launcher II
+Heavy Assault Missile Launcher II
+
+Medium EM Shield Reinforcer II
+Medium Core Defense Field Extender I
+Medium Core Defense Field Extender I
+
+
+Hobgoblin II x5
+
+Inferno Javelin Heavy Assault Missile x1000
+Inferno Rage Heavy Assault Missile x1000
+Mjolnir Rage Heavy Assault Missile x1000
+Nova Rage Heavy Assault Missile x1396
+Caldari Navy Inferno Heavy Assault Missile x700
+Caldari Navy Mjolnir Heavy Assault Missile x700
+Caldari Navy Nova Heavy Assault Missile x700`,
     },
     {
         id: 'ospreyni-ham-neut',
@@ -144,17 +392,81 @@ export const guideFittings: GuideFitting[] = [
         name: '2X Neut HAM Osprey Navy Issue',
         description:
             'Three HAM launchers and two medium neuts — the one-on-one pressure line versus gunboats and VNI.',
-        eftFormat: `[Osprey Navy Issue, 2X Neut HAM Osprey Navy Issue]`,
+        eftFormat: `[Osprey Navy Issue, 2X Neut HAM Osprey Navy Issue]
+
+Damage Control II
+Ballistic Control System II
+Ballistic Control System II
+Ballistic Control System II
+
+50MN Y-T8 Compact Microwarpdrive
+Large Shield Extender II
+Large F-S9 Regolith Compact Shield Extender
+Multispectrum Shield Hardener II
+Warp Scrambler II
+Small Capacitor Booster II
+
+Heavy Assault Missile Launcher II
+Heavy Assault Missile Launcher II
+Heavy Assault Missile Launcher II
+Medium Gremlin Compact Energy Neutralizer
+Medium Gremlin Compact Energy Neutralizer
+
+Medium EM Shield Reinforcer II
+Medium Core Defense Field Extender I
+Medium Ancillary Current Router I
+
+
+Hobgoblin II x5
+
+Inferno Rage Heavy Assault Missile x1000
+Mjolnir Rage Heavy Assault Missile x1000
+Nova Rage Heavy Assault Missile x1000
+Scourge Rage Heavy Assault Missile x1000
+Navy Cap Booster 400 x26
+Caldari Navy Inferno Heavy Assault Missile x1000
+Caldari Navy Mjolnir Heavy Assault Missile x1000
+Caldari Navy Nova Heavy Assault Missile x1000
+Caldari Navy Scourge Heavy Assault Missile x1000
+Nanite Repair Paste x100`,
     },
     {
         id: 'ospreyni-rhml-kite',
         fittingId: 0,
         shipId: 29340,
         shipGuideId: 'ospreyni',
-        name: 'RHML Osprey Navy Issue',
+        name: 'RLML Osprey Navy Issue',
         description:
-            'RHML long-point kite with XLASB for solo plex work. Utility highs stay free for neut or drone link.',
-        eftFormat: `[Osprey Navy Issue, RHML Osprey Navy Issue]`,
+            'RLML long-point kite with XLASB, scram, and dual small neuts for solo plex work.',
+        eftFormat: `[Osprey Navy Issue, RLML Osprey Navy Issue]
+
+Ballistic Control System II
+Ballistic Control System II
+Nanofiber Internal Structure II
+Nanofiber Internal Structure II
+
+50MN Quad LiF Restrained Microwarpdrive
+Warp Disruptor II
+Warp Scrambler II
+X-Large Ancillary Shield Booster
+Compact Multispectrum Shield Hardener
+Small F-RX Compact Capacitor Booster
+
+Rapid Light Missile Launcher II
+Rapid Light Missile Launcher II
+Rapid Light Missile Launcher II
+Small Gremlin Compact Energy Neutralizer
+Small Gremlin Compact Energy Neutralizer
+
+Medium EM Shield Reinforcer II
+Medium Hydraulic Bay Thrusters II
+Medium Rocket Fuel Cache Partition II
+
+
+Warrior II x5
+
+Navy Cap Booster 400 x30
+Caldari Navy Scourge Light Missile x180`,
     },
     {
         id: 'eni-blaster',
@@ -164,7 +476,43 @@ export const guideFittings: GuideFitting[] = [
         name: 'Blaster Exequror Navy Issue',
         description:
             'Neutron plate brawler with double web and a small nos. Prefer Neutrons over ions.',
-        eftFormat: `[Exequror Navy Issue, Blaster Exequror Navy Issue]`,
+        eftFormat: `[Exequror Navy Issue, Blaster Exequror Navy Issue]
+
+1600mm Steel Plates II
+Multispectrum Energized Membrane II
+Multispectrum Coating II
+Damage Control II
+Magnetic Field Stabilizer II
+Magnetic Field Stabilizer II
+
+50MN Quad LiF Restrained Microwarpdrive
+Warp Scrambler II
+Stasis Webifier II
+Stasis Webifier II
+
+Heavy Neutron Blaster II
+Heavy Neutron Blaster II
+Heavy Neutron Blaster II
+Heavy Neutron Blaster II
+Small Energy Nosferatu II
+
+Medium Ancillary Current Router I
+Medium Trimark Armor Pump I
+Medium Explosive Armor Reinforcer I
+
+
+Acolyte II x5
+
+Null M x1000
+Void M x2320
+Missile Precision Disruption Script x1
+Missile Range Disruption Script x1
+Federation Navy Antimatter Charge M x650
+Nanite Repair Paste x30
+Optimal Range Disruption Script x1
+Tracking Speed Disruption Script x1
+Balmer Series Compact Tracking Disruptor I x1
+C-IR Compact Guidance Disruptor x1`,
     },
     {
         id: 'eni-250rail',
@@ -174,7 +522,45 @@ export const guideFittings: GuideFitting[] = [
         name: '250mm Rail Exequror Navy Issue',
         description:
             '250mm rail plex / gang flex — hold range without giving up the ENI tank skeleton.',
-        eftFormat: `[Exequror Navy Issue, 250mm Rail Exequror Navy Issue]`,
+        eftFormat: `[Exequror Navy Issue, 250mm Rail Exequror Navy Issue]
+
+Damage Control II
+Magnetic Field Stabilizer II
+Magnetic Field Stabilizer II
+Shadow Serpentis Multispectrum Coating
+Medium Ancillary Armor Repairer
+1600mm Rolled Tungsten Compact Plates
+
+50MN Y-T8 Compact Microwarpdrive
+Warp Disruptor II
+Stasis Webifier II
+Medium F-RX Compact Capacitor Booster
+
+250mm Railgun II
+250mm Railgun II
+250mm Railgun II
+250mm Railgun II
+[Empty High slot]
+
+Medium Ancillary Current Router I
+Medium Ancillary Current Router II
+Medium Ionic Field Projector II
+
+
+Acolyte II x5
+
+Javelin M x2000
+Spike M x6308
+Caldari Navy Antimatter Charge M x2000
+Caldari Navy Iron Charge M x1744
+Caldari Navy Thorium Charge M x2000
+Nanite Repair Paste x132
+ECCM Script x1
+Scan Resolution Script x1
+Targeting Range Script x2
+Optimal Range Script x3
+Tracking Speed Script x3
+Tracking Computer II x1`,
     },
     {
         id: 'eni-dual-plate-electron',
@@ -184,7 +570,37 @@ export const guideFittings: GuideFitting[] = [
         name: 'Dual Plate Electron Exequror Navy Issue',
         description:
             'Dual 1600 electron blob / mass fight line.',
-        eftFormat: `[Exequror Navy Issue, Dual Plate Electron Exequror Navy Issue]`,
+        eftFormat: `[Exequror Navy Issue, Dual Plate Electron Exequror Navy Issue]
+
+1600mm Crystalline Carbonide Restrained Plates
+1600mm Rolled Tungsten Compact Plates
+Multispectrum Energized Membrane II
+Multispectrum Energized Membrane II
+Corelum C-Type Explosive Energized Membrane
+Damage Control II
+
+50MN Quad LiF Restrained Microwarpdrive
+Warp Scrambler II
+Stasis Webifier II
+Stasis Webifier II
+
+Heavy Electron Blaster II
+Heavy Electron Blaster II
+Heavy Electron Blaster II
+Heavy Electron Blaster II
+Small Energy Nosferatu II
+
+Medium Ancillary Current Router II
+Medium Trimark Armor Pump I
+Medium Trimark Armor Pump I
+
+
+Hobgoblin II x5
+
+Null M x1000
+Void M x2800
+Caldari Navy Antimatter Charge M x1000
+Nanite Repair Paste x50`,
     },
     {
         id: 'vexor-neut-plate',
@@ -194,7 +610,35 @@ export const guideFittings: GuideFitting[] = [
         name: 'Neut Vexor',
         description:
             '1600 plate plex holder with multi-neut highs and heavy drone DPS.',
-        eftFormat: `[Vexor, Neut Vexor]`,
+        eftFormat: `[Vexor, Neut Vexor]
+
+1600mm Rolled Tungsten Compact Plates
+Multispectrum Energized Membrane II
+Multispectrum Energized Membrane II
+Damage Control II
+Drone Damage Amplifier II
+
+50MN Quad LiF Restrained Microwarpdrive
+Warp Scrambler II
+Stasis Webifier II
+Small Capacitor Booster II
+
+Medium Energy Neutralizer II
+Small Energy Neutralizer II
+Small Energy Neutralizer II
+Small Energy Neutralizer II
+
+Medium Trimark Armor Pump I
+Medium Trimark Armor Pump I
+Medium Explosive Armor Reinforcer I
+
+
+Hobgoblin II x5
+Warrior II x5
+Hammerhead II x5
+Hornet EC-300 x5
+
+Navy Cap Booster 400 x1`,
     },
     {
         id: 'vexor-blaster-neut',
@@ -213,8 +657,38 @@ export const guideFittings: GuideFitting[] = [
         shipGuideId: 'vni',
         name: 'Dual Rep Vexor Navy Issue',
         description:
-            'Dual-rep reactive electron VNI with double medium cap boosters.',
-        eftFormat: `[Vexor Navy Issue, Dual Rep Vexor Navy Issue]`,
+            'Dual-rep reactive ion VNI with scram/web and a medium cap booster.',
+        eftFormat: `[Vexor Navy Issue, Dual Rep Vexor Navy Issue]
+
+Medium Armor Repairer II
+Medium Armor Repairer II
+Multispectrum Energized Membrane II
+Multispectrum Energized Membrane II
+Damage Control II
+Reactive Armor Hardener
+
+50MN Quad LiF Restrained Microwarpdrive
+Warp Scrambler II
+Stasis Webifier II
+Medium F-RX Compact Capacitor Booster
+
+Heavy Ion Blaster II
+Heavy Ion Blaster II
+Heavy Ion Blaster II
+Small Energy Neutralizer II
+
+Medium Auxiliary Nano Pump I
+Medium Auxiliary Nano Pump I
+Medium Nanobot Accelerator I
+
+
+Acolyte II x5
+Hobgoblin II x1
+Hammerhead II x2
+Ogre II x2
+
+Void M x360
+Navy Cap Booster 800 x1`,
     },
     {
         id: 'bellicose-ham',
@@ -233,8 +707,42 @@ export const guideFittings: GuideFitting[] = [
         shipGuideId: 'bellicose',
         name: 'XLASB HAM Bellicose',
         description:
-            'XLASB HAM plex protector — trade a LSE for the ancillary and keep the scram.',
-        eftFormat: `[Bellicose, XLASB HAM Bellicose]`,
+            'AB XLASB HAM plex protector — cheap Caracal Navy Issue stand-in with scram/web.',
+        eftFormat: `[Bellicose, XLASB HAM Bellicose]
+
+Damage Control II
+Co-Processor II
+Ballistic Control System II
+Ballistic Control System II
+
+10MN Afterburner II
+X-Large Ancillary Shield Booster
+Warp Scrambler II
+Fleeting Compact Stasis Webifier
+Multispectrum Shield Hardener II
+
+Heavy Assault Missile Launcher II
+Heavy Assault Missile Launcher II
+Heavy Assault Missile Launcher II
+Heavy Assault Missile Launcher II
+
+Medium Processor Overclocking Unit I
+Medium EM Shield Reinforcer II
+Medium Thermal Shield Reinforcer II
+
+
+Hammerhead II x5
+
+Inferno Javelin Heavy Assault Missile x530
+Inferno Rage Heavy Assault Missile x530
+Mjolnir Rage Heavy Assault Missile x530
+Nova Rage Heavy Assault Missile x530
+Scourge Rage Heavy Assault Missile x264
+Navy Cap Booster 400 x39
+Caldari Navy Inferno Heavy Assault Missile x530
+Caldari Navy Mjolnir Heavy Assault Missile x530
+Caldari Navy Nova Heavy Assault Missile x530
+Zainou 'Gypsy' CPU Management EE-602 x1`,
     },
     {
         id: 'scythefi-dual-prop-ac',
@@ -244,7 +752,35 @@ export const guideFittings: GuideFitting[] = [
         name: 'Dual Prop Scythe Fleet Issue',
         description:
             'Primary dual-prop leave-insurance: MWD + AB XLASB with Dual 180mm ACs.',
-        eftFormat: `[Scythe Fleet Issue, Dual Prop Scythe Fleet Issue]`,
+        eftFormat: `[Scythe Fleet Issue, Dual Prop Scythe Fleet Issue]
+
+Reactor Control Unit II
+Damage Control II
+Nanofiber Internal Structure II
+Gyrostabilizer II
+Gyrostabilizer II
+
+50MN Microwarpdrive II
+10MN Afterburner II
+Warp Scrambler II
+X-Large Ancillary Shield Booster
+Multispectrum Shield Hardener II
+
+Dual 180mm AutoCannon II
+Dual 180mm AutoCannon II
+Dual 180mm AutoCannon II
+Dual 180mm AutoCannon II
+Small Energy Nosferatu II
+
+Medium Processor Overclocking Unit I
+Medium EM Shield Reinforcer II
+Medium Polycarbon Engine Housing II
+
+
+Hobgoblin II x5
+
+Navy Cap Booster 400 x9
+Republic Fleet Phased Plasma M x1600`,
     },
     {
         id: 'scythefi-rlml-armor',
@@ -254,7 +790,44 @@ export const guideFittings: GuideFitting[] = [
         name: 'Armor RLML Scythe Fleet Issue',
         description:
             'Primary RLML line: 800 plate MAAR long-point with medium neut. Refit: RLML XLASB (shield flash kite).',
-        eftFormat: `[Scythe Fleet Issue, Armor RLML Scythe Fleet Issue]`,
+        eftFormat: `[Scythe Fleet Issue, Armor RLML Scythe Fleet Issue]
+
+Ballistic Control System II
+Ballistic Control System II
+Damage Control II
+Medium Ancillary Armor Repairer
+800mm Crystalline Carbonide Restrained Plates
+
+50MN Cold-Gas Enduring Microwarpdrive
+Warp Disruptor II
+Missile Guidance Computer II
+Missile Guidance Computer II
+Medium Cap Battery II
+
+Rapid Light Missile Launcher II
+Rapid Light Missile Launcher II
+Rapid Light Missile Launcher II
+Rapid Light Missile Launcher II
+Medium Infectious Scoped Energy Neutralizer
+
+Medium Polycarbon Engine Housing II
+Medium Polycarbon Engine Housing I
+Medium Ancillary Current Router I
+
+
+Hornet II x5
+
+Inferno Fury Light Missile x1000
+Mjolnir Fury Light Missile x1000
+Nova Fury Light Missile x1000
+Scourge Fury Light Missile x1000
+Caldari Navy Inferno Light Missile x1000
+Caldari Navy Mjolnir Light Missile x1000
+Caldari Navy Nova Light Missile x1000
+Caldari Navy Scourge Light Missile x1000
+Missile Precision Script x2
+Missile Range Script x2
+Nanite Repair Paste x150`,
     },
     {
         id: 'scythefi-rlml-xlsb',
@@ -264,7 +837,40 @@ export const guideFittings: GuideFitting[] = [
         name: 'RLML XLASB Scythe Fleet Issue',
         description:
             'Refit of Armor RLML: four RLML + XLASB long-point kite with a small neut.',
-        eftFormat: `[Scythe Fleet Issue, RLML XLASB Scythe Fleet Issue]`,
+        eftFormat: `[Scythe Fleet Issue, RLML XLASB Scythe Fleet Issue]
+
+Ballistic Control System II
+Ballistic Control System II
+Co-Processor II
+Nanofiber Internal Structure II
+Nanofiber Internal Structure II
+
+50MN Y-T8 Compact Microwarpdrive
+Warp Disruptor II
+Compact Multispectrum Shield Hardener
+X-Large Ancillary Shield Booster
+Small F-RX Compact Capacitor Booster
+
+Rapid Light Missile Launcher II
+Rapid Light Missile Launcher II
+Rapid Light Missile Launcher II
+Rapid Light Missile Launcher II
+Small Gremlin Compact Energy Neutralizer
+
+Medium Rocket Fuel Cache Partition II
+Medium EM Shield Reinforcer II
+Medium Hydraulic Bay Thrusters II
+
+
+Hornet II x5
+
+Inferno Fury Light Missile x1000
+Mjolnir Fury Light Missile x1000
+Nova Fury Light Missile x1000
+Navy Cap Booster 400 x37
+Caldari Navy Inferno Light Missile x1000
+Caldari Navy Mjolnir Light Missile x1100
+Caldari Navy Nova Light Missile x1080`,
     },
     {
         id: 'stabber-xlsb',
@@ -274,7 +880,35 @@ export const guideFittings: GuideFitting[] = [
         name: 'AB XLASB Stabber',
         description:
             'AB XLASB plex protector — do not MWD-scram in this hull. Hold the beacon and leave when you must.',
-        eftFormat: `[Stabber, AB XLASB Stabber]`,
+        eftFormat: `[Stabber, AB XLASB Stabber]
+
+Gyrostabilizer II
+IFFA Compact Damage Control
+Gyrostabilizer II
+Counterbalanced Compact Gyrostabilizer
+
+10MN Afterburner II
+Warp Scrambler II
+Multispectrum Shield Hardener II
+X-Large Ancillary Shield Booster
+
+Dual 180mm AutoCannon II
+Dual 180mm AutoCannon II
+Dual 180mm AutoCannon II
+Dual 180mm AutoCannon II
+Small Gremlin Compact Energy Neutralizer
+Small Ghoul Compact Energy Nosferatu
+
+Medium EM Shield Reinforcer II
+Medium Processor Overclocking Unit I
+Medium Processor Overclocking Unit I
+
+
+Hobgoblin II x5
+
+Navy Cap Booster 400 x18
+Republic Fleet Fusion M x800
+Republic Fleet Phased Plasma M x800`,
     },
     {
         id: 'stabber-vulcan-kite',
@@ -294,7 +928,40 @@ export const guideFittings: GuideFitting[] = [
         name: 'Dual Prop Stabber Fleet Issue',
         description:
             'MWD + AB 1600 plate Vulcan for range control and punching up.',
-        eftFormat: `[Stabber Fleet Issue, Dual Prop Stabber Fleet Issue]`,
+        eftFormat: `[Stabber Fleet Issue, Dual Prop Stabber Fleet Issue]
+
+1600mm Rolled Tungsten Compact Plates
+Multispectrum Energized Membrane II
+Multispectrum Energized Membrane II
+Damage Control II
+Gyrostabilizer II
+Gyrostabilizer II
+
+50MN Quad LiF Restrained Microwarpdrive
+Warp Scrambler II
+Stasis Webifier II
+10MN Afterburner II
+
+220mm Vulcan AutoCannon II
+220mm Vulcan AutoCannon II
+220mm Vulcan AutoCannon II
+220mm Vulcan AutoCannon II
+220mm Vulcan AutoCannon II
+
+Medium Trimark Armor Pump I
+Medium Trimark Armor Pump I
+Medium Explosive Armor Reinforcer I
+
+
+Hobgoblin II x2
+Hammerhead II x3
+
+Barrage M x1000
+Hail M x1800
+Nanite Repair Paste x100
+Republic Fleet EMP M x1000
+Republic Fleet Fusion M x1000
+Republic Fleet Phased Plasma M x1000`,
     },
 ]
 
