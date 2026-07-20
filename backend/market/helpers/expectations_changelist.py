@@ -18,6 +18,10 @@ from market.models import (
 )
 
 EXPECTATION_PAGE_SIZE = 15
+# The non-doctrine fitting list tops out at a few hundred rows, so render it
+# unpaginated: paginating splits the save form across pages and only the
+# visible page gets saved.
+FITTING_EXPECTATION_PAGE_SIZE = 10_000
 
 
 class FittingExpectationListItem:
@@ -180,7 +184,7 @@ def _quantity_input(fitting_id: int, quantity: int | None) -> str:
 
 
 class LocationFittingExpectationsModelAdmin(admin.ModelAdmin):
-    list_per_page = EXPECTATION_PAGE_SIZE
+    list_per_page = FITTING_EXPECTATION_PAGE_SIZE
     search_fields = ("fitting_name",)
     search_help_text = _("Search by ship fit name.")
     list_filter = (FittingTagListFilter, FittingConfiguredListFilter)
