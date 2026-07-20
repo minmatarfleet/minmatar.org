@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 REMOVED_TAGS = frozenset({"lowsec", "solo", "budget"})
 
-# Keep in sync with fittings.models.FittingTag choices at migration time.
 FITTING_TAG_SEED = (
     ("highsec", "Highsec"),
     ("nullsec", "Nullsec"),
@@ -21,21 +20,19 @@ FITTING_TAG_SEED = (
 )
 
 
-def seed_fitting_tags(apps, schema_editor):
-    EveFittingTag = apps.get_model("fittings", "EveFittingTag")
+def seed_tags(apps, schema_editor):
+    Tag = apps.get_model("fittings", "EveFittingTag")
     for slug, label in FITTING_TAG_SEED:
-        EveFittingTag.objects.update_or_create(
-            slug=slug, defaults={"label": label}
-        )
+        Tag.objects.get_or_create(slug=slug, defaults={"label": label})
 
 
-def backfill_fitting_tags(apps, schema_editor):
-    EveFitting = apps.get_model("fittings", "EveFitting")
-    EveFittingTag = apps.get_model("fittings", "EveFittingTag")
+def backfill_tags(apps, schema_editor):
+    Fitting = apps.get_model("fittings", "EveFitting")
+    Tag = apps.get_model("fittings", "EveFittingTag")
     allowed = {slug for slug, _ in FITTING_TAG_SEED}
-    tags_by_slug = {t.slug: t for t in EveFittingTag.objects.all()}
+    by_slug = {t.slug: t for t in Tag.objects.all()}
 
-    for fitting in EveFitting.objects.all().iterator(chunk_size=200):
+    for fitting in Fitting.objects.iterator(chunk_size=500):
         raw = fitting.tags_legacy
         if isinstance(raw, str):
             try:
@@ -43,28 +40,21 @@ def backfill_fitting_tags(apps, schema_editor):
             except (TypeError, ValueError, json.JSONDecodeError):
                 raw = []
         if not isinstance(raw, list):
-            raw = []
-        slugs = sorted(
-            {
-                t
-                for t in raw
-                if isinstance(t, str)
-                and t in allowed
-                and t not in REMOVED_TAGS
-            }
-        )
-        if not slugs:
             continue
-        fitting.tags.set([tags_by_slug[s] for s in slugs if s in tags_by_slug])
+        tags = [
+            by_slug[s]
+            for s in raw
+            if isinstance(s, str) and s in allowed and s not in REMOVED_TAGS
+        ]
+        if tags:
+            fitting.tags.set(tags)
 
 
-def noop_reverse(apps, schema_editor):
+def noop(apps, schema_editor):
     pass
 
 
 class Migration(migrations.Migration):
-
-    atomic = False
 
     dependencies = [
         ("fittings", "0029_eve_fitting_module_substitution"),
@@ -86,11 +76,9 @@ class Migration(migrations.Migration):
                 ("slug", models.SlugField(max_length=64, unique=True)),
                 ("label", models.CharField(max_length=64)),
             ],
-            options={
-                "ordering": ["slug"],
-            },
+            options={"ordering": ["slug"]},
         ),
-        migrations.RunPython(seed_fitting_tags, noop_reverse),
+        migrations.RunPython(seed_tags, noop),
         migrations.RenameField(
             model_name="evefitting",
             old_name="tags",
@@ -105,7 +93,7 @@ class Migration(migrations.Migration):
                 to="fittings.evefittingtag",
             ),
         ),
-        migrations.RunPython(backfill_fitting_tags, noop_reverse),
+        migrations.RunPython(backfill_tags, noop),
         migrations.RemoveField(
             model_name="evefitting",
             name="tags_legacy",
