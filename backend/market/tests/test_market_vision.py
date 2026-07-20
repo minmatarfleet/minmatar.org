@@ -1258,6 +1258,22 @@ class ExpectationsAdminViewsTestCase(TestCase):
             9,
         )
 
+    def test_fitting_expectations_render_on_single_page(self):
+        for i in range(20):
+            fitting = EveFitting.objects.create(
+                name=f"[FL33T] Rifter {i:02d}",
+                eft_format=rifter_eft(f"[FL33T] Rifter {i:02d}"),
+                ship_id=587,
+            )
+            fitting.set_tag_slugs([FittingTag.NANOGANG], write_history=False)
+
+        context = build_location_fitting_expectations_context(
+            self.location, self.factory.get("/")
+        )
+        cl = context["cl"]
+        self.assertFalse(cl.multi_page)
+        self.assertEqual(len(cl.result_list), 20)
+
     def test_fitting_expectations_save_on_page_two(self):
         fittings = []
         for i in range(2):
