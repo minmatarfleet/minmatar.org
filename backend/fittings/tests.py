@@ -121,7 +121,7 @@ class FittingsRouterTestCase(TestCase):
             eft_format="[Retribution, [ADV-5] Retribution]",
             ship_id=608,
             description="",
-            tags=["solo", "lowsec"],
+            tags=["nanogang", "nullsec"],
         )
         response = self.client.get(
             "/api/fittings/",
@@ -130,7 +130,7 @@ class FittingsRouterTestCase(TestCase):
         self.assertEqual(200, response.status_code)
         data = response.json()
         self.assertEqual(1, len(data))
-        self.assertEqual(["lowsec", "solo"], data[0]["tags"])
+        self.assertEqual(["nanogang", "nullsec"], data[0]["tags"])
 
     def test_get_fitting_includes_refits(self):
         fitting = EveFitting.objects.create(
@@ -475,11 +475,11 @@ class EveFittingVersionHistoryTestCase(TestCase):
             eft_format="[Retribution, [ADV-5] Retribution]",
             ship_id=608,
             description="d",
-            tags=["solo"],
+            tags=["nullsec"],
         )
         version_v1 = fitting.latest_version
 
-        fitting.tags = ["solo", "nanogang"]
+        fitting.tags = ["nanogang", "nullsec"]
         fitting.save()
 
         fitting.refresh_from_db()
@@ -488,7 +488,7 @@ class EveFittingVersionHistoryTestCase(TestCase):
         history = EveFittingHistory.objects.filter(fitting=fitting)
         self.assertEqual(1, history.count())
         row = history.get()
-        self.assertEqual(["solo"], row.tags)
+        self.assertEqual(["nullsec"], row.tags)
 
 
 class FittingsManageSearchTestCase(TestCase):

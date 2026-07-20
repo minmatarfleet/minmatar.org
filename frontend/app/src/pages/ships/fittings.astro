@@ -2,13 +2,13 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { FittingItem, ShipFittings, ShipTypeFittingGroups } from '@dtypes/layout_components'
+import type { FittingItem, ShipTypeFittingGroups } from '@dtypes/layout_components'
 import { fetch_fittings } from '@helpers/fetching/ships'
-import { fitting_tag_label, format_fitting_tags_line } from '@helpers/fitting_tags'
+import { fitting_tag_label } from '@helpers/fitting_tags'
 import { SHIP_TYPES_SORTED } from '@helpers/eve'
 import { get_ship_type_icon } from '@helpers/eve'
 import { get_ships_meta } from '@helpers/sde/ships'
-import { unique_values } from '@helpers/array'
+import { group_by, unique_values } from '@helpers/array'
 import {
     buildFittingsListJsonLd,
     buildFittingsListMetaDescription,
@@ -37,9 +37,7 @@ try {
     get_fittings_error = error.message
 }
 
-let ship_type: Record<string, string> = {};
 fittings.forEach((fitting) => {
-    ship_type[fitting.ship_type] = fitting.ship_type;
     if (fitting.ship_type === 'Unknown')
         console.log(fitting)
 })
@@ -55,17 +53,25 @@ const tag_options = [...tag_slugs_seen]
     }))
     .sort((a, b) => a.label.localeCompare(b.label))
 
-let fitting_ship_types = Object.keys(ship_type)
+const search_tag = Astro.url.searchParams.get('tag')
+const initial_tag_filter =
+    search_tag && tag_options.some((o) => o.value === search_tag) ? search_tag : '-1'
+
+/** Only fittings that carry the selected tag (or all fittings when unfiltered). */
+const fittings_for_list =
+    initial_tag_filter === '-1'
+        ? fittings
+        : fittings.filter((fitting) => (fitting.tags ?? []).includes(initial_tag_filter))
+
+let fitting_ship_types = unique_values(fittings_for_list.map((fitting) => fitting.ship_type))
 fitting_ship_types = fitting_ship_types.sort((a, b) => SHIP_TYPES_SORTED.indexOf(a) - SHIP_TYPES_SORTED.indexOf(b))
 
 let fittings_grouped_by_ship_type:FittingItem[][] = []
 fitting_ship_types.forEach((fitting_ship_type) => {
     fittings_grouped_by_ship_type.push(
-        fittings.filter((fitting) => fitting.ship_type === fitting_ship_type).sort((a, b) => a.ship_name.localeCompare(b.ship_name))
+        fittings_for_list.filter((fitting) => fitting.ship_type === fitting_ship_type).sort((a, b) => a.ship_name.localeCompare(b.ship_name))
     )
 })
-
-import { group_by } from '@helpers/array';
 
 const fitting_groups = fittings_grouped_by_ship_type.map(fittings_group => {
     let _array = Object.values(fittings_group)
@@ -73,23 +79,20 @@ const fitting_groups = fittings_grouped_by_ship_type.map(fittings_group => {
 
     return {
         ship_type: fittings_group[0].ship_type,
-        ship_groups: Object.entries(fittings_by_ship).map(([ship_name, fittings]) => ({
+        ship_groups: Object.entries(fittings_by_ship).map(([ship_name, ship_fittings]) => ({
             ship_name: ship_name,
-            ship_id: fittings[0].ship_id,
-            ship_meta: fittings[0].ship_meta,
-            count: fittings.length,
-            ship_type: fittings[0].ship_type,
-            tags: unique_values(fittings.flatMap(fitting => fitting.tags ?? [])),
-            fittings: fittings.sort((a, b) => a.fitting_name.localeCompare(b.fitting_name)),
+            ship_id: ship_fittings[0].ship_id,
+            ship_meta: ship_fittings[0].ship_meta,
+            count: ship_fittings.length,
+            ship_type: ship_fittings[0].ship_type,
+            // Per-ship tag union for client-side filter; each fit keeps its own tags in `fittings`.
+            tags: unique_values(ship_fittings.flatMap(fitting => fitting.tags ?? [])),
+            fittings: ship_fittings.sort((a, b) => a.fitting_name.localeCompare(b.fitting_name)),
         })),
     } as ShipTypeFittingGroups
 })
 
 const ships_count = fitting_groups.flatMap(fitting_group => fitting_group.ship_groups).length
-
-const search_tag = Astro.url.searchParams.get('tag')
-const initial_tag_filter =
-    search_tag && tag_options.some((o) => o.value === search_tag) ? search_tag : '-1'
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -171,19 +174,27 @@ const structured_data = buildFittingsListJsonLd(
 
                 return visible_count
             },
+            refresh_ships_count() {
+                this.ships_count = this.countVisibleElements('.fitting-card')
+            },
+            // Read filters in the expression (not only inside a method) so Alpine tracks them.
             show_item(el) {
+                const name_filter = this.fitting_name_filter
+                const tag_filter = this.fitting_tag_filter
+                const type_filter = this.ship_type_filter
                 const ps = el.querySelectorAll('.fitting-card-filters p')
                 const name_el = ps[0]
                 const ship_el = ps[1]
                 const tag_attr = el.getAttribute('data-fitting-tags') || ''
                 const tag_list = tag_attr.split(/\\s+/).filter(Boolean)
                 return (
-                    (this.fitting_name_filter === '' || (name_el && name_el.textContent.toLowerCase().includes(this.fitting_name_filter.toLowerCase()))) &&
-                    (this.fitting_tag_filter === '-1' || tag_list.includes(this.fitting_tag_filter)) &&
-                    (this.ship_type_filter === '-1' || (ship_el && ship_el.textContent === this.ship_type_filter))
+                    (name_filter === '' || (name_el && name_el.textContent.toLowerCase().includes(name_filter.toLowerCase()))) &&
+                    (tag_filter === '-1' || tag_list.includes(tag_filter)) &&
+                    (type_filter === '-1' || (ship_el && ship_el.textContent === type_filter))
                 )
             },
         }`}
+        x-init="$nextTick(() => refresh_ships_count())"
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <FlexInline>
@@ -201,7 +212,7 @@ const structured_data = buildFittingsListJsonLd(
                     type="text"
                     placeholder={t('search')}
                     x-model="fitting_name_filter"
-                    x-on:keyup="setTimeout(function () { ships_count = countVisibleElements('.fitting-card') })"
+                    x-on:keyup="setTimeout(() => refresh_ships_count())"
                     x-init="$el.focus()"
                     width='250px'
                 >
@@ -211,11 +222,17 @@ const structured_data = buildFittingsListJsonLd(
                 <div class="[ hidden 2xl:!block ]">
                     <Select
                         x-model="fitting_tag_filter"
-                        x-on:change="setTimeout(function () { ships_count = countVisibleElements('.fitting-card') }, 100)"
+                        x-on:change="
+                            const tag = fitting_tag_filter === '-1' ? null : fitting_tag_filter
+                            const url = new URL(window.location.href)
+                            if (tag) url.searchParams.set('tag', tag)
+                            else url.searchParams.delete('tag')
+                            window.location.assign(url.pathname + url.search)
+                        "
                     >
-                        <option selected value="-1">{t('all_fitting_types')}</option>
+                        <option value="-1" selected={initial_tag_filter === '-1'}>{t('all_fitting_types')}</option>
                         {tag_options.map(({ value, label }) => 
-                            <option value={value}>{label}</option>
+                            <option value={value} selected={initial_tag_filter === value}>{label}</option>
                         )}
                     </Select>
                 </div>
@@ -223,7 +240,7 @@ const structured_data = buildFittingsListJsonLd(
                 <div class="[ hidden xl:!block ]">
                     <Select
                         x-model="ship_type_filter"
-                        x-on:change="setTimeout(function () { ships_count = countVisibleElements('.fitting-card') }, 100)"
+                        x-on:change="setTimeout(() => refresh_ships_count(), 100)"
                     >
                         <option selected value="-1">{t('all_ship_type')}</option>
                         {fitting_ship_types.map((option) => 
