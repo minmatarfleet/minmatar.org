@@ -59,7 +59,7 @@ import Tech3Icon from '@components/icons/Tech3Icon.astro';
                 <Flexblock gap='var(--space-3xs)'>
                     <FlexInline gap='var(--space-3xs)'>
                         {format_fitting_tags_line(ship_group.tags, t)?.map(tag =>
-                            <Tag text={t(tag as any) ?? tag} />
+                            <Tag text={tag} />
                         )}
                     </FlexInline>
                     <small>
@@ -90,7 +90,7 @@ import Tech3Icon from '@components/icons/Tech3Icon.astro';
                             type_id={fitting.ship_id}
                         >
                             <small>
-                                {semantic_list(lang, format_fitting_tags_line(ship_group.tags, t))}
+                                {semantic_list(lang, format_fitting_tags_line(fitting.tags, t))}
                             </small>
                         </ItemBadge>
                     </FittingLink>

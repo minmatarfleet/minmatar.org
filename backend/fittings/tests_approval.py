@@ -1000,7 +1000,7 @@ class HistoryDisplayTestCase(TestCase):
             ship_id=587,
             eft_format="[Rifter, Rifter SK]\nHigh Slot\n",
             description="old desc",
-            tags=["solo"],
+            tags=["nanogang"],
         )
         history = EveFittingHistory.objects.create(
             fitting=fitting,
@@ -1009,9 +1009,9 @@ class HistoryDisplayTestCase(TestCase):
             ship_id=587,
             eft_format="[Rifter, Rifter SK]\nHigh Slot\n",
             description="old desc",
-            tags=["solo"],
+            tags=["nanogang"],
         )
         html = str(format_fitting_history_html(history))
         self.assertIn("Rifter", html)
         self.assertIn("old desc", html)
-        self.assertIn("solo", html)
+        self.assertIn("nanogang", html)
