@@ -1,16 +1,10 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
-
 import type { GuideMeta } from '@/data/guides/types'
 import { getGuideCoverImage } from '@/data/guides/covers'
-
-interface Props {
-    guide: GuideMeta
-}
-
-const { guide } = Astro.props
-const guideUrl = guide.path ? translatePath(guide.path) : translatePath(`/guides/${guide.slug}/`)
+import { get_app_url } from '@helpers/env'
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
@@ -22,6 +16,22 @@ import CorporationBadge from '@components/blocks/CorporationBadge.astro'
 import AllianceBadge from '@components/blocks/AllianceBadge.astro'
 import Button from '@components/blocks/Button.astro'
 import ClipboardButton from '@components/blocks/ClipboardButton.astro'
+
+const { t, translatePath } = i18n(Astro.url)
+
+interface Props {
+    guide: GuideMeta
+}
+
+const { guide } = Astro.props
+const guidePath = guide.path ? translatePath(guide.path) : translatePath(`/guides/${guide.slug}/`)
+const guideUrl = guidePath
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user: User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const shareUrl = user
+    ? `${get_app_url(guidePath)}?ref=${user.user_id}`
+    : get_app_url(guidePath)
 ---
 
 <Flexblock
@@ -88,7 +98,7 @@ import ClipboardButton from '@components/blocks/ClipboardButton.astro'
             <p class="[ excerpt ]">{guide.excerpt}</p>
             <FlexInline>
                 <Button size='sm' href={guideUrl}>{t('view')}</Button>
-                <ClipboardButton id={`guide-${guide.slug}`} text={t('share')}>{guideUrl}</ClipboardButton>
+                <ClipboardButton id={`guide-${guide.slug}`} text={t('share')}>{shareUrl}</ClipboardButton>
             </FlexInline>
         </Flexblock>
     </Wrapper>
