@@ -3,7 +3,10 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.contrib import admin
+from django.contrib.auth import get_user_model
+from django.contrib.messages.storage.fallback import FallbackStorage
 from django.test import RequestFactory
+from django.urls import reverse
 from django.utils import timezone
 
 from app.test import TestCase
@@ -16,6 +19,10 @@ from fittings.models import (
     EveDoctrineFitting,
     EveFitting,
     FittingTag,
+)
+from market.admin_location_views import (
+    _allowed_fitting_ids,
+    market_location_fitting_expectations_view,
 )
 from market.helpers.contract_admin import build_location_contracts_context
 from market.helpers.contract_match import (
@@ -1249,6 +1256,61 @@ class ExpectationsAdminViewsTestCase(TestCase):
                 location=self.location, fitting=self.fitting
             ).quantity,
             9,
+        )
+
+    def test_fitting_expectations_save_on_page_two(self):
+        fittings = []
+        for i in range(2):
+            fitting = EveFitting.objects.create(
+                name=f"[FL33T] Rifter {i:02d}",
+                eft_format=rifter_eft(f"[FL33T] Rifter {i:02d}"),
+                ship_id=587,
+            )
+            fitting.set_tag_slugs([FittingTag.NANOGANG], write_history=False)
+            fittings.append(fitting)
+
+        with patch(
+            "market.helpers.expectations_changelist."
+            "LocationFittingExpectationsModelAdmin.list_per_page",
+            1,
+        ):
+            get_request = self.factory.get("/", {"p": "2"})
+            context = build_location_fitting_expectations_context(
+                self.location, get_request
+            )
+            self.assertEqual(context["cl"].page_num, 2)
+            self.assertIn("p=2", context["form_action"])
+            page2_fitting_id = context["cl"].result_list[0].fitting_id
+            self.assertEqual(_allowed_fitting_ids(context), {page2_fitting_id})
+
+            user = get_user_model().objects.create_superuser(
+                username="expectations-admin",
+                email="admin@example.com",
+                password="test-pass",
+            )
+            url = reverse(
+                "admin:market_location_fitting_expectations",
+                args=[self.location.pk],
+            )
+            post_request = self.factory.post(
+                f"{url}?p=2",
+                {f"quantity_{page2_fitting_id}": "8"},
+            )
+            post_request.user = user
+            post_request.session = {}
+            setattr(post_request, "_messages", FallbackStorage(post_request))
+
+            response = market_location_fitting_expectations_view(
+                post_request, self.location.pk
+            )
+            self.assertEqual(response.status_code, 302)
+            self.assertIn("p=2", response.url)
+
+        self.assertEqual(
+            EveMarketFittingExpectation.objects.get(
+                location=self.location, fitting_id=page2_fitting_id
+            ).quantity,
+            8,
         )
 
     def test_contract_expectations_include_all_doctrine_fittings(self):

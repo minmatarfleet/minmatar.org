@@ -621,6 +621,7 @@ def build_location_sell_orders_context(location, request=None) -> dict:
         source_filter=source_filter,
         stock_filter=stock_filter,
         markup_filter=markup_filter,
+        page=cl.page_num if cl is not None else None,
     )
     form_action = reverse(
         "admin:market_location_sell_orders", args=[location.pk]

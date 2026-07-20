@@ -310,7 +310,9 @@ def build_location_fitting_expectations_context(
         )
         model_admin = cl.model_admin
 
-    base_params = _fitting_expectation_query_params(request)
+    base_params = _fitting_expectation_query_params(
+        request, page=cl.page_num if cl is not None else None
+    )
     form_action = reverse(
         "admin:market_location_fitting_expectations",
         args=[location.pk],
@@ -389,7 +391,9 @@ def build_location_contract_expectations_context(
         )
         model_admin = cl.model_admin
 
-    base_params = _expectation_query_params(request)
+    base_params = _expectation_query_params(
+        request, page=cl.page_num if cl is not None else None
+    )
     form_action = reverse(
         "admin:market_location_contract_expectations",
         args=[location.pk],
