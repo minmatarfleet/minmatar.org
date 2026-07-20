@@ -55,30 +55,44 @@ try {
     )
 
     if (auth_token && user) {
-        for (const group of tribe_groups) {
-            const memberships = await get_memberships(auth_token, tribe_id, group.id)
-            const mine = memberships.find(m => m.user_id === user.user_id) ?? null
-            membership_by_group.set(group.id, mine)
-        }
+        // Own membership only — full roster + live requirement checks belong on
+        // /members (chiefs otherwise serialize every committed alt per group).
+        const [summary, membershipResults, availableResults] = await Promise.all([
+            get_characters_summary_sorted(auth_token),
+            Promise.all(
+                tribe_groups.map(async (group) => {
+                    try {
+                        const memberships = await get_memberships(
+                            auth_token as string,
+                            tribe_id,
+                            group.id,
+                            { mine: true },
+                        )
+                        return [group.id, memberships[0] ?? null] as const
+                    } catch {
+                        return [group.id, null] as const
+                    }
+                }),
+            ),
+            Promise.all(
+                tribe_groups.map(async (group) => {
+                    try {
+                        const list = await get_membership_characters_available(
+                            auth_token as string,
+                            tribe_id,
+                            group.id,
+                        )
+                        return [group.id, list] as const
+                    } catch {
+                        return [group.id, []] as const
+                    }
+                }),
+            ),
+        ])
 
-        const summary = await get_characters_summary_sorted(auth_token)
         user_characters = summary.characters ?? []
-
-        const availableResults = await Promise.all(
-            tribe_groups.map(async (group) => {
-                try {
-                    const list = await get_membership_characters_available(
-                        auth_token as string,
-                        tribe_id,
-                        group.id,
-                    )
-                    return [group.id, list] as const
-                } catch {
-                    return [group.id, []] as const
-                }
-            }),
-        )
-
+        for (const [gid, mine] of membershipResults)
+            membership_by_group.set(gid, mine)
         for (const [gid, list] of availableResults)
             available_by_group.set(gid, list as TribeAvailableCharacter[])
     }
