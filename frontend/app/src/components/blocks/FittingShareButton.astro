@@ -3,6 +3,10 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { ButtonSizes } from '@dtypes/layout_components';
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+import { get_app_url } from '@helpers/env'
 
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 
@@ -22,7 +26,13 @@ const {
     ...attributes
 } = Astro.props
 
-const share_url = new URL(translatePath(`/ships/fittings/${fitting_id}`), Astro.url.origin).href
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user: User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+const fitting_path = translatePath(`/ships/fittings/${fitting_id}`)
+const share_url = user
+    ? `${get_app_url(fitting_path)}?ref=${user.user_id}`
+    : get_app_url(fitting_path)
 ---
 
 <ClipboardButton

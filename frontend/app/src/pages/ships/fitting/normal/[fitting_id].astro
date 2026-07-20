@@ -4,5 +4,5 @@ const { translatePath } = i18n(Astro.url)
 
 const fitting_id = Astro.params.fitting_id ?? 0;
 
-return Astro.redirect(translatePath(`/ships/fittings/normal/${fitting_id}`), 301)
+return Astro.redirect(`${translatePath(`/ships/fittings/normal/${fitting_id}`)}${Astro.url.search}`, 301)
 ---
