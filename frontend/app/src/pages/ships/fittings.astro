@@ -177,6 +177,13 @@ const structured_data = buildFittingsListJsonLd(
             refresh_ships_count() {
                 this.ships_count = this.countVisibleElements('.fitting-card')
             },
+            apply_tag_filter() {
+                const tag = this.fitting_tag_filter === '-1' ? null : this.fitting_tag_filter
+                const url = new URL(window.location.href)
+                if (tag) url.searchParams.set('tag', tag)
+                else url.searchParams.delete('tag')
+                window.location.assign(url.pathname + url.search)
+            },
             // Read filters in the expression (not only inside a method) so Alpine tracks them.
             show_item(el) {
                 const name_filter = this.fitting_name_filter
@@ -222,13 +229,7 @@ const structured_data = buildFittingsListJsonLd(
                 <div class="[ hidden 2xl:!block ]">
                     <Select
                         x-model="fitting_tag_filter"
-                        x-on:change="
-                            const tag = fitting_tag_filter === '-1' ? null : fitting_tag_filter
-                            const url = new URL(window.location.href)
-                            if (tag) url.searchParams.set('tag', tag)
-                            else url.searchParams.delete('tag')
-                            window.location.assign(url.pathname + url.search)
-                        "
+                        x-on:change="apply_tag_filter()"
                     >
                         <option value="-1" selected={initial_tag_filter === '-1'}>{t('all_fitting_types')}</option>
                         {tag_options.map(({ value, label }) => 
