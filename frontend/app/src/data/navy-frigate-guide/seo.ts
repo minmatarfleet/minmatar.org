@@ -99,7 +99,6 @@ export function buildNavyFrigateGuideJsonLd(options: NavyFrigateGuideJsonLdOptio
                     'Imperial Navy Slicer',
                     'Republic Fleet Firetail',
                     'Vigil Fleet Issue',
-                    'Rifter',
                     'Tristan',
                     'Breacher',
                     'Scout complex',

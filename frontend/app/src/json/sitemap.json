@@ -256,7 +256,7 @@
         "path": "/guides/navy-frigate-guide/",
         "publish": true,
         "description": "page_finder.ships.navy_frigate_guide.description",
-        "keywords": [ "EVE Online frigate guide", "faction warfare frigate", "navy frigate", "Hookbill", "Comet", "Slicer", "Firetail", "Vigil Fleet Issue", "Rifter", "Tristan", "Breacher", "Scout complex", "1v1 pvp" ]
+        "keywords": [ "EVE Online frigate guide", "faction warfare frigate", "navy frigate", "Hookbill", "Comet", "Slicer", "Firetail", "Vigil Fleet Issue", "Tristan", "Breacher", "Scout complex", "1v1 pvp" ]
     },
     {
         "slug": "guides.faction_warfare_cruiser_guide",
