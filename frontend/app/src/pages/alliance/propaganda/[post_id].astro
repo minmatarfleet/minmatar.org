@@ -59,9 +59,6 @@ import ClipboardButton from '@components/blocks/ClipboardButton.astro'
 
 const page_title = post?.title ?? t('new_post')
 const page_description = post?.excerpt ?? page_title
-
-const share_url = new URL(Astro.url.href)
-if (user) share_url.searchParams.set('ref', user.user_id.toString())
 ---
 
 <Viewport
@@ -93,7 +90,7 @@ if (user) share_url.searchParams.set('ref', user.user_id.toString())
                         copied_text={t('post_url_copied')}
                         iconed={false}
                     >
-                        {share_url.href}
+                        {Astro.url}
                     </ClipboardButton>
                     {is_user_post &&
                         <Button
