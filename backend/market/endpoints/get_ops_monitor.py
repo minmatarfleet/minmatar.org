@@ -33,6 +33,7 @@ class OpsSellGap(Schema):
     type_id: int
     item_name: str
     current_quantity: int
+    viable_quantity: int
     expected_quantity: int
     shortfall: int
     ships: List[OpsSellGapShip] = []
@@ -43,11 +44,13 @@ class OpsMonitorSummary(Schema):
     sell_gaps: int
     contracts_health_pct: Optional[float] = None
     sell_orders_health_pct: Optional[float] = None
+    sell_orders_viability_pct: Optional[float] = None
     overall_health_pct: Optional[float] = None
     contract_targets: int = 0
     contract_fulfilled: int = 0
     sell_order_targets: int = 0
     sell_order_fulfilled: int = 0
+    sell_order_viable_fulfilled: int = 0
     contracts_isk: float = 0.0
     sell_orders_isk: float = 0.0
     total_isk_on_market: float = 0.0

@@ -4,10 +4,15 @@ from django.contrib import admin
 from django.contrib.admin.views.main import PAGE_VAR, SEARCH_VAR
 from django.urls import reverse
 from django.utils.http import urlencode
-
 from eveuniverse.models import EveType
-from fittings.models import EveFittingRefit
 
+from fittings.models import EveFittingRefit
+from market.helpers.price_viability import is_price_viable
+from market.helpers.pricing import (
+    get_prices_by_type_id,
+    get_volume_90d_by_type_id,
+)
+from market.helpers.qualification import get_qualified_sell_fittings
 from market.helpers.sell_orders_changelist import (
     LocationSellOrdersChangeList,
     LocationSellOrdersModelAdmin,
@@ -15,11 +20,6 @@ from market.helpers.sell_orders_changelist import (
     SellOrderSourceListFilter,
     SellOrderStockListFilter,
 )
-from market.helpers.pricing import (
-    get_prices_by_type_id,
-    get_volume_90d_by_type_id,
-)
-from market.helpers.qualification import get_qualified_sell_fittings
 from market.models import (
     EveMarketContractExpectation,
     EveMarketFittingExpectation,
@@ -47,24 +47,13 @@ MARKUP_UNDERPRICED_MAX = -5
 MARKUP_NORMAL_MAX = 5
 MARKUP_OVERPRICED_MAX = 20
 
-# Listed-within-reason: exclude sell orders priced >20% above Jita when
-# computing actionable stock. Cheap items (Jita sell < 1M ISK) always count.
-REASONABLE_MARKUP_MAX_PCT = 20
-REASONABLE_JITA_PRICE_FLOOR = 1_000_000
-
 
 def _order_quantity_counts_as_reasonable(
     order_price,
     jita_sell_price: int | None,
 ) -> bool:
     """Return True if this sell order counts toward within-reason listed stock."""
-    if jita_sell_price is None or jita_sell_price <= 0:
-        return True
-    if jita_sell_price < REASONABLE_JITA_PRICE_FLOOR:
-        return True
-    price = int(order_price)
-    max_reasonable = jita_sell_price * (100 + REASONABLE_MARKUP_MAX_PCT) // 100
-    return price <= max_reasonable
+    return is_price_viable(order_price, jita_sell_price)
 
 
 def _aggregate_order_rows(

@@ -1,8 +1,10 @@
+from unittest.mock import patch
+
 from django.test import Client
+from eveuniverse.models import EveCategory, EveGroup, EveType
 
 from app.test import TestCase
 from eveonline.models import EveLocation
-from eveuniverse.models import EveCategory, EveGroup, EveType
 from fittings.models import EveFitting
 from market.helpers.ops_monitor import build_ops_monitor
 from market.helpers.readiness import (
@@ -14,7 +16,7 @@ from market.models import (
     EveMarketContract,
     EveMarketContractExpectation,
 )
-from market.models.item import EveMarketItemExpectation
+from market.models.item import EveMarketItemExpectation, EveMarketItemOrder
 
 BASE_URL = "/api/market"
 
@@ -302,3 +304,196 @@ class OpsMonitorApiTestCase(TestCase):
         data = build_ops_monitor(location_id=self.loc.location_id)
         self.assertEqual(len(data["understocked_contracts"]), 50)
         self.assertEqual(data["summary"]["understocked_contracts"], 50)
+
+    def test_overpriced_stock_counts_as_coverage_not_viability(self):
+        charge_cat, _ = EveCategory.objects.get_or_create(
+            id=8, defaults={"name": "Charge", "published": True}
+        )
+        charge_grp, _ = EveGroup.objects.get_or_create(
+            id=801,
+            defaults={
+                "name": "Hybrid Charge",
+                "published": True,
+                "eve_category": charge_cat,
+            },
+        )
+        item, _ = EveType.objects.update_or_create(
+            id=91001,
+            defaults={
+                "name": "Viable Gap Ammo",
+                "published": True,
+                "eve_group": charge_grp,
+            },
+        )
+        EveMarketItemExpectation.objects.create(
+            item=item,
+            location=self.loc,
+            quantity=100,
+        )
+        EveMarketItemOrder.objects.create(
+            location=self.loc,
+            item=item,
+            quantity=11,
+            price=2_200_000,
+            is_buy_order=False,
+        )
+        EveMarketItemOrder.objects.create(
+            location=self.loc,
+            item=item,
+            quantity=89,
+            price=3_000_000,
+            is_buy_order=False,
+        )
+
+        with patch(
+            "market.helpers.ops_monitor.get_prices_by_type_id",
+            return_value={item.pk: 2_000_000},
+        ):
+            data = build_ops_monitor(location_id=self.loc.location_id)
+
+        gap = next(
+            row
+            for row in data["sell_gaps"]
+            if row["item_name"] == "Viable Gap Ammo"
+        )
+        self.assertEqual(gap["current_quantity"], 100)
+        self.assertEqual(gap["viable_quantity"], 11)
+        self.assertEqual(gap["shortfall"], 89)
+        self.assertEqual(data["summary"]["sell_order_targets"], 1)
+        self.assertEqual(data["summary"]["sell_order_fulfilled"], 1)
+        self.assertEqual(data["summary"]["sell_order_viable_fulfilled"], 0)
+        self.assertEqual(data["summary"]["sell_orders_health_pct"], 100.0)
+        self.assertEqual(data["summary"]["sell_orders_viability_pct"], 11.0)
+        self.assertEqual(data["summary"]["sell_gaps"], 1)
+
+    def test_boundary_price_counts_as_viable(self):
+        charge_cat, _ = EveCategory.objects.get_or_create(
+            id=8, defaults={"name": "Charge", "published": True}
+        )
+        charge_grp, _ = EveGroup.objects.get_or_create(
+            id=801,
+            defaults={
+                "name": "Hybrid Charge",
+                "published": True,
+                "eve_category": charge_cat,
+            },
+        )
+        item, _ = EveType.objects.update_or_create(
+            id=91002,
+            defaults={
+                "name": "Boundary Ammo",
+                "published": True,
+                "eve_group": charge_grp,
+            },
+        )
+        EveMarketItemExpectation.objects.create(
+            item=item,
+            location=self.loc,
+            quantity=100,
+        )
+        EveMarketItemOrder.objects.create(
+            location=self.loc,
+            item=item,
+            quantity=100,
+            price=2_400_000,
+            is_buy_order=False,
+        )
+
+        with patch(
+            "market.helpers.ops_monitor.get_prices_by_type_id",
+            return_value={item.pk: 2_000_000},
+        ):
+            data = build_ops_monitor(location_id=self.loc.location_id)
+
+        self.assertEqual(
+            [row["item_name"] for row in data["sell_gaps"]],
+            [],
+        )
+        self.assertEqual(data["summary"]["sell_orders_health_pct"], 100.0)
+        self.assertEqual(data["summary"]["sell_orders_viability_pct"], 100.0)
+        self.assertEqual(data["summary"]["sell_order_viable_fulfilled"], 1)
+
+    def test_missing_baseline_keeps_listed_stock_viable(self):
+        charge_cat, _ = EveCategory.objects.get_or_create(
+            id=8, defaults={"name": "Charge", "published": True}
+        )
+        charge_grp, _ = EveGroup.objects.get_or_create(
+            id=801,
+            defaults={
+                "name": "Hybrid Charge",
+                "published": True,
+                "eve_category": charge_cat,
+            },
+        )
+        item, _ = EveType.objects.update_or_create(
+            id=91003,
+            defaults={
+                "name": "No Baseline Ammo",
+                "published": True,
+                "eve_group": charge_grp,
+            },
+        )
+        EveMarketItemExpectation.objects.create(
+            item=item,
+            location=self.loc,
+            quantity=100,
+        )
+        EveMarketItemOrder.objects.create(
+            location=self.loc,
+            item=item,
+            quantity=100,
+            price=50_000_000,
+            is_buy_order=False,
+        )
+
+        with patch(
+            "market.helpers.ops_monitor.get_prices_by_type_id",
+            return_value={},
+        ):
+            data = build_ops_monitor(location_id=self.loc.location_id)
+
+        self.assertEqual(data["sell_gaps"], [])
+        self.assertEqual(data["summary"]["sell_orders_viability_pct"], 100.0)
+        self.assertEqual(data["summary"]["sell_order_viable_fulfilled"], 1)
+
+    def test_cheap_baseline_counts_overpriced_orders(self):
+        charge_cat, _ = EveCategory.objects.get_or_create(
+            id=8, defaults={"name": "Charge", "published": True}
+        )
+        charge_grp, _ = EveGroup.objects.get_or_create(
+            id=801,
+            defaults={
+                "name": "Hybrid Charge",
+                "published": True,
+                "eve_category": charge_cat,
+            },
+        )
+        item, _ = EveType.objects.update_or_create(
+            id=91004,
+            defaults={
+                "name": "Cheap Ammo",
+                "published": True,
+                "eve_group": charge_grp,
+            },
+        )
+        EveMarketItemExpectation.objects.create(
+            item=item,
+            location=self.loc,
+            quantity=100,
+        )
+        EveMarketItemOrder.objects.create(
+            location=self.loc,
+            item=item,
+            quantity=100,
+            price=900_000,
+            is_buy_order=False,
+        )
+
+        with patch(
+            "market.helpers.ops_monitor.get_prices_by_type_id",
+            return_value={item.pk: 50_000},
+        ):
+            data = build_ops_monitor(location_id=self.loc.location_id)
+
+        self.assertEqual(data["sell_gaps"], [])
+        self.assertEqual(data["summary"]["sell_orders_viability_pct"], 100.0)

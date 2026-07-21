@@ -91,6 +91,7 @@ const summary = monitor?.summary
 const overall_tone = health_tone(summary?.overall_health_pct)
 const contracts_tone = health_tone(summary?.contracts_health_pct)
 const sell_tone = health_tone(summary?.sell_orders_health_pct)
+const sell_viability_tone = health_tone(summary?.sell_orders_viability_pct)
 
 import Viewport from '@layouts/Viewport.astro';
 import PageWide from '@components/page/PageWide.astro';
@@ -226,24 +227,58 @@ const admin_hub = location_id != null
                                 </p>
                             </article>
 
-                            <article class:list={['ops-health__card', `ops-health__card--${sell_tone}`]}>
+                            <article class="[ ops-health__card ]">
                                 <p class="[ ops-health__card-label ]">{t('ops_health_sell_orders')}</p>
-                                <p class="[ ops-health__card-pct ]">{format_pct(summary.sell_orders_health_pct)}</p>
-                                <Progress
-                                    class:list={[
-                                        'ops-health__bar',
-                                        {
-                                            success: sell_tone === 'good',
-                                            danger: sell_tone === 'bad',
-                                            disabled: sell_tone === 'none',
-                                        },
-                                    ]}
-                                    max="100"
-                                    value={summary.sell_orders_health_pct != null ? Math.max(summary.sell_orders_health_pct, 0.1) : 0.1}
-                                />
-                                <p class="[ ops-health__card-meta ]">
-                                    {fulfilled_label(summary.sell_order_fulfilled, summary.sell_order_targets)}
-                                </p>
+                                <div class="[ ops-health__dual ]">
+                                    <div
+                                        class:list={['ops-health__metric', `ops-health__metric--${sell_tone}`]}
+                                        title={t('ops_health_coverage_hint')}
+                                    >
+                                        <p class="[ ops-health__metric-label ]">{t('ops_health_coverage')}</p>
+                                        <p class="[ ops-health__card-pct ]">{format_pct(summary.sell_orders_health_pct)}</p>
+                                        <Progress
+                                            class:list={[
+                                                'ops-health__bar',
+                                                {
+                                                    success: sell_tone === 'good',
+                                                    danger: sell_tone === 'bad',
+                                                    disabled: sell_tone === 'none',
+                                                },
+                                            ]}
+                                            max="100"
+                                            value={summary.sell_orders_health_pct != null ? Math.max(summary.sell_orders_health_pct, 0.1) : 0.1}
+                                        />
+                                        <p class="[ ops-health__card-meta ]">
+                                            {fulfilled_label(summary.sell_order_fulfilled, summary.sell_order_targets)}
+                                        </p>
+                                    </div>
+                                    <div
+                                        class:list={['ops-health__metric', `ops-health__metric--${sell_viability_tone}`]}
+                                        title={t('ops_health_viability_hint')}
+                                    >
+                                        <p class="[ ops-health__metric-label ]">{t('ops_health_viability')}</p>
+                                        <p class="[ ops-health__card-pct ]">{format_pct(summary.sell_orders_viability_pct)}</p>
+                                        <Progress
+                                            class:list={[
+                                                'ops-health__bar',
+                                                {
+                                                    success: sell_viability_tone === 'good',
+                                                    danger: sell_viability_tone === 'bad',
+                                                    disabled: sell_viability_tone === 'none',
+                                                },
+                                            ]}
+                                            max="100"
+                                            value={summary.sell_orders_viability_pct != null ? Math.max(summary.sell_orders_viability_pct, 0.1) : 0.1}
+                                        />
+                                        <p class="[ ops-health__card-meta ]">
+                                            {summary.sell_order_targets > 0
+                                                ? t('ops_health_viable_fulfilled')
+                                                    .replace('{fulfilled}', String(summary.sell_order_viable_fulfilled))
+                                                    .replace('{targets}', String(summary.sell_order_targets))
+                                                : t('ops_health_no_targets')}
+                                        </p>
+                                    </div>
+                                </div>
                                 <p class="[ ops-health__card-meta ops-health__card-meta--isk ]">
                                     {isk_label('ops_health_isk_in_sell_orders', summary.sell_orders_isk)}
                                 </p>
@@ -397,15 +432,39 @@ const admin_hub = location_id != null
         color: var(--highlight);
     }
 
-    .ops-health__card--good .ops-health__card-pct {
+    .ops-health__dual {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-s);
+    }
+
+    .ops-health__metric {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+    }
+
+    .ops-health__metric-label {
+        margin: 0;
+        font-size: var(--step--1);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.7);
+    }
+
+    .ops-health__card--good .ops-health__card-pct,
+    .ops-health__metric--good .ops-health__card-pct {
         color: var(--green);
     }
 
-    .ops-health__card--warn .ops-health__card-pct {
+    .ops-health__card--warn .ops-health__card-pct,
+    .ops-health__metric--warn .ops-health__card-pct {
         color: var(--fleet-yellow);
     }
 
-    .ops-health__card--bad .ops-health__card-pct {
+    .ops-health__card--bad .ops-health__card-pct,
+    .ops-health__metric--bad .ops-health__card-pct {
         color: var(--fleet-red);
     }
 

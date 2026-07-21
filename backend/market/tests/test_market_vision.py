@@ -8,11 +8,11 @@ from django.contrib.messages.storage.fallback import FallbackStorage
 from django.test import RequestFactory
 from django.urls import reverse
 from django.utils import timezone
+from eveuniverse.models import EveType
 
 from app.test import TestCase
 from eveonline.client import EsiResponse
 from eveonline.models import EveLocation
-from eveuniverse.models import EveType
 from fittings.models import (
     DOCTRINE_TYPE_NON_STRATEGIC,
     EveDoctrine,
@@ -25,6 +25,10 @@ from market.admin_location_views import (
     market_location_fitting_expectations_view,
 )
 from market.helpers.contract_admin import build_location_contracts_context
+from market.helpers.contract_items import (
+    apply_content_match,
+    fetch_and_match_contract_items,
+)
 from market.helpers.contract_match import (
     MATCH_THRESHOLD,
     is_match_accepted,
@@ -34,8 +38,6 @@ from market.helpers.contract_match import (
 )
 from market.helpers.contract_stock import outstanding_stock_q
 from market.helpers.contracts import create_or_update_contract_from_db_contract
-from market.helpers.contract_items import apply_content_match
-from market.helpers.contract_items import fetch_and_match_contract_items
 from market.helpers.expectations_admin import (
     build_contract_expectation_rows,
     build_fitting_expectation_rows,
@@ -47,6 +49,13 @@ from market.helpers.expectations_admin import (
     save_fitting_expectation_quantities,
 )
 from market.helpers.orders import process_structure_sell_orders_page
+from market.helpers.price_viability import (
+    DEFAULT_BASELINE_PRICE_FLOOR,
+    DEFAULT_MAX_MARKUP_PCT,
+    REASONABLE_JITA_PRICE_FLOOR,
+    REASONABLE_MARKUP_MAX_PCT,
+    is_price_viable,
+)
 from market.helpers.pricing import get_volume_90d_by_type_id
 from market.helpers.qualification import (
     get_qualified_contract_fittings,
@@ -54,8 +63,6 @@ from market.helpers.qualification import (
     get_qualified_sell_fittings,
 )
 from market.helpers.sell_orders import (
-    REASONABLE_JITA_PRICE_FLOOR,
-    REASONABLE_MARKUP_MAX_PCT,
     _calculate_markup_pct,
     _format_reference_display,
     _order_quantity_counts_as_reasonable,
@@ -779,6 +786,15 @@ class SellOrderRowsTestCase(TestCase):
         self.assertTrue(_order_quantity_counts_as_reasonable(1_000_000, None))
         self.assertEqual(REASONABLE_MARKUP_MAX_PCT, 20)
         self.assertEqual(REASONABLE_JITA_PRICE_FLOOR, 1_000_000)
+        # Shared policy stays the source of truth for sell-order aggregation.
+        self.assertEqual(REASONABLE_MARKUP_MAX_PCT, DEFAULT_MAX_MARKUP_PCT)
+        self.assertEqual(
+            REASONABLE_JITA_PRICE_FLOOR, DEFAULT_BASELINE_PRICE_FLOOR
+        )
+        self.assertEqual(
+            _order_quantity_counts_as_reasonable(2_400_001, 2_000_000),
+            is_price_viable(2_400_001, 2_000_000),
+        )
 
     def test_format_listed_qty_display(self):
         self.assertEqual(_format_listed_qty_display(11, 100), "11 (100)")

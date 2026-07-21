@@ -5,11 +5,13 @@ from __future__ import annotations
 from django.db.models import Count, DecimalField, F, Sum, Value
 from django.db.models.functions import Coalesce
 from django.utils import timezone
-from eveonline.models import EveLocation
 from eveuniverse.models import EveType
 
+from eveonline.models import EveLocation
 from market.helpers.contract_stock import outstanding_stock_q
 from market.helpers.item_ships import item_ships_by_location
+from market.helpers.price_viability import is_price_viable
+from market.helpers.pricing import get_prices_by_type_id
 from market.helpers.readiness import fitting_readiness, shortfall
 from market.models import (
     EveMarketContract,
@@ -100,11 +102,13 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
                 "sell_gaps": 0,
                 "contracts_health_pct": None,
                 "sell_orders_health_pct": None,
+                "sell_orders_viability_pct": None,
                 "overall_health_pct": None,
                 "contract_targets": 0,
                 "contract_fulfilled": 0,
                 "sell_order_targets": 0,
                 "sell_order_fulfilled": 0,
+                "sell_order_viable_fulfilled": 0,
                 "contracts_isk": 0.0,
                 "sell_orders_isk": 0.0,
                 "total_isk_on_market": 0.0,
@@ -179,25 +183,35 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
     ships_by_item = item_ships_by_location(locations)
     sell_gaps = []
     sell_fill_ratios: list[float] = []
+    sell_viable_fill_ratios: list[float] = []
     all_names = set()
     for name_map in effective.values():
         all_names.update(name_map.keys())
     type_by_name = {
         t.name: t for t in EveType.objects.filter(name__in=all_names)
     }
-    stock_by_loc_item = {
-        (row["location_id"], row["item_id"]): row["total"] or 0
-        for row in EveMarketItemOrder.objects.filter(
-            location_id__in=location_pks,
-            is_buy_order=False,
-            item_id__in=[t.id for t in type_by_name.values()],
-        )
-        .values("location_id", "item_id")
-        .annotate(total=Sum("quantity"))
-    }
+    target_type_ids = [t.id for t in type_by_name.values()]
+    baseline_by_type = (
+        get_prices_by_type_id(target_type_ids) if target_type_ids else {}
+    )
+    stock_by_loc_item: dict[tuple[int, int], int] = {}
+    viable_by_loc_item: dict[tuple[int, int], int] = {}
+    for order in EveMarketItemOrder.objects.filter(
+        location_id__in=location_pks,
+        is_buy_order=False,
+        item_id__in=target_type_ids,
+    ).values("location_id", "item_id", "price", "quantity"):
+        key = (order["location_id"], order["item_id"])
+        quantity = order["quantity"] or 0
+        stock_by_loc_item[key] = stock_by_loc_item.get(key, 0) + quantity
+        if is_price_viable(
+            order["price"], baseline_by_type.get(order["item_id"])
+        ):
+            viable_by_loc_item[key] = viable_by_loc_item.get(key, 0) + quantity
 
     sell_targets = 0
     sell_fulfilled = 0
+    sell_viable_fulfilled = 0
     for loc_pk, name_map in effective.items():
         loc = location_by_pk[loc_pk]
         for name, desired in name_map.items():
@@ -207,15 +221,17 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
             if eve_type is None:
                 continue
             current = stock_by_loc_item.get((loc_pk, eve_type.id), 0)
+            viable = viable_by_loc_item.get((loc_pk, eve_type.id), 0)
             sell_targets += 1
             sell_fill_ratios.append(min(1.0, current / desired))
+            sell_viable_fill_ratios.append(min(1.0, viable / desired))
             if current >= desired:
                 sell_fulfilled += 1
-            needed = shortfall(current, desired)
-            if needed <= 0:
-                continue
-            # Critical sell gaps: under 50% of target (matches model understock).
-            if current >= desired * 0.5:
+            if viable >= desired:
+                sell_viable_fulfilled += 1
+            needed = shortfall(viable, desired)
+            # Critical viability gaps: under 50% of target at a viable price.
+            if viable >= desired * 0.5:
                 continue
             sell_gaps.append(
                 {
@@ -225,6 +241,7 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
                     "type_id": eve_type.id,
                     "item_name": name,
                     "current_quantity": current,
+                    "viable_quantity": viable,
                     "expected_quantity": desired,
                     "shortfall": needed,
                     "ships": ships_by_item.get(loc_pk, {}).get(name, []),
@@ -239,6 +256,7 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
     )
     contracts_health_pct = _health_pct(contract_fill_ratios)
     sell_orders_health_pct = _health_pct(sell_fill_ratios)
+    sell_orders_viability_pct = _health_pct(sell_viable_fill_ratios)
     overall_health_pct = _combined_health(
         contracts_health_pct, sell_orders_health_pct
     )
@@ -313,11 +331,13 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
             "sell_gaps": min(len(sell_gaps), 100),
             "contracts_health_pct": contracts_health_pct,
             "sell_orders_health_pct": sell_orders_health_pct,
+            "sell_orders_viability_pct": sell_orders_viability_pct,
             "overall_health_pct": overall_health_pct,
             "contract_targets": contract_targets,
             "contract_fulfilled": contract_fulfilled,
             "sell_order_targets": sell_targets,
             "sell_order_fulfilled": sell_fulfilled,
+            "sell_order_viable_fulfilled": sell_viable_fulfilled,
             "contracts_isk": round(contracts_isk, 2),
             "sell_orders_isk": round(sell_orders_isk, 2),
             "total_isk_on_market": round(total_isk_on_market, 2),
