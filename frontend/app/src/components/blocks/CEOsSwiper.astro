@@ -1,0 +1,88 @@
+---
+interface Props {
+    pagination?:        boolean;
+    gap?:               number;
+    initial_slide?:     number;
+    align?:             'start' | 'center' | 'end';
+    delay_ms?:          number;
+    effect?:            'slide' | 'fade' | 'cube' | 'coverflow' | 'flip' | 'cards' | 'creative';
+    nested?:            boolean;
+}
+
+const {
+    pagination = true,
+    gap = 5,
+    initial_slide = 0,
+    align = 'start',
+    delay_ms = 0,
+    effect = 'fade',
+    nested = false,
+} = Astro.props
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+---
+
+<FlexInline
+    class:list={['swiper-wrapper select-none', `!items-${align}`]}
+    gap='0'
+    x-data={`{
+        swiper: null,
+        corporation_pagination(index) {
+            return this.pagination_icons[index]
+        },
+        next_slide() {
+            this.swiper.slideNext()
+        },
+        init() {
+            const INIT_WORKAROUND_TIMER_MS = 100
+
+            setTimeout(() => {
+                this.swiper = new Swiper('#learn-ceos', {
+                    initialSlide: ${initial_slide},
+                    slidesPerView: 1,
+                    spaceBetween: ${gap},
+                    pagination: ${pagination ? JSON.stringify({
+                        clickable: true,
+                        dynamicBullets: true,
+                        el: ".swiper-pagination",
+                    }) : JSON.stringify(false)},
+                    loop: false,
+                    ${delay_ms > 0 ? `
+                    autoplay: {
+                        delay: ${delay_ms},
+                    },` : ''}
+                    effect: '${effect}',
+                    nested: ${JSON.stringify(nested)},
+                    fadeEffect: {
+                        crossFade: true
+                    },
+                    navigation: {
+                        nextEl: '#learn-ceos-button-next',
+                        prevEl: '#learn-ceos-button-prev',
+                    },
+                });
+            }, INIT_WORKAROUND_TIMER_MS)
+        }
+    }`}
+>
+    <slot />
+</FlexInline>
+
+{pagination && <div class="swiper-pagination"></div>}
+
+<style lang="scss">
+    :global(.swiper-pagination-bullet) {
+        --swiper-pagination-bullet-border-radius: 0;
+    }
+
+    .swiper-pagination {
+        --swiper-pagination-color: var(--fleet-yellow);
+        --swiper-pagination-bullet-inactive-color: var(--highlight);
+        --swiper-pagination-bullet-inactive-opacity: 1;
+    }
+
+    .swiper-wrapper {
+        flex-wrap: nowrap;
+        align-items: flex-start;
+    }
+</style>
