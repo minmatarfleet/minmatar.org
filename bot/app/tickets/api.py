@@ -5,7 +5,6 @@ from app.settings import settings
 HELP_TICKETS_BASE_URL = f"{settings.API_URL}/help-tickets"
 PANEL_CONFIG_URL = f"{HELP_TICKETS_BASE_URL}/panel-config"
 PANEL_STATE_URL = f"{HELP_TICKETS_BASE_URL}/panel-state"
-OPEN_TICKETS_URL = f"{HELP_TICKETS_BASE_URL}/open"
 
 
 class HelpTicketPanelCategory(BaseModel):
@@ -54,12 +53,3 @@ class HelpTicketResponse(BaseModel):
 class CloseHelpTicketRequest(BaseModel):
     closed_by_discord_id: int
     close_reason: str = ""
-
-
-class OpenHelpTicket(BaseModel):
-    id: int
-    thread_id: int
-
-
-class OpenHelpTicketsResponse(BaseModel):
-    tickets: list[OpenHelpTicket]

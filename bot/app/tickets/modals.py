@@ -1,5 +1,7 @@
 import discord
 
+from .ticket_flow import create_ticket_from_modal
+
 
 class HelpRequestModal(discord.ui.Modal, title="Help request"):
     def __init__(self, category_id: int):
@@ -15,9 +17,6 @@ class HelpRequestModal(discord.ui.Modal, title="Help request"):
     )
 
     async def on_submit(self, interaction: discord.Interaction):
-        # pylint: disable=import-outside-toplevel
-        from .ticket_flow import create_ticket_from_modal
-
         await create_ticket_from_modal(
             interaction,
             category_id=self.category_id,

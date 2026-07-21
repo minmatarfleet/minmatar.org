@@ -1,6 +1,7 @@
 import discord
 
 from .api import HelpTicketPanelConfig
+from .modals import HelpRequestModal
 
 HELP_TICKET_SELECT_CUSTOM_ID = "help_ticket_select"
 
@@ -56,9 +57,6 @@ class HelpTicketSelect(discord.ui.Select):
                 ephemeral=True,
             )
             return
-
-        # pylint: disable=import-outside-toplevel
-        from .modals import HelpRequestModal
 
         await interaction.response.send_modal(HelpRequestModal(category_id))
 
