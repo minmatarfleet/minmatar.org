@@ -100,7 +100,39 @@ Tracking Speed Disruption Script x1`,
         name: 'TD Support Arbitrator',
         description:
             'MWD armor buffer with dual tracking disruptors for small-gang / fleet support. Do not expect solo kills.',
-        eftFormat: `[Arbitrator, TD Support Arbitrator]`,
+        eftFormat: `[Arbitrator, TD Support Arbitrator]
+
+1600mm Rolled Tungsten Compact Plates
+Multispectrum Energized Membrane II
+Multispectrum Energized Membrane II
+Damage Control II
+Reactive Armor Hardener
+
+50MN Y-T8 Compact Microwarpdrive
+Tracking Disruptor II
+Tracking Disruptor II
+Small Capacitor Booster II
+
+Medium Energy Neutralizer II
+Small Energy Neutralizer II
+Small Energy Neutralizer II
+Small Energy Neutralizer II
+
+Medium Trimark Armor Pump I
+Medium Trimark Armor Pump I
+Medium Trimark Armor Pump I
+
+
+Acolyte II x5
+Warrior II x5
+Hammerhead II x5
+Valkyrie II x5
+
+
+Navy Cap Booster 400 x1
+Nanite Repair Paste x32
+Republic Fleet Phased Plasma S x240
+Caldari Navy Nova Rocket x50`,
     },
     {
         id: 'augni-polarized',
@@ -110,7 +142,38 @@ Tracking Speed Disruption Script x1`,
         name: 'Polarized Augoror Navy Issue',
         description:
             'Dual 1600 polarized heavy pulse zero-range brawler with scram/web.',
-        eftFormat: `[Augoror Navy Issue, Polarized Augoror Navy Issue]`,
+        eftFormat: `[Augoror Navy Issue, Polarized Augoror Navy Issue]
+
+1600mm Rolled Tungsten Compact Plates
+1600mm Rolled Tungsten Compact Plates
+Layered Energized Membrane II
+Reactor Control Unit II
+Heat Sink II
+Heat Sink II
+Heat Sink II
+
+50MN Y-T8 Compact Microwarpdrive
+Stasis Webifier II
+Warp Scrambler II
+
+Small Ghoul Compact Energy Nosferatu
+Small Knave Scoped Energy Nosferatu
+Polarized Heavy Pulse Laser
+Polarized Heavy Pulse Laser
+Polarized Heavy Pulse Laser
+
+Medium Energy Collision Accelerator II
+Medium Trimark Armor Pump I
+Medium Trimark Armor Pump I
+
+
+Hobgoblin II x3
+
+
+Conflagration M x6
+Scorch M x3
+Imperial Navy Multifrequency M x3
+Nanite Repair Paste x50`,
     },
     {
         id: 'augni-kite-pulse',
@@ -238,7 +301,38 @@ Imperial Navy Multifrequency M x5`,
         name: 'Pulse Omen',
         description:
             'MWD scram/web heavy pulse kite — AugNI pattern on a T1 hull.',
-        eftFormat: `[Omen, Pulse Omen]`,
+        eftFormat: `[Omen, Pulse Omen]
+
+Medium Ancillary Armor Repairer
+Multispectrum Energized Membrane II
+Damage Control II
+800mm Rolled Tungsten Compact Plates
+Heat Sink II
+Heat Sink II
+
+50MN Cold-Gas Enduring Microwarpdrive
+Warp Disruptor II
+Medium F-RX Compact Capacitor Booster
+
+Focused Medium Pulse Laser II
+Focused Medium Pulse Laser II
+Focused Medium Pulse Laser II
+Focused Medium Pulse Laser II
+Focused Medium Pulse Laser II
+
+Medium Energy Locus Coordinator II
+Medium Energy Locus Coordinator II
+Medium Polycarbon Engine Housing I
+
+
+Warrior II x5
+
+
+Conflagration M x5
+Scorch M x5
+Navy Cap Booster 800 x16
+Imperial Navy Multifrequency M x5
+Nanite Repair Paste x90`,
     },
     {
         id: 'omen-sniper',
@@ -697,8 +791,41 @@ Navy Cap Booster 800 x1`,
         shipGuideId: 'bellicose',
         name: 'HAM Bellicose',
         description:
-            'Four-HAM shield scram brawler with light drones.',
-        eftFormat: `[Bellicose, HAM Bellicose]`,
+            'Cheap four-HAM shield scram brawler with Hammerheads.',
+        eftFormat: `[Bellicose, HAM Bellicose]
+
+Ballistic Control System II
+Ballistic Control System II
+Ballistic Control System II
+IFFA Compact Damage Control
+
+50MN Y-T8 Compact Microwarpdrive
+Faint Epsilon Scoped Warp Scrambler
+Multispectrum Shield Hardener II
+Large Shield Extender II
+Large Shield Extender II
+
+Heavy Assault Missile Launcher II
+Heavy Assault Missile Launcher II
+Heavy Assault Missile Launcher II
+Heavy Assault Missile Launcher II
+
+Medium EM Shield Reinforcer I
+Medium Core Defense Field Extender I
+Medium Core Defense Field Extender I
+
+
+Hammerhead II x5
+
+
+Inferno Rage Heavy Assault Missile x1200
+Mjolnir Rage Heavy Assault Missile x1200
+Nova Rage Heavy Assault Missile x1200
+Caldari Navy Inferno Heavy Assault Missile x700
+Caldari Navy Mjolnir Heavy Assault Missile x700
+Caldari Navy Nova Heavy Assault Missile x700
+Fleeting Compact Stasis Webifier x1
+Parallel Enduring Target Painter x1`,
     },
     {
         id: 'bellicose-xlsb',
@@ -918,7 +1045,45 @@ Republic Fleet Phased Plasma M x800`,
         name: 'Vulcan Stabber',
         description:
             'MWD long-point Vulcan kite with twin LSE and twin RLML.',
-        eftFormat: `[Stabber, Vulcan Stabber]`,
+        eftFormat: `[Stabber, Vulcan Stabber]
+
+Damage Control II
+Gyrostabilizer II
+Gyrostabilizer II
+Power Diagnostic System II
+
+50MN Cold-Gas Enduring Microwarpdrive
+Large Shield Extender II
+Large Shield Extender II
+Warp Disruptor II
+
+220mm Vulcan AutoCannon II
+220mm Vulcan AutoCannon II
+220mm Vulcan AutoCannon II
+220mm Vulcan AutoCannon II
+Rapid Light Missile Launcher II
+Rapid Light Missile Launcher II
+
+Medium Core Defense Field Extender I
+Medium Core Defense Field Extender I
+Medium Core Defense Field Extender I
+
+
+Hornet II x5
+
+
+Barrage M x1000
+Hail M x1640
+Inferno Fury Light Missile x400
+Mjolnir Fury Light Missile x400
+Nova Fury Light Missile x440
+Caldari Navy Inferno Light Missile x400
+Caldari Navy Mjolnir Light Missile x400
+Caldari Navy Nova Light Missile x400
+Nanite Repair Paste x50
+Republic Fleet EMP M x800
+Republic Fleet Fusion M x800
+Republic Fleet Phased Plasma M x800`,
     },
     {
         id: 'stabberfi-dual-prop',

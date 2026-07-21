@@ -700,7 +700,7 @@ export const bellicoseGuide: ShipGuide = {
     matchups: [
         {
             title: 'HAM Bellicose',
-            fitContext: 'Four-HAM shield scram brawler with light drones.',
+            fitContext: 'Cheap four-HAM shield scram brawler with Hammerheads.',
             entries: [
                 { opponent: 'AB XLASB Stabber', load: 'Rage', verdict: 'favoured', advice: 'Idiot-proof apply for gangs and meat-grinders.' },
                 { opponent: 'Pulse Maller', load: 'Rage', verdict: 'favoured', advice: 'T1 laser brick — scramble and grind.' },
