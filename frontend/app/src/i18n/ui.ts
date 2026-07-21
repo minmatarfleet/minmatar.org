@@ -401,6 +401,8 @@ export const ui = {
         'ops_sell_gap_listed': '{listed} listed',
         'ops_health_coverage_hint': 'Share of target quantity currently listed, regardless of price.',
         'ops_health_viability_hint': 'Share of target quantity listed within 20% of baseline (items under 1M ISK always count).',
+        'ops_copy_jita_buy_list': 'Copy Jita buy list',
+        'ops_copy_jita_buy_list_tip': 'Copies the missing quantities as a Multibuy list. Paste it into the EVE Multibuy window in Jita.',
         'freight.page_title': 'Freight Service',
         'freight.leading_text': 'Minmatar Fleet Logistics offers the best prices for logistics across the warzone, ensuring our pilots can destroy trillions in enemy vessels.',
         'freight.meta_description': 'Minmatar Fleet freight: jump freighter hauling from Jita and wormhole routes. Courier contracts, calculator, and 30-day summary for EVE Online pilots.',

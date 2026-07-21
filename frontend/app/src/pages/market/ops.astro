@@ -93,6 +93,12 @@ const contracts_tone = health_tone(summary?.contracts_health_pct)
 const sell_tone = health_tone(summary?.sell_orders_health_pct)
 const sell_viability_tone = health_tone(summary?.sell_orders_viability_pct)
 
+// EVE Multibuy format: one "Item Name quantity" per line, pasteable in Jita.
+const jita_buy_list = (monitor?.sell_gaps ?? [])
+    .filter(row => row.shortfall > 0)
+    .map(row => `${row.item_name} ${row.shortfall}`)
+    .join('\n')
+
 import Viewport from '@layouts/Viewport.astro';
 import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
@@ -105,6 +111,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import Markdown from '@components/blocks/Markdown.astro';
 import Progress from '@components/blocks/Progress.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 import OpsUnderstockedGrid from '@components/blocks/OpsUnderstockedGrid.astro';
 import OpsSellGapsList from '@components/blocks/OpsSellGapsList.astro';
 
@@ -304,6 +311,15 @@ const admin_hub = location_id != null
                                 rows={monitor.sell_gaps}
                                 hide_location={true}
                             />
+                            {jita_buy_list.length > 0 &&
+                                <FlexInline justification="flex-end">
+                                    <ClipboardButton
+                                        id="jita-buy-list-clipboard"
+                                        text={t('ops_copy_jita_buy_list')}
+                                        data-tippy-content={t('ops_copy_jita_buy_list_tip')}
+                                    >{jita_buy_list}</ClipboardButton>
+                                </FlexInline>
+                            }
                         </Flexblock>
                     </Flexblock>
                 </>
