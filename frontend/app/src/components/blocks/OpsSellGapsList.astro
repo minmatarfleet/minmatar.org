@@ -11,6 +11,7 @@ interface SellGapRow {
     type_id:            number;
     item_name:          string;
     current_quantity:   number;
+    viable_quantity:    number;
     expected_quantity:  number;
     shortfall:          number;
     ships:              SellGapShip[];
@@ -26,11 +27,26 @@ const {
     hide_location = false,
 } = Astro.props
 
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
 import UsefulForShips from '@components/blocks/UsefulForShips.astro'
+
+function qty_label(row: SellGapRow): string {
+    return t('ops_sell_gap_qty')
+        .replace('{viable}', String(row.viable_quantity))
+        .replace('{expected}', String(row.expected_quantity))
+}
+
+function listed_label(row: SellGapRow): string | null {
+    if (row.current_quantity === row.viable_quantity)
+        return null
+    return t('ops_sell_gap_listed').replace('{listed}', String(row.current_quantity))
+}
 ---
 
 {rows.length === 0 &&
@@ -63,7 +79,12 @@ import UsefulForShips from '@components/blocks/UsefulForShips.astro'
                             <UsefulForShips ships={row.ships ?? []} size={28} max={10} />
                         </Flexblock>
                     </FlexInline>
-                    <span class="[ ops-qty ]">{row.current_quantity}/{row.expected_quantity}</span>
+                    <Flexblock gap="var(--space-3xs)" class="[ ops-qty-block ]">
+                        <span class="[ ops-qty ]">{qty_label(row)}</span>
+                        {listed_label(row) &&
+                            <small class="[ ops-qty-listed ]">{listed_label(row)}</small>
+                        }
+                    </Flexblock>
                 </FlexInline>
             </ComponentBlock>
         )}
@@ -87,9 +108,20 @@ import UsefulForShips from '@components/blocks/UsefulForShips.astro'
         }
     }
 
+    .ops-qty-block {
+        align-items: flex-end;
+        flex-shrink: 0;
+        text-align: right;
+    }
+
     .ops-qty {
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
-        flex-shrink: 0;
+    }
+
+    .ops-qty-listed {
+        color: rgba(255, 255, 255, 0.55);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
     }
 </style>

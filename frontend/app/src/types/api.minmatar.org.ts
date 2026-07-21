@@ -1176,11 +1176,13 @@ export interface OpsMonitorSummary {
     sell_gaps:                  number;
     contracts_health_pct:       number | null;
     sell_orders_health_pct:     number | null;
+    sell_orders_viability_pct:  number | null;
     overall_health_pct:         number | null;
     contract_targets:           number;
     contract_fulfilled:         number;
     sell_order_targets:         number;
     sell_order_fulfilled:       number;
+    sell_order_viable_fulfilled: number;
     contracts_isk:              number;
     sell_orders_isk:            number;
     total_isk_on_market:        number;
@@ -1210,6 +1212,7 @@ export interface OpsMonitor {
         type_id:            number;
         item_name:          string;
         current_quantity:   number;
+        viable_quantity:    number;
         expected_quantity:  number;
         shortfall:          number;
         ships: {
