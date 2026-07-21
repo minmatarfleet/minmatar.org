@@ -4,23 +4,17 @@ import logging
 import discord
 
 from .api import (
-    CloseHelpTicketRequest,
     CreateHelpTicketRequest,
     HelpTicketPanelCategory,
 )
 from .service import (
-    close_help_ticket,
     create_help_ticket,
-    fetch_help_ticket,
     fetch_panel_config,
-    member_can_close_ticket,
     sanitize_thread_name,
 )
-from .views import CloseTicketView
+from .views import build_close_ticket_view
 
 logger = logging.getLogger(__name__)
-
-THREAD_ARCHIVE_DELAY_SECONDS = 5
 
 
 async def create_ticket_from_modal(
@@ -109,109 +103,15 @@ async def create_ticket_from_modal(
         )
         return
 
-    close_view = CloseTicketView(ticket.id)
-    interaction.client.add_view(close_view)
-
     await thread.send(
         content=mention or None,
         embeds=[welcome_embed, details_embed],
-        view=close_view,
+        view=build_close_ticket_view(ticket.id),
     )
 
     await interaction.followup.send(
         f"Your ticket was opened: {thread.mention}",
         ephemeral=True,
-    )
-
-
-async def _send_close_notice_dm(
-    client: discord.Client,
-    *,
-    opener_discord_id: int,
-    closed_by: discord.Member,
-    close_reason: str,
-) -> None:
-    reason_text = close_reason.strip() or "No reason specified"
-    try:
-        opener = await client.fetch_user(opener_discord_id)
-        await opener.send(
-            f"Your help ticket has been closed by {closed_by.display_name}.\n"
-            f"**Reason:** {reason_text}"
-        )
-    except discord.HTTPException:
-        logger.warning(
-            "Could not DM opener %s about closed help ticket",
-            opener_discord_id,
-            exc_info=True,
-        )
-
-
-async def close_ticket(
-    interaction: discord.Interaction,
-    ticket_id: int,
-    *,
-    close_reason: str = "",
-):
-    if not isinstance(interaction.user, discord.Member):
-        await interaction.response.send_message(
-            "Unable to verify your permissions.",
-            ephemeral=True,
-        )
-        return
-
-    if not member_can_close_ticket(interaction.user):
-        await interaction.response.send_message(
-            "Only moderators and administrators can close tickets.",
-            ephemeral=True,
-        )
-        return
-
-    if not isinstance(interaction.channel, discord.Thread):
-        await interaction.response.send_message(
-            "Tickets can only be closed from the ticket thread.",
-            ephemeral=True,
-        )
-        return
-
-    await interaction.response.defer(ephemeral=True)
-
-    reason_text = close_reason.strip() or "No reason specified"
-
-    try:
-        ticket = await asyncio.to_thread(fetch_help_ticket, ticket_id)
-    except Exception:
-        logger.exception("Failed to fetch help ticket %s", ticket_id)
-        await interaction.followup.send(
-            "Could not load ticket details. Try again.",
-            ephemeral=True,
-        )
-        return
-
-    await interaction.followup.send("Ticket closed.", ephemeral=True)
-    await asyncio.sleep(THREAD_ARCHIVE_DELAY_SECONDS)
-
-    try:
-        await asyncio.to_thread(
-            close_help_ticket,
-            ticket_id,
-            CloseHelpTicketRequest(
-                closed_by_discord_id=interaction.user.id,
-                close_reason=close_reason,
-            ),
-        )
-    except Exception:
-        logger.exception("Failed to close help ticket %s via API", ticket_id)
-        await interaction.followup.send(
-            "Could not archive the Discord thread. The ticket is still open.",
-            ephemeral=True,
-        )
-        return
-
-    await _send_close_notice_dm(
-        interaction.client,
-        opener_discord_id=ticket.opener_discord_id,
-        closed_by=interaction.user,
-        close_reason=reason_text,
     )
 
 
@@ -227,17 +127,3 @@ def _find_category(
 def _format_mentions(discord_ids: list[int]) -> str:
     unique_ids = list(dict.fromkeys(discord_ids))
     return " ".join(f"<@{discord_id}>" for discord_id in unique_ids)
-
-
-async def register_persistent_ticket_views(client: discord.Client):
-    # pylint: disable=import-outside-toplevel
-    from .service import fetch_open_help_tickets
-
-    try:
-        open_tickets = await asyncio.to_thread(fetch_open_help_tickets)
-    except Exception:
-        logger.exception("Failed to fetch open help tickets for view registration")
-        return
-
-    for ticket in open_tickets.tickets:
-        client.add_view(CloseTicketView(ticket.id))
