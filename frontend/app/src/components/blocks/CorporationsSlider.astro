@@ -163,6 +163,14 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
 <div class="[ swiper-button-next ]"></div>
 
 <style lang="scss">
+    .swiper {
+        overflow: visible !important;
+    }
+
+    :global(#corporations-list .swiper-slide) {
+        overflow: visible !important;
+    }
+
     .swiper-button-prev,
     .swiper-button-next {
         --swiper-navigation-color: var(--highlight);
