@@ -448,6 +448,37 @@ class CompressedOrePlanTestCase(TestCase):
         out = reprocess_output("Veldspar", 100, refine_rate=0.84)
         self.assertEqual(out["Tritanium"], 336)
 
+    def test_reprocess_output_ignores_partial_portions(self):
+        """In-game, only whole 100-unit portions refine; remainders yield 0."""
+        # 150 units = 1 whole portion; the trailing 50 refine to nothing.
+        out = reprocess_output("Veldspar", 150, refine_rate=0.84)
+        self.assertEqual(out["Tritanium"], 336)
+        # Below one portion → no output at all.
+        self.assertEqual(
+            reprocess_output("Veldspar", 99, refine_rate=0.84), {}
+        )
+
+    def test_to_compressed_units_rounds_up_to_whole_portions(self):
+        compressed = to_compressed_units({"Zeolites": 59_524}, batch_size=100)
+        self.assertEqual(compressed["Compressed Zeolites"], 59_600)
+        # Default (ice) keeps 1:1 ceil.
+        self.assertEqual(
+            to_compressed_units({"Glare Crust": 10.2})[
+                "Compressed Glare Crust"
+            ],
+            11,
+        )
+
+    def test_plan_belt_stacks_are_whole_portions(self):
+        plan = build_compressed_ore_plan(
+            {"Tritanium": 8_000_001, "Pyerite": 4_000_000},
+            refine_rate=0.84,
+            use_moon_ore=False,
+            require_market=False,
+        )
+        for name, qty in plan.belt_ore_compressed.items():
+            self.assertEqual(qty % 100, 0, msg=f"{name}: {qty}")
+
     def test_floor_top_up_eliminates_covered_mineral_shortfall(self):
         """Continuous blend can undershoot Trit by 1; top-up closes the gap."""
         plan = build_compressed_ore_plan(
