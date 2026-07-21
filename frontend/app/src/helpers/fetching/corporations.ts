@@ -9,30 +9,44 @@ import type { CorporationObject, CorporationStatusType, CorporationMembers, Char
 import { get_all_corporations, get_corporation_info, get_corporation_by_id } from '@helpers/api.minmatar.org/corporations'
 import { get_corporation_applications, get_corporation_applications_by_id } from '@helpers/api.minmatar.org/applications'
 
-const MINMATAR_EXTRACTION_Company = 98838663
+const MINMATAR_EXTRACTION_COMPANY_ID = 98838663
+
+// Minmatar Extraction Company is an associate corporation (Minmatar Fleet
+// Associates), so the "alliance" corporations endpoint does not return it.
+// It is recruiting through the alliance corporations page, so it gets
+// fetched separately and appended to the list.
+const append_extraction_corporation = async (api_corporations:Corporation[]) => {
+    try {
+        const extractions_info = await get_corporation_info(MINMATAR_EXTRACTION_COMPANY_ID)
+
+        api_corporations.push({
+            active: extractions_info.active,
+            alliance_id: extractions_info.alliance_id,
+            alliance_name: extractions_info.alliance_name,
+            biography: extractions_info.biography,
+            corporation_id: extractions_info.corporation_id,
+            corporation_name: extractions_info.corporation_name,
+            faction_id: extractions_info.faction_id,
+            faction_name: extractions_info.faction_name,
+            introduction: extractions_info.introduction,
+            requirements: extractions_info.requirements,
+            timezones: extractions_info.timezones,
+            type: extractions_info.type,
+            members: [],
+        })
+    } catch (error) {
+        console.log(`Error fetching Minmatar Extraction Company info: ${error.message}`)
+    }
+}
 
 export async function get_corporations_list_auth(access_token:string, user_id:number, corporation_type:CorporationType) {
     let api_corporations:Corporation[] = []
     let corporations:CorporationObject[] = []
 
     api_corporations = await get_all_corporations(corporation_type)
-    const extractions_info = await get_corporation_info(MINMATAR_EXTRACTION_Company)
 
-    api_corporations.push({
-        active: extractions_info.active,
-        alliance_id: extractions_info.alliance_id,
-        alliance_name: extractions_info.alliance_name,
-        biography: extractions_info.biography,
-        corporation_id: extractions_info.corporation_id,
-        corporation_name: extractions_info.corporation_name,
-        faction_id: extractions_info.faction_id,
-        faction_name: extractions_info.faction_name,
-        introduction: extractions_info.introduction,
-        requirements: extractions_info.requirements,
-        timezones: extractions_info.timezones,
-        type: extractions_info.type,
-        members: [],
-    })
+    if (corporation_type === 'alliance')
+        await append_extraction_corporation(api_corporations)
 
     corporations = await Promise.all(api_corporations.map(async (api_corp) => add_status_to_corporation(access_token, api_corp, user_id) ));
     
@@ -44,6 +58,9 @@ export async function get_corporations_list(corporation_type:CorporationType) {
     let corporations:CorporationObject[] = []
 
     api_corporations = await get_all_corporations(corporation_type)
+
+    if (corporation_type === 'alliance')
+        await append_extraction_corporation(api_corporations)
 
     corporations = api_corporations.map( (i):CorporationObject => {
         return {
