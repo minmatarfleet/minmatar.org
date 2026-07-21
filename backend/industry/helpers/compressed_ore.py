@@ -420,18 +420,21 @@ def reprocess_output(
     refine_rate: float = DEFAULT_REFINE_RATE,
 ) -> Dict[str, int]:
     """
-    Portion-aware refine output: floor(qty / 100 * base * refine_rate).
+    Portion-aware refine output: floor(floor(qty / 100) * base * refine_rate).
 
-    Matches in-game batch reprocessing for Compressed / uncompressed ore.
+    Matches in-game batch reprocessing for Compressed / uncompressed ore:
+    only whole 100-unit portions refine; a trailing partial stack yields
+    nothing (Discord report: crediting partial portions shorted Pye/Mex).
     """
     if quantity <= 0 or refine_rate <= 0:
+        return {}
+    portions = quantity // ORE_BATCH_SIZE
+    if portions <= 0:
         return {}
     per_portion = ore_materials_per_portion(ore_name)
     out: Dict[str, int] = {}
     for name, base_qty in per_portion.items():
-        produced = math.floor(
-            quantity / ORE_BATCH_SIZE * base_qty * refine_rate
-        )
+        produced = math.floor(portions * base_qty * refine_rate)
         if produced > 0:
             out[name] = produced
     return out
@@ -755,18 +758,27 @@ def compute_practical_belt_blend(
 
 def to_compressed_units(
     uncompressed_units: Dict[str, float],
+    *,
+    batch_size: int = 1,
 ) -> Dict[str, int]:
     """
     Convert ore units to Compressed stacks.
 
     Modern compression is 1:1 quantity (volume shrinks ~100×).
+
+    ``batch_size`` rounds each stack up to whole reprocessing portions
+    (100 for ore, 1 for ice). Units beyond the last whole portion refine
+    to nothing in-game, so partial stacks are pure dead weight.
     """
     compressed: Dict[str, int] = {}
     for ore_name, units in uncompressed_units.items():
         if units <= 0:
             continue
         name = compressed_type_name(ore_name)
-        compressed[name] = compressed.get(name, 0) + int(math.ceil(units))
+        qty = int(math.ceil(units))
+        if batch_size > 1:
+            qty = math.ceil(qty / batch_size) * batch_size
+        compressed[name] = compressed.get(name, 0) + qty
     return compressed
 
 
@@ -834,11 +846,14 @@ def _top_up_floor_coverage(
             return
         name = compressed_type_name(ore)
         base_qty = ore_materials_per_portion(ore).get(shortfall, 0.0)
-        yield_per = (base_qty / ORE_BATCH_SIZE) * coverage_rate
-        if yield_per <= 0:
+        yield_per_portion = base_qty * coverage_rate
+        if yield_per_portion <= 0:
             return
-        add = max(1, math.ceil(shortfall_qty / yield_per))
-        belt_compressed[name] = belt_compressed.get(name, 0) + add
+        # Whole portions only — partial stacks refine to nothing in-game.
+        add_portions = max(1, math.ceil(shortfall_qty / yield_per_portion))
+        belt_compressed[name] = (
+            belt_compressed.get(name, 0) + add_portions * ORE_BATCH_SIZE
+        )
 
 
 def ice_materials_per_unit(ice_name: str) -> Dict[str, float]:
@@ -1121,7 +1136,8 @@ def build_compressed_ore_plan(
             require_market=require_market,
         )
         plan.moon_ore_compressed = to_compressed_units(
-            {k: float(v) for k, v in moon_units.items()}
+            {k: float(v) for k, v in moon_units.items()},
+            batch_size=ORE_BATCH_SIZE,
         )
         plan.moon_mineral_byproducts = moon_byproducts
         # Uncovered PI P0 (not allowlisted / no marketable moon ore) stays import.
@@ -1143,7 +1159,9 @@ def build_compressed_ore_plan(
     belt_units, mineral_imports = compute_practical_belt_blend(
         mineral_needs, moon_byproducts, ore_yields
     )
-    plan.belt_ore_compressed = to_compressed_units(belt_units)
+    plan.belt_ore_compressed = to_compressed_units(
+        belt_units, batch_size=ORE_BATCH_SIZE
+    )
     _top_up_floor_coverage(
         plan.belt_ore_compressed,
         mineral_needs,
