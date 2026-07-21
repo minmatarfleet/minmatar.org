@@ -21,12 +21,9 @@ const {
 
 const LILITH_HIMMELSGAENGER_ID = 2123699290
 const ORION_SA_SOLO_ID = 93672441
-const ANGSKEL_ISSOD_ID = 856157051
-const XAVIER_ANJOU_ID = 94395490
 
 import CorporationSlide from '@components/blocks/CorporationSlide.astro';
 import StylessButton from '@components/blocks/StylessButton.astro';
-import CEOsSwiper from '@components/blocks/CEOsSwiper.astro';
 ---
 
 <CorporationSlide
@@ -38,67 +35,22 @@ import CEOsSwiper from '@components/blocks/CEOsSwiper.astro';
     picture_placement='left'
     mirror_slide={picture_placement === 'right'}
 >
-    <div
-        id="learn-ceos"
-        class="[ co-ceo swiper ][ pb-10! w-[648px] ]"
+    <StylessButton
+        class="[ co-ceo ]"
         slot="coceo"
+        x-data={`{
+            show_character_modal() {
+                show_modal({
+                    partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
+                        character_id: LILITH_HIMMELSGAENGER_ID.toString(),
+                    })}',
+                })
+            }
+        }`}
+        x-on:click="show_character_modal()"
     >
-        <CEOsSwiper
-            nested={true}
-        >
-            <div class="[ swiper-slide ]">
-                <StylessButton
-                    x-data={`{
-                        show_character_modal() {
-                            show_modal({
-                                partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
-                                    character_id: LILITH_HIMMELSGAENGER_ID.toString(),
-                                })}',
-                            })
-                        }
-                    }`}
-                    x-on:click="show_character_modal()"
-                    data-tippy-content={t('swipe_left_for_history')}
-                >
-                    <img src="/images/corporations/l34rn/co-ceo.webp" />
-                </StylessButton>
-            </div>
-
-            <div class="[ swiper-slide ][ desatured ]">
-                <StylessButton
-                    x-data={`{
-                        show_character_modal() {
-                            show_modal({
-                                partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
-                                    character_id: ANGSKEL_ISSOD_ID.toString(),
-                                })}',
-                            })
-                        }
-                    }`}
-                    x-on:click="show_character_modal()"
-                >
-                    <img src="/images/corporations/l34rn/angskel.webp" />
-                </StylessButton>
-            </div>
-
-            <div class="[ swiper-slide ][ desatured ]">
-                <StylessButton
-                    x-data={`{
-                        show_character_modal() {
-                            show_modal({
-                                partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
-                                    character_id: XAVIER_ANJOU_ID.toString(),
-                                })}',
-                            })
-                        }
-                    }`}
-                    x-on:click="show_character_modal()"
-                >
-                    <img src="/images/corporations/l34rn/anjou.webp" />
-                </StylessButton>
-            </div>
-        </CEOsSwiper>
-    </div>
+        <img src="/images/corporations/l34rn/co-ceo.webp" />
+    </StylessButton>
 
     <img slot="ships" class="[ vigil ]" src="/images/corporations/l34rn/vigil.png" />
     <img slot="ships" class="[ burst ]" src="/images/corporations/l34rn/burst.png" />
