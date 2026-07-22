@@ -7,6 +7,7 @@ from django.db import models
 from app.models import MinmatarSoftDeleteModel
 from eveonline.models import EveLocation
 from eveuniverse.models import EveType
+from fittings.known_fitting import KnownFitting
 
 
 class FittingTag(models.TextChoices):
@@ -101,6 +102,15 @@ class EveFitting(MinmatarSoftDeleteModel):
     # e.g [FL33T] Tornado, [NVY-30] Tornado
     aliases = models.TextField(blank=True, null=True)
 
+    # Stable app/guide catalog key (not versioned with EFT content).
+    known_key = models.CharField(
+        max_length=64,
+        choices=KnownFitting.choices,
+        blank=True,
+        null=True,
+        help_text="Optional system meaning, e.g. guide.fw-cruiser.omen-kite-pulse.",
+    )
+
     # fitting info
     eft_format = models.TextField()
     latest_version = models.CharField(max_length=255, blank=True)
@@ -124,6 +134,12 @@ class EveFitting(MinmatarSoftDeleteModel):
                 fields=["name"],
                 condition=models.Q(deleted__isnull=True),
                 name="unique_evefitting_name_not_deleted",
+            ),
+            models.UniqueConstraint(
+                fields=["known_key"],
+                condition=models.Q(deleted__isnull=True)
+                & models.Q(known_key__isnull=False),
+                name="unique_evefitting_known_key_not_deleted",
             ),
         ]
 
@@ -156,6 +172,26 @@ class EveFitting(MinmatarSoftDeleteModel):
         if self.pk is None:
             return []
         return sorted(self.tags.values_list("slug", flat=True))
+
+    @staticmethod
+    def known_key_in_use(known_key: str, *, exclude_pk=None) -> bool:
+        """True if an active fit or pending create already owns this catalog key."""
+        if not known_key:
+            return False
+        active = EveFitting.objects.filter(known_key=known_key)
+        if exclude_pk:
+            active = active.exclude(pk=exclude_pk)
+        if active.exists():
+            return True
+        pending_create = EveFitting.all_objects.filter(
+            known_key=known_key,
+            deleted__isnull=False,
+            change_requests__status=ChangeRequestStatus.PENDING,
+            change_requests__change_kind="fitting_create",
+        )
+        if exclude_pk:
+            pending_create = pending_create.exclude(pk=exclude_pk)
+        return pending_create.exists()
 
     def set_tag_slugs(self, raw, *, write_history: bool = True):
         """
@@ -212,7 +248,35 @@ class EveFitting(MinmatarSoftDeleteModel):
         )
         return coerced
 
+    def clean(self):
+        super().clean()
+        if self.known_key == "":
+            self.known_key = None
+        if self.known_key is not None:
+            allowed = {c.value for c in KnownFitting}
+            if self.known_key not in allowed:
+                raise ValidationError(
+                    {
+                        "known_key": f"invalid known fitting key: {self.known_key!r}"
+                    }
+                )
+            if EveFitting.known_key_in_use(self.known_key, exclude_pk=self.pk):
+                raise ValidationError(
+                    {
+                        "known_key": (
+                            f"known key {self.known_key!r} is already assigned "
+                            f"to another fitting."
+                        )
+                    }
+                )
+
     def save(self, *args, **kwargs):
+        if self.known_key == "":
+            self.known_key = None
+            update_fields = kwargs.get("update_fields")
+            if update_fields is not None:
+                kwargs["update_fields"] = {*update_fields, "known_key"}
+
         derived_name = self.fitting_name_from_eft(self.eft_format)
         if derived_name and derived_name != self.name:
             self.name = derived_name

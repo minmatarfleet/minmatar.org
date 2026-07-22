@@ -18,6 +18,15 @@ import {
 import GuideContentsLayout from '@components/blocks/GuideContentsLayout.astro'
 import FactionWarfareCruiserGuideMatchupChart from '@components/blocks/faction-warfare-cruiser-guide/FactionWarfareCruiserGuideMatchupChart.astro'
 import FactionWarfareCruiserGuideShipSection from '@components/blocks/faction-warfare-cruiser-guide/FactionWarfareCruiserGuideShipSection.astro'
+import { get_fittings } from '@helpers/api.minmatar.org/ships'
+import type { Fitting } from '@dtypes/api.minmatar.org'
+
+let fittingLibrary: Fitting[] = []
+try {
+    fittingLibrary = await get_fittings()
+} catch {
+    fittingLibrary = []
+}
 ---
 
 <div class="fwc-guide card component light-transparency border">
@@ -106,7 +115,7 @@ import FactionWarfareCruiserGuideShipSection from '@components/blocks/faction-wa
             <div class="fwc-guide__ships">
                 {
                     shipGuides.map((ship) => (
-                        <FactionWarfareCruiserGuideShipSection ship={ship} />
+                        <FactionWarfareCruiserGuideShipSection ship={ship} fittingLibrary={fittingLibrary} />
                     ))
                 }
             </div>

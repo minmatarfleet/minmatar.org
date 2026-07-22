@@ -8,6 +8,7 @@ from fittings.helpers.module_substitutions import (
     types_are_variants,
 )
 
+from .known_fitting import KnownFitting
 from .models import (
     ChangeRequestStatus,
     EveDoctrine,
@@ -52,6 +53,14 @@ class EveFittingAdminForm(forms.ModelForm):
         required=False,
         widget=forms.CheckboxSelectMultiple,
     )
+    known_key = forms.ChoiceField(
+        choices=[("", "---------")] + list(KnownFitting.choices),
+        required=False,
+        help_text=(
+            "Stable catalog key for guides and app features "
+            "(e.g. guide.fw-cruiser.omen-kite-pulse). Not versioned with EFT."
+        ),
+    )
     aliases = forms.CharField(
         required=False,
         widget=forms.Textarea(
@@ -92,6 +101,10 @@ class EveFittingAdminForm(forms.ModelForm):
             self.cleaned_data.get("aliases") or ""
         )
 
+    def clean_known_key(self):
+        value = self.cleaned_data.get("known_key") or ""
+        return value or None
+
     def clean(self):
         cleaned = super().clean()
         eft = cleaned.get("eft_format") or ""
@@ -128,6 +141,17 @@ class EveFittingAdminForm(forms.ModelForm):
                         f"A pending create request already uses the name "
                         f"{derived!r}.",
                     )
+
+        known_key = cleaned.get("known_key")
+        if known_key:
+            if EveFitting.known_key_in_use(
+                known_key, exclude_pk=self.instance.pk
+            ):
+                self.add_error(
+                    "known_key",
+                    f"known key {known_key!r} is already assigned to another "
+                    f"fitting (including pending creates).",
+                )
         return cleaned
 
 

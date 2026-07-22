@@ -4,13 +4,16 @@ import NavyFrigateGuideMatchupCard from '@components/blocks/navy-frigate-guide/N
 import ItemPicture from '@components/blocks/ItemPicture.astro'
 import { getGuideFittingsForShip } from '@/data/navy-frigate-guide'
 import type { MatchupVerdict, ShipGuide } from '@/data/navy-frigate-guide'
+import { resolveGuideFittings } from '@helpers/guide_fittings'
+import type { Fitting } from '@dtypes/api.minmatar.org'
 
 interface Props {
     ship: ShipGuide
+    fittingLibrary?: Fitting[]
 }
 
-const { ship } = Astro.props
-const fits = getGuideFittingsForShip(ship.id)
+const { ship, fittingLibrary = [] } = Astro.props
+const fits = resolveGuideFittings(getGuideFittingsForShip(ship.id), fittingLibrary)
 
 const verdictLabels: Record<MatchupVerdict, string> = {
     favoured: 'Favoured',

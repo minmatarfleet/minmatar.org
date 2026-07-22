@@ -1,5 +1,6 @@
 import re
 
+from django.db import IntegrityError
 from django.test import Client
 from django.urls import reverse
 
@@ -8,6 +9,7 @@ from eveuniverse.models import EveCategory, EveGroup, EveType
 from app.test import TestCase
 
 from fittings.models import (
+    ChangeRequestStatus,
     EveDoctrine,
     EveFitting,
     EveFittingChangeRequest,
@@ -114,6 +116,76 @@ class FittingsRouterTestCase(TestCase):
         self.assertEqual([], fitting["refits"])
         self.assertIn("tags", fitting)
         self.assertEqual([], fitting["tags"])
+        self.assertIn("known_key", fitting)
+        self.assertIsNone(fitting["known_key"])
+
+    def test_get_fittings_includes_known_key_when_set(self):
+        fitting = EveFitting.objects.create(
+            name="[ADV-5] Retribution",
+            eft_format="[Retribution, [ADV-5] Retribution]",
+            ship_id=608,
+            description="",
+            known_key="guide.fw-cruiser.omen-kite-pulse",
+        )
+        response = self.client.get(
+            "/api/fittings/",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        data = response.json()
+        self.assertEqual(1, len(data))
+        self.assertEqual(
+            "guide.fw-cruiser.omen-kite-pulse", data[0]["known_key"]
+        )
+        self.assertEqual(fitting.id, data[0]["id"])
+
+    def test_known_key_unique_among_active_fittings(self):
+        EveFitting.objects.create(
+            name="Pulse Omen A",
+            eft_format="[Omen, Pulse Omen A]",
+            ship_id=2006,
+            description="",
+            known_key="guide.fw-cruiser.omen-kite-pulse",
+        )
+        duplicate = EveFitting(
+            name="Pulse Omen B",
+            eft_format="[Omen, Pulse Omen B]",
+            ship_id=2006,
+            description="",
+            known_key="guide.fw-cruiser.omen-kite-pulse",
+        )
+        with self.assertRaises(IntegrityError):
+            duplicate.save()
+
+    def test_known_key_in_use_includes_pending_creates(self):
+        pending = EveFitting.objects.create(
+            name="Pending Pulse Omen",
+            eft_format="[Omen, Pending Pulse Omen]",
+            ship_id=2006,
+            description="",
+            known_key="guide.fw-cruiser.omen-kite-pulse",
+        )
+        pending.delete()
+        EveFittingChangeRequest.objects.create(
+            fitting=pending,
+            change_kind="fitting_create",
+            status=ChangeRequestStatus.PENDING,
+            tier="non_strategic",
+            payload={},
+            submitted_by=self.user,
+        )
+        self.assertTrue(
+            EveFitting.known_key_in_use("guide.fw-cruiser.omen-kite-pulse")
+        )
+        self.assertFalse(
+            EveFitting.known_key_in_use(
+                "guide.fw-cruiser.omen-kite-pulse",
+                exclude_pk=pending.pk,
+            )
+        )
+        self.assertFalse(
+            EveFitting.known_key_in_use("guide.fw-cruiser.omen-sniper")
+        )
 
     def test_get_fittings_includes_tags_when_set(self):
         fitting = EveFitting.objects.create(

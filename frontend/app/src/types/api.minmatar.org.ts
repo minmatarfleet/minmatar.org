@@ -397,6 +397,63 @@ export type FittingTagSlug =
     | 'command_bursts'
     | 'escape_frigate'
 
+export type KnownFittingKey =
+    | 'guide.navy-destroyer.cat-blaster'
+    | 'guide.navy-destroyer.cat-10mn'
+    | 'guide.navy-destroyer.coercer-dual-neuts-mwd'
+    | 'guide.navy-destroyer.coercer-mwd-scram-brawl'
+    | 'guide.navy-destroyer.coercer-kite-beams'
+    | 'guide.navy-destroyer.tfi-ac'
+    | 'guide.navy-destroyer.tfi-arty'
+    | 'guide.navy-destroyer.corm-dual-masb-neutrons'
+    | 'guide.navy-destroyer.corm-buffer'
+    | 'guide.navy-destroyer.corm-10mn'
+    | 'guide.navy-destroyer.talfi-10mn-rocket'
+    | 'guide.navy-destroyer.algos-10mn'
+    | 'guide.navy-destroyer.algos-brawl'
+    | 'guide.navy-destroyer.algos-farm'
+    | 'guide.navy-destroyer.thrasher-arty'
+    | 'guide.navy-destroyer.thrasher-ac'
+    | 'guide.navy-destroyer.coercer-brawl'
+    | 'guide.navy-destroyer.dragoon-neut'
+    | 'guide.navy-frigate.hookbill-shield'
+    | 'guide.navy-frigate.hookbill-control'
+    | 'guide.navy-frigate.comet-blaster'
+    | 'guide.navy-frigate.comet-rail'
+    | 'guide.navy-frigate.slicer-beam'
+    | 'guide.navy-frigate.firetail-arty'
+    | 'guide.navy-frigate.vigil-web-kite'
+    | 'guide.navy-frigate.tristan-brawl'
+    | 'guide.navy-frigate.breacher-masb'
+    | 'guide.fw-cruiser.arby-long-kite'
+    | 'guide.fw-cruiser.arby-brawl'
+    | 'guide.fw-cruiser.arby-td-support'
+    | 'guide.fw-cruiser.augni-polarized'
+    | 'guide.fw-cruiser.augni-kite-pulse'
+    | 'guide.fw-cruiser.maller-pulse'
+    | 'guide.fw-cruiser.omen-quad-light'
+    | 'guide.fw-cruiser.omen-kite-pulse'
+    | 'guide.fw-cruiser.omen-sniper'
+    | 'guide.fw-cruiser.omenni-mid-kite'
+    | 'guide.fw-cruiser.omenni-mid-sniper'
+    | 'guide.fw-cruiser.caracalni-ham'
+    | 'guide.fw-cruiser.ospreyni-ham-neut'
+    | 'guide.fw-cruiser.ospreyni-rhml-kite'
+    | 'guide.fw-cruiser.eni-blaster'
+    | 'guide.fw-cruiser.eni-250rail'
+    | 'guide.fw-cruiser.eni-dual-plate-electron'
+    | 'guide.fw-cruiser.vexor-neut-plate'
+    | 'guide.fw-cruiser.vexor-blaster-neut'
+    | 'guide.fw-cruiser.vni-dual-rep'
+    | 'guide.fw-cruiser.bellicose-ham'
+    | 'guide.fw-cruiser.bellicose-xlsb'
+    | 'guide.fw-cruiser.scythefi-dual-prop-ac'
+    | 'guide.fw-cruiser.scythefi-rlml-armor'
+    | 'guide.fw-cruiser.scythefi-rlml-xlsb'
+    | 'guide.fw-cruiser.stabber-xlsb'
+    | 'guide.fw-cruiser.stabber-vulcan-kite'
+    | 'guide.fw-cruiser.stabberfi-dual-prop'
+
 export interface Refit {
     id:             number;
     name:           string;
@@ -417,6 +474,7 @@ export interface Fitting {
     minimum_pod:        string;
     recommended_pod:    string;
     latest_version:     string;
+    known_key:          KnownFittingKey | null;
     refits:             Refit[];
     tags:               FittingTagSlug[];
 }
