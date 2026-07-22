@@ -1250,6 +1250,34 @@ export interface OpsMonitorHistoryPoint {
     sell_gaps:                      OpsMonitor['sell_gaps'];
 }
 
+export interface InferredSalesVolumeBucket {
+    date:   string;
+    units:  number;
+}
+
+export interface InferredSalesVelocity {
+    long_days:                  number;
+    short_days:                 number;
+    days_of_data:               number;
+    median_daily_units:         number;
+    short_mean_daily_units:     number;
+    total_units:                number;
+}
+
+export interface InferredSalesTopMover {
+    type_id:    number;
+    item_name:  string;
+    units:      number;
+}
+
+export interface InferredSalesVolume {
+    location_id:    number;
+    days:           number;
+    buckets:        InferredSalesVolumeBucket[];
+    velocity:       InferredSalesVelocity;
+    top_movers:     InferredSalesTopMover[];
+}
+
 export interface OrderAssignmentsBreakdownItem {
     name:                   string;
     type_id:                number;

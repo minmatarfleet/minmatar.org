@@ -1,10 +1,9 @@
 import logging
-import uuid
 
 from django.core.cache import cache
 from django.db.models import Q
 from django.utils import timezone
-from celery import chain, chord, group
+from celery import chord, group
 
 from app.celery import app
 from eveonline.client import EsiClient
@@ -27,6 +26,9 @@ from market.helpers import (
 )
 from market.helpers.contract_items import fetch_and_match_contract_items
 from market.helpers.ops_snapshot import record_ops_monitor_snapshots
+from market.helpers.order_book_sync import (
+    sync_structure_order_book_for_location,
+)
 from market.models import (
     EveMarketContract,
     EveMarketContractError,
@@ -227,8 +229,8 @@ def spawn_structure_sell_orders_pages(
     task_uid: str,
 ) -> None:
     """
-    Spawn a task per page for a structure (chained after clear). After all
-    pages finish, snapshot ops health from local DB (no extra ESI).
+    Legacy page-fanout helper (kept for compatibility). Prefer
+    sync_structure_order_book_for_location via fetch_structure_sell_orders.
     """
     header = group(
         process_structure_sell_orders_page_task.s(
@@ -247,9 +249,10 @@ def spawn_structure_sell_orders_pages(
 @app.task()
 def fetch_structure_sell_orders():
     """
-    Fetch structure market sell orders for all market-active locations. Gets
-    total pages from ESI (X-Pages), then for each structure fires: clear
-    orders, then one task per page to fetch and insert (structure + page).
+    Fetch structure market sell orders for all market-active locations.
+
+    Per location: atomic order-book sync (infer sales + replace snapshot),
+    then record an ops-monitor health snapshot from local DB.
     Requires a character with esi-markets.structure_markets.v1 and docking
     access to each structure.
     """
@@ -273,62 +276,48 @@ def fetch_structure_sell_orders():
         return
 
     logger.info(
-        "Scheduling structure sell orders for %s location(s): %s",
+        "Syncing structure sell orders for %s location(s): %s",
         len(locations_list),
         [loc.location_name for loc in locations_list],
     )
 
-    client = EsiClient(character_id)
-    scheduled = 0
+    synced = 0
     skipped = 0
 
     for location in locations_list:
         try:
-            first_page_data, total_pages = (
-                client.get_structure_market_orders_first_page_and_total(
-                    location.location_id
-                )
+            result = sync_structure_order_book_for_location(
+                character_id, location.location_id
             )
         except Exception as e:
             logger.exception(
-                "Failed to get page count for location %s: %s",
+                "Failed to sync order book for location %s: %s",
                 location.location_name,
                 e,
             )
             skipped += 1
             continue
 
-        if total_pages < 1 or first_page_data is None:
-            logger.warning(
-                "No data or pages for location %s (total_pages=%s), skipping",
-                location.location_name,
-                total_pages,
-            )
+        if result is None:
             skipped += 1
             continue
 
-        task_uid = uuid.uuid4().hex
-        chain(
-            clear_structure_sell_orders_for_location_task.si(
-                location.location_id, task_uid
-            ),
-            spawn_structure_sell_orders_pages.s(
-                character_id,
-                location.location_id,
-                total_pages,
-                task_uid,
-            ),
-        ).apply_async()
-        scheduled += 1
+        sales_created, orders_written = result
+        synced += 1
         logger.info(
-            "Scheduled location %s: %s page(s)",
+            "Synced location %s: sales=%s orders=%s",
             location.location_name,
-            total_pages,
+            sales_created,
+            orders_written,
+        )
+        record_ops_monitor_snapshot_task.delay(
+            EveMarketOpsMonitorSnapshot.TRIGGER_ORDERS,
+            location.location_id,
         )
 
     logger.info(
-        "fetch_structure_sell_orders complete: %s scheduled, %s skipped",
-        scheduled,
+        "fetch_structure_sell_orders complete: %s synced, %s skipped",
+        synced,
         skipped,
     )
 

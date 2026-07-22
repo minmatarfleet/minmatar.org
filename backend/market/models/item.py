@@ -146,6 +146,16 @@ class EveMarketItemOrder(models.Model):
         blank=True,
         help_text="1-based ESI page this order was imported from (for debugging).",
     )
+    issued = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="ESI order issued timestamp (for expiry guard on inferred sales).",
+    )
+    duration_days = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="ESI order duration in days (for expiry guard on inferred sales).",
+    )
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

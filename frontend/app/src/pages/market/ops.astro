@@ -2,9 +2,9 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import { get_ops_monitor, get_ops_monitor_history } from '@helpers/api.minmatar.org/market'
+import { get_ops_monitor, get_ops_monitor_history, get_inferred_sales_volume } from '@helpers/api.minmatar.org/market'
 import { get_market_locations } from '@helpers/api.minmatar.org/locations'
-import type { OpsMonitor, OpsMonitorHistoryPoint } from '@dtypes/api.minmatar.org'
+import type { InferredSalesVolume, OpsMonitor, OpsMonitorHistoryPoint } from '@dtypes/api.minmatar.org'
 import { query_string } from '@helpers/string'
 import { from_now_diff } from '@helpers/date'
 import {
@@ -15,6 +15,7 @@ import {
 
 let monitor: OpsMonitor | null = null
 let history: OpsMonitorHistoryPoint[] = []
+let volume: InferredSalesVolume | null = null
 let fetch_error: Error | false = false
 let locations: Awaited<ReturnType<typeof get_market_locations>> = []
 let location_id: number | undefined
@@ -32,9 +33,12 @@ try {
         return Astro.redirect(ops_redirect_path(translatePath, location_id))
     }
 
-    ;[monitor, history] = await Promise.all([
+    ;[monitor, history, volume] = await Promise.all([
         get_ops_monitor(location_id),
         get_ops_monitor_history(location_id, 48).catch(() => [] as OpsMonitorHistoryPoint[]),
+        location_id != null
+            ? get_inferred_sales_volume(location_id, 7).catch(() => null)
+            : Promise.resolve(null),
     ])
 } catch (error) {
     fetch_error = error as Error
@@ -383,6 +387,31 @@ const admin_hub = location_id != null
                         }
                     </section>
 
+                    {volume && volume.velocity.total_units > 0 &&
+                        <section class="[ ops-volume ]">
+                            <h2>{t('ops_volume_7d')}</h2>
+                            <p class="[ ops-volume__total ]">
+                                {t('ops_volume_total_units').replace(
+                                    '{units}',
+                                    String(volume.velocity.total_units),
+                                )}
+                            </p>
+                            {volume.top_movers.length > 0 ?
+                                <ul class="[ ops-volume__movers ]">
+                                    {volume.top_movers.map(mover =>
+                                        <li>
+                                            {t('ops_volume_mover')
+                                                .replace('{name}', mover.item_name)
+                                                .replace('{units}', String(mover.units))}
+                                        </li>
+                                    )}
+                                </ul>
+                                :
+                                <p class="[ ops-volume__empty ]">{t('ops_volume_empty')}</p>
+                            }
+                        </section>
+                    }
+
                     <Flexblock gap="var(--space-l)">
                         <Flexblock gap="var(--space-s)">
                             <h2>{t('ops_understocked')} ({monitor.summary.understocked_contracts})</h2>
@@ -612,6 +641,26 @@ const admin_hub = location_id != null
         width: 100%;
         height: 3rem;
         color: var(--highlight);
+    }
+
+    .ops-volume {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .ops-volume__total,
+    .ops-volume__empty {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.65);
+        font-size: var(--step--1);
+    }
+
+    .ops-volume__movers {
+        margin: 0;
+        padding-inline-start: 1.25rem;
+        color: rgba(255, 255, 255, 0.85);
+        font-size: var(--step--1);
     }
 
     h2 {

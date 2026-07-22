@@ -14,12 +14,14 @@ from market.models import (
     EveMarketContractError,
     EveMarketContractExpectation,
     EveMarketFittingExpectation,
+    EveMarketInferredSale,
     EveMarketItemExpectation,
     EveMarketItemHistory,
     EveMarketItemLocationPrice,
     EveMarketItemOrder,
     EveMarketItemTransaction,
     EveMarketOpsMonitorSnapshot,
+    EveMarketOrderBookSync,
     EveTypeWithSellOrders,
 )
 from market.models.item import parse_eft_items
@@ -571,6 +573,73 @@ class EveMarketItemLocationPriceAdmin(admin.ModelAdmin):
     autocomplete_fields = ("location",)
     raw_id_fields = ("item",)
     ordering = ("location__location_name", "item__name")
+
+
+@admin.register(EveMarketOrderBookSync)
+class EveMarketOrderBookSyncAdmin(admin.ModelAdmin):
+    """Per-location order-book sync watermark (read-mostly)."""
+
+    list_display = ("location", "last_synced_at")
+    list_display_links = ("location",)
+    search_fields = (
+        "location__location_name",
+        "location__short_name",
+    )
+    autocomplete_fields = ("location",)
+    ordering = ("-last_synced_at",)
+    readonly_fields = ("location", "last_synced_at")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(EveMarketInferredSale)
+class EveMarketInferredSaleAdmin(admin.ModelAdmin):
+    """Inferred sell fills from successive structure order-book snapshots."""
+
+    list_display = (
+        "inferred_at",
+        "location",
+        "item",
+        "quantity",
+        "price",
+        "reason",
+        "order_id",
+    )
+    list_display_links = ("inferred_at", "item")
+    list_filter = ("location", "reason")
+    list_per_page = 50
+    show_full_result_count = False
+    search_fields = (
+        "item__name",
+        "location__location_name",
+        "location__short_name",
+        "order_id",
+    )
+    autocomplete_fields = ("location",)
+    raw_id_fields = ("item",)
+    ordering = ("-inferred_at",)
+    readonly_fields = (
+        "location",
+        "item",
+        "quantity",
+        "price",
+        "inferred_at",
+        "order_id",
+        "reason",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("item", "location")
 
 
 @admin.register(EveMarketItemOrder)

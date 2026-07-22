@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from django.test import Client
 
@@ -17,7 +17,7 @@ from market.models import (
 )
 from market.tasks import (
     fetch_eve_market_contracts,
-    spawn_structure_sell_orders_pages,
+    fetch_structure_sell_orders,
 )
 
 BASE_URL = "/api/market"
@@ -127,24 +127,19 @@ class OpsMonitorSnapshotTestCase(TestCase):
         )
         self.assertIsNotNone(items_task_mock)
 
-    @patch("market.tasks.chord")
-    @patch("market.tasks.group")
-    def test_order_pages_chord_snapshots_after_pages(
-        self, group_mock, chord_mock
+    @patch("market.tasks.record_ops_monitor_snapshot_task")
+    @patch("market.tasks.sync_structure_order_book_for_location")
+    @patch("market.tasks.get_character_with_structure_markets_scope")
+    def test_order_sync_schedules_snapshot_after_location(
+        self, scope_mock, sync_mock, snapshot_task_mock
     ):
-        header = group_mock.return_value
-        chord_runner = MagicMock()
-        chord_mock.return_value = chord_runner
+        scope_mock.return_value = 42
+        sync_mock.return_value = (0, 10)
 
-        spawn_structure_sell_orders_pages(
-            0, character_id=1, location_id=99, total_pages=2, task_uid="abc"
-        )
+        fetch_structure_sell_orders()
 
-        group_mock.assert_called_once()
-        chord_mock.assert_called_once_with(header)
-        chord_runner.assert_called_once()
-        callback = chord_runner.call_args[0][0]
-        self.assertEqual(
-            callback.args,
-            (EveMarketOpsMonitorSnapshot.TRIGGER_ORDERS, 99),
+        sync_mock.assert_called_once_with(42, self.loc.location_id)
+        snapshot_task_mock.delay.assert_called_once_with(
+            EveMarketOpsMonitorSnapshot.TRIGGER_ORDERS,
+            self.loc.location_id,
         )
