@@ -90,7 +90,10 @@ if (Astro.request.method === "PATCH") {
 }
 
 import { fetch_order_by_id } from '@helpers/fetching/industry'
-import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
+import {
+    resolve_primary_for_claim,
+    type PrimaryClaimAvailability,
+} from '@helpers/api.minmatar.org/characters'
 import type { RootSingleItem } from '@dtypes/api.minmatar.org'
 import { fetch_order_breakdown_grouped } from '@helpers/fetching/industry'
 
@@ -98,6 +101,13 @@ let fetching_error: Error | false = false
 let order:IndustryOrderUI | null = null
 let order_breakdown: RootSingleItem[] = []
 let primary_character_id = 0
+let claim_availability: PrimaryClaimAvailability = 'login'
+
+const claim_disabled_reason_by_availability: Record<Exclude<PrimaryClaimAvailability, 'ok'>, string> = {
+    login: t('industry.orders.assign_login_required'),
+    auth: t('industry.orders.claim_session_required'),
+    no_primary: t('industry.orders.claim_main_pilot_required'),
+}
 
 try {
     order = await fetch_order_by_id(order_id)
@@ -107,12 +117,17 @@ try {
 
     if (fetch_breakdown) {
         order_breakdown = await fetch_order_breakdown_grouped(order_id)
-        const primary_pilot = await get_primary_characters(auth_token as string)
-        primary_character_id = primary_pilot?.character_id ?? 0
+        const primary = await resolve_primary_for_claim(auth_token)
+        primary_character_id = primary.character_id
+        claim_availability = primary.availability
     }
 } catch (error) {
     fetching_error = error
 }
+
+const claim_disabled_reason = !fetch_breakdown || claim_availability === 'ok'
+    ? null
+    : claim_disabled_reason_by_availability[claim_availability]
 
 import { query_string } from '@helpers/string';
 const ORDER_ITEM_PARTIAL_URL = translatePath(`/partials/order_item_component?${query_string({
@@ -141,5 +156,6 @@ import ShowAlert from '@components/blocks/ShowAlert.astro'
         order_breakdown={fetch_breakdown ? order_breakdown : undefined}
         location_name={order?.location.location_name}
         primary_character_id={fetch_breakdown ? primary_character_id : undefined}
+        claim_disabled_reason={fetch_breakdown ? claim_disabled_reason : undefined}
     />
 }

@@ -7,6 +7,7 @@ import type { RootSingleItem } from '@dtypes/api.minmatar.org'
 interface Props {
     order_id:                   number;
     primary_character_id?:      number | null;
+    claim_disabled_reason?:     string | null;
     order_breakdown:            RootSingleItem[];
     location_name:              string | undefined;
     init_tooltips?:             boolean;
@@ -15,6 +16,7 @@ interface Props {
 const {
     order_id,
     primary_character_id,
+    claim_disabled_reason = null,
     order_breakdown,
     location_name,
     init_tooltips = false,
@@ -161,14 +163,31 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
 
                     <FlexInline class="[ grow ]">
                         {(item.unassigned_quantity > 0 || user_assignment) &&
-                            <ButtonClaimOrder
-                                target_id={`order-item-${order_id}`}
-                                reclaim={Boolean(user_assignment)}
-                                order_id={order_id}
-                                claimed={user_assignment?.quantity ?? 0}
-                                item={item}
-                                character_id={primary_character_id as number}
-                            />
+                            <>{claim_disabled_reason ?
+                                <span
+                                    class="[ inline-flex ]"
+                                    data-tippy-content={claim_disabled_reason}
+                                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                                >
+                                    <Button
+                                        size='sm'
+                                        color='green'
+                                        disabled
+                                        off_disable={true}
+                                    >
+                                        {t('claim')}
+                                    </Button>
+                                </span>
+                                :
+                                <ButtonClaimOrder
+                                    target_id={`order-item-${order_id}`}
+                                    reclaim={Boolean(user_assignment)}
+                                    order_id={order_id}
+                                    claimed={user_assignment?.quantity ?? 0}
+                                    item={item}
+                                    character_id={primary_character_id as number}
+                                />
+                            }</>
                         }
 
                         {user_assignment &&

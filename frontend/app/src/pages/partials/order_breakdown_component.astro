@@ -2,33 +2,45 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { User } from '@dtypes/jwt'
-import * as jose from 'jose'
-
 const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '0')
 const location_name = Astro.url.searchParams.get('location_name')
 
 import type { RootSingleItem } from '@dtypes/api.minmatar.org'
 import { fetch_order_breakdown_grouped } from '@helpers/fetching/industry'
-import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
+import {
+    resolve_primary_for_claim,
+    type PrimaryClaimAvailability,
+} from '@helpers/api.minmatar.org/characters'
 
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
-const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 let order_breakdown: RootSingleItem[] = []
 let primary_character_id = 0
+let claim_availability: PrimaryClaimAvailability = 'login'
 let fetching_error: Error | false = false
+
+const claim_disabled_reason_by_availability: Record<Exclude<PrimaryClaimAvailability, 'ok'>, string> = {
+    login: t('industry.orders.assign_login_required'),
+    auth: t('industry.orders.claim_session_required'),
+    no_primary: t('industry.orders.claim_main_pilot_required'),
+}
 
 try {
     if (isNaN(order_id))
         throw new Error(t('invalid_order_id'), { cause: 400 })
 
     order_breakdown = await fetch_order_breakdown_grouped(order_id)
-    const primary_pilot = await get_primary_characters(auth_token as string)
-    primary_character_id = primary_pilot?.character_id ?? 0
+
+    const primary = await resolve_primary_for_claim(auth_token)
+    primary_character_id = primary.character_id
+    claim_availability = primary.availability
 } catch (error) {
     fetching_error = error
 }
+
+const claim_disabled_reason = claim_availability === 'ok'
+    ? null
+    : claim_disabled_reason_by_availability[claim_availability]
 
 import { query_string } from '@helpers/string';
 const ORDER_BREAKDOWN_PARTIAL_URL = `${translatePath('/partials/order_breakdown_component')}?${query_string({
@@ -55,6 +67,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         <OrderBreakdown
             order_id={order_id}
             primary_character_id={primary_character_id}
+            claim_disabled_reason={claim_disabled_reason}
             order_breakdown={order_breakdown}
             location_name={location_name ?? undefined}
             init_tooltips={true}
