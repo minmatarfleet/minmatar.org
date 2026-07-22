@@ -26,8 +26,9 @@ export function withGuideKnownKey<T extends GuideFittingRef>(
 
 /**
  * Resolve a guide fit against the live library.
- * Prefer known_key (stable across envs), then fittingId if that row exists
- * in the current API response, else keep the static guide EFT / no link.
+ * Prefer known_key (stable across envs), then fittingId for the link.
+ * Live EFT is used when the library row is present; otherwise static guide EFT.
+ * Legacy fittingId still yields a View link even if the list fetch failed.
  */
 export function resolveGuideFitting<T extends GuideFittingRef>(
     fit: T,
@@ -47,13 +48,11 @@ export function resolveGuideFitting<T extends GuideFittingRef>(
 
     if (fit.fittingId > 0) {
         const byId = library.find((row) => row.id === fit.fittingId)
-        if (byId) {
-            return {
-                ...fit,
-                resolvedFittingId: byId.id,
-                resolvedEftFormat: byId.eft_format,
-                fromLibrary: true,
-            }
+        return {
+            ...fit,
+            resolvedFittingId: fit.fittingId,
+            resolvedEftFormat: byId?.eft_format ?? fit.eftFormat,
+            fromLibrary: true,
         }
     }
 

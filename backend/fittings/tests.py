@@ -9,6 +9,7 @@ from eveuniverse.models import EveCategory, EveGroup, EveType
 from app.test import TestCase
 
 from fittings.models import (
+    ChangeRequestStatus,
     EveDoctrine,
     EveFitting,
     EveFittingChangeRequest,
@@ -155,6 +156,36 @@ class FittingsRouterTestCase(TestCase):
         )
         with self.assertRaises(IntegrityError):
             duplicate.save()
+
+    def test_known_key_in_use_includes_pending_creates(self):
+        pending = EveFitting.objects.create(
+            name="Pending Pulse Omen",
+            eft_format="[Omen, Pending Pulse Omen]",
+            ship_id=2006,
+            description="",
+            known_key="guide.fw-cruiser.omen-kite-pulse",
+        )
+        pending.delete()
+        EveFittingChangeRequest.objects.create(
+            fitting=pending,
+            change_kind="fitting_create",
+            status=ChangeRequestStatus.PENDING,
+            tier="non_strategic",
+            payload={},
+            submitted_by=self.user,
+        )
+        self.assertTrue(
+            EveFitting.known_key_in_use("guide.fw-cruiser.omen-kite-pulse")
+        )
+        self.assertFalse(
+            EveFitting.known_key_in_use(
+                "guide.fw-cruiser.omen-kite-pulse",
+                exclude_pk=pending.pk,
+            )
+        )
+        self.assertFalse(
+            EveFitting.known_key_in_use("guide.fw-cruiser.omen-sniper")
+        )
 
     def test_get_fittings_includes_tags_when_set(self):
         fitting = EveFitting.objects.create(

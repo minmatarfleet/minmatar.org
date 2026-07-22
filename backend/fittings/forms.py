@@ -144,14 +144,13 @@ class EveFittingAdminForm(forms.ModelForm):
 
         known_key = cleaned.get("known_key")
         if known_key:
-            dupes = EveFitting.objects.filter(known_key=known_key)
-            if self.instance.pk:
-                dupes = dupes.exclude(pk=self.instance.pk)
-            if dupes.exists():
+            if EveFitting.known_key_in_use(
+                known_key, exclude_pk=self.instance.pk
+            ):
                 self.add_error(
                     "known_key",
                     f"known key {known_key!r} is already assigned to another "
-                    f"fitting.",
+                    f"fitting (including pending creates).",
                 )
         return cleaned
 

@@ -173,6 +173,26 @@ class EveFitting(MinmatarSoftDeleteModel):
             return []
         return sorted(self.tags.values_list("slug", flat=True))
 
+    @staticmethod
+    def known_key_in_use(known_key: str, *, exclude_pk=None) -> bool:
+        """True if an active fit or pending create already owns this catalog key."""
+        if not known_key:
+            return False
+        active = EveFitting.objects.filter(known_key=known_key)
+        if exclude_pk:
+            active = active.exclude(pk=exclude_pk)
+        if active.exists():
+            return True
+        pending_create = EveFitting.all_objects.filter(
+            known_key=known_key,
+            deleted__isnull=False,
+            change_requests__status=ChangeRequestStatus.PENDING,
+            change_requests__change_kind="fitting_create",
+        )
+        if exclude_pk:
+            pending_create = pending_create.exclude(pk=exclude_pk)
+        return pending_create.exists()
+
     def set_tag_slugs(self, raw, *, write_history: bool = True):
         """
         Replace M2M tags from a slug list. Optionally write history and bump
@@ -240,10 +260,7 @@ class EveFitting(MinmatarSoftDeleteModel):
                         "known_key": f"invalid known fitting key: {self.known_key!r}"
                     }
                 )
-            dupes = EveFitting.objects.filter(known_key=self.known_key)
-            if self.pk:
-                dupes = dupes.exclude(pk=self.pk)
-            if dupes.exists():
+            if EveFitting.known_key_in_use(self.known_key, exclude_pk=self.pk):
                 raise ValidationError(
                     {
                         "known_key": (
