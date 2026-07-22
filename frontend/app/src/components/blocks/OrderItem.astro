@@ -9,6 +9,7 @@ interface Props {
     order:                  IndustryOrderUI;
     order_breakdown?:       RootSingleItem[];
     primary_character_id?:  number | null;
+    claim_disabled_reason?: string | null;
     location_name:          string | undefined;
     init_tooltips:          boolean;
 }
@@ -17,6 +18,7 @@ const {
     order,
     order_breakdown,
     primary_character_id,
+    claim_disabled_reason = null,
     location_name,
     init_tooltips,
 } = Astro.props
@@ -148,6 +150,7 @@ import TippyOrderItem from './TippyOrderItem.astro';
             <OrderBreakdown
                 order_id={order.id}
                 primary_character_id={primary_character_id}
+                claim_disabled_reason={claim_disabled_reason}
                 order_breakdown={order_breakdown}
                 location_name={location_name}
                 init_tooltips={true}

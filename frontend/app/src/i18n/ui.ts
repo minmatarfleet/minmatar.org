@@ -454,6 +454,8 @@ export const ui = {
         'industry.orders.assign_unassigned_suffix': 'unassigned',
         'industry.orders.assign_invalid_form': 'Invalid item, character, or quantity.',
         'industry.orders.assign_error': 'Could not create assignment.',
+        'industry.orders.claim_session_required': 'Your session expired. Log in again to claim.',
+        'industry.orders.claim_main_pilot_required': 'Set a main pilot on your account to claim.',
         'page_finder.orders.description': 'Manufacturing orders and assignments breakdowns.',
         'page_finder.orders.history.description': 'Manufacturing orders history.',
 
