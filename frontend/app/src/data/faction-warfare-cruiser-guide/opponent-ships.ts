@@ -33,7 +33,6 @@ const fitNameToShip: Record<string, ResolvedOpponentShip> = {
     'Sniper Omen': cruiserGuideShips.omen,
     'Kite Omen Navy Issue': cruiserGuideShips.omenni,
     'Beam Omen Navy Issue': cruiserGuideShips.omenni,
-    'Pulse Omen Navy Issue': cruiserGuideShips.omenni,
     'HAM Caracal Navy Issue': cruiserGuideShips.caracalni,
     '2X Neut HAM Osprey Navy Issue': cruiserGuideShips.ospreyni,
     'RLML Osprey Navy Issue': cruiserGuideShips.ospreyni,

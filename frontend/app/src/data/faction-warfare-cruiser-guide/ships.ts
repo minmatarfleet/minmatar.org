@@ -270,7 +270,7 @@ export const omenniGuide: ShipGuide = {
     shortName: 'OmenNI',
     faction: 'Amarr',
     shipId: 17709,
-    tagline: 'Mid-range kite is top tier; sniper and pulse fill the gaps.',
+    tagline: 'Mid-range kite is top tier; beam sniper covers plex denial.',
     bonuses: [
         { label: 'Medium Energy Turret damage', value: '5%' },
         { label: 'Medium Energy Turret tracking', value: '7.5%' },
@@ -282,7 +282,7 @@ export const omenniGuide: ShipGuide = {
             id: 'overview',
             title: 'Overview',
             paragraphs: [
-                'If you are flying Omen Navy, you are usually kiting at mid range. That line is the hull\'s job. Sniper and pulse exist for plex pressure and frigates respectively.',
+                'If you are flying Omen Navy, you are usually kiting at mid range. That pulse kite line is the hull\'s job and the gold standard — no closer-range pulse variant. Beam sniper covers plex denial and gang projection.',
             ],
         },
         {
@@ -297,13 +297,6 @@ export const omenniGuide: ShipGuide = {
             title: 'Beam Omen Navy Issue',
             paragraphs: [
                 'Longer band for plex denial and gang projection.',
-            ],
-        },
-        {
-            id: 'pulse',
-            title: 'Pulse Omen Navy Issue',
-            paragraphs: [
-                'Tracking and frigate work when the mid-range kite is the wrong tool.',
             ],
         },
     ],
@@ -332,16 +325,6 @@ export const omenniGuide: ShipGuide = {
                 { opponent: 'XLASB HAM Bellicose', load: 'Aurora', verdict: 'favoured', advice: 'Same idea — do not let them scramble free.' },
                 { opponent: 'Blaster Exequror Navy Issue', load: 'Aurora', verdict: 'bail', advice: 'Once Neutrons land you are dead. Warp.' },
                 { opponent: 'Armor RLML Scythe Fleet Issue', load: 'Aurora', verdict: 'unfavoured', advice: 'They out-range-threat and outspeed. Leave early.' },
-            ],
-        },
-        {
-            title: 'Pulse Omen Navy Issue',
-            fitContext: 'Closer-range pulse for tracking and frigate work.',
-            entries: [
-                { opponent: 'AB XLASB Stabber', load: 'Conflag', verdict: 'favoured', advice: 'Closer band where tracking helps.' },
-                { opponent: 'Brawl Arbitrator', load: 'Conflag', verdict: 'skill', advice: 'Possible if you open clean. Watch neuts.' },
-                { opponent: 'Blaster Exequror Navy Issue', load: 'Conflag', verdict: 'unfavoured', advice: 'Neutron race is not your fight.' },
-                { opponent: 'Dual Rep Vexor Navy Issue', load: 'Conflag', verdict: 'bail', advice: 'Do not take the reactive wall at pulse range.' },
             ],
         },
     ],
@@ -599,7 +582,7 @@ export const vexorGuide: ShipGuide = {
         },
         {
             title: 'Blaster Vexor',
-            fitContext: 'Neutron + dual mag stab scram brawler with bulkhead rigs.',
+            fitContext: 'Hull-tank Neutrons with dual webs, medium neut, and bulkhead rigs.',
             entries: [
                 { opponent: 'AB XLASB Stabber', load: 'Void', verdict: 'favoured', advice: 'Wins most T1 mirror work.' },
                 { opponent: 'XLASB HAM Bellicose', load: 'Void', verdict: 'favoured', advice: 'Scram race into a T1 missile boat.' },
