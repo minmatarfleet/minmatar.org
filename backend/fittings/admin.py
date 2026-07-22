@@ -53,6 +53,7 @@ from fittings.helpers.permissions import (
     effective_protection_tier,
     protection_tier_for_doctrine,
 )
+from fittings.known_fitting import KnownFitting
 from fittings.models import (
     ChangeRequestStatus,
     EveDoctrine,
@@ -66,7 +67,6 @@ from fittings.models import (
     EveFittingPod,
     EveFittingRefit,
     FittingTag,
-    KnownFitting,
 )
 from srp.models import PodReimbursementProgram
 

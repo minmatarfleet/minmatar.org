@@ -3,7 +3,8 @@ from typing import List
 
 from pydantic import BaseModel, field_validator
 
-from fittings.models import FittingTag, KnownFitting
+from fittings.known_fitting import KnownFitting
+from fittings.models import FittingTag
 
 
 class RefitResponse(BaseModel):

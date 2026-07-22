@@ -8,6 +8,7 @@ from fittings.helpers.module_substitutions import (
     types_are_variants,
 )
 
+from .known_fitting import KnownFitting
 from .models import (
     ChangeRequestStatus,
     EveDoctrine,
@@ -18,7 +19,6 @@ from .models import (
     EveFittingModuleSubstitution,
     EveFittingRefit,
     FittingTag,
-    KnownFitting,
 )
 
 
