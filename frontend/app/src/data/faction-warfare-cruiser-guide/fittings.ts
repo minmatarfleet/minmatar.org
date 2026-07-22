@@ -342,7 +342,36 @@ Nanite Repair Paste x90`,
         name: 'Sniper Omen',
         description:
             'Heavy beam long-point plex protector with MAAR.',
-        eftFormat: `[Omen, Sniper Omen]`,
+        eftFormat: `[Omen, Sniper Omen]
+
+Medium Ancillary Armor Repairer
+Multispectrum Energized Membrane II
+Damage Control II
+Heat Sink II
+Extruded Compact Heat Sink
+Reactor Control Unit II
+
+50MN Y-T8 Compact Microwarpdrive
+Warp Disruptor II
+Medium F-RX Compact Capacitor Booster
+
+Heavy Beam Laser II
+Heavy Beam Laser II
+Heavy Beam Laser II
+Heavy Beam Laser II
+Heavy Beam Laser II
+
+Medium Ionic Field Projector II
+Medium Ancillary Current Router I
+Medium Energy Locus Coordinator II
+
+
+Warrior II x5
+
+Aurora M x5
+Navy Cap Booster 800 x1
+Imperial Navy Xray M x5
+Nanite Repair Paste x32`,
     },
     {
         id: 'omenni-mid-kite',
@@ -424,16 +453,6 @@ Hornet EC-300 x5
 
 Navy Cap Booster 800 x15
 Nanite Repair Paste x214`,
-    },
-    {
-        id: 'omenni-pulse',
-        fittingId: 0,
-        shipId: 17709,
-        shipGuideId: 'omenni',
-        name: 'Pulse Omen Navy Issue',
-        description:
-            'Closer-range pulse variant of the mid-range kite line.',
-        eftFormat: `[Omen Navy Issue, Pulse Omen Navy Issue]`,
     },
     {
         id: 'caracalni-ham',
@@ -741,8 +760,35 @@ Navy Cap Booster 400 x1`,
         shipGuideId: 'vexor',
         name: 'Blaster Vexor',
         description:
-            'Neutron + dual magnetic stab scram brawler with bulkhead rigs.',
-        eftFormat: `[Vexor, Blaster Vexor]`,
+            'Hull-tank Neutrons with dual webs, medium neut, and transverse bulkhead rigs.',
+        eftFormat: `[Vexor, Blaster Vexor]
+
+Drone Damage Amplifier II
+Drone Damage Amplifier II
+Damage Control II
+Mark I Compact Reinforced Bulkheads
+Reinforced Bulkheads II
+
+50MN Quad LiF Restrained Microwarpdrive
+Faint Epsilon Scoped Warp Scrambler
+Fleeting Compact Stasis Webifier
+Fleeting Compact Stasis Webifier
+
+Medium Energy Neutralizer II
+Heavy Neutron Blaster II
+Heavy Neutron Blaster II
+Heavy Neutron Blaster II
+
+Medium Transverse Bulkhead I
+Medium Transverse Bulkhead I
+Medium Transverse Bulkhead I
+
+
+Hobgoblin II x1
+Hammerhead II x2
+Ogre II x2
+
+Void M x480`,
     },
     {
         id: 'vni-dual-rep',
