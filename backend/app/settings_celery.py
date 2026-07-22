@@ -28,7 +28,7 @@ CELERYBEAT_MARKET = [
         "[Market] Fetch Structure Sell Orders",
         {
             "task": "market.tasks.fetch_structure_sell_orders",
-            "schedule": crontab(minute=33, hour="*/4"),
+            "schedule": schedule(timedelta(minutes=15)),
         },
     ),
     (

@@ -14,11 +14,14 @@ from market.models import (
     EveMarketContractError,
     EveMarketContractExpectation,
     EveMarketFittingExpectation,
+    EveMarketInferredSale,
     EveMarketItemExpectation,
     EveMarketItemHistory,
     EveMarketItemLocationPrice,
     EveMarketItemOrder,
     EveMarketItemTransaction,
+    EveMarketOpsMonitorSnapshot,
+    EveMarketOrderBookSync,
     EveTypeWithSellOrders,
 )
 from market.models.item import parse_eft_items
@@ -572,6 +575,73 @@ class EveMarketItemLocationPriceAdmin(admin.ModelAdmin):
     ordering = ("location__location_name", "item__name")
 
 
+@admin.register(EveMarketOrderBookSync)
+class EveMarketOrderBookSyncAdmin(admin.ModelAdmin):
+    """Per-location order-book sync watermark (read-mostly)."""
+
+    list_display = ("location", "last_synced_at")
+    list_display_links = ("location",)
+    search_fields = (
+        "location__location_name",
+        "location__short_name",
+    )
+    autocomplete_fields = ("location",)
+    ordering = ("-last_synced_at",)
+    readonly_fields = ("location", "last_synced_at")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(EveMarketInferredSale)
+class EveMarketInferredSaleAdmin(admin.ModelAdmin):
+    """Inferred sell fills from successive structure order-book snapshots."""
+
+    list_display = (
+        "inferred_at",
+        "location",
+        "item",
+        "quantity",
+        "price",
+        "reason",
+        "order_id",
+    )
+    list_display_links = ("inferred_at", "item")
+    list_filter = ("location", "reason")
+    list_per_page = 50
+    show_full_result_count = False
+    search_fields = (
+        "item__name",
+        "location__location_name",
+        "location__short_name",
+        "order_id",
+    )
+    autocomplete_fields = ("location",)
+    raw_id_fields = ("item",)
+    ordering = ("-inferred_at",)
+    readonly_fields = (
+        "location",
+        "item",
+        "quantity",
+        "price",
+        "inferred_at",
+        "order_id",
+        "reason",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("item", "location")
+
+
 @admin.register(EveMarketItemOrder)
 class EveMarketItemOrderAdmin(admin.ModelAdmin):
     """Sell orders at structures, synced from ESI for item seeding."""
@@ -727,6 +797,62 @@ class EveMarketItemHistoryAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related("item")
+
+
+@admin.register(EveMarketOpsMonitorSnapshot)
+class EveMarketOpsMonitorSnapshotAdmin(admin.ModelAdmin):
+    """Read-only health snapshots captured after market ESI syncs."""
+
+    list_display = (
+        "captured_at",
+        "location",
+        "trigger",
+        "overall_health_pct",
+        "contracts_health_pct",
+        "sell_orders_health_pct",
+        "sell_orders_viability_pct",
+        "understocked_contracts_count",
+        "sell_gaps_count",
+    )
+    list_display_links = ("captured_at", "location")
+    list_filter = ("trigger", "location")
+    list_per_page = 50
+    date_hierarchy = "captured_at"
+    search_fields = ("location__location_name", "location__short_name")
+    raw_id_fields = ("location",)
+    ordering = ("-captured_at",)
+    readonly_fields = (
+        "captured_at",
+        "location",
+        "trigger",
+        "contracts_health_pct",
+        "sell_orders_health_pct",
+        "sell_orders_viability_pct",
+        "overall_health_pct",
+        "understocked_contracts_count",
+        "sell_gaps_count",
+        "contract_targets",
+        "contract_fulfilled",
+        "sell_order_targets",
+        "sell_order_fulfilled",
+        "sell_order_viable_fulfilled",
+        "contracts_isk",
+        "sell_orders_isk",
+        "total_isk_on_market",
+        "contracts_synced_at",
+        "orders_synced_at",
+        "understocked_contracts",
+        "sell_gaps",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("location")
 
 
 # ----- Market admin index -----

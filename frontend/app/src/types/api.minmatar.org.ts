@@ -1223,6 +1223,61 @@ export interface OpsMonitor {
     summary: OpsMonitorSummary;
 }
 
+export interface OpsMonitorHistoryPoint {
+    id:                             number;
+    captured_at:                    string;
+    location_id:                    number;
+    location_name:                  string;
+    short_name:                     string;
+    trigger:                        string;
+    contracts_health_pct:           number | null;
+    sell_orders_health_pct:         number | null;
+    sell_orders_viability_pct:      number | null;
+    overall_health_pct:             number | null;
+    understocked_contracts_count:   number;
+    sell_gaps_count:                number;
+    contract_targets:               number;
+    contract_fulfilled:             number;
+    sell_order_targets:             number;
+    sell_order_fulfilled:           number;
+    sell_order_viable_fulfilled:    number;
+    contracts_isk:                  number;
+    sell_orders_isk:                number;
+    total_isk_on_market:            number;
+    contracts_synced_at:            string | null;
+    orders_synced_at:               string | null;
+    understocked_contracts:         OpsMonitor['understocked_contracts'];
+    sell_gaps:                      OpsMonitor['sell_gaps'];
+}
+
+export interface InferredSalesVolumeBucket {
+    date:   string;
+    units:  number;
+}
+
+export interface InferredSalesVelocity {
+    long_days:                  number;
+    short_days:                 number;
+    days_of_data:               number;
+    median_daily_units:         number;
+    short_mean_daily_units:     number;
+    total_units:                number;
+}
+
+export interface InferredSalesTopMover {
+    type_id:    number;
+    item_name:  string;
+    units:      number;
+}
+
+export interface InferredSalesVolume {
+    location_id:    number;
+    days:           number;
+    buckets:        InferredSalesVolumeBucket[];
+    velocity:       InferredSalesVelocity;
+    top_movers:     InferredSalesTopMover[];
+}
+
 export interface OrderAssignmentsBreakdownItem {
     name:                   string;
     type_id:                number;

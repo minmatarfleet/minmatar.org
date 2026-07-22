@@ -5,7 +5,12 @@ from market.models.contract import (
     EveMarketContractItem,
 )
 from market.models.history import EveMarketItemHistory
+from market.models.inferred_sale import (
+    EveMarketInferredSale,
+    EveMarketOrderBookSync,
+)
 from market.models.location_price import EveMarketItemLocationPrice
+from market.models.ops_snapshot import EveMarketOpsMonitorSnapshot
 from market.models.item import (
     EveMarketBuyOrderExpectation,
     EveMarketFittingExpectation,
@@ -25,11 +30,14 @@ __all__ = [
     "EveMarketContractItem",
     "EveMarketBuyOrderExpectation",
     "EveMarketFittingExpectation",
+    "EveMarketInferredSale",
     "EveMarketItemExpectation",
     "EveMarketItemHistory",
     "EveMarketItemLocationPrice",
     "EveMarketItemOrder",
     "EveMarketItemTransaction",
+    "EveMarketOpsMonitorSnapshot",
+    "EveMarketOrderBookSync",
     "EveTypeWithSellOrders",
     "_get_consumable_items",
     "get_effective_item_expectations",
