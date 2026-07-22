@@ -4,7 +4,7 @@ import uuid
 from django.core.cache import cache
 from django.db.models import Q
 from django.utils import timezone
-from celery import chain, group
+from celery import chain, chord, group
 
 from app.celery import app
 from eveonline.client import EsiClient
@@ -26,11 +26,13 @@ from market.helpers import (
     update_region_market_history_for_type,
 )
 from market.helpers.contract_items import fetch_and_match_contract_items
+from market.helpers.ops_snapshot import record_ops_monitor_snapshots
 from market.models import (
     EveMarketContract,
     EveMarketContractError,
     EveMarketItemOrder,
 )
+from market.models.ops_snapshot import EveMarketOpsMonitorSnapshot
 
 logger = logging.getLogger(__name__)
 
@@ -203,6 +205,20 @@ def fetch_market_location_prices_for_type(type_id: int) -> int:
 
 
 @app.task()
+def record_ops_monitor_snapshot_task(
+    trigger: str,
+    location_id: int | None = None,
+) -> int:
+    """
+    Persist ops health from local DB after an ESI sync. Does not call ESI.
+    """
+    return record_ops_monitor_snapshots(
+        trigger=trigger,
+        location_id=location_id,
+    )
+
+
+@app.task()
 def spawn_structure_sell_orders_pages(
     _clear_result,  # pylint: disable=invalid-name
     character_id: int,
@@ -211,16 +227,21 @@ def spawn_structure_sell_orders_pages(
     task_uid: str,
 ) -> None:
     """
-    Spawn a task per page for a structure (chained after clear). Ignores
-    _clear_result; runs the group of page tasks with the same task_uid.
+    Spawn a task per page for a structure (chained after clear). After all
+    pages finish, snapshot ops health from local DB (no extra ESI).
     """
-    page_tasks = group(
+    header = group(
         process_structure_sell_orders_page_task.s(
             character_id, location_id, page, task_uid
         )
         for page in range(1, total_pages + 1)
     )
-    page_tasks.apply_async()
+    chord(header)(
+        record_ops_monitor_snapshot_task.si(
+            EveMarketOpsMonitorSnapshot.TRIGGER_ORDERS,
+            location_id,
+        )
+    )
 
 
 @app.task()
@@ -464,6 +485,11 @@ def fetch_eve_market_contracts():
 
     duration = (timezone.now() - start_time).total_seconds()
     logger.info("fetch_eve_market_contracts complete in %.1fs", duration)
+
+    # Snapshot from local DB after this ESI sync — no additional ESI calls.
+    record_ops_monitor_snapshot_task.delay(
+        EveMarketOpsMonitorSnapshot.TRIGGER_CONTRACTS,
+    )
 
 
 @app.task(queue="market")

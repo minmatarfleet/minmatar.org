@@ -1,6 +1,7 @@
 import type {
     Contract,
     OpsMonitor,
+    OpsMonitorHistoryPoint,
 } from '@dtypes/api.minmatar.org'
 import { get_error_message } from '@helpers/string'
 
@@ -56,5 +57,32 @@ export async function get_ops_monitor(location_id?: number) {
         return await response.json() as OpsMonitor
     } catch (error) {
         throw new Error(`Error fetching ops monitor: ${error.message}`, { cause: error.cause })
+    }
+}
+
+export async function get_ops_monitor_history(location_id?: number, limit = 48) {
+    const headers = {
+        'Content-Type': 'application/json',
+    }
+
+    const params = new URLSearchParams()
+    if (location_id !== undefined)
+        params.set('location_id', String(location_id))
+    params.set('limit', String(limit))
+
+    const ENDPOINT = `${API_ENDPOINT}/ops-monitor/history?${params.toString()}`
+
+    try {
+        const response = await fetch(ENDPOINT, { headers })
+        if (!response.ok) {
+            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status,
+            })
+        }
+        return await response.json() as OpsMonitorHistoryPoint[]
+    } catch (error) {
+        throw new Error(`Error fetching ops monitor history: ${error.message}`, {
+            cause: error.cause,
+        })
     }
 }

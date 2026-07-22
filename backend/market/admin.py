@@ -19,6 +19,7 @@ from market.models import (
     EveMarketItemLocationPrice,
     EveMarketItemOrder,
     EveMarketItemTransaction,
+    EveMarketOpsMonitorSnapshot,
     EveTypeWithSellOrders,
 )
 from market.models.item import parse_eft_items
@@ -727,6 +728,62 @@ class EveMarketItemHistoryAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related("item")
+
+
+@admin.register(EveMarketOpsMonitorSnapshot)
+class EveMarketOpsMonitorSnapshotAdmin(admin.ModelAdmin):
+    """Read-only health snapshots captured after market ESI syncs."""
+
+    list_display = (
+        "captured_at",
+        "location",
+        "trigger",
+        "overall_health_pct",
+        "contracts_health_pct",
+        "sell_orders_health_pct",
+        "sell_orders_viability_pct",
+        "understocked_contracts_count",
+        "sell_gaps_count",
+    )
+    list_display_links = ("captured_at", "location")
+    list_filter = ("trigger", "location")
+    list_per_page = 50
+    date_hierarchy = "captured_at"
+    search_fields = ("location__location_name", "location__short_name")
+    raw_id_fields = ("location",)
+    ordering = ("-captured_at",)
+    readonly_fields = (
+        "captured_at",
+        "location",
+        "trigger",
+        "contracts_health_pct",
+        "sell_orders_health_pct",
+        "sell_orders_viability_pct",
+        "overall_health_pct",
+        "understocked_contracts_count",
+        "sell_gaps_count",
+        "contract_targets",
+        "contract_fulfilled",
+        "sell_order_targets",
+        "sell_order_fulfilled",
+        "sell_order_viable_fulfilled",
+        "contracts_isk",
+        "sell_orders_isk",
+        "total_isk_on_market",
+        "contracts_synced_at",
+        "orders_synced_at",
+        "understocked_contracts",
+        "sell_gaps",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("location")
 
 
 # ----- Market admin index -----
