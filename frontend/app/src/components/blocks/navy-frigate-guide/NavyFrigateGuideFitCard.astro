@@ -11,9 +11,10 @@ import FixedFluid from '@components/compositions/FixedFluid.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import type { GuideFitting } from '@/data/navy-frigate-guide'
+import type { ResolvedGuideFitting } from '@helpers/guide_fittings'
 
 interface Props {
-    fit: GuideFitting
+    fit: ResolvedGuideFitting<GuideFitting>
     shipName: string
 }
 
@@ -43,10 +44,10 @@ const textareaId = `nfg-fit-${fit.id}`
         </FixedFluid>
 
         <FlexInline class="[ nfg-fit-card__actions ]">
-            {fit.fittingId > 0 && (
+            {fit.fromLibrary && (
                 <FittingLink
                     class="[ action-button ]"
-                    fitting_id={fit.fittingId}
+                    fitting_id={fit.resolvedFittingId}
                     is_button={true}
                 >
                     {t('view_fitting')}
@@ -58,7 +59,7 @@ const textareaId = `nfg-fit-${fit.id}`
                 narrow={true}
                 text={t('copy_fitting')}
             >
-                {fit.eftFormat}
+                {fit.resolvedEftFormat}
             </ClipboardButton>
         </FlexInline>
     </Flexblock>

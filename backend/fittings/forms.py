@@ -18,6 +18,7 @@ from .models import (
     EveFittingModuleSubstitution,
     EveFittingRefit,
     FittingTag,
+    KnownFitting,
 )
 
 
@@ -51,6 +52,14 @@ class EveFittingAdminForm(forms.ModelForm):
         choices=FittingTag.choices,
         required=False,
         widget=forms.CheckboxSelectMultiple,
+    )
+    known_key = forms.ChoiceField(
+        choices=[("", "---------")] + list(KnownFitting.choices),
+        required=False,
+        help_text=(
+            "Stable catalog key for guides and app features "
+            "(e.g. guide.fw-cruiser.omen-kite-pulse). Not versioned with EFT."
+        ),
     )
     aliases = forms.CharField(
         required=False,
@@ -92,6 +101,10 @@ class EveFittingAdminForm(forms.ModelForm):
             self.cleaned_data.get("aliases") or ""
         )
 
+    def clean_known_key(self):
+        value = self.cleaned_data.get("known_key") or ""
+        return value or None
+
     def clean(self):
         cleaned = super().clean()
         eft = cleaned.get("eft_format") or ""
@@ -128,6 +141,18 @@ class EveFittingAdminForm(forms.ModelForm):
                         f"A pending create request already uses the name "
                         f"{derived!r}.",
                     )
+
+        known_key = cleaned.get("known_key")
+        if known_key:
+            dupes = EveFitting.objects.filter(known_key=known_key)
+            if self.instance.pk:
+                dupes = dupes.exclude(pk=self.instance.pk)
+            if dupes.exists():
+                self.add_error(
+                    "known_key",
+                    f"known key {known_key!r} is already assigned to another "
+                    f"fitting.",
+                )
         return cleaned
 
 

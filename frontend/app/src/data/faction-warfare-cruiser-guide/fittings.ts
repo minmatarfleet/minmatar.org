@@ -1,4 +1,5 @@
 import type { GuideFitting } from './types'
+import { withGuideKnownKey } from '@helpers/guide_fittings'
 
 /**
  * Example fits for the Faction Warfare Cruiser Guide.
@@ -6,6 +7,8 @@ import type { GuideFitting } from './types'
  * Names follow navy-destroyer-metagame style: `{Role/Weapon/Prop} {Ship}`.
  * EFTs from Dato Koppla (YC 128) where available; others stay header-only until filled.
  */
+export const GUIDE_FITTING_KEY_PREFIX = 'guide.fw-cruiser'
+
 export const guideFittings: GuideFitting[] = [
     {
         id: 'arby-long-kite',
@@ -1177,9 +1180,12 @@ Republic Fleet Phased Plasma M x1000`,
 ]
 
 export function getGuideFittingsForShip(shipGuideId: string): GuideFitting[] {
-    return guideFittings.filter((fit) => fit.shipGuideId === shipGuideId)
+    return guideFittings
+        .filter((fit) => fit.shipGuideId === shipGuideId)
+        .map((fit) => withGuideKnownKey(fit, GUIDE_FITTING_KEY_PREFIX))
 }
 
 export function getGuideFittingById(id: string): GuideFitting | undefined {
-    return guideFittings.find((fit) => fit.id === id)
+    const fit = guideFittings.find((row) => row.id === id)
+    return fit ? withGuideKnownKey(fit, GUIDE_FITTING_KEY_PREFIX) : undefined
 }

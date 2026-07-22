@@ -17,6 +17,15 @@ import {
 import GuideContentsLayout from '@components/blocks/GuideContentsLayout.astro'
 import NavyFrigateGuideMatchupChart from '@components/blocks/navy-frigate-guide/NavyFrigateGuideMatchupChart.astro'
 import NavyFrigateGuideShipSection from '@components/blocks/navy-frigate-guide/NavyFrigateGuideShipSection.astro'
+import { get_fittings } from '@helpers/api.minmatar.org/ships'
+import type { Fitting } from '@dtypes/api.minmatar.org'
+
+let fittingLibrary: Fitting[] = []
+try {
+    fittingLibrary = await get_fittings()
+} catch {
+    fittingLibrary = []
+}
 ---
 
 <div class="nfg-guide card component light-transparency border">
@@ -105,7 +114,7 @@ import NavyFrigateGuideShipSection from '@components/blocks/navy-frigate-guide/N
             <div class="nfg-guide__ships">
                 {
                     shipGuides.map((ship) => (
-                        <NavyFrigateGuideShipSection ship={ship} />
+                        <NavyFrigateGuideShipSection ship={ship} fittingLibrary={fittingLibrary} />
                     ))
                 }
             </div>

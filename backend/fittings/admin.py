@@ -66,6 +66,7 @@ from fittings.models import (
     EveFittingPod,
     EveFittingRefit,
     FittingTag,
+    KnownFitting,
 )
 from srp.models import PodReimbursementProgram
 
@@ -210,6 +211,27 @@ class FittingTagListFilter(admin.SimpleListFilter):
     def queryset(self, request, queryset):
         if self.value():
             return queryset.filter(tags__slug=self.value())
+        return queryset
+
+
+class KnownFittingListFilter(admin.SimpleListFilter):
+    title = "known key"
+    parameter_name = "known_key"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("set", "Has known key"),
+            ("unset", "No known key"),
+        ) + tuple(KnownFitting.choices)
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if value == "set":
+            return queryset.filter(known_key__isnull=False)
+        if value == "unset":
+            return queryset.filter(known_key__isnull=True)
+        if value:
+            return queryset.filter(known_key=value)
         return queryset
 
 
@@ -362,19 +384,21 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
     list_display = (
         "highlight_deleted_field",
         "ship_name",
+        "known_key",
         "pod_count",
         "refit_count",
         "substitution_count",
         "description",
         "deleted",
     )
-    search_fields = ("name", "description", "aliases")
+    search_fields = ("name", "description", "aliases", "known_key")
     list_filter = (
         SafeDeleteAdminFilter,
         HasFittingPodsListFilter,
         HasRefitsListFilter,
         InDoctrineListFilter,
         FittingTagListFilter,
+        KnownFittingListFilter,
     )
     list_per_page = 50
     ordering = ("name",)
@@ -418,6 +442,16 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
                     "fitting name."
                 ),
                 "fields": ("aliases",),
+            },
+        ),
+        (
+            "Known key",
+            {
+                "description": (
+                    "Stable catalog meaning for guides and app features. "
+                    "Saved immediately (not versioned with EFT changes)."
+                ),
+                "fields": ("known_key",),
             },
         ),
         (
@@ -539,6 +573,7 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
             return
 
         original = EveFitting.objects.get(pk=obj.pk)
+        known_key_updated = self._sync_known_key(original, obj, form)
         payload = build_fitting_payload_from_form(form, original)
 
         if not fitting_payload_changed(original, payload):
@@ -550,6 +585,9 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
                     request,
                     f"Fitting name updated to match EFT: {obj.name}",
                 )
+                return
+            if known_key_updated:
+                messages.info(request, "Fitting known key updated.")
                 return
             # Inlines (module substitutions, etc.) still save via save_formset.
             return
@@ -579,6 +617,19 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
                 ),
             )
             _mark_change_request_queued(request, url)
+
+    @staticmethod
+    def _sync_known_key(original, obj, form) -> bool:
+        """Persist known_key immediately; it is not part of versioned EFT payloads."""
+        if "known_key" not in form.cleaned_data:
+            return False
+        new_key = form.cleaned_data.get("known_key") or None
+        if (original.known_key or None) == new_key:
+            return False
+        original.known_key = new_key
+        original.save(update_fields=["known_key"])
+        obj.known_key = new_key
+        return True
 
     def delete_model(self, request, obj):
         payload = build_fitting_payload_from_instance(obj)

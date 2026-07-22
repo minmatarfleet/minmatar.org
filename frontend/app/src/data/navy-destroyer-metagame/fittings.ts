@@ -1,6 +1,9 @@
 import type { GuideFitting } from './types'
+import { withGuideKnownKey } from '@helpers/guide_fittings'
 
 /** Example fits for the navy destroyer metagame guide. */
+export const GUIDE_FITTING_KEY_PREFIX = 'guide.navy-destroyer'
+
 export const guideFittings: GuideFitting[] = [
     {
         id: 'cat-blaster',
@@ -668,9 +671,12 @@ Republic Fleet Phased Plasma S x1000`,
 ]
 
 export function getGuideFittingsForShip(shipGuideId: string): GuideFitting[] {
-    return guideFittings.filter((fit) => fit.shipGuideId === shipGuideId)
+    return guideFittings
+        .filter((fit) => fit.shipGuideId === shipGuideId)
+        .map((fit) => withGuideKnownKey(fit, GUIDE_FITTING_KEY_PREFIX))
 }
 
 export function getGuideFittingById(id: string): GuideFitting | undefined {
-    return guideFittings.find((fit) => fit.id === id)
+    const fit = guideFittings.find((row) => row.id === id)
+    return fit ? withGuideKnownKey(fit, GUIDE_FITTING_KEY_PREFIX) : undefined
 }

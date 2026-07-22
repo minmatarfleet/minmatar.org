@@ -18,6 +18,15 @@ import {
 import GuideContentsLayout from '@components/blocks/GuideContentsLayout.astro'
 import NavyDestroyerMetagameMatchupChart from '@components/blocks/navy-destroyer-metagame/NavyDestroyerMetagameMatchupChart.astro'
 import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-metagame/NavyDestroyerMetagameShipSection.astro'
+import { get_fittings } from '@helpers/api.minmatar.org/ships'
+import type { Fitting } from '@dtypes/api.minmatar.org'
+
+let fittingLibrary: Fitting[] = []
+try {
+    fittingLibrary = await get_fittings()
+} catch {
+    fittingLibrary = []
+}
 ---
 
 <div class="ndm-guide card component light-transparency border">
@@ -106,7 +115,7 @@ import NavyDestroyerMetagameShipSection from '@components/blocks/navy-destroyer-
             <div class="ndm-guide__ships">
                 {
                     shipGuides.map((ship) => (
-                        <NavyDestroyerMetagameShipSection ship={ship} />
+                        <NavyDestroyerMetagameShipSection ship={ship} fittingLibrary={fittingLibrary} />
                     ))
                 }
             </div>

@@ -11,15 +11,15 @@ import FixedFluid from '@components/compositions/FixedFluid.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import type { GuideFitting } from '@/data/faction-warfare-cruiser-guide'
+import type { ResolvedGuideFitting } from '@helpers/guide_fittings'
 
 interface Props {
-    fit: GuideFitting
+    fit: ResolvedGuideFitting<GuideFitting>
     shipName: string
 }
 
 const { fit, shipName } = Astro.props
 const textareaId = `fwc-fit-${fit.id}`
-const hasLibraryFit = fit.fittingId > 0
 ---
 
 <ComponentBlock
@@ -44,24 +44,22 @@ const hasLibraryFit = fit.fittingId > 0
         </FixedFluid>
 
         <FlexInline class="[ fwc-fit-card__actions ]">
-            {
-                hasLibraryFit && (
-                    <FittingLink
-                        class="[ action-button ]"
-                        fitting_id={fit.fittingId}
-                        is_button={true}
-                    >
-                        {t('view_fitting')}
-                    </FittingLink>
-                )
-            }
+            {fit.fromLibrary && (
+                <FittingLink
+                    class="[ action-button ]"
+                    fitting_id={fit.resolvedFittingId}
+                    is_button={true}
+                >
+                    {t('view_fitting')}
+                </FittingLink>
+            )}
             <ClipboardButton
                 class="[ action-button ]"
                 id={textareaId}
                 narrow={true}
                 text={t('copy_fitting')}
             >
-                {fit.eftFormat}
+                {fit.resolvedEftFormat}
             </ClipboardButton>
         </FlexInline>
     </Flexblock>

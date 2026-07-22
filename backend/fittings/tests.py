@@ -1,5 +1,6 @@
 import re
 
+from django.db import IntegrityError
 from django.test import Client
 from django.urls import reverse
 
@@ -114,6 +115,46 @@ class FittingsRouterTestCase(TestCase):
         self.assertEqual([], fitting["refits"])
         self.assertIn("tags", fitting)
         self.assertEqual([], fitting["tags"])
+        self.assertIn("known_key", fitting)
+        self.assertIsNone(fitting["known_key"])
+
+    def test_get_fittings_includes_known_key_when_set(self):
+        fitting = EveFitting.objects.create(
+            name="[ADV-5] Retribution",
+            eft_format="[Retribution, [ADV-5] Retribution]",
+            ship_id=608,
+            description="",
+            known_key="guide.fw-cruiser.omen-kite-pulse",
+        )
+        response = self.client.get(
+            "/api/fittings/",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        data = response.json()
+        self.assertEqual(1, len(data))
+        self.assertEqual(
+            "guide.fw-cruiser.omen-kite-pulse", data[0]["known_key"]
+        )
+        self.assertEqual(fitting.id, data[0]["id"])
+
+    def test_known_key_unique_among_active_fittings(self):
+        EveFitting.objects.create(
+            name="Pulse Omen A",
+            eft_format="[Omen, Pulse Omen A]",
+            ship_id=2006,
+            description="",
+            known_key="guide.fw-cruiser.omen-kite-pulse",
+        )
+        duplicate = EveFitting(
+            name="Pulse Omen B",
+            eft_format="[Omen, Pulse Omen B]",
+            ship_id=2006,
+            description="",
+            known_key="guide.fw-cruiser.omen-kite-pulse",
+        )
+        with self.assertRaises(IntegrityError):
+            duplicate.save()
 
     def test_get_fittings_includes_tags_when_set(self):
         fitting = EveFitting.objects.create(

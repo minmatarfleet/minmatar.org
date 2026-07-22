@@ -1,6 +1,9 @@
 import type { GuideFitting } from './types'
+import { withGuideKnownKey } from '@helpers/guide_fittings'
 
 /** Example fits for the navy frigate guide. fittingId 0 = copy-only (not in Fleet library). */
+export const GUIDE_FITTING_KEY_PREFIX = 'guide.navy-frigate'
+
 export const guideFittings: GuideFitting[] = [
     {
         id: 'hookbill-shield',
@@ -320,9 +323,12 @@ Nanite Repair Paste x50`,
 ]
 
 export function getGuideFittingsForShip(shipGuideId: string): GuideFitting[] {
-    return guideFittings.filter((fit) => fit.shipGuideId === shipGuideId)
+    return guideFittings
+        .filter((fit) => fit.shipGuideId === shipGuideId)
+        .map((fit) => withGuideKnownKey(fit, GUIDE_FITTING_KEY_PREFIX))
 }
 
 export function getGuideFittingById(id: string): GuideFitting | undefined {
-    return guideFittings.find((fit) => fit.id === id)
+    const fit = guideFittings.find((row) => row.id === id)
+    return fit ? withGuideKnownKey(fit, GUIDE_FITTING_KEY_PREFIX) : undefined
 }
