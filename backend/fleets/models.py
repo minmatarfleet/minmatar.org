@@ -129,6 +129,14 @@ class EveFleet(models.Model):
 
         response = esi_response.data
 
+        # Only the in-game fleet boss (fleet commander) may link/start tracking.
+        # Otherwise a member can "steal" an existing EveFleetInstance.
+        if response.get("fleet_boss_id") != eve_character.character_id:
+            raise RuntimeError(
+                f"Character {eve_character.character_name} is not the fleet "
+                f"commander (starting fleet {self.id})"
+            )
+
         if EveFleetInstance.objects.filter(id=response["fleet_id"]).exists():
             fleet_instance = EveFleetInstance.objects.get(
                 id=response["fleet_id"]

@@ -56,6 +56,10 @@ def disconnect_fleet_signals():
         sender=EveFleet,
         dispatch_uid="update_fleet_schedule_on_save",
     )
+    signals.post_delete.disconnect(
+        update_fleet_schedule_on_delete,
+        sender=EveFleet,
+    )
     signals.post_save.disconnect(
         sender=EveCharacter,
         dispatch_uid="populate_eve_character_public_data",
@@ -625,6 +629,121 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual(400, response.status_code)
         error = response.json()
         self.assertEqual("Not currently in a fleet", error["detail"])
+
+    @patch("fleets.models.EsiClient")
+    @patch("fleets.models.discord")
+    def test_start_fleet_rejects_non_commander(self, discord_mock, esi_mock):
+        char_id = setup_fc(self.user)
+        fleet = make_test_fleet("Test", self.user)
+        fleet.disable_motd = True
+        fleet.save()
+
+        owner = User.objects.create(username="real_fc")
+        owner_fleet = make_test_fleet("Owner fleet", owner)
+        existing = EveFleetInstance.objects.create(
+            id=987654,
+            eve_fleet=owner_fleet,
+            boss_id=9999,
+        )
+
+        esi_mock_instance = esi_mock.return_value
+        esi_mock_instance.get_active_fleet.return_value = EsiResponse(
+            response_code=200,
+            data={
+                "fleet_id": existing.id,
+                "fleet_boss_id": 9999,
+                "role": "squad_member",
+            },
+        )
+
+        response = self.client.post(
+            f"{BASE_URL}/{fleet.id}/tracking",
+            data=None,
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(400, response.status_code)
+        self.assertEqual(
+            "Must be the fleet commander of your in-game fleet",
+            response.json()["detail"],
+        )
+
+        existing.refresh_from_db()
+        self.assertEqual(owner_fleet.id, existing.eve_fleet_id)
+        self.assertEqual(9999, existing.boss_id)
+        self.assertNotEqual(char_id, existing.boss_id)
+
+    @patch("fleets.models.EsiClient")
+    @patch("fleets.models.discord")
+    def test_start_fleet_now_as_commander(self, discord_mock, esi_mock):
+        char_id = setup_fc(self.user)
+
+        esi_mock_instance = esi_mock.return_value
+        esi_mock_instance.get_active_fleet.return_value = EsiResponse(
+            response_code=200,
+            data={
+                "fleet_id": 555666,
+                "fleet_boss_id": char_id,
+                "role": "fleet_commander",
+            },
+        )
+        esi_mock_instance.update_fleet_details.return_value = EsiResponse(
+            response_code=204, data={}
+        )
+
+        response = self.client.post(
+            f"{BASE_URL}/start-now",
+            {},
+            "application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        fleet_id = response.json()["id"]
+        instance = EveFleetInstance.objects.get(id=555666)
+        self.assertEqual(fleet_id, instance.eve_fleet_id)
+        self.assertEqual(char_id, instance.boss_id)
+
+    @patch("fleets.models.EsiClient")
+    @patch("fleets.models.discord")
+    def test_start_fleet_now_rejects_non_commander(
+        self, discord_mock, esi_mock
+    ):
+        setup_fc(self.user)
+
+        owner = User.objects.create(username="real_fc")
+        owner_fleet = make_test_fleet("Owner fleet", owner)
+        existing = EveFleetInstance.objects.create(
+            id=555666,
+            eve_fleet=owner_fleet,
+            boss_id=9999,
+        )
+
+        esi_mock_instance = esi_mock.return_value
+        esi_mock_instance.get_active_fleet.return_value = EsiResponse(
+            response_code=200,
+            data={
+                "fleet_id": existing.id,
+                "fleet_boss_id": 9999,
+                "role": "squad_member",
+            },
+        )
+
+        fleets_before = EveFleet.objects.count()
+        response = self.client.post(
+            f"{BASE_URL}/start-now",
+            {},
+            "application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(400, response.status_code)
+        self.assertEqual(
+            "Must be the fleet commander of your in-game fleet",
+            response.json()["detail"],
+        )
+        self.assertEqual(fleets_before, EveFleet.objects.count())
+
+        existing.refresh_from_db()
+        self.assertEqual(owner_fleet.id, existing.eve_fleet_id)
 
     @patch("fleets.models.EsiClient")
     @patch("fleets.models.discord")

@@ -24,7 +24,11 @@ ROUTE_SPEC = {
         403: ErrorResponse,
         400: ErrorResponse,
     },
-    "description": "Create a fleet with defaults, link to your current in-game fleet, and activate (no Discord). Must be in a fleet and have fleets.add_evefleet.",
+    "description": (
+        "Create a fleet with defaults, link to your current in-game fleet, "
+        "and activate (no Discord). Must be the fleet commander (boss) of "
+        "your in-game fleet and have fleets.create / fleets.add_evefleet."
+    ),
 }
 
 
@@ -68,6 +72,10 @@ def start_fleet_now(request, payload: Optional[StartFleetNowRequest] = None):
         fleet.delete()
         if "not in a fleet" in str(e):
             return 400, {"detail": "Not currently in a fleet"}
+        if "not the fleet commander" in str(e):
+            return 400, {
+                "detail": ("Must be the fleet commander of your in-game fleet")
+            }
         logger.exception(
             "Quick start fleet failed for user %s", request.user.username
         )

@@ -38,6 +38,10 @@ def start_fleet(
     except Exception as e:
         if "not in a fleet" in str(e):
             return 400, ErrorResponse.log("Not currently in a fleet", e)
+        if "not the fleet commander" in str(e):
+            return 400, ErrorResponse.log(
+                "Must be the fleet commander of your in-game fleet", e
+            )
         else:
             return 400, ErrorResponse.log(
                 f"Error starting fleet {fleet.id}", e
