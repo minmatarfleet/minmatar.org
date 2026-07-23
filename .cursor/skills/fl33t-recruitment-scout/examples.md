@@ -4,6 +4,183 @@ Real responses that worked. Add entries here after you send outreach — no temp
 
 ---
 
+## 2026-07-22 scout run
+
+### Hek returner, non-PvP industry, US evenings, no lowsec move-in
+**Thread:** [Starting back](https://www.reddit.com/r/evejobs/comments/1v2mwrr/starting_back/)  
+**Routed:** Minmatar Extraction Company (MFA)  
+**Author:** BearThatCares
+
+**Scout draft (not sent):**
+> Hek and US evenings after 1900 with rock and moon fleets, and no lowsec move-in tax is exactly what Minmatar Extraction Company runs out of Amo in the Minmatar Fleet Associates network, highsec bulwarks with optional lowsec later when you want it. [Ad] or discord.gg/minmatar and ask for Keldor
+
+**Sent:**
+> Hek basing and daily ore fleets without a lowsec move-in is what Minmatar Extraction Company runs out of Amo for Minmatar Fleet Associates, highsec bulwarks with optional lowsec later when you want it. [Ad](https://www.reddit.com/r/evejobs/comments/1v1kuse/minmatar_extraction_company_amo_mining_fleets_100/) or [discord.gg/minmatar](http://discord.gg/minmatar) and ask for Keldor
+
+**What changed and why:**
+- Dropped schedule mirror (`US evenings after 1900`) and `rock and moon` / `exactly` — OP already named those; `Hek basing` + `daily ore fleets` + `without a lowsec move-in` is enough weave.
+- Kept Extraction Company as the named MFA mining corp (live Amo ad) + Keldor. Correct industry-primary route.
+
+**Routing note:** Explicit non-PvP + highsec basing + mining fleets → Extraction / MFA, never Academy or FW corps.
+
+---
+
+### Short saturated LFC, 50m SP small-gang + ISK between fleets (no TZ)
+**Thread:** [Returned, looking for a corp](https://www.reddit.com/r/evejobs/comments/1v27k8g/returned_looking_for_a_corp/)  
+**Routed:** Soltech Armada  
+**Author:** BearThatCares
+
+**Sent (matched scout draft):**
+> Soltech Armada flies daily out of Amamake in Minmatar faction warfare, small enough that you are not a ping number, with room to make ISK between fleets when you are not blowing shit up. [Ad](https://www.reddit.com/r/evejobs/comments/1uzva5j/sltar_soltech_armada_welcome_to_amamake_the_best/) or [discord.gg/minmatar](http://discord.gg/minmatar)
+
+**Why it worked as drafted:** Thread already had ~10 corp dumps. Blunt corp-first one-liner weaves OP language (`blowing shit up`) without schedule mirroring. Soltech default when no TZ and ask is alive small-gang + ISK downtime. Dark Tribe skipped (30m SP / KB / capital-ready unknown on a one-line post).
+
+---
+
+### NA TZ pair, prefer WH, open to LS, IRL-first, learning PvP in T3s
+**Thread:** [Returning players looking for LS / WH corp (NA TZ)](https://www.reddit.com/r/evejobs/comments/1v17m3j/returning_players_looking_for_ls_wh_corp_na_tz/)  
+**Routed:** Soltech Armada  
+**Author:** BearThatCares
+
+**Scout draft (not sent):**
+> Not sure a wormhole static is required if the real ask is NA evenings, learning PvP in T3s, and an IRL-first corp that does not demand voice whenever you are logged in. Soltech Armada runs that window out of Amamake in faction warfare lowsec, medium roster, mature adults, PI and manufacturing alts welcome on the side. [Ad] or discord.gg/minmatar
+
+**Sent:**
+> Wormholes are dead, faction warfare is the new hotness. Especially if you're multi-boxing you can make 100-200m per character in just a navy cruiser, with combat coming to you instead of having to scan for it.
+>
+> Soltech Armada runs that window out of Amamake in faction warfare lowsec, PI and manufacturing alts welcome on the side. [Ad](https://www.reddit.com/r/evejobs/comments/1uzva5j/sltar_soltech_armada_welcome_to_amamake_the_best/) or [discord.gg/minmatar](http://discord.gg/minmatar)
+
+**What changed and why:**
+- Soft contrast opener (`Not sure a wormhole static…`) → blunt WH vs FW claim — stronger when OP's "ideally WH" is the objection to clear.
+- Added concrete FW beat: navy cruiser multi-box ISK + combat comes to you vs scanning — kills "will there be content/ISK in LS?" without a WH static.
+- Dropped IRL-first / no-mandatory-comms / medium roster clauses — implied by Soltech + shorter second block; OP already listed those as criteria.
+- Allowed short two-block (claim+proof / corp+links) like other proof-led sends.
+
+**Routing note:** Prefer-WH but open to LS + NA/PST + learn PvP → Soltech (IRL-first, USTZ on API). Do not route WH-only seekers; do pitch FW when they leave LS open.
+
+---
+
+### Five EU friends, organized mining, open high/low/null, fear empty fleet promises
+**Thread:** [5 Players LFC EU TZ…](https://www.reddit.com/r/evejobs/comments/1v0ll3g/5_players_lfc_eu_tz_looking_for_active_nulllowsec/)  
+**Routed:** Minmatar Extraction Company (MFA)  
+**Author:** BearThatCares
+
+**Scout draft (not sent):**
+> Minmatar Extraction Company runs organized Amo mining fleets with 100% Jita buyback inside Minmatar Fleet Associates, a highsec bulwark industry network with lowsec when a group wants out of the rocks, and five friends joining together is normal there. [Ad] and discord.gg/minmatar, ask for Keldor
+
+**Sent:**
+> CCP has been putting many of the new strong sites in highsec. Minmatar Extraction Company runs MULTIPLE daily (had to mute pings, they ping too much) organized Amo mining fleets with 100% Jita buyback inside Minmatar Fleet Associates. Five friends joining together is normal there. [Ad](https://www.reddit.com/r/evejobs/comments/1v1kuse/minmatar_extraction_company_amo_mining_fleets_100/) and [discord.gg/minmatar](http://discord.gg/minmatar), ask for Keldor
+
+**What changed and why:**
+- Lead with CCP highsec strong sites — answers null/low preference without pitching sov-null or apologizing for highsec.
+- `MULTIPLE daily` + human aside (`had to mute pings`) kills their stated fear of corps that promise fleets and never run them better than brochure "organized."
+- Dropped bulwark/lowsec-excursions clause — redundant once strong-sites + daily fleets are there.
+
+**Routing note:** Industry-primary group open to highsec → Extraction / MFA. Never redirect with "we have null too."
+
+---
+
+### Brand-new Aussie, industry/logistics first week
+**Thread:** [New player L4 industry/logistics…](https://www.reddit.com/r/evejobs/comments/1uzns5l/new_player_l4_industrylogistics_focused_corp_or/)  
+**Routed:** Minmatar Fleet Associates (+ Extraction ad)  
+**Author:** BearThatCares
+
+**Scout draft (not sent):**
+> First week of abyssals, missions, mining, and manufacturing is the right mess for Minmatar Fleet Associates, a network of industry corps in highsec bulwarks where logistics and production are the day job and Aussie hours are fine. discord.gg/minmatar and ask for Keldor, or the Extraction Company mining ad if you want the rock-fleet picture: [Ad]
+
+**Sent:**
+> First week of abyssals, missions, mining, and manufacturing is the right mess for Minmatar Fleet Associates, a network of industry corps in highsec bulwark systems. Aussie hours are fine, lots of fleets during that time.
+>
+> [discord.gg/minmatar](http://discord.gg/minmatar) and ask for Keldor, or [the Extraction mining ad](https://www.reddit.com/r/evejobs/comments/1v1kuse/minmatar_extraction_company_amo_mining_fleets_100/) to learn more
+
+**What changed and why:**
+- Dropped `logistics and production are the day job` — first-week weave already lists the activities.
+- Added `lots of fleets during that time` as AUTZ activity proof next to Aussie hours.
+- Discord+Keldor first, Extraction ad second (`to learn more`) — MFA door then optional named mining corp.
+
+**Routing note:** New industry player + AUTZ → MFA network, not Academy (Academy is USTZ PvP on the API).
+
+---
+
+### Forum: 13yr return, industry, has a hulk
+**Thread:** [Looking for industry corp](https://forums.eveonline.com/t/looking-for-industry-corp/515221)  
+**Routed:** Minmatar Fleet Associates  
+**Author:** BearThatCares
+
+**Sent (matched scout draft):**
+> Thirteen years away with a hulk still in the hangar is a solid restart, and Minmatar Fleet Associates will teach industry in highsec bulwark systems without pretending you remember the 2013 market. discord.gg/minmatar and ask for Keldor
+
+**Why it worked as drafted:** OP-first weave (13 years + hulk) + one MFA line + Keldor. Forums: discord-only closer is enough; Extraction ad optional when they did not ask for fleet mining specifically.
+
+---
+
+### Forum: dual accounts, mining lean + PvP alt, avoiding null meat grinder
+**Thread:** [Returning Pilot, looking for a home](https://forums.eveonline.com/t/returning-pilot-looking-for-a-home/514994)  
+**Routed:** Soltech Armada (combat) + Minmatar Extraction Company (industry)  
+**Author:** BearThatCares
+
+**Scout draft (not sent):**
+> Mining and industry on Valkyer while ReklavEM stays ratting-capable is the Minmatar Fleet Associates setup, highsec bulwarks for the ISK grind and lowsec faction warfare later if you want pew without jumping into a null meat grinder. discord.gg/minmatar and ask for Keldor
+
+**Sent:**
+> Dip into combat with ReklavEM while leveraging industry with Valkyer in Minmatar Fleet Alliance. Soltech Armada is probably the best fit for you, with your industry character in Minmatar Extraction Company.
+>
+> [my.minmatar.org/alliance/corporations/](https://my.minmatar.org/alliance/corporations/)
+
+**What changed and why:**
+- Scout MFA-only → dual-corp same alliance: Soltech for the PvP-oriented alt, Extraction for the mining main. Better when OP names two characters with different jobs.
+- Linked the corp directory instead of discord/Keldor — lets them self-serve bios; good on forums when dual-routing.
+- Used `probably the best fit` — ships, but avoid stacking that salesy fit language in future drafts; name the corps and let them decide.
+
+**Routing note:** Explicit mining primary + open to PvP later with a second character → Extraction on industry toon + Soltech (or another FW corp) on combat toon, not MFA-only and not null.
+
+---
+
+### Lapsed logi specialist, small-gang / no sov, interest check (already covered mid-week)
+**Thread:** [Lapsed player thinking about coming back…](https://www.reddit.com/r/evejobs/comments/1uzzh1a/lapsed_player_thinking_about_coming_back_interest/)  
+**Routed:** alliance FW proof (no named corp)  
+**Author:** BearThatCares
+
+**Sent:**
+> FW is better than it has ever been. Lots of small gang and solo content, with big fleet fights periodically.
+>
+> Recent system siege on r/eve: [https://www.reddit.com/r/Eve/s/p5mPIRJe6k](https://www.reddit.com/r/Eve/s/p5mPIRJe6k)
+
+**Why it works as a pattern:** OP wrote a long filter (logi, small gang, no sov megabloc). Proof-first FW + BR, no corp brochure — leaves room for a second recruiter (Fearless linked FOSFO). Same family as cap-feeder / Goons-redirect: evidence over pitch when the ask is ultra-specific or the thread needs air.
+
+**Routing note:** FOSFO ad may be live while corp is missing from the corporations API — do not scout-route FOSFO until the API lists them; a human recruiter can still link the ad.
+
+---
+
+### Forum: US EST retired, missions/abyssals/mining, small corp (slightly older thread)
+**Thread:** [US EST Retired Old Man…](https://forums.eveonline.com/t/us-est-retired-old-man-looking-for-active-small-scale-pve-corp/514783)  
+**Routed:** Minmatar Fleet Associates  
+**Author:** BearThatCares
+
+**Sent:**
+> Coming back for missions, abyssals, and mining with people who know your name is a fair ask, and Minmatar Fleet Associates is a network of industry corps in highsec bulwark systems where that is the day job, with lowsec excursions when you want to learn PvP without getting lost in a mega-alliance roster. discord.gg/minmatar and ask for Keldor
+
+**Why it worked:** OP-first fear-kill (`people who know your name` / not mega-roster) + MFA day job + optional lowsec PvP later. No Extraction ad — PvE mix, not fleet-mining primary.
+
+---
+
+## Patterns (2026-07-22 run)
+
+| Situation | What landed |
+|-----------|-------------|
+| Hek / non-PvP / mining fleets / no lowsec move-in | Extraction Company named + Amo ad + Keldor; drop schedule mirroring |
+| Short saturated small-gang LFC, no TZ | Blunt Soltech one-liner; ship scout draft; weave one OP phrase |
+| Prefer WH, open to LS, NA TZ | Blunt "WH dead / FW hot" + navy cruiser multi-box ISK beat, then Soltech; soft contrast opener too weak |
+| EU mining group open high/low/null, fear empty fleets | CCP highsec strong sites + "MULTIPLE daily / mute pings" social proof → Extraction |
+| New Aussie industry | MFA + Aussie fleets line; discord/Keldor first, Extraction ad second |
+| Forum industry returner (hulk) | Scout draft shippable; discord+Keldor enough |
+| Dual accounts mining + PvP, avoid null | Soltech combat + Extraction industry; link corp directory; skip MFA-only |
+| Ultra-specific logi / no-sov interest check | Proof BR + FW claim, no corp name; leave air for FOSFO etc. |
+| Extraction vs MFA naming | Name Extraction when they want mining *fleets*; MFA network when general industry/PvE |
+| Salesy fit language | Avoid `probably the best fit` in future drafts even if one send used it |
+
+---
+
 ## 2026-07-17 scout run
 
 ### AUTZ WH vet, open to lowsec, wants pew + bit of everything (100m SP)

@@ -231,6 +231,11 @@ bigger/smaller corp in the same alliance — name only, no ad link. Use
   the name from the corporations API, not stale external tickers.
 - **Industry-primary:** MFA associate corps primary. Base in highsec bulwark
   systems, lowsec excursions when people want out. PvP corp is a side note only.
+  Name **Minmatar Extraction Company** (and its Amo mining ad) when they want
+  organized mining fleets; MFA network + Keldor for general industry/PvE. Dual
+  accounts (mining main + PvP alt) can split Extraction + a FW corp (e.g.
+  Soltech) — on forums, linking `my.minmatar.org/alliance/corporations/` works
+  when dual-routing.
 - **Blops/caps/lowsec bloodshed:** Rattini Tribe (all TZ, escalates into cap
   fights) or **Administrative Atrocities** (tight EUTZ skirmish crew). Match TZ
   and vibe (big pond vs small roster). **Straylight is not in the alliance** —
@@ -288,9 +293,9 @@ in one run. Rotate how link/discord land (end of sentence, after corp name, etc.
   the same comma-chain mirror (`holland, eu nights, new but wanting pvp?`).
 - **No question-form mirroring.** Do not restate their post as a rhetorical
   question (`industry, mining ops, pve, fw sounds interesting?`).
-- **No salesy fit language.** Avoid "probably the move", "good fit", "worth a
-  look" stacked together, or listing `you want X, Y, Z`. Describe the corp; let
-  them decide.
+- **No salesy fit language.** Avoid "probably the move", "good fit", "probably
+  the best fit", "worth a look" stacked together, or listing `you want X, Y, Z`.
+  Describe the corp; let them decide.
 - **`tracks` is for negatives only.** Valid: `goons feeling like a number tracks`.
   Invalid: `sons of bane taking care of people tracks`. Positive nostalgia gets
   a plain statement (`hard to find another sons of bane since winter co days`).
