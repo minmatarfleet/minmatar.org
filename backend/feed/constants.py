@@ -134,7 +134,9 @@ ROLLUP_VERSIONS: dict[str, int] = {
 # Capital kill Discord pings (radius from Amamake)
 AMAMAKE_SOLAR_SYSTEM_ID = 30002537
 CAPITAL_PING_MAX_LIGHT_YEARS = 8.0
-CAPITAL_PING_MAX_AGE_SECONDS = 3600
+# Only ping for genuinely fresh kills. Stale killmails (feed backlog, bot
+# restarts, replays) must not fire a "capital within jump range" alert.
+CAPITAL_PING_MAX_AGE_SECONDS = 180
 # Reuse one Discord message for further capital-related kills in the same system.
 CAPITAL_PING_SESSION_SECONDS = 30 * 60
 METERS_PER_LIGHT_YEAR = 9_460_528_400_000_000

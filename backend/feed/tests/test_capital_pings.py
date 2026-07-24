@@ -665,6 +665,22 @@ class CapitalPingTestCase(TestCase):
         self.assertEqual(FeedCapitalPing.objects.count(), 0)
 
     @patch("feed.helpers.capital_pings.DiscordClient")
+    def test_maybe_notify_age_gate_skips_recently_stale_kill(
+        self, mock_client_cls
+    ):
+        payload = make_killmail_payload(
+            136500018,
+            solar_system_id=AMAMAKE_SOLAR_SYSTEM_ID,
+            ship_type_id=73790,
+            killmail_time=dj_tz.now() - timedelta(minutes=5),
+        )
+        self.assertIsNone(
+            maybe_notify_capital_kill(payload, apply_age_gate=True)
+        )
+        mock_client_cls.return_value.create_message.assert_not_called()
+        self.assertEqual(FeedCapitalPing.objects.count(), 0)
+
+    @patch("feed.helpers.capital_pings.DiscordClient")
     def test_maybe_notify_age_gate_allows_fresh_kill(self, mock_client_cls):
         mock_client = MagicMock()
         create_response = MagicMock()
@@ -676,7 +692,7 @@ class CapitalPingTestCase(TestCase):
             136500009,
             solar_system_id=AMAMAKE_SOLAR_SYSTEM_ID,
             ship_type_id=73790,
-            killmail_time=dj_tz.now() - timedelta(minutes=5),
+            killmail_time=dj_tz.now() - timedelta(minutes=1),
         )
         self.assertTrue(
             maybe_notify_capital_kill(payload, apply_age_gate=True)
