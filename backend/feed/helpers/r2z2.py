@@ -471,7 +471,9 @@ def poll_r2z2_batch(  # noqa: C901
                 deadline=deadline,
                 allowlist=allowlist,
                 stats=stats,
-                apply_age_gate=False,
+                # Age-gate live too: a gap (bot restart, feed backlog) makes
+                # the live phase churn stale sequences, which must not ping.
+                apply_age_gate=True,
                 pending_capital=pending_capital,
             )
 
