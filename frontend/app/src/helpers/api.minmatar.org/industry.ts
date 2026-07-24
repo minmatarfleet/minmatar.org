@@ -14,6 +14,9 @@ import type {
     IndustrySingleOrder,
     OrderAssignment,
     OrdersProfitSummary,
+    OrderBlueprintCoordinator,
+    OrderBlueprintCoordinatorEveType,
+    RootSingleItem,
 } from '@dtypes/api.minmatar.org'
 import {
     get_error_message,
@@ -60,8 +63,6 @@ export type OrdersProfitSummaryParams = {
     needed_by_to?: string
     open_only?: boolean
     order_ids?: string | number[]
-    facility_key?: string
-    compressed?: boolean
 }
 
 export async function get_orders_profit_summary(
@@ -81,9 +82,6 @@ export async function get_orders_profit_summary(
             ? params.order_ids.join(',')
             : String(params.order_ids)
     }
-    if (params.facility_key) raw.facility_key = params.facility_key
-    if (params.compressed !== undefined)
-        raw.compressed = params.compressed ? 'true' : 'false'
 
     const qs = query_string(raw)
     const ENDPOINT = `${API_ENDPOINT}/orders/profit-summary${qs ? `?${qs}` : ''}`
@@ -106,6 +104,41 @@ export async function get_orders_profit_summary(
     } catch (error) {
         throw new Error(
             `Error fetching orders profit summary: ${error.message}`,
+            { cause: error.cause },
+        )
+    }
+}
+
+export async function refresh_order_profit_breakdown(
+    access_token: string,
+    order_id: number,
+) {
+    const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${access_token}`,
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/orders/${order_id}/profit-breakdown/refresh`
+
+    console.log(`Requesting: POST ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            method: 'POST',
+            headers,
+        })
+
+        if (!response.ok) {
+            throw new Error(
+                await parse_response_error(response, `POST ${ENDPOINT}`),
+                { cause: response.status },
+            )
+        }
+
+        return await response.json()
+    } catch (error) {
+        throw new Error(
+            `Error refreshing order profit breakdown: ${error.message}`,
             { cause: error.cause },
         )
     }
@@ -460,7 +493,7 @@ export async function post_order_item_assignment(
     access_token: string,
     order_id: number,
     order_item_id: number,
-    body: { character_id: number; quantity: number },
+    body: { character_id: number; quantity: number; has_blueprints?: boolean },
 ) {
     const headers = {
         'Content-Type': 'application/json',
@@ -468,6 +501,39 @@ export async function post_order_item_assignment(
     }
 
     const ENDPOINT = `${API_ENDPOINT}/orders/${order_id}/orderitems/${order_item_id}/assignments`
+
+    const response = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+            character_id: body.character_id,
+            quantity: body.quantity,
+            has_blueprints: body.has_blueprints ?? false,
+        }),
+    })
+
+    if (!response.ok) {
+        throw new Error(
+            await parse_response_error(response, `POST ${ENDPOINT}`), {
+                cause: response.status
+            }
+        )
+    }
+
+    return await response.json()
+}
+
+export async function post_order_blueprint_coordinator(
+    access_token: string,
+    order_id: number,
+    body: { character_id: number; eve_type_ids: number[] },
+): Promise<OrderBlueprintCoordinator> {
+    const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${access_token}`,
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/orders/${order_id}/blueprint-coordinators`
 
     const response = await fetch(ENDPOINT, {
         method: 'POST',
@@ -483,7 +549,173 @@ export async function post_order_item_assignment(
         )
     }
 
-    return await response.json()
+    return await response.json() as OrderBlueprintCoordinator
+}
+
+export async function patch_order_blueprint_coordinator(
+    access_token: string,
+    order_id: number,
+    coordinator_id: number,
+    body: { eve_type_ids: number[] },
+): Promise<OrderBlueprintCoordinator> {
+    const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${access_token}`,
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/orders/${order_id}/blueprint-coordinators/${coordinator_id}`
+
+    const response = await fetch(ENDPOINT, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify(body),
+    })
+
+    if (!response.ok) {
+        throw new Error(
+            await parse_response_error(response, `PATCH ${ENDPOINT}`), {
+                cause: response.status
+            }
+        )
+    }
+
+    return await response.json() as OrderBlueprintCoordinator
+}
+
+export async function delete_order_blueprint_coordinator(
+    access_token: string,
+    order_id: number,
+    coordinator_id: number,
+): Promise<void> {
+    const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${access_token}`,
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/orders/${order_id}/blueprint-coordinators/${coordinator_id}`
+
+    const response = await fetch(ENDPOINT, {
+        method: 'DELETE',
+        headers,
+    })
+
+    if (!response.ok && response.status !== 204) {
+        throw new Error(
+            await parse_response_error(response, `DELETE ${ENDPOINT}`), {
+                cause: response.status
+            }
+        )
+    }
+}
+
+export async function post_order_mineral_coordinator(
+    access_token: string,
+    order_id: number,
+    body: { character_id: number; eve_type_ids: number[] },
+): Promise<OrderBlueprintCoordinator> {
+    const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${access_token}`,
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/orders/${order_id}/mineral-coordinators`
+
+    const response = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+    })
+
+    if (!response.ok) {
+        throw new Error(
+            await parse_response_error(response, `POST ${ENDPOINT}`), {
+                cause: response.status
+            }
+        )
+    }
+
+    return await response.json() as OrderBlueprintCoordinator
+}
+
+export async function delete_order_mineral_coordinator(
+    access_token: string,
+    order_id: number,
+    coordinator_id: number,
+): Promise<void> {
+    const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${access_token}`,
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/orders/${order_id}/mineral-coordinators/${coordinator_id}`
+
+    const response = await fetch(ENDPOINT, {
+        method: 'DELETE',
+        headers,
+    })
+
+    if (!response.ok && response.status !== 204) {
+        throw new Error(
+            await parse_response_error(response, `DELETE ${ENDPOINT}`), {
+                cause: response.status
+            }
+        )
+    }
+}
+
+export async function post_order_pi_coordinator(
+    access_token: string,
+    order_id: number,
+    body: { character_id: number; eve_type_ids: number[] },
+): Promise<OrderBlueprintCoordinator> {
+    const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${access_token}`,
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/orders/${order_id}/pi-coordinators`
+
+    const response = await fetch(ENDPOINT, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+    })
+
+    if (!response.ok) {
+        throw new Error(
+            await parse_response_error(response, `POST ${ENDPOINT}`), {
+                cause: response.status
+            }
+        )
+    }
+
+    return await response.json() as OrderBlueprintCoordinator
+}
+
+export async function delete_order_pi_coordinator(
+    access_token: string,
+    order_id: number,
+    coordinator_id: number,
+): Promise<void> {
+    const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${access_token}`,
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/orders/${order_id}/pi-coordinators/${coordinator_id}`
+
+    const response = await fetch(ENDPOINT, {
+        method: 'DELETE',
+        headers,
+    })
+
+    if (!response.ok && response.status !== 204) {
+        throw new Error(
+            await parse_response_error(response, `DELETE ${ENDPOINT}`), {
+                cause: response.status
+            }
+        )
+    }
 }
 
 export async function get_order_by_id(order_id: number) {
@@ -514,6 +746,69 @@ export async function get_order_by_id(order_id: number) {
         return await response.json() as IndustrySingleOrder;
     } catch (error) {
         throw new Error(`Error fetching industry orders: ${error.message}`, { cause: error.cause });
+    }
+}
+
+export async function get_order_orderitems(order_id: number) {
+    const headers = {
+        'Content-Type': 'application/json',
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/orders/${order_id}/orderitems`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers,
+        })
+
+        if (!response.ok) {
+            throw new Error(
+                get_error_message(response.status, `GET ${ENDPOINT}`),
+                { cause: response.status },
+            )
+        }
+
+        return (await response.json()) as RootSingleItem[]
+    } catch (error) {
+        throw new Error(
+            `Error fetching order items: ${error.message}`,
+            { cause: error.cause },
+        )
+    }
+}
+
+export async function get_order_material_options(order_id: number) {
+    const headers = {
+        'Content-Type': 'application/json',
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/orders/${order_id}/material-options`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers,
+        })
+
+        if (!response.ok) {
+            throw new Error(
+                get_error_message(response.status, `GET ${ENDPOINT}`),
+                { cause: response.status },
+            )
+        }
+
+        return (await response.json()) as {
+            mineral_options: OrderBlueprintCoordinatorEveType[]
+            pi_options: OrderBlueprintCoordinatorEveType[]
+        }
+    } catch (error) {
+        throw new Error(
+            `Error fetching order material options: ${error.message}`,
+            { cause: error.cause },
+        )
     }
 }
 

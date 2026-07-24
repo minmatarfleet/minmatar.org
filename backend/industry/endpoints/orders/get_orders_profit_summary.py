@@ -1,4 +1,4 @@
-"""GET /profit-summary — canvas-style profit rollup for filtered orders (public)."""
+"""GET /profit-summary — profit rollup from stored per-order snapshots (public)."""
 
 from datetime import date
 from typing import Optional
@@ -12,14 +12,16 @@ from industry.endpoints.orders.schemas import (
     ProfitSummaryRowResponse,
     ProfitSummaryTotalsResponse,
 )
-from industry.helpers.orders_profit_summary import build_orders_profit_summary
+from industry.helpers.order_profit_breakdown import (
+    compose_orders_profit_summary_from_snapshots,
+)
 
 PATH = "profit-summary"
 METHOD = "get"
 ROUTE_SPEC = {
     "summary": (
-        "Profit summary for industry orders "
-        "(Amamake cost vs Jita sell, filterable by needed_by / order ids)"
+        "Profit summary for industry orders from stored snapshots "
+        "(filterable by needed_by / order ids)"
     ),
     "response": {
         200: OrdersProfitSummaryResponse,
@@ -36,17 +38,13 @@ def get_orders_profit_summary(
     order_ids: Optional[str] = Query(
         None, description="Comma-separated order IDs to include"
     ),
-    facility_key: str = Query("amamake"),
-    compressed: bool = Query(True),
 ):
     try:
-        summary = build_orders_profit_summary(
+        summary = compose_orders_profit_summary_from_snapshots(
             needed_by_from=needed_by_from,
             needed_by_to=needed_by_to,
             open_only=open_only,
             order_ids=order_ids,
-            facility_key=facility_key,
-            compressed=compressed,
         )
     except ValueError as exc:
         return 400, ErrorResponse(detail=str(exc))

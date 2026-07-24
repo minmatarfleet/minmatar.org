@@ -1,0 +1,93 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import {
+    get_order_by_id,
+    get_order_material_options,
+} from '@helpers/api.minmatar.org/industry'
+import {
+    resolve_primary_for_claim,
+    type PrimaryClaimAvailability,
+} from '@helpers/api.minmatar.org/characters'
+import type {
+    IndustrySingleOrder,
+    OrderBlueprintCoordinatorEveType,
+} from '@dtypes/api.minmatar.org'
+import { query_string } from '@helpers/string'
+
+import OrderCoordinators from '@components/blocks/OrderCoordinators.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+
+const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '0')
+const auth_token = Astro.cookies.has('auth_token')
+    ? (Astro.cookies.get('auth_token')?.value as string)
+    : false
+
+let order: IndustrySingleOrder | null = null
+let mineral_options: OrderBlueprintCoordinatorEveType[] = []
+let pi_options: OrderBlueprintCoordinatorEveType[] = []
+let primary_character_id = 0
+let claim_availability: PrimaryClaimAvailability = 'login'
+let fetching_error: Error | false = false
+
+const claim_disabled_reason_by_availability: Record<
+    Exclude<PrimaryClaimAvailability, 'ok'>,
+    string
+> = {
+    login: t('industry.orders.coordinators.login_required'),
+    auth: t('industry.orders.coordinators.session_required'),
+    no_primary: t('industry.orders.coordinators.main_pilot_required'),
+}
+
+try {
+    if (isNaN(order_id) || order_id <= 0)
+        throw new Error(t('invalid_order_id'), { cause: 400 })
+
+    const [order_result, options, primary] = await Promise.all([
+        get_order_by_id(order_id),
+        get_order_material_options(order_id),
+        resolve_primary_for_claim(auth_token),
+    ])
+    order = order_result
+    mineral_options = options.mineral_options ?? []
+    pi_options = options.pi_options ?? []
+    primary_character_id = primary.character_id
+    claim_availability = primary.availability
+} catch (error) {
+    fetching_error = error
+}
+
+const claim_disabled_reason =
+    claim_availability === 'ok'
+        ? null
+        : claim_disabled_reason_by_availability[claim_availability]
+
+const partial_url = translatePath(
+    `/partials/order_coordinators_component?${query_string({ order_id })}`,
+)
+---
+
+{
+    fetching_error !== false ? (
+        <ErrorRefetch
+            args={{
+                partial: partial_url,
+                error: fetching_error,
+                delay: 0,
+            }}
+        />
+    ) : order ? (
+        <OrderCoordinators
+            order_id={order.id}
+            items={order.items}
+            blueprint_coordinators={order.blueprint_coordinators ?? []}
+            mineral_coordinators={order.mineral_coordinators ?? []}
+            pi_coordinators={order.pi_coordinators ?? []}
+            mineral_options={mineral_options}
+            pi_options={pi_options}
+            primary_character_id={primary_character_id}
+            claim_disabled_reason={claim_disabled_reason}
+        />
+    ) : null
+}

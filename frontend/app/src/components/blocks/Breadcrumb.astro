@@ -1,0 +1,81 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+export interface BreadcrumbItem {
+    label: string
+    href?: string
+}
+
+interface Props {
+    items: BreadcrumbItem[]
+    [propName: string]: any
+}
+
+const {
+    items,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+{items.length > 0 &&
+    <nav
+        class:list={['breadcrumb', Astro.props.class]}
+        aria-label={t('breadcrumb')}
+        {...attributes}
+    >
+        <ol>
+            {items.map((item, index) => {
+                const is_current = index === items.length - 1
+                return (
+                    <li aria-current={is_current ? 'page' : undefined}>
+                        {!is_current && item.href ? (
+                            <a href={item.href}>{item.label}</a>
+                        ) : (
+                            item.label
+                        )}
+                    </li>
+                )
+            })}
+        </ol>
+    </nav>
+}
+
+<style lang="scss">
+    .breadcrumb {
+        margin: 0;
+        min-width: 0;
+
+        ol {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2xs);
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            font-size: var(--step--1);
+            color: var(--text-color-secondary, var(--muted-color));
+        }
+
+        li:not(:last-child)::after {
+            content: '/';
+            margin-left: var(--space-2xs);
+        }
+
+        a {
+            color: var(--highlight);
+            text-decoration: none;
+
+            &:hover,
+            &:focus-visible {
+                text-decoration: underline;
+            }
+        }
+
+        [aria-current='page'] {
+            color: var(--foreground, var(--highlight));
+        }
+    }
+</style>

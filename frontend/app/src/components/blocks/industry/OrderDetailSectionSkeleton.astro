@@ -1,0 +1,169 @@
+---
+/**
+ * Section skeletons for order detail deferred stacks.
+ * Reuses the shared shimmer styles from OpenOrdersProfitSummarySkeleton.
+ */
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Grid from '@components/compositions/Grid.astro'
+
+interface Props {
+    section: 'metrics' | 'assignments' | 'chart'
+}
+
+const { section } = Astro.props
+---
+
+{
+    section === 'metrics' && (
+        <div
+            class="[ order-summary-skeleton order-detail-section-skeleton w-full ]"
+            aria-hidden="true"
+        >
+            <Grid
+                class="[ w-full order-metrics-grid ]"
+                row_gap="var(--space-3xs)"
+                column_gap="var(--space-3xs)"
+                min_item_width="200px"
+            >
+                <div class="[ skel skel-stat ]"></div>
+                <div class="[ skel skel-stat ]"></div>
+                <div class="[ skel skel-stat ]"></div>
+                <div class="[ skel skel-stat ]"></div>
+            </Grid>
+        </div>
+    )
+}
+
+{
+    section === 'assignments' && (
+        <div
+            class="[ order-summary-skeleton order-detail-section-skeleton w-full ]"
+            aria-hidden="true"
+        >
+            <Flexblock gap="var(--space-m)">
+                <Flexblock gap="var(--space-3xs)">
+                    <div class="[ skel skel-title ]"></div>
+                    <div class="[ skel skel-subtitle skel-subtitle--wide ]"></div>
+                </Flexblock>
+                <div class="[ skel-table ]">
+                    {Array.from({ length: 6 }).map(() => (
+                        <div class="[ skel skel-row ]"></div>
+                    ))}
+                </div>
+            </Flexblock>
+        </div>
+    )
+}
+
+{
+    section === 'chart' && (
+        <div
+            class="[ order-summary-skeleton order-detail-section-skeleton w-full ]"
+            aria-hidden="true"
+        >
+            <Flexblock gap="var(--space-m)">
+                <Flexblock gap="var(--space-3xs)">
+                    <div class="[ skel skel-title ]"></div>
+                    <div class="[ skel skel-subtitle skel-subtitle--wide ]"></div>
+                </Flexblock>
+                <div class="[ skel skel-chart ]"></div>
+            </Flexblock>
+        </div>
+    )
+}
+
+<style lang="scss" is:global>
+    /* Shared with summary skeleton; loaded when detail sections are used. */
+    .order-detail-deferred-stack.is-loading .order-summary-skeleton {
+        display: block;
+    }
+
+    .order-detail-deferred-stack.is-loading .order-detail-deferred-content {
+        display: none;
+    }
+
+    .order-detail-section-skeleton {
+        display: none;
+        min-width: 0;
+    }
+
+    .order-detail-deferred-stack.is-loading .order-detail-section-skeleton {
+        display: block;
+    }
+
+    .order-summary-skeleton .skel {
+        border-radius: 2px;
+        background: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.12) 50%,
+            rgba(255, 255, 255, 0.06) 100%
+        );
+        background-size: 200% 100%;
+        animation: order-summary-skel 1.1s ease-in-out infinite;
+    }
+
+    .order-summary-skeleton .skel-title {
+        width: 12rem;
+        height: 1.35rem;
+    }
+
+    .order-summary-skeleton .skel-subtitle {
+        width: 22rem;
+        max-width: 100%;
+        height: 0.85rem;
+    }
+
+    .order-summary-skeleton .skel-subtitle--wide {
+        width: 28rem;
+    }
+
+    .order-summary-skeleton .skel-stat {
+        min-height: 4.75rem;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background-color: rgba(85, 85, 85, 0.12);
+        background-image: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.08) 50%,
+            transparent 100%
+        );
+        background-size: 200% 100%;
+        animation: order-summary-skel 1.1s ease-in-out infinite;
+    }
+
+    .order-summary-skeleton .skel-chart {
+        width: 100%;
+        min-height: 360px;
+        height: min(420px, 70vh);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background-color: rgba(85, 85, 85, 0.1);
+        background-image: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.07) 50%,
+            transparent 100%
+        );
+        background-size: 200% 100%;
+        animation: order-summary-skel 1.1s ease-in-out infinite;
+    }
+
+    .order-summary-skeleton .skel-table {
+        display: grid;
+        gap: var(--space-3xs);
+    }
+
+    .order-summary-skeleton .skel-row {
+        height: 2.75rem;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    @keyframes order-summary-skel {
+        0% {
+            background-position: 100% 0;
+        }
+        100% {
+            background-position: -100% 0;
+        }
+    }
+</style>

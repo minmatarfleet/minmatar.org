@@ -69,14 +69,22 @@ import PageTitle from '@components/page/PageTitle.astro';
 import TextBox from '@components/layout/TextBox.astro';
 
 import BlockList from '@components/compositions/BlockList.astro'
-import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
 
-import Button from '@components/blocks/Button.astro';
 import DeliveryContractInvoice from '@components/blocks/DeliveryContractInvoice.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-import ShowAlert from '@components/blocks/ShowAlert.astro'
+import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 
 const page_title = t('industry.orders.invoice.page_title');
+const order_code = order?.public_short_code ?? (order_id > 0 ? String(order_id) : null)
+const breadcrumb_items = [
+    { label: t('market.page_title'), href: translatePath('/market/') },
+    { label: t('industry.orders.page_title'), href: translatePath('/industry/orders/') },
+    ...(order_code
+        ? [{ label: order_code, href: translatePath(`/industry/orders/${order_id}/`) }]
+        : []),
+    { label: t('industry.orders.breadcrumb.invoice') },
+]
 ---
 
 <Viewport title={page_title}>
@@ -91,18 +99,12 @@ const page_title = t('industry.orders.invoice.page_title');
             overlay: true,
         }}
     >
-        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
-            <FlexInline>
-                <PageTitle>
-                    {page_title}
-                </PageTitle>
-            </FlexInline>
-            <FlexInline>
-                <Button class="[ !hidden sm:block! ]" href={translatePath(`/industry/orders/`)}>
-                    {t('back_to_orders')}
-                </Button>
-            </FlexInline>
-        </FlexInline>
+        <Flexblock slot="header" gap="var(--space-s)" class="[ w-full ]">
+            <Breadcrumb items={breadcrumb_items} />
+            <PageTitle>
+                {page_title}
+            </PageTitle>
+        </Flexblock>
 
         <BlockList gap='var(--space-xl)'>
             {data_fetching_error !== false ?
@@ -130,6 +132,6 @@ const page_title = t('industry.orders.invoice.page_title');
                     <p>{t('assignment_not_exist')}</p>
                 }</>
             }
-        </Flexblock>
+        </BlockList>
     </PageDefault>
 </Viewport>

@@ -1,0 +1,57 @@
+---
+import type { OrderBlueprintCoordinatorEveType } from '@dtypes/api.minmatar.org'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
+import CoordinatorCheckboxSelectActions from '@components/blocks/CoordinatorCheckboxSelectActions.astro'
+
+interface Props {
+    types: OrderBlueprintCoordinatorEveType[]
+    selected_ids: number[] | Set<number>
+    character_id: number
+    name?: string
+}
+
+const {
+    types,
+    selected_ids,
+    character_id,
+    name = 'eve_type_ids',
+} = Astro.props
+
+const selected =
+    selected_ids instanceof Set ? selected_ids : new Set(selected_ids)
+---
+
+<div class="[ coordinator-volunteer-checks ]">
+    <CoordinatorCheckboxSelectActions name={name} />
+    <Flexblock
+        gap="var(--space-2xs)"
+        class="[ coordinator-volunteer-checks__scroll ]"
+    >
+        {types.map((item) => (
+            <RadioCheckInput
+                type="checkbox"
+                name={name}
+                value={item.eve_type_id}
+                checked={selected.has(item.eve_type_id)}
+                label={item.eve_type_name}
+            />
+        ))}
+    </Flexblock>
+    <input type="hidden" name="character_id" value={character_id} />
+</div>
+
+<style lang="scss">
+    .coordinator-volunteer-checks {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .coordinator-volunteer-checks__scroll {
+        max-height: 14rem;
+        overflow-y: auto;
+        padding-block-end: var(--space-2xs);
+    }
+</style>

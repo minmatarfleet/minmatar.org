@@ -51,13 +51,17 @@ const chartId = `guide-order-profit-bar-${Math.random().toString(36).slice(2, 9)
                             },
                         },
                     },
+                    layout: {
+                        padding: { bottom: 8 },
+                    },
                     scales: {
                         x: {
                             ticks: {
-                                maxRotation: 60,
-                                minRotation: 45,
+                                // Full ship names: tilt rather than abbreviate
+                                maxRotation: 90,
+                                minRotation: 55,
                                 autoSkip: false,
-                                font: { size: 10 },
+                                font: { size: 11 },
                             },
                         },
                         y: {
@@ -89,8 +93,9 @@ const chartId = `guide-order-profit-bar-${Math.random().toString(36).slice(2, 9)
     .guide-order-profit-chart {
         position: relative;
         width: 100%;
-        min-height: 360px;
-        height: min(420px, 70vh);
+        /* Extra height so tilted full type names stay readable */
+        min-height: 440px;
+        height: min(520px, 75vh);
     }
 
     canvas {

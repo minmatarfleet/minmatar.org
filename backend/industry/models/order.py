@@ -45,6 +45,19 @@ class IndustryOrder(models.Model):
         related_name="industry_orders",
         help_text="Tribe groups this order belongs to (reporting, town hall).",
     )
+    profit_breakdown = models.JSONField(
+        null=True,
+        blank=True,
+        help_text=(
+            "Frozen profit/price breakdown for graphs and order summaries "
+            "(rows, totals, assumptions, facility_key, compressed)."
+        ),
+    )
+    profit_breakdown_computed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When profit_breakdown was last computed and stored.",
+    )
 
     class Meta:
         ordering = ["-created_at"]
@@ -166,9 +179,139 @@ class IndustryOrderItemAssignment(models.Model):
         blank=True,
         help_text="When this assignment was marked delivered.",
     )
+    has_blueprints = models.BooleanField(
+        default=False,
+        help_text="Whether the assignee has blueprints for this line.",
+    )
 
     class Meta:
         ordering = ["id"]
 
     def __str__(self):
         return f"{self.order_item} → {self.character.character_name} x{self.quantity}"
+
+
+class IndustryOrderBlueprintCoordinator(models.Model):
+    """
+    Volunteer who can supply blueprints for selected ships on an order.
+
+    Selection only — no quantity, runs, or delivery commitment.
+    Multiple coordinators per order; one row per character.
+    """
+
+    order = models.ForeignKey(
+        IndustryOrder,
+        on_delete=models.CASCADE,
+        related_name="blueprint_coordinators",
+    )
+    character = models.ForeignKey(
+        "eveonline.EveCharacter",
+        on_delete=models.CASCADE,
+        related_name="industry_order_blueprint_coordinators",
+    )
+    eve_types = models.ManyToManyField(
+        "eveuniverse.EveType",
+        related_name="+",
+        blank=True,
+        help_text="Order item types whose blueprints this character can supply.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["order", "character"],
+                name="uniq_order_blueprint_coordinator_character",
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"Order #{self.order_id} blueprint coordinator "
+            f"{self.character.character_name}"
+        )
+
+
+class IndustryOrderMineralCoordinator(models.Model):
+    """
+    Volunteer who can supply selected minerals for an order.
+
+    Selection only — no quantity or delivery commitment.
+    Multiple coordinators per order; one row per character.
+    """
+
+    order = models.ForeignKey(
+        IndustryOrder,
+        on_delete=models.CASCADE,
+        related_name="mineral_coordinators",
+    )
+    character = models.ForeignKey(
+        "eveonline.EveCharacter",
+        on_delete=models.CASCADE,
+        related_name="industry_order_mineral_coordinators",
+    )
+    eve_types = models.ManyToManyField(
+        "eveuniverse.EveType",
+        related_name="+",
+        blank=True,
+        help_text="Minerals from this order's BOM this character can supply.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["order", "character"],
+                name="uniq_order_mineral_coordinator_character",
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"Order #{self.order_id} mineral coordinator "
+            f"{self.character.character_name}"
+        )
+
+
+class IndustryOrderPiCoordinator(models.Model):
+    """
+    Volunteer who can supply selected planetary materials for an order.
+
+    Selection only — no quantity or delivery commitment.
+    Multiple coordinators per order; one row per character.
+    """
+
+    order = models.ForeignKey(
+        IndustryOrder,
+        on_delete=models.CASCADE,
+        related_name="pi_coordinators",
+    )
+    character = models.ForeignKey(
+        "eveonline.EveCharacter",
+        on_delete=models.CASCADE,
+        related_name="industry_order_pi_coordinators",
+    )
+    eve_types = models.ManyToManyField(
+        "eveuniverse.EveType",
+        related_name="+",
+        blank=True,
+        help_text="PI materials from this order's BOM this character can supply.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["order", "character"],
+                name="uniq_order_pi_coordinator_character",
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"Order #{self.order_id} PI coordinator "
+            f"{self.character.character_name}"
+        )

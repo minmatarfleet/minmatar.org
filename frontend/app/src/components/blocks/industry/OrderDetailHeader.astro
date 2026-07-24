@@ -1,0 +1,218 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { OrderLpStockpile } from '@dtypes/api.minmatar.org'
+import { format_date_short } from '@helpers/date'
+import { query_string } from '@helpers/string'
+
+interface Props {
+    order_id: number
+    character_id: number
+    character_name: string
+    location_name?: string | null
+    needed_by?: Date | string | null
+    /**
+     * LP stockpiles for the stockpiles dialog. Empty until the header partial
+     * loads; coordinators load their own content inside the modal.
+     */
+    lp_stockpiles?: OrderLpStockpile[] | null
+}
+
+const {
+    order_id,
+    character_id,
+    character_name,
+    location_name = null,
+    needed_by = null,
+    lp_stockpiles = null,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import PilotBadge from '@components/blocks/PilotBadge.astro'
+import DialogButton from '@components/blocks/DialogButton.astro'
+import Button from '@components/blocks/Button.astro'
+import OrderLpStockpiles from '@components/blocks/OrderLpStockpiles.astro'
+
+const COORDINATORS_PARTIAL = translatePath(
+    `/partials/order_coordinators_component?${query_string({
+        order_id: String(order_id),
+    })}`,
+)
+---
+
+<FlexInline
+    id="order-detail-header"
+    justification="space-between"
+    class="[ w-full order-detail-meta ]"
+>
+    <Flexblock gap="var(--space-s)" class="[ order-detail-meta__contractor ]">
+        <PilotBadge
+            character_id={character_id}
+            character_name={character_name}
+            heading={true}
+        >
+            <small>{t('contractor')}</small>
+        </PilotBadge>
+        <FlexInline gap="var(--space-s)" class="[ order-detail-meta__actions ]">
+            <DialogButton
+                size="sm"
+                color="fleet-red"
+                narrow={false}
+                max_width="640px"
+            >
+                {t('industry.orders.lp_stockpiles.view')}
+                <Flexblock slot="header" gap="var(--space-3xs)">
+                    <h3>
+                        {t('industry.orders.lp_stockpiles.title')}
+                    </h3>
+                    <small>
+                        {t(
+                            'industry.orders.lp_stockpiles.description',
+                        )}
+                    </small>
+                </Flexblock>
+                <OrderLpStockpiles
+                    slot="dialog"
+                    stockpiles={lp_stockpiles ?? []}
+                    show_heading={false}
+                />
+                <FlexInline
+                    slot="footer"
+                    justification="flex-start"
+                    gap="var(--space-xs)"
+                >
+                    <Button
+                        type="button"
+                        size="sm"
+                        color="transparent"
+                        x-on:click="close_dialog()"
+                    >
+                        {t('close')}
+                    </Button>
+                </FlexInline>
+            </DialogButton>
+            <DialogButton
+                size="sm"
+                color="fleet-red"
+                narrow={false}
+                max_width="720px"
+            >
+                {t('industry.orders.coordinators.view')}
+                <Flexblock slot="header" gap="var(--space-3xs)">
+                    <h3>
+                        {t('industry.orders.coordinators.title')}
+                    </h3>
+                    <small>
+                        {t(
+                            'industry.orders.coordinators.description',
+                        )}
+                    </small>
+                </Flexblock>
+                <div
+                    slot="dialog"
+                    class="[ order-coordinators-lazy w-full ]"
+                    hx-get={COORDINATORS_PARTIAL}
+                    hx-trigger="intersect once"
+                    hx-swap="innerHTML"
+                    hx-on="htmx:afterSwap: htmx.process(this); if (typeof Alpine !== 'undefined') Alpine.initTree(this)"
+                >
+                    <Flexblock
+                        gap="var(--space-s)"
+                        class="[ order-coordinators-skel ]"
+                        aria-busy="true"
+                        aria-live="polite"
+                    >
+                        <p class="[ order-coordinators-skel__status ]">
+                            {t(
+                                'industry.orders.coordinators.calculating_build_requirements',
+                            )}
+                        </p>
+                        <div class="[ order-coordinators-skel__tabs ]">
+                            <div class="[ skel skel-tab ]"></div>
+                            <div class="[ skel skel-tab ]"></div>
+                            <div class="[ skel skel-tab ]"></div>
+                        </div>
+                        <div class="[ skel skel-row ]"></div>
+                        <div class="[ skel skel-row ]"></div>
+                        <div class="[ skel skel-row skel-row--short ]"></div>
+                        <div class="[ skel skel-row ]"></div>
+                        <div class="[ skel skel-row skel-row--short ]"></div>
+                    </Flexblock>
+                </div>
+            </DialogButton>
+        </FlexInline>
+    </Flexblock>
+    <Flexblock gap="var(--space-3xs)" class="[ order-detail-meta__aside ]">
+        {
+            location_name && (
+                <small class="[ text-highlight ]">{location_name}</small>
+            )
+        }
+        {
+            needed_by && (
+                <small>
+                    {t('needed_by')}: {format_date_short(lang, needed_by)}
+                </small>
+            )
+        }
+    </Flexblock>
+</FlexInline>
+
+<style lang="scss">
+    .order-coordinators-skel__status {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--highlight);
+    }
+
+    .order-coordinators-skel__tabs {
+        display: flex;
+        gap: var(--space-3xs);
+        margin-block-end: var(--space-2xs);
+    }
+
+    .order-coordinators-skel .skel {
+        border-radius: 2px;
+        background: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.12) 50%,
+            rgba(255, 255, 255, 0.06) 100%
+        );
+        background-size: 200% 100%;
+        animation: order-coord-skel 1.1s ease-in-out infinite;
+    }
+
+    .order-coordinators-skel .skel-tab {
+        width: 5.5rem;
+        height: 1.75rem;
+    }
+
+    .order-coordinators-skel .skel-row {
+        width: 100%;
+        height: 2.5rem;
+    }
+
+    .order-coordinators-skel .skel-row--short {
+        width: 70%;
+    }
+
+    @keyframes order-coord-skel {
+        0% {
+            background-position: 100% 0;
+        }
+        100% {
+            background-position: -100% 0;
+        }
+    }
+
+    .order-detail-meta__actions {
+        flex-wrap: wrap;
+    }
+
+    .order-detail-meta__aside {
+        text-align: right;
+    }
+</style>

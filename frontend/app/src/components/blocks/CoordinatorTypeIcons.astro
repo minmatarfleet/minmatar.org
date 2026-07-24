@@ -1,0 +1,43 @@
+---
+import type { OrderBlueprintCoordinatorEveType } from '@dtypes/api.minmatar.org'
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+
+interface Props {
+    types: OrderBlueprintCoordinatorEveType[]
+    size?: 32
+}
+
+const { types, size = 32 } = Astro.props
+---
+
+{
+    types.length > 0 && (
+        <FlexInline
+            gap="var(--space-3xs)"
+            class="[ coordinator-type-icons ]"
+        >
+            {types.map((et) => (
+                <div
+                    data-tippy-content={et.eve_type_name}
+                    x-init="tippy($el, tippy_options)"
+                >
+                    <ItemPicture
+                        item_id={et.eve_type_id}
+                        size={size}
+                        icon_quality={32}
+                    />
+                    <span class="[ sr-only ]">{et.eve_type_name}</span>
+                </div>
+            ))}
+        </FlexInline>
+    )
+}
+
+<style lang="scss">
+    .coordinator-type-icons {
+        flex-wrap: wrap;
+        align-items: center;
+    }
+</style>

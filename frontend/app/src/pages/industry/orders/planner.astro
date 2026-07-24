@@ -134,6 +134,7 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import TextGroup from '@components/blocks/TextGroup.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 import ButtonAuth from '@components/blocks/ButtonAuth.astro';
+import Breadcrumb from '@components/blocks/Breadcrumb.astro';
 
 const page_title = product
     ? (product.quantity > 1
@@ -146,6 +147,15 @@ const viewport_title = product
 const default_facility = facilities[0]?.key ?? 'amamake'
 const default_refine = facilities[0]?.reprocessing?.refine_rate ?? 0
 
+const order_code = order?.public_short_code ?? (order_id > 0 ? String(order_id) : null)
+const breadcrumb_items = [
+    { label: t('market.page_title'), href: translatePath('/market/') },
+    { label: t('industry.orders.page_title'), href: translatePath('/industry/orders/') },
+    ...(order_code
+        ? [{ label: order_code, href: translatePath(`/industry/orders/${order_id}/`) }]
+        : []),
+    { label: t('industry.orders.planner.page_title') },
+]
 const refetch_query = product
     ? (has_type_id
         ? query_string({
@@ -188,18 +198,12 @@ const bucket_labels = JSON.stringify({
     >
         {alert && <ShowAlert alert={alert} />}
 
-        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
-            <FlexInline>
-                <PageTitle>
-                    {page_title}
-                </PageTitle>
-            </FlexInline>
-            <FlexInline>
-                <Button class="[ !hidden sm:block! ]" href={translatePath(`/industry/orders/`)}>
-                    {t('back_to_orders')}
-                </Button>
-            </FlexInline>
-        </FlexInline>
+        <Flexblock slot="header" gap="var(--space-s)" class="[ w-full ]">
+            <Breadcrumb items={breadcrumb_items} />
+            <PageTitle>
+                {page_title}
+            </PageTitle>
+        </Flexblock>
 
         <BlockList gap='var(--space-xl)'>
             {data_fetching_error !== false ?

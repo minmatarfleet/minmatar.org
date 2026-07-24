@@ -1,10 +1,20 @@
 ---
+import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
+
 interface Props {
     pre_chevron?:   boolean;
+    appearance?:    'plain' | 'button';
+    color?:         ButtonColors;
+    size?:          ButtonSizes;
+    [propName: string]: any;
 }
 
 const {
     pre_chevron = false,
+    appearance = 'plain',
+    color = 'fleet-red',
+    size = 'sm',
+    ...attributes
 } = Astro.props
 
 const Element = pre_chevron ? FixedFluid : FluidFixed
@@ -12,9 +22,18 @@ const Element = pre_chevron ? FixedFluid : FluidFixed
 import FluidFixed from '@components/compositions/FluidFixed.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import CaretIcon from '@components/icons/CaretIcon.astro';
+
+const button_background_color = `var(--${color})`;
+const button_color = (color !== 'transparent' ? 'var(--button-color)' : 'var(--highlight)');
 ---
 
-<button {...Astro.props} type="button">
+<button
+    {...attributes}
+    type="button"
+    data-appearance={appearance}
+    data-size={appearance === 'button' ? size : undefined}
+    style={appearance === 'button' ? `--button_background_color: ${button_background_color}; --inner_button_color: ${button_color}` : undefined}
+>
     <Element width="20px" class="[ items-center ]">
         {pre_chevron && <CaretIcon x-bind:class="expanded ? 'expanded' : 'collapsed'" /> }
         <slot />
@@ -46,6 +65,54 @@ import CaretIcon from '@components/icons/CaretIcon.astro';
         &:focus-visible {
             outline-color: var(--highlight);
             outline-style: double;
+        }
+
+        &[data-appearance="button"] {
+            --background-color: var(--button_background_color);
+            --inner-button-color: var(--inner_button_color);
+
+            display: inline-block;
+            text-decoration: none;
+            font-size: var(--step--0);
+            font-family: var(--button-font);
+            font-weight: 600;
+            text-align: left;
+            padding: var(--space-2xs) var(--space-xs-s);
+            border: solid 1px var(--background-color);
+            color: var(--inner-button-color);
+            background-color: var(--background-color);
+            align-items: center;
+            transition: var(--fast-transition);
+
+            svg {
+                color: var(--inner-button-color);
+            }
+
+            &:focus-visible {
+                outline: none;
+            }
+
+            /* Desktop */
+            @media (hover: hover) {
+                &:focus-visible,
+                &:hover:not([disabled]) {
+                    cursor: pointer;
+                    transform: scale(1.1);
+                }
+            }
+
+            &:active:not([disabled]) {
+                transform: scale(1);
+            }
+
+            /* Tactile */
+            @media (hover: none) {
+                transform: scale(1);
+
+                &:active:not([disabled]) {
+                    transform: scale(0.90);
+                }
+            }
         }
     }
 </style>

@@ -1,0 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap');
+
+.guide-shell {
+    --guide-shell-display-font: 'Orbitron', var(--heading-font);
+    --guide-shell-body-font: 'Source Sans 3', var(--body-font);
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: clip;
+    padding: var(--space-2xl) var(--space-l-xl);
+    font-family: var(--guide-shell-body-font);
+}
+
+@media (max-width: 48rem) {
+    .guide-shell {
+        padding: var(--space-l) var(--space-s);
+    }
+}
+
+.guide-shell__masthead {
+    margin-bottom: var(--space-2xl);
+    padding-bottom: var(--space-xl);
+    text-align: center;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent);
+}
+
+.guide-shell__title {
+    margin: 0;
+    font-family: var(--guide-shell-display-font);
+    font-size: clamp(var(--step-1), 3vw, var(--step-3));
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--highlight);
+}
+
+.guide-shell__subtitle {
+    margin: var(--space-s) 0 0;
+    font-size: var(--step--1);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-color-secondary, var(--faded));
+}

@@ -111,11 +111,11 @@ import StylessButton from '@components/blocks/StylessButton.astro';
             x-trap="button_dialog_open"
             x-bind:inert="!button_dialog_open"
             @keyup.escape.window="close_dialog()"
-            @mousedown.outside="open && close_dialog()"
+            @mousedown.outside="button_dialog_open && close_dialog()"
             style={max_width ? `--dialog-max-width: ${max_width}` : undefined}
             thin={thin_dialog}
             transparent={transparent}
-            x-init="htmx.process($el); $watch('open', v => { if(v) $nextTick(() => $el.focus()) })"
+            x-init="htmx.process($el); $watch('button_dialog_open', v => { if(v) $nextTick(() => $el.focus()) })"
             tabindex="-1"
         >
             <slot name="header" slot="header" />

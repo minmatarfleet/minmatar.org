@@ -1,0 +1,359 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_400_Bad_Request } from '@helpers/http_responses'
+import { get_site_origin } from '@helpers/seo'
+import { query_string } from '@helpers/string'
+
+const order_id = parseInt(Astro.params.id ?? '0')
+if (isNaN(order_id) || order_id <= 0)
+    return HTTP_400_Bad_Request()
+
+/** Optimistic meta from the orders list — paints the header before API round-trips. */
+const params = Astro.url.searchParams
+const order_code = params.get('code') || String(order_id)
+const character_id = parseInt(params.get('character_id') ?? '0')
+const character_name = params.get('character_name') || ''
+const location_name = params.get('location_name') || ''
+const needed_by = params.get('needed_by') || ''
+const has_optimistic_header =
+    character_id > 0 && character_name.length > 0
+
+const page_title = t('industry.orders.detail.page_title').replace(
+    '{code}',
+    order_code,
+)
+const page_description = t('industry.orders.detail.leading_text')
+const meta_title = t('industry.orders.detail.meta_title')
+    .replace('{code}', order_code)
+    .replace('{site}', t('index.page_title'))
+const meta_description = t('industry.orders.detail.meta_description').replace(
+    '{code}',
+    order_code,
+)
+const site_origin = get_site_origin(Astro.url.origin)
+const canonical_url = new URL(
+    translatePath(`/industry/orders/${order_id}/`),
+    site_origin,
+).href
+const meta_image = new URL('/images/industry-cover.jpg', site_origin).href
+
+const HEADER_PARTIAL = translatePath(
+    `/partials/order_detail_header_component?${query_string({
+        order_id: String(order_id),
+    })}`,
+)
+const PROFIT_PARTIAL = translatePath(
+    `/partials/order_detail_profit_component?${query_string({
+        order_id: String(order_id),
+        ...(needed_by && { needed_by }),
+    })}`,
+)
+const BREAKDOWN_PARTIAL = translatePath(
+    `/partials/order_breakdown_component?${query_string({
+        order_id: String(order_id),
+        ...(location_name && { location_name }),
+    })}`,
+)
+
+import {
+    get_location_video_cover,
+    get_location_video_cover_thumb,
+    get_location_cover,
+    get_location_cover_990,
+} from '@helpers/covers'
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Breadcrumb from '@components/blocks/Breadcrumb.astro'
+import OrderDetailHeader from '@components/blocks/industry/OrderDetailHeader.astro'
+import OrderDetailHeaderSkeleton from '@components/blocks/industry/OrderDetailHeaderSkeleton.astro'
+import OrderDetailSectionSkeleton from '@components/blocks/industry/OrderDetailSectionSkeleton.astro'
+
+const breadcrumb_items = [
+    { label: t('market.page_title'), href: translatePath('/market/') },
+    { label: t('industry.orders.page_title'), href: translatePath('/industry/orders/') },
+    { label: order_code },
+]
+---
+
+<Viewport
+    title={meta_title}
+    meta_description={meta_description}
+    meta_image={meta_image}
+    canonical_url={canonical_url}
+    og_type="article"
+    components={{
+        alert_dialog: true,
+        tippy: true,
+    }}
+>
+    <PageLanding
+        wide={true}
+        cover={{
+            video:
+                (location_name
+                    ? get_location_video_cover(location_name)
+                    : null) ?? undefined,
+            video_thumb:
+                (location_name
+                    ? get_location_video_cover_thumb(location_name)
+                    : null) ?? undefined,
+            image:
+                (location_name ? get_location_cover(location_name) : null) ??
+                '/images/industry-cover.jpg',
+            image_990:
+                (location_name
+                    ? get_location_cover_990(location_name)
+                    : null) ?? '/images/industry-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <Flexblock gap="var(--space-2xl)" class="[ w-full ]">
+            <Flexblock gap="var(--space-xl)" class="[ w-full ]">
+                <Flexblock gap="var(--space-3xs)">
+                    <Breadcrumb items={breadcrumb_items} />
+                    <PageTitle is_landing={true}>{page_title}</PageTitle>
+                </Flexblock>
+                <p class="[ excerpt ]">{page_description}</p>
+            </Flexblock>
+
+            <Flexblock
+                gap="var(--space-l)"
+                class="[ w-full ]"
+                id="order-detail-body"
+                data-order-detail-deferred="1"
+            >
+                <div
+                    id="order-detail-header-slot"
+                    hx-get={HEADER_PARTIAL}
+                    hx-trigger="load"
+                    hx-swap="innerHTML"
+                    hx-indicator=".loader"
+                >
+                    {
+                        has_optimistic_header ? (
+                            <OrderDetailHeader
+                                order_id={order_id}
+                                character_id={character_id}
+                                character_name={character_name}
+                                location_name={location_name || null}
+                                needed_by={needed_by || null}
+                            />
+                        ) : (
+                            <OrderDetailHeaderSkeleton />
+                        )
+                    }
+                </div>
+
+                <div
+                    id="order-detail-metrics-stack"
+                    class="[ order-detail-deferred-stack is-loading w-full ]"
+                >
+                    <div
+                        id="order-detail-metrics"
+                        class="[ order-detail-deferred-content w-full ]"
+                        hx-get={PROFIT_PARTIAL}
+                        hx-trigger="load"
+                        hx-swap="innerHTML"
+                        hx-indicator=".loader"
+                        aria-busy="true"
+                        aria-live="polite"
+                    >
+                    </div>
+                    <OrderDetailSectionSkeleton section="metrics" />
+                </div>
+
+                <div
+                    id="order-detail-assignments-stack"
+                    class="[ order-detail-deferred-stack is-loading w-full ]"
+                >
+                    <div
+                        id="order-detail-assignments"
+                        class="[ order-detail-deferred-content w-full ]"
+                        hx-get={BREAKDOWN_PARTIAL}
+                        hx-trigger="load"
+                        hx-swap="innerHTML"
+                        hx-indicator=".loader"
+                        aria-busy="true"
+                        aria-live="polite"
+                    >
+                    </div>
+                    <OrderDetailSectionSkeleton section="assignments" />
+                </div>
+
+                <div
+                    id="order-detail-chart-stack"
+                    class="[ order-detail-deferred-stack is-loading w-full ]"
+                >
+                    <div
+                        id="order-detail-chart"
+                        class="[ order-detail-deferred-content w-full ]"
+                        aria-busy="true"
+                        aria-live="polite"
+                    >
+                    </div>
+                    <OrderDetailSectionSkeleton section="chart" />
+                </div>
+            </Flexblock>
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<script>
+    function clearDeferredLoading(stackId: string, contentId: string) {
+        const stack = document.getElementById(stackId)
+        const content = document.getElementById(contentId)
+        stack?.classList.remove('is-loading')
+        content?.setAttribute('aria-busy', 'false')
+    }
+
+    function initCoordinatorHtmxRoot(target: HTMLElement) {
+        const scope = target.parentElement ?? target
+        if (typeof htmx !== 'undefined') {
+            htmx.process(target)
+            if (scope !== target) htmx.process(scope)
+        }
+        if (typeof Alpine !== 'undefined') {
+            Alpine.initTree(target)
+            // Alert islands are sibling roots after outerHTML multi-node swaps.
+            if (scope !== target) Alpine.initTree(scope)
+        }
+    }
+
+    function bindOrderDetailDeferred() {
+        const body = document.getElementById('order-detail-body')
+        if (!body || body.dataset.bound === '1') return
+        body.dataset.bound = '1'
+
+        document.body.addEventListener('htmx:afterSwap', (event: any) => {
+            const target = event.detail?.target as HTMLElement | undefined
+            if (!target) return
+
+            if (target.id === 'order-detail-metrics') {
+                clearDeferredLoading(
+                    'order-detail-metrics-stack',
+                    'order-detail-metrics',
+                )
+                clearDeferredLoading(
+                    'order-detail-chart-stack',
+                    'order-detail-chart',
+                )
+                const chart = document.getElementById('order-detail-chart')
+                if (typeof htmx !== 'undefined') {
+                    htmx.process(target)
+                    if (chart) htmx.process(chart)
+                }
+                if (typeof Alpine !== 'undefined') {
+                    Alpine.initTree(target)
+                    if (chart) Alpine.initTree(chart)
+                }
+                if (typeof tippy === 'function') {
+                    tippy(
+                        '#order-detail-metrics [data-tippy-content], #order-detail-chart [data-tippy-content]',
+                        {
+                            delay: [100, 200],
+                            arrow: true,
+                        },
+                    )
+                }
+            }
+            if (target.id === 'order-detail-assignments') {
+                clearDeferredLoading(
+                    'order-detail-assignments-stack',
+                    'order-detail-assignments',
+                )
+                if (typeof htmx !== 'undefined') htmx.process(target)
+                if (typeof Alpine !== 'undefined') Alpine.initTree(target)
+                if (typeof tippy === 'function') {
+                    tippy('#order-detail-assignments [data-tippy-content]', {
+                        delay: [100, 200],
+                        arrow: true,
+                    })
+                }
+            }
+            if (target.id === 'order-detail-header-slot') {
+                if (typeof htmx !== 'undefined') htmx.process(target)
+                if (typeof Alpine !== 'undefined') Alpine.initTree(target)
+            }
+
+            const is_coordinator_root =
+                target.classList?.contains('order-coordinators-lazy') ||
+                target.id === 'order-blueprint-coordinators' ||
+                target.id === 'order-mineral-coordinators' ||
+                target.id === 'order-pi-coordinators'
+            if (is_coordinator_root) {
+                initCoordinatorHtmxRoot(target)
+            }
+        })
+
+        document.body.addEventListener('htmx:afterRequest', (event: any) => {
+            const elt = event.detail?.elt as HTMLElement | undefined
+            if (!elt) return
+            if (elt.id === 'order-detail-metrics' && !event.detail?.successful) {
+                clearDeferredLoading(
+                    'order-detail-metrics-stack',
+                    'order-detail-metrics',
+                )
+                clearDeferredLoading(
+                    'order-detail-chart-stack',
+                    'order-detail-chart',
+                )
+            }
+            if (
+                elt.id === 'order-detail-assignments' &&
+                !event.detail?.successful
+            ) {
+                clearDeferredLoading(
+                    'order-detail-assignments-stack',
+                    'order-detail-assignments',
+                )
+            }
+        })
+    }
+
+    bindOrderDetailDeferred()
+    document.addEventListener('astro:page-load', bindOrderDetailDeferred)
+</script>
+
+<style lang="scss">
+    .excerpt,
+    :global(.excerpt p) {
+        font-size: var(--step-1);
+        line-height: 1.6;
+        max-width: 48rem;
+    }
+
+    .order-detail-meta {
+        flex-wrap: wrap;
+        gap: var(--space-s);
+    }
+
+    .order-detail-meta__contractor {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .order-detail-meta__actions {
+        flex-wrap: wrap;
+    }
+
+    .order-detail-meta__aside {
+        flex-shrink: 0;
+        text-align: right;
+    }
+
+    .order-detail-deferred-stack {
+        min-width: 0;
+        position: relative;
+    }
+
+    h3 {
+        font-size: var(--step-1);
+    }
+</style>

@@ -1,0 +1,493 @@
+---
+/**
+ * Shared volunteer list for mineral / PI coordinators (mirrors blueprint UX).
+ */
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type {
+    OrderBlueprintCoordinator,
+    OrderBlueprintCoordinatorEveType,
+} from '@dtypes/api.minmatar.org'
+import { query_string } from '@helpers/string'
+
+interface Props {
+    order_id: number
+    role: 'mineral' | 'pi'
+    options: OrderBlueprintCoordinatorEveType[]
+    coordinators: OrderBlueprintCoordinator[]
+    primary_character_id: number
+    claim_disabled_reason: string | null
+    /** When false, omit the section title/description (e.g. tab already has a header). */
+    show_heading?: boolean
+    /** When false in modal context, omit Close (parent dialog provides it). */
+    include_close?: boolean
+}
+
+const {
+    order_id,
+    role,
+    options,
+    coordinators,
+    primary_character_id,
+    claim_disabled_reason,
+    show_heading = true,
+    include_close,
+} = Astro.props
+
+const i18n_prefix =
+    role === 'mineral'
+        ? 'industry.orders.mineral_coordinators'
+        : 'industry.orders.pi_coordinators'
+
+const section_id =
+    role === 'mineral'
+        ? 'order-mineral-coordinators'
+        : 'order-pi-coordinators'
+
+const can_volunteer = !claim_disabled_reason && primary_character_id > 0
+const my_coordinator = coordinators.find(
+    (c) => c.character_id === primary_character_id,
+)
+const my_type_ids = new Set(
+    (my_coordinator?.eve_types ?? []).map((et) => et.eve_type_id),
+)
+
+const PARTIAL_URL = translatePath(
+    `/partials/order_supply_coordinator_component?${query_string({
+        order_id,
+        role,
+    })}`,
+)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import PilotBadge from '@components/blocks/PilotBadge.astro'
+import Button from '@components/blocks/Button.astro'
+import CoordinatorTypeIcons from '@components/blocks/CoordinatorTypeIcons.astro'
+import CoordinatorVolunteerChecks from '@components/blocks/CoordinatorVolunteerChecks.astro'
+import DialogButton from '@components/blocks/DialogButton.astro'
+import TrashIcon from '@components/icons/buttons/TrashIcon.astro'
+
+const volunteer_label = my_coordinator
+    ? t(`${i18n_prefix}.edit`)
+    : t(`${i18n_prefix}.volunteer`)
+
+const show_volunteer = can_volunteer && options.length > 0
+const is_modal = !show_heading
+const show_close = include_close ?? is_modal
+const form_id = `${section_id}-volunteer-form`
+const modal_form_id = `${form_id}-modal`
+---
+
+<section
+    id={section_id}
+    class={`[ ${section_id} ]`}
+    x-data={is_modal ? '{ volunteering: false }' : undefined}
+>
+    <Flexblock
+        gap="var(--space-s)"
+        class:list={[{ 'supply-coordinators__stack': is_modal }]}
+    >
+        {!is_modal && (
+            <FlexInline
+                justification="space-between"
+                class="[ w-full items-start ]"
+                gap="var(--space-s)"
+            >
+                <Flexblock gap="var(--space-3xs)">
+                    <h3>{t(`${i18n_prefix}.title`)}</h3>
+                    <small>{t(`${i18n_prefix}.description`)}</small>
+                </Flexblock>
+
+                {show_volunteer && (
+                    <DialogButton
+                        color="green"
+                        size="sm"
+                        narrow={false}
+                        max_width="520px"
+                        disable_when_open={true}
+                    >
+                        {volunteer_label}
+                        <Flexblock slot="header" gap="var(--space-3xs)">
+                            <h3>{volunteer_label}</h3>
+                            <small>{t(`${i18n_prefix}.select_types`)}</small>
+                        </Flexblock>
+                        <form
+                            id={form_id}
+                            slot="dialog"
+                            hx-post={PARTIAL_URL}
+                            hx-trigger="submit"
+                            hx-target={`#${section_id}`}
+                            hx-swap="outerHTML transition:true"
+                            hx-indicator=".loader"
+                            x-on:submit="close_dialog(false)"
+                        >
+                            <CoordinatorVolunteerChecks
+                                types={options}
+                                selected_ids={my_type_ids}
+                                character_id={primary_character_id}
+                            />
+                        </form>
+                        <FlexInline
+                            slot="footer"
+                            justification="flex-start"
+                            gap="var(--space-xs)"
+                        >
+                            <Button
+                                type="submit"
+                                form={form_id}
+                                color="green"
+                                size="sm"
+                            >
+                                {t(`${i18n_prefix}.submit`)}
+                            </Button>
+                            <Button
+                                type="button"
+                                size="sm"
+                                color="transparent"
+                                x-on:click="close_dialog()"
+                            >
+                                {t('cancel')}
+                            </Button>
+                        </FlexInline>
+                    </DialogButton>
+                )}
+            </FlexInline>
+        )}
+
+        {!can_volunteer && claim_disabled_reason && (
+            <small class="[ supply-coordinators__notice ]">
+                {claim_disabled_reason}
+            </small>
+        )}
+
+        {
+            is_modal ? (
+                <>
+                    <div
+                        class="[ supply-coordinators__body ]"
+                        x-show="!volunteering"
+                    >
+                        {options.length === 0 ? (
+                            <Flexblock
+                                gap="var(--space-2xs)"
+                                class="[ supply-coordinators__empty ]"
+                            >
+                                <p class="[ supply-coordinators__empty-title ]">
+                                    {t(`${i18n_prefix}.no_options`)}
+                                </p>
+                            </Flexblock>
+                        ) : coordinators.length === 0 ? (
+                            <Flexblock
+                                gap="var(--space-2xs)"
+                                class="[ supply-coordinators__empty ]"
+                            >
+                                <p class="[ supply-coordinators__empty-title ]">
+                                    {t(`${i18n_prefix}.empty`)}
+                                </p>
+                                <small class="[ supply-coordinators__empty-hint ]">
+                                    {t(`${i18n_prefix}.empty_hint`)}
+                                </small>
+                            </Flexblock>
+                        ) : (
+                            <Flexblock
+                                gap="var(--space-xs)"
+                                class="[ supply-coordinators__list ]"
+                            >
+                                {coordinators.map((coordinator) => (
+                                    <ComponentBlock
+                                        padding_block="var(--space-xs)"
+                                        padding_inline="var(--space-m)"
+                                    >
+                                        <FlexInline
+                                            justification="space-between"
+                                            class="[ w-full items-center ]"
+                                            gap="var(--space-s)"
+                                        >
+                                            <Flexblock
+                                                gap="var(--space-3xs)"
+                                                class="[ min-w-0 ]"
+                                            >
+                                                <PilotBadge
+                                                    character_id={
+                                                        coordinator.character_id
+                                                    }
+                                                    character_name={
+                                                        coordinator.character_name
+                                                    }
+                                                    size={32}
+                                                    icon_quality={32}
+                                                />
+                                                <CoordinatorTypeIcons
+                                                    types={coordinator.eve_types}
+                                                />
+                                            </Flexblock>
+                                            {can_volunteer &&
+                                                coordinator.character_id ===
+                                                    primary_character_id && (
+                                                    <Button
+                                                        size="sm"
+                                                        type="button"
+                                                        narrow={true}
+                                                        color="fleet-red"
+                                                        hx-delete={`${PARTIAL_URL}&${query_string(
+                                                            {
+                                                                coordinator_id:
+                                                                    coordinator.id,
+                                                            },
+                                                        )}`}
+                                                        hx-target={`#${section_id}`}
+                                                        hx-swap="outerHTML transition:true"
+                                                        hx-indicator=".loader"
+                                                    >
+                                                        <TrashIcon slot="icon" />
+                                                        {t(
+                                                            `${i18n_prefix}.remove`,
+                                                        )}
+                                                    </Button>
+                                                )}
+                                        </FlexInline>
+                                    </ComponentBlock>
+                                ))}
+                            </Flexblock>
+                        )}
+                    </div>
+
+                    {
+                        show_volunteer && (
+                            <div
+                                class="[ supply-coordinators__volunteer ]"
+                                x-show="volunteering"
+                                x-cloak
+                            >
+                                <Flexblock gap="var(--space-s)">
+                                    <Flexblock gap="var(--space-3xs)">
+                                        <p class="[ supply-coordinators__volunteer-title ]">
+                                            {volunteer_label}
+                                        </p>
+                                        <small>
+                                            {t(`${i18n_prefix}.select_types`)}
+                                        </small>
+                                    </Flexblock>
+                                    <form
+                                        id={modal_form_id}
+                                        hx-post={PARTIAL_URL}
+                                        hx-trigger="submit"
+                                        hx-target={`#${section_id}`}
+                                        hx-swap="outerHTML transition:true"
+                                        hx-indicator=".loader"
+                                    >
+                                        <CoordinatorVolunteerChecks
+                                            types={options}
+                                            selected_ids={my_type_ids}
+                                            character_id={primary_character_id}
+                                        />
+                                    </form>
+                                </Flexblock>
+                            </div>
+                        )
+                    }
+
+                    <div
+                        class="[ supply-coordinators__footer ]"
+                        x-show="!volunteering"
+                    >
+                        <FlexInline
+                            gap="var(--space-xs)"
+                            justification="flex-start"
+                            class="[ flex-wrap ]"
+                        >
+                            {show_volunteer && (
+                                <Button
+                                    type="button"
+                                    color="green"
+                                    size="sm"
+                                    x-on:click="volunteering = true"
+                                >
+                                    {volunteer_label}
+                                </Button>
+                            )}
+                            {show_close && (
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    color="transparent"
+                                    x-on:click="close_dialog()"
+                                >
+                                    {t('close')}
+                                </Button>
+                            )}
+                        </FlexInline>
+                    </div>
+
+                    {
+                        show_volunteer && (
+                            <FlexInline
+                                justification="flex-start"
+                                class="[ w-full supply-coordinators__footer ]"
+                                gap="var(--space-xs)"
+                                x-show="volunteering"
+                                x-cloak
+                            >
+                                <Button
+                                    type="submit"
+                                    form={modal_form_id}
+                                    color="green"
+                                    size="sm"
+                                >
+                                    {t(`${i18n_prefix}.submit`)}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    color="transparent"
+                                    x-on:click="volunteering = false"
+                                >
+                                    {t('cancel')}
+                                </Button>
+                            </FlexInline>
+                        )
+                    }
+                </>
+            ) : options.length === 0 ? (
+                <Flexblock
+                    gap="var(--space-2xs)"
+                    class="[ supply-coordinators__empty ]"
+                >
+                    <p class="[ supply-coordinators__empty-title ]">
+                        {t(`${i18n_prefix}.no_options`)}
+                    </p>
+                </Flexblock>
+            ) : coordinators.length === 0 ? (
+                <Flexblock
+                    gap="var(--space-2xs)"
+                    class="[ supply-coordinators__empty ]"
+                >
+                    <p class="[ supply-coordinators__empty-title ]">
+                        {t(`${i18n_prefix}.empty`)}
+                    </p>
+                    <small class="[ supply-coordinators__empty-hint ]">
+                        {t(`${i18n_prefix}.empty_hint`)}
+                    </small>
+                </Flexblock>
+            ) : (
+                <Flexblock
+                    gap="var(--space-xs)"
+                    class="[ supply-coordinators__list ]"
+                >
+                    {coordinators.map((coordinator) => (
+                        <ComponentBlock
+                            padding_block="var(--space-xs)"
+                            padding_inline="var(--space-m)"
+                        >
+                            <FlexInline
+                                justification="space-between"
+                                class="[ w-full items-center ]"
+                                gap="var(--space-s)"
+                            >
+                                <Flexblock
+                                    gap="var(--space-3xs)"
+                                    class="[ min-w-0 ]"
+                                >
+                                    <PilotBadge
+                                        character_id={coordinator.character_id}
+                                        character_name={
+                                            coordinator.character_name
+                                        }
+                                        size={32}
+                                        icon_quality={32}
+                                    />
+                                    <CoordinatorTypeIcons
+                                        types={coordinator.eve_types}
+                                    />
+                                </Flexblock>
+                                {can_volunteer &&
+                                    coordinator.character_id ===
+                                        primary_character_id && (
+                                        <Button
+                                            size="sm"
+                                            type="button"
+                                            narrow={true}
+                                            color="fleet-red"
+                                            hx-delete={`${PARTIAL_URL}&${query_string(
+                                                {
+                                                    coordinator_id:
+                                                        coordinator.id,
+                                                },
+                                            )}`}
+                                            hx-target={`#${section_id}`}
+                                            hx-swap="outerHTML transition:true"
+                                            hx-indicator=".loader"
+                                        >
+                                            <TrashIcon slot="icon" />
+                                            {t(`${i18n_prefix}.remove`)}
+                                        </Button>
+                                    )}
+                            </FlexInline>
+                        </ComponentBlock>
+                    ))}
+                </Flexblock>
+            )
+        }
+    </Flexblock>
+</section>
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-1);
+    }
+
+    .supply-coordinators__stack {
+        min-height: 12rem;
+    }
+
+    .supply-coordinators__body {
+        flex: 1 1 auto;
+        min-height: 6.5rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+    }
+
+    .supply-coordinators__empty {
+        padding-block: var(--space-s);
+        text-align: left;
+        max-width: 26rem;
+    }
+
+    .supply-coordinators__empty-title {
+        margin: 0;
+        font-size: var(--step-0);
+        color: var(--highlight);
+        line-height: 1.35;
+    }
+
+    .supply-coordinators__empty-hint {
+        line-height: 1.45;
+        color: var(--foreground);
+    }
+
+    .supply-coordinators__notice {
+        display: block;
+    }
+
+    .supply-coordinators__footer {
+        flex-wrap: wrap;
+        padding-block-start: var(--space-s);
+        margin-block-start: auto;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .supply-coordinators__volunteer-title {
+        margin: 0;
+        font-size: var(--step-0);
+        color: var(--highlight);
+        font-weight: 600;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+</style>

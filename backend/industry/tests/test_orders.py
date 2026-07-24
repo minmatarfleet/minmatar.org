@@ -267,6 +267,7 @@ class OrdersEndpointTestCase(AppTestCase):
             assignee.character_name,
         )
         self.assertEqual(data["items"][0]["assignments"][0]["quantity"], 3)
+        self.assertFalse(data["items"][0]["assignments"][0]["has_blueprints"])
 
     def test_get_order_orderitems_returns_items_with_assignments(self):
         order = create_industry_order(
@@ -375,6 +376,47 @@ class OrderMutationApiTests(OrdersEndpointTestCase):
         data = response.json()
         self.assertEqual(data["quantity"], 2)
         self.assertEqual(data["character_id"], assignee.character_id)
+        self.assertFalse(data["has_blueprints"])
+        assignment = IndustryOrderItemAssignment.objects.get(
+            order_item=item, character=assignee
+        )
+        self.assertFalse(assignment.has_blueprints)
+
+    def test_post_assignment_sets_has_blueprints(self):
+        order = create_industry_order(
+            needed_by=(timezone.now() + timedelta(days=7)).date(),
+            character=self.character,
+        )
+        item = IndustryOrderItem.objects.create(
+            order=order, eve_type=self.eve_type, quantity=5
+        )
+        assignee = EveCharacter.objects.create(
+            character_id=999035,
+            character_name="Has BPs",
+            user=self.user,
+        )
+        url = (
+            f"/api/industry/orders/{order.pk}/orderitems/{item.pk}/assignments"
+        )
+        response = self.client.post(
+            url,
+            data=json.dumps(
+                {
+                    "character_id": assignee.character_id,
+                    "quantity": 2,
+                    "has_blueprints": True,
+                }
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 201, response.content)
+        data = response.json()
+        self.assertTrue(data["has_blueprints"])
+        assignment = IndustryOrderItemAssignment.objects.get(
+            order_item=item, character=assignee
+        )
+        self.assertTrue(assignment.has_blueprints)
 
     def test_post_assignment_rejects_over_remaining(self):
         order = create_industry_order(

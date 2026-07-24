@@ -8,17 +8,17 @@ import Grid from '@components/compositions/Grid.astro'
     class="[ order-summary-skeleton w-full ]"
     aria-hidden="true"
 >
-    <Flexblock gap="var(--space-2xl)" class="[ w-full ]">
+    <Flexblock gap="var(--space-l)" class="[ w-full ]">
         <Flexblock gap="var(--space-m)">
             <Flexblock gap="var(--space-3xs)">
                 <div class="[ skel skel-title ]"></div>
                 <div class="[ skel skel-subtitle ]"></div>
             </Flexblock>
             <Grid
-                class="[ w-full grid-fill ]"
+                class="[ w-full order-metrics-grid ]"
                 row_gap="var(--space-3xs)"
                 column_gap="var(--space-3xs)"
-                min_item_width="300px"
+                min_item_width="200px"
             >
                 <div class="[ skel skel-stat ]"></div>
                 <div class="[ skel skel-stat ]"></div>
@@ -57,11 +57,13 @@ import Grid from '@components/compositions/Grid.astro'
         min-width: 0;
     }
 
-    .order-summary-results-stack.is-loading .order-summary-skeleton {
+    .order-summary-results-stack.is-loading .order-summary-skeleton,
+    .order-detail-deferred-stack.is-loading .order-summary-skeleton {
         display: block;
     }
 
-    .order-summary-results-stack.is-loading #order-summary-results {
+    .order-summary-results-stack.is-loading #order-summary-results,
+    .order-detail-deferred-stack.is-loading .order-detail-deferred-content {
         display: none;
     }
 

@@ -1,0 +1,27 @@
+---
+/**
+ * Shared publication card + masthead for all guides.
+ * Matches the Faction Warfare ship-guide chrome (card, series title, edition line).
+ */
+import './GuideShell.scss'
+
+interface Props {
+    title: string
+    subtitle: string
+    class?: string
+}
+
+const {
+    title,
+    subtitle,
+    class: className,
+} = Astro.props
+---
+
+<div class:list={['guide-shell', 'card', 'component', 'light-transparency', 'border', className]}>
+    <header class="guide-shell__masthead">
+        <p class="guide-shell__title">{title}</p>
+        <p class="guide-shell__subtitle">{subtitle}</p>
+    </header>
+    <slot />
+</div>

@@ -1,9 +1,27 @@
 ---
-import CollapsableButton  from "@components/blocks/CollapsableButton.astro";
+import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
+
+interface Props {
+    variant?:           'default' | 'button';
+    color?:             ButtonColors;
+    size?:              ButtonSizes;
+    [propName: string]: any;
+}
+
+const {
+    variant = 'default',
+    color = 'fleet-red',
+    size = 'sm',
+    ...attributes
+} = Astro.props
+
+import CollapsableButton from "@components/blocks/CollapsableButton.astro";
 ---
 
 <div
-    {...Astro.props}
+    {...attributes}
+    class:list={[ attributes.class, { 'button-dropdown': variant === 'button' } ]}
+    x-bind:class="{ 'is-open': expanded }"
     x-data={`{
         id: $id('dropdown'),
         expanded: false,
@@ -11,25 +29,48 @@ import CollapsableButton  from "@components/blocks/CollapsableButton.astro";
             this.expanded = false
         },
         toggle() {
-            this.expanded = this.expanded ? this.close() : true
+            this.expanded = !this.expanded
         }
     }`}
     @keydown.escape.prevent.stop="close()"
+    @click.outside="close()"
 >
     <CollapsableButton
+        appearance={variant === 'button' ? 'button' : 'plain'}
+        color={color}
+        size={size}
         @click="toggle()"
         :id="id"
+        x-bind:aria-expanded="expanded.toString()"
+        aria-haspopup="true"
     >
         <slot name="button" />
     </CollapsableButton>
  
     <div
-        class="[ light-transparency ][ px-[var(--space-3xs)] py-[var(--space-3xs)] z-[var(--tooltips-z-index)] ]"
+        class:list={[
+            '[ light-transparency ][ px-[var(--space-3xs)] py-[var(--space-3xs)] z-[var(--tooltips-z-index)] ]',
+            { 'button-dropdown-panel': variant === 'button' },
+        ]}
         x-show="expanded"
         x-anchor.bottom-end="document.getElementById(id)"
         style="display: none"
-        @click.outside="close()"
     >
         <slot />
     </div>
 </div>
+
+<style lang="scss">
+    .button-dropdown {
+        position: relative;
+
+        &.is-open {
+            z-index: var(--tooltips-z-index);
+        }
+    }
+
+    .button-dropdown-panel {
+        min-width: max-content;
+        width: max-content;
+    }
+</style>

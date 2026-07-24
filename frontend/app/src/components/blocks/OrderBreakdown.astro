@@ -48,10 +48,13 @@ import Button from '@components/blocks/Button.astro';
 import ButtonClaimOrder from '@components/blocks/ButtonClaimOrder.astro';
 import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
 import ButtonFindBlueprint from '@components/blocks/ButtonFindBlueprint.astro';
+import Dropdown from '@components/blocks/Dropdown.astro';
 import StylessButton from '@components/blocks/StylessButton.astro';
 
 import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
+import IndustryIcon from '@components/icons/IndustryIcon.astro';
 import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
+import AddIcon from '@components/icons/buttons/AddIcon.astro';
 ---
 
 <Flexblock id={id}>
@@ -101,8 +104,12 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
                     </ItemBadge>
                 </div>
 
-                <FlexInline gap='var(--space-3xs)' justification='space-between'>
-                    <div class="[ basis-[310px] ]">
+                <FlexInline
+                    gap='var(--space-s)'
+                    justification='space-between'
+                    class="[ w-full flex-nowrap! items-center! ]"
+                >
+                    <div class="[ min-w-0 grow ]">
                         <FixedFluid width='32px' breakpoint='30%' gap='var(--space-2xs)' class="[  items-center! text-highlight ]">
                             <div
                                 class="[ text-highlight h-[32px] ]"
@@ -119,6 +126,7 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
                                         delivery={assignment.delivered_at}
                                         contract_value={item?.target_unit_price ? parseInt(item?.target_unit_price) * assignment.quantity : undefined}
                                         earnings={item?.target_estimated_margin ? parseInt(item?.target_estimated_margin) * assignment.quantity : undefined}
+                                        has_blueprints={assignment.has_blueprints}
                                         init_tooltip={init_tooltips}
                                     >
                                         <CharacterPicture
@@ -138,8 +146,11 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
                         </FixedFluid>
                     </div>
 
-                    <FlexInline class="[ basis-[210px] ]" gap='0'>
-                        <div class="[ basis-[140px] pr-[30px]! ]">
+                    <FlexInline
+                        class="[ basis-[180px] min-w-[180px] shrink-0 flex-nowrap! items-center! ]"
+                        gap='var(--space-2xs)'
+                    >
+                        <div class="[ grow min-w-0 ]">
                             <Progress
                                 class:list={[ 'w-full' ]}
                                 max="100"
@@ -152,7 +163,7 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
                             </Progress>
                         </div>
 
-                        <div class="[ basis-[60px] ]">
+                        <div class="[ basis-[4ch] shrink-0 text-right ]">
                             {item.quantity > 0 &&
                                 <small>
                                     {completion.toFixed(0)}%
@@ -161,84 +172,93 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
                         </div>
                     </FlexInline>
 
-                    <FlexInline class="[ grow ]">
-                        {(item.unassigned_quantity > 0 || user_assignment) &&
-                            <>{claim_disabled_reason ?
-                                <span
-                                    class="[ inline-flex ]"
-                                    data-tippy-content={claim_disabled_reason}
-                                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                                >
-                                    <Button
-                                        size='sm'
-                                        color='green'
-                                        disabled
-                                        off_disable={true}
-                                    >
-                                        {t('claim')}
-                                    </Button>
-                                </span>
-                                :
-                                <ButtonClaimOrder
-                                    target_id={`order-item-${order_id}`}
-                                    reclaim={Boolean(user_assignment)}
-                                    order_id={order_id}
-                                    claimed={user_assignment?.quantity ?? 0}
-                                    item={item}
-                                    character_id={primary_character_id as number}
-                                />
-                            }</>
-                        }
+                    <div class="[ shrink-0 ml-[var(--space-s)] ]">
+                        <Dropdown variant="button" color="fleet-red" size="sm">
+                            <span slot="button">{t('actions')}</span>
 
-                        {user_assignment &&
-                            <>{!user_assignment.delivered_at ?
+                            <Flexblock gap='var(--space-3xs)' class="[ order-breakdown-actions ]">
+                                {(item.unassigned_quantity > 0 || user_assignment) &&
+                                    <>{claim_disabled_reason ?
+                                        <span
+                                            class="[ inline-flex w-full ]"
+                                            data-tippy-content={claim_disabled_reason}
+                                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                                        >
+                                            <Button
+                                                size='sm'
+                                                color='green'
+                                                disabled
+                                                off_disable={true}
+                                            >
+                                                <AddIcon slot="icon" />
+                                                {t('claim')}
+                                            </Button>
+                                        </span>
+                                        :
+                                        <ButtonClaimOrder
+                                            target_id={`order-item-${order_id}`}
+                                            reclaim={Boolean(user_assignment)}
+                                            order_id={order_id}
+                                            claimed={user_assignment?.quantity ?? 0}
+                                            item={item}
+                                            character_id={primary_character_id as number}
+                                            has_blueprints={user_assignment?.has_blueprints ?? false}
+                                        />
+                                    }</>
+                                }
+
+                                {user_assignment &&
+                                    <>{!user_assignment.delivered_at ?
+                                        <Button
+                                            size='sm'
+                                            color='green'
+                                            href={translatePath(`/industry/orders/contract?${query_string({
+                                                order_id: order_id,
+                                                item_id: item.id,
+                                                assignment_id: user_assignment.id,
+                                            })}`)}
+                                        >
+                                            {t('delivery_contract')}
+                                        </Button> :
+                                        <ButtonConfirm
+                                            label={t('revert_delivery')}
+                                            size='sm'
+                                        >
+                                            <Button
+                                                size='sm'
+                                                hx-patch={`${ORDER_ITEM_PARTIAL_URL}?${query_string({
+                                                    order_id: order_id,
+                                                    item_id: item.id,
+                                                    assignment_id: user_assignment.id,
+                                                    delivery: false,
+                                                })}`}
+                                                hx-target={`#order-item-${order_id}`}
+                                                hx-indicator=".loader"
+                                                hx-swap="outerHTML transition:true"
+                                                x-on:click="$el.setAttribute('disabled','')"
+                                            >
+                                                {t('confirm')}
+                                            </Button>
+                                        </ButtonConfirm>
+                                    }</>
+                                }
+
+                                <ButtonFindBlueprint item_name={item.eve_type_name} />
+
                                 <Button
                                     size='sm'
-                                    color='green'
-                                    href={translatePath(`/industry/orders/contract?${query_string({
+                                    color='fleet-red'
+                                    href={translatePath(`/industry/orders/planner?${query_string({
                                         order_id: order_id,
                                         item_id: item.id,
-                                        assignment_id: user_assignment.id,
                                     })}`)}
                                 >
-                                    {t('delivery_contract')}
-                                </Button> :
-                                <ButtonConfirm
-                                    label={t('revert_delivery')}
-                                    size='sm'
-                                >
-                                    <Button
-                                        size='sm'
-                                        hx-patch={`${ORDER_ITEM_PARTIAL_URL}?${query_string({
-                                            order_id: order_id,
-                                            item_id: item.id,
-                                            assignment_id: user_assignment.id,
-                                            delivery: false,
-                                        })}`}
-                                        hx-target={`#order-item-${order_id}`}
-                                        hx-indicator=".loader"
-                                        hx-swap="outerHTML transition:true"
-                                        x-on:click="$el.setAttribute('disabled','')"
-                                    >
-                                        {t('confirm')}
-                                    </Button>
-                                </ButtonConfirm>
-                            }</>
-                        }
-
-                        <ButtonFindBlueprint item_name={item.eve_type_name} />
-
-                        <Button
-                            size='sm'
-                            color='fleet-red'
-                            href={translatePath(`/industry/orders/planner?${query_string({
-                                order_id: order_id,
-                                item_id: item.id,
-                            })}`)}
-                        >
-                            {t('planner')}
-                        </Button>
-                    </FlexInline>
+                                    <IndustryIcon slot="icon" size={24} />
+                                    {t('planner')}
+                                </Button>
+                            </Flexblock>
+                        </Dropdown>
+                    </div>
                 </FlexInline>
             </FixedFluid>
         )
@@ -248,5 +268,19 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
 <style lang="scss">
     .order-breakdown-assign-footer {
         margin-top: var(--space-m);
+    }
+
+    .order-breakdown-actions {
+        width: fit-content;
+
+        > :global(*) {
+            width: 100%;
+        }
+
+        :global(button),
+        :global(a.button) {
+            width: 100%;
+            box-sizing: border-box;
+        }
     }
 </style>

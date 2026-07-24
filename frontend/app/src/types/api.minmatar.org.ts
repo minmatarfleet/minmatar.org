@@ -1406,6 +1406,7 @@ export interface OrderAssignment {
     target_unit_price:          number | null;
     target_estimated_margin:    number | null;
     delivered_at:               Date | null;
+    has_blueprints:             boolean;
 }
 
 export interface RootSingleItem {
@@ -1432,6 +1433,44 @@ export interface IndustrySingleOrder {
     character_name:     string;
     location:           BaseLocation;
     items:              RootSingleItem[];
+    lp_stockpiles:      OrderLpStockpile[];
+    blueprint_coordinators: OrderBlueprintCoordinator[];
+    mineral_coordinators?: OrderBlueprintCoordinator[];
+    pi_coordinators?: OrderBlueprintCoordinator[];
+    mineral_options?: OrderBlueprintCoordinatorEveType[];
+    pi_options?: OrderBlueprintCoordinatorEveType[];
+    profit_breakdown_computed_at?: Date | string | null;
+    can_refresh_profit_breakdown?: boolean;
+}
+
+export interface OrderLpStockpileContact {
+    character_name:     string;
+    discord_user_id:    number | null;
+    discord_username:   string;
+}
+
+export interface OrderLpStockpile {
+    account_id:             number;
+    account_name:           string;
+    loyalty_point_id:       number;
+    loyalty_point_name:     string;
+    corporation_id:         number;
+    balance:                number;
+    contacts:               OrderLpStockpileContact[];
+    character_id?:          number | null;
+    account_corporation_id?: number | null;
+}
+
+export interface OrderBlueprintCoordinatorEveType {
+    eve_type_id:    number;
+    eve_type_name:  string;
+}
+
+export interface OrderBlueprintCoordinator {
+    id:                 number;
+    character_id:       number;
+    character_name:     string;
+    eve_types:          OrderBlueprintCoordinatorEveType[];
 }
 
 export interface FleetMetrics {
