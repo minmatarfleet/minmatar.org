@@ -6,6 +6,10 @@ from app.celery import app
 from eveonline.helpers.characters.update import update_character_industry_jobs
 from eveonline.models import EveCharacter
 
+from industry.helpers.contract_associations import (
+    reconcile_associations_for_character,
+    reconcile_open_order_contract_associations,
+)
 from industry.helpers.cost_indices import sync_industry_system_cost_indices
 from industry.helpers.loyalty_store import (
     ensure_loyalty_store_offers_for_product,
@@ -105,5 +109,36 @@ def ensure_loyalty_store_offers_for_product_task(product_id: int) -> int:
         logger.exception(
             "Failed to ensure loyalty store offers for product %s",
             product_id,
+        )
+        raise
+
+
+@app.task()
+def reconcile_industry_contract_associations_task() -> int:
+    """
+    Score and upsert soft links between open industry orders and ESI contracts.
+
+    Periodic via Celery beat. Does not mark assignments delivered.
+    """
+    try:
+        return reconcile_open_order_contract_associations(fetch_items=True)
+    except Exception:
+        logger.exception("Failed to reconcile industry contract associations")
+        raise
+
+
+@app.task()
+def reconcile_industry_contract_associations_for_character_task(
+    character_id: int,
+) -> int:
+    """Reconcile associations for open orders owned by this ESI character_id."""
+    try:
+        return reconcile_associations_for_character(
+            int(character_id), fetch_items=True
+        )
+    except Exception:
+        logger.exception(
+            "Failed to reconcile industry contract associations for character %s",
+            character_id,
         )
         raise

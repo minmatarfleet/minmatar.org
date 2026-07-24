@@ -29,6 +29,7 @@ from industry.helpers.lp_ledger import (
     weighted_average_cost_isk_per_lp,
 )
 from industry.models import (
+    IndustryContractAssociation,
     IndustryLoyaltyPoint,
     IndustryLoyaltyPointAccount,
     IndustryLoyaltyPointContact,
@@ -811,6 +812,23 @@ class IndustryOrderItemAssignmentAdmin(admin.ModelAdmin):
         if order_item_id:
             initial["order_item"] = order_item_id
         return initial
+
+
+@admin.register(IndustryContractAssociation)
+class IndustryContractAssociationAdmin(admin.ModelAdmin):
+    list_display = (
+        "contract_id",
+        "order",
+        "assignment",
+        "score",
+        "contract_status",
+        "updated_at",
+    )
+    list_filter = ("contract_status",)
+    search_fields = ("contract_id", "order__id", "order__public_short_code")
+    raw_id_fields = ("order", "assignment")
+    readonly_fields = ("created_at", "updated_at", "signals")
+    ordering = ("-score", "-updated_at")
 
 
 @admin.register(IndustryProduct)
