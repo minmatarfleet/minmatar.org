@@ -34,12 +34,15 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
 import DialogButton from '@components/blocks/DialogButton.astro'
 import Button from '@components/blocks/Button.astro'
 import OrderLpStockpiles from '@components/blocks/OrderLpStockpiles.astro'
+import CogIcon from '@components/icons/buttons/CogIcon.astro'
 
 const COORDINATORS_PARTIAL = translatePath(
     `/partials/order_coordinators_component?${query_string({
         order_id: String(order_id),
     })}`,
 )
+const api_base = import.meta.env.API_URL || ''
+const admin_order_url = `${api_base}/admin/industry/industryorder/${order_id}/change/`
 ---
 
 <FlexInline
@@ -145,6 +148,17 @@ const COORDINATORS_PARTIAL = translatePath(
         </FlexInline>
     </Flexblock>
     <Flexblock gap="var(--space-3xs)" class="[ order-detail-meta__aside ]">
+        <Button
+            href={admin_order_url}
+            size="sm"
+            color="transparent"
+            narrow={true}
+            new_tab={true}
+            aria-label={t('industry.orders.detail.edit_in_admin')}
+            title={t('industry.orders.detail.edit_in_admin')}
+        >
+            <CogIcon slot="icon" />
+        </Button>
         {
             location_name && (
                 <small class="[ text-highlight ]">{location_name}</small>
@@ -213,6 +227,7 @@ const COORDINATORS_PARTIAL = translatePath(
     }
 
     .order-detail-meta__aside {
+        align-items: flex-end;
         text-align: right;
     }
 </style>

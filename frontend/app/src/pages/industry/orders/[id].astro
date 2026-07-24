@@ -10,15 +10,7 @@ const order_id = parseInt(Astro.params.id ?? '0')
 if (isNaN(order_id) || order_id <= 0)
     return HTTP_400_Bad_Request()
 
-/** Optimistic meta from the orders list — paints the header before API round-trips. */
-const params = Astro.url.searchParams
-const order_code = params.get('code') || String(order_id)
-const character_id = parseInt(params.get('character_id') ?? '0')
-const character_name = params.get('character_name') || ''
-const location_name = params.get('location_name') || ''
-const needed_by = params.get('needed_by') || ''
-const has_optimistic_header =
-    character_id > 0 && character_name.length > 0
+const order_code = String(order_id)
 
 const page_title = t('industry.orders.detail.page_title').replace(
     '{code}',
@@ -47,29 +39,19 @@ const HEADER_PARTIAL = translatePath(
 const PROFIT_PARTIAL = translatePath(
     `/partials/order_detail_profit_component?${query_string({
         order_id: String(order_id),
-        ...(needed_by && { needed_by }),
     })}`,
 )
 const BREAKDOWN_PARTIAL = translatePath(
     `/partials/order_breakdown_component?${query_string({
         order_id: String(order_id),
-        ...(location_name && { location_name }),
     })}`,
 )
-
-import {
-    get_location_video_cover,
-    get_location_video_cover_thumb,
-    get_location_cover,
-    get_location_cover_990,
-} from '@helpers/covers'
 
 import Viewport from '@layouts/Viewport.astro'
 import PageLanding from '@components/page/PageLanding.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import Breadcrumb from '@components/blocks/Breadcrumb.astro'
-import OrderDetailHeader from '@components/blocks/industry/OrderDetailHeader.astro'
 import OrderDetailHeaderSkeleton from '@components/blocks/industry/OrderDetailHeaderSkeleton.astro'
 import OrderDetailSectionSkeleton from '@components/blocks/industry/OrderDetailSectionSkeleton.astro'
 
@@ -94,21 +76,8 @@ const breadcrumb_items = [
     <PageLanding
         wide={true}
         cover={{
-            video:
-                (location_name
-                    ? get_location_video_cover(location_name)
-                    : null) ?? undefined,
-            video_thumb:
-                (location_name
-                    ? get_location_video_cover_thumb(location_name)
-                    : null) ?? undefined,
-            image:
-                (location_name ? get_location_cover(location_name) : null) ??
-                '/images/industry-cover.jpg',
-            image_990:
-                (location_name
-                    ? get_location_cover_990(location_name)
-                    : null) ?? '/images/industry-cover.jpg',
+            image: '/images/industry-cover.jpg',
+            image_990: '/images/industry-cover.jpg',
             animated: false,
             scrollable: true,
             overlay: true,
@@ -136,19 +105,7 @@ const breadcrumb_items = [
                     hx-swap="innerHTML"
                     hx-indicator=".loader"
                 >
-                    {
-                        has_optimistic_header ? (
-                            <OrderDetailHeader
-                                order_id={order_id}
-                                character_id={character_id}
-                                character_name={character_name}
-                                location_name={location_name || null}
-                                needed_by={needed_by || null}
-                            />
-                        ) : (
-                            <OrderDetailHeaderSkeleton />
-                        )
-                    }
+                    <OrderDetailHeaderSkeleton />
                 </div>
 
                 <div
