@@ -3,6 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { RootSingleItem } from '@dtypes/api.minmatar.org'
+import type { Alert } from '@dtypes/layout_components'
 
 interface Props {
     order_id:                   number;
@@ -11,6 +12,11 @@ interface Props {
     order_breakdown:            RootSingleItem[];
     location_name:              string | undefined;
     init_tooltips?:             boolean;
+    /** HTMX swap target for claim/delivery. Detail page uses the breakdown root. */
+    swap_target_id?:            string;
+    /** After claim/delivery, render breakdown-only HTML instead of the list OrderItem card. */
+    claim_render?:              'order_item' | 'breakdown';
+    alert?:                     Alert | null;
 }
 
 const {
@@ -20,6 +26,9 @@ const {
     order_breakdown,
     location_name,
     init_tooltips = false,
+    swap_target_id,
+    claim_render = 'order_item',
+    alert = null,
 } = Astro.props
 
 import { query_string } from '@helpers/string';
@@ -32,6 +41,8 @@ const ORDER_BREAKDOWN_PARTIAL_URL = `${translatePath('/partials/order_breakdown_
 })}`
 
 const id = `order-breakdown-${order_id}-inner`
+const hx_swap_target = swap_target_id ?? `order-item-${order_id}`
+const claim_query = claim_render === 'breakdown' ? { render: 'breakdown' } : {}
 
 import { number_thousand_separator } from '@helpers/numbers'
 
@@ -57,7 +68,10 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
 import AddIcon from '@components/icons/buttons/AddIcon.astro';
 ---
 
-<Flexblock id={id}>
+<Flexblock
+    id={id}
+    x-init={alert ? `show_alert_dialog(${JSON.stringify(alert)})` : undefined}
+>
     <hr class="border-bottom">
     <StylessButton
         hx-get={ORDER_BREAKDOWN_PARTIAL_URL}
@@ -196,13 +210,14 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
                                         </span>
                                         :
                                         <ButtonClaimOrder
-                                            target_id={`order-item-${order_id}`}
+                                            target_id={hx_swap_target}
                                             reclaim={Boolean(user_assignment)}
                                             order_id={order_id}
                                             claimed={user_assignment?.quantity ?? 0}
                                             item={item}
                                             character_id={primary_character_id as number}
                                             has_blueprints={user_assignment?.has_blueprints ?? false}
+                                            render={claim_render}
                                         />
                                     }</>
                                 }
@@ -231,8 +246,9 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
                                                     item_id: item.id,
                                                     assignment_id: user_assignment.id,
                                                     delivery: false,
+                                                    ...claim_query,
                                                 })}`}
-                                                hx-target={`#order-item-${order_id}`}
+                                                hx-target={`#${hx_swap_target}`}
                                                 hx-indicator=".loader"
                                                 hx-swap="outerHTML transition:true"
                                                 x-on:click="$el.setAttribute('disabled','')"
