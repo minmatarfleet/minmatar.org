@@ -1,0 +1,100 @@
+---
+interface Props {
+    labels: readonly string[]
+    valuesM: readonly number[]
+}
+
+const { labels, valuesM } = Astro.props
+const chartId = `guide-order-profit-bar-${Math.random().toString(36).slice(2, 9)}`
+---
+
+<div
+    class="[ guide-order-profit-chart ]"
+    x-data={`{
+        labels: ${JSON.stringify(labels)},
+        dataM: ${JSON.stringify(valuesM)},
+        chart: null,
+        buildChart() {
+            const canvas = document.getElementById('${chartId}')
+            if (!canvas || typeof Chart === 'undefined') return false
+            if (this.chart) {
+                this.chart.destroy()
+                this.chart = null
+            }
+            const ctx = canvas.getContext('2d')
+            Chart.defaults.borderColor = 'rgb(255, 255, 255, 0.05)'
+            Chart.defaults.color = '#ffffff'
+            Chart.defaults.font.family = 'Montserrat Variable'
+            this.chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: this.labels,
+                    datasets: [{
+                        label: 'Order profit (M ISK)',
+                        data: this.dataM,
+                        backgroundColor: 'rgba(32, 81, 181, 0.75)',
+                        borderColor: '#2051B5',
+                        borderWidth: 1,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => {
+                                    const v = ctx.parsed.y
+                                    return v == null ? '' : v.toLocaleString() + 'M ISK'
+                                },
+                            },
+                        },
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                maxRotation: 60,
+                                minRotation: 45,
+                                autoSkip: false,
+                                font: { size: 10 },
+                            },
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'M ISK',
+                            },
+                            beginAtZero: true,
+                        },
+                    },
+                },
+            })
+            return true
+        },
+        init() {
+            if (this.buildChart()) return
+            let tries = 0
+            const timer = setInterval(() => {
+                tries += 1
+                if (this.buildChart() || tries > 40) clearInterval(timer)
+            }, 100)
+        },
+    }`}
+>
+    <canvas id={chartId} aria-label="Order profit by product in millions of ISK"></canvas>
+</div>
+
+<style lang="scss">
+    .guide-order-profit-chart {
+        position: relative;
+        width: 100%;
+        min-height: 360px;
+        height: min(420px, 70vh);
+    }
+
+    canvas {
+        width: 100% !important;
+        height: 100% !important;
+    }
+</style>

@@ -5,13 +5,15 @@ interface Props {
     headers: string[]
     rows: CampaignTableRow[]
     striped?: boolean
+    /** Green ▲ on success-tone first cells (campaign tables). Off for industry. */
+    success_marker?: boolean
 }
 
-const { headers, rows, striped = false } = Astro.props
+const { headers, rows, striped = false, success_marker = true } = Astro.props
 ---
 
 <div class="er-table-wrap" tabindex="0" role="region">
-    <table class:list={['er-table' ]}>
+    <table class:list={['er-table', !success_marker && 'er-table--no-markers']}>
         <thead>
             <tr>
                 {
@@ -35,7 +37,21 @@ const { headers, rows, striped = false } = Astro.props
                         {
                             row.cells.map((cell, index) => (
                                 <td class:list={[index > 0 && 'er-table__numeric']}>
-                                    {cell}
+                                    {index === 0 && row.icon_url ? (
+                                        <span class="er-table__name">
+                                            <img
+                                                class="er-table__icon"
+                                                src={row.icon_url}
+                                                alt=""
+                                                width="24"
+                                                height="24"
+                                                loading="lazy"
+                                            />
+                                            <span>{cell}</span>
+                                        </span>
+                                    ) : (
+                                        cell
+                                    )}
                                 </td>
                             ))
                         }
@@ -89,6 +105,20 @@ const { headers, rows, striped = false } = Astro.props
         font-variant-numeric: tabular-nums;
     }
 
+    .er-table__name {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+    }
+
+    .er-table__icon {
+        flex-shrink: 0;
+        width: 24px;
+        height: 24px;
+        object-fit: contain;
+        border-radius: 2px;
+    }
+
     .er-table__row--info td {
         font-weight: 600;
     }
@@ -96,6 +126,10 @@ const { headers, rows, striped = false } = Astro.props
     .er-table__row--success td:first-child:after {
         content: '▲';
         color: var(--green);
+    }
+
+    .er-table--no-markers .er-table__row--success td:first-child:after {
+        content: none;
     }
 
     .er-table__row--warning td:first-child {

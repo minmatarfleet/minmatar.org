@@ -13,6 +13,7 @@ import type {
     OrderAssignmentsBreakdown,
     IndustrySingleOrder,
     OrderAssignment,
+    OrdersProfitSummary,
 } from '@dtypes/api.minmatar.org'
 import {
     get_error_message,
@@ -51,6 +52,62 @@ export async function get_orders_with_location() {
         return await response.json() as IndustryOrder[];
     } catch (error) {
         throw new Error(`Error fetching industry orders: ${error.message}`, { cause: error.cause });
+    }
+}
+
+export type OrdersProfitSummaryParams = {
+    needed_by_from?: string
+    needed_by_to?: string
+    open_only?: boolean
+    order_ids?: string | number[]
+    facility_key?: string
+    compressed?: boolean
+}
+
+export async function get_orders_profit_summary(
+    params: OrdersProfitSummaryParams = {},
+): Promise<OrdersProfitSummary> {
+    const headers = {
+        'Content-Type': 'application/json',
+    }
+
+    const raw: Record<string, string> = {}
+    if (params.needed_by_from) raw.needed_by_from = params.needed_by_from
+    if (params.needed_by_to) raw.needed_by_to = params.needed_by_to
+    if (params.open_only !== undefined)
+        raw.open_only = params.open_only ? 'true' : 'false'
+    if (params.order_ids !== undefined) {
+        raw.order_ids = Array.isArray(params.order_ids)
+            ? params.order_ids.join(',')
+            : String(params.order_ids)
+    }
+    if (params.facility_key) raw.facility_key = params.facility_key
+    if (params.compressed !== undefined)
+        raw.compressed = params.compressed ? 'true' : 'false'
+
+    const qs = query_string(raw)
+    const ENDPOINT = `${API_ENDPOINT}/orders/profit-summary${qs ? `?${qs}` : ''}`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers,
+        })
+
+        if (!response.ok) {
+            throw new Error(
+                get_error_message(response.status, `GET ${ENDPOINT}`),
+                { cause: response.status },
+            )
+        }
+
+        return (await response.json()) as OrdersProfitSummary
+    } catch (error) {
+        throw new Error(
+            `Error fetching orders profit summary: ${error.message}`,
+            { cause: error.cause },
+        )
     }
 }
 

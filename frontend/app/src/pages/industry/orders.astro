@@ -123,6 +123,13 @@ const page_title = t('industry.orders.page_title');
 
         <PageSubheader slot="subheader">
             <Button
+                href={translatePath('/industry/orders/summary/')}
+                size='sm'
+            >
+                {t('view_orders_summary')}
+            </Button>
+
+            <Button
                 href={translatePath('/industry/orders/history/')}
                 size='sm'
             >

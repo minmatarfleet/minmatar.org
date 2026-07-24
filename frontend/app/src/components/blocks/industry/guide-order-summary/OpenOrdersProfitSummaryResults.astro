@@ -1,0 +1,174 @@
+---
+import type { OrdersProfitSummary } from '@dtypes/api.minmatar.org'
+import type { CampaignTableRow } from '@/data/campaigns/etherium-reach'
+import {
+    formatIskCompact,
+    formatIskFull,
+    rowTone,
+    shortHullName,
+} from '@/data/industry/guide-order-summary'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { number_name } from '@helpers/numbers'
+import { i18n } from '@helpers/i18n'
+
+import CampaignCallout from '@components/blocks/campaigns/etherium-reach/CampaignCallout.astro'
+import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
+import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
+import GuideOrderProfitBarChart from '@components/blocks/industry/guide-order-summary/GuideOrderProfitBarChart.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Grid from '@components/compositions/Grid.astro'
+
+interface Props {
+    summary: OrdersProfitSummary
+    facility_label: string
+}
+
+const { summary, facility_label } = Astro.props
+const { lang } = i18n(Astro.url)
+
+const totals = summary.totals
+const sortedRows = [...summary.rows].sort((a, b) => b.order_profit - a.order_profit)
+const chartLabels = sortedRows.map((r) => shortHullName(r.name))
+const chartValuesM = sortedRows.map((r) =>
+    Math.round(r.order_profit / 1_000_000),
+)
+
+const tableRows: CampaignTableRow[] = summary.rows.map((r) => ({
+    cells: [
+        r.name,
+        String(r.qty),
+        r.isk_per_lp == null ? '-' : String(Math.round(r.isk_per_lp)),
+        formatIskCompact(r.cost_per),
+        formatIskCompact(r.unit_price),
+        formatIskFull(r.profit_per),
+        formatIskCompact(r.order_profit),
+    ] as const,
+    tone: rowTone(r.order_profit),
+    icon_url: get_item_icon(r.type_id, 32),
+}))
+
+const tableHeaders = [
+    'Product',
+    'Qty',
+    'ISK/LP',
+    'Cost / item',
+    'Ask / item',
+    'Profit / item',
+    'Order profit',
+]
+
+const assumptions = Array.isArray(summary.assumptions)
+    ? summary.assumptions
+    : [String(summary.assumptions)]
+---
+
+<Flexblock gap="var(--space-2xl)" class="[ order-summary-results-inner w-full ]">
+    <Flexblock gap="var(--space-m)">
+        <Flexblock gap="var(--space-3xs)">
+            <h2>Order key metrics</h2>
+            <small>
+                Totals for the orders you included, using build cost at{' '}
+                {facility_label} and each order’s ask price.
+            </small>
+        </Flexblock>
+
+        <Grid
+            class="[ w-full grid-fill ]"
+            row_gap="var(--space-3xs)"
+            column_gap="var(--space-3xs)"
+            min_item_width="300px"
+        >
+            <CampaignStat label="Total order amount" tone="info">
+                <span
+                    data-tippy-content={number_name(
+                        totals.total_order_amount,
+                        lang,
+                    )}
+                >
+                    {formatIskCompact(totals.total_order_amount)}
+                </span>
+            </CampaignStat>
+            <CampaignStat
+                label="Total order profit"
+                tone={totals.total_profit >= 0 ? 'success' : 'danger'}
+            >
+                <span data-tippy-content={number_name(totals.total_profit, lang)}>
+                    {formatIskCompact(totals.total_profit)}
+                </span>
+            </CampaignStat>
+            <CampaignStat label="Total products" tone="info">
+                {totals.line_count}
+            </CampaignStat>
+            <CampaignStat label="Total order items" tone="info">
+                {totals.total_qty}
+            </CampaignStat>
+        </Grid>
+    </Flexblock>
+
+    {
+        chartLabels.length > 0 ? (
+            <Flexblock gap="var(--space-m)">
+                <Flexblock gap="var(--space-3xs)">
+                    <h2>Order profit by product</h2>
+                    <small>
+                        Profit for each product across the included orders,
+                        sorted from highest to lowest (shown in millions of
+                        ISK).
+                    </small>
+                </Flexblock>
+                <ComponentBlock>
+                    <GuideOrderProfitBarChart
+                        labels={chartLabels}
+                        valuesM={chartValuesM}
+                    />
+                </ComponentBlock>
+            </Flexblock>
+        ) : null
+    }
+
+    {
+        tableRows.length > 0 ? (
+            <Flexblock gap="var(--space-m)">
+                <Flexblock gap="var(--space-3xs)">
+                    <h2>Product breakdown</h2>
+                    <small>
+                        Build cost at {facility_label}. Revenue uses the order
+                        ask; Jita sell is only used when an ask is missing.
+                    </small>
+                </Flexblock>
+                <CampaignDataTable
+                    headers={tableHeaders}
+                    rows={tableRows}
+                    success_marker={false}
+                />
+            </Flexblock>
+        ) : (
+            <CampaignCallout title="Nothing to summarize" tone="info">
+                <p>
+                    Select at least one order in range, or widen the needed-by
+                    dates.
+                </p>
+            </CampaignCallout>
+        )
+    }
+
+    <CampaignCallout title="Assumptions" tone="info">
+        <ul class="[ assumptions-list ]">
+            {assumptions.map((item) => (
+                <li>{item}</li>
+            ))}
+        </ul>
+    </CampaignCallout>
+</Flexblock>
+
+<style lang="scss">
+    .assumptions-list {
+        margin: 0;
+        padding-inline-start: 1.25rem;
+        display: grid;
+        gap: var(--space-2xs);
+        font-size: var(--step--1);
+        line-height: 1.5;
+    }
+</style>

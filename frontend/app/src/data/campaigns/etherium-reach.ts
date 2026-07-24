@@ -378,4 +378,6 @@ export type CampaignRowTone = 'info' | 'success' | 'warning' | 'danger' | undefi
 export type CampaignTableRow = {
     cells: readonly string[]
     tone?: CampaignRowTone
+    /** Optional leading icon (e.g. EVE type icon) for the first cell. */
+    icon_url?: string
 }

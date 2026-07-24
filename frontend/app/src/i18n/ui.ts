@@ -463,6 +463,15 @@ export const ui = {
         'industry.orders.contract.leading_text': 'Start creating a contract by selecting your items from your Inventory or Personal Assets, at the station specified below, right click and create contract.',
         'industry.orders.contract.meta_description': 'Delivery contract for industry orders.',
 
+        'industry.orders.summary.page_title': 'Order summary',
+        'industry.orders.summary.leading_text':
+            'See expected profit for industry orders using build cost at your selected system and each order’s ask price. Change dates, system, or which orders to include.',
+        'industry.orders.summary.meta_title': 'Order summary | {site}',
+        'industry.orders.summary.meta_description':
+            'Live order summary for Minmatar Fleet industry orders: build cost at a chosen industry system, revenue from order asks, and filters for needed-by date and included orders.',
+        'page_finder.orders.summary.description':
+            'Order summary with build cost, ask revenue, and filters for dates, system, and included orders.',
+        'view_orders_summary': 'Order summary',
         'industry.orders.planner.page_title': 'Build planner',
         'industry.orders.planner.beta_title': 'Beta',
         'industry.orders.planner.beta_warning': 'This build planner is in beta — shopping lists, costs, and refine amounts may be off. Report problems in Discord [#help](https://discordapp.com/channels/1041384161505722368/1183401618943791186).',

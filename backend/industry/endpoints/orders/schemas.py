@@ -126,3 +126,54 @@ class PatchOrderItemAssignmentRequest(BaseModel):
     """Mark assignment delivery state."""
 
     delivered: bool
+
+
+class ProfitSummaryOrderResponse(BaseModel):
+    """One order candidate for the profit-summary filter UI."""
+
+    id: int
+    public_short_code: str
+    needed_by: date
+    location_label: str
+    fulfilled_at: date | None
+    item_count: int
+    item_type_ids: List[int]
+    included: bool
+
+
+class ProfitSummaryRowResponse(BaseModel):
+    """Aggregated product line with Amamake cost vs order ask (or Jita fallback)."""
+
+    name: str
+    type_id: int
+    kind: str
+    qty: int
+    isk_per_lp: float | None
+    cost_per: int
+    unit_price: int
+    price_source: str
+    profit_per: int
+    order_profit: int
+    note: str | None = None
+
+
+class ProfitSummaryTotalsResponse(BaseModel):
+    total_order_amount: int
+    total_profit: int
+    line_count: int
+    total_qty: int
+    best_name: str | None
+    best_profit: int | None
+    worst_name: str | None
+    worst_profit: int | None
+
+
+class OrdersProfitSummaryResponse(BaseModel):
+    """Canvas-style profit rollup for filtered industry orders."""
+
+    orders: List[ProfitSummaryOrderResponse]
+    rows: List[ProfitSummaryRowResponse]
+    totals: ProfitSummaryTotalsResponse
+    assumptions: List[str]
+    facility_key: str
+    compressed: bool

@@ -1144,6 +1144,51 @@ export interface IndustryOrder {
     assigned_to:        Character[];
 }
 
+export interface OrdersProfitSummaryOrder {
+    id:                 number;
+    public_short_code:  string;
+    needed_by:          string;
+    location_label:     string;
+    fulfilled_at:       string | null;
+    item_count:         number;
+    item_type_ids:      number[];
+    included:           boolean;
+}
+
+export interface OrdersProfitSummaryRow {
+    name:           string;
+    type_id:        number;
+    kind:           string;
+    qty:            number;
+    isk_per_lp:     number | null;
+    cost_per:       number;
+    unit_price:     number;
+    price_source:   string;
+    profit_per:     number;
+    order_profit:   number;
+    note?:          string | null;
+}
+
+export interface OrdersProfitSummaryTotals {
+    total_order_amount: number;
+    total_profit:   number;
+    line_count:     number;
+    total_qty:      number;
+    best_name:      string | null;
+    best_profit:    number | null;
+    worst_name:     string | null;
+    worst_profit:   number | null;
+}
+
+export interface OrdersProfitSummary {
+    orders:         OrdersProfitSummaryOrder[];
+    rows:           OrdersProfitSummaryRow[];
+    totals:         OrdersProfitSummaryTotals;
+    assumptions:    string[];
+    facility_key:   string;
+    compressed:     boolean;
+}
+
 export const freight_contract_statuses = [ 'outstanding', 'in_progress', 'finished'  ] as const
 export type FreightContractStatus = typeof freight_contract_statuses[number]
 

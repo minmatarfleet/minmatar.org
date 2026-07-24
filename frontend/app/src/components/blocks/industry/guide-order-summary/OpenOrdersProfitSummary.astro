@@ -1,0 +1,315 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import type { OrdersProfitSummary } from '@dtypes/api.minmatar.org'
+import type { PlannerFacility } from '@helpers/api.minmatar.org/industry'
+
+import OpenOrdersProfitSummaryOrders from '@components/blocks/industry/guide-order-summary/OpenOrdersProfitSummaryOrders.astro'
+import OpenOrdersProfitSummaryResults from '@components/blocks/industry/guide-order-summary/OpenOrdersProfitSummaryResults.astro'
+import OpenOrdersProfitSummarySkeleton from '@components/blocks/industry/guide-order-summary/OpenOrdersProfitSummarySkeleton.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+import Switch from '@components/blocks/Switch.astro'
+
+interface Props {
+    summary: OrdersProfitSummary
+    facilities: PlannerFacility[]
+    facility_key: string
+    needed_by_from: string
+    needed_by_to: string
+    open_only: boolean
+    selected_order_ids: number[]
+}
+
+const {
+    summary,
+    facilities,
+    facility_key,
+    needed_by_from,
+    needed_by_to,
+    open_only,
+    selected_order_ids,
+} = Astro.props
+
+const facility_label =
+    facilities.find((f) => f.key === facility_key)?.system_name ??
+    facility_key.replace(/^\w/, (c) => c.toUpperCase())
+
+const page_action = translatePath('/industry/orders/summary/')
+const results_partial = translatePath(
+    '/partials/order_summary_results_component',
+)
+---
+
+<div class="[ order-summary w-full ]">
+    <Flexblock gap="var(--space-2xl)">
+        <form
+            id="order-summary-filters"
+            class="[ w-full ]"
+            hx-get={results_partial}
+            hx-target="#order-summary-results"
+            hx-swap="innerHTML"
+            hx-trigger="change, orderSummaryRefresh"
+            data-page-action={page_action}
+        >
+            <input type="hidden" name="applied" value="1" />
+            <input
+                type="hidden"
+                name="refresh_orders"
+                id="order-summary-refresh-orders"
+                value="0"
+            />
+
+            <Flexblock gap="var(--space-m)">
+                <Flexblock gap="var(--space-3xs)">
+                    <h2>Filters</h2>
+                    <small>
+                        Pick a needed-by date range, industry system, and which
+                        orders to include. Metrics and charts update when you
+                        change anything here.
+                    </small>
+                </Flexblock>
+
+                <FlexInline gap="var(--space-m)" class="[ flex-wrap items-end ]">
+                    <label class="[ filter-field ]">
+                        <span>Needed by from</span>
+                        <Input
+                            type="date"
+                            name="needed_by_from"
+                            value={needed_by_from}
+                            size="sm"
+                            width="12rem"
+                        />
+                    </label>
+                    <label class="[ filter-field ]">
+                        <span>Needed by to</span>
+                        <Input
+                            type="date"
+                            name="needed_by_to"
+                            value={needed_by_to}
+                            size="sm"
+                            width="12rem"
+                        />
+                    </label>
+                    <label class="[ filter-field ]">
+                        <span>Build Location</span>
+                        <Select
+                            name="facility_key"
+                            size="sm"
+                            width="14rem"
+                        >
+                            {
+                                facilities.map((f) => (
+                                    <option
+                                        value={f.key}
+                                        selected={f.key === facility_key}
+                                    >
+                                        {f.system_name}
+                                    </option>
+                                ))
+                            }
+                        </Select>
+                    </label>
+                    <div class="[ filter-switch ]">
+                        <Switch name="open_only" value="1" checked={open_only}>
+                            Open orders only
+                        </Switch>
+                    </div>
+                </FlexInline>
+
+                <div id="order-summary-orders">
+                    <OpenOrdersProfitSummaryOrders
+                        orders={summary.orders}
+                        selected_order_ids={selected_order_ids}
+                    />
+                </div>
+            </Flexblock>
+        </form>
+
+        <div
+            id="order-summary-results-stack"
+            class="[ order-summary-results-stack w-full ]"
+        >
+            <div
+                id="order-summary-results"
+                class="[ order-summary-results w-full ]"
+                aria-busy="false"
+                aria-live="polite"
+            >
+                <OpenOrdersProfitSummaryResults
+                    summary={summary}
+                    facility_label={facility_label}
+                />
+            </div>
+            <OpenOrdersProfitSummarySkeleton />
+        </div>
+    </Flexblock>
+</div>
+
+<script>
+    const form = document.getElementById(
+        'order-summary-filters',
+    ) as HTMLFormElement | null
+    const refreshOrdersInput = document.getElementById(
+        'order-summary-refresh-orders',
+    ) as HTMLInputElement | null
+    const resultsStack = document.getElementById(
+        'order-summary-results-stack',
+    )
+    const results = document.getElementById('order-summary-results')
+    const pageAction = form?.dataset.pageAction || ''
+
+    const RANGE_FIELDS = new Set([
+        'needed_by_from',
+        'needed_by_to',
+        'open_only',
+    ])
+
+    function syncHistory() {
+        if (!form || !pageAction) return
+        const params = new URLSearchParams(new FormData(form) as any)
+        params.delete('refresh_orders')
+        const qs = params.toString()
+        history.replaceState(null, '', qs ? `${pageAction}?${qs}` : pageAction)
+    }
+
+    function setRefreshOrders(enabled: boolean) {
+        if (refreshOrdersInput) refreshOrdersInput.value = enabled ? '1' : '0'
+    }
+
+    function setResultsLoading(loading: boolean) {
+        resultsStack?.classList.toggle('is-loading', loading)
+        results?.setAttribute('aria-busy', loading ? 'true' : 'false')
+        if (!loading) {
+            document
+                .getElementById('order-summary-orders')
+                ?.classList.remove('is-loading')
+        }
+    }
+
+    if (form && form.dataset.bound !== '1') {
+        form.dataset.bound = '1'
+        if (typeof htmx !== 'undefined') htmx.process(form)
+
+        // Set OOB order-list refresh before HTMX serializes the form.
+        form.addEventListener(
+            'change',
+            (event) => {
+                const target = event.target as HTMLInputElement | null
+                setRefreshOrders(
+                    !!target?.name && RANGE_FIELDS.has(target.name),
+                )
+            },
+            true,
+        )
+
+        form.addEventListener('click', (event) => {
+            const button = (event.target as HTMLElement | null)?.closest(
+                '[data-order-select]',
+            ) as HTMLElement | null
+            if (!button || !form.contains(button)) return
+
+            const mode = button.dataset.orderSelect
+            form
+                .querySelectorAll<HTMLInputElement>('input[name="order_ids"]')
+                .forEach((input) => {
+                    input.checked = mode === 'all'
+                })
+            setRefreshOrders(false)
+            if (typeof htmx !== 'undefined') {
+                htmx.trigger(form, 'orderSummaryRefresh')
+            }
+        })
+
+        document.body.addEventListener('htmx:beforeRequest', (event: any) => {
+            if (event.detail?.elt !== form) return
+            setResultsLoading(true)
+            const orders = document.getElementById('order-summary-orders')
+            if (orders && refreshOrdersInput?.value === '1') {
+                orders.classList.add('is-loading')
+            }
+        })
+
+        document.body.addEventListener('htmx:afterSwap', (event: any) => {
+            const target = event.detail?.target as HTMLElement | undefined
+            if (target?.id !== 'order-summary-results') return
+            setRefreshOrders(false)
+            setResultsLoading(false)
+            syncHistory()
+            if (typeof htmx !== 'undefined') htmx.process(target)
+            if (typeof Alpine !== 'undefined') Alpine.initTree(target)
+            if (typeof tippy === 'function') {
+                tippy('#order-summary-results [data-tippy-content]', {
+                    delay: [100, 200],
+                    arrow: true,
+                })
+            }
+        })
+
+        document.body.addEventListener('htmx:afterRequest', (event: any) => {
+            if (event.detail?.elt !== form) return
+            setResultsLoading(false)
+        })
+    }
+</script>
+
+<style lang="scss">
+    .order-summary {
+        min-width: 0;
+    }
+
+    .filter-field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        font-size: var(--step--1);
+        color: var(--highlight);
+    }
+
+    .filter-switch {
+        align-self: flex-end;
+        padding-bottom: var(--space-3xs);
+        font-size: var(--step--1);
+    }
+
+    .order-summary-results {
+        min-width: 0;
+    }
+
+    .order-summary-results-stack {
+        min-width: 0;
+        position: relative;
+    }
+
+    :global(#order-summary-orders.is-loading) {
+        position: relative;
+        pointer-events: none;
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 2px;
+            background: linear-gradient(
+                90deg,
+                rgba(0, 0, 0, 0.15) 0%,
+                rgba(255, 255, 255, 0.06) 50%,
+                rgba(0, 0, 0, 0.15) 100%
+            );
+            background-size: 200% 100%;
+            animation: order-summary-orders-skel 1.1s ease-in-out infinite;
+        }
+    }
+
+    @keyframes order-summary-orders-skel {
+        0% {
+            background-position: 100% 0;
+        }
+        100% {
+            background-position: -100% 0;
+        }
+    }
+</style>
