@@ -71,6 +71,8 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
             order_breakdown={order_breakdown}
             location_name={location_name ?? undefined}
             init_tooltips={true}
+            swap_target_id={`order-breakdown-${order_id}-inner`}
+            claim_render="breakdown"
         />
         :
         <DebugTag>{t('no_order_unexpected_error')}</DebugTag>

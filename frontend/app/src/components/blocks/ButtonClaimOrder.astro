@@ -16,6 +16,7 @@ interface Props {
     has_blueprints?: boolean;
     hidden?:        boolean;
     id?:            string;
+    render?:        'order_item' | 'breakdown';
 }
 
 const {
@@ -29,9 +30,11 @@ const {
     has_blueprints = false,
     hidden = false,
     id,
+    render = 'order_item',
 } = Astro.props
 
 import { hours_diff } from '@helpers/date'
+import { query_string } from '@helpers/string'
 
 const is_assign_window = new Date(item.self_assign_window_ends_at) > new Date()
 const hours_left = hours_diff(new Date(), item.self_assign_window_ends_at)
@@ -39,12 +42,17 @@ const hours_left = hours_diff(new Date(), item.self_assign_window_ends_at)
 let clip_maximum = false
 let max_claimable_items = item.unassigned_quantity
 
-if (item.self_assign_maximum && item.self_assign_maximum > item.unassigned_quantity && is_assign_window) {
-    max_claimable_items = item.self_assign_maximum - claimed
-    clip_maximum = true
+if (item.self_assign_maximum != null && is_assign_window) {
+    const remaining_under_cap = Math.max(0, item.self_assign_maximum - claimed)
+    max_claimable_items = Math.min(item.unassigned_quantity, remaining_under_cap)
+    clip_maximum = remaining_under_cap < item.unassigned_quantity
 }
 
-const ORDER_ITEM_PARTIAL_URL = translatePath(`/partials/order_item_component?order_id=${order_id}&item_id=${item.id}`)
+const ORDER_ITEM_PARTIAL_URL = translatePath(`/partials/order_item_component?${query_string({
+    order_id: order_id,
+    item_id: item.id,
+    ...(render === 'breakdown' ? { render: 'breakdown' } : {}),
+})}`)
 
 import { number_thousand_separator } from '@helpers/numbers'
 

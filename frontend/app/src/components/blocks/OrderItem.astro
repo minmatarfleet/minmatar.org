@@ -3,7 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { RootSingleItem } from '@dtypes/api.minmatar.org'
-import type { IndustryOrderUI } from '@dtypes/layout_components'
+import type { Alert, IndustryOrderUI } from '@dtypes/layout_components'
 
 interface Props {
     order:                  IndustryOrderUI;
@@ -12,6 +12,7 @@ interface Props {
     claim_disabled_reason?: string | null;
     location_name:          string | undefined;
     init_tooltips:          boolean;
+    alert?:                 Alert | null;
 }
 
 const {
@@ -21,6 +22,7 @@ const {
     claim_disabled_reason = null,
     location_name,
     init_tooltips,
+    alert = null,
 } = Astro.props
 
 import {
@@ -60,7 +62,10 @@ import FlagIcon from '@components/icons/FlagIcon.astro';
 import TippyOrderItem from './TippyOrderItem.astro';
 ---
 
-<div id={`order-item-${order.id}`}>
+<div
+    id={`order-item-${order.id}`}
+    x-init={alert ? `show_alert_dialog(${JSON.stringify(alert)})` : undefined}
+>
     <a
         href={order_detail_href}
         class="[ order-item-link ]"
