@@ -1,5 +1,7 @@
 from django.contrib import admin
 from django.contrib import messages
+from django import forms
+from django.db.models import Q, Sum
 from django.http import HttpResponseRedirect
 from django.urls import path, reverse
 from django.utils import timezone
@@ -13,14 +15,24 @@ from industry.admin_views import (
     industry_orders_home_view,
 )
 from industry.forms import (
+    IndustryLoyaltyPointAccountAdminForm,
+    IndustryLoyaltyPointLedgerEntryAdminForm,
     IndustryOrderAdminForm,
     MiningUpgradeCompletionAdminForm,
 )
 from industry.helpers.admin_permissions import industry_orders_index_link_perms
 from industry.helpers.type_breakdown import get_breakdown_for_industry_product
+from industry.helpers.lp_ledger import (
+    account_balance,
+    remaining_lots,
+    resolve_offer_isk_per_lp,
+    weighted_average_cost_isk_per_lp,
+)
 from industry.models import (
     IndustryLoyaltyPoint,
+    IndustryLoyaltyPointAccount,
     IndustryLoyaltyPointContact,
+    IndustryLoyaltyPointLedgerEntry,
     IndustryLpStoreOffer,
     IndustryOrder,
     IndustryOrderItem,
@@ -31,10 +43,35 @@ from industry.models import (
 from tribes.models import TribeGroup
 
 
+class IndustryLoyaltyPointAccountInline(admin.TabularInline):
+    """Edit seller/stockpile holders directly from a loyalty currency."""
+
+    model = IndustryLoyaltyPointAccount
+    extra = 0
+    show_change_link = True
+    fields = (
+        "name",
+        "role",
+        "isk_per_lp",
+        "corporation_name",
+        "is_active",
+        "balance_display",
+    )
+    readonly_fields = ("balance_display",)
+    autocomplete_fields = ("eve_character", "user")
+
+    @admin.display(description="balance")
+    def balance_display(self, obj):
+        if not obj.pk:
+            return "—"
+        return f"{account_balance(obj):,}"
+
+
 class IndustryLoyaltyPointContactInline(admin.TabularInline):
     model = IndustryLoyaltyPointContact
-    extra = 0
-    raw_id_fields = ("eve_character", "user")
+    extra = 1
+    show_change_link = True
+    autocomplete_fields = ("eve_character", "user")
     fields = (
         "character_name",
         "eve_character",
@@ -46,6 +83,61 @@ class IndustryLoyaltyPointContactInline(admin.TabularInline):
     )
 
 
+class IndustryLoyaltyPointLedgerHistoryInline(admin.TabularInline):
+    """Read-only lot history. New rows are posted via the account form."""
+
+    model = IndustryLoyaltyPointLedgerEntry
+    extra = 0
+    can_delete = False
+    show_change_link = True
+    fields = (
+        "created_at",
+        "amount_display",
+        "isk_per_lp",
+        "balance_after",
+        "notes",
+        "created_by",
+    )
+    readonly_fields = fields
+    ordering = ("-created_at", "-id")
+
+    @admin.display(description="amount")
+    def amount_display(self, obj):
+        if obj.amount is None:
+            return "—"
+        sign = "+" if obj.amount > 0 else ""
+        return f"{sign}{obj.amount:,}"
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+class PositiveLpBalanceFilter(admin.SimpleListFilter):
+    title = "balance"
+    parameter_name = "has_balance"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("positive", "Positive balance"),
+            ("zero", "Zero balance"),
+        )
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if value == "positive":
+            return queryset.annotate(
+                _bal=Sum("ledger_entries__amount")
+            ).filter(_bal__gt=0)
+        if value == "zero":
+            return queryset.annotate(
+                _bal=Sum("ledger_entries__amount")
+            ).filter(Q(_bal__isnull=True) | Q(_bal=0))
+        return queryset
+
+
 @admin.register(IndustryLoyaltyPoint)
 class IndustryLoyaltyPointAdmin(admin.ModelAdmin):
     list_display = (
@@ -53,32 +145,365 @@ class IndustryLoyaltyPointAdmin(admin.ModelAdmin):
         "corporation_id",
         "default_isk_per_lp",
         "is_active",
-        "contact_count",
+        "account_count",
+        "accounts_link",
     )
+    list_editable = ("default_isk_per_lp", "is_active")
     list_filter = ("is_active",)
     search_fields = ("name", "corporation_id")
-    inlines = (IndustryLoyaltyPointContactInline,)
+    inlines = (IndustryLoyaltyPointAccountInline,)
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "name",
+                    "corporation_id",
+                    "default_isk_per_lp",
+                    "is_active",
+                    "notes",
+                ),
+                "description": (
+                    "Currency catalog for militia / navy LP. Default ISK/LP is "
+                    "used by the planner and as the offer fallback for accounts."
+                ),
+            },
+        ),
+        (
+            "Timestamps",
+            {
+                "classes": ("collapse",),
+                "fields": ("created_at", "updated_at"),
+            },
+        ),
+    )
+    readonly_fields = ("created_at", "updated_at")
+
+    @admin.display(description="accounts")
+    def account_count(self, obj):
+        return obj.accounts.count()
+
+    @admin.display(description="open accounts")
+    def accounts_link(self, obj):
+        url = reverse("admin:industry_industryloyaltypointaccount_changelist")
+        return format_html(
+            '<a href="{}?loyalty_point__id__exact={}">View accounts</a>',
+            url,
+            obj.pk,
+        )
+
+
+@admin.register(IndustryLoyaltyPointAccount)
+class IndustryLoyaltyPointAccountAdmin(admin.ModelAdmin):
+    form = IndustryLoyaltyPointAccountAdminForm
+    list_display = (
+        "name",
+        "loyalty_point",
+        "role",
+        "balance_display",
+        "offer_isk_per_lp_display",
+        "avg_cost_display",
+        "contact_summary",
+        "is_active",
+    )
+    list_filter = (
+        "role",
+        "is_active",
+        "loyalty_point",
+        PositiveLpBalanceFilter,
+    )
+    list_editable = ("role", "is_active")
+    search_fields = (
+        "name",
+        "corporation_name",
+        "loyalty_point__name",
+        "contacts__character_name",
+        "contacts__discord_username",
+    )
+    autocomplete_fields = ("loyalty_point", "eve_character", "user")
+    inlines = (
+        IndustryLoyaltyPointContactInline,
+        IndustryLoyaltyPointLedgerHistoryInline,
+    )
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "loyalty_point",
+                    "name",
+                    "role",
+                    "corporation_name",
+                    "eve_character",
+                    "user",
+                    "is_active",
+                    "notes",
+                ),
+            },
+        ),
+        (
+            "Pricing",
+            {
+                "fields": ("isk_per_lp",),
+                "description": (
+                    "Current offer ISK/LP for industrialists (or known seller ask). "
+                    "Lot history can still mix 825 / 850 / etc. on the ledger."
+                ),
+            },
+        ),
+        (
+            "Balance",
+            {
+                "fields": (
+                    "balance_display",
+                    "offer_isk_per_lp_display",
+                    "avg_cost_display",
+                    "lots_display",
+                ),
+            },
+        ),
+        (
+            "Post ledger entry",
+            {
+                "fields": (
+                    "ledger_direction",
+                    "ledger_quantity",
+                    "ledger_isk_per_lp",
+                    "ledger_notes",
+                ),
+                "description": (
+                    "Leave quantity blank to only update the account. "
+                    "To post: choose credit/debit, enter LP quantity and ISK/LP "
+                    "for that lot, then Save."
+                ),
+            },
+        ),
+        (
+            "Timestamps",
+            {
+                "classes": ("collapse",),
+                "fields": ("created_at", "updated_at"),
+            },
+        ),
+    )
+    readonly_fields = (
+        "balance_display",
+        "offer_isk_per_lp_display",
+        "avg_cost_display",
+        "lots_display",
+        "created_at",
+        "updated_at",
+    )
+
+    def get_fieldsets(self, request, obj=None):
+        fieldsets = list(super().get_fieldsets(request, obj))
+        if obj is None:
+            # Balance + ledger post only make sense after the account exists.
+            return [
+                fs
+                for fs in fieldsets
+                if fs[0] not in ("Balance", "Post ledger entry")
+            ]
+        return fieldsets
+
+    def get_inlines(self, request, obj):
+        if obj is None:
+            return (IndustryLoyaltyPointContactInline,)
+        return self.inlines
+
+    @admin.display(description="balance")
+    def balance_display(self, obj):
+        if not obj or not obj.pk:
+            return "—"
+        return f"{account_balance(obj):,}"
+
+    @admin.display(description="offer ISK/LP")
+    def offer_isk_per_lp_display(self, obj):
+        if not obj or not obj.pk:
+            return "—"
+        return resolve_offer_isk_per_lp(obj)
+
+    @admin.display(description="avg cost")
+    def avg_cost_display(self, obj):
+        if not obj or not obj.pk:
+            return "—"
+        avg = weighted_average_cost_isk_per_lp(obj)
+        if avg is None:
+            return "—"
+        return f"{avg:.1f}"
+
+    @admin.display(description="remaining lots")
+    def lots_display(self, obj):
+        if not obj or not obj.pk:
+            return "—"
+        lots = remaining_lots(obj)
+        if not lots:
+            return "—"
+        return mark_safe(
+            "<br>".join(
+                f"{lot.quantity:,} LP @ {lot.isk_per_lp} ISK/LP"
+                for lot in lots
+            )
+        )
 
     @admin.display(description="contacts")
-    def contact_count(self, obj):
-        return obj.contacts.count()
+    def contact_summary(self, obj):
+        names = list(
+            obj.contacts.filter(is_active=True).values_list(
+                "character_name", flat=True
+            )[:3]
+        )
+        if not names:
+            return "—"
+        suffix = "…" if obj.contacts.filter(is_active=True).count() > 3 else ""
+        return ", ".join(names) + suffix
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if not isinstance(form, IndustryLoyaltyPointAccountAdminForm):
+            return
+        try:
+            entry = form.post_ledger_if_requested(user=request.user)
+        except forms.ValidationError as exc:
+            messages.error(request, "; ".join(exc.messages))
+            return
+        if entry is not None:
+            sign = "+" if entry.amount > 0 else ""
+            messages.success(
+                request,
+                f"Posted ledger entry: {sign}{entry.amount:,} LP "
+                f"@ {entry.isk_per_lp} ISK/LP (balance {entry.balance_after:,}).",
+            )
 
 
 @admin.register(IndustryLoyaltyPointContact)
 class IndustryLoyaltyPointContactAdmin(admin.ModelAdmin):
     list_display = (
         "character_name",
-        "loyalty_point",
+        "account",
+        "account_role",
+        "loyalty_point_name",
         "discord_username",
         "is_active",
     )
-    list_filter = ("is_active", "loyalty_point")
+    list_editable = ("is_active",)
+    list_filter = ("is_active", "account__loyalty_point", "account__role")
     search_fields = (
         "character_name",
         "discord_username",
-        "loyalty_point__name",
+        "account__name",
+        "account__loyalty_point__name",
     )
-    raw_id_fields = ("loyalty_point", "eve_character", "user")
+    autocomplete_fields = ("account", "eve_character", "user")
+
+    @admin.display(description="role", ordering="account__role")
+    def account_role(self, obj):
+        return obj.account.get_role_display()
+
+    @admin.display(
+        description="loyalty point", ordering="account__loyalty_point__name"
+    )
+    def loyalty_point_name(self, obj):
+        return obj.account.loyalty_point.name
+
+
+@admin.register(IndustryLoyaltyPointLedgerEntry)
+class IndustryLoyaltyPointLedgerEntryAdmin(admin.ModelAdmin):
+    form = IndustryLoyaltyPointLedgerEntryAdminForm
+    list_display = (
+        "created_at",
+        "account",
+        "amount_display",
+        "isk_per_lp",
+        "balance_after",
+        "notes_short",
+        "created_by",
+    )
+    list_filter = ("account__loyalty_point", "account__role", "account")
+    search_fields = ("account__name", "notes")
+    autocomplete_fields = ("account",)
+    date_hierarchy = "created_at"
+    ordering = ("-created_at", "-id")
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj:
+            return (
+                "account",
+                "amount_display",
+                "isk_per_lp",
+                "balance_after",
+                "created_by",
+                "created_at",
+            )
+        return ("balance_after", "created_by", "created_at", "amount_display")
+
+    def get_fieldsets(self, request, obj=None):
+        if obj:
+            return (
+                (
+                    None,
+                    {
+                        "fields": (
+                            "account",
+                            "amount_display",
+                            "isk_per_lp",
+                            "balance_after",
+                            "notes",
+                            "created_by",
+                            "created_at",
+                        ),
+                        "description": (
+                            "Amount and ISK/LP are immutable. Edit notes if needed, "
+                            "or post a reversing entry from the account page."
+                        ),
+                    },
+                ),
+            )
+        return (
+            (
+                None,
+                {
+                    "fields": (
+                        "account",
+                        "direction",
+                        "quantity",
+                        "isk_per_lp",
+                        "notes",
+                    ),
+                    "description": (
+                        "Post a credit (LP in) or debit (LP out) against an account. "
+                        "Use a distinct ISK/LP per lot when prices differ."
+                    ),
+                },
+            ),
+        )
+
+    def get_form(self, request, obj=None, change=False, **kwargs):
+        form = super().get_form(request, obj, change=change, **kwargs)
+
+        class RequestLedgerForm(form):
+            def __init__(self, *args, **inner_kwargs):
+                super().__init__(*args, **inner_kwargs)
+                self._request_user = request.user
+
+        return RequestLedgerForm
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    @admin.display(description="amount", ordering="amount")
+    def amount_display(self, obj):
+        if not obj or obj.amount is None:
+            return "—"
+        sign = "+" if obj.amount > 0 else ""
+        return f"{sign}{obj.amount:,}"
+
+    @admin.display(description="notes")
+    def notes_short(self, obj):
+        notes = (obj.notes or "").strip()
+        if len(notes) <= 48:
+            return notes or "—"
+        return notes[:45] + "…"
 
 
 @admin.register(IndustryLpStoreOffer)
