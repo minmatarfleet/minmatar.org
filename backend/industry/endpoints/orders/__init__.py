@@ -20,6 +20,12 @@ from industry.endpoints.orders.get_orders import (
     get_orders,
     METHOD as get_orders_method,
 )
+from industry.endpoints.orders.get_orders_profit_summary import (
+    PATH as get_orders_profit_summary_path,
+    ROUTE_SPEC as get_orders_profit_summary_spec,
+    get_orders_profit_summary,
+    METHOD as get_orders_profit_summary_method,
+)
 from industry.endpoints.orders.get_order_orderitems import (
     PATH as get_order_orderitems_path,
     ROUTE_SPEC as get_order_orderitems_spec,
@@ -49,6 +55,12 @@ router = Router(tags=["Industry - Orders"])
 
 _ROUTES = (
     (get_orders_method, get_orders_path, get_orders_spec, get_orders),
+    (
+        get_orders_profit_summary_method,
+        get_orders_profit_summary_path,
+        get_orders_profit_summary_spec,
+        get_orders_profit_summary,
+    ),
     (post_order_method, post_order_path, post_order_spec, post_order),
     (get_order_method, get_order_path, get_order_spec, get_order),
     (delete_order_method, delete_order_path, delete_order_spec, delete_order),

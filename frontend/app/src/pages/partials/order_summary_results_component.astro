@@ -1,0 +1,81 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import {
+    get_orders_profit_summary,
+    get_planner_facilities,
+} from '@helpers/api.minmatar.org/industry'
+import type { OrdersProfitSummary } from '@dtypes/api.minmatar.org'
+import OpenOrdersProfitSummaryResults from '@components/blocks/industry/guide-order-summary/OpenOrdersProfitSummaryResults.astro'
+import OpenOrdersProfitSummaryOrders from '@components/blocks/industry/guide-order-summary/OpenOrdersProfitSummaryOrders.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+
+const params = Astro.url.searchParams
+const needed_by_from = params.get('needed_by_from') || ''
+const needed_by_to = params.get('needed_by_to') || ''
+const open_only =
+    params.get('open_only') === '1' || params.get('open_only') === 'true'
+const facility_key = (params.get('facility_key') || 'amamake').toLowerCase()
+const order_id_params = params.getAll('order_ids').filter(Boolean)
+const selected_order_ids = order_id_params
+    .map((id) => parseInt(id, 10))
+    .filter((id) => !Number.isNaN(id) && id > 0)
+const refresh_orders = params.get('refresh_orders') === '1'
+
+let summary: OrdersProfitSummary | null = null
+let fetching_error: Error | false = false
+
+try {
+    // Date / open-only changes rebuild the order list and include every match.
+    // Facility / checkbox changes keep the current selection (including none).
+    summary = await get_orders_profit_summary({
+        needed_by_from: needed_by_from || undefined,
+        needed_by_to: needed_by_to || undefined,
+        open_only,
+        facility_key,
+        order_ids: refresh_orders
+            ? undefined
+            : selected_order_ids.join(','),
+    })
+} catch (error) {
+    fetching_error = error
+}
+
+const facilities = await get_planner_facilities().catch(() => [])
+const facility_label =
+    facilities.find((f) => f.key === facility_key)?.system_name ??
+    facility_key.replace(/^\w/, (c) => c.toUpperCase())
+
+const partial_qs = Astro.url.search
+const partial_url = `${translatePath('/partials/order_summary_results_component')}${partial_qs}`
+---
+
+{
+    fetching_error !== false ? (
+        <ErrorRefetch
+            args={{
+                partial: partial_url,
+                error: fetching_error,
+                delay: 0,
+            }}
+        />
+    ) : summary ? (
+        <>
+            <OpenOrdersProfitSummaryResults
+                summary={summary}
+                facility_label={facility_label}
+            />
+            {refresh_orders ? (
+                <div id="order-summary-orders" hx-swap-oob="innerHTML">
+                    <OpenOrdersProfitSummaryOrders
+                        orders={summary.orders}
+                        selected_order_ids={summary.orders
+                            .filter((order) => order.included)
+                            .map((order) => order.id)}
+                    />
+                </div>
+            ) : null}
+        </>
+    ) : null
+}
