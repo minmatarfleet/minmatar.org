@@ -45,38 +45,38 @@ const t1Rows = [
 
 const brawlMatrix: MatchupRating[][] = [
     // Blaster Exequror Navy Issue high
-    ['=', '-', '+', '+', '=', '+', '+', '+'],
+    ['=', '-', '=', '+', '=', '-', '+', '+'],
     // Dual Rep Vexor Navy Issue high
     ['+', '=', '+', '+', '=', '++', '++', '+'],
     // Polarized Augoror Navy Issue high
-    ['-', '--', '=', '+', '=', '+', '+', '+'],
+    ['=', '--', '=', '+', '=', '-', '-', '+'],
     // HAM Caracal Navy Issue high
-    ['=', '-', '+', '=', '-', '+', '+', '='],
+    ['=', '-', '+', '=', '-', '++', '+', '='],
     // 2X Neut HAM Osprey Navy Issue high
-    ['=', '=', '+', '+', '=', '+', '=', '-'],
+    ['=', '=', '+', '+', '=', '++', '=', '+'],
     // Brawl Arbitrator high
-    ['-', '--', '+', '=', '=', '=', '=', '='],
+    ['+', '--', '+', '--', '--', '=', '=', '='],
     // Dual Prop Stabber Fleet Issue high
-    ['-', '--', '+', '=', '+', '+', '=', '='],
+    ['-', '--', '+', '=', '+', '=', '=', '='],
     // Dual Prop Scythe Fleet Issue high
-    ['-', '-', '+', '+', '+', '+', '-', '='],
+    ['-', '-', '+', '+', '-', '+', '-', '='],
 ]
 
 const kiteMatrix: MatchupRating[][] = [
     // Long Point Arbitrator high
-    ['=', '-', '-', '-', '=', '-', '+'],
+    ['=', '-', '-', '-', '-', '-', '='],
     // Pulse Augoror Navy Issue high
-    ['+', '=', '=', '=', '+', '-', '+'],
+    ['+', '=', '=', '=', '+', '+', '+'],
     // Kite Omen Navy Issue high
     ['+', '=', '=', '=', '+', '-', '+'],
     // 250mm Rail Exequror Navy Issue high
     ['+', '=', '=', '=', '+', '=', '+'],
     // RLML Osprey Navy Issue high
-    ['=', '-', '=', '-', '=', '--', '-'],
+    ['+', '-', '-', '-', '=', '--', '+'],
     // Armor RLML Scythe Fleet Issue high
-    ['+', '+', '+', '=', '++', '=', '+'],
+    ['+', '-', '+', '=', '++', '=', '+'],
     // Vulcan Stabber high
-    ['=', '-', '-', '-', '=', '-', '='],
+    ['=', '-', '-', '-', '-', '-', '='],
 ]
 
 const t1Matrix: MatchupRating[][] = [
