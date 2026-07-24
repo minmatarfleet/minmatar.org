@@ -91,12 +91,19 @@ def post_order_item_assignment(
             IndustryOrderItemAssignment.objects.get_or_create(
                 order_item=item,
                 character=character,
-                defaults={"quantity": payload.quantity},
+                defaults={
+                    "quantity": payload.quantity,
+                    "has_blueprints": payload.has_blueprints,
+                },
             )
         )
         if not created:
             assignment.quantity += payload.quantity
-            assignment.save(update_fields=["quantity"])
+            # Once claimed with blueprints, keep True; otherwise take latest claim.
+            assignment.has_blueprints = (
+                assignment.has_blueprints or payload.has_blueprints
+            )
+            assignment.save(update_fields=["quantity", "has_blueprints"])
 
     assignment = IndustryOrderItemAssignment.objects.select_related(
         "character"

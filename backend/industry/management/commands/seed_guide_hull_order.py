@@ -1,4 +1,4 @@
-"""Seed an active industry order matching the guide-hull ×100 canvas."""
+"""Seed an active industry order matching the navy-only guide-hull ×100 canvas."""
 
 from datetime import timedelta
 
@@ -13,39 +13,41 @@ from industry.helpers.guide_order_summary_export import (
     ORDER_QTY,
     EXPLICIT_CUT_TYPE_IDS,
 )
-from industry.models import IndustryOrderItem
+from industry.models import (
+    IndustryOrder,
+    IndustryOrderItem,
+    IndustryOrderItemAssignment,
+)
 from industry.test_utils import create_industry_order
 
-# Kept guide lines (same set as frontend guide-order-summary.ts).
-# Ask prices match the canvas Jita sells used when the guide report was baked.
+# Navy-only kept guide lines (T1 Coercer/Arbitrator/Bellicose/Stabber excluded).
+# Ask prices = target_unit_price from the navy-only guide pricing run.
+DEFAULT_SELF_ASSIGN_MAXIMUM = 25
 KEPT_HULLS = (
-    (17619, 8_000_000),  # Caldari Navy Hookbill
-    (17841, 8_465_000),  # Federation Navy Comet
-    (17703, 10_000_000),  # Imperial Navy Slicer
-    (17812, 8_998_000),  # Republic Fleet Firetail
-    (37454, 11_490_000),  # Vigil Fleet Issue
-    (73789, 21_300_000),  # Coercer Navy Issue
-    (73794, 18_840_000),  # Thrasher Fleet Issue
-    (73795, 18_000_000),  # Cormorant Navy Issue
-    (91858, 19_522_645),  # Talwar Fleet Issue
-    (16236, 1_386_000),  # Coercer
-    (628, 9_198_000),  # Arbitrator
-    (29337, 43_560_000),  # Augoror Navy Issue
-    (17709, 44_230_000),  # Omen Navy Issue
-    (17634, 40_000_000),  # Caracal Navy Issue
-    (29340, 40_930_000),  # Osprey Navy Issue
-    (630, 11_790_000),  # Bellicose
-    (29336, 42_840_000),  # Scythe Fleet Issue
-    (622, 11_620_000),  # Stabber
-    (17713, 43_340_000),  # Stabber Fleet Issue
+    (17619, 8_380_000),  # Caldari Navy Hookbill
+    (17841, 8_180_000),  # Federation Navy Comet
+    (17703, 8_480_000),  # Imperial Navy Slicer
+    (17812, 7_880_000),  # Republic Fleet Firetail
+    (37454, 7_880_000),  # Vigil Fleet Issue
+    (73789, 19_120_000),  # Coercer Navy Issue
+    (73794, 17_320_000),  # Thrasher Fleet Issue
+    (73795, 18_820_000),  # Cormorant Navy Issue
+    (91858, 17_320_000),  # Talwar Fleet Issue
+    (29337, 44_100_000),  # Augoror Navy Issue
+    (17709, 44_100_000),  # Omen Navy Issue
+    (17634, 43_600_000),  # Caracal Navy Issue
+    (29340, 43_600_000),  # Osprey Navy Issue
+    (29336, 41_400_000),  # Scythe Fleet Issue
+    (17713, 41_400_000),  # Stabber Fleet Issue
 )
 KEPT_TYPE_IDS = tuple(pair[0] for pair in KEPT_HULLS)
 
 
 class Command(BaseCommand):
     help = (
-        "Seed an active industry order with the kept guide hulls "
-        f"(qty {ORDER_QTY} each) for open-orders profit summary demos."
+        "Seed an active industry order with navy-only guide hulls "
+        f"(qty {ORDER_QTY} each, claim max {DEFAULT_SELF_ASSIGN_MAXIMUM}) "
+        "for open-orders profit summary demos."
     )
 
     def add_arguments(self, parser):
@@ -54,6 +56,15 @@ class Command(BaseCommand):
             type=int,
             default=ORDER_QTY,
             help=f"Quantity per hull (default {ORDER_QTY}).",
+        )
+        parser.add_argument(
+            "--self-assign-maximum",
+            type=int,
+            default=DEFAULT_SELF_ASSIGN_MAXIMUM,
+            help=(
+                "Per-character claim max for the first 48h "
+                f"(default {DEFAULT_SELF_ASSIGN_MAXIMUM})."
+            ),
         )
         parser.add_argument(
             "--character-id",
@@ -66,6 +77,14 @@ class Command(BaseCommand):
             type=int,
             default=None,
             help="EveLocation.location_id (default: Amamake if present).",
+        )
+        parser.add_argument(
+            "--replace-all",
+            action="store_true",
+            help=(
+                "Delete ALL local IndustryOrder rows (and cascading items/"
+                "assignments) before creating the new order. Local DB only."
+            ),
         )
         parser.add_argument(
             "--include-cuts",
@@ -81,6 +100,37 @@ class Command(BaseCommand):
         qty = int(options["quantity"])
         if qty < 1:
             raise CommandError("quantity must be >= 1")
+
+        claim_max = int(options["self_assign_maximum"])
+        if claim_max < 1:
+            raise CommandError("self-assign-maximum must be >= 1")
+
+        if options["replace_all"]:
+            # Raw deletes: ORM collector also walks IndustryContractAssociation,
+            # which may not be migrated on local DBs yet.
+            # pylint: disable=protected-access
+            n_assignments = IndustryOrderItemAssignment.objects.count()
+            n_items = IndustryOrderItem.objects.count()
+            n_orders = IndustryOrder.objects.count()
+            for order in IndustryOrder.objects.all():
+                order.tribe_groups.clear()
+            IndustryOrderItemAssignment.objects.all()._raw_delete(
+                using=IndustryOrderItemAssignment.objects.db
+            )
+            IndustryOrderItem.objects.all()._raw_delete(
+                using=IndustryOrderItem.objects.db
+            )
+            IndustryOrder.objects.all()._raw_delete(
+                using=IndustryOrder.objects.db
+            )
+            # pylint: enable=protected-access
+            self.stdout.write(
+                self.style.WARNING(
+                    f"Deleted local industry data: "
+                    f"{n_orders} orders, {n_items} items, "
+                    f"{n_assignments} assignments"
+                )
+            )
 
         if options["include_cuts"]:
             type_ids = [
@@ -146,7 +196,7 @@ class Command(BaseCommand):
                 order=order,
                 eve_type=types[tid],
                 quantity=qty,
-                self_assign_maximum=qty,
+                self_assign_maximum=claim_max,
                 target_unit_price=ask_by_type.get(tid),
             )
 
@@ -155,7 +205,7 @@ class Command(BaseCommand):
             self.style.SUCCESS(
                 f"Created IndustryOrder #{order.pk} "
                 f"(code {order.public_short_code}) at {loc_label}: "
-                f"{len(type_ids)} hulls ×{qty}"
+                f"{len(type_ids)} hulls ×{qty} (claim max {claim_max})"
             )
         )
         self.stdout.write(

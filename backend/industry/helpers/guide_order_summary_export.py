@@ -614,16 +614,6 @@ export function formatIskFull(isk: number): string {{
     return Math.round(isk).toLocaleString('en-US')
 }}
 
-export function shortHullName(name: string): string {{
-    return name
-        .replace(' Navy Issue', ' NI')
-        .replace(' Fleet Issue', ' FI')
-        .replace('Caldari Navy ', '')
-        .replace('Federation Navy ', '')
-        .replace('Imperial Navy ', '')
-        .replace('Republic Fleet ', '')
-}}
-
 export function rowTone(orderProfit: number): GuideOrderTableTone {{
     if (orderProfit >= 100_000_000) return 'success'
     if (orderProfit >= MIN_ORDER_PROFIT_ISK) return 'info'

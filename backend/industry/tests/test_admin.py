@@ -1,12 +1,13 @@
 """Tests for industry admin customizations."""
 
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import PermissionDenied
-from django.test import RequestFactory
+from django.test import Client, RequestFactory
 from django.urls import reverse
 from django.utils import timezone
 
@@ -27,6 +28,7 @@ class IndustryAdminCustomizationsTestCase(TestCase):
     def setUp(self):
         super().setUp()
         self.factory = RequestFactory()
+        self.client = Client()
         user_model = get_user_model()
         self.staff = user_model.objects.create_user(
             username="industry-orders-viewer",
@@ -106,6 +108,32 @@ class IndustryAdminCustomizationsTestCase(TestCase):
         self.assertContains(response, "Order items")
         self.assertContains(response, "Assignments")
         self.assertContains(response, "Edit order")
+        self.assertContains(response, "Refresh order breakdown")
+
+    @patch("industry.admin.refresh_order_profit_breakdown")
+    def test_refresh_profit_breakdown_admin_view(self, mock_refresh):
+        change_perm = Permission.objects.get(
+            codename="change_industryorder",
+            content_type=ContentType.objects.get(
+                app_label="industry", model="industryorder"
+            ),
+        )
+        self.staff.user_permissions.add(self.view_perm, change_perm)
+        user_model = get_user_model()
+        self.staff = user_model.objects.get(pk=self.staff.pk)
+        self.client.force_login(self.staff)
+        url = reverse(
+            "admin:industry_industryorder_refresh_profit_breakdown",
+            args=[self.order.pk],
+        )
+        get_response = self.client.get(url)
+        self.assertEqual(get_response.status_code, 302)
+        mock_refresh.assert_not_called()
+
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 302)
+        mock_refresh.assert_called_once()
+        self.assertEqual(mock_refresh.call_args.args[0].pk, self.order.pk)
 
     def test_apply_industry_app_list_hides_nested_models(self):
         self.staff.user_permissions.add(self.view_perm)

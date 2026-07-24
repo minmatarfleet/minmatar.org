@@ -30,6 +30,8 @@ const BLUEPRINTS_BUTTONS_PARTIAL_URL = translatePath(`/partials/blueprints_butto
 import Flexblock from '@components/compositions/Flexblock.astro';
 
 import DialogButton from "@components/blocks/DialogButton.astro";
+
+import CargoIcon from '@components/icons/CargoIcon.astro';
 ---
 
 <DialogButton
@@ -40,7 +42,8 @@ import DialogButton from "@components/blocks/DialogButton.astro";
     color='fleet-red'
     max_width='520px'
 >
-    {t('blueprints')}
+    <CargoIcon slot="icon" size={24} />
+    {t('find_blueprints')}
 
     <Flexblock slot="dialog"  gap="var(--space-l)">
         <Flexblock gap="var(--space-s)">

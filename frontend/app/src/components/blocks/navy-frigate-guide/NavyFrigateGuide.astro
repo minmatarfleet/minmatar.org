@@ -15,6 +15,7 @@ import {
 } from '@/data/navy-frigate-guide'
 
 import GuideContentsLayout from '@components/blocks/GuideContentsLayout.astro'
+import GuideShell from '@components/blocks/GuideShell.astro'
 import NavyFrigateGuideMatchupChart from '@components/blocks/navy-frigate-guide/NavyFrigateGuideMatchupChart.astro'
 import NavyFrigateGuideShipSection from '@components/blocks/navy-frigate-guide/NavyFrigateGuideShipSection.astro'
 import { get_fittings } from '@helpers/api.minmatar.org/ships'
@@ -28,12 +29,11 @@ try {
 }
 ---
 
-<div class="nfg-guide card component light-transparency border">
-    <header class="nfg-guide__masthead">
-        <p class="nfg-guide__series">{guideMeta.title}</p>
-        <p class="nfg-guide__edition">{guideMeta.edition} · {guideMeta.yc}</p>
-    </header>
-
+<GuideShell
+    title={guideMeta.title}
+    subtitle={`${guideMeta.edition} · ${guideMeta.yc}`}
+>
+    <div class="nfg-guide">
     <GuideContentsLayout sections={guideSections}>
             <section id="introduction" data-section-id="introduction" class="nfg-section nfg-panel" aria-labelledby="nfg-intro-title">
                 <h2 id="nfg-intro-title" class="nfg-section__title">Introduction</h2>
@@ -157,28 +157,16 @@ try {
                 </ul>
             </section>
     </GuideContentsLayout>
-</div>
+    </div>
+</GuideShell>
 
 <style lang="scss">
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap');
-
     .nfg-guide {
         --nfg-display-font: 'Orbitron', var(--heading-font);
         --nfg-body-font: 'Source Sans 3', var(--body-font);
         --nfg-panel-padding-block: var(--component-padding-block);
         --nfg-panel-padding-inline: var(--space-l-xl);
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
-        overflow-x: clip;
-        padding: var(--space-2xl) var(--space-l-xl);
         font-family: var(--nfg-body-font);
-    }
-
-    @media (max-width: 48rem) {
-        .nfg-guide {
-            padding: var(--space-l) var(--space-s);
-        }
     }
 
     .nfg-panel {
@@ -192,30 +180,6 @@ try {
         .nfg-panel {
             --nfg-panel-padding-inline: var(--space-s);
         }
-    }
-
-    .nfg-guide__masthead {
-        margin-bottom: var(--space-2xl);
-        padding-bottom: var(--space-xl);
-        text-align: center;
-        border-bottom: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent);
-    }
-
-    .nfg-guide__series {
-        margin: 0;
-        font-family: var(--nfg-display-font);
-        font-size: clamp(var(--step-1), 3vw, var(--step-3));
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: var(--highlight);
-    }
-
-    .nfg-guide__edition {
-        margin: var(--space-s) 0 0;
-        font-size: var(--step--1);
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--text-color-secondary, var(--faded));
     }
 
     .nfg-guide__ships {

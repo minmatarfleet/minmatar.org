@@ -5,19 +5,14 @@ import {
     formatIskCompact,
     formatIskFull,
     rowTone,
-    shortHullName,
 } from '@/data/industry/guide-order-summary'
 import { get_item_icon } from '@helpers/eve_image_server'
-import { number_name } from '@helpers/numbers'
-import { i18n } from '@helpers/i18n'
 
 import CampaignCallout from '@components/blocks/campaigns/etherium-reach/CampaignCallout.astro'
 import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
-import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
-import GuideOrderProfitBarChart from '@components/blocks/industry/guide-order-summary/GuideOrderProfitBarChart.astro'
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import OpenOrdersProfitSummaryChart from '@components/blocks/industry/guide-order-summary/OpenOrdersProfitSummaryChart.astro'
+import OpenOrdersProfitSummaryMetrics from '@components/blocks/industry/guide-order-summary/OpenOrdersProfitSummaryMetrics.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
-import Grid from '@components/compositions/Grid.astro'
 
 interface Props {
     summary: OrdersProfitSummary
@@ -25,14 +20,6 @@ interface Props {
 }
 
 const { summary, facility_label } = Astro.props
-const { lang } = i18n(Astro.url)
-
-const totals = summary.totals
-const sortedRows = [...summary.rows].sort((a, b) => b.order_profit - a.order_profit)
-const chartLabels = sortedRows.map((r) => shortHullName(r.name))
-const chartValuesM = sortedRows.map((r) =>
-    Math.round(r.order_profit / 1_000_000),
-)
 
 const tableRows: CampaignTableRow[] = summary.rows.map((r) => ({
     cells: [
@@ -63,69 +50,10 @@ const assumptions = Array.isArray(summary.assumptions)
     : [String(summary.assumptions)]
 ---
 
-<Flexblock gap="var(--space-2xl)" class="[ order-summary-results-inner w-full ]">
-    <Flexblock gap="var(--space-m)">
-        <Flexblock gap="var(--space-3xs)">
-            <h2>Order key metrics</h2>
-            <small>
-                Totals for the orders you included, using build cost at{' '}
-                {facility_label} and each order’s ask price.
-            </small>
-        </Flexblock>
+<Flexblock gap="var(--space-l)" class="[ order-summary-results-inner w-full ]">
+    <OpenOrdersProfitSummaryMetrics summary={summary} />
 
-        <Grid
-            class="[ w-full grid-fill ]"
-            row_gap="var(--space-3xs)"
-            column_gap="var(--space-3xs)"
-            min_item_width="300px"
-        >
-            <CampaignStat label="Total order amount" tone="info">
-                <span
-                    data-tippy-content={number_name(
-                        totals.total_order_amount,
-                        lang,
-                    )}
-                >
-                    {formatIskCompact(totals.total_order_amount)}
-                </span>
-            </CampaignStat>
-            <CampaignStat
-                label="Total order profit"
-                tone={totals.total_profit >= 0 ? 'success' : 'danger'}
-            >
-                <span data-tippy-content={number_name(totals.total_profit, lang)}>
-                    {formatIskCompact(totals.total_profit)}
-                </span>
-            </CampaignStat>
-            <CampaignStat label="Total products" tone="info">
-                {totals.line_count}
-            </CampaignStat>
-            <CampaignStat label="Total order items" tone="info">
-                {totals.total_qty}
-            </CampaignStat>
-        </Grid>
-    </Flexblock>
-
-    {
-        chartLabels.length > 0 ? (
-            <Flexblock gap="var(--space-m)">
-                <Flexblock gap="var(--space-3xs)">
-                    <h2>Order profit by product</h2>
-                    <small>
-                        Profit for each product across the included orders,
-                        sorted from highest to lowest (shown in millions of
-                        ISK).
-                    </small>
-                </Flexblock>
-                <ComponentBlock>
-                    <GuideOrderProfitBarChart
-                        labels={chartLabels}
-                        valuesM={chartValuesM}
-                    />
-                </ComponentBlock>
-            </Flexblock>
-        ) : null
-    }
+    <OpenOrdersProfitSummaryChart summary={summary} />
 
     {
         tableRows.length > 0 ? (

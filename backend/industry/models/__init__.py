@@ -14,8 +14,11 @@ from industry.models.lp_store import (
 from industry.models.mining import MiningUpgradeCompletion
 from industry.models.order import (
     IndustryOrder,
+    IndustryOrderBlueprintCoordinator,
     IndustryOrderItem,
     IndustryOrderItemAssignment,
+    IndustryOrderMineralCoordinator,
+    IndustryOrderPiCoordinator,
 )
 from industry.models.product import (
     IndustryProduct,
@@ -30,8 +33,11 @@ __all__ = [
     "IndustryLoyaltyPointLedgerEntry",
     "IndustryLpStoreOffer",
     "IndustryOrder",
+    "IndustryOrderBlueprintCoordinator",
     "IndustryOrderItem",
     "IndustryOrderItemAssignment",
+    "IndustryOrderMineralCoordinator",
+    "IndustryOrderPiCoordinator",
     "IndustryProduct",
     "IndustrySystemCostIndex",
     "MiningUpgradeCompletion",

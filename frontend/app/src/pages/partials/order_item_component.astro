@@ -30,6 +30,7 @@ if (Astro.request.method === "POST") {
         const data = await Astro.request.formData()
         const quantity = parseInt(data.get('quantity' as string) as string)
         const character_id = parseInt(data.get('character_id' as string) as string)
+        const has_blueprints = data.get('has_blueprints') === 'on'
 
         if (isNaN(item_id))
             throw new Error(t('invalid_item_id'))
@@ -47,6 +48,7 @@ if (Astro.request.method === "POST") {
             {
                 character_id: character_id,
                 quantity: quantity,
+                has_blueprints: has_blueprints,
             }
         )
     } catch (error) {

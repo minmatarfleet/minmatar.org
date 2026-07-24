@@ -64,6 +64,18 @@
         <span class="industry-settings-panel__value">{{ order.contract_to }}</span>
       </div>
       {% endif %}
+      <div class="industry-settings-panel__item">
+        <span class="industry-settings-panel__label">{% translate "Profit breakdown" %}</span>
+        <span class="industry-settings-panel__value">
+          {% if sections.settings.profit_breakdown_computed_at %}
+            {% blocktranslate with when=sections.settings.profit_breakdown_computed_at trimmed %}
+            Last refreshed {{ when }}
+            {% endblocktranslate %}
+          {% else %}
+            {% translate "Not stored yet" %}
+          {% endif %}
+        </span>
+      </div>
     </div>
     <div class="industry-card__actions">
       <a href="{{ sections.settings.edit_url }}" class="industry-btn industry-btn--primary">
@@ -73,6 +85,14 @@
       <a href="{{ sections.settings.mark_fulfilled_url }}" class="industry-btn industry-btn--secondary">
         {% translate "Mark fulfilled" %}
       </a>
+      {% endif %}
+      {% if sections.settings.can_refresh_profit_breakdown %}
+      <form method="post" action="{{ sections.settings.refresh_profit_breakdown_url }}" class="industry-inline-form">
+        {% csrf_token %}
+        <button type="submit" class="industry-btn industry-btn--secondary">
+          {% translate "Refresh order breakdown" %}
+        </button>
+      </form>
       {% endif %}
     </div>
   </section>

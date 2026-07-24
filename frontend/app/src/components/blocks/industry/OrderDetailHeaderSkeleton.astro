@@ -1,0 +1,80 @@
+---
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+---
+
+<FlexInline
+    id="order-detail-header"
+    justification="space-between"
+    class="[ w-full order-detail-meta order-detail-header-skeleton ]"
+    aria-busy="true"
+    aria-live="polite"
+>
+    <Flexblock gap="var(--space-s)" class="[ order-detail-meta__contractor ]">
+        <FlexInline gap="var(--space-xs)" class="[ items-center ]">
+            <div class="[ skel skel-avatar ]"></div>
+            <Flexblock gap="var(--space-3xs)">
+                <div class="[ skel skel-name ]"></div>
+                <div class="[ skel skel-label ]"></div>
+            </Flexblock>
+        </FlexInline>
+    </Flexblock>
+    <Flexblock gap="var(--space-3xs)" class="[ order-detail-meta__aside ]">
+        <div class="[ skel skel-aside ]"></div>
+        <div class="[ skel skel-aside skel-aside--short ]"></div>
+    </Flexblock>
+</FlexInline>
+
+<style lang="scss">
+    .order-detail-header-skeleton .skel {
+        border-radius: 2px;
+        background: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.12) 50%,
+            rgba(255, 255, 255, 0.06) 100%
+        );
+        background-size: 200% 100%;
+        animation: order-detail-header-skel 1.1s ease-in-out infinite;
+    }
+
+    .order-detail-header-skeleton .skel-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .order-detail-header-skeleton .skel-name {
+        width: 10rem;
+        height: 1.25rem;
+    }
+
+    .order-detail-header-skeleton .skel-label {
+        width: 5rem;
+        height: 0.75rem;
+    }
+
+    .order-detail-header-skeleton .skel-aside {
+        width: 10rem;
+        height: 0.85rem;
+        margin-inline-start: auto;
+    }
+
+    .order-detail-header-skeleton .skel-aside--short {
+        width: 8rem;
+    }
+
+    .order-detail-meta__aside {
+        text-align: right;
+    }
+
+    @keyframes order-detail-header-skel {
+        0% {
+            background-position: 100% 0;
+        }
+        100% {
+            background-position: -100% 0;
+        }
+    }
+</style>

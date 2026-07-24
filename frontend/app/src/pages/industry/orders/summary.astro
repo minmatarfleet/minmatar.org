@@ -3,11 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { get_site_origin } from '@helpers/seo'
-import {
-    get_orders_profit_summary,
-    get_planner_facilities,
-    type PlannerFacility,
-} from '@helpers/api.minmatar.org/industry'
+import { get_orders_profit_summary } from '@helpers/api.minmatar.org/industry'
 import type { OrdersProfitSummary } from '@dtypes/api.minmatar.org'
 
 import Viewport from '@layouts/Viewport.astro'
@@ -16,7 +12,7 @@ import PageTitle from '@components/page/PageTitle.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import OpenOrdersProfitSummary from '@components/blocks/industry/guide-order-summary/OpenOrdersProfitSummary.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-import Button from '@components/blocks/Button.astro'
+import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 
 function isoDate(d: Date): string {
     return d.toISOString().slice(0, 10)
@@ -35,57 +31,24 @@ const applied = params.get('applied') === '1'
 const open_only = applied
     ? params.get('open_only') === '1' || params.get('open_only') === 'true'
     : params.get('open_only') !== '0' && params.get('open_only') !== 'false'
-const facility_key = (params.get('facility_key') || 'amamake').toLowerCase()
 const order_id_params = params.getAll('order_ids').filter(Boolean)
 const selected_order_ids = order_id_params
     .map((id) => parseInt(id, 10))
     .filter((id) => !Number.isNaN(id) && id > 0)
 
 let summary: OrdersProfitSummary | null = null
-let facilities: PlannerFacility[] = []
 let fetching_error: Error | false = false
 
 try {
-    ;[summary, facilities] = await Promise.all([
-        get_orders_profit_summary({
-            needed_by_from,
-            needed_by_to,
-            open_only,
-            facility_key,
-            // When the form was submitted, honor explicit selection (including empty).
-            order_ids: applied ? selected_order_ids.join(',') : undefined,
-        }),
-        get_planner_facilities(),
-    ])
-    if (!facilities.some((f) => f.key === facility_key) && facilities[0]) {
-        // Keep URL facility if API still accepts it; list may be empty on error.
-    }
+    summary = await get_orders_profit_summary({
+        needed_by_from,
+        needed_by_to,
+        open_only,
+        // When the form was submitted, honor explicit selection (including empty).
+        order_ids: applied ? selected_order_ids.join(',') : undefined,
+    })
 } catch (error) {
     fetching_error = error
-}
-
-if (facilities.length === 0) {
-    facilities = [
-        {
-            key: 'amamake',
-            system_id: 30002537,
-            system_name: 'Amamake',
-            structures: [],
-            system_cost_bonus: 0,
-            facility_tax: 0,
-            scc_surcharge: 0,
-            reprocessing: {
-                structure_name: '',
-                structure_type_id: 0,
-                rig_name: '',
-                rig_type_id: 0,
-                facility_base_yield: 0,
-                refine_rate: 0,
-                facility_tax: 0,
-                effects: [],
-            },
-        },
-    ]
 }
 
 const page_title = t('industry.orders.summary.page_title')
@@ -101,6 +64,11 @@ const canonical_url = new URL(
     site_origin,
 ).href
 const meta_image = new URL('/images/industry-cover.jpg', site_origin).href
+const breadcrumb_items = [
+    { label: t('market.page_title'), href: translatePath('/market/') },
+    { label: t('industry.orders.page_title'), href: translatePath('/industry/orders/') },
+    { label: t('industry.orders.breadcrumb.summary') },
+]
 
 import {
     get_location_video_cover,
@@ -145,12 +113,10 @@ import {
         <Flexblock gap="var(--space-2xl)" class="[ w-full ]">
             <Flexblock gap="var(--space-xl)" class="[ w-full ]">
                 <Flexblock gap="var(--space-3xs)">
+                    <Breadcrumb items={breadcrumb_items} />
                     <PageTitle is_landing={true}>{page_title}</PageTitle>
                 </Flexblock>
                 <p class="[ excerpt ]">{page_description}</p>
-                <Button href={translatePath('/industry/orders/')} size="sm">
-                    {t('view_active_orders')}
-                </Button>
             </Flexblock>
 
             {
@@ -158,7 +124,7 @@ import {
                     <ErrorRefetch
                         args={{
                             partial: translatePath(
-                                `/industry/orders/summary/?needed_by_from=${needed_by_from}&needed_by_to=${needed_by_to}&open_only=${open_only ? '1' : '0'}&facility_key=${facility_key}`,
+                                `/industry/orders/summary/?needed_by_from=${needed_by_from}&needed_by_to=${needed_by_to}&open_only=${open_only ? '1' : '0'}`,
                             ),
                             error: fetching_error,
                             delay: 0,
@@ -167,8 +133,6 @@ import {
                 ) : summary ? (
                     <OpenOrdersProfitSummary
                         summary={summary}
-                        facilities={facilities}
-                        facility_key={facility_key}
                         needed_by_from={needed_by_from}
                         needed_by_to={needed_by_to}
                         open_only={open_only}

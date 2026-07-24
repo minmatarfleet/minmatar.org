@@ -1,4 +1,4 @@
-"""Tests for GET /api/industry/orders/profit-summary."""
+"""Tests for GET /api/industry/orders/profit-summary (snapshot compose path)."""
 
 from datetime import timedelta
 from unittest.mock import patch
@@ -10,6 +10,9 @@ from eveonline.models import EveCharacter, EveLocation
 from eveuniverse.models import EveCategory, EveGroup, EveType
 
 from app.test import TestCase as AppTestCase
+from industry.helpers.order_profit_breakdown import (
+    ensure_order_profit_breakdown,
+)
 from industry.helpers.product_unit_cost import ProductUnitCost
 from industry.models import IndustryOrderItem
 from industry.test_utils import create_industry_order
@@ -97,6 +100,8 @@ class OrdersProfitSummaryEndpointTestCase(AppTestCase):
         IndustryOrderItem.objects.create(
             order=order_b, eve_type=self.eve_type, quantity=5
         )
+        # Snapshots must exist before compose/GET; no live backfill on read.
+        ensure_order_profit_breakdown(order_a)
 
         response = self.client.get(
             "/api/industry/orders/profit-summary",
@@ -121,12 +126,51 @@ class OrdersProfitSummaryEndpointTestCase(AppTestCase):
         self.assertEqual(data["totals"]["total_profit"], 5_000_000)
         # Ask missing → Jita 1.5M × 10
         self.assertEqual(data["totals"]["total_order_amount"], 15_000_000)
+        order_a.refresh_from_db()
+        self.assertIsNotNone(order_a.profit_breakdown)
         assumptions_text = " ".join(data["assumptions"]).lower()
         self.assertIn("order ask", assumptions_text)
         self.assertIn("maximum claim", assumptions_text)
         mock_plan.assert_called()
         _, plan_kwargs = mock_plan.call_args
         self.assertEqual(plan_kwargs.get("quantity"), 100)
+
+    @patch("industry.helpers.orders_profit_summary.plan_product_unit_cost")
+    @patch(
+        "industry.helpers.orders_profit_summary.jita_sell_prices_by_type_id"
+    )
+    def test_profit_summary_skips_orders_without_snapshot(
+        self, mock_prices, mock_plan
+    ):
+        mock_prices.return_value = {self.eve_type.id: 1_500_000}
+        mock_plan.side_effect = lambda tid, **kw: self._unit_cost(
+            tid, self.eve_type.name
+        )
+        needed = (timezone.now() + timedelta(days=7)).date()
+        order = create_industry_order(
+            needed_by=needed,
+            character=self.character,
+            location=self.location,
+        )
+        IndustryOrderItem.objects.create(
+            order=order, eve_type=self.eve_type, quantity=10
+        )
+        response = self.client.get(
+            "/api/industry/orders/profit-summary",
+            {
+                "needed_by_from": needed.isoformat(),
+                "needed_by_to": needed.isoformat(),
+                "open_only": "true",
+                "order_ids": str(order.pk),
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["rows"], [])
+        self.assertEqual(data["totals"]["total_profit"], 0)
+        mock_plan.assert_not_called()
+        assumptions_text = " ".join(data["assumptions"]).lower()
+        self.assertIn("no stored profit breakdown", assumptions_text)
 
     @patch("industry.helpers.orders_profit_summary.plan_product_unit_cost")
     @patch(
@@ -170,9 +214,35 @@ class OrdersProfitSummaryEndpointTestCase(AppTestCase):
         self.assertIn(open_order.pk, ids)
         self.assertNotIn(done.pk, ids)
 
-    def test_profit_summary_rejects_unknown_facility(self):
+    @patch("industry.helpers.orders_profit_summary.plan_product_unit_cost")
+    @patch(
+        "industry.helpers.orders_profit_summary.jita_sell_prices_by_type_id"
+    )
+    def test_profit_summary_ignores_facility_query_param(
+        self, mock_prices, mock_plan
+    ):
+        """Facility filter was removed; unknown facility_key is ignored."""
+        mock_prices.return_value = {self.eve_type.id: 1_500_000}
+        mock_plan.side_effect = lambda tid, **kw: self._unit_cost(
+            tid, self.eve_type.name
+        )
+        needed = (timezone.now() + timedelta(days=7)).date()
+        order = create_industry_order(
+            needed_by=needed,
+            character=self.character,
+            location=self.location,
+        )
+        IndustryOrderItem.objects.create(
+            order=order, eve_type=self.eve_type, quantity=1
+        )
+        ensure_order_profit_breakdown(order)
         response = self.client.get(
             "/api/industry/orders/profit-summary",
-            {"facility_key": "not-a-facility"},
+            {
+                "facility_key": "not-a-facility",
+                "needed_by_from": needed.isoformat(),
+                "needed_by_to": needed.isoformat(),
+            },
         )
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["facility_key"], "amamake")

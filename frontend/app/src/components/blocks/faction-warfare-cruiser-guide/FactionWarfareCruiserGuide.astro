@@ -16,6 +16,7 @@ import {
 } from '@/data/faction-warfare-cruiser-guide'
 
 import GuideContentsLayout from '@components/blocks/GuideContentsLayout.astro'
+import GuideShell from '@components/blocks/GuideShell.astro'
 import FactionWarfareCruiserGuideMatchupChart from '@components/blocks/faction-warfare-cruiser-guide/FactionWarfareCruiserGuideMatchupChart.astro'
 import FactionWarfareCruiserGuideShipSection from '@components/blocks/faction-warfare-cruiser-guide/FactionWarfareCruiserGuideShipSection.astro'
 import { get_fittings } from '@helpers/api.minmatar.org/ships'
@@ -29,12 +30,11 @@ try {
 }
 ---
 
-<div class="fwc-guide card component light-transparency border">
-    <header class="fwc-guide__masthead">
-        <p class="fwc-guide__series">{guideMeta.title}</p>
-        <p class="fwc-guide__edition">{guideMeta.edition} · {guideMeta.yc}</p>
-    </header>
-
+<GuideShell
+    title={guideMeta.title}
+    subtitle={`${guideMeta.edition} · ${guideMeta.yc}`}
+>
+    <div class="fwc-guide">
     <GuideContentsLayout sections={guideSections}>
             <section id="introduction" data-section-id="introduction" class="fwc-section fwc-panel" aria-labelledby="fwc-intro-title">
                 <h2 id="fwc-intro-title" class="fwc-section__title">Introduction</h2>
@@ -158,28 +158,16 @@ try {
                 </ul>
             </section>
     </GuideContentsLayout>
-</div>
+    </div>
+</GuideShell>
 
 <style lang="scss">
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap');
-
     .fwc-guide {
         --fwc-display-font: 'Orbitron', var(--heading-font);
         --fwc-body-font: 'Source Sans 3', var(--body-font);
         --fwc-panel-padding-block: var(--component-padding-block);
         --fwc-panel-padding-inline: var(--space-l-xl);
-        width: 100%;
-        max-width: 100%;
-        min-width: 0;
-        overflow-x: clip;
-        padding: var(--space-2xl) var(--space-l-xl);
         font-family: var(--fwc-body-font);
-    }
-
-    @media (max-width: 48rem) {
-        .fwc-guide {
-            padding: var(--space-l) var(--space-s);
-        }
     }
 
     .fwc-panel {
@@ -193,30 +181,6 @@ try {
         .fwc-panel {
             --fwc-panel-padding-inline: var(--space-s);
         }
-    }
-
-    .fwc-guide__masthead {
-        margin-bottom: var(--space-2xl);
-        padding-bottom: var(--space-xl);
-        text-align: center;
-        border-bottom: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent);
-    }
-
-    .fwc-guide__series {
-        margin: 0;
-        font-family: var(--fwc-display-font);
-        font-size: clamp(var(--step-1), 3vw, var(--step-3));
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: var(--highlight);
-    }
-
-    .fwc-guide__edition {
-        margin: var(--space-s) 0 0;
-        font-size: var(--step--1);
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--text-color-secondary, var(--faded));
     }
 
     .fwc-guide__ships {

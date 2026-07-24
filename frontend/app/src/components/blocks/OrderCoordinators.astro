@@ -1,0 +1,238 @@
+---
+/**
+ * Unified coordinators modal: Blueprints / Minerals / PI tabs.
+ */
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type {
+    OrderBlueprintCoordinator,
+    OrderBlueprintCoordinatorEveType,
+    RootSingleItem,
+} from '@dtypes/api.minmatar.org'
+
+interface Props {
+    order_id: number
+    items: RootSingleItem[]
+    blueprint_coordinators: OrderBlueprintCoordinator[]
+    mineral_coordinators: OrderBlueprintCoordinator[]
+    pi_coordinators: OrderBlueprintCoordinator[]
+    mineral_options: OrderBlueprintCoordinatorEveType[]
+    pi_options: OrderBlueprintCoordinatorEveType[]
+    primary_character_id: number
+    claim_disabled_reason: string | null
+    /** Initial tab when opening from a deep link. */
+    initial_tab?: 'blueprints' | 'minerals' | 'pi'
+}
+
+const {
+    order_id,
+    items,
+    blueprint_coordinators,
+    mineral_coordinators,
+    pi_coordinators,
+    mineral_options,
+    pi_options,
+    primary_character_id,
+    claim_disabled_reason,
+    initial_tab = 'blueprints',
+} = Astro.props
+
+import OrderBlueprintCoordinators from '@components/blocks/OrderBlueprintCoordinators.astro'
+import OrderSupplyCoordinators from '@components/blocks/OrderSupplyCoordinators.astro'
+
+const tabs = [
+    {
+        id: 'blueprints',
+        label: t('industry.orders.coordinators.tab_blueprints'),
+        panel: 'order-coordinators-panel-blueprints',
+    },
+    {
+        id: 'minerals',
+        label: t('industry.orders.coordinators.tab_minerals'),
+        panel: 'order-coordinators-panel-minerals',
+    },
+    {
+        id: 'pi',
+        label: t('industry.orders.coordinators.tab_pi'),
+        panel: 'order-coordinators-panel-pi',
+    },
+] as const
+---
+
+<div
+    class="[ order-coordinators ]"
+    x-data={`{
+        activeTab: ${JSON.stringify(initial_tab)},
+        tabs: ['blueprints', 'minerals', 'pi'],
+        selectTab(tab) {
+            this.activeTab = tab
+            this.$nextTick(() => {
+                this.$refs['tab-' + tab]?.focus()
+            })
+        },
+        onTabKeydown(event) {
+            const i = this.tabs.indexOf(this.activeTab)
+            if (i < 0) return
+            if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+                event.preventDefault()
+                this.selectTab(this.tabs[(i + 1) % this.tabs.length])
+            } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+                event.preventDefault()
+                this.selectTab(this.tabs[(i - 1 + this.tabs.length) % this.tabs.length])
+            } else if (event.key === 'Home') {
+                event.preventDefault()
+                this.selectTab(this.tabs[0])
+            } else if (event.key === 'End') {
+                event.preventDefault()
+                this.selectTab(this.tabs[this.tabs.length - 1])
+            }
+        }
+    }`}
+>
+    <div
+        class="[ order-coordinators__tabs ]"
+        role="tablist"
+        aria-label={t('industry.orders.coordinators.title')}
+    >
+        {tabs.map((tab) => (
+            <button
+                type="button"
+                role="tab"
+                id={`order-coordinators-tab-${tab.id}`}
+                class="[ order-coordinators__tab ]"
+                :class={`{ 'is-active': activeTab === '${tab.id}' }`}
+                :aria-selected={`activeTab === '${tab.id}'`}
+                :tabindex={`activeTab === '${tab.id}' ? 0 : -1`}
+                aria-controls={tab.panel}
+                x-ref={`tab-${tab.id}`}
+                @click={`selectTab('${tab.id}')`}
+                @keydown="onTabKeydown($event)"
+            >
+                {tab.label}
+            </button>
+        ))}
+    </div>
+
+    <div class="[ order-coordinators__panels ]">
+        <div
+            id="order-coordinators-panel-blueprints"
+            class:list={[
+                'order-coordinators__panel',
+                { 'is-active': initial_tab === 'blueprints' },
+            ]}
+            :class="{ 'is-active': activeTab === 'blueprints' }"
+            role="tabpanel"
+            aria-labelledby="order-coordinators-tab-blueprints"
+            :aria-hidden="activeTab !== 'blueprints'"
+            :inert="activeTab !== 'blueprints'"
+        >
+            <OrderBlueprintCoordinators
+                order_id={order_id}
+                items={items}
+                coordinators={blueprint_coordinators}
+                primary_character_id={primary_character_id}
+                claim_disabled_reason={claim_disabled_reason}
+                show_heading={false}
+                include_close={false}
+                show_find_blueprints={false}
+            />
+        </div>
+        <div
+            id="order-coordinators-panel-minerals"
+            class:list={[
+                'order-coordinators__panel',
+                { 'is-active': initial_tab === 'minerals' },
+            ]}
+            :class="{ 'is-active': activeTab === 'minerals' }"
+            role="tabpanel"
+            aria-labelledby="order-coordinators-tab-minerals"
+            :aria-hidden="activeTab !== 'minerals'"
+            :inert="activeTab !== 'minerals'"
+        >
+            <OrderSupplyCoordinators
+                order_id={order_id}
+                role="mineral"
+                options={mineral_options}
+                coordinators={mineral_coordinators}
+                primary_character_id={primary_character_id}
+                claim_disabled_reason={claim_disabled_reason}
+                show_heading={false}
+                include_close={false}
+            />
+        </div>
+        <div
+            id="order-coordinators-panel-pi"
+            class:list={[
+                'order-coordinators__panel',
+                { 'is-active': initial_tab === 'pi' },
+            ]}
+            :class="{ 'is-active': activeTab === 'pi' }"
+            role="tabpanel"
+            aria-labelledby="order-coordinators-tab-pi"
+            :aria-hidden="activeTab !== 'pi'"
+            :inert="activeTab !== 'pi'"
+        >
+            <OrderSupplyCoordinators
+                order_id={order_id}
+                role="pi"
+                options={pi_options}
+                coordinators={pi_coordinators}
+                primary_character_id={primary_character_id}
+                claim_disabled_reason={claim_disabled_reason}
+                show_heading={false}
+                include_close={false}
+            />
+        </div>
+    </div>
+</div>
+
+<style lang="scss">
+    .order-coordinators__tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs);
+        border-bottom: 1px solid var(--border-color);
+        margin-block-end: var(--space-s);
+    }
+
+    .order-coordinators__tab {
+        appearance: none;
+        background: transparent;
+        border: 0;
+        border-bottom: 2px solid transparent;
+        color: var(--foreground);
+        cursor: pointer;
+        font: inherit;
+        font-size: var(--step--1);
+        margin-block-end: -1px;
+        padding: var(--space-2xs) var(--space-s);
+
+        &.is-active {
+            border-bottom-color: var(--fleet-red, #c45c48);
+            color: var(--highlight);
+            font-weight: 600;
+        }
+    }
+
+    /* Stack panels in one grid cell so tab switches keep a stable height. */
+    .order-coordinators__panels {
+        display: grid;
+        min-height: 14rem;
+    }
+
+    .order-coordinators__panel {
+        grid-area: 1 / 1;
+        visibility: hidden;
+        opacity: 0;
+        pointer-events: none;
+        z-index: 0;
+
+        &.is-active {
+            visibility: visible;
+            opacity: 1;
+            pointer-events: auto;
+            z-index: 1;
+        }
+    }
+</style>

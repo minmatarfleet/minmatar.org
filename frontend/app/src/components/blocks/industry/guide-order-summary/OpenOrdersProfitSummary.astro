@@ -3,7 +3,6 @@ import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
 import type { OrdersProfitSummary } from '@dtypes/api.minmatar.org'
-import type { PlannerFacility } from '@helpers/api.minmatar.org/industry'
 
 import OpenOrdersProfitSummaryOrders from '@components/blocks/industry/guide-order-summary/OpenOrdersProfitSummaryOrders.astro'
 import OpenOrdersProfitSummaryResults from '@components/blocks/industry/guide-order-summary/OpenOrdersProfitSummaryResults.astro'
@@ -11,13 +10,10 @@ import OpenOrdersProfitSummarySkeleton from '@components/blocks/industry/guide-o
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Input from '@components/blocks/Input.astro'
-import Select from '@components/blocks/Select.astro'
 import Switch from '@components/blocks/Switch.astro'
 
 interface Props {
     summary: OrdersProfitSummary
-    facilities: PlannerFacility[]
-    facility_key: string
     needed_by_from: string
     needed_by_to: string
     open_only: boolean
@@ -26,8 +22,6 @@ interface Props {
 
 const {
     summary,
-    facilities,
-    facility_key,
     needed_by_from,
     needed_by_to,
     open_only,
@@ -35,8 +29,7 @@ const {
 } = Astro.props
 
 const facility_label =
-    facilities.find((f) => f.key === facility_key)?.system_name ??
-    facility_key.replace(/^\w/, (c) => c.toUpperCase())
+    summary.facility_key.replace(/^\w/, (c) => c.toUpperCase())
 
 const page_action = translatePath('/industry/orders/summary/')
 const results_partial = translatePath(
@@ -45,7 +38,7 @@ const results_partial = translatePath(
 ---
 
 <div class="[ order-summary w-full ]">
-    <Flexblock gap="var(--space-2xl)">
+    <Flexblock gap="var(--space-l)">
         <form
             id="order-summary-filters"
             class="[ w-full ]"
@@ -67,9 +60,9 @@ const results_partial = translatePath(
                 <Flexblock gap="var(--space-3xs)">
                     <h2>Filters</h2>
                     <small>
-                        Pick a needed-by date range, industry system, and which
-                        orders to include. Metrics and charts update when you
-                        change anything here.
+                        Pick a needed-by date range and which orders to include.
+                        Metrics and charts use each order’s stored profit
+                        breakdown.
                     </small>
                 </Flexblock>
 
@@ -93,25 +86,6 @@ const results_partial = translatePath(
                             size="sm"
                             width="12rem"
                         />
-                    </label>
-                    <label class="[ filter-field ]">
-                        <span>Build Location</span>
-                        <Select
-                            name="facility_key"
-                            size="sm"
-                            width="14rem"
-                        >
-                            {
-                                facilities.map((f) => (
-                                    <option
-                                        value={f.key}
-                                        selected={f.key === facility_key}
-                                    >
-                                        {f.system_name}
-                                    </option>
-                                ))
-                            }
-                        </Select>
                     </label>
                     <div class="[ filter-switch ]">
                         <Switch name="open_only" value="1" checked={open_only}>

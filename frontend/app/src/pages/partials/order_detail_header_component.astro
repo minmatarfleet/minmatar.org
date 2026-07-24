@@ -1,0 +1,50 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_order_by_id } from '@helpers/api.minmatar.org/industry'
+import type { IndustrySingleOrder } from '@dtypes/api.minmatar.org'
+import { query_string } from '@helpers/string'
+
+const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '0')
+
+let order: IndustrySingleOrder | null = null
+let fetching_error: Error | false = false
+
+try {
+    if (isNaN(order_id) || order_id <= 0)
+        throw new Error(t('invalid_order_id'), { cause: 400 })
+
+    order = await get_order_by_id(order_id)
+} catch (error) {
+    fetching_error = error
+}
+
+const partial_url = translatePath(
+    `/partials/order_detail_header_component?${query_string({ order_id })}`,
+)
+
+import OrderDetailHeader from '@components/blocks/industry/OrderDetailHeader.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{
+    fetching_error !== false ? (
+        <ErrorRefetch
+            args={{
+                partial: partial_url,
+                error: fetching_error,
+                delay: 0,
+            }}
+        />
+    ) : order ? (
+        <OrderDetailHeader
+            order_id={order.id}
+            character_id={order.character_id}
+            character_name={order.character_name}
+            location_name={order.location?.location_name}
+            needed_by={order.needed_by}
+            lp_stockpiles={order.lp_stockpiles ?? []}
+        />
+    ) : null
+}

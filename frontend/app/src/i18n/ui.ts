@@ -438,6 +438,10 @@ export const ui = {
 
         'industry.orders.page_title': 'Orders',
         'industry.orders.history.page_title': 'Orders history',
+        'industry.orders.breadcrumb.summary': 'Summary',
+        'industry.orders.breadcrumb.history': 'History',
+        'industry.orders.breadcrumb.contract': 'Contract',
+        'industry.orders.breadcrumb.invoice': 'Invoice',
         'industry.orders.leading_text': 'Orders are the outputs, the ships and items our fleet commanders and contract seeders need built.',
         'industry.orders.meta_description': 'Alliance manufacturing orders with full material breakdowns. See what ships and items need building.',
         'industry.orders.assign': 'Assign',
@@ -465,13 +469,109 @@ export const ui = {
 
         'industry.orders.summary.page_title': 'Order summary',
         'industry.orders.summary.leading_text':
-            'See expected profit for industry orders using build cost at your selected system and each order’s ask price. Change dates, system, or which orders to include.',
+            'See expected profit for industry orders from each order’s stored build-cost and ask-price breakdown. Change dates or which orders to include.',
         'industry.orders.summary.meta_title': 'Order summary | {site}',
         'industry.orders.summary.meta_description':
-            'Live order summary for Minmatar Fleet industry orders: build cost at a chosen industry system, revenue from order asks, and filters for needed-by date and included orders.',
+            'Order summary for Minmatar Fleet industry orders: stored build cost and ask revenue, with filters for needed-by date and included orders.',
         'page_finder.orders.summary.description':
-            'Order summary with build cost, ask revenue, and filters for dates, system, and included orders.',
+            'Order summary with build cost, ask revenue, and filters for dates and included orders.',
         'view_orders_summary': 'Order summary',
+        'refresh_order_breakdown': 'Refresh order breakdown',
+
+        'industry.orders.detail.page_title': 'Order {code}',
+        'industry.orders.detail.leading_text':
+            'Assignment breakdown for this manufacturing order — who claimed each line, delivery progress, and claim actions.',
+        'industry.orders.detail.meta_title': 'Order {code} | {site}',
+        'industry.orders.detail.meta_description':
+            'Assignment breakdown for Minmatar Fleet industry order {code}: producers, claim status, and delivery progress.',
+        'industry.orders.detail.profit_chart_description':
+            'Profit for each product on this order, sorted from highest to lowest (shown in millions of ISK).',
+        'industry.orders.lp_stockpiles.title': 'LP stockpiles',
+        'industry.orders.lp_stockpiles.view': 'View loyalty point stockpiles',
+        'industry.orders.lp_stockpiles.description':
+            'Active loyalty-point stockpiles for navy blueprints on this order.',
+        'industry.orders.lp_stockpiles.empty':
+            'No matching LP stockpiles for this order.',
+        'industry.orders.lp_stockpiles.balance': '{balance} LP',
+        'industry.orders.lp_stockpiles.contacts': 'Contacts',
+        'industry.orders.lp_stockpiles.no_contacts': 'No contacts listed',
+        'industry.orders.blueprint_coordinators.title': 'Blueprint coordinators',
+        'industry.orders.blueprint_coordinators.view': 'View blueprint coordinators',
+        'industry.orders.blueprint_coordinators.description':
+            'Volunteers who can supply blueprints for ships on this order. Select the ships you can cover — no quantity commitment.',
+        'industry.orders.blueprint_coordinators.empty':
+            'No blueprint coordinators yet.',
+        'industry.orders.blueprint_coordinators.empty_hint':
+            'Volunteering helps producers find and coordinate blueprints for ships on this order.',
+        'industry.orders.blueprint_coordinators.volunteer': 'Volunteer',
+        'industry.orders.blueprint_coordinators.edit': 'Update ships',
+        'industry.orders.blueprint_coordinators.remove': 'Remove',
+        'industry.orders.blueprint_coordinators.submit': 'Save',
+        'industry.orders.blueprint_coordinators.select_ships':
+            'Select ships you can supply blueprints for',
+        'industry.orders.coordinators.select_all': 'Select all',
+        'industry.orders.coordinators.select_none': 'Select none',
+        'industry.orders.blueprint_coordinators.none_selected':
+            'Select at least one ship.',
+        'industry.orders.blueprint_coordinators.error':
+            'Could not update blueprint coordinator.',
+        'industry.orders.blueprint_coordinators.covers': 'Covers',
+        'industry.orders.blueprint_coordinators.no_options':
+            'No ships on this order yet.',
+        'industry.orders.blueprint_coordinators.no_options_hint':
+            'Add hulls to the order before volunteering as a blueprint coordinator.',
+        'industry.orders.coordinators.title': 'Coordinators',
+        'industry.orders.coordinators.view': 'View coordinators',
+        'industry.orders.coordinators.description':
+            'Volunteers who can supply blueprints, minerals, or PI for this order. Select what you can cover — no quantity commitment.',
+        'industry.orders.coordinators.calculating_build_requirements':
+            'Loading coordinator options…',
+        'industry.orders.coordinators.login_required':
+            'Log in to volunteer as a coordinator.',
+        'industry.orders.coordinators.session_required':
+            'Your session expired. Log in again to volunteer.',
+        'industry.orders.coordinators.main_pilot_required':
+            'Set a main pilot on your account to volunteer.',
+        'industry.orders.coordinators.tab_blueprints': 'Blueprints',
+        'industry.orders.coordinators.tab_minerals': 'Minerals',
+        'industry.orders.coordinators.tab_pi': 'PI',
+        'industry.orders.mineral_coordinators.title': 'Mineral coordinators',
+        'industry.orders.mineral_coordinators.description':
+            'Volunteers who can supply basic minerals for navy hulls. Select what you can cover — no quantity commitment.',
+        'industry.orders.mineral_coordinators.empty':
+            'No mineral coordinators yet.',
+        'industry.orders.mineral_coordinators.empty_hint':
+            'Volunteering helps producers coordinate mineral supply for this order.',
+        'industry.orders.mineral_coordinators.volunteer': 'Volunteer',
+        'industry.orders.mineral_coordinators.edit': 'Update minerals',
+        'industry.orders.mineral_coordinators.remove': 'Remove',
+        'industry.orders.mineral_coordinators.submit': 'Save',
+        'industry.orders.mineral_coordinators.select_types':
+            'Select basic minerals you can supply',
+        'industry.orders.mineral_coordinators.none_selected':
+            'Select at least one mineral.',
+        'industry.orders.mineral_coordinators.covers': 'Covers',
+        'industry.orders.mineral_coordinators.no_options':
+            'No mineral options available.',
+        'industry.orders.pi_coordinators.title': 'PI coordinators',
+        'industry.orders.pi_coordinators.description':
+            'Volunteers who can supply key PI used on navy hulls. Select what you can cover — no quantity commitment.',
+        'industry.orders.pi_coordinators.empty':
+            'No PI coordinators yet.',
+        'industry.orders.pi_coordinators.empty_hint':
+            'Volunteering helps producers coordinate PI supply for this order.',
+        'industry.orders.pi_coordinators.volunteer': 'Volunteer',
+        'industry.orders.pi_coordinators.edit': 'Update PI',
+        'industry.orders.pi_coordinators.remove': 'Remove',
+        'industry.orders.pi_coordinators.submit': 'Save',
+        'industry.orders.pi_coordinators.select_types':
+            'Select navy-hull PI you can supply',
+        'industry.orders.pi_coordinators.none_selected':
+            'Select at least one PI material.',
+        'industry.orders.pi_coordinators.covers': 'Covers',
+        'industry.orders.pi_coordinators.no_options':
+            'No PI options available.',
+        'view_order_detail': 'Detail',
         'industry.orders.planner.page_title': 'Build planner',
         'industry.orders.planner.beta_title': 'Beta',
         'industry.orders.planner.beta_warning': 'This build planner is in beta — shopping lists, costs, and refine amounts may be off. Report problems in Discord [#help](https://discordapp.com/channels/1041384161505722368/1183401618943791186).',
@@ -547,7 +647,7 @@ export const ui = {
         'industry.orders.planner.bucket.first_stage_reactions': 'Reactions (first stage)',
         'industry.orders.planner.bucket.second_stage_reactions': 'Reactions (second stage)',
         'industry.orders.planner.bucket.other': 'Other (usually buy)',
-        'planner': 'Planner',
+        'planner': 'Open planner',
         
         'industry.orders.invoice.page_title': 'Delivery Contract Invoice',
         'industry.orders.invoice.leading_text': 'Check the in-game contract values are correct.',
@@ -876,6 +976,7 @@ export const ui = {
         'copy': 'Copy',
         'ideal_composition': 'Ideal Composition',
         'search': 'Search',
+        'breadcrumb': 'Breadcrumb',
         'doctrine': 'Doctrine',
         'no_results': 'The capacitor is empty!',
         'back_to_safe': 'Back to the home station',
@@ -2208,6 +2309,8 @@ export const ui = {
         'deadline_percent': '{percent}% to deadline',
         'completed_percent': 'Completed on {date}',
         'overdue': 'Overdue',
+        'days_remaining': 'Days remaining',
+        'soonest_days_remaining': 'Soonest days remaining',
         'no_manufacturing_orders': 'There are no currently manufacturing orders.',
         'material_requirements': 'Material requirements',
         'contracts_plural': '{count} contracts',
@@ -2514,10 +2617,13 @@ export const ui = {
         'total_to_produce': 'Total to produce:',
         'units_plural': '{count} units',
         'units_singular': '1 unit',
-        'my_claim': 'My claim',
+        'my_claim': 'Update claim',
+        'i_have_blueprints': 'I have blueprints',
+        'has_blueprints': 'Has blueprints',
+        'actions': 'Actions',
         'contact_it': 'Try reloading the page. If this error persist reach us by opening a ticket at [#help](https://discordapp.com/channels/1041384161505722368/1183401618943791186).',
         'become_a_trucker': 'Become a trucker',
-        'delivery_contract': 'Delivery contract',
+        'delivery_contract': 'Create delivery contract',
         'item_exchange': 'Item Exchange',
         'back_to_orders': 'Back to orders',
         'deliver_contract': 'Deliver contract',

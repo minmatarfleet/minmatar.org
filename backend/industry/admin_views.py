@@ -8,6 +8,9 @@ from industry.helpers.admin_views import (
     get_order_or_redirect,
     render_industry_orders_view,
 )
+from industry.helpers.order_profit_breakdown import (
+    can_refresh_order_profit_breakdown,
+)
 from industry.models import (
     IndustryOrder,
     IndustryOrderItemAssignment,
@@ -77,6 +80,16 @@ def industry_order_hub_view(request, order_id):
                     "mark_fulfilled_url": reverse(
                         "admin:industry_industryorder_mark_fulfilled",
                         args=[order.pk],
+                    ),
+                    "refresh_profit_breakdown_url": reverse(
+                        "admin:industry_industryorder_refresh_profit_breakdown",
+                        args=[order.pk],
+                    ),
+                    "can_refresh_profit_breakdown": can_refresh_order_profit_breakdown(
+                        order
+                    ),
+                    "profit_breakdown_computed_at": (
+                        order.profit_breakdown_computed_at
                     ),
                 },
                 "items": {

@@ -13,6 +13,7 @@ interface Props {
     item:           RootSingleItem;
     size?:          ButtonSizes;
     character_id:   number;
+    has_blueprints?: boolean;
     hidden?:        boolean;
     id?:            string;
 }
@@ -25,6 +26,7 @@ const {
     item,
     size = 'sm',
     character_id,
+    has_blueprints = false,
     hidden = false,
     id,
 } = Astro.props
@@ -58,6 +60,9 @@ import Input from '@components/blocks/Input.astro';
 import ItemBadge from '@components/blocks/ItemBadge.astro';
 import Markdown from './Markdown.astro';
 import TextGroup from './TextGroup.astro';
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro';
+
+import AddIcon from '@components/icons/buttons/AddIcon.astro';
 ---
 
 <DialogButton
@@ -69,6 +74,7 @@ import TextGroup from './TextGroup.astro';
     max_width='520px'
     disable_when_open={true}
 >
+    <AddIcon slot="icon" />
     {reclaim ? t('my_claim') : t('claim')}
 
     <form
@@ -135,6 +141,13 @@ import TextGroup from './TextGroup.astro';
                             <small>{t(hours_left !== 1 ? 'maximum_amount_limited_plural' : 'maximum_amount_limited_singular').replace('{count}', String(hours_left))}</small>
                         }
                     </Flexblock>
+
+                    <RadioCheckInput
+                        type="checkbox"
+                        name="has_blueprints"
+                        label={t('i_have_blueprints')}
+                        checked={has_blueprints ? 'checked' : undefined}
+                    />
 
                     <Flexblock gap='var(--space-3xs)'>
                         <FlexInline justification='flex-end'>

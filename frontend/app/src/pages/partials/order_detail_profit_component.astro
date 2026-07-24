@@ -1,0 +1,76 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import {
+    get_order_by_id,
+    get_orders_profit_summary,
+} from '@helpers/api.minmatar.org/industry'
+import type { OrdersProfitSummary } from '@dtypes/api.minmatar.org'
+import { query_string } from '@helpers/string'
+
+const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '0')
+let needed_by = Astro.url.searchParams.get('needed_by') || ''
+
+let summary: OrdersProfitSummary | null = null
+let fetching_error: Error | false = false
+
+function iso_date(value: Date | string): string {
+    if (typeof value === 'string') return value.slice(0, 10)
+    return value.toISOString().slice(0, 10)
+}
+
+try {
+    if (isNaN(order_id) || order_id <= 0)
+        throw new Error('Invalid order id', { cause: 400 })
+
+    if (!needed_by) {
+        const order = await get_order_by_id(order_id)
+        needed_by = iso_date(order.needed_by)
+    }
+
+    summary = await get_orders_profit_summary({
+        needed_by_from: needed_by,
+        needed_by_to: needed_by,
+        open_only: false,
+        order_ids: order_id,
+    })
+} catch (error) {
+    fetching_error = error
+}
+
+const partial_url = translatePath(
+    `/partials/order_detail_profit_component?${query_string({
+        order_id,
+        ...(needed_by && { needed_by }),
+    })}`,
+)
+
+import OpenOrdersProfitSummaryMetrics from '@components/blocks/industry/guide-order-summary/OpenOrdersProfitSummaryMetrics.astro'
+import OpenOrdersProfitSummaryChart from '@components/blocks/industry/guide-order-summary/OpenOrdersProfitSummaryChart.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{
+    fetching_error !== false ? (
+        <ErrorRefetch
+            args={{
+                partial: partial_url,
+                error: fetching_error,
+                delay: 0,
+            }}
+        />
+    ) : summary ? (
+        <>
+            <OpenOrdersProfitSummaryMetrics summary={summary} />
+            <div id="order-detail-chart" hx-swap-oob="innerHTML">
+                <OpenOrdersProfitSummaryChart
+                    summary={summary}
+                    description={t(
+                        'industry.orders.detail.profit_chart_description',
+                    )}
+                />
+            </div>
+        </>
+    ) : null
+}

@@ -44,11 +44,20 @@ else
 if (order.fulfilled_at)
     completion_text = t('completed_percent').replace('{date}', format_date_short(lang, order.fulfilled_at))
 
-import { query_string } from '@helpers/string';
-const ORDER_BREAKDOWN_PARTIAL_URL = `${translatePath('/partials/order_breakdown_component')}?${query_string({
-    order_id: order.id,
-    ...(location_name && { location_name }),
-})}`
+import { query_string } from '@helpers/string'
+
+const order_detail_href = translatePath(
+    `/industry/orders/${order.id}/?${query_string({
+        code: order.public_short_code,
+        character_id: String(order.character_id),
+        character_name: order.character_name,
+        location_name: location_name ?? order.location?.location_name ?? '',
+        needed_by:
+            typeof order.needed_by === 'string'
+                ? order.needed_by.slice(0, 10)
+                : new Date(order.needed_by).toISOString().slice(0, 10),
+    })}`,
+)
 
 import FixedFluid from "@components/compositions/FixedFluid.astro";
 import Flexblock from "@components/compositions/Flexblock.astro";
@@ -57,7 +66,6 @@ import FlexInline from "@components/compositions/FlexInline.astro";
 import PilotBadge from "@components/blocks/PilotBadge.astro";
 import ProducersList from '@components/blocks/ProducersList.astro';
 import ItemPicture from '@components/blocks/ItemPicture.astro';
-import CollapsibleBlock from '@components/blocks/CollapsibleBlock.astro';
 import OrderBreakdown from '@components/blocks/OrderBreakdown.astro'
 
 import IndustryIcon from '@components/icons/IndustryIcon.astro';
@@ -65,13 +73,11 @@ import FlagIcon from '@components/icons/FlagIcon.astro';
 import TippyOrderItem from './TippyOrderItem.astro';
 ---
 
-<CollapsibleBlock
-    id={`order-item-${order.id}`}
-    padding_inline='0'    
-    expanded={order_breakdown ? true : false}
-    pre_chevron={true}
->
-    <div slot="head" class="[ w-full ]">
+<div id={`order-item-${order.id}`}>
+    <a
+        href={order_detail_href}
+        class="[ order-item-link ]"
+    >
         <FixedFluid width='312px' class="[ order-item ]">
             <div class="[ flex items-center! ]">
                 <PilotBadge
@@ -143,10 +149,10 @@ import TippyOrderItem from './TippyOrderItem.astro';
                 </FlexInline>
             </FlexInline>
         </FixedFluid>
-    </div>
+    </a>
 
-    <div class="[ order-breakdown-container ]" id={`order-breakdown-${order.id}`}>
-        {order_breakdown ?
+    {order_breakdown &&
+        <div class="[ order-breakdown-container ]" id={`order-breakdown-${order.id}`}>
             <OrderBreakdown
                 order_id={order.id}
                 primary_character_id={primary_character_id}
@@ -155,44 +161,30 @@ import TippyOrderItem from './TippyOrderItem.astro';
                 location_name={location_name}
                 init_tooltips={true}
             />
-            :
-            <small
-                class="[ loading ]"
-                hx-get={ORDER_BREAKDOWN_PARTIAL_URL}
-                hx-trigger="intersect"
-                hx-indicator=".loader"
-                hx-swap="outerHTML transition:true"
-            >{t('fetching_order_breakdown')}</small>
-        }
-        
-    </div>
-</CollapsibleBlock>
+        </div>
+    }
+</div>
 
 <style lang="scss">
-    .timeline {
-        border: solid var(--highlight);
-        border-width: 0 1px 0 1px;
-        position: relative;
-        
-        &:before,
-        &:after {
-            content: ' ';
-            position: absolute;
-            height: 100%;
-            bottom: 0;
-            pointer-events: none;
+    .order-item-link {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        padding-block: var(--space-2xs);
+        padding-inline: var(--space-3xs);
+        margin-block: calc(-1 * var(--space-2xs));
+        margin-inline: calc(-1 * var(--space-3xs));
+        transition: var(--fast-transition);
+
+        &:focus-visible {
+            outline: 2px solid var(--highlight);
+            outline-offset: 2px;
         }
 
-        &:before {
-            left: 25%;
-            border: solid var(--highlight);
-            border-width: 0 1px 0 1px;
-            width: 50%;
-        }
-
-        &:after {
-            left: 50%;
-            border-left: solid 1px var(--highlight);
+        @media (hover: hover) {
+            &:hover {
+                background-color: var(--light-transparency-background);
+            }
         }
     }
 

@@ -53,10 +53,15 @@ import Input from '@components/blocks/Input.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import OrdersTable from '@components/blocks/OrdersTable.astro'
 import Button from '@components/blocks/Button.astro'
+import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
 const page_title = t('industry.orders.page_title');
+const breadcrumb_items = [
+    { label: t('market.page_title'), href: translatePath('/market/') },
+    { label: t('industry.orders.page_title') },
+]
 ---
 
 <Viewport
@@ -102,11 +107,14 @@ const page_title = t('industry.orders.page_title');
         }`}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
-            <Flexblock gap="var(--space-3xs)">
-                <PageTitle>
-                    {page_title}
-                </PageTitle>
-                <small x-text="(orders_count != 1 ? orders_plural : orders_singular).replace('{count}', String(orders_count))">{orders_count_text}</small>
+            <Flexblock gap="var(--space-s)">
+                <Breadcrumb items={breadcrumb_items} />
+                <Flexblock gap="var(--space-3xs)">
+                    <PageTitle>
+                        {page_title}
+                    </PageTitle>
+                    <small x-text="(orders_count != 1 ? orders_plural : orders_singular).replace('{count}', String(orders_count))">{orders_count_text}</small>
+                </Flexblock>
             </Flexblock>
             <FlexInline>
                 <Input type="text"

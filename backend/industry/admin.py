@@ -3,6 +3,7 @@ from django.contrib import messages
 from django import forms
 from django.db.models import Q, Sum
 from django.http import HttpResponseRedirect
+from django.middleware.csrf import get_token
 from django.urls import path, reverse
 from django.utils import timezone
 from django.utils.html import format_html
@@ -21,6 +22,11 @@ from industry.forms import (
     MiningUpgradeCompletionAdminForm,
 )
 from industry.helpers.admin_permissions import industry_orders_index_link_perms
+from industry.helpers.order_profit_breakdown import (
+    ProfitBreakdownRefreshNotAllowed,
+    can_refresh_order_profit_breakdown,
+    refresh_order_profit_breakdown,
+)
 from industry.helpers.type_breakdown import get_breakdown_for_industry_product
 from industry.helpers.lp_ledger import (
     account_balance,
@@ -36,8 +42,11 @@ from industry.models import (
     IndustryLoyaltyPointLedgerEntry,
     IndustryLpStoreOffer,
     IndustryOrder,
+    IndustryOrderBlueprintCoordinator,
     IndustryOrderItem,
     IndustryOrderItemAssignment,
+    IndustryOrderMineralCoordinator,
+    IndustryOrderPiCoordinator,
     IndustryProduct,
     MiningUpgradeCompletion,
 )
@@ -579,6 +588,36 @@ class IndustryOrderItemInline(admin.TabularInline):
         return format_html('<a href="{}">Manage assignments</a>', url)
 
 
+class IndustryOrderBlueprintCoordinatorInline(admin.TabularInline):
+    """Blueprint coordinators volunteering ships on this order."""
+
+    model = IndustryOrderBlueprintCoordinator
+    extra = 0
+    autocomplete_fields = ("character",)
+    raw_id_fields = ("eve_types",)
+    readonly_fields = ("created_at",)
+
+
+class IndustryOrderMineralCoordinatorInline(admin.TabularInline):
+    """Mineral coordinators volunteering minerals on this order."""
+
+    model = IndustryOrderMineralCoordinator
+    extra = 0
+    autocomplete_fields = ("character",)
+    raw_id_fields = ("eve_types",)
+    readonly_fields = ("created_at",)
+
+
+class IndustryOrderPiCoordinatorInline(admin.TabularInline):
+    """PI coordinators volunteering PI materials on this order."""
+
+    model = IndustryOrderPiCoordinator
+    extra = 0
+    autocomplete_fields = ("character",)
+    raw_id_fields = ("eve_types",)
+    readonly_fields = ("created_at",)
+
+
 @admin.register(IndustryOrder)
 class IndustryOrderAdmin(admin.ModelAdmin):
     """Industry orders: manage order items and their assignments from one place."""
@@ -598,11 +637,18 @@ class IndustryOrderAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"
     ordering = ("-created_at",)
     autocomplete_fields = ("character", "location", "tribe_groups")
-    inlines = [IndustryOrderItemInline]
+    inlines = [
+        IndustryOrderItemInline,
+        IndustryOrderBlueprintCoordinatorInline,
+        IndustryOrderMineralCoordinatorInline,
+        IndustryOrderPiCoordinatorInline,
+    ]
     readonly_fields = (
         "created_at",
         "fulfilled_at",
         "mark_fulfilled_button",
+        "profit_breakdown_computed_at",
+        "refresh_profit_breakdown_button",
         "relevant_jobs_display",
     )
     search_fields = (
@@ -632,6 +678,20 @@ class IndustryOrderAdmin(admin.ModelAdmin):
             },
         ),
         (
+            "Profit breakdown",
+            {
+                "fields": (
+                    "profit_breakdown_computed_at",
+                    "refresh_profit_breakdown_button",
+                ),
+                "description": (
+                    "Stored profit/price snapshot used by order summary "
+                    "graphs. Refresh while the order is open, or once if "
+                    "no snapshot exists yet."
+                ),
+            },
+        ),
+        (
             "Relevant industry jobs",
             {
                 "fields": ("relevant_jobs_display",),
@@ -648,6 +708,14 @@ class IndustryOrderAdmin(admin.ModelAdmin):
             ).order_by("tribe__name", "name")
         return super().formfield_for_manytomany(db_field, request, **kwargs)
 
+    def changeform_view(
+        self, request, object_id=None, form_url="", extra_context=None
+    ):
+        self._admin_request = request
+        return super().changeform_view(
+            request, object_id, form_url, extra_context
+        )
+
     def get_urls(self):
         urls = super().get_urls()
         return [
@@ -655,6 +723,11 @@ class IndustryOrderAdmin(admin.ModelAdmin):
                 "<path:object_id>/mark-fulfilled/",
                 self.admin_site.admin_view(self.mark_fulfilled_view),
                 name="industry_industryorder_mark_fulfilled",
+            ),
+            path(
+                "<path:object_id>/refresh-profit-breakdown/",
+                self.admin_site.admin_view(self.refresh_profit_breakdown_view),
+                name="industry_industryorder_refresh_profit_breakdown",
             ),
         ] + urls
 
@@ -673,6 +746,36 @@ class IndustryOrderAdmin(admin.ModelAdmin):
             reverse("admin:industry_order_hub", args=[obj.pk])
         )
 
+    def refresh_profit_breakdown_view(self, request, object_id):
+        if request.method != "POST":
+            messages.error(
+                request,
+                "Refresh profit breakdown requires a POST request.",
+            )
+            return HttpResponseRedirect(
+                reverse("admin:industry_order_hub", args=[object_id])
+            )
+        if not self.has_change_permission(request):
+            messages.error(request, "Permission denied.")
+            return HttpResponseRedirect("../")
+        obj = self.get_object(request, object_id)
+        if not obj:
+            messages.error(request, "Order not found.")
+            return HttpResponseRedirect("../")
+        try:
+            refresh_order_profit_breakdown(obj)
+        except ProfitBreakdownRefreshNotAllowed as exc:
+            messages.error(request, str(exc))
+        except Exception as exc:  # noqa: BLE001 — surface planner failures
+            messages.error(
+                request, f"Failed to refresh profit breakdown: {exc}"
+            )
+        else:
+            messages.success(request, "Order profit breakdown refreshed.")
+        return HttpResponseRedirect(
+            reverse("admin:industry_order_hub", args=[obj.pk])
+        )
+
     @admin.display(description="Mark as fulfilled")
     def mark_fulfilled_button(self, obj):
         if not obj.pk or obj.fulfilled_at is not None:
@@ -682,6 +785,31 @@ class IndustryOrderAdmin(admin.ModelAdmin):
         )
         return format_html(
             '<a class="button" href="{}">Mark order as fulfilled</a>', url
+        )
+
+    @admin.display(description="Refresh profit breakdown")
+    def refresh_profit_breakdown_button(self, obj):
+        if not obj.pk:
+            return "—"
+        if not can_refresh_order_profit_breakdown(obj):
+            return (
+                "— (fulfilled orders keep their stored snapshot; "
+                "refresh is only available when open or missing)"
+            )
+        request = getattr(self, "_admin_request", None)
+        if request is None:
+            return "—"
+        url = reverse(
+            "admin:industry_industryorder_refresh_profit_breakdown",
+            args=[obj.pk],
+        )
+        return format_html(
+            '<form method="post" action="{}">'
+            '<input type="hidden" name="csrfmiddlewaretoken" value="{}">'
+            '<button type="submit" class="button">Refresh order breakdown</button>'
+            "</form>",
+            url,
+            get_token(request),
         )
 
     @admin.display(description="Items")
@@ -749,6 +877,7 @@ class IndustryOrderItemAssignmentInline(admin.TabularInline):
         "quantity",
         "target_unit_price",
         "target_estimated_margin",
+        "has_blueprints",
         "delivered_at",
     )
 
@@ -801,9 +930,10 @@ class IndustryOrderItemAssignmentAdmin(admin.ModelAdmin):
         "quantity",
         "target_unit_price",
         "target_estimated_margin",
+        "has_blueprints",
         "delivered_at",
     )
-    list_filter = ("character", "order_item__order")
+    list_filter = ("character", "has_blueprints", "order_item__order")
     autocomplete_fields = ("order_item", "character")
 
     def get_changeform_initial_data(self, request):
@@ -812,6 +942,57 @@ class IndustryOrderItemAssignmentAdmin(admin.ModelAdmin):
         if order_item_id:
             initial["order_item"] = order_item_id
         return initial
+
+
+@admin.register(IndustryOrderBlueprintCoordinator)
+class IndustryOrderBlueprintCoordinatorAdmin(admin.ModelAdmin):
+    list_display = ("order", "character", "created_at", "eve_types_summary")
+    list_filter = ("order", "character")
+    autocomplete_fields = ("order", "character")
+    raw_id_fields = ("eve_types",)
+    readonly_fields = ("created_at",)
+
+    @admin.display(description="Ships")
+    def eve_types_summary(self, obj):
+        names = list(obj.eve_types.values_list("name", flat=True)[:8])
+        if not names:
+            return "—"
+        suffix = "…" if obj.eve_types.count() > 8 else ""
+        return ", ".join(names) + suffix
+
+
+@admin.register(IndustryOrderMineralCoordinator)
+class IndustryOrderMineralCoordinatorAdmin(admin.ModelAdmin):
+    list_display = ("order", "character", "created_at", "eve_types_summary")
+    list_filter = ("order", "character")
+    autocomplete_fields = ("order", "character")
+    raw_id_fields = ("eve_types",)
+    readonly_fields = ("created_at",)
+
+    @admin.display(description="Minerals")
+    def eve_types_summary(self, obj):
+        names = list(obj.eve_types.values_list("name", flat=True)[:8])
+        if not names:
+            return "—"
+        suffix = "…" if obj.eve_types.count() > 8 else ""
+        return ", ".join(names) + suffix
+
+
+@admin.register(IndustryOrderPiCoordinator)
+class IndustryOrderPiCoordinatorAdmin(admin.ModelAdmin):
+    list_display = ("order", "character", "created_at", "eve_types_summary")
+    list_filter = ("order", "character")
+    autocomplete_fields = ("order", "character")
+    raw_id_fields = ("eve_types",)
+    readonly_fields = ("created_at",)
+
+    @admin.display(description="PI materials")
+    def eve_types_summary(self, obj):
+        names = list(obj.eve_types.values_list("name", flat=True)[:8])
+        if not names:
+            return "—"
+        suffix = "…" if obj.eve_types.count() > 8 else ""
+        return ", ".join(names) + suffix
 
 
 @admin.register(IndustryContractAssociation)
