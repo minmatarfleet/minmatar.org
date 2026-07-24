@@ -145,6 +145,13 @@ CELERYBEAT_INDUSTRY = [
             "schedule": crontab(minute=20),
         },
     ),
+    (
+        "[Industry] Reconcile Contract Associations",
+        {
+            "task": "industry.tasks.reconcile_industry_contract_associations_task",
+            "schedule": crontab(minute=35, hour="*/2"),
+        },
+    ),
 ]
 
 # Groups

@@ -19,6 +19,7 @@ from industry.forms import (
 from industry.helpers.admin_permissions import industry_orders_index_link_perms
 from industry.helpers.type_breakdown import get_breakdown_for_industry_product
 from industry.models import (
+    IndustryContractAssociation,
     IndustryLoyaltyPoint,
     IndustryLoyaltyPointContact,
     IndustryLpStoreOffer,
@@ -386,6 +387,23 @@ class IndustryOrderItemAssignmentAdmin(admin.ModelAdmin):
         if order_item_id:
             initial["order_item"] = order_item_id
         return initial
+
+
+@admin.register(IndustryContractAssociation)
+class IndustryContractAssociationAdmin(admin.ModelAdmin):
+    list_display = (
+        "contract_id",
+        "order",
+        "assignment",
+        "score",
+        "contract_status",
+        "updated_at",
+    )
+    list_filter = ("contract_status",)
+    search_fields = ("contract_id", "order__id", "order__public_short_code")
+    raw_id_fields = ("order", "assignment")
+    readonly_fields = ("created_at", "updated_at", "signals")
+    ordering = ("-score", "-updated_at")
 
 
 @admin.register(IndustryProduct)
