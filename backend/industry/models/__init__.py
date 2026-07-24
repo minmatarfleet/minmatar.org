@@ -5,7 +5,9 @@
 from industry.models.cost_index import IndustrySystemCostIndex
 from industry.models.lp_store import (
     IndustryLoyaltyPoint,
+    IndustryLoyaltyPointAccount,
     IndustryLoyaltyPointContact,
+    IndustryLoyaltyPointLedgerEntry,
     IndustryLpStoreOffer,
 )
 from industry.models.mining import MiningUpgradeCompletion
@@ -21,7 +23,9 @@ from industry.models.product import (
 
 __all__ = [
     "IndustryLoyaltyPoint",
+    "IndustryLoyaltyPointAccount",
     "IndustryLoyaltyPointContact",
+    "IndustryLoyaltyPointLedgerEntry",
     "IndustryLpStoreOffer",
     "IndustryOrder",
     "IndustryOrderItem",

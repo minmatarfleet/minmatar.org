@@ -18,9 +18,18 @@ from industry.forms import (
 )
 from industry.helpers.admin_permissions import industry_orders_index_link_perms
 from industry.helpers.type_breakdown import get_breakdown_for_industry_product
+from industry.helpers.lp_ledger import (
+    LpLedgerError,
+    account_balance,
+    post_ledger_entry,
+    resolve_offer_isk_per_lp,
+    weighted_average_cost_isk_per_lp,
+)
 from industry.models import (
     IndustryLoyaltyPoint,
+    IndustryLoyaltyPointAccount,
     IndustryLoyaltyPointContact,
+    IndustryLoyaltyPointLedgerEntry,
     IndustryLpStoreOffer,
     IndustryOrder,
     IndustryOrderItem,
@@ -46,6 +55,27 @@ class IndustryLoyaltyPointContactInline(admin.TabularInline):
     )
 
 
+class IndustryLoyaltyPointLedgerEntryInline(admin.TabularInline):
+    model = IndustryLoyaltyPointLedgerEntry
+    extra = 1
+    fields = (
+        "amount",
+        "isk_per_lp",
+        "notes",
+        "balance_after",
+        "created_by",
+        "created_at",
+    )
+    readonly_fields = ("balance_after", "created_by", "created_at")
+    ordering = ("-created_at", "-id")
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(IndustryLoyaltyPoint)
 class IndustryLoyaltyPointAdmin(admin.ModelAdmin):
     list_display = (
@@ -53,32 +83,128 @@ class IndustryLoyaltyPointAdmin(admin.ModelAdmin):
         "corporation_id",
         "default_isk_per_lp",
         "is_active",
-        "contact_count",
+        "account_count",
     )
     list_filter = ("is_active",)
     search_fields = ("name", "corporation_id")
-    inlines = (IndustryLoyaltyPointContactInline,)
 
-    @admin.display(description="contacts")
-    def contact_count(self, obj):
-        return obj.contacts.count()
+    @admin.display(description="accounts")
+    def account_count(self, obj):
+        return obj.accounts.count()
+
+
+@admin.register(IndustryLoyaltyPointAccount)
+class IndustryLoyaltyPointAccountAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "loyalty_point",
+        "role",
+        "balance_display",
+        "offer_isk_per_lp_display",
+        "avg_cost_display",
+        "is_active",
+    )
+    list_filter = ("role", "is_active", "loyalty_point")
+    search_fields = (
+        "name",
+        "corporation_name",
+        "loyalty_point__name",
+        "contacts__character_name",
+        "contacts__discord_username",
+    )
+    raw_id_fields = ("loyalty_point", "eve_character", "user")
+    inlines = (
+        IndustryLoyaltyPointContactInline,
+        IndustryLoyaltyPointLedgerEntryInline,
+    )
+
+    @admin.display(description="balance")
+    def balance_display(self, obj):
+        return account_balance(obj)
+
+    @admin.display(description="offer ISK/LP")
+    def offer_isk_per_lp_display(self, obj):
+        return resolve_offer_isk_per_lp(obj)
+
+    @admin.display(description="avg cost")
+    def avg_cost_display(self, obj):
+        avg = weighted_average_cost_isk_per_lp(obj)
+        if avg is None:
+            return "—"
+        return f"{avg:.1f}"
+
+    def save_formset(self, request, form, formset, change):
+        if formset.model is not IndustryLoyaltyPointLedgerEntry:
+            super().save_formset(request, form, formset, change)
+            return
+        instances = formset.save(commit=False)
+        for obj in formset.deleted_objects:
+            obj.delete()
+        account = form.instance
+        for obj in instances:
+            if obj.pk:
+                continue
+            if obj.amount is None or obj.isk_per_lp is None:
+                continue
+            try:
+                post_ledger_entry(
+                    account,
+                    obj.amount,
+                    obj.isk_per_lp,
+                    notes=obj.notes or "",
+                    user=request.user,
+                )
+            except LpLedgerError as exc:
+                messages.error(request, str(exc))
+        formset.save_m2m()
 
 
 @admin.register(IndustryLoyaltyPointContact)
 class IndustryLoyaltyPointContactAdmin(admin.ModelAdmin):
     list_display = (
         "character_name",
-        "loyalty_point",
+        "account",
         "discord_username",
         "is_active",
     )
-    list_filter = ("is_active", "loyalty_point")
+    list_filter = ("is_active", "account__loyalty_point", "account__role")
     search_fields = (
         "character_name",
         "discord_username",
-        "loyalty_point__name",
+        "account__name",
+        "account__loyalty_point__name",
     )
-    raw_id_fields = ("loyalty_point", "eve_character", "user")
+    raw_id_fields = ("account", "eve_character", "user")
+
+
+@admin.register(IndustryLoyaltyPointLedgerEntry)
+class IndustryLoyaltyPointLedgerEntryAdmin(admin.ModelAdmin):
+    list_display = (
+        "account",
+        "amount",
+        "isk_per_lp",
+        "balance_after",
+        "created_by",
+        "created_at",
+    )
+    list_filter = ("account__loyalty_point", "account__role")
+    search_fields = ("account__name", "notes")
+    raw_id_fields = ("account", "created_by")
+    readonly_fields = (
+        "account",
+        "amount",
+        "isk_per_lp",
+        "notes",
+        "balance_after",
+        "created_by",
+        "created_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(IndustryLpStoreOffer)

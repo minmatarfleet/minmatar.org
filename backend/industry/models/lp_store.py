@@ -7,8 +7,8 @@ class IndustryLoyaltyPoint(models.Model):
     """
     A loyalty-point currency we care about (e.g. Tribal Liberation Force).
 
-    Holds default ISK/LP pricing for the industry planner. Contacts who can
-    supply this LP are linked via IndustryLoyaltyPointContact.
+    Holds default ISK/LP pricing for the industry planner. Holders (sellers /
+    stockpiles) and contacts are linked via IndustryLoyaltyPointAccount.
     """
 
     name = models.CharField(max_length=128)
@@ -34,11 +34,79 @@ class IndustryLoyaltyPoint(models.Model):
         return f"{self.name} ({self.default_isk_per_lp} ISK/LP)"
 
 
-class IndustryLoyaltyPointContact(models.Model):
-    """Someone to contact for a given loyalty-point currency."""
+class IndustryLoyaltyPointAccount(models.Model):
+    """
+    A holder of one LP currency: external seller or in-alliance stockpile.
+
+    Balance is derived from ledger entries (SUM of amounts). Offer price is
+    the current ask; each ledger row carries its own lot price (825, 850, …).
+    """
+
+    class Role(models.TextChoices):
+        SELLER = "seller", "Seller"
+        STOCKPILE = "stockpile", "Stockpile"
 
     loyalty_point = models.ForeignKey(
         IndustryLoyaltyPoint,
+        on_delete=models.CASCADE,
+        related_name="accounts",
+    )
+    name = models.CharField(max_length=128)
+    role = models.CharField(
+        max_length=16,
+        choices=Role.choices,
+        default=Role.SELLER,
+        db_index=True,
+    )
+    isk_per_lp = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text=(
+            "Current offer ISK/LP for this holder. Falls back to the currency "
+            "default when empty. Lot history uses each ledger entry's price."
+        ),
+    )
+    eve_character = models.ForeignKey(
+        "eveonline.EveCharacter",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="loyalty_point_accounts",
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="loyalty_point_accounts",
+    )
+    corporation_name = models.CharField(max_length=128, blank=True)
+    is_active = models.BooleanField(default=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["loyalty_point__name", "name"]
+        verbose_name = "Industry loyalty point account"
+        verbose_name_plural = "Industry loyalty point accounts"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["loyalty_point", "name"],
+                condition=models.Q(is_active=True),
+                name="uniq_active_lp_account_name_per_currency",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.loyalty_point.name}, {self.role})"
+
+
+class IndustryLoyaltyPointContact(models.Model):
+    """Someone to contact for a given LP account (seller or stockpile)."""
+
+    account = models.ForeignKey(
+        IndustryLoyaltyPointAccount,
         on_delete=models.CASCADE,
         related_name="contacts",
     )
@@ -65,12 +133,57 @@ class IndustryLoyaltyPointContact(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["loyalty_point__name", "character_name"]
+        ordering = ["account__loyalty_point__name", "character_name"]
         verbose_name = "Industry loyalty point contact"
         verbose_name_plural = "Industry loyalty point contacts"
 
     def __str__(self) -> str:
-        return f"{self.character_name} ({self.loyalty_point.name})"
+        return f"{self.character_name} ({self.account.name})"
+
+
+class IndustryLoyaltyPointLedgerEntry(models.Model):
+    """
+    One credit/debit lot against an LP account.
+
+    Credits are intakes at a specific ISK/LP (e.g. +200k @ 825). Debits are
+    draws. Mixed prices on the same account are expected.
+    """
+
+    account = models.ForeignKey(
+        IndustryLoyaltyPointAccount,
+        on_delete=models.CASCADE,
+        related_name="ledger_entries",
+    )
+    amount = models.BigIntegerField(
+        help_text="Signed LP change: positive credit, negative debit.",
+    )
+    isk_per_lp = models.PositiveIntegerField(
+        help_text="ISK/LP for this lot (required; e.g. 825 or 850).",
+    )
+    notes = models.TextField(blank=True)
+    balance_after = models.BigIntegerField(
+        help_text="Account balance after this entry was posted.",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="loyalty_point_ledger_entries",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        verbose_name = "Industry loyalty point ledger entry"
+        verbose_name_plural = "Industry loyalty point ledger entries"
+
+    def __str__(self) -> str:
+        sign = "+" if self.amount >= 0 else ""
+        return (
+            f"{self.account.name}: {sign}{self.amount} LP "
+            f"@ {self.isk_per_lp} ISK/LP"
+        )
 
 
 class IndustryLpStoreOffer(models.Model):
