@@ -44,20 +44,7 @@ else
 if (order.fulfilled_at)
     completion_text = t('completed_percent').replace('{date}', format_date_short(lang, order.fulfilled_at))
 
-import { query_string } from '@helpers/string'
-
-const order_detail_href = translatePath(
-    `/industry/orders/${order.id}/?${query_string({
-        code: order.public_short_code,
-        character_id: String(order.character_id),
-        character_name: order.character_name,
-        location_name: location_name ?? order.location?.location_name ?? '',
-        needed_by:
-            typeof order.needed_by === 'string'
-                ? order.needed_by.slice(0, 10)
-                : new Date(order.needed_by).toISOString().slice(0, 10),
-    })}`,
-)
+const order_detail_href = translatePath(`/industry/orders/${order.id}/`)
 
 import FixedFluid from "@components/compositions/FixedFluid.astro";
 import Flexblock from "@components/compositions/Flexblock.astro";

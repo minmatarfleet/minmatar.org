@@ -486,6 +486,7 @@ export const ui = {
             'Assignment breakdown for Minmatar Fleet industry order {code}: producers, claim status, and delivery progress.',
         'industry.orders.detail.profit_chart_description':
             'Profit for each product on this order, sorted from highest to lowest (shown in millions of ISK).',
+        'industry.orders.detail.edit_in_admin': 'Edit order in admin',
         'industry.orders.lp_stockpiles.title': 'LP stockpiles',
         'industry.orders.lp_stockpiles.view': 'View loyalty point stockpiles',
         'industry.orders.lp_stockpiles.description':
