@@ -71,7 +71,7 @@ def _upsert_kill_burst_cluster(
         killmails = list(
             FeedKillmail.objects.filter(killmail_id__in=merged_ids)
         )
-        stats = _build_cluster_stats(killmails)
+        stats = build_cluster_stats(killmails)
 
     canonical_key = _cluster_key(
         FeedCluster.ClusterType.KILL_BURST,
@@ -131,7 +131,7 @@ def _merge_fleet_cluster(
 ) -> FeedCluster:
     merged_ids = sorted(set(existing.killmail_ids or []) | set(killmail_ids))
     killmails = list(FeedKillmail.objects.filter(killmail_id__in=merged_ids))
-    stats = _build_cluster_stats(killmails)
+    stats = build_cluster_stats(killmails)
     existing.dominant_faction_id = stats["dominant_faction_id"]
     existing.started_at = stats["started_at"]
     existing.last_kill_at = stats["last_kill_at"]
@@ -201,10 +201,6 @@ def build_cluster_stats(killmails: list[FeedKillmail]) -> dict[str, Any]:
         "attacker_ids": sorted(attacker_ids),
         "killmail_ids": killmail_ids,
     }
-
-
-# Backwards-compatible internal alias.
-_build_cluster_stats = build_cluster_stats
 
 
 def detect_clusters(*, since_hours: int = 48) -> int:
@@ -300,7 +296,7 @@ def _sliding_window_clusters(
             j += 1
 
         if len(window_kills) >= min_kills:
-            stats = _build_cluster_stats(window_kills)
+            stats = build_cluster_stats(window_kills)
             if stats["pilot_count"] >= min_pilots:
                 if cluster_type == FeedCluster.ClusterType.FLEET_ENGAGEMENT:
                     stale_minutes = get_rollup_config("fleet_active").get(
