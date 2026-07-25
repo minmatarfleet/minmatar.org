@@ -6,7 +6,7 @@
             return this.pagination_icons[index]
         },
         init() {
-            this.swiper = new Swiper('.swiper', {
+            this.swiper = new Swiper('#corporations-list', {
                 slidesPerView: 1,
                 loop: false,
                 effect: 'fade',
@@ -16,8 +16,8 @@
                 },
                 pagination: false,
                 navigation: {
-                    nextEl: '.swiper-button-next',
-                    prevEl: '.swiper-button-prev',
+                    nextEl: '#corporations-list-swiper-button-next',
+                    prevEl: '#corporations-list-swiper-button-prev',
                 },
             });
         }
