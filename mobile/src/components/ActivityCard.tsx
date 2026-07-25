@@ -39,9 +39,19 @@ interface ActivityCardProps {
   onView: (item: ActivityItem) => void;
 }
 
+const UPGRADE_BADGE_MAX_AGE_MS = 3 * 60 * 60 * 1000;
+
+function isRecentlyUpgraded(item: ActivityItem): boolean {
+  if (item.kind !== 'fleet_active' || !item.upgraded_at) return false;
+  const upgradedAt = new Date(item.upgraded_at).getTime();
+  if (Number.isNaN(upgradedAt)) return false;
+  return Date.now() - upgradedAt <= UPGRADE_BADGE_MAX_AGE_MS;
+}
+
 export function ActivityCard({ item, isFirst = false, isLast = false, onView }: ActivityCardProps) {
   const { title, subheader, preview } = mapActivityToCard(item);
   const { accent, nodeBg } = getActivityAccent(item);
+  const upgraded = isRecentlyUpgraded(item);
 
   return (
     <View style={styles.row}>
@@ -66,9 +76,16 @@ export function ActivityCard({ item, isFirst = false, isLast = false, onView }: 
             </View>
           </View>
 
-          <Text style={styles.title} numberOfLines={1}>
-            {title}
-          </Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.title} numberOfLines={1}>
+              {title}
+            </Text>
+            {upgraded ? (
+              <Text style={[styles.upgradeBadge, { color: accent, borderColor: accent }]}>
+                Upgraded
+              </Text>
+            ) : null}
+          </View>
           <Text style={styles.subheader} numberOfLines={1}>
             {subheader}
           </Text>
@@ -155,11 +172,28 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 13,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.xs,
+  },
   title: {
     ...typography.bodyStrong,
     color: colors.highlight,
     fontSize: 13,
     lineHeight: 17,
+    flexShrink: 1,
+  },
+  upgradeBadge: {
+    ...typography.overline,
+    fontSize: 8,
+    lineHeight: 12,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderWidth: 1,
+    borderRadius: 3,
+    textTransform: 'uppercase',
   },
   subheader: {
     ...typography.caption,
