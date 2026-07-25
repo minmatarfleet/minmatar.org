@@ -71,7 +71,7 @@ def _upsert_kill_burst_cluster(
         killmails = list(
             FeedKillmail.objects.filter(killmail_id__in=merged_ids)
         )
-        stats = _build_cluster_stats(killmails)
+        stats = build_cluster_stats(killmails)
 
     canonical_key = _cluster_key(
         FeedCluster.ClusterType.KILL_BURST,
@@ -106,17 +106,24 @@ def _find_active_fleet_cluster(
     stale_minutes: int,
 ) -> FeedCluster | None:
     cutoff = window_start - timedelta(minutes=stale_minutes)
-    return (
-        FeedCluster.objects.filter(
-            cluster_type=FeedCluster.ClusterType.FLEET_ENGAGEMENT,
-            solar_system_id=solar_system_id,
-            dominant_faction_id=faction_id,
-            is_active=True,
-            last_kill_at__gte=cutoff,
-        )
-        .order_by("-last_kill_at")
-        .first()
-    )
+    active = FeedCluster.objects.filter(
+        cluster_type=FeedCluster.ClusterType.FLEET_ENGAGEMENT,
+        solar_system_id=solar_system_id,
+        is_active=True,
+        last_kill_at__gte=cutoff,
+    ).order_by("-last_kill_at")
+
+    exact = active.filter(dominant_faction_id=faction_id).first()
+    if exact is not None:
+        return exact
+
+    # An orphan window whose dominant faction is unknown (NULL/0) still belongs
+    # to the active fight in the system; likewise attach a newly-resolved faction
+    # to a cluster whose faction could not previously be determined. This avoids
+    # splitting one engagement across ``:0:`` and ``:<faction>:`` cluster keys.
+    if faction_id is None:
+        return active.first()
+    return active.filter(dominant_faction_id__isnull=True).first()
 
 
 def _merge_fleet_cluster(
@@ -124,7 +131,7 @@ def _merge_fleet_cluster(
 ) -> FeedCluster:
     merged_ids = sorted(set(existing.killmail_ids or []) | set(killmail_ids))
     killmails = list(FeedKillmail.objects.filter(killmail_id__in=merged_ids))
-    stats = _build_cluster_stats(killmails)
+    stats = build_cluster_stats(killmails)
     existing.dominant_faction_id = stats["dominant_faction_id"]
     existing.started_at = stats["started_at"]
     existing.last_kill_at = stats["last_kill_at"]
@@ -159,7 +166,7 @@ def _cluster_defaults(
     }
 
 
-def _build_cluster_stats(killmails: list[FeedKillmail]) -> dict[str, Any]:
+def build_cluster_stats(killmails: list[FeedKillmail]) -> dict[str, Any]:
     attacker_ids: set[int] = set()
     ship_counts: Counter[str] = Counter()
     killmail_ids: list[int] = []
@@ -289,7 +296,7 @@ def _sliding_window_clusters(
             j += 1
 
         if len(window_kills) >= min_kills:
-            stats = _build_cluster_stats(window_kills)
+            stats = build_cluster_stats(window_kills)
             if stats["pilot_count"] >= min_pilots:
                 if cluster_type == FeedCluster.ClusterType.FLEET_ENGAGEMENT:
                     stale_minutes = get_rollup_config("fleet_active").get(

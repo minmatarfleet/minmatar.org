@@ -70,6 +70,9 @@ export function mapApiFeedItemToActivity(item: ApiFeedEventItem): ActivityItem {
         composition: item.body || item.preview || undefined,
         roster: mapRoster(payload),
         roster_total: payload.roster_total as number | undefined,
+        engagement_tier: payload.engagement_tier as string | undefined,
+        previous_tier: payload.previous_tier as string | undefined,
+        upgraded_at: payload.upgraded_at as string | undefined,
       };
     case 'killmail_batch':
       return {
