@@ -293,6 +293,8 @@ class OpsMonitorApiTestCase(TestCase):
             self.assertTrue(row["coverage_gap"])
             self.assertTrue(row["viability_gap"])
             self.assertEqual(row["item_type"], "consumable")
+            self.assertEqual(row["units_1d"], 0)
+            self.assertEqual(row["units_3d"], 0)
             self.assertEqual(row["weekly_units"], 0)
             self.assertEqual(row["units_30d"], 0)
             self.assertEqual(row["units_90d"], 0)
@@ -449,8 +451,16 @@ class OpsMonitorApiTestCase(TestCase):
             item=item,
             quantity=30,
             price=1_000_000,
-            inferred_at=now - timedelta(days=1),
+            inferred_at=now - timedelta(hours=12),
             reason=EveMarketInferredSale.REASON_SELLOUT,
+        )
+        EveMarketInferredSale.objects.create(
+            location=self.loc,
+            item=item,
+            quantity=4,
+            price=1_000_000,
+            inferred_at=now - timedelta(days=2),
+            reason=EveMarketInferredSale.REASON_PARTIAL_FILL,
         )
         EveMarketInferredSale.objects.create(
             location=self.loc,
@@ -497,9 +507,11 @@ class OpsMonitorApiTestCase(TestCase):
             for row in data["sell_gaps"]
             if row["item_name"] == "Weekly Sold Ammo"
         )
-        self.assertEqual(gap["weekly_units"], 42)
-        self.assertEqual(gap["units_30d"], 50)
-        self.assertEqual(gap["units_90d"], 55)
+        self.assertEqual(gap["units_1d"], 30)
+        self.assertEqual(gap["units_3d"], 34)
+        self.assertEqual(gap["weekly_units"], 46)
+        self.assertEqual(gap["units_30d"], 54)
+        self.assertEqual(gap["units_90d"], 59)
         # qty-weighted avg price = (40*3M + 10*6M) / 50 = 3.6M → +80% vs 2M
         self.assertEqual(gap["avg_markup_pct"], 80.0)
 

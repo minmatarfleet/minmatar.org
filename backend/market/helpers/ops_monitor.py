@@ -34,6 +34,8 @@ from market.models.item import (
 _CRITICAL_RATIO = 0.5
 
 # Rolling windows for inferred sales volume on gap rows.
+_VOLUME_DAYS_1 = 1
+_VOLUME_DAYS_3 = 3
 _VOLUME_DAYS_7 = 7
 _VOLUME_DAYS_30 = 30
 _VOLUME_DAYS_90 = 90  # matches inferred-sale retention window
@@ -234,12 +236,16 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
 
     classified_by_id = classify_items(target_type_ids)
 
+    units_1d_by_loc_item: dict[tuple[int, int], int] = {}
+    units_3d_by_loc_item: dict[tuple[int, int], int] = {}
     weekly_units_by_loc_item: dict[tuple[int, int], int] = {}
     units_30d_by_loc_item: dict[tuple[int, int], int] = {}
     units_90d_by_loc_item: dict[tuple[int, int], int] = {}
     sales_history_days = 0
     if target_type_ids:
         now = timezone.now()
+        since_1 = now - timedelta(days=_VOLUME_DAYS_1)
+        since_3 = now - timedelta(days=_VOLUME_DAYS_3)
         since_7 = now - timedelta(days=_VOLUME_DAYS_7)
         since_30 = now - timedelta(days=_VOLUME_DAYS_30)
         since_90 = now - timedelta(days=_VOLUME_DAYS_90)
@@ -261,6 +267,14 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
             if inferred_at >= since_7:
                 weekly_units_by_loc_item[key] = (
                     weekly_units_by_loc_item.get(key, 0) + qty
+                )
+            if inferred_at >= since_3:
+                units_3d_by_loc_item[key] = (
+                    units_3d_by_loc_item.get(key, 0) + qty
+                )
+            if inferred_at >= since_1:
+                units_1d_by_loc_item[key] = (
+                    units_1d_by_loc_item.get(key, 0) + qty
                 )
 
         # How much history exists, so the UI can hide windows it cannot fill.
@@ -337,6 +351,12 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
                         classified_by_id[eve_type.id].item_variant
                         if eve_type.id in classified_by_id
                         else ITEM_VARIANT_OTHER
+                    ),
+                    "units_1d": units_1d_by_loc_item.get(
+                        (loc_pk, eve_type.id), 0
+                    ),
+                    "units_3d": units_3d_by_loc_item.get(
+                        (loc_pk, eve_type.id), 0
                     ),
                     "weekly_units": weekly_units_by_loc_item.get(
                         (loc_pk, eve_type.id), 0

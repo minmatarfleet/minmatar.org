@@ -1323,6 +1323,8 @@ export interface OpsMonitor {
         viability_gap:      boolean;
         item_type:          string;
         item_variant:       string;
+        units_1d:           number;
+        units_3d:           number;
         weekly_units:       number;
         units_30d:          number;
         units_90d:          number;

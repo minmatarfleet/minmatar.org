@@ -18,6 +18,8 @@ interface SellGapRow {
     viability_gap:      boolean;
     item_type:          string;
     item_variant:       string;
+    units_1d:           number;
+    units_3d:           number;
     weekly_units:       number;
     units_30d:          number;
     units_90d:          number;
@@ -94,6 +96,8 @@ const variant_options = [
     { id: 'other', label: t('ops_gap_variant_other') },
 ] as const
 
+const show_volume_1d = sales_history_days >= 1
+const show_volume_3d = sales_history_days >= 3
 const show_volume_7d = sales_history_days >= 7
 const show_volume_30d = sales_history_days >= 30
 const show_volume_90d = sales_history_days >= 90
@@ -260,6 +264,20 @@ const empty_label = t('ops_sell_gaps_empty_filter')
                             <span class="[ ops-sell-gap__metric ]">
                                 <span class="[ ops-sell-gap__metric-label ]">{t('ops_sell_gap_metric_markup')}</span>
                                 <span class="[ ops-sell-gap__metric-value ]">{format_markup(row.avg_markup_pct)}</span>
+                            </span>
+                            <span class="[ ops-sell-gap__sep ]" aria-hidden="true">·</span>
+                            <span class="[ ops-sell-gap__metric ]">
+                                <span class="[ ops-sell-gap__metric-label ]">{t('ops_sell_gap_metric_1d')}</span>
+                                <span class="[ ops-sell-gap__metric-value ]">
+                                    {show_volume_1d ? format_units(row.units_1d) : '—'}
+                                </span>
+                            </span>
+                            <span class="[ ops-sell-gap__sep ]" aria-hidden="true">·</span>
+                            <span class="[ ops-sell-gap__metric ]">
+                                <span class="[ ops-sell-gap__metric-label ]">{t('ops_sell_gap_metric_3d')}</span>
+                                <span class="[ ops-sell-gap__metric-value ]">
+                                    {show_volume_3d ? format_units(row.units_3d) : '—'}
+                                </span>
                             </span>
                             <span class="[ ops-sell-gap__sep ]" aria-hidden="true">·</span>
                             <span class="[ ops-sell-gap__metric ]">
