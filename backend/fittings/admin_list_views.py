@@ -51,6 +51,7 @@ def _filter_fittings_queryset(queryset, search: str):
         Q(name__icontains=term)
         | Q(description__icontains=term)
         | Q(aliases__icontains=term)
+        | Q(known_key__icontains=term)
         | Q(ship_id__in=ship_ids)
     )
 

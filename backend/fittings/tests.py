@@ -8,6 +8,8 @@ from eveuniverse.models import EveCategory, EveGroup, EveType
 
 from app.test import TestCase
 
+from fittings.forms import EveFittingAdminForm
+from fittings.known_fitting_choices import known_fitting_admin_choices
 from fittings.models import (
     ChangeRequestStatus,
     EveDoctrine,
@@ -577,6 +579,7 @@ class FittingsManageSearchTestCase(TestCase):
             ship_id=608,
             description="pulse laser kite",
             aliases="[FL33T] Retribution",
+            known_key="guide.fw-cruiser.omen-kite-pulse",
         )
         EveFitting.objects.create(
             name="[NVY-30] Tornado",
@@ -591,7 +594,8 @@ class FittingsManageSearchTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         html = response.content.decode()
         self.assertIn('name="q"', html)
-        self.assertIn("Search fittings", html)
+        self.assertIn("known key", html.lower())
+        self.assertIn("guide.fw-cruiser.omen-kite-pulse", html)
         self.assertIn("[ADV-5] Retribution", html)
         self.assertIn("[NVY-30] Tornado", html)
 
@@ -611,6 +615,67 @@ class FittingsManageSearchTestCase(TestCase):
         html = response.content.decode()
         self.assertIn("[ADV-5] Retribution", html)
         self.assertNotIn("[NVY-30] Tornado", html)
+
+    def test_manage_page_filters_by_known_key(self):
+        url = reverse("admin:fittings_manage_fittings")
+        response = self.client.get(url, {"q": "eni-blaster"})
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertNotIn("[ADV-5] Retribution", html)
+        self.assertNotIn("[NVY-30] Tornado", html)
+
+        response = self.client.get(url, {"q": "omen-kite-pulse"})
+        self.assertEqual(response.status_code, 200)
+        html = response.content.decode()
+        self.assertIn("[ADV-5] Retribution", html)
+        self.assertNotIn("[NVY-30] Tornado", html)
+
+
+class KnownFittingAdminChoicesTestCase(TestCase):
+    """known_key admin picker: searchable Select2 + available/in-use labels."""
+
+    def setUp(self):
+        super().setUp()
+        self.holder = EveFitting.objects.create(
+            name="[NVY] Pulse Omen",
+            eft_format="[Omen, [NVY] Pulse Omen]",
+            ship_id=2006,
+            description="",
+            known_key="guide.fw-cruiser.omen-kite-pulse",
+        )
+
+    def test_choices_split_available_and_assigned(self):
+        choices = known_fitting_admin_choices()
+        groups = {label: opts for label, opts in choices if label}
+        self.assertIn("Available", groups)
+        self.assertIn("Already assigned", groups)
+
+        available_values = {value for value, _ in groups["Available"]}
+        assigned_values = {value for value, _ in groups["Already assigned"]}
+        self.assertIn("guide.fw-cruiser.eni-blaster", available_values)
+        self.assertIn("guide.fw-cruiser.omen-kite-pulse", assigned_values)
+        self.assertNotIn("guide.fw-cruiser.omen-kite-pulse", available_values)
+
+        assigned_label = dict(groups["Already assigned"])[
+            "guide.fw-cruiser.omen-kite-pulse"
+        ]
+        self.assertIn(f"#{self.holder.pk}", assigned_label)
+        self.assertIn("[NVY] Pulse Omen", assigned_label)
+
+    def test_choices_exclude_current_fitting_from_in_use(self):
+        choices = known_fitting_admin_choices(exclude_pk=self.holder.pk)
+        groups = {label: opts for label, opts in choices if label}
+        available_values = {value for value, _ in groups["Available"]}
+        self.assertIn("guide.fw-cruiser.omen-kite-pulse", available_values)
+        self.assertNotIn("Already assigned", groups)
+
+    def test_admin_form_uses_searchable_known_key_widget(self):
+        form = EveFittingAdminForm(instance=self.holder)
+        html = str(form["known_key"])
+        self.assertIn("known-key-select", html)
+        self.assertIn("guide.fw-cruiser.eni-blaster", html)
+        self.assertIn("select2.full.js", str(form.media))
+        self.assertIn("known_key_select.js", str(form.media))
 
 
 class EveFittingModuleSubstitutionTestCase(TestCase):

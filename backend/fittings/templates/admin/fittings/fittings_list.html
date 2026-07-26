@@ -34,8 +34,8 @@
         type="text"
         name="q"
         value="{{ search_query }}"
-        placeholder="{% translate 'Search fittings' %}"
-        aria-label="{% translate 'Search fittings' %}"
+        placeholder="{% translate 'Search name, ship, alias, or known key' %}"
+        aria-label="{% translate 'Search name, ship, alias, or known key' %}"
         size="40"
         autofocus
       >
@@ -61,6 +61,7 @@
       <tr>
         <th>{% translate "Name" %}</th>
         <th>{% translate "Ship" %}</th>
+        <th>{% translate "Known key" %}</th>
         <th>{% translate "Protection" %}</th>
         <th>{% translate "Pods" %}</th>
         <th>{% translate "Refits" %}</th>
@@ -73,6 +74,13 @@
       <tr>
         <td><strong>{{ row.fitting.name }}</strong></td>
         <td>{{ row.ship_name }}</td>
+        <td>
+          {% if row.fitting.known_key %}
+          <code>{{ row.fitting.known_key }}</code>
+          {% else %}
+          —
+          {% endif %}
+        </td>
         <td>{{ row.protection_tier }}</td>
         <td>{{ row.pod_count }}</td>
         <td>{{ row.refit_count }}</td>
@@ -87,7 +95,7 @@
       </tr>
       {% empty %}
       <tr>
-        <td colspan="7">
+        <td colspan="8">
           {% if search_query %}
             {% blocktranslate with query=search_query %}No fittings match “{{ query }}”.{% endblocktranslate %}
           {% else %}
