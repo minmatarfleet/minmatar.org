@@ -16,7 +16,6 @@ import FactionWarfareCruiserGuide from '@components/blocks/faction-warfare-cruis
 import PageProgress from '@components/blocks/PageProgress.astro'
 
 const page_title = t('ships.faction_warfare_cruiser_guide.page_title')
-const page_description = t('ships.faction_warfare_cruiser_guide.leading_text')
 const meta_title = t('ships.faction_warfare_cruiser_guide.meta_title')
     .replace('{site}', t('index.page_title'))
 const meta_description = t('ships.faction_warfare_cruiser_guide.meta_description')
@@ -88,11 +87,6 @@ const progress = pageProgressFromSections({
                         </div>
                     </div>
                     <PageTitle is_landing={true}>{page_title}</PageTitle>
-                    <aside class="fwc-page__wip" role="status">
-                        <p class="fwc-page__wip-title">{t('ships.faction_warfare_cruiser_guide.wip_alert_title')}</p>
-                        <p class="fwc-page__wip-text">{t('ships.faction_warfare_cruiser_guide.wip_alert_text')}</p>
-                    </aside>
-                    <p class="[ excerpt ]">{page_description}</p>
                 </Flexblock>
             </TextBox>
 
@@ -166,33 +160,4 @@ const progress = pageProgressFromSections({
         }
     }
 
-    .fwc-page__wip {
-        max-width: var(--max-text-width);
-        padding: var(--space-s) var(--space-m);
-        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 40%, transparent);
-        border-left: 4px solid var(--fleet-yellow);
-        background: color-mix(in srgb, var(--fleet-yellow) 10%, var(--component-background));
-    }
-
-    .fwc-page__wip-title {
-        margin: 0 0 var(--space-2xs);
-        font-size: var(--step-0);
-        font-weight: 600;
-        color: var(--fleet-yellow);
-        line-height: 1.3;
-    }
-
-    .fwc-page__wip-text {
-        margin: 0;
-        font-size: var(--step--1);
-        line-height: 1.5;
-        color: var(--foreground);
-    }
-
-    .excerpt,
-    :global(.excerpt p) {
-        font-size: var(--step-1);
-        line-height: 1.6;
-        max-width: var(--max-text-width);
-    }
 </style>
