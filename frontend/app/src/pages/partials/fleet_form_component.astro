@@ -60,8 +60,9 @@ const timer = fleet?.start_time
 const eve_datetime = timer ? new Date(timer) : new Date()
 if (!timer) eve_datetime.setMinutes(eve_datetime.getMinutes() + 15)
 
+// The form labels these as EVE time, so both parts must come from UTC
 const eve_date = eve_datetime.toISOString().slice(0, 10)
-const eve_time = eve_datetime.toTimeString().slice(0, 5)
+const eve_time = eve_datetime.toISOString().slice(11, 16)
 ---
 
 {fetch_doctrines_error ?

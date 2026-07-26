@@ -44,7 +44,7 @@ if (Astro.request.method === "POST") {
             doctrine_id: doctrine_id,
             description: data.get('description') as string,
             objective: data.get('objective') as string,
-            start_time: new Date(`${data.get('eve_date')} ${data.get('eve_time')}`),
+            start_time: new Date(`${data.get('eve_date')}T${data.get('eve_time')}Z`),
             type: data.get('fleet_type') as FleetTypes,
             audience_id: parseInt(data.get('audience_id') as string),
             disable_motd: (data.get('disable_motd' as string) === 'on'),
@@ -127,8 +127,9 @@ const timer = fleet?.start_time
 const eve_datetime = timer ? new Date(timer) : new Date()
 if (!timer) eve_datetime.setMinutes(eve_datetime.getMinutes() + 15)
 
+// The form labels these as EVE time, so both parts must come from UTC
 const eve_date = eve_datetime.toISOString().slice(0, 10)
-const eve_time = eve_datetime.toTimeString().slice(0, 5)
+const eve_time = eve_datetime.toISOString().slice(11, 16)
 ---
 
 <Viewport

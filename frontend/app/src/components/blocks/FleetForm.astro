@@ -69,6 +69,9 @@ const default_fleet_type = fleet?.type ?? fleet_types_select_options[0].value
 const default_doctrine = fleet?.doctrine?.id ?? doctrines_select_options[0].value
 const default_audience = fleet_audience_id ?? (audiences_select_options.length !== 2 ? audiences_select_options[0].value : audiences_select_options[1].value)
 
+// Alpine state holds the audience as a string so it matches the `<select>` value
+const default_audience_value = String(default_audience ?? '')
+
 // AUDIENCE_ICONS is deprecated - use audience.image_url instead
 
 import Context from '@components/layout/Context.astro';
@@ -107,18 +110,18 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
         method="POST"
         x-data={`{
             submitted: false,
-            fleet_type: '${default_fleet_type}',
-            eve_date: '${eve_date}',
-            eve_time: '${eve_time}',
-            audience: '${default_audience}',
-            doctrine_id: '${default_doctrine}',
-            objective: '${fleet?.objective ?? ''}',
+            fleet_type: ${JSON.stringify(String(default_fleet_type))},
+            eve_date: ${JSON.stringify(eve_date)},
+            eve_time: ${JSON.stringify(eve_time)},
+            audience: ${JSON.stringify(default_audience_value)},
+            doctrine_id: ${JSON.stringify(String(default_doctrine))},
+            objective: ${JSON.stringify(fleet?.objective ?? '')},
             local_datetime: '',
             audiences: ${JSON.stringify(AUDIENCES)},
             fleet_types: ${JSON.stringify(FLEET_TYPES_LABELS)},
             get_images() {
                 let images = [{
-                    src: '${get_player_icon(fleet_commander?.character_id ?? 0)}',
+                    src: ${JSON.stringify(get_player_icon(fleet_commander?.character_id ?? 0))},
                     width: 64,
                     height: 64,
                 }];
@@ -136,11 +139,11 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
             fleet_datetime(utc) {
                 const date_time = this.eve_date+' '+this.eve_time
                 const date_string = new Date(date_time+(utc ? ' UTC' : '')).toLocaleDateString(
-                    '${lang}',
+                    ${JSON.stringify(lang)},
                     ${import.meta.env.DATETIME_FORMAT}
                 )
 
-                return (date_string != 'Invalid Date' ? date_string : '${t('waiting_fleet_time')}')
+                return (date_string != 'Invalid Date' ? date_string : ${JSON.stringify(t('waiting_fleet_time'))})
             },
         }`}
         x-on:submit="launch_confetti(get_images()); submitted = true;"
@@ -159,7 +162,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                 <FlexInline class="[ audiences !justify-center ]">
                                     {audiences.map((option) =>
                                         <StylessButton
-                                            x-on:click={`audience = ${option.id}`}
+                                            x-on:click={`audience = ${JSON.stringify(String(option.id))}`}
                                             hx-get={translatePath(`/partials/fleet_cover?audience_id=${option.id}`)}
                                             hx-target="#viewport-cover-oob"
                                             hx-trigger="click"
@@ -169,8 +172,8 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                             data-tippy-content={option.display_name}
                                         >
                                             <img
-                                                class:list={{ selected: option.id === default_audience}}
-                                                x-bind:class={`{ 'selected': audience === ${option.id} }`}
+                                                class:list={{ selected: String(option.id) === default_audience_value }}
+                                                x-bind:class={`{ 'selected': audience === ${JSON.stringify(String(option.id))} }`}
                                                 src={option.image_url ?? '/images/fleet-logo.svg'}
                                                 height="256"
                                                 width="256"
@@ -188,7 +191,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                             required
                                         >
                                             {audiences_select_options.map((option) => 
-                                                <option value={option.value}>
+                                                <option value={option.value} selected={String(option.value) === default_audience_value}>
                                                     {option.label}
                                                 </option>
                                             )}
@@ -263,13 +266,13 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                 <label for="type">{t('type')}</label>
                                 <Select id="type" x-model="fleet_type" name="fleet_type">
                                     {fleet_types_select_options.map((option) => 
-                                        <option value={option.value}>{option.label}</option>
+                                        <option value={option.value} selected={option.value === default_fleet_type}>{option.label}</option>
                                     )}
                                 </Select>
                             </FixedFluid>
 
                             <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                                <label for="type">{t('objective')}</label>
+                                <label for="objective">{t('objective')}</label>
                                 <Input
                                     id="objective"
                                     name="objective"
@@ -345,12 +348,12 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                             </TextGroup>
 
                             <TextGroup
-                                class:list={{ 'text-red': default_audience < 1 }}
-                                x-bind:class="{ 'text-red': audience < 1 }"
+                                class:list={{ 'text-red': !default_audience_value }}
+                                x-bind:class="{ 'text-red': !audience }"
                                 title={t('audience')}
-                                x-text={`audience > 0 ? audiences[audience] : '${t('no_audience_selected')}'`}
+                                x-text={`audience ? audiences[audience] : ${JSON.stringify(t('no_audience_selected'))}`}
                             >
-                                {default_audience > 0 ? AUDIENCES[default_audience] : t('no_audience_selected')}
+                                {default_audience_value ? AUDIENCES[default_audience_value] : t('no_audience_selected')}
                             </TextGroup>
                         </FlexInline>
                     </Flexblock>
