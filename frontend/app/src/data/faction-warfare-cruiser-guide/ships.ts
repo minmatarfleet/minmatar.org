@@ -173,7 +173,7 @@ export const mallerGuide: ShipGuide = {
     matchups: [
         {
             title: 'Pulse Maller',
-            fitContext: 'AB 800mm plate pulse brick.',
+            fitContext: 'MWD 800mm plate pulse brick.',
             entries: [
                 { opponent: 'AB XLASB Stabber', load: 'Conflag', verdict: 'favoured', advice: 'Hold the plex and apply.' },
                 { opponent: 'XLASB HAM Bellicose', load: 'Conflag', verdict: 'favoured', advice: 'T1 buffer race in your favour if you land pulse clean.' },

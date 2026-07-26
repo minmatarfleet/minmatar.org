@@ -57,8 +57,9 @@ export const introduction = [
 
 export const considerations = [
     'Cruiser fights are much slower and intentional than destroyer and frigate engagements. Mutual scram and web often commit both pilots: if you slingshot wrong at zero, you will not get those fifty meters back before the DPS race is decided. Since fitting is generally a bit more freeform, this leads to interesting decisions like neutron blasters versus ion blasters.',
-    'Whereas frigates are much more of a rock-paper-scissors and destroyers are like a brawl in a pub, cruisers are much more like a dance. Many kite fits can still lose if a competent brawler punches in, and kiters cannot hold long point until the fight is over. The Exequror Navy Issue and Vexor Navy Issue punish greedy point holders.',
+    'Whereas frigates are much more of a rock-paper-scissors and destroyers are like a brawl in a pub, cruisers are much more like a dance. Many kite fits can still lose if a competent brawler punches in, and kiters will struggle to hold long point until the fight is over. The Exequror Navy Issue and Vexor Navy Issue punish greedy point holders.',
     'Utility highs matter significantly, much more than they do on frigate and destroyers. The capacitor race can often determine a solo fight, especially if you can turn off their tank or guns. Osprey Navy Issue is a great example of a platform that can abuse this.',
+    'Some cruisers are left out of this guide because they were deemed weak or simply outclassed for solo faction warfare fighting.',
 ]
 
 export const considerationBullets = [
@@ -71,6 +72,7 @@ export const considerationBullets = [
 export const disclaimers = [
     'The guide is written for solo and small-gang pilots stocking contracts or holding plexes. Many of these fits are wrong for large structured fleets. Example fittings are solid representations of each archetype, not the final word — module tier, rig choice, and bling all matter. Check skills and ISK before undocking.',
     'Matchup charts and per-ship cards rate the example fits in this guide against each other (high ground vs low ground when nothing else is in local). Change the plan when you know the fit, the pilot, or the gang. Being predictable is sometimes worse than being slightly suboptimal.',
+    'In the world of cruiser fights, pilot skill and knowledge make a far bigger difference than for frigates and destroyers. Things like defanging drones, shooting outside point range and then diving for the point, splitting launchers to confuse a reactive, tactically stopping to prevent slingshotting, choosing to either get under guns or scram kite — these can all decide a fight. As a result, take this matchup chart with a grain of salt.',
 ]
 
 export const metagameSummary = [
