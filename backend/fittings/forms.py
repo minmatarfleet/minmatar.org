@@ -8,7 +8,7 @@ from fittings.helpers.module_substitutions import (
     types_are_variants,
 )
 
-from .known_fitting import KnownFitting
+from .known_fitting_choices import known_fitting_admin_choices
 from .models import (
     ChangeRequestStatus,
     EveDoctrine,
@@ -20,6 +20,7 @@ from .models import (
     EveFittingRefit,
     FittingTag,
 )
+from .widgets import SearchableKnownFittingSelect
 
 
 def normalize_fitting_aliases(raw: str) -> str:
@@ -54,11 +55,13 @@ class EveFittingAdminForm(forms.ModelForm):
         widget=forms.CheckboxSelectMultiple,
     )
     known_key = forms.ChoiceField(
-        choices=[("", "---------")] + list(KnownFitting.choices),
+        choices=[("", "---------")],
         required=False,
+        widget=SearchableKnownFittingSelect,
         help_text=(
             "Stable catalog key for guides and app features "
-            "(e.g. guide.fw-cruiser.omen-kite-pulse). Not versioned with EFT."
+            "(e.g. guide.fw-cruiser.eni-blaster). Type to search by name or key. "
+            "Not versioned with EFT."
         ),
     )
     aliases = forms.CharField(
@@ -90,6 +93,11 @@ class EveFittingAdminForm(forms.ModelForm):
             self.initial["aliases"] = aliases_for_textarea(raw)
         if self.instance and self.instance.pk:
             self.initial["tags"] = self.instance.tag_slugs()
+        if "known_key" in self.fields:
+            exclude_pk = self.instance.pk if self.instance.pk else None
+            self.fields["known_key"].choices = known_fitting_admin_choices(
+                exclude_pk=exclude_pk
+            )
         if "eft_format" in self.fields:
             self.fields["eft_format"].help_text = (
                 "Fitting name is taken from the EFT header "

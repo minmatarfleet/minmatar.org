@@ -449,6 +449,7 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
             {
                 "description": (
                     "Stable catalog meaning for guides and app features. "
+                    "Type to search by fit name or key (e.g. eni-blaster). "
                     "Saved immediately (not versioned with EFT changes)."
                 ),
                 "fields": ("known_key",),

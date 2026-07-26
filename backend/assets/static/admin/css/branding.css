@@ -1,0 +1,45 @@
+/*
+ * FL33T admin — swap Django's default blues for fleet red (#b53620).
+ * Everything else stays on stock admin styling.
+ */
+
+html[data-theme="light"],
+:root {
+  --primary: #c97868;
+  --secondary: #b53620;
+  --accent: #f5dd5d;
+
+  --breadcrumbs-fg: #e8c4bc;
+  --breadcrumbs-bg: #8a2a18;
+
+  --link-fg: #b53620;
+  --link-hover-color: #8a2a18;
+  --link-selected-fg: #8a2a18;
+
+  --button-bg: var(--secondary);
+  --button-hover-bg: #8a2a18;
+  --default-button-bg: #8a2a18;
+  --default-button-hover-bg: var(--secondary);
+}
+
+html[data-theme="dark"] {
+  --primary: #8a2a18;
+
+  --breadcrumbs-bg: var(--primary);
+
+  --link-fg: #f0a898;
+  --link-hover-color: #f5bdb0;
+  --link-selected-fg: #d4563f;
+}
+
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme="light"]) {
+    --primary: #8a2a18;
+
+    --breadcrumbs-bg: var(--primary);
+
+    --link-fg: #f0a898;
+    --link-hover-color: #f5bdb0;
+    --link-selected-fg: #d4563f;
+  }
+}
