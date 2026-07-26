@@ -1,6 +1,8 @@
+from datetime import timedelta
 from unittest.mock import patch
 
 from django.test import Client
+from django.utils import timezone
 from eveuniverse.models import EveCategory, EveGroup, EveType
 
 from app.test import TestCase
@@ -15,6 +17,7 @@ from market.helpers.readiness import (
 from market.models import (
     EveMarketContract,
     EveMarketContractExpectation,
+    EveMarketInferredSale,
 )
 from market.models.item import EveMarketItemExpectation, EveMarketItemOrder
 
@@ -255,7 +258,7 @@ class OpsMonitorApiTestCase(TestCase):
         self.assertEqual(data["summary"]["understocked_contracts"], 0)
         self.assertEqual(data["summary"]["sell_gaps"], 0)
 
-    def test_sell_gaps_summary_matches_list_cap(self):
+    def test_sell_gaps_summary_returns_full_list(self):
         charge_cat, _ = EveCategory.objects.get_or_create(
             id=8, defaults={"name": "Charge", "published": True}
         )
@@ -284,8 +287,221 @@ class OpsMonitorApiTestCase(TestCase):
             )
 
         data = build_ops_monitor(location_id=self.loc.location_id)
-        self.assertEqual(len(data["sell_gaps"]), 100)
-        self.assertEqual(data["summary"]["sell_gaps"], 100)
+        self.assertEqual(len(data["sell_gaps"]), 105)
+        self.assertEqual(data["summary"]["sell_gaps"], 105)
+        for row in data["sell_gaps"]:
+            self.assertTrue(row["coverage_gap"])
+            self.assertTrue(row["viability_gap"])
+            self.assertEqual(row["item_type"], "consumable")
+            self.assertEqual(row["weekly_units"], 0)
+            self.assertEqual(row["units_30d"], 0)
+            self.assertEqual(row["units_90d"], 0)
+            self.assertIsNone(row["avg_markup_pct"])
+
+    def test_viability_only_gap_when_listed_but_overpriced(self):
+        charge_cat, _ = EveCategory.objects.get_or_create(
+            id=8, defaults={"name": "Charge", "published": True}
+        )
+        charge_grp, _ = EveGroup.objects.get_or_create(
+            id=801,
+            defaults={
+                "name": "Hybrid Charge",
+                "published": True,
+                "eve_category": charge_cat,
+            },
+        )
+        item, _ = EveType.objects.update_or_create(
+            id=91010,
+            defaults={
+                "name": "Viability Only Ammo",
+                "published": True,
+                "eve_group": charge_grp,
+            },
+        )
+        EveMarketItemExpectation.objects.create(
+            item=item,
+            location=self.loc,
+            quantity=100,
+        )
+        # Coverage OK (100 listed) but only 11 at a viable price.
+        EveMarketItemOrder.objects.create(
+            location=self.loc,
+            item=item,
+            quantity=11,
+            price=2_200_000,
+            is_buy_order=False,
+        )
+        EveMarketItemOrder.objects.create(
+            location=self.loc,
+            item=item,
+            quantity=89,
+            price=3_000_000,
+            is_buy_order=False,
+        )
+
+        with patch(
+            "market.helpers.ops_monitor.get_prices_by_type_id",
+            return_value={item.pk: 2_000_000},
+        ):
+            data = build_ops_monitor(location_id=self.loc.location_id)
+
+        gap = next(
+            row
+            for row in data["sell_gaps"]
+            if row["item_name"] == "Viability Only Ammo"
+        )
+        self.assertEqual(gap["current_quantity"], 100)
+        self.assertEqual(gap["viable_quantity"], 11)
+        self.assertFalse(gap["coverage_gap"])
+        self.assertTrue(gap["viability_gap"])
+        self.assertEqual(gap["item_type"], "consumable")
+
+    def test_both_gaps_when_stock_is_thin(self):
+        charge_cat, _ = EveCategory.objects.get_or_create(
+            id=8, defaults={"name": "Charge", "published": True}
+        )
+        charge_grp, _ = EveGroup.objects.get_or_create(
+            id=801,
+            defaults={
+                "name": "Hybrid Charge",
+                "published": True,
+                "eve_category": charge_cat,
+            },
+        )
+        item, _ = EveType.objects.update_or_create(
+            id=91011,
+            defaults={
+                "name": "Thin Stock Ammo",
+                "published": True,
+                "eve_group": charge_grp,
+            },
+        )
+        EveMarketItemExpectation.objects.create(
+            item=item,
+            location=self.loc,
+            quantity=100,
+        )
+        EveMarketItemOrder.objects.create(
+            location=self.loc,
+            item=item,
+            quantity=10,
+            price=2_000_000,
+            is_buy_order=False,
+        )
+
+        with patch(
+            "market.helpers.ops_monitor.get_prices_by_type_id",
+            return_value={item.pk: 2_000_000},
+        ):
+            data = build_ops_monitor(location_id=self.loc.location_id)
+
+        gap = next(
+            row
+            for row in data["sell_gaps"]
+            if row["item_name"] == "Thin Stock Ammo"
+        )
+        self.assertTrue(gap["coverage_gap"])
+        self.assertTrue(gap["viability_gap"])
+        self.assertEqual(gap["item_type"], "consumable")
+
+    def test_gap_row_includes_volume_windows_and_markup(self):
+        charge_cat, _ = EveCategory.objects.get_or_create(
+            id=8, defaults={"name": "Charge", "published": True}
+        )
+        charge_grp, _ = EveGroup.objects.get_or_create(
+            id=801,
+            defaults={
+                "name": "Hybrid Charge",
+                "published": True,
+                "eve_category": charge_cat,
+            },
+        )
+        item, _ = EveType.objects.update_or_create(
+            id=91020,
+            defaults={
+                "name": "Weekly Sold Ammo",
+                "published": True,
+                "eve_group": charge_grp,
+            },
+        )
+        EveMarketItemExpectation.objects.create(
+            item=item,
+            location=self.loc,
+            quantity=100,
+        )
+        EveMarketItemOrder.objects.create(
+            location=self.loc,
+            item=item,
+            quantity=40,
+            price=3_000_000,
+            is_buy_order=False,
+        )
+        EveMarketItemOrder.objects.create(
+            location=self.loc,
+            item=item,
+            quantity=10,
+            price=6_000_000,
+            is_buy_order=False,
+        )
+        now = timezone.now()
+        EveMarketInferredSale.objects.create(
+            location=self.loc,
+            item=item,
+            quantity=30,
+            price=1_000_000,
+            inferred_at=now - timedelta(days=1),
+            reason=EveMarketInferredSale.REASON_SELLOUT,
+        )
+        EveMarketInferredSale.objects.create(
+            location=self.loc,
+            item=item,
+            quantity=12,
+            price=1_000_000,
+            inferred_at=now - timedelta(days=6),
+            reason=EveMarketInferredSale.REASON_PARTIAL_FILL,
+        )
+        EveMarketInferredSale.objects.create(
+            location=self.loc,
+            item=item,
+            quantity=8,
+            price=1_000_000,
+            inferred_at=now - timedelta(days=20),
+            reason=EveMarketInferredSale.REASON_SELLOUT,
+        )
+        EveMarketInferredSale.objects.create(
+            location=self.loc,
+            item=item,
+            quantity=5,
+            price=1_000_000,
+            inferred_at=now - timedelta(days=60),
+            reason=EveMarketInferredSale.REASON_SELLOUT,
+        )
+        # Older than the 90-day window: excluded.
+        EveMarketInferredSale.objects.create(
+            location=self.loc,
+            item=item,
+            quantity=999,
+            price=1_000_000,
+            inferred_at=now - timedelta(days=120),
+            reason=EveMarketInferredSale.REASON_SELLOUT,
+        )
+
+        with patch(
+            "market.helpers.ops_monitor.get_prices_by_type_id",
+            return_value={item.pk: 2_000_000},
+        ):
+            data = build_ops_monitor(location_id=self.loc.location_id)
+
+        gap = next(
+            row
+            for row in data["sell_gaps"]
+            if row["item_name"] == "Weekly Sold Ammo"
+        )
+        self.assertEqual(gap["weekly_units"], 42)
+        self.assertEqual(gap["units_30d"], 50)
+        self.assertEqual(gap["units_90d"], 55)
+        # qty-weighted avg price = (40*3M + 10*6M) / 50 = 3.6M → +80% vs 2M
+        self.assertEqual(gap["avg_markup_pct"], 80.0)
 
     def test_understocked_contracts_summary_matches_list_cap(self):
         for i in range(55):
@@ -359,6 +575,9 @@ class OpsMonitorApiTestCase(TestCase):
         self.assertEqual(gap["current_quantity"], 100)
         self.assertEqual(gap["viable_quantity"], 11)
         self.assertEqual(gap["shortfall"], 89)
+        self.assertFalse(gap["coverage_gap"])
+        self.assertTrue(gap["viability_gap"])
+        self.assertEqual(gap["item_type"], "consumable")
         self.assertEqual(data["summary"]["sell_order_targets"], 1)
         self.assertEqual(data["summary"]["sell_order_fulfilled"], 1)
         self.assertEqual(data["summary"]["sell_order_viable_fulfilled"], 0)

@@ -234,7 +234,9 @@ class Command(BaseCommand):
             try:
                 existing.save(using=local)
             except ValidationError:
+                # Local may already have exclusive baseline/staging elsewhere.
                 existing.price_baseline = False
+                existing.staging_active = False
                 existing.save(using=local)
             return
         obj = EveLocation(location_id=location_id, **fields)
@@ -242,6 +244,7 @@ class Command(BaseCommand):
             obj.save(using=local)
         except ValidationError:
             obj.price_baseline = False
+            obj.staging_active = False
             obj.save(using=local)
         self.stdout.write(
             f"  Copied EveLocation {location_id} ({loc.short_name})."

@@ -3,16 +3,16 @@ import { get_error_message } from '@helpers/string'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/eveonline/locations`
 
-let locations_cache: Location[] | null = null
+/** Dedupes concurrent fetches in one render; must not outlive the request (SSR). */
+let locations_inflight: Promise<Location[]> | null = null
 
 /**
  * Fetch all locations from the API.
- * Results are cached to avoid multiple requests.
+ * Concurrent callers share one in-flight request; each page load refetches.
  */
 export async function get_locations(): Promise<Location[]> {
-    if (locations_cache !== null) {
-        return locations_cache
-    }
+    if (locations_inflight)
+        return locations_inflight
 
     const headers = {
         'Content-Type': 'application/json',
@@ -22,25 +22,30 @@ export async function get_locations(): Promise<Location[]> {
 
     console.log(`Requesting: ${ENDPOINT}`)
 
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
+    locations_inflight = (async () => {
+        try {
+            const response = await fetch(ENDPOINT, {
+                headers: headers
+            })
 
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
-                cause: response.status
-            });
+            if (!response.ok) {
+                throw new Error(get_error_message(
+                    response.status,
+                    `GET ${ENDPOINT}`
+                ), {
+                    cause: response.status
+                });
+            }
+
+            return await response.json() as Location[]
+        } catch (error) {
+            throw new Error(`Error fetching locations: ${error.message}`, { cause: error.cause });
+        } finally {
+            locations_inflight = null
         }
+    })()
 
-        locations_cache = await response.json() as Location[]
-        return locations_cache
-    } catch (error) {
-        throw new Error(`Error fetching locations: ${error.message}`, { cause: error.cause });
-    }
+    return locations_inflight
 }
 
 /**
@@ -62,4 +67,3 @@ export async function get_market_locations(): Promise<Location[]> {
     const all_locations = await get_locations()
     return all_locations.filter(location => location.market_active)
 }
-

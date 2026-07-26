@@ -1289,6 +1289,7 @@ export interface OpsMonitorSummary {
     contracts_isk:              number;
     sell_orders_isk:            number;
     total_isk_on_market:        number;
+    sales_history_days:         number;
 }
 
 export interface OpsMonitor {
@@ -1318,6 +1319,14 @@ export interface OpsMonitor {
         viable_quantity:    number;
         expected_quantity:  number;
         shortfall:          number;
+        coverage_gap:       boolean;
+        viability_gap:      boolean;
+        item_type:          string;
+        item_variant:       string;
+        weekly_units:       number;
+        units_30d:          number;
+        units_90d:          number;
+        avg_markup_pct:     number | null;
         ships: {
             ship_id:        number;
             fitting_name:   string;
