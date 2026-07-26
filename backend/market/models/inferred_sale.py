@@ -32,9 +32,11 @@ class EveMarketInferredSale(models.Model):
 
     REASON_PARTIAL_FILL = "partial_fill"
     REASON_SELLOUT = "sellout"
+    REASON_IMPORTED = "imported"
     REASON_CHOICES = [
         (REASON_PARTIAL_FILL, "Partial fill"),
         (REASON_SELLOUT, "Sellout"),
+        (REASON_IMPORTED, "Imported"),
     ]
 
     location = models.ForeignKey(
