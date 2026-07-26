@@ -13,12 +13,12 @@ from market.helpers.price_viability import (
 class PriceViabilityHelperTestCase(SimpleTestCase):
     def test_default_policy_constants(self):
         self.assertEqual(DEFAULT_MAX_MARKUP_PCT, 20)
-        self.assertEqual(DEFAULT_BASELINE_PRICE_FLOOR, 1_000_000)
+        self.assertEqual(DEFAULT_BASELINE_PRICE_FLOOR, 250_000)
         self.assertEqual(
             DEFAULT_PRICE_VIABILITY_POLICY,
             PriceViabilityPolicy(
                 max_markup_pct=20,
-                baseline_price_floor=1_000_000,
+                baseline_price_floor=250_000,
             ),
         )
 
@@ -33,7 +33,9 @@ class PriceViabilityHelperTestCase(SimpleTestCase):
 
     def test_cheap_baseline_always_viable(self):
         self.assertTrue(is_price_viable(500_000, 50_000))
-        self.assertTrue(is_price_viable(9_999_999, 999_999))
+        self.assertTrue(is_price_viable(9_999_999, 249_999))
+        # At/above the floor, markup rules apply (Gyrostab II class items).
+        self.assertFalse(is_price_viable(9_999_999, 250_000))
 
     def test_custom_policy(self):
         policy = PriceViabilityPolicy(
