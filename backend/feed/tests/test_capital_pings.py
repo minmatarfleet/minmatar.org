@@ -16,7 +16,11 @@ from eveuniverse.models import (
     EveType,
 )
 
-from feed.constants import AMAMAKE_SOLAR_SYSTEM_ID
+from feed.constants import (
+    AMAMAKE_SOLAR_SYSTEM_ID,
+    FACTION_AMARR,
+    FACTION_MINMATAR,
+)
 from feed.helpers.capital_pings import (
     CAPITAL_ALERT_TITLE,
     ZKILL_CHARACTER_URL,
@@ -30,7 +34,11 @@ from feed.helpers.capital_ships import (
     killmail_involves_capital,
 )
 from feed.helpers.system_distance import light_years_between_systems
-from feed.models import FeedCapitalAlert, FeedCapitalPing
+from feed.models import (
+    FeedCapitalAlert,
+    FeedCapitalPing,
+    FeedCharacterAffiliation,
+)
 from feed.tests.helpers import make_killmail_payload
 
 
@@ -416,6 +424,7 @@ class CapitalPingTestCase(TestCase):
             ship_type_id=17715,
             attacker_ship_type_id=73790,
             attacker_count=4,
+            faction_id=FACTION_AMARR,
             killmail_time=datetime(2026, 7, 17, 17, 0, 0, tzinfo=dt_tz.utc),
         )
         second = make_killmail_payload(
@@ -424,6 +433,7 @@ class CapitalPingTestCase(TestCase):
             ship_type_id=17715,
             attacker_ship_type_id=73790,
             attacker_count=4,
+            faction_id=FACTION_AMARR,
             killmail_time=datetime(2026, 7, 17, 17, 1, 0, tzinfo=dt_tz.utc),
         )
 
@@ -470,6 +480,7 @@ class CapitalPingTestCase(TestCase):
             ship_type_id=17715,
             attacker_ship_type_id=73790,
             attacker_count=1,
+            faction_id=FACTION_AMARR,
             killmail_time=datetime(2026, 7, 18, 14, 0, 0, tzinfo=dt_tz.utc),
         )
         second = make_killmail_payload(
@@ -478,6 +489,7 @@ class CapitalPingTestCase(TestCase):
             ship_type_id=17715,
             attacker_ship_type_id=73790,
             attacker_count=1,
+            faction_id=FACTION_AMARR,
             killmail_time=datetime(2026, 7, 18, 14, 10, 0, tzinfo=dt_tz.utc),
         )
 
@@ -526,6 +538,7 @@ class CapitalPingTestCase(TestCase):
             ship_type_id=17715,
             attacker_ship_type_id=73790,
             attacker_count=1,
+            faction_id=FACTION_AMARR,
         )
         second = make_killmail_payload(
             136500041,
@@ -533,6 +546,7 @@ class CapitalPingTestCase(TestCase):
             ship_type_id=17715,
             attacker_ship_type_id=73790,
             attacker_count=1,
+            faction_id=FACTION_AMARR,
         )
         # Distinct capital pilot so character overlap does not chain alerts.
         second["killmail"]["attackers"][0]["character_id"] = 91000001
@@ -568,6 +582,7 @@ class CapitalPingTestCase(TestCase):
             ship_type_id=17726,
             attacker_ship_type_id=73790,
             attacker_count=6,
+            faction_id=FACTION_AMARR,
         )
         self.assertTrue(maybe_notify_capital_kill(payload))
         mock_client.create_message.assert_called_once()
@@ -590,6 +605,71 @@ class CapitalPingTestCase(TestCase):
         )
 
     @patch("feed.helpers.capital_pings.DiscordClient")
+    def test_maybe_notify_skips_minmatar_republic_capitals(
+        self, mock_client_cls
+    ):
+        payload = make_killmail_payload(
+            136500050,
+            solar_system_id=AMAMAKE_SOLAR_SYSTEM_ID,
+            ship_type_id=17726,
+            attacker_ship_type_id=73790,
+            attacker_count=3,
+            faction_id=FACTION_MINMATAR,
+        )
+        self.assertFalse(maybe_notify_capital_kill(payload))
+        mock_client_cls.return_value.create_message.assert_not_called()
+        self.assertEqual(FeedCapitalPing.objects.count(), 0)
+
+    @patch("feed.helpers.capital_pings.DiscordClient")
+    def test_maybe_notify_skips_minmatar_victim_capital(self, mock_client_cls):
+        payload = make_killmail_payload(
+            136500051,
+            solar_system_id=AMAMAKE_SOLAR_SYSTEM_ID,
+            ship_type_id=73790,
+            attacker_ship_type_id=17726,
+            faction_id=FACTION_AMARR,
+            victim_faction_id=FACTION_MINMATAR,
+        )
+        self.assertFalse(maybe_notify_capital_kill(payload))
+        mock_client_cls.return_value.create_message.assert_not_called()
+
+    @patch("feed.helpers.capital_pings.DiscordClient")
+    def test_maybe_notify_skips_minmatar_via_affiliation_cache(
+        self, mock_client_cls
+    ):
+        FeedCharacterAffiliation.objects.create(
+            character_id=90000000,
+            faction_id=FACTION_MINMATAR,
+        )
+        payload = make_killmail_payload(
+            136500052,
+            solar_system_id=AMAMAKE_SOLAR_SYSTEM_ID,
+            ship_type_id=17726,
+            attacker_ship_type_id=73790,
+            attacker_count=1,
+            faction_id=None,
+        )
+        self.assertFalse(maybe_notify_capital_kill(payload))
+        mock_client_cls.return_value.create_message.assert_not_called()
+
+    @patch("feed.helpers.capital_pings.DiscordClient")
+    def test_maybe_notify_skips_when_any_capital_is_minmatar(
+        self, mock_client_cls
+    ):
+        payload = make_killmail_payload(
+            136500053,
+            solar_system_id=AMAMAKE_SOLAR_SYSTEM_ID,
+            ship_type_id=17726,
+            attacker_ship_type_id=73790,
+            attacker_count=2,
+            faction_id=FACTION_AMARR,
+        )
+        payload["killmail"]["attackers"][0]["faction_id"] = FACTION_MINMATAR
+        self.assertFalse(maybe_notify_capital_kill(payload))
+        mock_client_cls.return_value.create_message.assert_not_called()
+        self.assertEqual(FeedCapitalPing.objects.count(), 0)
+
+    @patch("feed.helpers.capital_pings.DiscordClient")
     def test_many_capitals_same_system_one_notification(self, mock_client_cls):
         """Thirty distinct capital pilots in one system still share one alert."""
         mock_client = MagicMock()
@@ -605,6 +685,7 @@ class CapitalPingTestCase(TestCase):
                 ship_type_id=17715,
                 attacker_ship_type_id=73790,
                 attacker_count=1,
+                faction_id=FACTION_AMARR,
             )
             payload["killmail"]["attackers"][0]["character_id"] = (
                 92000000 + index

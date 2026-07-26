@@ -17,7 +17,9 @@ from feed.constants import (
     CAPITAL_PING_MAX_AGE_SECONDS,
     CAPITAL_PING_MAX_LIGHT_YEARS,
     CAPITAL_PING_SESSION_SECONDS,
+    FACTION_MINMATAR,
 )
+from feed.helpers.affiliations import lookup_character_militia_factions
 from feed.helpers.capital_ships import (
     collect_killmail_ship_type_ids,
     filter_capital_ship_type_ids,
@@ -173,6 +175,73 @@ def _format_system_line(
     if not names:
         return fallback_name
     return " → ".join(names)
+
+
+def _capital_participant_rows(
+    raw: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """Return victim/attacker rows flying capital hulls (excludes CONCORD)."""
+    capital_type_ids = filter_capital_ship_type_ids(
+        collect_killmail_ship_type_ids(raw)
+    )
+    if not capital_type_ids:
+        return []
+
+    rows: list[dict[str, Any]] = []
+    victim = raw.get("victim") or {}
+    victim_ship_type_id = victim.get("ship_type_id")
+    if victim_ship_type_id and int(victim_ship_type_id) in capital_type_ids:
+        rows.append(victim)
+
+    for attacker in raw.get("attackers") or []:
+        if attacker.get("corporation_id") == _CONCORD_CORPORATION_ID:
+            continue
+        ship_type_id = attacker.get("ship_type_id")
+        if ship_type_id and int(ship_type_id) in capital_type_ids:
+            rows.append(attacker)
+    return rows
+
+
+def _capital_pilot_killmail_factions(
+    raw: dict[str, Any],
+) -> dict[int, int | None]:
+    """Map capital pilot IDs to killmail faction_id (None if untagged)."""
+    pilots: dict[int, int | None] = {}
+    for row in _capital_participant_rows(raw):
+        character_id = row.get("character_id")
+        if not character_id:
+            continue
+        character_id = int(character_id)
+        faction_id = row.get("faction_id")
+        if faction_id is not None:
+            pilots[character_id] = int(faction_id)
+        elif character_id not in pilots:
+            pilots[character_id] = None
+    return pilots
+
+
+def _capital_pilot_is_minmatar_republic(raw: dict[str, Any]) -> bool:
+    """True when any capital pilot is Minmatar Republic."""
+    pilots = _capital_pilot_killmail_factions(raw)
+    if not pilots:
+        return False
+
+    unresolved = {
+        character_id
+        for character_id, faction_id in pilots.items()
+        if faction_id is None
+    }
+    affiliations = lookup_character_militia_factions(unresolved)
+
+    for character_id, faction_id in pilots.items():
+        resolved = (
+            faction_id
+            if faction_id is not None
+            else affiliations.get(character_id)
+        )
+        if resolved == FACTION_MINMATAR:
+            return True
+    return False
 
 
 def _capital_entries(raw: dict[str, Any]) -> list[dict[str, Any]]:
@@ -779,6 +848,8 @@ def maybe_notify_capital_kill(
     if FeedCapitalPing.objects.filter(killmail_id=killmail_id).exists():
         return False
     if not killmail_involves_capital(raw):
+        return False
+    if _capital_pilot_is_minmatar_republic(raw):
         return False
 
     distance_ly = light_years_between_systems(
