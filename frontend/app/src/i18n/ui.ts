@@ -425,7 +425,6 @@ export const ui = {
         'ops_sell_gap_metric_30d': '30d',
         'ops_sell_gap_metric_90d': '90d',
         'ops_sell_gap_metric_partial': '{days}d',
-        'ops_sell_gaps_history_note': 'Sales windows limited to {days}d of tracked history.',
         'ops_health_coverage_hint': 'Share of target quantity currently listed, regardless of price.',
         'ops_health_viability_hint': 'Share of target quantity listed within 20% of baseline (items under 1M ISK always count).',
         'ops_copy_jita_buy_list': 'Copy Jita buy list',

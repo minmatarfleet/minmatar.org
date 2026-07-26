@@ -101,9 +101,6 @@ const show_volume_3d = sales_history_days >= 3
 const show_volume_7d = sales_history_days >= 7
 const show_volume_30d = sales_history_days >= 30
 const show_volume_90d = sales_history_days >= 90
-const history_note = sales_history_days > 0 && sales_history_days < 90
-    ? t('ops_sell_gaps_history_note').replace('{days}', String(sales_history_days))
-    : ''
 
 const rows_json = JSON.stringify(rows)
 const show_jita = Boolean(jita_copy_label)
@@ -204,9 +201,6 @@ const empty_label = t('ops_sell_gaps_empty_filter')
                             )}
                         </div>
                     </div>
-                    {history_note &&
-                        <p class="[ ops-sell-gaps__history-note ]">{history_note}</p>
-                    }
                 </Flexblock>
             </div>
         }
@@ -359,12 +353,6 @@ const empty_label = t('ops_sell_gaps_empty_filter')
         display: flex;
         flex-wrap: wrap;
         gap: var(--space-3xs);
-    }
-
-    .ops-sell-gaps__history-note {
-        margin: 0;
-        font-size: var(--step--2);
-        color: rgba(255, 255, 255, 0.48);
     }
 
     .ops-sell-gaps__chip {
