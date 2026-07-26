@@ -110,6 +110,9 @@ DEFAULT_ROLLUP_CONFIG: dict[str, dict] = {
         "min_kills": 5,
         "min_pilots": 6,
         "stale_minutes": 20,
+        # Hard cap: busy systems never gap 20m, so without this one cluster
+        # grows for days (Turnur/Kourmonen mega-cards).
+        "max_duration_minutes": 90,
         "dominant_faction_threshold": 0.75,
     },
     "contested_change": {
@@ -127,7 +130,7 @@ DEFAULT_ROLLUP_CONFIG: dict[str, dict] = {
 
 ROLLUP_VERSIONS: dict[str, int] = {
     "kill_burst": 6,
-    "fleet_active": 10,
+    "fleet_active": 11,
     "contested_change": 1,
 }
 

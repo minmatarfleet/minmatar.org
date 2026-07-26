@@ -116,3 +116,64 @@ class ClusterRollupTestCase(TestCase):
         cluster = fleet_clusters.get()
         self.assertGreaterEqual(cluster.kill_count, 5)
         self.assertGreaterEqual(cluster.pilot_count, 8)
+
+    def test_continuous_fight_under_max_duration_stays_one_cluster(self):
+        """Kills spanning <90m with <20m gaps stay a single engagement."""
+        FeedKillmail.objects.all().delete()
+        FeedCluster.objects.all().delete()
+        base = timezone.now() - timedelta(hours=2)
+        killmail_id = 310000
+        # Burst every 15m for 75 minutes — under the 90m cap, gaps < stale.
+        for segment in range(6):
+            segment_start = base + timedelta(minutes=segment * 15)
+            for i in range(6):
+                payload = make_killmail_payload(
+                    killmail_id,
+                    killmail_time=segment_start + timedelta(seconds=i * 20),
+                    attacker_count=8,
+                )
+                upsert_feed_killmail_from_r2z2(payload)
+                killmail_id += 1
+
+        detect_clusters(since_hours=3)
+        fleet_clusters = FeedCluster.objects.filter(
+            cluster_type=FeedCluster.ClusterType.FLEET_ENGAGEMENT,
+            solar_system_id=30002538,
+        )
+        self.assertEqual(fleet_clusters.count(), 1)
+        cluster = fleet_clusters.get()
+        span = cluster.last_kill_at - cluster.started_at
+        self.assertLessEqual(span, timedelta(minutes=90))
+
+    def test_continuous_fight_over_max_duration_splits_clusters(self):
+        """Busy-system mega-chain: kills never gap 20m but exceed 90m."""
+        FeedKillmail.objects.all().delete()
+        FeedCluster.objects.all().delete()
+        base = timezone.now() - timedelta(hours=3)
+        killmail_id = 320000
+        # Burst every 15m for 120 minutes (>90m cap, gaps always <20m).
+        for segment in range(9):
+            segment_start = base + timedelta(minutes=segment * 15)
+            for i in range(6):
+                payload = make_killmail_payload(
+                    killmail_id,
+                    killmail_time=segment_start + timedelta(seconds=i * 20),
+                    attacker_count=8,
+                )
+                upsert_feed_killmail_from_r2z2(payload)
+                killmail_id += 1
+
+        detect_clusters(since_hours=4)
+        fleet_clusters = list(
+            FeedCluster.objects.filter(
+                cluster_type=FeedCluster.ClusterType.FLEET_ENGAGEMENT,
+                solar_system_id=30002538,
+            ).order_by("started_at")
+        )
+        self.assertGreaterEqual(len(fleet_clusters), 2)
+        for cluster in fleet_clusters:
+            span = cluster.last_kill_at - cluster.started_at
+            self.assertLessEqual(span, timedelta(minutes=90))
+        # First segment closed when the cap forced a split.
+        self.assertFalse(fleet_clusters[0].is_active)
+        self.assertIsNotNone(fleet_clusters[0].ended_at)

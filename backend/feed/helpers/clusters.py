@@ -299,8 +299,10 @@ def _sliding_window_clusters(
             stats = build_cluster_stats(window_kills)
             if stats["pilot_count"] >= min_pilots:
                 if cluster_type == FeedCluster.ClusterType.FLEET_ENGAGEMENT:
-                    stale_minutes = get_rollup_config("fleet_active").get(
-                        "stale_minutes", 20
+                    fleet_cfg = get_rollup_config("fleet_active")
+                    stale_minutes = fleet_cfg.get("stale_minutes", 20)
+                    max_duration = timedelta(
+                        minutes=fleet_cfg.get("max_duration_minutes", 90)
                     )
                     existing = _find_active_fleet_cluster(
                         solar_system_id,
@@ -309,10 +311,28 @@ def _sliding_window_clusters(
                         stale_minutes=stale_minutes,
                     )
                     if existing is not None:
-                        _merge_fleet_cluster(existing, stats["killmail_ids"])
-                        upserted += 1
-                        i = j
-                        continue
+                        if (
+                            stats["last_kill_at"] - existing.started_at
+                            > max_duration
+                        ):
+                            # Fight has run long enough; close it and start a
+                            # fresh engagement even though kills continue.
+                            existing.is_active = False
+                            existing.ended_at = existing.last_kill_at
+                            existing.save(
+                                update_fields=[
+                                    "is_active",
+                                    "ended_at",
+                                    "updated_at",
+                                ]
+                            )
+                        else:
+                            _merge_fleet_cluster(
+                                existing, stats["killmail_ids"]
+                            )
+                            upserted += 1
+                            i = j
+                            continue
                     key = _cluster_key(
                         cluster_type,
                         solar_system_id,

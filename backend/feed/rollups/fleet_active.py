@@ -61,8 +61,10 @@ def _collapse_fleet_clusters(
     ``(cluster, faction_id)`` tuples that together represent one continuous
     engagement in a system for a single militia faction.
     """
-    stale_minutes = get_rollup_config("fleet_active").get("stale_minutes", 20)
+    fleet_cfg = get_rollup_config("fleet_active")
+    stale_minutes = fleet_cfg.get("stale_minutes", 20)
     stale_delta = timedelta(minutes=stale_minutes)
+    max_duration = timedelta(minutes=fleet_cfg.get("max_duration_minutes", 90))
     chains: list[list[tuple[FeedCluster, int | None]]] = []
     for cluster in sorted(
         clusters,
@@ -75,11 +77,13 @@ def _collapse_fleet_clusters(
         placed = False
         for chain in chains:
             last_cluster, last_faction = chain[-1]
+            chain_start = chain[0][0].started_at
             if (
                 last_cluster.solar_system_id == cluster.solar_system_id
                 and last_faction == faction
                 and cluster.started_at
                 <= last_cluster.last_kill_at + stale_delta
+                and cluster.last_kill_at - chain_start <= max_duration
             ):
                 chain.append((cluster, faction))
                 placed = True

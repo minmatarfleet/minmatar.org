@@ -54,6 +54,36 @@ class FleetActiveRollupTestCase(TestCase):
         self.assertEqual(chain[0][0].started_at, clusters[0].started_at)
         self.assertEqual(chain[-1][0].last_kill_at, clusters[-1].last_kill_at)
 
+    def test_collapse_respects_max_duration(self):
+        """Adjacent buckets past the 90m cap must not re-glue into one chain."""
+        base = timezone.now()
+        clusters = [
+            FeedCluster(
+                cluster_key=(
+                    f"fleet_engagement:30002542:500002:2026-06-19T"
+                    f"{minute:02d}:00"
+                ),
+                cluster_type=FeedCluster.ClusterType.FLEET_ENGAGEMENT,
+                solar_system_id=30002542,
+                dominant_faction_id=500002,
+                started_at=base + timedelta(minutes=minute),
+                last_kill_at=base + timedelta(minutes=minute + 15),
+                kill_count=8,
+                pilot_count=10,
+            )
+            for minute in (0, 20, 40, 60, 80, 100)
+        ]
+
+        collapsed = _collapse_fleet_clusters(clusters)
+
+        self.assertGreaterEqual(len(collapsed), 2)
+        for chain in collapsed:
+            chain_start = chain[0][0].started_at
+            chain_end = chain[-1][0].last_kill_at
+            self.assertLessEqual(
+                chain_end - chain_start, timedelta(minutes=90)
+            )
+
     def test_collapse_fleet_clusters_keeps_separate_engagements(self):
         base = timezone.now()
         first = FeedCluster(
