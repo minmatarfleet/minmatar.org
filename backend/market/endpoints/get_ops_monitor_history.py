@@ -36,6 +36,14 @@ class OpsMonitorHistorySellGap(Schema):
     viable_quantity: int
     expected_quantity: int
     shortfall: int
+    coverage_gap: bool = False
+    viability_gap: bool = False
+    item_type: str = "other"
+    item_variant: str = "other"
+    weekly_units: int = 0
+    units_30d: int = 0
+    units_90d: int = 0
+    avg_markup_pct: Optional[float] = None
     ships: List[OpsMonitorHistorySellGapShip] = []
 
 

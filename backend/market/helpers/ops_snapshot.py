@@ -55,6 +55,14 @@ def _problem_sell_gaps(rows: list[dict]) -> list[dict]:
             "viable_quantity": row["viable_quantity"],
             "expected_quantity": row["expected_quantity"],
             "shortfall": row["shortfall"],
+            "coverage_gap": bool(row.get("coverage_gap", False)),
+            "viability_gap": bool(row.get("viability_gap", True)),
+            "item_type": row.get("item_type") or "other",
+            "item_variant": row.get("item_variant") or "other",
+            "weekly_units": int(row.get("weekly_units", 0)),
+            "units_30d": int(row.get("units_30d", 0)),
+            "units_90d": int(row.get("units_90d", 0)),
+            "avg_markup_pct": row.get("avg_markup_pct"),
             "ships": row.get("ships") or [],
         }
         for row in rows

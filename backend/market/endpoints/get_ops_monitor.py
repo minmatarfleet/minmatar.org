@@ -36,6 +36,14 @@ class OpsSellGap(Schema):
     viable_quantity: int
     expected_quantity: int
     shortfall: int
+    coverage_gap: bool = False
+    viability_gap: bool = False
+    item_type: str = "other"
+    item_variant: str = "other"
+    weekly_units: int = 0
+    units_30d: int = 0
+    units_90d: int = 0
+    avg_markup_pct: Optional[float] = None
     ships: List[OpsSellGapShip] = []
 
 
@@ -54,6 +62,7 @@ class OpsMonitorSummary(Schema):
     contracts_isk: float = 0.0
     sell_orders_isk: float = 0.0
     total_isk_on_market: float = 0.0
+    sales_history_days: int = 0
 
 
 class OpsMonitorResponse(Schema):
