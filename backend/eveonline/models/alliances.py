@@ -42,7 +42,10 @@ class EveLocation(MinmatarSoftDeleteModel):
         "Used as the reference for markup calculations.",
     )
     freight_active = models.BooleanField(default=False)
-    staging_active = models.BooleanField(default=False)
+    staging_active = models.BooleanField(
+        default=False,
+        help_text="At most one location may be the active staging system.",
+    )
     market_categories = models.JSONField(
         default=list,
         blank=True,
@@ -58,6 +61,12 @@ class EveLocation(MinmatarSoftDeleteModel):
                 condition=models.Q(price_baseline=True)
                 & models.Q(deleted__isnull=True),
                 name="unique_price_baseline_location",
+            ),
+            models.UniqueConstraint(
+                fields=["staging_active"],
+                condition=models.Q(staging_active=True)
+                & models.Q(deleted__isnull=True),
+                name="unique_active_staging_location",
             ),
         ]
 
@@ -119,6 +128,18 @@ class EveLocation(MinmatarSoftDeleteModel):
             if dup:
                 raise ValidationError(
                     f"Only one location can be the price baseline. "
+                    f'"{dup.location_name}" already has it enabled.'
+                )
+
+        if self.staging_active:
+            dup = (
+                EveLocation.objects.filter(staging_active=True)
+                .exclude(pk=self.pk)
+                .first()
+            )
+            if dup:
+                raise ValidationError(
+                    f"Only one location can be the active staging system. "
                     f'"{dup.location_name}" already has it enabled.'
                 )
 

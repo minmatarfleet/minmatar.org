@@ -192,16 +192,6 @@ const admin_hub = location_id != null
                 }} />
                 : monitor && summary &&
                 <>
-                    <FlexInline gap="var(--space-2xs)">
-                        {locations.map(loc =>
-                            <Button
-                                size="sm"
-                                href={translatePath(`/market/ops/?${query_string({ location_id: loc.location_id })}`)}
-                                color={location_id === loc.location_id ? 'green' : undefined}
-                            >{loc.short_name || loc.location_name}</Button>
-                        )}
-                    </FlexInline>
-
                     <section class:list={['ops-health', `ops-health--${overall_tone}`]}>
                         <div class="[ ops-health__overall ]">
                             <p class="[ ops-health__eyebrow ]">{t('ops_health_overall')}</p>

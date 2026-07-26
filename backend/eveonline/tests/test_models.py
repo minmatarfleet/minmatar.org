@@ -5,6 +5,8 @@ import logging
 from typing import List
 from unittest.mock import patch, MagicMock
 
+from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.db.models import signals
 from django.db.utils import IntegrityError
 from django.contrib.auth.models import User
@@ -361,6 +363,52 @@ class EveLocationTestCase(TestCase):
         )
 
         self.assertEqual(1, EveLocation.objects.count())
+
+    def test_only_one_location_can_be_active_staging(self):
+        EveLocation.objects.create(
+            location_id=1,
+            location_name="First staging",
+            solar_system_id=1,
+            solar_system_name="First",
+            short_name="First",
+            staging_active=True,
+        )
+
+        with self.assertRaisesMessage(
+            ValidationError,
+            "Only one location can be the active staging system.",
+        ):
+            EveLocation.objects.create(
+                location_id=2,
+                location_name="Second staging",
+                solar_system_id=2,
+                solar_system_name="Second",
+                short_name="Second",
+                staging_active=True,
+            )
+
+    def test_database_rejects_multiple_active_staging_locations(self):
+        locations = [
+            EveLocation(
+                location_id=1,
+                location_name="First staging",
+                solar_system_id=1,
+                solar_system_name="First",
+                short_name="First",
+                staging_active=True,
+            ),
+            EveLocation(
+                location_id=2,
+                location_name="Second staging",
+                solar_system_id=2,
+                solar_system_name="Second",
+                short_name="Second",
+                staging_active=True,
+            ),
+        ]
+
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            EveLocation.objects.bulk_create(locations)
 
 
 class EveCorporationPopulateTestCase(TestCase):
