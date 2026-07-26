@@ -1,0 +1,94 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  {% include "admin/help_tickets/_styles.html" %}
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate "Home" %}</a>
+  &rsaquo; <a href="{% url 'admin:help_tickets_home' %}">{% translate "Help tickets" %}</a>
+  &rsaquo; {{ category.title }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <header class="help-hub-header">
+    <h1 class="help-hub-header__title">{{ category.title }}</h1>
+    <p class="help-hub-header__subtitle">{{ category.code }}{% if category.section %} &middot; {{ category.section }}{% endif %}</p>
+    <p class="help-hub-header__desc">
+      {% blocktranslate trimmed %}
+      When a pilot picks this category in #help, a Discord thread is created and
+      the configured assignees (or linked tribe group chief) are @mentioned.
+      {% endblocktranslate %}
+    </p>
+  </header>
+
+  <section class="help-section">
+    <div class="help-section-header">
+      <h2>{% translate "Category settings" %}</h2>
+    </div>
+    <div class="help-settings-panel">
+      <div class="help-settings-panel__item">
+        <span class="help-settings-panel__label">{% translate "Code" %}</span>
+        <span class="help-settings-panel__value">{{ category.code }}</span>
+      </div>
+      <div class="help-settings-panel__item">
+        <span class="help-settings-panel__label">{% translate "Section" %}</span>
+        <span class="help-settings-panel__value">
+          {% if category.section %}
+            {{ category.section }}
+          {% elif category.tribe_group %}
+            {{ category.tribe_group.tribe.name }}
+          {% else %}
+            {% translate "General" %}
+          {% endif %}
+        </span>
+      </div>
+      <div class="help-settings-panel__item">
+        <span class="help-settings-panel__label">{% translate "Tribe group" %}</span>
+        <span class="help-settings-panel__value">
+          {% if sections.tribe_group %}
+          <a href="{{ sections.tribe_group.hub_url }}">{{ sections.tribe_group.name }}</a>
+          {% else %}
+          —
+          {% endif %}
+        </span>
+      </div>
+      <div class="help-settings-panel__item">
+        <span class="help-settings-panel__label">{% translate "Assignees" %}</span>
+        <span class="help-settings-panel__value">{{ assignee_count }}</span>
+      </div>
+      <div class="help-settings-panel__item">
+        <span class="help-settings-panel__label">{% translate "Sort order" %}</span>
+        <span class="help-settings-panel__value">{{ category.sort_order }}</span>
+      </div>
+      <div class="help-settings-panel__item">
+        <span class="help-settings-panel__label">{% translate "Active" %}</span>
+        <span class="help-settings-panel__value{% if category.is_active %} help-settings-panel__value--ok{% else %} help-settings-panel__value--inactive{% endif %}">
+          {% if category.is_active %}{% translate "yes" %}{% else %}{% translate "no" %}{% endif %}
+        </span>
+      </div>
+    </div>
+    <a href="{{ sections.settings.edit_url }}" class="help-btn help-btn--primary">
+      {% translate "Edit category" %}
+    </a>
+  </section>
+
+  <section class="help-section">
+    <div class="help-section-header">
+      <h2>{% translate "Tickets" %}</h2>
+    </div>
+    <div class="help-card-grid">
+      {% include "admin/help_tickets/_hub_card.html" with title=_("Open tickets") count=sections.open_tickets.count description=_("Threads still awaiting resolution for this category.") list_url=sections.open_tickets.list_url list_label=_("View open tickets") %}
+      {% include "admin/help_tickets/_hub_card.html" with title=_("All tickets") count=sections.all_tickets.count description=_("Every ticket ever opened under this category, open or closed.") list_url=sections.all_tickets.list_url list_label=_("View all tickets") %}
+      {% include "admin/help_tickets/_hub_card.html" with title=_("Closed tickets") count=sections.closed_tickets.count description=_("Resolved threads with close reason and who closed them.") list_url=sections.closed_tickets.list_url list_label=_("View closed tickets") readonly=True %}
+    </div>
+  </section>
+</div>
+{% endblock %}

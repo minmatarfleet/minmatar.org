@@ -9,7 +9,13 @@ from pydantic import BaseModel
 from authentication import AuthBearer
 from eveonline.models import EveCharacter, EveCorporation
 
+from .l3arn import (
+    is_l3arn_corporation,
+    validate_application_description,
+    validate_l3arn_application_description,
+)
 from .models import EveCorporationApplication
+from groups.helpers.feature_access import can_use_feature
 
 router = Router(tags=["Applications"])
 logger = logging.getLogger(__name__)
@@ -70,7 +76,11 @@ def get_corporation_applications(request, corporation_id: int):
     "/corporations/{corporation_id}/applications",
     summary="Create a corporation application",
     auth=AuthBearer(),
-    response={200: CorporationApplicationResponse, 404: ErrorResponse},
+    response={
+        200: CorporationApplicationResponse,
+        400: ErrorResponse,
+        404: ErrorResponse,
+    },
 )
 def create_corporation_application(
     request, corporation_id: int, payload: CorporationApplicationRequest
@@ -80,6 +90,19 @@ def create_corporation_application(
     ).first()
     if not corporation:
         return 404, {"detail": "Corporation not found."}
+
+    if is_l3arn_corporation(corporation):
+        validation_error = validate_l3arn_application_description(
+            payload.description
+        )
+        if validation_error:
+            return 400, {"detail": validation_error}
+    elif "Questionnaire:" in payload.description:
+        validation_error = validate_application_description(
+            payload.description
+        )
+        if validation_error:
+            return 400, {"detail": validation_error}
 
     application = EveCorporationApplication.objects.create(
         corporation_id=corporation_id,
@@ -120,9 +143,7 @@ def get_corporation_application_by_id(
     if not application:
         return 404, ErrorResponse(detail="Application not found.")
     is_applicant = application.user_id == request.user.id
-    has_view_perm = request.user.has_perm(
-        "applications.view_evecorporationapplication"
-    )
+    has_view_perm = can_use_feature(request.user, "applications.view")
     if not is_applicant and not has_view_perm:
         return 403, ErrorResponse(
             detail="You do not have permission to view this application."
@@ -160,9 +181,7 @@ def get_corporation_application_by_id(
 def accept_corporation_application(
     request, corporation_id: int, application_id: int
 ):
-    if not request.user.has_perm(
-        "applications.change_evecorporationapplication"
-    ):
+    if not can_use_feature(request.user, "applications.manage"):
         return 403, {
             "detail": "You do not have permission to accept applications."
         }
@@ -199,9 +218,7 @@ def accept_corporation_application(
 def reject_corporation_application(
     request, corporation_id: int, application_id: int
 ):
-    if not request.user.has_perm(
-        "applications.change_evecorporationapplication"
-    ):
+    if not can_use_feature(request.user, "applications.manage"):
         return 403, {
             "detail": "You do not have permission to accept applications."
         }

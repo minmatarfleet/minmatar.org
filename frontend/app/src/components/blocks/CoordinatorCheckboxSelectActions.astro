@@ -1,0 +1,55 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+interface Props {
+    /** Checkbox `name` attribute to toggle within the nearest form. */
+    name?: string
+}
+
+const { name = 'eve_type_ids' } = Astro.props
+---
+
+<FlexInline
+    gap="var(--space-s)"
+    class="[ coordinator-checkbox-select ]"
+    justification="flex-end"
+>
+    <button
+        type="button"
+        class="[ coordinator-checkbox-select__action ]"
+        onclick={`this.closest('form').querySelectorAll('input[name="${name}"]').forEach(c => { c.checked = true })`}
+    >
+        {t('industry.orders.coordinators.select_all')}
+    </button>
+    <button
+        type="button"
+        class="[ coordinator-checkbox-select__action ]"
+        onclick={`this.closest('form').querySelectorAll('input[name="${name}"]').forEach(c => { c.checked = false })`}
+    >
+        {t('industry.orders.coordinators.select_none')}
+    </button>
+</FlexInline>
+
+<style lang="scss">
+    .coordinator-checkbox-select__action {
+        appearance: none;
+        background: none;
+        border: none;
+        padding: 0;
+        margin: 0;
+        cursor: pointer;
+        font: inherit;
+        font-size: var(--step--1);
+        color: var(--highlight);
+        text-decoration: underline;
+        text-underline-offset: 0.15em;
+
+        &:hover,
+        &:focus-visible {
+            color: var(--fleet-yellow, #c9a227);
+        }
+    }
+</style>

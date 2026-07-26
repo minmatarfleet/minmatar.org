@@ -5,9 +5,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Celery beat
 BROKER_URL = "redis://localhost:6379/1"  # Allianceauth uses 0
+CACHE_URL = "redis://localhost:6379/2"
 CELERY_IMPORTS = (
     "eveonline.tasks",
     "structures.tasks",
+    "access_lists.tasks",
     "groups.tasks",
     "discord.tasks",
     "fleets.tasks",
@@ -54,6 +56,7 @@ INSTALLED_APPS = [
     "users.apps.UsersConfig",
     "fittings.apps.FittingsConfig",
     "structures.apps.StructuresConfig",
+    "access_lists.apps.AccessListsConfig",
     "fleets.apps.FleetsConfig",
     # Mumble
     "mumble.apps.MumbleConfig",
@@ -79,6 +82,8 @@ INSTALLED_APPS = [
     "srp",
     # Onboarding acknowledgments (per program version)
     "onboarding",
+    # Generic page/section reading progress
+    "page_progress",
     # Referral links,
     "referrals",
     # User subscriptions
@@ -97,6 +102,8 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",  # static files
     "django.middleware.security.SecurityMiddleware",
+    # Answer browser CORS preflight (OPTIONS) before URL routing → 405.
+    "app.cors.SimpleCorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -129,8 +136,11 @@ TEMPLATES = [
 
 CACHES = {
     "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "unique-snowflake",
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": CACHE_URL,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        },
     }
 }
 

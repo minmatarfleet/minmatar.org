@@ -1,0 +1,97 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import type { CorporationObject } from '@dtypes/layout_components';
+import { L3ARN_CORPORATION_NAME } from '@helpers/corporations/l3arn_application';
+import CorporationApplicationGoals from '@components/blocks/corporation_application/CorporationApplicationGoals.astro';
+import CorporationApplicationIntroduction from '@components/blocks/corporation_application/CorporationApplicationIntroduction.astro';
+import CorporationApplicationTimezone from '@components/blocks/corporation_application/CorporationApplicationTimezone.astro';
+import CorporationApplicationRoles from '@components/blocks/corporation_application/CorporationApplicationRoles.astro';
+import CorporationApplicationOtherCorporations from '@components/blocks/corporation_application/CorporationApplicationOtherCorporations.astro';
+import CorporationApplicationDualCitizen from '@components/blocks/corporation_application/CorporationApplicationDualCitizen.astro';
+import CorporationApplicationRequirements from '@components/blocks/corporation_application/CorporationApplicationRequirements.astro';
+import CorporationApplicationHowFound from '@components/blocks/corporation_application/CorporationApplicationHowFound.astro';
+
+interface Props {
+    include_field_names?: boolean;
+    alliance_corporations?: CorporationObject[];
+}
+
+const { include_field_names = false, alliance_corporations } = Astro.props;
+---
+
+<Flexblock class="l3arn-application-form" gap="var(--space-xl)">
+    <Flexblock gap="var(--space-s)">
+        <p>{t('l3arn_application_alpha_warning')}</p>
+
+        <p class="form-lead">{t('l3arn_application_intro')}</p>
+
+        <p role="note">
+            {t('l3arn_application_draft_notice')}
+        </p>
+    </Flexblock>
+
+    <CorporationApplicationGoals include_field_names={include_field_names} />
+
+    <CorporationApplicationIntroduction
+        corporation_name={L3ARN_CORPORATION_NAME}
+        include_field_names={include_field_names}
+    />
+
+    <CorporationApplicationTimezone include_field_names={include_field_names} />
+
+    <CorporationApplicationRoles include_field_names={include_field_names} />
+
+    <CorporationApplicationOtherCorporations
+        include_field_names={include_field_names}
+        alliance_corporations={alliance_corporations}
+    />
+
+    <CorporationApplicationDualCitizen
+        corporation_name={L3ARN_CORPORATION_NAME}
+        include_field_names={include_field_names}
+    />
+
+    <CorporationApplicationRequirements include_field_names={include_field_names} />
+
+    <CorporationApplicationHowFound include_field_names={include_field_names} />
+</Flexblock>
+
+<style lang="scss">
+    @import './corporation_application/_shared.scss';
+
+    .form-lead {
+        margin: 0;
+        line-height: 1.6;
+        font-size: var(--step-0);
+    }
+
+    .alpha-warning {
+        padding: var(--space-s) var(--space-m);
+        border: 1px solid color-mix(in srgb, var(--fleet-red) 35%, transparent);
+        border-left: 4px solid var(--fleet-red);
+        background: color-mix(in srgb, var(--fleet-red) 8%, var(--component-background));
+        font-size: var(--step--1);
+        font-weight: 600;
+        color: var(--fleet-red);
+        line-height: 1.5;
+
+        p {
+            margin: 0;
+        }
+    }
+
+    .draft-notice {
+        padding: var(--space-s) var(--space-m);
+        border: 1px solid color-mix(in srgb, var(--border-color) 80%, transparent);
+        border-left: 4px solid var(--alliance-blue);
+        background: color-mix(in srgb, var(--component-background) 70%, transparent);
+
+        p {
+            margin: 0;
+        }
+    }
+
+</style>

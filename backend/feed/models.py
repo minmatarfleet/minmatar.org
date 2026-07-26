@@ -49,9 +49,15 @@ class FeedSystemContestedSnapshot(models.Model):
 
 
 class FeedR2z2Cursor(models.Model):
-    """Singleton cursor for R2Z2 poller."""
+    """Singleton cursor for R2Z2 poller (live + catch-up)."""
 
+    # Kept in sync with live_sequence_id for backward compatibility.
     last_sequence_id = models.BigIntegerField(default=0)
+    live_sequence_id = models.BigIntegerField(default=0)
+    catchup_sequence_id = models.BigIntegerField(default=0)
+    paused_until = models.DateTimeField(null=True, blank=True)
+    live_idle_until = models.DateTimeField(null=True, blank=True)
+    last_request_at = models.DateTimeField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -251,3 +257,57 @@ class FeedEventFleetLink(models.Model):
                 name="feed_event_fleet_unique",
             ),
         ]
+
+
+class FeedCapitalAlert(models.Model):
+    """One Discord message for a capital presence near Amamake.
+
+    Further capital-related kills in the same system, or the same capital
+    pilot(s) crossing systems (within the session TTL), edit this message
+    instead of posting new ones. ``systems`` holds the ordered chain.
+    """
+
+    solar_system_id = models.BigIntegerField(db_index=True)
+    system_name = models.CharField(max_length=64)
+    distance_ly = models.FloatField()
+    # [{solar_system_id, system_name, distance_ly}, ...] ordered sighting chain
+    systems = models.JSONField(default=list)
+    # [{type_id, name, role, count, characters}, ...]
+    capitals = models.JSONField(default=list)
+    # [{killmail_id, ship_name, time_hhmm}, ...]
+    kills = models.JSONField(default=list)
+    # {attacker_count, main_group, top_ship, group_counts, ship_counts}
+    composition = models.JSONField(default=dict)
+    # [{channel_id, message_id}, ...]
+    discord_messages = models.JSONField(default=list)
+    last_activity_at = models.DateTimeField(db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-last_activity_at"]
+
+    def __str__(self) -> str:
+        return f"Capital alert {self.system_name} ({self.solar_system_id})"
+
+
+class FeedCapitalPing(models.Model):
+    """Per-killmail dedup / audit for capital alerts."""
+
+    killmail_id = models.BigIntegerField(unique=True, db_index=True)
+    alert = models.ForeignKey(
+        FeedCapitalAlert,
+        on_delete=models.CASCADE,
+        related_name="pings",
+        null=True,
+        blank=True,
+    )
+    solar_system_id = models.BigIntegerField()
+    distance_ly = models.FloatField()
+    discord_message_id = models.BigIntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Capital ping {self.killmail_id}"

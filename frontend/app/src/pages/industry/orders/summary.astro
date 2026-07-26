@@ -1,0 +1,160 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_site_origin } from '@helpers/seo'
+import { get_orders_profit_summary } from '@helpers/api.minmatar.org/industry'
+import type { OrdersProfitSummary } from '@dtypes/api.minmatar.org'
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import OpenOrdersProfitSummary from '@components/blocks/industry/guide-order-summary/OpenOrdersProfitSummary.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import Breadcrumb from '@components/blocks/Breadcrumb.astro'
+
+function isoDate(d: Date): string {
+    return d.toISOString().slice(0, 10)
+}
+
+const today = new Date()
+const default_from = new Date(today)
+default_from.setUTCDate(default_from.getUTCDate() - 30)
+const default_to = new Date(today)
+default_to.setUTCDate(default_to.getUTCDate() + 60)
+
+const params = Astro.url.searchParams
+const needed_by_from = params.get('needed_by_from') || isoDate(default_from)
+const needed_by_to = params.get('needed_by_to') || isoDate(default_to)
+const applied = params.get('applied') === '1'
+const open_only = applied
+    ? params.get('open_only') === '1' || params.get('open_only') === 'true'
+    : params.get('open_only') !== '0' && params.get('open_only') !== 'false'
+const order_id_params = params.getAll('order_ids').filter(Boolean)
+const selected_order_ids = order_id_params
+    .map((id) => parseInt(id, 10))
+    .filter((id) => !Number.isNaN(id) && id > 0)
+
+let summary: OrdersProfitSummary | null = null
+let fetching_error: Error | false = false
+
+try {
+    summary = await get_orders_profit_summary({
+        needed_by_from,
+        needed_by_to,
+        open_only,
+        // When the form was submitted, honor explicit selection (including empty).
+        order_ids: applied ? selected_order_ids.join(',') : undefined,
+    })
+} catch (error) {
+    fetching_error = error
+}
+
+const page_title = t('industry.orders.summary.page_title')
+const page_description = t('industry.orders.summary.leading_text')
+const meta_title = t('industry.orders.summary.meta_title').replace(
+    '{site}',
+    t('index.page_title'),
+)
+const meta_description = t('industry.orders.summary.meta_description')
+const site_origin = get_site_origin(Astro.url.origin)
+const canonical_url = new URL(
+    translatePath('/industry/orders/summary/'),
+    site_origin,
+).href
+const meta_image = new URL('/images/industry-cover.jpg', site_origin).href
+const breadcrumb_items = [
+    { label: t('market.page_title'), href: translatePath('/market/') },
+    { label: t('industry.orders.page_title'), href: translatePath('/industry/orders/') },
+    { label: t('industry.orders.breadcrumb.summary') },
+]
+
+import {
+    get_location_video_cover,
+    get_location_video_cover_thumb,
+    get_location_cover,
+    get_location_cover_990,
+} from '@helpers/covers'
+---
+
+<Viewport
+    title={meta_title}
+    meta_description={meta_description}
+    meta_image={meta_image}
+    canonical_url={canonical_url}
+    og_type="article"
+    components={{
+        alert_dialog: true,
+        tippy: true,
+    }}
+>
+    <PageLanding
+        wide={true}
+        cover={{
+            video:
+                get_location_video_cover('Amamake - 5 times nearly AT winners') ??
+                undefined,
+            video_thumb:
+                get_location_video_cover_thumb(
+                    'Amamake - 5 times nearly AT winners',
+                ) ?? undefined,
+            image:
+                get_location_cover('Amamake - 5 times nearly AT winners') ??
+                '/images/industry-cover.jpg',
+            image_990:
+                get_location_cover_990('Amamake - 5 times nearly AT winners') ??
+                '/images/industry-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <Flexblock gap="var(--space-2xl)" class="[ w-full ]">
+            <Flexblock gap="var(--space-xl)" class="[ w-full ]">
+                <Flexblock gap="var(--space-3xs)">
+                    <Breadcrumb items={breadcrumb_items} />
+                    <PageTitle is_landing={true}>{page_title}</PageTitle>
+                </Flexblock>
+                <p class="[ excerpt ]">{page_description}</p>
+            </Flexblock>
+
+            {
+                fetching_error !== false ? (
+                    <ErrorRefetch
+                        args={{
+                            partial: translatePath(
+                                `/industry/orders/summary/?needed_by_from=${needed_by_from}&needed_by_to=${needed_by_to}&open_only=${open_only ? '1' : '0'}`,
+                            ),
+                            error: fetching_error,
+                            delay: 0,
+                        }}
+                    />
+                ) : summary ? (
+                    <OpenOrdersProfitSummary
+                        summary={summary}
+                        needed_by_from={needed_by_from}
+                        needed_by_to={needed_by_to}
+                        open_only={open_only}
+                        selected_order_ids={
+                            applied
+                                ? selected_order_ids
+                                : summary.orders
+                                      .filter((o) => o.included)
+                                      .map((o) => o.id)
+                        }
+                    />
+                ) : null
+            }
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .excerpt,
+    :global(.excerpt p) {
+        font-size: var(--step-1);
+        line-height: 1.6;
+        max-width: 48rem;
+    }
+</style>

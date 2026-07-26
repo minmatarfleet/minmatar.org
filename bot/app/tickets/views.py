@@ -1,4 +1,8 @@
+import re
+
 import discord
+
+from .close_flow import close_ticket
 
 
 class CloseWithReasonModal(discord.ui.Modal, title="Close ticket"):
@@ -15,9 +19,6 @@ class CloseWithReasonModal(discord.ui.Modal, title="Close ticket"):
     )
 
     async def on_submit(self, interaction: discord.Interaction):
-        # pylint: disable=import-outside-toplevel
-        from .ticket_flow import close_ticket
-
         await close_ticket(
             interaction,
             self.ticket_id,
@@ -25,36 +26,72 @@ class CloseWithReasonModal(discord.ui.Modal, title="Close ticket"):
         )
 
 
-class CloseTicketView(discord.ui.View):
+class CloseTicketButton(
+    discord.ui.DynamicItem[discord.ui.Button],
+    template=r"help_ticket_close:(?P<ticket_id>[0-9]+)",
+):
     def __init__(self, ticket_id: int):
-        super().__init__(timeout=None)
+        super().__init__(
+            discord.ui.Button(
+                label="Close",
+                style=discord.ButtonStyle.danger,
+                emoji="🔒",
+                custom_id=f"help_ticket_close:{ticket_id}",
+            )
+        )
         self.ticket_id = ticket_id
 
-        close_button = discord.ui.Button(
-            label="Close",
-            style=discord.ButtonStyle.danger,
-            emoji="🔒",
-            custom_id=f"help_ticket_close:{ticket_id}",
-        )
-        close_button.callback = self.close_callback
-        self.add_item(close_button)
+    @classmethod
+    async def from_custom_id(
+        cls,
+        interaction: discord.Interaction,
+        item: discord.ui.Button,
+        match: re.Match[str],
+        /,
+    ):
+        return cls(int(match["ticket_id"]))
 
-        close_with_reason_button = discord.ui.Button(
-            label="Close With Reason",
-            style=discord.ButtonStyle.danger,
-            emoji="🔒",
-            custom_id=f"help_ticket_close_reason:{ticket_id}",
-        )
-        close_with_reason_button.callback = self.close_with_reason_callback
-        self.add_item(close_with_reason_button)
-
-    async def close_callback(self, interaction: discord.Interaction):
-        # pylint: disable=import-outside-toplevel
-        from .ticket_flow import close_ticket
-
+    async def callback(self, interaction: discord.Interaction):
         await close_ticket(interaction, self.ticket_id)
 
-    async def close_with_reason_callback(self, interaction: discord.Interaction):
+
+class CloseWithReasonButton(
+    discord.ui.DynamicItem[discord.ui.Button],
+    template=r"help_ticket_close_reason:(?P<ticket_id>[0-9]+)",
+):
+    def __init__(self, ticket_id: int):
+        super().__init__(
+            discord.ui.Button(
+                label="Close With Reason",
+                style=discord.ButtonStyle.danger,
+                emoji="🔒",
+                custom_id=f"help_ticket_close_reason:{ticket_id}",
+            )
+        )
+        self.ticket_id = ticket_id
+
+    @classmethod
+    async def from_custom_id(
+        cls,
+        interaction: discord.Interaction,
+        item: discord.ui.Button,
+        match: re.Match[str],
+        /,
+    ):
+        return cls(int(match["ticket_id"]))
+
+    async def callback(self, interaction: discord.Interaction):
         await interaction.response.send_modal(
             CloseWithReasonModal(self.ticket_id)
         )
+
+
+def build_close_ticket_view(ticket_id: int) -> discord.ui.View:
+    view = discord.ui.View(timeout=None)
+    view.add_item(CloseTicketButton(ticket_id))
+    view.add_item(CloseWithReasonButton(ticket_id))
+    return view
+
+
+def register_close_ticket_buttons(client: discord.Client) -> None:
+    client.add_dynamic_items(CloseTicketButton, CloseWithReasonButton)

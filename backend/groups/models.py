@@ -1,19 +1,21 @@
 from django.db import models
 from eveuniverse.models import EveFaction
 
-from eveonline.models import EveAlliance, EveCorporation
+from eveonline.models import EveAlliance, EveCharacter, EveCorporation
+from groups.features.types import FeatureScope
 
 # Create your models here.
 
 
 class AffiliationType(models.Model):
-    """Automatically assigned groups based on corporation, alliance or faction membership."""
+    """Automatically assigned groups based on character, corporation, alliance or faction."""
 
     name = models.CharField(max_length=64)
     description = models.TextField(null=True, blank=True)
     image_url = models.URLField(null=True, blank=True)
     group = models.OneToOneField("auth.Group", on_delete=models.CASCADE)
     priority = models.IntegerField(unique=True)
+    characters = models.ManyToManyField(EveCharacter, blank=True)
     corporations = models.ManyToManyField(EveCorporation, blank=True)
     alliances = models.ManyToManyField(EveAlliance, blank=True)
     factions = models.ManyToManyField(EveFaction, blank=True)
@@ -152,3 +154,29 @@ class EveCorporationGroup(models.Model):
 
     def __str__(self):
         return str(self.group.name)
+
+
+class PilotFeature(models.Model):
+    """Admin-wired authorization feature synced from the code registry."""
+
+    code = models.CharField(max_length=64, unique=True)
+    label = models.CharField(max_length=128)
+    description = models.TextField(blank=True)
+    scope = models.CharField(max_length=32, choices=FeatureScope.choices)
+    legacy_permission = models.CharField(
+        max_length=100, blank=True, default=""
+    )
+    staff_permission = models.CharField(max_length=100, blank=True, default="")
+    affiliations = models.ManyToManyField(AffiliationType, blank=True)
+    tribe_groups = models.ManyToManyField("tribes.TribeGroup", blank=True)
+    auth_groups = models.ManyToManyField("auth.Group", blank=True)
+    deny_community_statuses = models.JSONField(default=list, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Pilot feature"
+        verbose_name_plural = "Pilot features"
+        ordering = ["code"]
+
+    def __str__(self):
+        return str(self.label or self.code)

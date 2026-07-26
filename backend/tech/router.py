@@ -19,7 +19,7 @@ from discord.client import DiscordClient
 from discord.models import DiscordUser
 from discord.tasks import sync_discord_user, sync_discord_nickname
 from discord.helpers import remove_all_roles_from_guild_member
-from groups.helpers import TECH_TEAM, user_in_team
+from groups.helpers.feature_access import can_use_feature
 from groups.tasks import update_affiliation
 from eveonline.client import esi_for, EsiClient
 from eveonline.models import (
@@ -61,7 +61,7 @@ logger = logging.getLogger(__name__)
 
 
 def permitted(user) -> bool:
-    return user.is_superuser or user_in_team(user, TECH_TEAM)
+    return can_use_feature(user, "tech.ops")
 
 
 @router.get(

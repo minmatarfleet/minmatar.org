@@ -5,18 +5,29 @@ from datetime import timedelta
 from django.test import TestCase
 from django.utils import timezone
 
-from feed.constants import FACTION_CALDARI
+from feed.constants import FACTION_CALDARI, FACTION_MINMATAR
 from feed.helpers.ingest import upsert_feed_killmail_from_r2z2
-from feed.models import FeedCluster
+from feed.helpers.monitored_systems import (
+    invalidate_monitored_systems_cache,
+)
+from feed.management.commands.seed_feed_monitored_systems import (
+    seed_from_fixture,
+)
+from feed.models import FeedCluster, FeedEvent
 from feed.rollups.fleet_active import (
     _collapse_fleet_clusters,
     run_fleet_active_rollup,
 )
 from feed.rollups.registry import build_context
+from feed.rollups.writer import write_rollup_results
 from feed.tests.helpers import make_killmail_payload
 
 
 class FleetActiveRollupTestCase(TestCase):
+    def setUp(self):
+        seed_from_fixture()
+        invalidate_monitored_systems_cache()
+
     def test_collapse_fleet_clusters_merges_adjacent_buckets(self):
         base = timezone.now()
         clusters = [
@@ -36,11 +47,42 @@ class FleetActiveRollupTestCase(TestCase):
         collapsed = _collapse_fleet_clusters(clusters)
 
         self.assertEqual(len(collapsed), 1)
-        representative, engagement_start = collapsed[0][:2]
-        self.assertEqual(
-            representative.last_kill_at, clusters[-1].last_kill_at
-        )
-        self.assertEqual(engagement_start, clusters[0].started_at)
+        chain = collapsed[0]
+        self.assertEqual(len(chain), 3)
+        # Chain is ordered by started_at: earliest is canonical, last carries
+        # the most recent kill.
+        self.assertEqual(chain[0][0].started_at, clusters[0].started_at)
+        self.assertEqual(chain[-1][0].last_kill_at, clusters[-1].last_kill_at)
+
+    def test_collapse_respects_max_duration(self):
+        """Adjacent buckets past the 90m cap must not re-glue into one chain."""
+        base = timezone.now()
+        clusters = [
+            FeedCluster(
+                cluster_key=(
+                    f"fleet_engagement:30002542:500002:2026-06-19T"
+                    f"{minute:02d}:00"
+                ),
+                cluster_type=FeedCluster.ClusterType.FLEET_ENGAGEMENT,
+                solar_system_id=30002542,
+                dominant_faction_id=500002,
+                started_at=base + timedelta(minutes=minute),
+                last_kill_at=base + timedelta(minutes=minute + 15),
+                kill_count=8,
+                pilot_count=10,
+            )
+            for minute in (0, 20, 40, 60, 80, 100)
+        ]
+
+        collapsed = _collapse_fleet_clusters(clusters)
+
+        self.assertGreaterEqual(len(collapsed), 2)
+        for chain in collapsed:
+            chain_start = chain[0][0].started_at
+            chain_end = chain[-1][0].last_kill_at
+            self.assertLessEqual(
+                chain_end - chain_start, timedelta(minutes=90)
+            )
 
     def test_collapse_fleet_clusters_keeps_separate_engagements(self):
         base = timezone.now()
@@ -123,3 +165,143 @@ class FleetActiveRollupTestCase(TestCase):
         results = run_fleet_active_rollup(ctx)
 
         self.assertEqual(len(results), 0)
+
+    def _make_fleet_cluster(
+        self,
+        *,
+        killmail_ids,
+        started_at,
+        last_kill_at,
+        kill_count,
+        pilot_count,
+        faction_id=FACTION_MINMATAR,
+        is_active=True,
+        solar_system_id=30002538,
+        key_suffix="",
+    ):
+        started_label = started_at.strftime("%Y-%m-%dT%H:%M")
+        return FeedCluster.objects.create(
+            cluster_key=(
+                f"fleet_engagement:{solar_system_id}:{faction_id}:"
+                f"{started_label}{key_suffix}"
+            ),
+            cluster_type=FeedCluster.ClusterType.FLEET_ENGAGEMENT,
+            solar_system_id=solar_system_id,
+            dominant_faction_id=faction_id,
+            started_at=started_at,
+            last_kill_at=last_kill_at,
+            kill_count=kill_count,
+            pilot_count=pilot_count,
+            killmail_ids=killmail_ids,
+            is_active=is_active,
+        )
+
+    def _seed_killmails(self, start_id, count, base_time):
+        ids = []
+        for i in range(count):
+            km_id = start_id + i
+            upsert_feed_killmail_from_r2z2(
+                make_killmail_payload(
+                    km_id, killmail_time=base_time + timedelta(minutes=i)
+                )
+            )
+            ids.append(km_id)
+        return ids
+
+    def test_growing_fight_updates_single_event_with_upgrade_marker(self):
+        base = timezone.now() - timedelta(minutes=30)
+        killmail_ids = self._seed_killmails(87000000, 6, base)
+        cluster = self._make_fleet_cluster(
+            killmail_ids=killmail_ids,
+            started_at=base,
+            last_kill_at=base + timedelta(minutes=5),
+            kill_count=14,
+            pilot_count=12,
+        )
+
+        now = timezone.now()
+        ctx = build_context(now - timedelta(hours=1), now + timedelta(hours=1))
+        write_rollup_results(run_fleet_active_rollup(ctx))
+
+        events = FeedEvent.objects.filter(kind=FeedEvent.Kind.FLEET_ACTIVE)
+        self.assertEqual(events.count(), 1)
+        self.assertEqual(events.get().payload.get("engagement_tier"), "medium")
+
+        # Same fight grows to a major engagement on the same cluster.
+        cluster.kill_count = 60
+        cluster.pilot_count = 45
+        cluster.last_kill_at = base + timedelta(minutes=12)
+        cluster.save()
+
+        write_rollup_results(run_fleet_active_rollup(ctx))
+
+        events = FeedEvent.objects.filter(kind=FeedEvent.Kind.FLEET_ACTIVE)
+        self.assertEqual(events.count(), 1)
+        event = events.get()
+        self.assertEqual(event.payload.get("engagement_tier"), "major")
+        self.assertEqual(event.payload.get("previous_tier"), "medium")
+        self.assertIsNotNone(event.payload.get("upgraded_at"))
+
+    def test_adjacent_clusters_collapse_to_single_cluster_and_event(self):
+        base = timezone.now() - timedelta(minutes=40)
+        ids_a = self._seed_killmails(85000000, 4, base)
+        ids_b = self._seed_killmails(85000100, 4, base + timedelta(minutes=10))
+        self._make_fleet_cluster(
+            killmail_ids=ids_a,
+            started_at=base,
+            last_kill_at=base + timedelta(minutes=3),
+            kill_count=8,
+            pilot_count=8,
+        )
+        self._make_fleet_cluster(
+            killmail_ids=ids_b,
+            started_at=base + timedelta(minutes=10),
+            last_kill_at=base + timedelta(minutes=13),
+            kill_count=8,
+            pilot_count=8,
+        )
+
+        now = timezone.now()
+        ctx = build_context(now - timedelta(hours=1), now + timedelta(hours=1))
+        write_rollup_results(run_fleet_active_rollup(ctx))
+
+        self.assertEqual(
+            FeedCluster.objects.filter(
+                cluster_type=FeedCluster.ClusterType.FLEET_ENGAGEMENT
+            ).count(),
+            1,
+        )
+        self.assertEqual(
+            FeedEvent.objects.filter(kind=FeedEvent.Kind.FLEET_ACTIVE).count(),
+            1,
+        )
+
+    def test_separate_engagements_stay_distinct(self):
+        base = timezone.now() - timedelta(hours=5)
+        ids1 = self._seed_killmails(86000000, 6, base)
+        self._make_fleet_cluster(
+            killmail_ids=ids1,
+            started_at=base,
+            last_kill_at=base + timedelta(minutes=5),
+            kill_count=14,
+            pilot_count=12,
+        )
+
+        later = base + timedelta(hours=3)
+        ids2 = self._seed_killmails(86000100, 6, later)
+        self._make_fleet_cluster(
+            killmail_ids=ids2,
+            started_at=later,
+            last_kill_at=later + timedelta(minutes=5),
+            kill_count=14,
+            pilot_count=12,
+        )
+
+        now = timezone.now()
+        ctx = build_context(now - timedelta(hours=8), now + timedelta(hours=1))
+        write_rollup_results(run_fleet_active_rollup(ctx))
+
+        self.assertEqual(
+            FeedEvent.objects.filter(kind=FeedEvent.Kind.FLEET_ACTIVE).count(),
+            2,
+        )

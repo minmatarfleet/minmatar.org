@@ -10,6 +10,7 @@
       "priority": 0,
       "default": true,
       "requires_trial": false,
+      "characters": [],
       "corporations": [],
       "alliances": [],
       "factions": []
@@ -26,6 +27,7 @@
       "priority": 5,
       "default": false,
       "requires_trial": false,
+      "characters": [],
       "corporations": [],
       "alliances": [],
       "factions": [
@@ -44,6 +46,7 @@
       "priority": 15,
       "default": false,
       "requires_trial": true,
+      "characters": [],
       "corporations": [
         98550601
       ],

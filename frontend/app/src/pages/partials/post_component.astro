@@ -10,6 +10,7 @@ const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : fals
 
 import { query_string } from '@helpers/string'
 import { fetch_post } from '@helpers/fetching/posts'
+import { get_app_url } from '@helpers/env'
 import type { PostUI } from '@dtypes/layout_components'
 import { HTTP_400_Bad_Request, HTTP_404_Not_Found } from '@helpers/http_responses'
 
@@ -40,6 +41,9 @@ import { format_date } from '@helpers/date'
 const POST_PARTIAL_URL = translatePath(`/partials/post_component?id=${post_id}`)
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+const post_url = get_app_url(translatePath(`/alliance/propaganda/${post_id}`))
+const share_url = user ? `${post_url}?ref=${user.user_id}` : post_url
 
 import PageTitle from '@components/page/PageTitle.astro';
 
@@ -83,7 +87,7 @@ import DebugTag from '@components/blocks/DebugTag.astro'
                     copied_text={t('post_url_copied')}
                     iconed={false}
                 >
-                    {Astro.url}
+                    {share_url}
                 </ClipboardButton>
                 {is_user_post &&
                     <Button

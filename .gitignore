@@ -165,7 +165,8 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-static/
+# Django collected STATIC_ROOT (app package static/ dirs must be tracked)
+/backend/static/
 dev/
 
 .astro/
@@ -184,3 +185,5 @@ mcps/.reddit-mcp/
 
 # EVE Online Static Data for import_sde.py
 sde/*.zip
+
+*:Zone.Identifier

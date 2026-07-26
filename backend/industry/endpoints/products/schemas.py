@@ -30,7 +30,10 @@ class CorporationProducerRef(BaseModel):
 
 
 class IndustryProductListItem(BaseModel):
-    """One industry product in list: type, strategy, volume, blueprint/reaction, relations, producers."""
+    """One industry product in list: type, strategy, volume, blueprint/reaction, relations.
+
+    Producers are omitted from the list payload; fetch via GET /products/{id}.
+    """
 
     id: int
     type_id: int
@@ -40,8 +43,6 @@ class IndustryProductListItem(BaseModel):
     blueprint_or_reaction_type_id: Optional[int] = None
     supplied_for: List[IndustryProductRef] = []
     supplies: List[IndustryProductRef] = []
-    character_producers: List[CharacterProducerRef] = []
-    corporation_producers: List[CorporationProducerRef] = []
 
 
 class IndustryProductDetail(BaseModel):

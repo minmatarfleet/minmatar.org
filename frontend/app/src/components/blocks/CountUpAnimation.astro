@@ -1,0 +1,48 @@
+---
+interface Props {
+    target:     number;
+    duration?:  number;
+    element?:   string;
+    [propName: string]: any;
+}
+
+const {
+    target,
+    duration = 3000,
+    element = 'span',
+    ...attributes
+} = Astro.props
+
+const Element = element
+---
+
+<Element
+    x-data={`{
+        start_time: null,
+        target: ${target},
+        duration: ${duration},
+        animate_count(timestamp) {
+            if (!this.start_time) this.start_time = timestamp
+            const progress = timestamp - this.start_time
+            
+            const t = progress / this.duration
+            const eased = 1 - Math.pow(1 - t, 3)
+            const currentCount = Math.min(
+                Math.floor(eased * this.target), 
+                this.target
+            );
+            
+            $el.innerText = currentCount.toLocaleString()
+            
+            if (progress < this.duration) {
+                requestAnimationFrame((t) => this.animate_count(t));
+            }
+        },
+        init() {
+            requestAnimationFrame((t) => this.animate_count(t))
+        }
+    }`}
+    {...attributes}
+>
+    0
+</Element>

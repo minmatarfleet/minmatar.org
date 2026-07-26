@@ -46,6 +46,8 @@ try {
     tribe = await get_tribe(tribe_id)
     tribe_group = await get_tribe_group(tribe_id, group_id)
 
+    // Member roster for the group landing (no live requirement checks — those
+    // are only needed on /members for chiefs reviewing qualify status).
     const memberships = await get_memberships(auth_token as string, tribe_id, tribe_group.id)
     const mine = memberships.find(m => m.user_id === user.user_id) ?? null
     membership_by_group.set(tribe_group.id, mine)

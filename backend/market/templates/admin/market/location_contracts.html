@@ -1,0 +1,76 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  {% include "admin/market/_market_styles.html" %}
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate "Home" %}</a>
+  &rsaquo; <a href="{% url 'admin:market_locations' %}">{% translate "Market locations" %}</a>
+  &rsaquo; <a href="{% url 'admin:market_location_hub' location.pk %}">{{ location.location_name }}</a>
+  &rsaquo; {% translate "Mismatched contracts" %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  {% include "admin/market/_learn_more_start.html" %}
+    <p>
+      {% blocktranslate trimmed %}
+      Each row is one <strong>item-exchange contract</strong> currently listed at
+      this location — not a ship fit configuration. Only contracts whose contents
+      score <strong>below 100% match</strong> against the expected fit appear here
+      (wrong, missing, or extra modules).
+      {% endblocktranslate %}
+    </p>
+  {% include "admin/market/_learn_more_end.html" %}
+
+  <p class="help">
+    {% if attention_count %}
+      {% blocktranslate count counter=attention_count %}
+      {{ counter }} individual contract needs review.
+      {% plural %}
+      {{ counter }} individual contracts need review.
+      {% endblocktranslate %}
+    {% else %}
+      {% translate "No mismatched contracts — every outstanding contract is a 100% fit match." %}
+    {% endif %}
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>{% translate "Contract ID" %}</th>
+        <th>{% translate "Contract title" %}</th>
+        <th>{% translate "Expected ship fit" %}</th>
+        <th>{% translate "Match %" %}</th>
+        <th>{% translate "Price" %}</th>
+        <th>{% translate "Public" %}</th>
+        <th>{% translate "Issuer" %}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in attention_rows %}
+      <tr>
+        <td><a href="{{ row.edit_url }}">{{ row.contract_id }}</a></td>
+        <td>{{ row.title_link }}</td>
+        <td>{{ row.fitting_name }}</td>
+        <td>{{ row.match_percent }}</td>
+        <td>{{ row.price }}</td>
+        <td>{{ row.is_public|yesno:_("yes,no") }}</td>
+        <td>{{ row.issuer_external_id }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7">{% translate "No mismatched contracts at this location." %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

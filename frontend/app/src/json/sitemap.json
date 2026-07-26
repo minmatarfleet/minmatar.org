@@ -71,6 +71,76 @@
         "keywords": [ "brand", "branding", "logo", "icons" ]
     },
     {
+        "slug": "campaigns.etherium_reach",
+        "path": "/campaigns/etherium-reach/",
+        "publish": true,
+        "description": "page_finder.campaigns.etherium_reach.description",
+        "keywords": [
+            "Etherium Reach",
+            "Dronelands",
+            "nullsec campaign",
+            "Minmatar Fleet",
+            "campaign report"
+        ]
+    },
+    {
+        "slug": "campaigns.auga",
+        "path": "/campaigns/auga-yc128/",
+        "publish": true,
+        "description": "page_finder.campaigns.auga.description",
+        "keywords": [
+            "Auga",
+            "Auga YC128",
+            "YC128",
+            "Hed",
+            "system siege",
+            "faction warfare",
+            "Minmatar Militia",
+            "Minmatar Fleet",
+            "siege report"
+        ]
+    },
+    {
+        "slug": "campaigns.providence",
+        "path": "/campaigns/providence/",
+        "publish": true,
+        "description": "page_finder.campaigns.providence.description",
+        "keywords": [
+            "Providence",
+            "CVA",
+            "nullsec campaign",
+            "Minmatar Fleet",
+            "campaign report"
+        ]
+    },
+    {
+        "slug": "campaigns.scalding_pass",
+        "path": "/campaigns/scalding-pass/",
+        "publish": true,
+        "description": "page_finder.campaigns.scalding_pass.description",
+        "keywords": [
+            "Scalding Pass",
+            "nullsec campaign",
+            "Minmatar Fleet",
+            "campaign report",
+            "F-5FDA"
+        ]
+    },
+    {
+        "slug": "campaigns.hek",
+        "path": "/campaigns/hek/",
+        "publish": true,
+        "description": "page_finder.campaigns.hek.description",
+        "keywords": [
+            "Hek",
+            "Metropolis",
+            "highsec campaign",
+            "HMA",
+            "Minmatar Fleet",
+            "campaign report"
+        ]
+    },
+    {
         "slug": "corporations.list",
         "alt": "icon.corporation.alt",
         "path": "/alliance/corporations/",
@@ -155,7 +225,7 @@
     },
     {
         "slug": "tribes_market",
-        "path": "/alliance/tribes/3/",
+        "path": "/alliance/tribes/2/",
         "description": "page_finder.tribes.market.description",
         "publish": true,
         "keywords": [ "groups", "tribes" ]
@@ -179,8 +249,23 @@
         "path": "/guides/navy-destroyer-metagame/",
         "publish": true,
         "description": "page_finder.guides.description",
-        "keywords": [ "EVE Online guides", "faction warfare guide", "abyssal deadspace", "navy destroyer metagame", "FW plexing", "L5 missions" ]
+        "keywords": [ "EVE Online destroyer guide", "faction warfare destroyer", "navy destroyer", "Catalyst Navy Issue", "Thrasher Fleet Issue", "Algos", "Coercer", "Dragoon", "1v1 pvp", "FW plex" ]
     },
+    {
+        "slug": "guides.navy_frigate_guide",
+        "path": "/guides/navy-frigate-guide/",
+        "publish": true,
+        "description": "page_finder.ships.navy_frigate_guide.description",
+        "keywords": [ "EVE Online frigate guide", "faction warfare frigate", "navy frigate", "Hookbill", "Comet", "Slicer", "Firetail", "Vigil Fleet Issue", "Tristan", "Breacher", "Scout complex", "1v1 pvp" ]
+    },
+    {
+        "slug": "guides.faction_warfare_cruiser_guide",
+        "path": "/guides/faction-warfare-cruiser-guide/",
+        "publish": true,
+        "description": "page_finder.ships.faction_warfare_cruiser_guide.description",
+        "keywords": [ "EVE Online cruiser guide", "faction warfare cruiser", "navy cruiser", "Exequror Navy Issue", "Vexor Navy Issue", "Stabber Fleet Issue", "Scythe Fleet Issue", "1v1 pvp", "FW plex" ]
+    },
+
     {
         "slug": "propaganda",
         "alt": "icon.tv.alt",
@@ -326,26 +411,16 @@
         "description": "page_finder.freight_contracts.history.description"
     },
     {
-        "slug": "contracts",
-        "alt": "icon.contract.alt",
-        "path": "/market/contracts/",
+        "slug": "staging_supply.ops",
+        "path": "/market/ops/",
         "publish": true,
-        "icon": "/images/icons/48px-Contractsicon.png",
-        "description": "page_finder.contracts.description"
-    },
-    {
-        "slug": "sell_orders",
-        "alt": "icon.contract.alt",
-        "path": "/market/sell_orders/",
-        "icon": "/images/icons/48px-Marketdeliveries.png",
-        "publish": true,
-        "description": "page_finder.sell_orders.description"
+        "description": "page_finder.staging_supply.ops.description"
     },
     {
         "slug": "industry",
         "alt": "icon.industry.alt",
         "path": "/industry/",
-        "publish": true,
+        "publish": false,
         "icon": "/images/icons/48px-Industry.png",
         "description": "page_finder.industry.description",
         "keywords": [ "industry", "supply chain", "manufacturing" ]
@@ -376,6 +451,13 @@
         "keywords": [ "orders", "manufacturing", "materials", "breakdown" ]
     },
     {
+        "slug": "industry.orders.summary",
+        "path": "/industry/orders/summary/",
+        "publish": true,
+        "description": "page_finder.orders.summary.description",
+        "keywords": [ "orders", "manufacturing", "profit", "summary" ]
+    },
+    {
         "slug": "industry.blueprints",
         "path": "/industry/blueprints/",
         "publish": true,
@@ -398,14 +480,14 @@
     {
         "slug": "industry.colonies",
         "path": "/industry/colonies/",
-        "publish": true,
+        "publish": false,
         "description": "page_finder.colonies.description",
         "keywords": [ "PI" ]
     },
     {
         "slug": "industry.planetary_production",
         "path": "/industry/planetary_production/",
-        "publish": true,
+        "publish": false,
         "description": "page_finder.planetary_production.description",
         "keywords": [ "PI", "harvest", "extractors", "factories" ]
     },

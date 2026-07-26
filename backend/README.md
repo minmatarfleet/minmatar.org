@@ -11,11 +11,14 @@
 
 Local development uses Docker for MariaDB and Redis only. Run Django (and Celery, Beat, etc.) on the host.
 
-1. From the **repo root**, start infrastructure: `docker compose up -d`
-1. Create `backend/.env` from `.env.example` (see root `README.md` for Discord and ESI values)
-1. `pipenv install --dev`
-1. `pipenv run python manage.py migrate`
-1. `pipenv run python manage.py runserver`
+1. From the **repo root**, complete setup in the root `README.md` (`.env` files, `pipenv install`, `migrate`, frontend/mobile `npm i`)
+1. From the **repo root**, start everything: `./dev.sh` (or `make dev`)
+
+To run only the API from `backend/`:
+
+```bash
+pipenv run python manage.py runserver
+```
 
 Navigate to `/api/docs` for endpoints or `/admin` for the admin panel.
 
@@ -129,7 +132,7 @@ coverage run -m manage test --testrunner="testrunner.Runner"  && cat testresults
 
 ### Reference fixtures
 
-Production-like reference data (tribes, fittings, doctrines, locations, market config) lives in committed JSON under `fixtures/data/`. Sensitive fields (Discord IDs, chiefs, memberships) are stripped at export time.
+Production-like reference data (tribes, doctrines, locations, market config) lives in committed JSON under `fixtures/data/`. Fittings are **not** included — fixture load must not wipe live fits. Sensitive fields (Discord IDs, chiefs, memberships) are stripped at export time.
 
 **Prerequisites:**
 
@@ -150,7 +153,17 @@ Use `--clear` to remove existing reference rows before loading. Use `--skip-eve-
 pipenv run python manage.py export_reference_fixtures
 ```
 
-`setup_test_data()` remains useful for test users and mock characters/fleets; reference fixtures replace its synthetic fittings/org config.
+`setup_test_data()` remains useful for test users and mock characters/fleets; reference fixtures cover org/market config (not fittings).
+
+### Authorization (PilotFeature)
+
+Product capabilities are gated via `can_use_feature()` with legacy Django-permission fallback. See [../docs/auth/](../docs/auth/README.md) for architecture, feature catalog, and migration docs.
+
+After deploy / migrate:
+
+```bash
+pipenv run python manage.py sync_pilot_features
+```
 
 ### Create a test admin user and display JWT
 ```

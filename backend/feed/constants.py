@@ -17,7 +17,10 @@ FW_WARZONE_REGIONS: dict[int, str] = {
     10000042: "Metropolis",
 }
 
-# R2Z2
+# R2Z2 — https://github.com/zKillboard/zKillboard/wiki/API-(R2Z2)
+# Live edge: sleep >= 6s after 404 (avg ~1 killmail / 5.5s). Catch-up: 100ms
+# between 200s (<= 10/s; limit is 15/s per IP). Rate-limit violators are
+# banned for 1 hour (403); transient overload may return 429.
 R2Z2_BASE_URL = "https://r2z2.zkillboard.com/ephemeral"
 R2Z2_SEQUENCE_URL = f"{R2Z2_BASE_URL}/sequence.json"
 R2Z2_USER_AGENT = (
@@ -25,7 +28,12 @@ R2Z2_USER_AGENT = (
 )
 R2Z2_SUCCESS_SLEEP_MS = 100
 R2Z2_NOT_FOUND_SLEEP_MS = 6000
+R2Z2_RATE_LIMIT_SLEEP_SECONDS = 3600
+R2Z2_BANNED_SLEEP_SECONDS = 3600
 R2Z2_POLL_SOFT_TIME_LIMIT_SECONDS = 25
+R2Z2_LIVE_GAP_WARN = 50
+R2Z2_CATCHUP_GAP_WARN = 500
+R2Z2_BAN_PAUSE_WARN_SECONDS = 1800
 
 # Retention
 FEED_KILLMAIL_RETENTION_DAYS = 30
@@ -102,6 +110,9 @@ DEFAULT_ROLLUP_CONFIG: dict[str, dict] = {
         "min_kills": 5,
         "min_pilots": 6,
         "stale_minutes": 20,
+        # Hard cap: busy systems never gap 20m, so without this one cluster
+        # grows for days (Turnur/Kourmonen mega-cards).
+        "max_duration_minutes": 90,
         "dominant_faction_threshold": 0.75,
     },
     "contested_change": {
@@ -119,6 +130,26 @@ DEFAULT_ROLLUP_CONFIG: dict[str, dict] = {
 
 ROLLUP_VERSIONS: dict[str, int] = {
     "kill_burst": 6,
-    "fleet_active": 9,
+    "fleet_active": 11,
     "contested_change": 1,
 }
+
+# Capital kill Discord pings (radius from Amamake)
+AMAMAKE_SOLAR_SYSTEM_ID = 30002537
+CAPITAL_PING_MAX_LIGHT_YEARS = 8.0
+# Only ping for genuinely fresh kills. Stale killmails (feed backlog, bot
+# restarts, replays) must not fire a "capital within jump range" alert.
+CAPITAL_PING_MAX_AGE_SECONDS = 180
+# Reuse one Discord message for further capital-related kills in the same system.
+CAPITAL_PING_SESSION_SECONDS = 30 * 60
+METERS_PER_LIGHT_YEAR = 9_460_528_400_000_000
+CAPITAL_SHIP_GROUPS = frozenset(
+    {
+        "Capital Ship",
+        "Dreadnought",
+        "Carrier",
+        "Supercarrier",
+        "Titan",
+        "Force Auxiliary",
+    }
+)

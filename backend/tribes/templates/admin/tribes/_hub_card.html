@@ -1,0 +1,17 @@
+<div class="tribes-card{% if readonly %} tribes-card--readonly{% endif %}">
+  <div class="tribes-card__header">
+    <h3>{{ title }}</h3>
+    {% if count is not None %}
+    <span class="tribes-card__badge">{{ count }}</span>
+    {% endif %}
+  </div>
+  <p class="tribes-card__desc">{{ description }}</p>
+  <div class="tribes-card__actions">
+    {% if list_url %}
+    <a href="{{ list_url }}" class="tribes-btn tribes-btn--primary">{{ list_label }}</a>
+    {% endif %}
+    {% if add_url %}
+    <a href="{{ add_url }}" class="tribes-btn tribes-btn--secondary">{{ add_label }}</a>
+    {% endif %}
+  </div>
+</div>

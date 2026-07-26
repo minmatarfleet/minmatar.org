@@ -58,8 +58,8 @@ def _production_binding(code: str) -> ReportBinding:
 
 
 REPORT_BINDINGS: dict[str, ReportBinding] = {
-    "industry.mining": ReportBinding(
-        code="industry.mining",
+    "supply.mining": ReportBinding(
+        code="supply.mining",
         views={
             ReportView.TOWN_HALL.value: QuerySpec(
                 "mining_by_user", ReportScope.ALLIANCE
@@ -70,8 +70,8 @@ REPORT_BINDINGS: dict[str, ReportBinding] = {
         },
         presentation={"town_hall": {"top_n": 5, "sort": "volume_m3"}},
     ),
-    "industry.planetary-interaction": ReportBinding(
-        code="industry.planetary-interaction",
+    "supply.planetary-interaction": ReportBinding(
+        code="supply.planetary-interaction",
         views={
             ReportView.TOWN_HALL.value: QuerySpec(
                 "pi_by_user",
@@ -88,14 +88,14 @@ REPORT_BINDINGS: dict[str, ReportBinding] = {
             "town_hall": {"top_n": 5, "sort": "isk_pi_30d_estimate"},
         },
     ),
-    "industry.subcapital-production": _production_binding(
-        "industry.subcapital-production"
+    "supply.subcapital-production": _production_binding(
+        "supply.subcapital-production"
     ),
-    "industry.capital-production": _production_binding(
-        "industry.capital-production"
+    "supply.capital-production": _production_binding(
+        "supply.capital-production"
     ),
-    "market.freighters": ReportBinding(
-        code="market.freighters",
+    "supply.freighters": ReportBinding(
+        code="supply.freighters",
         views={
             ReportView.TOWN_HALL.value: QuerySpec(
                 "freight_program", ReportScope.PROGRAM
@@ -105,18 +105,13 @@ REPORT_BINDINGS: dict[str, ReportBinding] = {
             ),
         },
     ),
-    "market.contracts": ReportBinding(
-        code="market.contracts",
+    "supply.market": ReportBinding(
+        code="supply.market",
         manual=True,
-        manual_message="Contracts tribe metrics are manual / narrative.",
+        manual_message="Market tribe metrics are manual / narrative.",
     ),
-    "market.market-orders": ReportBinding(
-        code="market.market-orders",
-        manual=True,
-        manual_message="Market orders tribe metrics are manual / narrative.",
-    ),
-    "market.loyalty-points": ReportBinding(
-        code="market.loyalty-points",
+    "supply.loyalty-points": ReportBinding(
+        code="supply.loyalty-points",
         manual=True,
         manual_message="Loyalty points tribe metrics are manual / narrative.",
     ),

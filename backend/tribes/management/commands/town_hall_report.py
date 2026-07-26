@@ -22,7 +22,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--group",
             dest="group_code",
-            help="TribeGroup.code (e.g. industry.mining)",
+            help="TribeGroup.code (e.g. supply.mining)",
         )
         parser.add_argument(
             "--all",

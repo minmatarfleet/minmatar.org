@@ -139,6 +139,30 @@ export async function get_primary_characters(access_token:string) {
     }
 }
 
+/** Resolve main pilot for claim UI without failing the parent page load. */
+export type PrimaryClaimAvailability = 'ok' | 'login' | 'auth' | 'no_primary'
+
+export async function resolve_primary_for_claim(
+    access_token: string | false
+): Promise<{ character_id: number; availability: PrimaryClaimAvailability }> {
+    if (!access_token) {
+        return { character_id: 0, availability: 'login' }
+    }
+
+    try {
+        const primary_pilot = await get_primary_characters(access_token)
+        const character_id = primary_pilot?.character_id ?? 0
+
+        if (!character_id) {
+            return { character_id: 0, availability: 'no_primary' }
+        }
+
+        return { character_id, availability: 'ok' }
+    } catch {
+        return { character_id: 0, availability: 'auth' }
+    }
+}
+
 export async function get_character_skillsets(access_token:string, character_id:number) {
     const headers = {
         'Content-Type': 'application/json',

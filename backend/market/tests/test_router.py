@@ -3,12 +3,11 @@ from django.utils import timezone
 
 from app.test import TestCase
 
-from eveonline.models import EveCharacter, EveLocation
+from eveonline.models import EveLocation
 from fittings.models import EveFitting
 from market.models import (
     EveMarketContract,
     EveMarketContractExpectation,
-    EveMarketContractResponsibility,
 )
 
 BASE_URL = "/api/market"
@@ -62,14 +61,6 @@ class MarketRouterTestCase(TestCase):
             issuer_external_id=1,
             created_at=timestamp,
         )
-        char = EveCharacter.objects.create(
-            character_id=12345,
-            character_name="Test Pilot",
-        )
-        EveMarketContractResponsibility.objects.create(
-            expectation=expectation,
-            entity_id=char.character_id,
-        )
 
         response = self.client.get(
             f"{BASE_URL}/contracts?location_id={expectation.location.location_id}",
@@ -84,9 +75,7 @@ class MarketRouterTestCase(TestCase):
         self.assertIn(
             str(timestamp)[0:19], data[0]["latest_contract_timestamp"]
         )
-        self.assertEqual(
-            "Test Pilot", data[0]["responsibilities"][0]["entity_name"]
-        )
+        self.assertNotIn("responsibilities", data[0])
         self.assertIn("doctrines", data[0])
         self.assertIsInstance(data[0]["doctrines"], list)
 
@@ -134,7 +123,7 @@ class MarketRouterTestCase(TestCase):
         self.assertEqual(1, data[0]["current_quantity"])
         self.assertEqual(0, data[0]["desired_quantity"])
         self.assertIsNone(data[0]["expectation_id"])
-        self.assertEqual([], data[0]["responsibilities"])
+        self.assertNotIn("responsibilities", data[0])
         self.assertEqual([], data[0]["doctrines"])
 
     def test_inactive_market(self):

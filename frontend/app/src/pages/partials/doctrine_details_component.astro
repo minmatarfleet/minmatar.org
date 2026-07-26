@@ -16,6 +16,7 @@ const user_permissions = user ? await get_user_permissions(user.username) : []
 const can_view_fleets = is_superuser || user_permissions.includes('fleets.view_evefleet')
 
 const doctrine_id = Astro.url.searchParams.get('doctrine_id') as string
+const active_location_id = parseInt(Astro.url.searchParams.get('location_id') ?? '0')
 
 import type { DoctrineType } from '@dtypes/layout_components'
 import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
@@ -46,7 +47,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 {fetch_doctrine_error ?
     <ErrorRefetch
         args={{
-            partial: `${DOCTRINE_DETAILS_PARTIAL_URL}?doctrine_id=${doctrine_id}`,
+            partial: `${DOCTRINE_DETAILS_PARTIAL_URL}?doctrine_id=${doctrine_id}${active_location_id ? `&location_id=${active_location_id}` : ''}`,
             error: fetch_doctrine_error,
             delay: delay,
         }}

@@ -14,24 +14,35 @@ const {
     init_tooltips,
 } = Astro.props
 
+const has_producers = (
+    product.character_producers !== undefined
+    || product.corporation_producers !== undefined
+)
+
+const PRODUCT_PRODUCERS_PARTIAL_URL = `${translatePath('/partials/product_producers_component')}?product_id=${product.id}`
+
 import { get_bpc_icon } from '@helpers/eve_image_server';
+import { query_string } from '@helpers/string';
 
 import FlexInline from '@components/compositions/FlexInline.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 import Grid from '@components/compositions/Grid.astro';
 
+import Button from '@components/blocks/Button.astro';
 import ItemBadge from '@components/blocks/ItemBadge.astro';
 import ItemPicture from '@components/blocks/ItemPicture.astro';
 import Picture from '@components/blocks/Picture.astro';
 import ProducersList from '@components/blocks/ProducersList.astro';
 
 import IndustryIcon from '@components/icons/IndustryIcon.astro';
+import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
 ---
 
 <FixedFluid
     class="[ product-item ]"
-    width='450px'
+    width='min(450px, 100%)'
     gap='var(--space-3xs)'
+    breakpoint='min(100%, 28rem)'
     x-show="show_item($el)"
 >
     <div>
@@ -58,48 +69,103 @@ import IndustryIcon from '@components/icons/IndustryIcon.astro';
     </div>
 
     <div class="[ alignment-hack ]">
-        <Grid class="[ pl-[64px] ]" min_item_width='250px'>
-            <FixedFluid width='32px' gap='var(--space-2xs)' breakpoint='30%' class="[  items-center! ]">
-                <div
-                    class="[ text-highlight ]"
-                    data-tippy-content={t('manufacturing')}
-                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                >
-                    <IndustryIcon size={32} />
-                </div>
-                
-                {product.supplied_for.length > 0 ?
-                    <FlexInline gap='var(--space-3xs)'>
-                        {product.supplied_for.map(material =>
-                            <div 
-                                data-tippy-content={material.name}
-                                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                            >
-                                <ItemPicture
-                                    item_id={material.type_id}
-                                    size={24}
-                                    icon_quality={32}
-                                />
-                                <div class="[ sr-only ]">{material.name}</div>
-                            </div>
-                        )}
-                    </FlexInline>
-                    :
-                    <small>{t('final_product')}</small>
-                }
-            </FixedFluid>
+        <FlexInline
+            class="[ items-center! product-item-actions ]"
+            gap='var(--space-s)'
+            justification='space-between'
+        >
+            <Grid class="[ product-item-meta grow min-w-0 ]" min_item_width='200px'>
+                <FixedFluid width='32px' gap='var(--space-2xs)' breakpoint='30%' class="[  items-center! ]">
+                    <div
+                        class="[ text-highlight ]"
+                        data-tippy-content={t('manufacturing')}
+                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                    >
+                        <IndustryIcon size={32} />
+                    </div>
 
-            <ProducersList
-                character_producers={product.character_producers}
-                corporation_producers={product.corporation_producers}
-                init_tooltips={init_tooltips}
-            />
-        </Grid>
+                    {product.supplied_for.length > 0 ?
+                        <FlexInline gap='var(--space-3xs)'>
+                            {product.supplied_for.map(material =>
+                                <div
+                                    data-tippy-content={material.name}
+                                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                                >
+                                    <ItemPicture
+                                        item_id={material.type_id}
+                                        size={24}
+                                        icon_quality={32}
+                                    />
+                                    <div class="[ sr-only ]">{material.name}</div>
+                                </div>
+                            )}
+                        </FlexInline>
+                        :
+                        <small>{t('final_product')}</small>
+                    }
+                </FixedFluid>
+
+                {has_producers ?
+                    <ProducersList
+                        character_producers={product.character_producers}
+                        corporation_producers={product.corporation_producers}
+                        init_tooltips={init_tooltips}
+                    />
+                    :
+                    <FixedFluid
+                        class="[ items-center! ]"
+                        width='32px'
+                        breakpoint='30%'
+                        gap='var(--space-2xs)'
+                        hx-get={PRODUCT_PRODUCERS_PARTIAL_URL}
+                        hx-trigger="intersect once"
+                        hx-sync="#products-list:queue all"
+                        hx-indicator=".loader"
+                        hx-swap="outerHTML transition:true"
+                    >
+                        <div
+                            class="[ text-highlight h-[32px] ]"
+                            data-tippy-content={t('industrialists')}
+                        >
+                            <IndustrialistIcon size={32} />
+                        </div>
+                        <small class="[ loading ]">{t('fetching_producers')}</small>
+                    </FixedFluid>
+                }
+            </Grid>
+
+            <Button
+                size='sm'
+                color='fleet-red'
+                class="[ shrink-0 ]"
+                href={translatePath(`/industry/orders/planner?${query_string({
+                    type_id: product.type_id,
+                })}`)}
+            >
+                <IndustryIcon slot="icon" size={24} />
+                {t('planner')}
+            </Button>
+        </FlexInline>
     </div>
 </FixedFluid>
 
 <style lang="scss">
     .alignment-hack {
         padding-left: var(--space-s);
+        min-width: 0;
+        width: 100%;
+    }
+
+    .product-item-meta {
+        padding-left: 0;
+
+        @media (min-width: 640px) {
+            padding-left: 64px;
+        }
+    }
+
+    .product-item-actions {
+        flex-wrap: wrap;
+        row-gap: var(--space-2xs);
     }
 </style>

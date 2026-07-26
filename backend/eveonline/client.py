@@ -1,11 +1,11 @@
 import logging
 import requests
-from typing import List
+from typing import Any, List
 
 from django.conf import settings
-from esi.clients import EsiClientProvider
 from esi.errors import TokenInvalidError
 from esi.models import Token
+from esi.openapi_clients import ESIClientProvider
 from oauthlib.oauth2.rfc6749.errors import InvalidGrantError
 from eveuniverse.models import (
     EveType,
@@ -19,8 +19,6 @@ from eveuniverse.models import (
 
 logger = logging.getLogger(__name__)
 
-esi_provider = EsiClientProvider()
-
 SUCCESS = 0
 UNKNOWN_CLIENT_ERROR = 901
 CHAR_ESI_SUSPENDED = 902
@@ -30,6 +28,43 @@ NO_VALID_ESI_TOKEN = 905
 ERROR_CALLING_ESI = 906
 
 ESI_BASE_URL = "https://esi.evetech.net/latest"
+ESI_COMPATIBILITY_DATE = "2026-06-09"
+
+esi_provider = ESIClientProvider(
+    compatibility_date=ESI_COMPATIBILITY_DATE,
+    ua_appname="MinmatarOrg",
+    ua_version="1.0.0",
+    ua_url="https://minmatar.org",
+    tags=[
+        "Alliance",
+        "Assets",
+        "Character",
+        "Contracts",
+        "Corporation",
+        "Faction Warfare",
+        "Fleets",
+        "Industry",
+        "Killmails",
+        "Mail",
+        "Market",
+        "Loyalty",
+        "Skills",
+        "Universe",
+    ],
+)
+
+
+def _esi_to_python(data: Any) -> Any:
+    """Normalize OpenAPI/Pydantic responses to plain dict/list for callers."""
+    if data is None:
+        return None
+    if hasattr(data, "model_dump"):
+        return data.model_dump(mode="json")
+    if isinstance(data, list):
+        return [_esi_to_python(item) for item in data]
+    if isinstance(data, dict):
+        return {key: _esi_to_python(value) for key, value in data.items()}
+    return data
 
 
 class EsiResponse:
@@ -101,6 +136,13 @@ class EsiClient:
             self.character_esi_suspended = character.esi_suspended
 
     def _valid_token(self, required_scopes: List[str]) -> tuple[Token, int]:
+        """Return a django-esi Token after validating/refreshing its access token.
+
+        OpenAPI fleet (and other rate-limited) operations require the Token
+        object so django-esi can read ``token.character_id`` for rate buckets.
+        Callers that use raw ``requests`` must pass
+        ``token.valid_access_token()`` in the Authorization header.
+        """
         if not self.character_id:
             return None, NO_CLIENT_CHAR
 
@@ -112,7 +154,8 @@ class EsiClient:
             return None, NO_VALID_ESI_TOKEN
 
         try:
-            return token.valid_access_token(), SUCCESS
+            token.valid_access_token()
+            return token, SUCCESS
         except (InvalidGrantError, TokenInvalidError):
             # Import here to avoid circular import (eveonline.models loads client)
             from eveonline.models import (  # pylint: disable=import-outside-toplevel
@@ -130,18 +173,56 @@ class EsiClient:
         except Exception:
             return None, NO_VALID_ACCESS_TOKEN
 
-    def _operation_results(self, operation) -> EsiResponse:
+    @staticmethod
+    def _bearer_headers(token: Token) -> dict:
+        return {"Authorization": f"Bearer {token.valid_access_token()}"}
+
+    def _operation_results(self, operation, **kwargs) -> EsiResponse:
+        # django-esi raises HTTPNotModified on 304 instead of returning the
+        # cached body, which surfaces as opaque 906. Default off for sync paths.
+        kwargs.setdefault("use_etag", False)
         try:
-            return EsiResponse(response_code=SUCCESS, data=operation.results())
+            return EsiResponse(
+                response_code=SUCCESS,
+                data=_esi_to_python(operation.results(**kwargs)),
+            )
         except Exception as e:
+            logger.warning(
+                "ESI operation.results() failed for %s: %s",
+                getattr(
+                    getattr(operation, "operation", None), "operationId", None
+                ),
+                e,
+                exc_info=True,
+            )
+            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+
+    def _operation_result(self, operation, **kwargs) -> EsiResponse:
+        # See _operation_results — same 304/ETag pitfall for single-object ops.
+        kwargs.setdefault("use_etag", False)
+        try:
+            return EsiResponse(
+                response_code=SUCCESS,
+                data=_esi_to_python(operation.result(**kwargs)),
+            )
+        except Exception as e:
+            logger.warning(
+                "ESI operation.result() failed for %s: %s",
+                getattr(
+                    getattr(operation, "operation", None), "operationId", None
+                ),
+                e,
+                exc_info=True,
+            )
             return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
 
     def get_character_public_data(self, char_id: int) -> EsiResponse:
         """Returns the public data for the specified Eve character."""
-        operation = esi_provider.client.Character.get_characters_character_id(
+        operation = esi_provider.client.Character.GetCharactersDetail(
             character_id=char_id
         )
-        return self._operation_results(operation)
+        # Single-object endpoint: result(), not results().
+        return self._operation_result(operation)
 
     def get_character_skills(self) -> EsiResponse:
         """Returns the skills for the character this ESI client was created for."""
@@ -150,15 +231,13 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = (
-            esi_provider.client.Skills.get_characters_character_id_skills(
-                character_id=self.character_id,
-                token=token,
-            )
+        operation = esi_provider.client.Skills.GetCharactersCharacterIdSkills(
+            character_id=self.character_id,
+            token=token,
         )
 
         try:
-            data = operation.results()
+            data = _esi_to_python(operation.result(use_etag=False))
             return EsiResponse(
                 data=data["skills"] if data else None,
                 response_code=SUCCESS,
@@ -173,15 +252,13 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = (
-            esi_provider.client.Assets.get_characters_character_id_assets(
-                character_id=self.character_id,
-                token=token,
-            )
+        operation = esi_provider.client.Assets.GetCharactersCharacterIdAssets(
+            character_id=self.character_id,
+            token=token,
         )
         try:
             return EsiResponse(
-                data=operation.results(),
+                data=_esi_to_python(operation.results(use_etag=False)),
                 response_code=SUCCESS,
             )
         except Exception as e:
@@ -194,7 +271,7 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = esi_provider.client.Killmails.get_characters_character_id_killmails_recent(
+        operation = esi_provider.client.Killmails.GetCharactersCharacterIdKillmailsRecent(
             character_id=self.character_id,
             token=token,
         )
@@ -205,10 +282,13 @@ class EsiClient:
         self, killmail_id, killmail_hash
     ) -> EsiResponse:
         """Returns a character's killmail"""
-        operation = esi_provider.client.Killmails.get_killmails_killmail_id_killmail_hash(
-            killmail_id=killmail_id, killmail_hash=killmail_hash
+        operation = (
+            esi_provider.client.Killmails.GetKillmailsKillmailIdKillmailHash(
+                killmail_id=killmail_id, killmail_hash=killmail_hash
+            )
         )
-        return self._operation_results(operation)
+        # Single-object endpoint: result(), not results().
+        return self._operation_result(operation)
 
     def get_character_blueprints(self) -> EsiResponse:
         """
@@ -222,7 +302,7 @@ class EsiClient:
             return EsiResponse(status)
 
         url = f"{ESI_BASE_URL}/characters/{self.character_id}/blueprints/"
-        headers = {"Authorization": f"Bearer {token}"}
+        headers = self._bearer_headers(token)
         try:
             resp = requests.get(
                 url,
@@ -269,13 +349,15 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = esi_provider.client.Industry.get_characters_character_id_industry_jobs(
-            character_id=self.character_id,
-            token=token,
-            include_completed=include_completed,
+        operation = (
+            esi_provider.client.Industry.GetCharactersCharacterIdIndustryJobs(
+                character_id=self.character_id,
+                token=token,
+                include_completed=include_completed,
+            )
         )
         try:
-            jobs = operation.results()
+            jobs = _esi_to_python(operation.results(use_etag=False))
         except Exception as e:
             return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
         return EsiResponse(response_code=SUCCESS, data=jobs or [])
@@ -289,9 +371,11 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = esi_provider.client.Contracts.get_characters_character_id_contracts(
-            character_id=self.character_id,
-            token=token,
+        operation = (
+            esi_provider.client.Contracts.GetCharactersCharacterIdContracts(
+                character_id=self.character_id,
+                token=token,
+            )
         )
         return self._operation_results(operation)
 
@@ -302,12 +386,14 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = esi_provider.client.Contracts.get_corporations_corporation_id_contracts(
+        operation = esi_provider.client.Contracts.GetCorporationsCorporationIdContracts(
             corporation_id=corporation_id,
             token=token,
         )
 
-        return self._operation_results(operation)
+        # Disable ETag — django-esi raises HTTPNotModified on 304 instead of
+        # returning cached body, which would surface as opaque 906.
+        return self._operation_results(operation, use_etag=False)
 
     def get_corporation_blueprints(self, corporation_id: int) -> EsiResponse:
         """
@@ -321,7 +407,7 @@ class EsiClient:
             return EsiResponse(status)
 
         url = f"{ESI_BASE_URL}/corporations/{corporation_id}/blueprints/"
-        headers = {"Authorization": f"Bearer {token}"}
+        headers = self._bearer_headers(token)
         try:
             resp = requests.get(
                 url,
@@ -369,7 +455,7 @@ class EsiClient:
 
         url = f"{ESI_BASE_URL}/corporations/{corporation_id}/industry/jobs/"
         params = {"include_completed": include_completed}
-        headers = {"Authorization": f"Bearer {token}"}
+        headers = self._bearer_headers(token)
 
         try:
             resp = requests.get(
@@ -417,7 +503,7 @@ class EsiClient:
             return EsiResponse(status)
 
         url = f"{ESI_BASE_URL}/corporations/{corporation_id}/wallets/{division}/journal/"
-        headers = {"Authorization": f"Bearer {token}"}
+        headers = self._bearer_headers(token)
         try:
             resp = requests.get(
                 url,
@@ -452,7 +538,7 @@ class EsiClient:
             page = 1
             while True:
                 url = f"{ESI_BASE_URL}/corporations/{corporation_id}/wallets/{division}/journal/"
-                headers = {"Authorization": f"Bearer {token}"}
+                headers = self._bearer_headers(token)
                 try:
                     resp = requests.get(
                         url,
@@ -478,13 +564,50 @@ class EsiClient:
         return EsiResponse(response_code=SUCCESS, data=all_entries)
 
     def get_public_contracts(self, region_id) -> EsiResponse:
-        operation = (
-            esi_provider.client.Contracts.get_contracts_public_region_id(
-                region_id=region_id,
-            )
+        operation = esi_provider.client.Contracts.GetContractsPublicRegionId(
+            region_id=region_id,
         )
 
         return self._operation_results(operation)
+
+    def get_public_contract_items(self, contract_id: int) -> EsiResponse:
+        operation = (
+            esi_provider.client.Contracts.GetContractsPublicItemsContractId(
+                contract_id=contract_id,
+            )
+        )
+        return self._operation_results(operation)
+
+    def get_character_contract_items(self, contract_id: int) -> EsiResponse:
+        token, status = self._valid_token(
+            ["esi-contracts.read_character_contracts.v1"]
+        )
+        if status > 0:
+            return EsiResponse(status)
+
+        operation = esi_provider.client.Contracts.GetCharactersCharacterIdContractsContractIdItems(
+            character_id=self.character_id,
+            contract_id=contract_id,
+            token=token,
+        )
+        return self._operation_results(operation)
+
+    def get_corporation_contract_items(
+        self, corporation_id: int, contract_id: int
+    ) -> EsiResponse:
+        token, status = self._valid_token(
+            ["esi-contracts.read_corporation_contracts.v1"]
+        )
+        if status > 0:
+            return EsiResponse(status)
+
+        operation = esi_provider.client.Contracts.GetCorporationsCorporationIdContractsContractIdItems(
+            corporation_id=corporation_id,
+            contract_id=contract_id,
+            token=token,
+        )
+        # Same 304/ETag pitfall as get_corporation_contracts.
+        return self._operation_results(operation, use_etag=False)
 
     def get_region_market_history(
         self, region_id: int, type_id: int
@@ -544,7 +667,7 @@ class EsiClient:
             resp = requests.get(
                 url,
                 params={"page": 1},
-                headers={"Authorization": f"Bearer {token}"},
+                headers=self._bearer_headers(token),
                 timeout=30,
             )
         except Exception as e:
@@ -570,18 +693,12 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = (
-            esi_provider.client.Market.get_markets_structures_structure_id(
-                structure_id=structure_id,
-                page=page,
-                token=token,
-            )
+        operation = esi_provider.client.Market.GetMarketsStructuresStructureId(
+            structure_id=structure_id,
+            page=page,
+            token=token,
         )
-        try:
-            page_data = operation.results()
-            return EsiResponse(response_code=SUCCESS, data=page_data)
-        except Exception as e:
-            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+        return self._operation_result(operation)
 
     def get_structure_market_orders_pages(self, structure_id: int):
         """
@@ -605,13 +722,11 @@ class EsiClient:
             yield None
             return
 
-        operation = (
-            esi_provider.client.Market.get_markets_structures_structure_id(
-                structure_id=structure_id,
-                token=token,
-            )
+        operation = esi_provider.client.Market.GetMarketsStructuresStructureId(
+            structure_id=structure_id,
+            token=token,
         )
-        all_orders = operation.results()
+        all_orders = _esi_to_python(operation.results(use_etag=False))
         count = len(all_orders) if all_orders else 0
         logger.info(
             "get_structure_market_orders_pages: structure_id=%s — received all pages, orders_count=%s",
@@ -629,7 +744,7 @@ class EsiClient:
         response = requests.get(
             url=f"{ESI_BASE_URL}/characters/{self.character_id}/fleet/",
             timeout=10,
-            headers={"Authorization": "Bearer " + token},
+            headers=self._bearer_headers(token),
         )
 
         return EsiResponse(
@@ -641,31 +756,35 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = esi_provider.client.Fleets.get_fleets_fleet_id_members(
+        operation = esi_provider.client.Fleets.GetFleetsFleetIdMembers(
             fleet_id=fleet_id, token=token
         )
 
         return self._operation_results(operation)
 
     def get_alliance(self, alliance_id: int) -> EsiResponse:
-        operation = esi_provider.client.Alliance.get_alliances_alliance_id(
+        operation = esi_provider.client.Alliance.GetAlliancesAllianceId(
             alliance_id=alliance_id
         )
-        return self._operation_results(operation)
+        # Single-object endpoint: result(), not results() (which returns a list)
+        return self._operation_result(operation)
 
     def get_alliance_corporations(self, alliance_id: int) -> EsiResponse:
-        operation = esi_provider.client.Alliance.get_alliances_alliance_id_corporations(
-            alliance_id=alliance_id
+        operation = (
+            esi_provider.client.Alliance.GetAlliancesAllianceIdCorporations(
+                alliance_id=alliance_id
+            )
         )
         return self._operation_results(operation)
 
     def get_corporation(self, corporation_id: int) -> EsiResponse:
         operation = (
-            esi_provider.client.Corporation.get_corporations_corporation_id(
+            esi_provider.client.Corporation.GetCorporationsCorporationId(
                 corporation_id=corporation_id
             )
         )
-        return self._operation_results(operation)
+        # Single-object endpoint: result(), not results() (which returns a list)
+        return self._operation_result(operation)
 
     def get_corporation_members(self, corporation_id: int) -> EsiResponse:
         required_scopes = ["esi-corporations.read_corporation_membership.v1"]
@@ -673,7 +792,7 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = esi_provider.client.Corporation.get_corporations_corporation_id_members(
+        operation = esi_provider.client.Corporation.GetCorporationsCorporationIdMembers(
             corporation_id=corporation_id,
             token=token,
         )
@@ -691,7 +810,7 @@ class EsiClient:
             return EsiResponse(status)
 
         url = f"{ESI_BASE_URL}/corporations/{corporation_id}/roles/"
-        headers = {"Authorization": f"Bearer {token}"}
+        headers = self._bearer_headers(token)
         try:
             resp = requests.get(
                 url,
@@ -730,8 +849,8 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = esi_provider.client.Mail.post_characters_character_id_mail(
-            mail=mail_details,
+        operation = esi_provider.client.Mail.PostCharactersCharacterIdMail(
+            body=mail_details,
             character_id=self.character_id,
             token=token,
         )
@@ -739,8 +858,8 @@ class EsiClient:
         return self._operation_results(operation)
 
     def resolve_universe_names(self, ids_to_resolve) -> EsiResponse:
-        operation = esi_provider.client.Universe.post_universe_names(
-            ids=ids_to_resolve
+        operation = esi_provider.client.Universe.PostUniverseNames(
+            body=ids_to_resolve
         )
         return self._operation_results(operation)
 
@@ -750,12 +869,15 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = esi_provider.client.Fleets.get_fleets_fleet_id(
+        operation = esi_provider.client.Fleets.GetFleetsFleetId(
             fleet_id=fleet_id,
             token=token,
         )
 
-        return self._operation_results(operation)
+        # Single-object endpoint: result(), not results().
+        # Disable ETag — django-esi raises HTTPNotModified on 304 instead of
+        # returning cached body, which would surface as opaque 906.
+        return self._operation_result(operation, use_etag=False)
 
     def update_fleet_details(self, fleet_id, update) -> EsiResponse:
         required_scopes = ["esi-fleets.write_fleet.v1"]
@@ -763,13 +885,14 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = esi_provider.client.Fleets.put_fleets_fleet_id(
+        operation = esi_provider.client.Fleets.PutFleetsFleetId(
             fleet_id=fleet_id,
-            new_settings=update,
+            body=update,
             token=token,
         )
 
-        return self._operation_results(operation)
+        # 204 No Content: result(), not results() (which wraps None as [None])
+        return self._operation_result(operation, use_etag=False)
 
     def get_character_planets(self) -> EsiResponse:
         """Returns the list of planetary colonies for the character."""
@@ -780,7 +903,7 @@ class EsiClient:
         response = requests.get(
             url=f"{ESI_BASE_URL}/characters/{self.character_id}/planets/",
             timeout=30,
-            headers={"Authorization": f"Bearer {token}"},
+            headers=self._bearer_headers(token),
         )
         if response.status_code == 200:
             return EsiResponse(response_code=SUCCESS, data=response.json())
@@ -795,7 +918,7 @@ class EsiClient:
         response = requests.get(
             url=f"{ESI_BASE_URL}/characters/{self.character_id}/planets/{planet_id}/",
             timeout=30,
-            headers={"Authorization": f"Bearer {token}"},
+            headers=self._bearer_headers(token),
         )
         if response.status_code == 200:
             return EsiResponse(response_code=SUCCESS, data=response.json())
@@ -824,7 +947,7 @@ class EsiClient:
         response = requests.get(
             url=f"{ESI_BASE_URL}/characters/{self.character_id}/clones/",
             timeout=30,
-            headers={"Authorization": f"Bearer {token}"},
+            headers=self._bearer_headers(token),
         )
         if response.status_code == 200:
             return EsiResponse(response_code=SUCCESS, data=response.json())
@@ -839,7 +962,7 @@ class EsiClient:
         response = requests.get(
             url=f"{ESI_BASE_URL}/characters/{self.character_id}/implants/",
             timeout=30,
-            headers={"Authorization": f"Bearer {token}"},
+            headers=self._bearer_headers(token),
         )
         if response.status_code == 200:
             return EsiResponse(response_code=SUCCESS, data=response.json())
@@ -856,7 +979,7 @@ class EsiClient:
         response = requests.get(
             url=f"{ESI_BASE_URL}/characters/{self.character_id}/mining/",
             timeout=30,
-            headers={"Authorization": f"Bearer {token}"},
+            headers=self._bearer_headers(token),
         )
         if response.status_code == 200:
             return EsiResponse(response_code=SUCCESS, data=response.json())
@@ -875,7 +998,7 @@ class EsiClient:
         response = requests.get(
             url=f"{ESI_BASE_URL}/characters/{self.character_id}/notifications/",
             timeout=10,
-            headers={"Authorization": "Bearer " + token},
+            headers=self._bearer_headers(token),
         )
 
         if response.status_code == 200:
@@ -891,8 +1014,8 @@ class EsiClient:
         """
         Returns the affiliations for a batch of characters.
         """
-        operation = esi_provider.client.Character.post_characters_affiliation(
-            characters=character_ids
+        operation = esi_provider.client.Character.PostCharactersAffiliation(
+            body=character_ids
         )
         return self._operation_results(operation)
 
@@ -903,11 +1026,62 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = esi_provider.client.FactionWarfare.get_characters_character_id_fw_stats(
-            character_id=self.character.character_id,
+        operation = esi_provider.client.Faction_Warfare.GetCharactersCharacterIdFwStats(
+            character_id=self.character_id,
             token=token,
         )
-        return self._operation_results(operation)
+        # Single-object endpoint: result(), not results().
+        return self._operation_result(operation)
+
+    def _authenticated_esi_get(
+        self, url: str, required_scopes: List[str]
+    ) -> EsiResponse:
+        """GET an authenticated ESI route with the Equinox compatibility date."""
+        token, status = self._valid_token(required_scopes)
+        if status > 0:
+            return EsiResponse(status)
+
+        headers = {
+            **self._bearer_headers(token),
+            "X-Compatibility-Date": ESI_COMPATIBILITY_DATE,
+        }
+        try:
+            resp = requests.get(url, headers=headers, timeout=30)
+        except Exception as e:
+            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+        if resp.status_code >= 400:
+            return EsiResponse(response_code=resp.status_code)
+        return EsiResponse(
+            response_code=SUCCESS,
+            data=resp.json() if resp.content else None,
+        )
+
+    def get_character_access_lists(self) -> EsiResponse:
+        """
+        List access list IDs managed by this character.
+        Requires esi-access.read_lists.v1.
+        """
+        url = f"{ESI_BASE_URL}/characters/{self.character_id}/access-lists/"
+        return self._authenticated_esi_get(
+            url,
+            ["esi-access.read_lists.v1"],
+        )
+
+    def get_character_access_list_detail(
+        self, access_list_id: int
+    ) -> EsiResponse:
+        """
+        Return membership for a single access list managed by this character.
+        Requires esi-access.read_lists.v1.
+        """
+        url = (
+            f"{ESI_BASE_URL}/characters/{self.character_id}/access-lists/"
+            f"{access_list_id}/"
+        )
+        return self._authenticated_esi_get(
+            url,
+            ["esi-access.read_lists.v1"],
+        )
 
     def get_corp_structures(self, corp_id: int) -> EsiResponse:
         """
@@ -919,7 +1093,7 @@ class EsiClient:
         if status > 0:
             return EsiResponse(status)
 
-        operation = esi_provider.client.Corporation.get_corporations_corporation_id_structures(
+        operation = esi_provider.client.Corporation.GetCorporationsCorporationIdStructures(
             corporation_id=corp_id,
             token=token,
         )

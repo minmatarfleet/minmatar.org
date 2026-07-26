@@ -56,6 +56,10 @@ def disconnect_fleet_signals():
         sender=EveFleet,
         dispatch_uid="update_fleet_schedule_on_save",
     )
+    signals.post_delete.disconnect(
+        update_fleet_schedule_on_delete,
+        sender=EveFleet,
+    )
     signals.post_save.disconnect(
         sender=EveCharacter,
         dispatch_uid="populate_eve_character_public_data",
@@ -151,6 +155,26 @@ class FleetHelperTestCase(SimpleTestCase):
         self.assertIn("&lt;tags&gt;", motd)
         self.assertIn("&amp;", motd)
         mock_choice.assert_called_once()
+
+    @patch(
+        "fleets.motd.random.choice", return_value='Quote with <tags> & "chars"'
+    )
+    def test_get_motd_shows_set_doctrine_link_when_no_doctrine(
+        self, mock_choice
+    ):
+        motd = get_motd(
+            1,
+            "FC Name",
+            None,
+            None,
+            "https://discord.gg/minmatar",
+            "Minmatar Fleet Discord",
+            None,
+            None,
+            fleet_edit_url="https://my.minmatar.org/fleets/upcoming/edit/42",
+        )
+        self.assertIn("Set the doctrine", motd)
+        self.assertIn("https://my.minmatar.org/fleets/upcoming/edit/42", motd)
 
     def test_discord_notification_template(self):
         notification = get_fleet_discord_notification(
@@ -292,6 +316,19 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual("Take the objective", response.json()["objective"])
 
+    def test_get_fleet_with_null_audience(self):
+        fleet = make_test_fleet("Test fleet", self.user)
+        fleet.audience = None
+        fleet.save()
+
+        response = self.client.get(
+            f"{BASE_URL}/{fleet.id}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertIsNone(response.json()["audience"])
+
     def test_create_fleet_with_objective(self):
         setup_fc(self.user)
         audience = EveFleetAudience.objects.first()
@@ -409,6 +446,30 @@ class FleetRouterTestCase(TestCase):
         updated_fleet = EveFleet.objects.filter(id=fleet.id).first()
 
         self.assertEqual("Updated", updated_fleet.description)
+
+    @patch("fleets.endpoints.fleet.patch_fleet.try_refresh_active_fleet_motd")
+    def test_patch_fleet_doctrine_refreshes_motd(self, refresh_mock):
+        self.user.is_superuser = True
+        self.user.save()
+
+        doctrine = EveDoctrine.objects.create(
+            name="Test Doctrine",
+            type="non_strategic",
+            description="A test doctrine",
+        )
+        fleet = make_test_fleet("Test fleet", self.user)
+
+        response = self.client.patch(
+            f"{BASE_URL}/{fleet.id}",
+            {"doctrine_id": doctrine.id},
+            "application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(doctrine.id, response.json()["doctrine_id"])
+        refresh_mock.assert_called_once()
+        self.assertEqual(fleet.id, refresh_mock.call_args[0][0].id)
 
     def test_fixup_fleet_status(self):
         self.assertEqual(None, fixup_fleet_status(None, None))
@@ -568,6 +629,121 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual(400, response.status_code)
         error = response.json()
         self.assertEqual("Not currently in a fleet", error["detail"])
+
+    @patch("fleets.models.EsiClient")
+    @patch("fleets.models.discord")
+    def test_start_fleet_rejects_non_commander(self, discord_mock, esi_mock):
+        char_id = setup_fc(self.user)
+        fleet = make_test_fleet("Test", self.user)
+        fleet.disable_motd = True
+        fleet.save()
+
+        owner = User.objects.create(username="real_fc")
+        owner_fleet = make_test_fleet("Owner fleet", owner)
+        existing = EveFleetInstance.objects.create(
+            id=987654,
+            eve_fleet=owner_fleet,
+            boss_id=9999,
+        )
+
+        esi_mock_instance = esi_mock.return_value
+        esi_mock_instance.get_active_fleet.return_value = EsiResponse(
+            response_code=200,
+            data={
+                "fleet_id": existing.id,
+                "fleet_boss_id": 9999,
+                "role": "squad_member",
+            },
+        )
+
+        response = self.client.post(
+            f"{BASE_URL}/{fleet.id}/tracking",
+            data=None,
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(400, response.status_code)
+        self.assertEqual(
+            "Must be the fleet commander of your in-game fleet",
+            response.json()["detail"],
+        )
+
+        existing.refresh_from_db()
+        self.assertEqual(owner_fleet.id, existing.eve_fleet_id)
+        self.assertEqual(9999, existing.boss_id)
+        self.assertNotEqual(char_id, existing.boss_id)
+
+    @patch("fleets.models.EsiClient")
+    @patch("fleets.models.discord")
+    def test_start_fleet_now_as_commander(self, discord_mock, esi_mock):
+        char_id = setup_fc(self.user)
+
+        esi_mock_instance = esi_mock.return_value
+        esi_mock_instance.get_active_fleet.return_value = EsiResponse(
+            response_code=200,
+            data={
+                "fleet_id": 555666,
+                "fleet_boss_id": char_id,
+                "role": "fleet_commander",
+            },
+        )
+        esi_mock_instance.update_fleet_details.return_value = EsiResponse(
+            response_code=204, data={}
+        )
+
+        response = self.client.post(
+            f"{BASE_URL}/start-now",
+            {},
+            "application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        fleet_id = response.json()["id"]
+        instance = EveFleetInstance.objects.get(id=555666)
+        self.assertEqual(fleet_id, instance.eve_fleet_id)
+        self.assertEqual(char_id, instance.boss_id)
+
+    @patch("fleets.models.EsiClient")
+    @patch("fleets.models.discord")
+    def test_start_fleet_now_rejects_non_commander(
+        self, discord_mock, esi_mock
+    ):
+        setup_fc(self.user)
+
+        owner = User.objects.create(username="real_fc")
+        owner_fleet = make_test_fleet("Owner fleet", owner)
+        existing = EveFleetInstance.objects.create(
+            id=555666,
+            eve_fleet=owner_fleet,
+            boss_id=9999,
+        )
+
+        esi_mock_instance = esi_mock.return_value
+        esi_mock_instance.get_active_fleet.return_value = EsiResponse(
+            response_code=200,
+            data={
+                "fleet_id": existing.id,
+                "fleet_boss_id": 9999,
+                "role": "squad_member",
+            },
+        )
+
+        fleets_before = EveFleet.objects.count()
+        response = self.client.post(
+            f"{BASE_URL}/start-now",
+            {},
+            "application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(400, response.status_code)
+        self.assertEqual(
+            "Must be the fleet commander of your in-game fleet",
+            response.json()["detail"],
+        )
+        self.assertEqual(fleets_before, EveFleet.objects.count())
+
+        existing.refresh_from_db()
+        self.assertEqual(owner_fleet.id, existing.eve_fleet_id)
 
     @patch("fleets.models.EsiClient")
     @patch("fleets.models.discord")
@@ -752,17 +928,18 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual(403, response.status_code)
 
     def test_get_fleet_requires_view_evefleet(self):
-        fc_only = User.objects.create(username="fc_only")
-        fleet = make_test_fleet("FC fleet", fc_only)
+        viewer = User.objects.create(username="viewer")
+        fc = User.objects.create(username="fc")
+        fleet = make_test_fleet("FC fleet", fc)
 
-        fc_token = jwt.encode(
-            {"user_id": fc_only.id},
+        viewer_token = jwt.encode(
+            {"user_id": viewer.id},
             settings.SECRET_KEY,
             algorithm="HS256",
         )
         response = self.client.get(
             f"{BASE_URL}/{fleet.id}",
-            HTTP_AUTHORIZATION=f"Bearer {fc_token}",
+            HTTP_AUTHORIZATION=f"Bearer {viewer_token}",
         )
         self.assertEqual(403, response.status_code)
 

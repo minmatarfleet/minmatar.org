@@ -80,7 +80,23 @@ Now, seed the database with development data. This step depends on roles being s
 
 ## Step 4: Start All Services
 
-Run these on your machine (not in Docker). Use separate terminals as needed.
+From the **repo root**, run everything in one terminal:
+
+```sh
+./dev.sh
+```
+
+This starts the API, Celery worker (all queues), Celery Beat, frontend, and mobile. Press **Ctrl+C** to stop all processes.
+
+The Discord bot is not included. Run it separately when needed (from `bot/`, after setting `bot/.env`):
+
+```sh
+pipenv run python main.py
+```
+
+### Individual services
+
+Use these when debugging a single process:
 
 **Backend** (from `backend/`):
 
@@ -104,12 +120,6 @@ pipenv run celery -A app beat -l info
 
 ```sh
 npm run dev
-```
-
-**Discord bot** (from `bot/`, after setting `bot/.env`):
-
-```sh
-pipenv run python main.py
 ```
 
 ---

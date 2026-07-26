@@ -126,6 +126,14 @@ class UserAffiliationTestCase(TestCase):
         character.save()
         user_affiliation.delete()
 
+        # qualify by specific character
+        affiliation_type.characters.add(character)
+        update_affiliations()
+        user_affiliation = UserAffiliation.objects.get(user=user)
+        assert user_affiliation.affiliation == affiliation_type
+        affiliation_type.characters.remove(character)
+        user_affiliation.delete()
+
         # remove if not qualified
         character.faction_id = faction.id
         character.save()

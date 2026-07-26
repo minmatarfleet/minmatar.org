@@ -15,7 +15,7 @@ def parse_r2z2_payload(
     payload: dict[str, Any],
 ) -> tuple[dict[str, Any], dict[str, Any], int | None]:
     """Extract (raw_killmail, zkb_meta, sequence_id) from R2Z2 JSON."""
-    raw = payload.get("killmail") or payload
+    raw = payload.get("killmail") or payload.get("esi") or payload
     zkb = payload.get("zkb") or raw.get("zkb") or {}
     sequence_id = payload.get("sequence_id") or payload.get("sequence")
     return raw, zkb, sequence_id

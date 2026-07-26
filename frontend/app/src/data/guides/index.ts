@@ -1,8 +1,8 @@
 import type { GuideMeta, Author } from '@/data/guides/types'
 
+import * as faction_warfare_basics from '@markdown/guides/faction-warfare-basics.md'
 import * as faction_warfare_advantage from '@markdown/guides/faction-warfare-advantage.md'
 import * as faction_warfare_plexing from '@markdown/guides/faction-warfare-plexing.md'
-import * as rendezvous_wolf from '@markdown/guides/rendezvous-wolf.md'
 import * as new_player_fleet_guide from '@markdown/guides/new-player-fleet-guide.md'
 import * as abyssals from '@markdown/guides/abyssals.md'
 import * as abyss_duo_jackdaws_t6_dark from '@markdown/guides/abyss-duo-jackdaws-t6-dark.md'
@@ -25,9 +25,9 @@ type GuideModule = {
 }
 
 const guideModules: Record<string, GuideModule> = {
+    'faction-warfare-basics': faction_warfare_basics,
     'faction-warfare-advantage': faction_warfare_advantage,
     'faction-warfare-plexing': faction_warfare_plexing,
-    'rendezvous-wolf': rendezvous_wolf,
     'new-player-fleet-guide': new_player_fleet_guide,
     'abyssals': abyssals,
     'abyss-duo-jackdaws-t6-dark': abyss_duo_jackdaws_t6_dark,
@@ -42,12 +42,71 @@ const guideModules: Record<string, GuideModule> = {
 
 export const guideCategories = ["Faction Warfare","PVP","PVE","Utility"] as const
 
+/** Preferred subsection order within a category (index page). */
+export const guideSectionsByCategory: Partial<Record<(typeof guideCategories)[number], readonly string[]>> = {
+    "Faction Warfare": ["Mechanics", "Ships"],
+}
+
 export const guides: GuideMeta[] = [
     {
-        slug: "navy-destroyer-metagame",
-        title: "The Navy Destroyer Metagame",
-        excerpt: "Furl0w's EVE Online navy destroyer metagame guide: Navy Issue fits, 1v1 matchup charts, and solo faction warfare plex tactics.",
+        slug: "faction-warfare-basics",
+        title: "Faction Warfare Basics",
+        excerpt: "An overview of the basic mechanics of faction warfare in EVE Online.",
         category: "Faction Warfare",
+        section: "Mechanics",
+        author: "BearThatCares",
+        authors: [{
+            name: "BearThatCares",
+            id: 634915984,
+            entity: 'character',
+        }],
+    },
+    {
+        slug: "faction-warfare-plexing",
+        title: "Faction Warfare Complexes",
+        excerpt: "An in-depth breakdown for capturing complexes in faction warfare space",
+        category: "Faction Warfare",
+        section: "Mechanics",
+        author: "BearThatCares",
+        authors: [{
+            name: "BearThatCares",
+            id: 634915984,
+            entity: 'character',
+        }],
+    },
+    {
+        slug: "faction-warfare-advantage",
+        title: "Faction Warfare Advantage",
+        excerpt: "An in-depth breakdown for advantage in faction warfare.",
+        category: "Faction Warfare",
+        section: "Mechanics",
+        author: "A'Songala",
+        authors: [{
+            name: "A'Songala",
+            id: 2120647389,
+            entity: 'character',
+        }],
+    },
+    {
+        slug: "faction-warfare-cruiser-guide",
+        title: "Faction Warfare Cruiser Guide",
+        excerpt: "Fittings, roles, and 1v1 matchups for cruisers in faction warfare.",
+        category: "Faction Warfare",
+        section: "Ships",
+        author: "Dato Koppla",
+        authors: [{
+            name: "Dato Koppla",
+            id: 1761145024,
+            entity: 'character',
+        }],
+        path: "/guides/faction-warfare-cruiser-guide/",
+    },
+    {
+        slug: "navy-destroyer-metagame",
+        title: "Faction Warfare Destroyer Guide",
+        excerpt: "Fittings, roles, and 1v1 matchups for destroyers in faction warfare.",
+        category: "Faction Warfare",
+        section: "Ships",
         author: "Furl0w",
         authors: [{
             name: "Furl0w",
@@ -57,41 +116,18 @@ export const guides: GuideMeta[] = [
         path: "/guides/navy-destroyer-metagame/",
     },
     {
-        slug: "faction-warfare-advantage",
-        title: "Faction Warfare Advantage",
-        excerpt: "How EVE Online faction warfare advantage works and how to build it via plexing, rendezvous sites, and battlefields.",
+        slug: "navy-frigate-guide",
+        title: "Faction Warfare Frigate Guide",
+        excerpt: "Fittings, roles, and 1v1 matchups for frigates in faction warfare.",
         category: "Faction Warfare",
-        author: "A'Songala",
+        section: "Ships",
+        author: "BearThatCares",
         authors: [{
-            name: "A'Songala",
-            id: 2120647389,
+            name: "BearThatCares",
+            id: 634915984,
             entity: 'character',
         }],
-    },
-    {
-        slug: "faction-warfare-plexing",
-        title: "Faction Warfare Complexes",
-        excerpt: "EVE Online FW plexing guide: complex sizes, O-plex vs D-plex, ship limits, LP payouts, and victory points.",
-        category: "Faction Warfare",
-        author: "Minmatar Fleet",
-        authors: [{
-            name: "Minmatar Fleet",
-            id: 99011978,
-            entity: 'alliance',
-        }],
-    },
-    {
-        slug: "rendezvous-wolf",
-        title: "Rendezvous sites in an AC Wolf",
-        excerpt: "Run Amarr Rendezvous sites with a PvE-fit autocannon Wolf assault frigate.",
-        category: "Faction Warfare",
-        author: "Buppas",
-        authors: [{
-            name: "Buppas",
-            id: 140971074,
-            entity: 'character',
-        }],
-        hiddenFromIndex: true,
+        path: "/guides/navy-frigate-guide/",
     },
     {
         slug: "new-player-fleet-guide",
@@ -203,10 +239,6 @@ export const guides: GuideMeta[] = [
             name: "Bobb Bobbington",
             id: 93613873,
             entity: 'character',
-        }, {
-            name: "Silvatek",
-            id: 2119722788,
-            entity: 'character',
         }],
     },
     {
@@ -240,4 +272,37 @@ export function getGuidesByCategory(): Record<string, GuideMeta[]> {
         grouped[category] = getIndexedGuides().filter((guide) => guide.category === category)
     }
     return grouped
+}
+
+export type GuideCategorySection = {
+    label: string | null
+    guides: GuideMeta[]
+}
+
+/** Split a category's guides into ordered subsections (Mechanics / Ships / …). */
+export function getGuideSectionsForCategory(
+    category: (typeof guideCategories)[number],
+    categoryGuides: GuideMeta[],
+): GuideCategorySection[] {
+    const preferred = guideSectionsByCategory[category]
+    if (!preferred?.length) {
+        return [{ label: null, guides: categoryGuides }]
+    }
+
+    const used = new Set<string>()
+    const sections: GuideCategorySection[] = []
+
+    for (const label of preferred) {
+        const guides = categoryGuides.filter((guide) => guide.section === label)
+        if (!guides.length) continue
+        for (const guide of guides) used.add(guide.slug)
+        sections.push({ label, guides })
+    }
+
+    const remainder = categoryGuides.filter((guide) => !used.has(guide.slug))
+    if (remainder.length) {
+        sections.push({ label: null, guides: remainder })
+    }
+
+    return sections.length ? sections : [{ label: null, guides: categoryGuides }]
 }

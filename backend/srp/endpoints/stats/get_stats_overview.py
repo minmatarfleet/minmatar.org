@@ -1,5 +1,6 @@
 """GET overview — pending SRP queue and average approval latency (last 90 days)."""
 
+from groups.helpers.feature_access import require_feature
 from typing import Optional
 
 from django.db.models import Count, Sum
@@ -27,10 +28,9 @@ ROUTE_SPEC = {
 
 
 def get_srp_stats_overview(request):
-    if not request.user.has_perm("srp.view_evefleetshipreimbursement"):
-        return 403, {
-            "detail": "User missing permission srp.view_evefleetshipreimbursement"
-        }
+    denied = require_feature(request.user, "srp.view")
+    if denied:
+        return denied
 
     denied = require_current_srp_onboarding(request)
     if denied:

@@ -189,11 +189,18 @@ import Markdown from '@components/blocks/Markdown.astro';
                         ]
 
                         let timer = setInterval(cameraBounce, this.CAMERA_ROTATION_TIMER_MS, modelViewer, orbitCycle)
+                        let sound = new Audio('/sounds/cat.mp3')
+                        sound.loop = true
+                        sound.play()
 
                         function clearTimer(event) {
                             console.log('clearing timer')
                             clearInterval(timer)
                             event.currentTarget.removeEventListener('astro:after-swap', clearTimer)
+                            sound.pause()
+                            sound.removeAttribute('src')
+                            sound.load()
+                            sound = null
                         }
 
                         document.addEventListener('astro:after-swap', clearTimer)

@@ -1,20 +1,20 @@
-"""GET "" - list all industry products with type, strategy, volume, relations, producers."""
+"""GET "" - list all industry products with type, strategy, volume, relations.
+
+Producers are loaded separately via GET /products/{id} (lazy on the products page).
+"""
 
 from typing import List
 
 from industry.endpoints.products.schemas import (
-    CharacterProducerRef,
-    CorporationProducerRef,
     IndustryProductListItem,
     IndustryProductRef,
 )
-from industry.helpers.producers import get_producers_for_types
 from industry.models import IndustryProduct
 
 PATH = ""
 METHOD = "get"
 ROUTE_SPEC = {
-    "summary": "List all industry products with strategy, volume, relations, character/corp producers",
+    "summary": "List all industry products with strategy, volume, and relations (no producers)",
     "response": {200: List[IndustryProductListItem]},
 }
 
@@ -34,8 +34,6 @@ def get_products(request):
         .prefetch_related("supplied_for__eve_type", "supplies__eve_type")
         .order_by("eve_type__name")
     )
-    type_ids = [p.eve_type_id for p in products]
-    producers_by_type = get_producers_for_types(type_ids)
     return [
         IndustryProductListItem(
             id=p.pk,
@@ -46,26 +44,6 @@ def get_products(request):
             blueprint_or_reaction_type_id=p.blueprint_or_reaction_type_id,
             supplied_for=_refs(p.supplied_for.all()),
             supplies=_refs(p.supplies.all()),
-            character_producers=[
-                CharacterProducerRef(
-                    id=c["id"],
-                    name=c["name"],
-                    total_value_isk=c.get("total_value_isk", 0.0),
-                )
-                for c in producers_by_type.get(p.eve_type_id, {}).get(
-                    "character_producers", []
-                )
-            ],
-            corporation_producers=[
-                CorporationProducerRef(
-                    id=c["id"],
-                    name=c["name"],
-                    total_value_isk=c.get("total_value_isk", 0.0),
-                )
-                for c in producers_by_type.get(p.eve_type_id, {}).get(
-                    "corporation_producers", []
-                )
-            ],
         )
         for p in products
     ]

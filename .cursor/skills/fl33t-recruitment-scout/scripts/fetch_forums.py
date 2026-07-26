@@ -32,13 +32,20 @@ def fetch_forum_latest(
     seen_ids: set[int] = set()
 
     for page in range(max_pages):
+        # Discourse needs slug + category id, e.g. corporations-alliances/recruitment-center/63
         resp = requests.get(
             f"https://forums.eveonline.com/c/{category}/l/latest.json",
             params={"page": page},
             timeout=20,
             headers={"User-Agent": user_agent},
+            allow_redirects=True,
         )
         if resp.status_code != 200:
+            if page == 0:
+                raise RuntimeError(
+                    f"forums fetch failed HTTP {resp.status_code} for category "
+                    f"{category!r} (check config forums.recruitment_center_category)"
+                )
             break
 
         topic_list = resp.json().get("topic_list", {})

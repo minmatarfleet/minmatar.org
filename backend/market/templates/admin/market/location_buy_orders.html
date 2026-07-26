@@ -1,0 +1,74 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  {% include "admin/market/_market_styles.html" %}
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate "Home" %}</a>
+  &rsaquo; <a href="{% url 'admin:market_locations' %}">{% translate "Market locations" %}</a>
+  &rsaquo; <a href="{% url 'admin:market_location_hub' location.pk %}">{{ location.location_name }}</a>
+  &rsaquo; {% translate "Configure buy orders" %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  {% include "admin/market/_learn_more_start.html" %}
+    <p>
+      {% blocktranslate trimmed %}
+      Set how much volume members should post as buy orders for each item.
+      <strong>Target volume</strong> is what you want listed;
+      <strong>Listed now</strong> is what is on the market today.
+      {% endblocktranslate %}
+    </p>
+  {% include "admin/market/_learn_more_end.html" %}
+
+  <p>
+    <a href="{{ add_url }}">{% translate "Add buy order target" %}</a>
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>{% translate "Item" %}</th>
+        <th>{% translate "Target volume" %}</th>
+        <th>{% translate "Listed now" %}</th>
+        <th>{% translate "Highest buy" %}</th>
+        <th>{% translate "Location buy / sell" %}</th>
+        <th>{% translate "Jita price" %}</th>
+        <th>{% translate "Who is buying" %}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>{{ row.item_name }}</td>
+        <td>{{ row.expected_qty }}</td>
+        <td>{{ row.current_qty }}</td>
+        <td>{{ row.highest_buy|default:"—" }}</td>
+        <td>{{ row.location_buy|default:"—" }} / {{ row.location_sell|default:"—" }}</td>
+        <td>{{ row.jita_price|default:"—" }}</td>
+        <td>{{ row.issuers|join:", " }}</td>
+        <td>
+          <a href="{{ row.edit_url }}">{% translate "Edit" %}</a>
+          · <a href="{{ row.history_url }}">{% translate "Price history" %}</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="8">
+          {% translate "No buy order targets yet. Add one to track an item members should buy from the market." %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

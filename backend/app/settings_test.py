@@ -34,9 +34,21 @@ CSRF_TRUSTED_ORIGINS = [
     "https://minmatar.org",
 ]
 BROKER_URL = os.environ.get("BROKER_URL", "redis://localhost:6379/1")
+TESTING = True
 CELERYBEAT_SCHEDULER = "django_celery_beat.schedulers.DatabaseScheduler"
 
+# Run Celery tasks inline in tests — no Redis broker or worker required.
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
+
 WEB_LINK_URL = os.environ.get("WEB_LINK_URL", "https://my.minmatar.org")
+
+CORS_ALLOWED_ORIGINS = [
+    WEB_LINK_URL.rstrip("/"),
+    "http://localhost:4321",
+    "https://my.minmatar.org",
+    "https://minmatar.org",
+]
 
 # DISCORD
 DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
@@ -69,9 +81,6 @@ DISCORD_FLEET_SCHEDULE_MESSAGE_ID = int(
 DISCORD_STRUCTURE_PINGS_CHANNEL_ID = int(
     os.environ.get("DISCORD_STRUCTURE_PINGS_CHANNEL_ID", 1270780039272595549)
 )
-DISCORD_SUPPLY_CHANNEL_ID = int(
-    os.environ.get("DISCORD_SUPPLY_CHANNEL_ID", 1174095138197340300)
-)
 DISCORD_INDUSTRY_CHANNEL_ID = int(
     os.environ.get("DISCORD_INDUSTRY_CHANNEL_ID", 1062178037875081226)
 )
@@ -85,6 +94,13 @@ ESI_SERVER_ERROR_MAX_RETRIES = 0  # 0 means no retries
 ESI_USER_CONTACT_EMAIL = os.environ.get(
     "ESI_USER_CONTACT_EMAIL", "admin@minmatar.org"
 )
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "test-unique-snowflake",
+    }
+}
 
 # MUMBLE
 MUMBLE_MURMUR_HOST = os.environ.get("MUMBLE_MURMUR_HOST", "")

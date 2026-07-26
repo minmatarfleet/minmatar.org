@@ -13,14 +13,23 @@ from tribes.models import (
     TribeGroup,
     TribeGroupMembership,
     TribeGroupMembershipHistory,
+    TribeGroupRank,
 )
 
 
 def setUpModule():
-    """Disconnect the Discord group-change signal that requires a linked DiscordUser."""
+    """Disconnect Discord signals that hit the live API during tests."""
     # pylint: disable-next=import-outside-toplevel
-    from discord.signals import user_group_changed  # noqa: PLC0415
+    from discord.signals import (
+        group_post_save,
+        user_group_changed,
+    )  # noqa: PLC0415
 
+    django_signals.post_save.disconnect(
+        group_post_save,
+        sender=Group,
+        dispatch_uid="group_post_save",
+    )
     django_signals.m2m_changed.disconnect(
         user_group_changed,
         sender=User.groups.through,
@@ -128,3 +137,68 @@ class MembershipSignalTestCase(TestCase):
 
         self.assertNotIn(self.group_auth_group, self.user.groups.all())
         self.assertNotIn(self.tribe_auth_group, self.user.groups.all())
+
+
+class MembershipRankSignalTestCase(TestCase):
+    def setUp(self):
+        self.tribe = Tribe.objects.create(name="Pulse", slug="pulse")
+        self.tribe_group = TribeGroup.objects.create(
+            tribe=self.tribe,
+            name="Fleet Commanders",
+            code="pulse.fleet-commanders",
+        )
+        self.strategic_group = Group.objects.create(name="Strategic FC")
+        self.skirmish_group = Group.objects.create(name="Skirmish FC")
+        self.strategic_rank = TribeGroupRank.objects.create(
+            tribe_group=self.tribe_group,
+            code="strategic",
+            name="Strategic FC",
+            group=self.strategic_group,
+        )
+        TribeGroupRank.objects.create(
+            tribe_group=self.tribe_group,
+            code="skirmish",
+            name="Skirmish FC",
+            group=self.skirmish_group,
+        )
+        self.user = User.objects.create_user(username="fc")
+        self.membership = TribeGroupMembership.objects.create(
+            user=self.user,
+            tribe_group=self.tribe_group,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+
+    def test_setting_rank_adds_linked_auth_group(self):
+        self.membership.rank = self.strategic_rank
+        self.membership.save()
+
+        self.assertIn(self.strategic_group, self.user.groups.all())
+
+    def test_changing_rank_swaps_auth_groups(self):
+        self.membership.rank = self.strategic_rank
+        self.membership.save()
+        self.membership.rank = TribeGroupRank.objects.get(
+            tribe_group=self.tribe_group, code="skirmish"
+        )
+        self.membership.save()
+
+        self.assertNotIn(self.strategic_group, self.user.groups.all())
+        self.assertIn(self.skirmish_group, self.user.groups.all())
+
+    def test_clearing_rank_removes_rank_auth_groups(self):
+        self.membership.rank = self.strategic_rank
+        self.membership.save()
+        self.membership.rank = None
+        self.membership.save()
+
+        self.assertNotIn(self.strategic_group, self.user.groups.all())
+
+    def test_inactive_membership_removes_rank_auth_groups(self):
+        self.membership.rank = self.strategic_rank
+        self.membership.save()
+        self.membership.status = TribeGroupMembership.STATUS_INACTIVE
+        self.membership.left_at = timezone.now()
+        self.membership.history_inactive_reason = "removed"
+        self.membership.save()
+
+        self.assertNotIn(self.strategic_group, self.user.groups.all())

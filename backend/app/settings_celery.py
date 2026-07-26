@@ -28,7 +28,7 @@ CELERYBEAT_MARKET = [
         "[Market] Fetch Structure Sell Orders",
         {
             "task": "market.tasks.fetch_structure_sell_orders",
-            "schedule": crontab(minute=33, hour="*/4"),
+            "schedule": schedule(timedelta(minutes=15)),
         },
     ),
     (
@@ -44,13 +44,6 @@ CELERYBEAT_MARKET = [
             "task": "market.tasks.fetch_market_item_history",
             "schedule": crontab(minute=15, hour=12),
             "options": {"queue": "market"},
-        },
-    ),
-    (
-        "[Market] Low Stock Warnings",
-        {
-            "task": "market.tasks.notify_eve_market_contract_warnings",
-            "schedule": crontab(minute=0, hour=14, day_of_week=1),
         },
     ),
     (
@@ -136,13 +129,27 @@ CELERYBEAT_CORPORATIONS = [
     ),
 ]
 
-# Industry (order assignees' jobs from ESI)
+# Industry (order assignees' jobs from ESI + cost-index cache)
 CELERYBEAT_INDUSTRY = [
     (
         "[Industry] Sync Jobs for Order Assignees",
         {
             "task": "industry.tasks.sync_industry_jobs_for_order_assignees",
             "schedule": crontab(minute=5, hour="*/4"),
+        },
+    ),
+    (
+        "[Industry] Sync System Cost Indices",
+        {
+            "task": "industry.tasks.sync_industry_system_cost_indices_task",
+            "schedule": crontab(minute=20),
+        },
+    ),
+    (
+        "[Industry] Reconcile Contract Associations",
+        {
+            "task": "industry.tasks.reconcile_industry_contract_associations_task",
+            "schedule": crontab(minute=35, hour="*/2"),
         },
     ),
 ]
@@ -199,6 +206,13 @@ CELERYBEAT_TRIBES = [
 
 # Misc (Celery, Fleets, ESI, Reminders, Reddit, Discord, Mumble)
 CELERYBEAT_OTHER = [
+    (
+        "[Misc] Sync executor access lists",
+        {
+            "task": "access_lists.tasks.sync_executor_access_lists_task",
+            "schedule": crontab(minute=20, hour="*/6"),
+        },
+    ),
     (
         "[Misc] Backend Cleanup",
         {
@@ -306,7 +320,7 @@ CELERYBEAT_FEED = [
         "[Feed] Poll zKill R2Z2",
         {
             "task": "feed.tasks.poll_zkill_r2z2",
-            "schedule": schedule(timedelta(seconds=15)),
+            "schedule": schedule(timedelta(seconds=7)),
             "options": {"queue": "celery"},
         },
     ),

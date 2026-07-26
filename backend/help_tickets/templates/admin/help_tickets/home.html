@@ -1,0 +1,163 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  {% include "admin/help_tickets/_styles.html" %}
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate "Home" %}</a>
+  &rsaquo; {% translate "Help tickets" %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  {% include "admin/help_tickets/_learn_more_start.html" %}
+    <p>
+      {% blocktranslate trimmed %}
+      Manage the #help Discord panel, the categories pilots can pick from, and
+      the ticket threads created from those selections.
+      {% endblocktranslate %}
+    </p>
+  {% include "admin/help_tickets/_learn_more_end.html" %}
+
+  <section class="help-section">
+    <div class="help-section-header">
+      <h2>{% translate "Discord panel" %}</h2>
+      <a href="{{ panel_edit_url }}" class="help-btn help-btn--primary">{% translate "Configure panel" %}</a>
+    </div>
+    <p class="help-section-desc">
+      {% blocktranslate trimmed %}
+      The panel is the dropdown message posted in #help. Categories shown here
+      must match what is deployed — if the hash is out of date, redeploy the
+      panel from the bot after saving category changes.
+      {% endblocktranslate %}
+    </p>
+    <div class="help-settings-panel">
+      <div class="help-settings-panel__item">
+        <span class="help-settings-panel__label">{% translate "Channel ID" %}</span>
+        <span class="help-settings-panel__value">{{ panel.channel_id|default:"—" }}</span>
+      </div>
+      <div class="help-settings-panel__item">
+        <span class="help-settings-panel__label">{% translate "Message ID" %}</span>
+        <span class="help-settings-panel__value">{{ panel.message_id|default:"—" }}</span>
+      </div>
+      <div class="help-settings-panel__item">
+        <span class="help-settings-panel__label">{% translate "Deployed hash" %}</span>
+        <span class="help-settings-panel__value">{{ panel.content_hash|default:"—"|truncatechars:16 }}</span>
+      </div>
+      <div class="help-settings-panel__item">
+        <span class="help-settings-panel__label">{% translate "Panel status" %}</span>
+        <span class="help-settings-panel__value{% if panel_is_stale %} help-settings-panel__value--warn{% else %} help-settings-panel__value--ok{% endif %}">
+          {% if panel_is_stale %}{% translate "Needs redeploy" %}{% else %}{% translate "Up to date" %}{% endif %}
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <section class="help-section">
+    <div class="help-section-header">
+      <h2>{% translate "Categories" %}</h2>
+      <a href="{{ add_category_url }}" class="help-btn help-btn--primary">{% translate "Add category" %}</a>
+    </div>
+    <p class="help-section-desc">
+      {% blocktranslate trimmed %}
+      Each category is an option in the #help dropdown (e.g. "Contact the
+      freighter team"). Link a tribe group to route tickets to that group's
+      chief, or assign specific users to @mention when a ticket opens.
+      {% endblocktranslate %}
+    </p>
+    <table class="help-data-table">
+      <thead>
+        <tr>
+          <th>{% translate "Category" %}</th>
+          <th>{% translate "Section" %}</th>
+          <th>{% translate "Tribe group" %}</th>
+          <th>{% translate "Open" %}</th>
+          <th>{% translate "Active" %}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in category_rows %}
+        <tr>
+          <td><strong>{{ row.category.title }}</strong></td>
+          <td>
+            {% if row.category.section %}
+              {{ row.category.section }}
+            {% elif row.category.tribe_group %}
+              {{ row.category.tribe_group.tribe.name }}
+            {% else %}
+              {% translate "General" %}
+            {% endif %}
+          </td>
+          <td>{{ row.category.tribe_group|default:"—" }}</td>
+          <td>{{ row.open_count }}</td>
+          <td>{% if row.category.is_active %}{% translate "yes" %}{% else %}{% translate "no" %}{% endif %}</td>
+          <td><a href="{{ row.hub_url }}" class="help-btn help-btn--primary">{% translate "Open" %}</a></td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">{% translate "No categories yet." %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="help-section">
+    <div class="help-section-header">
+      <h2>{% translate "Tickets" %}</h2>
+      <a href="{{ all_tickets_url }}" class="help-btn help-btn--secondary">{% translate "View all tickets" %}</a>
+    </div>
+    <p class="help-section-desc">
+      {% blocktranslate trimmed %}
+      Discord threads created when a pilot picks a category. Each ticket stores
+      the thread, opener, status, and close reason.
+      {% endblocktranslate %}
+    </p>
+    <table class="help-data-table">
+      <thead>
+        <tr>
+          <th>{% translate "Thread" %}</th>
+          <th>{% translate "Category" %}</th>
+          <th>{% translate "Status" %}</th>
+          <th>{% translate "Opened" %}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in ticket_rows %}
+        <tr>
+          <td><strong>{{ row.ticket.thread_name }}</strong></td>
+          <td>{{ row.ticket.category.title }}</td>
+          <td>
+            <span class="help-status--{{ row.ticket.status }}">
+              {{ row.ticket.get_status_display }}
+            </span>
+          </td>
+          <td>{{ row.ticket.opened_at }}</td>
+          <td><a href="{{ row.edit_url }}" class="help-btn help-btn--secondary">{% translate "View" %}</a></td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5">{% translate "No tickets yet." %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if tickets_truncated %}
+    <p class="help-section-note">
+      {% blocktranslate trimmed %}
+      Showing the 100 most recent tickets. Use "View all tickets" for the full list.
+      {% endblocktranslate %}
+    </p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

@@ -16,14 +16,12 @@ from eveonline.models import (
     EveCorporationIndustryJob,
     EvePlayer,
 )
+from industry.endpoints.blueprints.job_status import CURRENT_JOB_STATUSES
 from industry.endpoints.blueprints.schemas import (
     BlueprintDetailResponse,
     BlueprintIndustryJobResponse,
     BlueprintOwnerResponse,
 )
-
-# ESI industry job statuses that are not yet finished (product not delivered / job not closed).
-_CURRENT_JOB_STATUSES = frozenset({"active", "paused", "ready"})
 
 PATH = "{int:item_id}"
 METHOD = "get"
@@ -141,7 +139,7 @@ def _split_current_historical(
     current: List[BlueprintIndustryJobResponse] = []
     historical: List[BlueprintIndustryJobResponse] = []
     for j in jobs:
-        if j.status in _CURRENT_JOB_STATUSES:
+        if j.status in CURRENT_JOB_STATUSES:
             current.append(j)
         else:
             historical.append(j)
@@ -214,6 +212,8 @@ def get_blueprint(request, item_id: int):
         runs=bp.runs,
         is_original=bp.quantity == -1,
         owner=owner,
+        in_job=bool(current_jobs),
+        activity_id=current_jobs[0].activity_id if current_jobs else None,
         current_jobs=current_jobs,
         historical_jobs=historical_jobs,
     )

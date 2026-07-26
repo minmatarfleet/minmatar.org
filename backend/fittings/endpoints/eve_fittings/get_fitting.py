@@ -18,6 +18,8 @@ def get_fitting(request, fitting_id: int):
         return 404, ErrorResponse(
             detail=f"Fitting not found: {fitting_id}",
         )
-    fitting = EveFitting.objects.prefetch_related("refits").get(id=fitting_id)
+    fitting = EveFitting.objects.prefetch_related("refits", "tags").get(
+        id=fitting_id
+    )
     fitting_response = make_fitting_response(fitting)
     return fitting_response

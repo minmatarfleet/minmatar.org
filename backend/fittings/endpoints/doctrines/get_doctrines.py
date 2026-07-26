@@ -16,6 +16,7 @@ ROUTE_SPEC = {
 def get_doctrines(request):
     doctrines = EveDoctrine.objects.prefetch_related(
         "evedoctrinefitting_set__fitting__refits",
+        "evedoctrinefitting_set__fitting__tags",
     )
     response = []
     for doctrine in doctrines:

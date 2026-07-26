@@ -42,6 +42,13 @@ export interface TribeRequirement {
     qualifying_skills:      TribeQualifyingSkill[];
 }
 
+export interface TribeGroupRank {
+    id:         number;
+    code:       string;
+    name:       string;
+    sort_order: number;
+}
+
 export interface TribeGroup {
     id:                     number;
     tribe_id:               number;
@@ -55,6 +62,7 @@ export interface TribeGroup {
     is_active:              boolean;
     member_count:           number;
     requirements:           TribeRequirement[];
+    ranks?:                 TribeGroupRank[];
 }
 
 export interface Tribe {
@@ -110,6 +118,9 @@ export interface TribeMembership {
     tribe_group_name:       string;
     tribe_id:               number;
     status:                 TribeMembershipStatus;
+    rank_id:                number | null;
+    rank_code:              string | null;
+    rank_name:              string | null;
     inactive_reason:        string | null;
     requirement_snapshot:   Record<string, unknown> | null;
     created_at:             string;
@@ -377,17 +388,71 @@ export interface CharacterAsset {
 export type FittingTagSlug =
     | 'highsec'
     | 'industry'
-    | 'lowsec'
     | 'nullsec'
     | 'faction_warfare'
-    | 'solo'
     | 'nanogang'
     | 'fleet_composition'
     | 'new_player_friendly'
-    | 'budget'
     | 'capitals'
     | 'command_bursts'
     | 'escape_frigate'
+
+export type KnownFittingKey =
+    | 'guide.navy-destroyer.cat-blaster'
+    | 'guide.navy-destroyer.cat-10mn'
+    | 'guide.navy-destroyer.coercer-dual-neuts-mwd'
+    | 'guide.navy-destroyer.coercer-mwd-scram-brawl'
+    | 'guide.navy-destroyer.coercer-kite-beams'
+    | 'guide.navy-destroyer.tfi-ac'
+    | 'guide.navy-destroyer.tfi-arty'
+    | 'guide.navy-destroyer.corm-dual-masb-neutrons'
+    | 'guide.navy-destroyer.corm-buffer'
+    | 'guide.navy-destroyer.corm-10mn'
+    | 'guide.navy-destroyer.talfi-10mn-rocket'
+    | 'guide.navy-destroyer.algos-10mn'
+    | 'guide.navy-destroyer.algos-brawl'
+    | 'guide.navy-destroyer.algos-farm'
+    | 'guide.navy-destroyer.thrasher-arty'
+    | 'guide.navy-destroyer.thrasher-ac'
+    | 'guide.navy-destroyer.coercer-brawl'
+    | 'guide.navy-destroyer.dragoon-neut'
+    | 'guide.navy-frigate.hookbill-shield'
+    | 'guide.navy-frigate.hookbill-control'
+    | 'guide.navy-frigate.comet-blaster'
+    | 'guide.navy-frigate.comet-rail'
+    | 'guide.navy-frigate.slicer-beam'
+    | 'guide.navy-frigate.firetail-arty'
+    | 'guide.navy-frigate.vigil-web-kite'
+    | 'guide.navy-frigate.tristan-brawl'
+    | 'guide.navy-frigate.breacher-masb'
+    | 'guide.fw-cruiser.arby-long-kite'
+    | 'guide.fw-cruiser.arby-brawl'
+    | 'guide.fw-cruiser.arby-td-support'
+    | 'guide.fw-cruiser.augni-polarized'
+    | 'guide.fw-cruiser.augni-kite-pulse'
+    | 'guide.fw-cruiser.maller-pulse'
+    | 'guide.fw-cruiser.omen-quad-light'
+    | 'guide.fw-cruiser.omen-kite-pulse'
+    | 'guide.fw-cruiser.omen-sniper'
+    | 'guide.fw-cruiser.omenni-mid-kite'
+    | 'guide.fw-cruiser.omenni-mid-sniper'
+    | 'guide.fw-cruiser.caracalni-ham'
+    | 'guide.fw-cruiser.ospreyni-ham-neut'
+    | 'guide.fw-cruiser.ospreyni-rhml-kite'
+    | 'guide.fw-cruiser.eni-blaster'
+    | 'guide.fw-cruiser.eni-250rail'
+    | 'guide.fw-cruiser.eni-dual-plate-electron'
+    | 'guide.fw-cruiser.vexor-neut-plate'
+    | 'guide.fw-cruiser.vexor-blaster-neut'
+    | 'guide.fw-cruiser.vni-dual-rep'
+    | 'guide.fw-cruiser.bellicose-ham'
+    | 'guide.fw-cruiser.bellicose-xlsb'
+    | 'guide.fw-cruiser.scythefi-dual-prop-ac'
+    | 'guide.fw-cruiser.scythefi-rlml-armor'
+    | 'guide.fw-cruiser.scythefi-rlml-xlsb'
+    | 'guide.fw-cruiser.stabber-xlsb'
+    | 'guide.fw-cruiser.stabber-vulcan-kite'
+    | 'guide.fw-cruiser.stabberfi-dual-prop'
 
 export interface Refit {
     id:             number;
@@ -409,6 +474,7 @@ export interface Fitting {
     minimum_pod:        string;
     recommended_pod:    string;
     latest_version:     string;
+    known_key:          KnownFittingKey | null;
     refits:             Refit[];
     tags:               FittingTagSlug[];
 }
@@ -478,6 +544,7 @@ export interface FleetRequest {
 export interface FleetPatchRequest {
     type?:              FleetTypes;
     description?:       string;
+    objective?:         string;
     start_time?:        Date;
     doctrine_id?:       number | null;
     location_id?:       number;
@@ -763,19 +830,12 @@ export interface Contract {
     current_quantity:           number;
     latest_contract_timestamp:  string | null;
     historical_quantity:        History[];
-    responsibilities:           Responsability[];
     doctrines:                  ContractDoctrine[];
 }
 
 export interface History {
     date:       string;
     quantity:   number;
-}
-
-export interface Responsability {
-    entity_type:    string;
-    entity_id:      number;
-    entity_name:    string;
 }
 
 export interface MarketCorporation {
@@ -911,6 +971,7 @@ export interface SummaryCharacter {
     token_status:       ESITokenStatus;
     flags:              CharacterErrors[];
     requested_groups:   string[];
+    actual_groups:      string[];
 }
 
 export interface CharacterESITokens {
@@ -993,8 +1054,9 @@ export interface Product extends ProductBase {
     blueprint_or_reaction_type_id:  number;
     supplied_for:                   ProductBase[];
     supplies:                       ProductBase[];
-    character_producers:            Producer[];
-    corporation_producers:          Producer[]
+    /** Present on GET /products/{id}; omitted from list responses. */
+    character_producers?:           Producer[];
+    corporation_producers?:         Producer[];
 }
 
 /** Planetary (PI) API types */
@@ -1082,6 +1144,51 @@ export interface IndustryOrder {
     assigned_to:        Character[];
 }
 
+export interface OrdersProfitSummaryOrder {
+    id:                 number;
+    public_short_code:  string;
+    needed_by:          string;
+    location_label:     string;
+    fulfilled_at:       string | null;
+    item_count:         number;
+    item_type_ids:      number[];
+    included:           boolean;
+}
+
+export interface OrdersProfitSummaryRow {
+    name:           string;
+    type_id:        number;
+    kind:           string;
+    qty:            number;
+    isk_per_lp:     number | null;
+    cost_per:       number;
+    unit_price:     number;
+    price_source:   string;
+    profit_per:     number;
+    order_profit:   number;
+    note?:          string | null;
+}
+
+export interface OrdersProfitSummaryTotals {
+    total_order_amount: number;
+    total_profit:   number;
+    line_count:     number;
+    total_qty:      number;
+    best_name:      string | null;
+    best_profit:    number | null;
+    worst_name:     string | null;
+    worst_profit:   number | null;
+}
+
+export interface OrdersProfitSummary {
+    orders:         OrdersProfitSummaryOrder[];
+    rows:           OrdersProfitSummaryRow[];
+    totals:         OrdersProfitSummaryTotals;
+    assumptions:    string[];
+    facility_key:   string;
+    compressed:     boolean;
+}
+
 export const freight_contract_statuses = [ 'outstanding', 'in_progress', 'finished'  ] as const
 export type FreightContractStatus = typeof freight_contract_statuses[number]
 
@@ -1130,6 +1237,8 @@ export interface Blueprint {
     time_efficiency:        number;
     runs:                   number;
     owner:                  BlueprintOwner;
+    in_job:                 boolean;
+    activity_id:            number | null;
 }
 
 export type BlueprintIndustryJobSource = 'character' | 'corporation'
@@ -1165,71 +1274,122 @@ export interface BlueprintDetail extends Blueprint {
     historical_jobs:        BlueprintIndustryJob[];
 }
 
-export interface FittingMarketData {
-    fitting_id:             number;
-    fitting_name:           string
-    ship_id:                number;
-    ship_name:              string;
-    role:                   'primary' | 'secondary' | 'support';
-    expectation_quantity:   number | null;
-    current_quantity:       number;
-    doctrine_name?:         string;
-    eft?:                   string;
+export interface OpsMonitorSummary {
+    understocked_contracts:     number;
+    sell_gaps:                  number;
+    contracts_health_pct:       number | null;
+    sell_orders_health_pct:     number | null;
+    sell_orders_viability_pct:  number | null;
+    overall_health_pct:         number | null;
+    contract_targets:           number;
+    contract_fulfilled:         number;
+    sell_order_targets:         number;
+    sell_order_fulfilled:       number;
+    sell_order_viable_fulfilled: number;
+    contracts_isk:              number;
+    sell_orders_isk:            number;
+    total_isk_on_market:        number;
+    sales_history_days:         number;
 }
 
-export interface DoctrineMarketData {
-    doctrine_id:        number;
-    doctrine_name:      string;
-    fittings:           FittingMarketData[];
+export interface OpsMonitor {
+    synced_at:                  string;
+    contracts_synced_at:        string | null;
+    orders_synced_at:           string | null;
+    understocked_contracts:     {
+        location_id:        number;
+        location_name:      string;
+        short_name:         string;
+        fitting_id:         number;
+        fitting_name:       string;
+        ship_id:            number;
+        current_quantity:   number;
+        expected_quantity:  number;
+        shortfall:          number;
+        readiness:          string;
+        expectation_id:     number;
+    }[];
+    sell_gaps: {
+        location_id:        number;
+        location_name:      string;
+        short_name:         string;
+        type_id:            number;
+        item_name:          string;
+        current_quantity:   number;
+        viable_quantity:    number;
+        expected_quantity:  number;
+        shortfall:          number;
+        coverage_gap:       boolean;
+        viability_gap:      boolean;
+        item_type:          string;
+        item_variant:       string;
+        units_1d:           number;
+        units_3d:           number;
+        weekly_units:       number;
+        units_30d:          number;
+        units_90d:          number;
+        avg_markup_pct:     number | null;
+        ships: {
+            ship_id:        number;
+            fitting_name:   string;
+        }[];
+    }[];
+    summary: OpsMonitorSummary;
 }
 
-export interface LocationMarketData {
-    location_id:        number;
-    location_name:      string;
-    solar_system_name:  string;
-    short_name:         string;
-    doctrines:          DoctrineMarketData[];
+export interface OpsMonitorHistoryPoint {
+    id:                             number;
+    captured_at:                    string;
+    location_id:                    number;
+    location_name:                  string;
+    short_name:                     string;
+    trigger:                        string;
+    contracts_health_pct:           number | null;
+    sell_orders_health_pct:         number | null;
+    sell_orders_viability_pct:      number | null;
+    overall_health_pct:             number | null;
+    understocked_contracts_count:   number;
+    sell_gaps_count:                number;
+    contract_targets:               number;
+    contract_fulfilled:             number;
+    sell_order_targets:             number;
+    sell_order_fulfilled:           number;
+    sell_order_viable_fulfilled:    number;
+    contracts_isk:                  number;
+    sell_orders_isk:                number;
+    total_isk_on_market:            number;
+    contracts_synced_at:            string | null;
+    orders_synced_at:               string | null;
+    understocked_contracts:         OpsMonitor['understocked_contracts'];
+    sell_gaps:                      OpsMonitor['sell_gaps'];
 }
 
-export interface LocationFittingExpectation {
-    fitting_id:         number;
-    fitting_name:       string;
-    expectation_id:     number;
-    quantity:           number;
+export interface InferredSalesVolumeBucket {
+    date:   string;
+    units:  number;
 }
 
-export interface LocationExpectations {
-    location_id:            number;
-    location_name:          string;
-    solar_system_name:      string;
-    short_name:             string;
-    expectations:           LocationFittingExpectation[];
+export interface InferredSalesVelocity {
+    long_days:                  number;
+    short_days:                 number;
+    days_of_data:               number;
+    median_daily_units:         number;
+    short_mean_daily_units:     number;
+    total_units:                number;
 }
 
-export interface SellOrderItem {
-    item_name:              string;
-    type_id:                number | null;
-    category_id:            number | null;
-    category_name:          string;
-    group_id:               number | null;
-    group_name:             string;
-    expected_quantity:      number;
-    current_quantity:       number;
-    fulfilled:              boolean;
-    issuer_ids:             number[];
-    current_lowest_price:   number | null;
-    baseline_price:         number | null;
-    baseline_sell_price:    number | null;
-    baseline_buy_price:     number | null;
-    baseline_split_price:   number | null;
+export interface InferredSalesTopMover {
+    type_id:    number;
+    item_name:  string;
+    units:      number;
 }
 
-export interface SellOrderLocation {
-    location_id:        number;
-    location_name:      string;
-    short_name:         string;
-    is_price_baseline:  boolean;
-    items:              SellOrderItem[];
+export interface InferredSalesVolume {
+    location_id:    number;
+    days:           number;
+    buckets:        InferredSalesVolumeBucket[];
+    velocity:       InferredSalesVelocity;
+    top_movers:     InferredSalesTopMover[];
 }
 
 export interface OrderAssignmentsBreakdownItem {
@@ -1257,6 +1417,7 @@ export interface OrderAssignment {
     target_unit_price:          number | null;
     target_estimated_margin:    number | null;
     delivered_at:               Date | null;
+    has_blueprints:             boolean;
 }
 
 export interface RootSingleItem {
@@ -1283,6 +1444,44 @@ export interface IndustrySingleOrder {
     character_name:     string;
     location:           BaseLocation;
     items:              RootSingleItem[];
+    lp_stockpiles:      OrderLpStockpile[];
+    blueprint_coordinators: OrderBlueprintCoordinator[];
+    mineral_coordinators?: OrderBlueprintCoordinator[];
+    pi_coordinators?: OrderBlueprintCoordinator[];
+    mineral_options?: OrderBlueprintCoordinatorEveType[];
+    pi_options?: OrderBlueprintCoordinatorEveType[];
+    profit_breakdown_computed_at?: Date | string | null;
+    can_refresh_profit_breakdown?: boolean;
+}
+
+export interface OrderLpStockpileContact {
+    character_name:     string;
+    discord_user_id:    number | null;
+    discord_username:   string;
+}
+
+export interface OrderLpStockpile {
+    account_id:             number;
+    account_name:           string;
+    loyalty_point_id:       number;
+    loyalty_point_name:     string;
+    corporation_id:         number;
+    balance:                number;
+    contacts:               OrderLpStockpileContact[];
+    character_id?:          number | null;
+    account_corporation_id?: number | null;
+}
+
+export interface OrderBlueprintCoordinatorEveType {
+    eve_type_id:    number;
+    eve_type_name:  string;
+}
+
+export interface OrderBlueprintCoordinator {
+    id:                 number;
+    character_id:       number;
+    character_name:     string;
+    eve_types:          OrderBlueprintCoordinatorEveType[];
 }
 
 export interface FleetMetrics {
@@ -1408,6 +1607,62 @@ export interface OnboardingStatusResponse {
     current_version:        string;
     acknowledged_version:   string | null;
     is_current:             boolean;
+}
+
+export interface PageProgressStatusResponse {
+    page_key:           string;
+    version:            string | null;
+    page_title:         string;
+    read_sections:      string[];
+    missing_sections:   string[];
+    read_count:         number;
+    section_total:      number;
+    percent:            number;
+    is_acknowledged:    boolean;
+}
+
+export interface MarkSectionReadResponse {
+    page_key:           string;
+    section_id:         string;
+    version:            string;
+    created:            boolean;
+    read_count:         number;
+    section_total:      number;
+    percent:            number;
+    is_acknowledged:    boolean;
+}
+
+export interface PageAckResponse {
+    page_key:           string;
+    version:            string;
+    read_count:         number;
+    section_total:      number;
+    percent:            number;
+    is_acknowledged:    boolean;
+    missing_sections:   string[];
+}
+
+export interface PageProgressImportPage {
+    page_key:           string;
+    version:            string;
+    page_title?:        string;
+    section_total?:     number;
+    read_sections:      string[];
+    is_acknowledged?:   boolean;
+}
+
+export interface PageProgressImportResult {
+    page_key:           string;
+    version:            string;
+    read_count:         number;
+    section_total:      number;
+    percent:            number;
+    is_acknowledged:    boolean;
+}
+
+export interface PageProgressImportResponse {
+    imported:           PageProgressImportResult[];
+    skipped:            number;
 }
 
 export interface CharacterMembership {

@@ -20,9 +20,6 @@ from fittings.models import (
     EveDoctrine,
     EveDoctrineFitting,
     EveDoctrineHistory,
-    EveFitting,
-    EveFittingHistory,
-    EveFittingRefit,
 )
 from fleets.models import EveFleetAudience
 from groups.models import AffiliationType
@@ -44,12 +41,10 @@ FIXTURE_FILES = (
     "01_auth_groups.json",
     "02_eve_locations.json",
     "03_affiliation_types.json",
-    "04_fittings.json",
     "05_doctrines.json",
     "06_tribes.json",
     "07_fleet_audiences.json",
     "08_market_expectations.json",
-    "09_nvy_navy_destroyer_fittings.json",
     "10_help_tickets.json",
 )
 
@@ -72,9 +67,6 @@ class ExportBundle:
     auth_groups: list[Group] = field(default_factory=list)
     eve_locations: list[EveLocation] = field(default_factory=list)
     affiliation_types: list[AffiliationType] = field(default_factory=list)
-    fittings: list[EveFitting] = field(default_factory=list)
-    fitting_refits: list[EveFittingRefit] = field(default_factory=list)
-    fitting_history: list[EveFittingHistory] = field(default_factory=list)
     doctrines: list[EveDoctrine] = field(default_factory=list)
     doctrine_fittings: list[EveDoctrineFitting] = field(default_factory=list)
     doctrine_history: list[EveDoctrineHistory] = field(default_factory=list)
@@ -143,19 +135,8 @@ def collect_reference_data(
     )
     bundle.affiliation_types = affiliation_types
 
-    bundle.fittings = list(EveFitting.objects.using(source_db).order_by("pk"))
-    fitting_pks = [f.pk for f in bundle.fittings]
-    bundle.fitting_refits = list(
-        EveFittingRefit.objects.using(source_db)
-        .filter(base_fitting_id__in=fitting_pks)
-        .order_by("pk")
-    )
-    if include_history:
-        bundle.fitting_history = list(
-            EveFittingHistory.objects.using(source_db)
-            .filter(fitting_id__in=fitting_pks)
-            .order_by("pk")
-        )
+    # Fittings / refits / fitting history are intentionally not exported.
+    # Fixture load must not wipe or replace live doctrine fits.
 
     bundle.doctrines = list(
         EveDoctrine.objects.using(source_db)
@@ -234,9 +215,6 @@ def bundle_counts(bundle: ExportBundle) -> dict[str, int]:
         "auth.Group": len(bundle.auth_groups),
         "eveonline.EveLocation": len(bundle.eve_locations),
         "groups.AffiliationType": len(bundle.affiliation_types),
-        "fittings.EveFitting": len(bundle.fittings),
-        "fittings.EveFittingRefit": len(bundle.fitting_refits),
-        "fittings.EveFittingHistory": len(bundle.fitting_history),
         "fittings.EveDoctrine": len(bundle.doctrines),
         "fittings.EveDoctrineFitting": len(bundle.doctrine_fittings),
         "fittings.EveDoctrineHistory": len(bundle.doctrine_history),
@@ -316,11 +294,6 @@ def _apply_sanitization(objects: list[dict]) -> list[dict]:
 
 def serialize_bundle(bundle: ExportBundle) -> dict[str, list[dict]]:
     """Return fixture dicts keyed by output filename."""
-    fittings_objects = (
-        list(bundle.fittings)
-        + list(bundle.fitting_refits)
-        + list(bundle.fitting_history)
-    )
     doctrines_objects = (
         list(bundle.doctrines)
         + list(bundle.doctrine_fittings)
@@ -346,7 +319,6 @@ def serialize_bundle(bundle: ExportBundle) -> dict[str, list[dict]]:
         "03_affiliation_types.json": _serialize_queryset(
             bundle.affiliation_types
         ),
-        "04_fittings.json": _serialize_queryset(fittings_objects),
         "05_doctrines.json": _serialize_queryset(doctrines_objects),
         "06_tribes.json": _apply_sanitization(
             _serialize_queryset(tribes_objects)

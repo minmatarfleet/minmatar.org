@@ -1,0 +1,102 @@
+---
+import type { OrdersProfitSummary } from '@dtypes/api.minmatar.org'
+import type { CampaignTableRow } from '@/data/campaigns/etherium-reach'
+import {
+    formatIskCompact,
+    formatIskFull,
+    rowTone,
+} from '@/data/industry/guide-order-summary'
+import { get_item_icon } from '@helpers/eve_image_server'
+
+import CampaignCallout from '@components/blocks/campaigns/etherium-reach/CampaignCallout.astro'
+import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
+import OpenOrdersProfitSummaryChart from '@components/blocks/industry/guide-order-summary/OpenOrdersProfitSummaryChart.astro'
+import OpenOrdersProfitSummaryMetrics from '@components/blocks/industry/guide-order-summary/OpenOrdersProfitSummaryMetrics.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+interface Props {
+    summary: OrdersProfitSummary
+    facility_label: string
+}
+
+const { summary, facility_label } = Astro.props
+
+const tableRows: CampaignTableRow[] = summary.rows.map((r) => ({
+    cells: [
+        r.name,
+        String(r.qty),
+        r.isk_per_lp == null ? '-' : String(Math.round(r.isk_per_lp)),
+        formatIskCompact(r.cost_per),
+        formatIskCompact(r.unit_price),
+        formatIskFull(r.profit_per),
+        formatIskCompact(r.order_profit),
+    ] as const,
+    tone: rowTone(r.order_profit),
+    icon_url: get_item_icon(r.type_id, 32),
+}))
+
+const tableHeaders = [
+    'Product',
+    'Qty',
+    'ISK/LP',
+    'Cost / item',
+    'Ask / item',
+    'Profit / item',
+    'Order profit',
+]
+
+const assumptions = Array.isArray(summary.assumptions)
+    ? summary.assumptions
+    : [String(summary.assumptions)]
+---
+
+<Flexblock gap="var(--space-l)" class="[ order-summary-results-inner w-full ]">
+    <OpenOrdersProfitSummaryMetrics summary={summary} />
+
+    <OpenOrdersProfitSummaryChart summary={summary} />
+
+    {
+        tableRows.length > 0 ? (
+            <Flexblock gap="var(--space-m)">
+                <Flexblock gap="var(--space-3xs)">
+                    <h2>Product breakdown</h2>
+                    <small>
+                        Build cost at {facility_label}. Revenue uses the order
+                        ask; Jita sell is only used when an ask is missing.
+                    </small>
+                </Flexblock>
+                <CampaignDataTable
+                    headers={tableHeaders}
+                    rows={tableRows}
+                    success_marker={false}
+                />
+            </Flexblock>
+        ) : (
+            <CampaignCallout title="Nothing to summarize" tone="info">
+                <p>
+                    Select at least one order in range, or widen the needed-by
+                    dates.
+                </p>
+            </CampaignCallout>
+        )
+    }
+
+    <CampaignCallout title="Assumptions" tone="info">
+        <ul class="[ assumptions-list ]">
+            {assumptions.map((item) => (
+                <li>{item}</li>
+            ))}
+        </ul>
+    </CampaignCallout>
+</Flexblock>
+
+<style lang="scss">
+    .assumptions-list {
+        margin: 0;
+        padding-inline-start: 1.25rem;
+        display: grid;
+        gap: var(--space-2xs);
+        font-size: var(--step--1);
+        line-height: 1.5;
+    }
+</style>

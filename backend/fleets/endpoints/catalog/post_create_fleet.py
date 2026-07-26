@@ -4,6 +4,7 @@ import logging
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from groups.helpers.feature_access import require_feature
 from eveonline.models import EveLocation
 from fittings.models import EveDoctrine
 
@@ -27,8 +28,9 @@ ROUTE_SPEC = {
 
 
 def create_fleet(request, payload: CreateEveFleetRequest):
-    if not request.user.has_perm("fleets.add_evefleet"):
-        return 403, {"detail": "User missing permission fleets.add_evefleet"}
+    denied = require_feature(request.user, "fleets.create")
+    if denied:
+        return denied
 
     if not EveFleetAudience.objects.filter(id=payload.audience_id).exists():
         return 400, {"detail": "Audience does not exist"}

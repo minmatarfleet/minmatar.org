@@ -1,0 +1,607 @@
+#!/usr/bin/env python3
+"""Generate Reddit PNG graphics matching the Etherium Reach campaign page."""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+from pathlib import Path
+
+OUT_DIR = Path(
+    "/root/minmatar.org/frontend/app/public/images/campaigns/etherium-reach/reddit"
+)
+PUBLIC_IMAGES = Path("/root/minmatar.org/frontend/app/public/images")
+HTML_PATH = OUT_DIR / "reddit-export.html"
+
+# Campaign figures (aligned with etherium-reach.ts / Reddit draft)
+STATS = {
+    "participation_pct": "79%",
+    "pilots": "269",
+    "characters": "269",
+    "isk_destroyed": "3.49T",
+    "isk_lost": "921.3B",
+    "pilot_income": "684.6B",
+    "alliance_income": "522.7B",
+    "total_income": "1.21T",
+    "total_wealth": "1.2T",
+    "dronelands_destroyed": "3.49T",
+    "dronelands_lost": "921.3B",
+    "dronelands_fleets": "122",
+    "warzone_destroyed": "9.00T",
+    "warzone_lost": "2.53T",
+    "warzone_fleets": "149",
+}
+
+PLAYER_ROWS = [
+    ("Mining", "203.1B"),
+    ("Ratting", "68.9B"),
+    ("Planetary interaction", "228.6B"),
+    ("Courier rewards", "35.8B"),
+    ("Industry (profit)", "50.6B"),
+    ("Exploration (estimated)", "~108.0B"),
+    ("Total", "684.6B"),
+]
+
+ALLIANCE_ROWS = [
+    ("Ratting tax", "6.5B"),
+    ("Planetary interaction tax", "2.7B"),
+    ("Industry facility tax", "4.5B"),
+    ("Broker fees", "2.7B"),
+    ("Moons", "406.3B"),
+    ("Diplomatic contracts", "100.0B"),
+    ("Total disclosed", "522.7B"),
+]
+
+EXPORT_FRAMES = [
+    ("er-reddit-hero.png", "#export-hero"),
+    ("er-reddit-stats.png", "#export-stats"),
+    ("er-reddit-combat.png", "#export-combat"),
+    ("er-reddit-income.png", "#export-income"),
+    ("er-reddit-cta.png", "#export-cta"),
+]
+
+
+def table_rows(rows: list[tuple[str, str]], total: bool = False) -> str:
+    html = []
+    for label, value in rows:
+        row_class = ' class="er-table__row--info"' if total and label == "Total" else ""
+        if total and label == "Total disclosed":
+            row_class = ' class="er-table__row--info"'
+        html.append(
+            f"<tr{row_class}><td>{label}</td>"
+            f'<td class="er-table__numeric">{value}</td></tr>'
+        )
+    return "\n".join(html)
+
+
+def build_html() -> str:
+    cover_url = (PUBLIC_IMAGES / "etherium-cover.jpg").as_uri()
+    logo_url = (PUBLIC_IMAGES / "etherium-logo.png").as_uri()
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ER Reddit Export</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {{
+      --fleet-yellow: #f1d9a0;
+      --fleet-red: #b53620;
+      --alliance-blue: #2051B5;
+      --green: #198754;
+      --background: #000000;
+      --component-background: rgb(25, 25, 25);
+      --highlight: #ffffff;
+      --faded: rgba(255, 255, 255, 0.5);
+      --border-color: rgba(255, 255, 255, 0.05);
+      --heading-font: 'Bebas Neue', sans-serif;
+      --default-font: 'Montserrat', sans-serif;
+      --panel-bg: color-mix(in srgb, var(--component-background) 80%, transparent);
+      --panel-border: color-mix(in srgb, var(--border-color) 80%, transparent);
+      --space-3xs: 0.35rem;
+      --space-2xs: 0.5rem;
+      --space-s: 0.85rem;
+      --space-m: 1.75rem;
+      --space-l: 2.35rem;
+      --space-xl: 3.35rem;
+      --step--1: 0.9rem;
+      --step-0: 1.05rem;
+      --step-1: 1.5rem;
+      --step-2: 1.85rem;
+    }}
+
+    * {{ box-sizing: border-box; }}
+
+    body {{
+      margin: 0;
+      background: var(--background);
+      color: var(--fleet-yellow);
+      font-family: var(--default-font);
+      -webkit-font-smoothing: antialiased;
+    }}
+
+    .export-root {{
+      display: flex;
+      flex-direction: column;
+      gap: 48px;
+      padding: 32px;
+      background: var(--background);
+    }}
+
+    .export-frame {{
+      background: var(--background);
+      overflow: hidden;
+    }}
+
+    /* Shared campaign section styles */
+    .er-campaign__section {{
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-m);
+    }}
+
+    .er-campaign__section h3 {{
+      margin: 0;
+      font-family: var(--heading-font);
+      font-size: calc(var(--step-1) * 1.15);
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      color: var(--highlight);
+      line-height: 1.1;
+      text-transform: uppercase;
+    }}
+
+    .er-campaign__meta,
+    .er-campaign__subheading,
+    .er-campaign__footnote {{
+      margin: 0;
+      font-size: var(--step--1);
+      color: var(--faded);
+      line-height: 1.5;
+    }}
+
+    .er-campaign__subheading {{
+      margin-bottom: var(--space-s);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: 0.8rem;
+    }}
+
+    .er-campaign__stat-grid {{
+      display: grid;
+      gap: var(--space-m);
+    }}
+
+    .er-campaign__stat-grid--3 {{
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }}
+
+    .er-campaign__stat-grid--2 {{
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }}
+
+    .er-stat {{
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-3xs);
+      padding: var(--space-l);
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      min-width: 0;
+    }}
+
+    .er-stat__label {{
+      font-size: var(--step--1);
+      color: var(--faded);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }}
+
+    .er-stat__value {{
+      font-size: var(--step-2);
+      font-weight: 600;
+      color: var(--highlight);
+      line-height: 1.2;
+    }}
+
+    .er-stat--info .er-stat__value {{ color: var(--alliance-blue); }}
+    .er-stat--success .er-stat__value {{ color: var(--green); }}
+    .er-stat--danger .er-stat__value {{ color: var(--fleet-red); }}
+
+    .er-table {{
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--step--1);
+    }}
+
+    .er-table th,
+    .er-table td {{
+      padding: var(--space-s);
+      border: 1px solid var(--panel-border);
+      text-align: left;
+      vertical-align: top;
+    }}
+
+    .er-table th {{
+      background: color-mix(in srgb, var(--component-background) 90%, transparent);
+      font-weight: 600;
+      color: var(--highlight);
+    }}
+
+    .er-table td {{ color: var(--faded); }}
+    .er-table__numeric {{ text-align: right; font-variant-numeric: tabular-nums; }}
+    .er-table__row--info td {{ color: var(--alliance-blue); font-weight: 600; }}
+
+    .er-campaign__split {{
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-xl);
+    }}
+
+    .er-campaign__split > div {{
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-m);
+    }}
+
+    .er-callout {{
+      padding: var(--space-m) var(--space-l);
+      background: color-mix(in srgb, var(--component-background) 70%, transparent);
+      border: 1px solid var(--panel-border);
+      border-left: 4px solid var(--fleet-yellow);
+    }}
+
+    .er-callout p {{
+      margin: 0;
+      font-size: var(--step--1);
+      color: var(--faded);
+      line-height: 1.6;
+    }}
+
+    .er-callout strong {{ color: var(--highlight); }}
+
+    /* Hero */
+  #export-hero {{
+      width: 1200px;
+      height: 628px;
+      position: relative;
+      background: #000;
+    }}
+
+    .er-hero__cover {{
+      position: absolute;
+      inset: 0;
+      background-image: url("{cover_url}");
+      background-size: cover;
+      background-position: center top;
+    }}
+
+    .er-hero__overlay {{
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(105deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.72) 42%, rgba(0,0,0,0.35) 68%, rgba(0,0,0,0.55) 100%),
+        linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.95) 100%);
+    }}
+
+    .er-hero__content {{
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 20px;
+      padding: 40px 48px 36px;
+      border-left: 4px solid var(--fleet-yellow);
+    }}
+
+    .er-hero__eyebrow {{
+      margin: 0;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--faded);
+    }}
+
+    .er-hero__title {{
+      margin: 8px 0 0;
+      font-family: var(--heading-font);
+      font-size: 4.25rem;
+      line-height: 0.95;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--highlight);
+    }}
+
+    .er-hero__title span {{ color: var(--fleet-yellow); display: block; }}
+
+    .er-hero__period {{
+      margin: 12px 0 0;
+      font-size: var(--step-0);
+      color: var(--faded);
+    }}
+
+    .er-hero__stats {{
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }}
+
+    .er-hero__stats .er-stat {{
+      padding: 18px 20px;
+      background: color-mix(in srgb, var(--component-background) 92%, transparent);
+      border: 1px solid color-mix(in srgb, var(--border-color) 100%, transparent);
+    }}
+
+    .er-hero__stats .er-stat__label {{
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+    }}
+
+    .er-hero__stats .er-stat__value {{
+      font-size: 2.35rem;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }}
+
+    .er-hero__logo {{
+      position: absolute;
+      right: 48px;
+      top: 48px;
+      width: 96px;
+      height: 96px;
+      opacity: 0.35;
+      background: url("{logo_url}") center/contain no-repeat;
+    }}
+
+    /* Stats / combat / income frames */
+    #export-stats,
+    #export-combat,
+    #export-income {{
+      width: 1200px;
+      padding: 40px 48px;
+    }}
+
+    #export-cta {{
+      width: 1200px;
+      height: 400px;
+      padding: 40px 48px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border-left: 4px solid var(--fleet-yellow);
+      background:
+        linear-gradient(90deg, color-mix(in srgb, var(--component-background) 88%, transparent), transparent),
+        #000;
+    }}
+
+    .er-cta__title {{
+      margin: 0;
+      font-family: var(--heading-font);
+      font-size: 2.4rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--fleet-yellow);
+    }}
+
+    .er-cta__url {{
+      margin: 16px 0 0;
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--alliance-blue);
+      letter-spacing: 0.01em;
+    }}
+
+    .er-cta__sub {{
+      margin: 12px 0 0;
+      font-size: var(--step--1);
+      color: var(--faded);
+    }}
+  </style>
+</head>
+<body>
+  <div class="export-root">
+    <div id="export-hero" class="export-frame">
+      <div class="er-hero__cover"></div>
+      <div class="er-hero__overlay"></div>
+      <div class="er-hero__logo" aria-hidden="true"></div>
+      <div class="er-hero__content">
+        <div>
+          <p class="er-hero__eyebrow">Minmatar Fleet Alliance</p>
+          <h1 class="er-hero__title">We're done in<span>Etherium Reach</span></h1>
+          <p class="er-hero__period">Nov 2025 – Jun 2026 · Dronelands campaign wrap-up</p>
+        </div>
+        <div class="er-hero__stats">
+          <div class="er-stat er-stat--info">
+            <span class="er-stat__label">Pilots</span>
+            <span class="er-stat__value">{STATS["pilots"]}</span>
+          </div>
+          <div class="er-stat er-stat--success">
+            <span class="er-stat__label">ISK destroyed</span>
+            <span class="er-stat__value">{STATS["isk_destroyed"]}</span>
+          </div>
+          <div class="er-stat er-stat--info">
+            <span class="er-stat__label">Income</span>
+            <span class="er-stat__value">{STATS["total_wealth"]}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="export-stats" class="export-frame">
+      <section class="er-campaign__section">
+        <h3>Campaign by the numbers</h3>
+        <p class="er-campaign__meta">Nov 2025 – Jun 2026 · Etherium Reach, Kalevala, Spire, and Perrigen Falls</p>
+        <div class="er-campaign__stat-grid er-campaign__stat-grid--3">
+          <div class="er-stat er-stat--success">
+            <span class="er-stat__label">Participation</span>
+            <span class="er-stat__value">{STATS["participation_pct"]} · {STATS["pilots"]} pilots</span>
+          </div>
+          <div class="er-stat er-stat--success">
+            <span class="er-stat__label">ISK destroyed</span>
+            <span class="er-stat__value">{STATS["isk_destroyed"]}</span>
+          </div>
+          <div class="er-stat er-stat--info">
+            <span class="er-stat__label">Total income</span>
+            <span class="er-stat__value">{STATS["total_income"]}</span>
+          </div>
+        </div>
+        <div class="er-campaign__stat-grid er-campaign__stat-grid--3">
+          <div class="er-stat er-stat--info">
+            <span class="er-stat__label">Pilot income</span>
+            <span class="er-stat__value">{STATS["pilot_income"]}</span>
+          </div>
+          <div class="er-stat er-stat--info">
+            <span class="er-stat__label">Alliance income</span>
+            <span class="er-stat__value">{STATS["alliance_income"]}</span>
+          </div>
+          <div class="er-stat er-stat--danger">
+            <span class="er-stat__label">ISK lost</span>
+            <span class="er-stat__value">{STATS["isk_lost"]}</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div id="export-combat" class="export-frame">
+      <section class="er-campaign__section">
+        <h3>Content summary</h3>
+        <p class="er-campaign__meta">Combat and fleets in the Dronelands and warzone</p>
+        <div>
+          <p class="er-campaign__subheading">In the dronelands</p>
+          <div class="er-campaign__stat-grid er-campaign__stat-grid--3">
+            <div class="er-stat er-stat--success">
+              <span class="er-stat__label">ISK destroyed</span>
+              <span class="er-stat__value">{STATS["dronelands_destroyed"]}</span>
+            </div>
+            <div class="er-stat er-stat--danger">
+              <span class="er-stat__label">ISK lost</span>
+              <span class="er-stat__value">{STATS["dronelands_lost"]}</span>
+            </div>
+            <div class="er-stat">
+              <span class="er-stat__label">Campaign fleets</span>
+              <span class="er-stat__value">{STATS["dronelands_fleets"]}</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <p class="er-campaign__subheading">In the warzone</p>
+          <div class="er-campaign__stat-grid er-campaign__stat-grid--3">
+            <div class="er-stat er-stat--success">
+              <span class="er-stat__label">ISK destroyed</span>
+              <span class="er-stat__value">{STATS["warzone_destroyed"]}</span>
+            </div>
+            <div class="er-stat er-stat--danger">
+              <span class="er-stat__label">ISK lost</span>
+              <span class="er-stat__value">{STATS["warzone_lost"]}</span>
+            </div>
+            <div class="er-stat">
+              <span class="er-stat__label">Warzone fleets</span>
+              <span class="er-stat__value">{STATS["warzone_fleets"]}</span>
+            </div>
+          </div>
+        </div>
+        <div class="er-callout">
+          <p>Gross killboard totals. Structures, timers, and fuel cost real time and ISK.</p>
+        </div>
+      </section>
+    </div>
+
+    <div id="export-income" class="export-frame">
+      <section class="er-campaign__section">
+        <div class="er-campaign__split">
+          <div>
+            <h3>What pilots earned</h3>
+            <p class="er-campaign__meta">By activity type</p>
+            <table class="er-table">
+              <thead><tr><th>Source</th><th class="er-table__numeric">ISK</th></tr></thead>
+              <tbody>{table_rows(PLAYER_ROWS, total=True)}</tbody>
+            </table>
+          </div>
+          <div>
+            <h3>What the alliance earned</h3>
+            <p class="er-campaign__meta">By revenue source</p>
+            <table class="er-table">
+              <thead><tr><th>Source</th><th class="er-table__numeric">ISK</th></tr></thead>
+              <tbody>{table_rows(ALLIANCE_ROWS, total=True)}</tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div id="export-cta" class="export-frame">
+      <p class="er-hero__eyebrow">Full campaign report</p>
+      <h2 class="er-cta__title">Every number. Every chart.</h2>
+      <p class="er-cta__url">my.minmatar.org/campaigns/etherium-reach/</p>
+      <p class="er-cta__sub">Income over time · combat by region · fleet commanders · argue with the spreadsheets</p>
+    </div>
+  </div>
+</body>
+</html>
+"""
+
+
+def ensure_playwright() -> None:
+    try:
+        import playwright  # noqa: F401
+    except ImportError:
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", "playwright"],
+            stdout=subprocess.DEVNULL,
+        )
+    subprocess.run(
+        [sys.executable, "-m", "playwright", "install", "chromium"],
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
+def screenshot_exports() -> list[tuple[str, tuple[int, int]]]:
+    from playwright.sync_api import sync_playwright
+
+    results: list[tuple[str, tuple[int, int]]] = []
+    html_uri = HTML_PATH.resolve().as_uri()
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        page = browser.new_page(
+            viewport={"width": 1280, "height": 2400},
+            device_scale_factor=2,
+        )
+        page.goto(html_uri, wait_until="networkidle")
+        page.evaluate("document.fonts.ready")
+
+        for filename, selector in EXPORT_FRAMES:
+            locator = page.locator(selector)
+            locator.wait_for(state="visible")
+            out_path = OUT_DIR / filename
+            locator.screenshot(path=str(out_path), type="png")
+            box = locator.bounding_box()
+            size = (int(box["width"]), int(box["height"])) if box else (0, 0)
+            results.append((str(out_path), size))
+            print(f"{out_path}  {size[0]}x{size[1]} @2x")
+
+        browser.close()
+
+    return results
+
+
+def main() -> None:
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    HTML_PATH.write_text(build_html(), encoding="utf-8")
+    print(f"Wrote {HTML_PATH}")
+
+    ensure_playwright()
+    screenshot_exports()
+
+
+if __name__ == "__main__":
+    main()

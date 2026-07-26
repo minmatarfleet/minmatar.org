@@ -1,19 +1,18 @@
 """POST /{fleet_id}/role-volunteers — sign up a character for a role."""
 
-import logging
-
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from eveonline.helpers.characters import user_characters
 
-from fleets.endpoints.helpers import _fleet_authorized
+from fleets.endpoints.helpers import (
+    _fleet_authorized,
+    try_refresh_active_fleet_motd,
+)
 from fleets.endpoints.schemas import (
     CreateEveFleetRoleVolunteerRequest,
     EveFleetRoleVolunteerResponse,
 )
-from fleets.models import EveFleet, EveFleetInstance, EveFleetRoleVolunteer
-
-logger = logging.getLogger(__name__)
+from fleets.models import EveFleet, EveFleetRoleVolunteer
 
 PATH = "/{fleet_id}/role-volunteers"
 METHOD = "post"
@@ -63,16 +62,7 @@ def create_fleet_role_volunteer(
             "quantity": payload.quantity,
         },
     )
-    instance = EveFleetInstance.objects.filter(
-        eve_fleet=fleet, end_time__isnull=True
-    ).first()
-    if instance:
-        try:
-            instance.refresh_motd()
-        except Exception as e:
-            logger.warning(
-                "Failed to refresh MOTD for fleet %s: %s", fleet_id, e
-            )
+    try_refresh_active_fleet_motd(fleet)
     return 200, EveFleetRoleVolunteerResponse(
         id=volunteer.id,
         character_id=volunteer.character_id,

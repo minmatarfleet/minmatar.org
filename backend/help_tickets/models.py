@@ -21,7 +21,7 @@ class HelpRequestCategory(models.Model):
     code = models.CharField(
         max_length=64,
         unique=True,
-        help_text="Stable slug for thread names (e.g. market.freighters).",
+        help_text="Stable slug for thread names (e.g. supply.freighters).",
     )
     tribe_group = models.OneToOneField(
         "tribes.TribeGroup",

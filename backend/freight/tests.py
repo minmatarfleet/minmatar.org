@@ -1,4 +1,6 @@
-from django.test import Client
+from django.contrib import admin
+from django.contrib.auth.models import User
+from django.test import Client, RequestFactory
 from django.utils import timezone
 
 from app.test import TestCase
@@ -226,3 +228,72 @@ class FreightContractsEndpointTestCase(TestCase):
         self.assertEqual(len(data), 1)
         self.assertEqual(data[0]["issuer_id"], 88888)
         self.assertEqual(data[0]["issuer_character_name"], "Contract Issuer")
+
+
+class FreightAdminViewsTestCase(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.client = Client()
+        self.admin_user = User.objects.create_superuser(
+            username="freight_admin",
+            email="freight@example.com",
+            password="password",
+        )
+        self.client.force_login(self.admin_user)
+        self.origin = EveLocation.objects.create(
+            location_id=1001,
+            location_name="Origin Hub",
+            short_name="ORG",
+            solar_system_id=1,
+            solar_system_name="System A",
+            freight_active=True,
+        )
+        self.destination = EveLocation.objects.create(
+            location_id=1002,
+            location_name="Destination Hub",
+            short_name="DST",
+            solar_system_id=2,
+            solar_system_name="System B",
+            freight_active=True,
+        )
+        EveFreightRoute.objects.create(
+            origin_location=self.origin,
+            destination_location=self.destination,
+            isk_per_m3=50,
+            active=True,
+        )
+
+    def test_freight_locations_view_lists_active_locations(self):
+        response = self.client.get("/admin/freight/locations/")
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Freight locations")
+        self.assertContains(response, "Origin Hub")
+        self.assertContains(response, "Destination Hub")
+
+    def test_freight_location_hub_view(self):
+        response = self.client.get(
+            f"/admin/freight/location/{self.origin.pk}/"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Outbound routes")
+        self.assertContains(response, "Manage outbound routes")
+        self.assertContains(response, "Add outbound route")
+
+    def test_get_app_list_shows_freight_locations_on_staging_systems(self):
+        request = RequestFactory().get("/admin/")
+        request.user = self.admin_user
+        app_list = admin.site.get_app_list(request)
+        staging = next(
+            app for app in app_list if app["name"] == "Staging Systems"
+        )
+        names = [model["name"] for model in staging["models"]]
+        self.assertIn("Freight locations", names)
+        self.assertIn("Eve locations", names)
+
+    def test_get_app_list_hides_eve_freight_route_from_supply(self):
+        request = RequestFactory().get("/admin/")
+        request.user = self.admin_user
+        app_list = admin.site.get_app_list(request)
+        supply = next(app for app in app_list if app["name"] == "Supply")
+        keys = [model["object_name"].lower() for model in supply["models"]]
+        self.assertNotIn("evefreightroute", keys)

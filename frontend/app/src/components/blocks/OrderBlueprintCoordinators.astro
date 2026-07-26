@@ -1,0 +1,425 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type {
+    OrderBlueprintCoordinator,
+    RootSingleItem,
+} from '@dtypes/api.minmatar.org'
+import { query_string } from '@helpers/string'
+
+interface Props {
+    order_id: number
+    items: RootSingleItem[]
+    coordinators: OrderBlueprintCoordinator[]
+    primary_character_id: number
+    claim_disabled_reason: string | null
+    /** When false, omit the section title/description (e.g. modal already has a header). */
+    show_heading?: boolean
+    /** When false in modal context, omit Close (parent dialog provides it). */
+    include_close?: boolean
+    /** When false, hide Find blueprints in actions (e.g. parent header already links). */
+    show_find_blueprints?: boolean
+}
+
+const {
+    order_id,
+    items,
+    coordinators,
+    primary_character_id,
+    claim_disabled_reason,
+    show_heading = true,
+    include_close,
+    show_find_blueprints = true,
+} = Astro.props
+
+const can_volunteer = !claim_disabled_reason && primary_character_id > 0
+const my_coordinator = coordinators.find(
+    (c) => c.character_id === primary_character_id,
+)
+const my_type_ids = new Set(
+    (my_coordinator?.eve_types ?? []).map((et) => et.eve_type_id),
+)
+
+const PARTIAL_URL = translatePath(
+    `/partials/order_blueprint_coordinator_component?${query_string({
+        order_id,
+    })}`,
+)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import PilotBadge from '@components/blocks/PilotBadge.astro'
+import Button from '@components/blocks/Button.astro'
+import CoordinatorTypeIcons from '@components/blocks/CoordinatorTypeIcons.astro'
+import CoordinatorVolunteerChecks from '@components/blocks/CoordinatorVolunteerChecks.astro'
+import OrderBlueprintCoordinatorActions from '@components/blocks/OrderBlueprintCoordinatorActions.astro'
+import TrashIcon from '@components/icons/buttons/TrashIcon.astro'
+
+const volunteer_label = my_coordinator
+    ? t('industry.orders.blueprint_coordinators.edit')
+    : t('industry.orders.blueprint_coordinators.volunteer')
+
+const show_volunteer = can_volunteer && items.length > 0
+/** Modal context: list/empty in body, actions in a footer row (keeps HTMX swap in sync). */
+const is_modal = !show_heading
+const show_close = include_close ?? is_modal
+const volunteer_form_id = 'order-blueprint-coordinators-volunteer-form'
+const option_types = items.map((item) => ({
+    eve_type_id: item.eve_type_id,
+    eve_type_name: item.eve_type_name,
+}))
+
+const actions_props = {
+    volunteer_label,
+    show_volunteer,
+    partial_url: PARTIAL_URL,
+    items,
+    my_type_ids: [...my_type_ids],
+    primary_character_id,
+    show_find_blueprints: is_modal ? false : show_find_blueprints,
+    inline_volunteer: is_modal,
+    volunteer_form_id,
+}
+
+const empty_title =
+    items.length === 0
+        ? t('industry.orders.blueprint_coordinators.no_options')
+        : t('industry.orders.blueprint_coordinators.empty')
+const empty_hint =
+    items.length === 0
+        ? t('industry.orders.blueprint_coordinators.no_options_hint')
+        : t('industry.orders.blueprint_coordinators.empty_hint')
+---
+
+<section
+    id="order-blueprint-coordinators"
+    class="[ order-blueprint-coordinators ]"
+    x-data={is_modal ? '{ volunteering: false }' : undefined}
+>
+    <Flexblock
+        gap="var(--space-s)"
+        class:list={[
+            { 'order-blueprint-coordinators__stack': is_modal },
+        ]}
+    >
+        {!is_modal && (
+            <FlexInline
+                justification="space-between"
+                class="[ w-full items-start ]"
+                gap="var(--space-s)"
+            >
+                <Flexblock gap="var(--space-3xs)">
+                    <h3>{t('industry.orders.blueprint_coordinators.title')}</h3>
+                    <small>
+                        {t('industry.orders.blueprint_coordinators.description')}
+                    </small>
+                </Flexblock>
+
+                <OrderBlueprintCoordinatorActions {...actions_props} />
+            </FlexInline>
+        )}
+
+        {!can_volunteer && claim_disabled_reason && (
+            <small class="[ order-blueprint-coordinators__notice ]">
+                {claim_disabled_reason}
+            </small>
+        )}
+
+        {
+            is_modal ? (
+                <>
+                    <div
+                        class="[ order-blueprint-coordinators__body ]"
+                        x-show="!volunteering"
+                    >
+                        {coordinators.length === 0 ? (
+                            <Flexblock
+                                gap="var(--space-2xs)"
+                                class="[ order-blueprint-coordinators__empty ]"
+                            >
+                                <p class="[ order-blueprint-coordinators__empty-title ]">
+                                    {empty_title}
+                                </p>
+                                <small class="[ order-blueprint-coordinators__empty-hint ]">
+                                    {empty_hint}
+                                </small>
+                            </Flexblock>
+                        ) : (
+                            <Flexblock
+                                gap="var(--space-xs)"
+                                class="[ order-blueprint-coordinators__list ]"
+                            >
+                                {coordinators.map((coordinator) => (
+                                    <ComponentBlock
+                                        padding_block="var(--space-xs)"
+                                        padding_inline="var(--space-m)"
+                                    >
+                                        <FlexInline
+                                            justification="space-between"
+                                            class="[ w-full items-center ]"
+                                            gap="var(--space-s)"
+                                        >
+                                            <Flexblock
+                                                gap="var(--space-3xs)"
+                                                class="[ min-w-0 ]"
+                                            >
+                                                <PilotBadge
+                                                    character_id={
+                                                        coordinator.character_id
+                                                    }
+                                                    character_name={
+                                                        coordinator.character_name
+                                                    }
+                                                    size={32}
+                                                    icon_quality={32}
+                                                />
+                                                <CoordinatorTypeIcons
+                                                    types={coordinator.eve_types}
+                                                />
+                                            </Flexblock>
+                                            {can_volunteer &&
+                                                coordinator.character_id ===
+                                                    primary_character_id && (
+                                                    <Button
+                                                        size="sm"
+                                                        type="button"
+                                                        narrow={true}
+                                                        color="fleet-red"
+                                                        hx-delete={`${PARTIAL_URL}&${query_string(
+                                                            {
+                                                                coordinator_id:
+                                                                    coordinator.id,
+                                                            },
+                                                        )}`}
+                                                        hx-target="#order-blueprint-coordinators"
+                                                        hx-swap="outerHTML transition:true"
+                                                        hx-indicator=".loader"
+                                                    >
+                                                        <TrashIcon slot="icon" />
+                                                        {t(
+                                                            'industry.orders.blueprint_coordinators.remove',
+                                                        )}
+                                                    </Button>
+                                                )}
+                                        </FlexInline>
+                                    </ComponentBlock>
+                                ))}
+                            </Flexblock>
+                        )}
+                    </div>
+
+                    {
+                        show_volunteer && (
+                            <div
+                                class="[ order-blueprint-coordinators__volunteer ]"
+                                x-show="volunteering"
+                                x-cloak
+                            >
+                                <Flexblock gap="var(--space-s)">
+                                    <Flexblock gap="var(--space-3xs)">
+                                        <p class="[ order-blueprint-coordinators__volunteer-title ]">
+                                            {volunteer_label}
+                                        </p>
+                                        <small>
+                                            {t(
+                                                'industry.orders.blueprint_coordinators.select_ships',
+                                            )}
+                                        </small>
+                                    </Flexblock>
+                                    <form
+                                        id={volunteer_form_id}
+                                        hx-post={PARTIAL_URL}
+                                        hx-trigger="submit"
+                                        hx-target="#order-blueprint-coordinators"
+                                        hx-swap="outerHTML transition:true"
+                                        hx-indicator=".loader"
+                                    >
+                                        <CoordinatorVolunteerChecks
+                                            types={option_types}
+                                            selected_ids={my_type_ids}
+                                            character_id={primary_character_id}
+                                        />
+                                    </form>
+                                </Flexblock>
+                            </div>
+                        )
+                    }
+
+                    <div
+                        class="[ order-blueprint-coordinators__footer ]"
+                        x-show="!volunteering"
+                    >
+                        <OrderBlueprintCoordinatorActions
+                            {...actions_props}
+                            include_close={show_close}
+                        />
+                    </div>
+                    {
+                        show_volunteer && (
+                            <FlexInline
+                                justification="flex-start"
+                                class="[ w-full order-blueprint-coordinators__footer ]"
+                                gap="var(--space-xs)"
+                                x-show="volunteering"
+                                x-cloak
+                            >
+                                <Button
+                                    type="submit"
+                                    form={volunteer_form_id}
+                                    color="green"
+                                    size="sm"
+                                >
+                                    {t(
+                                        'industry.orders.blueprint_coordinators.submit',
+                                    )}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    color="transparent"
+                                    x-on:click="volunteering = false"
+                                >
+                                    {t('cancel')}
+                                </Button>
+                            </FlexInline>
+                        )
+                    }
+                </>
+            ) : coordinators.length === 0 ? (
+                <Flexblock
+                    gap="var(--space-2xs)"
+                    class="[ order-blueprint-coordinators__empty ]"
+                >
+                    <p class="[ order-blueprint-coordinators__empty-title ]">
+                        {empty_title}
+                    </p>
+                    <small class="[ order-blueprint-coordinators__empty-hint ]">
+                        {empty_hint}
+                    </small>
+                </Flexblock>
+            ) : (
+                <Flexblock
+                    gap="var(--space-xs)"
+                    class="[ order-blueprint-coordinators__list ]"
+                >
+                    {coordinators.map((coordinator) => (
+                        <ComponentBlock
+                            padding_block="var(--space-xs)"
+                            padding_inline="var(--space-m)"
+                        >
+                            <FlexInline
+                                justification="space-between"
+                                class="[ w-full items-center ]"
+                                gap="var(--space-s)"
+                            >
+                                <Flexblock
+                                    gap="var(--space-3xs)"
+                                    class="[ min-w-0 ]"
+                                >
+                                    <PilotBadge
+                                        character_id={coordinator.character_id}
+                                        character_name={
+                                            coordinator.character_name
+                                        }
+                                        size={32}
+                                        icon_quality={32}
+                                    />
+                                    <CoordinatorTypeIcons
+                                        types={coordinator.eve_types}
+                                    />
+                                </Flexblock>
+                                {can_volunteer &&
+                                    coordinator.character_id ===
+                                        primary_character_id && (
+                                        <Button
+                                            size="sm"
+                                            type="button"
+                                            narrow={true}
+                                            color="fleet-red"
+                                            hx-delete={`${PARTIAL_URL}&${query_string(
+                                                {
+                                                    coordinator_id:
+                                                        coordinator.id,
+                                                },
+                                            )}`}
+                                            hx-target="#order-blueprint-coordinators"
+                                            hx-swap="outerHTML transition:true"
+                                            hx-indicator=".loader"
+                                        >
+                                            <TrashIcon slot="icon" />
+                                            {t(
+                                                'industry.orders.blueprint_coordinators.remove',
+                                            )}
+                                        </Button>
+                                    )}
+                            </FlexInline>
+                        </ComponentBlock>
+                    ))}
+                </Flexblock>
+            )
+        }
+    </Flexblock>
+</section>
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-1);
+    }
+
+    .order-blueprint-coordinators__stack {
+        min-height: 12rem;
+    }
+
+    .order-blueprint-coordinators__body {
+        flex: 1 1 auto;
+        min-height: 6.5rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+    }
+
+    .order-blueprint-coordinators__empty {
+        padding-block: var(--space-s);
+        text-align: left;
+        max-width: 26rem;
+    }
+
+    .order-blueprint-coordinators__empty-title {
+        margin: 0;
+        font-size: var(--step-0);
+        color: var(--highlight);
+        line-height: 1.35;
+    }
+
+    .order-blueprint-coordinators__empty-hint {
+        line-height: 1.45;
+        color: var(--foreground);
+    }
+
+    .order-blueprint-coordinators__notice {
+        display: block;
+    }
+
+    .order-blueprint-coordinators__footer {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+        justify-content: flex-start;
+        padding-block-start: var(--space-s);
+        margin-block-start: auto;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .order-blueprint-coordinators__volunteer-title {
+        margin: 0;
+        font-size: var(--step-0);
+        color: var(--highlight);
+        font-weight: 600;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+</style>

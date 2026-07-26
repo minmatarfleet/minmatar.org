@@ -1,0 +1,176 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { RootSingleItem } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    volunteer_label: string
+    show_volunteer: boolean
+    partial_url: string
+    items: RootSingleItem[]
+    my_type_ids: number[]
+    primary_character_id: number
+    volunteer_form_id?: string
+    /** When true, append Close (modal footer). */
+    include_close?: boolean
+    /** When false, omit Find blueprints. */
+    show_find_blueprints?: boolean
+    /**
+     * When true, volunteer expands inline (Alpine `volunteering` on an ancestor)
+     * instead of opening a nested dialog.
+     */
+    inline_volunteer?: boolean
+}
+
+const {
+    volunteer_label,
+    show_volunteer,
+    partial_url,
+    items,
+    my_type_ids,
+    primary_character_id,
+    volunteer_form_id = 'order-blueprint-coordinators-volunteer-form',
+    include_close = false,
+    show_find_blueprints = true,
+    inline_volunteer = false,
+} = Astro.props
+
+const option_types = items.map((item) => ({
+    eve_type_id: item.eve_type_id,
+    eve_type_name: item.eve_type_name,
+}))
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+import DialogButton from '@components/blocks/DialogButton.astro'
+import CoordinatorVolunteerChecks from '@components/blocks/CoordinatorVolunteerChecks.astro'
+import CargoIcon from '@components/icons/CargoIcon.astro'
+---
+
+{
+    inline_volunteer ? (
+        <FlexInline
+            gap="var(--space-xs)"
+            class="[ shrink-0 flex-wrap order-blueprint-coordinator-actions ]"
+            justification="flex-start"
+        >
+            {show_volunteer && (
+                <Button
+                    type="button"
+                    color="green"
+                    size="sm"
+                    x-on:click="volunteering = true"
+                >
+                    {volunteer_label}
+                </Button>
+            )}
+            {include_close && (
+                <Button
+                    type="button"
+                    size="sm"
+                    color="transparent"
+                    x-on:click="close_dialog()"
+                >
+                    {t('close')}
+                </Button>
+            )}
+        </FlexInline>
+    ) : (
+        <FlexInline
+            gap="var(--space-xs)"
+            class="[ shrink-0 flex-wrap order-blueprint-coordinator-actions ]"
+            justification="flex-start"
+        >
+            {show_find_blueprints && (
+                <Button
+                    size="sm"
+                    color="fleet-red"
+                    href={translatePath('/industry/blueprints/')}
+                >
+                    <CargoIcon slot="icon" size={24} />
+                    {t('find_blueprints')}
+                </Button>
+            )}
+            {show_volunteer && (
+                <DialogButton
+                    color="green"
+                    size="sm"
+                    narrow={false}
+                    max_width="520px"
+                    disable_when_open={true}
+                >
+                    {volunteer_label}
+
+                    <Flexblock slot="header" gap="var(--space-3xs)">
+                        <h3>{volunteer_label}</h3>
+                        <small>
+                            {t(
+                                'industry.orders.blueprint_coordinators.select_ships',
+                            )}
+                        </small>
+                    </Flexblock>
+
+                    <form
+                        id={volunteer_form_id}
+                        slot="dialog"
+                        hx-post={partial_url}
+                        hx-trigger="submit"
+                        hx-target="#order-blueprint-coordinators"
+                        hx-swap="outerHTML transition:true"
+                        hx-indicator=".loader"
+                        x-on:submit="close_dialog(false)"
+                    >
+                        <CoordinatorVolunteerChecks
+                            types={option_types}
+                            selected_ids={my_type_ids}
+                            character_id={primary_character_id}
+                        />
+                    </form>
+
+                    <FlexInline
+                        slot="footer"
+                        justification="flex-start"
+                        gap="var(--space-xs)"
+                    >
+                        <Button
+                            type="submit"
+                            form={volunteer_form_id}
+                            color="green"
+                            size="sm"
+                        >
+                            {t(
+                                'industry.orders.blueprint_coordinators.submit',
+                            )}
+                        </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            color="transparent"
+                            x-on:click="close_dialog()"
+                        >
+                            {t('cancel')}
+                        </Button>
+                    </FlexInline>
+                </DialogButton>
+            )}
+            {include_close && (
+                <Button
+                    type="button"
+                    size="sm"
+                    color="transparent"
+                    x-on:click="close_dialog()"
+                >
+                    {t('close')}
+                </Button>
+            )}
+        </FlexInline>
+    )
+}
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-1);
+    }
+</style>

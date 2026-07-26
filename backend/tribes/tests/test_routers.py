@@ -2,7 +2,8 @@
 
 import jwt
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Permission, User
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import signals as django_signals
 from django.test import Client, TestCase
 
@@ -14,6 +15,7 @@ from tribes.models import (
     TribeGroupMembership,
     TribeGroupMembershipCharacter,
     TribeGroupMembershipCharacterHistory,
+    TribeGroupRank,
 )
 
 BASE_URL = "/api/tribes"
@@ -100,6 +102,13 @@ class MembershipApplyTestCase(TestCase):
             tribe=self.tribe, name="Mining"
         )
         self.user = User.objects.create_user(username="miner")
+        content_type = ContentType.objects.get(
+            app_label="tribes", model="tribegroupmembership"
+        )
+        perm = Permission.objects.get(
+            codename="add_tribegroupmembership", content_type=content_type
+        )
+        self.user.user_permissions.add(perm)
         self.token = _make_token(self.user)
         self.character = EveCharacter.objects.create(
             character_id=10001, character_name="Miner One", user=self.user
@@ -263,6 +272,110 @@ class MembershipLeaveTestCase(TestCase):
             self.membership.status, TribeGroupMembership.STATUS_INACTIVE
         )
         self.assertEqual(self.membership.removed_by, chief)
+
+
+class MembershipListTestCase(TestCase):
+    """GET memberships: mine filter and gated requirement checks."""
+
+    def setUp(self):
+        self.client = Client()
+        self.tribe = Tribe.objects.create(name="Supply", slug="supply")
+        self.tribe_group = TribeGroup.objects.create(
+            tribe=self.tribe, name="Mining"
+        )
+        self.chief = User.objects.create_user(username="chief")
+        self.member = User.objects.create_user(username="member")
+        self.other = User.objects.create_user(username="other")
+        self.tribe_group.chief = self.chief
+        self.tribe_group.save()
+
+        self.member_membership = TribeGroupMembership.objects.create(
+            user=self.member,
+            tribe_group=self.tribe_group,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+        self.other_membership = TribeGroupMembership.objects.create(
+            user=self.other,
+            tribe_group=self.tribe_group,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+        self.member_character = EveCharacter.objects.create(
+            character_id=30001,
+            character_name="Member Main",
+            user=self.member,
+        )
+        TribeGroupMembershipCharacter.objects.create(
+            membership=self.member_membership,
+            character=self.member_character,
+        )
+
+        self.list_url = f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}/memberships"
+
+    def test_chief_list_returns_all_without_requirement_status_by_default(
+        self,
+    ):
+        token = _make_token(self.chief)
+        response = self.client.get(
+            self.list_url, HTTP_AUTHORIZATION=f"Bearer {token}"
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data), 2)
+        for row in data:
+            for character in row["characters"]:
+                self.assertIsNone(character.get("qualifies"))
+                self.assertIsNone(character.get("missing_skills"))
+                self.assertIsNone(character.get("missing_assets"))
+
+    def test_mine_returns_only_caller_membership_with_characters(self):
+        token = _make_token(self.chief)
+        # Chief has no membership of their own — empty list.
+        response = self.client.get(
+            f"{self.list_url}?mine=true",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), [])
+
+        token = _make_token(self.member)
+        response = self.client.get(
+            f"{self.list_url}?mine=true",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["user_id"], self.member.pk)
+        self.assertEqual(len(data[0]["characters"]), 1)
+        self.assertEqual(
+            data[0]["characters"][0]["character_id"],
+            self.member_character.character_id,
+        )
+        self.assertIsNone(data[0]["characters"][0].get("qualifies"))
+
+    def test_include_requirements_adds_qualify_flags_for_chief(self):
+        token = _make_token(self.chief)
+        response = self.client.get(
+            f"{self.list_url}?include_requirements=true",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        member_row = next(r for r in data if r["user_id"] == self.member.pk)
+        self.assertEqual(len(member_row["characters"]), 1)
+        # No group requirements configured → qualifies is True.
+        self.assertTrue(member_row["characters"][0]["qualifies"])
+
+    def test_member_cannot_force_full_roster_via_include_requirements(self):
+        token = _make_token(self.member)
+        response = self.client.get(
+            f"{self.list_url}?include_requirements=true",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["user_id"], self.member.pk)
 
 
 class MembershipCharacterTestCase(TestCase):
@@ -435,3 +548,38 @@ class TribeGroupActivityDefinitionsTestCase(TestCase):
             bad_url, HTTP_AUTHORIZATION=f"Bearer {token}"
         )
         self.assertEqual(response.status_code, 404)
+
+
+class TribeGroupRankApiTestCase(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.tribe = Tribe.objects.create(name="Pulse", slug="pulse")
+        self.tribe_group = TribeGroup.objects.create(
+            tribe=self.tribe,
+            name="Fleet Commanders",
+            code="pulse.fleet-commanders",
+        )
+        self.rank = TribeGroupRank.objects.create(
+            tribe_group=self.tribe_group,
+            code="strategic",
+            name="Strategic FC",
+            sort_order=0,
+        )
+        self.chief = User.objects.create_user(username="chief")
+        self.member = User.objects.create_user(username="member")
+        self.tribe_group.chief = self.chief
+        self.tribe_group.save()
+        self.membership = TribeGroupMembership.objects.create(
+            user=self.member,
+            tribe_group=self.tribe_group,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+
+    def test_group_detail_includes_ranks(self):
+        response = self.client.get(
+            f"{BASE_URL}/{self.tribe.pk}/groups/{self.tribe_group.pk}"
+        )
+        self.assertEqual(response.status_code, 200)
+        ranks = response.json()["ranks"]
+        self.assertEqual(len(ranks), 1)
+        self.assertEqual(ranks[0]["code"], "strategic")

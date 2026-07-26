@@ -12,6 +12,7 @@ from tribes.models import (
     TribeGroupMembership,
     TribeGroupMembershipCharacter,
     TribeGroupMembershipCharacterHistory,
+    TribeGroupRank,
 )
 
 
@@ -184,3 +185,49 @@ class TribeGroupMembershipCharacterModelTestCase(TestCase):
             TribeGroupMembershipCharacter.objects.create(
                 membership=self.membership, character=self.character
             )
+
+
+class TribeGroupRankModelTestCase(TestCase):
+    def setUp(self):
+        self.tribe = Tribe.objects.create(name="Pulse", slug="pulse")
+        self.tribe_group = TribeGroup.objects.create(
+            tribe=self.tribe,
+            name="Fleet Commanders",
+            code="pulse.fleet-commanders",
+        )
+        self.other_group = TribeGroup.objects.create(
+            tribe=self.tribe,
+            name="Tournaments",
+            code="pulse.tournaments",
+        )
+        self.user = User.objects.create_user(username="fc")
+        self.rank = TribeGroupRank.objects.create(
+            tribe_group=self.tribe_group,
+            code="strategic",
+            name="Strategic FC",
+            sort_order=0,
+        )
+
+    def test_membership_accepts_rank_from_same_group(self):
+        membership = TribeGroupMembership.objects.create(
+            user=self.user,
+            tribe_group=self.tribe_group,
+            rank=self.rank,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+        self.assertEqual(membership.rank_id, self.rank.pk)
+
+    def test_membership_rejects_rank_from_other_group(self):
+        other_rank = TribeGroupRank.objects.create(
+            tribe_group=self.other_group,
+            code="player",
+            name="Player",
+        )
+        membership = TribeGroupMembership(
+            user=self.user,
+            tribe_group=self.tribe_group,
+            rank=other_rank,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+        with self.assertRaises(ValueError):
+            membership.save()

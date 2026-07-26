@@ -1,0 +1,244 @@
+---
+import {
+    CAMPAIGN_BEATS,
+    FLEETS_MONTHLY,
+    ISK_DESTROYED_MONTHLY,
+    MONTHS,
+    toBillions,
+} from '@/data/campaigns/etherium-reach'
+
+const iskData = ISK_DESTROYED_MONTHLY.map(toBillions)
+const fleetData = FLEETS_MONTHLY
+
+const BEAT_LABELS: Record<number, string> = {
+    3: 'SL0W collapses',
+    5: 'B0SS loses region',
+    6: 'RMC consolidates space',
+    7: 'TRD disbands',
+}
+
+const BEAT_LAYOUT: Record<number, { anchor: string; dx: number }> = {
+    5: { anchor: 'end', dx: -10 },
+    6: { anchor: 'middle', dx: 0 },
+    7: { anchor: 'start', dx: 10 },
+}
+
+const beatLabelMinGap = 2
+const beatLabelRows = new Map<number, number>()
+const sortedBeats = [...CAMPAIGN_BEATS].sort((a, b) => a.monthIndex - b.monthIndex)
+for (const beat of sortedBeats) {
+    let row = 0
+    while (
+        [...beatLabelRows.entries()].some(
+            ([index, assignedRow]) =>
+                assignedRow === row &&
+                Math.abs(index - beat.monthIndex) < beatLabelMinGap,
+        )
+    ) {
+        row++
+    }
+    beatLabelRows.set(beat.monthIndex, row)
+}
+
+const beatsConfig = CAMPAIGN_BEATS.map((beat) => ({
+    monthIndex: beat.monthIndex,
+    label: BEAT_LABELS[beat.monthIndex] ?? beat.label,
+    layout: BEAT_LAYOUT[beat.monthIndex] ?? { anchor: 'middle', dx: 0 },
+    row: beatLabelRows.get(beat.monthIndex) ?? 0,
+}))
+---
+
+<div
+    class="[ h-screen ]"
+    x-data={`{
+        MONTHS: ${JSON.stringify(MONTHS)},
+        iskData: ${JSON.stringify(iskData)},
+        fleetData: ${JSON.stringify(fleetData)},
+        beatsConfig: ${JSON.stringify(beatsConfig)},
+        init() {
+            var ctx = document.getElementById('player-content-chart').getContext('2d')
+
+            Chart.defaults.borderColor = 'rgb(255, 255, 255, 0.05)'
+            Chart.defaults.color = '#ffffff'
+            Chart.defaults.font.family = 'Montserrat Variable'
+
+            var chart = new Chart(ctx, {
+                data: {
+                    labels: this.MONTHS,
+                    datasets: [
+                        {
+                            type: 'line',
+                            label: 'ISK Destroyed',
+                            data: this.iskData,
+                            borderColor: '#198754',
+                            backgroundColor: '#198754',
+                            borderWidth: 2.5,
+                            pointRadius: 3.5,
+                            pointBackgroundColor: '#198754',
+                            pointBorderColor: '#1a1a2e',
+                            pointBorderWidth: 1.5,
+                            tension: 0,
+                            fill: true,
+                            yAxisID: 'y',
+                            order: 1,
+                        },
+                        {
+                            type: 'bar',
+                            label: 'Fleets',
+                            data: this.fleetData,
+                            backgroundColor: 'rgba(32, 81, 181, 0.62)',
+                            borderColor: 'rgba(32, 81, 181, 0.28)',
+                            borderWidth: 1,
+                            borderRadius: 2,
+                            barPercentage: 0.26,
+                            categoryPercentage: 0.8,
+                            yAxisID: 'y1',
+                            order: 2,
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            bottom: 50,
+                        },
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false,
+                            },
+                        },
+                        y: {
+                            type: 'linear',
+                            position: 'left',
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'ISK destroyed',
+                            },
+                            grid: {
+                                display: false,
+                            },
+                            ticks: {
+                                callback: function(value) { return value + ' B' },
+                            },
+                        },
+                        y1: {
+                            type: 'linear',
+                            position: 'right',
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Fleets',
+                            },
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        },
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: false,
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    if (context.dataset.yAxisID === 'y') {
+                                        return 'ISK Destroyed: ' + context.parsed.y + ' B'
+                                    }
+                                    return 'Fleets: ' + context.parsed.y
+                                },
+                            },
+                        },
+                    },
+                },
+                plugins: [
+                    {
+                        id: 'areaGradients',
+                        afterLayout: function(chart) {
+                            var ctx = chart.ctx
+                            var top = chart.chartArea.top
+                            var bottom = chart.chartArea.bottom
+                            var gradient = ctx.createLinearGradient(0, top, 0, bottom)
+                            gradient.addColorStop(0, 'rgba(25, 135, 84, 0.4)')
+                            gradient.addColorStop(1, 'rgba(25, 135, 84, 0)')
+                            chart.data.datasets[0].backgroundColor = gradient
+                        }
+                    },
+                    {
+                        id: 'highlightBand',
+                        beforeDraw: function(chart) {
+                            var ctx = chart.ctx
+                            var xScale = chart.scales.x
+                            var area = chart.chartArea
+
+                            var slot = xScale.getPixelForValue(1) - xScale.getPixelForValue(0)
+                            var x0 = xScale.getPixelForValue(0) - slot / 2
+                            var x1 = xScale.getPixelForValue(3) + slot / 2
+
+                            ctx.save()
+                            ctx.fillStyle = 'rgba(26, 26, 46, 0.5)'
+                            ctx.fillRect(x0, area.top, x1 - x0, area.bottom - area.top)
+                            ctx.restore()
+                        },
+                    },
+                    {
+                        id: 'campaignBeats',
+                        afterDraw: function(chart) {
+                            var ctx = chart.ctx
+                            var xScale = chart.scales.x
+                            var area = chart.chartArea
+                            var beats = chart._beatsConfig
+                            if (!beats) return
+
+                            var monthLabelBottom = area.bottom + 16
+                            var beatLabelBaseY = area.bottom + 50
+
+                            ctx.save()
+
+                            beats.forEach(function(beat) {
+                                var cx = xScale.getPixelForValue(beat.monthIndex)
+                                var layout = beat.layout
+                                var labelY = beatLabelBaseY + beat.row * 20
+
+                                ctx.beginPath()
+                                ctx.moveTo(cx, monthLabelBottom + 4)
+                                ctx.lineTo(cx + layout.dx, labelY - 10)
+                                ctx.strokeStyle = 'rgba(241, 217, 160, 0.35)'
+                                ctx.lineWidth = 1
+                                ctx.setLineDash([2, 3])
+                                ctx.stroke()
+                                ctx.setLineDash([])
+
+                                ctx.font = '600 10px Montserrat Variable'
+                                ctx.fillStyle = 'rgba(241, 217, 160, 0.8)'
+                                ctx.textAlign = layout.anchor
+                                ctx.textBaseline = 'middle'
+                                ctx.fillText(beat.label, cx + layout.dx, labelY)
+                            })
+
+                            ctx.restore()
+                        },
+                    },
+                ],
+            })
+
+            chart._beatsConfig = this.beatsConfig
+            chart.update('none')
+        }
+    }`}
+>
+    <canvas id="player-content-chart"></canvas>
+</div>
+
+<style lang="scss">
+    div {
+        max-height: min(700px, 90vh);
+    }
+</style>

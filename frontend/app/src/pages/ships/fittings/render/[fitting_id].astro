@@ -16,6 +16,8 @@ import type { FleetCombatLog, CargoItem } from '@dtypes/layout_components'
 import { get_fitting_by_id } from '@helpers/api.minmatar.org/ships'
 import type { Fitting } from '@dtypes/api.minmatar.org'
 import { get_ship_info } from '@helpers/sde/ships'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_site_origin } from '@helpers/seo'
 
 let fitting:Fitting | null = null
 let get_fitting_error: Error | false = false
@@ -30,6 +32,9 @@ try {
 } catch (error) {
     get_fitting_error = error
 }
+
+if (!fitting)
+    return HTTP_404_Not_Found()
 
 try {
     saved_logs = [] // user && !fetch_fleets_error ? await get_fitting_combatlogs(auth_token as string, parseInt(fitting_id ?? '0')) : []
@@ -53,10 +58,10 @@ import {
     type FittingDetailSeoInput,
 } from '@helpers/fitting_seo'
 
-const fitting_parsed = await parse_eft(fitting?.eft_format ?? '')
+const fitting_parsed = await parse_eft(fitting.eft_format ?? '')
 
 if (!fitting_parsed)
-    throw new Error(t('invalid_fitting'))
+    return HTTP_404_Not_Found()
 
 let turrets:string[] = []
 
@@ -79,6 +84,8 @@ const ship_display_name = fitting_parsed.ship_name ?? ''
 const site_name = t('index.page_title')
 const tag_labels = format_fitting_tags_line(fitting?.tags, t)
 
+const site_origin = get_site_origin(Astro.url.origin)
+
 const seo_input: FittingDetailSeoInput = {
     fittingId: parseInt(fitting_id ?? '0'),
     fittingName: fitting_display_name,
@@ -88,11 +95,11 @@ const seo_input: FittingDetailSeoInput = {
     tagLabels: tag_labels,
     updatedAt: fitting?.updated_at,
     siteName: site_name,
-    siteOrigin: Astro.url.origin,
-    fittingsListUrl: new URL(translatePath('/ships/fittings/'), Astro.url.origin).href,
-    shipsUrl: new URL(translatePath('/ships/'), Astro.url.origin).href,
-    canonicalUrl: new URL(translatePath(`/ships/fittings/normal/${fitting_id}`), Astro.url.origin).href,
-    metaImage: ship_id && Number(ship_id) > 0 ? get_item_icon(ship_id, 256) : `${Astro.url.origin}/images/fits-cover.jpg`,
+    siteOrigin: site_origin,
+    fittingsListUrl: new URL(translatePath('/ships/fittings/'), site_origin).href,
+    shipsUrl: new URL(translatePath('/ships/'), site_origin).href,
+    canonicalUrl: new URL(translatePath(`/ships/fittings/normal/${fitting_id}`), site_origin).href,
+    metaImage: ship_id && Number(ship_id) > 0 ? get_item_icon(ship_id, 256) : `${site_origin}/images/fits-cover.jpg`,
 }
 
 const meta_title = buildFittingDetailMetaTitle(seo_input, t)

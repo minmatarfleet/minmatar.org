@@ -42,7 +42,15 @@ class EveLocation(MinmatarSoftDeleteModel):
         "Used as the reference for markup calculations.",
     )
     freight_active = models.BooleanField(default=False)
-    staging_active = models.BooleanField(default=False)
+    staging_active = models.BooleanField(
+        default=False,
+        help_text="At most one location may be the active staging system.",
+    )
+    market_categories = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="Fitting tags that qualify sell-order fittings at this location (ANY match).",
+    )
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 
@@ -53,6 +61,12 @@ class EveLocation(MinmatarSoftDeleteModel):
                 condition=models.Q(price_baseline=True)
                 & models.Q(deleted__isnull=True),
                 name="unique_price_baseline_location",
+            ),
+            models.UniqueConstraint(
+                fields=["staging_active"],
+                condition=models.Q(staging_active=True)
+                & models.Q(deleted__isnull=True),
+                name="unique_active_staging_location",
             ),
         ]
 
@@ -71,7 +85,40 @@ class EveLocation(MinmatarSoftDeleteModel):
             self._clear_operational_flags_for_soft_delete()
         return super().delete(force_policy=force_policy, **kwargs)
 
+    @staticmethod
+    def coerce_market_categories(raw):
+        # Circular import: fittings.models imports EveLocation from this module.
+        # pylint: disable=import-outside-toplevel
+        from fittings.models import FittingTag
+
+        if raw is None:
+            return []
+        if not isinstance(raw, list):
+            raise ValidationError("market_categories must be a list")
+        allowed = {choice.value for choice in FittingTag}
+        seen = set()
+        out = []
+        for item in raw:
+            if not isinstance(item, str):
+                raise ValidationError("each market category must be a string")
+            if item not in allowed:
+                raise ValidationError(f"invalid market category: {item!r}")
+            if item not in seen:
+                seen.add(item)
+                out.append(item)
+        out.sort()
+        return out
+
     def clean(self):
+        try:
+            self.market_categories = self.coerce_market_categories(
+                self.market_categories
+            )
+        except ValidationError as exc:
+            raise ValidationError(
+                {"market_categories": list(exc.messages)}
+            ) from exc
+
         if self.price_baseline:
             dup = (
                 EveLocation.objects.filter(price_baseline=True)
@@ -84,7 +131,22 @@ class EveLocation(MinmatarSoftDeleteModel):
                     f'"{dup.location_name}" already has it enabled.'
                 )
 
+        if self.staging_active:
+            dup = (
+                EveLocation.objects.filter(staging_active=True)
+                .exclude(pk=self.pk)
+                .first()
+            )
+            if dup:
+                raise ValidationError(
+                    f"Only one location can be the active staging system. "
+                    f'"{dup.location_name}" already has it enabled.'
+                )
+
     def save(self, *args, **kwargs):
+        self.market_categories = self.coerce_market_categories(
+            self.market_categories
+        )
         self.clean()
         super().save(*args, **kwargs)
 

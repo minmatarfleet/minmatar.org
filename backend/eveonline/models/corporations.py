@@ -183,6 +183,7 @@ class EveCorporationIndustryJob(models.Model):
         ordering = ["-end_date"]
         indexes = [
             models.Index(fields=["corporation", "status"]),
+            models.Index(fields=["status", "blueprint_id"]),
         ]
 
     def __str__(self):

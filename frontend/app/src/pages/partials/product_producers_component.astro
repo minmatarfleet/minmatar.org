@@ -1,0 +1,43 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+const product_id = parseInt(Astro.url.searchParams.get('product_id') ?? '0')
+
+import type { Product } from '@dtypes/api.minmatar.org'
+import { get_product_by_id } from '@helpers/api.minmatar.org/industry'
+
+let product: Product | null = null
+let fetch_error: Error | false = false
+
+try {
+    if (isNaN(product_id) || product_id <= 0)
+        throw new Error(t('invalid_product_id'), { cause: 400 })
+
+    product = await get_product_by_id(product_id)
+} catch (error) {
+    fetch_error = error
+}
+
+const PRODUCT_PRODUCERS_PARTIAL_URL = `${translatePath('/partials/product_producers_component')}?product_id=${product_id}`
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '5')
+
+import ProducersList from '@components/blocks/ProducersList.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{fetch_error ?
+    <ErrorRefetch
+        args={{
+            partial: PRODUCT_PRODUCERS_PARTIAL_URL,
+            error: fetch_error,
+            delay: delay,
+        }}
+    /> :
+    <ProducersList
+        character_producers={product?.character_producers ?? []}
+        corporation_producers={product?.corporation_producers ?? []}
+        init_tooltips={true}
+    />
+}

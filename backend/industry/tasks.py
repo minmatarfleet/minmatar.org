@@ -1,4 +1,4 @@
-"""Celery tasks for industry: syncing jobs from ESI for order assignees."""
+"""Celery tasks for industry: jobs sync and cost-index cache."""
 
 import logging
 
@@ -6,6 +6,15 @@ from app.celery import app
 from eveonline.helpers.characters.update import update_character_industry_jobs
 from eveonline.models import EveCharacter
 
+from industry.helpers.contract_associations import (
+    reconcile_associations_for_character,
+    reconcile_open_order_contract_associations,
+)
+from industry.helpers.cost_indices import sync_industry_system_cost_indices
+from industry.helpers.loyalty_store import (
+    ensure_loyalty_store_offers_for_product,
+    sync_loyalty_store_offers,
+)
 from industry.models import IndustryOrderItemAssignment
 
 logger = logging.getLogger(__name__)
@@ -61,3 +70,75 @@ def sync_industry_jobs_for_order_assignees() -> None:
         "Scheduled industry job sync for %s character(s) (order assignees and related)",
         len(character_ids),
     )
+
+
+@app.task()
+def sync_industry_system_cost_indices_task() -> int:
+    """
+    Refresh cached ESI industry cost indices for all solar systems.
+
+    Hourly via Celery beat so planner requests read the DB instead of ESI.
+    """
+    try:
+        return sync_industry_system_cost_indices()
+    except Exception:
+        logger.exception("Failed to sync industry system cost indices")
+        raise
+
+
+@app.task()
+def sync_loyalty_store_offers_task() -> int:
+    """
+    Refresh cached pure LP+ISK loyalty-store offers.
+
+    Manual / admin / product-save driven — not on a beat schedule.
+    """
+    try:
+        return sync_loyalty_store_offers()
+    except Exception:
+        logger.exception("Failed to sync loyalty store offers")
+        raise
+
+
+@app.task()
+def ensure_loyalty_store_offers_for_product_task(product_id: int) -> int:
+    """Ensure LP store offers exist after a navy IndustryProduct is saved."""
+    try:
+        return ensure_loyalty_store_offers_for_product(int(product_id))
+    except Exception:
+        logger.exception(
+            "Failed to ensure loyalty store offers for product %s",
+            product_id,
+        )
+        raise
+
+
+@app.task()
+def reconcile_industry_contract_associations_task() -> int:
+    """
+    Score and upsert soft links between open industry orders and ESI contracts.
+
+    Periodic via Celery beat. Does not mark assignments delivered.
+    """
+    try:
+        return reconcile_open_order_contract_associations(fetch_items=True)
+    except Exception:
+        logger.exception("Failed to reconcile industry contract associations")
+        raise
+
+
+@app.task()
+def reconcile_industry_contract_associations_for_character_task(
+    character_id: int,
+) -> int:
+    """Reconcile associations for open orders owned by this ESI character_id."""
+    try:
+        return reconcile_associations_for_character(
+            int(character_id), fetch_items=True
+        )
+    except Exception:
+        logger.exception(
+            "Failed to reconcile industry contract associations for character %s",
+            character_id,
+        )
+        raise

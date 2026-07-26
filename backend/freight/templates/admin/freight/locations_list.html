@@ -1,0 +1,63 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  {% include "admin/market/_market_styles.html" %}
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate "Home" %}</a>
+  &rsaquo; {% translate "Freight locations" %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  {% include "admin/market/_learn_more_start.html" %}
+    <p>
+      {% blocktranslate trimmed %}
+      Each row is a structure or station where the alliance accepts freight
+      contracts. Open a location to manage outbound and inbound routes — pricing,
+      collateral rules, and contract timing.
+      {% endblocktranslate %}
+    </p>
+    <p class="help">
+      {% blocktranslate trimmed %}
+      Only locations marked <strong>freight active</strong> appear here.
+      To add or remove a location, edit it under Staging Systems → Locations.
+      {% endblocktranslate %}
+    </p>
+  {% include "admin/market/_learn_more_end.html" %}
+
+  <table>
+    <thead>
+      <tr>
+        <th>{% translate "Location" %}</th>
+        <th>{% translate "Active outbound routes" %}</th>
+        <th>{% translate "Active inbound routes" %}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td><strong>{{ row.location.location_name }}</strong></td>
+        <td>{{ row.outbound_route_count }}</td>
+        <td>{{ row.inbound_route_count }}</td>
+        <td><a href="{{ row.hub_url }}" class="button">{% translate "Open" %}</a></td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4">
+          {% translate "No freight-active locations. Mark a location as freight active in Staging Systems → Locations." %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

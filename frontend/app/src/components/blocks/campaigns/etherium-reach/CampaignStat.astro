@@ -1,0 +1,58 @@
+---
+import TextGroup from '@components/blocks/TextGroup.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+
+interface Props {
+    label: string
+    tone?: 'info' | 'success' | 'danger' | 'minmatar' | 'amarr' | 'angel'
+}
+
+const { label, tone } = Astro.props
+---
+
+<Wrapper
+    class:list={[ '[ card border light-transparency ]', tone && `er-stat--${tone}` ]}
+    padding_block='var(--space-s)'
+    padding_inline='var(--space-s)'
+>
+    <FlexInline gap="var(--space-s)" class="[ items-start ]">
+        <slot name="icon" />
+        <div class="[ grow min-w-0 ]">
+            <TextGroup title={label}>
+                <b><slot /></b>
+            </TextGroup>
+        </div>
+    </FlexInline>
+</Wrapper>
+
+<style lang="scss">
+    b {
+        font-size: var(--step-0);
+    }
+
+    .er-stat--info b {
+        color: var(--alliance-blue);
+    }
+
+    .er-stat--success b {
+        color: var(--green);
+    }
+
+    .er-stat--danger b {
+        color: var(--fleet-red);
+    }
+
+    /* EVE faction tones — reuse site tokens (Minmatar red/orange, Amarr gold) */
+    .er-stat--minmatar b {
+        color: var(--fleet-red-blind, var(--fleet-red));
+    }
+
+    .er-stat--amarr b {
+        color: var(--fleet-yellow);
+    }
+
+    .er-stat--angel b {
+        color: color-mix(in srgb, var(--fleet-yellow) 55%, var(--alliance-blue) 45%);
+    }
+</style>

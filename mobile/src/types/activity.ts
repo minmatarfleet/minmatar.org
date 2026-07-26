@@ -34,6 +34,10 @@ export interface ActivityItem {
   composition?: string;
   roster?: ActivityPilot[];
   roster_total?: number;
+  /** fleet_active — size/tier growth on the same engagement */
+  engagement_tier?: string;
+  previous_tier?: string;
+  upgraded_at?: string;
   /** killmail_batch */
   killmail_count?: number;
   window_minutes?: number;

@@ -21,11 +21,9 @@ const {
 } = Astro.props
 
 const logi_anchors = volunteers.filter((v) => v.role === 'logi_anchor')
-const dps_anchors = volunteers.filter((v) => v.role === 'dps_anchor')
 const cynos = volunteers.filter((v) => v.role === 'cyno')
 const links = volunteers.filter((v) => v.role === 'links')
-const armor_links = links.filter((v) => v.subtype === 'armor')
-const shield_links = links.filter((v) => v.subtype === 'shield')
+const ehp_links = links.filter((v) => v.subtype === 'ehp' || v.subtype === 'armor' || v.subtype === 'shield')
 const info_links = links.filter((v) => v.subtype === 'info')
 const skirmish_links = links.filter((v) => v.subtype === 'skirmish')
 
@@ -37,9 +35,11 @@ const FLEET_ROLES_PARTIAL_URL = translatePath(`/partials/fleet_role_component?${
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
+import Grid from '@components/compositions/Grid.astro'
 
 import FleetRoleItem from '@components/blocks/FleetRoleItem.astro'
 import Button from '@components/blocks/Button.astro'
+import EhpLinksIcon from '@components/icons/EhpLinksIcon.astro'
 
 import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
 ---
@@ -64,28 +64,23 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
             </Button>
         </FlexInline>
         
-        <p>{t('fleet_roles_description')}</p>
+        <div class="component">
+            <p>{t('fleet_roles_description')}</p>
+        </div>
 
-        <Flexblock>
-            <h3>{t('anchor_and_cynos')}</h3>
-
-            <FlexInline class="[ items-start! ]" justification='space-between'>
+        <Flexblock gap='var(--space-3xs)'>
+            <Grid
+                class="[ w-full grid-fill ]"
+                row_gap="var(--space-3xs)"
+                column_gap="var(--space-3xs)"
+                min_item_width="350px"
+            >
                 <FleetRoleItem
                     id='logi-anchor-role'
                     title={t('logi_anchor_label')}
                     fleet_id={fleet_id}
                     role='logi_anchor'
                     volunteers={logi_anchors}
-                    pilots={pilots}
-                    readonly={readonly}
-                />
-
-                <FleetRoleItem
-                    id='dps-anchor-role'
-                    title={t('dps_anchor_label')}
-                    fleet_id={fleet_id}
-                    role='dps_anchor'
-                    volunteers={dps_anchors}
                     pilots={pilots}
                     readonly={readonly}
                 />
@@ -99,46 +94,25 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
                     pilots={pilots}
                     readonly={readonly}
                 />
-            </FlexInline>
-        </Flexblock>
+            </Grid>
 
-        <Flexblock>
-            <h3>{t('links')}</h3>
-
-            <FlexInline class="[ items-start! ]" justification='space-between'>
+            <Grid
+                class="[ w-full grid-fill ]"
+                row_gap="var(--space-3xs)"
+                column_gap="var(--space-3xs)"
+                min_item_width="350px"
+            >
                 <FleetRoleItem
-                    id='armor-links-role'
-                    title={t('armor_links')}
+                    id='ehp-links-role'
+                    title={t('ehp_links')}
                     fleet_id={fleet_id}
                     role='links'
-                    subtype='armor'
-                    volunteers={armor_links}
+                    subtype='ehp'
+                    volunteers={ehp_links}
                     pilots={pilots}
                     readonly={readonly}
                 >
-                    <img
-                        slot="icon"
-                        src={get_item_icon(43552, 32)}
-                        width="32"
-                        height="32"
-                    />
-                </FleetRoleItem>
-                <FleetRoleItem
-                    id='shield-links-role'
-                    title={t('shield_links')}
-                    fleet_id={fleet_id}
-                    role='links'
-                    subtype='shield'
-                    volunteers={shield_links}
-                    pilots={pilots}
-                    readonly={readonly}
-                >
-                    <img
-                        slot="icon"
-                        src={get_item_icon(43555, 32)}
-                        width="32"
-                        height="32"
-                    />
+                    <EhpLinksIcon slot="icon" />
                 </FleetRoleItem>
                 <FleetRoleItem
                     id='info-links-role'
@@ -174,7 +148,7 @@ import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
                         height="32"
                     />
                 </FleetRoleItem>
-            </FlexInline>
+            </Grid>
         </Flexblock>
     </Flexblock>
 </div>

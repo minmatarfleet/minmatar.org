@@ -6,7 +6,7 @@ export const GUIDE_SLUG_BY_WIKI_PATH: Record<string, string> = {
     'alliance/Academy/faction-warfare-advantage': 'faction-warfare-advantage',
     'guides/pochven-standings': 'pochven-standings',
     'guides/zohar-hunting': 'zohar-hunting',
-    'guides/rendezvous-wolf': 'rendezvous-wolf',
+    'guides/rendezvous-wolf': 'faction-warfare-advantage',
     'guides/level5s': 'level5-missions',
     'guides/Abyss/Electrical/Solo/Stormbringer': 'abyss-stormbringer-t6-electrical',
     'guides/Abyss/Dark/Duo/Jackdaw': 'abyss-duo-jackdaws-t6-dark',

@@ -107,9 +107,10 @@ const FLEET_ROLE_ITEM_PARTIAL_URL = translatePath(`/partials/fleet_role_item_com
 
 import { get_item_icon } from '@helpers/eve_image_server'
 
-const ICONS_BY_SUBYPE = {
-    armor: get_item_icon(43552, 32),
-    shield: get_item_icon(43555, 32),
+import EhpLinksIcon from '@components/icons/EhpLinksIcon.astro'
+
+const ICONS_BY_SUBTYPE = {
+    ehp: null,
     info: get_item_icon(43554, 32),
     skirmish: get_item_icon(43556, 32),
 }
@@ -141,10 +142,13 @@ const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
         volunteers={role_volunteers}
         pilots={pilots}
     >
-        {subtype &&
+        {subtype === 'ehp' &&
+            <EhpLinksIcon slot="icon" />
+        }
+        {subtype && subtype !== 'ehp' &&
             <img
                 slot="icon"
-                src={ICONS_BY_SUBYPE[subtype]}
+                src={ICONS_BY_SUBTYPE[subtype]}
                 width="32"
                 height="32"
             />

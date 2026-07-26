@@ -13,8 +13,10 @@ interface Props {
     item:           RootSingleItem;
     size?:          ButtonSizes;
     character_id:   number;
+    has_blueprints?: boolean;
     hidden?:        boolean;
     id?:            string;
+    render?:        'order_item' | 'breakdown';
 }
 
 const {
@@ -25,11 +27,14 @@ const {
     item,
     size = 'sm',
     character_id,
+    has_blueprints = false,
     hidden = false,
     id,
+    render = 'order_item',
 } = Astro.props
 
 import { hours_diff } from '@helpers/date'
+import { query_string } from '@helpers/string'
 
 const is_assign_window = new Date(item.self_assign_window_ends_at) > new Date()
 const hours_left = hours_diff(new Date(), item.self_assign_window_ends_at)
@@ -37,12 +42,17 @@ const hours_left = hours_diff(new Date(), item.self_assign_window_ends_at)
 let clip_maximum = false
 let max_claimable_items = item.unassigned_quantity
 
-if (item.self_assign_maximum && item.self_assign_maximum > item.unassigned_quantity && is_assign_window) {
-    max_claimable_items = item.self_assign_maximum - claimed
-    clip_maximum = true
+if (item.self_assign_maximum != null && is_assign_window) {
+    const remaining_under_cap = Math.max(0, item.self_assign_maximum - claimed)
+    max_claimable_items = Math.min(item.unassigned_quantity, remaining_under_cap)
+    clip_maximum = remaining_under_cap < item.unassigned_quantity
 }
 
-const ORDER_ITEM_PARTIAL_URL = translatePath(`/partials/order_item_component?order_id=${order_id}&item_id=${item.id}`)
+const ORDER_ITEM_PARTIAL_URL = translatePath(`/partials/order_item_component?${query_string({
+    order_id: order_id,
+    item_id: item.id,
+    ...(render === 'breakdown' ? { render: 'breakdown' } : {}),
+})}`)
 
 import { number_thousand_separator } from '@helpers/numbers'
 
@@ -56,6 +66,11 @@ import DialogButton from "@components/blocks/DialogButton.astro";
 import Button from '@components/blocks/Button.astro';
 import Input from '@components/blocks/Input.astro';
 import ItemBadge from '@components/blocks/ItemBadge.astro';
+import Markdown from './Markdown.astro';
+import TextGroup from './TextGroup.astro';
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro';
+
+import AddIcon from '@components/icons/buttons/AddIcon.astro';
 ---
 
 <DialogButton
@@ -67,6 +82,7 @@ import ItemBadge from '@components/blocks/ItemBadge.astro';
     max_width='520px'
     disable_when_open={true}
 >
+    <AddIcon slot="icon" />
     {reclaim ? t('my_claim') : t('claim')}
 
     <form
@@ -134,6 +150,13 @@ import ItemBadge from '@components/blocks/ItemBadge.astro';
                         }
                     </Flexblock>
 
+                    <RadioCheckInput
+                        type="checkbox"
+                        name="has_blueprints"
+                        label={t('i_have_blueprints')}
+                        checked={has_blueprints ? 'checked' : undefined}
+                    />
+
                     <Flexblock gap='var(--space-3xs)'>
                         <FlexInline justification='flex-end'>
                             <small>{t('total_to_produce')}</small>
@@ -158,6 +181,12 @@ import ItemBadge from '@components/blocks/ItemBadge.astro';
                     </Flexblock>
                 </Flexblock>
             </Flexblock>
+
+            {reclaim &&
+                <TextGroup title={t('remove_order')}>
+                    <Markdown markdown={t('remove_order_hint')} inline={true} inline_element='small' />
+                </TextGroup>
+            }
 
             <FlexInline justification='flex-end'>
                 <Button

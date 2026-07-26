@@ -94,7 +94,9 @@ class SellOrderLocationResponse(BaseModel):
 def _bulk_current_stock_by_location(location_pks):
     stock_by_location = defaultdict(dict)
     for row in (
-        EveMarketItemOrder.objects.filter(location_id__in=location_pks)
+        EveMarketItemOrder.objects.filter(
+            location_id__in=location_pks, is_buy_order=False
+        )
         .values("location_id", "item__name")
         .annotate(total=Sum("quantity"))
     ):
@@ -105,7 +107,9 @@ def _bulk_current_stock_by_location(location_pks):
 def _bulk_lowest_prices_by_location(location_pks):
     lowest_by_location = defaultdict(dict)
     for row in (
-        EveMarketItemOrder.objects.filter(location_id__in=location_pks)
+        EveMarketItemOrder.objects.filter(
+            location_id__in=location_pks, is_buy_order=False
+        )
         .values("location_id", "item__name")
         .annotate(lowest=Min("price"))
     ):
@@ -120,6 +124,7 @@ def _bulk_issuers_by_location(location_pks):
     for location_id, item_name, issuer_id in (
         EveMarketItemOrder.objects.filter(
             location_id__in=location_pks,
+            is_buy_order=False,
             issuer_external_id__isnull=False,
         )
         .distinct()

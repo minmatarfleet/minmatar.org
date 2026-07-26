@@ -11,6 +11,9 @@ from tribes.endpoints.groups.schemas import (
     RequirementSchema,
     TribeGroupSchema,
 )
+from tribes.endpoints.groups.rank_serializers import (
+    serialize_tribe_group_ranks,
+)
 from tribes.models import Tribe, TribeGroupMembership
 
 PATH = "/{tribe_id}/groups"
@@ -46,6 +49,7 @@ def get_tribe_groups(request, tribe_id: int):
         tribe.groups.filter(is_active=True)
         .select_related("chief__eveplayer__primary_character")
         .prefetch_related(
+            "ranks",
             "requirements__asset_types__eve_type",
             "requirements__asset_types__locations",
             "requirements__qualifying_skills__eve_type",
@@ -101,6 +105,7 @@ def get_tribe_groups(request, tribe_id: int):
                     )
                     for req in tg.requirements.all()
                 ],
+                ranks=serialize_tribe_group_ranks(tg),
             )
         )
     return 200, result

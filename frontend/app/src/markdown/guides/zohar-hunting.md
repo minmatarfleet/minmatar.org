@@ -2,7 +2,7 @@
 title: 'Zohar''s Chosen Angel Hunting'
 excerpt: 'Hunt Zohar''s Chosen Angel NPCs in insurgency systems: fitting, scanning, tactics, and cashing in.'
 category: 'PVE'
-author: 'Bobb Bobbington and Silvatek'
+author: 'Bobb Bobbington'
 ---
 ## Before you start
 

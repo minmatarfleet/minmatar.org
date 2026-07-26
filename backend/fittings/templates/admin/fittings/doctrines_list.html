@@ -1,0 +1,80 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  {% include "admin/fittings/_fittings_styles.html" %}
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate "Home" %}</a>
+  &rsaquo; {% translate "Doctrines" %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  {% include "admin/fittings/_learn_more_start.html" %}
+    <p>
+      {% blocktranslate trimmed %}
+      Browse alliance doctrines here. To change a doctrine or its composition,
+      open it and submit a change request. Non-experimental doctrines require
+      approval before changes go live.
+      {% endblocktranslate %}
+    </p>
+  {% include "admin/fittings/_learn_more_end.html" %}
+
+  <div class="fittings-toolbar">
+    <a href="{{ add_url }}" class="fittings-btn fittings-btn--primary">{% translate "Request new doctrine" %}</a>
+    {% if pending_count %}
+    <a href="{{ pending_requests_url }}" class="fittings-btn fittings-btn--secondary">
+      {% blocktranslate count counter=pending_count %}
+      {{ counter }} pending doctrine request
+      {% plural %}
+      {{ counter }} pending doctrine requests
+      {% endblocktranslate %}
+    </a>
+    {% endif %}
+  </div>
+
+  <table class="fittings-data-table">
+    <thead>
+      <tr>
+        <th>{% translate "Name" %}</th>
+        <th>{% translate "Type" %}</th>
+        <th>{% translate "Primary" %}</th>
+        <th>{% translate "Secondary" %}</th>
+        <th>{% translate "Support" %}</th>
+        <th>{% translate "Status" %}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td><strong>{{ row.doctrine.name }}</strong></td>
+        <td>{{ row.doctrine.get_type_display }}</td>
+        <td>{{ row.composition.primary }}</td>
+        <td>{{ row.composition.secondary }}</td>
+        <td>{{ row.composition.support }}</td>
+        <td>
+          {% if row.has_pending %}
+          <span class="fittings-pending-badge">{% translate "Pending change" %}</span>
+          {% else %}
+          —
+          {% endif %}
+        </td>
+        <td><a href="{{ row.edit_url }}" class="fittings-btn fittings-btn--primary">{% translate "Open" %}</a></td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7">{% translate "No doctrines yet." %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

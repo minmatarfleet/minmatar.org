@@ -1,0 +1,103 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  {% include "admin/industry/_styles.html" %}
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate "Home" %}</a>
+  &rsaquo; {% translate "Industry orders" %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <header class="industry-hub-header">
+    <h1 class="industry-hub-header__title">{% translate "Industry orders" %}</h1>
+    <p class="industry-hub-header__desc">
+      {% blocktranslate trimmed %}
+      Manage build orders, their line items, and character assignments from one
+      place. Open an order hub to edit settings, add items, or review who is
+      building what.
+      {% endblocktranslate %}
+    </p>
+  </header>
+
+  {% include "admin/industry/_learn_more_start.html" %}
+    <p>
+      {% blocktranslate trimmed %}
+      An order is the top-level request (character, location, needed-by date).
+      Items are the Eve types and quantities to build. Assignments split each
+      item across builders. Products and mining completions are managed separately
+      under Supply.
+      {% endblocktranslate %}
+    </p>
+  {% include "admin/industry/_learn_more_end.html" %}
+
+  <section class="industry-section">
+    <div class="industry-section-header">
+      <h2>{% translate "Orders" %}</h2>
+      <a href="{{ add_order_url }}" class="industry-btn industry-btn--primary">{% translate "Add order" %}</a>
+    </div>
+    <p class="industry-section-desc">
+      {% blocktranslate trimmed %}
+      Recent orders (newest first). Use Open hub to manage items and
+      assignments without hunting through separate admin tables.
+      {% endblocktranslate %}
+    </p>
+    <table class="industry-data-table">
+      <thead>
+        <tr>
+          <th>{% translate "Order" %}</th>
+          <th>{% translate "Character" %}</th>
+          <th>{% translate "Needed by" %}</th>
+          <th>{% translate "Status" %}</th>
+          <th>{% translate "Items" %}</th>
+          <th>{% translate "Assignments" %}</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in order_rows %}
+        <tr>
+          <td>
+            <a href="{{ row.hub_url }}">#{{ row.order.pk }}</a>
+            {% if row.order.public_short_code %}
+            <span class="industry-settings-panel__value--inactive">({{ row.order.public_short_code }})</span>
+            {% endif %}
+          </td>
+          <td>{{ row.order.character.character_name }}</td>
+          <td>{{ row.order.needed_by }}</td>
+          <td>
+            {% if row.order.fulfilled_at %}
+            <span class="industry-status--fulfilled">{% translate "Fulfilled" %}</span>
+            {% else %}
+            <span class="industry-status--open">{% translate "Open" %}</span>
+            {% endif %}
+          </td>
+          <td>{{ row.item_count }}</td>
+          <td>{{ row.assignment_count }}</td>
+          <td>
+            <a href="{{ row.hub_url }}" class="industry-btn industry-btn--secondary">{% translate "Open hub" %}</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7">{% translate "No orders yet." %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if order_rows %}
+    <p class="industry-section-desc">
+      <a href="{{ all_orders_url }}">{% translate "View full changelist" %}</a>
+    </p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

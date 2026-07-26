@@ -10,6 +10,7 @@ from eveonline.models import EveCorporation
 from discord.client import DiscordClient
 from groups.models import EveCorporationGroup
 
+from .l3arn import application_discord_description
 from .models import EveCorporationApplication
 
 logger = logging.getLogger(__name__)
@@ -55,7 +56,9 @@ def eve_corporation_application_post_save(
         message += "\n\n"
         message += f"Main Character: {primary_character.character_name}\n"
         message += f"Applying to: {corp_name}\n"
-        message += f"Description: {instance.description}\n"
+        description = instance.description
+        description = application_discord_description(description)
+        message += f"Description: {description}\n"
         application_url = f"https://my.minmatar.org/alliance/corporations/application/{instance.corporation_id}/{instance.id}"
         message += f"{application_url}\n"
         response = discord.create_forum_thread(

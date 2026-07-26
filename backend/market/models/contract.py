@@ -3,6 +3,8 @@ from django.db import models
 from fittings.models import EveFitting
 from eveonline.models import EveLocation
 
+from market.helpers.contract_stock import outstanding_stock_q
+
 
 class EveMarketContractExpectation(models.Model):
     fitting = models.ForeignKey(EveFitting, on_delete=models.CASCADE)
@@ -15,9 +17,9 @@ class EveMarketContractExpectation(models.Model):
     @property
     def current_quantity(self):
         return EveMarketContract.objects.filter(
+            outstanding_stock_q(),
             fitting=self.fitting,
             location=self.location,
-            status="outstanding",
         ).count()
 
     @property
@@ -34,19 +36,6 @@ class EveMarketContractExpectation(models.Model):
         return (
             self.current_quantity
             < self.desired_quantity * understocked_percentage
-        )
-
-
-class EveMarketContractResponsibility(models.Model):
-    expectation = models.ForeignKey(
-        EveMarketContractExpectation, on_delete=models.CASCADE
-    )
-    # character or corporation
-    entity_id = models.BigIntegerField()
-
-    def __str__(self):
-        return str(
-            f"{self.entity_id} - {self.expectation.fitting.name} - {self.expectation.location}"
         )
 
 
@@ -82,9 +71,47 @@ class EveMarketContract(models.Model):
     fitting = models.ForeignKey(
         EveFitting, on_delete=models.SET_NULL, null=True, blank=True
     )
+    items_fetched = models.BooleanField(default=False)
+    items_fetched_at = models.DateTimeField(null=True, blank=True)
+    match_score = models.FloatField(null=True, blank=True)
+    match_is_flagged = models.BooleanField(default=False)
 
     def __str__(self):
         return str(f"{self.title} - {self.location}")
+
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=["location", "status"],
+                name="market_contract_loc_status",
+            ),
+            models.Index(
+                fields=["location", "status", "fitting"],
+                name="market_contract_loc_stat_fit",
+            ),
+        ]
+
+
+class EveMarketContractItem(models.Model):
+    contract = models.ForeignKey(
+        EveMarketContract,
+        on_delete=models.CASCADE,
+        related_name="items",
+    )
+    type_id = models.IntegerField()
+    quantity = models.IntegerField(default=1)
+    is_included = models.BooleanField(default=True)
+    is_singleton = models.BooleanField(null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(
+                fields=["contract", "type_id"], name="market_contractitem_ct"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.type_id} x{self.quantity}"
 
 
 class EveMarketContractError(models.Model):

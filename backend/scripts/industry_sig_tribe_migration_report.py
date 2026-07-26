@@ -43,10 +43,10 @@ FREIGHT_DAYS = 30
 
 # SIG group name (group__name) → (tribe_name, tribe_group_name)
 SIG_TO_TRIBE_GROUP = {
-    "SIG - Mining": ("Industry", "Mining"),
-    "SIG - Ship Production": ("Industry", "Subcapital Production"),
-    "SIG - Capital Production": ("Industry", "Capital Production"),
-    "SIG - Freighters": ("Market", "Freighters"),
+    "SIG - Mining": ("Supply", "Mining"),
+    "SIG - Ship Production": ("Supply", "Subcapital Production"),
+    "SIG - Capital Production": ("Supply", "Capital Production"),
+    "SIG - Freighters": ("Supply", "Freighters"),
 }
 
 # For output filenames (no spaces)
@@ -72,7 +72,7 @@ def run():
 
     # Load tribe groups from Industry and Market tribes
     tribe_groups_by_key = {}
-    for tribe_name in ("Industry", "Market"):
+    for tribe_name in ("Supply",):
         print("Loading %s tribe..." % tribe_name)
         try:
             tribe = Tribe.objects.using(DB).get(name=tribe_name)

@@ -12,6 +12,7 @@ from audit.models import AuditEntry
 from applications.models import EveCorporationApplication
 from eveonline.endpoints.characters.schemas import UserCharacter
 from eveonline.helpers.characters import (
+    merge_scope_groups,
     set_primary_character,
     user_primary_character,
 )
@@ -22,7 +23,11 @@ from eveonline.models import (
     EveCharacterTag,
     EveCorporation,
 )
-from eveonline.scopes import scope_group, TokenType, token_type_str
+from eveonline.scopes import (
+    scope_group,
+    TokenType,
+    token_type_str,
+)
 from groups.helpers import PEOPLE_TEAM, TECH_TEAM, user_in_team
 
 logger = logging.getLogger(__name__)
@@ -151,33 +156,58 @@ def fixup_character_token_level(character, token_count):
             character.save(update_fields=["esi_token_level"])
 
 
+def _linked_token_level(token: Token, fallback_group: str) -> str:
+    if token.scopes.exists():
+        return scope_group(token) or fallback_group
+    return fallback_group
+
+
+def _delete_other_character_tokens(
+    character_id: int, keep_token: Token
+) -> None:
+    Token.objects.filter(character_id=character_id).exclude(
+        pk=keep_token.pk
+    ).delete()
+
+
 def apply_token_to_existing_character(character, token, token_type):
+    group_name = token_type_str(token_type)
+    character.esi_scope_groups = merge_scope_groups(
+        getattr(character, "esi_scope_groups", None),
+        group_name,
+    )
+
+    new_scope_count = token.scopes.count()
+    old_token = character.token
+    level = _linked_token_level(token, group_name)
+
     if (
-        character.token
-        and character.token != token
-        and len(list(token.scopes.all()))
-        >= len(list(character.token.scopes.all()))
+        old_token
+        and old_token != token
+        and new_scope_count >= old_token.scopes.count()
     ):
         logger.info("Replacing token for %s", token.character_id)
-        old_token = character.token
-        character.token = token
-        character.esi_token_level = token_type_str(token_type)
-        character.user = token.user
-        character.esi_suspended = False
-        character.save()
-        old_token.delete()
-    elif not character.token:
         character.token = token
         character.user = token.user
-        character.esi_token_level = token_type_str(token_type)
+        character.esi_token_level = level
         character.esi_suspended = False
         character.save()
-    elif token != character.token:
+        _delete_other_character_tokens(character.character_id, token)
+    elif not old_token:
+        character.token = token
+        character.user = token.user
+        character.esi_token_level = level
+        character.esi_suspended = False
+        character.save()
+        _delete_other_character_tokens(character.character_id, token)
+    elif old_token == token:
+        character.esi_token_level = level
+        character.esi_suspended = False
+        character.save()
+        _delete_other_character_tokens(character.character_id, token)
+    elif token != old_token:
         token.delete()
-    token_count = Token.objects.filter(
-        character_id=character.character_id
-    ).count()
-    fixup_character_token_level(character, token_count)
+        character.save(update_fields=["esi_scope_groups"])
 
 
 def maybe_populate_ceo_corporation(character, token_type):
@@ -208,6 +238,7 @@ def handle_add_character_esi_callback(request, token, token_type):
             character_id=token.character_id,
             character_name=token.character_name,
             esi_token_level=token_type_str(token_type),
+            esi_scope_groups=[token_type_str(token_type)],
             token=token,
             user=token.user,
         )

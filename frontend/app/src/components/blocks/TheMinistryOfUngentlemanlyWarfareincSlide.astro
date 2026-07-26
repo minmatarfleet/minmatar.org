@@ -1,0 +1,242 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { CorporationObject } from '@dtypes/layout_components'
+
+import { query_string } from '@helpers/string';
+
+interface Props {
+    corporation:            CorporationObject;
+    is_user_corporation?:   boolean;
+    picture_placement?:     'left' | 'right';
+    
+}
+
+const {
+    corporation,
+    is_user_corporation = false,
+    picture_placement = 'left',
+} = Astro.props
+
+const TWAN_MOLENAAR_ID = 2114993571
+const HENO = 242136282
+
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import CorporationSlide from '@components/blocks/CorporationSlide.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
+---
+
+<CorporationSlide
+    id="atrocities-slide"
+    ceo_image='/images/corporations/atrocities/ceo.webp'
+    ceo_character_id={HENO}
+    corporation={corporation}
+    is_user_corporation={is_user_corporation}
+    picture_placement='left'
+    mirror_slide={picture_placement === 'right'}
+>
+    <StylessButton
+        class="[ co-ceo ]"
+        slot="coceo"
+        x-data={`{
+            show_character_modal() {
+                show_modal({
+                    partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
+                        character_id: TWAN_MOLENAAR_ID.toString(),
+                    })}',
+                })
+            }
+        }`}
+        x-on:click="show_character_modal()"
+    >
+        <img src="/images/corporations/atrocities/co-ceo.webp" />
+    </StylessButton>
+    
+    <img slot="ships" class="[ ikitursa ]" src="/images/corporations/atrocities/ikitursa.png" />
+    <img slot="ships" class="[ hecate ]" src="/images/corporations/atrocities/hecate.png" />
+    <img slot="ships" class="[ orthrus ]" src="/images/corporations/atrocities/orthrus.png" />
+
+    <Flexblock set:html={marked.parse(corporation.introduction ? corporation.introduction : t('atrocities_description_fallback'), { renderer })} />
+</CorporationSlide>
+
+<style lang="scss">
+    .co-ceo {
+        z-index: 11;
+        position: absolute;
+        cursor: pointer;
+        transform: scale(0.5);
+        opacity: 0;
+        height: 99%;
+        left: 3%;
+        top: 0;
+        filter: drop-shadow(0px 0px 0px black);
+
+        img {
+            mask-image: linear-gradient(to bottom, black 70%, transparent 95%);
+            width: auto;
+            height: 100%;
+        }
+
+        &:focus-visible {
+            outline: none;
+        }
+
+        &:focus-visible,
+        &:hover {
+            img {
+                filter: drop-shadow(0px 0px 3px rgba(255, 255, 255, 0.75));
+            }
+        }
+    }
+
+    .ikitursa {
+        position: absolute;
+        top: 14%;
+        left: -39%;
+        height: auto;
+        width: 50%;
+        z-index: 0;
+        transform: scale(0);
+    }
+
+    .hecate {
+        position: absolute;
+        top: 41%;
+        left: -20%;
+        width: 74%;
+        height: auto;
+        z-index: 2;
+        transform: scale(0);
+    }
+
+    .orthrus {
+        position: absolute;
+        top: 39%;
+        left: -12%;
+        width: 61%;
+        height: auto;
+        z-index: 1;
+        transform: scale(0);
+    }
+
+    @keyframes ikitursa {
+        0% {
+            transform: scale(0);
+            top: 22%;
+            left: 4%;
+        }
+
+        30% {
+            transform: scale(1);
+            top: 1%;
+            left: 47%;
+        }
+
+        100% {
+            transform: scale(1.03);
+            top: -2%;
+            left: 51%;
+        }
+    }
+
+    @keyframes hecate {
+        0% {
+            transform: scale(0);
+            top: 30%;
+            left: -10%;
+        }
+
+        33% {
+            transform: scale(1);
+            top: 31%;
+            left: 36%;
+        }
+
+        100% {
+            transform: scale(1.05);
+            top: 31%;
+            left: 39%;
+        }
+    }
+
+    @keyframes orthrus {
+        0% {
+            transform: scale(0);
+            left: 3%;
+            top: 7%;
+        }
+
+        36% {
+            transform: scale(1);
+            top: 34%;
+            left: 45%;
+        }
+
+        100% {
+            transform: scale(1.03);
+            top: 36%;
+            left: 48%;
+        }
+    }
+
+    @keyframes coceo {
+        0% {
+            transform: scale(0.9);
+            opacity: 0;
+        }
+
+        20% {
+            opacity: 1;
+        }
+
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+</style>
+
+<style lang="scss" is:global>
+    #atrocities-slide .ceo {
+        left: -10%;
+    }
+
+    .swiper-slide-active {
+        .ikitursa {
+            animation: ikitursa cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.7s;
+            animation-delay: 1.2s;
+            animation-iteration-count: 1;
+            transform-origin: center;
+            animation-fill-mode: forwards;
+        }
+        
+        .hecate {
+            animation: hecate cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.6s;
+            animation-delay: 1.3s;
+            animation-iteration-count: 1;
+            transform-origin: center;
+            animation-fill-mode: forwards;
+        }
+        
+        .orthrus {
+            animation: orthrus cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.5s;
+            animation-delay: 1.4s;
+            animation-iteration-count: 1;
+            transform-origin: center;
+            animation-fill-mode: forwards;
+        }
+
+        #atrocities-slide .co-ceo {
+            animation: coceo ease-out 3.2s;
+            animation-delay: 0.25s;
+            animation-iteration-count: 1;
+            transform-origin: bottom;
+            animation-fill-mode: forwards;
+        }
+    }
+</style>

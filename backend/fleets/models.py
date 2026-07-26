@@ -129,6 +129,14 @@ class EveFleet(models.Model):
 
         response = esi_response.data
 
+        # Only the in-game fleet boss (fleet commander) may link/start tracking.
+        # Otherwise a member can "steal" an existing EveFleetInstance.
+        if response.get("fleet_boss_id") != eve_character.character_id:
+            raise RuntimeError(
+                f"Character {eve_character.character_name} is not the fleet "
+                f"commander (starting fleet {self.id})"
+            )
+
         if EveFleetInstance.objects.filter(id=response["fleet_id"]).exists():
             fleet_instance = EveFleetInstance.objects.get(
                 id=response["fleet_id"]
@@ -233,6 +241,7 @@ class EveFleetInstance(models.Model):
             volunteer_url = (
                 _motd_volunteer_url(self.eve_fleet) if missing_roles else None
             )
+            fleet_edit_url = _motd_fleet_edit_url(self.eve_fleet)
             self.motd = get_motd(
                 self.eve_fleet.fleet_commander.character_id,
                 self.eve_fleet.fleet_commander.character_name,
@@ -253,6 +262,7 @@ class EveFleetInstance(models.Model):
                 role_volunteers=role_volunteers,
                 missing_roles=missing_roles or None,
                 volunteer_url=volunteer_url,
+                fleet_edit_url=fleet_edit_url,
             )
             update["motd"] = self.motd
 
@@ -262,7 +272,12 @@ class EveFleetInstance(models.Model):
             self.is_free_move = True
             self.save()
         else:
-            logger.warning("Error updating Eve fleet %d", self.id)
+            logger.warning(
+                "Error updating Eve fleet %d: %s (%s)",
+                self.id,
+                response.response,
+                response.response_code,
+            )
 
     def refresh_motd(self):
         """Regenerate and push the fleet MOTD to ESI. Public API for callers."""
@@ -276,6 +291,7 @@ class EveFleetInstance(models.Model):
         volunteer_url = (
             _motd_volunteer_url(self.eve_fleet) if missing_roles else None
         )
+        fleet_edit_url = _motd_fleet_edit_url(self.eve_fleet)
         motd = get_motd(
             self.eve_fleet.fleet_commander.character_id,
             self.eve_fleet.fleet_commander.character_name,
@@ -292,20 +308,18 @@ class EveFleetInstance(models.Model):
             role_volunteers=role_volunteers,
             missing_roles=missing_roles or None,
             volunteer_url=volunteer_url,
+            fleet_edit_url=fleet_edit_url,
         )
-        # token = self.eve_fleet.token
         update = {"motd": motd}
-        response = (
-            EsiClient(self.eve_fleet.fleet_commander)
-            .update_fleet_details(self.id, update)
-            .results()
-        )
-        # response = esi.client.Fleets.put_fleets_fleet_id(
-        #     fleet_id=self.id, new_settings={"motd": motd}, token=token
-        # ).results()
+        response = self.esi_client().update_fleet_details(self.id, update)
+        if not response.success():
+            raise ValueError(
+                f"Cannot return data for failed ESI call ({response.response_code}): "
+                f"{response.response}"
+            )
         self.motd = motd
         self.save()
-        return response
+        return response.results() if response.data is not None else None
 
     def update_free_move(self):
         """
@@ -324,9 +338,16 @@ class EveFleetInstance(models.Model):
         #     token=token,
         # ).results()
         update = {"is_free_move": True}
-        response = (
-            self.esi_client().update_fleet_details(self.id, update).results()
-        )
+        response = self.esi_client().update_fleet_details(self.id, update)
+        if not response.success():
+            logger.warning(
+                "Error setting free move for fleet %d: %s (%s)",
+                self.id,
+                response.response,
+                response.response_code,
+            )
+            return None
+        response = response.results() if response.data is not None else None
 
         self.is_free_move = True
         self.save()
@@ -551,19 +572,17 @@ class EveFleetInstanceMemberShipSnapshot(models.Model):
 class EveFleetInstanceMemberRole(models.Model):
     """
     Optional role assigned to a fleet instance member for critical fleet positions.
-    Roles: Logi Anchor, DPS Anchor, Links, Cyno, Scout.
+    Roles: Logi Anchor, Links, Cyno, Scout.
     For roles that need extra coordination (e.g. Links), use the optional RoleDetail.
     """
 
     ROLE_LOGI_ANCHOR = "logi_anchor"
-    ROLE_DPS_ANCHOR = "dps_anchor"
     ROLE_LINKS = "links"
     ROLE_CYNO = "cyno"
     ROLE_SCOUT = "scout"
 
     ROLE_CHOICES = (
         (ROLE_LOGI_ANCHOR, "Logi Anchor"),
-        (ROLE_DPS_ANCHOR, "DPS Anchor"),
         (ROLE_LINKS, "Links"),
         (ROLE_CYNO, "Cyno"),
         (ROLE_SCOUT, "Scout"),
@@ -606,17 +625,15 @@ class EveFleetInstanceMemberRole(models.Model):
 class EveFleetInstanceMemberRoleDetail(models.Model):
     """
     Optional detail for a fleet member role when the role needs extra coordination
-    (e.g. Links: subtype shield/armor/info/skirmish; quantity for slot counts).
+    (e.g. Links: subtype ehp/info/skirmish; quantity for slot counts).
     """
 
-    SUBTYPE_ARMOR = "armor"
-    SUBTYPE_SHIELD = "shield"
+    SUBTYPE_EHP = "ehp"
     SUBTYPE_INFO = "info"
     SUBTYPE_SKIRMISH = "skirmish"
 
     SUBTYPE_CHOICES = (
-        (SUBTYPE_ARMOR, "Armor"),
-        (SUBTYPE_SHIELD, "Shield"),
+        (SUBTYPE_EHP, "EHP"),
         (SUBTYPE_INFO, "Info"),
         (SUBTYPE_SKIRMISH, "Skirmish"),
     )
@@ -631,7 +648,7 @@ class EveFleetInstanceMemberRoleDetail(models.Model):
         choices=SUBTYPE_CHOICES,
         null=True,
         blank=True,
-        help_text="Optional; e.g. armor, shield, info, skirmish for roles that need it.",
+        help_text="Optional; e.g. ehp, info, skirmish for roles that need it.",
     )
     quantity = models.PositiveSmallIntegerField(
         null=True,
@@ -655,27 +672,23 @@ class EveFleetRoleVolunteer(models.Model):
     """
 
     ROLE_LOGI_ANCHOR = "logi_anchor"
-    ROLE_DPS_ANCHOR = "dps_anchor"
     ROLE_LINKS = "links"
     ROLE_CYNO = "cyno"
     ROLE_SCOUT = "scout"
 
     ROLE_CHOICES = (
         (ROLE_LOGI_ANCHOR, "Logi Anchor"),
-        (ROLE_DPS_ANCHOR, "DPS Anchor"),
         (ROLE_LINKS, "Links"),
         (ROLE_CYNO, "Cyno"),
         (ROLE_SCOUT, "Scout"),
     )
 
-    SUBTYPE_ARMOR = "armor"
-    SUBTYPE_SHIELD = "shield"
+    SUBTYPE_EHP = "ehp"
     SUBTYPE_INFO = "info"
     SUBTYPE_SKIRMISH = "skirmish"
 
     SUBTYPE_CHOICES = (
-        (SUBTYPE_ARMOR, "Armor"),
-        (SUBTYPE_SHIELD, "Shield"),
+        (SUBTYPE_EHP, "EHP"),
         (SUBTYPE_INFO, "Info"),
         (SUBTYPE_SKIRMISH, "Skirmish"),
     )
@@ -713,10 +726,9 @@ class EveFleetRoleVolunteer(models.Model):
 
 
 def _motd_role_volunteers(eve_fleet):
-    """Build role_volunteers list for get_motd: Logi Anchor, DPS Anchor, Cynos."""
+    """Build role_volunteers list for get_motd: Logi Anchor, Cynos."""
     critical_roles = [
         (EveFleetRoleVolunteer.ROLE_LOGI_ANCHOR, "Logi Anchor"),
-        (EveFleetRoleVolunteer.ROLE_DPS_ANCHOR, "DPS Anchor"),
         (EveFleetRoleVolunteer.ROLE_CYNO, "Cynos"),
     ]
     result = []
@@ -735,17 +747,16 @@ def _motd_role_volunteers(eve_fleet):
 
 def _motd_missing_roles(eve_fleet):
     """
-    Required: all 4 link subtypes, 1 logi anchor, 1 dps anchor, at least 2 cynos.
-    Return list of short strings for MOTD, e.g. ["Logi Anchor", "Links (Armor)", "1 more Cyno"].
+    Required: all 3 link subtypes, 1 logi anchor, at least 2 cynos.
+    Return list of short strings for MOTD, e.g. ["EHP links", "Logi anchor", "Cynos"].
     """
     missing = []
 
-    # Links: need at least one volunteer per subtype (armor, shield, info, skirmish)
+    # Links: need at least one volunteer per subtype (ehp, info, skirmish)
     link_subtype_labels = {
-        EveFleetRoleVolunteer.SUBTYPE_ARMOR: "Armor",
-        EveFleetRoleVolunteer.SUBTYPE_SHIELD: "Shield",
-        EveFleetRoleVolunteer.SUBTYPE_INFO: "Info",
-        EveFleetRoleVolunteer.SUBTYPE_SKIRMISH: "Skirmish",
+        EveFleetRoleVolunteer.SUBTYPE_EHP: "EHP links",
+        EveFleetRoleVolunteer.SUBTYPE_INFO: "Info links",
+        EveFleetRoleVolunteer.SUBTYPE_SKIRMISH: "Skirm links",
     }
     links_with_subtype = set(
         EveFleetRoleVolunteer.objects.filter(
@@ -758,29 +769,20 @@ def _motd_missing_roles(eve_fleet):
     )
     for subtype_value, label in link_subtype_labels.items():
         if subtype_value not in links_with_subtype:
-            missing.append(f"Links ({label})")
+            missing.append(label)
 
     # Logi anchor: need at least 1
     if not EveFleetRoleVolunteer.objects.filter(
         eve_fleet=eve_fleet, role=EveFleetRoleVolunteer.ROLE_LOGI_ANCHOR
     ).exists():
-        missing.append("Logi Anchor")
-
-    # DPS anchor: need at least 1
-    if not EveFleetRoleVolunteer.objects.filter(
-        eve_fleet=eve_fleet, role=EveFleetRoleVolunteer.ROLE_DPS_ANCHOR
-    ).exists():
-        missing.append("DPS Anchor")
+        missing.append("Logi anchor")
 
     # Cynos: need at least 2
     cyno_count = EveFleetRoleVolunteer.objects.filter(
         eve_fleet=eve_fleet, role=EveFleetRoleVolunteer.ROLE_CYNO
     ).count()
     if cyno_count < 2:
-        if cyno_count == 0:
-            missing.append("2 Cynos")
-        else:
-            missing.append("1 more Cyno")
+        missing.append("Cynos")
 
     return missing
 
@@ -789,6 +791,12 @@ def _motd_volunteer_url(eve_fleet):
     """URL to the fleet volunteer page for MOTD."""
     base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org")
     return f"{base.rstrip('/')}/fleets/upcoming/{eve_fleet.id}/volunteer"
+
+
+def _motd_fleet_edit_url(eve_fleet):
+    """URL to the fleet edit page for MOTD."""
+    base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org")
+    return f"{base.rstrip('/')}/fleets/upcoming/edit/{eve_fleet.id}"
 
 
 class EveFleetAudience(models.Model):

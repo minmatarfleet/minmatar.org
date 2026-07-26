@@ -6,18 +6,17 @@ from django.db import models
 
 from app.models import MinmatarSoftDeleteModel
 from eveonline.models import EveLocation
+from eveuniverse.models import EveType
+from fittings.known_fitting import KnownFitting
 
 
 class FittingTag(models.TextChoices):
     HIGHSEC = "highsec", "Highsec"
-    LOWSEC = "lowsec", "Lowsec"
     NULLSEC = "nullsec", "Nullsec"
     FACTION_WARFARE = "faction_warfare", "Faction warfare"
-    SOLO = "solo", "Solo"
     NANOGANG = "nanogang", "Nanogang"
     FLEET_COMPOSITION = "fleet_composition", "Fleet Composition"
     NEW_PLAYER_FRIENDLY = "new_player_friendly", "New Player Friendly"
-    BUDGET = "budget", "Budget"
     CAPITALS = "capitals", "Capitals"
     COMMAND_BURSTS = "command_bursts", "Command Bursts"
     INDUSTRY = "industry", "Industry"
@@ -31,15 +30,17 @@ DOCTRINE_TYPE_STRATEGIC = "strategic"
 PROTECTION_TIER_NON_STRATEGIC = "non_strategic"
 PROTECTION_TIER_STRATEGIC = "strategic"
 
-# Fields that define “the fit” for versioning; changes bump latest_version and may write history.
-EVE_FITTING_VERSIONED_FIELDS = (
+# Scalar fields that define “the fit” for versioning (DB columns on EveFitting).
+EVE_FITTING_VERSIONED_SCALAR_FIELDS = (
     "eft_format",
     "description",
     "aliases",
     "minimum_pod",
     "recommended_pod",
-    "tags",
 )
+
+# Versioned payload fields including tags (slug lists in change-request JSON).
+EVE_FITTING_VERSIONED_FIELDS = EVE_FITTING_VERSIONED_SCALAR_FIELDS + ("tags",)
 
 EVE_DOCTRINE_VERSIONED_FIELDS = ("name", "type", "description")
 
@@ -74,6 +75,19 @@ def location_ids_for_doctrine(doctrine) -> list:
     return sorted(doctrine.locations.values_list("pk", flat=True))
 
 
+class EveFittingTag(models.Model):
+    """Closed vocabulary of fitting tags (seeded from FittingTag choices)."""
+
+    slug = models.SlugField(max_length=64, unique=True)
+    label = models.CharField(max_length=64)
+
+    class Meta:
+        ordering = ["slug"]
+
+    def __str__(self):
+        return self.label
+
+
 class EveFitting(MinmatarSoftDeleteModel):
     """
     Model for storing fittings
@@ -88,6 +102,15 @@ class EveFitting(MinmatarSoftDeleteModel):
     # e.g [FL33T] Tornado, [NVY-30] Tornado
     aliases = models.TextField(blank=True, null=True)
 
+    # Stable app/guide catalog key (not versioned with EFT content).
+    known_key = models.CharField(
+        max_length=64,
+        choices=KnownFitting.choices,
+        blank=True,
+        null=True,
+        help_text="Optional system meaning, e.g. guide.fw-cruiser.omen-kite-pulse.",
+    )
+
     # fitting info
     eft_format = models.TextField()
     latest_version = models.CharField(max_length=255, blank=True)
@@ -99,7 +122,11 @@ class EveFitting(MinmatarSoftDeleteModel):
         blank=True,
         related_name="fittings",
     )
-    tags = models.JSONField(default=list, blank=True)
+    tags = models.ManyToManyField(
+        EveFittingTag,
+        blank=True,
+        related_name="fittings",
+    )
 
     class Meta:
         constraints = [
@@ -108,6 +135,12 @@ class EveFitting(MinmatarSoftDeleteModel):
                 condition=models.Q(deleted__isnull=True),
                 name="unique_evefitting_name_not_deleted",
             ),
+            models.UniqueConstraint(
+                fields=["known_key"],
+                condition=models.Q(deleted__isnull=True)
+                & models.Q(known_key__isnull=False),
+                name="unique_evefitting_known_key_not_deleted",
+            ),
         ]
 
     def __str__(self):
@@ -115,7 +148,7 @@ class EveFitting(MinmatarSoftDeleteModel):
 
     @staticmethod
     def coerce_tags(raw):
-        """Validate tags and return a sorted list of unique allowed values."""
+        """Validate tags and return a sorted list of unique allowed slug values."""
         if raw is None:
             return []
         if not isinstance(raw, list):
@@ -134,15 +167,122 @@ class EveFitting(MinmatarSoftDeleteModel):
         out.sort()
         return out
 
+    def tag_slugs(self) -> list[str]:
+        """Sorted list of related EveFittingTag slugs."""
+        if self.pk is None:
+            return []
+        return sorted(self.tags.values_list("slug", flat=True))
+
+    @staticmethod
+    def known_key_in_use(known_key: str, *, exclude_pk=None) -> bool:
+        """True if an active fit or pending create already owns this catalog key."""
+        if not known_key:
+            return False
+        active = EveFitting.objects.filter(known_key=known_key)
+        if exclude_pk:
+            active = active.exclude(pk=exclude_pk)
+        if active.exists():
+            return True
+        pending_create = EveFitting.all_objects.filter(
+            known_key=known_key,
+            deleted__isnull=False,
+            change_requests__status=ChangeRequestStatus.PENDING,
+            change_requests__change_kind="fitting_create",
+        )
+        if exclude_pk:
+            pending_create = pending_create.exclude(pk=exclude_pk)
+        return pending_create.exists()
+
+    def set_tag_slugs(self, raw, *, write_history: bool = True):
+        """
+        Replace M2M tags from a slug list. Optionally write history and bump
+        latest_version when the slug set changes.
+        """
+        if self.pk is None:
+            raise ValueError("Cannot set tags before the fitting is saved")
+        coerced = self.coerce_tags(raw)
+        current = self.tag_slugs()
+        if coerced == current:
+            return coerced
+
+        if write_history and self.latest_version:
+            old = (
+                EveFitting.all_objects.filter(pk=self.pk)
+                .values(
+                    *EVE_FITTING_VERSIONED_SCALAR_FIELDS,
+                    "latest_version",
+                    "name",
+                    "ship_id",
+                )
+                .first()
+            )
+            if old and old["latest_version"]:
+                EveFittingHistory.objects.create(
+                    fitting_id=self.pk,
+                    superseded_version_id=old["latest_version"],
+                    name=old["name"],
+                    ship_id=old["ship_id"],
+                    eft_format=old["eft_format"],
+                    description=old["description"],
+                    aliases=old["aliases"],
+                    minimum_pod=old["minimum_pod"],
+                    recommended_pod=old["recommended_pod"],
+                    tags=current,
+                )
+                new_version = str(uuid.uuid4())
+                EveFitting.all_objects.filter(pk=self.pk).update(
+                    latest_version=new_version
+                )
+                self.latest_version = new_version
+
+        self.tags.set(
+            [
+                EveFittingTag.objects.get_or_create(
+                    slug=slug,
+                    defaults={
+                        "label": dict(FittingTag.choices).get(slug, slug)
+                    },
+                )[0]
+                for slug in coerced
+            ]
+        )
+        return coerced
+
     def clean(self):
         super().clean()
-        try:
-            self.tags = self.coerce_tags(self.tags)
-        except ValidationError as e:
-            raise ValidationError({"tags": list(e.messages)}) from e
+        if self.known_key == "":
+            self.known_key = None
+        if self.known_key is not None:
+            allowed = {c.value for c in KnownFitting}
+            if self.known_key not in allowed:
+                raise ValidationError(
+                    {
+                        "known_key": f"invalid known fitting key: {self.known_key!r}"
+                    }
+                )
+            if EveFitting.known_key_in_use(self.known_key, exclude_pk=self.pk):
+                raise ValidationError(
+                    {
+                        "known_key": (
+                            f"known key {self.known_key!r} is already assigned "
+                            f"to another fitting."
+                        )
+                    }
+                )
 
     def save(self, *args, **kwargs):
-        self.tags = self.coerce_tags(self.tags)
+        if self.known_key == "":
+            self.known_key = None
+            update_fields = kwargs.get("update_fields")
+            if update_fields is not None:
+                kwargs["update_fields"] = {*update_fields, "known_key"}
+
+        derived_name = self.fitting_name_from_eft(self.eft_format)
+        if derived_name and derived_name != self.name:
+            self.name = derived_name
+            update_fields = kwargs.get("update_fields")
+            if update_fields is not None:
+                kwargs["update_fields"] = {*update_fields, "name"}
 
         if self.pk is None:
             if not self.latest_version:
@@ -151,7 +291,7 @@ class EveFitting(MinmatarSoftDeleteModel):
             old = (
                 EveFitting.all_objects.filter(pk=self.pk)
                 .values(
-                    *EVE_FITTING_VERSIONED_FIELDS,
+                    *EVE_FITTING_VERSIONED_SCALAR_FIELDS,
                     "latest_version",
                     "name",
                     "ship_id",
@@ -163,13 +303,10 @@ class EveFitting(MinmatarSoftDeleteModel):
                     not _eve_fitting_versioned_field_equal(
                         f, old.get(f), getattr(self, f)
                     )
-                    for f in EVE_FITTING_VERSIONED_FIELDS
+                    for f in EVE_FITTING_VERSIONED_SCALAR_FIELDS
                 )
                 if versioned_changed:
                     if old["latest_version"]:
-                        old_tags = old.get("tags")
-                        if not isinstance(old_tags, list):
-                            old_tags = []
                         EveFittingHistory.objects.create(
                             fitting_id=self.pk,
                             superseded_version_id=old["latest_version"],
@@ -180,7 +317,7 @@ class EveFitting(MinmatarSoftDeleteModel):
                             aliases=old["aliases"],
                             minimum_pod=old["minimum_pod"],
                             recommended_pod=old["recommended_pod"],
-                            tags=old_tags,
+                            tags=self.tag_slugs(),
                         )
                     self.latest_version = str(uuid.uuid4())
 
@@ -239,7 +376,7 @@ class EveFittingPod(MinmatarSoftDeleteModel):
         invalid = [
             fitting.name
             for fitting in self.escape_frigate_fittings.all()
-            if FittingTag.ESCAPE_FRIGATE not in (fitting.tags or [])
+            if FittingTag.ESCAPE_FRIGATE not in fitting.tag_slugs()
         ]
         if invalid:
             raise ValidationError(
@@ -302,6 +439,13 @@ class EveFittingRefit(models.Model):
         return f"{self.base_fitting.name} — {self.name}"
 
     def save(self, *args, **kwargs):
+        derived_name = EveFitting.fitting_name_from_eft(self.eft_format)
+        if derived_name and derived_name != self.name:
+            self.name = derived_name
+            update_fields = kwargs.get("update_fields")
+            if update_fields is not None:
+                kwargs["update_fields"] = {*update_fields, "name"}
+
         base_ship = EveFitting.ship_name_from_eft(self.base_fitting.eft_format)
         refit_ship = EveFitting.ship_name_from_eft(self.eft_format)
         if base_ship != refit_ship:
@@ -309,6 +453,72 @@ class EveFittingRefit(models.Model):
                 f"Refit ship '{refit_ship}' must match base fitting ship '{base_ship}'"
             )
         super().save(*args, **kwargs)
+
+
+class EveFittingModuleSubstitution(models.Model):
+    """
+    Per-fitting seeder fallback: if the preferred module cannot be sourced,
+    buy/stock the substitute instead.
+    """
+
+    fitting = models.ForeignKey(
+        EveFitting,
+        on_delete=models.CASCADE,
+        related_name="module_substitutions",
+    )
+    preferred_module = models.ForeignKey(
+        EveType,
+        on_delete=models.CASCADE,
+        related_name="+",
+        verbose_name="If unavailable",
+    )
+    substitute_module = models.ForeignKey(
+        EveType,
+        on_delete=models.CASCADE,
+        related_name="+",
+        verbose_name="Buy instead",
+    )
+    notes = models.CharField(
+        max_length=255,
+        blank=True,
+        default="",
+        help_text="Optional context for seeders (e.g. why this swap is acceptable).",
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["fitting", "preferred_module"],
+                name="unique_fitting_preferred_module_substitution",
+            ),
+        ]
+        ordering = ["preferred_module__name"]
+        verbose_name = "module substitution"
+        verbose_name_plural = "module substitutions"
+
+    def __str__(self):
+        preferred = (
+            self.preferred_module.name if self.preferred_module_id else "?"
+        )
+        substitute = (
+            self.substitute_module.name if self.substitute_module_id else "?"
+        )
+        return f"{preferred} → {substitute}"
+
+    def clean(self):
+        super().clean()
+        if (
+            self.preferred_module_id
+            and self.substitute_module_id
+            and self.preferred_module_id == self.substitute_module_id
+        ):
+            raise ValidationError(
+                {
+                    "substitute_module": (
+                        "Substitute must be a different module than the preferred one."
+                    )
+                }
+            )
 
 
 class EveDoctrine(models.Model):

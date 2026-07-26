@@ -25,6 +25,8 @@ let doctrine:DoctrineType | null = null
 let fetch_doctrine_error: Error | false = false
 let recently_fleets:FleetItem[] | null = null
 
+const active_location_id = parseInt(Astro.url.searchParams.get('location_id') ?? '0')
+
 try {
     doctrine = await fetch_doctrine_by_id(parseInt(doctrine_id))
 
@@ -37,8 +39,6 @@ try {
 }
 
 const DOCTRINE_DETAILS_PARTIAL_URL = translatePath('/partials/doctrine_details_component')
-
-const active_location_id = parseInt(Astro.url.searchParams.get('location_id') ?? '0')
 
 import {
     get_location_video_cover,
@@ -103,6 +103,7 @@ const page_description = doctrine?.description
             <DoctrineDetails 
                 doctrine={doctrine as DoctrineType} 
                 recently_fleets={recently_fleets as FleetItem[]}
+                location_id={active_location_id}
             />
         }
     </PageWide>

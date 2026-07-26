@@ -1,21 +1,27 @@
 ---
-import * as page from '@markdown/story.md';
+import * as page from '@markdown/story.md'
 
-import { marked } from 'marked';
-import { renderer } from '@helpers/marked';
-import { strip_markdown } from '@helpers/string';
-import { defaultChronicleChapterId, getChronicleChapterById } from '@/data/rat-chronicle';
+import { marked } from 'marked'
+import { renderer } from '@helpers/marked'
+import { strip_markdown } from '@helpers/string'
+import { pageProgressFromSections } from '@helpers/pageProgress'
+import {
+    defaultChronicleChapterId,
+    getChronicleChapterById,
+    getChronicleProgressSections,
+} from '@/data/rat-chronicle'
 
-import Viewport from '@layouts/Viewport.astro';
+import Viewport from '@layouts/Viewport.astro'
 
-import PageLanding from '@components/page/PageLanding.astro';
-import PageTitle from '@components/page/PageTitle.astro';
+import PageLanding from '@components/page/PageLanding.astro'
+import PageTitle from '@components/page/PageTitle.astro'
 
-import Wrapper from '@components/compositions/Wrapper.astro';
+import Wrapper from '@components/compositions/Wrapper.astro'
 
-import Flexblock from '@components/compositions/Flexblock.astro';
+import Flexblock from '@components/compositions/Flexblock.astro'
 
-import RatChronicle from '@components/blocks/RatChronicle.astro';
+import RatChronicle from '@components/blocks/RatChronicle.astro'
+import PageProgress from '@components/blocks/PageProgress.astro'
 
 const chapter_id = Astro.params.chapter_id ?? ''
 const chapter = getChronicleChapterById(chapter_id)
@@ -27,6 +33,14 @@ if (!chapter) {
 const page_title = page.frontmatter.title
 const page_description = page.frontmatter.excerpt
 const viewport_title = `${page_title} · Chapter ${chapter.number}: ${chapter.title}`
+
+const progress_sections = getChronicleProgressSections()
+const progress = pageProgressFromSections({
+    page_key: 'alliance/story',
+    page_title,
+    sections: progress_sections,
+    version_source: JSON.stringify(progress_sections),
+})
 ---
 
 <Viewport
@@ -46,7 +60,7 @@ const viewport_title = `${page_title} · Chapter ${chapter.number}: ${chapter.ti
             overlay: true
         }}
     >
-        <Flexblock gap='var(--space-2xl)' class="story-page">
+        <Flexblock gap='var(--space-2xl)' class="story-page" data-page-progress-root>
             <Wrapper
                 max_width="var(--max-content-width)"
                 padding_inline="0"
@@ -55,6 +69,7 @@ const viewport_title = `${page_title} · Chapter ${chapter.number}: ${chapter.ti
                 <Flexblock gap='var(--space-xl)'>
                     <PageTitle is_landing={true}>{page_title}</PageTitle>
                     <p class="[ excerpt ]" set:html={marked.parseInline(page_description as string, { renderer })} />
+                    <PageProgress {...progress} />
                 </Flexblock>
             </Wrapper>
 

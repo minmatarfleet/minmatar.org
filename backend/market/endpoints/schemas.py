@@ -27,12 +27,6 @@ class LocationExpectationsResponse(BaseModel):
     expectations: List[LocationFittingExpectationResponse]
 
 
-class MarketContractResponsibilityResponse(BaseModel):
-    entity_type: str
-    entity_id: int
-    entity_name: str
-
-
 class MarketContractHistoricalQuantityResponse(BaseModel):
     date: str
     quantity: int
@@ -50,5 +44,4 @@ class MarketContractResponse(BaseModel):
     current_quantity: int
     latest_contract_timestamp: str | None = None
     historical_quantity: List[MarketContractHistoricalQuantityResponse]
-    responsibilities: List[MarketContractResponsibilityResponse]
     doctrines: List[MarketContractDoctrineResponse]

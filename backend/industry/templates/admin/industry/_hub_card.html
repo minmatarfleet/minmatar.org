@@ -1,0 +1,17 @@
+<div class="industry-card{% if readonly %} industry-card--readonly{% endif %}">
+  <div class="industry-card__header">
+    <h3>{{ title }}</h3>
+    {% if count is not None %}
+    <span class="industry-card__badge">{{ count }}</span>
+    {% endif %}
+  </div>
+  <p class="industry-card__desc">{{ description }}</p>
+  <div class="industry-card__actions">
+    {% if list_url %}
+    <a href="{{ list_url }}" class="industry-btn industry-btn--primary">{{ list_label }}</a>
+    {% endif %}
+    {% if add_url %}
+    <a href="{{ add_url }}" class="industry-btn industry-btn--secondary">{{ add_label }}</a>
+    {% endif %}
+  </div>
+</div>

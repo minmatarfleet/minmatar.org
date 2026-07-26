@@ -4,5 +4,5 @@
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
-return Astro.redirect(translatePath('/ships/doctrines/'))
+return Astro.redirect(translatePath('/ships/doctrines/'), 301)
 ---

@@ -1,9 +1,7 @@
 from django.contrib import admin
 from django.contrib import messages
-from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Count, Sum
 from django.http import HttpResponseRedirect
-from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils.html import format_html
 from django.utils.http import urlencode
@@ -11,37 +9,49 @@ from django.utils.http import urlencode
 from eveonline.models import EveLocation
 
 from market.models import (
+    EveMarketBuyOrderExpectation,
     EveMarketContract,
     EveMarketContractError,
     EveMarketContractExpectation,
-    EveMarketContractResponsibility,
     EveMarketFittingExpectation,
+    EveMarketInferredSale,
     EveMarketItemExpectation,
     EveMarketItemHistory,
     EveMarketItemLocationPrice,
     EveMarketItemOrder,
-    EveMarketItemResponsibility,
     EveMarketItemTransaction,
+    EveMarketOpsMonitorSnapshot,
+    EveMarketOrderBookSync,
     EveTypeWithSellOrders,
 )
-from market.models.item import _get_consumable_items, parse_eft_items
+from market.models.item import parse_eft_items
+from market.admin_location_views import (
+    market_expectations_view,
+    market_location_buy_orders_view,
+    market_location_contract_expectations_view,
+    market_location_contracts_view,
+    market_location_fitting_expectations_view,
+    market_location_hub_view,
+    market_location_sell_orders_view,
+    market_locations_view,
+)
+from market.helpers.permissions import VIEW_MARKET_LOCATIONS, index_link_perms
 from market.tasks import (
     fetch_market_item_history_for_type,
     fetch_market_location_prices_for_type,
 )
 
-MARKET_INDEX_MODELS = {
-    "evemarketcontractexpectation": "Market contracts",
-    "evetypewithsellorders": "Market sell orders",
-}
+MARKET_INDEX_MODELS = {}
 
 MARKET_EXTRA_INDEX_LINKS = [
     {
-        "name": "Market expectations",
-        "admin_url": "admin:market_expectations",
+        "name": "Market locations",
+        "admin_url": "admin:market_locations",
         "view_only": True,
     },
 ]
+
+_STAGING_EVEONLINE_MODELS = {"evelocation"}
 
 
 def get_market_item_trends(item_id):
@@ -91,11 +101,6 @@ def get_market_item_trends(item_id):
 # ----- Contracts -----
 
 
-class EveMarketContractResponsibilityInline(admin.TabularInline):
-    model = EveMarketContractResponsibility
-    extra = 0
-
-
 @admin.register(EveMarketContractExpectation)
 class EveMarketContractExpectationAdmin(admin.ModelAdmin):
     """Contract expectations: fitting + quantity per location; stock levels from outstanding contracts."""
@@ -126,7 +131,6 @@ class EveMarketContractExpectationAdmin(admin.ModelAdmin):
     )
     autocomplete_fields = ("fitting", "location")
     ordering = ("fitting__name", "location__location_name")
-    inlines = [EveMarketContractResponsibilityInline]
     fieldsets = (
         ("Details", {"fields": ("fitting", "location", "quantity")}),
         (
@@ -144,6 +148,16 @@ class EveMarketContractExpectationAdmin(admin.ModelAdmin):
         ),
     )
 
+    def get_changeform_initial_data(self, request):
+        initial = super().get_changeform_initial_data(request)
+        fitting_id = request.GET.get("fitting")
+        location_id = request.GET.get("location")
+        if fitting_id:
+            initial["fitting"] = int(fitting_id)
+        if location_id:
+            initial["location"] = int(location_id)
+        return initial
+
     @admin.display(description="Outstanding contracts")
     def view_outstanding_contracts_link(self, obj):
         if not obj.pk or not obj.fitting_id or not obj.location_id:
@@ -159,30 +173,6 @@ class EveMarketContractExpectationAdmin(admin.ModelAdmin):
             + urlencode(query)
         )
         return format_html('<a href="{}">View outstanding contracts</a>', url)
-
-
-@admin.register(EveMarketContractResponsibility)
-class EveMarketContractResponsibilityAdmin(admin.ModelAdmin):
-    """Who is responsible for fulfilling a contract expectation (character or corp ID)."""
-
-    list_display = ("expectation", "entity_id", "get_fitting", "get_location")
-    list_display_links = ("expectation",)
-    search_fields = (
-        "entity_id",
-        "expectation__fitting__name",
-        "expectation__location__location_name",
-    )
-    list_filter = ("expectation__location", "expectation__fitting")
-    list_per_page = 50
-    autocomplete_fields = ("expectation",)
-
-    @admin.display(description="Fitting")
-    def get_fitting(self, obj):
-        return obj.expectation.fitting.name
-
-    @admin.display(description="Location")
-    def get_location(self, obj):
-        return obj.expectation.location.location_name
 
 
 @admin.register(EveMarketContract)
@@ -269,6 +259,33 @@ class EveMarketContractErrorAdmin(admin.ModelAdmin):
     autocomplete_fields = ("issuer", "location")
 
 
+@admin.register(EveMarketBuyOrderExpectation)
+class EveMarketBuyOrderExpectationAdmin(admin.ModelAdmin):
+    list_display = (
+        "item",
+        "location",
+        "quantity",
+        "current_quantity",
+        "is_fulfilled",
+        "is_understocked",
+    )
+    list_display_links = ("item", "location")
+    search_fields = (
+        "item__name",
+        "location__location_name",
+        "location__short_name",
+    )
+    list_filter = ("location", "item")
+    autocomplete_fields = ("location",)
+    raw_id_fields = ("item",)
+    readonly_fields = (
+        "current_quantity",
+        "desired_quantity",
+        "is_fulfilled",
+        "is_understocked",
+    )
+
+
 # ----- Fitting expectations (decomposed into items) -----
 
 
@@ -302,6 +319,16 @@ class EveMarketFittingExpectationAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+    def get_changeform_initial_data(self, request):
+        initial = super().get_changeform_initial_data(request)
+        fitting_id = request.GET.get("fitting")
+        location_id = request.GET.get("location")
+        if fitting_id:
+            initial["fitting"] = int(fitting_id)
+        if location_id:
+            initial["location"] = int(location_id)
+        return initial
 
     @admin.display(description="Unique items")
     def get_item_count(self, obj):
@@ -466,11 +493,6 @@ class EveTypeWithSellOrdersAdmin(admin.ModelAdmin):
 # ----- Items (sell-order seeding; hidden from index) -----
 
 
-class EveMarketItemResponsibilityInline(admin.TabularInline):
-    model = EveMarketItemResponsibility
-    extra = 0
-
-
 @admin.register(EveMarketItemExpectation)
 class EveMarketItemExpectationAdmin(admin.ModelAdmin):
     """Item seeding: EVE type + target quantity per location, tracked on sell orders."""
@@ -500,7 +522,6 @@ class EveMarketItemExpectationAdmin(admin.ModelAdmin):
         "is_understocked",
     )
     ordering = ("item__name", "location__location_name")
-    inlines = [EveMarketItemResponsibilityInline]
     change_form_template = "admin/market/evemarketitemorder/change_form.html"
     fieldsets = (
         ("Details", {"fields": ("item", "location", "quantity")}),
@@ -529,30 +550,6 @@ class EveMarketItemExpectationAdmin(admin.ModelAdmin):
         return super().change_view(request, object_id, form_url, extra_context)
 
 
-@admin.register(EveMarketItemResponsibility)
-class EveMarketItemResponsibilityAdmin(admin.ModelAdmin):
-    """Who is responsible for fulfilling an item expectation (character or corp ID)."""
-
-    list_display = ("expectation", "entity_id", "get_item", "get_location")
-    list_display_links = ("expectation",)
-    search_fields = (
-        "entity_id",
-        "expectation__item__name",
-        "expectation__location__location_name",
-    )
-    list_filter = ("expectation__location", "expectation__item")
-    list_per_page = 50
-    autocomplete_fields = ("expectation",)
-
-    @admin.display(description="Item")
-    def get_item(self, obj):
-        return obj.expectation.item.name
-
-    @admin.display(description="Location")
-    def get_location(self, obj):
-        return obj.expectation.location.location_name
-
-
 @admin.register(EveMarketItemLocationPrice)
 class EveMarketItemLocationPriceAdmin(admin.ModelAdmin):
     """Derived sell/buy/split prices per (location, item) from structure orders."""
@@ -576,6 +573,73 @@ class EveMarketItemLocationPriceAdmin(admin.ModelAdmin):
     autocomplete_fields = ("location",)
     raw_id_fields = ("item",)
     ordering = ("location__location_name", "item__name")
+
+
+@admin.register(EveMarketOrderBookSync)
+class EveMarketOrderBookSyncAdmin(admin.ModelAdmin):
+    """Per-location order-book sync watermark (read-mostly)."""
+
+    list_display = ("location", "last_synced_at")
+    list_display_links = ("location",)
+    search_fields = (
+        "location__location_name",
+        "location__short_name",
+    )
+    autocomplete_fields = ("location",)
+    ordering = ("-last_synced_at",)
+    readonly_fields = ("location", "last_synced_at")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(EveMarketInferredSale)
+class EveMarketInferredSaleAdmin(admin.ModelAdmin):
+    """Inferred sell fills from successive structure order-book snapshots."""
+
+    list_display = (
+        "inferred_at",
+        "location",
+        "item",
+        "quantity",
+        "price",
+        "reason",
+        "order_id",
+    )
+    list_display_links = ("inferred_at", "item")
+    list_filter = ("location", "reason")
+    list_per_page = 50
+    show_full_result_count = False
+    search_fields = (
+        "item__name",
+        "location__location_name",
+        "location__short_name",
+        "order_id",
+    )
+    autocomplete_fields = ("location",)
+    raw_id_fields = ("item",)
+    ordering = ("-inferred_at",)
+    readonly_fields = (
+        "location",
+        "item",
+        "quantity",
+        "price",
+        "inferred_at",
+        "order_id",
+        "reason",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("item", "location")
 
 
 @admin.register(EveMarketItemOrder)
@@ -735,135 +799,113 @@ class EveMarketItemHistoryAdmin(admin.ModelAdmin):
         return super().get_queryset(request).select_related("item")
 
 
-# ----- Unified expectations view -----
+@admin.register(EveMarketOpsMonitorSnapshot)
+class EveMarketOpsMonitorSnapshotAdmin(admin.ModelAdmin):
+    """Read-only health snapshots captured after market ESI syncs."""
 
-
-@staff_member_required
-def market_expectations_view(request):
-    """Custom admin view listing all market expectations broken down to individual items."""
-    location_filter = request.GET.get("location")
-
-    locations = EveLocation.objects.filter(market_active=True).order_by(
-        "location_name"
+    list_display = (
+        "captured_at",
+        "location",
+        "trigger",
+        "overall_health_pct",
+        "contracts_health_pct",
+        "sell_orders_health_pct",
+        "sell_orders_viability_pct",
+        "understocked_contracts_count",
+        "sell_gaps_count",
+    )
+    list_display_links = ("captured_at", "location")
+    list_filter = ("trigger", "location")
+    list_per_page = 50
+    date_hierarchy = "captured_at"
+    search_fields = ("location__location_name", "location__short_name")
+    raw_id_fields = ("location",)
+    ordering = ("-captured_at",)
+    readonly_fields = (
+        "captured_at",
+        "location",
+        "trigger",
+        "contracts_health_pct",
+        "sell_orders_health_pct",
+        "sell_orders_viability_pct",
+        "overall_health_pct",
+        "understocked_contracts_count",
+        "sell_gaps_count",
+        "contract_targets",
+        "contract_fulfilled",
+        "sell_order_targets",
+        "sell_order_fulfilled",
+        "sell_order_viable_fulfilled",
+        "contracts_isk",
+        "sell_orders_isk",
+        "total_isk_on_market",
+        "contracts_synced_at",
+        "orders_synced_at",
+        "understocked_contracts",
+        "sell_gaps",
     )
 
-    item_qs = EveMarketItemExpectation.objects.select_related(
-        "item", "location"
-    )
-    fitting_qs = EveMarketFittingExpectation.objects.select_related(
-        "fitting", "location"
-    )
-    contract_qs = EveMarketContractExpectation.objects.select_related(
-        "fitting", "location"
-    )
+    def has_add_permission(self, request):
+        return False
 
-    if location_filter:
-        item_qs = item_qs.filter(location_id=location_filter)
-        fitting_qs = fitting_qs.filter(location_id=location_filter)
-        contract_qs = contract_qs.filter(location_id=location_filter)
+    def has_change_permission(self, request, obj=None):
+        return False
 
-    rows = []
-
-    for exp in item_qs.order_by("item__name", "location__location_name"):
-        rows.append(
-            {
-                "name": exp.item.name,
-                "source": "Item",
-                "location_name": exp.location.location_name,
-                "quantity": exp.quantity,
-                "edit_url": reverse(
-                    "admin:market_evemarketitemexpectation_change",
-                    args=[exp.pk],
-                ),
-            }
-        )
-
-    for exp in fitting_qs:
-        edit_url = reverse(
-            "admin:market_evemarketfittingexpectation_change",
-            args=[exp.pk],
-        )
-        for item_name, qty in exp.get_item_quantities().items():
-            rows.append(
-                {
-                    "name": item_name,
-                    "source": f"Fitting: {exp.fitting.name}",
-                    "location_name": exp.location.location_name,
-                    "quantity": qty,
-                    "edit_url": edit_url,
-                }
-            )
-
-    for exp in contract_qs:
-        edit_url = reverse(
-            "admin:market_evemarketcontractexpectation_change",
-            args=[exp.pk],
-        )
-        consumables = _get_consumable_items(exp.fitting)
-        for item_name, qty in consumables.items():
-            rows.append(
-                {
-                    "name": item_name,
-                    "source": f"Doctrine: {exp.fitting.name}",
-                    "location_name": exp.location.location_name,
-                    "quantity": qty * exp.quantity,
-                    "edit_url": edit_url,
-                }
-            )
-
-    rows.sort(
-        key=lambda r: (r["name"].lower(), r["source"], r["location_name"])
-    )
-
-    context = {
-        **admin.site.each_context(request),
-        "title": "Market expectations",
-        "rows": rows,
-        "locations": locations,
-        "selected_location": location_filter or "",
-        "add_item_url": reverse("admin:market_evemarketitemexpectation_add"),
-        "add_fitting_url": reverse(
-            "admin:market_evemarketfittingexpectation_add"
-        ),
-    }
-    return TemplateResponse(
-        request, "admin/market/expectations_list.html", context
-    )
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("location")
 
 
 # ----- Market admin index -----
 
 
+def _is_market_admin_model(model: dict) -> bool:
+    return model.get("admin_url", "").startswith("/admin/market/")
+
+
+def _build_market_index_models(models: list[dict], request) -> list[dict]:
+    index_models = []
+    for model in models:
+        key = model["object_name"].lower()
+        if key in MARKET_INDEX_MODELS:
+            index_models.append({**model, "name": MARKET_INDEX_MODELS[key]})
+    for extra in MARKET_EXTRA_INDEX_LINKS:
+        index_models.append(
+            {
+                "name": extra["name"],
+                "object_name": extra["name"],
+                "perms": index_link_perms(
+                    request.user,
+                    view_perm=extra.get("view_perm", VIEW_MARKET_LOCATIONS),
+                ),
+                "admin_url": reverse(extra["admin_url"]),
+                "view_only": extra.get("view_only", False),
+            }
+        )
+    return index_models
+
+
 def _market_get_app_list(request, app_label=None):
-    """Show a filtered Market section: model entries from MARKET_INDEX_MODELS plus extra custom links."""
+    """Show filtered market index entries on Staging Systems; legacy market app too."""
     app_list = admin.site.get_app_list_original(request, app_label)
     for app in app_list:
-        if app["app_label"] != "market":
-            continue
-        models = []
-        for m in app["models"]:
-            key = m["object_name"].lower()
-            if key in MARKET_INDEX_MODELS:
-                display_name = MARKET_INDEX_MODELS[key]
-                models.append({**m, "name": display_name})
-        for extra in MARKET_EXTRA_INDEX_LINKS:
-            models.append(
-                {
-                    "name": extra["name"],
-                    "object_name": extra["name"],
-                    "perms": {
-                        "add": False,
-                        "change": True,
-                        "delete": False,
-                        "view": True,
-                    },
-                    "admin_url": reverse(extra["admin_url"]),
-                    "view_only": extra.get("view_only", False),
-                }
+        if app["name"] == "Staging Systems":
+            location_models = [
+                model
+                for model in app["models"]
+                if model["object_name"].lower() in _STAGING_EVEONLINE_MODELS
+            ]
+            market_models = [
+                model
+                for model in app["models"]
+                if _is_market_admin_model(model)
+            ]
+            app["models"] = location_models + _build_market_index_models(
+                market_models, request
             )
-        if models:
-            app["models"] = models
-        break
+        elif app["app_label"] == "market":
+            index_models = _build_market_index_models(app["models"], request)
+            if index_models:
+                app["models"] = index_models
     return app_list
 
 
@@ -874,9 +916,44 @@ def _get_custom_admin_urls():
     """Return the market custom admin URLs to be prepended to the default admin URLs."""
     return [
         path(
+            "market/locations/",
+            admin.site.admin_view(market_locations_view),
+            name="market_locations",
+        ),
+        path(
+            "market/location/<int:location_id>/",
+            admin.site.admin_view(market_location_hub_view),
+            name="market_location_hub",
+        ),
+        path(
             "market/expectations/",
             admin.site.admin_view(market_expectations_view),
             name="market_expectations",
+        ),
+        path(
+            "market/location/<int:location_id>/contracts/",
+            admin.site.admin_view(market_location_contracts_view),
+            name="market_location_contracts",
+        ),
+        path(
+            "market/location/<int:location_id>/buy-orders/",
+            admin.site.admin_view(market_location_buy_orders_view),
+            name="market_location_buy_orders",
+        ),
+        path(
+            "market/location/<int:location_id>/fitting-expectations/",
+            admin.site.admin_view(market_location_fitting_expectations_view),
+            name="market_location_fitting_expectations",
+        ),
+        path(
+            "market/location/<int:location_id>/contract-expectations/",
+            admin.site.admin_view(market_location_contract_expectations_view),
+            name="market_location_contract_expectations",
+        ),
+        path(
+            "market/location/<int:location_id>/sell-orders/",
+            admin.site.admin_view(market_location_sell_orders_view),
+            name="market_location_sell_orders",
         ),
     ]
 

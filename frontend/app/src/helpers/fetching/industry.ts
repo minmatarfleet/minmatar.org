@@ -15,6 +15,7 @@ import {
     get_blueprints,
     get_planetary_planets,
     get_order_by_id,
+    get_order_orderitems,
     get_order_assignments_breakdown,
 } from '@helpers/api.minmatar.org/industry'
 import { get_system_name, get_system_sun_type_id, get_planet_info } from '@helpers/sde/map'
@@ -203,8 +204,9 @@ export async function fetch_order_breakdown(order_id: number) {
 }
 
 export async function fetch_order_breakdown_grouped(order_id: number) {
-    const order = await get_order_by_id(order_id)
-    return order.items
+    // Use orderitems only — full GET /orders/{id} runs BOM planning for
+    // coordinator options and is far too slow for this partial.
+    return await get_order_orderitems(order_id)
 }
 
 export async function fetch_order_by_id(order_id: number) {

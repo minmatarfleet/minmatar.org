@@ -9,7 +9,7 @@ from app.settings import settings
 
 from .timer_form import TimerForm
 from .tickets.sync import deploy_or_update_panel
-from .tickets.ticket_flow import register_persistent_ticket_views
+from .tickets.views import register_close_ticket_buttons
 from .voicetracking_api import (
     ACTIVITY_RECORDS_URL,
     GUILDS_SYNC_URL,
@@ -39,12 +39,12 @@ class MyClient(discord.Client):
         print(f"Logged in as {self.user} (ID: {self.user.id})")
         print("------")
         await sync_guilds_to_api()
-        await register_persistent_ticket_views(self)
         await deploy_or_update_panel(self)
         track_voice_channels.start()
         sync_help_ticket_panel.start()
 
     async def setup_hook(self) -> None:
+        register_close_ticket_buttons(self)
         for guild in GUILDS:
             print(f"Syncing commands for {guild.id}")
             await self.tree.sync(guild=guild)

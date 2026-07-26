@@ -4,13 +4,16 @@ import NavyDestroyerMetagameMatchupCard from '@components/blocks/navy-destroyer-
 import ItemPicture from '@components/blocks/ItemPicture.astro'
 import { getGuideFittingsForShip } from '@/data/navy-destroyer-metagame'
 import type { MatchupVerdict, ShipGuide } from '@/data/navy-destroyer-metagame'
+import { resolveGuideFittings } from '@helpers/guide_fittings'
+import type { Fitting } from '@dtypes/api.minmatar.org'
 
 interface Props {
     ship: ShipGuide
+    fittingLibrary?: Fitting[]
 }
 
-const { ship } = Astro.props
-const fits = getGuideFittingsForShip(ship.id)
+const { ship, fittingLibrary = [] } = Astro.props
+const fits = resolveGuideFittings(getGuideFittingsForShip(ship.id), fittingLibrary)
 
 const verdictLabels: Record<MatchupVerdict, string> = {
     favoured: 'Favoured',
@@ -22,7 +25,7 @@ const verdictLabels: Record<MatchupVerdict, string> = {
 }
 ---
 
-<section id={ship.id} class="ndm-ship" aria-labelledby={`${ship.id}-title`}>
+<section id={ship.id} data-section-id={ship.id} class="ndm-ship" aria-labelledby={`${ship.id}-title`}>
     <div class="ndm-ship__hero">
         <div class="ndm-ship__hero-visual">
             <ItemPicture
@@ -79,7 +82,6 @@ const verdictLabels: Record<MatchupVerdict, string> = {
 
         <section class="ndm-ship__fits" aria-labelledby={`${ship.id}-fits-title`}>
             <h4 id={`${ship.id}-fits-title`} class="ndm-ship__fits-title">Example fits</h4>
-            <p class="ndm-ship__fits-lead">Live [NVY] fittings from the First Edition. Copy or open in the fitting library.</p>
             <div class="ndm-ship__fits-grid">
                 {
                     fits.map((fit) => (
@@ -304,7 +306,6 @@ const verdictLabels: Record<MatchupVerdict, string> = {
         color: var(--fleet-yellow);
     }
 
-    .ndm-ship__fits-lead,
     .ndm-ship__matchup-context {
         margin: 0 0 var(--space-s);
         font-size: var(--step--1);

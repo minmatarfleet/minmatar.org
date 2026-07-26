@@ -3,9 +3,8 @@
 A Cursor Agent Skill for finding pilots who are **looking for a corporation**,
 routing them to the right corp, and drafting short, human outreach replies.
 
-**The skill is the product.** `SKILL.md` and `examples.md` define the workflow and
-judgment. They improve over time as you add real outreach examples and refine
-routing principles.
+**The skill is the product.** `SKILL.md` defines workflow and judgment.
+`examples.md` stores real outreach learnings as they accumulate (starts empty).
 
 `scripts/` provides **single-purpose fetchers** the agent can run à la carte —
 not a monolithic pipeline.

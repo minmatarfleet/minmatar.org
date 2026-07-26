@@ -3,12 +3,11 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { getGuideBySlug } from '@/data/guides'
-import { getGuideCoverImage } from '@/data/guides/covers'
+import { getGuideSeoImage } from '@/data/guides/covers'
 import { buildGuideJsonLd, getGuidePageSeo } from '@/data/guides/seo'
-
-import { marked } from 'marked'
-import { renderer } from '@helpers/marked'
+import { pageProgressFromMarkdown } from '@helpers/pageProgress'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_site_origin } from '@helpers/seo'
 
 const slug = Astro.params.name ?? ''
 const guide = getGuideBySlug(slug)
@@ -17,21 +16,27 @@ if (!guide) {
     return HTTP_404_Not_Found()
 }
 
+const site_origin = get_site_origin(Astro.url.origin)
 const { module } = guide
-const coverImage = getGuideCoverImage(guide)
 const seo = getGuidePageSeo({
     guide,
     siteName: t('index.page_title'),
-    siteOrigin: Astro.url.origin,
+    siteOrigin: site_origin,
     translatePath,
     t,
-    coverImage,
+    coverImage: getGuideSeoImage(guide),
 })
 const structured_data = buildGuideJsonLd({
     guide,
     siteName: t('index.page_title'),
-    siteOrigin: Astro.url.origin,
+    siteOrigin: site_origin,
     ...seo,
+})
+
+const { html: guide_html, sections, ...progress } = pageProgressFromMarkdown({
+    page_key: `guides/${guide.slug}`,
+    page_title: guide.title,
+    markdown: module.rawContent(),
 })
 
 import Viewport from '@layouts/Viewport.astro'
@@ -45,7 +50,15 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import BlockList from '@components/compositions/BlockList.astro'
 
 import Button from '@components/blocks/Button.astro'
+import GuideContentsLayout from '@components/blocks/GuideContentsLayout.astro'
+import GuideShell from '@components/blocks/GuideShell.astro'
 import Tag from '@components/blocks/Tag.astro'
+import PageProgress from '@components/blocks/PageProgress.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+
+const shell_subtitle = guide.section
+    ? `${guide.category} · ${guide.section}`
+    : guide.category
 ---
 
 <Viewport
@@ -63,21 +76,26 @@ import Tag from '@components/blocks/Tag.astro'
     <PageLanding
         wide={true}
         cover={{
-            image: coverImage,
-            image_990: coverImage,
+            image: '/images/guides-cover.jpg',
+            image_990: '/images/guides-cover-990.jpg',
             scrollable: true,
             overlay: true
         }}
     >
-        <Flexblock gap='var(--space-2xl)'>
+        <Flexblock gap='var(--space-2xl)' data-page-progress-root>
             <TextBox>
                 <Flexblock gap='var(--space-m)'>
-                    <nav class="guide-breadcrumb" aria-label="Breadcrumb">
-                        <ol>
-                            <li><a href={translatePath('/guides/')}>{t('guides.page_title')}</a></li>
-                            <li aria-current="page">{guide.title}</li>
-                        </ol>
-                    </nav>
+                    <div class="guide-header-top">
+                        <nav class="guide-breadcrumb" aria-label="Breadcrumb">
+                            <ol>
+                                <li><a href={translatePath('/guides/')}>{t('guides.page_title')}</a></li>
+                                <li aria-current="page">{guide.title}</li>
+                            </ol>
+                        </nav>
+                        <div class="guide-header-top__progress">
+                            <PageProgress {...progress} />
+                        </div>
+                    </div>
                     <Tag text={guide.category} />
                     <PageTitle is_landing={true}>{guide.title}</PageTitle>
                     <p class="[ guide-excerpt ]">{guide.excerpt}</p>
@@ -85,41 +103,64 @@ import Tag from '@components/blocks/Tag.astro'
                 </Flexblock>
             </TextBox>
 
-            <TextBox>
-                <BlockList gap='var(--space-xl)'>
-                    <div
-                        class="[ prose ]"
-                        set:html={marked.parse(module.rawContent(), { renderer })}
-                        x-data={`{
-                            init_zoom() {
-                                mediumZoom('.prose img', {
-                                    background: 'var(--solid-transparency-background)',
-                                    scrollOffset: 0,
-                                    margin: 24,
-                                    metaClick: false,
-                                })
-                            }
-                        }`}
-                        x-init="init_zoom()"
-                    />
+            <Wrapper
+                max_width="var(--max-content-width)"
+                padding_inline="0"
+                padding_block="0"
+            >
+                <GuideShell title={guide.title} subtitle={shell_subtitle}>
+                    <GuideContentsLayout sections={sections}>
+                        <BlockList gap='var(--space-xl)'>
+                            <div
+                                class="[ prose ]"
+                                set:html={guide_html}
+                                x-data={`{
+                                    init_zoom() {
+                                        mediumZoom('.prose img', {
+                                            background: 'var(--solid-transparency-background)',
+                                            scrollOffset: 0,
+                                            margin: 24,
+                                            metaClick: false,
+                                        })
+                                    }
+                                }`}
+                                x-init="init_zoom()"
+                            />
 
-                    <hr class="[ border-bottom ]" />
+                            <hr class="[ border-bottom ]" />
 
-                    <Button
-                        class="[ w-fit! ]"
-                        href={translatePath('/guides/')}
-                    >
-                        {t('guides.back_to_guides')}
-                    </Button>
-                </BlockList>
-            </TextBox>
+                            <Button
+                                class="[ w-fit! ]"
+                                href={translatePath('/guides/')}
+                            >
+                                {t('guides.back_to_guides')}
+                            </Button>
+                        </BlockList>
+                    </GuideContentsLayout>
+                </GuideShell>
+            </Wrapper>
         </Flexblock>
     </PageLanding>
 </Viewport>
 
 <style lang="scss">
+    .guide-header-top {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: var(--space-s);
+        width: 100%;
+    }
+
+    .guide-header-top__progress {
+        flex: 0 0 auto;
+        margin-left: auto;
+    }
+
     .guide-breadcrumb {
         margin: 0;
+        min-width: 0;
 
         ol {
             display: flex;
@@ -152,5 +193,9 @@ import Tag from '@components/blocks/Tag.astro'
         font-size: var(--step-1);
         color: var(--muted-color);
         max-width: 60ch;
+    }
+
+    .prose :global(h2[id]) {
+        scroll-margin-top: calc(var(--header-height, 4rem) + var(--space-l));
     }
 </style>

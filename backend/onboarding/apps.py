@@ -9,7 +9,10 @@ class OnboardingConfig(AppConfig):
     def ready(self):
         from django.db.models.signals import post_migrate
 
+        from onboarding.admin import apply_onboarding_admin_customizations
         from onboarding.seed import ensure_onboarding_programs
+
+        apply_onboarding_admin_customizations()
 
         def _ensure(sender, app_config, **kwargs):
             if app_config.label != "onboarding":

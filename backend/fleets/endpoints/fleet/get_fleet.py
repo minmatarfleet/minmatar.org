@@ -2,6 +2,8 @@
 
 from authentication import AuthBearer
 
+from fleets.endpoints.helpers import _fleet_authorized
+
 from fleets.endpoints.schemas import EveFleetResponse, EveFleetTrackingResponse
 from fleets.models import EveFleet, EveFleetInstance
 
@@ -18,7 +20,7 @@ def get_fleet(request, fleet_id: int):
     fleet = EveFleet.objects.filter(id=fleet_id).first()
     if not fleet:
         return 404, None
-    if not request.user.has_perm("fleets.view_evefleet"):
+    if not _fleet_authorized(request, fleet):
         return 403, None
 
     tracking = None
@@ -39,7 +41,7 @@ def get_fleet(request, fleet_id: int):
             if fleet.formup_location
             else "Ask FC"
         ),
-        "audience": fleet.audience.name,
+        "audience": fleet.audience.name if fleet.audience else None,
         "tracking": tracking,
         "disable_motd": fleet.disable_motd,
         "status": fleet.status,

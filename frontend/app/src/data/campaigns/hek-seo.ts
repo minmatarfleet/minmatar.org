@@ -1,0 +1,88 @@
+interface HekCampaignJsonLdOptions {
+    canonicalUrl: string
+    siteName: string
+    siteOrigin: string
+    metaTitle: string
+    metaDescription: string
+    metaImage: string
+}
+
+export function buildHekCampaignJsonLd(options: HekCampaignJsonLdOptions) {
+    const {
+        canonicalUrl,
+        siteName,
+        siteOrigin,
+        metaTitle,
+        metaDescription,
+        metaImage,
+    } = options
+
+    return {
+        '@context': 'https://schema.org',
+        '@graph': [
+            {
+                '@type': 'WebSite',
+                '@id': `${siteOrigin}/#website`,
+                name: siteName,
+                url: siteOrigin,
+            },
+            {
+                '@type': 'WebPage',
+                '@id': `${canonicalUrl}#webpage`,
+                url: canonicalUrl,
+                name: metaTitle,
+                description: metaDescription,
+                isPartOf: { '@id': `${siteOrigin}/#website` },
+                primaryImageOfPage: { '@type': 'ImageObject', url: metaImage },
+                breadcrumb: { '@id': `${canonicalUrl}#breadcrumb` },
+                mainEntity: { '@id': `${canonicalUrl}#article` },
+            },
+            {
+                '@type': 'BreadcrumbList',
+                '@id': `${canonicalUrl}#breadcrumb`,
+                itemListElement: [
+                    {
+                        '@type': 'ListItem',
+                        position: 1,
+                        name: siteName,
+                        item: siteOrigin,
+                    },
+                    {
+                        '@type': 'ListItem',
+                        position: 2,
+                        name: metaTitle,
+                        item: canonicalUrl,
+                    },
+                ],
+            },
+            {
+                '@type': 'Article',
+                '@id': `${canonicalUrl}#article`,
+                headline: metaTitle,
+                description: metaDescription,
+                image: metaImage,
+                author: {
+                    '@type': 'Organization',
+                    name: 'Minmatar Fleet Alliance',
+                    url: siteOrigin,
+                },
+                publisher: {
+                    '@type': 'Organization',
+                    name: 'Minmatar Fleet Alliance',
+                    url: siteOrigin,
+                },
+                keywords: [
+                    'EVE Online',
+                    'Hek',
+                    'Metropolis',
+                    'highsec campaign',
+                    'Minmatar Fleet',
+                    'HMA',
+                    'campaign report',
+                ].join(', '),
+                inLanguage: 'en',
+                mainEntityOfPage: { '@id': `${canonicalUrl}#webpage` },
+            },
+        ],
+    }
+}

@@ -8,8 +8,9 @@ from eveonline.endpoints.characters._helpers import (
     handle_add_character_esi_callback,
     set_or_remove_session_value,
 )
+from eveonline.helpers.characters import scope_groups_for_token_add
 from eveonline.models import EveCharacter
-from eveonline.scopes import TokenType, scopes_for
+from eveonline.scopes import TokenType, scopes_for_groups
 
 PATH = "add"
 METHOD = "get"
@@ -26,21 +27,26 @@ def add_character(
 ):
     request.session["redirect_url"] = redirect_url
     set_or_remove_session_value(request, "add_character_id", character_id)
+
+    character = None
+    if character_id:
+        character = EveCharacter.objects.filter(
+            character_id=character_id
+        ).first()
+
     if not token_type:
-        if (
-            character_id
-            and EveCharacter.objects.filter(character_id=character_id).exists()
-        ):
-            char = EveCharacter.objects.get(character_id=character_id)
+        if character:
             try:
-                token_type = TokenType(char.esi_token_level or "Basic")
+                token_type = TokenType(character.esi_token_level or "Basic")
             except (ValueError, TypeError):
                 token_type = TokenType.BASIC
         else:
             token_type = TokenType.BASIC
     if character_id and token_type == TokenType.PUBLIC:
         token_type = TokenType.BASIC
-    scopes = scopes_for(token_type)
+
+    scope_groups = scope_groups_for_token_add(character, token_type)
+    scopes = scopes_for_groups(scope_groups)
 
     @login_required()
     @token_required(scopes=scopes, new=True)

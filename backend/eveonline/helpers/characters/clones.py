@@ -72,11 +72,15 @@ def update_character_clones(eve_character_id: int) -> int:
     character.medical_clone_location_name = resolve_location_name(
         home_location_id, home_location_type
     )
+    # Persist currently worn implants even when the body is not a jump clone
+    # (home/medical), so reprocessing RX bonuses still resolve.
+    character.active_implants = active_implant_ids
     character.clones_synced_at = timezone.now()
     character.save(
         update_fields=[
             "medical_clone_location_id",
             "medical_clone_location_name",
+            "active_implants",
             "clones_synced_at",
         ]
     )

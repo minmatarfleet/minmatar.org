@@ -1,0 +1,45 @@
+---
+import type { OrdersProfitSummary } from '@dtypes/api.minmatar.org'
+
+import GuideOrderProfitBarChart from '@components/blocks/industry/guide-order-summary/GuideOrderProfitBarChart.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+interface Props {
+    summary: OrdersProfitSummary
+    /** Override the chart blurb (defaults to multi-order summary copy). */
+    description?: string
+}
+
+const { summary, description } = Astro.props
+
+const sortedRows = [...summary.rows].sort(
+    (a, b) => b.order_profit - a.order_profit,
+)
+/** Full type names on axis labels (no navy/fleet abbreviation). */
+const chartLabels = sortedRows.map((r) => r.name)
+const chartValuesM = sortedRows.map((r) =>
+    Math.round(r.order_profit / 1_000_000),
+)
+
+const blurb =
+    description ??
+    'Profit for each product across the included orders, sorted from highest to lowest (shown in millions of ISK).'
+---
+
+{
+    chartLabels.length > 0 ? (
+        <Flexblock gap="var(--space-s)" class="[ w-full ]">
+            <Flexblock gap="var(--space-3xs)">
+                <h2>Order profit by product</h2>
+                <small>{blurb}</small>
+            </Flexblock>
+            <ComponentBlock>
+                <GuideOrderProfitBarChart
+                    labels={chartLabels}
+                    valuesM={chartValuesM}
+                />
+            </ComponentBlock>
+        </Flexblock>
+    ) : null
+}

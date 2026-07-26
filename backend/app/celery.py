@@ -19,6 +19,12 @@ app = Celery("app")
 # the configuration object to child processes.
 app.config_from_object("django.conf:settings")
 
+if getattr(settings, "CELERY_TASK_ALWAYS_EAGER", False):
+    app.conf.task_always_eager = True
+    app.conf.task_eager_propagates = getattr(
+        settings, "CELERY_TASK_EAGER_PROPAGATES", True
+    )
+
 # Queue and routing: set here so workers and producers (beat, admin) use the same queues.
 app.conf.task_queues = (
     Queue("celery", routing_key="celery"),
@@ -39,7 +45,7 @@ app.conf.worker_prefetch_multiplier = 1
 
 # celery_once: required for eveuniverse_load_data (and other tasks using Once)
 app.conf.ONCE = {
-    "backend": "eveuniverse.backends.DjangoBackend",
+    "backend": "app.celery_once_backend.DjangoBackend",
     "settings": {},
 }
 

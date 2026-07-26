@@ -16,7 +16,6 @@ from fittings.models import (
 )
 from fittings.helpers.permissions import (
     can_propose_doctrine_change,
-    can_publish_doctrine_change,
     protection_tier_for_doctrine,
     protection_tier_for_doctrine_type,
 )
@@ -157,10 +156,6 @@ def submit_doctrine_change_request(
 ) -> EveDoctrineChangeRequest | None:
     tier = protection_tier_for_doctrine(doctrine)
     if tier is None:
-        apply_doctrine_payload(doctrine, payload)
-        return None
-
-    if can_publish_doctrine_change(user, tier):
         apply_doctrine_payload(doctrine, payload)
         return None
 

@@ -14,6 +14,7 @@ from django.utils import timezone
 
 from app.celery import app
 from discord.client import DiscordClient
+from groups.helpers.feature_access import can_use_feature
 
 from tribes.helpers.activity_processors import process_all_for_tribe_group
 from tribes.helpers.chief_membership import (
@@ -116,8 +117,8 @@ def ensure_tribe_chiefs_have_group_memberships():
 @app.task()
 def remove_tribe_members_without_permission():
     """
-    Remove users from all TribeGroups if they no longer have the base
-    'tribes.add_tribegroupmembership' permission (e.g. they left the alliance).
+    Remove users from all TribeGroups if they no longer qualify for tribes.apply
+    (e.g. they left the alliance).
 
     Sets status to 'inactive' and records left_at, which triggers the
     post_save signal to remove the user from the auth.Group.
@@ -132,7 +133,7 @@ def remove_tribe_members_without_permission():
     for membership in active_memberships:
         user = membership.user
         try:
-            if not user.has_perm("tribes.add_tribegroupmembership"):
+            if not can_use_feature(user, "tribes.apply"):
                 logger.info(
                     "User %s lacks tribes permission; removing from %s",
                     user,

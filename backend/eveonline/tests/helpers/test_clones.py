@@ -82,6 +82,7 @@ class UpdateCharacterClonesTest(TestCase):
         self.assertEqual(char.medical_clone_location_id, 60003760)
         self.assertEqual(char.medical_clone_location_name, "Amarr VIII")
         self.assertIsNotNone(char.clones_synced_at)
+        self.assertEqual(char.active_implants, [19540, 19551])
 
         clones = EveCharacterClone.objects.filter(character=char).order_by(
             "clone_id"
@@ -89,6 +90,51 @@ class UpdateCharacterClonesTest(TestCase):
         self.assertEqual(clones.count(), 2)
         self.assertTrue(clones.get(clone_id=1).is_active)
         self.assertFalse(clones.get(clone_id=2).is_active)
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("eveonline.helpers.characters.clones.build_clone_implant_list")
+    @patch("eveonline.helpers.characters.clones.resolve_location_name")
+    @patch("eveonline.helpers.characters.clones.EsiClient")
+    def test_persists_active_implants_when_no_jump_clone_match(
+        self,
+        esi_mock_cls,
+        resolve_mock,
+        build_implants_mock,
+    ):
+        """Medical body wears RX; no jump clone matches → still store ESI list."""
+        char = EveCharacter.objects.create(
+            character_id=7004,
+            character_name="Medical Body",
+        )
+        resolve_mock.return_value = "Amarr VIII"
+        build_implants_mock.side_effect = lambda type_ids: [
+            {
+                "type_id": tid,
+                "type_name": f"Implant {tid}",
+                "estimated_price_isk": 1,
+            }
+            for tid in type_ids
+        ]
+
+        esi = MagicMock(spec=EsiClient)
+        esi_mock_cls.return_value = esi
+        esi.get_character_clones.return_value = EsiResponse(
+            response_code=0, data=CLONES_RESPONSE
+        )
+        # Currently worn implants do not match any jump clone set.
+        esi.get_character_implants.return_value = EsiResponse(
+            response_code=0, data=[27174, 19540]
+        )
+
+        update_character_clones(7004)
+
+        char.refresh_from_db()
+        self.assertEqual(char.active_implants, [19540, 27174])
+        self.assertFalse(
+            EveCharacterClone.objects.filter(
+                character=char, is_active=True
+            ).exists()
+        )
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("eveonline.helpers.characters.clones.EsiClient")

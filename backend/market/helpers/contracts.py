@@ -3,12 +3,13 @@ from datetime import datetime, timedelta
 from typing import List
 
 import pytz
-from django.db.models import Q
 from django.utils import timezone
 
 from eveonline.models import EveCharacter, EveCorporation, EveLocation
+from fittings.forms import normalize_fitting_aliases
 from fittings.models import EveFitting
 
+from market.helpers.contract_match import strip_fitting_tag
 from market.models import (
     EveMarketContract,
     EveMarketContractError,
@@ -81,28 +82,40 @@ def get_fitting_for_contract(contract_summary: str) -> EveFitting | None:
         return fitting_cache[contract_summary]
 
     contract_summary = contract_summary.replace("[FLEET]", "[FL33T]")
+    normalized_title = contract_summary.lower().strip()
 
-    fitting = None
+    fitting = EveFitting.all_objects.filter(
+        name__iexact=contract_summary
+    ).first()
+    if fitting:
+        fitting_cache[contract_summary] = fitting
+        return fitting
 
-    possible_matches = EveFitting.objects.filter(
-        Q(name__iexact=contract_summary)
-        | Q(aliases__contains=contract_summary)
-    )
+    for candidate in EveFitting.all_objects.exclude(
+        aliases__isnull=True
+    ).exclude(aliases=""):
+        aliases = normalize_fitting_aliases(candidate.aliases)
+        if not aliases:
+            continue
+        for alias in aliases.split(","):
+            if alias.strip().lower() == normalized_title:
+                fitting_cache[contract_summary] = candidate
+                return candidate
 
-    for candidate in possible_matches:
-        if candidate.name.lower() == contract_summary.lower():
-            fitting = candidate
-            break
-        for alias in candidate.aliases.lower().split(","):
-            if alias.strip() == contract_summary.lower():
-                fitting = candidate
-                break
-
-    if not fitting:
+    # Unique tag-stripped match: "Buffer Apostle" -> "[FL33T] Buffer Apostle"
+    bare_title = strip_fitting_tag(contract_summary)
+    if not bare_title:
         return None
+    matches = [
+        candidate
+        for candidate in EveFitting.all_objects.filter(deleted__isnull=True)
+        if strip_fitting_tag(candidate.name) == bare_title
+    ]
+    if len(matches) == 1:
+        fitting_cache[contract_summary] = matches[0]
+        return matches[0]
 
-    fitting_cache[contract_summary] = fitting
-    return fitting
+    return None
 
 
 def _map_contract_status(esi_status: str) -> str:
@@ -122,7 +135,11 @@ def create_or_update_contract_from_db_contract(
     """
     Create or update EveMarketContract from an EveCharacterContract or
     EveCorporationContract. Only stores if type is item_exchange, location
-    matches, and title matches a known fitting. Returns True if stored.
+    matches, and title matches a known fitting (exact / alias / unique
+    tag-strip). Content matching then verifies modules against that fit.
+
+    Once items have been fetched and a content match frozen, fitting/match_score
+    are not overwritten from the contract title.
     """
     if db_contract.type != EveMarketContract.esi_contract_type:
         logger.info(
@@ -154,6 +171,7 @@ def create_or_update_contract_from_db_contract(
         defaults={
             "price": db_contract.price or 0,
             "issuer_external_id": db_contract.issuer_id,
+            "fitting": fitting,
         },
     )
     contract.title = db_contract.title or ""
@@ -161,7 +179,8 @@ def create_or_update_contract_from_db_contract(
     contract.issued_at = db_contract.date_issued
     contract.expires_at = db_contract.date_expired
     contract.completed_at = db_contract.date_completed
-    contract.fitting = fitting
+    if not contract.items_fetched:
+        contract.fitting = fitting
     contract.location = location
     contract.is_public = False
     contract.assignee_id = db_contract.assignee_id
@@ -187,13 +206,15 @@ def create_or_update_contract(esi_contract, location: EveLocation):
         defaults={
             "price": esi_contract["price"],
             "issuer_external_id": esi_contract["issuer_id"],
+            "fitting": fitting,
         },
     )
     contract.title = esi_contract["title"]
     contract.status = "outstanding"
-    contract.issued_at = esi_contract["date_issued"]
-    contract.expires_at = esi_contract["date_expired"]
-    contract.fitting = fitting
+    contract.issued_at = esi_contract.get("date_issued")
+    contract.expires_at = esi_contract.get("date_expired")
+    if not contract.items_fetched:
+        contract.fitting = fitting
     contract.location = location
     contract.is_public = True
     contract.last_updated = timezone.now()

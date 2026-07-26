@@ -128,14 +128,32 @@ export async function get_tribe_group_activity(
     }
 }
 
+export type GetMembershipsOptions = {
+    status?: string
+    /** Only the caller's membership (for tribe landing tiles). */
+    mine?: boolean
+    /** Live asset/skill checks per committed character (members management page). */
+    include_requirements?: boolean
+}
+
 export async function get_memberships(
     access_token: string,
     tribe_id: number,
     group_id: number,
-    status?: string,
+    statusOrOptions?: string | GetMembershipsOptions,
 ): Promise<TribeMembership[]> {
-    let ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships`
-    if (status) ENDPOINT += `?status=${status}`
+    const options: GetMembershipsOptions =
+        typeof statusOrOptions === 'string'
+            ? { status: statusOrOptions }
+            : (statusOrOptions ?? {})
+
+    const params = new URLSearchParams()
+    if (options.status) params.set('status', options.status)
+    if (options.mine) params.set('mine', 'true')
+    if (options.include_requirements) params.set('include_requirements', 'true')
+
+    const query = params.toString()
+    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}/memberships${query ? `?${query}` : ''}`
     console.log(`Requesting: ${ENDPOINT}`)
     try {
         const response = await fetch(ENDPOINT, {

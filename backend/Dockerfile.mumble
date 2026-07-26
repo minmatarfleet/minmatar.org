@@ -1,7 +1,7 @@
 FROM python:3.10.12-slim-bookworm
 
 # install git for doctine pulling and various other dependencies
-RUN apt-get update && apt-get install -y git libmariadb-dev wget gcc g++ libssl-dev libbz2-dev unzip cmake
+RUN apt-get update && apt-get install -y git libmariadb-dev wget gcc g++ libssl-dev libbz2-dev unzip cmake pkg-config
 
 WORKDIR /opt/mariadb
 RUN wget https://archive.mariadb.org/connector-c-3.3.1/mariadb-connector-c-3.3.1-src.zip

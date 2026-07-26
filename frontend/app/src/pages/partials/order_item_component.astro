@@ -15,6 +15,7 @@ import type { IndustryOrderUI, Alert } from '@dtypes/layout_components'
 import { post_order_item_assignment, mark_assignment } from '@helpers/api.minmatar.org/industry'
 
 const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '')
+const render_mode = Astro.url.searchParams.get('render') === 'breakdown' ? 'breakdown' : 'order_item'
 let alert:Alert | null = null
 let fetch_breakdown = false
 
@@ -30,6 +31,7 @@ if (Astro.request.method === "POST") {
         const data = await Astro.request.formData()
         const quantity = parseInt(data.get('quantity' as string) as string)
         const character_id = parseInt(data.get('character_id' as string) as string)
+        const has_blueprints = data.get('has_blueprints') === 'on'
 
         if (isNaN(item_id))
             throw new Error(t('invalid_item_id'))
@@ -47,6 +49,7 @@ if (Astro.request.method === "POST") {
             {
                 character_id: character_id,
                 quantity: quantity,
+                has_blueprints: has_blueprints,
             }
         )
     } catch (error) {
@@ -90,7 +93,10 @@ if (Astro.request.method === "PATCH") {
 }
 
 import { fetch_order_by_id } from '@helpers/fetching/industry'
-import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
+import {
+    resolve_primary_for_claim,
+    type PrimaryClaimAvailability,
+} from '@helpers/api.minmatar.org/characters'
 import type { RootSingleItem } from '@dtypes/api.minmatar.org'
 import { fetch_order_breakdown_grouped } from '@helpers/fetching/industry'
 
@@ -98,34 +104,48 @@ let fetching_error: Error | false = false
 let order:IndustryOrderUI | null = null
 let order_breakdown: RootSingleItem[] = []
 let primary_character_id = 0
+let claim_availability: PrimaryClaimAvailability = 'login'
+
+const claim_disabled_reason_by_availability: Record<Exclude<PrimaryClaimAvailability, 'ok'>, string> = {
+    login: t('industry.orders.assign_login_required'),
+    auth: t('industry.orders.claim_session_required'),
+    no_primary: t('industry.orders.claim_main_pilot_required'),
+}
 
 try {
-    order = await fetch_order_by_id(order_id)
+    if (render_mode !== 'breakdown') {
+        order = await fetch_order_by_id(order_id)
+    }
 
     if (!fetch_breakdown)
         fetch_breakdown = JSON.parse(Astro.url.searchParams.get('fetch_breakdown') ?? 'false')
 
-    if (fetch_breakdown) {
+    if (fetch_breakdown || render_mode === 'breakdown') {
         order_breakdown = await fetch_order_breakdown_grouped(order_id)
-        const primary_pilot = await get_primary_characters(auth_token as string)
-        primary_character_id = primary_pilot?.character_id ?? 0
+        const primary = await resolve_primary_for_claim(auth_token)
+        primary_character_id = primary.character_id
+        claim_availability = primary.availability
+        fetch_breakdown = true
     }
 } catch (error) {
     fetching_error = error
 }
 
+const claim_disabled_reason = !fetch_breakdown || claim_availability === 'ok'
+    ? null
+    : claim_disabled_reason_by_availability[claim_availability]
+
 import { query_string } from '@helpers/string';
 const ORDER_ITEM_PARTIAL_URL = translatePath(`/partials/order_item_component?${query_string({
     order_id: order_id,
     fetch_breakdown: fetch_breakdown,
+    ...(render_mode === 'breakdown' ? { render: 'breakdown' } : {}),
 })}`)
 
 import OrderItem from '@components/blocks/OrderItem.astro';
+import OrderBreakdown from '@components/blocks/OrderBreakdown.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-import ShowAlert from '@components/blocks/ShowAlert.astro'
 ---
-
-{alert && <ShowAlert alert={alert} /> }
 
 {fetching_error !== false ?
     <ErrorRefetch
@@ -134,6 +154,17 @@ import ShowAlert from '@components/blocks/ShowAlert.astro'
             error: fetching_error,
             delay: 0,
         }}
+    /> : render_mode === 'breakdown' ?
+    <OrderBreakdown
+        order_id={order_id}
+        primary_character_id={primary_character_id}
+        claim_disabled_reason={claim_disabled_reason}
+        order_breakdown={order_breakdown}
+        location_name={undefined}
+        init_tooltips={true}
+        swap_target_id={`order-breakdown-${order_id}-inner`}
+        claim_render="breakdown"
+        alert={alert}
     /> :
     <OrderItem
         order={order as IndustryOrderUI }
@@ -141,5 +172,7 @@ import ShowAlert from '@components/blocks/ShowAlert.astro'
         order_breakdown={fetch_breakdown ? order_breakdown : undefined}
         location_name={order?.location.location_name}
         primary_character_id={fetch_breakdown ? primary_character_id : undefined}
+        claim_disabled_reason={fetch_breakdown ? claim_disabled_reason : undefined}
+        alert={alert}
     />
 }

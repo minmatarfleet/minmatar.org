@@ -13,9 +13,6 @@ from fittings.models import (
     EveDoctrine,
     EveDoctrineFitting,
     EveDoctrineHistory,
-    EveFitting,
-    EveFittingHistory,
-    EveFittingRefit,
 )
 from fleets.models import EveFleetAudience
 from groups.models import AffiliationType
@@ -71,9 +68,7 @@ def clear_reference_data() -> dict[str, int]:
     _delete("EveDoctrineHistory", EveDoctrineHistory.objects)
     _delete("EveDoctrineFitting", EveDoctrineFitting.objects)
     _delete("EveDoctrine", EveDoctrine.objects)
-    _delete("EveFittingHistory", EveFittingHistory.objects)
-    _delete("EveFittingRefit", EveFittingRefit.objects)
-    _delete("EveFitting", EveFitting.all_objects)
+    # Never clear fittings / refits / fitting history via reference fixtures.
     _delete("AffiliationType", AffiliationType.objects)
     _delete("EveLocation", EveLocation.all_objects)
     _delete("auth.Group", Group.objects)

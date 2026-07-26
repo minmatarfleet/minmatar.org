@@ -5,6 +5,7 @@ from datetime import datetime
 from decimal import Decimal
 
 import pytz
+from django.db import models
 from django.utils import timezone
 from esi.models import Token
 
@@ -102,31 +103,46 @@ def get_director_with_scope(corporation, scope_list):
 def resolve_directors_by_scope(corporation, scope_lists):
     """
     Return a dict mapping tuple(scope_list) -> EveCharacter | None for each
-    scope list, checking CEO and directors once per candidate.
+    scope list, checking the CEO first, then directors. Candidates who are no
+    longer in the corporation (stale director entries) are skipped, since ESI
+    rejects corporation endpoints for tokens of former members.
     """
-    candidate_ids = set()
+    candidate_ids = []
     if corporation.ceo_id and corporation.ceo:
-        candidate_ids.add(corporation.ceo.character_id)
+        candidate_ids.append(corporation.ceo.character_id)
     for director in corporation.directors.all():
-        candidate_ids.add(director.character_id)
+        if director.character_id not in candidate_ids:
+            candidate_ids.append(director.character_id)
 
     results = {tuple(scope_list): None for scope_list in scope_lists}
     if not candidate_ids:
         return results
 
+    # Only keep candidates still in the corporation; a character with an
+    # unknown affiliation (corporation_id not yet synced) is given the
+    # benefit of the doubt.
     characters_by_id = {
         character.character_id: character
         for character in EveCharacter.objects.filter(
-            character_id__in=candidate_ids
+            models.Q(corporation_id=corporation.corporation_id)
+            | models.Q(corporation_id__isnull=True),
+            character_id__in=candidate_ids,
         )
     }
     for character_id in candidate_ids:
+        if character_id not in characters_by_id:
+            logger.debug(
+                "Skipping candidate %s for corporation %s: no longer a member",
+                character_id,
+                corporation.corporation_id,
+            )
+            continue
         for scope_list in scope_lists:
             key = tuple(scope_list)
             if results[key] is not None:
                 continue
             if Token.get_token(character_id, scope_list):
-                results[key] = characters_by_id.get(character_id)
+                results[key] = characters_by_id[character_id]
     return results
 
 

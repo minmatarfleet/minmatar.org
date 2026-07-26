@@ -1,0 +1,93 @@
+---
+import type { OrdersProfitSummary } from '@dtypes/api.minmatar.org'
+import { formatIskCompact } from '@/data/industry/guide-order-summary'
+import { days_diff } from '@helpers/date'
+import { number_name } from '@helpers/numbers'
+import { i18n } from '@helpers/i18n'
+import moment from 'moment'
+
+import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
+import Grid from '@components/compositions/Grid.astro'
+
+interface Props {
+    summary: OrdersProfitSummary
+}
+
+const { summary } = Astro.props
+const { lang, t } = i18n(Astro.url)
+const totals = summary.totals
+
+function days_remaining_until(needed_by: string): number {
+    const today = moment().startOf('day').toDate()
+    const deadline = moment(needed_by).startOf('day').toDate()
+    return days_diff(today, deadline)
+}
+
+const included_orders = summary.orders.filter(
+    (order) => order.included && order.needed_by,
+)
+const days_remaining_values = included_orders.map((order) =>
+    days_remaining_until(order.needed_by),
+)
+const days_remaining =
+    days_remaining_values.length > 0
+        ? Math.min(...days_remaining_values)
+        : null
+const is_overdue = days_remaining !== null && days_remaining <= 0
+const days_remaining_label =
+    included_orders.length > 1
+        ? t('soonest_days_remaining')
+        : t('days_remaining')
+const days_remaining_tone = is_overdue ? 'danger' : 'info'
+const days_remaining_display =
+    days_remaining === null
+        ? '—'
+        : is_overdue
+          ? t('overdue')
+          : String(days_remaining)
+---
+
+<Grid
+    class="[ w-full order-metrics-grid ]"
+    row_gap="var(--space-3xs)"
+    column_gap="var(--space-3xs)"
+    min_item_width="200px"
+>
+    <CampaignStat label="Total order amount" tone="info">
+        <span
+            data-tippy-content={number_name(totals.total_order_amount, lang)}
+        >
+            {formatIskCompact(totals.total_order_amount)}
+        </span>
+    </CampaignStat>
+    <CampaignStat
+        label="Total order profit"
+        tone={totals.total_profit >= 0 ? 'success' : 'danger'}
+    >
+        <span data-tippy-content={number_name(totals.total_profit, lang)}>
+            {formatIskCompact(totals.total_profit)}
+        </span>
+    </CampaignStat>
+    <CampaignStat label="Total products" tone="info">
+        {totals.line_count}
+    </CampaignStat>
+    <CampaignStat label={days_remaining_label} tone={days_remaining_tone}>
+        {days_remaining_display}
+    </CampaignStat>
+</Grid>
+
+<style lang="scss">
+    /* Fixed 4 KPIs: equal columns that always consume the full row.
+       Skip auto-fill/auto-fit so we never leave a half-empty track. */
+    :global(.order-metrics-grid.grid) {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+
+        @media (max-width: 64rem) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        @media (max-width: 28rem) {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+</style>

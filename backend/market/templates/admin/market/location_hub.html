@@ -1,0 +1,119 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  {% include "admin/market/_market_styles.html" %}
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate "Home" %}</a>
+  &rsaquo; <a href="{% url 'admin:market_locations' %}">{% translate "Market locations" %}</a>
+  &rsaquo; {{ location.location_name }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  {% include "admin/market/_learn_more_start.html" %}
+    <p>
+      {% blocktranslate trimmed %}
+      Use <strong>Monitor</strong> pages to see current market health and problems.
+      Use <strong>Configure</strong> pages to set how many ships and items should
+      be available — those targets drive the suggestions on the market status page.
+      {% endblocktranslate %}
+    </p>
+  {% include "admin/market/_learn_more_end.html" %}
+
+  <h2>{% translate "Location settings" %}</h2>
+  <ul class="market-config-list">
+    <li>{% translate "Short name" %}: {{ location.short_name|default:"—" }}</li>
+    <li>{% translate "Market active" %}: {% if location.market_active %}{% translate "yes" %}{% else %}{% translate "no" %}{% endif %}</li>
+    <li>{% translate "Price tracking active" %}: {% if location.prices_active %}{% translate "yes" %}{% else %}{% translate "no" %}{% endif %}</li>
+    <li>
+      {% translate "Ship types stocked" %}:
+      {{ location.market_categories|join:", "|default:_("(not set — add categories to enable stock suggestions)") }}
+    </li>
+  </ul>
+  <p>
+    <a href="{% url 'admin:eveonline_evelocation_change' location.pk %}">
+      {% translate "Edit location settings" %}
+    </a>
+  </p>
+
+  <h2>{% translate "Monitor" %}</h2>
+  <div class="market-card-grid">
+    <div class="market-card">
+      <h3>{% translate "View market status" %}</h3>
+      <p>
+        {% blocktranslate trimmed %}
+        See what is listed at this structure right now: current stock, your
+        targets, suggested amounts, prices vs Jita, and items that are low
+        or overpriced.
+        {% endblocktranslate %}
+      </p>
+      <a href="{% url 'admin:market_location_sell_orders' location.pk %}" class="button">
+        {% translate "View market status" %}
+      </a>
+    </div>
+
+    <div class="market-card">
+      <h3>{% translate "Mismatched contracts" %}</h3>
+      <p>
+        {% blocktranslate trimmed %}
+        Outstanding contracts below 100% fit match — wrong or missing modules
+        that should be fixed or cancelled.
+        {% endblocktranslate %}
+      </p>
+      <a href="{% url 'admin:market_location_contracts' location.pk %}" class="button">
+        {% translate "Review mismatches" %}
+      </a>
+    </div>
+  </div>
+
+  <h2>{% translate "Configure" %}</h2>
+  <div class="market-card-grid">
+    <div class="market-card">
+      <h3>{% translate "Non-doctrine fittings for sale" %}</h3>
+      <p>
+        {% blocktranslate trimmed %}
+        Set how many of each <em>non-doctrine</em> ship fit should be stocked
+        on the market at this location.
+        {% endblocktranslate %}
+      </p>
+      <a href="{% url 'admin:market_location_fitting_expectations' location.pk %}" class="button">
+        {% translate "Configure quantities" %}
+      </a>
+    </div>
+
+    <div class="market-card">
+      <h3>{% translate "Doctrine fittings for sale" %}</h3>
+      <p>
+        {% blocktranslate trimmed %}
+        Set how many of each <em>doctrine</em> ship should be offered as
+        item-exchange contracts. Drives ammo and module stock suggestions.
+        {% endblocktranslate %}
+      </p>
+      <a href="{% url 'admin:market_location_contract_expectations' location.pk %}" class="button">
+        {% translate "Configure quantities" %}
+      </a>
+    </div>
+
+    <div class="market-card">
+      <h3>{% translate "Configure buy orders" %}</h3>
+      <p>
+        {% blocktranslate trimmed %}
+        Set target volumes for items members should buy from the market
+        (posted as buy orders at this structure).
+        {% endblocktranslate %}
+      </p>
+      <a href="{% url 'admin:market_location_buy_orders' location.pk %}" class="button">
+        {% translate "Configure buy orders" %}
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

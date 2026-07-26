@@ -2,14 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-interface Props {
-    is_superuser?:              boolean;
-}
-
-const {
-    is_superuser = false,
-} = Astro.props
-
 import Wrapper from '@components/compositions/Wrapper.astro';
 import Grid from '@components/compositions/Grid.astro';
 
@@ -17,7 +9,6 @@ import Button from '@components/blocks/Button.astro';
 import Tile from '@components/blocks/Tile.astro';
 
 import MarketDeliveriesEVEIcon from '@components/icons/MarketDeliveriesEVEIcon.astro';
-import ContractsServiceEvEIcon from '@components/icons/ContractsServiceEvEIcon.astro';
 import FreightServiceEvEIcon from '@components/icons/FreightServiceEvEIcon.astro';
 ---
 
@@ -34,29 +25,16 @@ import FreightServiceEvEIcon from '@components/icons/FreightServiceEvEIcon.astro
         min_item_width="580px"
     >
         <Tile
-            title={t('contracts.page_title')}
-            description={t('contracts.leading_text')}
-            cover='/images/contracts-tile-background.webp'
+            title={t('industry.orders.page_title')}
+            description={t('industry.orders.leading_text')}
+            cover='/images/orders-tile-background.webp'
         >
-            <ContractsServiceEvEIcon class="[ ml-[-7px] ]" slot="icon" />
-                
-            <Button size='sm' href={translatePath('/market/contracts/')}>
-                {t('view_market_expectations')}
-            </Button>
-        </Tile>
-
-        <Tile
-            title={t('sell_orders.page_title')}
-            description={t('sell_orders.leading_text')}
-            cover='/images/sellorders-tile-background.webp'
-        >
-            <MarketDeliveriesEVEIcon class="[ ml-[-7px] ]" slot="icon" />
-            
-            <Button size='sm' href={translatePath('/market/sell_orders/')}>
+            <Button size='sm' href={translatePath('/industry/orders/')}>
                 {t('browse')}
             </Button>
-            <Button size='sm' href={translatePath('/market/sell_orders/standard')}>
-                {t('standard_view')}
+
+            <Button size='sm' href={translatePath('/industry/blueprints/')}>
+                {t('find_blueprints')}
             </Button>
         </Tile>
 
@@ -72,6 +50,28 @@ import FreightServiceEvEIcon from '@components/icons/FreightServiceEvEIcon.astro
             </Button>
             <Button size='sm' href={translatePath('/market/freight/contracts/')}>
                 {t('freight_contracts.page_title')}
+            </Button>
+        </Tile>
+
+        <Tile
+            title={t('staging_supply.ops.tile_title')}
+            description={t('staging_supply.ops.tile_description')}
+            cover='/images/sellorders-tile-background.webp'
+        >
+            <MarketDeliveriesEVEIcon class="[ ml-[-7px] ]" slot="icon" />
+
+            <Button size='sm' href={translatePath('/market/ops/')}>
+                {t('staging_supply.ops.tile_browse')}
+            </Button>
+        </Tile>
+
+        <Tile
+            title={t('industry.products.page_title')}
+            description={t('industry.products.leading_text')}
+            cover='/images/products-tile-background.webp'
+        >
+            <Button size='sm' href={translatePath('/industry/products/')}>
+                {t('browse')}
             </Button>
         </Tile>
     </Grid>

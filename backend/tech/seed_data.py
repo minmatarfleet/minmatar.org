@@ -294,7 +294,7 @@ def sync_production_fittings():
 
     fittings_created = 0
     for fitting in fittings_data:
-        _, created = get_or_create_active(
+        obj, created = get_or_create_active(
             EveFitting,
             id=fitting["id"],
             defaults={
@@ -304,9 +304,9 @@ def sync_production_fittings():
                 "eft_format": fitting.get("eft_format", ""),
                 "minimum_pod": fitting.get("minimum_pod", ""),
                 "recommended_pod": fitting.get("recommended_pod", ""),
-                "tags": fitting.get("tags", []),
             },
         )
+        obj.set_tag_slugs(fitting.get("tags", []), write_history=False)
         if created:
             fittings_created += 1
 

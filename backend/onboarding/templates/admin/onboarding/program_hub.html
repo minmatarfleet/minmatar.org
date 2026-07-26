@@ -1,0 +1,85 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  {% include "admin/onboarding/_styles.html" %}
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate "Home" %}</a>
+  &rsaquo; <a href="{% url 'admin:onboarding_home' %}">{% translate "Onboarding" %}</a>
+  &rsaquo; {{ program.get_program_type_display }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <header class="onboarding-hub-header">
+    <h1 class="onboarding-hub-header__title">{{ program.get_program_type_display }}</h1>
+    <p class="onboarding-hub-header__subtitle"><code>{{ program.program_type }}</code></p>
+    <p class="onboarding-hub-header__desc">
+      {% blocktranslate trimmed %}
+      Pilots must acknowledge the current program version before using gated
+      features. Current acks match the version below; older acks are stale.
+      {% endblocktranslate %}
+    </p>
+  </header>
+
+  <section class="onboarding-section">
+    <div class="onboarding-section-header">
+      <h2>{% translate "Program settings" %}</h2>
+    </div>
+    <div class="onboarding-settings-panel">
+      <div class="onboarding-settings-panel__item">
+        <span class="onboarding-settings-panel__label">{% translate "Program type" %}</span>
+        <span class="onboarding-settings-panel__value">{{ program.get_program_type_display }}</span>
+      </div>
+      <div class="onboarding-settings-panel__item">
+        <span class="onboarding-settings-panel__label">{% translate "Current version" %}</span>
+        <span class="onboarding-settings-panel__value"><code>{{ program.version }}</code></span>
+      </div>
+      <div class="onboarding-settings-panel__item">
+        <span class="onboarding-settings-panel__label">{% translate "Current acks" %}</span>
+        <span class="onboarding-settings-panel__value">{{ ack_current }}</span>
+      </div>
+      <div class="onboarding-settings-panel__item">
+        <span class="onboarding-settings-panel__label">{% translate "Total acks" %}</span>
+        <span class="onboarding-settings-panel__value">{{ ack_total }}</span>
+      </div>
+    </div>
+    <a href="{{ sections.settings.edit_url }}" class="onboarding-btn onboarding-btn--primary">
+      {% translate "Edit program" %}
+    </a>
+  </section>
+
+  <section class="onboarding-section">
+    <div class="onboarding-section-header">
+      <h2>{% translate "Acknowledgments" %}</h2>
+    </div>
+    <div class="onboarding-card-grid">
+      <div class="onboarding-card">
+        <div class="onboarding-card__header">
+          <h3>{% translate "User acknowledgments" %}</h3>
+          <span class="onboarding-card__badge">{{ sections.acknowledgments.total }}</span>
+        </div>
+        <p class="onboarding-card__desc">
+          {% blocktranslate count counter=sections.acknowledgments.current %}
+          {{ counter }} user on the current version.
+          {% plural %}
+          {{ counter }} users on the current version.
+          {% endblocktranslate %}
+        </p>
+        <div class="onboarding-card__actions">
+          <a href="{{ sections.acknowledgments.list_url }}" class="onboarding-btn onboarding-btn--primary">
+            {% translate "View acknowledgments" %}
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

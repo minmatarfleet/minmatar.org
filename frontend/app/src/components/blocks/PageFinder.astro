@@ -133,6 +133,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
         x-trap="pages_finder_open"
         x-bind:inert="!pages_finder_open"
         close_button={false}
+        style="--dialog-z-index: var(--page-finder-z-index);"
     >
         <Flexblock gap="0">
             <Input

@@ -8,36 +8,44 @@ def make_killmail_payload(
     *,
     solar_system_id: int = 30002538,
     killmail_time: datetime | None = None,
-    faction_id: int = 500002,
+    faction_id: int | None = 500002,
+    victim_faction_id: int | None = None,
     attacker_count: int = 8,
     ship_type_id: int = 22468,
+    attacker_ship_type_id: int = 22468,
 ) -> dict:
     """Build R2Z2-style payload for tests."""
     if killmail_time is None:
         killmail_time = datetime(2026, 6, 19, 17, 25, 8, tzinfo=timezone.utc)
 
-    attackers = [
-        {
+    attackers = []
+    for i in range(attacker_count):
+        attacker: dict = {
             "character_id": 90000000 + i,
             "corporation_id": 98000000,
             "alliance_id": 99000000,
-            "faction_id": faction_id,
-            "ship_type_id": 22468,
+            "ship_type_id": attacker_ship_type_id,
             "damage_done": 1000,
             "final_blow": i == 0,
         }
-        for i in range(attacker_count)
-    ]
+        if faction_id is not None:
+            attacker["faction_id"] = faction_id
+        attackers.append(attacker)
+
+    victim: dict = {
+        "character_id": 80000000 + killmail_id % 1000,
+        "corporation_id": 98000001,
+        "ship_type_id": ship_type_id,
+        "damage_taken": 5000,
+    }
+    if victim_faction_id is not None:
+        victim["faction_id"] = victim_faction_id
+
     raw = {
         "killmail_id": killmail_id,
         "killmail_time": killmail_time.isoformat().replace("+00:00", "Z"),
         "solar_system_id": solar_system_id,
-        "victim": {
-            "character_id": 80000000 + killmail_id % 1000,
-            "corporation_id": 98000001,
-            "ship_type_id": ship_type_id,
-            "damage_taken": 5000,
-        },
+        "victim": victim,
         "attackers": attackers,
     }
     return {

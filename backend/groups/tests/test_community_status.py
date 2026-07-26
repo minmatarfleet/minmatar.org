@@ -21,6 +21,10 @@ class SyncUserCommunityGroupsTestCase(TestCase):
     """Tests for sync_user_community_groups."""
 
     def setUp(self):
+        signals.post_save.disconnect(
+            sender=Group,
+            dispatch_uid="group_post_save",
+        )
         signals.m2m_changed.disconnect(
             sender=User.groups.through,
             dispatch_uid="user_group_changed",
@@ -92,6 +96,10 @@ class UserCommunityStatusHistoryTestCase(TestCase):
     """Tests that status changes create history rows."""
 
     def setUp(self):
+        signals.post_save.disconnect(
+            sender=Group,
+            dispatch_uid="group_post_save",
+        )
         signals.m2m_changed.disconnect(
             sender=User.groups.through,
             dispatch_uid="user_group_changed",
@@ -129,6 +137,10 @@ class RequiresTrialTestCase(TestCase):
     """Tests that new UserAffiliation with requires_trial creates trial status."""
 
     def setUp(self):
+        signals.post_save.disconnect(
+            sender=Group,
+            dispatch_uid="group_post_save",
+        )
         signals.m2m_changed.disconnect(
             sender=User.groups.through,
             dispatch_uid="user_group_changed",

@@ -1,0 +1,475 @@
+---
+interface SellGapShip {
+    ship_id:        number;
+    fitting_name:   string;
+}
+
+interface SellGapRow {
+    location_id:        number;
+    location_name:      string;
+    short_name:         string;
+    type_id:            number;
+    item_name:          string;
+    current_quantity:   number;
+    viable_quantity:    number;
+    expected_quantity:  number;
+    shortfall:          number;
+    coverage_gap:       boolean;
+    viability_gap:      boolean;
+    item_type:          string;
+    item_variant:       string;
+    units_1d:           number;
+    units_3d:           number;
+    weekly_units:       number;
+    units_30d:          number;
+    units_90d:          number;
+    avg_markup_pct:     number | null;
+    ships:              SellGapShip[];
+}
+
+interface Props {
+    rows:                   SellGapRow[];
+    hide_location?:         boolean;
+    jita_copy_label?:       string;
+    jita_copy_tip?:         string;
+    sales_history_days?:    number;
+}
+
+const {
+    rows,
+    hide_location = false,
+    jita_copy_label,
+    jita_copy_tip,
+    sales_history_days = 0,
+} = Astro.props
+
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+import UsefulForShips from '@components/blocks/UsefulForShips.astro'
+import ClipboardButton from '@components/blocks/ClipboardButton.astro'
+
+function qty_label(row: SellGapRow): string {
+    return t('ops_sell_gap_qty')
+        .replace('{viable}', String(row.viable_quantity))
+        .replace('{expected}', String(row.expected_quantity))
+}
+
+const number_format = new Intl.NumberFormat('en-US')
+
+function format_units(units: number): string {
+    return number_format.format(units)
+}
+
+function format_markup(pct: number | null): string {
+    if (pct == null)
+        return '—'
+    const rounded = Number.isInteger(pct) ? String(pct) : pct.toFixed(1)
+    return `${rounded}%`
+}
+
+const criteria_options = [
+    { id: 'coverage', label: t('ops_gap_filter_coverage') },
+    { id: 'viability', label: t('ops_gap_filter_viability') },
+] as const
+
+const type_options = [
+    { id: 'hull', label: t('ops_gap_type_hull') },
+    { id: 'high_slot', label: t('ops_gap_type_high_slot') },
+    { id: 'medium_slot', label: t('ops_gap_type_medium_slot') },
+    { id: 'low_slot', label: t('ops_gap_type_low_slot') },
+    { id: 'consumable', label: t('ops_gap_type_consumable') },
+    { id: 'drone', label: t('ops_gap_type_drone') },
+    { id: 'rig', label: t('ops_gap_type_rig') },
+    { id: 'other', label: t('ops_gap_type_other') },
+] as const
+
+const variant_options = [
+    { id: 't1', label: t('ops_gap_variant_t1') },
+    { id: 't2', label: t('ops_gap_variant_t2') },
+    { id: 'faction', label: t('ops_gap_variant_faction') },
+    { id: 'deadspace', label: t('ops_gap_variant_deadspace') },
+    { id: 'other', label: t('ops_gap_variant_other') },
+] as const
+
+const show_volume_1d = sales_history_days >= 1
+const show_volume_3d = sales_history_days >= 3
+const show_volume_7d = sales_history_days >= 7
+const show_volume_30d = sales_history_days >= 30
+const show_volume_90d = sales_history_days >= 90
+
+const rows_json = JSON.stringify(rows)
+const show_jita = Boolean(jita_copy_label)
+const empty_label = t('ops_sell_gaps_empty_filter')
+---
+
+<div
+    class="[ ops-sell-gaps ]"
+    data-rows={rows_json}
+    x-data={`{
+        criteria: [],
+        types: [],
+        variants: [],
+        rows: [],
+        init() {
+            this.rows = JSON.parse(this.$el.dataset.rows || '[]')
+        },
+        toggle(list, id) {
+            const i = list.indexOf(id)
+            if (i >= 0)
+                list.splice(i, 1)
+            else
+                list.push(id)
+        },
+        active(list, id) {
+            return list.includes(id)
+        },
+        rowVisible(row) {
+            const criteria_ok = this.criteria.length === 0
+                || (this.criteria.includes('coverage') && row.coverage_gap)
+                || (this.criteria.includes('viability') && row.viability_gap)
+            const type_ok = this.types.length === 0
+                || this.types.includes(row.item_type)
+            const variant_ok = this.variants.length === 0
+                || this.variants.includes(row.item_variant)
+            return criteria_ok && type_ok && variant_ok
+        },
+        get visibleRows() {
+            return this.rows.filter(row => this.rowVisible(row))
+        },
+        get visibleCount() {
+            return this.visibleRows.length
+        },
+        get jitaBuyList() {
+            return this.visibleRows
+                .filter(row => row.shortfall > 0)
+                .map(row => row.item_name + ' ' + row.shortfall)
+                .join('\\n')
+        },
+    }`}
+>
+    <Flexblock gap="var(--space-s)">
+        <h2>
+            <span>{t('ops_sell_gaps')}</span>
+            {' '}
+            (<span x-text="visibleCount">{rows.length}</span>)
+        </h2>
+
+        {rows.length > 0 &&
+            <div class="[ ops-sell-gaps__sticky ]">
+                <Flexblock gap="var(--space-xs)" class="[ ops-sell-gaps__filters ]">
+                    <div class="[ ops-sell-gaps__filter-row ]">
+                        <span class="[ ops-sell-gaps__filter-label ]">{t('ops_gap_filter_criteria')}</span>
+                        <div class="[ ops-sell-gaps__chips ]">
+                            {criteria_options.map(opt =>
+                                <button
+                                    type="button"
+                                    class="[ ops-sell-gaps__chip ]"
+                                    x-bind:class={`active(criteria, '${opt.id}') && 'is-active'`}
+                                    x-on:click={`toggle(criteria, '${opt.id}')`}
+                                >{opt.label}</button>
+                            )}
+                        </div>
+                    </div>
+                    <div class="[ ops-sell-gaps__filter-row ]">
+                        <span class="[ ops-sell-gaps__filter-label ]">{t('ops_gap_filter_type')}</span>
+                        <div class="[ ops-sell-gaps__chips ]">
+                            {type_options.map(opt =>
+                                <button
+                                    type="button"
+                                    class="[ ops-sell-gaps__chip ]"
+                                    x-bind:class={`active(types, '${opt.id}') && 'is-active'`}
+                                    x-on:click={`toggle(types, '${opt.id}')`}
+                                >{opt.label}</button>
+                            )}
+                        </div>
+                    </div>
+                    <div class="[ ops-sell-gaps__filter-row ]">
+                        <span class="[ ops-sell-gaps__filter-label ]">{t('ops_gap_filter_variant')}</span>
+                        <div class="[ ops-sell-gaps__chips ]">
+                            {variant_options.map(opt =>
+                                <button
+                                    type="button"
+                                    class="[ ops-sell-gaps__chip ]"
+                                    x-bind:class={`active(variants, '${opt.id}') && 'is-active'`}
+                                    x-on:click={`toggle(variants, '${opt.id}')`}
+                                >{opt.label}</button>
+                            )}
+                        </div>
+                    </div>
+                </Flexblock>
+            </div>
+        }
+
+        <div class="[ ops-sell-gaps__results ]">
+            <p
+                class="[ ops-sell-gaps__empty ]"
+                x-show="visibleCount === 0"
+                x-cloak
+            >{rows.length === 0 ? '—' : empty_label}</p>
+
+            <Flexblock gap="var(--space-2xs)">
+                {rows.map((row, index) =>
+                    <div
+                        class="[ ops-sell-gap-card ]"
+                        x-show={`rowVisible(rows[${index}])`}
+                        x-cloak
+                    >
+                        <ComponentBlock
+                            class="[ ops-sell-gap-card__main ]"
+                            padding_block="var(--space-2xs)"
+                            padding_inline="var(--space-s)"
+                        >
+                            <FlexInline
+                                gap="var(--space-s)"
+                                justification="space-between"
+                                class="[ w-full ops-sell-gap ]"
+                            >
+                                <FlexInline gap="var(--space-s)" class="[ ops-sell-gap__main ]">
+                                    <div class="[ ops-sell-gap__item ]">
+                                        <ItemPicture
+                                            item_id={row.type_id}
+                                            item_name={row.item_name}
+                                            size={48}
+                                            icon_quality={64}
+                                        />
+                                    </div>
+                                    <Flexblock gap="var(--space-3xs)">
+                                        <strong>{row.item_name}</strong>
+                                        {!hide_location &&
+                                            <small>{row.short_name || row.location_name}</small>
+                                        }
+                                        <UsefulForShips ships={row.ships ?? []} size={28} max={10} />
+                                    </Flexblock>
+                                </FlexInline>
+                                <span class="[ ops-qty ]">{qty_label(row)}</span>
+                            </FlexInline>
+                        </ComponentBlock>
+                        <div class="[ ops-sell-gap__metrics ]" aria-label={t('ops_sell_gap_metrics')}>
+                            <span class="[ ops-sell-gap__metric ]">
+                                <span class="[ ops-sell-gap__metric-label ]">{t('ops_sell_gap_metric_listed')}</span>
+                                <span class="[ ops-sell-gap__metric-value ]">{format_units(row.current_quantity)}</span>
+                            </span>
+                            <span class="[ ops-sell-gap__sep ]" aria-hidden="true">·</span>
+                            <span class="[ ops-sell-gap__metric ]">
+                                <span class="[ ops-sell-gap__metric-label ]">{t('ops_sell_gap_metric_markup')}</span>
+                                <span class="[ ops-sell-gap__metric-value ]">{format_markup(row.avg_markup_pct)}</span>
+                            </span>
+                            <span class="[ ops-sell-gap__sep ]" aria-hidden="true">·</span>
+                            <span class="[ ops-sell-gap__metric ]">
+                                <span class="[ ops-sell-gap__metric-label ]">{t('ops_sell_gap_metric_1d')}</span>
+                                <span class="[ ops-sell-gap__metric-value ]">
+                                    {show_volume_1d ? format_units(row.units_1d) : '—'}
+                                </span>
+                            </span>
+                            <span class="[ ops-sell-gap__sep ]" aria-hidden="true">·</span>
+                            <span class="[ ops-sell-gap__metric ]">
+                                <span class="[ ops-sell-gap__metric-label ]">{t('ops_sell_gap_metric_3d')}</span>
+                                <span class="[ ops-sell-gap__metric-value ]">
+                                    {show_volume_3d ? format_units(row.units_3d) : '—'}
+                                </span>
+                            </span>
+                            <span class="[ ops-sell-gap__sep ]" aria-hidden="true">·</span>
+                            <span class="[ ops-sell-gap__metric ]">
+                                <span class="[ ops-sell-gap__metric-label ]">{t('ops_sell_gap_metric_7d')}</span>
+                                <span class="[ ops-sell-gap__metric-value ]">
+                                    {show_volume_7d ? format_units(row.weekly_units) : '—'}
+                                </span>
+                            </span>
+                            <span class="[ ops-sell-gap__sep ]" aria-hidden="true">·</span>
+                            <span class="[ ops-sell-gap__metric ]">
+                                <span class="[ ops-sell-gap__metric-label ]">{t('ops_sell_gap_metric_30d')}</span>
+                                <span class="[ ops-sell-gap__metric-value ]">
+                                    {show_volume_30d ? format_units(row.units_30d) : '—'}
+                                </span>
+                            </span>
+                            <span class="[ ops-sell-gap__sep ]" aria-hidden="true">·</span>
+                            <span class="[ ops-sell-gap__metric ]">
+                                <span class="[ ops-sell-gap__metric-label ]">{t('ops_sell_gap_metric_90d')}</span>
+                                <span class="[ ops-sell-gap__metric-value ]">
+                                    {show_volume_90d ? format_units(row.units_90d) : '—'}
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                )}
+            </Flexblock>
+        </div>
+
+        {show_jita && rows.length > 0 &&
+            <FlexInline justification="flex-end">
+                <div x-show="jitaBuyList.length > 0" x-cloak>
+                    <ClipboardButton
+                        id="jita-buy-list-clipboard"
+                        text={jita_copy_label}
+                        data-tippy-content={jita_copy_tip}
+                        x_value="jitaBuyList"
+                    >{''}</ClipboardButton>
+                </div>
+            </FlexInline>
+        }
+    </Flexblock>
+</div>
+
+<style lang="scss">
+    .ops-sell-gaps__sticky {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+
+    .ops-sell-gaps__filters {
+        padding: var(--space-s);
+        border: 1px solid var(--border-color);
+        background: rgba(0, 0, 0, 0.88);
+        backdrop-filter: blur(6px);
+    }
+
+    .ops-sell-gaps__filter-row {
+        display: grid;
+        grid-template-columns: 5.5rem 1fr;
+        align-items: baseline;
+        gap: var(--space-2xs) var(--space-s);
+
+        @media (max-width: 540px) {
+            grid-template-columns: 1fr;
+            gap: var(--space-3xs);
+        }
+    }
+
+    .ops-sell-gaps__filter-label {
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
+    }
+
+    .ops-sell-gaps__chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs);
+    }
+
+    .ops-sell-gaps__chip {
+        appearance: none;
+        margin: 0;
+        padding: var(--space-3xs) var(--space-xs);
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 40%, transparent);
+        background: transparent;
+        color: var(--fleet-yellow);
+        font-family: var(--button-font);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: var(--fast-transition);
+
+        @media (hover: hover) {
+            &:hover {
+                border-color: var(--fleet-yellow);
+                background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+            }
+        }
+
+        &.is-active {
+            border-color: var(--fleet-yellow);
+            background: var(--fleet-yellow);
+            color: var(--background);
+        }
+    }
+
+    .ops-sell-gaps__results {
+        min-height: min(28rem, 55vh);
+    }
+
+    .ops-sell-gaps__empty {
+        margin: 0;
+        padding-block: var(--space-m);
+        color: rgba(255, 255, 255, 0.55);
+        font-size: var(--step--1);
+    }
+
+    .ops-sell-gap-card {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .ops-sell-gap-card__main {
+        border-bottom: none;
+    }
+
+    .ops-sell-gap__main {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .ops-sell-gap__item {
+        flex-shrink: 0;
+
+        :global(picture),
+        :global(img) {
+            width: 48px;
+            height: 48px;
+            object-fit: contain;
+        }
+    }
+
+    .ops-qty {
+        flex-shrink: 0;
+        font-family: var(--heading-font);
+        font-variant-numeric: tabular-nums;
+        text-transform: uppercase;
+        color: var(--highlight);
+        white-space: nowrap;
+    }
+
+    .ops-sell-gap__metrics {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0.15rem 0.45rem;
+        padding: 0.12rem var(--space-s);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(0, 0, 0, 0.16);
+        line-height: 1.2;
+    }
+
+    .ops-sell-gap__metric {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 0.3rem;
+        min-width: 0;
+        white-space: nowrap;
+    }
+
+    .ops-sell-gap__sep {
+        color: rgba(255, 255, 255, 0.28);
+        font-size: var(--step--2);
+        user-select: none;
+    }
+
+    .ops-sell-gap__metric-label {
+        font-family: var(--button-font);
+        font-size: var(--step--2);
+        font-weight: 400;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.48);
+    }
+
+    .ops-sell-gap__metric-value {
+        font-size: var(--step--2);
+        font-variant-numeric: tabular-nums;
+        color: var(--highlight);
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+</style>

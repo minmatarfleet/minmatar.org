@@ -9,6 +9,7 @@ from django.utils import timezone
 from discord.client import DiscordClient
 from eveonline.models import EveLocation
 from fittings.models import EveDoctrine
+from groups.helpers.feature_access import can_use_feature
 
 from fleets.models import EveFleet, EveFleetAudience, EveFleetInstance
 from fleets.endpoints.schemas import EveFleetResponse, EveFleetTrackingResponse
@@ -52,7 +53,7 @@ def make_fleet_response(fleet: EveFleet) -> EveFleetResponse:
             if fleet.formup_location
             else "Ask FC"
         ),
-        "audience": fleet.audience.name,
+        "audience": fleet.audience.name if fleet.audience else None,
         "tracking": tracking,
         "disable_motd": fleet.disable_motd,
         "status": fixup_fleet_status(fleet, tracking),
@@ -79,13 +80,10 @@ def time_region(time: datetime) -> str:
 
 def _fleet_authorized(request, fleet: EveFleet) -> bool:
     """True if user can view this fleet (and thus list/volunteer for roles)."""
-    if request.user.has_perm("fleets.view_evefleet"):
+    if can_use_feature(request.user, "fleets.view", fleet=fleet):
         return True
     if request.user == fleet.created_by:
         return True
-    for group in fleet.audience.groups.all():
-        if group in request.user.groups.all():
-            return True
     return False
 
 
@@ -167,3 +165,18 @@ def update_instance_endtime(fleet: EveFleet) -> None:
         if not instance.end_time:
             instance.end_time = timezone.now()
             instance.save()
+
+
+def try_refresh_active_fleet_motd(fleet: EveFleet) -> None:
+    """Regenerate and push MOTD when the fleet is actively tracked."""
+    if fleet.disable_motd:
+        return
+    instance = EveFleetInstance.objects.filter(
+        eve_fleet=fleet, end_time__isnull=True
+    ).first()
+    if not instance:
+        return
+    try:
+        instance.refresh_motd()
+    except Exception as e:
+        logger.warning("Failed to refresh MOTD for fleet %s: %s", fleet.id, e)

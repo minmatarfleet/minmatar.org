@@ -71,6 +71,10 @@ def update_character(eve_character_id):
         refresh_character_killmails(eve_character_id)
     if Token.get_token(eve_character_id, SCOPE_CONTRACTS):
         refresh_character_contracts(eve_character_id)
+        app.send_task(
+            "industry.tasks.reconcile_industry_contract_associations_for_character_task",
+            args=[eve_character_id],
+        )
     if Token.get_token(eve_character_id, SCOPE_INDUSTRY_JOBS):
         refresh_character_industry_jobs(eve_character_id)
     if Token.get_token(eve_character_id, SCOPE_MINING):

@@ -3,14 +3,9 @@
 import logging
 
 from django.conf import settings
-from django.urls import reverse
 
 from discord.client import DiscordClient
 from discord.models import DiscordUser
-from fittings.helpers.permissions import (
-    users_who_can_approve_doctrine_request,
-    users_who_can_approve_fitting_request,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -42,52 +37,6 @@ def _send_dm(user, message: str):
             user,
             exc_info=True,
         )
-
-
-def notify_doctrine_change_proposed(change_request):
-    base = _admin_site_base()
-    path = reverse(
-        "admin:fittings_evedoctrinechangerequest_change",
-        args=[change_request.pk],
-    )
-    link = f"{base}{path}" if base else path
-    tier = change_request.tier.replace("_", " ")
-    submitter = (
-        change_request.submitted_by.username
-        if change_request.submitted_by
-        else "unknown"
-    )
-    message = (
-        f"**Doctrine change proposed** ({tier})\n"
-        f"Doctrine: **{change_request.doctrine.name}**\n"
-        f"Submitted by: {submitter}\n"
-        f"Review: {link}"
-    )
-    for user in users_who_can_approve_doctrine_request(change_request.tier):
-        _send_dm(user, message)
-
-
-def notify_fitting_change_proposed(change_request):
-    base = _admin_site_base()
-    path = reverse(
-        "admin:fittings_evefittingchangerequest_change",
-        args=[change_request.pk],
-    )
-    link = f"{base}{path}" if base else path
-    tier = change_request.tier.replace("_", " ")
-    submitter = (
-        change_request.submitted_by.username
-        if change_request.submitted_by
-        else "unknown"
-    )
-    message = (
-        f"**Fitting change proposed** ({tier})\n"
-        f"Fitting: **{change_request.fitting.name}**\n"
-        f"Submitted by: {submitter}\n"
-        f"Review: {link}"
-    )
-    for user in users_who_can_approve_fitting_request(change_request.tier):
-        _send_dm(user, message)
 
 
 def build_daily_reminder_message(

@@ -19,17 +19,16 @@ SECTION_VOICE = """<font size="13" color="#ffffffff">Voice: </font><font size="1
 
 SECTION_DOCTRINE = """<font size="13" color="#bfffffff">Doctrine: </font><font size="13" color="#ffffe400"><loc><a href="{{doctrine_link}}">{{doctrine_name}}</a></loc></font>"""
 
+SECTION_DOCTRINE_MISSING = """<font size="13" color="#bfffffff">Doctrine: </font><font size="13" color="#ffffe400"><loc><a href="{{fleet_edit_url}}">Set the doctrine</a></loc></font>"""
+
 # Links section: header + bookmarks / broadcast / channels (white font)
 SECTION_LINKS_HEADER = """<font size="13" color="#ffffffff">Links</font>"""
 SECTION_LINKS_BOOKMARKS = """<font size="13" color="#ffffffff">Bookmarks: <a href="bookmarkFolder:11785719">Minmil</a></font>"""
 SECTION_LINKS_BROADCAST = """<font size="13" color="#ffffffff">Broadcast: <a href="sharedSetting:b6254caf7710e789c99b506ea2ccdc63dc800d91//1//3">DPS</a>, <a href="sharedSetting:ef2be973427c71f5e3785105ce3751882d14acc8//1//3">Logi</a>, <a href="sharedSetting:d2928f2f783f75d0c9815a843ecf0626500dae1d//1//3">Dual</a></font>"""
 SECTION_LINKS_CHANNELS = """<font size="13" color="#ffffffff">Channels: <a href="joinChannel:player_4a392b7086c611ecaf859abe94f5a39b">Minmatar Logistics Chain</a></font>"""
 
-# At bottom when roles are missing: intro line, then bulleted list, then volunteer link
-SECTION_MISSING_HEADER = """<font size="13" color="#ffffffff">Some fleet roles are missing:</font>"""
-SECTION_MISSING_BULLET = (
-    """<font size="13" color="#ffffffff">- {{item}}</font>"""
-)
+# At bottom when roles are missing: one condensed line, then volunteer link
+SECTION_MISSING = """<font size="13" color="#ffffffff">Some fleet roles are missing: {{items}}</font>"""
 SECTION_MISSING_LINK = """<font size="13" color="#ffffffff"><loc><a href="{{volunteer_url}}">Click here to volunteer</a></loc>.</font>"""
 
 SECTION_RAT_QUOTE = """<font size="13" color="#ffaaaaaa">{{quote}}</font>"""
@@ -51,11 +50,13 @@ def get_motd(
     role_volunteers=None,
     missing_roles=None,
     volunteer_url=None,
+    fleet_edit_url=None,
 ):
     """
     role_volunteers: optional list of (role_label, [(character_id, character_name), ...])
-    missing_roles: optional list of short strings e.g. ["Logi Anchor", "Links (Armor)", "1 more Cyno"]
+    missing_roles: optional list of short strings e.g. ["EHP links", "Logi anchor", "Cynos"]
     volunteer_url: optional URL to the volunteer page (shown when missing_roles is non-empty)
+    fleet_edit_url: optional URL to edit the fleet (shown when no doctrine is set)
     """
     parts = [
         SECTION_HEADER,
@@ -95,6 +96,12 @@ def get_motd(
                 "{{doctrine_link}}", str(doctrine_link)
             ).replace("{{doctrine_name}}", str(doctrine_name))
         )
+    elif fleet_edit_url:
+        parts.append(
+            SECTION_DOCTRINE_MISSING.replace(
+                "{{fleet_edit_url}}", str(fleet_edit_url)
+            )
+        )
 
     parts.extend(
         [
@@ -108,9 +115,9 @@ def get_motd(
     parts.append("")  # newline after links section
 
     if missing_roles and volunteer_url:
-        parts.append(SECTION_MISSING_HEADER)
-        for role in missing_roles:
-            parts.append(SECTION_MISSING_BULLET.replace("{{item}}", role))
+        parts.append(
+            SECTION_MISSING.replace("{{items}}", ", ".join(missing_roles))
+        )
         parts.append(
             SECTION_MISSING_LINK.replace("{{volunteer_url}}", volunteer_url)
         )

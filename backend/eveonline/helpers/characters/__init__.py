@@ -8,11 +8,14 @@ from eveonline.helpers.characters.assets import (
     non_ship_location,
 )
 from eveonline.helpers.characters.characters import (
+    character_configured_scope_groups,
     character_desired_scopes,
     character_primary,
+    merge_scope_groups,
     orphan_character,
     player_characters,
     related_characters,
+    scope_groups_for_token_add,
     set_primary_character,
     user_characters,
     user_player,
@@ -47,7 +50,9 @@ from eveonline.helpers.characters.update import (
 )
 
 __all__ = [
+    "character_configured_scope_groups",
     "character_desired_scopes",
+    "scope_groups_for_token_add",
     "character_primary",
     "create_character_assets",
     "create_eve_character_skillset",

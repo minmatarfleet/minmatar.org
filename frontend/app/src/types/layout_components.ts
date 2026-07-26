@@ -33,6 +33,21 @@ export interface FittingItem {
     ship_meta?:     string;
 }
 
+export interface ShipFittings {
+    ship_name:      string;
+    ship_id:        number;
+    ship_type:      string;
+    ship_meta:      string;
+    tags:           string[];
+    count:          number;
+    fittings:       FittingItem[];
+}
+
+export interface ShipTypeFittingGroups {
+    ship_type:      string;
+    ship_groups:    ShipFittings[];
+}
+
 export interface DoctrineItemObj {
     doctrine_name:  string;
     href:           string;
@@ -995,19 +1010,10 @@ export interface DoctrineLocationUI {
     doctrines:          DoctrineType[];
 }
 
-import type { FittingMarketData, SellOrderItem } from '@dtypes/api.minmatar.org';
-
-export interface ContractMarketLocationUI {
-    name:               string;
-    doctrine_count:     number;
-    completion:         number;
-    fittings:           FittingMarketData[];
-}
-
-export const fleet_roles = ['logi_anchor', 'dps_anchor', 'cyno', 'links'] as const
+export const fleet_roles = ['logi_anchor', 'cyno', 'links'] as const
 export type FleetRoles = typeof fleet_roles[number]
 
-export const fleet_roles_subtypes = ['armor', 'shield', 'info', 'skirmish'] as const
+export const fleet_roles_subtypes = ['ehp', 'info', 'skirmish'] as const
 export type FleetRolesSubtypes = typeof fleet_roles_subtypes[number]
 
 import type { BaseLocation, RootItem, Producer } from '@dtypes/api.minmatar.org'
@@ -1038,13 +1044,6 @@ export interface FreightContractLocationDestination {
 export interface FreightContractLocation {
     location_name:  string;
     destinations:   FreightContractLocationDestination[];
-}
-
-export interface MarketLocationUI {
-    name:               string;
-    items_count:        number;
-    completion:         number;
-    items:              SellOrderItem[];
 }
 
 import type { ColonyEntry } from '@dtypes/api.minmatar.org'

@@ -1,6 +1,6 @@
 ---
 name: town-hall-summary
-description: Generate alliance town hall summaries from tribe catalog report bindings. Use when the user asks for town hall data, tribe slide metrics, town_hall_report output, production town hall analysis, or summaries by Capitals/Industry/Market/Pulse groups.
+description: Generate alliance town hall summaries from tribe catalog report bindings. Use when the user asks for town hall data, tribe slide metrics, town_hall_report output, production town hall analysis, or summaries by Capitals/Supply/Pulse groups.
 ---
 
 # Town Hall Summary
@@ -10,7 +10,7 @@ Generate slide-ready summaries from **`town_hall_report`** and the report API. M
 ## When to use
 
 - User asks for town hall numbers, tribe summaries, or "what can we infer" for the last 30 days
-- Preparing Capitals / Industry / Market / Pulse slides
+- Preparing Capitals / Supply / Pulse slides
 - Comparing production data without SSH (local + `production_readonly`)
 
 Also read **`debug-production-readonly-db`** when querying prod from the dev machine.
@@ -31,7 +31,7 @@ pipenv run python manage.py town_hall_report \
 
 ```bash
 pipenv run python manage.py town_hall_report \
-  --group industry.mining --view town_hall --period 30d \
+  --group supply.mining --view town_hall --period 30d \
   --database production_readonly --format json
 ```
 
@@ -41,7 +41,7 @@ Default town hall binding for mining is **alliance**. For Mining **tribe roster*
 
 ```bash
 pipenv run python manage.py town_hall_report \
-  --group industry.mining --scope roster --view town_hall --period 30d \
+  --group supply.mining --scope roster --view town_hall --period 30d \
   --database production_readonly
 ```
 
@@ -51,7 +51,7 @@ pipenv run python manage.py town_hall_report \
 
 ```bash
 pipenv run python manage.py town_hall_report \
-  --group industry.mining --format csv --period 30d \
+  --group supply.mining --format csv --period 30d \
   --database production_readonly
 ```
 
@@ -64,15 +64,15 @@ pipenv run python manage.py town_hall_report \
 | Tribe | Code | Automated metric |
 |-------|------|------------------|
 | Capitals | `capitals.dreads`, `capitals.carriers`, `capitals.faxes` | Kills, losses, fleet ops (qualifying hulls); top 5 by kills |
-| Industry | `industry.mining` | Volume m³ + ore ISK; top 5 (alliance default) |
-| Industry | `industry.planetary-interaction` | Gross PI ISK; top 5 roster |
-| Industry | `industry.capital-production`, `industry.subcapital-production` | Delivered/committed units + margin; top 5 by delivered margin |
-| Market | `market.freighters` | Program totals only (contracts, ISK, m³, completion hours) |
+| Supply | `supply.mining` | Volume m³ + ore ISK; top 5 (alliance default) |
+| Supply | `supply.planetary-interaction` | Gross PI ISK; top 5 roster |
+| Supply | `supply.capital-production`, `supply.subcapital-production` | Delivered/committed units + margin; top 5 by delivered margin |
+| Supply | `supply.freighters` | Program totals only (contracts, ISK, m³, completion hours) |
 | Pulse | `pulse.fleet-commanders` | Fleets led; top 5 alliance-wide |
 
 **Manual (narrative only — no query data):**
 
-- Market: `market.contracts`, `market.market-orders`, `market.loyalty-points`
+- Supply: `supply.market`, `supply.loyalty-points`
 - Pulse: `pulse.technology`, `pulse.thinkspeak`, `pulse.readiness`, `pulse.advocates`, `pulse.tournaments`
 
 Manual groups return `manual: true` and a message; note them in **Slide readiness**, do not invent numbers.
@@ -113,7 +113,7 @@ Alliance-wide; top 5 shown. k/l/f = kills / losses / fleets.
 | Carriers | … | … | … | … |
 | Faxes | … | … | … | … |
 
-## Industry
+## Supply
 ### Mining
 - Alliance: [volume] / [ISK] — top: …
 - Roster (if run): [volume] / [ISK] — top: …
@@ -123,10 +123,8 @@ Top 5: …
 
 ### Capital Production — [delivered/committed], [margin]
 ### Subcapital Production — [status or "empty"]
-
-## Market
 ### Freighters — [contracts], [ISK], [m³], median [h]h
-### Manual: Contracts, Market Orders, Loyalty Points
+### Manual: Market, Loyalty Points
 
 ## Pulse
 ### Fleet Commanders — [total fleets]; top FCs: …

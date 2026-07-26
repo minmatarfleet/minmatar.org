@@ -8,7 +8,6 @@ from app.settings import settings
 
 from .api import (
     HELP_TICKETS_BASE_URL,
-    OPEN_TICKETS_URL,
     PANEL_CONFIG_URL,
     PANEL_STATE_URL,
     CloseHelpTicketRequest,
@@ -17,7 +16,6 @@ from .api import (
     HelpTicketPanelState,
     HelpTicketPanelStateUpdate,
     HelpTicketResponse,
-    OpenHelpTicketsResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -79,11 +77,6 @@ def close_help_ticket(
 def fetch_help_ticket(ticket_id: int) -> HelpTicketResponse:
     response = _request("GET", f"{HELP_TICKETS_BASE_URL}/{ticket_id}/")
     return HelpTicketResponse.model_validate(response.json())
-
-
-def fetch_open_help_tickets() -> OpenHelpTicketsResponse:
-    response = _request("GET", OPEN_TICKETS_URL)
-    return OpenHelpTicketsResponse.model_validate(response.json())
 
 
 def sanitize_thread_name(group_code: str, username: str) -> str:

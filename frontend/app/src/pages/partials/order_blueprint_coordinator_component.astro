@@ -1,0 +1,151 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_400_Bad_Request } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token')
+    ? (Astro.cookies.get('auth_token')?.value as string)
+    : false
+const user: User | false = auth_token
+    ? (jose.decodeJwt(auth_token) as User)
+    : false
+
+import type { Alert } from '@dtypes/layout_components'
+import {
+    delete_order_blueprint_coordinator,
+    get_order_by_id,
+    post_order_blueprint_coordinator,
+} from '@helpers/api.minmatar.org/industry'
+import {
+    resolve_primary_for_claim,
+    type PrimaryClaimAvailability,
+} from '@helpers/api.minmatar.org/characters'
+import type { IndustrySingleOrder } from '@dtypes/api.minmatar.org'
+
+const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '')
+let alert: Alert | null = null
+
+if (isNaN(order_id) || order_id <= 0) {
+    return HTTP_400_Bad_Request()
+}
+
+if (Astro.request.method === 'POST') {
+    try {
+        if (!auth_token || !user) {
+            throw new Error(t('industry.orders.assign_login_required'))
+        }
+        const data = await Astro.request.formData()
+        const character_id = parseInt(data.get('character_id') as string)
+        const eve_type_ids = data
+            .getAll('eve_type_ids')
+            .map((v) => parseInt(String(v)))
+            .filter((id) => !isNaN(id) && id > 0)
+
+        if (isNaN(character_id) || character_id <= 0) {
+            throw new Error(t('invalid_character_id'))
+        }
+        if (eve_type_ids.length === 0) {
+            throw new Error(
+                t('industry.orders.blueprint_coordinators.none_selected'),
+            )
+        }
+
+        await post_order_blueprint_coordinator(auth_token, order_id, {
+            character_id,
+            eve_type_ids,
+        })
+    } catch (error) {
+        alert = {
+            title: t('industry.orders.blueprint_coordinators.title'),
+            content: (error as Error).message,
+        }
+    }
+}
+
+if (Astro.request.method === 'DELETE') {
+    try {
+        if (!auth_token || !user) {
+            throw new Error(t('industry.orders.assign_login_required'))
+        }
+        const coordinator_id = parseInt(
+            Astro.url.searchParams.get('coordinator_id') ?? '',
+        )
+        if (isNaN(coordinator_id) || coordinator_id <= 0) {
+            throw new Error(t('invalid_remove_id'))
+        }
+        await delete_order_blueprint_coordinator(
+            auth_token,
+            order_id,
+            coordinator_id,
+        )
+    } catch (error) {
+        alert = {
+            title: t('industry.orders.blueprint_coordinators.title'),
+            content: (error as Error).message,
+        }
+    }
+}
+
+let order: IndustrySingleOrder | null = null
+let primary_character_id = 0
+let claim_availability: PrimaryClaimAvailability = 'login'
+let fetching_error: Error | false = false
+
+const claim_disabled_reason_by_availability: Record<
+    Exclude<PrimaryClaimAvailability, 'ok'>,
+    string
+> = {
+    login: t('industry.orders.coordinators.login_required'),
+    auth: t('industry.orders.coordinators.session_required'),
+    no_primary: t('industry.orders.coordinators.main_pilot_required'),
+}
+
+try {
+    order = await get_order_by_id(order_id)
+    const primary = await resolve_primary_for_claim(auth_token)
+    primary_character_id = primary.character_id
+    claim_availability = primary.availability
+} catch (error) {
+    fetching_error = error as Error
+}
+
+const claim_disabled_reason =
+    claim_availability === 'ok'
+        ? null
+        : claim_disabled_reason_by_availability[claim_availability]
+
+import OrderBlueprintCoordinators from '@components/blocks/OrderBlueprintCoordinators.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import ShowAlert from '@components/blocks/ShowAlert.astro'
+---
+
+{
+    fetching_error !== false || !order ? (
+        <ErrorRefetch
+            args={{
+                partial: translatePath(
+                    `/partials/order_blueprint_coordinator_component?order_id=${order_id}`,
+                ),
+                error: fetching_error || new Error('Order not found'),
+                delay: 0,
+            }}
+        />
+    ) : (
+        <OrderBlueprintCoordinators
+            order_id={order.id}
+            items={order.items}
+            coordinators={order.blueprint_coordinators ?? []}
+            primary_character_id={primary_character_id}
+            claim_disabled_reason={claim_disabled_reason}
+            show_heading={false}
+            include_close={false}
+            show_find_blueprints={false}
+        />
+    )
+}
+
+{alert && <ShowAlert alert={alert} />}

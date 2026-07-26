@@ -4,6 +4,7 @@ import logging
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from groups.helpers.feature_access import can_use_feature
 
 from fleets.models import EveFleet
 
@@ -20,8 +21,8 @@ ROUTE_SPEC = {
 
 def delete_fleet(request, fleet_id: int):
     fleet = EveFleet.objects.get(id=fleet_id)
-    if request.user != fleet.created_by and not request.user.has_perm(
-        "fleets.delete_evefleet"
+    if request.user != fleet.created_by and not can_use_feature(
+        request.user, "fleets.delete"
     ):
         return 403, {
             "detail": "User does not have permission to delete this fleet"

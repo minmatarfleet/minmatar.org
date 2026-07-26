@@ -11,9 +11,10 @@ import FixedFluid from '@components/compositions/FixedFluid.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import type { GuideFitting } from '@/data/navy-destroyer-metagame'
+import type { ResolvedGuideFitting } from '@helpers/guide_fittings'
 
 interface Props {
-    fit: GuideFitting
+    fit: ResolvedGuideFitting<GuideFitting>
     shipName: string
 }
 
@@ -43,20 +44,22 @@ const textareaId = `ndm-fit-${fit.id}`
         </FixedFluid>
 
         <FlexInline class="[ ndm-fit-card__actions ]">
-            <FittingLink
-                class="[ action-button ]"
-                fitting_id={fit.fittingId}
-                is_button={true}
-            >
-                {t('view_fitting')}
-            </FittingLink>
+            {fit.fromLibrary && (
+                <FittingLink
+                    class="[ action-button ]"
+                    fitting_id={fit.resolvedFittingId}
+                    is_button={true}
+                >
+                    {t('view_fitting')}
+                </FittingLink>
+            )}
             <ClipboardButton
                 class="[ action-button ]"
                 id={textareaId}
                 narrow={true}
                 text={t('copy_fitting')}
             >
-                {fit.eftFormat}
+                {fit.resolvedEftFormat}
             </ClipboardButton>
         </FlexInline>
     </Flexblock>

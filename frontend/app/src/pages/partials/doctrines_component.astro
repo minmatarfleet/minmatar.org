@@ -14,12 +14,12 @@ let all_locations:Location[] = []
 let location_doctrine_counts_map: Map<number, number> = new Map()
 let all_locations_ui: DoctrineLocationUI[] = []
 
-const active_location_id = parseInt(Astro.url.searchParams.get('location_id') ?? '0')
+const AMAMAKE_LOCATION_ID = 1022167642188
+const active_location_id = parseInt(Astro.url.searchParams.get('location_id') ?? String(AMAMAKE_LOCATION_ID))
 
 try {
     doctrines = await fetch_doctrines()
 
-    // Collect all unique location_ids from all doctrines and count doctrines per location
     doctrines.forEach(doctrine => {
         if (doctrine.location_ids && doctrine.location_ids.length > 0) {
             doctrine.location_ids.forEach(location_id => {
@@ -30,11 +30,9 @@ try {
 
     const all_location_ids = Array.from(location_doctrine_counts_map.keys())
 
-    // Fetch all locations that have doctrines
     if (all_location_ids.length > 0) {
         try {
             const fetched_locations = await get_locations_by_ids(all_location_ids)
-            // Only include locations that have doctrines, have a valid short_name, and sort by name
             all_locations = fetched_locations
                 .filter(loc => 
                     location_doctrine_counts_map.has(loc.location_id) && 
@@ -64,14 +62,6 @@ try {
         } as DoctrineLocationUI
     })
 
-    all_locations_ui.push({
-        id: 0,
-        doctrine_count: doctrines.length,
-        doctrines: doctrines.sort((a, b) => 
-            SHIP_TYPES_SORTED.indexOf(a.primary_fittings[0].ship_type) - SHIP_TYPES_SORTED.indexOf(b.primary_fittings[0].ship_type)
-        ),
-        name: t('all_doctrines'),
-    })
 } catch (error) {
     fetch_doctrines_error = error
 }

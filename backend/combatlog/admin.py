@@ -1,5 +1,1 @@
-from django.contrib import admin
-
-from .models import CombatLog
-
-admin.site.register(CombatLog)
+# Combat log models are intentionally excluded from Django admin.

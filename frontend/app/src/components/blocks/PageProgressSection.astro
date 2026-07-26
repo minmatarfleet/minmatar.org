@@ -1,0 +1,19 @@
+---
+/**
+ * Marks a block as a trackable page-progress section.
+ * Equivalent to `id` + `data-section-id` on any element inside `data-page-progress-root`.
+ */
+interface Props {
+    id: string
+    class?: string
+    /** HTML tag to render. Default: section */
+    as?: string
+}
+
+const { id, class: class_name, as = 'section' } = Astro.props
+const Tag = as
+---
+
+<Tag id={id} data-section-id={id} class={class_name}>
+    <slot />
+</Tag>

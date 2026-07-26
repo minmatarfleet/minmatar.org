@@ -119,8 +119,10 @@ let fetch_group_error: Error | false = false
 try {
     tribe_group = await get_tribe_group(tribe_id, group_id)
 
-    const memberships = await get_memberships(auth_token as string, tribe_id, tribe_group.id)
-    const mine = memberships.find(m => m.user_id === user.user_id) ?? null
+    const memberships = await get_memberships(auth_token as string, tribe_id, tribe_group.id, {
+        mine: true,
+    })
+    const mine = memberships[0] ?? null
     membership_by_group.set(tribe_group.id, mine)
 
     const summary = await get_characters_summary_sorted(auth_token)

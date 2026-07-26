@@ -1,11 +1,20 @@
 """Tests for doctrine/fitting approval workflow."""
 
-from unittest.mock import patch
-
 from django.contrib.auth.models import Permission, User
 from django.contrib.contenttypes.models import ContentType
+from django.test import Client
+from django.urls import reverse
 
 from app.test import TestCase
+
+from eveonline.models import EveLocation
+from fittings.admin import _SELF_APPROVAL_WARNING
+from fittings.helpers.change_request_display import (
+    format_doctrine_change_request_html,
+    format_doctrine_history_html,
+    format_fitting_change_request_html,
+    format_fitting_history_html,
+)
 
 from fittings.helpers.doctrine_changes import (
     approve_doctrine_change_request,
@@ -22,12 +31,10 @@ from fittings.helpers.fitting_changes import (
 from fittings.helpers.permissions import (
     can_approve_doctrine_request,
     can_approve_fitting_request,
-    can_publish_fitting_change,
     effective_protection_tier,
     protection_tier_for_doctrine,
     users_who_can_approve_fitting_request,
 )
-from fittings.tasks import notify_fitting_change_request_proposed
 from fittings.models import (
     ChangeRequestStatus,
     DOCTRINE_TYPE_EXPERIMENTAL,
@@ -412,10 +419,12 @@ class FittingChangeRequestTestCase(TestCase):
         self.proposer = self.user
         self.proposer.user_permissions.add(
             _perm("change_doctrine_fitting_strategic"),
+            _perm("change_doctrine_fitting_non_strategic"),
         )
         self.approver = self._create_user("fc")
         self.approver.user_permissions.add(
             _perm("approve_doctrine_fitting_strategic"),
+            _perm("approve_doctrine_fitting_non_strategic"),
         )
 
     def _create_user(self, username):
@@ -487,10 +496,66 @@ class FittingChangeRequestTestCase(TestCase):
         approve_fitting_change_request(req, self.approver)
         fitting.refresh_from_db()
         self.assertEqual("d2", fitting.description)
+        self.assertEqual("Fit v2", fitting.name)
         self.assertNotEqual(version_before, fitting.latest_version)
         self.assertEqual(
             1, EveFittingHistory.objects.filter(fitting=fitting).count()
         )
+
+    def test_approve_fitting_create_publishes(self):
+        fitting = EveFitting.objects.create(
+            name="New Fit",
+            eft_format="[Rifter, New Fit]",
+            ship_id=587,
+            description="pending create",
+        )
+        fitting.delete()
+        self.assertFalse(EveFitting.objects.filter(pk=fitting.pk).exists())
+        payload = {
+            "eft_format": "[Rifter, New Fit]",
+            "description": "live description",
+            "aliases": "",
+            "minimum_pod": "",
+            "recommended_pod": "",
+            "tags": [],
+        }
+        req = submit_fitting_change_request(
+            fitting,
+            change_kind="fitting_create",
+            payload=payload,
+            user=self.proposer,
+        )
+        approve_fitting_change_request(req, self.approver)
+        live = EveFitting.objects.get(pk=fitting.pk)
+        self.assertIsNone(live.deleted)
+        self.assertEqual("live description", live.description)
+        self.assertEqual("New Fit", live.name)
+
+    def test_approve_fitting_delete_removes_live(self):
+        fitting = EveFitting.objects.create(
+            name="Doomed Fit",
+            eft_format="[Rifter, Doomed Fit]",
+            ship_id=587,
+            description="bye",
+        )
+        payload = {
+            "eft_format": fitting.eft_format,
+            "description": fitting.description,
+            "aliases": "",
+            "minimum_pod": "",
+            "recommended_pod": "",
+            "tags": [],
+        }
+        req = submit_fitting_change_request(
+            fitting,
+            change_kind="fitting_delete",
+            payload=payload,
+            user=self.proposer,
+        )
+        self.assertTrue(EveFitting.objects.filter(pk=fitting.pk).exists())
+        approve_fitting_change_request(req, self.approver)
+        self.assertFalse(EveFitting.objects.filter(pk=fitting.pk).exists())
+        self.assertTrue(EveFitting.all_objects.filter(pk=fitting.pk).exists())
 
     def test_api_unaffected_by_pending(self):
         doctrine = EveDoctrine.objects.create(
@@ -528,8 +593,11 @@ class FittingChangeRequestTestCase(TestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual("live", response.json()["description"])
 
-    def test_unlinked_fitting_publishes_immediately(self):
-        """R-F1/R-F2: fitting with no doctrine association updates live without a request."""
+    def test_unlinked_fitting_requires_change_request(self):
+        """Fittings with no doctrine link still queue changes for approval."""
+        self.proposer.user_permissions.add(
+            _perm("change_doctrine_fitting_non_strategic"),
+        )
         fitting = EveFitting.objects.create(
             name="Standalone",
             eft_format="[Rifter, Standalone]",
@@ -544,15 +612,16 @@ class FittingChangeRequestTestCase(TestCase):
             "recommended_pod": "",
             "tags": [],
         }
-        result = submit_fitting_change_request(
+        req = submit_fitting_change_request(
             fitting,
             change_kind="fitting_versioned",
             payload=payload,
             user=self.proposer,
         )
-        self.assertIsNone(result)
+        self.assertIsNotNone(req)
+        self.assertEqual("non_strategic", req.tier)
         fitting.refresh_from_db()
-        self.assertEqual("after", fitting.description)
+        self.assertEqual("before", fitting.description)
 
     def test_reject_keeps_live_fitting(self):
         doctrine = EveDoctrine.objects.create(
@@ -655,8 +724,8 @@ class FittingChangeRequestTestCase(TestCase):
                 user=self.proposer,
             )
 
-    def test_approver_can_publish_without_queue(self):
-        """X-1 / ST-5: user with approve perm applies fitting change immediately."""
+    def test_approver_must_queue_change_request(self):
+        """Users with approve permission still queue changes instead of publishing."""
         doctrine = EveDoctrine.objects.create(
             name="Strat",
             type=DOCTRINE_TYPE_STRATEGIC,
@@ -671,7 +740,9 @@ class FittingChangeRequestTestCase(TestCase):
         EveDoctrineFitting.objects.create(
             doctrine=doctrine, fitting=fitting, role="primary"
         )
-        self.assertTrue(can_publish_fitting_change(self.approver, "strategic"))
+        self.approver.user_permissions.add(
+            _perm("change_doctrine_fitting_strategic"),
+        )
         payload = {
             "eft_format": "[Rifter, Fit]",
             "description": "published",
@@ -686,59 +757,16 @@ class FittingChangeRequestTestCase(TestCase):
             payload=payload,
             user=self.approver,
         )
-        self.assertIsNone(result)
+        self.assertIsNotNone(result)
         fitting.refresh_from_db()
-        self.assertEqual("published", fitting.description)
+        self.assertEqual("before", fitting.description)
 
 
-class NotificationTasksTestCase(TestCase):
-    """Discord notify on propose (mocked)."""
+class ApproverRecipientTestCase(TestCase):
+    """Who receives change-request review eligibility."""
 
     def _create_user(self, username, *, is_staff=False):
         return User.objects.create(username=username, is_staff=is_staff)
-
-    def test_notify_task_sends_dm_to_approvers(self):
-        proposer = self._create_user("proposer")
-        proposer.user_permissions.add(
-            _perm("change_doctrine_fitting_strategic")
-        )
-        approver = self._create_user("approver", is_staff=True)
-        approver.user_permissions.add(
-            _perm("approve_doctrine_fitting_strategic")
-        )
-        doctrine = EveDoctrine.objects.create(
-            name="Strat",
-            type=DOCTRINE_TYPE_STRATEGIC,
-            description="",
-        )
-        fitting = EveFitting.objects.create(
-            name="Fit",
-            eft_format="[Rifter, Fit]",
-            ship_id=587,
-            description="",
-        )
-        EveDoctrineFitting.objects.create(
-            doctrine=doctrine, fitting=fitting, role="primary"
-        )
-        req = submit_fitting_change_request(
-            fitting,
-            change_kind="fitting_versioned",
-            payload={
-                "eft_format": "[Rifter, X]",
-                "description": "x",
-                "aliases": "",
-                "minimum_pod": "",
-                "recommended_pod": "",
-                "tags": [],
-            },
-            user=proposer,
-        )
-        self.assertIsNotNone(req)
-        with patch("fittings.helpers.notifications._send_dm") as mock_dm:
-            notify_fitting_change_request_proposed(req.pk)
-            self.assertGreaterEqual(mock_dm.call_count, 1)
-            dm_users = [call.args[0] for call in mock_dm.call_args_list]
-            self.assertIn(approver, dm_users)
 
     def test_users_who_can_approve_fitting_non_strategic(self):
         skirmish = self._create_user("skirmish", is_staff=True)
@@ -762,3 +790,228 @@ class NotificationTasksTestCase(TestCase):
         recipients = users_who_can_approve_fitting_request("strategic")
         self.assertIn(staff_approver, recipients)
         self.assertNotIn(non_staff, recipients)
+
+
+class ChangeRequestDisplayTestCase(TestCase):
+    def test_doctrine_change_request_display_shows_readable_diff(self):
+        self.user.user_permissions.add(_perm("change_doctrine_strategic"))
+        doctrine = EveDoctrine.objects.create(
+            name="Old Doctrine",
+            type=DOCTRINE_TYPE_STRATEGIC,
+            description="Old description",
+            latest_version="v1",
+        )
+        fitting = EveFitting.objects.create(
+            name="Hurricane Fleet",
+            ship_id=123,
+            eft_format="[Hurricane, Hurricane Fleet]\n",
+            description="",
+        )
+        location = EveLocation.objects.create(
+            location_id=60000001,
+            location_name="Old Staging",
+            short_name="OLD",
+            solar_system_id=30000001,
+            solar_system_name="Old System",
+        )
+        doctrine.locations.add(location)
+        EveDoctrineFitting.objects.create(
+            doctrine=doctrine,
+            fitting=fitting,
+            role="primary",
+        )
+        payload = {
+            "name": "New Doctrine",
+            "type": DOCTRINE_TYPE_STRATEGIC,
+            "description": "New description",
+            "composition": {
+                "primary": [fitting.pk],
+                "secondary": [],
+                "support": [],
+            },
+            "location_ids": [],
+        }
+        change_request = submit_doctrine_change_request(
+            doctrine, payload, self.user
+        )
+        html = str(format_doctrine_change_request_html(change_request))
+
+        self.assertIn("New Doctrine", html)
+        self.assertIn("Old Doctrine", html)
+        self.assertIn("Hurricane Fleet", html)
+        self.assertIn("OLD", html)
+        self.assertNotIn('"composition"', html)
+
+    def test_fitting_change_request_display_shows_eft_line_diff(self):
+        self.user.user_permissions.add(
+            _perm("change_doctrine_fitting_non_strategic"),
+        )
+        fitting = EveFitting.objects.create(
+            name="Rifter SK",
+            ship_id=587,
+            eft_format="[Rifter, Rifter SK]\nHigh Slot A\nMid Slot B\n",
+            description="",
+        )
+        payload = {
+            "eft_format": "[Rifter, Rifter SK]\nHigh Slot A\nMid Slot C\n",
+            "description": "",
+            "aliases": "",
+            "minimum_pod": "",
+            "recommended_pod": "",
+            "tags": [],
+        }
+        change_request = submit_fitting_change_request(
+            fitting,
+            change_kind="fitting_versioned",
+            payload=payload,
+            user=self.user,
+        )
+        html = str(format_fitting_change_request_html(change_request))
+
+        self.assertIn("Mid Slot B", html)
+        self.assertIn("Mid Slot C", html)
+        self.assertIn("− Mid Slot B", html)
+        self.assertIn("+ Mid Slot C", html)
+        self.assertNotIn('"eft_format"', html)
+
+
+class ChangeRequestAdminActionsTestCase(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.approver = User.objects.create(username="approver", is_staff=True)
+        self.approver.user_permissions.add(_perm("approve_doctrine_strategic"))
+        self.proposer = self.user
+        self.proposer.user_permissions.add(_perm("change_doctrine_strategic"))
+
+    def test_doctrine_change_request_detail_has_approve_action(self):
+        doctrine = EveDoctrine.objects.create(
+            name="Pending Doctrine",
+            type=DOCTRINE_TYPE_STRATEGIC,
+            description="",
+            latest_version="v1",
+        )
+        payload = {
+            "name": "Updated Doctrine",
+            "type": DOCTRINE_TYPE_STRATEGIC,
+            "description": "updated",
+            "composition": {"primary": [], "secondary": [], "support": []},
+            "location_ids": [],
+        }
+        change_request = submit_doctrine_change_request(
+            doctrine, payload, self.proposer
+        )
+        client = Client()
+        client.force_login(self.approver)
+        change_url = reverse(
+            "admin:fittings_evedoctrinechangerequest_change",
+            args=[change_request.pk],
+        )
+        response = client.get(change_url)
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Review action")
+        self.assertContains(response, "Approve")
+
+        response = client.post(
+            change_url,
+            {"review_action": "approve", "_save": "Save"},
+        )
+        self.assertEqual(302, response.status_code)
+        change_request.refresh_from_db()
+        doctrine.refresh_from_db()
+        self.assertEqual(ChangeRequestStatus.APPROVED, change_request.status)
+        self.assertEqual("Updated Doctrine", doctrine.name)
+
+    def test_submitter_can_self_approve_with_warning(self):
+        doctrine = EveDoctrine.objects.create(
+            name="Self Approve Doctrine",
+            type=DOCTRINE_TYPE_STRATEGIC,
+            description="",
+            latest_version="v1",
+        )
+        payload = {
+            "name": "Self Approved",
+            "type": DOCTRINE_TYPE_STRATEGIC,
+            "description": "self",
+            "composition": {"primary": [], "secondary": [], "support": []},
+            "location_ids": [],
+        }
+        change_request = submit_doctrine_change_request(
+            doctrine, payload, self.proposer
+        )
+        self.proposer.is_staff = True
+        self.proposer.save(update_fields=["is_staff"])
+        client = Client()
+        client.force_login(self.proposer)
+        change_url = reverse(
+            "admin:fittings_evedoctrinechangerequest_change",
+            args=[change_request.pk],
+        )
+        response = client.get(change_url)
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, "bypasses independent review")
+
+        response = client.post(
+            change_url,
+            {"review_action": "approve", "_save": "Save"},
+            follow=True,
+        )
+        self.assertEqual(200, response.status_code)
+        self.assertContains(response, _SELF_APPROVAL_WARNING, count=1)
+        change_request.refresh_from_db()
+        doctrine.refresh_from_db()
+        self.assertEqual(ChangeRequestStatus.APPROVED, change_request.status)
+        self.assertEqual("Self Approved", doctrine.name)
+
+
+class HistoryDisplayTestCase(TestCase):
+    def test_doctrine_history_display_shows_readable_snapshot(self):
+        doctrine = EveDoctrine.objects.create(
+            name="History Doctrine",
+            type=DOCTRINE_TYPE_STRATEGIC,
+            description="Snapshot description",
+        )
+        fitting = EveFitting.objects.create(
+            name="Barghest Fleet",
+            ship_id=33820,
+            eft_format="[Barghest, Barghest Fleet]\n",
+            description="",
+        )
+        history = EveDoctrineHistory.objects.create(
+            doctrine=doctrine,
+            superseded_version_id="version-abc",
+            name="History Doctrine",
+            type=DOCTRINE_TYPE_STRATEGIC,
+            description="Snapshot description",
+            composition={
+                "primary": [fitting.pk],
+                "secondary": [],
+                "support": [],
+            },
+            location_ids=[],
+        )
+        html = str(format_doctrine_history_html(history))
+        self.assertIn("Barghest Fleet", html)
+        self.assertIn("Snapshot description", html)
+        self.assertNotIn('"primary"', html)
+
+    def test_fitting_history_display_shows_readable_snapshot(self):
+        fitting = EveFitting.objects.create(
+            name="Rifter SK",
+            ship_id=587,
+            eft_format="[Rifter, Rifter SK]\nHigh Slot\n",
+            description="old desc",
+        )
+        fitting.set_tag_slugs(["nanogang"], write_history=False)
+        history = EveFittingHistory.objects.create(
+            fitting=fitting,
+            superseded_version_id="fit-version",
+            name="Rifter SK",
+            ship_id=587,
+            eft_format="[Rifter, Rifter SK]\nHigh Slot\n",
+            description="old desc",
+            tags=["nanogang"],
+        )
+        html = str(format_fitting_history_html(history))
+        self.assertIn("Rifter", html)
+        self.assertIn("old desc", html)
+        self.assertIn("nanogang", html)

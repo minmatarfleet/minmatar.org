@@ -4,6 +4,7 @@ from typing import List
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from groups.helpers.feature_access import require_feature
 
 from fleets.endpoints.schemas import EveFleetChannelResponse
 from fleets.models import EveFleetAudience
@@ -17,8 +18,9 @@ ROUTE_SPEC = {
 
 
 def get_fleet_audiences(request):
-    if not request.user.has_perm("fleets.add_evefleet"):
-        return 403, {"detail": "User missing permission fleets.add_evefleet"}
+    denied = require_feature(request.user, "fleets.create")
+    if denied:
+        return denied
     audiences = EveFleetAudience.objects.filter(hidden=False).all()
     response = []
     for audience in audiences:

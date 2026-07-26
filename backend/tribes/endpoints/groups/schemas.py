@@ -91,6 +91,13 @@ class RequirementSchema(BaseModel):
     qualifying_skills: List[QualifyingSkillSchema] = []
 
 
+class TribeGroupRankSchema(BaseModel):
+    id: int
+    code: str
+    name: str
+    sort_order: int = 0
+
+
 class TribeGroupSchema(BaseModel):
     id: int
     tribe_id: int
@@ -103,6 +110,7 @@ class TribeGroupSchema(BaseModel):
     is_active: bool
     member_count: int = 0
     requirements: List[RequirementSchema] = []
+    ranks: List[TribeGroupRankSchema] = []
 
 
 # --- Activity metrics, member activity, leaderboard ---

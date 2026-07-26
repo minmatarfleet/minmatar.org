@@ -39,6 +39,20 @@ class IngestTestCase(TestCase):
         upsert_feed_killmail_from_r2z2(payload)
         self.assertEqual(FeedKillmail.objects.count(), 1)
 
+    def test_ingest_r2z2_esi_shaped_payload(self):
+        legacy = make_killmail_payload(136398968)
+        payload = {
+            "killmail_id": legacy["killmail"]["killmail_id"],
+            "hash": legacy["hash"],
+            "zkb": legacy["zkb"],
+            "sequence_id": 96088892,
+            "esi": legacy["killmail"],
+            "uploaded_at": 1710000000,
+        }
+        result = upsert_feed_killmail_from_r2z2(payload)
+        self.assertIsNotNone(result)
+        self.assertEqual(FeedKillmail.objects.count(), 1)
+
     def test_is_npc_kill(self):
         self.assertTrue(is_npc_kill({"npc": True}))
         self.assertFalse(is_npc_kill({"npc": False}))

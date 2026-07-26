@@ -1,0 +1,235 @@
+---
+import { i18n } from '@helpers/i18n'
+import type { OrderLpStockpile } from '@dtypes/api.minmatar.org'
+import { number_thousand_separator } from '@helpers/numbers'
+import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+
+const { t } = i18n(Astro.url)
+
+interface Props {
+    stockpiles: OrderLpStockpile[]
+    /** When false, omit the section title/description (e.g. modal already has a header). */
+    show_heading?: boolean
+}
+
+const { stockpiles, show_heading = true } = Astro.props
+
+/** Amarr → Caldari → Gallente → Minmatar (classic race order). */
+const FACTION_ORDER: readonly number[] = [
+    1000179, // 24th Imperial Crusade
+    1000180, // State Protectorate
+    1000181, // Federal Defense Union
+    1000182, // Tribal Liberation Force
+]
+
+type StockpileFactionGroup = {
+    corporation_id: number
+    loyalty_point_name: string
+    stockpiles: OrderLpStockpile[]
+}
+
+function group_stockpiles_by_faction(
+    rows: OrderLpStockpile[],
+): StockpileFactionGroup[] {
+    const by_corp = new Map<number, StockpileFactionGroup>()
+
+    for (const stockpile of rows) {
+        let group = by_corp.get(stockpile.corporation_id)
+        if (!group) {
+            group = {
+                corporation_id: stockpile.corporation_id,
+                loyalty_point_name: stockpile.loyalty_point_name,
+                stockpiles: [],
+            }
+            by_corp.set(stockpile.corporation_id, group)
+        }
+        group.stockpiles.push(stockpile)
+    }
+
+    return [...by_corp.values()].sort((a, b) => {
+        const ai = FACTION_ORDER.indexOf(a.corporation_id)
+        const bi = FACTION_ORDER.indexOf(b.corporation_id)
+        const ao = ai === -1 ? FACTION_ORDER.length : ai
+        const bo = bi === -1 ? FACTION_ORDER.length : bi
+        if (ao !== bo) return ao - bo
+        return a.loyalty_point_name.localeCompare(b.loyalty_point_name)
+    })
+}
+
+function account_icon_src(stockpile: OrderLpStockpile): string | null {
+    if (stockpile.character_id) {
+        return get_player_icon(stockpile.character_id, 64)
+    }
+    if (stockpile.account_corporation_id) {
+        return get_corporation_logo(stockpile.account_corporation_id, 64)
+    }
+    return null
+}
+
+function account_icon_alt(stockpile: OrderLpStockpile): string {
+    if (stockpile.character_id) {
+        return `${stockpile.account_name} ${t('profile_picture')}`
+    }
+    if (stockpile.account_corporation_id) {
+        return `${stockpile.account_name} ${t('corporation_logo')}`
+    }
+    return stockpile.account_name
+}
+
+const factions = group_stockpiles_by_faction(stockpiles)
+---
+
+<section class="[ order-lp-stockpiles ]">
+    <Flexblock gap="var(--space-s)">
+        {show_heading && (
+            <Flexblock gap="var(--space-3xs)">
+                <h3>{t('industry.orders.lp_stockpiles.title')}</h3>
+                <small>{t('industry.orders.lp_stockpiles.description')}</small>
+            </Flexblock>
+        )}
+
+        {factions.length === 0 ? (
+            <Flexblock
+                gap="var(--space-2xs)"
+                centered
+                class="[ order-lp-stockpiles__empty ]"
+            >
+                <p class="[ order-lp-stockpiles__empty-title ]">
+                    {t('industry.orders.lp_stockpiles.empty')}
+                </p>
+            </Flexblock>
+        ) : (
+            <Flexblock gap="var(--space-xs)" class="[ order-lp-stockpiles__factions ]">
+                {factions.map((faction) => (
+                    <ComponentBlock
+                        class="[ order-lp-stockpiles__faction ]"
+                        padding_block="var(--space-xs)"
+                        padding_inline="var(--space-m)"
+                    >
+                        <Flexblock gap="var(--space-2xs)">
+                            <FlexInline
+                                gap="var(--space-xs)"
+                                class="[ order-lp-stockpiles__faction-header items-center ]"
+                            >
+                                <img
+                                    class="[ order-lp-stockpiles__logo ]"
+                                    loading="lazy"
+                                    src={get_corporation_logo(faction.corporation_id, 64)}
+                                    width="32"
+                                    height="32"
+                                    alt={`${faction.loyalty_point_name} ${t('corporation_logo')}`}
+                                />
+                                <h4 class="[ order-lp-stockpiles__faction-name ]">
+                                    {faction.loyalty_point_name}
+                                </h4>
+                            </FlexInline>
+
+                            <ul class="[ order-lp-stockpiles__rows ]">
+                                {faction.stockpiles.map((stockpile) => {
+                                    const icon_src = account_icon_src(stockpile)
+                                    return (
+                                        <li class="[ order-lp-stockpiles__row ]">
+                                            <FlexInline
+                                                justification="space-between"
+                                                class="[ w-full items-center ]"
+                                                gap="var(--space-s)"
+                                            >
+                                                <FlexInline
+                                                    gap="var(--space-xs)"
+                                                    class="[ min-w-0 items-center ]"
+                                                >
+                                                    {icon_src && (
+                                                        <img
+                                                            class="[ order-lp-stockpiles__account-icon ]"
+                                                            loading="lazy"
+                                                            src={icon_src}
+                                                            width="24"
+                                                            height="24"
+                                                            alt={account_icon_alt(stockpile)}
+                                                        />
+                                                    )}
+                                                    <span class="[ order-lp-stockpiles__account min-w-0 text-highlight ]">
+                                                        {stockpile.account_name}
+                                                    </span>
+                                                </FlexInline>
+                                                <span class="[ order-lp-stockpiles__balance whitespace-nowrap ]">
+                                                    {t('industry.orders.lp_stockpiles.balance').replace(
+                                                        '{balance}',
+                                                        number_thousand_separator(stockpile.balance),
+                                                    )}
+                                                </span>
+                                            </FlexInline>
+                                        </li>
+                                    )
+                                })}
+                            </ul>
+                        </Flexblock>
+                    </ComponentBlock>
+                ))}
+            </Flexblock>
+        )}
+    </Flexblock>
+</section>
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-1);
+    }
+
+    .order-lp-stockpiles__empty {
+        padding-block: var(--space-s);
+        text-align: center;
+    }
+
+    .order-lp-stockpiles__empty-title {
+        margin: 0;
+        font-size: var(--step-0);
+        color: var(--highlight);
+        line-height: 1.35;
+    }
+
+    .order-lp-stockpiles__logo,
+    .order-lp-stockpiles__account-icon {
+        flex-shrink: 0;
+        border-radius: var(--border-radius);
+        background-color: var(--background);
+    }
+
+    .order-lp-stockpiles__faction-name {
+        margin: 0;
+        font-size: var(--step--1);
+        letter-spacing: 0.02em;
+        color: var(--highlight);
+    }
+
+    .order-lp-stockpiles__rows {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .order-lp-stockpiles__row {
+        padding-block: var(--space-2xs);
+
+        & + & {
+            border-top: 1px solid var(--border-color);
+        }
+    }
+
+    .order-lp-stockpiles__account {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: var(--step--1);
+    }
+
+    .order-lp-stockpiles__balance {
+        font-variant-numeric: tabular-nums;
+        font-size: var(--step--1);
+        font-weight: 600;
+        color: var(--fleet-yellow);
+    }
+</style>

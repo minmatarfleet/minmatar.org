@@ -1,7 +1,10 @@
+import type { KnownFittingKey } from '@dtypes/api.minmatar.org'
+
 export type MatchupRating = '++' | '+' | '=' | '-' | '--' | '?'
 
 export type GuideFitting = {
     id: string
+    knownKey?: KnownFittingKey | null
     fittingId: number
     shipId: number
     shipGuideId: string
@@ -59,18 +62,6 @@ export type GuideSection = {
     id: string
     title: string
     shortTitle?: string
-}
-
-export type GuideHistoryEntry = {
-    id: string
-    dateLabel: string
-    yc: string
-    title: string
-    description: string
-    link?: {
-        href: string
-        label: string
-    }
 }
 
 export type MatchupChart = {

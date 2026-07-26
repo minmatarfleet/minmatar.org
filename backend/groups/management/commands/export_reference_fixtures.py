@@ -113,10 +113,14 @@ def _readme_content() -> str:
 
 Non-sensitive production configuration exported for local development.
 
+**Fittings are not included.** Doctrine fits must not be wiped by fixture load;
+sync fittings separately when needed.
+
 ## Prerequisites
 
 1. Run migrations: `pipenv run python manage.py migrate`
 2. Load EVE universe types locally: `pipenv run python manage.py eveuniverse_load_types`
+3. Ensure required EveFitting rows exist before loading doctrines / market expectations
 
 ## Load
 
@@ -124,7 +128,8 @@ Non-sensitive production configuration exported for local development.
 pipenv run python manage.py load_reference_fixtures
 ```
 
-Use `--clear` to remove existing reference rows before loading.
+Use `--clear` to remove existing reference rows before loading. This does
+**not** delete fittings or refits.
 
 ## Regenerate (maintainers with production_readonly access)
 
@@ -132,5 +137,5 @@ Use `--clear` to remove existing reference rows before loading.
 pipenv run python manage.py export_reference_fixtures
 ```
 
-Files load in numeric order (`01_` … `09_`). Do not reorder without updating `fixtures/export.py` and `load_reference_fixtures`.
+Files load in numeric order (`01_` … `10_`). Do not reorder without updating `fixtures/export.py` and `load_reference_fixtures`.
 """

@@ -29,6 +29,7 @@ def make_fitting_response(fitting: EveFitting) -> FittingResponse:
         minimum_pod=fitting.minimum_pod,
         recommended_pod=fitting.recommended_pod,
         latest_version=fitting.latest_version,
-        tags=list(fitting.tags or []),
+        known_key=fitting.known_key or None,
+        tags=fitting.tag_slugs(),
         refits=refits,
     )

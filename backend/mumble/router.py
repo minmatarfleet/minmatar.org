@@ -6,6 +6,7 @@ from authentication import AuthBearer
 from eveonline.helpers.characters import user_primary_character
 
 from .models import MumbleAccess
+from groups.helpers.feature_access import can_use_feature
 
 router = Router(tags=["Mumble"])
 
@@ -40,7 +41,7 @@ def mumble_username(user) -> str:
     },
 )
 def get_mumble_connection(request):
-    if not request.user.has_perm("mumble.view_mumbleaccess"):
+    if not can_use_feature(request.user, "mumble.access"):
         return 403, {"detail": "You do not have permission to access mumble."}
 
     primary_character = user_primary_character(request.user)

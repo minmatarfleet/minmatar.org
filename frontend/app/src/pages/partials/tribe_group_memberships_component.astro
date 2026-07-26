@@ -135,8 +135,14 @@ try {
     if (!is_superuser && !is_chief)
         return HTTP_403_Forbidden()
 
-    approved = await get_memberships(auth_token as string, tribe_id, tribe_group.id, 'active')
-    pending = await get_memberships(auth_token as string, tribe_id, tribe_group.id, 'pending')
+    approved = await get_memberships(auth_token as string, tribe_id, tribe_group.id, {
+        status: 'active',
+        include_requirements: true,
+    })
+    pending = await get_memberships(auth_token as string, tribe_id, tribe_group.id, {
+        status: 'pending',
+        include_requirements: true,
+    })
 
     if (is_chief)
         chief_membership = [ ...approved, ...pending ].find(m => m.user_id === user.user_id) ?? null

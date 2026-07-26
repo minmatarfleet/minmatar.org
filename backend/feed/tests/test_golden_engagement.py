@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from pathlib import Path
 
 from django.test import TestCase
@@ -23,21 +23,25 @@ from feed.rollups.writer import write_rollup_results
 from feed.tests.helpers import make_killmail_payload
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "engagement_vard_136398967"
-ANCHOR_TIME = datetime(2026, 6, 19, 17, 25, 8, tzinfo=timezone.utc)
 
 
 class GoldenEngagementTestCase(TestCase):
     def setUp(self):
         seed_from_fixture()
+        anchor_time = dj_timezone.now() - timedelta(hours=1)
+
         anchor_path = FIXTURE_DIR / "killmail_136398967.json"
         anchor = json.loads(anchor_path.read_text())
+        anchor["killmail"]["killmail_time"] = anchor_time.isoformat().replace(
+            "+00:00", "Z"
+        )
         upsert_feed_killmail_from_r2z2(anchor)
 
         for i in range(6):
             offset = timedelta(minutes=i * 2)
             payload = make_killmail_payload(
                 136398900 + i,
-                killmail_time=ANCHOR_TIME - timedelta(minutes=10) + offset,
+                killmail_time=anchor_time - timedelta(minutes=10) + offset,
                 attacker_count=8,
             )
             upsert_feed_killmail_from_r2z2(payload)
