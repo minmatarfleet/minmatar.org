@@ -11,7 +11,7 @@ from typing import NamedTuple
 
 # Listed-within-reason defaults used across market ops, admin sell orders, etc.
 DEFAULT_MAX_MARKUP_PCT = 20
-DEFAULT_BASELINE_PRICE_FLOOR = 1_000_000
+DEFAULT_BASELINE_PRICE_FLOOR = 250_000
 
 
 class PriceViabilityPolicy(NamedTuple):

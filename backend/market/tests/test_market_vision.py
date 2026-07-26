@@ -785,7 +785,7 @@ class SellOrderRowsTestCase(TestCase):
         self.assertTrue(_order_quantity_counts_as_reasonable(500_000, 50_000))
         self.assertTrue(_order_quantity_counts_as_reasonable(1_000_000, None))
         self.assertEqual(REASONABLE_MARKUP_MAX_PCT, 20)
-        self.assertEqual(REASONABLE_JITA_PRICE_FLOOR, 1_000_000)
+        self.assertEqual(REASONABLE_JITA_PRICE_FLOOR, 250_000)
         # Shared policy stays the source of truth for sell-order aggregation.
         self.assertEqual(REASONABLE_MARKUP_MAX_PCT, DEFAULT_MAX_MARKUP_PCT)
         self.assertEqual(
