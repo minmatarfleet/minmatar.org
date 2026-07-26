@@ -419,6 +419,8 @@ export const ui = {
         'ops_sell_gap_metrics': 'Coverage and sales metrics',
         'ops_sell_gap_metric_listed': 'Listed',
         'ops_sell_gap_metric_markup': 'Markup',
+        'ops_sell_gap_metric_1d': '1d',
+        'ops_sell_gap_metric_3d': '3d',
         'ops_sell_gap_metric_7d': '7d',
         'ops_sell_gap_metric_30d': '30d',
         'ops_sell_gap_metric_90d': '90d',

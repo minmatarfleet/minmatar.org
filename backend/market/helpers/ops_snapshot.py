@@ -59,6 +59,8 @@ def _problem_sell_gaps(rows: list[dict]) -> list[dict]:
             "viability_gap": bool(row.get("viability_gap", True)),
             "item_type": row.get("item_type") or "other",
             "item_variant": row.get("item_variant") or "other",
+            "units_1d": int(row.get("units_1d", 0)),
+            "units_3d": int(row.get("units_3d", 0)),
             "weekly_units": int(row.get("weekly_units", 0)),
             "units_30d": int(row.get("units_30d", 0)),
             "units_90d": int(row.get("units_90d", 0)),

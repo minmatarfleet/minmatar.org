@@ -40,6 +40,8 @@ class OpsSellGap(Schema):
     viability_gap: bool = False
     item_type: str = "other"
     item_variant: str = "other"
+    units_1d: int = 0
+    units_3d: int = 0
     weekly_units: int = 0
     units_30d: int = 0
     units_90d: int = 0
