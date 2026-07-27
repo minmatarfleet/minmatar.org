@@ -158,7 +158,7 @@ class EveFleet(models.Model):
         """
         Send the fleet notification to the audience's Discord channel, if configured.
         """
-        if not self.audience.discord_channel_id:
+        if not self.audience or not self.audience.discord_channel_id:
             return
 
         doctrine = None if self.type == "strategic" else self.doctrine

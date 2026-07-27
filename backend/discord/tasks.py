@@ -56,6 +56,10 @@ def sync_discord_users():
         try:
             sync_discord_user(user.id)
         except Exception as e:
+            if handle_discord_guild_member_error(
+                user, e, "sync_discord_users"
+            ):
+                continue
             notify_technology_team("sync_discord_users")
             logger.error(
                 "Failed to sync discord user %s: %s", user.username, e

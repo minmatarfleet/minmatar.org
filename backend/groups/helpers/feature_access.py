@@ -141,8 +141,10 @@ def _evaluate_resource_match(feature: PilotFeature, user, fleet) -> bool:
     if fleet is None:
         return _evaluate_affiliation(feature, user)
     if _evaluate_affiliation(feature, user):
-        audience_group_ids = set(
-            fleet.audience.groups.values_list("pk", flat=True)
+        audience_group_ids = (
+            set(fleet.audience.groups.values_list("pk", flat=True))
+            if fleet.audience is not None
+            else set()
         )
         if not audience_group_ids:
             return True

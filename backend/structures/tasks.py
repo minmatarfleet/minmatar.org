@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.conf import settings
 
 from app.celery import app
+from app.models import get_or_create_active
 
 from discord.client import DiscordClient
 from eveonline.client import EsiClient, esi_for
@@ -86,49 +87,37 @@ def update_corporation_structures(corporation_id: int):
             corporation = EveCorporation.objects.get(
                 corporation_id=structure["corporation_id"]
             )
-            if EveStructure.objects.filter(
-                id=structure["structure_id"]
-            ).exists():
+            services = structure.get("services")
+            structure_defaults = {
+                "system_id": structure["system_id"],
+                "system_name": system.name,
+                "type_id": structure["type_id"],
+                "type_name": structure_type.name,
+                "name": structure["name"],
+                "reinforce_hour": structure["reinforce_hour"],
+                "state": structure["state"],
+                "state_timer_start": structure.get("state_timer_start"),
+                "state_timer_end": structure.get("state_timer_end"),
+                "fuel_expires": structure.get("fuel_expires"),
+                "fitting": (
+                    json.dumps(services, indent=2) if services else None
+                ),
+                "corporation": corporation,
+            }
+            eve_structure, created = get_or_create_active(
+                EveStructure,
+                id=structure["structure_id"],
+                defaults=structure_defaults,
+            )
+            if created:
+                logger.debug("Creating new structure %s", structure["name"])
+            else:
                 logger.debug(
                     "Updating existing structure %s", structure["name"]
                 )
-                eve_structure = EveStructure.objects.get(
-                    id=structure["structure_id"]
-                )
-                eve_structure.state = structure["state"]
-                eve_structure.state_timer_start = structure.get(
-                    "state_timer_start"
-                )
-                eve_structure.state_timer_end = structure.get(
-                    "state_timer_end"
-                )
-                eve_structure.fuel_expires = structure.get("fuel_expires")
-                eve_structure.name = structure["name"]
-                services = structure.get("services")
-                eve_structure.fitting = (
-                    json.dumps(services, indent=2) if services else None
-                )
+                for key, value in structure_defaults.items():
+                    setattr(eve_structure, key, value)
                 eve_structure.save()
-            else:
-                logger.debug("Creating new structure %s", structure["name"])
-                services = structure.get("services")
-                eve_structure = EveStructure.objects.create(
-                    id=structure["structure_id"],
-                    system_id=structure["system_id"],
-                    system_name=system.name,
-                    type_id=structure["type_id"],
-                    type_name=structure_type.name,
-                    name=structure["name"],
-                    reinforce_hour=structure["reinforce_hour"],
-                    state=structure["state"],
-                    state_timer_start=structure.get("state_timer_start"),
-                    state_timer_end=structure.get("state_timer_end"),
-                    fuel_expires=structure.get("fuel_expires"),
-                    fitting=(
-                        json.dumps(services, indent=2) if services else None
-                    ),
-                    corporation=corporation,
-                )
 
             known_structure_ids.append(eve_structure.id)
 

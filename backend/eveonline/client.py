@@ -186,6 +186,15 @@ class EsiClient:
                 response_code=SUCCESS,
                 data=_esi_to_python(operation.results(**kwargs)),
             )
+        except (InvalidGrantError, TokenInvalidError) as e:
+            logger.info(
+                "ESI operation.results() token invalid for %s: %s",
+                getattr(
+                    getattr(operation, "operation", None), "operationId", None
+                ),
+                e,
+            )
+            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
         except Exception as e:
             logger.warning(
                 "ESI operation.results() failed for %s: %s",
@@ -193,7 +202,6 @@ class EsiClient:
                     getattr(operation, "operation", None), "operationId", None
                 ),
                 e,
-                exc_info=True,
             )
             return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
 
@@ -201,10 +209,28 @@ class EsiClient:
         # See _operation_results — same 304/ETag pitfall for single-object ops.
         kwargs.setdefault("use_etag", False)
         try:
+            data = _esi_to_python(operation.result(**kwargs))
+            # Belt-and-suspenders: some operations return a one-element list
+            # instead of the single dict callers expect.
+            if (
+                isinstance(data, list)
+                and len(data) == 1
+                and isinstance(data[0], dict)
+            ):
+                data = data[0]
             return EsiResponse(
                 response_code=SUCCESS,
-                data=_esi_to_python(operation.result(**kwargs)),
+                data=data,
             )
+        except (InvalidGrantError, TokenInvalidError) as e:
+            logger.info(
+                "ESI operation.result() token invalid for %s: %s",
+                getattr(
+                    getattr(operation, "operation", None), "operationId", None
+                ),
+                e,
+            )
+            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
         except Exception as e:
             logger.warning(
                 "ESI operation.result() failed for %s: %s",
@@ -212,7 +238,6 @@ class EsiClient:
                     getattr(operation, "operation", None), "operationId", None
                 ),
                 e,
-                exc_info=True,
             )
             return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
 

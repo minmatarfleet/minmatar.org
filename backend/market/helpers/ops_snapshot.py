@@ -100,9 +100,21 @@ def record_ops_monitor_snapshots(
         )
         return 0
 
+    if location_id is not None:
+        # Single location requested: one build is already minimal work.
+        payload_by_location = {
+            location_id: build_ops_monitor(location_id=location_id)
+        }
+    else:
+        # All locations: compute the shared queries once and split the
+        # result per location instead of calling build_ops_monitor() N times.
+        payload_by_location = build_ops_monitor().get("by_location", {})
+
     created = 0
     for loc in locations:
-        payload = build_ops_monitor(location_id=loc.location_id)
+        payload = payload_by_location.get(
+            loc.location_id
+        ) or build_ops_monitor(location_id=loc.location_id)
         summary = payload["summary"]
         EveMarketOpsMonitorSnapshot.objects.create(
             location=loc,

@@ -26,6 +26,8 @@ def get_fleet_users(request, fleet_id: int):
         return 403, None
 
     audience = fleet.audience
+    if audience is None:
+        return [{"fleet_id": fleet_id, "user_ids": []}]
     groups = audience.groups.all()
 
     users = set()
