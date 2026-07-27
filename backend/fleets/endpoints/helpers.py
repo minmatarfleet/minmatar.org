@@ -89,6 +89,9 @@ def _fleet_authorized(request, fleet: EveFleet) -> bool:
 
 def send_discord_pre_ping(fleet: EveFleet) -> bool:
     """Send a Discord pre-ping for a fleet."""
+    if not fleet.audience:
+        return False
+
     notification = get_fleet_discord_notification(
         is_pre_ping=True,
         fleet_id=fleet.id,

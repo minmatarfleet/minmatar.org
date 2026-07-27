@@ -156,7 +156,12 @@ class StructureTaskTests(TestCase):
                 }
             ],
         )
-        esi.get_solar_system.return_value = MagicMock(name="Home")
+        system_mock = MagicMock()
+        system_mock.name = "Home"
+        esi.get_solar_system.return_value = system_mock
+        type_mock = MagicMock()
+        type_mock.name = "Astrahus"
+        esi.get_eve_type.return_value = type_mock
 
         EveStructure.objects.create(
             id=100001,
@@ -167,3 +172,71 @@ class StructureTaskTests(TestCase):
         )
 
         update_corporation_structures(corp.corporation_id)
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("eveonline.utils.get_esi_downtime_countdown", return_value=0)
+    @patch("structures.tasks.esi_for")
+    @patch("structures.tasks.get_director_with_scope")
+    def test_update_corporation_structures_restores_soft_deleted(
+        self, get_director_mock, esi_mock, get_downtime_mock
+    ):
+        """A soft-deleted structure reappearing in ESI is restored, not
+        re-created (which would previously raise an IntegrityError)."""
+        ceo = EveCharacter.objects.create(
+            character_id=1002,
+            character_name="Mr CEO 2",
+            esi_token_level="ceo",
+        )
+        corp = EveCorporation.objects.create(
+            corporation_id=2002,
+            name="MegaCorp2",
+            ceo=ceo,
+        )
+        get_director_mock.return_value = ceo
+
+        structure = EveStructure.objects.create(
+            id=100002,
+            corporation=corp,
+            system_id=100002,
+            system_name="Old System",
+            type_id=100002,
+            type_name="Old Type",
+            name="Old Name",
+            reinforce_hour=10,
+        )
+        structure.delete()
+        self.assertIsNotNone(EveStructure.all_objects.get(id=100002).deleted)
+
+        esi = esi_mock.return_value
+        esi.get_corp_structures.return_value = EsiResponse(
+            response_code=200,
+            data=[
+                {
+                    "structure_id": 100002,
+                    "corporation_id": corp.corporation_id,
+                    "name": "MegaStructure",
+                    "system_id": 100002,
+                    "type_id": 100002,
+                    "reinforce_hour": 12,
+                    "state": "shield_vulnerable",
+                    "state_timer_start": None,
+                    "state_timer_end": None,
+                    "fuel_expires": None,
+                }
+            ],
+        )
+        system_mock = MagicMock()
+        system_mock.name = "Home System"
+        esi.get_solar_system.return_value = system_mock
+        type_mock = MagicMock()
+        type_mock.name = "Astrahus"
+        esi.get_eve_type.return_value = type_mock
+
+        update_corporation_structures(corp.corporation_id)
+
+        restored = EveStructure.objects.get(id=100002)
+        self.assertIsNone(restored.deleted)
+        self.assertEqual("MegaStructure", restored.name)
+        self.assertEqual("shield_vulnerable", restored.state)
+        self.assertEqual("Home System", restored.system_name)
+        self.assertEqual("Astrahus", restored.type_name)

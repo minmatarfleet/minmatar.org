@@ -6,6 +6,7 @@ from app.test import TestCase
 from eveonline.client import EsiResponse
 from eveonline.models import EveLocation
 from fittings.models import EveFitting
+from market.helpers.ops_monitor import build_ops_monitor
 from market.helpers.ops_snapshot import (
     list_ops_monitor_snapshots,
     record_ops_monitor_snapshots,
@@ -106,6 +107,61 @@ class OpsMonitorSnapshotTestCase(TestCase):
             location_id=self.loc.location_id, limit=2
         )
         self.assertEqual(len(rows), 2)
+
+    def test_record_snapshot_for_all_locations_builds_once(self):
+        """Snapshotting every location computes the shared queries once
+        (build_ops_monitor()) and splits results per location (CELERY-JC)."""
+        other_loc = EveLocation.objects.create(
+            location_id=100,
+            location_name="Elsewhere",
+            short_name="Elsewhere",
+            solar_system_id=2,
+            solar_system_name="Elsewhere",
+            market_active=True,
+        )
+        other_fit = EveFitting.objects.create(
+            name="[NVY-5] Rifter",
+            ship_id=587,
+            description="Testing",
+            eft_format="[Rifter, [NVY-5] Rifter]",
+        )
+        EveMarketContractExpectation.objects.create(
+            fitting=other_fit,
+            location=other_loc,
+            quantity=2,
+        )
+
+        with patch(
+            "market.helpers.ops_snapshot.build_ops_monitor",
+            wraps=build_ops_monitor,
+        ) as build_mock:
+            created = record_ops_monitor_snapshots(
+                trigger=EveMarketOpsMonitorSnapshot.TRIGGER_CONTRACTS,
+            )
+
+        self.assertEqual(created, 2)
+        build_mock.assert_called_once_with()
+
+        snap_by_loc = {
+            snap.location_id: snap
+            for snap in EveMarketOpsMonitorSnapshot.objects.all()
+        }
+        self.assertEqual(
+            snap_by_loc[self.loc.pk].understocked_contracts[0]["fitting_name"],
+            self.fit.name,
+        )
+        self.assertEqual(
+            snap_by_loc[other_loc.pk].understocked_contracts[0][
+                "fitting_name"
+            ],
+            other_fit.name,
+        )
+        self.assertEqual(
+            snap_by_loc[self.loc.pk].understocked_contracts_count, 1
+        )
+        self.assertEqual(
+            snap_by_loc[other_loc.pk].understocked_contracts_count, 1
+        )
 
     @patch("market.tasks.record_ops_monitor_snapshot_task")
     @patch("market.tasks.fetch_contract_items_task")

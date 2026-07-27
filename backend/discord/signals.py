@@ -64,9 +64,7 @@ def _discord_role_call(
     try:
         call(discord_user.id, role.role_id)
     except Exception as exc:
-        if handle_discord_guild_member_error(
-            user, exc, context, offboard_if_missing=False
-        ):
+        if handle_discord_guild_member_error(user, exc, context):
             return False
         raise
     return True

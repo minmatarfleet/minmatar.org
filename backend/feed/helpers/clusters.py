@@ -4,6 +4,7 @@ from collections import Counter, defaultdict
 from datetime import timedelta
 from typing import Any
 
+from django.db.models import F
 from django.utils import timezone
 
 from feed.helpers.killmail_classify import dominant_attacker_faction
@@ -317,14 +318,10 @@ def _sliding_window_clusters(
                         ):
                             # Fight has run long enough; close it and start a
                             # fresh engagement even though kills continue.
-                            existing.is_active = False
-                            existing.ended_at = existing.last_kill_at
-                            existing.save(
-                                update_fields=[
-                                    "is_active",
-                                    "ended_at",
-                                    "updated_at",
-                                ]
+                            FeedCluster.objects.filter(pk=existing.pk).update(
+                                is_active=False,
+                                ended_at=F("last_kill_at"),
+                                updated_at=timezone.now(),
                             )
                         else:
                             _merge_fleet_cluster(
@@ -363,12 +360,12 @@ def _sliding_window_clusters(
 
 def _mark_stale_fleet_clusters(stale_minutes: int) -> None:
     cutoff = timezone.now() - timedelta(minutes=stale_minutes)
-    stale = FeedCluster.objects.filter(
+    FeedCluster.objects.filter(
         cluster_type=FeedCluster.ClusterType.FLEET_ENGAGEMENT,
         is_active=True,
         last_kill_at__lt=cutoff,
+    ).update(
+        is_active=False,
+        ended_at=F("last_kill_at"),
+        updated_at=timezone.now(),
     )
-    for cluster in stale:
-        cluster.is_active = False
-        cluster.ended_at = cluster.last_kill_at
-        cluster.save(update_fields=["is_active", "ended_at", "updated_at"])

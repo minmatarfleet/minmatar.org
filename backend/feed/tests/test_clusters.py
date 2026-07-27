@@ -5,7 +5,7 @@ from datetime import timedelta
 from django.test import TestCase
 from django.utils import timezone
 
-from feed.helpers.clusters import detect_clusters
+from feed.helpers.clusters import _mark_stale_fleet_clusters, detect_clusters
 from feed.helpers.ingest import upsert_feed_killmail_from_r2z2
 from feed.management.commands.seed_feed_monitored_systems import (
     seed_from_fixture,
@@ -177,3 +177,39 @@ class ClusterRollupTestCase(TestCase):
         # First segment closed when the cap forced a split.
         self.assertFalse(fleet_clusters[0].is_active)
         self.assertIsNotNone(fleet_clusters[0].ended_at)
+
+    def test_mark_stale_fleet_clusters_deactivates_and_sets_ended_at(self):
+        """Stale active fleet clusters are deactivated via a single queryset update."""
+        FeedCluster.objects.all().delete()
+        last_kill_at = timezone.now() - timedelta(minutes=30)
+        stale_cluster = FeedCluster.objects.create(
+            cluster_key="fleet_engagement:30002538:500002:stale",
+            cluster_type=FeedCluster.ClusterType.FLEET_ENGAGEMENT,
+            solar_system_id=30002538,
+            dominant_faction_id=500002,
+            started_at=last_kill_at - timedelta(minutes=10),
+            last_kill_at=last_kill_at,
+            is_active=True,
+            kill_count=5,
+            pilot_count=8,
+        )
+        fresh_cluster = FeedCluster.objects.create(
+            cluster_key="fleet_engagement:30002538:500002:fresh",
+            cluster_type=FeedCluster.ClusterType.FLEET_ENGAGEMENT,
+            solar_system_id=30002538,
+            dominant_faction_id=500002,
+            started_at=timezone.now() - timedelta(minutes=2),
+            last_kill_at=timezone.now(),
+            is_active=True,
+            kill_count=5,
+            pilot_count=8,
+        )
+
+        _mark_stale_fleet_clusters(stale_minutes=20)
+
+        stale_cluster.refresh_from_db()
+        fresh_cluster.refresh_from_db()
+        self.assertFalse(stale_cluster.is_active)
+        self.assertEqual(stale_cluster.ended_at, stale_cluster.last_kill_at)
+        self.assertTrue(fresh_cluster.is_active)
+        self.assertIsNone(fresh_cluster.ended_at)
