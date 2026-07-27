@@ -1,0 +1,222 @@
+---
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Grid from '@components/compositions/Grid.astro'
+---
+
+<div
+    class="[ ops-monitor-skeleton ]"
+    aria-busy="true"
+    aria-live="polite"
+>
+    <Flexblock gap="var(--space-xl)">
+        <section class="[ ops-monitor-skeleton__health ]">
+            <div class="[ ops-monitor-skeleton__overall ]">
+                <div class="[ skel skel-eyebrow ]"></div>
+                <div class="[ skel skel-pct ]"></div>
+                <div class="[ skel skel-bar ]"></div>
+                <div class="[ skel skel-line skel-line--med ]"></div>
+                <div class="[ skel skel-line skel-line--short ]"></div>
+                <div class="[ skel skel-line skel-line--short ]"></div>
+            </div>
+
+            <Grid
+                class="[ ops-monitor-skeleton__split ]"
+                min_item_width="280px"
+                row_gap="var(--space-s)"
+                column_gap="var(--space-s)"
+            >
+                <div class="[ ops-monitor-skeleton__card ]">
+                    <div class="[ skel skel-eyebrow ]"></div>
+                    <div class="[ skel skel-card-pct ]"></div>
+                    <div class="[ skel skel-bar ]"></div>
+                    <div class="[ skel skel-line ]"></div>
+                    <div class="[ skel skel-line skel-line--med ]"></div>
+                    <div class="[ skel skel-line skel-line--short ]"></div>
+                </div>
+                <div class="[ ops-monitor-skeleton__card ]">
+                    <div class="[ skel skel-eyebrow ]"></div>
+                    <div class="[ ops-monitor-skeleton__dual ]">
+                        <div class="[ ops-monitor-skeleton__metric ]">
+                            <div class="[ skel skel-line skel-line--short ]"></div>
+                            <div class="[ skel skel-card-pct ]"></div>
+                            <div class="[ skel skel-bar ]"></div>
+                            <div class="[ skel skel-line ]"></div>
+                        </div>
+                        <div class="[ ops-monitor-skeleton__metric ]">
+                            <div class="[ skel skel-line skel-line--short ]"></div>
+                            <div class="[ skel skel-card-pct ]"></div>
+                            <div class="[ skel skel-bar ]"></div>
+                            <div class="[ skel skel-line ]"></div>
+                        </div>
+                    </div>
+                    <div class="[ skel skel-line skel-line--med ]"></div>
+                    <div class="[ skel skel-line skel-line--short ]"></div>
+                </div>
+            </Grid>
+        </section>
+
+        <Flexblock gap="var(--space-l)">
+            <Flexblock gap="var(--space-s)">
+                <div class="[ skel skel-heading ]"></div>
+                <Grid
+                    class="[ ops-monitor-skeleton__tiles ]"
+                    min_item_width="140px"
+                    row_gap="var(--space-s)"
+                    column_gap="var(--space-s)"
+                >
+                    {Array.from({ length: 8 }).map(() =>
+                        <div class="[ skel skel-tile ]"></div>
+                    )}
+                </Grid>
+            </Flexblock>
+
+            <Flexblock gap="var(--space-s)">
+                <div class="[ skel skel-heading ]"></div>
+                <div class="[ skel skel-filters ]"></div>
+                <Flexblock gap="var(--space-2xs)">
+                    {Array.from({ length: 6 }).map(() =>
+                        <div class="[ skel skel-row ]"></div>
+                    )}
+                </Flexblock>
+            </Flexblock>
+        </Flexblock>
+    </Flexblock>
+</div>
+
+<style lang="scss">
+    .ops-monitor-skeleton .skel {
+        border-radius: 2px;
+        background: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.12) 50%,
+            rgba(255, 255, 255, 0.06) 100%
+        );
+        background-size: 200% 100%;
+        animation: ops-monitor-skel 1.1s ease-in-out infinite;
+    }
+
+    .ops-monitor-skeleton__health {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+        padding: var(--space-l) var(--space-m);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(0, 0, 0, 0.28);
+    }
+
+    .ops-monitor-skeleton__overall {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        max-width: 28rem;
+    }
+
+    .ops-monitor-skeleton__card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-m);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.22);
+    }
+
+    .ops-monitor-skeleton__dual {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--space-s);
+    }
+
+    .ops-monitor-skeleton__metric {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+    }
+
+    .skel-eyebrow {
+        width: 8rem;
+        height: 0.75rem;
+    }
+
+    .skel-pct {
+        width: 11rem;
+        height: clamp(3.5rem, 8vw, 5.5rem);
+        max-width: 100%;
+    }
+
+    .skel-card-pct {
+        width: 6.5rem;
+        height: clamp(2rem, 4vw, 3rem);
+    }
+
+    .skel-bar {
+        width: 100%;
+        height: var(--space-2xs);
+        margin-block: var(--space-3xs);
+    }
+
+    .skel-line {
+        width: 14rem;
+        max-width: 100%;
+        height: 0.85rem;
+    }
+
+    .skel-line--med {
+        width: 11rem;
+    }
+
+    .skel-line--short {
+        width: 7.5rem;
+    }
+
+    .skel-heading {
+        width: 14rem;
+        max-width: 100%;
+        height: 1.35rem;
+    }
+
+    .skel-tile {
+        min-height: 9.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background-color: rgba(85, 85, 85, 0.12);
+        background-image: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.08) 50%,
+            transparent 100%
+        );
+        background-size: 200% 100%;
+        animation: ops-monitor-skel 1.1s ease-in-out infinite;
+    }
+
+    .skel-filters {
+        width: 100%;
+        min-height: 6.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background-color: rgba(85, 85, 85, 0.1);
+        background-image: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(255, 255, 255, 0.07) 50%,
+            transparent 100%
+        );
+        background-size: 200% 100%;
+        animation: ops-monitor-skel 1.1s ease-in-out infinite;
+    }
+
+    .skel-row {
+        width: 100%;
+        height: 4.25rem;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    @keyframes ops-monitor-skel {
+        0% {
+            background-position: 100% 0;
+        }
+        100% {
+            background-position: -100% 0;
+        }
+    }
+</style>
