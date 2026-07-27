@@ -1,0 +1,383 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type {
+    LearningCertificate,
+    LearningPersona,
+    LearningPersonaRecommendation,
+} from '@dtypes/api.minmatar.org'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Grid from '@components/compositions/Grid.astro'
+import Button from '@components/blocks/Button.astro'
+
+const CERTIFICATE_COVERS: Record<string, string> = {
+    'faction-warfare': '/images/combatlog-tile-background.webp',
+    'isk-generation': '/images/orders-tile-background.webp',
+}
+
+const DEFAULT_CERTIFICATE_COVER = '/images/doctrines-tile-background.webp'
+
+interface Props {
+    certificates: LearningCertificate[]
+    certificates_error?: boolean
+    completed_slugs: string[]
+    persona: LearningPersona | null
+    recommendation: LearningPersonaRecommendation | null
+    auth_token: string
+    needs_persona: boolean
+    persona_confirmed_on_server?: boolean
+}
+
+const {
+    certificates,
+    certificates_error = false,
+    completed_slugs,
+    persona,
+    recommendation,
+    auth_token,
+    needs_persona,
+    persona_confirmed_on_server = false,
+} = Astro.props
+
+const personas: { id: LearningPersona; title: string; description: string }[] = [
+    {
+        id: 'alliance',
+        title: t('learning_center.persona.alliance'),
+        description: t('learning_center.persona.alliance_desc'),
+    },
+    {
+        id: 'militia',
+        title: t('learning_center.persona.militia'),
+        description: t('learning_center.persona.militia_desc'),
+    },
+    {
+        id: 'other',
+        title: t('learning_center.persona.other'),
+        description: t('learning_center.persona.other_desc'),
+    },
+]
+
+let reason_text = t('learning_center.persona.reason.other')
+if (recommendation?.reason_key === 'learning.persona.reason.alliance') {
+    reason_text = t('learning_center.persona.reason.alliance')
+} else if (recommendation?.reason_key === 'learning.persona.reason.militia') {
+    reason_text = t('learning_center.persona.reason.militia')
+} else if (!recommendation) {
+    reason_text = t('learning_center.persona.pick_lead')
+}
+
+// Avoid empty string literals / awkward concat in frontmatter (esbuild bug in this repo).
+const config_json = JSON.stringify({
+    authToken: auth_token,
+    catalogPath: translatePath('/learning-center/'),
+    initialPersona: persona,
+    needsPersona: needs_persona,
+    personaConfirmedOnServer: persona_confirmed_on_server,
+    recommendedPersona: recommendation ? recommendation.persona : null,
+    completedSlugs: completed_slugs,
+})
+
+const progress_label = t('learning_center.certificate.progress')
+---
+
+<div
+    class="[ learning-center-hub ]"
+    data-config={config_json}
+    data-api-url={import.meta.env.API_URL}
+    x-data={`learningCenterHub(${needs_persona ? 'true' : 'false'})`}
+>
+    <Flexblock gap="var(--space-2xl)">
+        <FlexInline justification="space-between" class="[ w-full !items-start ]" gap="var(--space-m)">
+            <div class="[ grow ]">
+                <slot name="intro" />
+            </div>
+            {/* SSR is-hidden (not x-show/x-cloak): if Alpine races VT, panels stay correct. */}
+            <div
+                class:list={['shrink-0', needs_persona && 'is-hidden']}
+                data-hub-when-catalog
+            >
+                <Button size="sm" type="button" x-on:click="changePersona()">
+                    {t('learning_center.persona.change')}
+                </Button>
+            </div>
+        </FlexInline>
+
+        <div
+            class:list={['persona-gate', !needs_persona && 'is-hidden']}
+            data-hub-when-picker
+        >
+        <Flexblock gap="var(--space-l)">
+            <Flexblock gap="var(--space-2xs)">
+                <h2>{t('learning_center.persona.pick_title')}</h2>
+                <p class="[ excerpt ]">{t('learning_center.persona.pick_lead')}</p>
+                {recommendation &&
+                    <p class="[ recommendation ]">
+                        <strong>{t('learning_center.persona.recommended')}:</strong>
+                        {' '}{reason_text}
+                    </p>
+                }
+            </Flexblock>
+
+            <Grid
+                class="[ w-full grid-fill ]"
+                row_gap="var(--space-xs)"
+                column_gap="var(--space-xs)"
+                min_item_width="220px"
+            >
+                {personas.map((p) => (
+                    <button
+                        type="button"
+                        class="[ persona-card card border light-transparency ]"
+                        data-persona={p.id}
+                        x-bind:class={'selectedPersona === "' + p.id + '" ? "is-selected" : ""'}
+                        x-on:click={'selectedPersona = "' + p.id + '"'}
+                    >
+                        <Flexblock gap="var(--space-2xs)">
+                            <h3>{p.title}</h3>
+                            <p>{p.description}</p>
+                            {recommendation?.persona === p.id &&
+                                <span class="[ badge ]">{t('learning_center.persona.recommended')}</span>
+                            }
+                        </Flexblock>
+                    </button>
+                ))}
+            </Grid>
+
+            <FlexInline gap="var(--space-s)">
+                <Button
+                    size="sm"
+                    x-bind:disabled="saving || !selectedPersona"
+                    x-on:click="confirmPersona(selectedPersona)"
+                >
+                    {t('learning_center.persona.confirm')}
+                </Button>
+                <Button
+                    size="sm"
+                    type="button"
+                    x-show="canCancelPersona"
+                    x-cloak
+                    x-on:click="cancelPersonaChange()"
+                >
+                    {t('cancel')}
+                </Button>
+            </FlexInline>
+        </Flexblock>
+    </div>
+
+    <div
+        class:list={[needs_persona && 'is-hidden']}
+        data-hub-when-catalog
+    >
+        <Flexblock gap="var(--space-l)">
+            <h2>{t('learning_center.certificates_heading')}</h2>
+
+            {certificates_error ? (
+                <Flexblock gap="var(--space-2xs)">
+                    <p>{t('learning_center.certificates_error')}</p>
+                    <Button size="sm" href={translatePath('/learning-center/')}>
+                        {t('learning_center.certificates_retry')}
+                    </Button>
+                </Flexblock>
+            ) : certificates.length === 0 ? (
+                <p>{t('learning_center.empty_certificates')}</p>
+            ) : (
+                <Grid
+                    class="[ w-full grid-fill ]"
+                    row_gap="var(--space-2xs)"
+                    column_gap="var(--space-2xs)"
+                    min_item_width="280px"
+                >
+                    {certificates.map((cert) => {
+                        const slugs = cert.learnings.map((l) => l.slug)
+                        const slugs_json = JSON.stringify(slugs)
+                        const href = translatePath(`/learning-center/certificates/${cert.slug}/`)
+                        const cover = CERTIFICATE_COVERS[cert.slug] ?? DEFAULT_CERTIFICATE_COVER
+                        return (
+                            <a
+                                class="[ certificate-card card component border light-transparency soft ]"
+                                href={href}
+                            >
+                                <img
+                                    class="[ certificate-card__cover ]"
+                                    src={cover}
+                                    alt=""
+                                    loading="lazy"
+                                />
+                                <div class="[ certificate-card__content ]">
+                                    <div class="[ certificate-card__body ]">
+                                        <h3>{cert.title}</h3>
+                                        <p>{cert.summary}</p>
+                                    </div>
+                                    <div class="[ certificate-card__footer ]">
+                                        <span
+                                            x-text={`'${progress_label}: ' + certPercent(${slugs_json}) + '%'`}
+                                        >
+                                            {progress_label}: 0%
+                                        </span>
+                                        <div class="[ progress-bar ]" aria-hidden="true">
+                                            <div
+                                                class="[ progress-bar__fill ]"
+                                                x-bind:style={`'width: ' + certPercent(${slugs_json}) + '%'`}
+                                            ></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        )
+                    })}
+                </Grid>
+            )}
+        </Flexblock>
+    </div>
+    </Flexblock>
+</div>
+
+<style lang="scss">
+    .is-hidden {
+        display: none !important;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+
+    .persona-card {
+        text-align: left;
+        padding: var(--space-m);
+        color: inherit;
+        cursor: pointer;
+        background-color: var(--light-transparency-background-mobile);
+
+        @media screen and (min-width: 980px) {
+            background-color: var(--light-transparency-background);
+            backdrop-filter: blur(var(--transparency-backdrop-blur));
+            -webkit-backdrop-filter: blur(var(--transparency-backdrop-blur));
+        }
+
+        &.light-transparency::before {
+            content: none;
+        }
+
+        &.is-selected {
+            border-color: var(--fleet-red);
+            outline: solid 1px var(--fleet-red);
+        }
+
+        h3 {
+            margin: 0;
+            font-size: var(--step-1);
+        }
+
+        p {
+            margin: 0;
+            color: var(--fleet-yellow);
+            font-size: var(--step--1);
+        }
+    }
+
+    .badge {
+        display: inline-block;
+        font-size: var(--step--2);
+        color: var(--highlight);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .recommendation {
+        color: var(--highlight);
+        font-size: var(--step--1);
+    }
+
+    .certificate-card {
+        text-decoration: none;
+        color: inherit;
+        position: relative;
+        overflow: hidden;
+        display: block;
+        height: 100%;
+        min-height: 280px;
+        padding-block: var(--component-padding-block);
+        padding-inline: var(--space-l-xl);
+
+        // Darken covers behind title / summary / progress so text stays readable
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background: linear-gradient(
+                to top,
+                rgba(0, 0, 0, 0.75) 0%,
+                rgba(0, 0, 0, 0.4) 45%,
+                rgba(0, 0, 0, 0.15) 100%
+            );
+        }
+
+        &__cover {
+            object-fit: cover;
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            width: 100%;
+            height: 100%;
+            // Stronger fade than Tile soft — text sits lower on shorter cards
+            mask-image: linear-gradient(
+                to bottom,
+                rgba(0, 0, 0, 0.55) 0%,
+                rgba(0, 0, 0, 0.12) 45%,
+                transparent 75%
+            );
+        }
+
+        &__content {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            gap: var(--space-m);
+            min-height: calc(280px - (2 * var(--component-padding-block)));
+            height: 100%;
+        }
+
+        &__body {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2xs);
+        }
+
+        &__footer {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-2xs);
+            padding-top: var(--space-xs);
+            border-top: solid 1px var(--border-color);
+        }
+
+        h3 {
+            margin: 0;
+            font-size: var(--step-1);
+        }
+
+        p {
+            margin: 0;
+            color: var(--fleet-yellow);
+            font-size: var(--step--1);
+        }
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.22);
+
+        &__fill {
+            height: 100%;
+            background: var(--fleet-red);
+        }
+    }
+</style>

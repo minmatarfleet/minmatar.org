@@ -84,6 +84,8 @@ INSTALLED_APPS = [
     "onboarding",
     # Generic page/section reading progress
     "page_progress",
+    # Learning Center (certificates + abstract learnings)
+    "learning",
     # Referral links,
     "referrals",
     # User subscriptions

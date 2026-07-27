@@ -1,0 +1,395 @@
+---
+/**
+ * Learning Center Alpine factories — must live in FooterScripts (every Viewport page).
+ *
+ * ClientRouter swaps <body> then Alpine's MutationObserver inits new x-data *before*
+ * page-local is:inline scripts run (runScripts is after updateCallbackDone). If
+ * learningCenterHub / learningCertificateDetail are only defined on their pages,
+ * soft-nav onto that page throws ReferenceError; child x-show then evaluates on
+ * <body>, removes x-cloak, and leaves panels at display:none (blank hub).
+ * Same pattern as neocom_clock() in FooterScripts: define once, reuse on every VT.
+ */
+---
+
+<script>
+    import * as learningLocal from '@helpers/learning/localStore'
+
+    declare global {
+        interface Window {
+            __learningLocal?: typeof learningLocal
+        }
+    }
+
+    window.__learningLocal = learningLocal
+</script>
+
+<script is:inline>
+    function learningCenterHub(needsPersonaInitially) {
+        return {
+            authToken: '',
+            apiBase: '',
+            catalogPath: '',
+            persona: null,
+            needsPersona: true,
+            personaConfirmedOnServer: false,
+            recommendedPersona: null,
+            selectedPersona: null,
+            completedSlugs: [],
+            saving: false,
+            canCancelPersona: false,
+            completeError: '',
+            // Match SSR so soft navigations don't depend on Alpine removing x-cloak first.
+            showPicker: !!needsPersonaInitially,
+            localApi() {
+                return window.__learningLocal || null
+            },
+            setPersonaCookie(persona) {
+                const local = this.localApi()
+                const name = (local && local.PERSONA_COOKIE) || 'learning_persona'
+                document.cookie = name + '=' + persona + '; path=/; max-age=' + (60 * 60 * 24 * 180) + '; SameSite=Lax'
+            },
+            certPercent(slugs) {
+                const list = slugs || []
+                if (!list.length) return 0
+                let done = 0
+                for (let i = 0; i < list.length; i++) {
+                    if (this.completedSlugs.indexOf(list[i]) !== -1) done++
+                }
+                return Math.round((100 * done) / list.length)
+            },
+            syncPanels() {
+                const root = this.$el
+                if (!root) return
+                root.querySelectorAll('[data-hub-when-catalog]').forEach((el) => {
+                    el.classList.toggle('is-hidden', this.showPicker)
+                })
+                root.querySelectorAll('[data-hub-when-picker]').forEach((el) => {
+                    el.classList.toggle('is-hidden', !this.showPicker)
+                })
+            },
+            async syncPersonaToServer(persona) {
+                if (!this.authToken || !persona) return
+                try {
+                    const response = await fetch(this.apiBase + '/persona', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: 'Bearer ' + this.authToken,
+                        },
+                        body: JSON.stringify({ persona: persona }),
+                    })
+                    if (response.ok) this.personaConfirmedOnServer = true
+                } catch (e) {
+                    console.error(e)
+                }
+            },
+            async init() {
+                const cfg = JSON.parse(this.$el.getAttribute('data-config') || '{}')
+                const apiUrl = this.$el.getAttribute('data-api-url') || ''
+                this.authToken = cfg.authToken || ''
+                this.apiBase = apiUrl + '/api/learning'
+                this.catalogPath = cfg.catalogPath || '/learning-center/'
+                this.persona = cfg.initialPersona || null
+                this.needsPersona = !!cfg.needsPersona
+                this.personaConfirmedOnServer = !!cfg.personaConfirmedOnServer
+                this.recommendedPersona = cfg.recommendedPersona || null
+                this.completedSlugs = cfg.completedSlugs || []
+                this.selectedPersona = this.persona || this.recommendedPersona || null
+                this.showPicker = this.needsPersona
+                this.canCancelPersona = false
+                this.syncPanels()
+
+                const local = this.localApi()
+                if (!local) return
+
+                const pending = local.takePendingForImport()
+                if (!this.persona && pending.persona) {
+                    this.persona = pending.persona
+                    this.selectedPersona = pending.persona
+                    this.setPersonaCookie(pending.persona)
+                    if (this.needsPersona) {
+                        window.location.href = this.catalogPath + '?persona=' + encodeURIComponent(pending.persona)
+                        return
+                    }
+                    this.showPicker = false
+                    this.syncPanels()
+                }
+
+                // Always merge local completions into Alpine state so card % updates
+                // without a full reload (anonymous + post-import residual).
+                const localCompleted = local.getCompletedSlugs()
+                if (localCompleted.length) {
+                    this.completedSlugs = Array.from(new Set(this.completedSlugs.concat(localCompleted)))
+                }
+
+                if (this.authToken && pending.completed_learning_slugs.length) {
+                    await this.importPending(pending)
+                } else if (this.authToken && pending.persona && this.needsPersona) {
+                    await this.importPending(pending)
+                }
+
+                // Cookie/query persona counts as confirmed for the gate, but server may
+                // still lack persona_confirmed_at — sync even with no pending completions.
+                if (
+                    this.authToken &&
+                    this.persona &&
+                    !this.personaConfirmedOnServer &&
+                    !this.needsPersona
+                ) {
+                    await this.syncPersonaToServer(this.persona)
+                }
+            },
+            async importPending(pending) {
+                try {
+                    const local = this.localApi()
+                    if (local && local.importPendingToServer) {
+                        const data = await local.importPendingToServer(
+                            this.apiBase,
+                            this.authToken,
+                            pending,
+                        )
+                        if (!data) return
+                        this.completedSlugs = data.completed_learning_slugs || this.completedSlugs
+                        if (data.persona) {
+                            this.persona = data.persona
+                            this.setPersonaCookie(data.persona)
+                            this.personaConfirmedOnServer = true
+                        }
+                        return
+                    }
+                    const response = await fetch(this.apiBase + '/import', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: 'Bearer ' + this.authToken,
+                        },
+                        body: JSON.stringify({
+                            completed_learning_slugs: pending.completed_learning_slugs,
+                            persona: pending.persona,
+                        }),
+                    })
+                    if (!response.ok) return
+                    const data = await response.json()
+                    this.completedSlugs = data.completed_learning_slugs || this.completedSlugs
+                    if (data.persona) {
+                        this.persona = data.persona
+                        this.setPersonaCookie(data.persona)
+                        this.personaConfirmedOnServer = true
+                    }
+                    if (local) local.clearCompletedAfterImport()
+                } catch (e) {
+                    console.error(e)
+                }
+            },
+            async confirmPersona(persona) {
+                if (this.saving || !persona) return
+                this.saving = true
+                this.selectedPersona = persona
+                const local = this.localApi()
+                if (local) local.setLocalPersona(persona)
+                this.setPersonaCookie(persona)
+                if (this.authToken) {
+                    await this.syncPersonaToServer(persona)
+                }
+                window.location.href = this.catalogPath + '?persona=' + encodeURIComponent(persona)
+            },
+            changePersona() {
+                this.showPicker = true
+                this.canCancelPersona = true
+                this.selectedPersona = this.persona || this.recommendedPersona || null
+                this.syncPanels()
+            },
+            cancelPersonaChange() {
+                this.showPicker = false
+                this.canCancelPersona = false
+                this.selectedPersona = this.persona || this.recommendedPersona || null
+                this.syncPanels()
+            },
+        }
+    }
+
+    function learningCertificateDetail() {
+        return {
+            authToken: '',
+            apiBase: '',
+            completed: {},
+            saving: {},
+            percent: 0,
+            learningSlugs: [],
+            openedDialogTitle: '',
+            openedDialogBody: '',
+            markCompleteErrorTitle: '',
+            markCompleteErrorBody: '',
+            progressLabel: 'Progress',
+            tipAcceptLabel: 'Open',
+            tipCancelLabel: 'Cancel',
+            localApi() {
+                return window.__learningLocal || null
+            },
+            recalcPercent() {
+                const total = this.learningSlugs.length
+                if (total <= 0) {
+                    this.percent = 0
+                    return
+                }
+                let done = 0
+                for (const slug of this.learningSlugs) {
+                    if (this.completed[slug]) done++
+                }
+                this.percent = Math.round((100 * done) / total)
+            },
+            async openLearning(url) {
+                const local = this.localApi()
+                const openUrl = (target) => {
+                    window.open(target, '_blank', 'noopener,noreferrer')
+                }
+                // Body owns show_alert_dialog; this factory is not Alpine-evaluated with().
+                // accept_href makes Open a real <a target=_blank> so mobile browsers allow the tab
+                // (window.open after await show_alert_dialog loses the user gesture).
+                const rootData = Alpine.$data(document.body)
+                const showTip = () => {
+                    if (!rootData || !rootData.show_alert_dialog) return Promise.resolve(false)
+                    return rootData.show_alert_dialog({
+                        title: this.openedDialogTitle,
+                        content: '<p>' + this.openedDialogBody + '</p>',
+                        accept_href: url,
+                        accept_label: this.tipAcceptLabel,
+                        cancel_label: this.tipCancelLabel,
+                        show_cancel: true,
+                    })
+                }
+                if (local && local.openLearningWithNewTabTip) {
+                    await local.openLearningWithNewTabTip({
+                        url: url,
+                        hasSeenTip: local.hasSeenOpenNewTabTip(),
+                        markTipSeen: function () { local.markOpenNewTabTipSeen() },
+                        showTip: showTip,
+                        openUrl: openUrl,
+                        tipNavigates: true,
+                    })
+                    return
+                }
+                // Module script not hydrated yet — still show tip; do not open until Open.
+                if (local && local.hasSeenOpenNewTabTip && local.hasSeenOpenNewTabTip()) {
+                    openUrl(url)
+                    return
+                }
+                const accepted = await showTip()
+                if (!accepted) return
+                if (local && local.markOpenNewTabTipSeen) local.markOpenNewTabTipSeen()
+                // Tip Open already opened via accept_href; do not window.open after await.
+            },
+            async init() {
+                const cfg = JSON.parse(this.$el.getAttribute('data-config') || '{}')
+                const apiUrl = this.$el.getAttribute('data-api-url') || ''
+                this.authToken = cfg.authToken || ''
+                this.apiBase = apiUrl + '/api/learning'
+                this.learningSlugs = cfg.learningSlugs || []
+                this.percent = cfg.percent || 0
+                this.openedDialogTitle = cfg.openedDialogTitle || ''
+                this.openedDialogBody = cfg.openedDialogBody || ''
+                this.markCompleteErrorTitle = cfg.markCompleteErrorTitle || ''
+                this.markCompleteErrorBody = cfg.markCompleteErrorBody || ''
+                this.progressLabel = cfg.progressLabel || 'Progress'
+                this.tipAcceptLabel = cfg.tipAcceptLabel || 'Open'
+                this.tipCancelLabel = cfg.tipCancelLabel || 'Cancel'
+                const completed = {}
+                for (const slug of (cfg.completedSlugs || [])) completed[slug] = true
+                const local = this.localApi()
+                if (local) {
+                    for (const slug of local.getCompletedSlugs()) completed[slug] = true
+                    if (this.authToken) {
+                        const pending = local.takePendingForImport()
+                        if (pending.completed_learning_slugs.length) {
+                            try {
+                                let data = null
+                                if (local.importPendingToServer) {
+                                    data = await local.importPendingToServer(
+                                        this.apiBase,
+                                        this.authToken,
+                                        pending,
+                                    )
+                                } else {
+                                    const response = await fetch(this.apiBase + '/import', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            Authorization: 'Bearer ' + this.authToken,
+                                        },
+                                        body: JSON.stringify({
+                                            completed_learning_slugs: pending.completed_learning_slugs,
+                                            persona: pending.persona,
+                                        }),
+                                    })
+                                    if (response.ok) {
+                                        data = await response.json()
+                                        local.clearCompletedAfterImport()
+                                    }
+                                }
+                                if (data) {
+                                    for (const slug of (data.completed_learning_slugs || [])) {
+                                        completed[slug] = true
+                                    }
+                                }
+                            } catch (e) {
+                                console.error(e)
+                            }
+                        }
+                    }
+                }
+                this.completed = completed
+                this.recalcPercent()
+            },
+            async markComplete(slug) {
+                if (this.completed[slug] || this.saving[slug]) return
+                this.saving[slug] = true
+                const local = this.localApi()
+
+                if (!this.authToken) {
+                    if (local) local.markLearningCompleteLocal(slug)
+                    this.completed[slug] = true
+                    this.saving[slug] = false
+                    this.recalcPercent()
+                    return
+                }
+
+                try {
+                    const response = await fetch(
+                        this.apiBase + '/learnings/' + encodeURIComponent(slug) + '/complete',
+                        {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: 'Bearer ' + this.authToken,
+                            },
+                        },
+                    )
+                    if (!response.ok) {
+                        const rootData = Alpine.$data(document.body)
+                        if (rootData && rootData.show_alert_dialog) {
+                            await rootData.show_alert_dialog({
+                                title: this.markCompleteErrorTitle || 'Could not mark complete',
+                                content: '<p>' + (this.markCompleteErrorBody || 'Please try again.') + '</p>',
+                            })
+                        }
+                        this.saving[slug] = false
+                        return
+                    }
+                    if (local) local.markLearningCompleteLocal(slug)
+                    this.completed[slug] = true
+                    this.recalcPercent()
+                } catch (e) {
+                    console.error(e)
+                    const rootData = Alpine.$data(document.body)
+                    if (rootData && rootData.show_alert_dialog) {
+                        await rootData.show_alert_dialog({
+                            title: this.markCompleteErrorTitle || 'Could not mark complete',
+                            content: '<p>' + (this.markCompleteErrorBody || 'Please try again.') + '</p>',
+                        })
+                    }
+                }
+                this.saving[slug] = false
+            },
+        }
+    }
+</script>
