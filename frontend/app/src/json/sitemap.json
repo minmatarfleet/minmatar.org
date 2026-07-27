@@ -43,6 +43,15 @@
         "description": "page_finder.alliance.description"
     },
     {
+        "slug": "learning_center",
+        "alt": "icon.skills.alt",
+        "path": "/learning-center/",
+        "icon": "/images/icons/48px-Skills.png",
+        "publish": true,
+        "description": "page_finder.learning_center.description",
+        "keywords": ["learning", "guides", "AIR", "certificates", "onboarding"]
+    },
+    {
         "slug": "alliance.story",
         "path": "/alliance/story/",
         "publish": true,

@@ -1675,3 +1675,71 @@ export interface CharacterMembership {
     missing_skills:     boolean;
     missing_assets:     boolean;
 }
+
+export type LearningPersona = 'alliance' | 'militia' | 'other'
+
+export type LearningContentKind =
+    | 'guide'
+    | 'blog'
+    | 'page'
+    | 'youtube'
+    | 'external'
+    | 'other'
+
+export interface LearningItem {
+    slug:                   string;
+    title:                  string;
+    summary:                string;
+    url:                    string;
+    content_kind:           LearningContentKind;
+    thumbnail_url:          string;
+    estimated_minutes:      number | null;
+    order:                  number;
+}
+
+export interface LearningCertificate {
+    slug:                   string;
+    title:                  string;
+    summary:                string;
+    sort_order:             number;
+    personas:               LearningPersona[];
+    learnings:              LearningItem[];
+    learning_count:         number;
+}
+
+export interface LearningCertificateAward {
+    slug:                   string;
+    title:                  string;
+    awarded_at:             string;
+}
+
+export interface LearningPersonaRecommendation {
+    persona:                LearningPersona;
+    reason_key:             string;
+    corp_type:              string | null;
+}
+
+export interface LearningPersonaResponse {
+    persona:                LearningPersona;
+    confirmed:              boolean;
+}
+
+export interface LearningMeResponse {
+    persona:                LearningPersona | null;
+    persona_confirmed:      boolean;
+    completed_learning_slugs: string[];
+    awards:                 LearningCertificateAward[];
+}
+
+export interface LearningCompleteResponse {
+    learning_slug:          string;
+    completed:              boolean;
+    newly_awarded:          LearningCertificateAward[];
+}
+
+export interface LearningImportResponse {
+    imported_slugs:         string[];
+    persona:                LearningPersona | null;
+    completed_learning_slugs: string[];
+    awards:                 LearningCertificateAward[];
+}

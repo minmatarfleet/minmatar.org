@@ -1,0 +1,324 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { LearningCertificate } from '@dtypes/api.minmatar.org'
+import { getLearningCoverImage, isExternalLearningUrl } from '@helpers/learning'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Button from '@components/blocks/Button.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+
+interface Props {
+    certificate: LearningCertificate
+    completed_slugs: string[]
+    auth_token: string
+    percent: number
+}
+
+const {
+    certificate,
+    completed_slugs,
+    auth_token,
+    percent,
+} = Astro.props
+
+const progress_label = t('learning_center.certificate.progress')
+
+const config_json = JSON.stringify({
+    authToken: auth_token,
+    completedSlugs: completed_slugs,
+    learningSlugs: certificate.learnings.map((l) => l.slug),
+    percent: percent,
+    progressLabel: progress_label,
+    openedDialogTitle: t('learning_center.learning.opened_title'),
+    openedDialogBody: t('learning_center.learning.opened_body'),
+    markCompleteErrorTitle: t('learning_center.learning.mark_complete_error_title'),
+    markCompleteErrorBody: t('learning_center.learning.mark_complete_error_body'),
+    tipAcceptLabel: t('learning_center.learning.open'),
+    tipCancelLabel: t('cancel'),
+})
+---
+
+<div
+    class="[ learning-certificate-detail ]"
+    data-config={config_json}
+    data-api-url={import.meta.env.API_URL}
+    x-data="learningCertificateDetail()"
+>
+    <Flexblock gap="var(--space-l)">
+        <Flexblock gap="var(--space-2xs)">
+            <p class="[ excerpt ]">{certificate.summary}</p>
+            <p>
+                <span x-text="progressLabel + ': ' + percent + '%'"></span>
+                <span x-show="percent >= 100" x-cloak> — {t('learning_center.certificate.complete')}</span>
+            </p>
+            <div class="[ progress-bar ]" aria-hidden="true">
+                <div class="[ progress-bar__fill ]" x-bind:style="'width: ' + percent + '%'"></div>
+            </div>
+        </Flexblock>
+
+        <Flexblock gap="var(--space-xs)">
+            {certificate.learnings.map((learning) => {
+                const external = isExternalLearningUrl(learning.url)
+                const href = learning.url
+                const cover = getLearningCoverImage(learning.slug)
+                return (
+                    <ComponentBlock
+                        class="[ learning-card ]"
+                        padding_block="0"
+                        padding_inline="0"
+                    >
+                        <div class="[ learning-card__layout ]">
+                            <div class="[ learning-card__media ]" aria-hidden="true">
+                                <img src={cover} alt="" loading="lazy" />
+                            </div>
+                            <div class="[ learning-card__main ]">
+                                <div class="[ learning-card__copy ]">
+                                    <div class="[ learning-card__meta ]">
+                                        <span class="[ kind ]">{learning.content_kind}</span>
+                                        {external &&
+                                            <span class="[ kind external ]">
+                                                {t('learning_center.learning.external')}
+                                            </span>
+                                        }
+                                        {learning.estimated_minutes != null &&
+                                            <span class="[ meta ]">
+                                                {learning.estimated_minutes} {t('learning_center.minutes')}
+                                            </span>
+                                        }
+                                    </div>
+                                    <h3>{learning.title}</h3>
+                                    {learning.summary && <p>{learning.summary}</p>}
+                                </div>
+                                <div class="[ learning-card__actions ]">
+                                    {/* No href: avoid <a target=_blank> racing Alpine tip modal */}
+                                    <Button
+                                        class="[ learning-card__open ]"
+                                        size="sm"
+                                        type="button"
+                                        x-on:click.prevent={`openLearning(${JSON.stringify(href)})`}
+                                    >
+                                        {t('learning_center.learning.open')}
+                                    </Button>
+                                    <button
+                                        type="button"
+                                        class="[ learning-card__complete ]"
+                                        x-show={'!completed["' + learning.slug + '"]'}
+                                        x-cloak
+                                        x-bind:disabled={'saving["' + learning.slug + '"]'}
+                                        x-on:click={'markComplete("' + learning.slug + '")'}
+                                    >
+                                        {t('learning_center.learning.mark_complete')}
+                                    </button>
+                                    <span
+                                        class="[ done ]"
+                                        x-show={'completed["' + learning.slug + '"]'}
+                                        x-cloak
+                                    >
+                                        {t('learning_center.learning.completed')}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </ComponentBlock>
+                )
+            })}
+        </Flexblock>
+    </Flexblock>
+</div>
+
+<style lang="scss">
+    [x-cloak] {
+        display: none !important;
+    }
+
+    h3 {
+        margin: 0;
+        font-size: var(--step-0);
+        line-height: 1.25;
+    }
+
+    .excerpt {
+        margin: 0;
+        color: var(--fleet-yellow);
+    }
+
+    .learning-certificate-detail {
+        // Match guide SEO/share cards (1200×630 / ~1.91:1) so thumbs crop less aggressively
+        --learning-cover-aspect: 1200 / 630;
+    }
+
+    .learning-card__layout {
+        display: grid;
+        grid-template-columns: minmax(200px, 34%) minmax(0, 1fr);
+        gap: 0;
+        align-items: stretch;
+        min-height: 0;
+    }
+
+    .learning-card__media {
+        overflow: hidden;
+        background: rgba(0, 0, 0, 0.35);
+        border-right: solid 1px var(--border-color);
+        align-self: stretch;
+        width: 100%;
+        display: flex;
+        align-items: center;
+
+        img {
+            display: block;
+            width: 100%;
+            height: auto;
+            aspect-ratio: var(--learning-cover-aspect);
+            max-height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+    }
+
+    .learning-card__main {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: var(--space-s);
+        padding: var(--space-s);
+        min-width: 0;
+    }
+
+    .learning-card__copy {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+
+        p {
+            margin: 0;
+            color: var(--fleet-yellow);
+            font-size: var(--step--1);
+            line-height: 1.4;
+        }
+    }
+
+    .learning-card__meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-2xs);
+    }
+
+    .learning-card__actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-xs);
+    }
+
+    .learning-card__open {
+        flex: 0 0 auto;
+    }
+
+    .learning-card__complete {
+        appearance: none;
+        border: 0;
+        background: transparent;
+        color: var(--highlight);
+        font: inherit;
+        font-size: var(--step--1);
+        padding: 0;
+        cursor: pointer;
+        text-decoration: underline;
+        text-underline-offset: 0.15em;
+
+        &:hover,
+        &:focus-visible {
+            color: var(--fleet-yellow);
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: wait;
+        }
+    }
+
+    .kind {
+        font-size: var(--step--2);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--highlight);
+
+        &.external {
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .meta {
+        font-size: var(--step--2);
+        color: var(--muted-color, rgba(255, 255, 255, 0.55));
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+
+        &::before {
+            content: '·';
+            margin-right: var(--space-2xs);
+            color: rgba(255, 255, 255, 0.35);
+        }
+    }
+
+    .done {
+        color: var(--highlight);
+        font-size: var(--step--1);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .progress-bar {
+        width: 100%;
+        max-width: 28rem;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.22);
+
+        &__fill {
+            height: 100%;
+            background: var(--fleet-red);
+            transition: width 0.2s ease;
+        }
+    }
+
+    @media (max-width: 720px) {
+        .learning-card__layout {
+            grid-template-columns: 1fr;
+        }
+
+        .learning-card__media {
+            border-right: 0;
+            border-bottom: solid 1px var(--border-color);
+            // Full-width SEO frame; avoid tall max-height crops that hide the share card
+            max-height: none;
+
+            img {
+                max-height: none;
+            }
+        }
+
+        .learning-card__actions {
+            flex-direction: column;
+            align-items: stretch;
+            width: 100%;
+            gap: var(--space-2xs);
+        }
+
+        .learning-card__open {
+            width: 100%;
+            flex: 0 0 auto;
+        }
+
+        .learning-card__complete,
+        .done {
+            width: 100%;
+            flex: 0 0 auto;
+            text-align: center;
+            padding-block: var(--space-2xs);
+        }
+    }
+</style>

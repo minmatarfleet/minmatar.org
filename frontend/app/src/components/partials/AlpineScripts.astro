@@ -6,6 +6,10 @@ export const AlertDialogXData = `
     alert_dialog_title: '',
     alert_dialog_content: '',
     alert_dialog_return_on_accept: true,
+    alert_dialog_accept_href: '',
+    alert_dialog_accept_label: '',
+    alert_dialog_cancel_label: '',
+    alert_dialog_show_cancel: false,
     alert_dialog_hx: {},
     alert_dialog_partial: false,
     show_alert_dialog(args) {
@@ -14,6 +18,10 @@ export const AlertDialogXData = `
             content: '',
             partial: '',
             return_on_accept: true,
+            accept_href: '',
+            accept_label: '',
+            cancel_label: '',
+            show_cancel: false,
             hx: {
                 method: 'get',
                 url: false,
@@ -34,6 +42,10 @@ export const AlertDialogXData = `
 
         this.alert_dialog_title = properties.title
         this.alert_dialog_return_on_accept = properties.return_on_accept
+        this.alert_dialog_accept_href = properties.accept_href || ''
+        this.alert_dialog_accept_label = properties.accept_label || (properties.accept_href ? 'Open' : '')
+        this.alert_dialog_cancel_label = properties.cancel_label || ''
+        this.alert_dialog_show_cancel = !!(properties.show_cancel || properties.accept_href)
         this.alert_dialog_partial = properties.partial
         this.alert_dialog_hx = properties.hx
 
@@ -46,6 +58,10 @@ export const AlertDialogXData = `
         return new Promise((resolve) => {
             this.alert_dialog_close().then((result) => {
                 this.alert_dialog_open = false
+                this.alert_dialog_accept_href = ''
+                this.alert_dialog_accept_label = ''
+                this.alert_dialog_cancel_label = ''
+                this.alert_dialog_show_cancel = false
                 resolve(result.action == 'accept' ? this.alert_dialog_return_on_accept : false) 
             })
         })

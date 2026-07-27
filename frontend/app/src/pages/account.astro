@@ -17,11 +17,12 @@ if (user.is_superuser) roles.push(t('administrator'))
 if (user.is_staff) roles.push(t('director'))
 const roles_semantic_list:string = (roles.length > 0 ? semantic_list(lang, roles) : t('default'))
 
-import type { SummaryCharacter, Player } from '@dtypes/api.minmatar.org'
+import type { SummaryCharacter, Player, LearningCertificateAward } from '@dtypes/api.minmatar.org'
 import type { NotificationSubscription, CharacterErrorUI } from '@dtypes/layout_components'
 import { get_characters_summary_sorted, get_character_error_ui } from '@helpers/fetching/characters'
 import { get_current_player } from '@helpers/api.minmatar.org/players'
 import { get_user_subscriptions } from '@helpers/api.minmatar.org/notifications'
+import { get_learning_me } from '@helpers/api.minmatar.org/learning'
 
 let user_permissions:string[] = []
 let pilots:SummaryCharacter[] = []
@@ -31,6 +32,7 @@ let notification_subscriptions:NotificationSubscription[] = []
 let readiness_character_id = 0
 let character_errors:CharacterErrorUI[] = []
 let current_player:Player | null = null
+let learning_awards:LearningCertificateAward[] = []
 
 import { get_user_permissions } from '@helpers/permissions'
 
@@ -52,6 +54,13 @@ try {
 
     get_characters_error = error
     readonly = true
+}
+
+try {
+    const learning_me = await get_learning_me(auth_token as string)
+    learning_awards = learning_me.awards ?? []
+} catch (error) {
+    console.log(error)
 }
 
 try {
@@ -215,6 +224,53 @@ const page_title = t('account.page_title');
             {user_permissions.includes('mumble.view_mumbleaccess') &&
                 <Mumble />
             }
+
+            <ComponentBlock
+                width='narrow'
+                x-data={`{
+                    authToken: ${JSON.stringify(auth_token)},
+                    apiBase: ${JSON.stringify(`${import.meta.env.API_URL}/api/learning`)},
+                    async init() {
+                        try {
+                            const local = window.__learningLocal
+                            if (!local || !this.authToken) return
+                            const pending = local.takePendingForImport()
+                            if (!pending.completed_learning_slugs.length) return
+                            const data = await local.importPendingToServer(
+                                this.apiBase,
+                                this.authToken,
+                                pending,
+                            )
+                            if (data) window.location.reload()
+                        } catch (e) {
+                            console.error(e)
+                        }
+                    },
+                }`}
+            >
+                <Flexblock gap="var(--space-s)">
+                    <h2>{t('learning_center.account.certificates')}</h2>
+                    {learning_awards.length === 0 ? (
+                        <Flexblock gap="var(--space-2xs)">
+                            <p>{t('learning_center.account.empty')}</p>
+                            <Button size="sm" href={translatePath('/learning-center/')}>
+                                {t('learning_center.account.cta')}
+                            </Button>
+                        </Flexblock>
+                    ) : (
+                        <Flexblock gap="var(--space-2xs)">
+                            {learning_awards.map((award) => (
+                                <FlexInline justification="space-between" class="[ w-full ]">
+                                    <a href={translatePath(`/learning-center/certificates/${award.slug}/`)}>
+                                        {award.title}
+                                    </a>
+                                    <small>{new Date(award.awarded_at).toLocaleDateString()}</small>
+                                </FlexInline>
+                            ))}
+                        </Flexblock>
+                    )}
+                </Flexblock>
+            </ComponentBlock>
 
             <Context>
                 {character_errors.length > 0 &&
