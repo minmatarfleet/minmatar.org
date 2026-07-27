@@ -1,8 +1,10 @@
+from datetime import timedelta
+from unittest.mock import patch
+
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.test import Client, RequestFactory
 from django.utils import timezone
-from datetime import timedelta
 
 from app.test import TestCase
 
@@ -170,6 +172,10 @@ class FreightContractsEndpointTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         super().setUp()
+        # Avoid live ESI when EveCharacter rows are created in these tests.
+        public_data = patch("eveonline.signals.update_character_public_data")
+        public_data.start()
+        self.addCleanup(public_data.stop)
         self.corp = EveCorporation.objects.create(
             corporation_id=FREIGHT_CORPORATION_ID,
             name="Freight Corp",
@@ -607,6 +613,10 @@ class FreightContractsStatsEndpointTestCase(TestCase):
     def setUp(self):
         self.client = Client()
         super().setUp()
+        # Avoid live ESI when EveCharacter rows are created in these tests.
+        public_data = patch("eveonline.signals.update_character_public_data")
+        public_data.start()
+        self.addCleanup(public_data.stop)
         self.corp = EveCorporation.objects.create(
             corporation_id=FREIGHT_CORPORATION_ID,
             name="Freight Corp",
