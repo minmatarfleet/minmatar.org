@@ -1,12 +1,16 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { lang, t, translatePath } = i18n(Astro.url)
+const { lang, t } = i18n(Astro.url)
 
-import type { FreightContract } from '@dtypes/api.minmatar.org'
+import type { FreightContract, FreightContractStatus } from '@dtypes/api.minmatar.org'
+import type { TagColors } from '@dtypes/layout_components'
+import { freight_route_label } from '@helpers/fetching/freights'
+import { number_name } from '@helpers/numbers.ts'
+import { format_date_short, format_date_time, humanize_date_diff_single } from '@helpers/date'
 
 interface Props {
-    contract:              FreightContract;
-    init_tooltips:      boolean;
+    contract:       FreightContract;
+    init_tooltips:  boolean;
 }
 
 const {
@@ -14,115 +18,138 @@ const {
     init_tooltips,
 } = Astro.props
 
-import { number_name } from '@helpers/numbers.ts';
-import { format_date_time } from '@helpers/date'
+const STATUS_COLORS: Record<FreightContractStatus, TagColors> = {
+    outstanding: 'fleet-yellow',
+    in_progress: 'alliance-blue',
+    finished: 'green',
+}
 
-const date = format_date_time(lang, contract.status === 'finished' ? contract.date_completed : contract.date_issued)
+const STATUS_TEXT_COLORS: Partial<Record<FreightContractStatus, string>> = {
+    outstanding: 'var(--background)',
+}
 
-import FixedFluid from "@components/compositions/FixedFluid.astro";
-import Flexblock from "@components/compositions/Flexblock.astro";
+const issued_date = format_date_short(lang, contract.date_issued)
+const issued_datetime = format_date_time(lang, contract.date_issued)
+const completed_date = contract.date_completed
+    ? format_date_time(lang, contract.date_completed)
+    : null
+const delivery_duration = contract.date_completed
+    ? humanize_date_diff_single(lang, contract.date_issued, contract.date_completed)
+    : null
+
+const delivery_tooltip = completed_date && delivery_duration
+    ? t('delivery_time')
+        .replace('{date}', completed_date)
+        .replace('{duration}', delivery_duration)
+    : t('awaiting_delivery')
+
+const route_label = freight_route_label(contract.start_location_name, contract.end_location_name)
+const status_color = STATUS_COLORS[contract.status]
+const status_text_color = STATUS_TEXT_COLORS[contract.status]
+
 import FlexInline from "@components/compositions/FlexInline.astro";
 
 import PilotBadge from "@components/blocks/PilotBadge.astro";
 import CharacterPicture from "@components/blocks/CharacterPicture.astro";
 import Tag from '@components/blocks/Tag.astro';
-
-import VolumenIcon from '@components/icons/VolumenIcon.astro';
-import InsuranceIcon from '@components/icons/InsuranceIcon.astro';
-import RewardIcon from '@components/icons/RewardIcon.astro';
-import IndustrialistIcon from '@components/icons/IndustrialistIcon.astro';
 ---
 
-<FixedFluid width='350px' class="[ freight-contract-item ]">
-    <Flexblock gap='var(--space-3xs)'>
+<div class="[ freight-contract-item ]" role="row">
+    <div
+        class="[ freight-contract-item__created ]"
+        role="cell"
+        data-tippy-content={t('date_issued').replace('{date}', issued_datetime)}
+        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+    >
+        <span class="[ whitespace-nowrap ]">{issued_date}</span>
+    </div>
+
+    <div class="[ freight-contract-item__creator ]" role="cell">
         <PilotBadge
             character_id={contract.issuer_id}
             character_name={contract.issuer_character_name}
-            heading={true}
-        >
-            <small
-                class="[ w-fit ]"
-                data-tippy-content={(contract.status === 'finished' ? t('date_completed') : t('date_issued')).replace('{date}', date)}
-                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-            >
-                {t(`contract_${contract.status}` as any) ?? contract.status}
-            </small>
-        </PilotBadge>
-    </Flexblock>
-    <FlexInline gap='var(--space-l)'>
-        <FixedFluid class="[ items-center! basis-[150px] ]" width='32px' gap='var(--space-2xs)'>
-            <div
-                class="[ text-highlight h-[32px] ]"
-                data-tippy-content={t('volumen')}
-                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-            >
-                <VolumenIcon xlink='#volumen_icon' size={32} />
-            </div>
-            <div>
-                <span
-                    data-tippy-content={number_name(contract.volume, lang)}
-                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                >{contract.volume.toLocaleString()}</span> <span>m<sup>3</sup></span>
-            </div>
-        </FixedFluid>
+            size={32}
+            icon_quality={64}
+        />
+    </div>
 
-        <FixedFluid class="[ items-center! basis-[200px] ]" width='32px' gap='var(--space-2xs)'>
-            <div
-                class="[ text-highlight h-[32px] ]"
-                data-tippy-content={t('collateral')}
+    <div class="[ freight-contract-item__route ]" role="cell">
+        <span class="[ text-highlight ]">{route_label}</span>
+    </div>
+
+    <div
+        class="[ freight-contract-item__status ]"
+        role="cell"
+        data-tippy-content={delivery_tooltip}
+        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+    >
+        <Tag
+            text={t(`contract_${contract.status}` as any) ?? contract.status}
+            color={status_color}
+            text_color={status_text_color}
+            narrow={true}
+        />
+    </div>
+
+    <div class="[ freight-contract-item__size ]" role="cell">
+        <span
+            data-tippy-content={number_name(contract.volume, lang)}
+            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+        >{contract.volume.toLocaleString()}</span> <span>m<sup>3</sup></span>
+    </div>
+
+    <div class="[ freight-contract-item__collateral ]" role="cell">
+        <span
+            data-tippy-content={number_name(contract.collateral, lang)}
+            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+        >{contract.collateral.toLocaleString()}</span> <span>ISK</span>
+    </div>
+
+    <div class="[ freight-contract-item__reward ]" role="cell">
+        <span
+            data-tippy-content={number_name(contract.reward, lang)}
+            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+        >{contract.reward.toLocaleString()}</span> <span>ISK</span>
+    </div>
+
+    <div class="[ freight-contract-item__servicing ]" role="cell">
+        {(contract.completed_by_id || contract.completed_by_character_name) ?
+            <FlexInline
+                gap='var(--space-3xs)'
+                class="[ items-center ]"
+                data-tippy-content={contract.completed_by_character_name}
                 x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
             >
-                <InsuranceIcon xlink='#insurance_icon' size={32} />
-            </div>
-            <div>
-                <span
-                    data-tippy-content={number_name(contract.collateral, lang)}
-                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                >{contract.collateral.toLocaleString()}</span> <span>ISK</span>
-            </div>
-        </FixedFluid>
-
-        <FixedFluid class="[ items-center! basis-[200px] ]" width='32px' gap='var(--space-2xs)'>
-            <div
-                class="[ text-highlight h-[32px] ]"
-                data-tippy-content={t('reward')}
-                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-            >
-                <RewardIcon xlink='#reward_icon' size={32} />
-            </div>
-            <div>
-                <span
-                    data-tippy-content={number_name(contract.reward, lang)}
-                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                >{contract.reward.toLocaleString()}</span> <span>ISK</span>
-            </div>
-        </FixedFluid>
-
-        <FixedFluid width='32px' breakpoint='30%' gap='var(--space-2xs)' class="[  items-center! ]">
-            <div
-                class="[ text-highlight h-[32px] ]"
-                data-tippy-content={t('space_trucker')}
-                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-            >
-                <IndustrialistIcon size={32} />
-            </div>
-
-            <FlexInline gap='var(--space-3xs)'>
-                {contract.completed_by_id ?
-                    <div
-                        data-tippy-content={contract.completed_by_character_name}
-                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                    >
-                        <CharacterPicture
-                            character_id={contract.completed_by_id}
-                            character_name={contract.completed_by_character_name ?? ''}
-                            size={24}
-                        />
-                        <div class="[ sr-only ]">{contract.completed_by_character_name}</div>
-                    </div> :
-                    <Tag text={t('not_taken')} />
+                {contract.completed_by_id &&
+                    <CharacterPicture
+                        character_id={contract.completed_by_id}
+                        character_name={contract.completed_by_character_name ?? ''}
+                        size={24}
+                    />
                 }
-            </FlexInline>
-        </FixedFluid>
-    </FlexInline>
-</FixedFluid>
+                <span>{contract.completed_by_character_name}</span>
+            </FlexInline> :
+            <Tag text={t('not_taken')} />
+        }
+    </div>
+</div>
+
+<style lang="scss">
+    .freight-contract-item {
+        display: grid;
+        grid-template-columns: minmax(6.5rem, 0.8fr) minmax(10rem, 1.4fr) minmax(8rem, 1fr) minmax(7rem, 0.9fr) minmax(6rem, 0.8fr) minmax(7rem, 1fr) minmax(7rem, 1fr) minmax(7rem, 1fr);
+        gap: var(--space-s);
+        align-items: center;
+        padding-block: var(--space-2xs);
+        padding-inline: var(--space-2xs);
+        border-bottom: solid 1px var(--border-color);
+        font-size: var(--step--1);
+    }
+
+    @media (max-width: 72rem) {
+        .freight-contract-item {
+            grid-template-columns: minmax(6rem, 0.7fr) minmax(9rem, 1.2fr) minmax(7rem, 1fr) minmax(6rem, 0.8fr) minmax(5rem, 0.7fr) minmax(6rem, 0.9fr) minmax(6rem, 0.9fr) minmax(6rem, 0.9fr);
+            min-width: 70rem;
+        }
+    }
+</style>

@@ -19,6 +19,7 @@ class FreightContractResponse(BaseModel):
     issuer_character_name: Optional[str] = None
     completed_by_id: Optional[int] = None
     completed_by_character_name: Optional[str] = None
+    updated_at: Optional[str] = None
 
 
 class FreightCharacterStatResponse(BaseModel):
@@ -27,3 +28,12 @@ class FreightCharacterStatResponse(BaseModel):
     primary_character_id: Optional[int] = None
     primary_character_name: Optional[str] = None
     completed_contracts_count: int
+
+
+class FreightContractsStatsResponse(BaseModel):
+    """Aggregate metrics for the freight contracts list header."""
+
+    active_count: int
+    average_delivery_seconds: Optional[int] = None
+    active_haulers_count: int
+    window_days: int = 30

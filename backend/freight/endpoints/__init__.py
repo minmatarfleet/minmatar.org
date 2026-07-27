@@ -4,6 +4,12 @@ from freight.endpoints.get_contracts import router as get_contracts_router
 from freight.endpoints.get_contracts_history import (
     router as get_contracts_history_router,
 )
+from freight.endpoints.get_contracts_history_csv import (
+    router as get_contracts_history_csv_router,
+)
+from freight.endpoints.get_contracts_stats import (
+    router as get_contracts_stats_router,
+)
 from freight.endpoints.get_character_statistics import (
     router as get_character_statistics_router,
 )
@@ -11,6 +17,8 @@ from freight.endpoints.get_character_statistics import (
 router = Router(tags=["Freight"])
 router.add_router("", get_contracts_router)
 router.add_router("contracts", get_contracts_history_router)
+router.add_router("contracts", get_contracts_history_csv_router)
+router.add_router("contracts", get_contracts_stats_router)
 router.add_router("", get_character_statistics_router)
 
 __all__ = ["router"]

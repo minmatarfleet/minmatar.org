@@ -48,6 +48,7 @@ import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import FreightFAQs from '@components/blocks/FreightFAQs.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import FreightForm from '@components/blocks/FreightForm.astro'
+import Button from '@components/blocks/Button.astro'
 
 const page_title = t('freight.calculator.page_title');
 ---
@@ -78,6 +79,14 @@ const page_title = t('freight.calculator.page_title');
                 <PageTitle>
                     {page_title}
                 </PageTitle>
+            </FlexInline>
+            <FlexInline>
+                <Button
+                    href={translatePath('/market/freight/contracts/')}
+                    size='sm'
+                >
+                    {t('view_freight_contracts')}
+                </Button>
             </FlexInline>
         </FlexInline>
 
