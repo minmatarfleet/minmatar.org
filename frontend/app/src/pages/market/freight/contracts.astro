@@ -2,85 +2,51 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { FreightContractLocation } from '@dtypes/layout_components'
-import type { SpaceTruckerStatistics } from '@dtypes/api.minmatar.org'
-import { fetch_freight_contracts } from '@helpers/fetching/freights'
-import { get_characters_statistics } from '@helpers/api.minmatar.org/freights'
-
-let fetching_error: Error | false = false
-let location_contracts:FreightContractLocation[] = []
-let space_truckers:SpaceTruckerStatistics[] = []
-
-try {
-    location_contracts = await fetch_freight_contracts()
-    space_truckers = await get_characters_statistics()
-} catch (error) {
-    fetching_error = error
-}
-
-let active_location_name = Astro.url.searchParams.get('location_name') ?? (location_contracts[0]?.location_name ?? '')
-
-if (location_contracts.length > 0) {
-    if (active_location_name === '' || !location_contracts.find(location => location.location_name === active_location_name) )
-        active_location_name = location_contracts[0].location_name
-}
-
-const active_contracts_location = location_contracts.find(location => location.location_name === active_location_name)
-const contracts_count = active_contracts_location?.destinations.reduce((c, destination) => c + destination.contracts.length, 0) ?? 0
-const contracts_count_text = t(contracts_count != 1 ? 'showing_orders_plural' : 'showing_orders_singular').replace('{count}', String(contracts_count))
-
-const non_active_contracts_location = location_contracts.filter(location => location.location_name !== active_location_name)
-
 import { query_string } from '@helpers/string';
 
-const FREIGHT_CONTRACTS_PARTIAL_URL = translatePath(`/partials/freight_contracts_component${active_location_name ? `?${query_string({
-    location_name: active_location_name
+const location_name = Astro.url.searchParams.get('location_name')
+const FREIGHT_CONTRACTS_PARTIAL_URL = translatePath(`/partials/freight_contracts_component${location_name ? `?${query_string({
+    location_name,
 })}` : ''}`)
-
-import {
-    get_location_video_cover,
-    get_location_video_cover_thumb,
-    get_location_cover,
-    get_location_cover_990,
-} from '@helpers/covers'
 
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
-import PageSubheader from '@components/page/PageSubheader.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
-import Input from '@components/blocks/Input.astro'
-import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-import FreightContractsTable from '@components/blocks/FreightContractsTable.astro'
-import SpaceTruckersReel from '@components/blocks/SpaceTruckersReel.astro'
-import Button from '@components/blocks/Button.astro'
-
-import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
+import Breadcrumb from '@components/blocks/Breadcrumb.astro'
+import FreightContractsSkeleton from '@components/blocks/FreightContractsSkeleton.astro'
 
 const page_title = t('freight_contracts.page_title');
+const breadcrumb_items = [
+    { label: t('freight.calculator.page_title'), href: translatePath('/market/freight/calculator/') },
+    { label: t('freight_contracts.page_title') },
+]
+const contracts_count_text = t('showing_contracts_plural').replace('{count}', '0')
 ---
 
 <Viewport
     title={page_title}
     meta_description={t('freight_contracts.meta_description')}
+    components={{
+        tippy: true,
+    }}
 >
     <PageWide
         cover={{
-			video: get_location_video_cover(active_location_name) ?? undefined,
-			video_thumb: get_location_video_cover_thumb(active_location_name) ?? undefined,
-            image: get_location_cover(active_location_name) ?? '/images/freight-service-cover.jpg',
-            image_990: get_location_cover_990(active_location_name) ?? '/images/freight-service-cover.jpg',
+            image: '/images/freight-service-cover.jpg',
+            image_990: '/images/freight-service-cover.jpg',
             animated: false,
             scrollable: true,
             overlay: true,
         }}
         sticky={true}
         x-data={`{
-            contracts_count: ${contracts_count},
+            contracts_count: 0,
+            last_updated_text: '',
             item_name_filter: '',
             contracts_plural: '${t('showing_contracts_plural')}',
             contracts_singular: '${t('showing_contracts_singular')}',
@@ -104,102 +70,84 @@ const page_title = t('freight_contracts.page_title');
         }`}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
-            <Flexblock gap="var(--space-3xs)">
-                <PageTitle>
-                    {page_title}
-                </PageTitle>
-                <small x-text="(contracts_count != 1 ? contracts_plural : contracts_singular).replace('{count}', String(contracts_count))">{contracts_count_text}</small>
+            <Flexblock gap="var(--space-s)">
+                <Breadcrumb items={breadcrumb_items} />
+                <Flexblock gap="var(--space-3xs)">
+                    <PageTitle>
+                        {page_title}
+                    </PageTitle>
+                    <small x-text="(contracts_count != 1 ? contracts_plural : contracts_singular).replace('{count}', String(contracts_count))">{contracts_count_text}</small>
+                    <small x-show="last_updated_text" x-text="last_updated_text"></small>
+                </Flexblock>
             </Flexblock>
-            <FlexInline>
-                <Input type="text"
-                    placeholder={t('search')}
-                    x-model="item_name_filter"
-                    x-on:keyup="setTimeout(function () { contracts_count = countVisibleElements('.freight-contract-item') })"
-                    x-init="$el.focus()"
-                    width='250px'
-                >
-                    <MagnifierIcon slot="icon" />
-                </Input>
-            </FlexInline>
         </FlexInline>
 
-        <PageSubheader slot="subheader">
-            <Button
-                href={translatePath('/market/freight/contracts/history/')}
-                size='sm'
-            >
-                {t('view_contract_history')}
-            </Button>
-
-            <Button
-                href={translatePath('/market/freight/calculator/')}
-                size='sm'
-            >
-                {t('freight.calculator.page_title')}
-            </Button>
-        </PageSubheader>
-
-        {fetching_error !== false ?
-            <ErrorRefetch
-                args={{
-                    partial: FREIGHT_CONTRACTS_PARTIAL_URL,
-                    error: fetching_error,
-                    delay: 0,
-                }}
-            />
-            :
-            <>{active_contracts_location !== undefined ?
-                <FreightContractsTable
-                    active_contracts_location={active_contracts_location}
-                    non_active_contracts_location={non_active_contracts_location}
-                    init_tooltips={false}
-                />
-                :
-                <p>{t('no_freighter_contracts')}</p>
-            }</>
-            <SpaceTruckersReel space_truckers={space_truckers} />
-        }
+        <div
+            id="freight-contracts-slot"
+            data-freight-contracts-deferred="1"
+            hx-get={FREIGHT_CONTRACTS_PARTIAL_URL}
+            hx-trigger="load"
+            hx-swap="innerHTML"
+            hx-indicator=".loader"
+            aria-busy="true"
+            aria-live="polite"
+        >
+            <FreightContractsSkeleton />
+        </div>
     </PageWide>
-
-    <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="0" height="0">
-        <defs>
-            <symbol id="volumen_icon" width="128" height="128">
-                <style>
-                    .s1 { opacity: .25; }
-                    .s2 { opacity: .6; }
-                </style>
-                <path class="s0" d="m46.85 91.71l-39.75-22.95v-45.97l39.75 22.95z" fill="currentColor" />
-                <path class="s1" d="m46.85 45.74l39.69-22.91-39.69-22.92-39.69 22.92z" fill="currentColor" />
-                <path class="s2" d="m46.85 45.74v45.97l39.75-22.95v-45.96z" fill="currentColor" />
-            </symbol>
-            <symbol id="insurance_icon" width="128" height="128">
-                <path
-                    d="M25.005 19v51.662l.004.157c1.174 21.023 36.346 36.998 37.842 37.667l1.148.514 1.147-.514c1.5-.669 36.673-16.644 37.846-37.668L102.995 19zm5.625 51.58V24.623h66.74V70.58c-.954 15.707-27.48 29.383-33.371 32.232-5.891-2.849-32.412-16.525-33.369-32.232"
-                    fill="currentColor"
-                    fill-rule="evenodd"
-                />
-                <path
-                    d="M85.134 64.531v3.63h-1.618v-8.847l-1.601 1.601h-.019v7.246l-2.024 2.026v1.549l-5.232-1.768v-1.949l-4.032-2.374v-7.462l.936-3.494v-7.416l1.114-4.173v-9.564l-3.834-.682-3.835.682V43.1l2.048 17.011v9.609l-3.035-2.613-3.036 2.61v-9.606L63.014 43.1v-9.564l-3.834-.682-3.835.682V43.1l1.115 4.173v7.416l.935 3.498v7.458l-4.037 2.374v1.949l-5.229 1.768v-1.549l-2.024-2.026v-7.246h-.017l-1.603-1.601v8.847h-1.618v-3.63l-1.366-1.367v15.33l1.366 1.365V77.2h2.084l13.357 2.056V77.2h2.156v1.82l3.538 2.126 3.534-2.126V77.2h2.158v2.056L83.05 77.2h2.084v2.659l1.366-1.365v-15.33z"
-                    fill="currentColor"
-                />
-            </symbol>
-            <symbol id="reward_icon" width="128" height="128">
-                <path fill="currentColor" fill-rule="evenodd" d="
-                    M89.297 73.456
-                    c18.684-5.988 18.07-24.989 18.07-24.989V33.555H95.432l-.013 6.648h5.324v8.264
-                    c0 8.594-2.55 12.955-6.963 15.809l-.123.227a63.78 63.78 0 0 1-.953 2.646l-.1.263-.137.248z
-
-                    M38.704 73.456
-                    c-18.685-5.988-18.071-24.989-18.071-24.989V33.555h11.936l.013 6.648h-5.324v8.264
-                    c0 8.594 2.55 12.955 6.963 15.809l.123.227c.307.92.627 1.798.952 2.646l.101.263.136.248z
-
-                    M37.448 19.142
-                    v29.185c0 7.941 1.357 12.966 3.315 18.068l.05.132 4.468 8.17.055.082
-                    c4.862 7.206 7.348 8.917 11.418 10.226l.001 9.848-15.265 6.644v7.36h45.44v-7.36
-                    l-15.265-6.644v-9.848c4.071-1.309 6.557-3.02 11.418-10.226l.055-.082
-                    4.468-8.17.051-.132c1.958-5.102 3.314-10.127 3.314-18.068V19.142z
-                "/>
-            </symbol>
-        </defs>
-    </svg>
 </Viewport>
+
+<script>
+    function refreshFreightContractsSlot() {
+        const slot = document.getElementById('freight-contracts-slot')
+        if (!slot)
+            return
+
+        slot.setAttribute('aria-busy', 'false')
+        if (typeof htmx !== 'undefined')
+            htmx.process(slot)
+        if (typeof Alpine !== 'undefined')
+            Alpine.initTree(slot)
+        if (typeof tippy === 'function') {
+            tippy('#freight-contracts-slot [data-tippy-content]', {
+                delay: [100, 200],
+                arrow: true,
+            })
+        }
+    }
+
+    function isFreightContractsRequest(event: any): boolean {
+        const path = String(
+            event.detail?.pathInfo?.requestPath
+                || event.detail?.xhr?.responseURL
+                || event.detail?.elt?.getAttribute?.('hx-get')
+                || '',
+        )
+        return path.includes('freight_contracts_component')
+    }
+
+    function bindFreightContractsDeferred() {
+        const slot = document.getElementById('freight-contracts-slot')
+        if (!slot || slot.dataset.bound === '1')
+            return
+        slot.dataset.bound = '1'
+
+        document.body.addEventListener('htmx:afterSwap', (event: any) => {
+            if (!isFreightContractsRequest(event))
+                return
+            refreshFreightContractsSlot()
+        })
+
+        document.body.addEventListener('htmx:afterRequest', (event: any) => {
+            if (!isFreightContractsRequest(event))
+                return
+            if (!event.detail?.successful) {
+                const root = document.getElementById('freight-contracts-slot')
+                root?.setAttribute('aria-busy', 'false')
+            }
+        })
+    }
+
+    bindFreightContractsDeferred()
+    document.addEventListener('astro:page-load', bindFreightContractsDeferred)
+</script>

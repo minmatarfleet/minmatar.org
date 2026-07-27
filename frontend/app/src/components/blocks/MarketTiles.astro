@@ -39,17 +39,14 @@ import FreightServiceEvEIcon from '@components/icons/FreightServiceEvEIcon.astro
         </Tile>
 
         <Tile
-            title={t('freight.page_title')}
-            description={t('freight.leading_text')}
+            title={t('services.page_title')}
+            description={t('services.leading_text')}
             cover='/images/freight-tile-background.webp'
         >
             <FreightServiceEvEIcon class="[ ml-[-7px] ]" slot="icon" />
 
             <Button size='sm' href={translatePath('/market/freight/calculator/')}>
-                {t('freight.calculator.page_title')}
-            </Button>
-            <Button size='sm' href={translatePath('/market/freight/contracts/')}>
-                {t('freight_contracts.page_title')}
+                {t('freight_service')}
             </Button>
         </Tile>
 

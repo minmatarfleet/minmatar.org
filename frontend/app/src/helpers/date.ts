@@ -83,6 +83,42 @@ export const humanize_date_diff_single = (locale:Locales, from:Date, to:Date):st
     return t('just_now')
 }
 
+export const humanize_duration_seconds = (locale:Locales, seconds:number):string => {
+    const t = useTranslations(locale)
+    const duration = moment.duration(Math.max(0, seconds), 'seconds')
+
+    if (duration.asYears() >= 1) {
+        const years = Math.floor(duration.asYears())
+        return `${years} ${years != 1 ? t('years') : t('year')}`
+    }
+
+    if (duration.asMonths() >= 1) {
+        const months = Math.floor(duration.asMonths())
+        return `${months} ${months != 1 ? t('months') : t('month')}`
+    }
+
+    if (duration.asDays() >= 1) {
+        const days = Math.floor(duration.asDays())
+        return `${days} ${days != 1 ? t('days').toLowerCase() : t('day').toLowerCase()}`
+    }
+
+    if (duration.asHours() >= 1) {
+        const hours = Math.floor(duration.asHours())
+        return `${hours} ${hours != 1 ? t('hours').toLowerCase() : t('hour').toLowerCase()}`
+    }
+
+    if (duration.asMinutes() >= 1) {
+        const minutes = Math.floor(duration.asMinutes())
+        return `${minutes} ${minutes != 1 ? t('minutes').toLowerCase() : t('minute').toLowerCase()}`
+    }
+
+    const secs = Math.floor(duration.asSeconds())
+    if (secs > 0)
+        return `${secs} ${secs != 1 ? t('seconds').toLowerCase() : t('second').toLowerCase()}`
+
+    return t('just_now')
+}
+
 export const minutes_to = (datetime:Date):number => {
     var from_moment = moment(new Date(datetime))
     var to_moment = moment(new Date())

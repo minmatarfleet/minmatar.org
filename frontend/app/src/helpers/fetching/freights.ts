@@ -1,10 +1,17 @@
-import { useTranslations } from '@i18n/utils';
-const t = useTranslations('en');
-
-import type { FreightRoutesData, FreightContractLocation } from '@dtypes/layout_components'
-import type { FreightRoute, FreightContract } from '@dtypes/api.minmatar.org'
+import type { FreightRoutesData } from '@dtypes/layout_components'
+import type { FreightContract } from '@dtypes/api.minmatar.org'
 
 import { get_routes, get_contracts } from '@helpers/api.minmatar.org/freights'
+
+const STATUS_SORT_ORDER: Record<string, number> = {
+    outstanding: 0,
+    in_progress: 1,
+    finished: 2,
+}
+
+export function freight_route_label(start: string, end: string): string {
+    return `${start} → ${end}`
+}
 
 export async function fetch_freight_routes() {
     const api_freight_routes = await get_routes()
@@ -33,44 +40,39 @@ export async function fetch_freight_routes() {
     return freight_routes_data
 }
 
-export async function fetch_freight_contracts(history:boolean = false) {
+export async function fetch_freight_contracts(history: boolean = false): Promise<FreightContract[]> {
     const contracts = await get_contracts(history)
     const valid_contracts = contracts.filter(contract => contract.issuer_id > 0)
-    const routes: Record<string, Record<string, FreightContract[]>> = {}
-    const contracts_by_locations:FreightContractLocation[] = []
-    const LOCATION_TRANSLATION = {
-        'Structure': 'Amamake - 5 times nearly AT winners',
-        'Jita': 'Jita IV - Moon 4 - Caldari Navy Assembly Plant',
-    }
-    
-    valid_contracts.forEach(contract => {
-        const start_location_name = LOCATION_TRANSLATION[contract.start_location_name] ?? contract.start_location_name
-        const end_location_name = LOCATION_TRANSLATION[contract.end_location_name] ?? contract.end_location_name
 
-        if (!routes[start_location_name]) routes[start_location_name] = {}
-        if (!routes[start_location_name][end_location_name]) routes[start_location_name][end_location_name] = []
+    return valid_contracts.sort((a, b) => {
+        const status_diff = (STATUS_SORT_ORDER[a.status] ?? 99) - (STATUS_SORT_ORDER[b.status] ?? 99)
+        if (status_diff !== 0)
+            return status_diff
 
-        routes[start_location_name][end_location_name].push(contract)
+        const a_date = new Date(a.status === 'finished' ? (a.date_completed ?? a.date_issued) : a.date_issued).getTime()
+        const b_date = new Date(b.status === 'finished' ? (b.date_completed ?? b.date_issued) : b.date_issued).getTime()
+        return b_date - a_date
     })
+}
 
-    for (let start_location_name in routes) {
-        const route_contracts_by_end_location_name = routes[start_location_name]
-        const location:FreightContractLocation = {
-            location_name: start_location_name,
-            destinations: [],
-        }
+export function filter_freight_contracts_by_location(
+    contracts: FreightContract[],
+    location_name: string | null,
+): FreightContract[] {
+    if (!location_name)
+        return contracts
 
-        for (let end_location_name in route_contracts_by_end_location_name) {
-            const route_contracts = route_contracts_by_end_location_name[end_location_name]
+    const needle = location_name.toLowerCase()
 
-            location.destinations.push({
-                location_name: end_location_name,
-                contracts: route_contracts,
-            })
-        }
+    return contracts.filter(contract => {
+        const start = contract.start_location_name.toLowerCase()
+        const end = contract.end_location_name.toLowerCase()
 
-        contracts_by_locations.push(location)
-    }
-
-    return contracts_by_locations
+        return (
+            needle.includes(start)
+            || needle.includes(end)
+            || start.includes(needle)
+            || end.includes(needle)
+        )
+    })
 }

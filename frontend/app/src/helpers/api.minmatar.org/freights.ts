@@ -1,4 +1,4 @@
-import type { FreightRoute, RouteCost, FreightContract, SpaceTruckerStatistics } from '@dtypes/api.minmatar.org'
+import type { FreightRoute, RouteCost, FreightContract, SpaceTruckerStatistics, FreightContractsStats } from '@dtypes/api.minmatar.org'
 import { get_error_message } from '@helpers/string'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/freight`
@@ -95,6 +95,35 @@ export async function get_contracts(history:boolean = false) {
     }
 }
 
+export async function get_contracts_stats() {
+    const headers = {
+        'Content-Type': 'application/json',
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/contracts/stats`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers
+        })
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ), {
+                cause: response.status
+            });
+        }
+
+        return await response.json() as FreightContractsStats;
+    } catch (error) {
+        throw new Error(`Error fetching freight contracts stats: ${error.message}`, { cause: error.cause });
+    }
+}
+
 export async function get_characters_statistics() {
     const headers = {
         'Content-Type': 'application/json',
@@ -124,4 +153,8 @@ export async function get_characters_statistics() {
     } catch (error) {
         throw new Error(`Error fetching freight contracts: ${error.message}`, { cause: error.cause });
     }
+}
+
+export function freight_contracts_history_csv_url(): string {
+    return '/api/freight/contracts/history.csv'
 }

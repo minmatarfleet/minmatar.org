@@ -1206,12 +1206,20 @@ export interface FreightContract {
     issuer_character_name:          string;
     completed_by_id:                number;
     completed_by_character_name:    string | null;
+    updated_at:                     Date | null;
 }
 
 export interface SpaceTruckerStatistics {
     primary_character_id:       number;
     primary_character_name:     string;
     completed_contracts_count:  number;
+}
+
+export interface FreightContractsStats {
+    active_count:               number;
+    average_delivery_seconds:   number | null;
+    active_haulers_count:       number;
+    window_days:                number;
 }
 
 export const blueprint_owner_entity = [ 'character', 'corporation'  ] as const

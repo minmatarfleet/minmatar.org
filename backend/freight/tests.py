@@ -2,9 +2,11 @@ from django.contrib import admin
 from django.contrib.auth.models import User
 from django.test import Client, RequestFactory
 from django.utils import timezone
+from datetime import timedelta
 
 from app.test import TestCase
 
+from eveonline.helpers.characters import set_primary_character
 from eveonline.models import (
     EveCharacter,
     EveCorporation,
@@ -229,6 +231,306 @@ class FreightContractsEndpointTestCase(TestCase):
         self.assertEqual(data[0]["issuer_id"], 88888)
         self.assertEqual(data[0]["issuer_character_name"], "Contract Issuer")
 
+    def test_get_active_contracts_uses_location_short_names(self):
+        EveLocation.objects.create(
+            location_id=60003760,
+            location_name="Jita IV - Moon 4 - Caldari Navy Assembly Plant",
+            short_name="Jita",
+            solar_system_id=30000142,
+            solar_system_name="Jita",
+            freight_active=True,
+        )
+        EveLocation.objects.create(
+            location_id=1022167642188,
+            location_name="Amamake - 5 times nearly AT winners",
+            short_name="Amamake",
+            solar_system_id=30002053,
+            solar_system_name="Amamake",
+            freight_active=True,
+            is_structure=True,
+        )
+        EveCorporationContract.objects.create(
+            contract_id=77777,
+            corporation=self.corp,
+            type=FREIGHT_CONTRACT_TYPE,
+            status="outstanding",
+            issuer_id=99999,
+            assignee_id=FREIGHT_CORPORATION_ID,
+            start_location_id=60003760,
+            end_location_id=1022167642188,
+            volume=10000,
+            collateral=1000000,
+            reward=10000,
+            date_issued=timezone.now(),
+        )
+        response = self.client.get(
+            f"{BASE_URL}/contracts",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        data = response.json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["start_location_name"], "Jita")
+        self.assertEqual(data[0]["end_location_name"], "Amamake")
+
+    def test_get_contracts_history_csv(self):
+        issuer = EveCharacter.objects.create(
+            character_id=11111,
+            character_name="Issuer Pilot",
+            corporation_id=FREIGHT_CORPORATION_ID,
+        )
+        hauler = EveCharacter.objects.create(
+            character_id=22222,
+            character_name="Hauler Alt",
+            corporation_id=FREIGHT_CORPORATION_ID,
+        )
+        EveLocation.objects.create(
+            location_id=60003760,
+            location_name="Jita IV - Moon 4 - Caldari Navy Assembly Plant",
+            short_name="Jita",
+            solar_system_id=30000142,
+            solar_system_name="Jita",
+            freight_active=True,
+        )
+        EveLocation.objects.create(
+            location_id=1022167642188,
+            location_name="Amamake - 5 times nearly AT winners",
+            short_name="Amamake",
+            solar_system_id=30002053,
+            solar_system_name="Amamake",
+            freight_active=True,
+            is_structure=True,
+        )
+        issued = timezone.now() - timedelta(days=2)
+        completed = timezone.now() - timedelta(days=1)
+        EveCorporationContract.objects.create(
+            contract_id=88888,
+            corporation=self.corp,
+            type=FREIGHT_CONTRACT_TYPE,
+            status="finished",
+            issuer_id=issuer.character_id,
+            issuer_corporation_id=FREIGHT_CORPORATION_ID,
+            assignee_id=FREIGHT_CORPORATION_ID,
+            acceptor_id=hauler.character_id,
+            start_location_id=60003760,
+            end_location_id=1022167642188,
+            volume=12345,
+            collateral=5000000,
+            reward=75000,
+            date_issued=issued,
+            date_accepted=issued,
+            date_completed=completed,
+            title="Test haul",
+        )
+        # Active contracts should not appear in history CSV.
+        EveCorporationContract.objects.create(
+            contract_id=88889,
+            corporation=self.corp,
+            type=FREIGHT_CONTRACT_TYPE,
+            status="outstanding",
+            issuer_id=issuer.character_id,
+            assignee_id=FREIGHT_CORPORATION_ID,
+            start_location_id=60003760,
+            end_location_id=1022167642188,
+            volume=1,
+            collateral=1,
+            reward=1,
+            date_issued=timezone.now(),
+        )
+
+        response = self.client.get(
+            f"{BASE_URL}/contracts/history/csv",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        self.assertIn("text/csv", response["Content-Type"])
+        self.assertIn(
+            "attachment; filename=",
+            response["Content-Disposition"],
+        )
+        body = response.content.decode("utf-8")
+        self.assertIn("contract_id", body)
+        self.assertIn("start_location_short_name", body)
+        self.assertIn("88888", body)
+        self.assertIn("Jita", body)
+        self.assertIn("Amamake", body)
+        self.assertIn("Issuer Pilot", body)
+        self.assertIn("Hauler Alt", body)
+        self.assertIn("12345", body)
+        self.assertNotIn("88889", body)
+
+    def test_get_contracts_history_csv_requires_auth(self):
+        response = self.client.get(f"{BASE_URL}/contracts/history/csv")
+        self.assertEqual(401, response.status_code)
+
+    def test_get_contracts_history_csv_corp_acceptor(self):
+        EveLocation.objects.create(
+            location_id=60003760,
+            location_name="Jita IV - Moon 4 - Caldari Navy Assembly Plant",
+            short_name="Jita",
+            solar_system_id=30000142,
+            solar_system_name="Jita",
+            freight_active=True,
+        )
+        EveLocation.objects.create(
+            location_id=1022167642188,
+            location_name="Amamake - 5 times nearly AT winners",
+            short_name="Amamake",
+            solar_system_id=30002053,
+            solar_system_name="Amamake",
+            freight_active=True,
+            is_structure=True,
+        )
+        EveCorporationContract.objects.create(
+            contract_id=88890,
+            corporation=self.corp,
+            type=FREIGHT_CONTRACT_TYPE,
+            status="finished",
+            issuer_id=11111,
+            assignee_id=FREIGHT_CORPORATION_ID,
+            acceptor_id=FREIGHT_CORPORATION_ID,
+            start_location_id=60003760,
+            end_location_id=1022167642188,
+            volume=10,
+            collateral=10,
+            reward=10,
+            date_issued=timezone.now() - timedelta(days=1),
+            date_completed=timezone.now(),
+        )
+        response = self.client.get(
+            f"{BASE_URL}/contracts/history/csv",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        body = response.content.decode("utf-8")
+        self.assertIn("88890", body)
+        self.assertIn("Freight Corp", body)
+
+    def test_in_progress_shows_acceptor_without_user_link(self):
+        """Acceptor with EveCharacter but no User still appears as servicing."""
+        acceptor = EveCharacter.objects.create(
+            character_id=2124533412,
+            character_name="Minmatar Logistics Partner",
+        )
+        EveCorporationContract.objects.create(
+            contract_id=11111,
+            corporation=self.corp,
+            type=FREIGHT_CONTRACT_TYPE,
+            status="in_progress",
+            issuer_id=99999,
+            assignee_id=FREIGHT_CORPORATION_ID,
+            acceptor_id=acceptor.character_id,
+            start_location_id=100001,
+            end_location_id=100002,
+            volume=10000,
+            collateral=1000000,
+            reward=10000,
+            date_issued=timezone.now(),
+        )
+        response = self.client.get(
+            f"{BASE_URL}/contracts",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        data = response.json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["status"], "in_progress")
+        self.assertEqual(data[0]["completed_by_id"], 2124533412)
+        self.assertEqual(
+            data[0]["completed_by_character_name"],
+            "Minmatar Logistics Partner",
+        )
+
+    def test_in_progress_prefers_primary_character_when_linked(self):
+        acceptor = EveCharacter.objects.create(
+            character_id=2123595176,
+            character_name="A Busy Dad",
+            user=self.user,
+        )
+        primary = EveCharacter.objects.create(
+            character_id=93402996,
+            character_name="Wynric Marsson",
+            user=self.user,
+        )
+        set_primary_character(self.user, primary)
+        EveCorporationContract.objects.create(
+            contract_id=22222,
+            corporation=self.corp,
+            type=FREIGHT_CONTRACT_TYPE,
+            status="in_progress",
+            issuer_id=99999,
+            assignee_id=FREIGHT_CORPORATION_ID,
+            acceptor_id=acceptor.character_id,
+            start_location_id=100001,
+            end_location_id=100002,
+            volume=10000,
+            collateral=1000000,
+            reward=10000,
+            date_issued=timezone.now(),
+        )
+        response = self.client.get(
+            f"{BASE_URL}/contracts",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        data = response.json()
+        self.assertEqual(data[0]["completed_by_id"], 93402996)
+        self.assertEqual(
+            data[0]["completed_by_character_name"], "Wynric Marsson"
+        )
+
+    def test_in_progress_freight_corp_acceptor_shows_corp_name(self):
+        EveCorporationContract.objects.create(
+            contract_id=33333,
+            corporation=self.corp,
+            type=FREIGHT_CONTRACT_TYPE,
+            status="in_progress",
+            issuer_id=99999,
+            assignee_id=FREIGHT_CORPORATION_ID,
+            acceptor_id=FREIGHT_CORPORATION_ID,
+            start_location_id=100001,
+            end_location_id=100002,
+            volume=10000,
+            collateral=1000000,
+            reward=10000,
+            date_issued=timezone.now(),
+        )
+        response = self.client.get(
+            f"{BASE_URL}/contracts",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        data = response.json()
+        self.assertEqual(data[0]["completed_by_id"], None)
+        self.assertEqual(
+            data[0]["completed_by_character_name"], "Freight Corp"
+        )
+
+    def test_outstanding_without_acceptor_has_no_completed_by(self):
+        EveCorporationContract.objects.create(
+            contract_id=44444,
+            corporation=self.corp,
+            type=FREIGHT_CONTRACT_TYPE,
+            status="outstanding",
+            issuer_id=99999,
+            assignee_id=FREIGHT_CORPORATION_ID,
+            acceptor_id=0,
+            start_location_id=100001,
+            end_location_id=100002,
+            volume=10000,
+            collateral=1000000,
+            reward=10000,
+            date_issued=timezone.now(),
+        )
+        response = self.client.get(
+            f"{BASE_URL}/contracts",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        data = response.json()
+        self.assertEqual(data[0]["completed_by_id"], None)
+        self.assertEqual(data[0]["completed_by_character_name"], None)
+
 
 class FreightAdminViewsTestCase(TestCase):
     def setUp(self):
@@ -297,3 +599,198 @@ class FreightAdminViewsTestCase(TestCase):
         supply = next(app for app in app_list if app["name"] == "Supply")
         keys = [model["object_name"].lower() for model in supply["models"]]
         self.assertNotIn("evefreightroute", keys)
+
+
+class FreightContractsStatsEndpointTestCase(TestCase):
+    """Test GET /contracts/stats aggregate metrics."""
+
+    def setUp(self):
+        self.client = Client()
+        super().setUp()
+        self.corp = EveCorporation.objects.create(
+            corporation_id=FREIGHT_CORPORATION_ID,
+            name="Freight Corp",
+            ticker="FRT",
+        )
+        self.now = timezone.now()
+
+    def _create_contract(self, **kwargs):
+        defaults = {
+            "corporation": self.corp,
+            "type": FREIGHT_CONTRACT_TYPE,
+            "assignee_id": FREIGHT_CORPORATION_ID,
+            "issuer_id": 99999,
+            "start_location_id": 100001,
+            "end_location_id": 100002,
+            "volume": 10000,
+            "collateral": 1000000,
+            "reward": 10000,
+            "date_issued": self.now - timedelta(days=2),
+        }
+        defaults.update(kwargs)
+        return EveCorporationContract.objects.create(**defaults)
+
+    def test_stats_empty(self):
+        response = self.client.get(
+            f"{BASE_URL}/contracts/stats",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        data = response.json()
+        self.assertEqual(data["active_count"], 0)
+        self.assertIsNone(data["average_delivery_seconds"])
+        self.assertEqual(data["active_haulers_count"], 0)
+        self.assertEqual(data["window_days"], 30)
+
+    def test_active_count_includes_outstanding_and_in_progress(self):
+        self._create_contract(contract_id=1, status="outstanding")
+        self._create_contract(contract_id=2, status="outstanding")
+        self._create_contract(
+            contract_id=3, status="in_progress", acceptor_id=1
+        )
+        self._create_contract(contract_id=4, status="finished", acceptor_id=2)
+        response = self.client.get(
+            f"{BASE_URL}/contracts/stats",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(response.json()["active_count"], 3)
+
+    def test_average_delivery_seconds_last_30_days(self):
+        issued = self.now - timedelta(hours=10)
+        completed = self.now - timedelta(hours=4)
+        self._create_contract(
+            contract_id=10,
+            status="finished",
+            date_issued=issued,
+            date_completed=completed,
+            acceptor_id=111,
+        )
+        # Outside window — ignored for average
+        self._create_contract(
+            contract_id=11,
+            status="finished",
+            date_issued=self.now - timedelta(days=40),
+            date_completed=self.now - timedelta(days=39),
+            acceptor_id=111,
+        )
+        response = self.client.get(
+            f"{BASE_URL}/contracts/stats",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        # 6 hours = 21600 seconds
+        self.assertEqual(response.json()["average_delivery_seconds"], 21600)
+
+    def test_average_delivery_seconds_averages_multiple(self):
+        self._create_contract(
+            contract_id=20,
+            status="finished",
+            date_issued=self.now - timedelta(hours=4),
+            date_completed=self.now - timedelta(hours=2),
+            acceptor_id=111,
+        )
+        self._create_contract(
+            contract_id=21,
+            status="finished",
+            date_issued=self.now - timedelta(hours=8),
+            date_completed=self.now - timedelta(hours=2),
+            acceptor_id=111,
+        )
+        response = self.client.get(
+            f"{BASE_URL}/contracts/stats",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        # (2h + 6h) / 2 = 4h = 14400s
+        self.assertEqual(response.json()["average_delivery_seconds"], 14400)
+
+    def test_active_haulers_counts_distinct_users(self):
+        user_a = User.objects.create(username="hauler_a")
+        user_b = User.objects.create(username="hauler_b")
+        alt_a = EveCharacter.objects.create(
+            character_id=1001,
+            character_name="Alt A",
+            user=user_a,
+        )
+        primary_a = EveCharacter.objects.create(
+            character_id=1002,
+            character_name="Primary A",
+            user=user_a,
+        )
+        set_primary_character(user_a, primary_a)
+        hauler_b = EveCharacter.objects.create(
+            character_id=2001,
+            character_name="Hauler B",
+            user=user_b,
+        )
+        set_primary_character(user_b, hauler_b)
+
+        # Same user via alt + primary finished contracts → 1 hauler
+        self._create_contract(
+            contract_id=30,
+            status="finished",
+            acceptor_id=alt_a.character_id,
+            date_issued=self.now - timedelta(days=1),
+            date_completed=self.now - timedelta(hours=1),
+        )
+        self._create_contract(
+            contract_id=31,
+            status="finished",
+            acceptor_id=primary_a.character_id,
+            date_issued=self.now - timedelta(days=1),
+            date_completed=self.now - timedelta(hours=2),
+        )
+        # Second user currently in progress
+        self._create_contract(
+            contract_id=32,
+            status="in_progress",
+            acceptor_id=hauler_b.character_id,
+            date_issued=self.now - timedelta(hours=5),
+        )
+        # Freight corp acceptor excluded
+        self._create_contract(
+            contract_id=33,
+            status="in_progress",
+            acceptor_id=FREIGHT_CORPORATION_ID,
+            date_issued=self.now - timedelta(hours=1),
+        )
+        # Finished outside window, no in_progress → not counted
+        other = User.objects.create(username="old_hauler")
+        old_char = EveCharacter.objects.create(
+            character_id=3001,
+            character_name="Old Hauler",
+            user=other,
+        )
+        set_primary_character(other, old_char)
+        self._create_contract(
+            contract_id=34,
+            status="finished",
+            acceptor_id=old_char.character_id,
+            date_issued=self.now - timedelta(days=40),
+            date_completed=self.now - timedelta(days=39),
+        )
+
+        response = self.client.get(
+            f"{BASE_URL}/contracts/stats",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(response.json()["active_haulers_count"], 2)
+
+    def test_active_haulers_counts_acceptor_without_user(self):
+        EveCharacter.objects.create(
+            character_id=4001,
+            character_name="Orphan Hauler",
+        )
+        self._create_contract(
+            contract_id=40,
+            status="in_progress",
+            acceptor_id=4001,
+            date_issued=self.now - timedelta(hours=2),
+        )
+        response = self.client.get(
+            f"{BASE_URL}/contracts/stats",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(response.json()["active_haulers_count"], 1)
