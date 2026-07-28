@@ -2,10 +2,8 @@ The alliance does generate income, and has a desire to allocate this income to i
 
 These sources of income are,
 
-*   Purchases of PLEX using **coupon code "MINMATAR"** on Markeedragon
+*   Purchases of PLEX and Omega subscription using **coupon code "MINMATAR"** on [Markeedragon](https://store.markeedragon.com/affiliate.php?id=992)
     
-*   Loot from strategic fleets (contract to **Minmatar Fleet Holdings**)
-    
-*   Temporary holdings (moons), service income (structures), and one-off mercenary contracts
+*   Temporary holdings from deployments (moons, structures, mercenary contracts)
     
 These aren't consistent, babysitted income sources. If they go away, they go away- along with certain programs that they support.
