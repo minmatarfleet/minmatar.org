@@ -4,6 +4,142 @@ Real responses that worked. Add entries here after you send outreach — no temp
 
 ---
 
+## 2026-07-28 scout run
+
+### Brand-new Sebiestor, wants mentor not random recruit link
+**Thread:** [New Player looking for a Mentor / Recruiter to teach me the ropes!](https://www.reddit.com/r/evejobs/comments/1v6uksf/new_player_looking_for_a_mentor_recruiter_to/)  
+**Routed:** Minmatar Fleet Academy  
+**Author:** BearThatCares
+
+**Sent (matched scout draft):**
+> Holding off on a random recruitment link until someone will actually teach you is the right call, and Minmatar Fleet Academy exists for brand-new Sebiestor pilots who learn combat by undocking in USTZ fleets instead of sitting through slideshows. [Ad](https://www.reddit.com/r/evejobs/comments/1v4d8hb/minmatar_fleet_academy_new_players_that_learn_by/) or [discord.gg/minmatar](http://discord.gg/minmatar)
+
+**Why it worked as drafted:** OP-first validates their anti-random-link instinct, then Academy as the mentorship answer. Racial weave (`Sebiestor`) lands once without schedule mirroring. No TZ given → Academy default for brand-new combat learner (API USTZ fleets).
+
+**Routing note:** Explicit mentor / teach-the-ropes newbro → Academy, not Soltech and not MFA.
+
+---
+
+### USTZ hauler, developing solo/small-gang, open past null, wants ESS practice
+**Thread:** [USTZ Hauler Looking to Develop in Solo and Small-Gang PvP](https://forums.eveonline.com/t/ustz-hauler-looking-to-develop-in-solo-and-small-gang-pvp/515442)  
+**Routed:** Soltech Armada  
+**Author:** BearThatCares
+
+**Scout draft (not sent):**
+> Considering null for ESS practice is fine, but USTZ solo and small-gang brawling on a weeknight is what Soltech Armada flies out of Amamake in Minmatar faction warfare, and a self-sufficient Bustard and freighter main funds the learning curve while you get better at range control. [Ad] or discord.gg/minmatar
+
+**Sent:**
+> Considering null for ESS practice is fine, but USTZ solo and small-gang brawling on a weeknight is what Soltech Armada flies out of Amamake in Minmatar faction warfare and it’ll get you trained QUICK.
+>
+> Furthermore, we have an extremely busy freight program.
+>
+> [Freight Contracts History](https://my.minmatar.org/market/freight/contracts/history/)
+>
+> [Ad](https://www.reddit.com/r/evejobs/comments/1v67rnh/sltar_soltech_armada_is_recruiting_amamake_is/) or discord.gg/minmatar
+
+**What changed and why:**
+- Kept contrast opener (null/ESS → FW weeknight) + Soltech/Amamake — that was the useful half of the scout draft.
+- Dropped Bustard/freighter/`range control` weave — OP already said those; redundant on forums.
+- Added `trained QUICK` as the fear-kill for “still developing PvP.”
+- Second beat: alliance freight program + my.minmatar freight stats link — answers the hauler income identity without routing them industry-primary.
+- Allowed short multi-block when a second proof asset (freight history) is stronger than stuffing it into one paragraph.
+
+**Routing note:** USTZ + developing small-gang + open to non-null → Soltech. Hauling main is a side proof (freight program), not an MFA primary route. Do not skip as “null/ESS seeker” when they explicitly leave other space open.
+
+---
+
+### New ice miner / industry ask (responded mid-window before scout closed)
+**Thread:** [Good starting industrial corporation for new player?](https://www.reddit.com/r/evejobs/comments/1v5txwa/good_starting_industrial_corporation_for_new/)  
+**Routed:** Minmatar Fleet Associates (+ Extraction ad)  
+**Author:** BearThatCares
+
+**Sent:**
+> Ice mining and industry as a new player is the right mess for Minmatar Fleet Associates, a network of industry corps in highsec bulwark systems where Minmatar Extraction Company runs organized Amo fleets with 100% Jita buyback. [discord.gg/minmatar](http://discord.gg/minmatar) and ask for Keldor, or [the mining ad](https://www.reddit.com/r/evejobs/comments/1v1kuse/minmatar_extraction_company_amo_mining_fleets_100/) to see the fleet picture
+
+**Why it worked:** Same family as Aussie industry — MFA door first, Extraction ad second for the fleet picture. Named ice mining from the title without question-form mirroring.
+
+**Routing note:** New player + ice/industry primary → MFA / Extraction, never Academy.
+
+---
+
+### Casual nullbloc vet, prefers sov, open to leisure PvP (proof redirect)
+**Thread:** [70M Casual Vet Looking to Return](https://www.reddit.com/r/evejobs/comments/1v4tnjp/70m_casual_vet_looking_to_return/)  
+**Routed:** alliance FW proof (no named corp)  
+**Author:** BearThatCares
+
+**Sent:**
+> If you’re casual and just coming back, you need to come out to faction warfare space. It has been overhauled since you last played and is the fastest way to get actual PvP while making great money.
+>
+> https://www.reddit.com/r/Eve/s/CqygOsyjbT
+
+**Why it works as a pattern:** Prefers sov-null but wants casual / no CTA job — proof-first FW + BR, no corp brochure. Same family as lapsed-logi interest check and Goons-redirect. Do not force Soltech/Rattini into a 24-comment meat market when the objection is “null lifestyle.”
+
+**Routing note:** Prefer-null + casual leisure → FW proof redirect, not a named corp dump. Still worth a reply; skip only hard null-mining / sov-only locks.
+
+---
+
+### Forum: NA PSTZ lowsec PvP, 100m SP + alts
+**Thread:** [Need a Corp/Alliance PVP](https://forums.eveonline.com/t/need-a-corp-alliance-pvp/515429)  
+**Routed:** Soltech Armada (primary) + Rattini Tribe aside  
+**Author:** BearThatCares
+
+**Sent:**
+> Lowsec faction warfare out of Amamake is the busy seat for NA evenings, and Soltech Armada flies that window daily in Minmatar militia with room for alts on the side. [Ad](https://www.reddit.com/r/evejobs/comments/1v67rnh/sltar_soltech_armada_is_recruiting_amamake_is/) or discord.gg/minmatar
+>
+> If you’re a giga-boxer with caps, Rattini Tribe might be a better fit.
+
+**Why it worked:** Direct TZ/content answer → Soltech. Second sentence is a named same-alliance fork for cap/giga-box, not a second full pitch. Short forum post → short reply.
+
+**Routing note:** NA/PST + lowsec PvP + alts → Soltech default; mention Rattini only when caps/multibox bloodshed is plausible.
+
+---
+
+### Forum: 170m SP EU nights, open FW or WH, then found a home
+**Thread:** [I'm looking for a new home in New Eden 170m sp toon](https://forums.eveonline.com/t/im-looking-for-a-new-home-in-new-eden-170m-sp-toon/515456)  
+**Routed:** alliance-level FW (no named corp)  
+**Author:** BearThatCares
+
+**Sent:**
+> Faction warfare is the best place to be right now, and there’s no better alliance in faction warfare than Minmatar Fleet.
+>
+> [my.minmatar.org](https://my.minmatar.org/) · [discord](https://discord.com/invite/minmatar) · [zkill](https://zkillboard.com/alliance/99011978/)
+
+**Why it works as a pattern:** OP asked FW vs WH with no corp criteria — alliance claim + site/discord beats picking Academy vs Soltech vs Rattini from a one-line TZ. OP later edited “found a home.”
+
+**Routing note:** Vague “FW or WH, help me decide” → alliance FW door; name a corp only when TZ + doctrine + experience narrow it.
+
+---
+
+### Forum: German industry returner (DE reply, Extraction DE group forming)
+**Thread:** [Looking for german Industry Corp](https://forums.eveonline.com/t/looking-for-german-industry-corp/515370)  
+**Routed:** MFA / Extraction (German-speaking contact)  
+**Author:** BearThatCares
+
+**Sent:**
+> Hi, wir sind eine sehr aktive Allianz mit einer aktiven Industrie Abteilung. Wir bauen gerade eine dedizierte Mining Corporation auf, die ebenfalls eine deutsche Gruppe umfasst. Bei Interesse melde dich gerne bei “Keldar Atram” / keldar_atram (discord)
+
+**Why it worked:** Reply in German when OP wrote German. Named the forming DE mining group + Discord handle — no English brochure, no ad link required. Contact spelling on this send: **Keldar Atram** / `keldar_atram` (not the English-Keldor shorthand used on Reddit MFA pitches).
+
+**Routing note:** Language-locked industry seeker → MFA/Extraction path in their language; do not pitch Academy/FW corps.
+
+---
+
+## Patterns (2026-07-28 run)
+
+| Situation | What landed |
+|-----------|-------------|
+| Newbro wants mentor, not random link | Scout draft shippable; OP-first + Academy + Sebiestor weave |
+| USTZ hauler learning small-gang, open past null | Contrast null/ESS → Soltech; drop ship-name mirror; add freight-program proof + my.minmatar freight stats |
+| New ice/industry | MFA first, Extraction ad second, Keldor |
+| Prefer-null casual returner | FW proof BR only; no named corp in saturated thread |
+| Short NA lowsec + alts forum | Soltech + one-line Rattini cap/giga-box fork |
+| Vague FW-vs-WH forum | Alliance FW door + site/discord; skip corp pick |
+| German industry | Reply in DE; Keldar Atram contact for Extraction DE group |
+| Hauler ≠ industry-primary | Keep Soltech/FW primary; freight program is proof they belong, not MFA routing |
+| Scout one-paragraph vs forum multi-block | Freight/stats proof earns a second block; otherwise prefer one paragraph |
+
+---
+
 ## 2026-07-22 scout run
 
 ### Hek returner, non-PvP industry, US evenings, no lowsec move-in
