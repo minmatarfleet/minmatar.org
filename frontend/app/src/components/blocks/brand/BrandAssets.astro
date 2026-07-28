@@ -1,37 +1,33 @@
 ---
-import type { BrandAssetRow } from '@/data/brand/assets'
+import type { BrandAssetColumn, BrandAssetRow } from '@/data/brand/assets'
+import { logoAssetColumns } from '@/data/brand/assets'
 
 interface Props {
     title: string
     rows: BrandAssetRow[]
+    columns?: BrandAssetColumn[]
 }
 
-const { title, rows } = Astro.props
-
-const sizeColumns: { key: keyof BrandAssetRow; label: string }[] = [
-    { key: 'svg', label: 'SVG' },
-    { key: 'png512', label: '512px' },
-    { key: 'png1080', label: '1080px' },
-    { key: 'png2160', label: '2160px' },
-]
+const { title, rows, columns = logoAssetColumns } = Astro.props
 ---
 
 <section class="[ brand-section ]">
     <h2>{title}</h2>
+    <slot name="note" />
     <p class="[ brand-hint ]">Right-click an image and choose “Save image as…” to download it.</p>
 
     <div class="[ table-container ]">
         <table>
             <thead>
                 <tr>
-                    {sizeColumns.map(({ label }) => <th>{label}</th>)}
+                    {columns.map(({ label }) => <th>{label}</th>)}
                     <th>Description</th>
                 </tr>
             </thead>
             <tbody>
                 {rows.map((row) => (
                     <tr>
-                        {sizeColumns.map(({ key }) => (
+                        {columns.map(({ key }) => (
                             <td>
                                 {row[key] ? (
                                     <a href={row[key] as string} download>

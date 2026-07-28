@@ -4,10 +4,32 @@ export interface BrandAssetRow {
     name: string
     description: string
     svg?: string
+    png64?: string
+    png128?: string
+    png256?: string
     png512?: string
     png1080?: string
     png2160?: string
 }
+
+export type BrandAssetColumn = {
+    key: keyof BrandAssetRow
+    label: string
+}
+
+export const logoAssetColumns: BrandAssetColumn[] = [
+    { key: 'svg', label: 'SVG' },
+    { key: 'png512', label: '512px' },
+    { key: 'png1080', label: '1080px' },
+    { key: 'png2160', label: '2160px' },
+]
+
+export const mascotAssetColumns: BrandAssetColumn[] = [
+    { key: 'png512', label: '512px' },
+    { key: 'png256', label: '256px' },
+    { key: 'png128', label: '128px' },
+    { key: 'png64', label: '64px' },
+]
 
 export const brandColors = [
     { name: 'Gold', hex: '#F1D9A0' },
@@ -21,7 +43,7 @@ export const brandFont = {
 
 export const animatedLogoUrl = 'https://imgur.com/FpMFPu0'
 
-export const fleetAssets: BrandAssetRow[] = [
+export const logoAssets: BrandAssetRow[] = [
     {
         name: 'FL33T with banner',
         description: 'Current logo with banner',
@@ -39,9 +61,6 @@ export const fleetAssets: BrandAssetRow[] = [
         description: 'Old logo',
         png512: '/images/brand/fleet/fl33tvintage.png',
     },
-]
-
-export const buildAssets: BrandAssetRow[] = [
     {
         name: 'BUILD',
         description: 'Current logo',
@@ -50,42 +69,38 @@ export const buildAssets: BrandAssetRow[] = [
     },
 ]
 
-const sigSlugs = [
-    { slug: 'blackops', name: 'Blackops' },
-    { slug: 'capitals', name: 'Capitals' },
-    { slug: 'wormholes', name: 'Wormholes' },
-    { slug: 'abyss', name: 'Abyss' },
-    { slug: 'smallgang', name: 'Small Gang' },
-    { slug: 'ganking', name: 'Ganking' },
-] as const
-
-export const sigAssets: BrandAssetRow[] = sigSlugs.map(({ slug, name }) => ({
-    name,
-    description: name,
-    svg: `/images/brand/sigs/${slug}.svg`,
-    png512: `/images/brand/sigs/${slug}_512.png`,
-    png1080: `/images/brand/sigs/${slug}_1080.png`,
-    png2160: `/images/brand/sigs/${slug}_2160.png`,
-}))
-
-const teamSlugs = [
-    { slug: 'conversion', name: 'Conversion' },
-    { slug: 'fitting', name: 'Fitting' },
-    { slug: 'fleetcommand', name: 'Fleet Command' },
-    { slug: 'people', name: 'People' },
-    { slug: 'thinkspeak', name: 'Thinkspeak' },
-    { slug: 'technology', name: 'Technology' },
-    { slug: 'supply', name: 'Supply' },
-    { slug: 'wiki', name: 'Wiki' },
-] as const
-
-export const teamAssets: BrandAssetRow[] = teamSlugs.map(({ slug, name }) => ({
-    name,
-    description: name,
-    svg: `/images/brand/teams/${slug}.svg`,
-    png512: `/images/brand/teams/${slug}_512.png`,
-    png1080: `/images/brand/teams/${slug}_1080.png`,
-    png2160: `/images/brand/teams/${slug}_2160.png`,
-}))
-
-export const mascotImage = '/images/brand/scurry.png'
+export const mascotAssets: BrandAssetRow[] = [
+    {
+        name: 'Scurry',
+        description: 'Scurry — FL33T mascot',
+        png512: '/images/brand/scurry.png',
+    },
+    {
+        name: 'Sneak idle',
+        description: 'Sneak — idle',
+        png512: '/images/sneak-idle.png',
+    },
+    {
+        name: 'Sneak present',
+        description: 'Sneak — with present',
+        png512: '/images/sneak-present-icon.png',
+        png256: '/images/sneak-present-icon-256.png',
+        png128: '/images/sneak-present-icon-128.png',
+        png64: '/images/sneak-present-icon-64.png',
+    },
+    {
+        name: 'Sneak tip-toe',
+        description: 'Sneak — tip-toe',
+        png512: '/images/sneak.png',
+    },
+    {
+        name: 'Sneak duck',
+        description: 'Sneak — rubber duck',
+        png512: '/images/sneak-duck.png',
+    },
+    {
+        name: 'Sneak coffee',
+        description: 'Sneak — coffee',
+        png512: '/images/sneak-coffee.png',
+    },
+]

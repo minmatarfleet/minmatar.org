@@ -6,11 +6,9 @@ import {
     animatedLogoUrl,
     brandColors,
     brandFont,
-    buildAssets,
-    fleetAssets,
-    mascotImage,
-    sigAssets,
-    teamAssets,
+    logoAssets,
+    mascotAssetColumns,
+    mascotAssets,
 } from '@/data/brand/assets'
 
 import Viewport from '@layouts/Viewport.astro'
@@ -75,22 +73,22 @@ const page_description = t('brand.leading_text')
                         </ul>
                     </section>
 
-                    <BrandAssets title="FL33T" rows={fleetAssets} />
-                    <BrandAssets title="BUILD" rows={buildAssets} />
-                    <BrandAssets title="SIGs" rows={sigAssets} />
-                    <BrandAssets title="Teams" rows={teamAssets} />
+                    <BrandAssets title="Logos" rows={logoAssets} />
 
-                    <section class="[ brand-section ]">
-                        <h2>Mascots</h2>
-                        <a href={mascotImage} download>
-                            <img
-                                src={mascotImage}
-                                alt="Scurry mascot"
-                                data-zoomable
-                                loading="lazy"
-                            />
-                        </a>
-                    </section>
+                    <BrandAssets
+                        title="Mascots"
+                        rows={mascotAssets}
+                        columns={mascotAssetColumns}
+                    >
+                        <p slot="note" class="[ brand-hint ]">
+                            Sneak is inspired by the original
+                            <a
+                                href="https://www.reddit.com/r/comics/comments/73788f/rat/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >Rat comic</a>.
+                        </p>
+                    </BrandAssets>
 
                     <section class="[ brand-section ]">
                         <h2>GIFs</h2>
