@@ -32,6 +32,8 @@ MY_TYPE = register(
 
 `render` should return keys used by channels: `title`, `body`, `url` (web), `discord_message`, `subject`, `eve_mail_body`.
 
+**Copy:** write for busy humans. Short title, one plain sentence of what happened, one clear next step. Avoid jargon ("ESI", "assignment", "coordinator") in user-facing text.
+
 ## 2. Pick a mechanism
 
 | Pattern | When | How |
