@@ -1,0 +1,168 @@
+from unittest.mock import patch
+
+from django.contrib.auth.models import User
+from django.test import TestCase
+
+from notifications.channels import ChannelSkip
+from notifications.models import (
+    NotificationChannel,
+    NotificationDelivery,
+    NotificationDeliveryStatus,
+    NotificationPreference,
+    NotificationTopicSubscription,
+)
+from notifications.registry import get_type
+from notifications.service import (
+    effective_preferences,
+    notify_user,
+    preference_enabled,
+)
+from notifications.tasks import deliver_notification
+
+
+class RegistryTestCase(TestCase):
+    def test_industry_types_registered(self):
+        created = get_type("industry.order.created")
+        self.assertTrue(created.supports_topic_subscription)
+        self.assertIn(NotificationChannel.WEB, created.allowed_channels())
+        assignment = get_type("industry.order.assignment")
+        self.assertFalse(assignment.supports_topic_subscription)
+        get_type("industry.order.job")
+
+
+class PreferenceResolutionTestCase(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("prefuser", password="x")
+
+    def test_defaults_when_no_row(self):
+        ntype = get_type("industry.order.created")
+        self.assertTrue(
+            preference_enabled(self.user, ntype, NotificationChannel.WEB)
+        )
+        self.assertFalse(
+            preference_enabled(self.user, ntype, NotificationChannel.DISCORD)
+        )
+
+    def test_explicit_override(self):
+        NotificationPreference.objects.create(
+            user=self.user,
+            notification_type="industry.order.created",
+            channel=NotificationChannel.DISCORD,
+            enabled=True,
+        )
+        ntype = get_type("industry.order.created")
+        self.assertTrue(
+            preference_enabled(self.user, ntype, NotificationChannel.DISCORD)
+        )
+
+    def test_effective_preferences_shape(self):
+        prefs = effective_preferences(self.user)
+        self.assertIn("industry.order.created", prefs)
+        self.assertIn(NotificationChannel.WEB, prefs["industry.order.created"])
+
+
+class NotifyServiceTestCase(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("notifyuser", password="x")
+
+    @patch("notifications.service.deliver_notification.delay")
+    def test_notify_respects_channel_defaults(self, mock_delay):
+        deliveries = notify_user(
+            self.user,
+            "industry.order.assignment",
+            {
+                "order_id": 1,
+                "public_short_code": "ABC",
+                "item_id": 2,
+                "assignment_id": 3,
+                "item_name": "Rifter",
+                "quantity": 1,
+                "coordinators": [],
+            },
+        )
+        channels = {d.channel for d in deliveries}
+        # defaults: web + discord on, eve_mail off
+        self.assertEqual(
+            channels,
+            {NotificationChannel.WEB, NotificationChannel.DISCORD},
+        )
+        self.assertEqual(mock_delay.call_count, 2)
+
+    @patch("notifications.service.deliver_notification.delay")
+    def test_idempotency_skips_duplicate(self, mock_delay):
+        ctx = {
+            "order_id": 1,
+            "public_short_code": "ABC",
+            "item_id": 2,
+            "assignment_id": 3,
+            "item_name": "Rifter",
+            "quantity": 1,
+            "coordinators": [],
+        }
+        first = notify_user(
+            self.user,
+            "industry.order.assignment",
+            ctx,
+            idempotency_key="test-key-1",
+        )
+        second = notify_user(
+            self.user,
+            "industry.order.assignment",
+            ctx,
+            idempotency_key="test-key-1",
+        )
+        self.assertTrue(first)
+        self.assertEqual(second, [])
+        self.assertEqual(
+            NotificationDelivery.objects.filter(
+                user=self.user, notification_type="industry.order.assignment"
+            ).count(),
+            len(first),
+        )
+
+
+class TopicSubscriptionTestCase(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("topicuser", password="x")
+
+    def test_topic_subscribe(self):
+        NotificationTopicSubscription.objects.create(
+            user=self.user, notification_type="industry.order.created"
+        )
+        self.assertTrue(
+            NotificationTopicSubscription.objects.filter(
+                user=self.user, notification_type="industry.order.created"
+            ).exists()
+        )
+
+
+class DeliveryTaskTestCase(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user("delivuser", password="x")
+
+    @patch("notifications.tasks.send_channel")
+    def test_deliver_marks_sent(self, mock_send):
+        delivery = NotificationDelivery.objects.create(
+            user=self.user,
+            notification_type="industry.order.assignment",
+            channel=NotificationChannel.DISCORD,
+            payload={"discord_message": "hi"},
+        )
+        result = deliver_notification(delivery.id)
+        self.assertEqual(result, "sent")
+        delivery.refresh_from_db()
+        self.assertEqual(delivery.status, NotificationDeliveryStatus.SENT)
+
+    @patch("notifications.tasks.send_channel")
+    def test_deliver_skips(self, mock_send):
+        mock_send.side_effect = ChannelSkip("No Discord link")
+        delivery = NotificationDelivery.objects.create(
+            user=self.user,
+            notification_type="industry.order.assignment",
+            channel=NotificationChannel.DISCORD,
+            payload={"discord_message": "hi"},
+        )
+        result = deliver_notification(delivery.id)
+        self.assertEqual(result, "skipped")
+        delivery.refresh_from_db()
+        self.assertEqual(delivery.status, NotificationDeliveryStatus.SKIPPED)

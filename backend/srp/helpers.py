@@ -229,6 +229,8 @@ def is_valid_for_reimbursement(
 
 
 def send_decision_notification(reimbursement: EveFleetShipReimbursement):
+    # Future: route via notifications app + NOTIFICATIONS_EVE_MAIL_CHARACTER_ID
+    # (BearThatCares) instead of this hardcoded sender.
     mail_character_id = 2116116149
     evemail = make_reimbursement_evemail(reimbursement)
 

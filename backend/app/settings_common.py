@@ -22,6 +22,7 @@ CELERY_IMPORTS = (
     "reddit.tasks",
     "tribes.tasks",
     "feed.tasks",
+    "notifications.tasks",
 )
 
 
@@ -90,6 +91,8 @@ INSTALLED_APPS = [
     "referrals",
     # User subscriptions
     "subscriptions",
+    # Multi-channel notifications (prefs + delivery)
+    "notifications.apps.NotificationsConfig",
     # Audit history
     "audit",
     # Reddit integration

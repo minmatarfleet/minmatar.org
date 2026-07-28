@@ -13,6 +13,7 @@ from industry.endpoints.orders.schemas import (
     CreateOrderRequest,
     CreateOrderResponse,
 )
+from industry.helpers.notifications import emit_order_created
 from industry.helpers.order_profit_breakdown import (
     ensure_order_profit_breakdown,
 )
@@ -165,6 +166,12 @@ def post_order(request, payload: CreateOrderRequest):
     except Exception:  # noqa: BLE001 — never fail order create on planner
         logger.exception(
             "Failed to store profit breakdown for order %s", order.pk
+        )
+    try:
+        emit_order_created(order, creator_user_id=request.user.id)
+    except Exception:  # noqa: BLE001 — never fail order create on notify
+        logger.exception(
+            "Failed to emit new-order notification for order %s", order.pk
         )
     return 201, CreateOrderResponse(
         order_id=order.pk,

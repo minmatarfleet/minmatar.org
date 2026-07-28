@@ -22,6 +22,8 @@ import type { NotificationSubscription, CharacterErrorUI } from '@dtypes/layout_
 import { get_characters_summary_sorted, get_character_error_ui } from '@helpers/fetching/characters'
 import { get_current_player } from '@helpers/api.minmatar.org/players'
 import { get_user_subscriptions } from '@helpers/api.minmatar.org/notifications'
+import { get_notification_preferences } from '@helpers/api.minmatar.org/notification_preferences'
+import type { NotificationFeaturePreferences } from '@helpers/api.minmatar.org/notification_preferences'
 import { get_learning_me } from '@helpers/api.minmatar.org/learning'
 
 let user_permissions:string[] = []
@@ -29,6 +31,7 @@ let pilots:SummaryCharacter[] = []
 let get_characters_error: Error | false = false
 let readonly = false
 let notification_subscriptions:NotificationSubscription[] = []
+let notification_features:NotificationFeaturePreferences[] = []
 let readiness_character_id = 0
 let character_errors:CharacterErrorUI[] = []
 let current_player:Player | null = null
@@ -70,6 +73,12 @@ try {
     console.log(error)
 }
 
+try {
+    notification_features = await get_notification_preferences(auth_token as string)
+} catch (error) {
+    console.log(error)
+}
+
 const DELETE_ACCOUNT_URL = translatePath('/api/auth')
 const CLEAR_ACCOUNT_CACHE_URL = translatePath('/api/cache')
 const PILOTS_LIST_PARTIAL_URL = translatePath('/partials/pilots_list_component/')
@@ -97,6 +106,7 @@ import PilotsList from '@components/blocks/PilotsList.astro';
 import Mumble from '@components/blocks/Mumble.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import PushNotifications from '@components/blocks/PushNotifications.astro';
+import NotificationPreferences from '@components/blocks/NotificationPreferences.astro';
 import AccessibilityOptions from '@components/blocks/AccessibilityOptions.astro';
 import DisableBlock from '@components/blocks/DisableBlock.astro';
 import Button from '@components/blocks/Button.astro';
@@ -347,6 +357,15 @@ const page_title = t('account.page_title');
             {user_permissions.includes('subscriptions.add_usersubscription') &&
                 <ComponentBlock width='narrow'>
                     <PushNotifications notification_subscriptions={notification_subscriptions} />
+                </ComponentBlock>
+            }
+
+            {notification_features.length > 0 &&
+                <ComponentBlock width='narrow'>
+                    <NotificationPreferences
+                        features={notification_features}
+                        auth_token={auth_token as string}
+                    />
                 </ComponentBlock>
             }
 

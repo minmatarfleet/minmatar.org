@@ -263,8 +263,14 @@ def update_character_contracts(eve_character_id: int) -> int:
     return len(contracts_data)
 
 
-def update_character_industry_jobs(eve_character_id: int) -> int:
-    """Fetch industry jobs from ESI and upsert EveCharacterIndustryJob. Returns count synced."""
+def update_character_industry_jobs(
+    eve_character_id: int,
+) -> tuple[int, list[int]]:
+    """
+    Fetch industry jobs from ESI and upsert EveCharacterIndustryJob.
+
+    Returns (count synced, list of newly created ESI job_ids).
+    """
     character = EveCharacter.objects.filter(
         character_id=eve_character_id
     ).first()
@@ -273,13 +279,13 @@ def update_character_industry_jobs(eve_character_id: int) -> int:
             "Character %s not found, skipping industry jobs sync",
             eve_character_id,
         )
-        return 0
+        return 0, []
     if character.esi_suspended:
         logger.debug(
             "Skipping industry jobs for ESI suspended character %s",
             eve_character_id,
         )
-        return 0
+        return 0, []
 
     response = EsiClient(character).get_character_industry_jobs(
         include_completed=True
@@ -290,9 +296,10 @@ def update_character_industry_jobs(eve_character_id: int) -> int:
             eve_character_id,
             response.response_code,
         )
-        return 0
+        return 0, []
 
     jobs_data = response.results() or []
+    created_job_ids: list[int] = []
     for raw in jobs_data:
         job_id = raw["job_id"]
         completed_date = _parse_esi_date(raw.get("completed_date"))
@@ -300,7 +307,7 @@ def update_character_industry_jobs(eve_character_id: int) -> int:
         if cost is not None:
             cost = Decimal(str(cost))
 
-        EveCharacterIndustryJob.objects.update_or_create(
+        job, created = EveCharacterIndustryJob.objects.update_or_create(
             job_id=job_id,
             defaults={
                 "character_id": character.pk,
@@ -323,12 +330,14 @@ def update_character_industry_jobs(eve_character_id: int) -> int:
                 "cost": cost,
             },
         )
+        if created:
+            created_job_ids.append(job.job_id)
     logger.info(
         "Synced %s industry job(s) for character %s",
         len(jobs_data),
         eve_character_id,
     )
-    return len(jobs_data)
+    return len(jobs_data), created_job_ids
 
 
 def update_character_blueprints(eve_character_id: int) -> int:

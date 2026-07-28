@@ -32,6 +32,7 @@ docker = "*"
 django-safedelete = "*"
 pillow = "*"
 pytz = "*"
+pywebpush = "*"
 
 [dev-packages]
 pylint = "*"

@@ -65,7 +65,7 @@ class IndustryOrder(models.Model):
     def __str__(self):
         return f"Order #{self.pk} ({self.character.character_name}, needed by {self.needed_by})"
 
-    def _order_period_end(self):
+    def order_period_end(self):
         """End of the order's relevant time period (needed_by EOD or fulfilled_at)."""
         if self.fulfilled_at is not None:
             return self.fulfilled_at
@@ -87,7 +87,7 @@ class IndustryOrder(models.Model):
         if not character_ids:
             return EveCharacterIndustryJob.objects.none()
         period_start = self.created_at
-        period_end = self._order_period_end()
+        period_end = self.order_period_end()
         return (
             EveCharacterIndustryJob.objects.filter(
                 character_id__in=character_ids,
