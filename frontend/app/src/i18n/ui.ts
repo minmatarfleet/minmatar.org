@@ -96,7 +96,7 @@ export const ui = {
         'guides.seo.faction-warfare-plexing.meta_description': 'Capture EVE Online FW complexes for LP and victory points: gate landings, ship size limits, payout tables by site, and how contested % flips systems.',
         'guides.seo.faction-warfare-plexing.keywords': 'FW plexing, faction warfare plexing, how to plex EVE, FW complexes, LP payouts, victory points, offensive plexing, defensive plexing, contested percentage',
         'guides.seo.new-player-fleet-guide.meta_title': 'New Player Fleet Guide | EVE Online Militia | {site}',
-        'guides.seo.new-player-fleet-guide.meta_description': 'First Minmatar militia fleet guide for EVE Online: doctrines, support ships, fleet UI, comms, and FAQ for new faction warfare pilots.',
+        'guides.seo.new-player-fleet-guide.meta_description': 'First Minmatar militia fleet guide for EVE Online: Discord voice, doctrines, fleet UI, and FAQ for new faction warfare pilots.',
         'guides.seo.new-player-fleet-guide.keywords': 'new player fleet, militia fleet, faction warfare onboarding, Minmatar FW, fleet guide',
         'guides.seo.abyssals.meta_title': 'Farming the Abyss | EVE Online Abyssal Deadspace Guide | {site}',
         'guides.seo.abyssals.meta_description': 'EVE Online abyssal deadspace guide: filament tiers, weather types, security limits, and links to solo, duo, and trio T5–T6 abyss fit guides.',
