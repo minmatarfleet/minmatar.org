@@ -3,12 +3,15 @@ from __future__ import annotations
 from django.test import TestCase
 from eveuniverse.models import EveCategory, EveGroup, EveType
 
+from feed.constants import FACTION_AMARR, FACTION_MINMATAR
 from feed.helpers.eve_names import (
     detect_formation_type,
+    sample_fleet_roster,
     top_hull_classes_from_counts,
     top_ships_from_counts,
     without_capsule_ship_counts,
 )
+from feed.models import FeedCharacterAffiliation
 
 
 class EveNamesTestCase(TestCase):
@@ -80,3 +83,29 @@ class EveNamesTestCase(TestCase):
     def test_detect_formation_type_gang_without_counts(self):
         self.assertEqual(detect_formation_type(None), "gang")
         self.assertEqual(detect_formation_type({}), "gang")
+
+    def test_sample_fleet_roster_does_not_pad_with_other_faction(self):
+        FeedCharacterAffiliation.objects.create(
+            character_id=101,
+            faction_id=FACTION_AMARR,
+            corporation_id=1,
+        )
+        FeedCharacterAffiliation.objects.create(
+            character_id=201,
+            faction_id=FACTION_MINMATAR,
+            corporation_id=2,
+        )
+        FeedCharacterAffiliation.objects.create(
+            character_id=202,
+            faction_id=FACTION_MINMATAR,
+            corporation_id=2,
+        )
+
+        roster, total = sample_fleet_roster(
+            [101, 201, 202, 203],
+            faction_id=FACTION_AMARR,
+            limit=8,
+        )
+
+        self.assertEqual(total, 1)
+        self.assertEqual([row["character_id"] for row in roster], [101])

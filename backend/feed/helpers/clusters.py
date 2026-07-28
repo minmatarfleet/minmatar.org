@@ -7,7 +7,11 @@ from typing import Any
 from django.db.models import F
 from django.utils import timezone
 
-from feed.helpers.killmail_classify import dominant_attacker_faction
+from feed.constants import MILITIA_FACTION_IDS
+from feed.helpers.killmail_classify import (
+    dominant_attacker_faction,
+    resolve_attacker_militia_factions,
+)
 from feed.models import FeedCluster, FeedKillmail
 from feed.rollups.config import get_rollup_config
 
@@ -128,11 +132,17 @@ def _find_active_fleet_cluster(
 
 
 def _merge_fleet_cluster(
-    existing: FeedCluster, killmail_ids: list[int]
+    existing: FeedCluster,
+    killmail_ids: list[int],
+    *,
+    faction_id: int | None = None,
 ) -> FeedCluster:
     merged_ids = sorted(set(existing.killmail_ids or []) | set(killmail_ids))
     killmails = list(FeedKillmail.objects.filter(killmail_id__in=merged_ids))
-    stats = build_cluster_stats(killmails)
+    scope = (
+        faction_id if faction_id is not None else existing.dominant_faction_id
+    )
+    stats = build_cluster_stats(killmails, faction_id=scope)
     existing.dominant_faction_id = stats["dominant_faction_id"]
     existing.started_at = stats["started_at"]
     existing.last_kill_at = stats["last_kill_at"]
@@ -167,41 +177,170 @@ def _cluster_defaults(
     }
 
 
-def build_cluster_stats(killmails: list[FeedKillmail]) -> dict[str, Any]:
+def _attacker_faction_id(
+    attacker: dict[str, Any],
+    char_factions: dict[int, int],
+) -> int | None:
+    char_id = attacker.get("character_id")
+    if not char_id:
+        return None
+    resolved = char_factions.get(char_id)
+    if resolved in MILITIA_FACTION_IDS:
+        return resolved
+    tagged = attacker.get("faction_id")
+    if tagged in MILITIA_FACTION_IDS:
+        return tagged
+    return None
+
+
+def build_cluster_stats(
+    killmails: list[FeedKillmail],
+    *,
+    faction_id: int | None = None,
+) -> dict[str, Any]:
+    """Aggregate killmails into cluster stats.
+
+    When ``faction_id`` is set, only that militia's attackers and the killmails
+    they appear on are counted. This keeps opposing fleets on the same grid as
+    separate engagements instead of one mixed blob.
+    """
+    if not killmails:
+        return {
+            "dominant_faction_id": faction_id,
+            "started_at": None,
+            "last_kill_at": None,
+            "kill_count": 0,
+            "pilot_count": 0,
+            "ship_counts": {},
+            "attacker_ids": [],
+            "killmail_ids": [],
+        }
+
+    raw_kms = [km.raw_killmail for km in killmails]
+    char_factions = (
+        resolve_attacker_militia_factions(raw_kms)
+        if faction_id is not None
+        else {}
+    )
+
     attacker_ids: set[int] = set()
     ship_counts: Counter[str] = Counter()
     killmail_ids: list[int] = []
-    raw_kms: list[dict] = []
+    scoped_kms: list[FeedKillmail] = []
 
     for km in killmails:
-        killmail_ids.append(km.killmail_id)
-        raw_kms.append(km.raw_killmail)
-        ship_type = km.victim_ship_type_id
-        if ship_type:
-            ship_counts[str(ship_type)] += 1
+        faction_on_mail = False
         for attacker in km.attacker_summary or []:
             char_id = attacker.get("character_id")
-            if char_id:
+            if not char_id:
+                continue
+            if faction_id is None:
                 attacker_ids.add(char_id)
+                continue
+            if _attacker_faction_id(attacker, char_factions) == faction_id:
+                attacker_ids.add(char_id)
+                faction_on_mail = True
+        if faction_id is None or faction_on_mail:
+            scoped_kms.append(km)
+            killmail_ids.append(km.killmail_id)
+            ship_type = km.victim_ship_type_id
+            if ship_type:
+                ship_counts[str(ship_type)] += 1
 
-    fleet_cfg = get_rollup_config("fleet_active")
-    dominant = dominant_attacker_faction(
-        raw_kms,
-        threshold=fleet_cfg.get("dominant_faction_threshold", 0.75),
-    )
-    started_at = min(km.killmail_time for km in killmails)
-    last_kill_at = max(km.killmail_time for km in killmails)
+    if faction_id is None:
+        fleet_cfg = get_rollup_config("fleet_active")
+        dominant = dominant_attacker_faction(
+            raw_kms,
+            threshold=fleet_cfg.get("dominant_faction_threshold", 0.75),
+        )
+    else:
+        dominant = faction_id
+
+    if not scoped_kms:
+        return {
+            "dominant_faction_id": dominant,
+            "started_at": min(km.killmail_time for km in killmails),
+            "last_kill_at": max(km.killmail_time for km in killmails),
+            "kill_count": 0,
+            "pilot_count": 0,
+            "ship_counts": {},
+            "attacker_ids": [],
+            "killmail_ids": [],
+        }
 
     return {
         "dominant_faction_id": dominant,
-        "started_at": started_at,
-        "last_kill_at": last_kill_at,
-        "kill_count": len(killmails),
+        "started_at": min(km.killmail_time for km in scoped_kms),
+        "last_kill_at": max(km.killmail_time for km in scoped_kms),
+        "kill_count": len(scoped_kms),
         "pilot_count": len(attacker_ids),
         "ship_counts": dict(ship_counts),
         "attacker_ids": sorted(attacker_ids),
         "killmail_ids": killmail_ids,
     }
+
+
+def _militia_factions_in_window(
+    killmails: list[FeedKillmail],
+) -> dict[int, set[int]]:
+    """Map militia faction_id -> attacker character ids in the window."""
+    raw_kms = [km.raw_killmail for km in killmails]
+    char_factions = resolve_attacker_militia_factions(raw_kms)
+    faction_pilots: dict[int, set[int]] = defaultdict(set)
+    for char_id, resolved in char_factions.items():
+        if resolved in MILITIA_FACTION_IDS:
+            faction_pilots[resolved].add(char_id)
+    return faction_pilots
+
+
+def _upsert_one_fleet_cluster(
+    solar_system_id: int,
+    stats: dict[str, Any],
+    window_start,
+    *,
+    stale_minutes: int,
+    max_duration: timedelta,
+) -> int:
+    """Merge into an active same-faction cluster or create a new one."""
+    if stats["kill_count"] <= 0 or stats["started_at"] is None:
+        return 0
+
+    existing = _find_active_fleet_cluster(
+        solar_system_id,
+        stats["dominant_faction_id"],
+        window_start,
+        stale_minutes=stale_minutes,
+    )
+    if existing is not None:
+        if stats["last_kill_at"] - existing.started_at > max_duration:
+            FeedCluster.objects.filter(pk=existing.pk).update(
+                is_active=False,
+                ended_at=F("last_kill_at"),
+                updated_at=timezone.now(),
+            )
+        else:
+            _merge_fleet_cluster(
+                existing,
+                stats["killmail_ids"],
+                faction_id=stats["dominant_faction_id"],
+            )
+            return 1
+
+    key = _cluster_key(
+        FeedCluster.ClusterType.FLEET_ENGAGEMENT,
+        solar_system_id,
+        stats["dominant_faction_id"],
+        stats["started_at"],
+    )
+    FeedCluster.objects.update_or_create(
+        cluster_key=key,
+        defaults=_cluster_defaults(
+            FeedCluster.ClusterType.FLEET_ENGAGEMENT,
+            solar_system_id,
+            stats,
+        ),
+    )
+    return 1
 
 
 def detect_clusters(*, since_hours: int = 48) -> int:
@@ -297,52 +436,28 @@ def _sliding_window_clusters(
             j += 1
 
         if len(window_kills) >= min_kills:
-            stats = build_cluster_stats(window_kills)
-            if stats["pilot_count"] >= min_pilots:
-                if cluster_type == FeedCluster.ClusterType.FLEET_ENGAGEMENT:
-                    fleet_cfg = get_rollup_config("fleet_active")
-                    stale_minutes = fleet_cfg.get("stale_minutes", 20)
-                    max_duration = timedelta(
-                        minutes=fleet_cfg.get("max_duration_minutes", 90)
-                    )
-                    existing = _find_active_fleet_cluster(
-                        solar_system_id,
-                        stats["dominant_faction_id"],
-                        window_start,
-                        stale_minutes=stale_minutes,
-                    )
-                    if existing is not None:
-                        if (
-                            stats["last_kill_at"] - existing.started_at
-                            > max_duration
-                        ):
-                            # Fight has run long enough; close it and start a
-                            # fresh engagement even though kills continue.
-                            FeedCluster.objects.filter(pk=existing.pk).update(
-                                is_active=False,
-                                ended_at=F("last_kill_at"),
-                                updated_at=timezone.now(),
-                            )
-                        else:
-                            _merge_fleet_cluster(
-                                existing, stats["killmail_ids"]
-                            )
-                            upserted += 1
-                            i = j
-                            continue
-                    key = _cluster_key(
-                        cluster_type,
-                        solar_system_id,
-                        stats["dominant_faction_id"],
-                        stats["started_at"],
-                    )
-                    FeedCluster.objects.update_or_create(
-                        cluster_key=key,
-                        defaults=_cluster_defaults(
-                            cluster_type, solar_system_id, stats
-                        ),
-                    )
-                else:
+            if cluster_type == FeedCluster.ClusterType.FLEET_ENGAGEMENT:
+                fleet_cfg = get_rollup_config("fleet_active")
+                stale_minutes = fleet_cfg.get("stale_minutes", 20)
+                max_duration = timedelta(
+                    minutes=fleet_cfg.get("max_duration_minutes", 90)
+                )
+                created = _upsert_fleet_engagement_window(
+                    solar_system_id,
+                    window_kills,
+                    window_start,
+                    min_kills=min_kills,
+                    min_pilots=min_pilots,
+                    stale_minutes=stale_minutes,
+                    max_duration=max_duration,
+                )
+                if created:
+                    upserted += created
+                    i = j
+                    continue
+            else:
+                stats = build_cluster_stats(window_kills)
+                if stats["pilot_count"] >= min_pilots:
                     started_bucket = _window_start(
                         window_start, window_minutes
                     )
@@ -351,11 +466,66 @@ def _sliding_window_clusters(
                         started_bucket,
                         stats,
                     )
-                upserted += 1
-                i = j
-                continue
+                    upserted += 1
+                    i = j
+                    continue
         i += 1
     return upserted
+
+
+def _upsert_fleet_engagement_window(
+    solar_system_id: int,
+    window_kills: list[FeedKillmail],
+    window_start,
+    *,
+    min_kills: int,
+    min_pilots: int,
+    stale_minutes: int,
+    max_duration: timedelta,
+) -> int:
+    """Emit one fleet cluster per militia faction with enough attackers.
+
+    Opposing fleets on the same grid (e.g. Amarr Cerbs vs Minmatar) become
+    separate engagements instead of a single mixed pilot blob.
+    """
+    faction_pilots = _militia_factions_in_window(window_kills)
+    factions = [
+        faction_id
+        for faction_id, pilots in faction_pilots.items()
+        if len(pilots) >= min_pilots
+    ]
+
+    if not factions:
+        stats = build_cluster_stats(window_kills)
+        if (
+            stats["pilot_count"] >= min_pilots
+            and stats["kill_count"] >= min_kills
+        ):
+            return _upsert_one_fleet_cluster(
+                solar_system_id,
+                stats,
+                window_start,
+                stale_minutes=stale_minutes,
+                max_duration=max_duration,
+            )
+        return 0
+
+    created = 0
+    for faction_id in sorted(factions):
+        stats = build_cluster_stats(window_kills, faction_id=faction_id)
+        if (
+            stats["pilot_count"] < min_pilots
+            or stats["kill_count"] < min_kills
+        ):
+            continue
+        created += _upsert_one_fleet_cluster(
+            solar_system_id,
+            stats,
+            window_start,
+            stale_minutes=stale_minutes,
+            max_duration=max_duration,
+        )
+    return created
 
 
 def _mark_stale_fleet_clusters(stale_minutes: int) -> None:

@@ -288,11 +288,9 @@ def sample_fleet_roster(
     limit: int = 8,
 ) -> tuple[list[dict[str, int | str]], int]:
     ids = list(attacker_ids or [])
-    total = len(ids)
     if not ids:
         return [], 0
 
-    sample: list[int] = []
     if faction_id:
         enlisted = set(
             FeedCharacterAffiliation.objects.filter(
@@ -300,19 +298,18 @@ def sample_fleet_roster(
                 faction_id=faction_id,
             ).values_list("character_id", flat=True)
         )
-        for character_id in ids:
-            if character_id in enlisted:
-                sample.append(character_id)
-            if len(sample) >= limit:
-                break
-
-    if len(sample) < limit:
-        seen = set(sample)
-        for character_id in ids:
-            if character_id not in seen:
-                sample.append(character_id)
-            if len(sample) >= limit:
-                break
+        # Prefer affiliation-confirmed pilots; otherwise trust caller-scoped ids.
+        # Never pad with opposing-faction characters.
+        scoped = (
+            [character_id for character_id in ids if character_id in enlisted]
+            if enlisted
+            else ids
+        )
+        total = len(scoped)
+        sample = scoped[:limit]
+    else:
+        total = len(ids)
+        sample = ids[:limit]
 
     names = resolve_character_names(sample)
     roster = [

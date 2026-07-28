@@ -5,8 +5,10 @@ from datetime import timedelta
 from django.test import TestCase
 from django.utils import timezone
 
+from feed.constants import FACTION_AMARR, FACTION_MINMATAR
 from feed.helpers.clusters import _mark_stale_fleet_clusters, detect_clusters
 from feed.helpers.ingest import upsert_feed_killmail_from_r2z2
+from feed.helpers.monitored_systems import invalidate_monitored_systems_cache
 from feed.management.commands.seed_feed_monitored_systems import (
     seed_from_fixture,
 )
@@ -213,3 +215,77 @@ class ClusterRollupTestCase(TestCase):
         self.assertEqual(stale_cluster.ended_at, stale_cluster.last_kill_at)
         self.assertTrue(fresh_cluster.is_active)
         self.assertIsNone(fresh_cluster.ended_at)
+
+    def test_opposing_militia_fleets_produce_separate_clusters(self):
+        """Auga-style mixed grid: Amarr and Minmatar each get their own fleet.
+
+        Reproduces Militia Monday failure mode where ~equal attacker counts on
+        both sides collapsed into one Minmatar-labeled blob.
+        """
+        seed_from_fixture()
+        invalidate_monitored_systems_cache()
+        FeedKillmail.objects.all().delete()
+        FeedCluster.objects.all().delete()
+
+        base = timezone.now() - timedelta(minutes=25)
+        # Amarr wipe Minmatar (Cerb-style): many Amarr attackers on Min victims.
+        for i in range(8):
+            upsert_feed_killmail_from_r2z2(
+                make_killmail_payload(
+                    500000 + i,
+                    killmail_time=base + timedelta(minutes=i),
+                    faction_id=FACTION_AMARR,
+                    victim_faction_id=FACTION_MINMATAR,
+                    attacker_count=12,
+                    attacker_id_base=91000000,
+                    attacker_ship_type_id=11993,
+                )
+            )
+        # Minmatar also get kills on Amarr in the same window.
+        for i in range(6):
+            upsert_feed_killmail_from_r2z2(
+                make_killmail_payload(
+                    500100 + i,
+                    killmail_time=base + timedelta(minutes=i, seconds=30),
+                    faction_id=FACTION_MINMATAR,
+                    victim_faction_id=FACTION_AMARR,
+                    attacker_count=10,
+                    attacker_id_base=92000000,
+                )
+            )
+
+        detect_clusters(since_hours=2)
+
+        amarr = FeedCluster.objects.filter(
+            cluster_type=FeedCluster.ClusterType.FLEET_ENGAGEMENT,
+            dominant_faction_id=FACTION_AMARR,
+        )
+        minmatar = FeedCluster.objects.filter(
+            cluster_type=FeedCluster.ClusterType.FLEET_ENGAGEMENT,
+            dominant_faction_id=FACTION_MINMATAR,
+        )
+        self.assertEqual(amarr.count(), 1)
+        self.assertEqual(minmatar.count(), 1)
+
+        amarr_cluster = amarr.get()
+        minmatar_cluster = minmatar.get()
+        self.assertGreaterEqual(amarr_cluster.pilot_count, 8)
+        self.assertGreaterEqual(minmatar_cluster.pilot_count, 8)
+        # Pilot sets must not mix opposing militia attackers.
+        self.assertTrue(
+            set(amarr_cluster.attacker_ids).isdisjoint(
+                set(minmatar_cluster.attacker_ids)
+            )
+        )
+        self.assertTrue(
+            all(
+                91000000 <= cid < 92000000
+                for cid in amarr_cluster.attacker_ids
+            )
+        )
+        self.assertTrue(
+            all(cid >= 92000000 for cid in minmatar_cluster.attacker_ids)
+        )
+        # Neither side should absorb the other's full pilot count.
+        self.assertLess(amarr_cluster.pilot_count, 22)
+        self.assertLess(minmatar_cluster.pilot_count, 22)
