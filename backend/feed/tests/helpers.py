@@ -12,6 +12,8 @@ def make_killmail_payload(
     victim_faction_id: int | None = None,
     attacker_count: int = 8,
     attacker_id_base: int = 90000000,
+    corporation_id: int = 98000000,
+    alliance_id: int = 99000000,
     ship_type_id: int = 22468,
     attacker_ship_type_id: int = 22468,
 ) -> dict:
@@ -23,8 +25,8 @@ def make_killmail_payload(
     for i in range(attacker_count):
         attacker: dict = {
             "character_id": attacker_id_base + i,
-            "corporation_id": 98000000 + (0 if faction_id == 500002 else 1),
-            "alliance_id": 99000000 + (0 if faction_id == 500002 else 1),
+            "corporation_id": corporation_id,
+            "alliance_id": alliance_id,
             "ship_type_id": attacker_ship_type_id,
             "damage_done": 1000,
             "final_blow": i == 0,
