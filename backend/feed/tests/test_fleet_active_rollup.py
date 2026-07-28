@@ -5,7 +5,8 @@ from datetime import timedelta
 from django.test import TestCase
 from django.utils import timezone
 
-from feed.constants import FACTION_CALDARI, FACTION_MINMATAR
+from feed.constants import FACTION_AMARR, FACTION_CALDARI, FACTION_MINMATAR
+from feed.helpers.clusters import detect_clusters
 from feed.helpers.ingest import upsert_feed_killmail_from_r2z2
 from feed.helpers.monitored_systems import (
     invalidate_monitored_systems_cache,
@@ -13,7 +14,7 @@ from feed.helpers.monitored_systems import (
 from feed.management.commands.seed_feed_monitored_systems import (
     seed_from_fixture,
 )
-from feed.models import FeedCluster, FeedEvent
+from feed.models import FeedCluster, FeedEvent, FeedKillmail
 from feed.rollups.fleet_active import (
     _collapse_fleet_clusters,
     run_fleet_active_rollup,
@@ -305,3 +306,54 @@ class FleetActiveRollupTestCase(TestCase):
             FeedEvent.objects.filter(kind=FeedEvent.Kind.FLEET_ACTIVE).count(),
             2,
         )
+
+    def test_opposing_fleets_rollup_to_separate_faction_events(self):
+        """Mixed Auga-style fight must emit Amarr and Minmatar fleet_active."""
+        seed_from_fixture()
+        invalidate_monitored_systems_cache()
+        FeedKillmail.objects.all().delete()
+        FeedCluster.objects.all().delete()
+        FeedEvent.objects.all().delete()
+
+        base = timezone.now() - timedelta(minutes=20)
+        for i in range(8):
+            upsert_feed_killmail_from_r2z2(
+                make_killmail_payload(
+                    710000 + i,
+                    killmail_time=base + timedelta(minutes=i),
+                    faction_id=FACTION_AMARR,
+                    victim_faction_id=FACTION_MINMATAR,
+                    attacker_count=12,
+                    attacker_id_base=93000000,
+                )
+            )
+        for i in range(7):
+            upsert_feed_killmail_from_r2z2(
+                make_killmail_payload(
+                    710100 + i,
+                    killmail_time=base + timedelta(minutes=i, seconds=20),
+                    faction_id=FACTION_MINMATAR,
+                    victim_faction_id=FACTION_AMARR,
+                    attacker_count=11,
+                    attacker_id_base=94000000,
+                )
+            )
+
+        detect_clusters(since_hours=2)
+        now = timezone.now()
+        ctx = build_context(now - timedelta(hours=1), now + timedelta(hours=1))
+        write_rollup_results(run_fleet_active_rollup(ctx))
+
+        events = list(
+            FeedEvent.objects.filter(kind=FeedEvent.Kind.FLEET_ACTIVE)
+        )
+        factions = sorted(
+            (event.payload or {}).get("faction") for event in events
+        )
+        self.assertEqual(factions, ["amarr", "minmatar"])
+        for event in events:
+            payload = event.payload or {}
+            self.assertNotEqual(payload.get("faction"), None)
+            # Roster total is faction-scoped, not the mixed attacker blob.
+            self.assertLessEqual(payload.get("roster_total") or 0, 15)
+            self.assertLessEqual(payload.get("pilots") or 0, 15)

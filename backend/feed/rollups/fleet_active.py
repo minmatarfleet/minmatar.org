@@ -37,15 +37,28 @@ def _accent_for_faction(faction_id: int | None) -> str:
 
 
 def _dominant_faction_for_cluster(cluster: FeedCluster) -> int | None:
+    """Return the militia faction for a fleet cluster.
+
+    When the cluster was stored as Amarr/Minmatar (faction-scoped detection),
+    re-validate against that faction's attackers on the linked killmails so a
+    mixed grid cannot flip labels — while still dropping stale wrong labels
+    (e.g. Minmatar stamped on Caldari-heavy mails).
+    """
     killmail_ids = cluster.killmail_ids or []
     if not killmail_ids:
         return None
-    raw = list(
-        FeedKillmail.objects.filter(killmail_id__in=killmail_ids).values_list(
-            "raw_killmail", flat=True
-        )
-    )
+
+    killmails = list(FeedKillmail.objects.filter(killmail_id__in=killmail_ids))
+    raw = [km.raw_killmail for km in killmails]
     fleet_cfg = get_rollup_config("fleet_active")
+    stored = cluster.dominant_faction_id
+
+    if stored in (FACTION_AMARR, FACTION_MINMATAR):
+        stats = build_cluster_stats(killmails, faction_id=stored)
+        if stats["pilot_count"] > 5:
+            return stored
+        return None
+
     return dominant_attacker_faction(
         raw,
         threshold=fleet_cfg.get("dominant_faction_threshold", 0.75),
@@ -112,7 +125,9 @@ def _persist_fleet_chain(
         killmails = list(
             FeedKillmail.objects.filter(killmail_id__in=merged_ids)
         )
-        stats = build_cluster_stats(killmails)
+        stats = build_cluster_stats(
+            killmails, faction_id=canonical.dominant_faction_id
+        )
         tip = max(
             (cluster for cluster, _ in ordered),
             key=lambda cluster: cluster.last_kill_at,
