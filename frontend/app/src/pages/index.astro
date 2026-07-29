@@ -53,14 +53,12 @@ const STAGINGS_STATIONS:StagingTranslation = {
 	watermellon: 'Sosala - WATERMELLON',
 	amarr: 'Amarr VIII (Oris) - Emperor Family Academy',
 	amamake: 'Amamake - 5 times nearly AT winners',
-	r6_2: 'R-6KYM - Casper Anchored It',
 }
 
 const STAGINGS_SYSTEMS:StagingTranslation = {
 	watermellon: 'Sosala',
 	amarr: 'Amarr',
 	amamake: 'Amamake',
-	r6_2: 'R-6KYM',
 }
 
 /*const RATTINI_TRIBE_ID = 98726134
@@ -93,12 +91,10 @@ const STAGING_DOCTRINES = {
 
 const FREIGHT_ORDERS = {
 	amamake: 'Amamake - 5 times nearly AT winners',
-	r6_2: 'R-6KYM - Casper Anchored It',
 }
 
 const INDUSTRY_ORDERS = {
 	amamake: 'Amamake - 5 times nearly AT winners',
-	r6_2: 'R-6KYM - Casper Anchored It',
 }
 
 const IS_APRIL_FOOLS = is_seasonal_date('04-01', '04-01')
@@ -211,7 +207,6 @@ const page_description = t('index.leading_text');
 			>
 				{staging === 'amamake' ? <AmamakeInfo is_random={is_random_staging} /> :
 					staging === 'amarr' ? <AmarrInfo /> :
-					staging === 'r6_2' ? <R6_2Info is_random={is_random_staging} /> :
 					<WatermellonInfo is_random={is_random_staging} />
 				}
 				<FlexInline gap='var(--space-3xs)'>
