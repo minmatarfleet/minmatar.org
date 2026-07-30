@@ -132,7 +132,7 @@ export const guides: GuideMeta[] = [
     {
         slug: "new-player-fleet-guide",
         title: "New Player Fleet Guide",
-        excerpt: "Everything you need for your first militia fleet: doctrines, support ships, fleet UI, and FAQ.",
+        excerpt: "Voice, ships, fleet UI, and FAQ for your first militia fleet.",
         category: "PVP",
         author: "Minmatar Fleet",
         authors: [{
