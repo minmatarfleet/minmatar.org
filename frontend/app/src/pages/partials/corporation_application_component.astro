@@ -32,11 +32,19 @@ if (!valid_request)
 
 import type { ApplicationDetail, Alert } from '@dtypes/layout_components'
 import { get_application_by_id } from '@helpers/fetching/applications'
-import { accept_corporation_applications, reject_corporation_applications } from '@helpers/api.minmatar.org/applications'
+import {
+    accept_corporation_applications,
+    reject_corporation_applications,
+    transfer_corporation_application,
+} from '@helpers/api.minmatar.org/applications'
+import { query_string } from '@helpers/string'
 
 let application_action_error
 let action
 let alert:Alert | false = false
+let redirect_url:string | false = false
+let display_corporation:CorporationBasic = corporation
+let fetch_corporation_id = corporation_id
 
 if (Astro.request.method === "POST") {
     action = Astro.url.searchParams.get('action')
@@ -44,8 +52,30 @@ if (Astro.request.method === "POST") {
     try {
         if (action == 'accept') {
             await accept_corporation_applications(auth_token as string, corporation_id, application_id)
-        } else {
+        } else if (action == 'deny') {
             await reject_corporation_applications(auth_token as string, corporation_id, application_id)
+        } else if (action == 'transfer') {
+            const target_corporation = JSON.parse(
+                Astro.url.searchParams.get('target_corporation') as string
+            ) as CorporationBasic
+            const target_corporation_id = target_corporation?.id ?? 0
+
+            if (target_corporation_id <= 0) {
+                throw new Error(t('transfer_application_error'))
+            }
+
+            await transfer_corporation_application(
+                auth_token as string,
+                corporation_id,
+                application_id,
+                target_corporation_id,
+            )
+
+            display_corporation = target_corporation
+            fetch_corporation_id = target_corporation_id
+            redirect_url = translatePath(
+                `/alliance/corporations/application/${target_corporation_id}/${application_id}`
+            )
         }
     } catch (error) {
         application_action_error = error.message
@@ -56,14 +86,24 @@ let application:ApplicationDetail | null = null
 let get_corporation_application_error: Error | false = false
 
 try {
-    application = await get_application_by_id(auth_token as string, corporation_id, application_id)
+    application = await get_application_by_id(
+        auth_token as string,
+        fetch_corporation_id,
+        application_id,
+    )
 } catch (error) {
     get_corporation_application_error = error
 }
 
 if (application_action_error) {
+    const dialog_title = action === 'accept'
+        ? t('accept_application_dialog_title')
+        : action === 'transfer'
+            ? t('transfer_application_dialog_title')
+            : t('deny_application_dialog_title')
+
     alert = {
-        title: (action === 'accept' ? t('accept_application_dialog_title') : t('deny_application_dialog_title')),
+        title: dialog_title,
         content: application_action_error,
     }
 
@@ -72,10 +112,17 @@ if (application_action_error) {
         character_name: application?.character_name ?? t('unknown_character'),
     }
 
+    const dialog_corporation = action === 'transfer'
+        ? (
+            JSON.parse(Astro.url.searchParams.get('target_corporation') as string) as CorporationBasic
+            ?? corporation
+        )
+        : corporation
+
     const params = {
         character: JSON.stringify(character),
-        corporation: JSON.stringify(corporation),
-        application_id: application?.id.toString(),
+        corporation: JSON.stringify(dialog_corporation),
+        application_id: application?.id?.toString() ?? application_id.toString(),
         type: action,
         message: application_action_error,
     }
@@ -83,10 +130,8 @@ if (application_action_error) {
     alert.partial = `${translatePath('/partials/dialog_with_application/')}?${query_string(params)}`
 }
 
-import { query_string } from '@helpers/string';
-
 const CORPORATION_APPLICATION_PARTIAL_URL = `${translatePath('/partials/corporation_application_component')}?${query_string({
-    corporation_id: corporation_id,
+    corporation: JSON.stringify(display_corporation),
     application_id: application_id,
 })}`
 
@@ -107,8 +152,9 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
     :
     <CorporationApplication
         application={application as ApplicationDetail}
-        corporation_id={corporation_id}
-        corporation_name={corporation.name}
+        corporation_id={display_corporation.id}
+        corporation_name={display_corporation.name}
         alert={alert}
+        redirect_url={redirect_url}
     />
 }

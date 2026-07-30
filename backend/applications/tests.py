@@ -5,6 +5,7 @@ from django.db.models import signals
 from django.test import Client
 
 from app.test import TestCase
+from applications.discord import notify_application_transferred
 from applications.l3arn import (
     L3ARN_APPLICATION_DESCRIPTION_MAX_LENGTH,
     L3ARN_CORPORATION_NAME,
@@ -151,6 +152,107 @@ class EveCorporationApplicationTestCase(TestCase):
         application = EveCorporationApplication.objects.get(id=application.id)
         self.assertEqual(application.status, "pending")
 
+    @patch("applications.router.notify_application_transferred")
+    def test_transfer_corporation_application_success(self, notify_mock):
+        source_corporation = EveCorporation.objects.create(
+            corporation_id=123, name="Source Corporation"
+        )
+        target_corporation = EveCorporation.objects.create(
+            corporation_id=456, name="Target Corporation"
+        )
+        application = EveCorporationApplication.objects.create(
+            user=self.user,
+            corporation_id=source_corporation.corporation_id,
+            description="Test application",
+            discord_thread_id=999,
+        )
+
+        permission = Permission.objects.get(
+            codename="change_evecorporationapplication"
+        )
+        self.user.user_permissions.add(permission)
+        response = self.client.post(
+            f"{BASE_URL}corporations/{source_corporation.corporation_id}/applications/{application.id}/transfer",
+            data={"corporation_id": target_corporation.corporation_id},
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        application = EveCorporationApplication.objects.get(id=application.id)
+        self.assertEqual(
+            application.corporation_id, target_corporation.corporation_id
+        )
+        self.assertEqual(application.status, "pending")
+        self.assertEqual(
+            response.json(),
+            {
+                "application_id": application.id,
+                "status": "pending",
+                "user_id": application.user.id,
+                "corporation_id": target_corporation.corporation_id,
+            },
+        )
+        notify_mock.assert_called_once_with(
+            application,
+            previous_corporation_id=source_corporation.corporation_id,
+            transferred_by_username=self.user.username,
+        )
+
+    def test_transfer_corporation_application_failure_unauthorized(self):
+        source_corporation = EveCorporation.objects.create(
+            corporation_id=123, name="Source Corporation"
+        )
+        target_corporation = EveCorporation.objects.create(
+            corporation_id=456, name="Target Corporation"
+        )
+        application = EveCorporationApplication.objects.create(
+            user=self.user,
+            corporation_id=source_corporation.corporation_id,
+            description="Test application",
+        )
+
+        response = self.client.post(
+            f"{BASE_URL}corporations/{source_corporation.corporation_id}/applications/{application.id}/transfer",
+            data={"corporation_id": target_corporation.corporation_id},
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 403)
+        application = EveCorporationApplication.objects.get(id=application.id)
+        self.assertEqual(
+            application.corporation_id, source_corporation.corporation_id
+        )
+
+    def test_transfer_corporation_application_rejects_non_pending(self):
+        source_corporation = EveCorporation.objects.create(
+            corporation_id=123, name="Source Corporation"
+        )
+        target_corporation = EveCorporation.objects.create(
+            corporation_id=456, name="Target Corporation"
+        )
+        application = EveCorporationApplication.objects.create(
+            user=self.user,
+            corporation_id=source_corporation.corporation_id,
+            description="Test application",
+            status="accepted",
+        )
+
+        permission = Permission.objects.get(
+            codename="change_evecorporationapplication"
+        )
+        self.user.user_permissions.add(permission)
+        response = self.client.post(
+            f"{BASE_URL}corporations/{source_corporation.corporation_id}/applications/{application.id}/transfer",
+            data={"corporation_id": target_corporation.corporation_id},
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 400)
+        application = EveCorporationApplication.objects.get(id=application.id)
+        self.assertEqual(
+            application.corporation_id, source_corporation.corporation_id
+        )
+
 
 class L3arnCorporationApplicationValidationTest(TestCase):
     """L3ARN application description length validation."""
@@ -266,7 +368,10 @@ class EveCorporationApplicationSignalTest(TestCase):
             user=self.user,
         )
 
-        with patch("applications.signals.discord") as discord_mock:
+        with patch("applications.discord.discord") as discord_mock:
+            discord_mock.create_forum_thread.return_value.json.return_value = {
+                "id": "555"
+            }
             EveCorporationApplication.objects.create(
                 user=self.user,
                 corporation_id=corporation.corporation_id,
@@ -275,3 +380,59 @@ class EveCorporationApplicationSignalTest(TestCase):
             )
 
             discord_mock.create_message.assert_called()
+
+    def test_notify_application_transferred_updates_thread(self):
+        signals.post_save.disconnect(
+            sender=EveCharacter,
+            dispatch_uid="populate_eve_character_public_data",
+        )
+        signals.post_save.disconnect(
+            sender=EveCorporation,
+            dispatch_uid="eve_corporation_post_save",
+        )
+        signals.post_save.disconnect(
+            sender=EveCorporationApplication,
+            dispatch_uid="eve_corporation_application_post_save",
+        )
+
+        source_corporation = EveCorporation.objects.create(
+            corporation_id=123, name="Source Corporation"
+        )
+        target_corporation = EveCorporation.objects.create(
+            corporation_id=456, name="Target Corporation"
+        )
+        char = EveCharacter.objects.create(
+            character_id=1234,
+            character_name="Mr User",
+            user=self.user,
+        )
+        set_primary_character(self.user, char)
+        DiscordUser.objects.create(
+            id=1,
+            discord_tag="MrUser",
+            user=self.user,
+        )
+        application = EveCorporationApplication.objects.create(
+            user=self.user,
+            corporation_id=target_corporation.corporation_id,
+            description="Test application",
+            discord_thread_id=999,
+        )
+
+        with patch("applications.discord.discord") as discord_mock:
+            notify_application_transferred(
+                application,
+                previous_corporation_id=source_corporation.corporation_id,
+                transferred_by_username="Recruiter",
+            )
+
+            discord_mock.rename_thread.assert_called_once_with(
+                channel_id=999,
+                name="Mr User - Target Corporation",
+            )
+            discord_mock.update_message.assert_called_once()
+            discord_mock.create_message.assert_called_once()
+            message = discord_mock.create_message.call_args.kwargs["message"]
+            self.assertIn("Source Corporation", message)
+            self.assertIn("Target Corporation", message)
+            self.assertIn("Recruiter", message)

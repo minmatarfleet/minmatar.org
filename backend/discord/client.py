@@ -262,6 +262,15 @@ class DiscordClient(DiscordBaseClient):
             f"{BASE_URL}/channels/{channel_id}/messages/{message_id}",
         )
 
+    def rename_thread(self, channel_id, name: str):
+        """Rename a discord thread (max 100 characters)."""
+        return self.patch(
+            f"{BASE_URL}/channels/{channel_id}",
+            json={
+                "name": (name or "")[:100],
+            },
+        )
+
     def close_thread(self, channel_id):
         """Close a discord thread"""
         return self.patch(

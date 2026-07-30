@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from authentication import AuthBearer
 from eveonline.models import EveCharacter, EveCorporation
 
+from .discord import notify_application_transferred
 from .l3arn import (
     is_l3arn_corporation,
     validate_application_description,
@@ -43,6 +44,10 @@ class CorporationApplicationDetailResponse(CorporationApplicationResponse):
 
 class CorporationApplicationRequest(BaseModel):
     description: str
+
+
+class TransferCorporationApplicationRequest(BaseModel):
+    corporation_id: int
 
 
 class ErrorResponse(BaseModel):
@@ -232,6 +237,73 @@ def reject_corporation_application(
     logger.info(
         "Application for %s rejected by %s",
         application.user.username,
+        request.user.username,
+    )
+
+    return {
+        "status": application.status,
+        "user_id": application.user.id,
+        "corporation_id": application.corporation_id,
+        "application_id": application.id,
+    }
+
+
+@router.post(
+    "/corporations/{corporation_id}/applications/{application_id}/transfer",
+    summary="Transfer a corporation application to another corporation",
+    auth=AuthBearer(),
+    response={
+        200: CorporationApplicationResponse,
+        400: ErrorResponse,
+        403: ErrorResponse,
+        404: ErrorResponse,
+    },
+)
+def transfer_corporation_application(
+    request,
+    corporation_id: int,
+    application_id: int,
+    payload: TransferCorporationApplicationRequest,
+):
+    if not can_use_feature(request.user, "applications.manage"):
+        return 403, {
+            "detail": "You do not have permission to transfer applications."
+        }
+
+    application = EveCorporationApplication.objects.filter(
+        corporation_id=corporation_id, id=application_id
+    ).first()
+    if not application:
+        return 404, {"detail": "Application not found."}
+
+    if application.status != "pending":
+        return 400, {"detail": "Only pending applications can be transferred."}
+
+    target_corporation_id = payload.corporation_id
+    if target_corporation_id == application.corporation_id:
+        return 400, {"detail": "Application is already for this corporation."}
+
+    target_corporation = EveCorporation.objects.filter(
+        corporation_id=target_corporation_id
+    ).first()
+    if not target_corporation:
+        return 404, {"detail": "Target corporation not found."}
+
+    previous_corporation_id = application.corporation_id
+    application.corporation_id = target_corporation_id
+    application.save()
+
+    notify_application_transferred(
+        application,
+        previous_corporation_id=previous_corporation_id,
+        transferred_by_username=request.user.username,
+    )
+
+    logger.info(
+        "Application %s transferred from %s to %s by %s",
+        application.id,
+        previous_corporation_id,
+        target_corporation_id,
         request.user.username,
     )
 

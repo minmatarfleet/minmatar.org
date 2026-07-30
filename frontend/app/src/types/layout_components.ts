@@ -397,7 +397,7 @@ export interface CharacterBasic {
     corporation?:       CorporationBasic;
 }
 
-export type GroupRequestAction = 'accept' | 'deny'
+export type GroupRequestAction = 'accept' | 'deny' | 'transfer'
 
 export interface ModalCover {
     image:          string;
