@@ -8,7 +8,10 @@ from django.utils import timezone
 
 from discord.client import DiscordClient
 from discord.models import DiscordChannel
-from feed.constants import AMARR_FLEET_PING_SESSION_SECONDS
+from feed.constants import (
+    AMARR_FLEET_PING_MAX_AGE_SECONDS,
+    AMARR_FLEET_PING_SESSION_SECONDS,
+)
 from feed.models import FeedAmarrFleetAlert, FeedAmarrFleetPing, FeedEvent
 
 logger = logging.getLogger(__name__)
@@ -162,7 +165,17 @@ def _event_snapshot(event: FeedEvent) -> dict[str, Any]:
         "roster": list(payload.get("roster") or []),
         "roster_total": int(payload.get("roster_total") or 0),
         "cluster_key": event.cluster_key or "",
+        "is_active": bool(event.is_active),
+        "occurred_at": event.occurred_at,
     }
+
+
+def _is_fresh_fleet(event: FeedEvent) -> bool:
+    """True when the fleet tip is recent enough to warrant Discord traffic."""
+    if event.occurred_at is None:
+        return False
+    age_seconds = (timezone.now() - event.occurred_at).total_seconds()
+    return age_seconds <= AMARR_FLEET_PING_MAX_AGE_SECONDS
 
 
 def _active_alert(solar_system_id: int) -> FeedAmarrFleetAlert | None:
@@ -178,6 +191,25 @@ def _active_alert(solar_system_id: int) -> FeedAmarrFleetAlert | None:
         .order_by("-last_activity_at")
         .first()
     )
+
+
+def _alert_for_cluster(cluster_key: str) -> FeedAmarrFleetAlert | None:
+    """Return the alert previously used for this cluster, if still in session."""
+    if not cluster_key:
+        return None
+    ping = (
+        FeedAmarrFleetPing.objects.select_related("alert")
+        .filter(cluster_key=cluster_key, alert__isnull=False)
+        .first()
+    )
+    if ping is None or ping.alert is None:
+        return None
+    cutoff = timezone.now() - timedelta(
+        seconds=AMARR_FLEET_PING_SESSION_SECONDS
+    )
+    if ping.alert.last_activity_at < cutoff:
+        return None
+    return ping.alert
 
 
 def _post_alert_messages(
@@ -379,6 +411,11 @@ def maybe_notify_amarr_fleet(
     """Create or update a Discord Amarr fleet alert from a feed event.
 
     Returns True if a Discord message was created or edited, False if skipped.
+
+    Guards against rollup catch-up spam:
+    - Only active fleets with a fresh ``occurred_at`` may create new messages.
+    - Cluster keys that were already pinged never create a second message;
+      they only edit an in-session alert when one still exists.
     """
     if not _amarr_fleet_ping_channel_ids() or not _is_amarr_fleet_event(event):
         return False
@@ -392,7 +429,18 @@ def maybe_notify_amarr_fleet(
         return False
 
     client = discord_client or DiscordClient()
-    existing = _active_alert(snapshot["solar_system_id"])
+    existing = _alert_for_cluster(snapshot["cluster_key"]) or _active_alert(
+        snapshot["solar_system_id"]
+    )
+    already_pinged = FeedAmarrFleetPing.objects.filter(
+        cluster_key=snapshot["cluster_key"]
+    ).exists()
+
+    # Historical / inactive rollup rewrites: never open a new Discord thread.
+    if existing is None:
+        if already_pinged or not event.is_active or not _is_fresh_fleet(event):
+            return False
+
     try:
         alert, created = _upsert_amarr_fleet_alert(
             snapshot=snapshot,

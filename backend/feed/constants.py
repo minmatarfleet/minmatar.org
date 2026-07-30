@@ -145,6 +145,9 @@ CAPITAL_PING_SESSION_SECONDS = 30 * 60
 # Amarr fleet Discord pings (fleet_active rollups). Reuse one Discord message
 # for further updates to the same system engagement within the session TTL.
 AMARR_FLEET_PING_SESSION_SECONDS = 30 * 60
+# Skip rollup catch-up / historical rewrites. Only live fleets whose tip is
+# fresher than this should create Discord traffic.
+AMARR_FLEET_PING_MAX_AGE_SECONDS = 20 * 60
 METERS_PER_LIGHT_YEAR = 9_460_528_400_000_000
 CAPITAL_SHIP_GROUPS = frozenset(
     {
