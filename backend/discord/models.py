@@ -163,6 +163,12 @@ class DiscordChannel(models.Model):
             "When enabled, capital kills within 8 LY of Amamake are posted here."
         ),
     )
+    receive_amarr_fleet_pings = models.BooleanField(
+        default=False,
+        help_text=(
+            "When enabled, Amarr fleet_active feed events are posted here."
+        ),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import logging
 from datetime import timedelta
 
 from django.utils import timezone
 
+from feed.helpers.amarr_fleet_pings import maybe_notify_amarr_fleet
 from feed.models import (
     FeedEvent,
     FeedEventKillmailLink,
@@ -11,6 +13,8 @@ from feed.models import (
 )
 from feed.rollups.config import get_rollup_config
 from feed.rollups.types import RollupResult
+
+logger = logging.getLogger(__name__)
 
 FLEET_ACTIVE_ROLLUP = "fleet_active"
 # Ordered smallest -> largest; index is used to detect tier upgrades.
@@ -22,8 +26,24 @@ def write_rollup_results(results: list[RollupResult]) -> int:
     for result in results:
         event = _upsert_event(result)
         _sync_killmail_links(event, result.killmail_ids)
+        _maybe_notify_amarr_fleet(event)
         written += 1
     return written
+
+
+def _maybe_notify_amarr_fleet(event: FeedEvent) -> None:
+    if (
+        event.rollup_code != FLEET_ACTIVE_ROLLUP
+        or event.accent != FeedEvent.Accent.AMARR
+    ):
+        return
+    try:
+        maybe_notify_amarr_fleet(event)
+    except Exception:
+        # Discord failures must not roll back feed event writes.
+        logger.exception(
+            "Amarr fleet Discord notify failed for event %s", event.pk
+        )
 
 
 def _event_lookup(result: RollupResult) -> dict:
