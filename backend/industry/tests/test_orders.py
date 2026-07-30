@@ -1,6 +1,7 @@
 """Tests for industry orders endpoints: GET /orders, GET /orders/{id} (public)."""
 
 import json
+import uuid
 from datetime import timedelta
 from decimal import Decimal
 
@@ -34,7 +35,10 @@ from tribes.models import Tribe, TribeGroup
 
 
 def _acknowledge_orders_onboarding(user):
-    program = OnboardingProgram.objects.get(pk=OnboardingProgramType.ORDERS)
+    program, _ = OnboardingProgram.objects.get_or_create(
+        program_type=OnboardingProgramType.ORDERS,
+        defaults={"version": uuid.uuid4()},
+    )
     UserOnboardingAcknowledgment.objects.update_or_create(
         user=user,
         program=program,

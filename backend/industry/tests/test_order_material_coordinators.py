@@ -1,6 +1,7 @@
 """Tests for mineral / PI order coordinators and fixed catalog options."""
 
 import json
+import uuid
 from datetime import timedelta
 
 from django.utils import timezone
@@ -31,7 +32,10 @@ from onboarding.models import (
 
 
 def _acknowledge_orders_onboarding(user):
-    program = OnboardingProgram.objects.get(pk=OnboardingProgramType.ORDERS)
+    program, _ = OnboardingProgram.objects.get_or_create(
+        program_type=OnboardingProgramType.ORDERS,
+        defaults={"version": uuid.uuid4()},
+    )
     UserOnboardingAcknowledgment.objects.update_or_create(
         user=user,
         program=program,

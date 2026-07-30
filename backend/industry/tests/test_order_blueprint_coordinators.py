@@ -1,6 +1,7 @@
 """Tests for order LP stockpiles and blueprint coordinators."""
 
 import json
+import uuid
 from datetime import timedelta
 from unittest.mock import patch
 
@@ -39,7 +40,10 @@ TLIB_CORP_ID = 1000182
 
 
 def _acknowledge_orders_onboarding(user):
-    program = OnboardingProgram.objects.get(pk=OnboardingProgramType.ORDERS)
+    program, _ = OnboardingProgram.objects.get_or_create(
+        program_type=OnboardingProgramType.ORDERS,
+        defaults={"version": uuid.uuid4()},
+    )
     UserOnboardingAcknowledgment.objects.update_or_create(
         user=user,
         program=program,

@@ -34,6 +34,10 @@ class OnboardingApiTestCase(TestCase):
         )
         self.token = _make_token(self.user)
         self.auth = {"HTTP_AUTHORIZATION": f"Bearer {self.token}"}
+        OnboardingProgram.objects.get_or_create(
+            program_type=ORDERS,
+            defaults={"version": uuid.uuid4()},
+        )
 
     def test_get_unknown_program_type_returns_404(self):
         r = self.client.get(
