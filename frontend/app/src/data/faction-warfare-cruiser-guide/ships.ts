@@ -8,10 +8,10 @@ export const arbitratorGuide: ShipGuide = {
     shipId: 628,
     tagline: 'Drone DPS with a flexible layout: kite, AB brawl, or TD support.',
     bonuses: [
-        { label: 'Drone damage and hitpoints', value: '10%' },
-        { label: 'Tracking Disruptor effectiveness', value: '7.5%' },
+        { label: 'Drone hitpoints, damage, and mining yield', value: '10%' },
+        { label: 'Weapon Disruption effectiveness', value: '7.5%' },
     ],
-    roleBonus: 'Drone damage platform with strong Tracking Disruptor bonuses',
+    roleBonus: 'Drone damage platform with strong Weapon Disruption bonuses',
     sections: [
         {
             id: 'overview',
@@ -84,17 +84,16 @@ export const augniGuide: ShipGuide = {
     shipId: 29337,
     tagline: 'Polarized apex predator, or Pulse Augoror Navy Issue when you want to live.',
     bonuses: [
-        { label: 'Medium Energy Turret damage', value: '5%' },
-        { label: 'Armor hitpoints', value: '5%' },
-        { label: 'Energy Nosferatu / Neutralizer amount', value: '10%' },
+        { label: 'Medium Energy Turret damage', value: '25%' },
+        { label: 'Ship armor hitpoints', value: '10%' },
     ],
-    roleBonus: 'Armor combat Navy Issue with energy warfare bonuses',
+    roleBonus: 'Armor combat Navy Issue with heavy energy turret damage and armor hitpoints',
     sections: [
         {
             id: 'overview',
             title: 'Overview',
             paragraphs: [
-                'Strong solo Navy Issue. The hull HP bonus is what makes polarized play real, and the same frame carries a safer Scorch kite with medium neuts. Pick aggression or stay-alive; both are first-rate.',
+                'Strong solo Navy Issue. The armor HP bonus is what makes polarized play real, and the same frame carries a safer Scorch kite with medium neuts in the utility highs. Pick aggression or stay-alive; both are first-rate.',
             ],
         },
         {
@@ -151,9 +150,9 @@ export const mallerGuide: ShipGuide = {
     tagline: 'Underrated pulse brick: eight-hundred plate and real DPS.',
     bonuses: [
         { label: 'Medium Energy Turret damage', value: '5%' },
-        { label: 'Armor hitpoints', value: '5%' },
+        { label: 'All armor resistances', value: '4%' },
     ],
-    roleBonus: 'Armor laser brick with medium energy turret damage bonuses',
+    roleBonus: 'Armor laser brick with medium energy turret damage and resist bonuses',
     sections: [
         {
             id: 'overview',
@@ -196,10 +195,10 @@ export const omenGuide: ShipGuide = {
     shipId: 2006,
     tagline: 'Underrated laser T1: quad lights, kite pulse, and plex snipers.',
     bonuses: [
-        { label: 'Medium Energy Turret damage', value: '5%' },
-        { label: 'Medium Energy Turret capacitor use', value: '10% reduction' },
+        { label: 'Medium Energy Turret rate of fire', value: '5%' },
+        { label: 'Medium Energy Turret activation cost', value: '10% reduction' },
     ],
-    roleBonus: 'Laser combat cruiser with medium energy turret capacitor efficiency',
+    roleBonus: 'Laser combat cruiser with medium energy turret rate of fire and capacitor efficiency',
     sections: [
         {
             id: 'overview',
@@ -277,11 +276,10 @@ export const omenniGuide: ShipGuide = {
     shipId: 17709,
     tagline: 'Mid-range kite is top tier; beam sniper covers plex denial.',
     bonuses: [
-        { label: 'Medium Energy Turret damage', value: '5%' },
-        { label: 'Medium Energy Turret tracking', value: '7.5%' },
-        { label: 'Capacitor capacity', value: '5%' },
+        { label: 'Medium Energy Turret damage', value: '10%' },
+        { label: 'Medium Energy Turret optimal range', value: '10%' },
     ],
-    roleBonus: 'Combat Navy Issue with medium energy turret tracking and capacitor',
+    roleBonus: 'Combat Navy Issue with medium energy turret damage and optimal range',
     sections: [
         {
             id: 'overview',
@@ -343,10 +341,10 @@ export const caracalniGuide: ShipGuide = {
     shipId: 17634,
     tagline: 'Idiot-proof HAM brawler — top tier for new pilots.',
     bonuses: [
-        { label: 'Heavy Assault Missile and Heavy Missile damage', value: '5%' },
-        { label: 'Shield boost amount', value: '7.5%' },
+        { label: 'Rapid Light, Heavy, and Heavy Assault Missile Launcher rate of fire', value: '6%' },
+        { label: 'Heavy Missile and Heavy Assault Missile explosion radius', value: '5%' },
     ],
-    roleBonus: 'Missile Navy Issue with heavy assault missile damage and shield boost',
+    roleBonus: 'Missile Navy Issue with launcher rate of fire and HAM/HML application',
     sections: [
         {
             id: 'overview',
@@ -390,10 +388,11 @@ export const ospreyniGuide: ShipGuide = {
     shipId: 29340,
     tagline: 'Mixed hardpoints: double-neut HAM and RLML kite.',
     bonuses: [
-        { label: 'Heavy Assault Missile and Heavy Missile damage', value: '5%' },
-        { label: 'Shield boost amount', value: '7.5%' },
+        { label: 'Heavy Missile and Heavy Assault Missile max velocity', value: '10%' },
+        { label: 'Kinetic Light, Heavy, and Heavy Assault Missile damage', value: '25%' },
+        { label: 'EM, explosive, and thermal Light, Heavy, and Heavy Assault Missile damage', value: '20%' },
     ],
-    roleBonus: 'Missile Navy Issue with utility highs for neuts and projection tools',
+    roleBonus: 'Missile Navy Issue with kinetic-favoured damage and HAM/HML velocity; utility highs for neuts',
     sections: [
         {
             id: 'overview',
@@ -413,7 +412,7 @@ export const ospreyniGuide: ShipGuide = {
             id: 'rhml-kite',
             title: 'RLML Osprey Navy Issue',
             paragraphs: [
-                'Damage-per-level clip into kiting cruisers with a very large XLASB tank. Anything that catches you is scary — leave early.',
+                'Kinetic-favoured missile damage and velocity bonus clip into kiting cruisers with a very large XLASB tank. Anything that catches you is scary — leave early.',
             ],
         },
     ],
@@ -458,11 +457,11 @@ export const eniGuide: ShipGuide = {
     shipId: 29344,
     tagline: 'Still top tier: free plate feel, scram-edge falloff, Neutrons.',
     bonuses: [
-        { label: 'Medium Hybrid Turret damage', value: '5%' },
-        { label: 'Armor hitpoints', value: '5%' },
-        { label: 'Armor plate mass penalty', value: '5% reduction' },
+        { label: 'Medium Hybrid Turret damage', value: '17.5%' },
+        { label: 'Medium Hybrid Turret falloff', value: '7.5%' },
+        { label: 'Hull Upgrades mass penalty', value: '15% reduction' },
     ],
-    roleBonus: 'Armor hybrid Navy Issue with plate mass reduction and hybrid damage',
+    roleBonus: 'Armor hybrid Navy Issue with heavy hybrid damage, falloff, and plate mass reduction',
     sections: [
         {
             id: 'overview',
@@ -545,10 +544,10 @@ export const vexorGuide: ShipGuide = {
     shipId: 626,
     tagline: 'Neut-plate plex defender; blaster trade fit for T1 work.',
     bonuses: [
-        { label: 'Drone damage and hitpoints', value: '10%' },
-        { label: 'Drone bandwidth', value: 'bonus varies by level' },
+        { label: 'Medium Hybrid Turret damage', value: '5%' },
+        { label: 'Drone hitpoints, damage, and mining yield', value: '10%' },
     ],
-    roleBonus: 'Drone combat cruiser with strong bandwidth and drone damage',
+    roleBonus: 'Drone combat cruiser with hybrid turret and drone damage bonuses',
     sections: [
         {
             id: 'overview',
@@ -614,10 +613,11 @@ export const vniGuide: ShipGuide = {
     shipId: 17843,
     tagline: 'Dual-rep landlord: barely loses a scram fight without neuts-plus-DPS.',
     bonuses: [
-        { label: 'Drone damage and hitpoints', value: '10%' },
-        { label: 'Armor repairer amount', value: '7.5%' },
+        { label: 'Drone hitpoints, damage, and tracking speed', value: '10%' },
+        { label: 'Medium Hybrid Turret damage and tracking speed', value: '10%' },
+        { label: 'Repair Systems amount', value: '7.5%' },
     ],
-    roleBonus: 'Drone Navy Issue with armor repair amount bonuses',
+    roleBonus: 'Drone Navy Issue with hybrid damage/tracking and armor repair amount',
     sections: [
         {
             id: 'overview',
@@ -662,10 +662,11 @@ export const bellicoseGuide: ShipGuide = {
     shipId: 630,
     tagline: 'Cheaper Caracal energy: HAM grinders and XLASB plex work.',
     bonuses: [
-        { label: 'Missile launcher rate of fire', value: '5% reduction' },
-        { label: 'Target painter effectiveness', value: '7.5%' },
+        { label: 'Rapid Light, Heavy, and Heavy Assault Missile Launcher rate of fire', value: '5%' },
+        { label: 'Target Painting effectiveness', value: '7.5%' },
+        { label: 'Heavy Missile and Heavy Assault Missile explosion velocity', value: '7.5%' },
     ],
-    roleBonus: 'Missile T1 cruiser with launcher rate of fire and target painter bonuses',
+    roleBonus: 'Missile T1 cruiser with launcher rate of fire, application, and target painter bonuses',
     sections: [
         {
             id: 'overview',
@@ -727,10 +728,10 @@ export const scythefiGuide: ShipGuide = {
     shipId: 29336,
     tagline: 'Dual-prop leave-machine; armor RLML for low-commit plex (XLASB RLML refit).',
     bonuses: [
-        { label: 'Missile damage', value: '5%' },
-        { label: 'Shield boost amount', value: '7.5%' },
+        { label: 'Medium Projectile Turret rate of fire', value: '10%' },
+        { label: 'Light, Heavy, and Heavy Assault Missile damage', value: '10%' },
     ],
-    roleBonus: 'Fleet Issue combat hull with missile damage and shield boost',
+    roleBonus: 'Fleet Issue combat hull with projectile rate of fire and missile damage',
     sections: [
         {
             id: 'overview',
@@ -809,16 +810,16 @@ export const stabberGuide: ShipGuide = {
     shipId: 622,
     tagline: 'AB XLASB plex hold and Vulcan half-kite — never MWD scram.',
     bonuses: [
-        { label: 'Medium Projectile Turret damage', value: '5%' },
-        { label: 'Max velocity', value: '5%' },
+        { label: 'Medium Projectile Turret rate of fire', value: '7.5%' },
+        { label: 'Medium Projectile Turret falloff', value: '10%' },
     ],
-    roleBonus: 'Projectile T1 cruiser with turret damage and velocity bonuses',
+    roleBonus: 'Projectile T1 cruiser with turret rate of fire and falloff',
     sections: [
         {
             id: 'overview',
             title: 'Overview',
             paragraphs: [
-                'Same job family as Bellicose for plex defense, with projectile tracking instead of missiles. Strong against T1 cruisers; can get under laser boats. Never fit microwarpdrive plus scram for solo — you will lose more than you win, even into Navy kiters, because the tank is too thin.',
+                'Same job family as Bellicose for plex defense, with projectile rate of fire and falloff instead of missiles. Strong against T1 cruisers; can get under laser boats. Never fit microwarpdrive plus scram for solo — you will lose more than you win, even into Navy kiters, because the tank is too thin.',
             ],
         },
         {
@@ -876,11 +877,11 @@ export const stabberfiGuide: ShipGuide = {
     shipId: 17713,
     tagline: 'Fairly weak, still useful: dual-prop plate for range control.',
     bonuses: [
-        { label: 'Medium Projectile Turret damage', value: '5%' },
-        { label: 'Medium Projectile Turret tracking', value: '7.5%' },
-        { label: 'Medium Projectile Turret falloff', value: '7.5%' },
+        { label: 'Medium Projectile Turret rate of fire', value: '7.5%' },
+        { label: 'Medium Projectile Turret tracking speed', value: '10%' },
+        { label: 'Medium Projectile Turret falloff', value: '5%' },
     ],
-    roleBonus: 'Fleet Issue combat hull with projectile damage, tracking, and falloff',
+    roleBonus: 'Fleet Issue combat hull with projectile rate of fire, tracking, and falloff',
     sections: [
         {
             id: 'overview',
