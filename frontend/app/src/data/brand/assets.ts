@@ -103,4 +103,9 @@ export const mascotAssets: BrandAssetRow[] = [
         description: 'Sneak — coffee',
         png512: '/images/sneak-coffee.png',
     },
+    {
+        name: 'Sneak teaching',
+        description: 'Sneak — teaching (L3ARN whiteboard)',
+        png512: '/images/sneak-teaching.png',
+    },
 ]
