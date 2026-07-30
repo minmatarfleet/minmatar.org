@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
@@ -196,6 +197,50 @@ class AmarrFleetPingTestCase(TestCase):
         self.assertEqual(FeedAmarrFleetAlert.objects.count(), 0)
 
     @patch("feed.helpers.amarr_fleet_pings.DiscordClient")
+    def test_skips_inactive_and_stale_fleets(self, mock_client_cls):
+        mock_client = MagicMock()
+        mock_client_cls.return_value = mock_client
+
+        inactive = _amarr_event(
+            cluster_key="fleet_active:30002537:500003:2026-07-29T10:00"
+        )
+        inactive.is_active = False
+        inactive.save()
+        self.assertFalse(maybe_notify_amarr_fleet(inactive))
+
+        stale = _amarr_event(
+            cluster_key="fleet_active:30002537:500003:2026-07-29T11:00"
+        )
+        stale.occurred_at = timezone.now() - timedelta(hours=3)
+        stale.save()
+        self.assertFalse(maybe_notify_amarr_fleet(stale))
+        mock_client.create_message.assert_not_called()
+
+    @patch("feed.helpers.amarr_fleet_pings.DiscordClient")
+    def test_skips_already_pinged_cluster_without_session(
+        self, mock_client_cls
+    ):
+        mock_client = MagicMock()
+        create_response = MagicMock()
+        create_response.json.return_value = {"id": "999888704"}
+        mock_client.create_message.return_value = create_response
+        mock_client_cls.return_value = mock_client
+
+        event = _amarr_event()
+        self.assertTrue(maybe_notify_amarr_fleet(event))
+        alert = FeedAmarrFleetAlert.objects.get()
+        # Expire the session so catch-up cannot open a second message.
+        alert.last_activity_at = timezone.now() - timedelta(hours=2)
+        alert.save(update_fields=["last_activity_at"])
+
+        mock_client.create_message.reset_mock()
+        mock_client.update_message.reset_mock()
+        self.assertFalse(maybe_notify_amarr_fleet(event))
+        mock_client.create_message.assert_not_called()
+        mock_client.update_message.assert_not_called()
+        self.assertEqual(FeedAmarrFleetAlert.objects.count(), 1)
+
+    @patch("feed.helpers.amarr_fleet_pings.DiscordClient")
     def test_writer_notifies_amarr_fleet_active(self, mock_client_cls):
         mock_client = MagicMock()
         create_response = MagicMock()
@@ -235,3 +280,39 @@ class AmarrFleetPingTestCase(TestCase):
         self.assertEqual(FeedAmarrFleetAlert.objects.count(), 1)
         self.assertEqual(FeedAmarrFleetPing.objects.count(), 1)
         mock_client.create_message.assert_called_once()
+
+    @patch("feed.helpers.amarr_fleet_pings.DiscordClient")
+    def test_writer_skips_historical_amarr_catchup(self, mock_client_cls):
+        mock_client = MagicMock()
+        mock_client_cls.return_value = mock_client
+
+        write_rollup_results(
+            [
+                RollupResult(
+                    kind=FeedEvent.Kind.FLEET_ACTIVE,
+                    occurred_at=timezone.now() - timedelta(hours=5),
+                    title="Large Amarr gang active",
+                    subheader="Vard · 14 kills · 23 pilots · ~19m",
+                    preview="Large gang involving battlecruisers.",
+                    body="",
+                    accent=FeedEvent.Accent.AMARR,
+                    payload={
+                        "faction": "amarr",
+                        "system_id": 30002538,
+                        "system_name": "Vard",
+                        "kills": 14,
+                        "pilots": 23,
+                        "roster": [],
+                        "roster_total": 23,
+                    },
+                    rollup_code="fleet_active",
+                    rollup_version=1,
+                    cluster_key="fleet_active:30002538:500003:2026-07-29T12:00",
+                    is_active=False,
+                )
+            ]
+        )
+
+        self.assertEqual(FeedEvent.objects.count(), 1)
+        self.assertEqual(FeedAmarrFleetAlert.objects.count(), 0)
+        mock_client.create_message.assert_not_called()
