@@ -86,28 +86,34 @@ try {
             <section id="matchups" data-section-id="matchups" class="nfg-section nfg-panel" aria-labelledby="nfg-matchups-title">
                 <h2 id="nfg-matchups-title" class="nfg-section__title">Matchup Charts</h2>
 
-                <div class="nfg-legend" aria-label="Matchup rating legend">
-                    {
-                        matchupLegend.map((item) => (
-                            <div class="nfg-legend__item">
-                                <span class:list={['nfg-legend__symbol', `nfg-legend__symbol--${item.rating === '?' ? 'unknown' : item.rating.replace(/\+/g, 'plus').replace(/-/g, 'minus').replace(/=/g, 'even')}`]}>
-                                    {item.rating}
-                                </span>
-                                <span class="nfg-legend__label">
-                                    <strong>{item.label}</strong>
-                                    <span>{item.description}</span>
-                                </span>
-                            </div>
-                        ))
-                    }
-                </div>
+                <p class="nfg-charts-mobile-note">
+                    Matchup charts are available on desktop.
+                </p>
 
-                <div class="nfg-charts-grid">
-                    {
-                        matchupCharts.map((chart) => (
-                            <NavyFrigateGuideMatchupChart chart={chart} />
-                        ))
-                    }
+                <div class="nfg-charts-desktop">
+                    <div class="nfg-legend" aria-label="Matchup rating legend">
+                        {
+                            matchupLegend.map((item) => (
+                                <div class="nfg-legend__item">
+                                    <span class:list={['nfg-legend__symbol', `nfg-legend__symbol--${item.rating === '?' ? 'unknown' : item.rating.replace(/\+/g, 'plus').replace(/-/g, 'minus').replace(/=/g, 'even')}`]}>
+                                        {item.rating}
+                                    </span>
+                                    <span class="nfg-legend__label">
+                                        <strong>{item.label}</strong>
+                                        <span>{item.description}</span>
+                                    </span>
+                                </div>
+                            ))
+                        }
+                    </div>
+
+                    <div class="nfg-charts-grid">
+                        {
+                            matchupCharts.map((chart) => (
+                                <NavyFrigateGuideMatchupChart chart={chart} />
+                            ))
+                        }
+                    </div>
                 </div>
             </section>
 
@@ -361,6 +367,30 @@ try {
 
         .nfg-legend__label span {
             font-size: var(--step--1);
+        }
+    }
+
+    .nfg-charts-mobile-note {
+        margin: 0;
+        padding: var(--space-s);
+        border: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+        background: color-mix(in srgb, var(--component-background) 55%, transparent);
+        font-size: var(--step--1);
+        line-height: 1.55;
+        color: var(--text-color-secondary, var(--faded));
+    }
+
+    .nfg-charts-desktop {
+        display: none;
+    }
+
+    @media (min-width: 48rem) {
+        .nfg-charts-mobile-note {
+            display: none;
+        }
+
+        .nfg-charts-desktop {
+            display: contents;
         }
     }
 
