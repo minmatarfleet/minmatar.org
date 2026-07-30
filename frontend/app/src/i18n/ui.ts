@@ -2796,7 +2796,7 @@ export const ui = {
         'fittings_plural': '{count} fittings',
         'fittings_singular': '1 fitting',
         'ship_fittings_template': '{name} fittings',
-        'atrocities_description_fallback': 'Zigg Omelo: I mean they are clearly brutal and guilty of war crimes.',
+        'ministry_description_fallback': 'Zigg Omelo: I mean they are clearly brutal and guilty of war crimes.',
         'select_character_to_add': 'Select character to add',
         'isk_destroyed_template': '{amount} ISK destroyed',
         'destroyed_on_template': 'Destroyed on {daterange}',

@@ -19,7 +19,7 @@ const {
     picture_placement = 'left',
 } = Astro.props
 
-const TWAN_MOLENAAR_ID = 2114993571
+const THRAXIS_GREY_ID = 2114993571
 const HENO = 242136282
 
 import { marked } from 'marked';
@@ -32,8 +32,8 @@ import StylessButton from '@components/blocks/StylessButton.astro';
 ---
 
 <CorporationSlide
-    id="atrocities-slide"
-    ceo_image='/images/corporations/atrocities/ceo.webp'
+    id="ministry-slide"
+    ceo_image='/images/corporations/ministry/ceo.webp'
     ceo_character_id={HENO}
     corporation={corporation}
     is_user_corporation={is_user_corporation}
@@ -47,21 +47,21 @@ import StylessButton from '@components/blocks/StylessButton.astro';
             show_character_modal() {
                 show_modal({
                     partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
-                        character_id: TWAN_MOLENAAR_ID.toString(),
+                        character_id: THRAXIS_GREY_ID.toString(),
                     })}',
                 })
             }
         }`}
         x-on:click="show_character_modal()"
     >
-        <img src="/images/corporations/atrocities/co-ceo.webp" />
+        <img src="/images/corporations/ministry/co-ceo.webp" />
     </StylessButton>
     
-    <img slot="ships" class="[ ikitursa ]" src="/images/corporations/atrocities/ikitursa.png" />
-    <img slot="ships" class="[ hecate ]" src="/images/corporations/atrocities/hecate.png" />
-    <img slot="ships" class="[ orthrus ]" src="/images/corporations/atrocities/orthrus.png" />
+    <img slot="ships" class="[ ikitursa ]" src="/images/corporations/ministry/ikitursa.png" />
+    <img slot="ships" class="[ hecate ]" src="/images/corporations/ministry/hecate.png" />
+    <img slot="ships" class="[ orthrus ]" src="/images/corporations/ministry/orthrus.png" />
 
-    <Flexblock set:html={marked.parse(corporation.introduction ? corporation.introduction : t('atrocities_description_fallback'), { renderer })} />
+    <Flexblock set:html={marked.parse(corporation.introduction ? corporation.introduction : t('ministry_description_fallback'), { renderer })} />
 </CorporationSlide>
 
 <style lang="scss">
@@ -202,7 +202,7 @@ import StylessButton from '@components/blocks/StylessButton.astro';
 </style>
 
 <style lang="scss" is:global>
-    #atrocities-slide .ceo {
+    #ministry-slide .ceo {
         left: -10%;
     }
 
@@ -231,7 +231,7 @@ import StylessButton from '@components/blocks/StylessButton.astro';
             animation-fill-mode: forwards;
         }
 
-        #atrocities-slide .co-ceo {
+        #ministry-slide .co-ceo {
             animation: coceo ease-out 3.2s;
             animation-delay: 0.25s;
             animation-iteration-count: 1;
