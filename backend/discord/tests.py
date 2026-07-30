@@ -682,8 +682,8 @@ class DiscordOffboardSyncTests(TestCase):
     ):
         user_id = self.user.id
 
-        def delete_user(_user_id):
-            User.objects.filter(id=user_id).delete()
+        def delete_user(synced_user_id):
+            User.objects.filter(id=synced_user_id).delete()
 
         mock_sync.side_effect = delete_user
         client = Client()
