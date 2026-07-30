@@ -1,6 +1,7 @@
 import logging
 
 from django.contrib.auth.models import Group, User
+from django.db import IntegrityError
 from django.db.models import signals
 from django.dispatch import receiver
 
@@ -24,24 +25,75 @@ discord = DiscordClient()
 def resolve_existing_discord_role_from_server(
     sender, instance, *args, **kwargs
 ):
-    existing_role = False
-    if not instance.role_id:  # skip when importing a role
-        roles = discord.get_roles()
-        for role in roles:
-            if role["name"] == instance.name:
-                logger.info("Found existing role with name %s", instance.name)
-                instance.role_id = role["id"]
-                existing_role = True
-                break
+    if instance.role_id:
+        # Already linked to a Discord role (create or later updates).
+        return
 
-    if not existing_role:
-        logger.info(
-            "No role_id, creating role based on group name %s",
-            instance.group.name,
-        )
-        role = discord.create_role(instance.group.name)
-        logger.info("External role created: %s", role.json())
-        instance.role_id = role.json()["id"]
+    roles = discord.get_roles()
+    for role in roles:
+        if role["name"] == instance.name:
+            logger.info("Found existing role with name %s", instance.name)
+            instance.role_id = role["id"]
+            return
+
+    logger.info(
+        "No role_id, creating role based on group name %s",
+        instance.group.name,
+    )
+    role = discord.create_role(instance.group.name)
+    logger.info("External role created: %s", role.json())
+    instance.role_id = role.json()["id"]
+
+
+def _discord_role_id_for_name(name: str):
+    """Return Discord role id for a role name if it already exists on the server."""
+    for role in discord.get_roles():
+        if role["name"] == name:
+            return role["id"]
+    return None
+
+
+def _ensure_discord_role_for_group(group: Group) -> DiscordRole:
+    """
+    Ensure a DiscordRole row exists for this auth group.
+
+    If Discord already has a role with this name and a DiscordRole row owns that
+    role_id (e.g. leftover from a deleted/recreated group), re-point it instead
+    of inserting a duplicate unique role_id.
+    """
+    existing = DiscordRole.objects.filter(group=group).first()
+    if existing is not None:
+        return existing
+
+    role_id = _discord_role_id_for_name(group.name)
+    if role_id is not None:
+        claimed = DiscordRole.objects.filter(role_id=role_id).first()
+        if claimed is not None:
+            logger.info(
+                "Re-linking DiscordRole role_id=%s from group %s to %s",
+                role_id,
+                claimed.group_id,
+                group.id,
+            )
+            claimed.group = group
+            claimed.name = group.name
+            claimed.save(update_fields=["group", "name", "updated_at"])
+            return claimed
+
+    try:
+        return DiscordRole.objects.create(name=group.name, group=group)
+    except IntegrityError:
+        # Concurrent create or race with role_id uniqueness — recover by role_id.
+        role_id = role_id or _discord_role_id_for_name(group.name)
+        if role_id is None:
+            raise
+        claimed = DiscordRole.objects.filter(role_id=role_id).first()
+        if claimed is None:
+            raise
+        claimed.group = group
+        claimed.name = group.name
+        claimed.save(update_fields=["group", "name", "updated_at"])
+        return claimed
 
 
 @receiver(signals.post_save, sender=Group, dispatch_uid="group_post_save")
@@ -49,11 +101,7 @@ def group_post_save(
     sender, instance, created, **kwargs
 ):  # pylint: disable=unused-argument
     logger.info("Group saved, creating / updating role")
-    if not DiscordRole.objects.filter(group=instance).exists():
-        DiscordRole.objects.create(
-            name=instance.name,
-            group=instance,
-        )
+    _ensure_discord_role_for_group(instance)
 
 
 def _discord_role_call(
@@ -78,7 +126,7 @@ def _add_user_to_group_discord_role(user, group):
     logger.info("User added to group, adding to discord role")
     discord_user = _discord_user_for(user)
     if discord_user is None:
-        logger.error("Group change without discord user")
+        logger.info("Group change without discord user")
         return
     logger.debug("Checking group %s", group.name)
     if not DiscordRole.objects.filter(group=group).exists():
@@ -104,7 +152,7 @@ def _remove_user_from_group_discord_role(user, group):
     logger.info("User removed from group, removing from discord role")
     discord_user = _discord_user_for(user)
     if discord_user is None:
-        logger.error("Group change without discord user")
+        logger.info("Group change without discord user")
         return
     if not DiscordRole.objects.filter(group=group).exists():
         logger.warning("No discord role for group %s", group.name)
@@ -134,7 +182,7 @@ def _user_group_pre_clear(user):
     logger.info("User removed from all groups, removing from discord roles")
     discord_user = _discord_user_for(user)
     if discord_user is None:
-        logger.error("Group change without discord user")
+        logger.info("Group change without discord user")
         return
     for role in discord_user.groups.all():
         if not _discord_role_call(
@@ -167,7 +215,7 @@ def user_group_changed(
         else:
             user = instance
             if _discord_user_for(user) is None:
-                logger.error("Group change without discord user")
+                logger.info("Group change without discord user")
                 return
             _user_group_pre_add(user, model, pk_set)
     elif action == "pre_remove":
@@ -179,7 +227,7 @@ def user_group_changed(
         else:
             user = instance
             if _discord_user_for(user) is None:
-                logger.error("Group change without discord user")
+                logger.info("Group change without discord user")
                 return
             _user_group_pre_remove(user, model, pk_set)
     elif action == "pre_clear":
@@ -190,7 +238,7 @@ def user_group_changed(
         else:
             user = instance
             if _discord_user_for(user) is None:
-                logger.error("Group change without discord user")
+                logger.info("Group change without discord user")
                 return
             _user_group_pre_clear(user)
 

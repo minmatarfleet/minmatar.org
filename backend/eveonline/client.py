@@ -106,7 +106,10 @@ class EsiResponse:
         if self.response_code == 905:
             return f"No valid ESI token ({self.response_code})"
         if self.response_code == 906:
-            return f"Error calling ESI ({self.response_code})"
+            detail = f"Error calling ESI ({self.response_code})"
+            if self.response is not None:
+                return f"{detail}: {self.response}"
+            return detail
         if self.response_code < 500:
             return f"HTTP client error ({self.response_code})"
         if self.response_code < 600:

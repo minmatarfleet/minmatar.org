@@ -286,14 +286,22 @@ def delete_account(request):
     summary="Sync user with Discord",
     description="This will sync the user with Discord. You can only sync your own account.",
     auth=AuthBearer(),
-    response={200: str, 403: ErrorResponse},
+    response={200: str, 403: ErrorResponse, 410: ErrorResponse},
 )
 def sync_user(request, user_id: int):
     if request.user.id != user_id:
         return 403, ErrorResponse(detail="You can only sync your own account.")
     update_affiliation(user_id)
     sync_discord_user(user_id)
-    sync_discord_nickname(user_id, True)
+    # sync_discord_user may offboard the account when Discord returns Unknown Member
+    if not User.objects.filter(id=user_id).exists():
+        return 410, ErrorResponse(
+            detail=(
+                "Account was offboarded because the Discord member "
+                "was not found on the server."
+            )
+        )
+    sync_discord_nickname(request.user, True)
     return "User synced successfully"
 
 

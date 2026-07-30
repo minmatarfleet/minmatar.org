@@ -26,10 +26,15 @@ from discord.views import discord_login_redirect, fake_login
 
 from discord.tasks import sync_discord_nickname, sync_discord_user
 from discord.helpers import (
+    get_discord_user,
     handle_discord_guild_member_error,
     is_discord_unknown_guild_member_error,
     remove_all_roles_from_guild_member,
     find_unregistered_guild_members,
+)
+from discord.signals import (
+    group_post_save,
+    resolve_existing_discord_role_from_server,
 )
 
 from requests.exceptions import HTTPError
@@ -110,6 +115,47 @@ class DiscordSignalTests(TestCase):
 
             discord_mock.get_roles.assert_called()
             discord_mock.create_role.assert_called_with("reversegroup")
+
+    @patch("discord.signals.discord")
+    def test_group_post_save_relinks_existing_role_id(self, discord_mock):
+        """HF: recreating a group with an existing Discord role_id must not IntegrityError."""
+        discord_mock.get_roles.return_value = [
+            {"id": 1486197729745965067, "name": "Tribe - Chief"},
+        ]
+        signals.post_save.disconnect(
+            sender=Group, dispatch_uid="group_post_save"
+        )
+        signals.pre_save.disconnect(
+            sender=DiscordRole,
+            dispatch_uid="resolve_existing_discord_role_from_server",
+        )
+        old_group = Group.objects.create(name="Old Chief Group")
+        DiscordRole.objects.create(
+            role_id=1486197729745965067,
+            name="Tribe - Chief",
+            group=old_group,
+        )
+        signals.pre_save.connect(
+            resolve_existing_discord_role_from_server,
+            sender=DiscordRole,
+            dispatch_uid="resolve_existing_discord_role_from_server",
+        )
+        signals.post_save.connect(
+            group_post_save,
+            sender=Group,
+            dispatch_uid="group_post_save",
+        )
+
+        new_group = Group.objects.create(name="Tribe - Chief")
+
+        role = DiscordRole.objects.get(role_id=1486197729745965067)
+        self.assertEqual(role.group_id, new_group.id)
+        self.assertEqual(role.name, "Tribe - Chief")
+        self.assertEqual(
+            DiscordRole.objects.filter(role_id=1486197729745965067).count(),
+            1,
+        )
+        discord_mock.create_role.assert_not_called()
 
 
 class DiscordTests(TestCase):
@@ -579,6 +625,74 @@ class DiscordChannelAdminFormTestCase(TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertIn("receive_capital_pings", form.errors)
+
+
+class DiscordOffboardSyncTests(TestCase):
+    """A5/MG: offboard during sync must not 500, and message must be correct."""
+
+    def _unknown_member_error(self):
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_response.json.return_value = {
+            "message": "Unknown Member",
+            "code": 10007,
+        }
+        return HTTPError(response=mock_response)
+
+    @patch("discord.helpers.discord")
+    @patch("discord.helpers.offboard_user")
+    def test_get_discord_user_posts_offboard_message_when_notify(
+        self, mock_offboard, mock_discord
+    ):
+        DiscordUser.objects.create(id=999, user=self.user, discord_tag="x")
+        mock_discord.get_user.side_effect = self._unknown_member_error()
+
+        result = get_discord_user(self.user, notify=True)
+
+        self.assertIsNone(result)
+        mock_offboard.assert_called_once_with(self.user.id)
+        message = mock_discord.create_message.call_args[0][1]
+        self.assertIn("offboarded", message)
+        self.assertNotIn("Ushra'Khant", message)
+
+    @patch("discord.helpers.discord")
+    @patch("discord.helpers.offboard_user")
+    def test_get_discord_user_skips_message_when_notify_false(
+        self, mock_offboard, mock_discord
+    ):
+        DiscordUser.objects.create(id=998, user=self.user, discord_tag="x")
+        mock_discord.get_user.side_effect = self._unknown_member_error()
+
+        result = get_discord_user(self.user, notify=False)
+
+        self.assertIsNone(result)
+        mock_offboard.assert_called_once_with(self.user.id)
+        mock_discord.create_message.assert_not_called()
+
+    def test_sync_discord_nickname_missing_user_is_noop(self):
+        sync_discord_nickname(999999, force_update=True)
+
+    def test_sync_discord_user_missing_user_is_noop(self):
+        sync_discord_user(999999)
+
+    @patch("users.router.sync_discord_user")
+    @patch("users.router.update_affiliation")
+    def test_sync_user_endpoint_returns_410_after_offboard(
+        self, mock_affiliation, mock_sync
+    ):
+        user_id = self.user.id
+
+        def delete_user(synced_user_id):
+            User.objects.filter(id=synced_user_id).delete()
+
+        mock_sync.side_effect = delete_user
+        client = Client()
+        response = client.post(
+            f"/api/users/{user_id}/sync",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 410)
+        self.assertIn(b"offboarded", response.content)
 
 
 if __name__ == "__main__":

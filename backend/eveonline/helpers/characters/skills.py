@@ -28,7 +28,12 @@ def upsert_character_skills(character_id: int):
     character = EveCharacter.objects.get(character_id=character_id)
     response = EsiClient(character).get_character_skills()
     if not response.success():
-        logger.error(
+        log = (
+            logger.warning
+            if response.response_code in (902, 904, 905, 906)
+            else logger.error
+        )
+        log(
             "Error %s getting skills for %s",
             response.error_text(),
             character.summary(),

@@ -111,8 +111,10 @@ def get_expected_nickname(user: User):
 
 def get_discord_user(user: User, notify=False):
     """
-    Fetches a user based on their discord user
-    If they don't exist, notifies people team if notify=True
+    Fetches a user based on their discord user.
+
+    If Discord returns Unknown Member (10007), the site account is offboarded.
+    When notify=True, posts an offboard notice to the people-team channel.
     """
     external_discord_user = None
     if not DiscordUser.objects.filter(user_id=user.id).exists():
@@ -134,10 +136,15 @@ def get_discord_user(user: User, notify=False):
                     )
                 ]
             )
+            username = user.username
             offboard_user(user.id)
 
-            message = f":white_check_mark: {user.username} ({characters}) was promoted to Ushra'Khant"
-            discord.create_message(DISCORD_PEOPLE_TEAM_CHANNEL_ID, message)
+            if notify:
+                message = (
+                    f":wave: {username} ({characters}) was offboarded "
+                    "(not a member of the Discord server)"
+                )
+                discord.create_message(DISCORD_PEOPLE_TEAM_CHANNEL_ID, message)
             return None
 
     return external_discord_user
