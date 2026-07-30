@@ -295,6 +295,7 @@ export interface Corporation {
     type:               CorporationType;
     introduction:       string;
     biography:          string;
+    executor_notes:     string;
     timezones:          string[];
     requirements:       string[];
     members:            CharacterCorp[];
@@ -311,6 +312,7 @@ export interface CorporationInfo {
     type:               CorporationType;
     introduction:       string;
     biography:          string;
+    executor_notes:     string;
     timezones:          string[];
     requirements:       string[];
     active:             boolean;

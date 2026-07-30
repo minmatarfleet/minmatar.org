@@ -17,21 +17,22 @@ const MINMATAR_EXTRACTION_COMPANY_ID = 98838663
 // fetched separately and appended to the list.
 const append_extraction_corporation = async (api_corporations:Corporation[]) => {
     try {
-        const extractions_info = await get_corporation_info(MINMATAR_EXTRACTION_COMPANY_ID)
+        const extraction_info = await get_corporation_info(MINMATAR_EXTRACTION_COMPANY_ID)
 
         api_corporations.push({
-            active: extractions_info.active,
-            alliance_id: extractions_info.alliance_id,
-            alliance_name: extractions_info.alliance_name,
-            biography: extractions_info.biography,
-            corporation_id: extractions_info.corporation_id,
-            corporation_name: extractions_info.corporation_name,
-            faction_id: extractions_info.faction_id,
-            faction_name: extractions_info.faction_name,
-            introduction: extractions_info.introduction,
-            requirements: extractions_info.requirements,
-            timezones: extractions_info.timezones,
-            type: extractions_info.type,
+            active: extraction_info.active,
+            alliance_id: extraction_info.alliance_id,
+            alliance_name: extraction_info.alliance_name,
+            biography: extraction_info.biography,
+            executor_notes: extraction_info.executor_notes,
+            corporation_id: extraction_info.corporation_id,
+            corporation_name: extraction_info.corporation_name,
+            faction_id: extraction_info.faction_id,
+            faction_name: extraction_info.faction_name,
+            introduction: extraction_info.introduction,
+            requirements: extraction_info.requirements,
+            timezones: extraction_info.timezones,
+            type: extraction_info.type,
             members: [],
         })
     } catch (error) {
@@ -71,6 +72,7 @@ export async function get_corporations_list(corporation_type:CorporationType) {
             corporation_type: i.type,
             active: i.active,
             biography: i.biography,
+            executor_notes: i.executor_notes,
             introduction: i.introduction,
             requirements: i.requirements,
             timezones: i.timezones,
@@ -101,6 +103,7 @@ const add_status_to_corporation = async (access_token:string, api_corporation:Co
         active: api_corporation.active,
         status: 'available',
         biography: api_corporation.biography,
+        executor_notes: api_corporation.executor_notes,
         introduction: api_corporation.introduction,
         requirements: api_corporation.requirements,
         timezones: api_corporation.timezones,

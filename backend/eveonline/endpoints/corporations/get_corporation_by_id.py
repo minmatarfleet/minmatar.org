@@ -24,6 +24,7 @@ def get_corporation_by_id(request, corporation_id: int):
         "corporation_name": corporation.name,
         "introduction": corporation.introduction,
         "biography": corporation.biography,
+        "executor_notes": corporation.executor_notes,
         "timezones": (
             corporation.timezones.strip().split(",")
             if corporation.timezones

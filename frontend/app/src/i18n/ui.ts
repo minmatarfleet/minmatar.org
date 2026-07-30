@@ -1062,6 +1062,7 @@ export const ui = {
         'waiting_fleet_time': 'Waiting for fleet time',
         'create': 'Create',
         'description': 'Description',
+        'executor_notes': 'Executor notes',
         'confirm': 'Confirm',
         'fleet_submit': 'Fleet submit',
         'push_button': 'Push the button!',

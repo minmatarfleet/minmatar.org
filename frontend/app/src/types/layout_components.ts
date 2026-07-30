@@ -347,6 +347,7 @@ export interface CorporationObject {
     application_updated?:   Date;
     introduction?:          string;
     biography?:             string;
+    executor_notes?:        string;
     timezones?:             string[];
     requirements?:          string[];
 }

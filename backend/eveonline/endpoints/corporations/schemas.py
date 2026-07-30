@@ -37,6 +37,7 @@ class CorporationResponse(Schema):
     type: CorporationType
     introduction: Optional[str] = None
     biography: Optional[str] = None
+    executor_notes: Optional[str] = None
     timezones: Optional[List[str]] = None
     requirements: Optional[List[str]] = None
     members: List[CorporationMemberResponse] = []
@@ -56,6 +57,7 @@ class CorporationInfoResponse(Schema):
     type: CorporationType
     introduction: Optional[str] = None
     biography: Optional[str] = None
+    executor_notes: Optional[str] = None
     timezones: Optional[List[str]] = None
     requirements: Optional[List[str]] = None
     active: bool
