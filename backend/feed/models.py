@@ -311,3 +311,58 @@ class FeedCapitalPing(models.Model):
 
     def __str__(self) -> str:
         return f"Capital ping {self.killmail_id}"
+
+
+class FeedAmarrFleetAlert(models.Model):
+    """One Discord message for an Amarr fleet engagement.
+
+    Further ``fleet_active`` rollup updates for the same system (within the
+    session TTL) edit this message instead of posting new ones. ``systems``
+    holds the ordered sighting chain when the fight moves.
+    """
+
+    solar_system_id = models.BigIntegerField(db_index=True)
+    system_name = models.CharField(max_length=64)
+    # [{solar_system_id, system_name}, ...] ordered sighting chain
+    systems = models.JSONField(default=list)
+    title = models.CharField(max_length=256)
+    subheader = models.CharField(max_length=512, blank=True, default="")
+    preview = models.TextField(blank=True, default="")
+    kills = models.PositiveIntegerField(default=0)
+    pilots = models.PositiveIntegerField(default=0)
+    # [{character_id, name}, ...]
+    roster = models.JSONField(default=list)
+    roster_total = models.PositiveIntegerField(default=0)
+    cluster_key = models.CharField(max_length=256, db_index=True)
+    # [{channel_id, message_id}, ...]
+    discord_messages = models.JSONField(default=list)
+    last_activity_at = models.DateTimeField(db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-last_activity_at"]
+
+    def __str__(self) -> str:
+        return f"Amarr fleet alert {self.system_name} ({self.solar_system_id})"
+
+
+class FeedAmarrFleetPing(models.Model):
+    """Per-cluster_key dedup / audit for Amarr fleet alerts."""
+
+    cluster_key = models.CharField(max_length=256, unique=True, db_index=True)
+    alert = models.ForeignKey(
+        FeedAmarrFleetAlert,
+        on_delete=models.CASCADE,
+        related_name="pings",
+        null=True,
+        blank=True,
+    )
+    solar_system_id = models.BigIntegerField()
+    discord_message_id = models.BigIntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Amarr fleet ping {self.cluster_key}"
