@@ -2,6 +2,21 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+import { should_redirect_to_orders_onboarding } from '@helpers/onboarding/ordersRedirect'
+
+if (auth_token && user) {
+    if (await should_redirect_to_orders_onboarding(auth_token as string)) {
+        const return_to = encodeURIComponent(Astro.url.pathname + Astro.url.search)
+        return Astro.redirect(`${translatePath('/industry/orders/onboarding/')}?return=${return_to}`)
+    }
+}
+
 import { HTTP_400_Bad_Request } from '@helpers/http_responses'
 import { get_site_origin } from '@helpers/seo'
 import { query_string } from '@helpers/string'

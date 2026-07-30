@@ -8,6 +8,7 @@ class OnboardingProgramType(models.TextChoices):
     """Hardcoded onboarding programs; add new values here and deploy."""
 
     SRP = "srp", "SRP"
+    ORDERS = "orders", "Orders"
 
 
 class OnboardingProgram(models.Model):

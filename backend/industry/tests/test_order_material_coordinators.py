@@ -23,6 +23,20 @@ from industry.models import (
     IndustryOrderPiCoordinator,
 )
 from industry.test_utils import create_industry_order
+from onboarding.models import (
+    OnboardingProgram,
+    OnboardingProgramType,
+    UserOnboardingAcknowledgment,
+)
+
+
+def _acknowledge_orders_onboarding(user):
+    program = OnboardingProgram.objects.get(pk=OnboardingProgramType.ORDERS)
+    UserOnboardingAcknowledgment.objects.update_or_create(
+        user=user,
+        program=program,
+        defaults={"acknowledged_version": program.version},
+    )
 
 
 class MineralPiCoordinatorApiTestCase(AppTestCase):
@@ -95,6 +109,7 @@ class MineralPiCoordinatorApiTestCase(AppTestCase):
         IndustryOrderItem.objects.create(
             order=self.order, eve_type=self.ship, quantity=5
         )
+        _acknowledge_orders_onboarding(self.user)
 
     def test_validate_mineral_rejects_non_mineral(self):
         err = validate_mineral_coordinator_eve_type_ids(

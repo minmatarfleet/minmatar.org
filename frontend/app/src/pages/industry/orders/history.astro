@@ -45,7 +45,6 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
-import PageSubheader from '@components/page/PageSubheader.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -53,7 +52,6 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Input from '@components/blocks/Input.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import OrdersTable from '@components/blocks/OrdersTable.astro'
-import Button from '@components/blocks/Button.astro'
 import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
@@ -130,17 +128,6 @@ const breadcrumb_items = [
                 </Input>
             </FlexInline>
         </FlexInline>
-
-        <PageSubheader slot="subheader">
-            <Button
-                href={translatePath('/resources/IndyConfig_uq0uu_qm.json')}
-                download="rarwork-fl33t-config.json"
-                size='sm'
-                data-tippy-content={t('ravworks_tooltip')}
-            >
-                {t('ravworks_config')}
-            </Button>
-        </PageSubheader>
 
         {fetching_error !== false ?
             <ErrorRefetch

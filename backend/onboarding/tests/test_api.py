@@ -16,6 +16,7 @@ from users.helpers import add_user_permission
 
 BASE = "/api/onboarding"
 SRP = OnboardingProgramType.SRP
+ORDERS = OnboardingProgramType.ORDERS
 SRP_PROGRAMS = "/api/srp/programs"
 
 
@@ -51,6 +52,14 @@ class OnboardingApiTestCase(TestCase):
         self.assertIsNone(data["acknowledged_version"])
         self.assertFalse(data["is_current"])
 
+    def test_get_orders_without_ack_returns_not_current(self):
+        r = self.client.get(f"{BASE}/{ORDERS}", **self.auth)
+        self.assertEqual(r.status_code, 200)
+        data = r.json()
+        self.assertEqual(data["program_type"], ORDERS)
+        self.assertIsNone(data["acknowledged_version"])
+        self.assertFalse(data["is_current"])
+
     def test_post_ack_then_get_is_current(self):
         r_post = self.client.post(
             f"{BASE}/{SRP}/ack",
@@ -62,6 +71,22 @@ class OnboardingApiTestCase(TestCase):
 
         program = OnboardingProgram.objects.get(pk=SRP)
         r_get = self.client.get(f"{BASE}/{SRP}", **self.auth)
+        self.assertEqual(r_get.status_code, 200)
+        data = r_get.json()
+        self.assertEqual(data["acknowledged_version"], str(program.version))
+        self.assertTrue(data["is_current"])
+
+    def test_post_orders_ack_then_get_is_current(self):
+        r_post = self.client.post(
+            f"{BASE}/{ORDERS}/ack",
+            **self.auth,
+            content_type="application/json",
+            data="{}",
+        )
+        self.assertEqual(r_post.status_code, 204)
+
+        program = OnboardingProgram.objects.get(pk=ORDERS)
+        r_get = self.client.get(f"{BASE}/{ORDERS}", **self.auth)
         self.assertEqual(r_get.status_code, 200)
         data = r_get.json()
         self.assertEqual(data["acknowledged_version"], str(program.version))

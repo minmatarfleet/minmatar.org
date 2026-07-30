@@ -16,6 +16,7 @@ from industry.helpers.order_coordinator_materials import (
     validate_mineral_coordinator_eve_type_ids,
 )
 from industry.models import IndustryOrder, IndustryOrderMineralCoordinator
+from onboarding.orders_gate import require_current_orders_onboarding
 
 PATH = "{int:order_id}/mineral-coordinators/{int:coordinator_id}"
 METHOD = "patch"
@@ -37,6 +38,10 @@ def patch_order_mineral_coordinator(
     coordinator_id: int,
     payload: PatchBlueprintCoordinatorRequest,
 ):
+    denied = require_current_orders_onboarding(request)
+    if denied is not None:
+        return denied
+
     with transaction.atomic():
         try:
             order = IndustryOrder.objects.select_for_update().get(pk=order_id)

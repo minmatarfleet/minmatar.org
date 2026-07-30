@@ -6,12 +6,23 @@ const API_ENDPOINT = `${import.meta.env.API_URL}/api/onboarding`
 /** Path segment for GET/POST `/api/onboarding/{program_type}` — matches `OnboardingProgramType.SRP`. */
 export const SRP_ONBOARDING_PROGRAM_TYPE = 'srp'
 
+/** Path segment matching `OnboardingProgramType.ORDERS`. */
+export const ORDERS_ONBOARDING_PROGRAM_TYPE = 'orders'
+
 /** Matches backend `onboarding.srp_gate.SRP_ONBOARDING_REQUIRED_DETAIL`. */
 export const SRP_ONBOARDING_REQUIRED_DETAIL = 'srp_onboarding_required'
+
+/** Matches backend `onboarding.orders_gate.ORDERS_ONBOARDING_REQUIRED_DETAIL`. */
+export const ORDERS_ONBOARDING_REQUIRED_DETAIL = 'orders_onboarding_required'
 
 export function is_srp_onboarding_required_error(error: unknown): boolean {
     if (!(error instanceof Error)) return false
     return (error.message ?? '').includes(SRP_ONBOARDING_REQUIRED_DETAIL)
+}
+
+export function is_orders_onboarding_required_error(error: unknown): boolean {
+    if (!(error instanceof Error)) return false
+    return (error.message ?? '').includes(ORDERS_ONBOARDING_REQUIRED_DETAIL)
 }
 
 export async function get_onboarding_status(

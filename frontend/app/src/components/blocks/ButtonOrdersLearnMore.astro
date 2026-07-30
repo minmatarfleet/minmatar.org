@@ -1,0 +1,66 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { ButtonSizes } from '@dtypes/layout_components';
+
+interface Props {
+    size?:          ButtonSizes;
+}
+
+const {
+    size = 'sm',
+} = Astro.props
+
+import * as orders_overview_md from '@markdown/orders-overview.md';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import TextBox from '@components/layout/TextBox.astro';
+
+import DialogButton from "@components/blocks/DialogButton.astro";
+import Button from '@components/blocks/Button.astro';
+import Markdown from '@components/blocks/Markdown.astro'
+---
+
+<DialogButton
+    color='fleet-red'
+    narrow={false}
+    size={size}
+    max_width='800px'
+    full_screen={true}
+    non_centered={false}
+    transparent={true}
+>
+    {t('learn_more')}
+
+    <Flexblock gap="var(--space-l)" slot="dialog">
+        <Flexblock gap="var(--space-s)">
+            <TextBox class="[ prose ]">
+                <h2 class="[ onboarding-section-title ]">{t('industry.orders.learn_more_title')}</h2>
+                <Markdown
+                    markdown={orders_overview_md.rawContent()}
+                    element='div'
+                />
+            </TextBox>
+        </Flexblock>
+    </Flexblock>
+
+    <FlexInline slot="footer" justification='flex-end'>
+        <Button
+            type="button"
+            size='sm'
+            color='transparent'
+            x-on:click="close_dialog()"
+        >
+            {t('close')}
+        </Button>
+    </FlexInline>
+</DialogButton>
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-1);
+    }
+</style>

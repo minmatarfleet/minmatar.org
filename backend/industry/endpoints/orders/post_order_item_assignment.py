@@ -18,6 +18,7 @@ from industry.models import (
     IndustryOrderItem,
     IndustryOrderItemAssignment,
 )
+from onboarding.orders_gate import require_current_orders_onboarding
 
 PATH = "{int:order_id}/orderitems/{int:order_item_id}/assignments"
 METHOD = "post"
@@ -39,6 +40,10 @@ def post_order_item_assignment(
     order_item_id: int,
     payload: PostOrderItemAssignmentRequest,
 ):
+    denied = require_current_orders_onboarding(request)
+    if denied is not None:
+        return denied
+
     try:
         character = EveCharacter.objects.get(
             character_id=payload.character_id, user=request.user
