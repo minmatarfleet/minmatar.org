@@ -17,6 +17,7 @@ from industry.helpers.order_lp_stockpiles import (
     validate_coordinator_eve_type_ids,
 )
 from industry.models import IndustryOrder, IndustryOrderBlueprintCoordinator
+from onboarding.orders_gate import require_current_orders_onboarding
 
 PATH = "{int:order_id}/blueprint-coordinators"
 METHOD = "post"
@@ -37,6 +38,10 @@ def post_order_blueprint_coordinator(
     order_id: int,
     payload: BlueprintCoordinatorWriteRequest,
 ):
+    denied = require_current_orders_onboarding(request)
+    if denied is not None:
+        return denied
+
     try:
         character = EveCharacter.objects.get(
             character_id=payload.character_id, user=request.user

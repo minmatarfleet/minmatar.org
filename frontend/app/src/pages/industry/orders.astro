@@ -2,6 +2,21 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+import { should_redirect_to_orders_onboarding } from '@helpers/onboarding/ordersRedirect'
+
+if (auth_token && user) {
+    if (await should_redirect_to_orders_onboarding(auth_token as string)) {
+        const return_to = encodeURIComponent(Astro.url.pathname + Astro.url.search)
+        return Astro.redirect(`${translatePath('/industry/orders/onboarding/')}?return=${return_to}`)
+    }
+}
+
 import type { OrderLocation } from '@dtypes/layout_components'
 import { fetch_orders_by_locations } from '@helpers/fetching/industry'
 
@@ -53,11 +68,14 @@ import Input from '@components/blocks/Input.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import OrdersTable from '@components/blocks/OrdersTable.astro'
 import Button from '@components/blocks/Button.astro'
+import ButtonOrdersLearnMore from '@components/blocks/ButtonOrdersLearnMore.astro'
 import Breadcrumb from '@components/blocks/Breadcrumb.astro'
+import TextBox from '@components/layout/TextBox.astro'
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
 const page_title = t('industry.orders.page_title');
+const leading_text = t('industry.orders.leading_text');
 const breadcrumb_items = [
     { label: t('market.page_title'), href: translatePath('/market/') },
     { label: t('industry.orders.page_title') },
@@ -69,6 +87,7 @@ const breadcrumb_items = [
     meta_description={t('industry.orders.meta_description')}
     components={{
         alert_dialog: true,
+        modal: true,
     }}
 >
     <PageWide
@@ -130,6 +149,8 @@ const breadcrumb_items = [
         </FlexInline>
 
         <PageSubheader slot="subheader">
+            <ButtonOrdersLearnMore />
+
             <Button
                 href={translatePath('/industry/orders/summary/')}
                 size='sm'
@@ -143,35 +164,32 @@ const breadcrumb_items = [
             >
                 {t('view_orders_history')}
             </Button>
-
-            <Button
-                href={translatePath('/resources/IndyConfig_uq0uu_qm.json')}
-                download="rarwork-fl33t-config.json"
-                size='sm'
-                data-tippy-content={t('ravworks_tooltip')}
-            >
-                {t('ravworks_config')}
-            </Button>
         </PageSubheader>
 
-        {fetching_error !== false ?
-            <ErrorRefetch
-                args={{
-                    partial: INDUSTRY_ORDERS_PARTIAL_URL,
-                    error: fetching_error,
-                    delay: 0,
-                }}
-            />
-            :
-            active_orders_locations !== undefined ?
-                <OrdersTable
-                    active_orders_locations={active_orders_locations}
-                    non_active_orders_locations={non_active_orders_locations}
-                    is_history={false}
-                    init_tooltips={false}
+        <Flexblock gap="var(--space-xl)">
+            <TextBox>
+                <p class="[ excerpt ]">{leading_text}</p>
+            </TextBox>
+
+            {fetching_error !== false ?
+                <ErrorRefetch
+                    args={{
+                        partial: INDUSTRY_ORDERS_PARTIAL_URL,
+                        error: fetching_error,
+                        delay: 0,
+                    }}
                 />
                 :
-                <p>{t('no_manufacturing_orders')}</p>
-        }
+                active_orders_locations !== undefined ?
+                    <OrdersTable
+                        active_orders_locations={active_orders_locations}
+                        non_active_orders_locations={non_active_orders_locations}
+                        is_history={false}
+                        init_tooltips={false}
+                    />
+                    :
+                    <p>{t('no_manufacturing_orders')}</p>
+            }
+        </Flexblock>
     </PageWide>
 </Viewport>

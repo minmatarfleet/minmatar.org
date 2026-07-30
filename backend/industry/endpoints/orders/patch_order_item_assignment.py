@@ -11,6 +11,7 @@ from industry.endpoints.orders.schemas import (
 )
 from industry.endpoints.orders.serialization import assignment_to_response
 from industry.models import IndustryOrder, IndustryOrderItemAssignment
+from onboarding.orders_gate import require_current_orders_onboarding
 
 PATH = "{int:order_id}/orderitems/{int:order_item_id}/assignments/{int:assignment_id}"
 METHOD = "patch"
@@ -32,6 +33,10 @@ def patch_order_item_assignment(
     assignment_id: int,
     payload: PatchOrderItemAssignmentRequest,
 ):
+    denied = require_current_orders_onboarding(request)
+    if denied is not None:
+        return denied
+
     with transaction.atomic():
         try:
             IndustryOrder.objects.select_for_update().get(pk=order_id)

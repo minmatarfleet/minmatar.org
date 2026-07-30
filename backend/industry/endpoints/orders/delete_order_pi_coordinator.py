@@ -3,6 +3,7 @@
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from industry.models import IndustryOrder, IndustryOrderPiCoordinator
+from onboarding.orders_gate import require_current_orders_onboarding
 
 PATH = "{int:order_id}/pi-coordinators/{int:coordinator_id}"
 METHOD = "delete"
@@ -22,6 +23,10 @@ def delete_order_pi_coordinator(
     order_id: int,
     coordinator_id: int,
 ):
+    denied = require_current_orders_onboarding(request)
+    if denied is not None:
+        return denied
+
     try:
         IndustryOrder.objects.get(pk=order_id)
     except IndustryOrder.DoesNotExist:

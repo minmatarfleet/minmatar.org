@@ -1,6 +1,7 @@
 """Tests for mineral / PI order coordinators and fixed catalog options."""
 
 import json
+import uuid
 from datetime import timedelta
 
 from django.utils import timezone
@@ -23,6 +24,23 @@ from industry.models import (
     IndustryOrderPiCoordinator,
 )
 from industry.test_utils import create_industry_order
+from onboarding.models import (
+    OnboardingProgram,
+    OnboardingProgramType,
+    UserOnboardingAcknowledgment,
+)
+
+
+def _acknowledge_orders_onboarding(user):
+    program, _ = OnboardingProgram.objects.get_or_create(
+        program_type=OnboardingProgramType.ORDERS,
+        defaults={"version": uuid.uuid4()},
+    )
+    UserOnboardingAcknowledgment.objects.update_or_create(
+        user=user,
+        program=program,
+        defaults={"acknowledged_version": program.version},
+    )
 
 
 class MineralPiCoordinatorApiTestCase(AppTestCase):
@@ -95,6 +113,7 @@ class MineralPiCoordinatorApiTestCase(AppTestCase):
         IndustryOrderItem.objects.create(
             order=self.order, eve_type=self.ship, quantity=5
         )
+        _acknowledge_orders_onboarding(self.user)
 
     def test_validate_mineral_rejects_non_mineral(self):
         err = validate_mineral_coordinator_eve_type_ids(

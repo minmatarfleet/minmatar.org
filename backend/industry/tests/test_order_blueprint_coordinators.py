@@ -1,6 +1,7 @@
 """Tests for order LP stockpiles and blueprint coordinators."""
 
 import json
+import uuid
 from datetime import timedelta
 from unittest.mock import patch
 
@@ -29,8 +30,25 @@ from industry.models import (
     IndustryOrderItem,
 )
 from industry.test_utils import create_industry_order
+from onboarding.models import (
+    OnboardingProgram,
+    OnboardingProgramType,
+    UserOnboardingAcknowledgment,
+)
 
 TLIB_CORP_ID = 1000182
+
+
+def _acknowledge_orders_onboarding(user):
+    program, _ = OnboardingProgram.objects.get_or_create(
+        program_type=OnboardingProgramType.ORDERS,
+        defaults={"version": uuid.uuid4()},
+    )
+    UserOnboardingAcknowledgment.objects.update_or_create(
+        user=user,
+        program=program,
+        defaults={"acknowledged_version": program.version},
+    )
 
 
 class OrderLpStockpileHelperTestCase(AppTestCase):
@@ -279,6 +297,7 @@ class BlueprintCoordinatorApiTestCase(AppTestCase):
         IndustryOrderItem.objects.create(
             order=self.order, eve_type=self.eve_type_b, quantity=3
         )
+        _acknowledge_orders_onboarding(self.user)
 
     def test_validate_rejects_types_not_on_order(self):
         err = validate_coordinator_eve_type_ids(self.order, [999999])

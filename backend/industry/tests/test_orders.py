@@ -1,6 +1,7 @@
 """Tests for industry orders endpoints: GET /orders, GET /orders/{id} (public)."""
 
 import json
+import uuid
 from datetime import timedelta
 from decimal import Decimal
 
@@ -25,7 +26,24 @@ from industry.models import (
     IndustryOrderItemAssignment,
 )
 from industry.test_utils import create_industry_order
+from onboarding.models import (
+    OnboardingProgram,
+    OnboardingProgramType,
+    UserOnboardingAcknowledgment,
+)
 from tribes.models import Tribe, TribeGroup
+
+
+def _acknowledge_orders_onboarding(user):
+    program, _ = OnboardingProgram.objects.get_or_create(
+        program_type=OnboardingProgramType.ORDERS,
+        defaults={"version": uuid.uuid4()},
+    )
+    UserOnboardingAcknowledgment.objects.update_or_create(
+        user=user,
+        program=program,
+        defaults={"acknowledged_version": program.version},
+    )
 
 
 class OrdersEndpointTestCase(AppTestCase):
@@ -67,6 +85,7 @@ class OrdersEndpointTestCase(AppTestCase):
             solar_system_name="Test System",
             short_name="TST",
         )
+        _acknowledge_orders_onboarding(self.user)
 
     def test_get_orders_returns_list_with_location(self):
         order = create_industry_order(
@@ -348,6 +367,39 @@ class OrderMutationApiTests(OrdersEndpointTestCase):
         feature.tribe_groups.set([tribe_group])
         clear_feature_cache()
 
+    def test_post_assignment_requires_orders_onboarding(self):
+        UserOnboardingAcknowledgment.objects.filter(
+            user=self.user,
+            program_id=OnboardingProgramType.ORDERS,
+        ).delete()
+        order = create_industry_order(
+            needed_by=(timezone.now() + timedelta(days=7)).date(),
+            character=self.character,
+        )
+        item = IndustryOrderItem.objects.create(
+            order=order, eve_type=self.eve_type, quantity=5
+        )
+        assignee = EveCharacter.objects.create(
+            character_id=999031,
+            character_name="No Ack Assignee",
+            user=self.user,
+        )
+        url = (
+            f"/api/industry/orders/{order.pk}/orderitems/{item.pk}/assignments"
+        )
+        response = self.client.post(
+            url,
+            data=json.dumps(
+                {"character_id": assignee.character_id, "quantity": 1}
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 403, response.content)
+        self.assertEqual(
+            response.json()["detail"], "orders_onboarding_required"
+        )
+
     def test_post_assignment_creates_row(self):
         order = create_industry_order(
             needed_by=(timezone.now() + timedelta(days=7)).date(),
@@ -560,6 +612,7 @@ class OrderMutationApiTests(OrdersEndpointTestCase):
         assignee_user = self.user.__class__.objects.create(
             username="assignee_owner_test"
         )
+        _acknowledge_orders_onboarding(assignee_user)
         assignee = EveCharacter.objects.create(
             character_id=999035,
             character_name="Deliveree",
