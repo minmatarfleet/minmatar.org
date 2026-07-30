@@ -87,28 +87,34 @@ try {
             <section id="matchups" data-section-id="matchups" class="fwc-section fwc-panel" aria-labelledby="fwc-matchups-title">
                 <h2 id="fwc-matchups-title" class="fwc-section__title">Matchup Charts</h2>
 
-                <div class="fwc-legend" aria-label="Matchup rating legend">
-                    {
-                        matchupLegend.map((item) => (
-                            <div class="fwc-legend__item">
-                                <span class:list={['fwc-legend__symbol', `fwc-legend__symbol--${item.rating === '?' ? 'unknown' : item.rating.replace(/\+/g, 'plus').replace(/-/g, 'minus').replace(/=/g, 'even')}`]}>
-                                    {item.rating}
-                                </span>
-                                <span class="fwc-legend__label">
-                                    <strong>{item.label}</strong>
-                                    <span>{item.description}</span>
-                                </span>
-                            </div>
-                        ))
-                    }
-                </div>
+                <p class="fwc-charts-mobile-note">
+                    Matchup charts are available on desktop.
+                </p>
 
-                <div class="fwc-charts-grid">
-                    {
-                        matchupCharts.map((chart) => (
-                            <FactionWarfareCruiserGuideMatchupChart chart={chart} />
-                        ))
-                    }
+                <div class="fwc-charts-desktop">
+                    <div class="fwc-legend" aria-label="Matchup rating legend">
+                        {
+                            matchupLegend.map((item) => (
+                                <div class="fwc-legend__item">
+                                    <span class:list={['fwc-legend__symbol', `fwc-legend__symbol--${item.rating === '?' ? 'unknown' : item.rating.replace(/\+/g, 'plus').replace(/-/g, 'minus').replace(/=/g, 'even')}`]}>
+                                        {item.rating}
+                                    </span>
+                                    <span class="fwc-legend__label">
+                                        <strong>{item.label}</strong>
+                                        <span>{item.description}</span>
+                                    </span>
+                                </div>
+                            ))
+                        }
+                    </div>
+
+                    <div class="fwc-charts-grid">
+                        {
+                            matchupCharts.map((chart) => (
+                                <FactionWarfareCruiserGuideMatchupChart chart={chart} />
+                            ))
+                        }
+                    </div>
                 </div>
             </section>
 
@@ -384,6 +390,30 @@ try {
 
         .fwc-legend__label span {
             font-size: var(--step--1);
+        }
+    }
+
+    .fwc-charts-mobile-note {
+        margin: 0;
+        padding: var(--space-s);
+        border: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+        background: color-mix(in srgb, var(--component-background) 55%, transparent);
+        font-size: var(--step--1);
+        line-height: 1.55;
+        color: var(--text-color-secondary, var(--faded));
+    }
+
+    .fwc-charts-desktop {
+        display: none;
+    }
+
+    @media (min-width: 48rem) {
+        .fwc-charts-mobile-note {
+            display: none;
+        }
+
+        .fwc-charts-desktop {
+            display: contents;
         }
     }
 

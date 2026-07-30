@@ -87,28 +87,34 @@ try {
             <section id="matchups" data-section-id="matchups" class="ndm-section ndm-panel" aria-labelledby="ndm-matchups-title">
                 <h2 id="ndm-matchups-title" class="ndm-section__title">Matchup Charts</h2>
 
-                <div class="ndm-legend" aria-label="Matchup rating legend">
-                    {
-                        matchupLegend.map((item) => (
-                            <div class="ndm-legend__item">
-                                <span class:list={['ndm-legend__symbol', `ndm-legend__symbol--${item.rating === '?' ? 'unknown' : item.rating.replace(/\+/g, 'plus').replace(/-/g, 'minus').replace(/=/g, 'even')}`]}>
-                                    {item.rating}
-                                </span>
-                                <span class="ndm-legend__label">
-                                    <strong>{item.label}</strong>
-                                    <span>{item.description}</span>
-                                </span>
-                            </div>
-                        ))
-                    }
-                </div>
+                <p class="ndm-charts-mobile-note">
+                    Matchup charts are available on desktop.
+                </p>
 
-                <div class="ndm-charts-grid">
-                    {
-                        matchupCharts.map((chart) => (
-                            <NavyDestroyerMetagameMatchupChart chart={chart} />
-                        ))
-                    }
+                <div class="ndm-charts-desktop">
+                    <div class="ndm-legend" aria-label="Matchup rating legend">
+                        {
+                            matchupLegend.map((item) => (
+                                <div class="ndm-legend__item">
+                                    <span class:list={['ndm-legend__symbol', `ndm-legend__symbol--${item.rating === '?' ? 'unknown' : item.rating.replace(/\+/g, 'plus').replace(/-/g, 'minus').replace(/=/g, 'even')}`]}>
+                                        {item.rating}
+                                    </span>
+                                    <span class="ndm-legend__label">
+                                        <strong>{item.label}</strong>
+                                        <span>{item.description}</span>
+                                    </span>
+                                </div>
+                            ))
+                        }
+                    </div>
+
+                    <div class="ndm-charts-grid">
+                        {
+                            matchupCharts.map((chart) => (
+                                <NavyDestroyerMetagameMatchupChart chart={chart} />
+                            ))
+                        }
+                    </div>
                 </div>
             </section>
 
@@ -446,6 +452,30 @@ try {
 
         .ndm-legend__label span {
             font-size: var(--step--1);
+        }
+    }
+
+    .ndm-charts-mobile-note {
+        margin: 0;
+        padding: var(--space-s);
+        border: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+        background: color-mix(in srgb, var(--component-background) 55%, transparent);
+        font-size: var(--step--1);
+        line-height: 1.55;
+        color: var(--text-color-secondary, var(--faded));
+    }
+
+    .ndm-charts-desktop {
+        display: none;
+    }
+
+    @media (min-width: 48rem) {
+        .ndm-charts-mobile-note {
+            display: none;
+        }
+
+        .ndm-charts-desktop {
+            display: contents;
         }
     }
 
