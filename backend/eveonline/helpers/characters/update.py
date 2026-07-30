@@ -51,7 +51,14 @@ def update_character_assets(eve_character_id: int) -> tuple[int, int, int]:
 
     response = EsiClient(character).get_character_assets()
     if not response.success():
-        logger.error(
+        # Expected ESI/token failures (opaque 906, suspended, missing token)
+        # are per-character and should not dominate Sentry as errors.
+        log = (
+            logger.warning
+            if response.response_code in (902, 904, 905, 906)
+            else logger.error
+        )
+        log(
             "Error %s fetching assets for %s",
             response.error_text(),
             character.summary(),

@@ -227,3 +227,26 @@ class EsiClientTest(SimpleTestCase):
         self.assertIsInstance(response.response, AttributeError)
         self.assertIn("character_id", str(response.response))
         operation.result.assert_called_once_with(use_etag=False)
+
+    def test_error_text_includes_underlying_exception_for_906(self):
+        response = EsiResponse(
+            response_code=ERROR_CALLING_ESI,
+            response=RuntimeError("upstream boom"),
+        )
+        text = response.error_text()
+        self.assertIn("906", text)
+        self.assertIn("upstream boom", text)
+
+    def test_operation_result_unwraps_one_element_list(self):
+        client = EsiClient(634915984)
+        operation = MagicMock()
+        operation.result.return_value = [
+            {"name": "Gankproof Dex", "corporation_id": 1}
+        ]
+
+        # pylint: disable-next=protected-access
+        response = client._operation_result(operation)
+
+        self.assertEqual(response.response_code, SUCCESS)
+        self.assertEqual(response.results()["name"], "Gankproof Dex")
+        self.assertIsInstance(response.results(), dict)

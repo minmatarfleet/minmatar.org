@@ -74,7 +74,14 @@ def sync_discord_user_nicknames():
 
 def sync_discord_nickname(user: User | int, force_update: bool):
     if isinstance(user, int):
-        user = User.objects.get(id=user)
+        user_id = user
+        user = User.objects.filter(id=user_id).first()
+        if user is None:
+            logger.info(
+                "Skipping discord nickname sync; user %s no longer exists",
+                user_id,
+            )
+            return
 
     logger.debug("Syncing discord nickname user %s", user.username)
     discord_user = DiscordUser.objects.filter(user_id=user.id).first()
@@ -109,12 +116,20 @@ def sync_discord_nickname(user: User | int, force_update: bool):
 
 @app.task(rate_limit="1/s")
 def sync_discord_user(user_id: int):
-    user = User.objects.get(id=user_id)
+    user = User.objects.filter(id=user_id).first()
+    if user is None:
+        logger.info(
+            "Skipping discord user sync; user %s no longer exists", user_id
+        )
+        return
     discord_user = DiscordUser.objects.filter(user_id=user.id).first()
     if discord_user is None:
         return
     external_discord_user = get_discord_user(user, notify=True)
     if external_discord_user is None:
+        return
+    # User may have been offboarded during get_discord_user
+    if not User.objects.filter(id=user_id).exists():
         return
     expected_discord_roles = DiscordRole.objects.filter(
         group__in=user.groups.all()
