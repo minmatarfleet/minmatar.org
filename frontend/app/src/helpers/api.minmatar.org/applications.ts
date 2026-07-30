@@ -170,3 +170,42 @@ export async function reject_corporation_applications(access_token:string, corpo
         throw new Error(`Error rejecting corporation application: ${error.message}`, { cause: error.cause });
     }
 }
+
+export async function transfer_corporation_application(
+    access_token: string,
+    corporation_id: number,
+    application_id: number,
+    target_corporation_id: number,
+) {
+    const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${access_token}`
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/${corporation_id}/applications/${application_id}/transfer`
+
+    console.log(`Requesting: POST ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers,
+            body: JSON.stringify({
+                corporation_id: target_corporation_id,
+            }),
+            method: 'POST'
+        })
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `POST ${ENDPOINT}`
+            ), {
+                cause: response.status
+            });
+        }
+
+        return await response.json() as CorporationApplication;
+    } catch (error) {
+        throw new Error(`Error transferring corporation application: ${error.message}`, { cause: error.cause });
+    }
+}

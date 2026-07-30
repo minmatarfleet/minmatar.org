@@ -9,6 +9,7 @@ interface Props {
     corporation_id:     number;
     corporation_name:   string;
     alert?:             Alert | false;
+    redirect_url?:      string | false;
 }
 
 const {
@@ -16,6 +17,7 @@ const {
     corporation_id,
     corporation_name,
     alert = false,
+    redirect_url = false,
 } = Astro.props
 
 const character:CharacterBasic = {
@@ -34,9 +36,10 @@ const corporation:CorporationBasic = {
 
 import { query_string } from '@helpers/string';
 const CORPORATION_APPLICATION_PARTIAL_URL = translatePath('/partials/corporation_application_component')
+const DIALOG_WITH_APPLICATION_URL = translatePath('/partials/dialog_with_application/')
 
 import { format_date_time } from '@helpers/date'
-import { marked } from 'marked';
+import { marked } from 'marked'
 
 import Context from '@components/layout/Context.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -53,7 +56,40 @@ import Tag from '@components/blocks/Tag.astro';
     gap='var(--space-l)'
     x-data={`{
         init() {
+            ${redirect_url ? `window.location.href = ${JSON.stringify(redirect_url)}` : ''}
             ${alert !== false ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+        },
+        async show_transfer_application_dialog() {
+            const selected = await show_corporations_finder()
+            if (!selected) return
+
+            const target_corporation_id = selected.corporation_id
+            if (target_corporation_id === ${corporation_id}) {
+                show_alert_dialog({
+                    title: ${JSON.stringify(t('transfer_application_dialog_title'))},
+                    content: ${JSON.stringify(t('same_corporation_transfer_error'))},
+                })
+                return
+            }
+
+            const target_corporation = {
+                id: target_corporation_id,
+                name: selected.name,
+            }
+            const target_corporation_param = encodeURIComponent(JSON.stringify(target_corporation))
+            const character_param = encodeURIComponent(${JSON.stringify(JSON.stringify(character))})
+            const source_corporation_param = encodeURIComponent(${JSON.stringify(JSON.stringify(corporation))})
+
+            show_confirm_dialog({
+                title: ${JSON.stringify(t('transfer_application_dialog_title'))},
+                partial: '${DIALOG_WITH_APPLICATION_URL}?character=' + character_param + '&corporation=' + target_corporation_param + '&application_id=${application.id}&type=transfer&message=' + encodeURIComponent(${JSON.stringify(t('transfer_application_dialog_text'))}),
+                hx: {
+                    method: 'post',
+                    url: '${CORPORATION_APPLICATION_PARTIAL_URL}?corporation=' + source_corporation_param + '&application_id=${application.id}&action=transfer&target_corporation=' + target_corporation_param,
+                    target: '#corporation-application',
+                    swap: 'outerHTML transition:true'
+                }
+            })
         }
     }`}
 >
@@ -133,6 +169,14 @@ import Tag from '@components/blocks/Tag.astro';
                     x-on:click="show_deny_application_dialog()"
                 >
                     {t('deny')}
+                </Button>
+
+                <Button
+                    size='sm'
+                    type="button"
+                    x-on:click="show_transfer_application_dialog()"
+                >
+                    {t('transfer_to_corporation')}
                 </Button>
             }
             {application?.status === 'accepted' &&
