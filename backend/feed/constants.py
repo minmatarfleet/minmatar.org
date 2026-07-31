@@ -148,6 +148,8 @@ AMARR_FLEET_PING_SESSION_SECONDS = 30 * 60
 # Skip rollup catch-up / historical rewrites. Only live fleets whose tip is
 # fresher than this should create Discord traffic.
 AMARR_FLEET_PING_MAX_AGE_SECONDS = 20 * 60
+# Skip no-op Discord message edits within this window (rollups run ~3m).
+AMARR_FLEET_PING_EDIT_MIN_SECONDS = 90
 METERS_PER_LIGHT_YEAR = 9_460_528_400_000_000
 CAPITAL_SHIP_GROUPS = frozenset(
     {

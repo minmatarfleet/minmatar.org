@@ -241,6 +241,47 @@ class AmarrFleetPingTestCase(TestCase):
         self.assertEqual(FeedAmarrFleetAlert.objects.count(), 1)
 
     @patch("feed.helpers.amarr_fleet_pings.DiscordClient")
+    def test_skips_noop_discord_edit_within_min_interval(
+        self, mock_client_cls
+    ):
+        mock_client = MagicMock()
+        create_response = MagicMock()
+        create_response.json.return_value = {"id": "999888705"}
+        mock_client.create_message.return_value = create_response
+        mock_client_cls.return_value = mock_client
+
+        event = _amarr_event()
+        self.assertTrue(maybe_notify_amarr_fleet(event))
+        mock_client.create_message.assert_called_once()
+        mock_client.update_message.reset_mock()
+
+        # Same content shortly after create — no Discord PATCH.
+        self.assertTrue(maybe_notify_amarr_fleet(event))
+        mock_client.update_message.assert_not_called()
+        alert = FeedAmarrFleetAlert.objects.get()
+        self.assertEqual(alert.kills, 12)
+
+    @patch("feed.helpers.amarr_fleet_pings.DiscordClient")
+    def test_edits_discord_after_min_interval_even_if_unchanged(
+        self, mock_client_cls
+    ):
+        mock_client = MagicMock()
+        create_response = MagicMock()
+        create_response.json.return_value = {"id": "999888706"}
+        mock_client.create_message.return_value = create_response
+        mock_client_cls.return_value = mock_client
+
+        event = _amarr_event()
+        self.assertTrue(maybe_notify_amarr_fleet(event))
+        alert = FeedAmarrFleetAlert.objects.get()
+        alert.last_activity_at = timezone.now() - timedelta(minutes=3)
+        alert.save(update_fields=["last_activity_at"])
+
+        mock_client.update_message.reset_mock()
+        self.assertTrue(maybe_notify_amarr_fleet(event))
+        mock_client.update_message.assert_called_once()
+
+    @patch("feed.helpers.amarr_fleet_pings.DiscordClient")
     def test_writer_notifies_amarr_fleet_active(self, mock_client_cls):
         mock_client = MagicMock()
         create_response = MagicMock()

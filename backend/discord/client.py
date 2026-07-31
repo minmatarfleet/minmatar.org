@@ -49,6 +49,16 @@ class DiscordError(Exception):
         return e
 
 
+def _raise_discord_rate_limit(response: requests.Response) -> None:
+    """Raise RateLimitException with Discord Retry-After for backoff retries."""
+    raw = response.headers.get("Retry-After", "1")
+    try:
+        period_remaining = float(raw)
+    except (TypeError, ValueError):
+        period_remaining = 1.0
+    raise RateLimitException("Discord API rate limited", period_remaining)
+
+
 class DiscordBaseClient:
     """Base Discord API Client"""
 
@@ -73,7 +83,7 @@ class DiscordBaseClient:
             timeout=10,
         )
         if response.status_code == 429:
-            raise RateLimitException
+            _raise_discord_rate_limit(response)
         if response.status_code == 400:
             logger.error(response.json())
         response.raise_for_status()
@@ -91,7 +101,7 @@ class DiscordBaseClient:
             timeout=10,
         )
         if response.status_code == 429:
-            raise RateLimitException
+            _raise_discord_rate_limit(response)
         response.raise_for_status()
         return response
 
@@ -107,7 +117,7 @@ class DiscordBaseClient:
             timeout=10,
         )
         if response.status_code == 429:
-            raise RateLimitException
+            _raise_discord_rate_limit(response)
         response.raise_for_status()
         return response
 
@@ -123,7 +133,7 @@ class DiscordBaseClient:
             timeout=10,
         )
         if response.status_code == 429:
-            raise RateLimitException
+            _raise_discord_rate_limit(response)
         response.raise_for_status()
         return response.json()
 
@@ -138,7 +148,7 @@ class DiscordBaseClient:
             timeout=10,
         )
         if response.status_code == 429:
-            raise RateLimitException
+            _raise_discord_rate_limit(response)
         if response.status_code == 404:
             # Don't throw exception for failing to delete if it doesn't exist
             return response

@@ -3,9 +3,13 @@ from __future__ import annotations
 from django.test import TestCase
 from django.utils import timezone
 
-from feed.models import FeedEvent
+from feed.models import FeedEvent, FeedEventKillmailLink, FeedKillmail
 from feed.rollups.types import RollupResult
-from feed.rollups.writer import write_rollup_results
+from feed.rollups.writer import (
+    _apply_upgrade_metadata,
+    _sync_killmail_links,
+    write_rollup_results,
+)
 
 
 class WriterTestCase(TestCase):
@@ -163,3 +167,56 @@ class WriterTestCase(TestCase):
         self.assertEqual(
             FeedEvent.objects.filter(rollup_code="fleet_active").count(), 2
         )
+
+    def test_sync_killmail_links_is_idempotent(self):
+        event = FeedEvent.objects.create(
+            kind=FeedEvent.Kind.FLEET_ACTIVE,
+            rollup_code="fleet_active",
+            cluster_key="fleet_active:30002542:500002:idempotent",
+            occurred_at=timezone.now(),
+            title="Fleet",
+            subheader="",
+            preview="",
+            body="",
+            accent=FeedEvent.Accent.MILITIA,
+            payload={},
+            rollup_version=1,
+        )
+        km = FeedKillmail.objects.create(
+            killmail_id=137371129,
+            hash="abc",
+            killmail_time=timezone.now(),
+            solar_system_id=30002542,
+            raw_killmail={},
+        )
+        _sync_killmail_links(event, [km.killmail_id])
+        _sync_killmail_links(event, [km.killmail_id])
+        # Concurrent create path: existing link + bulk_create ignore_conflicts
+        FeedEventKillmailLink.objects.bulk_create(
+            [FeedEventKillmailLink(feed_event=event, feed_killmail=km)],
+            ignore_conflicts=True,
+        )
+        self.assertEqual(
+            FeedEventKillmailLink.objects.filter(feed_event=event).count(), 1
+        )
+
+    def test_apply_upgrade_metadata_tolerates_deleted_event(self):
+        event = FeedEvent.objects.create(
+            kind=FeedEvent.Kind.FLEET_ACTIVE,
+            rollup_code="fleet_active",
+            cluster_key="fleet_active:30002542:500002:deleted",
+            occurred_at=timezone.now(),
+            title="Major fleet",
+            subheader="",
+            preview="",
+            body="",
+            accent=FeedEvent.Accent.MILITIA,
+            payload={"engagement_tier": "major", "kills": 60, "pilots": 40},
+            rollup_version=1,
+        )
+        prior = [{"engagement_tier": "medium", "kills": 14, "pilots": 12}]
+        event_pk = event.pk
+        FeedEvent.objects.filter(pk=event_pk).delete()
+        # Must not raise DatabaseError when the row was concurrently deleted.
+        _apply_upgrade_metadata(event, prior)
+        self.assertFalse(FeedEvent.objects.filter(pk=event_pk).exists())
