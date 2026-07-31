@@ -34,6 +34,24 @@ SCOPE_CLONES = ["esi-clones.read_clones.v1"]
 SCOPE_IMPLANTS = ["esi-clones.read_implants.v1"]
 
 
+def _refresh_contracts_and_reconcile(eve_character_id: int) -> None:
+    refresh_character_contracts(eve_character_id)
+    app.send_task(
+        "industry.tasks.reconcile_industry_contract_associations_for_character_task",
+        args=[eve_character_id],
+    )
+
+
+def _refresh_industry_jobs_and_notify(eve_character_id: int) -> None:
+    result = refresh_character_industry_jobs(eve_character_id)
+    created_job_ids = result[1] if isinstance(result, tuple) else []
+    if created_job_ids:
+        app.send_task(
+            "industry.tasks.emit_order_job_notifications_for_jobs",
+            args=[created_job_ids],
+        )
+
+
 @app.task(rate_limit="5/m")
 def update_character(eve_character_id):
     """Update a character's assets, skills, killmails, contracts, and industry jobs."""
@@ -79,13 +97,9 @@ def update_character(eve_character_id):
     if Token.get_token(eve_character_id, SCOPE_KILLMAILS):
         refresh_character_killmails(eve_character_id)
     if Token.get_token(eve_character_id, SCOPE_CONTRACTS):
-        refresh_character_contracts(eve_character_id)
-        app.send_task(
-            "industry.tasks.reconcile_industry_contract_associations_for_character_task",
-            args=[eve_character_id],
-        )
+        _refresh_contracts_and_reconcile(eve_character_id)
     if Token.get_token(eve_character_id, SCOPE_INDUSTRY_JOBS):
-        refresh_character_industry_jobs(eve_character_id)
+        _refresh_industry_jobs_and_notify(eve_character_id)
     if Token.get_token(eve_character_id, SCOPE_MINING):
         refresh_character_mining(eve_character_id)
     if Token.get_token(eve_character_id, SCOPE_PLANETS):

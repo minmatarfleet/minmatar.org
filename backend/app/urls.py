@@ -50,6 +50,7 @@ from structures.router import router as structures_router
 from users.router import router as users_router
 from users.eve_views import eve_mobile_sso_complete
 from subscriptions.router import router as subscription_router
+from notifications.router import router as notifications_router
 from feed.router import router as feed_router
 from help_tickets.router import router as help_tickets_router
 
@@ -79,6 +80,7 @@ api.add_router("learning", learning_router)
 api.add_router("tech", tech_router)
 api.add_router("feed", feed_router)
 api.add_router("subscriptions", subscription_router)
+api.add_router("notifications", notifications_router)
 api.add_router("discord", discord_router)
 api.add_router("help-tickets", help_tickets_router)
 

@@ -1,0 +1,132 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { NotificationFeaturePreferences } from '@helpers/api.minmatar.org/notification_preferences'
+
+interface Props {
+    features: NotificationFeaturePreferences[]
+    auth_token: string
+}
+
+const { features, auth_token } = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+const channel_labels: Record<string, string> = {
+    web: t('notification_channel_web'),
+    discord: t('notification_channel_discord'),
+    eve_mail: t('notification_channel_eve_mail'),
+}
+
+const api_base = `${import.meta.env.API_URL}/api/notifications`
+const save_error = t('notification_preferences_save_error')
+---
+
+<Flexblock
+    gap="var(--space-l)"
+    class="[ w-full ]"
+    x-data={`{
+        features: ${JSON.stringify(features)},
+        saving: false,
+        error: '',
+        async setChannel(typeKey, channel, enabled) {
+            this.saving = true
+            this.error = ''
+            try {
+                const response = await fetch('${api_base}/preferences', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ${auth_token}',
+                    },
+                    body: JSON.stringify({
+                        preferences: [{
+                            notification_type: typeKey,
+                            channel: channel,
+                            enabled: enabled,
+                        }],
+                    }),
+                })
+                if (response.ok) {
+                    this.features = await response.json()
+                } else {
+                    this.error = '${save_error}'
+                }
+            } catch (e) {
+                this.error = '${save_error}'
+            } finally {
+                this.saving = false
+            }
+        },
+        async setTopic(typeKey, subscribed) {
+            this.saving = true
+            this.error = ''
+            try {
+                const url = '${api_base}/topics/' + encodeURIComponent(typeKey)
+                const response = await fetch(url, {
+                    method: subscribed ? 'POST' : 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ${auth_token}',
+                    },
+                })
+                if (response.ok || response.status === 204) {
+                    const prefRes = await fetch('${api_base}/preferences', {
+                        headers: {
+                            'Authorization': 'Bearer ${auth_token}',
+                        },
+                    })
+                    if (prefRes.ok) this.features = await prefRes.json()
+                    else this.error = '${save_error}'
+                } else {
+                    this.error = '${save_error}'
+                }
+            } catch (e) {
+                this.error = '${save_error}'
+            } finally {
+                this.saving = false
+            }
+        },
+    }`}
+>
+    <h2>{t('notification_preferences')}</h2>
+    <p>{t('notification_preferences_description')}</p>
+    <p x-show="error" x-text="error" class="[ text-red ]" role="alert"></p>
+
+    <template x-for="feature in features" :key="feature.feature">
+        <Flexblock gap="var(--space-s)" class="[ w-full ]">
+            <h3 x-text="feature.feature" class="[ capitalize ]"></h3>
+            <template x-for="ntype in feature.types" :key="ntype.key">
+                <Flexblock gap="var(--space-2xs)" class="[ w-full ]">
+                    <strong x-text="ntype.label"></strong>
+                    <small x-text="ntype.description"></small>
+                    <template x-if="ntype.supports_topic_subscription">
+                        <label class="[ flex items-center gap-2 ]">
+                            <input
+                                type="checkbox"
+                                :checked="ntype.topic_subscribed"
+                                @change="setTopic(ntype.key, $event.target.checked)"
+                            />
+                            <span>{t('notification_topic_subscribe')}</span>
+                        </label>
+                    </template>
+                    <template x-for="ch in ntype.channels" :key="ch.channel">
+                        <label class="[ flex items-center gap-2 ]">
+                            <input
+                                type="checkbox"
+                                :checked="ch.enabled"
+                                @change="setChannel(ntype.key, ch.channel, $event.target.checked)"
+                            />
+                            <span x-text="({
+                                web: '${channel_labels.web}',
+                                discord: '${channel_labels.discord}',
+                                eve_mail: '${channel_labels.eve_mail}',
+                            })[ch.channel] || ch.channel"></span>
+                        </label>
+                    </template>
+                </Flexblock>
+            </template>
+        </Flexblock>
+    </template>
+</Flexblock>

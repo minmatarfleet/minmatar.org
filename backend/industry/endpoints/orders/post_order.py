@@ -20,6 +20,7 @@ from industry.helpers.public_short_code import (
     pick_unique_public_short_code_among_actives,
 )
 from industry.models import IndustryOrder, IndustryOrderItem
+from industry.tasks import emit_order_created_notification
 
 logger = logging.getLogger(__name__)
 
@@ -165,6 +166,12 @@ def post_order(request, payload: CreateOrderRequest):
     except Exception:  # noqa: BLE001 — never fail order create on planner
         logger.exception(
             "Failed to store profit breakdown for order %s", order.pk
+        )
+    try:
+        emit_order_created_notification.delay(order.pk, request.user.id)
+    except Exception:  # noqa: BLE001 — never fail order create on notify
+        logger.exception(
+            "Failed to enqueue new-order notification for order %s", order.pk
         )
     return 201, CreateOrderResponse(
         order_id=order.pk,

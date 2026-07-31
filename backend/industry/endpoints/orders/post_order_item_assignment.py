@@ -1,5 +1,7 @@
 """POST /{order_id}/orderitems/{order_item_id}/assignments — assign quantity to user's character."""
 
+import logging
+
 from django.db import transaction
 from django.db.models import Sum
 
@@ -12,6 +14,7 @@ from industry.endpoints.orders.schemas import (
     PostOrderItemAssignmentRequest,
 )
 from industry.endpoints.orders.serialization import assignment_to_response
+from industry.helpers.notifications import emit_order_assignment
 from industry.helpers.order_assignments import validate_assignment_quantity
 from industry.models import (
     IndustryOrder,
@@ -19,6 +22,8 @@ from industry.models import (
     IndustryOrderItemAssignment,
 )
 from onboarding.orders_gate import require_current_orders_onboarding
+
+logger = logging.getLogger(__name__)
 
 PATH = "{int:order_id}/orderitems/{int:order_item_id}/assignments"
 METHOD = "post"
@@ -111,6 +116,13 @@ def post_order_item_assignment(
             assignment.save(update_fields=["quantity", "has_blueprints"])
 
     assignment = IndustryOrderItemAssignment.objects.select_related(
-        "character"
+        "character", "order_item", "order_item__order", "order_item__eve_type"
     ).get(pk=assignment.pk)
+    try:
+        emit_order_assignment(assignment, request.user)
+    except Exception:  # noqa: BLE001 — never fail assign on notify
+        logger.exception(
+            "Failed to emit assignment notification for assignment %s",
+            assignment.pk,
+        )
     return 201, assignment_to_response(assignment)

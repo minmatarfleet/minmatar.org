@@ -103,7 +103,7 @@ def _resolve_to_primary_producers(character_refs):
     ]
 
 
-def _blueprint_activity_pairs_for_product_type(product_type_id: int):
+def blueprint_activity_pairs_for_product_type(product_type_id: int):
     """(blueprint_type_id, activity_id) pairs that produce this product type."""
     return set(
         EveIndustryActivityProduct.objects.filter(
@@ -123,7 +123,7 @@ def get_character_producers_for_type(product_type_id: int):
     out = []
 
     # Industry jobs (manufacturing, reactions)
-    pairs = _blueprint_activity_pairs_for_product_type(product_type_id)
+    pairs = blueprint_activity_pairs_for_product_type(product_type_id)
     if pairs:
         q = Q()
         for blueprint_type_id, activity_id in pairs:
@@ -165,7 +165,7 @@ def get_corporation_producers_for_type(product_type_id: int):
     Corporations who have industry jobs producing this product type.
     Returns list of {"id": corporation_id, "name": corporation_name}, distinct.
     """
-    pairs = _blueprint_activity_pairs_for_product_type(product_type_id)
+    pairs = blueprint_activity_pairs_for_product_type(product_type_id)
     if not pairs:
         return []
     q = Q()

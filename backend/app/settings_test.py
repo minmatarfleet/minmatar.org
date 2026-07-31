@@ -163,3 +163,17 @@ REDDIT_USERNAME = os.environ.get("REDDIT_USERNAME", "")
 REDDIT_PASSWORD = os.environ.get("REDDIT_PASSWORD", "")
 REDDIT_CLIENT_ID = os.environ.get("REDDIT_CLIENT_ID", "")
 REDDIT_SECRET = os.environ.get("REDDIT_SECRET", "")
+
+# Notifications (web push / Discord DM / Eve mail)
+NOTIFICATIONS_EVE_MAIL_CHARACTER_ID = int(
+    os.environ.get("NOTIFICATIONS_EVE_MAIL_CHARACTER_ID", "634915984")
+)
+NOTIFICATIONS_DISCORD_DM_RATE_PER_SECOND = float(
+    os.environ.get("NOTIFICATIONS_DISCORD_DM_RATE_PER_SECOND", "2")
+)
+NOTIFICATIONS_EVE_MAIL_RATE_PER_SECOND = float(
+    os.environ.get("NOTIFICATIONS_EVE_MAIL_RATE_PER_SECOND", "0.5")
+)
+VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
+VAPID_CONTACT = os.environ.get("VAPID_CONTACT", "")
