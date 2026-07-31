@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, patch
 
 from django.test import SimpleTestCase
+from esi.exceptions import ESIErrorLimitException, HTTPClientError
 
 from eveonline.client import (
     ERROR_CALLING_ESI,
@@ -227,6 +228,32 @@ class EsiClientTest(SimpleTestCase):
         self.assertIsInstance(response.response, AttributeError)
         self.assertIn("character_id", str(response.response))
         operation.result.assert_called_once_with(use_etag=False)
+
+    def test_operation_result_preserves_http_client_error_status(self):
+        client = EsiClient(634915984)
+        operation = MagicMock()
+        operation.result.side_effect = HTTPClientError(
+            404, {}, {"error": "Character has been deleted!"}
+        )
+        operation.operation.operationId = "GetCharactersDetail"
+
+        # pylint: disable-next=protected-access
+        response = client._operation_result(operation)
+
+        self.assertEqual(response.response_code, 404)
+        self.assertIsInstance(response.response, HTTPClientError)
+
+    def test_operation_result_maps_error_limit_to_420(self):
+        client = EsiClient(634915984)
+        operation = MagicMock()
+        operation.result.side_effect = ESIErrorLimitException(reset=12)
+        operation.operation.operationId = "GetCharactersDetail"
+
+        # pylint: disable-next=protected-access
+        response = client._operation_result(operation)
+
+        self.assertEqual(response.response_code, 420)
+        self.assertIsInstance(response.response, ESIErrorLimitException)
 
     def test_error_text_includes_underlying_exception_for_906(self):
         response = EsiResponse(

@@ -38,6 +38,7 @@ from eveonline.helpers.characters.planets import (
 )
 from eveonline.helpers.characters.public_data import (
     apply_character_public_data,
+    mark_character_esi_deleted,
     update_character_public_data,
 )
 from eveonline.helpers.characters.update import (
@@ -71,6 +72,7 @@ __all__ = [
     "update_character_planets",
     "update_character_public_data",
     "apply_character_public_data",
+    "mark_character_esi_deleted",
     "update_character_skills",
     "update_character_with_affiliations",
     "user_characters",

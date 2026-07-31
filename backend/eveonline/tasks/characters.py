@@ -1,6 +1,7 @@
 import logging
 
 from django.contrib.auth.models import User
+from esi.exceptions import ESIErrorLimitException
 from esi.models import Token
 
 from app.celery import app
@@ -51,6 +52,14 @@ def update_character(eve_character_id):
         return
 
     character = EveCharacter.objects.get(character_id=eve_character_id)
+    if character.esi_deleted:
+        logger.info(
+            "Skipping update for ESI-deleted character %s (%s)",
+            character.character_name,
+            eve_character_id,
+        )
+        return
+
     logger.info(
         "Updating character %s (%s)",
         character.character_name,
@@ -99,12 +108,23 @@ def update_character_urgent(eve_character_id):
 def update_all_character_public_data() -> int:
     """Refresh public ESI fields (including security status) for every character."""
     character_ids = list(
-        EveCharacter.objects.values_list("character_id", flat=True)
+        EveCharacter.objects.filter(esi_deleted=False).values_list(
+            "character_id", flat=True
+        )
     )
     updated = 0
-    for character_id in character_ids:
-        if refresh_character_public_data(character_id):
-            updated += 1
+    for index, character_id in enumerate(character_ids):
+        try:
+            if refresh_character_public_data(character_id):
+                updated += 1
+        except ESIErrorLimitException:
+            logger.warning(
+                "ESI error limited during public data sweep after %d update(s); "
+                "aborting remaining %d character(s)",
+                updated,
+                len(character_ids) - index,
+            )
+            return updated
     logger.info(
         "Updated public data for %d of %d character(s)",
         updated,
@@ -125,7 +145,8 @@ def update_alliance_characters():
         evecharacter__in=alliance_characters
     ).distinct()
     all_characters = EveCharacter.objects.filter(
-        user__in=users_with_alliance_chars
+        user__in=users_with_alliance_chars,
+        esi_deleted=False,
     ).exclude(token=None)
 
     logger.info(

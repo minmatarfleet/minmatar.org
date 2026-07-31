@@ -4,6 +4,7 @@ from typing import Any, List
 
 from django.conf import settings
 from esi.errors import TokenInvalidError
+from esi.exceptions import ESIErrorLimitException, HTTPClientError
 from esi.models import Token
 from esi.openapi_clients import ESIClientProvider
 from oauthlib.oauth2.rfc6749.errors import InvalidGrantError
@@ -234,6 +235,24 @@ class EsiClient:
                 e,
             )
             return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+        except HTTPClientError as e:
+            logger.warning(
+                "ESI operation.result() failed for %s: %s",
+                getattr(
+                    getattr(operation, "operation", None), "operationId", None
+                ),
+                e,
+            )
+            return EsiResponse(response_code=e.status_code, response=e)
+        except ESIErrorLimitException as e:
+            logger.warning(
+                "ESI operation.result() error-limited for %s: %s",
+                getattr(
+                    getattr(operation, "operation", None), "operationId", None
+                ),
+                e,
+            )
+            return EsiResponse(response_code=420, response=e)
         except Exception as e:
             logger.warning(
                 "ESI operation.result() failed for %s: %s",

@@ -57,6 +57,9 @@ class EveCharacter(models.Model):
     )
     exempt = models.BooleanField(default=False)
     esi_suspended = models.BooleanField(default=False)
+    # Set when ESI returns 404 "Character has been deleted!"; skip future public ESI.
+    esi_deleted = models.BooleanField(default=False, db_index=True)
+    esi_deleted_at = models.DateTimeField(null=True, blank=True)
     esi_token_level = models.CharField(max_length=40, null=True, blank=True)
     esi_scope_groups = models.JSONField(default=list, blank=True)
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)

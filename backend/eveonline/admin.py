@@ -201,7 +201,9 @@ class EveCharacterAdmin(admin.ModelAdmin):
         "alliance_display",
         "primary_eve_character",
         "user",
+        "esi_deleted",
     )
+    readonly_fields = ("esi_deleted_at",)
     search_fields = (
         "character_name",
         "=character_id",
@@ -215,6 +217,8 @@ class EveCharacterAdmin(admin.ModelAdmin):
         EveCharacterAllianceFilter,
         EveCharacterPrimaryFilter,
         EveCharacterDiscordFilter,
+        "esi_deleted",
+        "esi_suspended",
     )
     list_per_page = 50
     inlines = [EveCharacterTagInline]
