@@ -4,6 +4,106 @@ Real responses that worked. Add entries here after you send outreach — no temp
 
 ---
 
+## 2026-07-31 scout run
+
+### Returning EU FW alt, ~2m SP alpha, voice + fleets, open faction
+**Thread:** [Returning EU Pilot Seeking Active Faction Warfare Corporation](https://www.reddit.com/r/evejobs/comments/1vbx8k4/returning_eu_pilot_seeking_active_faction_warfare/)  
+**Routed:** Soltech Armada  
+**Author:** BearThatCares
+
+**Sent (matched scout draft):**
+> Minmatar militia EU evenings out of Amamake is the busy seat for learning faction warfare on voice, and Soltech Armada runs that window daily as an IRL-first crew that will walk a returning pilot through the finer details without caring about a perfect killboard. [Ad](https://www.reddit.com/r/evejobs/comments/1v67rnh/sltar_soltech_armada_is_recruiting_amamake_is/) or [discord.gg/minmatar](http://discord.gg/minmatar)
+
+**Why it worked as drafted:** Direct-answer open (EU + learn FW on voice → Minmatar/Amamake) then Soltech as the IRL-first teacher. Absorbs age/maturity + bad-KB fears without mirroring the bio list. Alpha/2m SP left unsaid — corp pitch over requirements lecture.
+
+**Routing note:** Returning EU + explicit FW learn + voice fleets → Soltech (EUTZ on API), not Academy (USTZ fleets). Open to leaving Caldari NPC militia → Minmatar pitch is fine. Do not default new/returning EU FW to Academy.
+
+---
+
+### 110m SP, 5 accounts, wants caps PvP/PvE, EU, forever home
+**Thread:** [Wanna fly big toys](https://www.reddit.com/r/evejobs/comments/1vbxiw6/wanna_fly_big_toys/)  
+**Routed:** Rattini Tribe  
+**Author:** BearThatCares
+
+**Sent (matched scout draft):**
+> Rattini Tribe feeds capitals in Minmatar faction warfare and keeps multibox accounts busy across EU nights without the structure-timer lifestyle, so a social forever home that still undocks big toys for PvP is the day job. [Ad](https://www.reddit.com/r/evejobs/comments/1v9vicg/rattini_tribe_relentlessly_feeding_capitals_in_a/) or [discord.gg/minmatar](http://discord.gg/minmatar)
+
+**Why it worked as drafted:** Corp-first Rattini. Weaves `big toys` / multibox / forever-home without question-form mirroring. Cap PvE ask answered by capital-feed identity, not a nullsec crab pitch. Thread already had nullbloc dumps — FW cap home is the contrast.
+
+**Routing note:** Caps + multibox + social forever home + EU → Rattini. Do not redirect to sov-null for “cap PvE.”
+
+---
+
+### Forum: UK 120m SP, WH break, patchy hours, no CTAs, wants blops
+**Thread:** [120m sp + alts Looking for pew and fun](https://forums.eveonline.com/t/120m-sp-alts-looking-for-pew-and-fun/515585)  
+**Routed:** Rattini Tribe  
+**Author:** BearThatCares
+
+**Scout draft (not sent):**
+> A break from wormholes with spontaneous UK evenings, small-gang pew, and someone who will teach blops is the Rattini Tribe pitch in Minmatar lowsec, patchy work weeks normal and CTAs not the product. [Ad] or discord.gg/minmatar — Soltech Armada (same alliance) if you want the tighter IRL-first Amamake seat instead
+
+**Sent:**
+> A break from wormholes fits, we were formed from two wormhole alliances that got a bit tired of the grind.
+>
+> Rattini Tribe has spontaneous UK evenings, with the vast majority of our content being solo / small gang until a massive fight shows up. No CTAs, no bullshit to babysit.
+>
+> [Ad](https://www.reddit.com/r/evejobs/comments/1v9vicg/rattini_tribe_relentlessly_feeding_capitals_in_a/) or discord.gg/minmatar
+>
+> [State of Southern FW YC128](https://www.reddit.com/r/Eve/s/hyLBa0Yhi9)
+>
+> [Ahbazon 300B AAR](https://www.reddit.com/r/Eve/s/yS8CtRzbyb)
+>
+> [Auga Siege Report](https://my.minmatar.org/alliance/campaigns/auga-yc128/)
+
+**What changed and why:**
+- Kept WH-break opener, but swapped brochure “pitch” for recruiter ownership: `we were formed from two wormhole alliances` — credibility when OP is explicitly leaving jspace.
+- Dropped Soltech same-alliance fork and blops-teach clause — Rattini-only; blops implied by capital/fight culture + proof links.
+- Named OP fears directly: spontaneous UK evenings, solo/small-gang until big fight, no CTAs / nothing to babysit.
+- Proof stack (FW state post + Ahbazon AAR + Auga siege report) after ad/discord — same family as hauler freight proof and casual-null FW BR redirects; forums earn multi-block when proof is the close.
+
+**Routing note:** UK/EU + WH break + no CTAs + small-gang/blops → Rattini primary. WH-origin credibility line lands harder than a soft Soltech fork when they already named lowsec and bloodshed.
+
+---
+
+### Forum: UK highsec industry returner (Caldari preferred)
+**Thread:** [Looking for Corp](https://forums.eveonline.com/t/looking-for-corp/515586)  
+**Routed:** Minmatar Fleet Associates / Extraction  
+**Author:** BearThatCares
+
+**Scout draft (not sent):**
+> Getting back into highsec mining, invention, and research on a UK clock is the Minmatar Fleet Associates door, highsec bulwark industry with Minmatar Extraction Company running organized Amo fleets and 100% Jita buyback when you want rocks with a fleet. discord.gg/minmatar and ask for Keldor, or [the mining ad]
+
+**Sent:**
+> Getting back into highsec mining, invention, and research on a UK clock sounds like Minmatar Fleet Associates. Highsec bulwark industry with Minmatar Extraction Company running organized Amo fleets and 100% Jita buyback when you want rocks with a fleet.
+>
+> [discord.gg/minmatar](http://discord.gg/minmatar) and ask for Keldor, or [the mining ad](https://www.reddit.com/r/evejobs/comments/1v7zpun/minmatar_extraction_company_amo_mining_fleets_100/)
+>
+> [Rock Hoppin' — Extraction Company](https://www.youtube.com/watch?v=XCApG7Pt6m4)
+
+**What changed and why:**
+- `is the … door` → `sounds like` — softer, less brochure; same MFA/Extraction routing.
+- Split corp line from discord/Keldor + ad, then closed with the Extraction “Rock Hoppin'” YouTube — fleet-picture proof when OP wants mining fleets, same family as freight-history / Auga proof closes.
+- Used the live Extraction ad (`1v7zpun`), not a stale mining link.
+- Left “Caldari preferred” unsaid — do not apologize for Minmatar highsec bulwarks when the ask is industry, not faction identity.
+
+**Routing note:** UK highsec miner/builder/inventor → MFA + Extraction + Keldor. Empire-race preference is not a skip when they did not lock language or militia.
+
+---
+
+## Patterns (2026-07-31 run)
+
+| Situation | What landed |
+|-----------|-------------|
+| Returning EU FW learner, voice + fleets | Scout draft shippable; direct-answer Soltech; skip Academy even for low SP |
+| Caps + multibox forever home | Scout draft shippable; corp-first Rattini; no null crab redirect |
+| UK WH-break, patchy, no CTAs, blops | Drop Soltech fork; WH-origin “we were formed from…” + Rattini content beat + proof stack (FW state / AAR / Auga) |
+| UK highsec industry returner | Soften “door” → `sounds like`; MFA + Extraction + Keldor; close with Rock Hoppin' YouTube; ignore Caldari preferred |
+| Alpha / requirements | Leave unsaid in outreach; pitch the corp |
+| Forum proof close | Multi-block OK when BR/siege/AAR/video links do more than a second corp name |
+| Extraction ad URL | Prefer live Amo mining ad from current pre-scout, not older Reddit links |
+
+---
+
 ## 2026-07-28 scout run
 
 ### Brand-new Sebiestor, wants mentor not random recruit link
