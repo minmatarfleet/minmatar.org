@@ -113,12 +113,6 @@ def blueprint_activity_pairs_for_product_type(product_type_id: int):
     )
 
 
-# Backwards-compatible alias for older call sites / patches.
-_blueprint_activity_pairs_for_product_type = (
-    blueprint_activity_pairs_for_product_type
-)
-
-
 def get_character_producers_for_type(product_type_id: int):
     """
     All characters dealing with this product type (industry jobs and/or planetary
@@ -129,7 +123,7 @@ def get_character_producers_for_type(product_type_id: int):
     out = []
 
     # Industry jobs (manufacturing, reactions)
-    pairs = _blueprint_activity_pairs_for_product_type(product_type_id)
+    pairs = blueprint_activity_pairs_for_product_type(product_type_id)
     if pairs:
         q = Q()
         for blueprint_type_id, activity_id in pairs:
@@ -171,7 +165,7 @@ def get_corporation_producers_for_type(product_type_id: int):
     Corporations who have industry jobs producing this product type.
     Returns list of {"id": corporation_id, "name": corporation_name}, distinct.
     """
-    pairs = _blueprint_activity_pairs_for_product_type(product_type_id)
+    pairs = blueprint_activity_pairs_for_product_type(product_type_id)
     if not pairs:
         return []
     q = Q()
