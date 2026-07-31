@@ -18,6 +18,7 @@ test("CorporationInfo defaults", async () => {
     faction_name: "minmatar",
     requirements: ["chicken"],
     biography: "",
+    executor_notes: "",
     introduction: "",
     timezones: [],
     type: "alliance",

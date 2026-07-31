@@ -16,6 +16,7 @@ class EveCorporation(models.Model):
     corporation_id = models.IntegerField(unique=True)
     introduction = models.TextField(blank=True)
     biography = models.TextField(blank=True)
+    executor_notes = models.TextField(blank=True)
     timezones = models.TextField(blank=True)
     requirements = models.TextField(blank=True)
     name = models.CharField(max_length=255, blank=True)

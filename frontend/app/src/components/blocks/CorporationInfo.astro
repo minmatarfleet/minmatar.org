@@ -146,6 +146,13 @@ const timezones = corporation?.timezones?.length ?? 0 > 0 ? corporation?.timezon
                     </SectionH4>
                 </ComponentBlock>
             }
+            {corporation?.executor_notes !== '' &&
+                <ComponentBlock>
+                    <SectionH4 heading_text={t('executor_notes')}>
+                        <Markdown markdown={corporation?.executor_notes as string} />
+                    </SectionH4>
+                </ComponentBlock>
+            }
         </Flexblock>
     }
 </Wrapper>

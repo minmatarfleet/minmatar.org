@@ -43,6 +43,7 @@ class CorporationRouterTestCase(TestCase):
             corporation_id=corp_id,
             introduction="Intro",
             biography="Bio",
+            executor_notes="Executor notes",
             timezones="TZ",
             requirements="Req",
             name=corp_name,
@@ -84,6 +85,21 @@ class CorporationRouterTestCase(TestCase):
         corp = response.json()
         self.assertEqual(12345, corp["corporation_id"])
         self.assertEqual("TestCorp", corp["corporation_name"])
+        self.assertEqual("Executor notes", corp["executor_notes"])
+
+    def test_get_corporation_info(self):
+        self.create_corp(12345, "TestCorp")
+
+        response = self.client.get(
+            BASE_URL + "corporations/12345/info",
+        )
+
+        self.assertEqual(200, response.status_code)
+        corp = response.json()
+        self.assertEqual(12345, corp["corporation_id"])
+        self.assertEqual("TestCorp", corp["corporation_name"])
+        self.assertEqual("Executor notes", corp["executor_notes"])
+        self.assertEqual("Bio", corp["biography"])
 
     def test_update_affiliations(self):
         EveCharacter.objects.create(
