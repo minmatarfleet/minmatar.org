@@ -10,6 +10,7 @@ from eveonline.models import EveCharacter, EveCharacterIndustryJob
 from industry.helpers.notifications import (
     match_industry_job_to_assignment,
     new_order_audience,
+    users_active_in_tribe_groups,
     users_participated_in_orders_since,
 )
 from industry.models import (
@@ -18,6 +19,7 @@ from industry.models import (
     IndustryOrderItemAssignment,
 )
 from notifications.models import NotificationTopicSubscription
+from tribes.models import Tribe, TribeGroup, TribeGroupMembership
 
 
 def _make_type(type_id: int, name: str) -> EveType:
@@ -89,10 +91,38 @@ class AudienceTestCase(TestCase):
         self.assertIn(self.assignee.id, users)
 
     def test_new_order_audience_unions_topic_subscribers(self):
-        audience = new_order_audience(exclude_user_id=self.owner.id)
+        audience = new_order_audience(
+            self.order, exclude_user_id=self.owner.id
+        )
         self.assertNotIn(self.owner.id, audience)
         self.assertIn(self.assignee.id, audience)
         self.assertIn(self.subscriber.id, audience)
+
+    def test_new_order_audience_includes_active_tribe_group_members(self):
+        member = User.objects.create_user("tribemember", password="x")
+        outsider = User.objects.create_user("outsider", password="x")
+        tribe = Tribe.objects.create(name="Supply", slug="supply-notif")
+        group = TribeGroup.objects.create(
+            tribe=tribe, name="Manufacturing", code="supply.mfg.notif"
+        )
+        TribeGroupMembership.objects.create(
+            user=member,
+            tribe_group=group,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+        TribeGroupMembership.objects.create(
+            user=outsider,
+            tribe_group=group,
+            status=TribeGroupMembership.STATUS_PENDING,
+        )
+        self.order.tribe_groups.add(group)
+
+        self.assertEqual(users_active_in_tribe_groups([group.pk]), {member.id})
+        audience = new_order_audience(
+            self.order, exclude_user_id=self.owner.id
+        )
+        self.assertIn(member.id, audience)
+        self.assertNotIn(outsider.id, audience)
 
 
 class JobMatchTestCase(TestCase):

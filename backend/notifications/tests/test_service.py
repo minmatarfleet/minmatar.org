@@ -15,6 +15,7 @@ from notifications.registry import get_type
 from notifications.service import (
     effective_preferences,
     notify_user,
+    notify_users,
     preference_enabled,
 )
 from notifications.tasks import deliver_notification
@@ -88,6 +89,46 @@ class NotifyServiceTestCase(TestCase):
             {NotificationChannel.WEB, NotificationChannel.DISCORD},
         )
         self.assertEqual(mock_delay.call_count, 2)
+
+    @patch("notifications.service.deliver_notification.apply_async")
+    @patch("notifications.service.deliver_notification.delay")
+    def test_stagger_paces_discord_enqueue(self, mock_delay, mock_async):
+        users = [
+            User.objects.create_user(f"stag{i}", password="x")
+            for i in range(3)
+        ]
+        for user in users:
+            NotificationPreference.objects.create(
+                user=user,
+                notification_type="industry.order.created",
+                channel=NotificationChannel.DISCORD,
+                enabled=True,
+            )
+            NotificationPreference.objects.create(
+                user=user,
+                notification_type="industry.order.created",
+                channel=NotificationChannel.WEB,
+                enabled=False,
+            )
+        with self.captureOnCommitCallbacks(execute=True):
+            notify_users(
+                users,
+                "industry.order.created",
+                {
+                    "order_id": 1,
+                    "public_short_code": "ABC",
+                    "items": ["1× Rifter"],
+                },
+                stagger_rate_limited_channels=True,
+            )
+        self.assertEqual(mock_delay.call_count, 1)
+        self.assertEqual(mock_async.call_count, 2)
+        countdowns = sorted(
+            call.kwargs.get("countdown", 0)
+            for call in mock_async.call_args_list
+        )
+        self.assertGreater(countdowns[0], 0)
+        self.assertGreater(countdowns[1], countdowns[0])
 
     @patch("notifications.service.deliver_notification.delay")
     def test_idempotency_skips_duplicate(self, mock_delay):

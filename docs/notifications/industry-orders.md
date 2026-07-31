@@ -8,7 +8,7 @@ Copy tone: short, plain English, one next step. Written for busy pilots — no j
 
 | Key | Mechanism | Who | When | Example title |
 |-----|-----------|-----|------|---------------|
-| `industry.order.created` | Broadcast | Last-30-day participants ∪ topic subscribers (excludes creator) | Order created | "New Build Order BTC" |
+| `industry.order.created` | Broadcast | Last-30-day participants ∪ topic subscribers ∪ active tribe-group members (excludes creator) | Order created / tribe groups assigned | "New Build Order BTC" |
 | `industry.order.assignment` | Action-ack | Assigning user | Self-assign | "You're on the order!" |
 | `industry.order.job` | External-event | Assignee | Matched active manufacturing/reaction job | "We've detected an order blueprint cooking!" |
 
@@ -20,9 +20,16 @@ Participation (30 days) includes users who:
 - Were assigned on an order (via `IndustryOrderItemAssignment`)
 - Volunteered as blueprint / mineral / PI coordinator
 
-Plus anyone with a topic subscription to `industry.order.created`.
+Plus:
 
-Helpers: `industry.helpers.notifications.users_participated_in_orders_since`, `new_order_audience`.
+- Anyone with a topic subscription to `industry.order.created`
+- **Active members** of any `IndustryOrder.tribe_groups` designated on the order
+
+Helpers: `users_participated_in_orders_since`, `users_active_in_tribe_groups`, `new_order_audience`.
+
+Emit is async (`emit_order_created_notification` Celery task) from order create and again when tribe groups are added (admin M2M). Idempotency key `industry.order.created:{order_id}` prevents duplicate pings when groups are assigned after create.
+
+Discord and Eve mail deliveries are **staggered** under `NOTIFICATIONS_*_RATE_PER_SECOND` (with headroom) so large tribe fans do not slam the rate buckets.
 
 ## Assignment payload
 

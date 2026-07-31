@@ -15,10 +15,40 @@ from industry.helpers.loyalty_store import (
     ensure_loyalty_store_offers_for_product,
     sync_loyalty_store_offers,
 )
-from industry.helpers.notifications import emit_order_jobs_for_created_job_ids
-from industry.models import IndustryOrderItemAssignment
+from industry.helpers.notifications import (
+    emit_order_created,
+    emit_order_jobs_for_created_job_ids,
+)
+from industry.models import IndustryOrder, IndustryOrderItemAssignment
 
 logger = logging.getLogger(__name__)
+
+
+@app.task()
+def emit_order_created_notification(
+    order_id: int, creator_user_id: int | None = None
+) -> int:
+    """
+    Fan-out industry.order.created off the request/admin thread.
+
+    Safe to call again after tribe_groups are assigned — idempotency keys
+    skip users already notified for this order.
+    """
+    try:
+        order = IndustryOrder.objects.select_related("character").get(
+            pk=order_id
+        )
+    except IndustryOrder.DoesNotExist:
+        logger.warning("Order %s not found for created notification", order_id)
+        return 0
+    try:
+        deliveries = emit_order_created(order, creator_user_id=creator_user_id)
+        return len(deliveries)
+    except Exception:
+        logger.exception(
+            "Failed to emit new-order notification for order %s", order_id
+        )
+        raise
 
 
 @app.task()

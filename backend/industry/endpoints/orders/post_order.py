@@ -13,7 +13,6 @@ from industry.endpoints.orders.schemas import (
     CreateOrderRequest,
     CreateOrderResponse,
 )
-from industry.helpers.notifications import emit_order_created
 from industry.helpers.order_profit_breakdown import (
     ensure_order_profit_breakdown,
 )
@@ -21,6 +20,7 @@ from industry.helpers.public_short_code import (
     pick_unique_public_short_code_among_actives,
 )
 from industry.models import IndustryOrder, IndustryOrderItem
+from industry.tasks import emit_order_created_notification
 
 logger = logging.getLogger(__name__)
 
@@ -168,10 +168,10 @@ def post_order(request, payload: CreateOrderRequest):
             "Failed to store profit breakdown for order %s", order.pk
         )
     try:
-        emit_order_created(order, creator_user_id=request.user.id)
+        emit_order_created_notification.delay(order.pk, request.user.id)
     except Exception:  # noqa: BLE001 — never fail order create on notify
         logger.exception(
-            "Failed to emit new-order notification for order %s", order.pk
+            "Failed to enqueue new-order notification for order %s", order.pk
         )
     return 201, CreateOrderResponse(
         order_id=order.pk,

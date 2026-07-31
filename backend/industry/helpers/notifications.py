@@ -28,6 +28,7 @@ from notifications.types.industry import (
     ORDER_CREATED,
     ORDER_JOB,
 )
+from tribes.models import TribeGroupMembership
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -72,10 +73,36 @@ def users_participated_in_orders_since(since=None) -> set[int]:
     )
 
 
-def new_order_audience(*, exclude_user_id: int | None = None) -> set[int]:
+def users_active_in_tribe_groups(tribe_group_ids) -> set[int]:
+    """User IDs with active membership in any of the given TribeGroup PKs."""
+    ids = [int(pk) for pk in tribe_group_ids if pk is not None]
+    if not ids:
+        return set()
+    return set(
+        TribeGroupMembership.objects.filter(
+            tribe_group_id__in=ids,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        ).values_list("user_id", flat=True)
+    )
+
+
+def new_order_audience(
+    order: IndustryOrder | None = None,
+    *,
+    exclude_user_id: int | None = None,
+) -> set[int]:
+    """
+    Recipients for industry.order.created.
+
+    Unions recent participants, topic subscribers, and (when ``order`` is set)
+    active members of the order's designated tribe groups.
+    """
     participants = users_participated_in_orders_since()
     subscribers = topic_subscribers(ORDER_CREATED.key)
     audience = union_audiences(participants, subscribers)
+    if order is not None:
+        tribe_ids = order.tribe_groups.values_list("pk", flat=True)
+        audience |= users_active_in_tribe_groups(tribe_ids)
     if exclude_user_id:
         audience.discard(exclude_user_id)
     return audience
@@ -210,13 +237,18 @@ def emit_order_created(order: IndustryOrder, *, creator_user_id: int | None):
         "items": item_lines,
         "location_name": location_name,
     }
-    audience_ids = new_order_audience(exclude_user_id=creator_user_id)
+    if creator_user_id is None and order.character_id:
+        creator_user_id = getattr(order.character, "user_id", None)
+
+    audience_ids = new_order_audience(order, exclude_user_id=creator_user_id)
     users = User.objects.filter(id__in=audience_ids)
-    notify_users(
+    # Pace Discord / Eve mail under cluster rate limits for large tribe fans.
+    return notify_users(
         users,
         ORDER_CREATED.key,
         ctx,
         idempotency_key=f"industry.order.created:{order.pk}",
+        stagger_rate_limited_channels=True,
     )
 
 
