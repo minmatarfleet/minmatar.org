@@ -4,6 +4,8 @@ from unittest.mock import patch, Mock, MagicMock
 from django.contrib.auth.models import User, Group
 from django.test import SimpleTestCase, Client
 from django.db.models import signals
+from ratelimit import RateLimitException
+from requests.exceptions import HTTPError
 
 from eveonline.models import (
     EveCharacter,
@@ -12,19 +14,10 @@ from eveonline.models import (
 from eveonline.helpers.characters import set_primary_character
 
 from app.test import TestCase
+from discord.client import _raise_discord_rate_limit
 from discord.core import DISCORD_NICKNAME_MAX_LENGTH, make_nickname
-from discord.models import (
-    DiscordUser,
-    DiscordRole,
-    DiscordChannelActivityRecord,
-    DiscordChannel,
-    DiscordGuild,
-)
 from discord.forms import DiscordChannelAdminForm
 from discord.guilds import sync_discord_guilds
-from discord.views import discord_login_redirect, fake_login
-
-from discord.tasks import sync_discord_nickname, sync_discord_user
 from discord.helpers import (
     get_discord_user,
     handle_discord_guild_member_error,
@@ -32,12 +25,19 @@ from discord.helpers import (
     remove_all_roles_from_guild_member,
     find_unregistered_guild_members,
 )
+from discord.models import (
+    DiscordUser,
+    DiscordRole,
+    DiscordChannelActivityRecord,
+    DiscordChannel,
+    DiscordGuild,
+)
 from discord.signals import (
     group_post_save,
     resolve_existing_discord_role_from_server,
 )
-
-from requests.exceptions import HTTPError
+from discord.tasks import sync_discord_nickname, sync_discord_user
+from discord.views import discord_login_redirect, fake_login
 
 
 class DiscordSimpleTests(SimpleTestCase):
@@ -71,6 +71,30 @@ class DiscordSimpleTests(SimpleTestCase):
         )
         self.assertTrue(nickname.startswith("[L3ARN] "))
         self.assertTrue(nickname.endswith("…"))
+
+
+class DiscordRateLimitTests(SimpleTestCase):
+    def test_raise_discord_rate_limit_uses_retry_after(self):
+        response = MagicMock()
+        response.headers = {"Retry-After": "2.5"}
+        with self.assertRaises(RateLimitException) as ctx:
+            _raise_discord_rate_limit(response)
+        self.assertEqual(ctx.exception.period_remaining, 2.5)
+        self.assertIn("rate limited", str(ctx.exception).lower())
+
+    def test_raise_discord_rate_limit_defaults_when_header_invalid(self):
+        response = MagicMock()
+        response.headers = {"Retry-After": "soon"}
+        with self.assertRaises(RateLimitException) as ctx:
+            _raise_discord_rate_limit(response)
+        self.assertEqual(ctx.exception.period_remaining, 1.0)
+
+    def test_raise_discord_rate_limit_defaults_when_header_missing(self):
+        response = MagicMock()
+        response.headers = {}
+        with self.assertRaises(RateLimitException) as ctx:
+            _raise_discord_rate_limit(response)
+        self.assertEqual(ctx.exception.period_remaining, 1.0)
 
 
 class DiscordSignalTests(TestCase):
@@ -718,6 +742,21 @@ class DiscordOffboardSyncTests(TestCase):
         )
         self.assertEqual(response.status_code, 410)
         self.assertIn(b"offboarded", response.content)
+
+    @patch("users.router.sync_discord_user")
+    @patch("users.router.update_affiliation")
+    def test_sync_user_endpoint_returns_404_when_user_missing(
+        self, mock_affiliation, mock_sync
+    ):
+        mock_affiliation.side_effect = User.DoesNotExist
+        client = Client()
+        response = client.post(
+            f"/api/users/{self.user.id}/sync",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertIn(b"not found", response.content)
+        mock_sync.assert_not_called()
 
 
 if __name__ == "__main__":

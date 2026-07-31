@@ -203,7 +203,11 @@ def _apply_upgrade_metadata(
 
     if changed:
         event.payload = payload
-        event.save(update_fields=["payload", "updated_at"])
+        # Concurrent coalesce may delete this row; queryset.update is race-safe.
+        FeedEvent.objects.filter(pk=event.pk).update(
+            payload=payload,
+            updated_at=timezone.now(),
+        )
 
 
 def _coalesce_fleet_active_event(
@@ -231,8 +235,12 @@ def _sync_killmail_links(event: FeedEvent, killmail_ids: list[int]) -> None:
         )
     )
     killmails = FeedKillmail.objects.filter(killmail_id__in=killmail_ids)
-    for km in killmails:
-        if km.id not in existing:
-            FeedEventKillmailLink.objects.create(
-                feed_event=event, feed_killmail=km
-            )
+    to_create = [
+        FeedEventKillmailLink(feed_event=event, feed_killmail=km)
+        for km in killmails
+        if km.id not in existing
+    ]
+    if to_create:
+        FeedEventKillmailLink.objects.bulk_create(
+            to_create, ignore_conflicts=True
+        )

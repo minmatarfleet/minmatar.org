@@ -9,6 +9,7 @@ from django.utils import timezone
 from discord.client import DiscordClient
 from discord.models import DiscordChannel
 from feed.constants import (
+    AMARR_FLEET_PING_EDIT_MIN_SECONDS,
     AMARR_FLEET_PING_MAX_AGE_SECONDS,
     AMARR_FLEET_PING_SESSION_SECONDS,
 )
@@ -295,12 +296,43 @@ def _create_amarr_fleet_alert(
     )
 
 
+def _alert_content_changed(
+    alert: FeedAmarrFleetAlert, snapshot: dict[str, Any]
+) -> bool:
+    return (
+        alert.solar_system_id != snapshot["solar_system_id"]
+        or alert.system_name != snapshot["system_name"]
+        or alert.title != snapshot["title"]
+        or alert.subheader != snapshot["subheader"]
+        or alert.preview != snapshot["preview"]
+        or alert.kills != snapshot["kills"]
+        or alert.pilots != snapshot["pilots"]
+        or alert.roster != snapshot["roster"]
+        or alert.roster_total != snapshot["roster_total"]
+    )
+
+
+def _should_edit_discord(
+    alert: FeedAmarrFleetAlert,
+    snapshot: dict[str, Any],
+    *,
+    now,
+) -> bool:
+    """Edit Discord when content changed, or after the min edit interval."""
+    if _alert_content_changed(alert, snapshot):
+        return True
+    age = (now - alert.last_activity_at).total_seconds()
+    return age >= AMARR_FLEET_PING_EDIT_MIN_SECONDS
+
+
 def _update_amarr_fleet_alert(
     alert: FeedAmarrFleetAlert,
     *,
     snapshot: dict[str, Any],
     discord_client: DiscordClient,
 ) -> FeedAmarrFleetAlert:
+    now = timezone.now()
+    should_edit = _should_edit_discord(alert, snapshot, now=now)
     alert.systems = _append_system(
         _systems_for_alert(alert),
         solar_system_id=snapshot["solar_system_id"],
@@ -316,19 +348,22 @@ def _update_amarr_fleet_alert(
     alert.roster = snapshot["roster"]
     alert.roster_total = snapshot["roster_total"]
     alert.cluster_key = snapshot["cluster_key"] or alert.cluster_key
-    alert.last_activity_at = timezone.now()
-    discord_payload = build_amarr_fleet_alert_payload(
-        system_name=alert.system_name,
-        title=alert.title,
-        subheader=alert.subheader,
-        preview=alert.preview,
-        kills=alert.kills,
-        pilots=alert.pilots,
-        roster=alert.roster,
-        roster_total=alert.roster_total,
-        systems=alert.systems,
-    )
-    _edit_alert_messages(alert, discord_payload, discord_client=discord_client)
+    if should_edit:
+        alert.last_activity_at = now
+        discord_payload = build_amarr_fleet_alert_payload(
+            system_name=alert.system_name,
+            title=alert.title,
+            subheader=alert.subheader,
+            preview=alert.preview,
+            kills=alert.kills,
+            pilots=alert.pilots,
+            roster=alert.roster,
+            roster_total=alert.roster_total,
+            systems=alert.systems,
+        )
+        _edit_alert_messages(
+            alert, discord_payload, discord_client=discord_client
+        )
     alert.save(
         update_fields=[
             "solar_system_id",
