@@ -76,7 +76,13 @@ def update_character(eve_character_id):
             args=[eve_character_id],
         )
     if Token.get_token(eve_character_id, SCOPE_INDUSTRY_JOBS):
-        refresh_character_industry_jobs(eve_character_id)
+        result = refresh_character_industry_jobs(eve_character_id)
+        created_job_ids = result[1] if isinstance(result, tuple) else []
+        if created_job_ids:
+            app.send_task(
+                "industry.tasks.emit_order_job_notifications_for_jobs",
+                args=[created_job_ids],
+            )
     if Token.get_token(eve_character_id, SCOPE_MINING):
         refresh_character_mining(eve_character_id)
     if Token.get_token(eve_character_id, SCOPE_PLANETS):

@@ -13,6 +13,7 @@ class NotificationDeliveryStatus(models.TextChoices):
     SENT = "sent", "Sent"
     FAILED = "failed", "Failed"
     SKIPPED = "skipped", "Skipped"
+    READ = "read", "Read"
 
 
 class NotificationPreference(models.Model):
@@ -103,6 +104,13 @@ class NotificationDelivery(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     sent_at = models.DateTimeField(null=True, blank=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+    discord_channel_id = models.CharField(
+        max_length=32, blank=True, default=""
+    )
+    discord_message_id = models.CharField(
+        max_length=32, blank=True, default=""
+    )
 
     class Meta:
         indexes = [
@@ -113,10 +121,11 @@ class NotificationDelivery(models.Model):
             ),
         ]
         constraints = [
+            # Unconditional: MySQL does not support partial unique indexes.
+            # Multiple NULLs are allowed in MySQL unique indexes, so
+            # deliveries without an idempotency_key store None (not "").
             models.UniqueConstraint(
                 fields=["idempotency_key", "channel"],
-                condition=models.Q(idempotency_key__isnull=False)
-                & ~models.Q(idempotency_key=""),
                 name="uniq_notif_delivery_idem_channel",
             ),
         ]

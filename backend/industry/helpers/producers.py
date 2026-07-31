@@ -103,7 +103,7 @@ def _resolve_to_primary_producers(character_refs):
     ]
 
 
-def _blueprint_activity_pairs_for_product_type(product_type_id: int):
+def blueprint_activity_pairs_for_product_type(product_type_id: int):
     """(blueprint_type_id, activity_id) pairs that produce this product type."""
     return set(
         EveIndustryActivityProduct.objects.filter(
@@ -111,6 +111,12 @@ def _blueprint_activity_pairs_for_product_type(product_type_id: int):
             activity_id__in=PRODUCTION_ACTIVITIES,
         ).values_list("eve_type_id", "activity_id")
     )
+
+
+# Backwards-compatible alias for older call sites / patches.
+_blueprint_activity_pairs_for_product_type = (
+    blueprint_activity_pairs_for_product_type
+)
 
 
 def get_character_producers_for_type(product_type_id: int):

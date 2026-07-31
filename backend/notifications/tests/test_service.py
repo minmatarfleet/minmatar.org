@@ -67,19 +67,20 @@ class NotifyServiceTestCase(TestCase):
 
     @patch("notifications.service.deliver_notification.delay")
     def test_notify_respects_channel_defaults(self, mock_delay):
-        deliveries = notify_user(
-            self.user,
-            "industry.order.assignment",
-            {
-                "order_id": 1,
-                "public_short_code": "ABC",
-                "item_id": 2,
-                "assignment_id": 3,
-                "item_name": "Rifter",
-                "quantity": 1,
-                "coordinators": [],
-            },
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            deliveries = notify_user(
+                self.user,
+                "industry.order.assignment",
+                {
+                    "order_id": 1,
+                    "public_short_code": "ABC",
+                    "item_id": 2,
+                    "assignment_id": 3,
+                    "item_name": "Rifter",
+                    "quantity": 1,
+                    "coordinators": [],
+                },
+            )
         channels = {d.channel for d in deliveries}
         # defaults: web + discord on, eve_mail off
         self.assertEqual(
@@ -99,18 +100,19 @@ class NotifyServiceTestCase(TestCase):
             "quantity": 1,
             "coordinators": [],
         }
-        first = notify_user(
-            self.user,
-            "industry.order.assignment",
-            ctx,
-            idempotency_key="test-key-1",
-        )
-        second = notify_user(
-            self.user,
-            "industry.order.assignment",
-            ctx,
-            idempotency_key="test-key-1",
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            first = notify_user(
+                self.user,
+                "industry.order.assignment",
+                ctx,
+                idempotency_key="test-key-1",
+            )
+            second = notify_user(
+                self.user,
+                "industry.order.assignment",
+                ctx,
+                idempotency_key="test-key-1",
+            )
         self.assertTrue(first)
         self.assertEqual(second, [])
         self.assertEqual(
@@ -142,6 +144,10 @@ class DeliveryTaskTestCase(TestCase):
 
     @patch("notifications.tasks.send_channel")
     def test_deliver_marks_sent(self, mock_send):
+        mock_send.return_value = {
+            "discord_channel_id": "123",
+            "discord_message_id": "456",
+        }
         delivery = NotificationDelivery.objects.create(
             user=self.user,
             notification_type="industry.order.assignment",
@@ -152,6 +158,12 @@ class DeliveryTaskTestCase(TestCase):
         self.assertEqual(result, "sent")
         delivery.refresh_from_db()
         self.assertEqual(delivery.status, NotificationDeliveryStatus.SENT)
+        self.assertEqual(delivery.discord_channel_id, "123")
+        self.assertEqual(delivery.discord_message_id, "456")
+        mock_send.assert_called_once()
+        self.assertEqual(
+            mock_send.call_args.kwargs.get("delivery_id"), delivery.id
+        )
 
     @patch("notifications.tasks.send_channel")
     def test_deliver_skips(self, mock_send):
@@ -166,3 +178,33 @@ class DeliveryTaskTestCase(TestCase):
         self.assertEqual(result, "skipped")
         delivery.refresh_from_db()
         self.assertEqual(delivery.status, NotificationDeliveryStatus.SKIPPED)
+
+    @patch("notifications.tasks.send_channel")
+    def test_deliver_does_not_overwrite_read(self, mock_send):
+        mock_send.return_value = {
+            "discord_channel_id": "123",
+            "discord_message_id": "456",
+        }
+        delivery = NotificationDelivery.objects.create(
+            user=self.user,
+            notification_type="industry.order.assignment",
+            channel=NotificationChannel.DISCORD,
+            payload={"discord_message": "hi"},
+            status=NotificationDeliveryStatus.PENDING,
+        )
+
+        def mark_read_during_send(*args, **kwargs):
+            NotificationDelivery.objects.filter(pk=delivery.pk).update(
+                status=NotificationDeliveryStatus.READ,
+            )
+            return {
+                "discord_channel_id": "123",
+                "discord_message_id": "456",
+            }
+
+        mock_send.side_effect = mark_read_during_send
+        result = deliver_notification(delivery.id)
+        self.assertEqual(result, "sent_already_read")
+        delivery.refresh_from_db()
+        self.assertEqual(delivery.status, NotificationDeliveryStatus.READ)
+        self.assertEqual(delivery.discord_message_id, "456")

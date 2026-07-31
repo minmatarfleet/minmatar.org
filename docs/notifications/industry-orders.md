@@ -8,9 +8,9 @@ Copy tone: short, plain English, one next step. Written for busy pilots — no j
 
 | Key | Mechanism | Who | When | Example title |
 |-----|-----------|-----|------|---------------|
-| `industry.order.created` | Broadcast | Last-30-day participants ∪ topic subscribers (excludes creator) | Order created | "New build order (BTC)" |
-| `industry.order.assignment` | Action-ack | Assigning user | Self-assign | "You're building 5× Rifter" |
-| `industry.order.job` | External-event | Assignee | Matched manufacturing job | "Rifter is cooking" |
+| `industry.order.created` | Broadcast | Last-30-day participants ∪ topic subscribers (excludes creator) | Order created | "New Build Order BTC" |
+| `industry.order.assignment` | Action-ack | Assigning user | Self-assign | "You're on the order!" |
+| `industry.order.job` | External-event | Assignee | Matched active manufacturing/reaction job | "We've detected an order blueprint cooking!" |
 
 ## Audience: new orders
 
@@ -32,11 +32,15 @@ Includes order short code, line qty/type, who can help (friendly labels), and ha
 
 ## Job matching
 
-On first upsert of an `EveCharacterIndustryJob` during industry job sync:
+On first upsert of an `EveCharacterIndustryJob` during any industry job sync path
+(`sync_industry_jobs_for_character` or `update_character`):
 
-1. Activity is manufacturing or reaction
-2. Character (or same-user alts) has an undelivered assignment on an unfulfilled order
-3. Job overlaps the order time window
-4. `(blueprint_type_id, activity_id)` produces the line's `eve_type` (`EveIndustryActivityProduct`)
+1. Job status is `active` or `paused` (not completed)
+2. Activity is manufacturing or reaction
+3. Character (or same-user alts) has an undelivered assignment on an unfulfilled order
+4. Job overlaps the order time window
+5. `(blueprint_type_id, activity_id)` produces the line's `eve_type` (`EveIndustryActivityProduct`)
+
+Matching prefers the job's own character over alts, then the most recent claim.
 
 Idempotency: `industry.order.job:{job_id}` so re-syncs do not re-notify.

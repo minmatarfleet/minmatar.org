@@ -13,6 +13,9 @@ _ROLE_LABELS = {
     "PI": "planetary stuff",
 }
 
+# Keep Discord embeds / Eve mail / web push under size limits.
+_MAX_ITEM_LINES = 8
+
 
 def _web_base() -> str:
     return getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org").rstrip(
@@ -31,33 +34,6 @@ def _contract_url(order_id: int, item_id: int, assignment_id: int) -> str:
     )
 
 
-def _format_needed_by(needed_by: str) -> str:
-    """Prefer a short date like Aug 1 if ISO date is passed."""
-    if not needed_by:
-        return ""
-    try:
-        parts = needed_by[:10].split("-")
-        month = int(parts[1])
-        day = int(parts[2])
-        months = (
-            "Jan",
-            "Feb",
-            "Mar",
-            "Apr",
-            "May",
-            "Jun",
-            "Jul",
-            "Aug",
-            "Sep",
-            "Oct",
-            "Nov",
-            "Dec",
-        )
-        return f"{months[month - 1]} {day}"
-    except (ValueError, IndexError):
-        return needed_by
-
-
 def _help_lines(coordinators: list) -> list[str]:
     lines = []
     for c in coordinators:
@@ -67,34 +43,60 @@ def _help_lines(coordinators: list) -> list[str]:
     return lines
 
 
+def _item_lines(ctx: dict) -> list[str]:
+    """Normalize item lines from `items` list or legacy `items_summary` string."""
+    items = ctx.get("items")
+    if isinstance(items, list) and items:
+        return [str(line) for line in items if line]
+    summary = (ctx.get("items_summary") or "").strip()
+    if not summary:
+        return []
+    return [part.strip() for part in summary.split(",") if part.strip()]
+
+
+def _capped_item_lines(lines: list[str]) -> list[str]:
+    if len(lines) <= _MAX_ITEM_LINES:
+        return lines
+    remaining = len(lines) - _MAX_ITEM_LINES
+    return lines[:_MAX_ITEM_LINES] + [f"…and {remaining} more"]
+
+
+def _bullet_block(lines: list[str], *, empty: str = "- (see order)") -> str:
+    capped = _capped_item_lines(lines)
+    if not capped:
+        return empty
+    return "\n".join(f"- {line}" for line in capped)
+
+
+def _body_item_phrase(lines: list[str]) -> str:
+    capped = _capped_item_lines(lines)
+    return ", ".join(capped)
+
+
 def render_order_created(ctx: dict) -> dict:
     order_id = ctx["order_id"]
     short = ctx.get("public_short_code") or str(order_id)
-    needed = _format_needed_by(ctx.get("needed_by") or "")
-    items = ctx.get("items_summary") or ""
-    location = ctx.get("location_name") or ""
     url = _order_url(order_id)
+    lines = _item_lines(ctx)
+    bullets = _bullet_block(lines)
 
-    title = f"New build order ({short})"
-    bits = []
-    if needed:
-        bits.append(f"due {needed}")
-    if location:
-        bits.append(location)
-    if items:
-        bits.append(items)
-    detail = " · ".join(bits) if bits else "Open it if you want a piece."
-    body = f"{detail}. Open the order to claim what you can build."
+    title = f"New Build Order {short}"
+    phrase = _body_item_phrase(lines)
+    body = (
+        f"{phrase}. Want in? Open the order."
+        if phrase
+        else "Want in? Open the order."
+    )
 
     discord = (
-        f"**New build order ({short})**\n"
-        f"{detail}\n\n"
-        f"Want in? Open the order and grab a piece:\n{url}"
+        f"## New Build Order `{short}`\n"
+        f"{bullets}\n\n"
+        f"Want in? [Click here]({url})"
     )
     eve_body = (
-        f"Hey — there's a new build order ({short}).\n\n"
-        f"{detail}\n\n"
-        f"If you've got time, open it and claim something to build:\n{url}\n\n"
+        f"New Build Order {short}\n\n"
+        f"{bullets}\n\n"
+        f"Want in? {url}\n\n"
         f"— Bear"
     )
     return {
@@ -109,35 +111,44 @@ def render_order_created(ctx: dict) -> dict:
 
 def render_order_assignment(ctx: dict) -> dict:
     order_id = ctx["order_id"]
-    short = ctx.get("public_short_code") or str(order_id)
     item_name = ctx.get("item_name") or "that ship"
     quantity = ctx.get("quantity") or ""
     assignment_id = ctx["assignment_id"]
     item_id = ctx["item_id"]
     delivery_url = _contract_url(order_id, item_id, assignment_id)
+
+    items = ctx.get("items")
+    if isinstance(items, list) and items:
+        item_lines = [str(line) for line in items if line]
+    else:
+        qty_bit = f"{quantity}× " if quantity != "" else ""
+        item_lines = [f"{qty_bit}{item_name}"]
+    bullets = _bullet_block(item_lines, empty="- (see order)")
+
     help_lines = _help_lines(ctx.get("coordinators") or [])
     help_block = (
-        "\n".join(help_lines)
-        if help_lines
-        else "- Nobody signed up to help yet — ask in industry chat if you're stuck."
+        "\n".join(help_lines) if help_lines else "- (nobody listed yet)"
     )
-    qty_bit = f"{quantity}× " if quantity != "" else ""
 
-    title = f"You're building {qty_bit}{item_name}"
+    title = "You're on the order!"
+    phrase = _body_item_phrase(item_lines)
     body = (
-        f"Order {short}. Stuck for blueprints or minerals? Ping the folks below. "
-        f"When you're done, tap here to hand it in."
+        f"{phrase}. When you're finished, open the delivery link."
+        if phrase
+        else "When you're finished, open the delivery link."
     )
     discord = (
-        f"**You're on it — {qty_bit}{item_name}** (order {short})\n\n"
-        f"**Who can help**\n{help_block}\n\n"
-        f"When you're finished, hand it in here:\n{delivery_url}"
+        f"You're on the order!\n\n"
+        f"{bullets}\n\n"
+        f"**Who can help**\n"
+        f"{help_block}\n\n"
+        f"When you're finished, click [here]({delivery_url}) for delivery."
     )
     eve_body = (
-        f"You're down for {qty_bit}{item_name} on order {short}. Nice.\n\n"
-        f"Need blueprints, minerals, or PI? Try these folks:\n{help_block}\n\n"
-        f"When the build is done, hand it in here so we can mark you complete:\n"
-        f"{delivery_url}\n\n"
+        f"You're on the order!\n\n"
+        f"{bullets}\n\n"
+        f"Who can help\n{help_block}\n\n"
+        f"When you're finished, open this for delivery:\n{delivery_url}\n\n"
         f"— Bear"
     )
     return {
@@ -152,24 +163,20 @@ def render_order_assignment(ctx: dict) -> dict:
 
 def render_order_job(ctx: dict) -> dict:
     order_id = ctx["order_id"]
-    short = ctx.get("public_short_code") or str(order_id)
     item_name = ctx.get("item_name") or "your build"
     assignment_id = ctx["assignment_id"]
     item_id = ctx["item_id"]
     delivery_url = _contract_url(order_id, item_id, assignment_id)
 
-    title = f"{item_name} is cooking"
-    body = (
-        f"We saw your build start for order {short}. "
-        f"When it finishes, hand it in so we know you're done."
-    )
+    title = "We've detected an order blueprint cooking!"
+    body = f"When it's done, open delivery steps for {item_name}."
     discord = (
-        f"**{item_name} is cooking** (order {short})\n\n"
-        f"When it finishes, hand it in here:\n{delivery_url}"
+        f"We've detected an order blueprint cooking!\n\n"
+        f"When it's done, [click here]({delivery_url}) for delivery steps."
     )
     eve_body = (
-        f"Looks like your {item_name} build for order {short} is running.\n\n"
-        f"When it's done, hand it in here — takes a minute:\n{delivery_url}\n\n"
+        f"We've detected an order blueprint cooking!\n\n"
+        f"When it's done, open this for delivery steps:\n{delivery_url}\n\n"
         f"— Bear"
     )
     return {

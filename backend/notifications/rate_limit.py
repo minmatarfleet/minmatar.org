@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 import time
 
 from django.core.cache import cache
+
+logger = logging.getLogger(__name__)
 
 # Lua: token bucket. KEYS[1]=bucket key; ARGV=rate, capacity, now, requested
 _TOKEN_BUCKET_LUA = """
@@ -47,7 +50,9 @@ def acquire(
     Try to take `tokens` from a Redis token bucket.
 
     Returns (allowed, retry_after_seconds).
-    Falls back to allowing the call if Redis/Lua is unavailable (locmem tests).
+
+    LocMemCache (tests / no Redis client): coarse in-process throttle.
+    Redis client present but eval fails: fail closed (deny + retry).
     """
     if rate_per_second <= 0:
         return True, 0.0
@@ -73,7 +78,13 @@ def acquire(
         retry_after = float(result[1] or 0)
         return allowed, retry_after
     except Exception:
-        return _locmem_acquire(key, rate_per_second, cap, tokens, now)
+        logger.warning(
+            "Notification rate limit Redis error for bucket %s; denying",
+            bucket,
+            exc_info=True,
+        )
+        # Fail closed so a Redis outage cannot flood Discord / Eve mail.
+        return False, max(1.0 / rate_per_second, 1.0)
 
 
 def _locmem_acquire(key, rate, capacity, requested, now) -> tuple[bool, float]:

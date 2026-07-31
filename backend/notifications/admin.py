@@ -37,7 +37,21 @@ class NotificationDeliveryAdmin(admin.ModelAdmin):
         "attempts",
         "created_at",
         "sent_at",
+        "read_at",
     )
     list_filter = ("channel", "status", "notification_type")
-    search_fields = ("user__username", "idempotency_key", "error")
-    readonly_fields = ("payload", "created_at", "updated_at", "sent_at")
+    search_fields = (
+        "user__username",
+        "idempotency_key",
+        "error",
+        "discord_message_id",
+    )
+    readonly_fields = (
+        "payload",
+        "created_at",
+        "updated_at",
+        "sent_at",
+        "read_at",
+        "discord_channel_id",
+        "discord_message_id",
+    )

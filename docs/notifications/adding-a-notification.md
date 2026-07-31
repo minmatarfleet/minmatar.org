@@ -32,13 +32,17 @@ MY_TYPE = register(
 
 `render` should return keys used by channels: `title`, `body`, `url` (web), `discord_message`, `subject`, `eve_mail_body`.
 
+Discord DMs are wrapped as embeds with an **author** from the type's `feature`
+(e.g. `industry` → `Industry`). Register a label/color in
+`notifications.discord_format` when you add a new feature key.
+
 **Copy:** write for busy humans. Short title, one plain sentence of what happened, one clear next step. Avoid jargon ("ESI", "assignment", "coordinator") in user-facing text.
 
 ## 2. Pick a mechanism
 
 | Pattern | When | How |
 |---------|------|-----|
-| **Broadcast** | Many recipients | Build audience (`recent_participants` ∪ `topic_subscribers`) → `notify_users(...)` |
+| **Broadcast** | Many recipients | Build audience (`users_participated_in_orders_since` ∪ `topic_subscribers`) → `notify_users(...)` |
 | **Action-ack** | Notify the actor after they do something | `notify_user(request.user, ...)` with next-step context |
 | **External-event** | ESI/sync detects something | Match domain object → `notify_user` with stable `idempotency_key` |
 

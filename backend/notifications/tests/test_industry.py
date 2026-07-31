@@ -118,7 +118,7 @@ class JobMatchTestCase(TestCase):
         )
 
     @patch(
-        "industry.helpers.notifications._blueprint_activity_pairs_for_product_type",
+        "industry.helpers.notifications.blueprint_activity_pairs_for_product_type",
         return_value={(999, 1)},
     )
     def test_match_when_blueprint_produces_line(self, mock_pairs):
@@ -145,7 +145,7 @@ class JobMatchTestCase(TestCase):
         self.assertEqual(matched.pk, self.assignment.pk)
 
     @patch(
-        "industry.helpers.notifications._blueprint_activity_pairs_for_product_type",
+        "industry.helpers.notifications.blueprint_activity_pairs_for_product_type",
         return_value={(999, 1)},
     )
     def test_no_match_wrong_blueprint(self, mock_pairs):
@@ -169,3 +169,77 @@ class JobMatchTestCase(TestCase):
             runs=1,
         )
         self.assertIsNone(match_industry_job_to_assignment(job))
+
+    @patch(
+        "industry.helpers.notifications.blueprint_activity_pairs_for_product_type",
+        return_value={(999, 1)},
+    )
+    def test_no_match_completed_job(self, mock_pairs):
+        del mock_pairs
+        now = timezone.now()
+        job = EveCharacterIndustryJob.objects.create(
+            job_id=555004,
+            character=self.char,
+            activity_id=1,
+            blueprint_id=1,
+            blueprint_type_id=999,
+            blueprint_location_id=1,
+            facility_id=1,
+            location_id=1,
+            output_location_id=1,
+            status="delivered",
+            installer_id=self.char.character_id,
+            start_date=now - timedelta(hours=3),
+            end_date=now - timedelta(hours=1),
+            completed_date=now - timedelta(hours=1),
+            duration=7200,
+            runs=1,
+        )
+        self.assertIsNone(match_industry_job_to_assignment(job))
+
+    @patch(
+        "industry.helpers.notifications.blueprint_activity_pairs_for_product_type",
+        return_value={(999, 1)},
+    )
+    def test_match_prefers_job_character_over_older_alt_claim(
+        self, mock_pairs
+    ):
+        del mock_pairs
+        alt = EveCharacter.objects.create(
+            character_id=910202,
+            character_name="Builder Alt",
+            user=self.user,
+        )
+        older_order = IndustryOrder.objects.create(
+            needed_by=timezone.now().date() + timedelta(days=7),
+            character=self.char,
+            public_short_code="OLD",
+        )
+        older_item = IndustryOrderItem.objects.create(
+            order=older_order, eve_type=self.product, quantity=1
+        )
+        # Older claim on alt (lower pk) vs newer claim on job character.
+        IndustryOrderItemAssignment.objects.create(
+            order_item=older_item, character=alt, quantity=1
+        )
+        now = timezone.now()
+        job = EveCharacterIndustryJob.objects.create(
+            job_id=555003,
+            character=self.char,
+            activity_id=1,
+            blueprint_id=1,
+            blueprint_type_id=999,
+            blueprint_location_id=1,
+            facility_id=1,
+            location_id=1,
+            output_location_id=1,
+            status="active",
+            installer_id=self.char.character_id,
+            start_date=now,
+            end_date=now + timedelta(hours=2),
+            duration=7200,
+            runs=1,
+        )
+        matched = match_industry_job_to_assignment(job)
+        self.assertEqual(matched.pk, self.assignment.pk)
+        self.assertEqual(matched.character_id, self.char.pk)

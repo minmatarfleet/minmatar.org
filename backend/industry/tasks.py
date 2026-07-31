@@ -4,7 +4,7 @@ import logging
 
 from app.celery import app
 from eveonline.helpers.characters.update import update_character_industry_jobs
-from eveonline.models import EveCharacter, EveCharacterIndustryJob
+from eveonline.models import EveCharacter
 
 from industry.helpers.contract_associations import (
     reconcile_associations_for_character,
@@ -15,10 +15,23 @@ from industry.helpers.loyalty_store import (
     ensure_loyalty_store_offers_for_product,
     sync_loyalty_store_offers,
 )
-from industry.helpers.notifications import emit_order_job_if_matched
+from industry.helpers.notifications import emit_order_jobs_for_created_job_ids
 from industry.models import IndustryOrderItemAssignment
 
 logger = logging.getLogger(__name__)
+
+
+@app.task()
+def emit_order_job_notifications_for_jobs(created_job_ids: list[int]) -> int:
+    """Fan-out from character update / job sync when new ESI jobs are created."""
+    try:
+        return emit_order_jobs_for_created_job_ids(created_job_ids or [])
+    except Exception:
+        logger.exception(
+            "Failed to emit order-job notifications for jobs %s",
+            created_job_ids,
+        )
+        raise
 
 
 @app.task()
@@ -34,18 +47,7 @@ def sync_industry_jobs_for_character(character_id: int) -> None:
         )
         return
 
-    if not created_job_ids:
-        return
-
-    jobs = EveCharacterIndustryJob.objects.filter(job_id__in=created_job_ids)
-    for job in jobs:
-        try:
-            emit_order_job_if_matched(job)
-        except Exception:
-            logger.exception(
-                "Failed to emit order-job notification for job %s",
-                job.job_id,
-            )
+    emit_order_jobs_for_created_job_ids(created_job_ids)
 
 
 @app.task()

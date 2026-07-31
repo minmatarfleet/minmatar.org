@@ -12,7 +12,7 @@ from django.utils import timezone
 from eveonline.models import EveCharacter, EveCharacterIndustryJob
 from industry.helpers.producers import (
     PRODUCTION_ACTIVITIES,
-    _blueprint_activity_pairs_for_product_type,
+    blueprint_activity_pairs_for_product_type,
 )
 from industry.models import (
     IndustryOrder,
@@ -140,6 +140,12 @@ def match_industry_job_to_assignment(
     if job.activity_id not in PRODUCTION_ACTIVITIES:
         return None
 
+    # Present-tense "cooking" copy only makes sense for in-progress jobs.
+    if job.completed_date is not None:
+        return None
+    if (job.status or "").lower() not in ("active", "paused"):
+        return None
+
     character = job.character
     user_id = character.user_id
     if user_id:
@@ -158,32 +164,39 @@ def match_industry_job_to_assignment(
             order_item__order__fulfilled_at__isnull=True,
         )
         .select_related(
-            "order_item", "order_item__order", "order_item__eve_type"
+            "character",
+            "order_item",
+            "order_item__order",
+            "order_item__eve_type",
         )
-        .order_by("id")
+        .order_by("-id")
     )
 
+    candidates: list[IndustryOrderItemAssignment] = []
     for assignment in assignments:
         order = assignment.order_item.order
         period_start = order.created_at
         period_end = order.order_period_end()
         if job.end_date < period_start or job.start_date > period_end:
             continue
-        pairs = _blueprint_activity_pairs_for_product_type(
+        pairs = blueprint_activity_pairs_for_product_type(
             assignment.order_item.eve_type_id
         )
         if (job.blueprint_type_id, job.activity_id) in pairs:
-            return assignment
-    return None
+            candidates.append(assignment)
+
+    if not candidates:
+        return None
+
+    # Prefer the job's own character over alts; then most recent claim.
+    same_char = [a for a in candidates if a.character_id == character.pk]
+    pool = same_char or candidates
+    return pool[0]
 
 
 def emit_order_created(order: IndustryOrder, *, creator_user_id: int | None):
     items = list(order.items.select_related("eve_type").all())
-    items_summary = ", ".join(
-        f"{i.quantity}× {i.eve_type.name}" for i in items[:5]
-    )
-    if len(items) > 5:
-        items_summary += f" (+{len(items) - 5} more)"
+    item_lines = [f"{i.quantity}× {i.eve_type.name}" for i in items]
     location_name = ""
     if order.location_id:
         location_name = getattr(order.location, "location_name", "") or str(
@@ -194,7 +207,7 @@ def emit_order_created(order: IndustryOrder, *, creator_user_id: int | None):
         "order_id": order.pk,
         "public_short_code": order.public_short_code,
         "needed_by": order.needed_by.isoformat() if order.needed_by else "",
-        "items_summary": items_summary,
+        "items": item_lines,
         "location_name": location_name,
     }
     audience_ids = new_order_audience(exclude_user_id=creator_user_id)
@@ -253,3 +266,28 @@ def emit_order_job_if_matched(job: EveCharacterIndustryJob) -> bool:
         idempotency_key=f"industry.order.job:{job.job_id}",
     )
     return True
+
+
+def emit_order_jobs_for_created_job_ids(created_job_ids: list[int]) -> int:
+    """
+    Emit job notifications for newly upserted ESI jobs.
+
+    Safe to call from any sync path that first creates EveCharacterIndustryJob
+    rows; idempotency keys prevent duplicate pings.
+    """
+    if not created_job_ids:
+        return 0
+    emitted = 0
+    jobs = EveCharacterIndustryJob.objects.filter(
+        job_id__in=created_job_ids
+    ).select_related("character")
+    for job in jobs:
+        try:
+            if emit_order_job_if_matched(job):
+                emitted += 1
+        except Exception:
+            logger.exception(
+                "Failed to emit order-job notification for job %s",
+                job.job_id,
+            )
+    return emitted

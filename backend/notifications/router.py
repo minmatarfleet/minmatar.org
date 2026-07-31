@@ -5,8 +5,11 @@ from typing import List
 from ninja import Router, Schema
 from pydantic import Field
 
+from django.db import transaction
+
 from app.errors import ErrorResponse
 from authentication import AuthBearer
+from notifications.ack import AckError, ack_delivery_for_requester
 from notifications.models import (
     NotificationChannel,
     NotificationPreference,
@@ -101,6 +104,7 @@ def get_preferences(request):
     auth=AuthBearer(),
 )
 def put_preferences(request, payload: PreferenceUpdateRequest):
+    validated: list[tuple[str, str, bool]] = []
     for item in payload.preferences:
         try:
             ntype = get_type(item.notification_type)
@@ -115,12 +119,16 @@ def put_preferences(request, payload: PreferenceUpdateRequest):
                     f"{item.notification_type}"
                 )
             )
-        NotificationPreference.objects.update_or_create(
-            user=request.user,
-            notification_type=item.notification_type,
-            channel=item.channel,
-            defaults={"enabled": item.enabled},
-        )
+        validated.append((item.notification_type, item.channel, item.enabled))
+
+    with transaction.atomic():
+        for notification_type, channel, enabled in validated:
+            NotificationPreference.objects.update_or_create(
+                user=request.user,
+                notification_type=notification_type,
+                channel=channel,
+                defaults={"enabled": enabled},
+            )
     return get_preferences(request)
 
 
@@ -158,3 +166,47 @@ def unsubscribe_topic(request, type_key: str):
         user=request.user, notification_type=type_key
     ).delete()
     return 204, None
+
+
+class AckDeliveryRequest(Schema):
+    discord_user_id: int
+
+
+class AckDeliveryResponse(Schema):
+    id: int
+    status: str
+    delete_message: bool = True
+
+
+@router.post(
+    "/deliveries/{delivery_id}/ack",
+    response={
+        200: AckDeliveryResponse,
+        400: ErrorResponse,
+        403: ErrorResponse,
+        404: ErrorResponse,
+    },
+    auth=AuthBearer(),
+    summary="Mark a Discord notification delivery as read (bot / user)",
+)
+def ack_delivery(request, delivery_id: int, payload: AckDeliveryRequest):
+    """
+    Called by the Discord bot when the user clicks Mark as read.
+
+    Owners may ack their own deliveries. Staff/superuser tokens (bot service)
+    may ack on behalf of a Discord user after ownership checks.
+    """
+    try:
+        delivery = ack_delivery_for_requester(
+            delivery_id,
+            requester=request.user,
+            discord_user_id=payload.discord_user_id,
+        )
+    except AckError as exc:
+        return exc.status_code, ErrorResponse(detail=str(exc))
+
+    return 200, AckDeliveryResponse(
+        id=delivery.id,
+        status=delivery.status,
+        delete_message=True,
+    )

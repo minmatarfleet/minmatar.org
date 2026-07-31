@@ -1660,6 +1660,7 @@ export const ui = {
         'notification_channel_discord': 'Discord message',
         'notification_channel_eve_mail': 'Eve mail',
         'notification_topic_subscribe': 'Also include me even if I haven\'t built lately',
+        'notification_preferences_save_error': 'Couldn\'t save that setting. Try again.',
         'create_subscription_error': 'An error occurred while creating the subscription',
         'delete_subscription_error': 'An error occurred while deleting the subscription',
         'fleet_date_and_time': 'Fleet date and time',

@@ -31,6 +31,18 @@ Discord **channel** broadcasts (fleet pings, structure alerts, etc.) are outside
 
 - `GET/PUT /api/notifications/preferences`
 - `POST/DELETE /api/notifications/topics/{type_key}`
+- `POST /api/notifications/deliveries/{id}/ack` — Mark as read (body: `{ "discord_user_id": <snowflake> }`). Delivery owners or staff/bot service tokens only.
+
+## Discord Mark as read
+
+Discord DMs are sent as **embeds** with an author line for the product area
+(e.g. `Industry`), so pilots can tell what kind of ping it is at a glance.
+Each DM also includes a **Mark as read** button (`custom_id`: `notif_ack:{delivery_id}`). On click the bot:
+
+1. Calls `POST /api/notifications/deliveries/{id}/ack` with the clicker's Discord snowflake
+2. Deletes the DM if ack succeeds
+
+Delivery status becomes `read` and `read_at` is set. Message ids are stored on `NotificationDelivery` when the DM is sent.
 
 ## Docs in this folder
 

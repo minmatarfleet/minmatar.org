@@ -8,6 +8,7 @@ from collections.abc import Iterable
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
 
+from notifications.discord_format import feature_label
 from notifications.models import (
     NotificationDelivery,
     NotificationDeliveryStatus,
@@ -83,15 +84,26 @@ def notify_users(
     created: list[NotificationDelivery] = []
 
     # Materialize users (may be QuerySet)
-    user_list = list(users)
+    user_list = [u for u in list(users) if u is not None]
     if not user_list:
         return created
 
+    pref_map = {
+        (p.user_id, p.channel): p.enabled
+        for p in NotificationPreference.objects.filter(
+            user_id__in=[u.id for u in user_list],
+            notification_type=type_key,
+        )
+    }
+
     for user in user_list:
-        if user is None:
-            continue
         for channel in ntype.allowed_channels():
-            if not preference_enabled(user, ntype, channel):
+            key = (user.id, channel)
+            if key in pref_map:
+                enabled = pref_map[key]
+            else:
+                enabled = ntype.default_enabled(channel)
+            if not enabled:
                 continue
             if idempotency_key:
                 # Fan-out: include user so each recipient can be notified once.
@@ -117,6 +129,10 @@ def notify_users(
                         status=NotificationDeliveryStatus.PENDING,
                         idempotency_key=store_key,
                     )
+                    delivery_id = delivery.id
+                    transaction.on_commit(
+                        lambda did=delivery_id: deliver_notification.delay(did)
+                    )
             except IntegrityError:
                 logger.info(
                     "Skipping duplicate delivery %s %s",
@@ -126,17 +142,21 @@ def notify_users(
                 continue
 
             created.append(delivery)
-            deliver_notification.delay(delivery.id)
 
     return created
 
 
 def _render_payload(ntype: NotificationType, context: dict) -> dict:
     if ntype.render is None:
-        return dict(context)
-    rendered = ntype.render(context)
-    if not isinstance(rendered, dict):
-        raise TypeError(
-            f"Renderer for {ntype.key} must return a dict, got {type(rendered)}"
-        )
+        rendered = dict(context)
+    else:
+        rendered = ntype.render(context)
+        if not isinstance(rendered, dict):
+            raise TypeError(
+                f"Renderer for {ntype.key} must return a dict, "
+                f"got {type(rendered)}"
+            )
+    # Always stamp feature branding so Discord embeds show the product area.
+    rendered.setdefault("feature", ntype.feature)
+    rendered.setdefault("feature_label", feature_label(ntype.feature))
     return rendered
