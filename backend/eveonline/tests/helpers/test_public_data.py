@@ -1,7 +1,10 @@
 import factory
 from unittest.mock import MagicMock, patch
 
+from django.contrib.auth.models import User
 from django.db.models import signals
+from esi.exceptions import ESIErrorLimitException, HTTPClientError
+from esi.models import Token
 
 from app.test import TestCase
 
@@ -12,6 +15,7 @@ from eveonline.helpers.characters.public_data import (
 )
 from eveonline.models import EveCharacter
 from eveonline.signals import populate_eve_character_public_data
+from eveonline.tasks.characters import update_all_character_public_data
 
 
 class CharacterPublicDataHelperTests(TestCase):
@@ -91,3 +95,116 @@ class CharacterPublicDataHelperTests(TestCase):
         populate_eve_character_public_data(MagicMock(), instance, True)
 
         update_mock.assert_called_once_with(10004)
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("eveonline.helpers.characters.public_data.esi_public")
+    def test_update_character_public_data_marks_deleted_on_404(
+        self, esi_public
+    ):
+        user = User.objects.create(username="pilot")
+        token = Token.objects.create(user=user, character_id=10005)
+        EveCharacter.objects.create(
+            character_id=10005,
+            character_name="Gone Pilot",
+            user=user,
+            token=token,
+            corporation_id=2001,
+        )
+        esi_public.return_value.get_character_public_data.return_value = (
+            EsiResponse(
+                response_code=404,
+                response=HTTPClientError(
+                    404, {}, {"error": "Character has been deleted!"}
+                ),
+            )
+        )
+
+        updated = update_character_public_data(10005)
+
+        self.assertFalse(updated)
+        character = EveCharacter.objects.get(character_id=10005)
+        self.assertTrue(character.esi_deleted)
+        self.assertIsNotNone(character.esi_deleted_at)
+        self.assertIsNone(character.user_id)
+        self.assertIsNone(character.token_id)
+        self.assertEqual(0, Token.objects.filter(character_id=10005).count())
+        self.assertEqual("Gone Pilot", character.character_name)
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("eveonline.helpers.characters.public_data.esi_public")
+    def test_update_character_public_data_skips_already_deleted(
+        self, esi_public
+    ):
+        EveCharacter.objects.create(
+            character_id=10006,
+            character_name="Already Gone",
+            esi_deleted=True,
+        )
+
+        updated = update_character_public_data(10006)
+
+        self.assertFalse(updated)
+        esi_public.return_value.get_character_public_data.assert_not_called()
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("eveonline.helpers.characters.public_data.esi_public")
+    def test_update_character_public_data_raises_on_error_limit(
+        self, esi_public
+    ):
+        EveCharacter.objects.create(character_id=10007, character_name="Alive")
+        esi_public.return_value.get_character_public_data.return_value = (
+            EsiResponse(
+                response_code=420,
+                response=ESIErrorLimitException(reset=12),
+            )
+        )
+
+        with self.assertRaises(ESIErrorLimitException):
+            update_character_public_data(10007)
+
+        character = EveCharacter.objects.get(character_id=10007)
+        self.assertFalse(character.esi_deleted)
+
+
+class UpdateAllCharacterPublicDataTests(TestCase):
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch(
+        "eveonline.tasks.characters.refresh_character_public_data",
+        autospec=True,
+    )
+    def test_excludes_esi_deleted_characters(self, refresh_mock):
+        refresh_mock.return_value = True
+        EveCharacter.objects.create(character_id=20001, character_name="Live")
+        EveCharacter.objects.create(
+            character_id=20002,
+            character_name="Dead",
+            esi_deleted=True,
+        )
+
+        updated = update_all_character_public_data()
+
+        self.assertEqual(1, updated)
+        refresh_mock.assert_called_once_with(20001)
+
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch(
+        "eveonline.tasks.characters.refresh_character_public_data",
+        autospec=True,
+    )
+    def test_aborts_on_esi_error_limit(self, refresh_mock):
+        EveCharacter.objects.create(character_id=20003, character_name="A")
+        EveCharacter.objects.create(character_id=20004, character_name="B")
+        EveCharacter.objects.create(character_id=20005, character_name="C")
+
+        def side_effect(character_id):
+            if character_id == 20004:
+                raise ESIErrorLimitException(reset=5)
+            return True
+
+        refresh_mock.side_effect = side_effect
+
+        updated = update_all_character_public_data()
+
+        self.assertEqual(1, updated)
+        called_ids = [c.args[0] for c in refresh_mock.call_args_list]
+        self.assertEqual([20003, 20004], called_ids)
