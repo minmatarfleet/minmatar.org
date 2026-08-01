@@ -9,18 +9,19 @@ from django.conf import settings
 from discord.client import DiscordClient
 from discord.models import DiscordChannel
 from eveonline.helpers.characters import user_primary_character
+from industry.helpers.lp_buyback_discord_buttons import (
+    isk_sent_components,
+    lp_sent_components,
+)
 from industry.helpers.lp_market_orders import (
     currency_short_name,
     format_lp_quantity,
     remaining_quantity,
 )
 from industry.models import IndustryLoyaltyPointMarketOrder
-from tribes.models import TribeGroup
 
 logger = logging.getLogger(__name__)
 discord = DiscordClient()
-
-LOYALTY_POINTS_TRIBE_CODE = "supply.loyalty-points"
 
 
 def order_site_url(order: IndustryLoyaltyPointMarketOrder) -> str:
@@ -30,26 +31,9 @@ def order_site_url(order: IndustryLoyaltyPointMarketOrder) -> str:
     return f"{base}/industry/loyalty/?order={order.pk}"
 
 
-def _conversion_role_mention() -> str:
-    tg = (
-        TribeGroup.objects.filter(
-            code=LOYALTY_POINTS_TRIBE_CODE, is_active=True
-        )
-        .select_related("group")
-        .first()
-    )
-    if not tg or not tg.group_id:
-        return ""
-    try:
-        discord_group = tg.group.discord_group
-    except Exception:
-        return ""
-    if not discord_group or not discord_group.role_id:
-        return ""
-    return f"<@&{discord_group.role_id}>"
-
-
 def _user_mention(user) -> str:
+    if user is None:
+        return ""
     try:
         return f"<@{user.discord_user.id}>"
     except Exception:
@@ -57,14 +41,27 @@ def _user_mention(user) -> str:
 
 
 def _display_name(user) -> str:
+    if user is None:
+        return "?"
     primary = user_primary_character(user)
     if primary:
         return primary.character_name
     return user.username
 
 
+def lp_sender(order: IndustryLoyaltyPointMarketOrder):
+    if order.side == order.Side.SELL:
+        return order.created_by
+    return order.claimed_by
+
+
+def isk_payer(order: IndustryLoyaltyPointMarketOrder):
+    if order.side == order.Side.SELL:
+        return order.claimed_by
+    return order.created_by
+
+
 def lp_buyback_channel_id() -> int | None:
-    """Forum channel designated for LP buyback order threads, if any."""
     channel_id = (
         DiscordChannel.objects.filter(
             receive_lp_buyback=True,
@@ -87,7 +84,6 @@ def order_starter_message(order: IndustryLoyaltyPointMarketOrder) -> str:
     side_label = "Sell" if order.side == order.Side.SELL else "Buy"
     parts = [
         _user_mention(order.created_by),
-        _conversion_role_mention(),
         "",
         f"**{side_label}** {order.quantity:,} "
         f"{order.loyalty_point.name} @ {order.isk_per_lp} ISK/LP",
@@ -97,11 +93,10 @@ def order_starter_message(order: IndustryLoyaltyPointMarketOrder) -> str:
     if order.notes:
         parts.append(f"Notes: {order.notes}")
     parts.append(order_site_url(order))
-    return "\n".join(p for p in parts if p is not None)
+    return "\n".join(parts)
 
 
 def _default_forum_tag_ids(channel_id: int) -> list[str]:
-    """Pick applied_tags for the LP buyback forum (needed when REQUIRE_TAG)."""
     try:
         channel = discord.get_channel(channel_id).json()
     except Exception as exc:
@@ -125,7 +120,6 @@ def _default_forum_tag_ids(channel_id: int) -> list[str]:
 
 
 def create_order_thread(order: IndustryLoyaltyPointMarketOrder) -> int | None:
-    """Create #lp-buyback forum thread; return thread id or None on skip/fail."""
     channel_id = lp_buyback_channel_id()
     if not channel_id:
         logger.warning(
@@ -153,13 +147,17 @@ def post_order_status_update(
     order: IndustryLoyaltyPointMarketOrder,
     *,
     message: str,
+    components: list[dict] | None = None,
     close: bool = False,
 ) -> None:
     if not order.discord_thread_id:
         return
+    payload = {"content": message}
+    if components:
+        payload["components"] = components
     try:
         discord.create_message(
-            channel_id=order.discord_thread_id, message=message
+            channel_id=order.discord_thread_id, payload=payload
         )
     except Exception as exc:
         logger.error("Failed posting LP buyback Discord update: %s", exc)
@@ -180,13 +178,44 @@ def notify_order_created(order: IndustryLoyaltyPointMarketOrder) -> None:
         order.discord_thread_id = thread_id
 
 
+def _destination_label(
+    order: IndustryLoyaltyPointMarketOrder,
+    *,
+    claim=None,
+) -> str:
+    if claim is not None:
+        dest_parts = []
+        if claim.destination_character_name:
+            dest_parts.append(claim.destination_character_name)
+        if claim.destination_corporation_name:
+            dest_parts.append(claim.destination_corporation_name)
+        if dest_parts:
+            return " / ".join(dest_parts)
+    return (order.destination_character_name or "").strip() or "(unset)"
+
+
+def _send_lp_line(
+    order: IndustryLoyaltyPointMarketOrder,
+    sender,
+    *,
+    claim=None,
+) -> str:
+    dest = _destination_label(order, claim=claim)
+    if dest == "(unset)":
+        return ""
+    mention = _user_mention(sender)
+    prefix = f"{mention} " if mention else ""
+    return f"\n{prefix}Send LP to: **{dest}**"
+
+
 def notify_order_claimed(
     order: IndustryLoyaltyPointMarketOrder,
     *,
     claim=None,
 ) -> None:
     claimer_user = claim.claimed_by if claim is not None else order.claimed_by
-    claimer = _display_name(claimer_user) if claimer_user else "?"
+    claimer = _display_name(claimer_user)
+    sender = lp_sender(order)
     if claim is not None:
         remaining = remaining_quantity(order)
         label = "Partial claim" if remaining > 0 else "Claim"
@@ -194,23 +223,41 @@ def notify_order_claimed(
             f":handshake: {label} by **{claimer}**: "
             f"**{int(claim.amount):,}** LP"
         )
-        dest_parts = []
-        if claim.destination_character_name:
-            dest_parts.append(claim.destination_character_name)
-        if claim.destination_corporation_name:
-            dest_parts.append(claim.destination_corporation_name)
-        if dest_parts:
-            msg += f"\nSend LP to: **{' / '.join(dest_parts)}**"
+        msg += _send_lp_line(order, sender, claim=claim)
         if remaining > 0:
             msg += f"\nRemaining: **{remaining:,}** LP (still open)"
         else:
             msg += f"\nStatus: {order.get_status_display()}"
     else:
         msg = f":handshake: Claimed by **{claimer}**\nStatus: Claimed"
-        if order.destination_character_name:
-            msg += f"\nSend LP to: **{order.destination_character_name}**"
+        msg += _send_lp_line(order, sender)
     msg += f"\n{order_site_url(order)}"
     post_order_status_update(order, message=msg)
+
+
+def _awaiting_lp_message(order: IndustryLoyaltyPointMarketOrder) -> str:
+    return "\n".join(
+        [
+            _user_mention(lp_sender(order)),
+            "",
+            ":package: Awaiting LP transfer",
+            f"Claimed by **{_display_name(order.claimed_by)}**",
+            f"Send LP to: **{_destination_label(order)}**",
+            order_site_url(order),
+        ]
+    )
+
+
+def _awaiting_isk_message(order: IndustryLoyaltyPointMarketOrder) -> str:
+    return "\n".join(
+        [
+            _user_mention(isk_payer(order)),
+            "",
+            ":moneybag: LP received — awaiting ISK payment",
+            f"Pay ISK to: **{_display_name(lp_sender(order))}**",
+            order_site_url(order),
+        ]
+    )
 
 
 def notify_order_status_changed(
@@ -218,21 +265,26 @@ def notify_order_status_changed(
 ) -> None:
     status = order.status
     if status == order.Status.AWAITING_LP:
-        dest = order.destination_character_name or "(unset)"
-        msg = (
-            f":package: Awaiting LP transfer\n"
-            f"Send LP to: **{dest}**\n{order_site_url(order)}"
+        post_order_status_update(
+            order,
+            message=_awaiting_lp_message(order),
+            components=lp_sent_components(order.pk),
         )
-        post_order_status_update(order, message=msg)
     elif status == order.Status.AWAITING_ISK:
-        msg = (
-            f":moneybag: LP received — awaiting ISK payment\n"
-            f"{order_site_url(order)}"
+        post_order_status_update(
+            order,
+            message=_awaiting_isk_message(order),
+            components=isk_sent_components(order.pk),
         )
-        post_order_status_update(order, message=msg)
     elif status == order.Status.COMPLETED:
-        msg = f":white_check_mark: Completed\n{order_site_url(order)}"
-        post_order_status_update(order, message=msg, close=True)
+        post_order_status_update(
+            order,
+            message=f":white_check_mark: Completed\n{order_site_url(order)}",
+            close=True,
+        )
     elif status == order.Status.CANCELLED:
-        msg = f":x: Cancelled\n{order_site_url(order)}"
-        post_order_status_update(order, message=msg, close=True)
+        post_order_status_update(
+            order,
+            message=f":x: Cancelled\n{order_site_url(order)}",
+            close=True,
+        )
