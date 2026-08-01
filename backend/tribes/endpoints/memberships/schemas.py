@@ -12,6 +12,7 @@ class MembershipCharacterSchema(BaseModel):
     qualifies: Optional[bool] = None
     missing_skills: Optional[bool] = None
     missing_assets: Optional[bool] = None
+    missing_token: Optional[bool] = None
 
 
 class MembershipSchema(BaseModel):
@@ -64,6 +65,8 @@ class AvailableCharacterSchema(BaseModel):
     # When qualifies is False: what they're missing (for simple UI message).
     missing_skills: bool = False
     missing_assets: bool = False
+    # True when the group requires an ESI token type the character lacks.
+    missing_token: bool = False
 
 
 class RefreshAvailableCharacterRequest(BaseModel):

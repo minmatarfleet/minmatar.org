@@ -57,7 +57,7 @@ def get_memberships(
         "user__eveplayer__primary_character",
         "rank",
     ).prefetch_related(
-        "characters__character",
+        "characters__character__token",
         "tribe_group__requirements__asset_types__eve_type",
         "tribe_group__requirements__qualifying_skills__eve_type",
     )

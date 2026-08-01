@@ -5,6 +5,10 @@ from tribes.endpoints.memberships.schemas import (
     AddCharacterRequest,
     MembershipCharacterSchema,
 )
+from tribes.helpers import (
+    character_has_required_token,
+    token_requirement_error_detail,
+)
 from tribes.models import (
     TribeGroup,
     TribeGroupMembership,
@@ -49,9 +53,13 @@ def post_membership_character(
     ]:
         return 400, {"detail": "Cannot add characters to a closed membership."}
 
-    character = EveCharacter.objects.filter(
-        character_id=payload.character_id, user=request.user
-    ).first()
+    character = (
+        EveCharacter.objects.filter(
+            character_id=payload.character_id, user=request.user
+        )
+        .select_related("token")
+        .first()
+    )
     if not character:
         return 404, {
             "detail": "Character not found or does not belong to you."
@@ -62,6 +70,13 @@ def post_membership_character(
     ).exists():
         return 400, {
             "detail": "Character already committed to this membership."
+        }
+
+    if not character_has_required_token(character, tg):
+        return 400, {
+            "detail": token_requirement_error_detail(
+                [character], tg.required_token_type
+            )
         }
 
     mc = TribeGroupMembershipCharacter.objects.create(
@@ -79,4 +94,5 @@ def post_membership_character(
         character_name=character.character_name,
         committed_at=history.at.isoformat(),
         left_at=None,
+        missing_token=False,
     )

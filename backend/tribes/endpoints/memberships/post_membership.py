@@ -11,7 +11,12 @@ from tribes.endpoints.memberships.schemas import (
     MembershipSchema,
 )
 from tribes.endpoints.memberships.serializers import serialize_membership
-from tribes.helpers import build_membership_snapshot, user_can_manage_group
+from tribes.helpers import (
+    build_membership_snapshot,
+    characters_missing_required_token,
+    token_requirement_error_detail,
+    user_can_manage_group,
+)
 from tribes.models import (
     TribeGroup,
     TribeGroupMembership,
@@ -69,6 +74,19 @@ def post_membership(
     denied = require_feature(request.user, "tribes.apply", tribe_group=tg)
     if denied:
         return denied
+
+    owned_characters = list(
+        EveCharacter.objects.filter(
+            character_id__in=payload.character_ids, user=request.user
+        ).select_related("token")
+    )
+    missing_token = characters_missing_required_token(owned_characters, tg)
+    if missing_token:
+        return 400, {
+            "detail": token_requirement_error_detail(
+                missing_token, tg.required_token_type
+            )
+        }
 
     existing = TribeGroupMembership.objects.filter(
         user=request.user, tribe_group=tg

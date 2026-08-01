@@ -3,6 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { SummaryCharacter, TribeAvailableCharacter, TribeMembership  } from '@dtypes/api.minmatar.org'
+import { get_api_url, get_app_url } from '@helpers/env'
 
 interface Props {
     target_id:              string;
@@ -13,6 +14,7 @@ interface Props {
     pilots:                 SummaryCharacter[];
     membership:             TribeMembership;
     available_characters?:  TribeAvailableCharacter[];
+    required_token_type?:   string | null;
     hidden?:                boolean;
     id?:                    string;
 }
@@ -26,6 +28,7 @@ const {
     pilots,
     membership,
     available_characters,
+    required_token_type = null,
     hidden = false,
     id,
 } = Astro.props
@@ -33,6 +36,21 @@ const {
 import { query_string } from '@helpers/string';
 
 const TRIBE_GROUP_STATUS_PARTIAL_URL = translatePath(`/partials/tribe_group_status_component?tribe_id=${tribe_id}&group_id=${group_id}`)
+const redirect_path = translatePath(`/alliance/tribes/${tribe_id}/${group_id}`)
+const FIX_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${redirect_path}`
+
+const qualify_label = (available: TribeAvailableCharacter) => {
+    if (available.missing_token && required_token_type) {
+        return t('tribes.detail.missing_token').replace('{token}', required_token_type)
+    }
+    if (available.qualifies) return t('tribes.detail.qualified')
+    if (available.missing_skills && available.missing_assets) {
+        return t('tribes.detail.missing_skills_and_assets')
+    }
+    if (available.missing_skills) return t('tribes.detail.missing_skills')
+    if (available.missing_assets) return t('tribes.detail.missing_assets')
+    return t('tribes.detail.unqualified')
+}
 
 // Avoid adding a frontmatter line with a string literal (e.g. ?? "" or ?? ''). It triggers
 // esbuild "Unterminated string literal" when compiling this .astro file. Use template for defaults (e.g. data-api-url={import.meta.env.API_URL}).
@@ -99,24 +117,21 @@ import Tag from '@components/blocks/Tag.astro';
                 <LandingSwiper swiper_selector={`#${target_id}-swiper`}>
                     {pilots.map((pilot) => {
                         const is_member = membership.characters.find(character => character.character_id === pilot.character_id)
-
+                        const committed_missing = Boolean(is_member?.missing_token)
                         const available = available_characters?.find(
                             (a) => a.character_id === pilot.character_id
                         )
-                        
-                        const cid = pilot.character_id
-                        const hasBar = available != null
-                        const barLabel = hasBar
-                            ? (available.qualifies
-                                ? t('tribes.detail.qualified')
-                                : available.missing_skills && available.missing_assets
-                                    ? t('tribes.detail.missing_skills_and_assets')
-                                    : available.missing_skills
-                                        ? t('tribes.detail.missing_skills')
-                                        : available.missing_assets
-                                            ? t('tribes.detail.missing_assets')
-                                            : t('tribes.detail.unqualified'))
-                            : '';
+                        const missing_token = Boolean(available?.missing_token) || committed_missing
+                        const hasBar = available != null || committed_missing
+                        const barLabel = available
+                            ? qualify_label(available)
+                            : (committed_missing && required_token_type
+                                ? t('tribes.detail.missing_token').replace('{token}', required_token_type)
+                                : '')
+                        const isOk = available
+                            ? !available.missing_token && available.qualifies
+                            : !committed_missing
+
                         return (
                             <div class="[ swiper-slide ]" style="margin-right: 5px">
                                 <div class="[ tribe-apply-character-card ]">
@@ -128,7 +143,16 @@ import Tag from '@components/blocks/Tag.astro';
                                             inert={true}
                                         >
                                             <div slot="visible-actions">
-                                                {!is_member ?
+                                                {missing_token && required_token_type &&
+                                                    <Button
+                                                        color='green'
+                                                        size='sm'
+                                                        href={`${FIX_CHARACTER_URL}&token_type=${required_token_type}&character_id=${pilot.character_id}`}
+                                                    >
+                                                        {t('tribes.detail.upgrade_token').replace('{token}', required_token_type)}
+                                                    </Button>
+                                                }
+                                                {!missing_token && !is_member &&
                                                     <Button
                                                         color='green'
                                                         size='sm'
@@ -142,7 +166,9 @@ import Tag from '@components/blocks/Tag.astro';
                                                         x-on:click="close_dialog(false)"
                                                     >
                                                         {t('add')}
-                                                    </Button> :
+                                                    </Button>
+                                                }
+                                                {is_member &&
                                                     <ButtonConfirm
                                                         size='sm'
                                                         label={t('remove')}
@@ -167,7 +193,7 @@ import Tag from '@components/blocks/Tag.astro';
                                                 {hasBar &&
                                                     <Tag
                                                         class="no-desaturate"
-                                                        color={available.qualifies ? 'green' : 'fleet-red'}
+                                                        color={isOk ? 'green' : 'fleet-red'}
                                                         text={barLabel}
                                                     />
                                                 }

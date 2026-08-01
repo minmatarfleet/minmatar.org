@@ -96,6 +96,7 @@ def get_tribe_group(request, tribe_id: int, group_id: int):
             for req in tg.requirements.all()
         ],
         ranks=serialize_tribe_group_ranks(tg),
+        required_token_type=tg.required_token_type or None,
     )
 
 
