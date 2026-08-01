@@ -3011,5 +3011,8 @@ export const ui = {
         'currently_busy': '⚠️ Currently in use. Come back later to check if the job is completed.',
         'opens_in_a_new_tab': 'Opens in a new tab',
         'swipe_left_for_history': 'Swipe left to see past CEOs.',
+        'quick_navigation_tip': 'Navigate through the sitemap',
+        'character_finder_tip': 'Find characters registered in our site',
+        'fitting_finder_tip': 'List of our fittings with name filter',
     },
 } as const;
