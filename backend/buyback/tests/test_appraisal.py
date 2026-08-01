@@ -24,7 +24,7 @@ from buyback.helpers.pricing import (
 from buyback.models import BuybackAcceptedItem, EveBuybackSettings
 from eveonline.models import EveCharacter, EveLocation
 from industry.models import IndustryOrder, IndustryOrderItem, IndustryProduct
-from market.models import EveMarketItemHistory, EveMarketItemLocationPrice
+from market.models import EveMarketItemHistory
 
 BASE_URL = "/api/buyback"
 
@@ -227,9 +227,9 @@ class PriceBuybackTestCase(TestCase):
         )
 
 
-class BaselineBuyPriceFallbackTestCase(TestCase):
+class BaselineBuyPriceHistoryTestCase(TestCase):
     def setUp(self):
-        self.baseline = EveLocation.objects.create(
+        EveLocation.objects.create(
             location_id=60003760,
             location_name="Jita IV - Moon 4 - Caldari Navy Assembly Plant",
             solar_system_id=30000142,
@@ -256,13 +256,6 @@ class BaselineBuyPriceFallbackTestCase(TestCase):
             category_id=43,
             category_name="Planetary Commodities",
         )
-        EveMarketItemLocationPrice.objects.create(
-            location=self.baseline,
-            item=self.water,
-            sell_price=Decimal("110"),
-            buy_price=Decimal("100"),
-            split_price=Decimal("105"),
-        )
         EveMarketItemHistory.objects.create(
             region_id=10000002,
             item=self.trit,
@@ -272,18 +265,24 @@ class BaselineBuyPriceFallbackTestCase(TestCase):
             lowest=Decimal("3.89"),
             volume=1_000_000,
         )
+        EveMarketItemHistory.objects.create(
+            region_id=10000002,
+            item=self.water,
+            date=date(2026, 7, 31),
+            average=Decimal("100.00"),
+            highest=Decimal("110.00"),
+            lowest=Decimal("90.00"),
+            volume=50_000,
+        )
 
-    def test_uses_location_buy_when_present(self):
-        prices = get_baseline_buy_prices([self.water.id])
-        self.assertEqual(prices[self.water.id], Decimal("100"))
-
-    def test_falls_back_to_region_history_average(self):
-        prices = get_baseline_buy_prices([self.trit.id])
+    def test_uses_region_history_average(self):
+        prices = get_baseline_buy_prices([self.trit.id, self.water.id])
         self.assertEqual(prices[self.trit.id], Decimal("3.93"))
+        self.assertEqual(prices[self.water.id], Decimal("100.00"))
 
         by_name = get_baseline_buy_prices_by_name(["Tritanium", "Water"])
         self.assertEqual(by_name["Tritanium"], Decimal("3.93"))
-        self.assertEqual(by_name["Water"], Decimal("100"))
+        self.assertEqual(by_name["Water"], Decimal("100.00"))
 
 
 class AcceptedItemsSeedTestCase(TestCase):
@@ -412,6 +411,7 @@ class AppraiseEndpointTestCase(TestCase):
             solar_system_id=30000142,
             solar_system_name="Jita",
             short_name="Jita",
+            region_id=10000002,
             price_baseline=True,
         )
         self.ore = _ensure_type(
@@ -462,19 +462,23 @@ class AppraiseEndpointTestCase(TestCase):
             category_id=4,
             category_name="Material",
         )
-        EveMarketItemLocationPrice.objects.create(
-            location=self.baseline,
+        EveMarketItemHistory.objects.create(
+            region_id=10000002,
             item=self.p1,
-            sell_price=Decimal("110"),
-            buy_price=Decimal("100"),
-            split_price=Decimal("105"),
+            date=date(2026, 7, 31),
+            average=Decimal("100.00"),
+            highest=Decimal("110.00"),
+            lowest=Decimal("90.00"),
+            volume=50_000,
         )
-        EveMarketItemLocationPrice.objects.create(
-            location=self.baseline,
+        EveMarketItemHistory.objects.create(
+            region_id=10000002,
             item=self.p2,
-            sell_price=Decimal("10000"),
-            buy_price=Decimal("9000"),
-            split_price=Decimal("9500"),
+            date=date(2026, 7, 31),
+            average=Decimal("9000.00"),
+            highest=Decimal("10000.00"),
+            lowest=Decimal("8000.00"),
+            volume=10_000,
         )
         BuybackAcceptedItem.objects.create(
             eve_type=self.ore, category=BuybackAcceptedItem.Category.ORE
@@ -515,9 +519,7 @@ class AppraiseEndpointTestCase(TestCase):
         "buyback.helpers.pricing.reprocess_output",
         return_value={"Tritanium": 100},
     )
-    def test_appraise_ore_uses_history_when_jita_buy_missing(
-        self, unused_mock_reprocess
-    ):
+    def test_appraise_ore_uses_region_history(self, unused_mock_reprocess):
         trit = _ensure_type(
             type_id=34,
             name="Tritanium",
@@ -535,7 +537,6 @@ class AppraiseEndpointTestCase(TestCase):
             lowest=Decimal("3.90"),
             volume=1_000_000,
         )
-        # Baseline has no Tritanium location buy — production Jita case.
         response = self.client.post(
             f"{BASE_URL}/appraise",
             data={"paste": "Compressed Veldspar\t1000"},

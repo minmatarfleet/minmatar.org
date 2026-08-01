@@ -1,4 +1,4 @@
-"""Price buyback lines against price_baseline Jita buy orders."""
+"""Price buyback lines against Jita-region market history."""
 
 from __future__ import annotations
 
@@ -15,33 +15,26 @@ from industry.helpers.compressed_ore import (
     reprocess_output,
 )
 from market.helpers.pricing import JITA_REGION_ID
-from market.models import EveMarketItemHistory, EveMarketItemLocationPrice
+from market.models import EveMarketItemHistory
 
 from buyback.helpers.classify import BuybackCategory
 from buyback.models import DEFAULT_RATE_RULES
 
 
-def _baseline_region_id(baseline: EveLocation | None) -> int:
+def _baseline_region_id() -> int:
+    baseline = EveLocation.objects.filter(price_baseline=True).first()
     if baseline and baseline.region_id:
         return int(baseline.region_id)
     return JITA_REGION_ID
 
 
-def _fallback_buy_prices_by_type_id(
-    type_ids: list[int],
-    *,
-    region_id: int,
-) -> dict[int, Decimal]:
-    """
-    Region market-history average, then EveMarketPrice average.
-
-    Used when the price_baseline location has no station-range buy order yet
-    (or none for that type). Keeps appraisals working between ESI syncs.
-    """
+def _history_prices_by_type_id(type_ids: list[int]) -> dict[int, Decimal]:
+    """Latest region history average, then EveMarketPrice average."""
     if not type_ids:
         return {}
 
     unique_ids = list({int(tid) for tid in type_ids})
+    region_id = _baseline_region_id()
     prices: dict[int, Decimal] = {}
 
     latest_date = (
@@ -75,76 +68,31 @@ def get_baseline_buy_prices(
     type_ids: list[int] | None = None,
 ) -> dict[int, Decimal]:
     """
-    Highest buy order price per EveType at the price_baseline location.
+    Jita guide price per EveType from price_baseline region history.
 
-    Falls back to The Forge history / EveMarketPrice when the baseline
-    location has no stored station-range buy (e.g. Jita not market-synced).
+    Uses EveMarketItemHistory (The Forge when Jita is baseline), with
+    EveMarketPrice as a last resort — not live station order-book rows.
     """
-    baseline = EveLocation.objects.filter(price_baseline=True).first()
-    prices: dict[int, Decimal] = {}
-    if baseline:
-        qs = EveMarketItemLocationPrice.objects.filter(
-            location=baseline, buy_price__isnull=False
-        )
-        if type_ids is not None:
-            qs = qs.filter(item_id__in=type_ids)
-        prices = {
-            item_id: Decimal(str(buy_price))
-            for item_id, buy_price in qs.values_list("item_id", "buy_price")
-        }
-
-    if type_ids is None:
-        return prices
-
-    missing = [tid for tid in type_ids if tid not in prices]
-    if missing:
-        prices.update(
-            _fallback_buy_prices_by_type_id(
-                missing, region_id=_baseline_region_id(baseline)
-            )
-        )
-    return prices
+    if not type_ids:
+        return {}
+    return _history_prices_by_type_id(type_ids)
 
 
 def get_baseline_buy_prices_by_name(
     names: list[str] | None = None,
 ) -> dict[str, Decimal]:
-    """Buy prices by item name; same fallback as get_baseline_buy_prices."""
-    baseline = EveLocation.objects.filter(price_baseline=True).first()
-    prices: dict[str, Decimal] = {}
-    if baseline:
-        qs = EveMarketItemLocationPrice.objects.filter(
-            location=baseline, buy_price__isnull=False
-        )
-        if names is not None:
-            if not names:
-                return {}
-            qs = qs.filter(item__name__in=names)
-        prices = {
-            name: Decimal(str(buy))
-            for name, buy in qs.values_list("item__name", "buy_price")
-        }
-
-    if names is None:
-        return prices
-
-    missing_names = [name for name in names if name not in prices]
-    if not missing_names:
-        return prices
-
+    """Jita guide prices by item name; same source as get_baseline_buy_prices."""
+    if not names:
+        return {}
     name_to_id = dict(
-        EveType.objects.filter(name__in=missing_names).values_list(
-            "name", "id"
-        )
+        EveType.objects.filter(name__in=names).values_list("name", "id")
     )
-    fallback = _fallback_buy_prices_by_type_id(
-        list(name_to_id.values()),
-        region_id=_baseline_region_id(baseline),
-    )
-    for name, type_id in name_to_id.items():
-        if type_id in fallback:
-            prices[name] = fallback[type_id]
-    return prices
+    by_id = _history_prices_by_type_id(list(name_to_id.values()))
+    return {
+        name: by_id[type_id]
+        for name, type_id in name_to_id.items()
+        if type_id in by_id
+    }
 
 
 def merge_rate_rules(raw) -> dict[str, float]:

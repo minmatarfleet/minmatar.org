@@ -495,7 +495,7 @@ export const ui = {
         'buyback.appraisal.unit_price': 'Our / unit',
         'buyback.appraisal.line_total': 'Line total',
         'buyback.appraisal.reason': 'Reason',
-        'buyback.appraisal.jita_note': 'Jita buy is the baseline market buy price. Ore is priced from refined minerals (no single Jita buy on the ore itself). Rate is the share of that baseline we pay.',
+        'buyback.appraisal.jita_note': 'Jita buy is the Forge market-history average (our price guide). Ore is priced from refined minerals (no single Jita price on the ore itself). Rate is the share of that baseline we pay.',
         'buyback.appraisal.again': 'New paste',
 
         'buyback.faq.title': 'FAQ',
