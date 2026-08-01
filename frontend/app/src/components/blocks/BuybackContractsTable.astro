@@ -1,0 +1,81 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { BuybackContract } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    contracts:      BuybackContract[];
+    init_tooltips:  boolean;
+    is_history?:    boolean;
+}
+
+const {
+    contracts,
+    init_tooltips,
+    is_history = false,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import BuybackContractItem from '@components/blocks/BuybackContractItem.astro';
+import Button from '@components/blocks/Button.astro';
+---
+
+<Flexblock class="[ buyback-contracts-table ]" gap='var(--space-l)'>
+    <div class="[ buyback-contracts-table__scroll ]">
+        <div class="[ buyback-contracts-table__grid ]" role="table">
+            <div class="[ buyback-contracts-table__header ]" role="row">
+                <div role="columnheader">{t('date_created')}</div>
+                <div role="columnheader">{t('creator')}</div>
+                <div role="columnheader">{t('location')}</div>
+                <div role="columnheader">{t('status')}</div>
+                <div role="columnheader">{t('size_m3')}</div>
+                <div role="columnheader">{t('buyback.contract.price')}</div>
+                <div role="columnheader">{t('buyback.contract.description')}</div>
+                <div role="columnheader">{t('buyback.table.acceptor')}</div>
+            </div>
+
+            {contracts.map(contract =>
+                <BuybackContractItem contract={contract} init_tooltips={init_tooltips} />
+            )}
+        </div>
+    </div>
+
+    {!is_history &&
+        <FlexInline justification='center' class="[ w-full pt-[var(--space-s)] pb-[64px] ]">
+            <Button
+                href={translatePath('/market/buyback/contracts/history/')}
+                size='sm'
+            >
+                {t('view_all_historical_contracts')}
+            </Button>
+        </FlexInline>
+    }
+</Flexblock>
+
+<style lang="scss">
+    .buyback-contracts-table__scroll {
+        overflow-x: auto;
+        mask-image: linear-gradient(to right, black 90%, transparent);
+    }
+
+    .buyback-contracts-table__grid {
+        min-width: 70rem;
+    }
+
+    .buyback-contracts-table__header {
+        display: grid;
+        grid-template-columns: minmax(6.5rem, 0.8fr) minmax(10rem, 1.4fr) minmax(7rem, 0.9fr) minmax(7rem, 0.9fr) minmax(6rem, 0.8fr) minmax(7rem, 1fr) minmax(6rem, 0.9fr) minmax(7rem, 1fr);
+        gap: var(--space-s);
+        align-items: end;
+        padding-block: var(--space-2xs);
+        padding-inline: var(--space-2xs);
+        border-bottom: solid 1px var(--border-color);
+        color: var(--highlight);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+    }
+</style>

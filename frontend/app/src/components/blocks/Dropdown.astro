@@ -22,6 +22,7 @@ import CollapsableButton from "@components/blocks/CollapsableButton.astro";
     {...attributes}
     class:list={[ attributes.class, { 'button-dropdown': variant === 'button' } ]}
     x-bind:class="{ 'is-open': expanded }"
+    x-bind:style="expanded ? { '--button-dropdown-min-width': `${$refs.trigger?.offsetWidth || 0}px` } : {}"
     x-data={`{
         id: $id('dropdown'),
         expanded: false,
@@ -41,6 +42,7 @@ import CollapsableButton from "@components/blocks/CollapsableButton.astro";
         size={size}
         @click="toggle()"
         :id="id"
+        x-ref="trigger"
         x-bind:aria-expanded="expanded.toString()"
         aria-haspopup="true"
     >
@@ -53,7 +55,7 @@ import CollapsableButton from "@components/blocks/CollapsableButton.astro";
             { 'button-dropdown-panel': variant === 'button' },
         ]}
         x-show="expanded"
-        x-anchor.bottom-end="document.getElementById(id)"
+        x-anchor.fixed.bottom-end="document.getElementById(id)"
         style="display: none"
     >
         <slot />
@@ -70,7 +72,7 @@ import CollapsableButton from "@components/blocks/CollapsableButton.astro";
     }
 
     .button-dropdown-panel {
-        min-width: max-content;
+        min-width: var(--button-dropdown-min-width, 0px);
         width: max-content;
     }
 </style>

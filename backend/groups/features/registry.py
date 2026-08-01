@@ -201,6 +201,22 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         description="Submit industry orders as an industry tribe chief.",
         default_tribe_group_codes=_tribe_codes(*_INDUSTRY_TRIBE_CODES),
     ),
+    "industry.loyalty.trade": FeatureDefinition(
+        code="industry.loyalty.trade",
+        label="Post LP sell orders",
+        scope=FeatureScope.AFFILIATION,
+        description="Post loyalty-point sell orders on the buyback board.",
+        default_affiliation_names=_aff("Alliance", "Militia", "Associate"),
+    ),
+    "industry.loyalty.manage": FeatureDefinition(
+        code="industry.loyalty.manage",
+        label="Manage LP buyback",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description=(
+            "Post buy orders and claim/settle loyalty-point buyback orders."
+        ),
+        default_tribe_group_codes=_tribe_codes("supply.loyalty-points"),
+    ),
     "applications.manage": FeatureDefinition(
         code="applications.manage",
         label="Manage corp applications",

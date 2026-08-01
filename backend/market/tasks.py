@@ -26,6 +26,12 @@ from market.helpers import (
 )
 from market.helpers.contract_items import fetch_and_match_contract_items
 from market.helpers.ops_snapshot import record_ops_monitor_snapshots
+from market.helpers.attributed_orders import (
+    allied_corporation_ids_for_order_sync,
+    character_ids_for_attributed_order_sync,
+    sync_character_orders,
+    sync_corporation_orders,
+)
 from market.helpers.order_book_sync import (
     sync_structure_order_book_for_location,
 )
@@ -324,6 +330,52 @@ def fetch_structure_sell_orders():
 
 def fetch_eve_market_transactions():
     pass
+
+
+@app.task()
+def sync_character_attributed_orders(character_id: int):
+    """Sync personal open orders for one character."""
+    result = sync_character_orders(character_id)
+    logger.info(
+        "Character attributed orders %s: status=%s rows=%s",
+        character_id,
+        result.status.value,
+        result.rows,
+    )
+    return result.status.value
+
+
+@app.task()
+def sync_corporation_attributed_orders(corporation_id: int):
+    """Sync corp open orders for one corporation (issued_by attribution)."""
+    result = sync_corporation_orders(corporation_id)
+    logger.info(
+        "Corporation attributed orders %s: status=%s rows=%s",
+        corporation_id,
+        result.status.value,
+        result.rows,
+    )
+    return result.status.value
+
+
+@app.task()
+def fetch_attributed_market_orders():
+    """Enqueue per-character and per-corp attributed order syncs."""
+    character_ids = character_ids_for_attributed_order_sync()
+    corporation_ids = allied_corporation_ids_for_order_sync()
+    logger.info(
+        "Queueing attributed market order sync: %s characters, %s corporations",
+        len(character_ids),
+        len(corporation_ids),
+    )
+    for character_id in character_ids:
+        sync_character_attributed_orders.delay(character_id)
+    for corporation_id in corporation_ids:
+        sync_corporation_attributed_orders.delay(corporation_id)
+    return {
+        "characters_queued": len(character_ids),
+        "corporations_queued": len(corporation_ids),
+    }
 
 
 @app.task()

@@ -9,6 +9,10 @@ from django.utils import timezone
 
 from eveonline.models import EveCharacter
 from eveonline.models.characters import EvePlayer
+from industry.helpers.orders_character_statistics import (
+    assignment_delivery_at,
+    assignment_unit_price,
+)
 from industry.models import IndustryOrderItemAssignment
 from tribes.reports.roster import roster_character_pks, roster_user_ids
 from tribes.reports.types import PeriodBounds, ReportScope
@@ -52,9 +56,7 @@ def run_industry_orders_report(
         if not uid:
             continue
         order = a.order_item.order
-        unit_price = _dec(
-            a.target_unit_price or a.order_item.target_unit_price or 0
-        )
+        unit_price = assignment_unit_price(a)
         unit_margin = _dec(
             a.target_estimated_margin
             or a.order_item.target_estimated_margin
@@ -65,7 +67,7 @@ def run_industry_orders_report(
         if order.fulfilled_at is None:
             _add(committed[uid], qty, unit_price, unit_margin)
 
-        fulfilled_at = a.delivered_at or order.fulfilled_at
+        fulfilled_at = assignment_delivery_at(a)
         if fulfilled_at and period_start_dt <= fulfilled_at <= period_end_dt:
             _add(delivered[uid], qty, unit_price, unit_margin)
 

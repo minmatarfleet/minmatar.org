@@ -9,6 +9,9 @@ from industry.models.lp_store import (
     IndustryLoyaltyPointAccount,
     IndustryLoyaltyPointContact,
     IndustryLoyaltyPointLedgerEntry,
+    IndustryLoyaltyPointMarketOrder,
+    IndustryLoyaltyPointMarketOrderClaim,
+    IndustryLoyaltyPointPriceHistory,
     IndustryLpStoreOffer,
 )
 from industry.models.mining import MiningUpgradeCompletion
@@ -31,6 +34,9 @@ __all__ = [
     "IndustryLoyaltyPointAccount",
     "IndustryLoyaltyPointContact",
     "IndustryLoyaltyPointLedgerEntry",
+    "IndustryLoyaltyPointMarketOrder",
+    "IndustryLoyaltyPointMarketOrderClaim",
+    "IndustryLoyaltyPointPriceHistory",
     "IndustryLpStoreOffer",
     "IndustryOrder",
     "IndustryOrderBlueprintCoordinator",

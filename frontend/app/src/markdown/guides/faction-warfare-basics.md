@@ -108,7 +108,7 @@ They respawn several times a day for each faction.
 
 Loyalty points are the currency of faction warfare. Complexes, advantage sites, and battlefields reward loyalty points, which can be converted for items to sell on the market.
 
-Loyalty point conversion is an absolute beast, and we have an entire team dedicated to it. To sell your loyalty points, ask about the conversion team. If you’d like to learn how to convert your own loyalty points, join the conversion team.
+Loyalty point conversion is an absolute beast, and we have an entire team dedicated to it. To sell your loyalty points, use the [Loyalty Points buyback board](/industry/loyalty/) (mirrored into Discord `#lp-buyback`). If you’d like to learn how to convert your own loyalty points, join the conversion team.
 
 ## Additional Resources
 

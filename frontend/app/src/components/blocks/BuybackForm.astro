@@ -1,0 +1,53 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import Button from '@components/blocks/Button.astro';
+import Textarea from '@components/blocks/Textarea.astro';
+---
+
+<form
+    method="POST"
+    action={translatePath('/market/buyback/appraisal')}
+    x-data={`{
+        paste: '',
+        submitted: false,
+    }`}
+    x-on:submit="submitted = true"
+>
+    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+        <Flexblock gap='var(--space-3xs)'>
+            <h2>{t('buyback.form.title')}</h2>
+            <p class="[ buyback-form__hint ]">{t('buyback.form.paste_tip')}</p>
+        </Flexblock>
+
+        <Flexblock gap='var(--space-2xs)' class="[ w-full ]">
+            <label for="paste">{t('buyback.form.paste')}</label>
+            <Textarea
+                id="paste"
+                name="paste"
+                rows="8"
+                required
+                x-model="paste"
+                placeholder={t('buyback.form.paste_placeholder')}
+            />
+        </Flexblock>
+
+        <Button x-bind:disabled="submitted" type="submit" class="[ w-full ]">{t('buyback.form.submit')}</Button>
+    </Flexblock>
+</form>
+
+<style lang="scss">
+    .buyback-form__hint {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--foreground);
+        opacity: 0.8;
+    }
+
+    label {
+        font-weight: 600;
+    }
+</style>

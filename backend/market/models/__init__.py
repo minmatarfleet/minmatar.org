@@ -1,3 +1,4 @@
+from market.models.attributed_order import EveMarketAttributedOrder
 from market.models.contract import (
     EveMarketContract,
     EveMarketContractError,
@@ -24,6 +25,7 @@ from market.models.item import (
 )
 
 __all__ = [
+    "EveMarketAttributedOrder",
     "EveMarketContract",
     "EveMarketContractError",
     "EveMarketContractExpectation",

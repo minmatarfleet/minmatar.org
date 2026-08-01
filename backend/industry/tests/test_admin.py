@@ -166,10 +166,14 @@ class IndustryAdminCustomizationsTestCase(TestCase):
             for model in supply_app["models"]
             if model.get("admin_url", "").startswith("/admin/industry/")
         ]
-        self.assertEqual(len(industry_links), 1)
+        self.assertEqual(len(industry_links), 2)
         self.assertEqual(industry_links[0]["name"].lower(), "industry orders")
         self.assertEqual(
             industry_links[0]["admin_url"], "/admin/industry/orders/"
+        )
+        self.assertEqual(industry_links[1]["name"].lower(), "loyalty points")
+        self.assertEqual(
+            industry_links[1]["admin_url"], "/admin/industry/loyalty/"
         )
         self.assertTrue(
             any(

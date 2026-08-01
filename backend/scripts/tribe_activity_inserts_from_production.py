@@ -12,6 +12,7 @@ from django.utils import timezone
 from industry.helpers.type_breakdown import get_blueprint_or_reaction_type_id
 from industry.models import IndustryOrderItemAssignment
 
+from tribes.constants import MANUFACTURING_PRODUCTION_GROUP_CODES
 from tribes.models import (
     TribeGroup,
     TribeGroupActivity,
@@ -34,12 +35,7 @@ MANUAL_CODES = frozenset(
     }
 )
 
-PRODUCTION_CODES = frozenset(
-    {
-        "supply.subcapital-production",
-        "supply.capital-production",
-    }
-)
+PRODUCTION_CODES = MANUFACTURING_PRODUCTION_GROUP_CODES
 
 CAPITALS_PREFIX = "capitals."
 

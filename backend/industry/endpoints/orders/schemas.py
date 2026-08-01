@@ -268,3 +268,11 @@ class OrderMaterialOptionsResponse(BaseModel):
 
     mineral_options: List[CoordinatorEveTypeResponse]
     pi_options: List[CoordinatorEveTypeResponse]
+
+
+class IndustryOrderCharacterStatResponse(BaseModel):
+    """Manufacturer stats: primary character and delivered ISK estimate (last 30 days)."""
+
+    primary_character_id: int | None = None
+    primary_character_name: str | None = None
+    delivered_isk_estimate: Decimal

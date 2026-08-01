@@ -49,7 +49,7 @@
         "icon": "/images/icons/48px-Skills.png",
         "publish": true,
         "description": "page_finder.learning_center.description",
-        "keywords": ["learning", "guides", "AIR", "certificates", "onboarding"]
+        "keywords": ["learning", "guides", "AIR", "certificates", "onboarding", "readiness", "pilot readiness"]
     },
     {
         "slug": "alliance.story",
@@ -418,6 +418,26 @@
         "path": "/market/freight/contracts/history/",
         "publish": true,
         "description": "page_finder.freight_contracts.history.description"
+    },
+    {
+        "slug": "buyback",
+        "alt": "icon.market.alt",
+        "path": "/market/buyback/",
+        "publish": true,
+        "icon": "/images/icons/48px-Market.png",
+        "description": "page_finder.buyback.description"
+    },
+    {
+        "slug": "buyback_contracts",
+        "path": "/market/buyback/contracts/",
+        "publish": true,
+        "description": "page_finder.buyback_contracts.description"
+    },
+    {
+        "slug": "buyback_contracts.history",
+        "path": "/market/buyback/contracts/history/",
+        "publish": true,
+        "description": "page_finder.buyback_contracts.history.description"
     },
     {
         "slug": "staging_supply.ops",

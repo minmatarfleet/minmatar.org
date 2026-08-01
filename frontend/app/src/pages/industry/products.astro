@@ -5,9 +5,8 @@ const { t, translatePath } = i18n(Astro.url)
 import type { Product } from '@dtypes/api.minmatar.org'
 import { get_products } from '@helpers/api.minmatar.org/industry'
 
-const strategy = Astro.url.searchParams.get('strategy')
+const strategy = Astro.url.searchParams.get('strategy') ?? 'produced'
 
-let all_strategies_count = 0
 const strategy_count = {
     produced: 0,
     harvested: 0,
@@ -19,22 +18,20 @@ let fetching_error: Error | false = false
 
 try {
     products = await get_products()
-    all_strategies_count = products.length
 
     products.map(product => {
         if (strategy_count[product.strategy] !== undefined)
             strategy_count[product.strategy] = strategy_count[product.strategy] + 1
     })
 
-    if (strategy)
-        products = products.filter(product => product.strategy === strategy)
+    products = products.filter(product => product.strategy === strategy)
 
     products = products.sort((a, b) => a.supplied_for.length - b.supplied_for.length)
 } catch (error) {
     fetching_error = error
 }
 
-const PRODUCTS_PARTIAL_URL = translatePath(`/partials/products_component${strategy ? `?strategy=${strategy}` : ''}`)
+const PRODUCTS_PARTIAL_URL = translatePath(`/partials/products_component?strategy=${strategy}`)
 
 const count_text = t(products.length != 1 ? 'products_plural' : 'products_singular').replace('{count}', String(products.length))
 
@@ -75,7 +72,6 @@ const page_title = t('industry.products.page_title');
             count_text: '${count_text}',
             products_plural: '${t('products_plural')}',
             products_singular: '${t('products_singular')}',
-            all_strategies_count: ${all_strategies_count},
             produced_count: ${strategy_count['produced']},
             harvested_count: ${strategy_count['harvested']},
             imported_count: ${strategy_count['imported']},
@@ -121,21 +117,8 @@ const page_title = t('industry.products.page_title');
 
         <PageSubheader slot="subheader">
             <Button
-                color={!strategy ? 'transparent' : undefined}
-                href={translatePath('/industry/products/')}
-                size='sm'
-            >
-                {t('all_strategies')}
-                <NotificationBadge
-                    color={strategy ? 'fleet-yellow' : undefined}
-                    x-text="all_strategies_count"
-                    number={all_strategies_count}
-                />
-            </Button>
-
-            <Button
                 color={strategy === 'produced' ? 'transparent' : undefined}
-                href={translatePath('/industry/products?strategy=produced')}
+                href={translatePath('/industry/products/')}
                 size='sm'
             >
                 {t('produced')}

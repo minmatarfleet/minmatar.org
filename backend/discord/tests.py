@@ -675,6 +675,31 @@ class DiscordChannelAdminFormTestCase(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("receive_amarr_fleet_pings", form.errors)
 
+    @patch("discord.forms.fetch_active_guild_channels")
+    @patch("discord.forms.get_guild_channel")
+    def test_receive_lp_buyback_rejected_for_text_channel(
+        self, mock_get_channel, mock_fetch_active
+    ):
+        mock_fetch_active.return_value = [
+            {
+                "id": 789,
+                "name": "general",
+                "type": "text",
+                "guild_id": self.guild.guild_id,
+            },
+        ]
+        mock_get_channel.return_value = mock_fetch_active.return_value[0]
+        form = DiscordChannelAdminForm(
+            data={
+                "discord_channel_pick": "789",
+                "track_voice_activity": False,
+                "receive_lp_buyback": True,
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("receive_lp_buyback", form.errors)
+
 
 class DiscordOffboardSyncTests(TestCase):
     """A5/MG: offboard during sync must not 500, and message must be correct."""

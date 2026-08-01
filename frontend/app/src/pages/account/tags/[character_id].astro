@@ -40,7 +40,6 @@ import TextBox from '@components/layout/TextBox.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
-import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import CharactersTagList from '@components/blocks/CharactersTagList.astro'
 
@@ -51,20 +50,17 @@ const page_title = t('account.tags.page_title');
     title={page_title}
     components={{
         alert_dialog: true,
-        confirm_dialog: true,
         modal: true
     }}
 >
     <form
         hx-post={CHARACTER_TAG_LIST_PARTIAL_URL}
-        hx-trigger="submit"
+        hx-trigger="change"
         hx-target="#character-tag-list"
         hx-indicator=".loader"
         hx-swap="outerHTML transition:true"
-        x-data={`{
-            is_dirty: false
-        }`}
-        x-on:submit="is_dirty = false"
+        hx-sync="this:abort"
+        hx-disabled-elt="find input[name=tag]"
     >
         <PageWide
             cover={{
@@ -78,19 +74,6 @@ const page_title = t('account.tags.page_title');
                 <PageTitle>
                     {page_title}
                 </PageTitle>
-                <FlexInline
-                    class="[ animate-fade-in-up ]"
-                    x-show="is_dirty"
-                    style="display: none"
-                >
-                    <Button
-                        color='green'
-                        off_disable={true}
-                        x-bind:disabled="!is_dirty"
-                    >
-                        {t('update')}
-                    </Button>
-                </FlexInline>
             </FlexInline>
             
             <Flexblock gap="var(--space-xl)">

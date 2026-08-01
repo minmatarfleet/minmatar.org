@@ -44,6 +44,12 @@ from industry.endpoints.orders.get_orders import (
     get_orders,
     METHOD as get_orders_method,
 )
+from industry.endpoints.orders.get_orders_character_statistics import (
+    PATH as get_orders_character_statistics_path,
+    ROUTE_SPEC as get_orders_character_statistics_spec,
+    get_orders_character_statistics,
+    METHOD as get_orders_character_statistics_method,
+)
 from industry.endpoints.orders.get_orders_profit_summary import (
     PATH as get_orders_profit_summary_path,
     ROUTE_SPEC as get_orders_profit_summary_spec,
@@ -126,6 +132,12 @@ _ROUTES = (
         get_orders_profit_summary_path,
         get_orders_profit_summary_spec,
         get_orders_profit_summary,
+    ),
+    (
+        get_orders_character_statistics_method,
+        get_orders_character_statistics_path,
+        get_orders_character_statistics_spec,
+        get_orders_character_statistics,
     ),
     (post_order_method, post_order_path, post_order_spec, post_order),
     (get_order_method, get_order_path, get_order_spec, get_order),

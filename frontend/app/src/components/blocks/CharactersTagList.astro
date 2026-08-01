@@ -52,18 +52,6 @@ import Badge from '@components/blocks/Badge.astro';
                         <StylessButton
                             class="w-full character-selector"
                             href={translatePath(`/account/tags/${character.character_id}`)}
-                            x-data={`{
-                                redirect(accepted) {
-                                    if (accepted) navigate("${translatePath(`/account/tags/${character.character_id}`)}")
-                                },
-                                show_unsaved_dialog() {
-                                    show_confirm_dialog({
-                                        title: '${t('unsaved_changes_dialog_title')}',
-                                        content: '${t('unsaved_changes_dialog_text')}',
-                                    }).then( (accepted) => this.redirect(accepted) )
-                                }
-                            }`}
-                            x-on:click.prevent="is_dirty ? show_unsaved_dialog() : redirect(true)"
                         >
                             <Badge
                                 character_id={character.character_id}
@@ -95,7 +83,6 @@ import Badge from '@components/blocks/Badge.astro';
                 name="tag"
                 value={tag.id}
                 checked={active_tags?.includes(tag.id)}
-                x-on:change="is_dirty = true"
             >
                 <Flexblock gap='var(--space-3xs)'>
                     <h3>{t(`${tag.description}_tag` as any) ?? tag.description}</h3>

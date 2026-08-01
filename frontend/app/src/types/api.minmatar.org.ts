@@ -560,12 +560,6 @@ export interface FleetPatchRequest {
 export const tracking_status = ['pending', 'active', 'complete', 'cancelled', 'unknown'] as const
 export type TrackingStatus = typeof tracking_status[number]
 
-export interface MumbleInformation {
-    username:   string;
-    password:   string;
-    url:        string;
-}
-
 export interface Audience {
     id:                     number;
     display_name:           string;
@@ -1217,11 +1211,103 @@ export interface SpaceTruckerStatistics {
     completed_contracts_count:  number;
 }
 
+export interface MarketOperatorStatistics {
+    primary_character_id:       number | null;
+    primary_character_name:     string | null;
+    total_isk_on_market:        number;
+}
+
+export interface IndustryOrderCharacterStatistics {
+    primary_character_id:       number | null;
+    primary_character_name:     string | null;
+    delivered_isk_estimate:     number;
+}
+
 export interface FreightContractsStats {
     active_count:               number;
     average_delivery_seconds:   number | null;
     active_haulers_count:       number;
     window_days:                number;
+}
+
+export interface BuybackLocation {
+    location_id:    number;
+    name:           string;
+    short_name:     string;
+}
+
+export interface BuybackRateRules {
+    ore_refine:         number;
+    ore_jita_buy:       number;
+    p1_jita_buy_cap:    number;
+    other_jita_buy?:    number;
+}
+
+export interface BuybackAcceptedItem {
+    type_id:    number;
+    name:       string;
+    category:   string;
+}
+
+export interface BuybackSettings {
+    active:                 boolean;
+    assignee_name:          string;
+    corporation_id:         number;
+    location:               BuybackLocation | null;
+    accepted_categories:    string[];
+    accepted_items:         BuybackAcceptedItem[];
+    rate_rules:             BuybackRateRules;
+    exclusions:             string[];
+    discord_thread_url:     string;
+    leading_text:           string;
+}
+
+export interface BuybackAppraisalLine {
+    type_id:        number | null;
+    name:           string;
+    quantity:       number;
+    category:       string;
+    rate:           number | null;
+    jita_buy:       number | null;
+    unit_price:     number | null;
+    line_total:     number | null;
+    accepted:       boolean;
+    reject_reason:  string | null;
+}
+
+export interface BuybackAppraisal {
+    lines:              BuybackAppraisalLine[];
+    offer_total:        number;
+    accepted_count:     number;
+    rejected_count:     number;
+    rate_rules:         BuybackRateRules;
+}
+
+export type BuybackContractStatus = FreightContractStatus
+
+export interface BuybackContract {
+    contract_id:                    number;
+    status:                         BuybackContractStatus;
+    location_name:                  string;
+    volume:                         number;
+    price:                          number;
+    title:                          string;
+    date_issued:                    Date;
+    date_completed:                 Date | null;
+    issuer_id:                      number | null;
+    issuer_character_name:          string | null;
+    acceptor_id:                    number | null;
+    acceptor_character_name:        string | null;
+    updated_at:                     Date | null;
+}
+
+export interface BuybackContractsStats {
+    outstanding_count:              number;
+    outstanding_isk:                number;
+    finished_count:                 number;
+    finished_isk:                   number;
+    average_processing_seconds:     number | null;
+    window_days:                    number;
 }
 
 export const blueprint_owner_entity = [ 'character', 'corporation'  ] as const
@@ -1480,6 +1566,73 @@ export interface OrderLpStockpile {
     contacts:               OrderLpStockpileContact[];
     character_id?:          number | null;
     account_corporation_id?: number | null;
+}
+
+export interface LoyaltyCurrency {
+    id:                 number;
+    name:               string;
+    corporation_id:     number;
+    default_isk_per_lp: number;
+    is_active:          boolean;
+}
+
+export interface LoyaltyMarketOrderClaim {
+    id:                              number;
+    amount:                          number;
+    destination_character_name:      string;
+    destination_corporation_name:    string;
+    claimed_by_user_id:              number;
+    claimed_by_name:                 string;
+    claimed_by_character_id:         number | null;
+    created_at:                      Date | string;
+}
+
+export interface LoyaltyMarketOrder {
+    id:                         number;
+    loyalty_point_id:           number;
+    loyalty_point_name:         string;
+    corporation_id:             number;
+    side:                       'buy' | 'sell' | string;
+    quantity:                   number;
+    quantity_claimed:           number;
+    quantity_remaining:         number;
+    isk_per_lp:                 number;
+    status:                     string;
+    created_by_user_id:         number;
+    created_by_name:            string;
+    created_by_character_id:    number | null;
+    claimed_by_user_id:         number | null;
+    claimed_by_name:            string | null;
+    claimed_by_character_id:    number | null;
+    destination_character_name: string;
+    discord_thread_id:          number | null;
+    notes:                      string;
+    claims:                     LoyaltyMarketOrderClaim[];
+    created_at:                 Date | string;
+    updated_at:                 Date | string;
+    completed_at:               Date | string | null;
+}
+
+export interface LoyaltyLedgerEntry {
+    id:                     number;
+    account_id:             number;
+    account_name:           string;
+    account_role:           string;
+    loyalty_point_id:       number;
+    loyalty_point_name:     string;
+    corporation_id:         number;
+    amount:                 number;
+    isk_per_lp:             number;
+    balance_after:          number;
+    notes:                  string;
+    market_order_id:        number | null;
+    seller_user_id:         number | null;
+    seller_character_name:  string;
+    counterparty_user_id:   number | null;
+    counterparty_character_name: string;
+    created_by_user_id:     number | null;
+    created_by_name:        string | null;
+    created_at:             Date | string;
 }
 
 export interface OrderBlueprintCoordinatorEveType {

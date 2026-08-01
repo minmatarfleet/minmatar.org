@@ -1,0 +1,106 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { BuybackContract, BuybackContractsStats } from '@dtypes/api.minmatar.org'
+import { fetch_buyback_contracts } from '@helpers/fetching/buybacks'
+import { get_buyback_contracts_stats } from '@helpers/api.minmatar.org/buybacks'
+import { query_string } from '@helpers/string'
+import { from_now_diff } from '@helpers/date'
+
+const history = Boolean(JSON.parse(Astro.url.searchParams.get('is_history') ?? 'false'))
+
+let fetching_error: Error | false = false
+let contracts: BuybackContract[] = []
+let contracts_stats: BuybackContractsStats | null = null
+
+try {
+    contracts = await fetch_buyback_contracts(history)
+} catch (error) {
+    fetching_error = error as Error
+}
+
+if (fetching_error === false && !history) {
+    try {
+        contracts_stats = await get_buyback_contracts_stats()
+    } catch (error) {
+        console.log(error)
+        contracts_stats = null
+    }
+}
+
+const contracts_count = contracts.length
+
+const newest_updated_at = contracts.reduce<Date | null>((newest, contract) => {
+    if (!contract.updated_at)
+        return newest
+    const updated_at = new Date(contract.updated_at)
+    if (Number.isNaN(updated_at.getTime()))
+        return newest
+    if (!newest || updated_at > newest)
+        return updated_at
+    return newest
+}, null)
+
+const last_updated_text = newest_updated_at
+    ? t('last_updated_relative').replace('{time}', from_now_diff(lang, newest_updated_at))
+    : ''
+
+const BUYBACK_CONTRACTS_PARTIAL_URL = translatePath(`/partials/buyback_contracts_component?${query_string({
+    is_history: history,
+})}`)
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import BuybackContractsTable from '@components/blocks/BuybackContractsTable.astro'
+import BuybackContractsMetrics from '@components/blocks/BuybackContractsMetrics.astro'
+import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astro'
+import Button from '@components/blocks/Button.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+---
+
+{fetching_error !== false ?
+    <ErrorRefetch
+        args={{
+            partial: BUYBACK_CONTRACTS_PARTIAL_URL,
+            error: fetching_error,
+            delay: delay,
+        }}
+    />
+    :
+    <Flexblock gap='var(--space-l)'>
+        {!history && contracts_stats &&
+            <BuybackContractsMetrics stats={contracts_stats} />
+        }
+        {contracts.length > 0 ?
+            <BuybackContractsTable
+                contracts={contracts}
+                init_tooltips={false}
+                is_history={history}
+            />
+            :
+            <Flexblock gap='var(--space-l)' class="[ pb-[64px] ]">
+                <p>{history ? t('no_buyback_contracts_history') : t('no_buyback_contracts')}</p>
+                {!history &&
+                    <FlexInline justification='center' class="[ w-full ]">
+                        <Button
+                            href={translatePath('/market/buyback/contracts/history/')}
+                            size='sm'
+                        >
+                            {t('view_all_historical_contracts')}
+                        </Button>
+                    </FlexInline>
+                }
+            </Flexblock>
+        }
+        <UpdateAlpineVariables
+            variables={{
+                contracts_count: contracts_count,
+                last_updated_text: last_updated_text,
+            }}
+        />
+    </Flexblock>
+}

@@ -32,6 +32,13 @@ CELERYBEAT_MARKET = [
         },
     ),
     (
+        "[Market] Fetch Attributed Market Orders",
+        {
+            "task": "market.tasks.fetch_attributed_market_orders",
+            "schedule": schedule(timedelta(minutes=30)),
+        },
+    ),
+    (
         "[Market] Update Location Prices (sell/buy/split from ESI)",
         {
             "task": "market.tasks.fetch_market_location_prices",

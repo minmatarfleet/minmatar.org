@@ -62,39 +62,11 @@ def corporation_ids_for_order_navy_blueprints(
     return corp_ids
 
 
-def resolve_order_lp_stockpiles(
-    order: IndustryOrder,
+def stockpile_rows_from_accounts(
+    accounts: Sequence[IndustryLoyaltyPointAccount],
 ) -> List[OrderLpStockpile]:
-    """
-    Active stockpile accounts for LP currencies needed by this order's navy BPCs.
-    """
-    corp_ids = corporation_ids_for_order_navy_blueprints(order)
-    if not corp_ids:
-        return []
-
-    currencies = list(
-        IndustryLoyaltyPoint.objects.filter(
-            corporation_id__in=corp_ids,
-            is_active=True,
-        )
-    )
-    if not currencies:
-        return []
-
-    currency_by_id = {c.pk: c for c in currencies}
-    accounts = list(
-        IndustryLoyaltyPointAccount.objects.filter(
-            loyalty_point_id__in=currency_by_id.keys(),
-            role=IndustryLoyaltyPointAccount.Role.STOCKPILE,
-            is_active=True,
-        )
-        .select_related("loyalty_point", "eve_character")
-        .prefetch_related("contacts")
-        .order_by("loyalty_point__name", "name")
-    )
-
+    """Build OrderLpStockpile rows for the given accounts."""
     corp_ids_by_name = _corporation_ids_by_name(accounts)
-
     results: List[OrderLpStockpile] = []
     for account in accounts:
         currency = account.loyalty_point
@@ -126,6 +98,52 @@ def resolve_order_lp_stockpiles(
             )
         )
     return results
+
+
+def _stockpile_account_queryset():
+    return (
+        IndustryLoyaltyPointAccount.objects.filter(
+            role=IndustryLoyaltyPointAccount.Role.STOCKPILE,
+            is_active=True,
+            loyalty_point__is_active=True,
+        )
+        .select_related("loyalty_point", "eve_character")
+        .prefetch_related("contacts")
+        .order_by("loyalty_point__name", "name")
+    )
+
+
+def resolve_all_lp_stockpiles() -> List[OrderLpStockpile]:
+    """Active stockpile accounts across all active LP currencies."""
+    return stockpile_rows_from_accounts(list(_stockpile_account_queryset()))
+
+
+def resolve_order_lp_stockpiles(
+    order: IndustryOrder,
+) -> List[OrderLpStockpile]:
+    """
+    Active stockpile accounts for LP currencies needed by this order's navy BPCs.
+    """
+    corp_ids = corporation_ids_for_order_navy_blueprints(order)
+    if not corp_ids:
+        return []
+
+    currencies = list(
+        IndustryLoyaltyPoint.objects.filter(
+            corporation_id__in=corp_ids,
+            is_active=True,
+        )
+    )
+    if not currencies:
+        return []
+
+    currency_by_id = {c.pk: c for c in currencies}
+    accounts = list(
+        _stockpile_account_queryset().filter(
+            loyalty_point_id__in=currency_by_id.keys(),
+        )
+    )
+    return stockpile_rows_from_accounts(accounts)
 
 
 def _account_character_id(

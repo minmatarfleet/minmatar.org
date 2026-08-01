@@ -1,0 +1,152 @@
+---
+import { i18n } from '@helpers/i18n'
+import type { LoyaltyCurrency } from '@dtypes/api.minmatar.org'
+import { get_corporation_logo } from '@helpers/eve_image_server'
+import { number_thousand_separator } from '@helpers/numbers'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Grid from '@components/compositions/Grid.astro'
+
+const { t } = i18n(Astro.url)
+
+interface Props {
+    currencies: LoyaltyCurrency[]
+}
+
+const { currencies } = Astro.props
+
+const FACTION_ORDER: readonly number[] = [
+    1000182, // TLIB
+    1000179, // 24th
+    1000180, // State
+    1000181, // FDU
+]
+
+const sorted = [...currencies].sort((a, b) => {
+    const ai = FACTION_ORDER.indexOf(a.corporation_id)
+    const bi = FACTION_ORDER.indexOf(b.corporation_id)
+    const ao = ai === -1 ? FACTION_ORDER.length : ai
+    const bo = bi === -1 ? FACTION_ORDER.length : bi
+    if (ao !== bo) return ao - bo
+    return a.name.localeCompare(b.name)
+})
+---
+
+<section class="[ loyalty-rate-cards ]">
+    <Flexblock gap="var(--space-xs)">
+        <h2>{t('industry.loyalty.rates.title')}</h2>
+
+        {sorted.length === 0 ? (
+            <p class="[ loyalty-rate-cards__empty ]">{t('industry.loyalty.rates.empty')}</p>
+        ) : (
+            <Grid
+                class="[ loyalty-rate-cards__grid w-full ]"
+                row_gap="var(--space-3xs)"
+                column_gap="var(--space-3xs)"
+                min_item_width="14rem"
+            >
+                {sorted.map((currency) => (
+                    <ComponentBlock
+                        class="[ loyalty-rate-cards__card ]"
+                        padding_block="var(--space-s)"
+                        padding_inline="var(--space-m)"
+                    >
+                        <div class="[ loyalty-rate-cards__body ]">
+                            <div class="[ loyalty-rate-cards__identity ]">
+                                <img
+                                    class="[ loyalty-rate-cards__logo ]"
+                                    loading="lazy"
+                                    src={get_corporation_logo(currency.corporation_id, 64)}
+                                    width="40"
+                                    height="40"
+                                    alt={`${currency.name} ${t('corporation_logo')}`}
+                                />
+                                <h3 class="[ loyalty-rate-cards__name ]">{currency.name}</h3>
+                            </div>
+                            <p class="[ loyalty-rate-cards__price ]">
+                                <span class="[ loyalty-rate-cards__price-value ]">
+                                    {number_thousand_separator(currency.default_isk_per_lp)}
+                                </span>
+                                <span class="[ loyalty-rate-cards__price-unit ]">
+                                    {t('industry.loyalty.rates.isk_per_lp')}
+                                </span>
+                            </p>
+                        </div>
+                    </ComponentBlock>
+                ))}
+            </Grid>
+        )}
+    </Flexblock>
+</section>
+
+<style lang="scss">
+    h2 {
+        font-size: var(--step-1);
+        margin: 0;
+    }
+
+    .loyalty-rate-cards :global(.loyalty-rate-cards__card) {
+        height: 100%;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .loyalty-rate-cards__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        flex: 1;
+        min-width: 0;
+    }
+
+    .loyalty-rate-cards__identity {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: var(--space-xs);
+        min-width: 0;
+    }
+
+    .loyalty-rate-cards__name {
+        margin: 0;
+        min-width: 0;
+        font-size: var(--step--1);
+        line-height: 1.25;
+        color: var(--highlight);
+    }
+
+    .loyalty-rate-cards__logo {
+        flex-shrink: 0;
+        width: 40px;
+        height: 40px;
+        border-radius: var(--border-radius);
+        background-color: var(--background);
+    }
+
+    .loyalty-rate-cards__price {
+        margin: 0;
+        margin-block-start: auto;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: var(--space-3xs);
+    }
+
+    .loyalty-rate-cards__price-value {
+        font-size: var(--step-2);
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: var(--fleet-yellow);
+    }
+
+    .loyalty-rate-cards__price-unit {
+        font-size: var(--step--1);
+        color: var(--foreground);
+    }
+
+    .loyalty-rate-cards__empty {
+        margin: 0;
+        color: var(--highlight);
+    }
+</style>

@@ -2,8 +2,8 @@
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
-import { get_ops_monitor } from '@helpers/api.minmatar.org/market'
-import type { OpsMonitor } from '@dtypes/api.minmatar.org'
+import { get_ops_monitor, get_market_character_statistics } from '@helpers/api.minmatar.org/market'
+import type { MarketOperatorStatistics, OpsMonitor } from '@dtypes/api.minmatar.org'
 import { query_string } from '@helpers/string'
 
 const location_id_param = Astro.url.searchParams.get('location_id')
@@ -13,12 +13,22 @@ const parsed_location_id = location_id_param != null && location_id_param !== ''
 const location_id = Number.isNaN(parsed_location_id) ? undefined : parsed_location_id
 
 let monitor: OpsMonitor | null = null
+let market_operators: MarketOperatorStatistics[] = []
 let fetching_error: Error | false = false
 
 try {
     monitor = await get_ops_monitor(location_id)
 } catch (error) {
     fetching_error = error as Error
+}
+
+if (fetching_error === false) {
+    try {
+        market_operators = await get_market_character_statistics()
+    } catch (error) {
+        console.log(error)
+        market_operators = []
+    }
 }
 
 const partial_url = translatePath(
@@ -30,6 +40,7 @@ const partial_url = translatePath(
 )
 
 import OpsMonitorContent from '@components/blocks/OpsMonitorContent.astro'
+import MarketOperatorsReel from '@components/blocks/MarketOperatorsReel.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 ---
 
@@ -42,6 +53,9 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         }}
     />
     : monitor ?
-        <OpsMonitorContent monitor={monitor} />
+        <div class="[ compensate-bottom-bar ]">
+            <OpsMonitorContent monitor={monitor} />
+            <MarketOperatorsReel market_operators={market_operators} />
+        </div>
     : null
 }

@@ -65,6 +65,8 @@ INSTALLED_APPS = [
     "reminders.apps.RemindersConfig",
     # Freight
     "freight.apps.FreightConfig",
+    # Buyback
+    "buyback.apps.BuybackConfig",
     # Posts
     "posts.apps.PostsConfig",
     # Moons
