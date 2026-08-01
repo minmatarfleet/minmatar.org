@@ -20,20 +20,12 @@ const {
     path,
 } = Astro.props
 
-import { is_referral_url } from '@helpers/fetching/referrals'
-const is_referral_page = user ? is_referral_url(Astro.url.pathname, lang) : false
-
 const current_page = path ? path : `${Astro.url.pathname}${Astro.url.search}${Astro.url.hash}`
 
 import FlexInline from '@components/compositions/FlexInline.astro';
-
-import ReferralLink from '@components/blocks/ReferralLink.astro';
 ---
 
 <FlexInline class="[ page-title ][ !items-center relative ]" gap='var(--space-xs)'>
-    {is_referral_page && user &&
-        <ReferralLink user_id={user.user_id} />
-    }
     <h1 class:list={{ 'is-landing': is_landing }} {...Astro.props}>
         {no_link ?
             <slot /> :
@@ -49,28 +41,6 @@ import ReferralLink from '@components/blocks/ReferralLink.astro';
 
         &.is-landing {
             font-size: var(--step-5);
-        }
-    }
-
-    :global(.page-title:has(.referral-link)) {
-        padding-inline-start: 40px;
-
-        @media screen and (max-width: 600px) {
-            padding-inline-start: 0;
-            padding-block-start: 28px;
-        }
-    }
-
-    :global(.page-title .referral-link) {
-        position: absolute;
-        left: 0;
-        top: 50%;
-        transform: translateY(-50%);
-
-        @media screen and (max-width: 600px) {
-            left: 0;
-            top: 0;
-            transform: none;
         }
     }
 </style>
