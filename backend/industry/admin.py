@@ -39,6 +39,11 @@ from industry.helpers.lp_ledger import (
     resolve_offer_isk_per_lp,
     weighted_average_cost_isk_per_lp,
 )
+from industry.helpers.lp_store_economics import (
+    offer_economics_for_queryset,
+    tracked_corporation_ids,
+)
+from industry.tasks import sync_loyalty_store_offers_task
 from industry.models import (
     IndustryContractAssociation,
     IndustryLoyaltyPoint,
@@ -670,20 +675,45 @@ class IndustryLoyaltyPointLedgerEntryAdmin(admin.ModelAdmin):
         return notes[:45] + "…"
 
 
+class IndustryLpStoreCurrencyListFilter(admin.SimpleListFilter):
+    title = "currency"
+    parameter_name = "currency"
+
+    def lookups(self, request, model_admin):
+        rows = IndustryLoyaltyPoint.objects.filter(is_active=True).order_by(
+            "name"
+        )
+        return [(str(r.corporation_id), r.name) for r in rows]
+
+    def queryset(self, request, queryset):
+        if self.value() is None:
+            return queryset
+        return queryset.filter(corporation_id=self.value())
+
+
 @admin.register(IndustryLpStoreOffer)
 class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
+    _request_stash = None
+
     list_display = (
-        "offer_id",
-        "corporation_id",
+        "type_name_display",
+        "currency_display",
+        "kind_display",
         "type_id",
         "lp_cost",
         "isk_cost",
         "quantity",
+        "isk_per_lp_display",
+        "jita_sell_display",
+        "jita_buy_display",
+        "cost_display",
+        "profit_vs_sell_display",
         "updated_at",
     )
-    list_filter = ("corporation_id",)
+    list_filter = (IndustryLpStoreCurrencyListFilter,)
     search_fields = ("offer_id", "type_id", "corporation_id")
     ordering = ("corporation_id", "type_id")
+    actions = ("sync_loyalty_store_offers_action",)
     readonly_fields = (
         "offer_id",
         "corporation_id",
@@ -707,12 +737,113 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
                     "updated_at",
                 ),
                 "description": (
-                    "Read-only ESI loyalty-store cache. Refreshed when navy "
-                    "industry products sync or on planner miss."
+                    "Read-only ESI cache for tracked LP currencies. "
+                    "Refresh via navy product sync, planner miss, or sync action."
                 ),
             },
         ),
     )
+
+    def get_queryset(self, request):
+        return (
+            super()
+            .get_queryset(request)
+            .filter(corporation_id__in=tracked_corporation_ids())
+        )
+
+    def get_changelist_instance(self, request):
+        cl = super().get_changelist_instance(request)
+        IndustryLpStoreOfferAdmin._request_stash = (
+            offer_economics_for_queryset(list(cl.result_list))
+        )
+        return cl
+
+    def changelist_view(self, request, extra_context=None):
+        try:
+            return super().changelist_view(
+                request, extra_context=extra_context
+            )
+        finally:
+            IndustryLpStoreOfferAdmin._request_stash = None
+
+    @classmethod
+    def _econ_for(cls, obj):
+        stash = cls._request_stash
+        if not stash:
+            return None
+        return stash.get(obj.offer_id)
+
+    @classmethod
+    def _format_isk(cls, obj, attr: str) -> str:
+        econ = cls._econ_for(obj)
+        if econ is None:
+            return "—"
+        value = getattr(econ, attr)
+        if value is None:
+            return "—"
+        return f"{value:,}"
+
+    @admin.display(description="Item")
+    def type_name_display(self, obj):
+        econ = self._econ_for(obj)
+        if econ is None:
+            return str(obj.type_id)
+        if econ.kind == "blueprint" and econ.market_type_id != econ.type_id:
+            return f"{econ.market_type_name} (BPC {econ.type_id})"
+        return econ.type_name
+
+    @admin.display(description="Currency")
+    def currency_display(self, obj):
+        econ = self._econ_for(obj)
+        return (
+            econ.currency_name if econ is not None else str(obj.corporation_id)
+        )
+
+    @admin.display(description="Kind")
+    def kind_display(self, obj):
+        econ = self._econ_for(obj)
+        return econ.kind if econ is not None else "—"
+
+    @admin.display(description="ISK/LP")
+    def isk_per_lp_display(self, obj):
+        econ = self._econ_for(obj)
+        if econ is None or econ.isk_per_lp is None:
+            return "—"
+        return f"{econ.isk_per_lp:,.0f}"
+
+    @admin.display(description="Jita sell")
+    def jita_sell_display(self, obj):
+        return self._format_isk(obj, "jita_sell")
+
+    @admin.display(description="Jita buy")
+    def jita_buy_display(self, obj):
+        return self._format_isk(obj, "jita_buy")
+
+    @admin.display(description="Cost")
+    def cost_display(self, obj):
+        return self._format_isk(obj, "cost_per_unit")
+
+    @admin.display(description="Profit vs sell")
+    def profit_vs_sell_display(self, obj):
+        return self._format_isk(obj, "profit_vs_sell")
+
+    @admin.action(description="Sync LP store offers from ESI now")
+    def sync_loyalty_store_offers_action(self, request, queryset):
+        del queryset  # whole-cache sync; selection unused
+        try:
+            count = sync_loyalty_store_offers_task()
+        except Exception as exc:  # noqa: BLE001 — surface ESI failures
+            self.message_user(
+                request,
+                f"LP store sync failed: {exc}",
+                level=messages.ERROR,
+            )
+            return
+        self.message_user(
+            request,
+            f"Synced {count} pure LP+ISK loyalty-store offer(s).",
+            level=messages.SUCCESS,
+        )
 
     def has_add_permission(self, request):
         return False
