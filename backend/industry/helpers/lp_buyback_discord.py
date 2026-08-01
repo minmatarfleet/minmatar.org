@@ -100,6 +100,30 @@ def order_starter_message(order: IndustryLoyaltyPointMarketOrder) -> str:
     return "\n".join(p for p in parts if p is not None)
 
 
+def _default_forum_tag_ids(channel_id: int) -> list[str]:
+    """Pick applied_tags for the LP buyback forum (needed when REQUIRE_TAG)."""
+    try:
+        channel = discord.get_channel(channel_id).json()
+    except Exception as exc:
+        logger.warning(
+            "Could not fetch LP buyback forum channel %s for tags: %s",
+            channel_id,
+            exc,
+        )
+        return []
+
+    tags = channel.get("available_tags") or []
+    if not tags:
+        return []
+
+    preferred_names = {"open", "buyback", "order", "new", "wts", "wtb"}
+    for tag in tags:
+        name = str(tag.get("name") or "").strip().lower()
+        if name in preferred_names:
+            return [str(tag["id"])]
+    return [str(tags[0]["id"])]
+
+
 def create_order_thread(order: IndustryLoyaltyPointMarketOrder) -> int | None:
     """Create #lp-buyback forum thread; return thread id or None on skip/fail."""
     channel_id = lp_buyback_channel_id()
@@ -113,6 +137,7 @@ def create_order_thread(order: IndustryLoyaltyPointMarketOrder) -> int | None:
             channel_id=channel_id,
             title=order_thread_title(order)[:100],
             message=order_starter_message(order),
+            applied_tags=_default_forum_tag_ids(channel_id),
         )
         return int(response.json()["id"])
     except Exception as exc:

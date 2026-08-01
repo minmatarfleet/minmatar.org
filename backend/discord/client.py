@@ -198,16 +198,29 @@ class DiscordClient(DiscordBaseClient):
         user = response.json()
         return user
 
-    def create_forum_thread(self, channel_id, title, message):
-        """Create a forum thread in a discord channel"""
+    def get_channel(self, channel_id):
+        """Get a discord channel by id (includes forum available_tags)."""
+        return self.get(f"{BASE_URL}/channels/{channel_id}")
+
+    def create_forum_thread(
+        self, channel_id, title, message, applied_tags=None
+    ):
+        """Create a forum thread in a discord channel.
+
+        applied_tags: optional list of forum tag snowflake ids. Required by
+        Discord when the forum channel has the REQUIRE_TAG flag enabled.
+        """
+        payload = {
+            "name": title,
+            "message": {
+                "content": message,
+            },
+        }
+        if applied_tags:
+            payload["applied_tags"] = [str(tag_id) for tag_id in applied_tags]
         return self.post(
             f"{BASE_URL}/channels/{channel_id}/threads",
-            json={
-                "name": title,
-                "message": {
-                    "content": message,
-                },
-            },
+            json=payload,
         )
 
     def get_message(self, channel_id, message_id):
