@@ -84,6 +84,16 @@ const button_color = (color !== 'transparent' ? 'var(--button-color)' : 'var(--h
             align-items: center;
             transition: var(--fast-transition);
 
+            :global(.fluid-fixed),
+            :global(.fixed-fluid) {
+                flex-wrap: nowrap;
+            }
+
+            :global(.fluid-fixed > :first-child),
+            :global(.fixed-fluid > :last-child) {
+                min-width: 0;
+            }
+
             svg {
                 color: var(--inner-button-color);
             }

@@ -1,0 +1,36 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { IndustryOrderCharacterStatistics } from '@dtypes/api.minmatar.org'
+import { formatIskCompact } from '@/data/industry/guide-order-summary'
+
+interface Props {
+    place:          number;
+    manufacturer:   IndustryOrderCharacterStatistics;
+}
+
+const {
+    place,
+    manufacturer,
+} = Astro.props
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import PilotBadge from '@components/blocks/PilotBadge.astro';
+---
+
+<FlexInline
+    class="[ items-center! ]"
+    gap='var(--space-xs)'
+>
+    <h2>{place}</h2>
+    <PilotBadge
+        class="[ items-center! ]"
+        character_id={manufacturer.primary_character_id ?? 0}
+        character_name={manufacturer.primary_character_name ?? ''}
+        size={32}
+    >
+        <small>{`${formatIskCompact(Number(manufacturer.delivered_isk_estimate))} ${t('isk')}`}</small>
+    </PilotBadge>
+</FlexInline>

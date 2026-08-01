@@ -12,6 +12,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Grid from '@components/compositions/Grid.astro'
 import Button from '@components/blocks/Button.astro'
+import PilotReadinessBanner from '@components/blocks/PilotReadinessBanner.astro'
 
 const CERTIFICATE_COVERS: Record<string, string> = {
     'faction-warfare': '/images/combatlog-tile-background.webp',
@@ -29,6 +30,7 @@ interface Props {
     auth_token: string
     needs_persona: boolean
     persona_confirmed_on_server?: boolean
+    readiness_character_id?: number
 }
 
 const {
@@ -40,6 +42,7 @@ const {
     auth_token,
     needs_persona,
     persona_confirmed_on_server = false,
+    readiness_character_id = 0,
 } = Astro.props
 
 const personas: { id: LearningPersona; title: string; description: string }[] = [
@@ -172,6 +175,10 @@ const progress_label = t('learning_center.certificate.progress')
         data-hub-when-catalog
     >
         <Flexblock gap="var(--space-l)">
+            {readiness_character_id > 0 &&
+                <PilotReadinessBanner main_character_id={readiness_character_id} />
+            }
+
             <h2>{t('learning_center.certificates_heading')}</h2>
 
             {certificates_error ? (

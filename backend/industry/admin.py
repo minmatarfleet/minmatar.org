@@ -12,16 +12,21 @@ from django.utils.safestring import mark_safe
 from eveuniverse.models import EveGroup
 
 from industry.admin_views import (
+    industry_loyalty_home_view,
     industry_order_hub_view,
     industry_orders_home_view,
 )
+from industry import admin_lp_market_order  # pylint: disable=unused-import
 from industry.forms import (
     IndustryLoyaltyPointAccountAdminForm,
     IndustryLoyaltyPointLedgerEntryAdminForm,
     IndustryOrderAdminForm,
     MiningUpgradeCompletionAdminForm,
 )
-from industry.helpers.admin_permissions import industry_orders_index_link_perms
+from industry.helpers.admin_permissions import (
+    industry_orders_index_link_perms,
+    loyalty_index_link_perms,
+)
 from industry.helpers.order_profit_breakdown import (
     ProfitBreakdownRefreshNotAllowed,
     can_refresh_order_profit_breakdown,
@@ -40,6 +45,7 @@ from industry.models import (
     IndustryLoyaltyPointAccount,
     IndustryLoyaltyPointContact,
     IndustryLoyaltyPointLedgerEntry,
+    IndustryLoyaltyPointPriceHistory,
     IndustryLpStoreOffer,
     IndustryOrder,
     IndustryOrderBlueprintCoordinator,
@@ -105,6 +111,9 @@ class IndustryLoyaltyPointLedgerHistoryInline(admin.TabularInline):
         "amount_display",
         "isk_per_lp",
         "balance_after",
+        "market_order",
+        "seller_character_name",
+        "counterparty_character_name",
         "notes",
         "created_by",
     )
@@ -117,6 +126,55 @@ class IndustryLoyaltyPointLedgerHistoryInline(admin.TabularInline):
             return "—"
         sign = "+" if obj.amount > 0 else ""
         return f"{sign}{obj.amount:,}"
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+class IndustryLoyaltyPointPriceHistoryInline(admin.TabularInline):
+    """Read-only ISK/LP price changes for a currency (defaults + account offers)."""
+
+    model = IndustryLoyaltyPointPriceHistory
+    fk_name = "loyalty_point"
+    extra = 0
+    can_delete = False
+    show_change_link = False
+    fields = (
+        "changed_at",
+        "account",
+        "old_isk_per_lp",
+        "new_isk_per_lp",
+        "changed_by",
+    )
+    readonly_fields = fields
+    ordering = ("-changed_at", "-id")
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+class IndustryLoyaltyPointAccountPriceHistoryInline(admin.TabularInline):
+    """Read-only offer price changes for one account."""
+
+    model = IndustryLoyaltyPointPriceHistory
+    fk_name = "account"
+    extra = 0
+    can_delete = False
+    show_change_link = False
+    fields = (
+        "changed_at",
+        "old_isk_per_lp",
+        "new_isk_per_lp",
+        "changed_by",
+    )
+    readonly_fields = fields
+    ordering = ("-changed_at", "-id")
 
     def has_add_permission(self, request, obj=None):
         return False
@@ -161,7 +219,10 @@ class IndustryLoyaltyPointAdmin(admin.ModelAdmin):
     list_editable = ("default_isk_per_lp", "is_active")
     list_filter = ("is_active",)
     search_fields = ("name", "corporation_id")
-    inlines = (IndustryLoyaltyPointAccountInline,)
+    inlines = (
+        IndustryLoyaltyPointAccountInline,
+        IndustryLoyaltyPointPriceHistoryInline,
+    )
     fieldsets = (
         (
             None,
@@ -188,6 +249,22 @@ class IndustryLoyaltyPointAdmin(admin.ModelAdmin):
         ),
     )
     readonly_fields = ("created_at", "updated_at")
+
+    def save_model(self, request, obj, form, change):
+        obj.history_changed_by = request.user
+        super().save_model(request, obj, form, change)
+
+    def save_formset(self, request, form, formset, change):
+        if formset.model is IndustryLoyaltyPointAccount:
+            instances = formset.save(commit=False)
+            for obj in instances:
+                obj.history_changed_by = request.user
+                obj.save()
+            formset.save_m2m()
+            for obj in formset.deleted_objects:
+                obj.delete()
+            return
+        super().save_formset(request, form, formset, change)
 
     @admin.display(description="accounts")
     def account_count(self, obj):
@@ -233,6 +310,7 @@ class IndustryLoyaltyPointAccountAdmin(admin.ModelAdmin):
     autocomplete_fields = ("loyalty_point", "eve_character", "user")
     inlines = (
         IndustryLoyaltyPointContactInline,
+        IndustryLoyaltyPointAccountPriceHistoryInline,
         IndustryLoyaltyPointLedgerHistoryInline,
     )
     fieldsets = (
@@ -369,6 +447,7 @@ class IndustryLoyaltyPointAccountAdmin(admin.ModelAdmin):
         return ", ".join(names) + suffix
 
     def save_model(self, request, obj, form, change):
+        obj.history_changed_by = request.user
         super().save_model(request, obj, form, change)
         if not isinstance(form, IndustryLoyaltyPointAccountAdminForm):
             return
@@ -384,6 +463,40 @@ class IndustryLoyaltyPointAccountAdmin(admin.ModelAdmin):
                 f"Posted ledger entry: {sign}{entry.amount:,} LP "
                 f"@ {entry.isk_per_lp} ISK/LP (balance {entry.balance_after:,}).",
             )
+
+
+@admin.register(IndustryLoyaltyPointPriceHistory)
+class IndustryLoyaltyPointPriceHistoryAdmin(admin.ModelAdmin):
+    list_display = (
+        "changed_at",
+        "loyalty_point",
+        "account",
+        "old_isk_per_lp",
+        "new_isk_per_lp",
+        "changed_by",
+    )
+    list_filter = ("loyalty_point",)
+    list_select_related = ("loyalty_point", "account", "changed_by")
+    search_fields = (
+        "loyalty_point__name",
+        "account__name",
+        "changed_by__username",
+    )
+    readonly_fields = (
+        "loyalty_point",
+        "account",
+        "old_isk_per_lp",
+        "new_isk_per_lp",
+        "changed_at",
+        "changed_by",
+    )
+    ordering = ("-changed_at", "-id")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(IndustryLoyaltyPointContact)
@@ -426,12 +539,25 @@ class IndustryLoyaltyPointLedgerEntryAdmin(admin.ModelAdmin):
         "amount_display",
         "isk_per_lp",
         "balance_after",
+        "market_order_link",
+        "seller_character_name",
+        "counterparty_character_name",
         "notes_short",
         "created_by",
     )
-    list_filter = ("account__loyalty_point", "account__role", "account")
-    search_fields = ("account__name", "notes")
-    autocomplete_fields = ("account",)
+    list_filter = (
+        "account__loyalty_point",
+        "account__role",
+        "account",
+        ("market_order", admin.EmptyFieldListFilter),
+    )
+    search_fields = (
+        "account__name",
+        "notes",
+        "seller_character_name",
+        "counterparty_character_name",
+    )
+    autocomplete_fields = ("account", "market_order")
     date_hierarchy = "created_at"
     ordering = ("-created_at", "-id")
 
@@ -442,6 +568,12 @@ class IndustryLoyaltyPointLedgerEntryAdmin(admin.ModelAdmin):
                 "amount_display",
                 "isk_per_lp",
                 "balance_after",
+                "market_order",
+                "market_order_link",
+                "seller_user",
+                "seller_character_name",
+                "counterparty_user",
+                "counterparty_character_name",
                 "created_by",
                 "created_at",
             )
@@ -465,6 +597,18 @@ class IndustryLoyaltyPointLedgerEntryAdmin(admin.ModelAdmin):
                         "description": (
                             "Amount and ISK/LP are immutable. Edit notes if needed, "
                             "or post a reversing entry from the account page."
+                        ),
+                    },
+                ),
+                (
+                    "Buyback counterparties",
+                    {
+                        "fields": (
+                            "market_order",
+                            "seller_user",
+                            "seller_character_name",
+                            "counterparty_user",
+                            "counterparty_character_name",
                         ),
                     },
                 ),
@@ -508,6 +652,16 @@ class IndustryLoyaltyPointLedgerEntryAdmin(admin.ModelAdmin):
         sign = "+" if obj.amount > 0 else ""
         return f"{sign}{obj.amount:,}"
 
+    @admin.display(description="market order", ordering="market_order")
+    def market_order_link(self, obj):
+        if not obj or not obj.market_order_id:
+            return "—"
+        url = reverse(
+            "admin:industry_industryloyaltypointmarketorder_change",
+            args=[obj.market_order_id],
+        )
+        return format_html('<a href="{}">#{}</a>', url, obj.market_order_id)
+
     @admin.display(description="notes")
     def notes_short(self, obj):
         notes = (obj.notes or "").strip()
@@ -529,6 +683,7 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
     )
     list_filter = ("corporation_id",)
     search_fields = ("offer_id", "type_id", "corporation_id")
+    ordering = ("corporation_id", "type_id")
     readonly_fields = (
         "offer_id",
         "corporation_id",
@@ -538,6 +693,32 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
         "quantity",
         "updated_at",
     )
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "offer_id",
+                    "corporation_id",
+                    "type_id",
+                    "lp_cost",
+                    "isk_cost",
+                    "quantity",
+                    "updated_at",
+                ),
+                "description": (
+                    "Read-only ESI loyalty-store cache. Refreshed when navy "
+                    "industry products sync or on planner miss."
+                ),
+            },
+        ),
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 class IndustryProductEveGroupListFilter(admin.SimpleListFilter):
@@ -1125,35 +1306,66 @@ INDUSTRY_ORDERS_HIDDEN_MODELS = {
     "industryorderitemassignment",
 }
 
-INDUSTRY_SUPPLY_EXCLUDED_MODELS = INDUSTRY_ORDERS_HIDDEN_MODELS | {
-    "industryproduct",
-    "miningupgradecompletion",
+INDUSTRY_LOYALTY_HIDDEN_MODELS = {
+    "industryloyaltypoint",
+    "industryloyaltypointaccount",
+    "industryloyaltypointcontact",
+    "industryloyaltypointledgerentry",
+    "industryloyaltypointmarketorder",
+    "industrylpstoreoffer",
 }
+
+INDUSTRY_SUPPLY_EXCLUDED_MODELS = (
+    INDUSTRY_ORDERS_HIDDEN_MODELS
+    | INDUSTRY_LOYALTY_HIDDEN_MODELS
+    | {
+        "industryproduct",
+        "miningupgradecompletion",
+    }
+)
 
 INDUSTRY_EXPERIMENTAL_VISIBLE_RENAMES = {
     "industryproduct": "Products",
     "miningupgradecompletion": "Mining completions",
 }
 
-INDUSTRY_ORDERS_EXTRA_INDEX_LINKS = [
+INDUSTRY_SUPPLY_EXTRA_INDEX_LINKS = [
     {
         "name": "Industry orders",
         "admin_url": "admin:industry_orders_home",
+        "perms": industry_orders_index_link_perms,
+    },
+    {
+        "name": "Loyalty points",
+        "admin_url": "admin:industry_loyalty_home",
+        "perms": loyalty_index_link_perms,
     },
 ]
+
+# Back-compat alias used by older tests / imports.
+INDUSTRY_ORDERS_EXTRA_INDEX_LINKS = INDUSTRY_SUPPLY_EXTRA_INDEX_LINKS[:1]
 
 _INDUSTRY_ADMIN_PATCHED_ATTR = "industry_admin_patched"
 
 
+def _build_industry_supply_index_links(request) -> list[dict]:
+    links = []
+    for extra in INDUSTRY_SUPPLY_EXTRA_INDEX_LINKS:
+        links.append(
+            {
+                "name": extra["name"],
+                "object_name": extra["name"],
+                "perms": extra["perms"](request.user),
+                "admin_url": reverse(extra["admin_url"]),
+                "view_only": extra.get("view_only", False),
+            }
+        )
+    return links
+
+
 def _build_industry_orders_index_link(request) -> dict:
-    extra = INDUSTRY_ORDERS_EXTRA_INDEX_LINKS[0]
-    return {
-        "name": extra["name"],
-        "object_name": extra["name"],
-        "perms": industry_orders_index_link_perms(request.user),
-        "admin_url": reverse(extra["admin_url"]),
-        "view_only": extra.get("view_only", False),
-    }
+    """Back-compat helper for tests that expect a single orders link."""
+    return _build_industry_supply_index_links(request)[0]
 
 
 def _rename_industry_experimental_models(models: list[dict]) -> list[dict]:
@@ -1178,7 +1390,10 @@ def _apply_industry_app_list(app_list: list[dict], request) -> list[dict]:
                 if model.get("object_name", "").lower()
                 not in INDUSTRY_SUPPLY_EXCLUDED_MODELS
             ]
-            models.insert(0, _build_industry_orders_index_link(request))
+            for index, link in enumerate(
+                _build_industry_supply_index_links(request)
+            ):
+                models.insert(index, link)
             app["models"] = models
         elif app["name"] == "Experimental":
             app["models"] = _rename_industry_experimental_models(app["models"])
@@ -1197,11 +1412,16 @@ def _get_custom_industry_admin_urls():
             admin.site.admin_view(industry_order_hub_view),
             name="industry_order_hub",
         ),
+        path(
+            "industry/loyalty/",
+            admin.site.admin_view(industry_loyalty_home_view),
+            name="industry_loyalty_home",
+        ),
     ]
 
 
 def apply_industry_admin_customizations():
-    """Chain industry orders hub URLs and Supply sidebar entry."""
+    """Chain industry hub URLs and Supply sidebar entries."""
     if getattr(admin.site, _INDUSTRY_ADMIN_PATCHED_ATTR, False):
         return
 

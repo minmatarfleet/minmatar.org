@@ -1,0 +1,94 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { BuybackContractsStats } from '@dtypes/api.minmatar.org'
+import { humanize_duration_seconds } from '@helpers/date'
+import { number_name } from '@helpers/numbers.ts'
+
+import Grid from '@components/compositions/Grid.astro'
+
+interface Props {
+    stats: BuybackContractsStats
+}
+
+const { stats } = Astro.props
+
+const window_label = t('buyback_contracts.metrics.window')
+    .replace('{days}', String(stats.window_days))
+
+const avg_processing_display = stats.average_processing_seconds != null
+    ? humanize_duration_seconds(lang, stats.average_processing_seconds)
+    : '—'
+---
+
+<section class="[ buyback-contracts-metrics ]" aria-label={t('buyback_contracts.metrics.aria_label')}>
+    <Grid
+        class="[ buyback-contracts-metrics__grid ]"
+        min_item_width="200px"
+        row_gap="var(--space-s)"
+        column_gap="var(--space-s)"
+    >
+        <article class="[ buyback-contracts-metrics__card ]">
+            <p class="[ buyback-contracts-metrics__label ]">{t('buyback_contracts.metrics.outstanding')}</p>
+            <p class="[ buyback-contracts-metrics__value ]">{stats.outstanding_count}</p>
+            <p class="[ buyback-contracts-metrics__meta ]">
+                <span data-tippy-content={number_name(stats.outstanding_isk, lang)}>
+                    {stats.outstanding_isk.toLocaleString()} ISK
+                </span>
+            </p>
+        </article>
+
+        <article class="[ buyback-contracts-metrics__card ]">
+            <p class="[ buyback-contracts-metrics__label ]">{t('buyback_contracts.metrics.finished')}</p>
+            <p class="[ buyback-contracts-metrics__value ]">{stats.finished_count}</p>
+            <p class="[ buyback-contracts-metrics__meta ]">
+                <span data-tippy-content={number_name(stats.finished_isk, lang)}>
+                    {stats.finished_isk.toLocaleString()} ISK
+                </span>
+                · {window_label}
+            </p>
+        </article>
+
+        <article class="[ buyback-contracts-metrics__card ]">
+            <p class="[ buyback-contracts-metrics__label ]">{t('buyback_contracts.metrics.avg_processing')}</p>
+            <p class="[ buyback-contracts-metrics__value ]">{avg_processing_display}</p>
+            <p class="[ buyback-contracts-metrics__meta ]">{window_label}</p>
+        </article>
+    </Grid>
+</section>
+
+<style lang="scss">
+    .buyback-contracts-metrics__card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-m);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.22);
+    }
+
+    .buyback-contracts-metrics__label {
+        margin: 0;
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
+    }
+
+    .buyback-contracts-metrics__value {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: clamp(2rem, 4.5vw, 3rem);
+        line-height: 0.95;
+        letter-spacing: -0.02em;
+        text-transform: uppercase;
+        color: var(--highlight);
+    }
+
+    .buyback-contracts-metrics__meta {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.65);
+        font-size: var(--step--1);
+    }
+</style>

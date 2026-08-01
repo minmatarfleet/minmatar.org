@@ -13,9 +13,20 @@ interface Props {
     stockpiles: OrderLpStockpile[]
     /** When false, omit the section title/description (e.g. modal already has a header). */
     show_heading?: boolean
+    show_contacts?: boolean
+    title?: string
+    description?: string
+    empty_text?: string
 }
 
-const { stockpiles, show_heading = true } = Astro.props
+const {
+    stockpiles,
+    show_heading = true,
+    show_contacts = false,
+    title = t('industry.orders.lp_stockpiles.title'),
+    description = t('industry.orders.lp_stockpiles.description'),
+    empty_text = t('industry.orders.lp_stockpiles.empty'),
+} = Astro.props
 
 /** Amarr → Caldari → Gallente → Minmatar (classic race order). */
 const FACTION_ORDER: readonly number[] = [
@@ -86,8 +97,8 @@ const factions = group_stockpiles_by_faction(stockpiles)
     <Flexblock gap="var(--space-s)">
         {show_heading && (
             <Flexblock gap="var(--space-3xs)">
-                <h3>{t('industry.orders.lp_stockpiles.title')}</h3>
-                <small>{t('industry.orders.lp_stockpiles.description')}</small>
+                <h3>{title}</h3>
+                <small>{description}</small>
             </Flexblock>
         )}
 
@@ -98,7 +109,7 @@ const factions = group_stockpiles_by_faction(stockpiles)
                 class="[ order-lp-stockpiles__empty ]"
             >
                 <p class="[ order-lp-stockpiles__empty-title ]">
-                    {t('industry.orders.lp_stockpiles.empty')}
+                    {empty_text}
                 </p>
             </Flexblock>
         ) : (
@@ -132,36 +143,53 @@ const factions = group_stockpiles_by_faction(stockpiles)
                                     const icon_src = account_icon_src(stockpile)
                                     return (
                                         <li class="[ order-lp-stockpiles__row ]">
-                                            <FlexInline
-                                                justification="space-between"
-                                                class="[ w-full items-center ]"
-                                                gap="var(--space-s)"
-                                            >
+                                            <Flexblock gap="var(--space-3xs)">
                                                 <FlexInline
-                                                    gap="var(--space-xs)"
-                                                    class="[ min-w-0 items-center ]"
+                                                    justification="space-between"
+                                                    class="[ w-full items-center ]"
+                                                    gap="var(--space-s)"
                                                 >
-                                                    {icon_src && (
-                                                        <img
-                                                            class="[ order-lp-stockpiles__account-icon ]"
-                                                            loading="lazy"
-                                                            src={icon_src}
-                                                            width="24"
-                                                            height="24"
-                                                            alt={account_icon_alt(stockpile)}
-                                                        />
-                                                    )}
-                                                    <span class="[ order-lp-stockpiles__account min-w-0 text-highlight ]">
-                                                        {stockpile.account_name}
+                                                    <FlexInline
+                                                        gap="var(--space-xs)"
+                                                        class="[ min-w-0 items-center ]"
+                                                    >
+                                                        {icon_src && (
+                                                            <img
+                                                                class="[ order-lp-stockpiles__account-icon ]"
+                                                                loading="lazy"
+                                                                src={icon_src}
+                                                                width="24"
+                                                                height="24"
+                                                                alt={account_icon_alt(stockpile)}
+                                                            />
+                                                        )}
+                                                        <span class="[ order-lp-stockpiles__account min-w-0 text-highlight ]">
+                                                            {stockpile.account_name}
+                                                        </span>
+                                                    </FlexInline>
+                                                    <span class="[ order-lp-stockpiles__balance whitespace-nowrap ]">
+                                                        {t('industry.orders.lp_stockpiles.balance').replace(
+                                                            '{balance}',
+                                                            number_thousand_separator(stockpile.balance),
+                                                        )}
                                                     </span>
                                                 </FlexInline>
-                                                <span class="[ order-lp-stockpiles__balance whitespace-nowrap ]">
-                                                    {t('industry.orders.lp_stockpiles.balance').replace(
-                                                        '{balance}',
-                                                        number_thousand_separator(stockpile.balance),
-                                                    )}
-                                                </span>
-                                            </FlexInline>
+                                                {show_contacts && (
+                                                    stockpile.contacts.length > 0 ? (
+                                                        <p class="[ order-lp-stockpiles__contacts ]">
+                                                            <span class="[ order-lp-stockpiles__contacts-label ]">
+                                                                {t('industry.orders.lp_stockpiles.contacts')}:
+                                                            </span>
+                                                            {' '}
+                                                            {stockpile.contacts.map((c) => c.character_name).join(', ')}
+                                                        </p>
+                                                    ) : (
+                                                        <p class="[ order-lp-stockpiles__contacts muted ]">
+                                                            {t('industry.orders.lp_stockpiles.no_contacts')}
+                                                        </p>
+                                                    )
+                                                )}
+                                            </Flexblock>
                                         </li>
                                     )
                                 })}
@@ -231,5 +259,19 @@ const factions = group_stockpiles_by_faction(stockpiles)
         font-size: var(--step--1);
         font-weight: 600;
         color: var(--fleet-yellow);
+    }
+
+    .order-lp-stockpiles__contacts {
+        margin: 0;
+        font-size: var(--step--2);
+    }
+
+    .order-lp-stockpiles__contacts.muted {
+        color: var(--foreground);
+        opacity: 0.7;
+    }
+
+    .order-lp-stockpiles__contacts-label {
+        color: var(--foreground);
     }
 </style>

@@ -1,7 +1,21 @@
 ---
-import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
-
 import { get_bug_icon } from '@helpers/bug_icons'
+
+interface Props {
+    class?: string;
+    alt?: string;
+}
+
+const {
+    alt = '',
+} = Astro.props
 ---
-<img class={Astro.props.class} loading="lazy" class="[ max-w-[100%] h-auto ]" src={get_bug_icon("/images/icons/48px-Browser.png")} width="48" height="48" alt={t('icon.browser.alt')} />
+<img
+    class:list={[Astro.props.class, '[ max-w-[100%] h-auto ]']}
+    loading="lazy"
+    src={get_bug_icon('/images/icons/48px-Browser.png')}
+    width="48"
+    height="48"
+    alt={alt}
+    aria-hidden={alt === '' ? 'true' : undefined}
+/>

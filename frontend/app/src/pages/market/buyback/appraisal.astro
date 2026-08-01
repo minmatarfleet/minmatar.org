@@ -1,0 +1,293 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import {
+    get_buyback_settings,
+    post_buyback_appraisal,
+} from '@helpers/api.minmatar.org/buybacks'
+import type {
+    BuybackAppraisal,
+    BuybackSettings,
+} from '@dtypes/api.minmatar.org'
+import { number_name } from '@helpers/numbers.ts'
+
+let settings: BuybackSettings | null = null
+let appraisal: BuybackAppraisal | null = null
+let data_fetching_error: Error | false = false
+
+if (Astro.request.method !== "POST")
+    return Astro.redirect(translatePath('/market/buyback/'))
+
+try {
+    settings = await get_buyback_settings()
+
+    if (!settings.active || !settings.location)
+        throw new Error(t('buyback.inactive'), { cause: 400 })
+
+    const data = await Astro.request.formData()
+    const paste = ((data.get("paste") as string) || '').trim()
+
+    if (!paste)
+        throw new Error(t('buyback.invalid_paste'), { cause: 400 })
+
+    appraisal = await post_buyback_appraisal(paste)
+
+    if (!appraisal.accepted_count || appraisal.offer_total <= 0)
+        throw new Error(t('buyback.no_accepted_items'), { cause: 400 })
+} catch (error) {
+    data_fetching_error = error as Error
+}
+
+if (data_fetching_error || !settings || !settings.location || !appraisal) {
+    Astro.cookies.set('buyback_contract_error', data_fetching_error ? data_fetching_error.message : t('buyback.appraisal_error'), { path: '/' })
+    return Astro.redirect(translatePath('/market/buyback/'))
+}
+
+const price = Math.floor(appraisal.offer_total)
+const accepted = appraisal.lines.filter((line) => line.accepted)
+const rejected = appraisal.lines.filter((line) => !line.accepted)
+
+import {
+    get_location_video_cover,
+    get_location_video_cover_thumb,
+    get_location_cover,
+    get_location_cover_990,
+} from '@helpers/covers'
+
+import Viewport from '@layouts/Viewport.astro';
+import PageWide from '@components/page/PageWide.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+import Button from '@components/blocks/Button.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+
+const location_short = settings.location.short_name
+const page_title = t('buyback.appraisal.page_title')
+
+const category_label = (category: string) => {
+    switch (category) {
+        case 'ore': return 'Ore'
+        case 'p1': return 'P1'
+        case 'p2': return 'P2'
+        case 'p3': return 'P3'
+        case 'p4': return 'P4'
+        case 'pi_other': return 'PI'
+        case 'salvage': return 'Salvage'
+        case 'excluded': return 'Excluded'
+        default: return category
+    }
+}
+
+const format_rate = (rate: number | null) => {
+    if (rate == null) return '—'
+    return `${Math.round(rate * 100)}%`
+}
+
+const format_isk = (value: number | null) => {
+    if (value == null) return '—'
+    return Math.round(value).toLocaleString()
+}
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('buyback.appraisal.meta_description')}
+    components={{
+        tippy: true,
+    }}
+>
+    <PageWide
+        cover={{
+            video: get_location_video_cover(location_short) ?? undefined,
+			video_thumb: get_location_video_cover_thumb(location_short) ?? undefined,
+            image: get_location_cover(location_short) ?? '/images/freight-service-cover.jpg',
+            image_990: get_location_cover_990(location_short) ?? '/images/freight-service-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+    >
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <PageTitle>
+                {page_title}
+            </PageTitle>
+            <Button size='sm' href={translatePath('/market/buyback/')}>
+                {t('buyback.appraisal.again')}
+            </Button>
+        </FlexInline>
+
+        <Flexblock gap='var(--space-3xs)'>
+            <ComponentBlock>
+                <form
+                    class="[ buyback-appraisal-summary ]"
+                    method="POST"
+                    action={translatePath('/market/buyback/contract')}
+                >
+                    <input type="hidden" name="price" value={price} />
+
+                    <Flexblock gap='var(--space-m)'>
+                        <FlexInline
+                            justification='space-between'
+                            gap='var(--space-s)'
+                            class="[ w-full buyback-appraisal-summary__total ]"
+                        >
+                            <Flexblock gap='var(--space-3xs)'>
+                                <p class="[ buyback-appraisal-summary__label ]">{t('buyback.appraisal.offer_total')}</p>
+                                <p class="[ buyback-appraisal-summary__price ]">
+                                    <strong>
+                                        <span data-tippy-content={number_name(price, lang)}>{price.toLocaleString()}</span>
+                                    </strong>
+                                    <span class="[ buyback-appraisal-summary__isk ]">ISK</span>
+                                </p>
+                            </Flexblock>
+
+                            <ClipboardButton
+                                id="copy-buyback-offer"
+                                class="[ relative shrink-0 ]"
+                            >{price}</ClipboardButton>
+                        </FlexInline>
+
+                        <Button type="submit">
+                            {t('buyback.form.continue')}
+                        </Button>
+                    </Flexblock>
+                </form>
+            </ComponentBlock>
+
+            <ComponentBlock>
+                <Flexblock class="[ w-full ]" gap='var(--space-l)'>
+                    <Flexblock class="[ w-full ]" gap='var(--space-2xs)'>
+                        <h2>{t('buyback.appraisal.accepted')} ({accepted.length})</h2>
+                        <div class="[ buyback-appraisal-table-wrap ]">
+                            <table class="[ buyback-appraisal-table ]">
+                                <thead>
+                                    <tr>
+                                        <th>{t('buyback.appraisal.item')}</th>
+                                        <th class="[ buyback-appraisal-table__num ]">{t('buyback.appraisal.qty')}</th>
+                                        <th>{t('buyback.appraisal.category')}</th>
+                                        <th class="[ buyback-appraisal-table__num ]">{t('buyback.appraisal.jita_buy')}</th>
+                                        <th class="[ buyback-appraisal-table__num ]">{t('buyback.appraisal.rate')}</th>
+                                        <th class="[ buyback-appraisal-table__num ]">{t('buyback.appraisal.unit_price')}</th>
+                                        <th class="[ buyback-appraisal-table__num ]">{t('buyback.appraisal.line_total')}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {accepted.map((line) =>
+                                        <tr>
+                                            <td>{line.name}</td>
+                                            <td class="[ buyback-appraisal-table__num ]">{line.quantity.toLocaleString()}</td>
+                                            <td>{category_label(line.category)}</td>
+                                            <td class="[ buyback-appraisal-table__num ]">{format_isk(line.jita_buy ?? null)}</td>
+                                            <td class="[ buyback-appraisal-table__num ]">{format_rate(line.rate)}</td>
+                                            <td class="[ buyback-appraisal-table__num ]">{format_isk(line.unit_price)}</td>
+                                            <td class="[ buyback-appraisal-table__num ]">{format_isk(line.line_total)}</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="[ buyback-appraisal-note ]">{t('buyback.appraisal.jita_note')}</p>
+                    </Flexblock>
+
+                    {rejected.length > 0 &&
+                        <Flexblock class="[ w-full ]" gap='var(--space-2xs)'>
+                            <h2>{t('buyback.appraisal.rejected')} ({rejected.length})</h2>
+                            <div class="[ buyback-appraisal-table-wrap ]">
+                                <table class="[ buyback-appraisal-table ]">
+                                    <thead>
+                                        <tr>
+                                            <th>{t('buyback.appraisal.item')}</th>
+                                            <th class="[ buyback-appraisal-table__num ]">{t('buyback.appraisal.qty')}</th>
+                                            <th>{t('buyback.appraisal.reason')}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {rejected.map((line) =>
+                                            <tr>
+                                                <td>{line.name}</td>
+                                                <td class="[ buyback-appraisal-table__num ]">{line.quantity.toLocaleString()}</td>
+                                                <td>{line.reject_reason || '—'}</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </Flexblock>
+                    }
+                </Flexblock>
+            </ComponentBlock>
+        </Flexblock>
+    </PageWide>
+</Viewport>
+
+<style lang="scss">
+    .buyback-appraisal-summary {
+        &__label {
+            margin: 0;
+            font-size: var(--step--1);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--fleet-yellow);
+            font-weight: 600;
+        }
+
+        &__price {
+            margin: 0;
+            font-size: var(--step-2);
+            line-height: 1.1;
+        }
+
+        &__isk {
+            font-size: var(--step-0);
+            font-weight: 400;
+            opacity: 0.85;
+        }
+
+        &__total {
+            align-items: flex-start;
+        }
+    }
+
+    .buyback-appraisal-note {
+        margin: 0;
+        font-size: var(--step--2);
+        color: var(--foreground);
+        opacity: 0.75;
+    }
+
+    .buyback-appraisal-table-wrap {
+        overflow-x: auto;
+        width: 100%;
+    }
+
+    .buyback-appraisal-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: var(--step--1);
+
+        th,
+        td {
+            text-align: left;
+            padding: var(--space-3xs) var(--space-2xs);
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        th {
+            color: var(--fleet-yellow);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        &__num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+    }
+</style>

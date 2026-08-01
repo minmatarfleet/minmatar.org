@@ -68,6 +68,5 @@ import ShowAlert from '@components/blocks/ShowAlert.astro'
         }}
     />
     :
-    <div x-init={`is_dirty = ${alert ? 'true' : 'false'}; $el.remove()`} />
     <CharactersTagList tags={tags} tags_summary={tags_summary} active_character={active_character} />
 }

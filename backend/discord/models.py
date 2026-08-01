@@ -169,11 +169,25 @@ class DiscordChannel(models.Model):
             "When enabled, Amarr fleet_active feed events are posted here."
         ),
     )
+    receive_lp_buyback = models.BooleanField(
+        default=False,
+        help_text=(
+            "When enabled, LP buyback order threads are created in this "
+            "forum. Only one channel should have this enabled."
+        ),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["name"]
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.receive_lp_buyback:
+            type(self).objects.filter(receive_lp_buyback=True).exclude(
+                pk=self.pk
+            ).update(receive_lp_buyback=False)
 
     def __str__(self) -> str:
         return f"{self.name} ({self.get_channel_type_display()})"

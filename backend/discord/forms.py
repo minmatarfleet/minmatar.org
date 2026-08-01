@@ -5,6 +5,7 @@ from discord.channels import (
     ADMIN_PICKER_CHANNEL_TYPES,
     AMARR_FLEET_PING_CHANNEL_TYPES,
     CAPITAL_PING_CHANNEL_TYPES,
+    LP_BUYBACK_CHANNEL_TYPES,
     VOICE_TRACKING_CHANNEL_TYPES,
     fetch_active_guild_channels,
     get_guild_channel,
@@ -26,6 +27,7 @@ class DiscordChannelAdminForm(forms.ModelForm):
             "track_voice_activity",
             "receive_capital_pings",
             "receive_amarr_fleet_pings",
+            "receive_lp_buyback",
         )
 
     def __init__(self, *args, **kwargs):
@@ -85,6 +87,7 @@ class DiscordChannelAdminForm(forms.ModelForm):
         receive_amarr_fleet_pings = cleaned_data.get(
             "receive_amarr_fleet_pings", False
         )
+        receive_lp_buyback = cleaned_data.get("receive_lp_buyback", False)
 
         if self.instance.pk:
             channel_type = self.instance.channel_type
@@ -148,6 +151,15 @@ class DiscordChannelAdminForm(forms.ModelForm):
                 {
                     "receive_amarr_fleet_pings": (
                         "Amarr fleet pings are only supported for text and forum channels."
+                    )
+                }
+            )
+
+        if receive_lp_buyback and channel_type not in LP_BUYBACK_CHANNEL_TYPES:
+            raise ValidationError(
+                {
+                    "receive_lp_buyback": (
+                        "LP buyback order threads require a forum channel."
                     )
                 }
             )

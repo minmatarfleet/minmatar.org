@@ -10,7 +10,9 @@ from eveonline.helpers.characters.assets import (
 from eveonline.helpers.characters.characters import (
     character_configured_scope_groups,
     character_desired_scopes,
+    character_has_market_scopes,
     character_primary,
+    market_scope_character_ids,
     merge_scope_groups,
     orphan_character,
     player_characters,
@@ -18,6 +20,7 @@ from eveonline.helpers.characters.characters import (
     scope_groups_for_token_add,
     set_primary_character,
     user_characters,
+    user_ids_with_market_scopes,
     user_player,
     user_primary_character,
 )
@@ -53,8 +56,11 @@ from eveonline.helpers.characters.update import (
 __all__ = [
     "character_configured_scope_groups",
     "character_desired_scopes",
+    "character_has_market_scopes",
+    "market_scope_character_ids",
     "scope_groups_for_token_add",
     "character_primary",
+    "user_ids_with_market_scopes",
     "create_character_assets",
     "create_eve_character_skillset",
     "compare_skills_to_skillset",

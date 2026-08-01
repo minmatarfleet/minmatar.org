@@ -1,0 +1,65 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  {% include "admin/industry/_styles.html" %}
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate "Home" %}</a>
+  &rsaquo; {% translate "Loyalty points" %}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <header class="industry-hub-header">
+    <h1 class="industry-hub-header__title">{% translate "Loyalty points" %}</h1>
+    <p class="industry-hub-header__desc">
+      {% blocktranslate trimmed %}
+      Manage militia LP currencies, stockpile and seller accounts, ledger lots,
+      Conversion Team buyback market orders, and cached LP store offers from one
+      place.
+      {% endblocktranslate %}
+    </p>
+  </header>
+
+  {% include "admin/industry/_learn_more_start.html" %}
+    <p>
+      {% blocktranslate trimmed %}
+      Currencies hold default ISK/LP for the planner. Accounts are sellers or
+      alliance stockpiles; post credits and debits from an account (or the ledger
+      add form). Market orders are the public buyback book — completing a sell
+      posts a stockpile ledger entry with seller and counterparty. Store offers
+      are read-only ESI cache used by navy blueprint costing.
+      {% endblocktranslate %}
+    </p>
+  {% include "admin/industry/_learn_more_end.html" %}
+
+  <section class="industry-section">
+    <h2>{% translate "Catalog & holders" %}</h2>
+    <div class="industry-card-grid">
+      {% include "admin/industry/_hub_card.html" with title=_("Currencies") count=sections.currencies.count description=_("Militia / navy LP currencies and default ISK per LP. Edit a currency to manage linked accounts inline.") list_url=sections.currencies.list_url list_label=_("View currencies") add_url=sections.currencies.add_url add_label=_("Add currency") %}
+      {% include "admin/industry/_hub_card.html" with title=_("Accounts") count=sections.accounts.count description=_("Sellers and stockpiles. Open an account to edit contacts, see remaining lots, and post ledger entries.") list_url=sections.accounts.list_url list_label=_("View accounts") add_url=sections.accounts.add_url add_label=_("Add account") %}
+      {% include "admin/industry/_hub_card.html" with title=_("Contacts") count=sections.contacts.count description=_("People to reach for a seller or stockpile account (character, Discord, notes).") list_url=sections.contacts.list_url list_label=_("View contacts") add_url=sections.contacts.add_url add_label=_("Add contact") %}
+      {% include "admin/industry/_hub_card.html" with title=_("Price history") count=sections.price_history.count description=_("Append-only log of published currency default ISK/LP and account offer price changes.") list_url=sections.price_history.list_url list_label=_("View price history") readonly=1 %}
+    </div>
+  </section>
+
+  <section class="industry-section">
+    <h2>{% translate "Ledger & buyback" %}</h2>
+    <div class="industry-card-grid">
+      {% include "admin/industry/_hub_card.html" with title=_("Ledger entries") count=sections.ledger.count description=_("Immutable credit/debit lots with ISK/LP, balances, and market-order counterparties when from buyback.") list_url=sections.ledger.list_url list_label=_("View ledger") add_url=sections.ledger.add_url add_label=_("Post entry") %}
+      {% include "admin/industry/_hub_card.html" with title=_("Market orders") count=sections.market_orders.count description=_("Open Conversion Team buyback orders (count shows open status). Manage claims, settlement status, and Discord threads.") list_url=sections.market_orders.open_list_url list_label=_("View open orders") add_url=sections.market_orders.add_url add_label=_("Add order") %}
+      {% include "admin/industry/_hub_card.html" with title=_("LP store offers") count=sections.store_offers.count description=_("Cached pure LP+ISK loyalty-store offers used by the industry planner. Read-only; refreshed when navy products sync.") list_url=sections.store_offers.list_url list_label=_("View offers") readonly=1 %}
+    </div>
+    <p class="industry-section-desc">
+      <a href="{{ sections.market_orders.list_url }}">{% translate "View all market orders" %}</a>
+    </p>
+  </section>
+</div>
+{% endblock %}

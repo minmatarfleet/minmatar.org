@@ -1,0 +1,207 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_logged_in = Boolean(auth_token && user)
+const user_is_staff = Boolean(user && user.is_staff)
+
+import type {
+    LoyaltyCurrency,
+    LoyaltyLedgerEntry,
+    LoyaltyMarketOrder,
+    OrderLpStockpile,
+} from '@dtypes/api.minmatar.org'
+import {
+    get_loyalty_currencies,
+    get_loyalty_ledger,
+    get_loyalty_orders,
+    get_loyalty_stockpiles,
+} from '@helpers/api.minmatar.org/loyalty'
+import { get_characters_summary } from '@helpers/api.minmatar.org/characters'
+
+let currencies: LoyaltyCurrency[] = []
+let ledger_entries: LoyaltyLedgerEntry[] = []
+let orders: LoyaltyMarketOrder[] = []
+let stockpiles: OrderLpStockpile[] = []
+let fetching_error: Error | false = false
+let claim_characters: {
+    character_name: string
+    corp_name: string
+    is_primary: boolean
+}[] = []
+let claim_corporations: string[] = []
+
+try {
+    [currencies, ledger_entries, orders, stockpiles] = await Promise.all([
+        get_loyalty_currencies(),
+        get_loyalty_ledger(),
+        get_loyalty_orders(),
+        get_loyalty_stockpiles(),
+    ])
+} catch (error) {
+    fetching_error = error as Error
+}
+
+if (is_logged_in && auth_token) {
+    try {
+        const summary = await get_characters_summary(auth_token)
+        claim_characters = (summary.characters ?? [])
+            .map((character) => ({
+                character_name: character.character_name,
+                corp_name: character.corp_name || '',
+                is_primary: Boolean(character.is_primary),
+            }))
+            .sort((a, b) => {
+                if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1
+                return a.character_name.localeCompare(b.character_name)
+            })
+        claim_corporations = [...new Set(
+            claim_characters
+                .map((character) => character.corp_name)
+                .filter((name) => Boolean(name))
+        )].sort((a, b) => a.localeCompare(b))
+    } catch (error) {
+        console.log(error)
+    }
+}
+
+const highlight_order_id = Astro.url.searchParams.get('order')
+const default_currency_id = currencies[0]?.id ?? null
+const default_isk_per_lp = currencies[0]?.default_isk_per_lp ?? 800
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Breadcrumb from '@components/blocks/Breadcrumb.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import LoyaltyRateCards from '@components/blocks/LoyaltyRateCards.astro'
+import LoyaltyLedger from '@components/blocks/LoyaltyLedger.astro'
+import LoyaltyOrderBook from '@components/blocks/LoyaltyOrderBook.astro'
+import LoyaltyStockpiles from '@components/blocks/LoyaltyStockpiles.astro'
+import Button from '@components/blocks/Button.astro'
+import CogIcon from '@components/icons/buttons/CogIcon.astro'
+
+const page_title = t('industry.loyalty.page_title')
+const breadcrumb_items = [
+    { label: t('market.page_title'), href: translatePath('/market/') },
+    { label: page_title },
+]
+const api_base = import.meta.env.API_URL || ''
+const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('industry.loyalty.meta_description')}
+    components={{
+        alert_dialog: true,
+        tippy: true,
+    }}
+>
+    <PageWide
+        cover={{
+            image: '/images/loyalty-points-cover.webp',
+            image_990: '/images/loyalty-points-cover.webp',
+            overlay: true,
+            scrollable: true,
+        }}
+        sticky={true}
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <Flexblock gap="var(--space-3xs)">
+                <Breadcrumb items={breadcrumb_items} />
+                <PageTitle>{page_title}</PageTitle>
+            </Flexblock>
+            {user_is_staff && (
+                <Button
+                    href={admin_loyalty_url}
+                    size="sm"
+                    color="transparent"
+                    narrow={true}
+                    new_tab={true}
+                    aria-label={t('industry.loyalty.edit_in_admin')}
+                    title={t('industry.loyalty.edit_in_admin')}
+                >
+                    <CogIcon slot="icon" />
+                </Button>
+            )}
+        </FlexInline>
+
+        <Flexblock gap="var(--space-xl)">
+            {fetching_error ? (
+                <ErrorRefetch
+                    args={{
+                        partial: highlight_order_id
+                            ? `${translatePath('/industry/loyalty/')}?order=${encodeURIComponent(highlight_order_id)}`
+                            : translatePath('/industry/loyalty/'),
+                        error: fetching_error,
+                        delay: 0,
+                    }}
+                />
+            ) : (
+                <>
+                    <LoyaltyRateCards currencies={currencies} />
+                    {is_logged_in && (
+                        <div class="[ loyalty-cta-row ]">
+                            <Button
+                                class="[ loyalty-cta-row__button ]"
+                                color="fleet-red"
+                                x-on:click="$dispatch('loyalty-open-sell')"
+                            >
+                                {t('industry.loyalty.post_sell')}
+                            </Button>
+                            <Button
+                                class="[ loyalty-cta-row__button ]"
+                                color="green"
+                                x-on:click="$dispatch('loyalty-open-buy')"
+                            >
+                                {t('industry.loyalty.post_buy')}
+                            </Button>
+                        </div>
+                    )}
+                    <LoyaltyOrderBook
+                        orders={orders}
+                        currencies={currencies}
+                        is_logged_in={is_logged_in}
+                        highlight_order_id={highlight_order_id}
+                        default_currency_id={default_currency_id}
+                        default_isk_per_lp={default_isk_per_lp}
+                        claim_characters={claim_characters}
+                        claim_corporations={claim_corporations}
+                    />
+                    <LoyaltyLedger ledger_entries={ledger_entries} />
+                    <LoyaltyStockpiles stockpiles={stockpiles} />
+                </>
+            )}
+        </Flexblock>
+    </PageWide>
+</Viewport>
+
+<style lang="scss">
+    .loyalty-cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs);
+        width: 100%;
+
+        :global(.loyalty-cta-row__button) {
+            flex: 1 1 0;
+            min-width: 12rem;
+            text-align: center;
+        }
+    }
+</style>
+
+<script define:vars={{ highlight_order_id }}>
+    if (highlight_order_id) {
+        const el = document.getElementById(`order-${highlight_order_id}`)
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+</script>

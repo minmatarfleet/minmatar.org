@@ -12,6 +12,7 @@ ADMIN_PICKER_CHANNEL_TYPES = {"text", "voice", "stage", "forum"}
 VOICE_TRACKING_CHANNEL_TYPES = {"voice", "stage"}
 CAPITAL_PING_CHANNEL_TYPES = {"text", "forum"}
 AMARR_FLEET_PING_CHANNEL_TYPES = {"text", "forum"}
+LP_BUYBACK_CHANNEL_TYPES = {"forum"}
 
 
 def fetch_guild_channels(guild_id=None):

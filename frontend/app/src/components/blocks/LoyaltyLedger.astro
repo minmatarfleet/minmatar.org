@@ -1,0 +1,180 @@
+---
+import { i18n } from '@helpers/i18n'
+import type { LoyaltyLedgerEntry } from '@dtypes/api.minmatar.org'
+import { format_date_time } from '@helpers/date'
+import { number_thousand_separator } from '@helpers/numbers'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+
+const { t, lang } = i18n(Astro.url)
+
+interface Props {
+    ledger_entries: LoyaltyLedgerEntry[]
+}
+
+const { ledger_entries } = Astro.props
+
+const status_labels: Record<string, string> = {
+    posted: t('industry.loyalty.status.posted'),
+}
+
+type LedgerRow = {
+    key: string
+    created_at: Date | string
+    account: string
+    currency: string
+    amount: number
+    isk_per_lp: number
+    status: string
+    seller: string
+    counterparty: string
+    notes: string
+}
+
+const rows: LedgerRow[] = ledger_entries.map((entry) => ({
+    key: `entry-${entry.id}`,
+    created_at: entry.created_at,
+    account: entry.account_name,
+    currency: entry.loyalty_point_name,
+    amount: entry.amount,
+    isk_per_lp: entry.isk_per_lp,
+    status: status_labels.posted,
+    seller: entry.seller_character_name || '',
+    counterparty: entry.counterparty_character_name || '',
+    notes: entry.notes || '',
+}))
+
+function format_amount(amount: number): string {
+    const abs = number_thousand_separator(Math.abs(amount))
+    return amount >= 0 ? `+${abs}` : `−${abs}`
+}
+---
+
+<section class="[ loyalty-ledger ]">
+    <Flexblock gap="var(--space-s)">
+        <h2>{t('industry.loyalty.ledger.title')}</h2>
+
+        {rows.length === 0 ? (
+            <p class="[ loyalty-ledger__empty ]">{t('industry.loyalty.ledger.empty')}</p>
+        ) : (
+            <ComponentBlock
+                padding_block="var(--space-2xs)"
+                padding_inline="var(--space-m)"
+            >
+                <div class="[ loyalty-ledger__table-wrap ]">
+                    <table class="[ loyalty-ledger__table ]">
+                        <thead>
+                            <tr>
+                                <th>{t('industry.loyalty.ledger.col.date')}</th>
+                                <th>{t('industry.loyalty.ledger.col.account')}</th>
+                                <th>{t('industry.loyalty.orders.col.currency')}</th>
+                                <th>{t('industry.loyalty.ledger.col.amount')}</th>
+                                <th>{t('industry.loyalty.orders.col.rate')}</th>
+                                <th>{t('industry.loyalty.orders.col.status')}</th>
+                                <th>{t('industry.loyalty.ledger.col.seller')}</th>
+                                <th>{t('industry.loyalty.ledger.col.counterparty')}</th>
+                                <th>{t('industry.loyalty.ledger.col.notes')}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rows.map((row) => (
+                                <tr>
+                                    <td class="[ loyalty-ledger__date ]">
+                                        {format_date_time(lang, row.created_at)}
+                                    </td>
+                                    <td>
+                                        <span class="[ text-highlight ]">{row.account}</span>
+                                    </td>
+                                    <td>{row.currency}</td>
+                                    <td class:list={[
+                                        'tabular',
+                                        'loyalty-ledger__amount',
+                                        row.amount >= 0 ? 'is-credit' : 'is-debit',
+                                    ]}>
+                                        {format_amount(row.amount)}
+                                    </td>
+                                    <td class="[ tabular ]">
+                                        {number_thousand_separator(row.isk_per_lp)}
+                                    </td>
+                                    <td>{row.status}</td>
+                                    <td>{row.seller || '—'}</td>
+                                    <td>{row.counterparty || '—'}</td>
+                                    <td class="[ loyalty-ledger__notes ]">
+                                        {row.notes || '—'}
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </ComponentBlock>
+        )}
+    </Flexblock>
+</section>
+
+<style lang="scss">
+    h2 {
+        font-size: var(--step-1);
+        margin: 0;
+    }
+
+    .loyalty-ledger__table-wrap {
+        overflow-x: auto;
+    }
+
+    .loyalty-ledger__table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: var(--step--1);
+
+        th,
+        td {
+            text-align: left;
+            padding: var(--space-2xs) var(--space-xs);
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: top;
+        }
+
+        th {
+            color: var(--highlight);
+            font-weight: 600;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+    }
+
+    .tabular {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .loyalty-ledger__amount.is-credit {
+        color: var(--fleet-yellow);
+        font-weight: 600;
+    }
+
+    .loyalty-ledger__amount.is-debit {
+        color: var(--foreground);
+        font-weight: 600;
+        opacity: 0.9;
+    }
+
+    .loyalty-ledger__date,
+    .loyalty-ledger__notes {
+        white-space: nowrap;
+    }
+
+    .loyalty-ledger__notes {
+        max-width: 16rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        opacity: 0.85;
+    }
+
+    .loyalty-ledger__empty {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--highlight);
+    }
+</style>

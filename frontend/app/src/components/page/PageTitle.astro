@@ -52,13 +52,25 @@ import ReferralLink from '@components/blocks/ReferralLink.astro';
         }
     }
 
-    :global(.page-title .referral-link) {
-        position: absolute;
-        left: -35px;
+    :global(.page-title:has(.referral-link)) {
+        padding-inline-start: 40px;
 
         @media screen and (max-width: 600px) {
-            left: -4px;
-            top: -22px;
+            padding-inline-start: 0;
+            padding-block-start: 28px;
+        }
+    }
+
+    :global(.page-title .referral-link) {
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+
+        @media screen and (max-width: 600px) {
+            left: 0;
+            top: 0;
+            transform: none;
         }
     }
 </style>

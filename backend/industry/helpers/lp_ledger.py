@@ -8,9 +8,12 @@ from typing import Optional
 from django.db import transaction
 from django.db.models import Sum
 
+from eveonline.helpers.characters import user_primary_character
 from industry.models import (
+    IndustryLoyaltyPoint,
     IndustryLoyaltyPointAccount,
     IndustryLoyaltyPointLedgerEntry,
+    IndustryLoyaltyPointMarketOrder,
 )
 
 
@@ -91,6 +94,21 @@ def weighted_average_cost_isk_per_lp(
     return cost / total_qty
 
 
+def resolve_stockpile_for_currency(
+    currency: IndustryLoyaltyPoint,
+) -> Optional[IndustryLoyaltyPointAccount]:
+    """First active stockpile account for a loyalty-point currency, if any."""
+    return (
+        IndustryLoyaltyPointAccount.objects.filter(
+            loyalty_point=currency,
+            role=IndustryLoyaltyPointAccount.Role.STOCKPILE,
+            is_active=True,
+        )
+        .order_by("name", "id")
+        .first()
+    )
+
+
 @transaction.atomic
 def post_ledger_entry(
     account: IndustryLoyaltyPointAccount,
@@ -99,6 +117,11 @@ def post_ledger_entry(
     *,
     notes: str = "",
     user=None,
+    market_order: Optional[IndustryLoyaltyPointMarketOrder] = None,
+    seller_user=None,
+    seller_character_name: str = "",
+    counterparty_user=None,
+    counterparty_character_name: str = "",
 ) -> IndustryLoyaltyPointLedgerEntry:
     """
     Append a credit/debit lot and return the new entry.
@@ -129,4 +152,75 @@ def post_ledger_entry(
         notes=notes or "",
         balance_after=balance_after,
         created_by=user,
+        market_order=market_order,
+        seller_user=seller_user,
+        seller_character_name=(seller_character_name or "").strip(),
+        counterparty_user=counterparty_user,
+        counterparty_character_name=(
+            counterparty_character_name or ""
+        ).strip(),
+    )
+
+
+def post_sell_order_completion_ledger(
+    order: IndustryLoyaltyPointMarketOrder,
+    *,
+    user=None,
+) -> Optional[IndustryLoyaltyPointLedgerEntry]:
+    """
+    Credit the currency stockpile when a sell buyback order completes.
+
+    Idempotent: returns the existing entry if this order already posted.
+    Buy orders are ignored (no ledger movement yet).
+    """
+    if order.side != IndustryLoyaltyPointMarketOrder.Side.SELL:
+        return None
+    existing = (
+        IndustryLoyaltyPointLedgerEntry.objects.filter(market_order=order)
+        .order_by("id")
+        .first()
+    )
+    if existing is not None:
+        return existing
+
+    stockpile = resolve_stockpile_for_currency(order.loyalty_point)
+    if stockpile is None:
+        raise LpLedgerError(
+            "No active stockpile account for this LP currency; "
+            "cannot post sell completion to the ledger."
+        )
+
+    seller = order.created_by
+    seller_primary = user_primary_character(seller) if seller else None
+    seller_name = (
+        seller_primary.character_name
+        if seller_primary
+        else (seller.username if seller else "")
+    )
+
+    claimer = order.claimed_by
+    dest = (order.destination_character_name or "").strip()
+    if dest:
+        counterparty_name = dest
+    elif claimer:
+        claimer_primary = user_primary_character(claimer)
+        counterparty_name = (
+            claimer_primary.character_name
+            if claimer_primary
+            else claimer.username
+        )
+    else:
+        counterparty_name = ""
+
+    return post_ledger_entry(
+        stockpile,
+        int(order.quantity),
+        int(order.isk_per_lp),
+        notes=f"Sell order #{order.pk} completed",
+        user=user or claimer,
+        market_order=order,
+        seller_user=seller,
+        seller_character_name=seller_name,
+        counterparty_user=claimer,
+        counterparty_character_name=counterparty_name,
     )

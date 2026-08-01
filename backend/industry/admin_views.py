@@ -1,4 +1,4 @@
-"""Custom industry orders admin views."""
+"""Custom industry orders and loyalty admin views."""
 
 from django.db.models import Count
 from django.urls import reverse
@@ -7,11 +7,19 @@ from industry.helpers.admin_urls import add_url, changelist_url
 from industry.helpers.admin_views import (
     get_order_or_redirect,
     render_industry_orders_view,
+    render_loyalty_admin_view,
 )
 from industry.helpers.order_profit_breakdown import (
     can_refresh_order_profit_breakdown,
 )
 from industry.models import (
+    IndustryLoyaltyPoint,
+    IndustryLoyaltyPointAccount,
+    IndustryLoyaltyPointContact,
+    IndustryLoyaltyPointLedgerEntry,
+    IndustryLoyaltyPointMarketOrder,
+    IndustryLoyaltyPointPriceHistory,
+    IndustryLpStoreOffer,
     IndustryOrder,
     IndustryOrderItemAssignment,
 )
@@ -109,4 +117,56 @@ def industry_order_hub_view(request, order_id):
                 },
             },
         },
+    )
+
+
+def industry_loyalty_home_view(request):
+    """Hub linking currencies, accounts, ledger, market orders, and offers."""
+    open_orders = IndustryLoyaltyPointMarketOrder.objects.filter(
+        status=IndustryLoyaltyPointMarketOrder.Status.OPEN
+    ).count()
+    sections = {
+        "currencies": {
+            "count": IndustryLoyaltyPoint.objects.count(),
+            "list_url": changelist_url("industryloyaltypoint"),
+            "add_url": add_url("industryloyaltypoint"),
+        },
+        "accounts": {
+            "count": IndustryLoyaltyPointAccount.objects.count(),
+            "list_url": changelist_url("industryloyaltypointaccount"),
+            "add_url": add_url("industryloyaltypointaccount"),
+        },
+        "contacts": {
+            "count": IndustryLoyaltyPointContact.objects.count(),
+            "list_url": changelist_url("industryloyaltypointcontact"),
+            "add_url": add_url("industryloyaltypointcontact"),
+        },
+        "price_history": {
+            "count": IndustryLoyaltyPointPriceHistory.objects.count(),
+            "list_url": changelist_url("industryloyaltypointpricehistory"),
+        },
+        "ledger": {
+            "count": IndustryLoyaltyPointLedgerEntry.objects.count(),
+            "list_url": changelist_url("industryloyaltypointledgerentry"),
+            "add_url": add_url("industryloyaltypointledgerentry"),
+        },
+        "market_orders": {
+            "count": open_orders,
+            "list_url": changelist_url("industryloyaltypointmarketorder"),
+            "add_url": add_url("industryloyaltypointmarketorder"),
+            "open_list_url": changelist_url(
+                "industryloyaltypointmarketorder",
+                status__exact=IndustryLoyaltyPointMarketOrder.Status.OPEN,
+            ),
+        },
+        "store_offers": {
+            "count": IndustryLpStoreOffer.objects.count(),
+            "list_url": changelist_url("industrylpstoreoffer"),
+        },
+    }
+    return render_loyalty_admin_view(
+        request,
+        title="Loyalty points",
+        template_name="admin/industry/loyalty_home.html",
+        context={"sections": sections},
     )

@@ -17,17 +17,13 @@ if (auth_token && user) {
     }
 }
 
-import type { OrderLocation } from '@dtypes/layout_components'
-import { fetch_orders_by_locations } from '@helpers/fetching/industry'
+import { load_industry_orders_page } from '@helpers/fetching/industry_orders_page'
 
-let fetching_error: Error | false = false
-let orders_locations:OrderLocation[] = []
-
-try {
-    orders_locations = await fetch_orders_by_locations()
-} catch (error) {
-    fetching_error = error
-}
+const {
+    orders_locations,
+    fetching_error,
+    manufacturers,
+} = await load_industry_orders_page()
 
 let active_location_name = Astro.url.searchParams.get('location_name') ?? (orders_locations[0]?.location_name ?? '')
 
@@ -71,6 +67,7 @@ import Button from '@components/blocks/Button.astro'
 import ButtonOrdersLearnMore from '@components/blocks/ButtonOrdersLearnMore.astro'
 import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import TextBox from '@components/layout/TextBox.astro'
+import IndustryManufacturersReel from '@components/blocks/IndustryManufacturersReel.astro'
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
@@ -166,7 +163,7 @@ const breadcrumb_items = [
             </Button>
         </PageSubheader>
 
-        <Flexblock gap="var(--space-xl)">
+        <Flexblock gap="var(--space-xl)" class="[ compensate-bottom-bar ]">
             <TextBox>
                 <p class="[ excerpt ]">{leading_text}</p>
             </TextBox>
@@ -192,4 +189,6 @@ const breadcrumb_items = [
             }
         </Flexblock>
     </PageWide>
+
+    <IndustryManufacturersReel manufacturers={manufacturers} />
 </Viewport>

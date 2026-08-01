@@ -1,16 +1,14 @@
 """Helpers to update a corporation's ESI-derived data (public info, members, roles, contracts, industry jobs)."""
 
 import logging
-from datetime import datetime
 from decimal import Decimal
 
-import pytz
 from django.db import models
-from django.utils import timezone
 from esi.models import Token
 
 from eveonline.client import EsiClient
 from eveonline.helpers.db_sync import replace_with_bulk_create
+from eveonline.helpers.esi import parse_esi_date
 from eveonline.models import (
     EveAlliance,
     EveCharacter,
@@ -74,20 +72,6 @@ def known_contract_issuer_ids():
     )
     corp_ids = alliance_corporation_ids()
     return character_ids | corp_ids
-
-
-def _parse_esi_date(value):
-    """Parse ESI ISO date string to timezone-aware datetime."""
-    if not value:
-        return None
-    if isinstance(value, datetime):
-        return (
-            timezone.make_aware(value) if timezone.is_naive(value) else value
-        )
-    dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    if timezone.is_naive(dt):
-        dt = pytz.UTC.localize(dt)
-    return dt
 
 
 def get_director_with_scope(corporation, scope_list):
@@ -382,10 +366,10 @@ def update_corporation_contracts(corporation_id: int) -> int:
                 "assignee_id": raw.get("assignee_id"),
                 "acceptor_id": raw.get("acceptor_id"),
                 "for_corporation": raw.get("for_corporation", False),
-                "date_issued": _parse_esi_date(raw.get("date_issued")),
-                "date_expired": _parse_esi_date(raw.get("date_expired")),
-                "date_accepted": _parse_esi_date(raw.get("date_accepted")),
-                "date_completed": _parse_esi_date(raw.get("date_completed")),
+                "date_issued": parse_esi_date(raw.get("date_issued")),
+                "date_expired": parse_esi_date(raw.get("date_expired")),
+                "date_accepted": parse_esi_date(raw.get("date_accepted")),
+                "date_completed": parse_esi_date(raw.get("date_completed")),
                 "days_to_complete": raw.get("days_to_complete"),
                 "price": price,
                 "reward": reward,
@@ -447,7 +431,7 @@ def update_corporation_industry_jobs(corporation_id: int) -> int:
     jobs_data = response.results() or []
     for raw in jobs_data:
         job_id = raw["job_id"]
-        completed_date = _parse_esi_date(raw.get("completed_date"))
+        completed_date = parse_esi_date(raw.get("completed_date"))
         cost = raw.get("cost")
         if cost is not None:
             cost = Decimal(str(cost))
@@ -467,8 +451,8 @@ def update_corporation_industry_jobs(corporation_id: int) -> int:
                 "output_location_id": raw["output_location_id"],
                 "status": raw["status"],
                 "installer_id": raw["installer_id"],
-                "start_date": _parse_esi_date(raw["start_date"]),
-                "end_date": _parse_esi_date(raw["end_date"]),
+                "start_date": parse_esi_date(raw["start_date"]),
+                "end_date": parse_esi_date(raw["end_date"]),
                 "duration": raw["duration"],
                 "completed_date": completed_date,
                 "completed_character_id": raw.get("completed_character_id"),
@@ -612,7 +596,7 @@ def update_corporation_wallet_journal(corporation_id: int) -> int:
             division=division,
             ref_id=ref_id,
             defaults={
-                "date": _parse_esi_date(raw.get("date")),
+                "date": parse_esi_date(raw.get("date")),
                 "ref_type": raw.get("ref_type", ""),
                 "first_party_id": raw.get("first_party_id"),
                 "second_party_id": raw.get("second_party_id"),

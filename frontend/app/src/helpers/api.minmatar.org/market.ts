@@ -1,6 +1,7 @@
 import type {
     Contract,
     InferredSalesVolume,
+    MarketOperatorStatistics,
     OpsMonitor,
     OpsMonitorHistoryPoint,
 } from '@dtypes/api.minmatar.org'
@@ -115,6 +116,28 @@ export async function get_inferred_sales_volume(
         return await response.json() as InferredSalesVolume
     } catch (error) {
         throw new Error(`Error fetching inferred sales volume: ${error.message}`, {
+            cause: error.cause,
+        })
+    }
+}
+
+export async function get_market_character_statistics() {
+    const headers = {
+        'Content-Type': 'application/json',
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/character-statistics`
+
+    try {
+        const response = await fetch(ENDPOINT, { headers })
+        if (!response.ok) {
+            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status,
+            })
+        }
+        return await response.json() as MarketOperatorStatistics[]
+    } catch (error) {
+        throw new Error(`Error fetching market character statistics: ${error.message}`, {
             cause: error.cause,
         })
     }

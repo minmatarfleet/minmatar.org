@@ -1,0 +1,214 @@
+---
+import { i18n } from '@helpers/i18n'
+import type { OrderLpStockpile } from '@dtypes/api.minmatar.org'
+import { get_corporation_logo } from '@helpers/eve_image_server'
+import { number_thousand_separator } from '@helpers/numbers'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Grid from '@components/compositions/Grid.astro'
+
+const { t } = i18n(Astro.url)
+
+interface Props {
+    stockpiles: OrderLpStockpile[]
+}
+
+const { stockpiles } = Astro.props
+
+const FACTION_ORDER: readonly number[] = [
+    1000182, // TLIB
+    1000179, // 24th
+    1000180, // State
+    1000181, // FDU
+]
+
+type FactionTotal = {
+    corporation_id: number
+    loyalty_point_name: string
+    total: number
+    tip_html: string
+}
+
+function escape_html(value: string): string {
+    return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+}
+
+function faction_totals(rows: OrderLpStockpile[]): FactionTotal[] {
+    const by_corp = new Map<number, {
+        corporation_id: number
+        loyalty_point_name: string
+        stockpiles: OrderLpStockpile[]
+    }>()
+
+    for (const stockpile of rows) {
+        let group = by_corp.get(stockpile.corporation_id)
+        if (!group) {
+            group = {
+                corporation_id: stockpile.corporation_id,
+                loyalty_point_name: stockpile.loyalty_point_name,
+                stockpiles: [],
+            }
+            by_corp.set(stockpile.corporation_id, group)
+        }
+        group.stockpiles.push(stockpile)
+    }
+
+    return [...by_corp.values()]
+        .sort((a, b) => {
+            const ai = FACTION_ORDER.indexOf(a.corporation_id)
+            const bi = FACTION_ORDER.indexOf(b.corporation_id)
+            const ao = ai === -1 ? FACTION_ORDER.length : ai
+            const bo = bi === -1 ? FACTION_ORDER.length : bi
+            if (ao !== bo) return ao - bo
+            return a.loyalty_point_name.localeCompare(b.loyalty_point_name)
+        })
+        .map((group) => {
+            const accounts = group.stockpiles
+                .slice()
+                .sort((a, b) => b.balance - a.balance || a.account_name.localeCompare(b.account_name))
+            const total = accounts.reduce((sum, row) => sum + row.balance, 0)
+            const tip_html = [
+                `<strong>${escape_html(t('industry.loyalty.stockpiles.breakdown'))}</strong>`,
+                ...accounts.map((row) =>
+                    `${escape_html(row.account_name)}: ${number_thousand_separator(row.balance)} LP`
+                ),
+            ].join('<br>')
+            return {
+                corporation_id: group.corporation_id,
+                loyalty_point_name: group.loyalty_point_name,
+                total,
+                tip_html,
+            }
+        })
+}
+
+const factions = faction_totals(stockpiles)
+---
+
+<section class="[ loyalty-stockpiles ]">
+    <Flexblock gap="var(--space-xs)">
+        <h2>{t('industry.loyalty.stockpiles.title')}</h2>
+
+        {factions.length === 0 ? (
+            <p class="[ loyalty-stockpiles__empty ]">{t('industry.loyalty.stockpiles.empty')}</p>
+        ) : (
+            <Grid
+                class="[ loyalty-stockpiles__grid w-full ]"
+                row_gap="var(--space-3xs)"
+                column_gap="var(--space-3xs)"
+                min_item_width="14rem"
+            >
+                {factions.map((faction) => (
+                    <ComponentBlock
+                        class="[ loyalty-stockpiles__card ]"
+                        padding_block="var(--space-s)"
+                        padding_inline="var(--space-m)"
+                        x-init={`tippy($el, {
+                            content: ${JSON.stringify(faction.tip_html)},
+                            allowHTML: true,
+                            delay: [100, 200],
+                            arrow: true,
+                        })`}
+                    >
+                        <div class="[ loyalty-stockpiles__body ]">
+                            <div class="[ loyalty-stockpiles__identity ]">
+                                <img
+                                    class="[ loyalty-stockpiles__logo ]"
+                                    loading="lazy"
+                                    src={get_corporation_logo(faction.corporation_id, 64)}
+                                    width="40"
+                                    height="40"
+                                    alt={`${faction.loyalty_point_name} ${t('corporation_logo')}`}
+                                />
+                                <h3 class="[ loyalty-stockpiles__name ]">{faction.loyalty_point_name}</h3>
+                            </div>
+                            <p class="[ loyalty-stockpiles__total ]">
+                                <span class="[ loyalty-stockpiles__total-value ]">
+                                    {number_thousand_separator(faction.total)}
+                                </span>
+                                <span class="[ loyalty-stockpiles__total-unit ]">LP</span>
+                            </p>
+                        </div>
+                    </ComponentBlock>
+                ))}
+            </Grid>
+        )}
+    </Flexblock>
+</section>
+
+<style lang="scss">
+    h2 {
+        font-size: var(--step-1);
+        margin: 0;
+    }
+
+    .loyalty-stockpiles :global(.loyalty-stockpiles__card) {
+        height: 100%;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        cursor: help;
+    }
+
+    .loyalty-stockpiles__body {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        flex: 1;
+        min-width: 0;
+    }
+
+    .loyalty-stockpiles__identity {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: var(--space-xs);
+        min-width: 0;
+    }
+
+    .loyalty-stockpiles__name {
+        margin: 0;
+        min-width: 0;
+        font-size: var(--step--1);
+        line-height: 1.25;
+        color: var(--highlight);
+    }
+
+    .loyalty-stockpiles__logo {
+        flex-shrink: 0;
+        width: 40px;
+        height: 40px;
+        border-radius: var(--border-radius);
+        background-color: var(--background);
+    }
+
+    .loyalty-stockpiles__total {
+        margin: 0;
+        margin-block-start: auto;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: var(--space-3xs);
+    }
+
+    .loyalty-stockpiles__total-value {
+        font-size: var(--step-2);
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: var(--fleet-yellow);
+    }
+
+    .loyalty-stockpiles__total-unit {
+        font-size: var(--step--1);
+        color: var(--foreground);
+    }
+
+    .loyalty-stockpiles__empty {
+        margin: 0;
+        color: var(--highlight);
+    }
+</style>

@@ -17,6 +17,7 @@ import type {
     OrderBlueprintCoordinator,
     OrderBlueprintCoordinatorEveType,
     RootSingleItem,
+    IndustryOrderCharacterStatistics,
 } from '@dtypes/api.minmatar.org'
 import {
     get_error_message,
@@ -55,6 +56,35 @@ export async function get_orders_with_location() {
         return await response.json() as IndustryOrder[];
     } catch (error) {
         throw new Error(`Error fetching industry orders: ${error.message}`, { cause: error.cause });
+    }
+}
+
+export async function get_orders_character_statistics() {
+    const headers = {
+        'Content-Type': 'application/json',
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/orders/character-statistics`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers
+        })
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ), {
+                cause: response.status
+            })
+        }
+
+        return await response.json() as IndustryOrderCharacterStatistics[];
+    } catch (error) {
+        throw new Error(`Error fetching industry order character statistics: ${error.message}`, { cause: error.cause });
     }
 }
 

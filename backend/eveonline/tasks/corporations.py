@@ -16,14 +16,10 @@ from eveonline.helpers.corporations import (
     update_corporation_populate as refresh_corporation_populate,
     update_corporation_wallet_journal as refresh_corporation_wallet_journal,
 )
+from eveonline.constants import ALLIED_ALLIANCE_NAMES
 from eveonline.models import EveCorporation
 
 logger = logging.getLogger(__name__)
-
-ALLIED_ALLIANCE_NAMES = [
-    "Minmatar Fleet Alliance",
-    "Minmatar Fleet Associates",
-]
 
 
 @app.task

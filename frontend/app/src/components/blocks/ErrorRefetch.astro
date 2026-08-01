@@ -18,8 +18,6 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Markdown from '@components/blocks/Markdown.astro';
 import RifterIcon from '@components/icons/RifterIcon.astro';
 
-console.log(args.error.cause)
-
 let url = new URL(args.partial, new URL(Astro.url.origin))
 const MAX_RETRYING_TIME_SECONDS = parseInt(import.meta.env.MAX_RETRYING_TIME_SECONDS ?? 30)
 const RETRYING_TIME_INCREMENT_SECONDS = parseInt(import.meta.env.RETRYING_TIME_INCREMENT_SECONDS ?? 5)

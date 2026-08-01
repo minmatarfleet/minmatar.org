@@ -21,6 +21,7 @@ from industry.endpoints.mining import router as mining_router
 from industry.endpoints.orders import router as orders_router
 from industry.endpoints.planetary import router as planetary_router
 from industry.endpoints.planner import router as planner_router
+from industry.endpoints.loyalty import router as loyalty_router
 from industry.endpoints.products import router as products_router
 
 router = Router(tags=["Industry"])
@@ -28,6 +29,7 @@ router.add_router("blueprints", blueprints_router)
 router.add_router("planetary", planetary_router)
 router.add_router("mining/systems", mining_router)
 router.add_router("planner", planner_router)
+router.add_router("loyalty", loyalty_router)
 router.add_router("", get_types_type_id_breakdown_router)
 router.add_router("orders", orders_router)
 router.add_router("orders", breakdown_router)

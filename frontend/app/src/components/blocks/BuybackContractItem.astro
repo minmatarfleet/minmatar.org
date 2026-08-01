@@ -1,0 +1,158 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { BuybackContract, BuybackContractStatus } from '@dtypes/api.minmatar.org'
+import type { TagColors } from '@dtypes/layout_components'
+import { number_name } from '@helpers/numbers.ts'
+import { format_date_short, format_date_time, humanize_date_diff_single } from '@helpers/date'
+
+interface Props {
+    contract:       BuybackContract;
+    init_tooltips:  boolean;
+}
+
+const {
+    contract,
+    init_tooltips,
+} = Astro.props
+
+const STATUS_COLORS: Record<BuybackContractStatus, TagColors> = {
+    outstanding: 'fleet-yellow',
+    in_progress: 'alliance-blue',
+    finished: 'green',
+}
+
+const STATUS_TEXT_COLORS: Partial<Record<BuybackContractStatus, string>> = {
+    outstanding: 'var(--background)',
+}
+
+const issued_date = format_date_short(lang, contract.date_issued)
+const issued_datetime = format_date_time(lang, contract.date_issued)
+const completed_date = contract.date_completed
+    ? format_date_time(lang, contract.date_completed)
+    : null
+const processing_duration = contract.date_completed
+    ? humanize_date_diff_single(lang, contract.date_issued, contract.date_completed)
+    : null
+
+const processing_tooltip = completed_date && processing_duration
+    ? t('buyback.processing_time')
+        .replace('{date}', completed_date)
+        .replace('{duration}', processing_duration)
+    : t('buyback.awaiting_accept')
+
+const status_color = STATUS_COLORS[contract.status]
+const status_text_color = STATUS_TEXT_COLORS[contract.status]
+const title_is_url = contract.title.startsWith('http')
+
+import FlexInline from "@components/compositions/FlexInline.astro";
+import PilotBadge from "@components/blocks/PilotBadge.astro";
+import CharacterPicture from "@components/blocks/CharacterPicture.astro";
+import Tag from '@components/blocks/Tag.astro';
+---
+
+<div class="[ buyback-contract-item ]" role="row">
+    <div
+        class="[ buyback-contract-item__created ]"
+        role="cell"
+        data-tippy-content={t('date_issued').replace('{date}', issued_datetime)}
+        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+    >
+        <span class="[ whitespace-nowrap ]">{issued_date}</span>
+    </div>
+
+    <div class="[ buyback-contract-item__creator ]" role="cell">
+        <PilotBadge
+            character_id={contract.issuer_id ?? 0}
+            character_name={contract.issuer_character_name ?? 'Unknown'}
+            size={32}
+            icon_quality={64}
+        />
+    </div>
+
+    <div class="[ buyback-contract-item__location ]" role="cell">
+        <span class="[ text-highlight ]">{contract.location_name}</span>
+    </div>
+
+    <div
+        class="[ buyback-contract-item__status ]"
+        role="cell"
+        data-tippy-content={processing_tooltip}
+        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+    >
+        <Tag
+            text={t(`contract_${contract.status}` as any) ?? contract.status}
+            color={status_color}
+            text_color={status_text_color}
+            narrow={true}
+        />
+    </div>
+
+    <div class="[ buyback-contract-item__size ]" role="cell">
+        <span
+            data-tippy-content={number_name(contract.volume, lang)}
+            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+        >{contract.volume.toLocaleString()}</span> <span>m<sup>3</sup></span>
+    </div>
+
+    <div class="[ buyback-contract-item__price ]" role="cell">
+        <span
+            data-tippy-content={number_name(contract.price, lang)}
+            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+        >{contract.price.toLocaleString()}</span> <span>ISK</span>
+    </div>
+
+    <div class="[ buyback-contract-item__title ]" role="cell">
+        {title_is_url &&
+            <a href={contract.title} target="_blank" rel="noopener noreferrer" class="[ text-highlight break-all ]">
+                {t('buyback.table.description_link')}
+            </a>
+        }
+        {!title_is_url && contract.title &&
+            <span class="[ break-all ]">{contract.title}</span>
+        }
+        {!contract.title &&
+            <span>—</span>
+        }
+    </div>
+
+    <div class="[ buyback-contract-item__acceptor ]" role="cell">
+        {(contract.acceptor_id || contract.acceptor_character_name) ?
+            <FlexInline
+                gap='var(--space-3xs)'
+                class="[ items-center ]"
+                data-tippy-content={contract.acceptor_character_name}
+                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+            >
+                {contract.acceptor_id &&
+                    <CharacterPicture
+                        character_id={contract.acceptor_id}
+                        character_name={contract.acceptor_character_name ?? ''}
+                        size={24}
+                    />
+                }
+                <span>{contract.acceptor_character_name}</span>
+            </FlexInline> :
+            <Tag text={t('not_taken')} />
+        }
+    </div>
+</div>
+
+<style lang="scss">
+    .buyback-contract-item {
+        display: grid;
+        grid-template-columns: minmax(6.5rem, 0.8fr) minmax(10rem, 1.4fr) minmax(7rem, 0.9fr) minmax(7rem, 0.9fr) minmax(6rem, 0.8fr) minmax(7rem, 1fr) minmax(6rem, 0.9fr) minmax(7rem, 1fr);
+        gap: var(--space-s);
+        align-items: center;
+        padding-block: var(--space-2xs);
+        padding-inline: var(--space-2xs);
+        border-bottom: solid 1px var(--border-color);
+        font-size: var(--step--1);
+        min-width: 70rem;
+    }
+
+    a {
+        color: var(--highlight);
+    }
+</style>

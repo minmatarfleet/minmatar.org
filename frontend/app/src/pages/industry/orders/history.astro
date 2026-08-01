@@ -2,17 +2,13 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { OrderLocation } from '@dtypes/layout_components'
-import { fetch_orders_by_locations } from '@helpers/fetching/industry'
+import { load_industry_orders_page } from '@helpers/fetching/industry_orders_page'
 
-let fetching_error: Error | false = false
-let orders_locations:OrderLocation[] = []
-
-try {
-    orders_locations = await fetch_orders_by_locations(true)
-} catch (error) {
-    fetching_error = error
-}
+const {
+    orders_locations,
+    fetching_error,
+    manufacturers,
+} = await load_industry_orders_page(true)
 
 let active_location_name = Astro.url.searchParams.get('location_name') ?? (orders_locations[0]?.location_name ?? '')
 
@@ -53,6 +49,7 @@ import Input from '@components/blocks/Input.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import OrdersTable from '@components/blocks/OrdersTable.astro'
 import Breadcrumb from '@components/blocks/Breadcrumb.astro'
+import IndustryManufacturersReel from '@components/blocks/IndustryManufacturersReel.astro'
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
@@ -138,15 +135,20 @@ const breadcrumb_items = [
                 }}
             />
             :
-            active_orders_locations !== undefined ?
-                <OrdersTable
-                    active_orders_locations={active_orders_locations}
-                    non_active_orders_locations={non_active_orders_locations}
-                    is_history={true}
-                    init_tooltips={false}
-                />
-                :
-                <p>{t('no_manufacturing_orders')}</p>
+            <div class="[ compensate-bottom-bar ]">
+                {active_orders_locations !== undefined ?
+                    <OrdersTable
+                        active_orders_locations={active_orders_locations}
+                        non_active_orders_locations={non_active_orders_locations}
+                        is_history={true}
+                        init_tooltips={false}
+                    />
+                    :
+                    <p>{t('no_manufacturing_orders')}</p>
+                }
+            </div>
         }
     </PageWide>
+
+    <IndustryManufacturersReel manufacturers={manufacturers} />
 </Viewport>

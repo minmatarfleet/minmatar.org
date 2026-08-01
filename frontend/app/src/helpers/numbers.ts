@@ -51,3 +51,16 @@ export function format_number(num: number, digits: number = 1): string {
         ? (num / item.value).toFixed(digits).replace(rx, "$1") + item.symbol 
         : "0";
 }
+
+export function format_isk(isk: number): string {
+    const abs = Math.abs(isk)
+    if (abs >= 1_000_000_000_000)
+        return `${(isk / 1_000_000_000_000).toFixed(2)}T`
+    if (abs >= 1_000_000_000)
+        return `${(isk / 1_000_000_000).toFixed(1)}B`
+    if (abs >= 1_000_000)
+        return `${(isk / 1_000_000).toFixed(0)}M`
+    if (abs >= 1_000)
+        return `${(isk / 1_000).toFixed(0)}K`
+    return isk.toFixed(0)
+}

@@ -179,3 +179,45 @@ def scope_groups_for_token_add(
     if character is not None:
         existing = character_configured_scope_groups(character)
     return merge_scope_groups(existing, token_type_str(token_type))
+
+
+def character_has_market_scopes(character: EveCharacter) -> bool:
+    """True if the character is configured with Market or Executor scopes."""
+    groups = character_configured_scope_groups(character)
+    return (
+        TokenType.MARKET.value in groups or TokenType.EXECUTOR.value in groups
+    )
+
+
+def user_ids_with_market_scopes() -> set[int]:
+    """User IDs that own at least one non-suspended Market/Executor character."""
+    user_ids = set()
+    for character in (
+        EveCharacter.objects.filter(user_id__isnull=False)
+        .exclude(esi_suspended=True)
+        .only("user_id", "esi_scope_groups", "esi_token_level")
+    ):
+        if character_has_market_scopes(character):
+            user_ids.add(character.user_id)
+    return user_ids
+
+
+def market_scope_character_ids(
+    *, user_ids: set[int] | None = None
+) -> list[int]:
+    """
+    Character IDs with Market/Executor scopes.
+    When user_ids is set, only characters owned by those users are considered.
+    """
+    qs = EveCharacter.objects.filter(user__isnull=False).exclude(
+        esi_suspended=True
+    )
+    if user_ids is not None:
+        qs = qs.filter(user_id__in=user_ids)
+    ids = []
+    for character in qs.only(
+        "character_id", "esi_scope_groups", "esi_token_level"
+    ):
+        if character_has_market_scopes(character):
+            ids.append(character.character_id)
+    return ids

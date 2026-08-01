@@ -426,6 +426,36 @@ class EsiClient:
         )
         return self._operation_results(operation)
 
+    def get_character_orders(self) -> EsiResponse:
+        """Open market orders for this character (personal wallet)."""
+        token, status = self._valid_token(
+            ["esi-markets.read_character_orders.v1"]
+        )
+        if status > 0:
+            return EsiResponse(status)
+
+        operation = esi_provider.client.Market.GetCharactersCharacterIdOrders(
+            character_id=self.character_id,
+            token=token,
+        )
+        return self._operation_results(operation)
+
+    def get_corporation_orders(self, corporation_id: int) -> EsiResponse:
+        """Open market orders placed on behalf of a corporation."""
+        token, status = self._valid_token(
+            ["esi-markets.read_corporation_orders.v1"]
+        )
+        if status > 0:
+            return EsiResponse(status)
+
+        operation = (
+            esi_provider.client.Market.GetCorporationsCorporationIdOrders(
+                corporation_id=corporation_id,
+                token=token,
+            )
+        )
+        return self._operation_results(operation)
+
     def get_corporation_contracts(self, corporation_id) -> EsiResponse:
         token, status = self._valid_token(
             ["esi-contracts.read_corporation_contracts.v1"]

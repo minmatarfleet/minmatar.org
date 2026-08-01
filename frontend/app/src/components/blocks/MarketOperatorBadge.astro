@@ -1,0 +1,37 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { MarketOperatorStatistics } from '@dtypes/api.minmatar.org'
+import { format_isk } from '@helpers/numbers'
+
+interface Props {
+    place:      number;
+    operator:   MarketOperatorStatistics;
+}
+
+const {
+    place,
+    operator,
+} = Astro.props
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import PilotBadge from '@components/blocks/PilotBadge.astro'
+
+---
+
+<FlexInline
+    class="[ items-center! ]"
+    gap='var(--space-xs)'
+>
+    <h2>{place}</h2>
+    <PilotBadge
+        class="[ items-center! ]"
+        character_id={operator.primary_character_id ?? 0}
+        character_name={operator.primary_character_name ?? ''}
+        size={32}
+    >
+        <small>{t('market_operator_isk_on_market').replace('{isk}', format_isk(operator.total_isk_on_market))}</small>
+    </PilotBadge>
+</FlexInline>

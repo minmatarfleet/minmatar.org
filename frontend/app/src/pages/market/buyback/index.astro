@@ -1,0 +1,121 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_buyback_settings } from '@helpers/api.minmatar.org/buybacks'
+import type { BuybackSettings } from '@dtypes/api.minmatar.org'
+
+let settings: BuybackSettings | null = null
+let fetch_error: Error | false = false
+
+try {
+    settings = await get_buyback_settings()
+} catch (error) {
+    fetch_error = error as Error
+}
+
+import type { Alert } from '@dtypes/layout_components'
+
+let alert: Alert | null = null
+if (Astro.cookies.has('buyback_contract_error')) {
+    alert = {
+        title: t('buyback.page_title'),
+        content: (Astro.cookies.get('buyback_contract_error')?.value as string),
+    }
+    Astro.cookies.delete('buyback_contract_error', { path: '/' })
+}
+
+import Viewport from '@layouts/Viewport.astro';
+import PageWide from '@components/page/PageWide.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import TextBox from '@components/layout/TextBox.astro';
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import BuybackForm from '@components/blocks/BuybackForm.astro';
+import BuybackInfo from '@components/blocks/BuybackInfo.astro';
+import BuybackFAQs from '@components/blocks/BuybackFAQs.astro';
+import Button from '@components/blocks/Button.astro';
+
+const page_title = t('buyback.page_title');
+const leading_text = settings?.leading_text?.trim() || ''
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('buyback.meta_description')}
+    components={{
+        alert_dialog: true,
+    }}
+>
+    <PageWide
+        cover={{
+            image: "/images/mining-cover.webp",
+            image_990: "/images/mining-cover.jpg",
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+        x-data={`{
+            init() {
+                ${alert ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+            }
+        }`}
+    >
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <FlexInline>
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
+            </FlexInline>
+            <FlexInline>
+                <Button
+                    href={translatePath('/market/buyback/contracts/')}
+                    size='sm'
+                >
+                    {t('view_buyback_contracts')}
+                </Button>
+            </FlexInline>
+        </FlexInline>
+
+        <Flexblock gap='var(--space-xl)'>
+            {fetch_error ?
+                <ComponentBlock>
+                    <p>{t('buyback.fetch_error')}</p>
+                </ComponentBlock>
+                :
+                <>
+                    {settings && !settings.active &&
+                        <ComponentBlock>
+                            <p>{t('buyback.inactive')}</p>
+                        </ComponentBlock>
+                    }
+
+                    {leading_text &&
+                        <TextBox>
+                            <p class="[ excerpt ]">{leading_text}</p>
+                        </TextBox>
+                    }
+
+                    {settings &&
+                        <BuybackInfo settings={settings} />
+                    }
+
+                    <Flexblock gap='var(--space-3xs)'>
+                        {settings?.active &&
+                            <ComponentBlock>
+                                <BuybackForm />
+                            </ComponentBlock>
+                        }
+
+                        <ComponentBlock>
+                            <BuybackFAQs discord_thread_url={settings?.discord_thread_url || ''} />
+                        </ComponentBlock>
+                    </Flexblock>
+                </>
+            }
+        </Flexblock>
+    </PageWide>
+</Viewport>

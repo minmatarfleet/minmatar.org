@@ -4,6 +4,7 @@ const { lang, t } = i18n(Astro.url)
 
 import type { OpsMonitor } from '@dtypes/api.minmatar.org'
 import { from_now_diff } from '@helpers/date'
+import { format_isk } from '@helpers/numbers'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import Grid from '@components/compositions/Grid.astro'
@@ -40,19 +41,6 @@ function fulfilled_label(fulfilled: number, targets: number): string {
     return t('ops_health_fulfilled')
         .replace('{fulfilled}', String(fulfilled))
         .replace('{targets}', String(targets))
-}
-
-function format_isk(isk: number): string {
-    const abs = Math.abs(isk)
-    if (abs >= 1_000_000_000_000)
-        return `${(isk / 1_000_000_000_000).toFixed(2)}T`
-    if (abs >= 1_000_000_000)
-        return `${(isk / 1_000_000_000).toFixed(1)}B`
-    if (abs >= 1_000_000)
-        return `${(isk / 1_000_000).toFixed(0)}M`
-    if (abs >= 1_000)
-        return `${(isk / 1_000).toFixed(0)}K`
-    return isk.toFixed(0)
 }
 
 function isk_label(template_key: string, isk: number): string {

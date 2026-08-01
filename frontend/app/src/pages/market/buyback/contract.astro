@@ -1,0 +1,178 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import { get_buyback_settings } from '@helpers/api.minmatar.org/buybacks'
+import type { BuybackSettings } from '@dtypes/api.minmatar.org'
+import { number_name } from '@helpers/numbers.ts';
+
+let settings: BuybackSettings | null = null
+let price: number = 0
+let data_fetching_error: Error | false = false
+
+if (Astro.request.method !== "POST")
+    return Astro.redirect(translatePath('/market/buyback/'))
+
+try {
+    settings = await get_buyback_settings()
+
+    if (!settings.active || !settings.location)
+        throw new Error(t('buyback.inactive'), { cause: 400 })
+
+    const data = await Astro.request.formData();
+
+    price = parseInt((data.get("price") as string).replaceAll(',', ''), 10) || 0
+
+    if (isNaN(price) || price <= 0)
+        throw new Error(t('buyback.invalid_price'), { cause: 400 })
+} catch (error) {
+    data_fetching_error = error as Error
+}
+
+if (data_fetching_error || !settings || !settings.location) {
+    Astro.cookies.set('buyback_contract_error', data_fetching_error ? data_fetching_error.message : t('buyback.fetch_error'), { path: '/' })
+    return Astro.redirect(translatePath('/market/buyback/'))
+}
+
+const assignee_name = settings.assignee_name
+const location_name = settings.location.name
+const location_short = settings.location.short_name
+
+import {
+    get_location_video_cover,
+    get_location_video_cover_thumb,
+    get_location_cover,
+    get_location_cover_990,
+} from '@helpers/covers'
+
+import Viewport from '@layouts/Viewport.astro';
+import PageAside from '@components/page/PageAside.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+
+import Context from '@components/layout/Context.astro';
+import TextBox from '@components/layout/TextBox.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import VerticalCenter from '@components/blocks/VerticalCenter.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+import Button from '@components/blocks/Button.astro';
+import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import HistoryIcon from '@components/icons/buttons/HistoryIcon.astro';
+import BuybackFAQs from '@components/blocks/BuybackFAQs.astro';
+import TextGroup from '@components/blocks/TextGroup.astro';
+
+const page_title = t('buyback.contract.page_title');
+---
+
+<Viewport title={page_title} meta_description={t('buyback.contract.meta_description')}>
+    <PageAside
+        cover={{
+            video: get_location_video_cover(location_short) ?? undefined,
+			video_thumb: get_location_video_cover_thumb(location_short) ?? undefined,
+            image: get_location_cover(location_short) ?? '/images/freight-service-cover.jpg',
+            image_990: get_location_cover_990(location_short) ?? '/images/freight-service-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true
+        }}
+    >
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <FlexInline>
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
+            </FlexInline>
+            <FlexInline>
+                <Button class="[ !hidden sm:block! ]" href={translatePath('/market/buyback/contracts/')}>
+                    {t('buyback_contracts')}
+                </Button>
+            </FlexInline>
+        </FlexInline>
+
+        <Flexblock gap='var(--space-xl)'>
+            <TextBox>
+                <p>{t('buyback.contract.instruction_paragraph')}</p>
+            </TextBox>
+
+            <Context>
+                <ComponentBlock width='narrow'>
+                    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                        <h2>{t('buyback.contract.step_1_title')}</h2>
+
+                        <VerticalCenter>
+                            <TextGroup title={t('contract_type')}>
+                                {t('item_exchange')}
+                            </TextGroup>
+                        </VerticalCenter>
+
+                        <VerticalCenter>
+                            <TextGroup title={t('availability')}>
+                                {t('private')}
+                            </TextGroup>
+                        </VerticalCenter>
+
+                        <VerticalCenter>
+                            <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
+                                <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
+                                    <h4>{t('name')}</h4>
+                                    <p>{assignee_name}</p>
+                                </Flexblock>
+                                <ClipboardButton id="copy-buyback-name" class="[ hidden md:!flex relative ]">{assignee_name}</ClipboardButton>
+                            </FlexInline>
+                        </VerticalCenter>
+                    </Flexblock>
+                </ComponentBlock>
+
+                <ComponentBlock width='narrow'>
+                    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                        <h2>{t('buyback.contract.step_2_title')}</h2>
+                        <p>{location_name}</p>
+                    </Flexblock>
+                </ComponentBlock>
+
+                <ComponentBlock width='narrow'>
+                    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                        <h2>{t('buyback.contract.step_3_title')}</h2>
+
+                        <VerticalCenter>
+                            <FlexInline gap="var(--space-3xl)" class="[ w-full ]">
+                                <Flexblock gap="var(--space-3xs)" class="basis-[250px]">
+                                    <h4>{t('buyback.contract.price')}</h4>
+                                    <p><span data-tippy-content={number_name(price, lang)}>{price.toLocaleString()}</span></p>
+                                </Flexblock>
+                                <ClipboardButton id="copy-buyback-price" class="[ hidden md:!flex relative ]">{price}</ClipboardButton>
+                            </FlexInline>
+                        </VerticalCenter>
+                    </Flexblock>
+                </ComponentBlock>
+
+                <ComponentBlock width='narrow'>
+                    <Flexblock class="[ w-full ]" gap='var(--space-m)'>
+                        <h2>{t('buyback.contract.step_4_title')}</h2>
+
+                        <p>{t('buyback.contract.step_4_text')}</p>
+
+                        <FlexInline>
+                            <Button href={translatePath('/market/buyback/')}>
+                                <HistoryIcon slot="icon" />
+                                {t('buyback.contract.again')}
+                            </Button>
+
+                            <Button href={translatePath('/market/buyback/contracts/')}>
+                                {t('buyback_contracts')}
+                            </Button>
+                        </FlexInline>
+                    </Flexblock>
+                </ComponentBlock>
+            </Context>
+        </Flexblock>
+
+        <ComponentBlock slot="aside">
+            <BuybackFAQs
+                is_contract_page={true}
+                discord_thread_url={settings.discord_thread_url || ''}
+            />
+        </ComponentBlock>
+    </PageAside>
+</Viewport>

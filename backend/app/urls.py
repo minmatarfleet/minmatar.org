@@ -34,6 +34,7 @@ from eveonline.routers import router
 from fittings.router import doctrines_router, fittings_router
 from fleets.router import router as fleets_router
 from freight.router import router as freight_router
+from buyback.router import router as buyback_router
 from tribes.router import router as tribes_router
 from industry.router import router as industry_router
 from market.router import router as market_router
@@ -65,6 +66,7 @@ api.add_router("structures/", structures_router)
 api.add_router("mumble/", mumble_router)
 api.add_router("fleets", fleets_router)
 api.add_router("freight", freight_router)
+api.add_router("buyback", buyback_router)
 api.add_router("blog", posts_router)
 api.add_router("combatlog", combatlog_router)
 api.add_router("moons", moons_router)
