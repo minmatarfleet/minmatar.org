@@ -14,7 +14,7 @@ from eveonline.models import (
 from eveonline.helpers.characters import set_primary_character
 
 from app.test import TestCase
-from discord.client import _raise_discord_rate_limit
+from discord.client import DiscordError, _raise_discord_rate_limit
 from discord.core import DISCORD_NICKNAME_MAX_LENGTH, make_nickname
 from discord.forms import DiscordChannelAdminForm
 from discord.guilds import sync_discord_guilds
@@ -289,6 +289,32 @@ class DiscordTests(TestCase):
         ).first()
         self.assertIsNotNone(new_discord_user)
         self.assertEqual("http://avatar.gif", new_discord_user.avatar)
+
+    def test_discord_login_redirect_exchange_error(self):
+        """Backend OAuth failures redirect to the frontend auth error page."""
+        discord_response = MagicMock()
+        discord_response.status_code = 400
+        error = DiscordError.for_response(
+            "Error exchanging token", "EXCHG_CODE", discord_response
+        )
+
+        with patch("discord.views.discord") as discord_client_mock:
+            discord_client_mock.exchange_code.side_effect = error
+
+            redirect_request_mock = Mock()
+            redirect_request_mock.GET.get.return_value = "used-code"
+            redirect_request_mock.session = {}
+
+            redirect_response = discord_login_redirect(redirect_request_mock)
+
+        self.assertEqual(redirect_response.status_code, 302)
+        self.assertIn("error=EXCHG_CODE", redirect_response.url)
+        self.assertIn(f"id={error.id}", redirect_response.url)
+        self.assertTrue(
+            redirect_response.url.startswith(
+                "https://my.minmatar.org/auth/login"
+            )
+        )
 
     def test_discord_nickname_task(self):
         self.disconnect_signals()
