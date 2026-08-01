@@ -8,7 +8,7 @@ from django.contrib.auth.models import User
 from django.http import HttpRequest
 from django.shortcuts import redirect
 
-from .client import DiscordClient
+from .client import DiscordClient, DiscordError
 from users.helpers import make_user_objects
 
 discord = DiscordClient()
@@ -58,10 +58,16 @@ def discord_login_redirect(request: HttpRequest):
         request.GET.get("code"),
     )
     code = request.GET.get("code")
-    user = discord.exchange_code(code, settings.DISCORD_ADMIN_REDIRECT_URL)
-
-    if not user:
-        redirect_to_error_page(request, "exchange_token_failed")
+    try:
+        user = discord.exchange_code(code, settings.DISCORD_ADMIN_REDIRECT_URL)
+    except DiscordError as e:
+        logger.error(
+            "Error exchanging Discord code for backend login (%s): %d %s",
+            e.id,
+            e.status_code,
+            e.description,
+        )
+        return redirect_to_error_page(request, e.code, error_id=e.id)
 
     django_user = make_user_objects(user)
 
@@ -81,7 +87,7 @@ def discord_login_redirect(request: HttpRequest):
     return redirect(next_url)
 
 
-def redirect_to_error_page(request, error_code):
+def redirect_to_error_page(request, error_code, error_id=None):
     """Redirects to a frontend authentication error page"""
     try:
         redirect_url = request.session["authentication_redirect_url"]
@@ -89,6 +95,8 @@ def redirect_to_error_page(request, error_code):
         redirect_url = "https://my.minmatar.org/auth/login"
 
     redirect_url = redirect_url + "?error=" + error_code
+    if error_id:
+        redirect_url = redirect_url + "&id=" + error_id
     logger.info("Redirecting to error URL... %s", redirect_url)
     return redirect(redirect_url)
 
