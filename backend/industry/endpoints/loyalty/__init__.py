@@ -38,6 +38,12 @@ from industry.endpoints.loyalty.post_order_claim import (
     post_order_claim,
     METHOD as post_order_claim_method,
 )
+from industry.endpoints.loyalty.post_order_discord_ack import (
+    PATH as post_order_discord_ack_path,
+    ROUTE_SPEC as post_order_discord_ack_spec,
+    post_order_discord_ack,
+    METHOD as post_order_discord_ack_method,
+)
 from industry.endpoints.loyalty.post_orders import (
     PATH as post_orders_path,
     ROUTE_SPEC as post_orders_spec,
@@ -68,6 +74,12 @@ _ROUTES = (
         post_order_claim_path,
         post_order_claim_spec,
         post_order_claim,
+    ),
+    (
+        post_order_discord_ack_method,
+        post_order_discord_ack_path,
+        post_order_discord_ack_spec,
+        post_order_discord_ack,
     ),
     (patch_order_method, patch_order_path, patch_order_spec, patch_order),
 )

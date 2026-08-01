@@ -169,13 +169,19 @@ def claim_order(
 
     fully_claimed = already_claimed + claim_amount >= int(locked.quantity)
     if fully_claimed:
-        locked.status = CLAIMED
+        if locked.destination_character_name:
+            locked.status = AWAITING_LP
+        else:
+            locked.status = CLAIMED
     locked.save()
 
     # pylint: disable=import-outside-toplevel
     from industry.helpers import lp_buyback_discord
 
-    lp_buyback_discord.notify_order_claimed(locked, claim=claim)
+    if locked.status == AWAITING_LP:
+        lp_buyback_discord.notify_order_status_changed(locked)
+    else:
+        lp_buyback_discord.notify_order_claimed(locked, claim=claim)
     return locked
 
 
@@ -249,3 +255,39 @@ def update_destination(
     order.destination_character_name = destination_character_name.strip()
     order.save(update_fields=["destination_character_name", "updated_at"])
     return order
+
+
+ACTION_LP_SENT = "lp_sent"
+ACTION_ISK_SENT = "isk_sent"
+
+
+def expected_ack_user(order: IndustryLoyaltyPointMarketOrder, action: str):
+    # pylint: disable=import-outside-toplevel
+    from industry.helpers.lp_buyback_discord import isk_payer, lp_sender
+
+    if action == ACTION_LP_SENT:
+        return lp_sender(order)
+    if action == ACTION_ISK_SENT:
+        return isk_payer(order)
+    raise LpMarketOrderError(f"Unknown ack action: {action}")
+
+
+def discord_ack_order(
+    order: IndustryLoyaltyPointMarketOrder,
+    *,
+    action: str,
+) -> IndustryLoyaltyPointMarketOrder:
+    action = (action or "").strip().lower()
+    if action == ACTION_LP_SENT:
+        if order.status != AWAITING_LP:
+            raise LpMarketOrderError(
+                f"Cannot ack LP sent while status is {order.status}."
+            )
+        return transition_order(order, AWAITING_ISK)
+    if action == ACTION_ISK_SENT:
+        if order.status != AWAITING_ISK:
+            raise LpMarketOrderError(
+                f"Cannot ack ISK sent while status is {order.status}."
+            )
+        return transition_order(order, COMPLETED)
+    raise LpMarketOrderError(f"Unknown ack action: {action}")

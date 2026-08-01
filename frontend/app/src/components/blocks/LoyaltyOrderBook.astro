@@ -120,6 +120,7 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
         post_dialog_open: false,
         claim_dialog_open: false,
         claim_order_id: null,
+        claim_side: 'sell',
         claim_remaining: 0,
         claim_amount: '',
         claim_isk_per_lp: 0,
@@ -237,17 +238,36 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                 this.busy = false
             }
         },
-        open_claim(orderId, remaining, iskPerLp) {
+        open_claim(orderId, remaining, iskPerLp, side, orderDestination) {
             this.claim_order_id = orderId
+            this.claim_side = side === 'buy' ? 'buy' : 'sell'
             this.claim_remaining = Number(remaining) || 0
             this.claim_isk_per_lp = Number(iskPerLp) || 0
             this.claim_amount = this.format_thousands(this.claim_remaining)
+            const existing = String(orderDestination || '').trim()
             const primary = ${JSON.stringify(default_claim_destination)}
-            this.claim_destination_choice = primary || this.claim_destination_other_value
-            this.claim_destination_other = ''
+            const knownNames = ${JSON.stringify([
+                ...claim_characters.map((c) => c.character_name),
+                ...claim_corporations,
+            ])}
+            if (this.claim_side === 'buy') {
+                const known = Boolean(existing && knownNames.includes(existing))
+                this.claim_destination_choice = known
+                    ? existing
+                    : this.claim_destination_other_value
+                this.claim_destination_other = known ? '' : existing
+            } else {
+                this.claim_destination_choice = primary || this.claim_destination_other_value
+                this.claim_destination_other = ''
+            }
             this.post_dialog_open = false
             this.claim_dialog_open = true
             this.$nextTick(() => document.getElementById('loyalty-claim-amount')?.focus())
+        },
+        claim_destination_hint() {
+            return this.claim_side === 'buy'
+                ? ${JSON.stringify(t('industry.loyalty.claim.destination_buy_hint'))}
+                : ${JSON.stringify(t('industry.loyalty.claim.destination_sell_hint'))}
         },
         close_claim_dialog() {
             this.close_dialog()
@@ -440,7 +460,7 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                                                                 size="sm"
                                                                 color="green"
                                                                 x-bind:disabled="busy"
-                                                                x-on:click={`open_claim(${order.id}, ${quantity_remaining}, ${order.isk_per_lp}); close()`}
+                                                                x-on:click={`open_claim(${order.id}, ${quantity_remaining}, ${order.isk_per_lp}, ${JSON.stringify(order.side)}, ${JSON.stringify(order.destination_character_name || '')}); close()`}
                                                             >
                                                                 {t('industry.loyalty.action.claim')}
                                                             </Button>
@@ -632,6 +652,7 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                         </Flexblock>
                         <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
                             <label for="loyalty-claim-destination">{t('industry.loyalty.claim.destination')}</label>
+                            <small x-text="claim_destination_hint()"></small>
                             <Select
                                 id="loyalty-claim-destination"
                                 x-model="claim_destination_choice"

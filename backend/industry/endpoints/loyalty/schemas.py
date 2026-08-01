@@ -71,6 +71,11 @@ class PatchLoyaltyMarketOrderRequest(Schema):
     notes: Optional[str] = None
 
 
+class DiscordAckLoyaltyMarketOrderRequest(Schema):
+    discord_user_id: int
+    action: str
+
+
 class LoyaltyLedgerEntryResponse(Schema):
     id: int
     account_id: int

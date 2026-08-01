@@ -21,10 +21,20 @@ from groups.models import (
     PilotFeature,
     UserAffiliation,
 )
-from discord.models import DiscordChannel, DiscordGuild
+from discord.models import DiscordChannel, DiscordGuild, DiscordUser
 from industry.helpers.lp_buyback_discord import (
+    _awaiting_isk_message,
+    _awaiting_lp_message,
     notify_order_created,
+    notify_order_status_changed,
     order_thread_title,
+)
+from industry.helpers.lp_buyback_discord_buttons import (
+    isk_sent_custom_id,
+    lp_sent_components,
+    lp_sent_custom_id,
+    parse_isk_sent_custom_id,
+    parse_lp_sent_custom_id,
 )
 from industry.helpers.lp_market_orders import MAX_SELL_LP, format_lp_quantity
 from industry.helpers.lp_ledger import account_balance, post_ledger_entry
@@ -57,6 +67,14 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         signals.m2m_changed.disconnect(
             sender=User.groups.through,
             dispatch_uid="user_group_changed",
+        )
+        signals.post_save.disconnect(
+            sender=EveCharacter,
+            dispatch_uid="populate_eve_character_public_data",
+        )
+        signals.post_save.disconnect(
+            sender=EveCharacter,
+            dispatch_uid="populate_eve_character_private_data",
         )
         clear_feature_cache()
         self.client = Client()
@@ -330,7 +348,7 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.manager_token}",
         )
         self.assertEqual(claim.status_code, 200, claim.content)
-        self.assertEqual(claim.json()["status"], "claimed")
+        self.assertEqual(claim.json()["status"], "awaiting_lp")
         self.assertEqual(claim.json()["quantity_claimed"], 500_000)
         self.assertEqual(claim.json()["quantity_remaining"], 0)
         self.assertEqual(len(claim.json()["claims"]), 1)
@@ -338,20 +356,6 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
             claim.json()["destination_character_name"],
             "tactical warfare trading",
         )
-
-        awaiting_lp = self.client.patch(
-            f"/api/industry/loyalty/orders/{order_id}",
-            data=json.dumps(
-                {
-                    "status": "awaiting_lp",
-                    "destination_character_name": "tactical warfare trading",
-                }
-            ),
-            content_type="application/json",
-            HTTP_AUTHORIZATION=f"Bearer {self.manager_token}",
-        )
-        self.assertEqual(awaiting_lp.status_code, 200, awaiting_lp.content)
-        self.assertEqual(awaiting_lp.json()["status"], "awaiting_lp")
 
         awaiting_isk = self.client.patch(
             f"/api/industry/loyalty/orders/{order_id}",
@@ -431,14 +435,12 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.manager_token}",
         )
         self.assertEqual(claim.status_code, 200, claim.content)
+        self.assertEqual(claim.json()["status"], "awaiting_lp")
 
-        for status in ("awaiting_lp", "awaiting_isk", "completed"):
-            payload = {"status": status}
-            if status == "awaiting_lp":
-                payload["destination_character_name"] = "LP Seller alt"
+        for status in ("awaiting_isk", "completed"):
             response = self.client.patch(
                 f"/api/industry/loyalty/orders/{order_id}",
-                data=json.dumps(payload),
+                data=json.dumps({"status": status}),
                 content_type="application/json",
                 HTTP_AUTHORIZATION=f"Bearer {self.manager_token}",
             )
@@ -453,8 +455,12 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
 
     @patch("industry.helpers.lp_buyback_discord.notify_order_created")
     @patch("industry.helpers.lp_buyback_discord.notify_order_claimed")
+    @patch("industry.helpers.lp_buyback_discord.notify_order_status_changed")
     def test_partial_claims_until_fully_claimed(
-        self, unused_claim_notify, unused_create_notify
+        self,
+        unused_status_notify,
+        unused_claim_notify,
+        unused_create_notify,
     ):
         create = self.client.post(
             "/api/industry/loyalty/orders",
@@ -523,7 +529,7 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.manager_token}",
         )
         self.assertEqual(second.status_code, 200, second.content)
-        self.assertEqual(second.json()["status"], "claimed")
+        self.assertEqual(second.json()["status"], "awaiting_lp")
         self.assertEqual(second.json()["quantity_claimed"], 1_000_000)
         self.assertEqual(second.json()["quantity_remaining"], 0)
         self.assertEqual(len(second.json()["claims"]), 2)
@@ -688,3 +694,202 @@ class LoyaltyBuybackDiscordTestCase(AppTestCase):
         other.refresh_from_db()
         self.assertFalse(self.lp_channel.receive_lp_buyback)
         self.assertTrue(other.receive_lp_buyback)
+
+
+class LpBuybackDiscordButtonsTestCase(AppTestCase):
+    def test_custom_id_roundtrip(self):
+        self.assertEqual(lp_sent_custom_id(42), "lp_buyback:lp:42")
+        self.assertEqual(parse_lp_sent_custom_id("lp_buyback:lp:42"), 42)
+        self.assertIsNone(parse_lp_sent_custom_id("lp_buyback:isk:42"))
+        self.assertEqual(isk_sent_custom_id(7), "lp_buyback:isk:7")
+        self.assertEqual(parse_isk_sent_custom_id("lp_buyback:isk:7"), 7)
+
+    def test_lp_sent_components(self):
+        button = lp_sent_components(99)[0]["components"][0]
+        self.assertEqual(button["label"], "LP sent")
+        self.assertEqual(button["custom_id"], "lp_buyback:lp:99")
+        self.assertEqual(button["style"], 3)
+
+
+class LpBuybackSideAwareMessagingTestCase(AppTestCase):
+    def setUp(self):
+        super().setUp()
+        signals.post_save.disconnect(
+            sender=EveCharacter,
+            dispatch_uid="populate_eve_character_public_data",
+        )
+        signals.post_save.disconnect(
+            sender=EveCharacter,
+            dispatch_uid="populate_eve_character_private_data",
+        )
+        self.currency, _ = IndustryLoyaltyPoint.objects.update_or_create(
+            corporation_id=TLIB_CORP_ID,
+            defaults={
+                "name": "Tribal Liberation Force",
+                "default_isk_per_lp": 800,
+                "is_active": True,
+            },
+        )
+        self.seller = self.user
+        seller_char = EveCharacter.objects.create(
+            character_id=888001,
+            character_name="WTS Pilot",
+            user=self.seller,
+        )
+        set_primary_character(self.seller, seller_char)
+        DiscordUser.objects.create(
+            id=1001, discord_tag="seller#0001", user=self.seller
+        )
+        self.claimer = User.objects.create(username="wtb_claimer")
+        claimer_char = EveCharacter.objects.create(
+            character_id=888002,
+            character_name="BearThatCares",
+            user=self.claimer,
+        )
+        set_primary_character(self.claimer, claimer_char)
+        DiscordUser.objects.create(
+            id=1002, discord_tag="bear#0001", user=self.claimer
+        )
+
+    def test_wts_awaiting_lp_tags_poster(self):
+        order = IndustryLoyaltyPointMarketOrder.objects.create(
+            loyalty_point=self.currency,
+            side=IndustryLoyaltyPointMarketOrder.Side.SELL,
+            quantity=1000,
+            isk_per_lp=800,
+            status=IndustryLoyaltyPointMarketOrder.Status.AWAITING_LP,
+            created_by=self.seller,
+            claimed_by=self.claimer,
+            destination_character_name="CT Alt",
+        )
+        msg = _awaiting_lp_message(order)
+        self.assertIn("<@1001>", msg)
+        self.assertIn("Send LP to: **CT Alt**", msg)
+
+    def test_wtb_awaiting_lp_tags_claimer(self):
+        order = IndustryLoyaltyPointMarketOrder.objects.create(
+            loyalty_point=self.currency,
+            side=IndustryLoyaltyPointMarketOrder.Side.BUY,
+            quantity=1000,
+            isk_per_lp=800,
+            status=IndustryLoyaltyPointMarketOrder.Status.AWAITING_LP,
+            created_by=self.seller,
+            claimed_by=self.claimer,
+            destination_character_name="Ballah Inc.",
+        )
+        msg = _awaiting_lp_message(order)
+        self.assertIn("<@1002>", msg)
+        self.assertIn("Send LP to: **Ballah Inc.**", msg)
+
+    def test_wtb_awaiting_isk_tags_poster_pay_claimer(self):
+        order = IndustryLoyaltyPointMarketOrder.objects.create(
+            loyalty_point=self.currency,
+            side=IndustryLoyaltyPointMarketOrder.Side.BUY,
+            quantity=1000,
+            isk_per_lp=800,
+            status=IndustryLoyaltyPointMarketOrder.Status.AWAITING_ISK,
+            created_by=self.seller,
+            claimed_by=self.claimer,
+        )
+        msg = _awaiting_isk_message(order)
+        self.assertIn("<@1001>", msg)
+        self.assertIn("Pay ISK to: **BearThatCares**", msg)
+
+    @patch("industry.helpers.lp_buyback_discord.discord")
+    def test_awaiting_lp_posts_lp_sent_button(self, discord_mock):
+        order = IndustryLoyaltyPointMarketOrder.objects.create(
+            loyalty_point=self.currency,
+            side=IndustryLoyaltyPointMarketOrder.Side.SELL,
+            quantity=1000,
+            isk_per_lp=800,
+            status=IndustryLoyaltyPointMarketOrder.Status.AWAITING_LP,
+            created_by=self.seller,
+            claimed_by=self.claimer,
+            destination_character_name="CT Alt",
+            discord_thread_id=555,
+        )
+        notify_order_status_changed(order)
+        kwargs = discord_mock.create_message.call_args.kwargs
+        self.assertEqual(
+            kwargs["payload"]["components"][0]["components"][0]["custom_id"],
+            f"lp_buyback:lp:{order.pk}",
+        )
+
+
+class LpBuybackDiscordAckApiTestCase(LoyaltyBuybackApiTestCase):
+    def setUp(self):
+        super().setUp()
+        DiscordUser.objects.create(
+            id=2001, discord_tag="seller#0001", user=self.user
+        )
+        DiscordUser.objects.create(
+            id=2002, discord_tag="manager#0001", user=self.manager
+        )
+        self.staff = User.objects.create(username="bot_service", is_staff=True)
+        self.staff_token = jwt.encode(
+            {"user_id": self.staff.id},
+            settings.SECRET_KEY,
+            algorithm="HS256",
+        )
+        self.bystander = User.objects.create(username="bystander")
+        DiscordUser.objects.create(
+            id=2003, discord_tag="bystander#0001", user=self.bystander
+        )
+
+    def _sell_order_awaiting_lp(self):
+        return IndustryLoyaltyPointMarketOrder.objects.create(
+            loyalty_point=self.currency,
+            side=IndustryLoyaltyPointMarketOrder.Side.SELL,
+            quantity=100_000,
+            isk_per_lp=800,
+            status=IndustryLoyaltyPointMarketOrder.Status.AWAITING_LP,
+            created_by=self.user,
+            claimed_by=self.manager,
+            destination_character_name="CT Alt",
+        )
+
+    @patch("industry.helpers.lp_buyback_discord.notify_order_status_changed")
+    def test_lp_sent_by_expected_party(self, unused_notify):
+        order = self._sell_order_awaiting_lp()
+        response = self.client.post(
+            f"/api/industry/loyalty/orders/{order.pk}/discord-ack",
+            data=json.dumps({"discord_user_id": 2001, "action": "lp_sent"}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.staff_token}",
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["status"], "awaiting_isk")
+
+    @patch("industry.helpers.lp_buyback_discord.notify_order_status_changed")
+    def test_isk_sent_by_manager(self, unused_notify):
+        order = self._sell_order_awaiting_lp()
+        order.status = IndustryLoyaltyPointMarketOrder.Status.AWAITING_ISK
+        order.save(update_fields=["status"])
+        response = self.client.post(
+            f"/api/industry/loyalty/orders/{order.pk}/discord-ack",
+            data=json.dumps({"discord_user_id": 2002, "action": "isk_sent"}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.staff_token}",
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["status"], "completed")
+
+    def test_wrong_user_rejected(self):
+        order = self._sell_order_awaiting_lp()
+        response = self.client.post(
+            f"/api/industry/loyalty/orders/{order.pk}/discord-ack",
+            data=json.dumps({"discord_user_id": 2003, "action": "lp_sent"}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.staff_token}",
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_wrong_status_rejected(self):
+        order = self._sell_order_awaiting_lp()
+        response = self.client.post(
+            f"/api/industry/loyalty/orders/{order.pk}/discord-ack",
+            data=json.dumps({"discord_user_id": 2002, "action": "isk_sent"}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.staff_token}",
+        )
+        self.assertEqual(response.status_code, 400)
