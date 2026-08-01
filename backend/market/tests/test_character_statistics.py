@@ -334,3 +334,58 @@ class AttributedOrderSyncTestCase(TestCase):
         order = EveMarketAttributedOrder.objects.get(order_id=300)
         self.assertEqual(777007, order.owner_character_id)
         self.assertEqual(98000099, order.corporation_id)
+
+    @patch("market.helpers.attributed_orders.get_director_with_scope")
+    @patch("market.helpers.attributed_orders.EsiClient")
+    def test_sync_corporation_orders_replaces_personal_same_order_id(
+        self, esi_cls, get_director
+    ):
+        """Personal↔corp ownership of the same ESI order_id must not IntegrityError."""
+        EveMarketAttributedOrder.objects.create(
+            order_id=400,
+            type_id=34,
+            location_esi_id=1,
+            price=Decimal("1"),
+            volume_remain=1,
+            is_buy_order=False,
+            owner_character_id=self.character.character_id,
+            corporation_id=None,
+        )
+        alliance = EveAlliance.objects.create(
+            alliance_id=99000002, name="Minmatar Fleet Alliance"
+        )
+        corp = EveCorporation.objects.create(
+            corporation_id=98000100,
+            name="Market Corp 2",
+            alliance=alliance,
+        )
+        get_director.return_value = self.character
+        client = MagicMock()
+        esi_cls.return_value = client
+        response = MagicMock()
+        response.success.return_value = True
+        response.results.return_value = [
+            {
+                "order_id": 400,
+                "type_id": 34,
+                "location_id": 60003760,
+                "price": 99.5,
+                "volume_remain": 5,
+                "is_buy_order": False,
+                "issued_by": self.character.character_id,
+                "issued": "2026-01-03T00:00:00Z",
+                "duration": 30,
+            }
+        ]
+        client.get_corporation_orders.return_value = response
+
+        result = sync_corporation_orders(corp.corporation_id)
+        self.assertEqual(OrderSyncStatus.OK, result.status)
+        self.assertEqual(1, result.rows)
+        order = EveMarketAttributedOrder.objects.get(order_id=400)
+        self.assertEqual(self.character.character_id, order.owner_character_id)
+        self.assertEqual(98000100, order.corporation_id)
+        self.assertEqual(Decimal("99.50"), order.price)
+        self.assertEqual(
+            1, EveMarketAttributedOrder.objects.filter(order_id=400).count()
+        )

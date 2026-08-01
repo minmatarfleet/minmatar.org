@@ -8,6 +8,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Callable, Iterable
 
+from django.db.models import Q
 from django.utils import timezone
 
 from eveonline.client import EsiClient
@@ -93,6 +94,15 @@ def _replace_orders_from_esi(
         )
         if order:
             instances.append(order)
+    # order_id is globally unique; personal and corp syncs use different
+    # delete scopes, so also clear any existing rows for these order_ids
+    # (ownership can move personal↔corp between syncs).
+    order_ids = [inst.order_id for inst in instances]
+    if order_ids:
+        model = delete_queryset.model
+        delete_queryset = model.objects.filter(
+            Q(pk__in=delete_queryset.values("pk")) | Q(order_id__in=order_ids)
+        )
     rows = replace_with_bulk_create(
         delete_queryset=delete_queryset,
         instances=instances,
