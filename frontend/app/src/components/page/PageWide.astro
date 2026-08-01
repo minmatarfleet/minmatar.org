@@ -1,6 +1,12 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { lang, t } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user:User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
 
 import { marked } from 'marked';
 
@@ -23,8 +29,20 @@ const {
     sticky = false,
     ...attributes
 } = Astro.props;
+
+import { is_referral_url } from '@helpers/fetching/referrals'
+const is_referral_page = user ? is_referral_url(Astro.url.pathname, lang) : false
+
+import ReferralLink from '@components/blocks/ReferralLink.astro';
 ---
+
 <main id="content" {...attributes}>
+    {is_referral_page && user &&
+        <div class="[ absolute top-[var(--space-2xs)] left-[var(--space-xl)] ]">
+            <ReferralLink user_id={user.user_id} />
+        </div>
+    }
+
     {cover && <PageCover {...cover} /> }
 
     <PageHeader max_width="var(--max-content-width)" sticky={sticky}>
