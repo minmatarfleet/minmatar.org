@@ -40,6 +40,9 @@
             completeError: '',
             // Match SSR so soft navigations don't depend on Alpine removing x-cloak first.
             showPicker: !!needsPersonaInitially,
+            // Button.astro nests empty x-data; $el from click handlers is the button.
+            // Capture hub root in init so syncPanels always toggles the right panels.
+            hubRoot: null,
             localApi() {
                 return window.__learningLocal || null
             },
@@ -58,7 +61,7 @@
                 return Math.round((100 * done) / list.length)
             },
             syncPanels() {
-                const root = this.$el
+                const root = this.hubRoot
                 if (!root) return
                 root.querySelectorAll('[data-hub-when-catalog]').forEach((el) => {
                     el.classList.toggle('is-hidden', this.showPicker)
@@ -84,6 +87,7 @@
                 }
             },
             async init() {
+                this.hubRoot = this.$el
                 const cfg = JSON.parse(this.$el.getAttribute('data-config') || '{}')
                 const apiUrl = this.$el.getAttribute('data-api-url') || ''
                 this.authToken = cfg.authToken || ''
