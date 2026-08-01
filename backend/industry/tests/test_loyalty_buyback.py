@@ -629,6 +629,15 @@ class LoyaltyBuybackDiscordTestCase(AppTestCase):
         response = MagicMock()
         response.json.return_value = {"id": "555666777"}
         discord_mock.create_forum_thread.return_value = response
+        channel_response = MagicMock()
+        channel_response.json.return_value = {
+            "available_tags": [
+                {"id": "111", "name": "misc"},
+                {"id": "222", "name": "Open"},
+            ],
+            "flags": 16,
+        }
+        discord_mock.get_channel.return_value = channel_response
 
         notify_order_created(self.order)
         self.order.refresh_from_db()
@@ -637,6 +646,25 @@ class LoyaltyBuybackDiscordTestCase(AppTestCase):
         kwargs = discord_mock.create_forum_thread.call_args.kwargs
         self.assertEqual(kwargs["channel_id"], self.lp_channel.channel_id)
         self.assertIn("WTS 2.5M TLIB @800", kwargs["title"])
+        self.assertEqual(kwargs["applied_tags"], ["222"])
+        discord_mock.get_channel.assert_called_once_with(
+            self.lp_channel.channel_id
+        )
+
+    @patch("industry.helpers.lp_buyback_discord.discord")
+    def test_notify_order_created_without_forum_tags(self, discord_mock):
+        response = MagicMock()
+        response.json.return_value = {"id": "555666778"}
+        discord_mock.create_forum_thread.return_value = response
+        channel_response = MagicMock()
+        channel_response.json.return_value = {"available_tags": [], "flags": 0}
+        discord_mock.get_channel.return_value = channel_response
+
+        notify_order_created(self.order)
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.discord_thread_id, 555666778)
+        kwargs = discord_mock.create_forum_thread.call_args.kwargs
+        self.assertEqual(kwargs["applied_tags"], [])
 
     @patch("industry.helpers.lp_buyback_discord.discord")
     def test_notify_skips_without_designated_channel(self, discord_mock):
