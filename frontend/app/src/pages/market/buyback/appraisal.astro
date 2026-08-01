@@ -33,8 +33,8 @@ try {
 
     appraisal = await post_buyback_appraisal(paste)
 
-    if (!appraisal.accepted_count || appraisal.offer_total <= 0)
-        throw new Error(t('buyback.no_accepted_items'), { cause: 400 })
+    if (!appraisal.lines.length)
+        throw new Error(t('buyback.invalid_paste'), { cause: 400 })
 } catch (error) {
     data_fetching_error = error as Error
 }
@@ -47,6 +47,7 @@ if (data_fetching_error || !settings || !settings.location || !appraisal) {
 const price = Math.floor(appraisal.offer_total)
 const accepted = appraisal.lines.filter((line) => line.accepted)
 const rejected = appraisal.lines.filter((line) => !line.accepted)
+const can_continue = accepted.length > 0 && price > 0
 
 import {
     get_location_video_cover,
@@ -145,15 +146,23 @@ const format_isk = (value: number | null) => {
                                 </p>
                             </Flexblock>
 
-                            <ClipboardButton
-                                id="copy-buyback-offer"
-                                class="[ relative shrink-0 ]"
-                            >{price}</ClipboardButton>
+                            {can_continue &&
+                                <ClipboardButton
+                                    id="copy-buyback-offer"
+                                    class="[ relative shrink-0 ]"
+                                >{price}</ClipboardButton>
+                            }
                         </FlexInline>
 
-                        <Button type="submit">
-                            {t('buyback.form.continue')}
-                        </Button>
+                        {!can_continue &&
+                            <p class="[ buyback-appraisal-note ]">{t('buyback.no_accepted_items')}</p>
+                        }
+
+                        {can_continue &&
+                            <Button type="submit">
+                                {t('buyback.form.continue')}
+                            </Button>
+                        }
                     </Flexblock>
                 </form>
             </ComponentBlock>

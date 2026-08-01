@@ -1,5 +1,6 @@
 """Tests for buyback paste parse, classify, price, and appraise endpoint."""
 
+from datetime import date
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -14,6 +15,8 @@ from buyback.helpers.accepted_items import (
 from buyback.helpers.classify import BuybackCategory, classify_eve_type
 from buyback.helpers.paste import parse_eve_paste
 from buyback.helpers.pricing import (
+    get_baseline_buy_prices,
+    get_baseline_buy_prices_by_name,
     merge_rate_rules,
     price_flat_line,
     price_ore_line,
@@ -21,7 +24,7 @@ from buyback.helpers.pricing import (
 from buyback.models import BuybackAcceptedItem, EveBuybackSettings
 from eveonline.models import EveCharacter, EveLocation
 from industry.models import IndustryOrder, IndustryOrderItem, IndustryProduct
-from market.models import EveMarketItemLocationPrice
+from market.models import EveMarketItemHistory, EveMarketItemLocationPrice
 
 BASE_URL = "/api/buyback"
 
@@ -222,6 +225,65 @@ class PriceBuybackTestCase(TestCase):
         mock_reprocess.assert_called_once_with(
             "Compressed Veldspar", 100, refine_rate=0.85
         )
+
+
+class BaselineBuyPriceFallbackTestCase(TestCase):
+    def setUp(self):
+        self.baseline = EveLocation.objects.create(
+            location_id=60003760,
+            location_name="Jita IV - Moon 4 - Caldari Navy Assembly Plant",
+            solar_system_id=30000142,
+            solar_system_name="Jita",
+            short_name="Jita",
+            region_id=10000002,
+            price_baseline=True,
+            prices_active=True,
+            market_active=False,
+        )
+        self.trit = _ensure_type(
+            type_id=34,
+            name="Tritanium",
+            group_id=18,
+            group_name="Mineral",
+            category_id=4,
+            category_name="Material",
+        )
+        self.water = _ensure_type(
+            type_id=3645,
+            name="Water",
+            group_id=1042,
+            group_name="Basic Commodities - Tier 1",
+            category_id=43,
+            category_name="Planetary Commodities",
+        )
+        EveMarketItemLocationPrice.objects.create(
+            location=self.baseline,
+            item=self.water,
+            sell_price=Decimal("110"),
+            buy_price=Decimal("100"),
+            split_price=Decimal("105"),
+        )
+        EveMarketItemHistory.objects.create(
+            region_id=10000002,
+            item=self.trit,
+            date=date(2026, 7, 31),
+            average=Decimal("3.93"),
+            highest=Decimal("3.94"),
+            lowest=Decimal("3.89"),
+            volume=1_000_000,
+        )
+
+    def test_uses_location_buy_when_present(self):
+        prices = get_baseline_buy_prices([self.water.id])
+        self.assertEqual(prices[self.water.id], Decimal("100"))
+
+    def test_falls_back_to_region_history_average(self):
+        prices = get_baseline_buy_prices([self.trit.id])
+        self.assertEqual(prices[self.trit.id], Decimal("3.93"))
+
+        by_name = get_baseline_buy_prices_by_name(["Tritanium", "Water"])
+        self.assertEqual(by_name["Tritanium"], Decimal("3.93"))
+        self.assertEqual(by_name["Water"], Decimal("100"))
 
 
 class AcceptedItemsSeedTestCase(TestCase):
@@ -448,6 +510,43 @@ class AppraiseEndpointTestCase(TestCase):
         self.assertEqual(by_name["Coolant"]["rate"], 1.0)
         self.assertEqual(by_name["Coolant"]["jita_buy"], 9000.0)
         self.assertFalse(by_name["Compressed Blue Ice"]["accepted"])
+
+    @patch(
+        "buyback.helpers.pricing.reprocess_output",
+        return_value={"Tritanium": 100},
+    )
+    def test_appraise_ore_uses_history_when_jita_buy_missing(
+        self, unused_mock_reprocess
+    ):
+        trit = _ensure_type(
+            type_id=34,
+            name="Tritanium",
+            group_id=18,
+            group_name="Mineral",
+            category_id=4,
+            category_name="Material",
+        )
+        EveMarketItemHistory.objects.create(
+            region_id=10000002,
+            item=trit,
+            date=date(2026, 7, 31),
+            average=Decimal("4.00"),
+            highest=Decimal("4.10"),
+            lowest=Decimal("3.90"),
+            volume=1_000_000,
+        )
+        # Baseline has no Tritanium location buy — production Jita case.
+        response = self.client.post(
+            f"{BASE_URL}/appraise",
+            data={"paste": "Compressed Veldspar\t1000"},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["accepted_count"], 1)
+        self.assertEqual(data["offer_total"], 400.0)
+        by_name = {line["name"]: line for line in data["lines"]}
+        self.assertTrue(by_name["Compressed Veldspar"]["accepted"])
 
     @patch(
         "buyback.helpers.pricing.reprocess_output",
