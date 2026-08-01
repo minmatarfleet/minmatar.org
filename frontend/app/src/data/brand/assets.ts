@@ -49,12 +49,16 @@ export const logoAssets: BrandAssetRow[] = [
         description: 'Current logo with banner',
         svg: '/images/brand/fleet/fl33t_logo.svg',
         png512: '/images/brand/fleet/fl33t_512.png',
+        png1080: '/images/brand/fleet/fl33t_1080.png',
+        png2160: '/images/brand/fleet/fl33t_2160.png',
     },
     {
         name: 'FL33T without banner',
         description: 'Current logo without banner',
-        svg: '/images/brand/fleet/fl33t_logo.svg',
-        png512: '/images/brand/fleet/fl33t_512.png',
+        svg: '/images/brand/fleet/fl33t_nobanner.svg',
+        png512: '/images/brand/fleet/fl33t_nobanner_512.png',
+        png1080: '/images/brand/fleet/fl33t_nobanner_1080.png',
+        png2160: '/images/brand/fleet/fl33t_nobanner_2160.png',
     },
     {
         name: 'FL33T vintage',
