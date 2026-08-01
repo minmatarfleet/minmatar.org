@@ -5,13 +5,15 @@ const { t } = i18n(Astro.url)
 import type { TribeMembership } from '@dtypes/api.minmatar.org'
 
 interface Props {
-    requests:   TribeMembership[];
-    init_tooltips:      boolean;
+    requests:               TribeMembership[];
+    init_tooltips:          boolean;
+    required_token_type?:   string | null;
 }
 
 const {
     requests,
     init_tooltips,
+    required_token_type = null,
 } = Astro.props
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -27,7 +29,11 @@ import Table from '@components/blocks/Table.astro';
         <Table>
             {requests.map(request =>
                 <div x-show="show_item($el)">
-                    <MembershipRequestItem request={request} init_tooltips={init_tooltips} />
+                    <MembershipRequestItem
+                        request={request}
+                        init_tooltips={init_tooltips}
+                        required_token_type={required_token_type}
+                    />
                 </div>
             )}
             <p class="[ no-result-text ]">{t('no_results')}</p>

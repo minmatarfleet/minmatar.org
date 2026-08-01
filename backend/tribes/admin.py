@@ -22,7 +22,13 @@ from tribes.models import (
 class TribeGroupInline(admin.TabularInline):
     model = TribeGroup
     extra = 0
-    fields = ("name", "chief", "is_active", "discord_channel_id")
+    fields = (
+        "name",
+        "chief",
+        "is_active",
+        "required_token_type",
+        "discord_channel_id",
+    )
     show_change_link = True
 
 
@@ -72,8 +78,15 @@ class TribeGroupRequirementInline(admin.TabularInline):
 
 @admin.register(TribeGroup)
 class TribeGroupAdmin(admin.ModelAdmin):
-    list_display = ("name", "code", "tribe", "chief", "is_active")
-    list_filter = ("is_active", "tribe")
+    list_display = (
+        "name",
+        "code",
+        "tribe",
+        "chief",
+        "required_token_type",
+        "is_active",
+    )
+    list_filter = ("is_active", "tribe", "required_token_type")
     search_fields = ("name", "code", "tribe__name")
     raw_id_fields = ("tribe", "chief", "group")
     inlines = [TribeGroupRankInline, TribeGroupRequirementInline]

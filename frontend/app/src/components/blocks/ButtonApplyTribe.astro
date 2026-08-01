@@ -3,6 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { SummaryCharacter, TribeAvailableCharacter } from '@dtypes/api.minmatar.org'
+import { get_api_url, get_app_url } from '@helpers/env'
 
 interface Props {
     target_id:              string;
@@ -11,6 +12,7 @@ interface Props {
     group_id:               number;
     pilots:                 SummaryCharacter[];
     available_characters?:  TribeAvailableCharacter[];
+    required_token_type?:   string | null;
     hidden?:                boolean;
     id?:                    string;
 }
@@ -22,11 +24,27 @@ const {
     group_id,
     pilots,
     available_characters,
+    required_token_type = null,
     hidden = false,
     id,
 } = Astro.props
 
 const TRIBE_GROUP_STATUS_PARTIAL_URL = translatePath(`/partials/tribe_group_status_component?tribe_id=${tribe_id}&group_id=${group_id}`)
+const redirect_path = translatePath(`/alliance/tribes/${tribe_id}/${group_id}`)
+const FIX_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${redirect_path}`
+
+const qualify_label = (available: TribeAvailableCharacter) => {
+    if (available.missing_token && required_token_type) {
+        return t('tribes.detail.missing_token').replace('{token}', required_token_type)
+    }
+    if (available.qualifies) return t('tribes.detail.qualified')
+    if (available.missing_skills && available.missing_assets) {
+        return t('tribes.detail.missing_skills_and_assets')
+    }
+    if (available.missing_skills) return t('tribes.detail.missing_skills')
+    if (available.missing_assets) return t('tribes.detail.missing_assets')
+    return t('tribes.detail.unqualified')
+}
 
 // Avoid adding a frontmatter line with a string literal (e.g. ?? "" or ?? ''). It triggers
 // esbuild "Unterminated string literal" when compiling this .astro file. Use template for defaults (e.g. data-api-url={import.meta.env.API_URL}).
@@ -37,6 +55,7 @@ import Wrapper from '@components/compositions/Wrapper.astro';
 import DialogButton from "@components/blocks/DialogButton.astro";
 import Button from '@components/blocks/Button.astro';
 import SelectableCharacterCard from '@components/blocks/SelectableCharacterCard.astro';
+import CharacterCard from '@components/blocks/CharacterCard.astro';
 import LandingSwiper from '@components/blocks/LandingSwiper.astro';
 import CorporationBadge from '@components/blocks/CorporationBadge.astro';
 import Tag from '@components/blocks/Tag.astro';
@@ -99,50 +118,78 @@ import Tag from '@components/blocks/Tag.astro';
                             const available = available_characters?.find(
                                 (a) => a.character_id === pilot.character_id
                             )
-                            
-                            const cid = pilot.character_id
+                            const missing_token = Boolean(available?.missing_token)
                             const hasBar = available != null
-                            const barLabel = hasBar
-                                ? (available.qualifies
-                                    ? t('tribes.detail.qualified')
-                                    : available.missing_skills && available.missing_assets
-                                        ? t('tribes.detail.missing_skills_and_assets')
-                                        : available.missing_skills
-                                            ? t('tribes.detail.missing_skills')
-                                            : available.missing_assets
-                                                ? t('tribes.detail.missing_assets')
-                                                : t('tribes.detail.unqualified'))
-                                : '';
+                            const barLabel = hasBar ? qualify_label(available) : ''
+                            const isOk = available ? !available.missing_token && available.qualifies : true
+
                             return (
                                 <div class="[ swiper-slide ]" style="margin-right: 5px">
                                     <div class="[ tribe-apply-character-card ]">
                                         <div class="[ tribe-apply-card-header ]">
-                                            <SelectableCharacterCard
-                                                character_id={pilot.character_id}
-                                                character_name={pilot.character_name}
-                                                x-model="characters"
-                                                x-on:change="update_character_ids()"
-                                                value={pilot.character_id}
-                                            >
-                                                <Flexblock gap='var(--space-3xs)'>
-                                                    {hasBar &&
-                                                        <Tag
-                                                            class="no-desaturate"
-                                                            color={available.qualifies ? 'green' : 'fleet-red'}
-                                                            text={barLabel}
+                                            {missing_token && required_token_type ?
+                                                <CharacterCard
+                                                    character_id={pilot.character_id}
+                                                    character_name={pilot.character_name}
+                                                    value={pilot.character_id}
+                                                    inert={true}
+                                                >
+                                                    <div slot="visible-actions">
+                                                        <Button
+                                                            color='green'
+                                                            size='sm'
+                                                            href={`${FIX_CHARACTER_URL}&token_type=${required_token_type}&character_id=${pilot.character_id}`}
+                                                        >
+                                                            {t('tribes.detail.upgrade_token').replace('{token}', required_token_type)}
+                                                        </Button>
+                                                    </div>
+                                                    <Flexblock gap='var(--space-3xs)'>
+                                                        {hasBar &&
+                                                            <Tag
+                                                                class="no-desaturate"
+                                                                color='fleet-red'
+                                                                text={barLabel}
+                                                            />
+                                                        }
+                                                        <h3>{pilot.character_name}</h3>
+                                                        <CorporationBadge
+                                                            corporation={{
+                                                                id: pilot.corp_id,
+                                                                name: pilot.corp_name,
+                                                                size: 'xs',
+                                                            }}
+                                                            highlight={false}
                                                         />
-                                                    }
-                                                    <h3>{pilot.character_name}</h3>
-                                                    <CorporationBadge
-                                                        corporation={{
-                                                            id: pilot.corp_id,
-                                                            name: pilot.corp_name,
-                                                            size: 'xs',
-                                                        }}
-                                                        highlight={false}
-                                                    />
-                                                </Flexblock>
-                                            </SelectableCharacterCard>
+                                                    </Flexblock>
+                                                </CharacterCard>
+                                                :
+                                                <SelectableCharacterCard
+                                                    character_id={pilot.character_id}
+                                                    character_name={pilot.character_name}
+                                                    x-model="characters"
+                                                    x-on:change="update_character_ids()"
+                                                    value={pilot.character_id}
+                                                >
+                                                    <Flexblock gap='var(--space-3xs)'>
+                                                        {hasBar &&
+                                                            <Tag
+                                                                class="no-desaturate"
+                                                                color={isOk ? 'green' : 'fleet-red'}
+                                                                text={barLabel}
+                                                            />
+                                                        }
+                                                        <h3>{pilot.character_name}</h3>
+                                                        <CorporationBadge
+                                                            corporation={{
+                                                                id: pilot.corp_id,
+                                                                name: pilot.corp_name,
+                                                                size: 'xs',
+                                                            }}
+                                                            highlight={false}
+                                                        />
+                                                    </Flexblock>
+                                                </SelectableCharacterCard>
+                                            }
                                         </div>
                                     </div>
                                 </div>

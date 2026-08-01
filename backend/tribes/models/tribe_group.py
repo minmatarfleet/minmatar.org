@@ -1,5 +1,7 @@
 from django.db import models
 
+from eveonline.scopes import TokenType
+
 
 class TribeGroup(models.Model):
     """
@@ -7,6 +9,10 @@ class TribeGroup(models.Model):
     A single-focus tribe (e.g. Mining) has one TribeGroup.
     A multi-focus tribe (e.g. Capitals) has several (Dreads, Carriers, Fax).
     """
+
+    TOKEN_TYPE_CHOICES = [
+        (t.value, t.value) for t in TokenType if t != TokenType.PUBLIC
+    ]
 
     tribe = models.ForeignKey(
         "tribes.Tribe", on_delete=models.CASCADE, related_name="groups"
@@ -36,6 +42,15 @@ class TribeGroup(models.Model):
     )
     discord_channel_id = models.BigIntegerField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    required_token_type = models.CharField(
+        max_length=40,
+        blank=True,
+        default="",
+        choices=TOKEN_TYPE_CHOICES,
+        help_text=(
+            "If set, characters must have this ESI token type to apply or be added."
+        ),
+    )
 
     def save(self, *args, **kwargs):
         if not self.code:

@@ -72,21 +72,31 @@ import StylessButton from '@components/blocks/StylessButton.astro';
                     const available = available_characters?.find(
                         (a) => a.character_id === pilot.character_id
                     )
-                    
-                    const has_tag = available != null
+                    const missing_token = Boolean(pilot.missing_token || available?.missing_token)
+                    const has_tag = available != null || missing_token
                     let tag_text = ''
+                    let tag_ok = true
 
-                    if (has_tag) {
-                        if (available?.qualifies)
+                    if (missing_token) {
+                        tag_text = t('tribes.detail.missing_token_generic')
+                        tag_ok = false
+                    } else if (has_tag) {
+                        if (available?.qualifies) {
                             tag_text = t('tribes.detail.qualified')
-                        else if (available?.missing_skills && available.missing_assets)
+                            tag_ok = true
+                        } else if (available?.missing_skills && available.missing_assets) {
                             tag_text = t('tribes.detail.missing_skills_and_assets')
-                        else if (available?.missing_skills)
+                            tag_ok = false
+                        } else if (available?.missing_skills) {
                             tag_text = t('tribes.detail.missing_skills')
-                        else if (available?.missing_assets)
+                            tag_ok = false
+                        } else if (available?.missing_assets) {
                             tag_text = t('tribes.detail.missing_assets')
-                        else
+                            tag_ok = false
+                        } else {
                             tag_text = t('tribes.detail.unqualified')
+                            tag_ok = false
+                        }
                     }
 
                     return (
@@ -112,7 +122,7 @@ import StylessButton from '@components/blocks/StylessButton.astro';
                                             <Flexblock gap='var(--space-3xs)'>
                                                 {has_tag &&
                                                     <Tag
-                                                        color={available.qualifies ? 'green' : 'fleet-red'}
+                                                        color={tag_ok ? 'green' : 'fleet-red'}
                                                         text={tag_text}
                                                     />
                                                 }

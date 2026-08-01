@@ -9,6 +9,7 @@ from tribes.endpoints.memberships.schemas import (
     RequirementQualificationSchema,
 )
 from tribes.helpers.requirements import check_character_meets_requirements
+from tribes.helpers.token_requirements import character_has_required_token
 from tribes.models import TribeGroup
 
 PATH = "/{tribe_id}/groups/{group_id}/memberships/characters-available"
@@ -44,6 +45,7 @@ def _build_available_character_schema(
     missing_assets = any(
         data.get("asset_met") is False for data in req_snapshot.values()
     )
+    missing_token = not character_has_required_token(character, tg)
     return AvailableCharacterSchema(
         character_id=character.character_id,
         character_name=character.character_name,
@@ -51,6 +53,7 @@ def _build_available_character_schema(
         requirements=requirements,
         missing_skills=missing_skills,
         missing_assets=missing_assets,
+        missing_token=missing_token,
     )
 
 
@@ -66,7 +69,9 @@ def get_membership_characters_available(request, tribe_id: int, group_id: int):
     if not tg:
         return 404, {"detail": "TribeGroup not found."}
 
-    characters = EveCharacter.objects.filter(user=request.user).order_by(
-        "character_name"
+    characters = (
+        EveCharacter.objects.filter(user=request.user)
+        .select_related("token")
+        .order_by("character_name")
     )
     return 200, [_build_available_character_schema(c, tg) for c in characters]

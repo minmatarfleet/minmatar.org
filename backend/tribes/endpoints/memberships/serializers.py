@@ -4,6 +4,7 @@ from eveonline.helpers.characters import user_primary_character
 
 from tribes.endpoints.memberships.schemas import MembershipSchema
 from tribes.helpers.requirements import check_character_meets_requirements
+from tribes.helpers.token_requirements import character_has_required_token
 from tribes.models import (
     TribeGroupMembership,
     TribeGroupMembershipCharacterHistory,
@@ -46,7 +47,7 @@ def serialize_membership(
 
     character_list = []
     if include_characters:
-        chars = m.characters.select_related("character").all()
+        chars = m.characters.select_related("character__token").all()
         for c in chars:
             char_data = {
                 "id": c.pk,
@@ -54,6 +55,9 @@ def serialize_membership(
                 "character_name": c.character.character_name,
                 "committed_at": _character_committed_at(m.pk, c.character_id),
                 "left_at": None,
+                "missing_token": not character_has_required_token(
+                    c.character, m.tribe_group
+                ),
             }
             if include_requirement_status:
                 req_snapshot = check_character_meets_requirements(

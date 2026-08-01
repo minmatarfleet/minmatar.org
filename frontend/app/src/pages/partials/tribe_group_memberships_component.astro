@@ -254,8 +254,16 @@ const page_title = t('tribes.groups.membership.page_title').replace('{group}', t
                     tribe_group={tribe_group}
                     chief_membership={chief_membership}
                 />
-                <MembershipRequests requests={pending} init_tooltips={true} />
-                <MembershipTable memberships={approved} init_tooltips={true} />
+                <MembershipRequests
+                    requests={pending}
+                    init_tooltips={true}
+                    required_token_type={tribe_group?.required_token_type}
+                />
+                <MembershipTable
+                    memberships={approved}
+                    init_tooltips={true}
+                    required_token_type={tribe_group?.required_token_type}
+                />
                 :
                 <p>{t('no_request_no_members')}</p>
             }

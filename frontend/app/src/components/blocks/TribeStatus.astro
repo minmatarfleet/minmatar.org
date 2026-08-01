@@ -82,6 +82,7 @@ import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
                 group_id={group_id}
                 pilots={user_characters}
                 available_characters={available_characters}
+                required_token_type={group.required_token_type}
             /> :
         is_auth && is_approved ?
             <ButtonTribeMembership
@@ -93,6 +94,7 @@ import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
                 pilots={user_characters}
                 membership={membership}
                 available_characters={available_characters}
+                required_token_type={group.required_token_type}
             /> :
         ''
     }

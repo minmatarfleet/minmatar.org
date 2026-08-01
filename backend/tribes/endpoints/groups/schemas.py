@@ -111,6 +111,7 @@ class TribeGroupSchema(BaseModel):
     member_count: int = 0
     requirements: List[RequirementSchema] = []
     ranks: List[TribeGroupRankSchema] = []
+    required_token_type: Optional[str] = None
 
 
 # --- Activity metrics, member activity, leaderboard ---

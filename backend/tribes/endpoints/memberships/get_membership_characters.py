@@ -6,6 +6,7 @@ from authentication import AuthBearer
 from tribes.endpoints.memberships.schemas import MembershipCharacterSchema
 from tribes.helpers import user_can_manage_group
 from tribes.helpers.requirements import check_character_meets_requirements
+from tribes.helpers.token_requirements import character_has_required_token
 from tribes.models import (
     TribeGroup,
     TribeGroupMembership,
@@ -45,7 +46,7 @@ def get_membership_characters(
     if not is_own and not user_can_manage_group(request.user, tg):
         return 403, {"detail": "Access denied."}
 
-    chars = membership.characters.select_related("character").all()
+    chars = membership.characters.select_related("character__token").all()
 
     # Derive committed_at from character history.
     history_map = {
@@ -56,13 +57,15 @@ def get_membership_characters(
         ).order_by("at")
     }
 
+    can_manage = user_can_manage_group(request.user, tg)
     result = []
     for c in chars:
         h_at = history_map.get(c.character_id)
         qualifies = None
         missing_skills = None
         missing_assets = None
-        if user_can_manage_group(request.user, tg):
+        missing_token = not character_has_required_token(c.character, tg)
+        if can_manage:
             req_snapshot = check_character_meets_requirements(c.character, tg)
             # No requirements → everyone qualifies; otherwise at least one requirement must be met
             qualifies = not req_snapshot or any(
@@ -86,6 +89,7 @@ def get_membership_characters(
                 qualifies=qualifies,
                 missing_skills=missing_skills,
                 missing_assets=missing_assets,
+                missing_token=missing_token,
             )
         )
     return 200, result

@@ -5,13 +5,15 @@ const { lang, t, translatePath } = i18n(Astro.url)
 import type { TribeMembership } from '@dtypes/api.minmatar.org'
 
 interface Props {
-    membership:         TribeMembership;
-    init_tooltips:      boolean;
+    membership:             TribeMembership;
+    init_tooltips:          boolean;
+    required_token_type?:   string | null;
 }
 
 const {
     membership,
     init_tooltips,
+    required_token_type = null,
 } = Astro.props
 
 const TRIBE_GROUP_MEMBERSHIPS_PARTIAL_URL = translatePath(`/partials/tribe_group_memberships_component?tribe_id=${membership.tribe_id}&group_id=${membership.tribe_group_id}`)
@@ -21,6 +23,10 @@ import { query_string } from '@helpers/string';
 import { format_date_short, humanize_date_diff_single } from '@helpers/date';
 
 const member_since = humanize_date_diff_single(lang, new Date(membership.approved_at as string), new Date())
+
+const token_tooltip = required_token_type
+    ? t('tribes.detail.missing_token').replace('{token}', required_token_type)
+    : t('tribes.detail.missing_token_generic')
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -72,20 +78,32 @@ import MemberIcon from '@components/icons/MemberIcon.astro';
             class="[ membership-characters ]"
         >
             {membership.characters.map((character) => {
-                const has_tooltip = character.qualifies != null || character.missing_skills != null || character.missing_assets != null
+                const missing_token = Boolean(character.missing_token)
+                const has_qualify = character.qualifies != null || character.missing_skills != null || character.missing_assets != null
+                const has_tooltip = missing_token || has_qualify
                 let tooltip_text = ''
+                let status_ok = true
 
-                if (has_tooltip) {
-                    if (character?.qualifies)
+                if (missing_token) {
+                    tooltip_text = token_tooltip
+                    status_ok = false
+                } else if (has_qualify) {
+                    if (character?.qualifies) {
                         tooltip_text = t('tribes.detail.qualified')
-                    else if (character?.missing_skills && character.missing_assets)
+                        status_ok = true
+                    } else if (character?.missing_skills && character.missing_assets) {
                         tooltip_text = t('tribes.detail.missing_skills_and_assets')
-                    else if (character?.missing_skills)
+                        status_ok = false
+                    } else if (character?.missing_skills) {
                         tooltip_text = t('tribes.detail.missing_skills')
-                    else if (character?.missing_assets)
+                        status_ok = false
+                    } else if (character?.missing_assets) {
                         tooltip_text = t('tribes.detail.missing_assets')
-                    else
+                        status_ok = false
+                    } else {
                         tooltip_text = t('tribes.detail.unqualified')
+                        status_ok = false
+                    }
                 }
 
                 return (
@@ -103,14 +121,16 @@ import MemberIcon from '@components/icons/MemberIcon.astro';
                             <div class="[ sr-only ]">{character.character_name}</div>
                         </div>
 
-                        <span
-                            class:list={[ 'membership-status', character.qualifies ? 'text-green' : 'text-red' ]}
-                            color={character.qualifies ? 'green' : 'fleet-red'}
-                            data-tippy-content={tooltip_text ? tooltip_text : undefined}
-                            x-init={init_tooltips && tooltip_text ? 'tippy($el, tippy_options)' : undefined}
-                        >
-                            {character.qualifies ? '▲' : '▼'}
-                        </span>
+                        {has_tooltip &&
+                            <span
+                                class:list={[ 'membership-status', status_ok ? 'text-green' : 'text-red' ]}
+                                color={status_ok ? 'green' : 'fleet-red'}
+                                data-tippy-content={tooltip_text ? tooltip_text : undefined}
+                                x-init={init_tooltips && tooltip_text ? 'tippy($el, tippy_options)' : undefined}
+                            >
+                                {status_ok ? '▲' : '▼'}
+                            </span>
+                        }
                     </div>
                 )
             })}
