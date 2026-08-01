@@ -1941,6 +1941,8 @@ export const ui = {
         'timers_copied_dialog_text': 'Active structure timers copied to clipboard.',
         'copied': 'Copied!',
         'lastest_timers': 'Latest TIMERS structure timers',
+        'fleet_discord': 'Fleet Discord',
+        'militia_discord': 'Militia Discord',
         'refresh_discord_roles': 'Refresh Discord roles',
         'pilot_used': 'You will use in fleet',
         'lets_rock': 'Let’s rock!',
