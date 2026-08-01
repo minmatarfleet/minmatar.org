@@ -35,8 +35,8 @@ def _fallback_buy_prices_by_type_id(
     """
     Region market-history average, then EveMarketPrice average.
 
-    Used when the price_baseline location has no station-range buy order
-    (common for Jita NPC station, which is prices_active but not market_active).
+    Used when the price_baseline location has no station-range buy order yet
+    (or none for that type). Keeps appraisals working between ESI syncs.
     """
     if not type_ids:
         return {}

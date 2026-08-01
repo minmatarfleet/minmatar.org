@@ -20,7 +20,45 @@ from market.helpers import (
 )
 from market.helpers.contracts import fitting_cache
 from market.models import EveMarketContract, EveMarketContractError
-from market.tasks import fetch_eve_market_contracts
+from market.tasks import (
+    fetch_eve_market_contracts,
+    fetch_market_location_prices,
+)
+
+
+class LocationPriceSyncTestCase(TestCase):
+    @patch("market.tasks.fetch_and_update_market_location_prices")
+    @patch("market.tasks.get_character_with_structure_markets_scope")
+    def test_syncs_prices_active_not_only_market_active(
+        self, scope_mock, update_mock
+    ):
+        scope_mock.return_value = None
+        update_mock.return_value = 1
+        EveLocation.objects.create(
+            location_id=60003760,
+            location_name="Jita IV - Moon 4 - Caldari Navy Assembly Plant",
+            solar_system_id=30000142,
+            solar_system_name="Jita",
+            short_name="Jita",
+            region_id=10000002,
+            prices_active=True,
+            market_active=False,
+            is_structure=False,
+        )
+        EveLocation.objects.create(
+            location_id=999,
+            location_name="Inactive",
+            solar_system_id=1,
+            solar_system_name="Sys",
+            short_name="x",
+            prices_active=False,
+            market_active=True,
+            is_structure=True,
+        )
+
+        fetch_market_location_prices()
+
+        update_mock.assert_called_once_with(None, 60003760)
 
 
 class MarketTaskTestCase(TestCase):

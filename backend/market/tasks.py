@@ -99,12 +99,15 @@ def process_structure_sell_orders_page_task(
 @app.task()
 def fetch_market_location_prices():
     """
-    For each market-active location, fetch market orders from ESI (structure
+    For each prices-active location, fetch market orders from ESI (structure
     or region API per location.is_structure), compute lowest sell / highest
     buy (station-range) / split per item, and update EveMarketItemLocationPrice.
     Does not touch EveMarketItemOrder.
+
+    Uses prices_active (not market_active) so baseline stations like Jita are
+    synced for appraisals without enabling alliance market sell-order flows.
     """
-    locations_list = list(EveLocation.objects.filter(market_active=True))
+    locations_list = list(EveLocation.objects.filter(prices_active=True))
     has_structure = any(loc.is_structure for loc in locations_list)
     character_id = (
         get_character_with_structure_markets_scope() if has_structure else None
@@ -136,7 +139,7 @@ def fetch_market_location_prices():
 @app.task()
 def fetch_market_location_prices_for_type(type_id: int) -> int:
     """
-    For each market-active location, fetch market orders for the given type_id
+    For each prices-active location, fetch market orders for the given type_id
     from ESI and update EveMarketItemLocationPrice for that item at that location.
     Returns total price rows updated.
     """
@@ -144,15 +147,15 @@ def fetch_market_location_prices_for_type(type_id: int) -> int:
         "fetch_market_location_prices_for_type type_id=%s — starting",
         type_id,
     )
-    locations_list = list(EveLocation.objects.filter(market_active=True))
+    locations_list = list(EveLocation.objects.filter(prices_active=True))
     if not locations_list:
         logger.info(
-            "fetch_market_location_prices_for_type type_id=%s — no market-active locations, skipping",
+            "fetch_market_location_prices_for_type type_id=%s — no prices-active locations, skipping",
             type_id,
         )
         return 0
     logger.info(
-        "fetch_market_location_prices_for_type type_id=%s — loaded %s market-active location(s): %s",
+        "fetch_market_location_prices_for_type type_id=%s — loaded %s prices-active location(s): %s",
         type_id,
         len(locations_list),
         [
