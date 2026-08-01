@@ -69,7 +69,7 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
     class={show_fleet_commanders_bar ? 'compensate-bottom-bar' : undefined}
 >
     {active_fleets.length > 0 ?
-        <Flexblock gap='0'>
+        <Flexblock class="[ cover-screen ]" gap='0'>
             <Wrapper
                 class="[ relative ]"
                 max_width='100%'
@@ -228,6 +228,11 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
 }
 
 <style lang="scss">
+    .cover-screen {
+        min-height: calc(100dvh - 375px);
+        justify-content: center;
+    }
+
 	.caret-down {
 		transform: rotate(90deg);
 
