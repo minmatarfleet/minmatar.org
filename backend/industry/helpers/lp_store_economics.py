@@ -1,4 +1,9 @@
-"""Economics helpers for admin LP store offer price tracking."""
+"""Economics helpers for admin LP store offer price tracking.
+
+Jita sell/buy columns use regional guide prices via
+market.helpers.pricing.get_prices_by_type_id (EveMarketItemHistory),
+not EveMarketItemLocationPrice live station orders.
+"""
 
 from __future__ import annotations
 

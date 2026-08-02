@@ -1,9 +1,12 @@
 """Fetch market orders from ESI and update EveMarketItemLocationPrice.
 
-Supports both Upwell structures (structure markets API) and NPC stations
-(region orders API). Does not touch EveMarketItemOrder. Fetches orders in
-memory, computes lowest sell / highest buy (station-range only) / split
-per item, and writes only to EveMarketItemLocationPrice.
+Live per-location order-book aggregates (“ItemPrice”): lowest sell, highest
+station-range buy, and split. Supports Upwell structures and NPC stations.
+Does not touch EveMarketItemOrder.
+
+This is **not** the Jita/Forge guide price. For appraisals, LP economics,
+and “Jita buy/sell” baselines, use market.helpers.pricing.get_prices_by_type_id
+(regional EveMarketItemHistory). See docs/market-pricing.md.
 """
 
 import logging
