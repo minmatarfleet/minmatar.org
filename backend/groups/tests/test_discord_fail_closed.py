@@ -53,10 +53,6 @@ class SyncCommunityGroupsReconcilerTestCase(TestCase):
             default=True,
         )
 
-    def tearDown(self):
-        reconnect_discord_group_signals()
-        super().tearDown()
-
     def test_reconciler_strips_stale_alliance_when_guest(self):
         UserAffiliation.objects.create(
             user=self.user, affiliation=self.guest_type

@@ -39,12 +39,13 @@ Optional:
 | `--burst-count 10` | Fewer roles for F1/F2 |
 | `--allow-guild-id <id>` | Allow an extra non-production test guild |
 
-Safety gates in code (`discord/live_verify.py`):
+Safety gates in code (`discord/live_verify.py` and `discord/client.py`):
 
 - Production guild ID `1041384161505722368` is **always refused**.
 - Default allowlist is the Minmatar Fleet Test Server (`1459994254427291781`).
 - The subject username is **never** offboarded (G1 uses `verify-*` throwaways only).
 - Scratch auth groups / Discord roles use the `VERIFY-` prefix and are deleted on cleanup.
+- Normal unit tests (`app.settings_test`) clear Discord credentials and **block live Discord HTTP** unless `ALLOW_LIVE_DISCORD_IN_TESTS=True` (do not set that for routine CI).
 
 ## Opt-in TestCase
 

@@ -49,6 +49,24 @@ class DiscordError(Exception):
         return e
 
 
+def _assert_discord_http_allowed() -> None:
+    """
+    Block live Discord HTTP during Django unit tests unless explicitly enabled.
+
+    settings_test sets TESTING=True and blank credentials. Live verification
+    uses app.settings (TESTING false) or ALLOW_LIVE_DISCORD_IN_TESTS=True.
+    """
+    if not getattr(settings, "TESTING", False):
+        return
+    if getattr(settings, "ALLOW_LIVE_DISCORD_IN_TESTS", False):
+        return
+    raise RuntimeError(
+        "Refusing live Discord HTTP during unit tests. Mock "
+        "discord.signals.discord / DiscordClient, or set "
+        "ALLOW_LIVE_DISCORD_IN_TESTS=True only for intentional live runs."
+    )
+
+
 def _raise_discord_rate_limit(response: requests.Response) -> None:
     """Raise RateLimitException with Discord Retry-After for backoff retries."""
     raw = response.headers.get("Retry-After", "1")
@@ -74,6 +92,7 @@ class DiscordBaseClient:
     @on_exception(expo, RateLimitException, max_tries=8)
     def post(self, *args, **kwargs):
         """Post a resource using REST API"""
+        _assert_discord_http_allowed()
         self.check_ratelimit()
         logger.info("POST %s", args)
         response = self.session.post(
@@ -92,6 +111,7 @@ class DiscordBaseClient:
     @on_exception(expo, RateLimitException, max_tries=8)
     def put(self, *args, **kwargs):
         """Put a resource using REST API"""
+        _assert_discord_http_allowed()
         self.check_ratelimit()
         logger.info("PUT %s", args)
         response = self.session.put(
@@ -108,6 +128,7 @@ class DiscordBaseClient:
     @on_exception(expo, RateLimitException, max_tries=8)
     def patch(self, *args, **kwargs):
         """Patch a resource using REST API"""
+        _assert_discord_http_allowed()
         self.check_ratelimit()
         logger.info("PATCH %s", args)
         response = self.session.patch(
@@ -124,6 +145,7 @@ class DiscordBaseClient:
     @on_exception(expo, RateLimitException, max_tries=8)
     def get(self, *args, **kwargs):
         """Get a resource using REST API"""
+        _assert_discord_http_allowed()
         self.check_ratelimit()
         logger.info("GET %s", args)
         response = self.session.get(
@@ -140,6 +162,7 @@ class DiscordBaseClient:
     @on_exception(expo, RateLimitException, max_tries=8)
     def delete(self, *args, **kwargs):
         """Delete a resource using REST API"""
+        _assert_discord_http_allowed()
         self.check_ratelimit()
         response = self.session.delete(
             *args,
@@ -161,6 +184,7 @@ class DiscordClient(DiscordBaseClient):
 
     def exchange_code(self, code: str, redirect_uri: str):
         """Exchange a Discord OAuth2 code for an access token"""
+        _assert_discord_http_allowed()
         data = {
             "client_id": settings.DISCORD_CLIENT_ID,
             "client_secret": settings.DISCORD_CLIENT_SECRET,

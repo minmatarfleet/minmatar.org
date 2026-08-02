@@ -50,19 +50,18 @@ CORS_ALLOWED_ORIGINS = [
     "https://minmatar.org",
 ]
 
-# DISCORD
-DISCORD_BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
-DISCORD_CLIENT_ID = os.environ.get("DISCORD_CLIENT_ID", "")
-DISCORD_CLIENT_SECRET = os.environ.get("DISCORD_CLIENT_SECRET", "")
-DISCORD_REDIRECT_URL = os.environ.get("DISCORD_REDIRECT_URL", "")
-DISCORD_ADMIN_REDIRECT_URL = os.environ.get("DISCORD_ADMIN_REDIRECT_URL", "")
-DISCORD_HOLY_RAT_WEBHOOK_MINMATAR_FLEET = os.environ.get(
-    "DISCORD_HOLY_RAT_WEBHOOK_MINMATAR_FLEET", ""
-)
-DISCORD_HOLY_RAT_WEBHOOK_RAT_CAVE = os.environ.get(
-    "DISCORD_HOLY_RAT_WEBHOOK_RAT_CAVE", ""
-)
-DISCORD_GUILD_ID = int(os.environ.get("DISCORD_GUILD_ID", 1041384161505722368))
+# DISCORD — never use real bot/OAuth secrets from the environment in unit tests.
+# Pipenv may load a .env with production tokens; those must not reach DiscordClient.
+DISCORD_BOT_TOKEN = ""
+DISCORD_CLIENT_ID = ""
+DISCORD_CLIENT_SECRET = ""
+DISCORD_REDIRECT_URL = ""
+DISCORD_ADMIN_REDIRECT_URL = ""
+DISCORD_HOLY_RAT_WEBHOOK_MINMATAR_FLEET = ""
+DISCORD_HOLY_RAT_WEBHOOK_RAT_CAVE = ""
+# Non-production placeholder; live verify must use app.settings + test guild.
+DISCORD_GUILD_ID = 1
+ALLOW_LIVE_DISCORD_IN_TESTS = False
 DISCORD_PEOPLE_TEAM_CHANNEL_ID = int(
     os.environ.get("DISCORD_PEOPLE_TEAM_CHANNEL_ID", 1098974756356771870)
 )
