@@ -76,8 +76,12 @@ if (is_logged_in && auth_token) {
 }
 
 const highlight_order_id = Astro.url.searchParams.get('order')
-const default_currency_id = currencies[0]?.id ?? null
-const default_isk_per_lp = currencies[0]?.default_isk_per_lp ?? 800
+const TLIB_CORP_ID = 1000182
+const default_currency = currencies.find((c) => c.corporation_id === TLIB_CORP_ID)
+    ?? currencies[0]
+    ?? null
+const default_currency_id = default_currency?.id ?? null
+const default_isk_per_lp = default_currency?.default_isk_per_lp ?? 800
 
 import Viewport from '@layouts/Viewport.astro'
 import PageWide from '@components/page/PageWide.astro'
