@@ -23,7 +23,13 @@ interface Props {
     highlight_order_id: string | null
     default_currency_id: number | null
     default_isk_per_lp: number
+    claim_characters?: {
+        character_name: string
+        corp_name: string
+        is_primary: boolean
+    }[]
     claim_corporations?: string[]
+    default_claim_character?: string
     default_claim_corporation?: string
 }
 
@@ -34,14 +40,19 @@ const {
     highlight_order_id,
     default_currency_id,
     default_isk_per_lp,
+    claim_characters = [],
     claim_corporations = [],
+    default_claim_character = '',
     default_claim_corporation = '',
 } = Astro.props
 
-const default_claim_destination = default_claim_corporation
+const default_lp_destination = default_claim_corporation
     || claim_corporations[0]
     || ''
+const default_isk_destination = default_claim_character
+    || default_lp_destination
 const CLAIM_DESTINATION_OTHER = '__other__'
+const claim_character_names = claim_characters.map((c) => c.character_name)
 
 const status_labels: Record<string, string> = {
     open: t('industry.loyalty.status.open'),
@@ -114,12 +125,14 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
         busy: false,
         post_dialog_open: false,
         claim_dialog_open: false,
+        await_lp_dialog_open: false,
         claim_order_id: null,
+        await_lp_order_id: null,
         claim_side: 'sell',
         claim_remaining: 0,
         claim_amount: '',
         claim_isk_per_lp: 0,
-        claim_destination_choice: ${JSON.stringify(default_claim_destination)},
+        claim_destination_choice: ${JSON.stringify(default_isk_destination)},
         claim_destination_other: '',
         claim_destination_other_value: ${JSON.stringify(CLAIM_DESTINATION_OTHER)},
         form_side: 'buy',
@@ -127,6 +140,8 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
         form_quantity: '',
         form_isk_per_lp: ${JSON.stringify(number_thousand_separator(default_isk_per_lp))},
         form_notes: '',
+        form_destination_choice: ${JSON.stringify(default_lp_destination)},
+        form_destination_other: '',
         max_sell_lp: 2500000,
         currencies: ${JSON.stringify(currencies)},
         is_logged_in: ${JSON.stringify(is_logged_in)},
@@ -161,10 +176,25 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
         form_isk_total() {
             return this.form_quantity_value() * this.form_isk_per_lp_value()
         },
+        form_destination_is_other() {
+            return this.form_destination_choice === this.claim_destination_other_value
+        },
+        form_destination_value() {
+            if (this.form_destination_is_other()) {
+                return String(this.form_destination_other || '').trim()
+            }
+            return String(this.form_destination_choice || '').trim()
+        },
         form_can_submit() {
-            return this.form_quantity_value() > 0
+            if (!(this.form_quantity_value() > 0
                 && this.form_isk_per_lp_value() > 0
-                && !this.form_quantity_over_max()
+                && !this.form_quantity_over_max())) {
+                return false
+            }
+            if (this.form_side === 'buy' && !this.form_destination_value()) {
+                return false
+            }
+            return true
         },
         post_title() {
             return this.form_side === 'sell'
@@ -189,6 +219,26 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
             }
             return String(this.claim_destination_choice || '').trim()
         },
+        claim_destination_label() {
+            return this.claim_side === 'buy'
+                ? ${JSON.stringify(t('industry.loyalty.claim.destination_isk'))}
+                : ${JSON.stringify(t('industry.loyalty.claim.destination_lp'))}
+        },
+        claim_destination_other_label() {
+            return this.claim_side === 'buy'
+                ? ${JSON.stringify(t('industry.loyalty.claim.destination_other_isk_label'))}
+                : ${JSON.stringify(t('industry.loyalty.claim.destination_other_label'))}
+        },
+        claim_destination_other_placeholder() {
+            return this.claim_side === 'buy'
+                ? ${JSON.stringify(t('industry.loyalty.claim.destination_other_isk_placeholder'))}
+                : ${JSON.stringify(t('industry.loyalty.claim.destination_other_placeholder'))}
+        },
+        claim_select_placeholder() {
+            return this.claim_side === 'buy'
+                ? ${JSON.stringify(t('industry.loyalty.claim.select_destination'))}
+                : ${JSON.stringify(t('industry.loyalty.claim.select_corporation'))}
+        },
         async show_response_error(response, fallback) {
             let detail = fallback
             try {
@@ -211,18 +261,27 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                 await show_alert_dialog({ title: ${JSON.stringify(t('industry.loyalty.form.quantity_sell_max'))} })
                 return
             }
+            const destination = this.form_destination_value()
+            if (this.form_side === 'buy' && !destination) {
+                await show_alert_dialog({ title: ${JSON.stringify(t('industry.loyalty.destination_required'))} })
+                return
+            }
             this.busy = true
             try {
+                const body = {
+                    loyalty_point_id: Number(this.form_loyalty_point_id),
+                    side: this.form_side,
+                    quantity,
+                    isk_per_lp: this.form_isk_per_lp_value() || null,
+                    notes: this.form_notes || '',
+                }
+                if (this.form_side === 'buy') {
+                    body.destination_character_name = destination
+                }
                 const response = await fetch(${JSON.stringify(translatePath('/api/industry/loyalty/orders'))}, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        loyalty_point_id: Number(this.form_loyalty_point_id),
-                        side: this.form_side,
-                        quantity,
-                        isk_per_lp: this.form_isk_per_lp_value() || null,
-                        notes: this.form_notes || '',
-                    }),
+                    body: JSON.stringify(body),
                 })
                 if (!response.ok) {
                     await this.show_response_error(response, ${JSON.stringify(t('industry.loyalty.form.error'))})
@@ -233,26 +292,19 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                 this.busy = false
             }
         },
-        open_claim(orderId, remaining, iskPerLp, side, orderDestination) {
+        open_claim(orderId, remaining, iskPerLp, side) {
             this.claim_order_id = orderId
             this.claim_side = side === 'buy' ? 'buy' : 'sell'
             this.claim_remaining = Number(remaining) || 0
             this.claim_isk_per_lp = Number(iskPerLp) || 0
             this.claim_amount = this.format_thousands(this.claim_remaining)
-            const existing = String(orderDestination || '').trim()
-            const primary = ${JSON.stringify(default_claim_destination)}
-            const knownNames = ${JSON.stringify(claim_corporations)}
-            if (this.claim_side === 'buy') {
-                const known = Boolean(existing && knownNames.includes(existing))
-                this.claim_destination_choice = known
-                    ? existing
-                    : this.claim_destination_other_value
-                this.claim_destination_other = known ? '' : existing
-            } else {
-                this.claim_destination_choice = primary || this.claim_destination_other_value
-                this.claim_destination_other = ''
-            }
+            const primary = this.claim_side === 'buy'
+                ? ${JSON.stringify(default_isk_destination)}
+                : ${JSON.stringify(default_lp_destination)}
+            this.claim_destination_choice = primary || this.claim_destination_other_value
+            this.claim_destination_other = ''
             this.post_dialog_open = false
+            this.await_lp_dialog_open = false
             this.claim_dialog_open = true
             this.$nextTick(() => document.getElementById('loyalty-claim-amount')?.focus())
         },
@@ -260,6 +312,11 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
             return this.claim_side === 'buy'
                 ? ${JSON.stringify(t('industry.loyalty.claim.destination_buy_hint'))}
                 : ${JSON.stringify(t('industry.loyalty.claim.destination_sell_hint'))}
+        },
+        reset_form_destination() {
+            const primary = ${JSON.stringify(default_lp_destination)}
+            this.form_destination_choice = primary || this.claim_destination_other_value
+            this.form_destination_other = ''
         },
         close_claim_dialog() {
             this.close_dialog()
@@ -276,6 +333,21 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                 await show_alert_dialog({ title: ${JSON.stringify(t('industry.loyalty.destination_required'))} })
                 return
             }
+            const knownCharacters = ${JSON.stringify(claim_character_names)}
+            const knownCorporations = ${JSON.stringify(claim_corporations)}
+            let destination_character_name = ''
+            let destination_corporation_name = ''
+            if (this.claim_side === 'buy') {
+                if (knownCharacters.includes(destination)) {
+                    destination_character_name = destination
+                } else if (knownCorporations.includes(destination)) {
+                    destination_corporation_name = destination
+                } else {
+                    destination_character_name = destination
+                }
+            } else {
+                destination_corporation_name = destination
+            }
             this.busy = true
             try {
                 const response = await fetch(${JSON.stringify(translatePath('/api/industry/loyalty/orders/'))} + this.claim_order_id + '/claim', {
@@ -283,8 +355,8 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         amount,
-                        destination_character_name: '',
-                        destination_corporation_name: destination,
+                        destination_character_name,
+                        destination_corporation_name,
                     }),
                 })
                 if (!response.ok) {
@@ -296,16 +368,15 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                 this.busy = false
             }
         },
-        async set_status(orderId, status) {
+        async set_status(orderId, status, destination) {
             const body = { status }
             if (status === 'awaiting_lp') {
-                const destination = window.prompt(${JSON.stringify(t('industry.loyalty.prompt.destination'))}, '')
-                if (destination === null) return
-                if (!destination.trim()) {
+                const dest = String(destination || '').trim()
+                if (!dest) {
                     await show_alert_dialog({ title: ${JSON.stringify(t('industry.loyalty.destination_required'))} })
                     return
                 }
-                body.destination_character_name = destination.trim()
+                body.destination_character_name = dest
             }
             this.busy = true
             try {
@@ -323,24 +394,57 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                 this.busy = false
             }
         },
+        open_await_lp(orderId, orderDestination) {
+            this.await_lp_order_id = orderId
+            const existing = String(orderDestination || '').trim()
+            const primary = ${JSON.stringify(default_lp_destination)}
+            const knownNames = ${JSON.stringify(claim_corporations)}
+            const known = Boolean(existing && knownNames.includes(existing))
+            if (existing) {
+                this.claim_destination_choice = known
+                    ? existing
+                    : this.claim_destination_other_value
+                this.claim_destination_other = known ? '' : existing
+            } else {
+                this.claim_destination_choice = primary || this.claim_destination_other_value
+                this.claim_destination_other = ''
+            }
+            this.post_dialog_open = false
+            this.claim_dialog_open = false
+            this.await_lp_dialog_open = true
+            this.$nextTick(() => document.getElementById('loyalty-await-lp-destination')?.focus())
+        },
+        async submit_await_lp() {
+            if (!this.await_lp_order_id) return
+            const destination = this.claim_destination_value()
+            if (!destination) {
+                await show_alert_dialog({ title: ${JSON.stringify(t('industry.loyalty.destination_required'))} })
+                return
+            }
+            await this.set_status(this.await_lp_order_id, 'awaiting_lp', destination)
+        },
         on_currency_change() {
             const currency = this.currencies.find(c => c.id === Number(this.form_loyalty_point_id))
             if (currency) this.form_isk_per_lp = this.format_thousands(currency.default_isk_per_lp)
         },
         open_sell() {
             this.claim_dialog_open = false
+            this.await_lp_dialog_open = false
             this.form_side = 'sell'
             this.form_quantity = ''
             this.form_notes = ''
+            this.reset_form_destination()
             this.on_currency_change()
             this.post_dialog_open = true
             this.$nextTick(() => document.getElementById('loyalty-post-quantity')?.focus())
         },
         open_buy() {
             this.claim_dialog_open = false
+            this.await_lp_dialog_open = false
             this.form_side = 'buy'
             this.form_quantity = ''
             this.form_notes = ''
+            this.reset_form_destination()
             this.on_currency_change()
             this.post_dialog_open = true
             this.$nextTick(() => document.getElementById('loyalty-post-quantity')?.focus())
@@ -348,7 +452,9 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
         close_dialog() {
             this.post_dialog_open = false
             this.claim_dialog_open = false
+            this.await_lp_dialog_open = false
             this.claim_order_id = null
+            this.await_lp_order_id = null
         },
     }`}
     x-bind:aria-busy="busy"
@@ -452,7 +558,7 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                                                                 size="sm"
                                                                 color="green"
                                                                 x-bind:disabled="busy"
-                                                                x-on:click={`open_claim(${order.id}, ${quantity_remaining}, ${order.isk_per_lp}, ${JSON.stringify(order.side)}, ${JSON.stringify(order.destination_character_name || '')}); close()`}
+                                                                x-on:click={`open_claim(${order.id}, ${quantity_remaining}, ${order.isk_per_lp}, ${JSON.stringify(order.side)}); close()`}
                                                             >
                                                                 {t('industry.loyalty.action.claim')}
                                                             </Button>
@@ -462,7 +568,7 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                                                                 size="sm"
                                                                 color="green"
                                                                 x-bind:disabled="busy"
-                                                                x-on:click={`set_status(${order.id}, 'awaiting_lp'); close()`}
+                                                                x-on:click={`open_await_lp(${order.id}, ${JSON.stringify(order.destination_character_name || '')}); close()`}
                                                             >
                                                                 {t('industry.loyalty.action.awaiting_lp')}
                                                             </Button>
@@ -575,6 +681,43 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                                 x-bind:value="form_isk_per_lp"
                             />
                         </Flexblock>
+                        <Flexblock
+                            class="[ w-full ]"
+                            gap="var(--space-3xs)"
+                            x-show="form_side === 'buy'"
+                            x-cloak
+                        >
+                            <label for="loyalty-post-destination">{t('industry.loyalty.form.destination_corporation')}</label>
+                            <small>{t('industry.loyalty.form.destination_buy_hint')}</small>
+                            <Select
+                                id="loyalty-post-destination"
+                                x-model="form_destination_choice"
+                            >
+                                <option value="">{t('industry.loyalty.claim.select_corporation')}</option>
+                                {claim_corporations.map((corporation) =>
+                                    <option value={corporation}>
+                                        {corporation}
+                                    </option>
+                                )}
+                                <option value={CLAIM_DESTINATION_OTHER}>
+                                    {t('industry.loyalty.claim.destination_other')}
+                                </option>
+                            </Select>
+                        </Flexblock>
+                        <Flexblock
+                            class="[ w-full ]"
+                            gap="var(--space-3xs)"
+                            x-show="form_side === 'buy' && form_destination_is_other()"
+                            x-cloak
+                        >
+                            <label for="loyalty-post-destination-other">{t('industry.loyalty.claim.destination_other_label')}</label>
+                            <Input
+                                id="loyalty-post-destination-other"
+                                type="text"
+                                x-model="form_destination_other"
+                                placeholder={t('industry.loyalty.claim.destination_other_placeholder')}
+                            />
+                        </Flexblock>
                         <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
                             <label for="loyalty-post-notes">{t('industry.loyalty.form.notes')}</label>
                             <Input
@@ -643,18 +786,33 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                             />
                         </Flexblock>
                         <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
-                            <label for="loyalty-claim-destination">{t('industry.loyalty.claim.destination_corporation')}</label>
+                            <label for="loyalty-claim-destination" x-text="claim_destination_label()"></label>
                             <small x-text="claim_destination_hint()"></small>
                             <Select
                                 id="loyalty-claim-destination"
                                 x-model="claim_destination_choice"
                             >
-                                <option value="">{t('industry.loyalty.claim.select_corporation')}</option>
-                                {claim_corporations.map((corporation) =>
-                                    <option value={corporation}>
-                                        {corporation}
-                                    </option>
-                                )}
+                                <option value="" x-text="claim_select_placeholder()"></option>
+                                <optgroup
+                                    label={t('industry.loyalty.claim.destination_characters')}
+                                    x-bind:hidden="claim_side !== 'buy'"
+                                >
+                                    {claim_characters.map((character) =>
+                                        <option
+                                            value={character.character_name}
+                                            x-bind:disabled="claim_side !== 'buy'"
+                                        >
+                                            {character.character_name}
+                                        </option>
+                                    )}
+                                </optgroup>
+                                <optgroup label={t('industry.loyalty.claim.destination_corporations')}>
+                                    {claim_corporations.map((corporation) =>
+                                        <option value={corporation}>
+                                            {corporation}
+                                        </option>
+                                    )}
+                                </optgroup>
                                 <option value={CLAIM_DESTINATION_OTHER}>
                                     {t('industry.loyalty.claim.destination_other')}
                                 </option>
@@ -666,12 +824,12 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                             x-show="claim_destination_is_other()"
                             x-cloak
                         >
-                            <label for="loyalty-claim-destination-other">{t('industry.loyalty.claim.destination_other_label')}</label>
+                            <label for="loyalty-claim-destination-other" x-text="claim_destination_other_label()"></label>
                             <Input
                                 id="loyalty-claim-destination-other"
                                 type="text"
                                 x-model="claim_destination_other"
-                                placeholder={t('industry.loyalty.claim.destination_other_placeholder')}
+                                x-bind:placeholder="claim_destination_other_placeholder()"
                             />
                         </Flexblock>
                         <Flexblock gap="var(--space-3xs)" class="[ loyalty-orders__form-summary ]">
@@ -699,6 +857,77 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                         x-on:click="submit_claim()"
                     >
                         {t('industry.loyalty.claim.submit')}
+                    </Button>
+                    <Button size="sm" x-on:click="close_dialog()">
+                        {t('cancel')}
+                    </Button>
+                </FlexInline>
+            </Flexblock>
+        </Dialog>
+    </template>
+
+    <template x-teleport="body">
+        <Dialog
+            breakout={true}
+            non_centered={true}
+            close_button={true}
+            class="[ loyalty-orders__await-lp-dialog w-full component overflow-y-auto ]"
+            x-bind:class="await_lp_dialog_open ? 'open' : ''"
+            x-bind:aria-hidden="await_lp_dialog_open == false"
+            x-trap="await_lp_dialog_open"
+            x-bind:inert="!await_lp_dialog_open"
+            x-on:keyup.escape.window="await_lp_dialog_open && close_dialog()"
+            x-on:mousedown.outside="await_lp_dialog_open && close_dialog()"
+            style="--dialog-max-width: 520px"
+            tabindex="-1"
+        >
+            <Flexblock gap="var(--space-l)" class="[ loyalty-orders__form ]">
+                <Flexblock gap="var(--space-s)">
+                    <h3>{t('industry.loyalty.await_lp.title')}</h3>
+                    <Flexblock gap="var(--space-xs)">
+                        <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+                            <label for="loyalty-await-lp-destination">{t('industry.loyalty.claim.destination_corporation')}</label>
+                            <small>{t('industry.loyalty.await_lp.hint')}</small>
+                            <Select
+                                id="loyalty-await-lp-destination"
+                                x-model="claim_destination_choice"
+                            >
+                                <option value="">{t('industry.loyalty.claim.select_corporation')}</option>
+                                {claim_corporations.map((corporation) =>
+                                    <option value={corporation}>
+                                        {corporation}
+                                    </option>
+                                )}
+                                <option value={CLAIM_DESTINATION_OTHER}>
+                                    {t('industry.loyalty.claim.destination_other')}
+                                </option>
+                            </Select>
+                        </Flexblock>
+                        <Flexblock
+                            class="[ w-full ]"
+                            gap="var(--space-3xs)"
+                            x-show="claim_destination_is_other()"
+                            x-cloak
+                        >
+                            <label for="loyalty-await-lp-destination-other">{t('industry.loyalty.claim.destination_other_label')}</label>
+                            <Input
+                                id="loyalty-await-lp-destination-other"
+                                type="text"
+                                x-model="claim_destination_other"
+                                placeholder={t('industry.loyalty.claim.destination_other_placeholder')}
+                            />
+                        </Flexblock>
+                    </Flexblock>
+                </Flexblock>
+                <FlexInline justification="flex-end">
+                    <Button
+                        size="sm"
+                        color="green"
+                        off_disable={true}
+                        x-bind:disabled="busy || !claim_destination_value()"
+                        x-on:click="submit_await_lp()"
+                    >
+                        {t('industry.loyalty.await_lp.submit')}
                     </Button>
                     <Button size="sm" x-on:click="close_dialog()">
                         {t('cancel')}
@@ -838,7 +1067,8 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
     }
 
     :global(.loyalty-orders__post-dialog),
-    :global(.loyalty-orders__claim-dialog) {
+    :global(.loyalty-orders__claim-dialog),
+    :global(.loyalty-orders__await-lp-dialog) {
         max-height: 88vh;
 
         h3 {

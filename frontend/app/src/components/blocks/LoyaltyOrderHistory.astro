@@ -1,0 +1,229 @@
+---
+import { i18n } from '@helpers/i18n'
+import type { LoyaltyMarketOrder } from '@dtypes/api.minmatar.org'
+import type { TagColors } from '@dtypes/layout_components'
+import { format_date_time } from '@helpers/date'
+import { number_thousand_separator } from '@helpers/numbers'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import Tag from '@components/blocks/Tag.astro'
+
+const { t, lang } = i18n(Astro.url)
+
+interface Props {
+    orders: LoyaltyMarketOrder[]
+}
+
+const { orders } = Astro.props
+
+const status_labels: Record<string, string> = {
+    completed: t('industry.loyalty.status.completed'),
+    cancelled: t('industry.loyalty.status.cancelled'),
+}
+
+const STATUS_COLORS: Record<string, TagColors> = {
+    completed: 'green',
+    cancelled: 'fleet-red',
+}
+
+type PurchaserIcon = {
+    character_id: number
+    character_name: string
+}
+
+const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
+    const by_user = new Map<number, PurchaserIcon>()
+
+    for (const claim of order.claims ?? []) {
+        if (!claim.claimed_by_character_id) continue
+        by_user.set(claim.claimed_by_user_id, {
+            character_id: claim.claimed_by_character_id,
+            character_name: claim.claimed_by_name,
+        })
+    }
+
+    if (
+        by_user.size === 0
+        && order.claimed_by_user_id
+        && order.claimed_by_character_id
+        && order.claimed_by_name
+    ) {
+        by_user.set(order.claimed_by_user_id, {
+            character_id: order.claimed_by_character_id,
+            character_name: order.claimed_by_name,
+        })
+    }
+
+    if (by_user.size === 0 && order.side === 'buy' && order.created_by_character_id) {
+        by_user.set(order.created_by_user_id, {
+            character_id: order.created_by_character_id,
+            character_name: order.created_by_name,
+        })
+    }
+
+    return [...by_user.values()]
+}
+
+const history_timestamp = (order: LoyaltyMarketOrder): Date | string =>
+    order.completed_at || order.updated_at || order.created_at
+
+const rows = [...orders].sort((a, b) => {
+    const a_ms = new Date(history_timestamp(a)).getTime()
+    const b_ms = new Date(history_timestamp(b)).getTime()
+    return b_ms - a_ms
+})
+---
+
+<section class="[ loyalty-history ]">
+    <Flexblock gap="var(--space-s)">
+        <h2>{t('industry.loyalty.history.title')}</h2>
+
+        {rows.length === 0 ? (
+            <p class="[ loyalty-history__empty ]">{t('industry.loyalty.history.empty')}</p>
+        ) : (
+            <ComponentBlock
+                padding_block="var(--space-2xs)"
+                padding_inline="var(--space-m)"
+            >
+                <div class="[ loyalty-history__table-wrap ]">
+                    <table class="[ loyalty-history__table ]">
+                        <thead>
+                            <tr>
+                                <th>{t('industry.loyalty.history.col.date')}</th>
+                                <th>{t('industry.loyalty.orders.col.side')}</th>
+                                <th>{t('industry.loyalty.orders.col.currency')}</th>
+                                <th class="[ tabular ]">{t('industry.loyalty.orders.col.quantity')}</th>
+                                <th class="[ tabular ]">{t('industry.loyalty.orders.col.rate')}</th>
+                                <th>{t('industry.loyalty.orders.col.status')}</th>
+                                <th>{t('industry.loyalty.orders.col.purchasers')}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rows.map((order) => {
+                                const status_color = STATUS_COLORS[order.status] ?? 'alliance-blue'
+                                const status_label = status_labels[order.status] ?? order.status
+                                const purchasers = order_purchasers(order)
+                                return (
+                                    <tr id={`order-${order.id}`}>
+                                        <td class="[ loyalty-history__date ]">
+                                            {format_date_time(lang, history_timestamp(order))}
+                                        </td>
+                                        <td class:list={[
+                                            'loyalty-history__side',
+                                            order.side === 'buy' ? 'is-buy' : 'is-sell',
+                                        ]}>
+                                            {order.side === 'buy'
+                                                ? t('industry.loyalty.side.buy')
+                                                : t('industry.loyalty.side.sell')}
+                                        </td>
+                                        <td>{order.loyalty_point_name}</td>
+                                        <td class="[ tabular ]">
+                                            {number_thousand_separator(order.quantity)}
+                                        </td>
+                                        <td class="[ tabular ]">
+                                            {number_thousand_separator(order.isk_per_lp)}
+                                        </td>
+                                        <td>
+                                            <Tag
+                                                text={status_label}
+                                                color={status_color}
+                                            />
+                                        </td>
+                                        <td>
+                                            {purchasers.length > 0 ? (
+                                                <FlexInline gap="var(--space-3xs)" class="[ loyalty-history__purchasers ]">
+                                                    {purchasers.map((pilot) => (
+                                                        <CharacterPicture
+                                                            character_id={pilot.character_id}
+                                                            character_name={pilot.character_name}
+                                                            tooltip={pilot.character_name}
+                                                            size={32}
+                                                            icon_quality={64}
+                                                        />
+                                                    ))}
+                                                </FlexInline>
+                                            ) : (
+                                                <Tag text={t('industry.loyalty.orders.no_purchasers')} />
+                                            )}
+                                        </td>
+                                    </tr>
+                                )
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </ComponentBlock>
+        )}
+    </Flexblock>
+</section>
+
+<style lang="scss">
+    h2 {
+        font-size: var(--step-1);
+        margin: 0;
+    }
+
+    .loyalty-history__table-wrap {
+        overflow-x: auto;
+    }
+
+    .loyalty-history__table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: var(--step--1);
+
+        th,
+        td {
+            text-align: left;
+            padding: var(--space-2xs) var(--space-xs);
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        th {
+            color: var(--highlight);
+            font-weight: 600;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        th.tabular,
+        td.tabular {
+            text-align: right;
+        }
+    }
+
+    .loyalty-history__side.is-sell {
+        color: var(--fleet-yellow);
+        font-weight: 600;
+    }
+
+    .loyalty-history__side.is-buy {
+        color: var(--highlight);
+        font-weight: 600;
+    }
+
+    .tabular {
+        font-variant-numeric: tabular-nums;
+    }
+
+    .loyalty-history__purchasers {
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .loyalty-history__date {
+        white-space: nowrap;
+    }
+
+    .loyalty-history__empty {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--highlight);
+    }
+</style>

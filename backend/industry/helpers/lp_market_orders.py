@@ -72,6 +72,7 @@ def create_order(
     isk_per_lp: int,
     created_by,
     notes: str = "",
+    destination_character_name: str = "",
 ) -> IndustryLoyaltyPointMarketOrder:
     quantity = int(quantity)
     if quantity <= 0:
@@ -84,6 +85,12 @@ def create_order(
             f"Sell orders cannot exceed {MAX_SELL_LP:,} LP."
         )
 
+    destination = (destination_character_name or "").strip()
+    if side == IndustryLoyaltyPointMarketOrder.Side.BUY and not destination:
+        raise LpMarketOrderError(
+            "destination_character_name is required for buy orders."
+        )
+
     order = IndustryLoyaltyPointMarketOrder.objects.create(
         loyalty_point=currency,
         side=side,
@@ -91,6 +98,7 @@ def create_order(
         isk_per_lp=isk_per_lp,
         status=OPEN,
         created_by=created_by,
+        destination_character_name=destination,
         notes=notes,
     )
     order.loyalty_point = currency
@@ -116,6 +124,33 @@ def remaining_quantity(order: IndustryLoyaltyPointMarketOrder) -> int:
     return max(0, int(order.quantity) - claimed_quantity(order))
 
 
+def _resolve_claim_amount(amount: int | None, remaining: int) -> int:
+    if amount is None:
+        return remaining
+    claim_amount = int(amount)
+    if claim_amount <= 0:
+        raise LpMarketOrderError("amount must be a positive integer.")
+    if claim_amount > remaining:
+        raise LpMarketOrderError(
+            f"amount exceeds remaining unclaimed quantity ({remaining:,})."
+        )
+    return claim_amount
+
+
+def _apply_sell_claim_destination(
+    order: IndustryLoyaltyPointMarketOrder,
+    dest_character: str,
+    dest_corporation: str,
+) -> None:
+    """Copy sell-claim LP destination onto the order."""
+    if order.side != IndustryLoyaltyPointMarketOrder.Side.SELL:
+        return
+    if dest_character:
+        order.destination_character_name = dest_character
+    elif dest_corporation and not order.destination_character_name:
+        order.destination_character_name = dest_corporation
+
+
 @transaction.atomic
 def claim_order(
     order: IndustryLoyaltyPointMarketOrder,
@@ -138,19 +173,13 @@ def claim_order(
     if remaining <= 0:
         raise LpMarketOrderError("Order is already fully claimed.")
 
-    if amount is None:
-        claim_amount = remaining
-    else:
-        claim_amount = int(amount)
-        if claim_amount <= 0:
-            raise LpMarketOrderError("amount must be a positive integer.")
-        if claim_amount > remaining:
-            raise LpMarketOrderError(
-                f"amount exceeds remaining unclaimed quantity ({remaining:,})."
-            )
-
+    claim_amount = _resolve_claim_amount(amount, remaining)
     dest_character = (destination_character_name or "").strip()
     dest_corporation = (destination_corporation_name or "").strip()
+    if not dest_character and not dest_corporation:
+        raise LpMarketOrderError(
+            "destination is required when claiming an order."
+        )
 
     claim = IndustryLoyaltyPointMarketOrderClaim.objects.create(
         order=locked,
@@ -162,17 +191,16 @@ def claim_order(
 
     if locked.claimed_by_id is None:
         locked.claimed_by = user
-    if dest_character:
-        locked.destination_character_name = dest_character
-    elif dest_corporation and not locked.destination_character_name:
-        locked.destination_character_name = dest_corporation
+
+    # Sell claims set LP destination on the order. Buy claims store ISK
+    # payout on the claim only — order.destination is already the LP dest.
+    _apply_sell_claim_destination(locked, dest_character, dest_corporation)
 
     fully_claimed = already_claimed + claim_amount >= int(locked.quantity)
     if fully_claimed:
-        if locked.destination_character_name:
-            locked.status = AWAITING_LP
-        else:
-            locked.status = CLAIMED
+        locked.status = (
+            AWAITING_LP if locked.destination_character_name else CLAIMED
+        )
     locked.save()
 
     # pylint: disable=import-outside-toplevel

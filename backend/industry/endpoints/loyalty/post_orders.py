@@ -69,6 +69,9 @@ def post_orders(request, payload: CreateLoyaltyMarketOrderRequest):
             isk_per_lp=isk_per_lp,
             created_by=request.user,
             notes=(payload.notes or "").strip(),
+            destination_character_name=(
+                payload.destination_character_name or ""
+            ).strip(),
         )
     except LpMarketOrderError as exc:
         return 400, ErrorResponse(detail=str(exc))

@@ -12,31 +12,35 @@ const user_is_staff = Boolean(user && user.is_staff)
 
 import type {
     LoyaltyCurrency,
-    LoyaltyLedgerEntry,
     LoyaltyMarketOrder,
     OrderLpStockpile,
 } from '@dtypes/api.minmatar.org'
 import {
     get_loyalty_currencies,
-    get_loyalty_ledger,
     get_loyalty_orders,
     get_loyalty_stockpiles,
 } from '@helpers/api.minmatar.org/loyalty'
 import { get_characters_summary } from '@helpers/api.minmatar.org/characters'
 
 let currencies: LoyaltyCurrency[] = []
-let ledger_entries: LoyaltyLedgerEntry[] = []
 let orders: LoyaltyMarketOrder[] = []
+let order_history: LoyaltyMarketOrder[] = []
 let stockpiles: OrderLpStockpile[] = []
 let fetching_error: Error | false = false
+let claim_characters: {
+    character_name: string
+    corp_name: string
+    is_primary: boolean
+}[] = []
 let claim_corporations: string[] = []
 let default_claim_corporation = ''
+let default_claim_character = ''
 
 try {
-    [currencies, ledger_entries, orders, stockpiles] = await Promise.all([
+    [currencies, orders, order_history, stockpiles] = await Promise.all([
         get_loyalty_currencies(),
-        get_loyalty_ledger(),
         get_loyalty_orders(),
+        get_loyalty_orders({ status: 'completed,cancelled' }),
         get_loyalty_stockpiles(),
     ])
 } catch (error) {
@@ -46,22 +50,24 @@ try {
 if (is_logged_in && auth_token) {
     try {
         const summary = await get_characters_summary(auth_token)
-        const characters = (summary.characters ?? [])
+        claim_characters = (summary.characters ?? [])
             .map((character) => ({
+                character_name: character.character_name,
                 corp_name: character.corp_name || '',
                 is_primary: Boolean(character.is_primary),
             }))
             .sort((a, b) => {
                 if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1
-                return a.corp_name.localeCompare(b.corp_name)
+                return a.character_name.localeCompare(b.character_name)
             })
         claim_corporations = [...new Set(
-            characters
+            claim_characters
                 .map((character) => character.corp_name)
                 .filter((name) => Boolean(name))
         )].sort((a, b) => a.localeCompare(b))
-        default_claim_corporation = characters.find((c) => c.is_primary)?.corp_name
-            || characters[0]?.corp_name
+        const primary = claim_characters.find((c) => c.is_primary) || claim_characters[0] || null
+        default_claim_character = primary?.character_name || ''
+        default_claim_corporation = primary?.corp_name
             || claim_corporations[0]
             || ''
     } catch (error) {
@@ -81,8 +87,8 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import LoyaltyRateCards from '@components/blocks/LoyaltyRateCards.astro'
-import LoyaltyLedger from '@components/blocks/LoyaltyLedger.astro'
 import LoyaltyOrderBook from '@components/blocks/LoyaltyOrderBook.astro'
+import LoyaltyOrderHistory from '@components/blocks/LoyaltyOrderHistory.astro'
 import LoyaltyStockpiles from '@components/blocks/LoyaltyStockpiles.astro'
 import Button from '@components/blocks/Button.astro'
 import CogIcon from '@components/icons/buttons/CogIcon.astro'
@@ -172,10 +178,12 @@ const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
                         highlight_order_id={highlight_order_id}
                         default_currency_id={default_currency_id}
                         default_isk_per_lp={default_isk_per_lp}
+                        claim_characters={claim_characters}
                         claim_corporations={claim_corporations}
+                        default_claim_character={default_claim_character}
                         default_claim_corporation={default_claim_corporation}
                     />
-                    <LoyaltyLedger ledger_entries={ledger_entries} />
+                    <LoyaltyOrderHistory orders={order_history} />
                     <LoyaltyStockpiles stockpiles={stockpiles} />
                 </>
             )}

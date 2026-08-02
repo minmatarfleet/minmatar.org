@@ -27,6 +27,7 @@ from industry.helpers.lp_buyback_discord import (
     _awaiting_lp_message,
     notify_order_created,
     notify_order_status_changed,
+    order_starter_message,
     order_thread_title,
 )
 from industry.helpers.lp_buyback_discord_buttons import (
@@ -276,6 +277,7 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
                     "loyalty_point_id": self.currency.pk,
                     "side": "buy",
                     "quantity": MAX_SELL_LP + 500_000,
+                    "destination_character_name": "Buyer Corp",
                 }
             ),
             content_type="application/json",
@@ -283,6 +285,26 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         )
         self.assertEqual(response.status_code, 201, response.content)
         self.assertEqual(response.json()["quantity"], MAX_SELL_LP + 500_000)
+        self.assertEqual(
+            response.json()["destination_character_name"], "Buyer Corp"
+        )
+
+    @patch("industry.helpers.lp_buyback_discord.notify_order_created")
+    def test_post_buy_requires_destination(self, unused_notify):
+        response = self.client.post(
+            "/api/industry/loyalty/orders",
+            data=json.dumps(
+                {
+                    "loyalty_point_id": self.currency.pk,
+                    "side": "buy",
+                    "quantity": 1_000_000,
+                }
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.manager_token}",
+        )
+        self.assertEqual(response.status_code, 400, response.content)
+        self.assertIn("destination", response.json()["detail"].lower())
 
     @patch("industry.helpers.lp_buyback_discord.notify_order_created")
     def test_post_buy_requires_manage(self, unused_notify):
@@ -293,6 +315,7 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
                     "loyalty_point_id": self.currency.pk,
                     "side": "buy",
                     "quantity": 1_000_000,
+                    "destination_character_name": "Buyer Corp",
                 }
             ),
             content_type="application/json",
@@ -307,6 +330,7 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
                     "loyalty_point_id": self.currency.pk,
                     "side": "buy",
                     "quantity": 1_000_000,
+                    "destination_character_name": "Buyer Corp",
                 }
             ),
             content_type="application/json",
@@ -420,6 +444,7 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
                     "side": "buy",
                     "quantity": 250_000,
                     "isk_per_lp": 800,
+                    "destination_character_name": "Buyer LP Corp",
                 }
             ),
             content_type="application/json",
@@ -427,15 +452,30 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         )
         self.assertEqual(create.status_code, 201, create.content)
         order_id = create.json()["id"]
+        self.assertEqual(
+            create.json()["destination_character_name"], "Buyer LP Corp"
+        )
 
         claim = self.client.post(
             f"/api/industry/loyalty/orders/{order_id}/claim",
-            data=json.dumps({"destination_character_name": "LP Seller alt"}),
+            data=json.dumps(
+                {
+                    "destination_corporation_name": "Seller ISK Wallet Corp",
+                }
+            ),
             content_type="application/json",
             HTTP_AUTHORIZATION=f"Bearer {self.manager_token}",
         )
         self.assertEqual(claim.status_code, 200, claim.content)
         self.assertEqual(claim.json()["status"], "awaiting_lp")
+        # Buy claim ISK dest must not overwrite order LP destination.
+        self.assertEqual(
+            claim.json()["destination_character_name"], "Buyer LP Corp"
+        )
+        self.assertEqual(
+            claim.json()["claims"][0]["destination_corporation_name"],
+            "Seller ISK Wallet Corp",
+        )
 
         for status in ("awaiting_isk", "completed"):
             response = self.client.patch(
@@ -765,6 +805,10 @@ class LpBuybackSideAwareMessagingTestCase(AppTestCase):
         msg = _awaiting_lp_message(order)
         self.assertIn("<@1001>", msg)
         self.assertIn("Send LP to: **CT Alt**", msg)
+        self.assertIn(
+            "Take a screenshot of the LP transfer and paste it in this thread.",
+            msg,
+        )
 
     def test_wtb_awaiting_lp_tags_claimer(self):
         order = IndustryLoyaltyPointMarketOrder.objects.create(
@@ -780,8 +824,46 @@ class LpBuybackSideAwareMessagingTestCase(AppTestCase):
         msg = _awaiting_lp_message(order)
         self.assertIn("<@1002>", msg)
         self.assertIn("Send LP to: **Ballah Inc.**", msg)
+        self.assertIn(
+            "Take a screenshot of the LP transfer and paste it in this thread.",
+            msg,
+        )
 
-    def test_wtb_awaiting_isk_tags_poster_pay_claimer(self):
+    def test_wtb_starter_includes_lp_destination(self):
+        order = IndustryLoyaltyPointMarketOrder.objects.create(
+            loyalty_point=self.currency,
+            side=IndustryLoyaltyPointMarketOrder.Side.BUY,
+            quantity=1000,
+            isk_per_lp=800,
+            status=IndustryLoyaltyPointMarketOrder.Status.OPEN,
+            created_by=self.seller,
+            destination_character_name="Buyer LP Corp",
+        )
+        msg = order_starter_message(order)
+        self.assertIn("Send LP to: **Buyer LP Corp**", msg)
+
+    def test_wtb_awaiting_isk_uses_claim_destination(self):
+        order = IndustryLoyaltyPointMarketOrder.objects.create(
+            loyalty_point=self.currency,
+            side=IndustryLoyaltyPointMarketOrder.Side.BUY,
+            quantity=1000,
+            isk_per_lp=800,
+            status=IndustryLoyaltyPointMarketOrder.Status.AWAITING_ISK,
+            created_by=self.seller,
+            claimed_by=self.claimer,
+            destination_character_name="Buyer LP Corp",
+        )
+        IndustryLoyaltyPointMarketOrderClaim.objects.create(
+            order=order,
+            amount=1000,
+            destination_corporation_name="Seller ISK Corp",
+            claimed_by=self.claimer,
+        )
+        msg = _awaiting_isk_message(order)
+        self.assertIn("<@1001>", msg)
+        self.assertIn("Pay ISK to: **Seller ISK Corp**", msg)
+
+    def test_wtb_awaiting_isk_falls_back_to_claimer_name(self):
         order = IndustryLoyaltyPointMarketOrder.objects.create(
             loyalty_point=self.currency,
             side=IndustryLoyaltyPointMarketOrder.Side.BUY,

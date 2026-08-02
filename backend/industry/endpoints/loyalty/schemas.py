@@ -56,6 +56,7 @@ class CreateLoyaltyMarketOrderRequest(Schema):
     side: str
     quantity: int
     isk_per_lp: Optional[int] = None
+    destination_character_name: str = ""
     notes: str = ""
 
 
