@@ -46,6 +46,21 @@ const {
     default_claim_corporation = '',
 } = Astro.props
 
+const FACTION_ORDER: readonly number[] = [
+    1000182, // TLIB
+    1000179, // 24th
+    1000180, // State
+    1000181, // FDU
+]
+const sorted_currencies = [...currencies].sort((a, b) => {
+    const ai = FACTION_ORDER.indexOf(a.corporation_id)
+    const bi = FACTION_ORDER.indexOf(b.corporation_id)
+    const ao = ai === -1 ? FACTION_ORDER.length : ai
+    const bo = bi === -1 ? FACTION_ORDER.length : bi
+    if (ao !== bo) return ao - bo
+    return a.name.localeCompare(b.name)
+})
+
 const default_lp_destination = default_claim_corporation
     || claim_corporations[0]
     || ''
@@ -641,7 +656,7 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                                 x-model="form_loyalty_point_id"
                                 x-on:change="on_currency_change()"
                             >
-                                {currencies.map((c) => (
+                                {sorted_currencies.map((c) => (
                                     <option value={c.id}>{c.name}</option>
                                 ))}
                             </Select>
