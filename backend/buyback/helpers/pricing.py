@@ -12,7 +12,6 @@ from eveuniverse.models import EveMarketPrice, EveType
 from industry.helpers.compressed_ore import (
     ORE_BATCH_SIZE,
     ore_materials_per_portion,
-    reprocess_output,
 )
 from market.helpers.pricing import JITA_REGION_ID
 from market.models import EveMarketItemHistory
@@ -127,6 +126,31 @@ class PricedLine:
     jita_buy: Optional[float] = None
 
 
+def _prorated_refine_outputs(
+    name: str,
+    quantity: int,
+    refine_rate: float,
+) -> dict[str, float] | None:
+    """
+    Mineral outputs for buyback pricing, prorating partial portions.
+
+    In-game refine floors to whole 100-unit batches, but buyback aggregates
+    stacks across contracts, so fractional amounts under (and remainders
+    above) ORE_BATCH_SIZE are priced in.
+    """
+    if quantity <= 0 or refine_rate <= 0:
+        return None
+    per_portion = ore_materials_per_portion(name)
+    if not per_portion:
+        return None
+    fraction = quantity / ORE_BATCH_SIZE
+    return {
+        mineral: fraction * base_qty * refine_rate
+        for mineral, base_qty in per_portion.items()
+        if base_qty > 0
+    }
+
+
 def price_ore_line(
     *,
     name: str,
@@ -136,19 +160,12 @@ def price_ore_line(
     ore_jita_buy: float,
     mineral_buy_by_name: dict[str, Decimal],
 ) -> PricedLine:
-    outputs = reprocess_output(name, quantity, refine_rate=refine_rate)
+    outputs = _prorated_refine_outputs(name, quantity, refine_rate)
     if not outputs:
-        if 0 < quantity < ORE_BATCH_SIZE:
-            reject_reason = (
-                f"Ore stacks under {ORE_BATCH_SIZE} units do not refine "
-                f"(in-game portion size)"
-            )
-        elif not ore_materials_per_portion(name):
-            reject_reason = "Could not refine ore (no material data)"
+        if quantity <= 0:
+            reject_reason = "Quantity must be positive"
         else:
-            reject_reason = (
-                f"Could not refine ore (need at least {ORE_BATCH_SIZE} units)"
-            )
+            reject_reason = "Could not refine ore (no material data)"
         return PricedLine(
             type_id=type_id,
             name=name,
@@ -173,7 +190,9 @@ def price_ore_line(
             line_total=None,
             accepted=False,
             reject_reason=f"Missing Jita buy for minerals: {', '.join(missing)}",
-            refine_outputs=outputs,
+            refine_outputs={
+                m: int(round(q)) for m, q in outputs.items() if round(q) > 0
+            },
         )
 
     mineral_isk = sum(
@@ -190,7 +209,9 @@ def price_ore_line(
         unit_price=round(unit_price, 2),
         line_total=round(line_total, 2),
         accepted=True,
-        refine_outputs=outputs,
+        refine_outputs={
+            m: int(round(q)) for m, q in outputs.items() if round(q) > 0
+        },
         jita_buy=None,
     )
 

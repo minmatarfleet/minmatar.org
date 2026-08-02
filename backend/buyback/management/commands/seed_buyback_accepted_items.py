@@ -8,7 +8,7 @@ from buyback.helpers.accepted_items import (
 
 class Command(BaseCommand):
     help = (
-        "Seed buyback accepted items (compressed highsec ores + PI used in "
+        "Seed buyback accepted items (compressed buyback ores + PI used in "
         "recent industry orders)."
     )
 

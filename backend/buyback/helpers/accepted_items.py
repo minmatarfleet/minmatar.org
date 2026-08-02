@@ -18,8 +18,11 @@ from buyback.helpers.classify import (
 )
 from buyback.models import BuybackAcceptedItem
 
-HIGHSEC_ORE_BASES = frozenset(
+# Compressed belt/moon ores accepted for buyback. Highsec bases plus selected
+# lowsec/nullsec ores (isogen-bearing and Equinox) requested for alliance take.
+BUYBACK_ORE_BASES = frozenset(
     {
+        # Highsec belt + HS moon
         "Veldspar",
         "Scordite",
         "Pyroxeres",
@@ -30,8 +33,20 @@ HIGHSEC_ORE_BASES = frozenset(
         "Sylvite",
         "Bitumens",
         "Coesite",
+        # Lowsec / nullsec belt (incl. isogen-rich)
+        "Hedbergite",
+        "Crokite",
+        "Dark Ochre",
+        # Equinox nullsec
+        "Ytirium",
+        "Eifyrium",
+        "Ducinium",
+        "Griemeer",
     }
 )
+
+# Back-compat alias for older imports / docs.
+HIGHSEC_ORE_BASES = BUYBACK_ORE_BASES
 
 _GRADE_SUFFIX_RE = re.compile(r"\s+(II|III|IV)-Grade$")
 _MOON_PREFIX_RE = re.compile(r"^(Brimful|Glistening)\s+")
@@ -46,21 +61,25 @@ PI_CATEGORIES = (
 )
 
 
-def compressed_highsec_base(name: str) -> str | None:
-    """Return the highsec ore base name if this is a matching Compressed type."""
+def compressed_buyback_ore_base(name: str) -> str | None:
+    """Return the ore base name if this is a matching Compressed buyback type."""
     if not name.startswith("Compressed "):
         return None
     rest = name[len("Compressed ") :]
     rest = _GRADE_SUFFIX_RE.sub("", rest)
     rest = _MOON_PREFIX_RE.sub("", rest)
-    if rest in HIGHSEC_ORE_BASES:
+    if rest in BUYBACK_ORE_BASES:
         return rest
     return None
 
 
+# Back-compat alias.
+compressed_highsec_base = compressed_buyback_ore_base
+
+
 def category_for_eve_type(eve_type: EveType) -> str | None:
     """Map an EveType to a BuybackAcceptedItem.Category value, or None."""
-    if compressed_highsec_base(eve_type.name):
+    if compressed_buyback_ore_base(eve_type.name):
         return BuybackAcceptedItem.Category.ORE
     group_id = getattr(eve_type, "eve_group_id", None)
     if group_id == GROUP_P1:
@@ -146,7 +165,7 @@ def iter_seed_ore_eve_types() -> Iterable[EveType]:
         .select_related("eve_group")
         .iterator()
     ):
-        if compressed_highsec_base(eve_type.name):
+        if compressed_buyback_ore_base(eve_type.name):
             yield eve_type
 
 
@@ -194,7 +213,7 @@ def seed_accepted_items(
     pi_lookback_days: int = DEFAULT_PI_LOOKBACK_DAYS,
 ) -> dict[str, int]:
     """
-    Upsert compressed highsec ores + PI used in recent industry orders.
+    Upsert compressed buyback ores + PI used in recent industry orders.
 
     PI rows outside the lookback BOM set are always deactivated. When
     deactivate_missing is True, active ore rows not in the seed set are also
