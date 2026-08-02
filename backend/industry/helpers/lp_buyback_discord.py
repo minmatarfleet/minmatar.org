@@ -143,12 +143,21 @@ def create_order_thread(order: IndustryLoyaltyPointMarketOrder) -> int | None:
         return None
 
 
+def close_order_thread(order: IndustryLoyaltyPointMarketOrder) -> None:
+    """Archive/lock the order thread without posting (avoids Discord reopen race)."""
+    if not order.discord_thread_id:
+        return
+    try:
+        discord.close_thread(channel_id=order.discord_thread_id)
+    except Exception as exc:
+        logger.error("Failed closing LP buyback Discord thread: %s", exc)
+
+
 def post_order_status_update(
     order: IndustryLoyaltyPointMarketOrder,
     *,
     message: str,
     components: list[dict] | None = None,
-    close: bool = False,
 ) -> None:
     if not order.discord_thread_id:
         return
@@ -161,12 +170,6 @@ def post_order_status_update(
         )
     except Exception as exc:
         logger.error("Failed posting LP buyback Discord update: %s", exc)
-        return
-    if close:
-        try:
-            discord.close_thread(channel_id=order.discord_thread_id)
-        except Exception as exc:
-            logger.error("Failed closing LP buyback Discord thread: %s", exc)
 
 
 def notify_order_created(order: IndustryLoyaltyPointMarketOrder) -> None:
@@ -276,15 +279,7 @@ def notify_order_status_changed(
             message=_awaiting_isk_message(order),
             components=isk_sent_components(order.pk),
         )
-    elif status == order.Status.COMPLETED:
-        post_order_status_update(
-            order,
-            message=f":white_check_mark: Completed\n{order_site_url(order)}",
-            close=True,
-        )
-    elif status == order.Status.CANCELLED:
-        post_order_status_update(
-            order,
-            message=f":x: Cancelled\n{order_site_url(order)}",
-            close=True,
-        )
+    elif status in (order.Status.COMPLETED, order.Status.CANCELLED):
+        # Do not post a close/status message — Discord unarchives threads when
+        # anything is sent (including after archive), same race as help tickets.
+        close_order_thread(order)
