@@ -29,12 +29,8 @@ let ledger_entries: LoyaltyLedgerEntry[] = []
 let orders: LoyaltyMarketOrder[] = []
 let stockpiles: OrderLpStockpile[] = []
 let fetching_error: Error | false = false
-let claim_characters: {
-    character_name: string
-    corp_name: string
-    is_primary: boolean
-}[] = []
 let claim_corporations: string[] = []
+let default_claim_corporation = ''
 
 try {
     [currencies, ledger_entries, orders, stockpiles] = await Promise.all([
@@ -50,21 +46,24 @@ try {
 if (is_logged_in && auth_token) {
     try {
         const summary = await get_characters_summary(auth_token)
-        claim_characters = (summary.characters ?? [])
+        const characters = (summary.characters ?? [])
             .map((character) => ({
-                character_name: character.character_name,
                 corp_name: character.corp_name || '',
                 is_primary: Boolean(character.is_primary),
             }))
             .sort((a, b) => {
                 if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1
-                return a.character_name.localeCompare(b.character_name)
+                return a.corp_name.localeCompare(b.corp_name)
             })
         claim_corporations = [...new Set(
-            claim_characters
+            characters
                 .map((character) => character.corp_name)
                 .filter((name) => Boolean(name))
         )].sort((a, b) => a.localeCompare(b))
+        default_claim_corporation = characters.find((c) => c.is_primary)?.corp_name
+            || characters[0]?.corp_name
+            || claim_corporations[0]
+            || ''
     } catch (error) {
         console.log(error)
     }
@@ -173,8 +172,8 @@ const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
                         highlight_order_id={highlight_order_id}
                         default_currency_id={default_currency_id}
                         default_isk_per_lp={default_isk_per_lp}
-                        claim_characters={claim_characters}
                         claim_corporations={claim_corporations}
+                        default_claim_corporation={default_claim_corporation}
                     />
                     <LoyaltyLedger ledger_entries={ledger_entries} />
                     <LoyaltyStockpiles stockpiles={stockpiles} />
