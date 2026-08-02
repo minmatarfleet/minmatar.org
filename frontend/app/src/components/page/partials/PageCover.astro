@@ -63,11 +63,31 @@ const animate_cover = !oob_swap || (old_cover !== image)
             width="1920"
             height="1080"
             poster={video_thumb}
-            autoplay
+            muted
+            playsinline
             loop
-        >
-            <source src={video} type="video/webm" />
-        </video>
+            preload="none"
+            x-ref="coverVideo"
+            x-data={`{
+                src: ${JSON.stringify(video)},
+                started: false,
+                start() {
+                    if (this.started) return
+                    this.started = true
+                    const videoEl = this.$refs.coverVideo
+                    if (!videoEl || !this.src) return
+                    if (!videoEl.querySelector('source')) {
+                        const source = document.createElement('source')
+                        source.src = this.src
+                        source.type = 'video/webm'
+                        videoEl.appendChild(source)
+                    }
+                    videoEl.load()
+                    videoEl.play().catch(() => {})
+                }
+            }`}
+            x-intersect.once="start()"
+        ></video>
     }
 </div>
 

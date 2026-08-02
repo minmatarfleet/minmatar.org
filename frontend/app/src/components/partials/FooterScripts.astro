@@ -1,8 +1,5 @@
 ---
-import { is_disabled_ccpwgl } from '@helpers/env';
 import LearningAlpine from '@components/partials/LearningAlpine.astro';
-
-const DISABLED_CCPWGL = is_disabled_ccpwgl()
 ---
 
 <LearningAlpine />
@@ -14,7 +11,6 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
 <script is:inline src="https://unpkg.com/@popperjs/core@2"></script>
 <script is:inline src="https://unpkg.com/tippy.js@6"></script>
 <script is:inline src="https://cdn.jsdelivr.net/npm/@tsparticles/confetti@3.0.3/tsparticles.confetti.bundle.min.js"></script>
-<script is:inline src="https://cdn.jsdelivr.net/npm/tsparticles/dist/tsparticles.min.js"></script>
 
 <script is:inline>
     const canvas = document.getElementById("confetti-canvas");
@@ -115,18 +111,4 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
     }
 </script>
 
-{!DISABLED_CCPWGL &&
-    <script is:inline type="text/javascript" src="/js/ccpwgl/ccpwgl_int.min.js"></script>
-    <script is:inline type="text/javascript" src="/js/ccpwgl/ccpwgl.js"></script>
-    <script is:inline type="text/javascript" src="/js/ccpwgl/minmatar.js"></script>
-}
-
-<script is:inline src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
-<script is:inline src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <script src="https://cdn.jsdelivr.net/npm/@justinribeiro/lite-youtube@1/lite-youtube.min.js"></script>
-
-<script src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
-
-<script is:inline src="/js/toastui-editor-all.min.js"></script>
