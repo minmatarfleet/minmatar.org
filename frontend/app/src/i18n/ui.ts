@@ -460,7 +460,7 @@ export const ui = {
 
         'buyback.info.buying': 'Accepted items',
         'buyback.info.no_items': 'No accepted items are configured yet.',
-        'buyback.info.group.ore': 'Compressed highsec ore',
+        'buyback.info.group.ore': 'Compressed ore',
         'buyback.info.group.p1': 'P1',
         'buyback.info.group.p2': 'P2',
         'buyback.info.group.p3': 'P3',
@@ -476,7 +476,7 @@ export const ui = {
 
         'buyback.form.title': 'Get a buyback offer',
         'buyback.form.paste': 'Paste your items',
-        'buyback.form.paste_tip': 'Copy items from Inventory or Assets (Ctrl+A, Ctrl+C) and paste below. Ore is appraised in 100-unit portions.',
+        'buyback.form.paste_tip': 'Copy items from Inventory or Assets (Ctrl+A, Ctrl+C) and paste below. Ore is priced from refine yield (including stacks under 100).',
         'buyback.form.paste_placeholder': 'Compressed Veldspar\t1000\nWater\t5000',
         'buyback.form.submit': 'Appraise',
         'buyback.form.continue': 'Create contract walkthrough',

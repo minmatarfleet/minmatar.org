@@ -9,7 +9,7 @@ from django.utils import timezone
 from eveuniverse.models import EveCategory, EveGroup, EveType
 
 from buyback.helpers.accepted_items import (
-    compressed_highsec_base,
+    compressed_buyback_ore_base,
     seed_accepted_items,
 )
 from buyback.helpers.classify import BuybackCategory, classify_eve_type
@@ -205,14 +205,14 @@ class PriceBuybackTestCase(TestCase):
         self.assertEqual(line.unit_price, 90.0)
         self.assertEqual(line.line_total, 9000.0)
 
-    @patch("buyback.helpers.pricing.reprocess_output")
-    def test_price_ore_uses_mineral_buys(self, mock_reprocess):
-        mock_reprocess.return_value = {"Tritanium": 1000, "Pyerite": 100}
+    @patch("buyback.helpers.pricing.ore_materials_per_portion")
+    def test_price_ore_uses_mineral_buys(self, mock_per_portion):
+        mock_per_portion.return_value = {"Tritanium": 1000, "Pyerite": 100}
         line = price_ore_line(
             name="Compressed Veldspar",
             quantity=100,
             type_id=62516,
-            refine_rate=0.85,
+            refine_rate=1.0,
             ore_jita_buy=1.0,
             mineral_buy_by_name={
                 "Tritanium": Decimal("4"),
@@ -222,9 +222,22 @@ class PriceBuybackTestCase(TestCase):
         self.assertTrue(line.accepted)
         # 1000*4 + 100*20 = 6000
         self.assertEqual(line.line_total, 6000.0)
-        mock_reprocess.assert_called_once_with(
-            "Compressed Veldspar", 100, refine_rate=0.85
+        mock_per_portion.assert_called_once_with("Compressed Veldspar")
+
+    @patch("buyback.helpers.pricing.ore_materials_per_portion")
+    def test_price_ore_prorates_stacks_under_100(self, mock_per_portion):
+        mock_per_portion.return_value = {"Tritanium": 400}
+        line = price_ore_line(
+            name="Compressed Veldspar",
+            quantity=43,
+            type_id=62516,
+            refine_rate=1.0,
+            ore_jita_buy=1.0,
+            mineral_buy_by_name={"Tritanium": Decimal("5")},
         )
+        self.assertTrue(line.accepted)
+        # 43/100 * 400 Trit * 5 ISK = 860
+        self.assertEqual(line.line_total, 860.0)
 
 
 class BaselineBuyPriceHistoryTestCase(TestCase):
@@ -286,21 +299,32 @@ class BaselineBuyPriceHistoryTestCase(TestCase):
 
 
 class AcceptedItemsSeedTestCase(TestCase):
-    def test_compressed_highsec_base_matches_variants(self):
+    def test_compressed_buyback_ore_base_matches_variants(self):
         self.assertEqual(
-            compressed_highsec_base("Compressed Veldspar"), "Veldspar"
+            compressed_buyback_ore_base("Compressed Veldspar"), "Veldspar"
         )
         self.assertEqual(
-            compressed_highsec_base("Compressed Veldspar II-Grade"),
+            compressed_buyback_ore_base("Compressed Veldspar II-Grade"),
             "Veldspar",
         )
         self.assertEqual(
-            compressed_highsec_base("Compressed Brimful Zeolites"),
+            compressed_buyback_ore_base("Compressed Brimful Zeolites"),
             "Zeolites",
         )
-        self.assertIsNone(compressed_highsec_base("Veldspar"))
-        self.assertIsNone(compressed_highsec_base("Compressed Blue Ice"))
-        self.assertIsNone(compressed_highsec_base("Compressed Arkonor"))
+        self.assertEqual(
+            compressed_buyback_ore_base("Compressed Hedbergite III-Grade"),
+            "Hedbergite",
+        )
+        self.assertEqual(
+            compressed_buyback_ore_base("Compressed Ytirium"), "Ytirium"
+        )
+        self.assertEqual(
+            compressed_buyback_ore_base("Compressed Crokite IV-Grade"),
+            "Crokite",
+        )
+        self.assertIsNone(compressed_buyback_ore_base("Veldspar"))
+        self.assertIsNone(compressed_buyback_ore_base("Compressed Blue Ice"))
+        self.assertIsNone(compressed_buyback_ore_base("Compressed Arkonor"))
 
     @patch("eveonline.signals.update_character_public_data")
     def test_seed_upserts_allowlist(self, unused_mock_public):
@@ -516,10 +540,10 @@ class AppraiseEndpointTestCase(TestCase):
         self.assertFalse(by_name["Compressed Blue Ice"]["accepted"])
 
     @patch(
-        "buyback.helpers.pricing.reprocess_output",
-        return_value={"Tritanium": 100},
+        "buyback.helpers.pricing._prorated_refine_outputs",
+        return_value={"Tritanium": 100.0},
     )
-    def test_appraise_ore_uses_region_history(self, unused_mock_reprocess):
+    def test_appraise_ore_uses_region_history(self, unused_mock_refine):
         trit = _ensure_type(
             type_id=34,
             name="Tritanium",
@@ -550,15 +574,15 @@ class AppraiseEndpointTestCase(TestCase):
         self.assertTrue(by_name["Compressed Veldspar"]["accepted"])
 
     @patch(
-        "buyback.helpers.pricing.reprocess_output",
-        return_value={"Tritanium": 100},
+        "buyback.helpers.pricing._prorated_refine_outputs",
+        return_value={"Tritanium": 100.0},
     )
     @patch(
         "buyback.helpers.appraise.get_baseline_buy_prices_by_name",
         return_value={"Tritanium": Decimal("4")},
     )
     def test_appraise_rejects_items_not_on_allowlist(
-        self, unused_mock_minerals, unused_mock_reprocess
+        self, unused_mock_minerals, unused_mock_refine
     ):
         paste = (
             "Compressed Veldspar\t10\n"

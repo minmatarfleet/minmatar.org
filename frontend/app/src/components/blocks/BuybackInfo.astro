@@ -15,7 +15,7 @@ interface Props {
 
 const { settings } = Astro.props
 
-const HIGHSEC_ORE_BASES = [
+const BUYBACK_ORE_BASES = [
     'Veldspar',
     'Scordite',
     'Pyroxeres',
@@ -26,18 +26,25 @@ const HIGHSEC_ORE_BASES = [
     'Sylvite',
     'Bitumens',
     'Coesite',
+    'Hedbergite',
+    'Crokite',
+    'Dark Ochre',
+    'Ytirium',
+    'Eifyrium',
+    'Ducinium',
+    'Griemeer',
 ] as const
 
-const HIGHSEC_ORE_BASE_SET = new Set<string>(HIGHSEC_ORE_BASES)
+const BUYBACK_ORE_BASE_SET = new Set<string>(BUYBACK_ORE_BASES)
 const GRADE_SUFFIX_RE = /\s+(II|III|IV)-Grade$/
 const MOON_PREFIX_RE = /^(Brimful|Glistening)\s+/
 
-function compressed_highsec_base(name: string): string | null {
+function compressed_buyback_ore_base(name: string): string | null {
     if (!name.startsWith('Compressed ')) return null
     let rest = name.slice('Compressed '.length)
     rest = rest.replace(GRADE_SUFFIX_RE, '')
     rest = rest.replace(MOON_PREFIX_RE, '')
-    return HIGHSEC_ORE_BASE_SET.has(rest) ? rest : null
+    return BUYBACK_ORE_BASE_SET.has(rest) ? rest : null
 }
 
 interface DisplayItem {
@@ -70,7 +77,7 @@ function display_items_for_category(category: (typeof CATEGORY_ORDER)[number]): 
     const leftover: BuybackAcceptedItem[] = []
 
     for (const item of items) {
-        const base = compressed_highsec_base(item.name)
+        const base = compressed_buyback_ore_base(item.name)
         if (!base) {
             leftover.push(item)
             continue
@@ -80,7 +87,7 @@ function display_items_for_category(category: (typeof CATEGORY_ORDER)[number]): 
         by_base.set(base, group)
     }
 
-    const grouped: DisplayItem[] = HIGHSEC_ORE_BASES
+    const grouped: DisplayItem[] = BUYBACK_ORE_BASES
         .filter((base) => by_base.has(base))
         .map((base) => {
             const variants = (by_base.get(base) ?? [])
