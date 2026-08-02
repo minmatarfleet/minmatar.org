@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 from esi.models import CallbackRedirect, Token
 
 from app.test import TestCase
+from discord.client import DiscordError
 from discord.models import DiscordUser
 from eveonline.models import EveCharacter, EveCorporation
 from eveonline.helpers.characters import (
@@ -162,23 +163,23 @@ class UserRouterTestCase(TestCase):
             self.assertTrue(discord_user.is_down_under)
             self.assertEqual("http://after.gif", discord_user.avatar)
 
-    @patch("discord.client.requests.post")
-    @patch("discord.client.requests.get")
-    def test_discord_login_redirect_error(self, profile_mock, exchange_mock):
-        exchange_mock.return_value.status_code = 400
-        profile_mock.return_value.status_code = 200
+    @patch("users.router.discord.exchange_code")
+    def test_discord_login_redirect_error(self, exchange_mock):
         request = MagicMock()
 
+        discord_response = MagicMock()
+        discord_response.status_code = 400
+        exchange_mock.side_effect = DiscordError.for_response(
+            "Error exchanging token", "EXCHG_CODE", discord_response
+        )
         response = callback(request, code="100001")
-
         self.assertEqual(response.status_code, 302)
         self.assertIn("error=EXCHG_CODE", response.url)
 
-        exchange_mock.return_value.status_code = 200
-        profile_mock.return_value.status_code = 400
-
+        exchange_mock.side_effect = DiscordError.for_response(
+            "Error fetching Discord profile", "GET_PROFILE", discord_response
+        )
         response = callback(request, code="100001")
-
         self.assertEqual(response.status_code, 302)
         self.assertIn("error=GET_PROFILE", response.url)
 
