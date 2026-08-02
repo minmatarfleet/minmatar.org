@@ -7,6 +7,7 @@ import {
     RATTING_GROSS_ISK,
     toBillions,
 } from '@/data/campaigns/etherium-reach'
+import ChartJsScript from '@components/partials/ChartJsScript.astro';
 
 const miningData = MINING_GROSS_ISK.map(toBillions)
 const rattingData = RATTING_GROSS_ISK.map(toBillions)
@@ -14,6 +15,7 @@ const piData = PI_GROSS_ISK.map(toBillions)
 const explorationData = EXPLORATION_GROSS_ISK.map(toBillions)
 ---
 
+<ChartJsScript />
 <div
     class="[ h-screen ]"
     x-data={`{

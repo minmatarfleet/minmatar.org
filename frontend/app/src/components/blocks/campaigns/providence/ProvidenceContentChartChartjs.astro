@@ -6,6 +6,7 @@ import {
     MONTHS,
     toBillions,
 } from '@/data/campaigns/providence'
+import ChartJsScript from '@components/partials/ChartJsScript.astro';
 
 const iskData = ISK_DESTROYED_MONTHLY.map(toBillions)
 const fleetData = FLEETS_MONTHLY
@@ -47,6 +48,7 @@ const beatsConfig = CAMPAIGN_BEATS.map((beat) => ({
 }))
 ---
 
+<ChartJsScript />
 <div
     class="[ h-screen ]"
     x-data={`{
