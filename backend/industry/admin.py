@@ -647,6 +647,12 @@ class IndustryLoyaltyPointLedgerEntryAdmin(admin.ModelAdmin):
 
         return RequestLedgerForm
 
+    def save_model(self, request, obj, form, change):
+        if not change:
+            # Already persisted by form.save() via post_ledger_entry.
+            return
+        super().save_model(request, obj, form, change)
+
     def has_delete_permission(self, request, obj=None):
         return False
 

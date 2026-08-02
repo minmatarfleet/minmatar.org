@@ -177,6 +177,77 @@ class LpAdminViewsTestCase(TestCase):
         self.assertContains(response, "Direction")
         self.assertContains(response, "LP quantity")
 
+    def test_ledger_add_posts_credit(self):
+        url = reverse("admin:industry_industryloyaltypointledgerentry_add")
+        response = self.client.post(
+            url,
+            {
+                "account": self.account.pk,
+                "direction": "credit",
+                "quantity": "250000",
+                "isk_per_lp": "825",
+                "notes": "admin add",
+                "_continue": "Save and continue editing",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(account_balance(self.account), 250000)
+        entry = IndustryLoyaltyPointLedgerEntry.objects.get(
+            account=self.account
+        )
+        self.assertEqual(entry.amount, 250000)
+        self.assertEqual(entry.isk_per_lp, 825)
+        self.assertEqual(entry.notes, "admin add")
+        self.assertEqual(entry.created_by, self.user)
+        self.assertEqual(
+            IndustryLoyaltyPointLedgerEntry.objects.filter(
+                account=self.account
+            ).count(),
+            1,
+        )
+
+    def test_ledger_change_page_loads(self):
+        entry = post_ledger_entry(
+            self.account,
+            100_000,
+            850,
+            notes="seed",
+            user=self.user,
+        )
+        url = reverse(
+            "admin:industry_industryloyaltypointledgerentry_change",
+            args=[entry.pk],
+        )
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Alliance pot")
+        self.assertContains(response, "850")
+
+    def test_ledger_change_updates_notes(self):
+        entry = post_ledger_entry(
+            self.account,
+            100_000,
+            850,
+            notes="seed",
+            user=self.user,
+        )
+        url = reverse(
+            "admin:industry_industryloyaltypointledgerentry_change",
+            args=[entry.pk],
+        )
+        response = self.client.post(
+            url,
+            {
+                "notes": "updated note",
+                "_continue": "Save and continue editing",
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        entry.refresh_from_db()
+        self.assertEqual(entry.notes, "updated note")
+        self.assertEqual(entry.amount, 100_000)
+        self.assertEqual(account_balance(self.account), 100_000)
+
     def test_market_order_change_page_loads(self):
         order = IndustryLoyaltyPointMarketOrder.objects.create(
             loyalty_point=self.currency,

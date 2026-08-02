@@ -236,17 +236,27 @@ class IndustryLoyaltyPointLedgerEntryAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk:
+            # On change, admin fieldsets/readonly drop these; the model
+            # isk_per_lp is shown via readonly_fields instead.
             for name in ("direction", "quantity", "isk_per_lp"):
-                self.fields[name].disabled = True
-                self.fields[name].required = False
+                self.fields.pop(name, None)
 
     def save(self, commit=True):
+        if self.instance.pk:
+            return self._save_existing(commit)
+        return self._save_new(commit)
+
+    def _save_existing(self, commit: bool):
         existing = self.instance
-        if existing.pk:
-            existing.notes = self.cleaned_data.get("notes") or ""
-            if commit:
-                existing.save(update_fields=["notes"])
-            return existing
+        existing.notes = self.cleaned_data.get("notes") or ""
+        if commit:
+            existing.save(update_fields=["notes"])
+        else:
+            # Admin always uses commit=False then form.save_m2m().
+            self.save_m2m = self._save_m2m_noop
+        return existing
+
+    def _save_new(self, commit: bool):
         direction = self.cleaned_data["direction"]
         quantity = int(self.cleaned_data["quantity"])
         amount = (
@@ -254,10 +264,18 @@ class IndustryLoyaltyPointLedgerEntryAdminForm(forms.ModelForm):
             if direction == IndustryLoyaltyPointAccountAdminForm.LEDGER_DEBIT
             else quantity
         )
-        return post_ledger_entry(
+        self.instance = post_ledger_entry(
             self.cleaned_data["account"],
             amount,
             int(self.cleaned_data["isk_per_lp"]),
             notes=self.cleaned_data.get("notes") or "",
             user=getattr(self, "_request_user", None),
         )
+        if not commit:
+            self.save_m2m = self._save_m2m_noop
+        return self.instance
+
+    @staticmethod
+    def _save_m2m_noop():
+        """No M2M fields; satisfy ModelAdmin.save_related after commit=False."""
+        return None
