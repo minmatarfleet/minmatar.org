@@ -1,12 +1,10 @@
 ---
 import { DAYS, SHIPS_DESTROYED_DAILY } from '@/data/campaigns/auga'
-import ChartJsScript from '@components/partials/ChartJsScript.astro';
 
 const days = [...DAYS]
 const shipsData = [...SHIPS_DESTROYED_DAILY]
 ---
 
-<ChartJsScript />
 <div
     class="[ h-screen ]"
     x-data={`{
