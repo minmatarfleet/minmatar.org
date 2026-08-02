@@ -23,12 +23,8 @@ interface Props {
     highlight_order_id: string | null
     default_currency_id: number | null
     default_isk_per_lp: number
-    claim_characters?: {
-        character_name: string
-        corp_name: string
-        is_primary: boolean
-    }[]
     claim_corporations?: string[]
+    default_claim_corporation?: string
 }
 
 const {
@@ -38,14 +34,13 @@ const {
     highlight_order_id,
     default_currency_id,
     default_isk_per_lp,
-    claim_characters = [],
     claim_corporations = [],
+    default_claim_corporation = '',
 } = Astro.props
 
-const default_claim_character = claim_characters.find((c) => c.is_primary)
-    ?? claim_characters[0]
-    ?? null
-const default_claim_destination = default_claim_character?.character_name ?? ''
+const default_claim_destination = default_claim_corporation
+    || claim_corporations[0]
+    || ''
 const CLAIM_DESTINATION_OTHER = '__other__'
 
 const status_labels: Record<string, string> = {
@@ -246,10 +241,7 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
             this.claim_amount = this.format_thousands(this.claim_remaining)
             const existing = String(orderDestination || '').trim()
             const primary = ${JSON.stringify(default_claim_destination)}
-            const knownNames = ${JSON.stringify([
-                ...claim_characters.map((c) => c.character_name),
-                ...claim_corporations,
-            ])}
+            const knownNames = ${JSON.stringify(claim_corporations)}
             if (this.claim_side === 'buy') {
                 const known = Boolean(existing && knownNames.includes(existing))
                 this.claim_destination_choice = known
@@ -291,8 +283,8 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         amount,
-                        destination_character_name: destination,
-                        destination_corporation_name: '',
+                        destination_character_name: '',
+                        destination_corporation_name: destination,
                     }),
                 })
                 if (!response.ok) {
@@ -651,30 +643,17 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                             />
                         </Flexblock>
                         <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
-                            <label for="loyalty-claim-destination">{t('industry.loyalty.claim.destination')}</label>
+                            <label for="loyalty-claim-destination">{t('industry.loyalty.claim.destination_corporation')}</label>
                             <small x-text="claim_destination_hint()"></small>
                             <Select
                                 id="loyalty-claim-destination"
                                 x-model="claim_destination_choice"
                             >
-                                <option value="">{t('industry.loyalty.claim.select_destination')}</option>
-                                {claim_characters.length > 0 && (
-                                    <optgroup label={t('industry.loyalty.claim.destination_characters')}>
-                                        {claim_characters.map((character) =>
-                                            <option value={character.character_name}>
-                                                {character.character_name}
-                                            </option>
-                                        )}
-                                    </optgroup>
-                                )}
-                                {claim_corporations.length > 0 && (
-                                    <optgroup label={t('industry.loyalty.claim.destination_corporations')}>
-                                        {claim_corporations.map((corporation) =>
-                                            <option value={corporation}>
-                                                {corporation}
-                                            </option>
-                                        )}
-                                    </optgroup>
+                                <option value="">{t('industry.loyalty.claim.select_corporation')}</option>
+                                {claim_corporations.map((corporation) =>
+                                    <option value={corporation}>
+                                        {corporation}
+                                    </option>
                                 )}
                                 <option value={CLAIM_DESTINATION_OTHER}>
                                     {t('industry.loyalty.claim.destination_other')}
