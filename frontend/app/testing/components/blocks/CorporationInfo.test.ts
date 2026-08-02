@@ -13,6 +13,7 @@ test("CorporationInfo defaults", async () => {
     corporation_name: "chicken attack",
     alliance_id: 34523,
     active: true,
+    trial: false,
     alliance_name: "coop",
     faction_id: 1,
     faction_name: "minmatar",

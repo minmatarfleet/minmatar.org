@@ -61,6 +61,7 @@ class CorporationRouterTestCase(TestCase):
         corps = response.json()
         self.assertEqual(1, len(corps))
         self.assertEqual("TestCorp", corps[0]["corporation_name"])
+        self.assertFalse(corps[0]["trial"])
 
         self.create_corp(23456, "TestCorp 2")
 
@@ -86,6 +87,7 @@ class CorporationRouterTestCase(TestCase):
         self.assertEqual(12345, corp["corporation_id"])
         self.assertEqual("TestCorp", corp["corporation_name"])
         self.assertEqual("Executor notes", corp["executor_notes"])
+        self.assertFalse(corp["trial"])
 
     def test_get_corporation_info(self):
         self.create_corp(12345, "TestCorp")
@@ -98,8 +100,22 @@ class CorporationRouterTestCase(TestCase):
         corp = response.json()
         self.assertEqual(12345, corp["corporation_id"])
         self.assertEqual("TestCorp", corp["corporation_name"])
+        self.assertFalse(corp["trial"])
         self.assertEqual("Executor notes", corp["executor_notes"])
         self.assertEqual("Bio", corp["biography"])
+
+    def test_corporation_trial_flag(self):
+        corp = self.create_corp(12345, "TrialCorp")
+        corp.trial = True
+        corp.save()
+
+        response = self.client.get(BASE_URL + "corporations")
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(response.json()[0]["trial"])
+
+        response = self.client.get(BASE_URL + "corporations/12345/info")
+        self.assertEqual(200, response.status_code)
+        self.assertTrue(response.json()["trial"])
 
     def test_update_affiliations(self):
         EveCharacter.objects.create(

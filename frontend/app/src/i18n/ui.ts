@@ -1250,6 +1250,7 @@ export const ui = {
         'tracking': 'Tracking',
         'members': 'Members',
         'member': 'Member',
+        'trial': 'Trial',
         'reload': 'Reload',
         'collapse_all': 'Collapse all',
         'forming': 'Forming',

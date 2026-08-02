@@ -25,6 +25,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import CorporationStatus from "@components/blocks/CorporationStatus.astro";
+import Tag from '@components/blocks/Tag.astro';
 ---
 
 <FixedFluid
@@ -43,9 +44,14 @@ import CorporationStatus from "@components/blocks/CorporationStatus.astro";
     </picture>
     <FlexInline justification='space-between' class="[ items-center ]">
         <Flexblock gap='0' class="[ grow basis-[220px] ]">
-            <span class="[ text-[var(--highlight)] ]">
-                {corporation.corporation_name}
-            </span>
+            <FlexInline gap='var(--space-3xs)' class="[ items-center ]">
+                <span class="[ text-[var(--highlight)] ]">
+                    {corporation.corporation_name}
+                </span>
+                {corporation.trial &&
+                    <Tag text={t('trial')} color='fleet-yellow' narrow />
+                }
+            </FlexInline>
             {corporation.alliance_id &&
                 <FixedFluid
                     width='24px'

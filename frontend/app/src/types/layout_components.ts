@@ -342,6 +342,7 @@ export interface CorporationObject {
     alliance_id:            number;
     alliance_name:          string,
     active:                 boolean;
+    trial?:                 boolean;
     corporation_type:       CorporationType;
     status?:                CorporationStatusType;
     application_updated?:   Date;

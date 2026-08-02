@@ -438,10 +438,11 @@ class EveCorporationAdmin(admin.ModelAdmin):
         "name",
         "ticker",
         "alliance",
+        "trial",
         "generate_corporation_groups",
     )
     search_fields = ("name", "ticker")
-    list_filter = ("alliance", "generate_corporation_groups")
+    list_filter = ("alliance", "trial", "generate_corporation_groups")
     filter_horizontal = ("directors", "recruiters", "stewards")
     actions = [refresh_corporations_action]
     change_form_template = "admin/eveonline/evecorporation/change_form.html"
