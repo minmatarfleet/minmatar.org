@@ -1,4 +1,14 @@
-"""Market price helpers for implant and item valuation."""
+"""
+Jita / price_baseline **regional guide** prices.
+
+Canonical source for “what is this worth in Jita?” is EveMarketItemHistory
+for the price_baseline location’s region (The Forge when Jita is baseline),
+with eveuniverse EveMarketPrice as fallback.
+
+Do **not** use EveMarketItemLocationPrice (live station/structure order book,
+aka “ItemPrice”) as the Jita guide — see docs/market-pricing.md and
+.cursor/rules/market-pricing.mdc.
+"""
 
 from datetime import timedelta
 
@@ -22,10 +32,13 @@ def _baseline_region_id() -> int:
 
 def get_prices_by_type_id(type_ids: list[int]) -> dict[int, int]:
     """
-    Return Jita-baseline ISK prices for type IDs.
+    Return Jita-baseline ISK guide prices for type IDs.
 
-    Uses the price_baseline location's region history when configured,
-    otherwise falls back to eveuniverse EveMarketPrice.average_price.
+    Prefers latest EveMarketItemHistory.average for the price_baseline
+    location's region (Forge when Jita is baseline). Missing types fall
+    back to EveMarketPrice.average_price.
+
+    This is regional history, not EveMarketItemLocationPrice live orders.
     """
     if not type_ids:
         return {}

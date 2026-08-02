@@ -1,8 +1,12 @@
 """
-Store derived sell, buy, and split prices per (location, eve type).
+Live sell / buy / split prices per (location, eve type).
 
-Computed from EveMarketItemOrder: lowest sell price, highest buy price,
-and average of the two (split) for locations we fetch orders for.
+“ItemPrice” in conversation usually means this model
+(EveMarketItemLocationPrice): current order-book aggregates at one
+EveLocation (prices_active), not the Jita regional guide.
+
+For Jita/Forge guide prices use EveMarketItemHistory via
+market.helpers.pricing.get_prices_by_type_id — see docs/market-pricing.md.
 """
 
 from django.db import models
@@ -14,10 +18,11 @@ from eveonline.models import EveLocation
 
 class EveMarketItemLocationPrice(models.Model):
     """
-    One row per (location, item): lowest sell price, highest buy price,
-    and split (average of the two) from the structure orders endpoint.
+    One row per (location, item): lowest sell, highest station-range buy,
+    and split from the live ESI order book at that location.
 
-    Populated after fetching orders for market-active locations.
+    Synced for EveLocation.prices_active (not market_active). Not the
+    canonical Jita guide — use EveMarketItemHistory / get_prices_by_type_id.
     """
 
     location = models.ForeignKey(

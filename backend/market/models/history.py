@@ -7,9 +7,11 @@ class EveMarketItemHistory(models.Model):
     """
     Daily region market history for an item in a region.
 
-    One row per (region_id, item, date) so we fetch each (region, type_id)
-    from ESI only once per date. Populated from GET markets/{region_id}/history/?type_id=.
-    Use location.region_id to query history for a location.
+    One row per (region_id, item, date). Populated from ESI
+    GET markets/{region_id}/history/?type_id=. Query via location.region_id
+    (price_baseline region = Jita/Forge guide). Used by
+    market.helpers.pricing.get_prices_by_type_id — preferred over
+    EveMarketItemLocationPrice for appraisals and “Jita” guide prices.
     """
 
     region_id = models.BigIntegerField(

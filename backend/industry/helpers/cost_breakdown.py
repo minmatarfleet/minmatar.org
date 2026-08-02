@@ -79,8 +79,11 @@ class PlanCostBreakdown:
 
 def jita_sell_prices_by_type_id(type_ids: Sequence[int]) -> Dict[int, int]:
     """
-    Lowest sell at the price_baseline location when available, else Jita-region
-    history / EveMarketPrice via ``get_prices_by_type_id``.
+    Industry “Jita sell”: lowest sell at price_baseline LocationPrice when
+    present, else regional guide via get_prices_by_type_id.
+
+    Prefer get_prices_by_type_id alone when you need the Forge history
+    guide (buyback, LP store), not this hybrid.
     """
     unique = list({int(tid) for tid in type_ids if tid})
     if not unique:
