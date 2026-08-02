@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from eveuniverse.models import EveFaction
 
 from eveonline.models import EveAlliance, EveCharacter, EveCorporation
@@ -57,6 +57,12 @@ class UserCommunityStatus(models.Model):
     def __str__(self):
         return f"{self.user} — {self.get_status_display()}"
 
+    def save(self, *args, **kwargs):
+        # Atomic so post_save community group sync failures roll back status.
+        # See docs/auth/discord-groups.md.
+        with transaction.atomic():
+            super().save(*args, **kwargs)
+
 
 class UserCommunityStatusHistory(models.Model):
     """Append-only audit log for community status changes."""
@@ -114,6 +120,17 @@ class UserAffiliation(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.affiliation}"
+
+    def save(self, *args, **kwargs):
+        # Atomic so post_save community group sync failures roll back affiliation.
+        # See docs/auth/discord-groups.md.
+        with transaction.atomic():
+            super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        # Atomic so post_delete community group sync failures roll back delete.
+        with transaction.atomic():
+            super().delete(*args, **kwargs)
 
 
 class EveCorporationGroup(models.Model):

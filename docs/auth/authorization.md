@@ -113,7 +113,7 @@ flowchart LR
 
 - **`AffiliationType`** (Alliance, Militia, Associate, Guest) — identity bucket derived from the primary character's corp/alliance/faction by a scheduled Celery task. Features reference affiliations; affiliations do not grant product access by themselves.
 - **`TribeGroup.code`** — stable key (`industry.mining`, `capitals.dreads`, …) used in feature wiring and reports.
-- **`auth.Group`** — primarily Discord role mapping; also usable as a feature wiring target (e.g. Technology Team). Some groups may still hold Django permissions used as `legacy_permission` fallbacks (see [migration.md](migration.md)).
+- **`auth.Group`** — primarily Discord role mapping; also usable as a feature wiring target (e.g. Technology Team). Some groups may still hold Django permissions used as `legacy_permission` fallbacks (see [migration.md](migration.md)). **Mutating `user.groups` is subject to fail-closed Discord sync** — see [discord-groups.md](discord-groups.md).
 
 ### Tribe offboarding
 

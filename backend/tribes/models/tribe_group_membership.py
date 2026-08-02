@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 
 
 class TribeGroupMembership(models.Model):
@@ -88,7 +88,10 @@ class TribeGroupMembership(models.Model):
             and self.rank.tribe_group_id != self.tribe_group_id
         ):
             raise ValueError("Rank must belong to the membership tribe group.")
-        super().save(*args, **kwargs)
+        # Atomic so post_save Discord group sync failures roll back status/rank
+        # changes (Discord roles must stay accurate). See docs/auth/discord-groups.md.
+        with transaction.atomic():
+            super().save(*args, **kwargs)
 
     class Meta:
         ordering = ["-created_at"]
