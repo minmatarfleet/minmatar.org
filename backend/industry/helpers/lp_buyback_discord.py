@@ -90,6 +90,13 @@ def order_starter_message(order: IndustryLoyaltyPointMarketOrder) -> str:
         f"Pilot: {_display_name(order.created_by)}",
         f"Status: {order.get_status_display()}",
     ]
+    if (
+        order.side == order.Side.BUY
+        and (order.destination_character_name or "").strip()
+    ):
+        parts.append(
+            f"Send LP to: **{order.destination_character_name.strip()}**"
+        )
     if order.notes:
         parts.append(f"Notes: {order.notes}")
     parts.append(order_site_url(order))
@@ -211,6 +218,35 @@ def _send_lp_line(
     return f"\n{prefix}Send LP to: **{dest}**"
 
 
+def _pay_isk_line(
+    order: IndustryLoyaltyPointMarketOrder,
+    *,
+    claim=None,
+) -> str:
+    """ISK payout line for buy-order claims (claimer destination)."""
+    dest = _destination_label(order, claim=claim)
+    if dest == "(unset)":
+        return ""
+    mention = _user_mention(isk_payer(order))
+    prefix = f"{mention} " if mention else ""
+    return f"\n{prefix}Pay ISK to: **{dest}**"
+
+
+def _isk_payout_label(order: IndustryLoyaltyPointMarketOrder) -> str:
+    """Where ISK should be paid for awaiting-ISK messages."""
+    if order.side == order.Side.BUY:
+        claim = (
+            order.claims.order_by("-created_at", "-id").first()
+            if hasattr(order, "claims")
+            else None
+        )
+        if claim is not None:
+            dest = _destination_label(order, claim=claim)
+            if dest != "(unset)":
+                return dest
+    return _display_name(lp_sender(order))
+
+
 def notify_order_claimed(
     order: IndustryLoyaltyPointMarketOrder,
     *,
@@ -226,14 +262,20 @@ def notify_order_claimed(
             f":handshake: {label} by **{claimer}**: "
             f"**{int(claim.amount):,}** LP"
         )
-        msg += _send_lp_line(order, sender, claim=claim)
+        if order.side == order.Side.BUY:
+            msg += _pay_isk_line(order, claim=claim)
+        else:
+            msg += _send_lp_line(order, sender, claim=claim)
         if remaining > 0:
             msg += f"\nRemaining: **{remaining:,}** LP (still open)"
         else:
             msg += f"\nStatus: {order.get_status_display()}"
     else:
         msg = f":handshake: Claimed by **{claimer}**\nStatus: Claimed"
-        msg += _send_lp_line(order, sender)
+        if order.side == order.Side.BUY:
+            msg += _pay_isk_line(order)
+        else:
+            msg += _send_lp_line(order, sender)
     msg += f"\n{order_site_url(order)}"
     post_order_status_update(order, message=msg)
 
@@ -246,6 +288,8 @@ def _awaiting_lp_message(order: IndustryLoyaltyPointMarketOrder) -> str:
             ":package: Awaiting LP transfer",
             f"Claimed by **{_display_name(order.claimed_by)}**",
             f"Send LP to: **{_destination_label(order)}**",
+            "",
+            "Take a screenshot of the LP transfer and paste it in this thread.",
             order_site_url(order),
         ]
     )
@@ -257,7 +301,7 @@ def _awaiting_isk_message(order: IndustryLoyaltyPointMarketOrder) -> str:
             _user_mention(isk_payer(order)),
             "",
             ":moneybag: LP received — awaiting ISK payment",
-            f"Pay ISK to: **{_display_name(lp_sender(order))}**",
+            f"Pay ISK to: **{_isk_payout_label(order)}**",
             order_site_url(order),
         ]
     )
