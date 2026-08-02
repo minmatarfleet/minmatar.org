@@ -1,6 +1,4 @@
 ---
-import ChartJsScript from '@components/partials/ChartJsScript.astro';
-
 interface Props {
     labels: readonly string[]
     valuesM: readonly number[]
@@ -10,7 +8,6 @@ const { labels, valuesM } = Astro.props
 const chartId = `guide-order-profit-bar-${Math.random().toString(36).slice(2, 9)}`
 ---
 
-<ChartJsScript />
 <div
     class="[ guide-order-profit-chart ]"
     x-data={`{
