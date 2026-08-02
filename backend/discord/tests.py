@@ -2,6 +2,8 @@ import unittest
 from unittest.mock import patch, Mock, MagicMock
 
 from django.contrib.auth.models import User, Group
+from django.conf import settings
+from django.db import transaction
 from django.test import SimpleTestCase, Client
 from django.db.models import signals
 from ratelimit import RateLimitException
@@ -14,10 +16,15 @@ from eveonline.models import (
 from eveonline.helpers.characters import set_primary_character
 
 from app.test import TestCase
-from discord.client import DiscordError, _raise_discord_rate_limit
+from discord.client import (
+    DiscordClient,
+    DiscordError,
+    _raise_discord_rate_limit,
+)
 from discord.core import DISCORD_NICKNAME_MAX_LENGTH, make_nickname
 from discord.forms import DiscordChannelAdminForm
 from discord.guilds import sync_discord_guilds
+from discord.exceptions import DiscordRoleAssignmentError
 from discord.helpers import (
     get_discord_user,
     handle_discord_guild_member_error,
@@ -37,13 +44,21 @@ from discord.signals import (
     resolve_existing_discord_role_from_server,
 )
 from discord.tasks import sync_discord_nickname, sync_discord_user
+from discord.testing import reconnect_discord_group_signals
 from discord.views import discord_login_redirect, fake_login
+from users.helpers import offboard_user
 
 
 class DiscordSimpleTests(SimpleTestCase):
     """
     Unit tests for Discord functionality.
     """
+
+    def test_unit_tests_block_live_discord_http(self):
+        client = DiscordClient()
+        with self.assertRaises(RuntimeError) as ctx:
+            client.get_roles()
+        self.assertIn("unit tests", str(ctx.exception).lower())
 
     def test_basic_nickname(self):
         character = Mock(character_name="Bob", corporation_id=999)
@@ -182,6 +197,155 @@ class DiscordSignalTests(TestCase):
         discord_mock.create_role.assert_not_called()
 
 
+class FailClosedDiscordGroupSyncTests(TestCase):
+    """Django group membership must not diverge from Discord (fail-closed)."""
+
+    def setUp(self):
+        reconnect_discord_group_signals()
+        super().setUp()
+
+    def _http_error(self, status_code: int, code: int | None = None):
+        mock_response = MagicMock()
+        mock_response.status_code = status_code
+        if code is not None:
+            mock_response.json.return_value = {"code": code, "message": "x"}
+        else:
+            mock_response.json.return_value = {"message": "x"}
+        return HTTPError(response=mock_response)
+
+    @patch("discord.signals.discord")
+    def test_add_without_discord_user_raises_and_group_not_stuck(
+        self, discord_mock
+    ):
+        discord_mock.get_roles.return_value = []
+        discord_mock.create_role.return_value.json.return_value = {"id": 10}
+        group = Group.objects.create(name="fc-no-discord-user")
+        with self.assertRaises(DiscordRoleAssignmentError):
+            with transaction.atomic():
+                self.user.groups.add(group)
+        self.assertFalse(self.user.groups.filter(pk=group.pk).exists())
+
+    @patch("discord.signals.discord")
+    def test_add_discord_403_raises_and_group_not_stuck(self, discord_mock):
+        discord_mock.get_roles.return_value = []
+        discord_mock.create_role.return_value.json.return_value = {"id": 11}
+        DiscordUser.objects.create(id=11, discord_tag="t", user=self.user)
+        group = Group.objects.create(name="fc-add-403")
+        discord_mock.add_user_role.side_effect = self._http_error(403, 50013)
+        with self.assertRaises(DiscordRoleAssignmentError):
+            with transaction.atomic():
+                self.user.groups.add(group)
+        self.assertFalse(self.user.groups.filter(pk=group.pk).exists())
+
+    @patch("discord.signals.discord")
+    def test_add_success_assigns_discord_and_members(self, discord_mock):
+        discord_mock.get_roles.return_value = []
+        discord_mock.create_role.return_value.json.return_value = {"id": 12}
+        du = DiscordUser.objects.create(id=12, discord_tag="t", user=self.user)
+        group = Group.objects.create(name="fc-add-ok")
+        self.user.groups.add(group)
+        self.assertTrue(self.user.groups.filter(pk=group.pk).exists())
+        discord_mock.add_user_role.assert_called()
+        role = DiscordRole.objects.get(group=group)
+        self.assertTrue(role.members.filter(pk=du.pk).exists())
+
+    @patch("discord.signals.discord")
+    def test_reverse_add_same_rules(self, discord_mock):
+        discord_mock.get_roles.return_value = []
+        discord_mock.create_role.return_value.json.return_value = {"id": 13}
+        DiscordUser.objects.create(id=13, discord_tag="t", user=self.user)
+        group = Group.objects.create(name="fc-reverse-ok")
+        group.user_set.add(self.user)
+        self.assertTrue(self.user.groups.filter(pk=group.pk).exists())
+        discord_mock.add_user_role.assert_called()
+
+    @patch("discord.signals.discord")
+    def test_remove_unreachable_keeps_django_group(self, discord_mock):
+        discord_mock.get_roles.return_value = []
+        discord_mock.create_role.return_value.json.return_value = {"id": 14}
+        DiscordUser.objects.create(id=14, discord_tag="t", user=self.user)
+        group = Group.objects.create(name="fc-remove-fail")
+        self.user.groups.add(group)
+        discord_mock.remove_user_role.side_effect = self._http_error(503, 0)
+        # Non-10007 failure must abort remove
+        discord_mock.remove_user_role.side_effect = ConnectionError("down")
+        with self.assertRaises(DiscordRoleAssignmentError):
+            with transaction.atomic():
+                self.user.groups.remove(group)
+        self.assertTrue(self.user.groups.filter(pk=group.pk).exists())
+
+    @patch("discord.signals.discord")
+    def test_remove_403_keeps_django_group(self, discord_mock):
+        discord_mock.get_roles.return_value = []
+        discord_mock.create_role.return_value.json.return_value = {"id": 15}
+        DiscordUser.objects.create(id=15, discord_tag="t", user=self.user)
+        group = Group.objects.create(name="fc-remove-403")
+        self.user.groups.add(group)
+        discord_mock.remove_user_role.side_effect = self._http_error(
+            403, 50013
+        )
+        with self.assertRaises(DiscordRoleAssignmentError):
+            with transaction.atomic():
+                self.user.groups.remove(group)
+        self.assertTrue(self.user.groups.filter(pk=group.pk).exists())
+
+    @patch("discord.helpers.offboard_user")
+    @patch("discord.signals.discord")
+    def test_remove_10007_allows_django_remove(
+        self, discord_mock, mock_offboard
+    ):
+        discord_mock.get_roles.return_value = []
+        discord_mock.create_role.return_value.json.return_value = {"id": 16}
+        DiscordUser.objects.create(id=16, discord_tag="t", user=self.user)
+        group = Group.objects.create(name="fc-remove-10007")
+        self.user.groups.add(group)
+        discord_mock.remove_user_role.side_effect = self._http_error(
+            404, 10007
+        )
+        self.user.groups.remove(group)
+        self.assertFalse(self.user.groups.filter(pk=group.pk).exists())
+        mock_offboard.assert_called()
+
+    @patch("discord.signals.remove_all_roles_from_guild_member")
+    @patch("discord.signals.discord")
+    def test_remove_without_discord_user_allows_django_remove(
+        self, discord_mock, remove_roles_mock
+    ):
+        del remove_roles_mock  # patched to block live Discord on DiscordUser delete
+        discord_mock.get_roles.return_value = []
+        discord_mock.create_role.return_value.json.return_value = {"id": 17}
+        DiscordUser.objects.create(id=17, discord_tag="t", user=self.user)
+        group = Group.objects.create(name="fc-remove-no-du")
+        self.user.groups.add(group)
+        DiscordUser.objects.filter(user=self.user).delete()
+        self.user.groups.remove(group)
+        self.assertFalse(self.user.groups.filter(pk=group.pk).exists())
+
+    @patch("discord.signals.discord")
+    @patch("discord.helpers.discord")
+    def test_offboard_does_not_permanently_mute_sync(
+        self, helpers_discord, signals_discord
+    ):
+        signals_discord.get_roles.return_value = []
+        signals_discord.create_role.return_value.json.return_value = {"id": 18}
+        helpers_discord.get_user.side_effect = self._http_error(404, 10007)
+        helpers_discord.get_roles.return_value = []
+
+        DiscordUser.objects.create(id=18, discord_tag="t", user=self.user)
+        other = User.objects.create(username="other_fc")
+        DiscordUser.objects.create(id=19, discord_tag="o", user=other)
+        group = Group.objects.create(name="fc-offboard-mute")
+
+        # Offboard self.user (scoped skip); other user must still sync
+        with patch("users.helpers.DiscordClient") as client_cls:
+            client_cls.return_value.delete_role = MagicMock()
+            offboard_user(self.user.id)
+
+        other.groups.add(group)
+        self.assertTrue(other.groups.filter(pk=group.pk).exists())
+        signals_discord.add_user_role.assert_called()
+
+
 class DiscordTests(TestCase):
     """
     Django tests for Discord functionality.
@@ -318,54 +482,59 @@ class DiscordTests(TestCase):
 
     def test_discord_nickname_task(self):
         self.disconnect_signals()
-        DiscordUser.objects.create(id=1, user=self.user)
-        corp = EveCorporation.objects.create(
-            corporation_id=123,
-            introduction="",
-            biography="",
-            timezones="",
-            requirements="",
-            name="TestCorp",
-            ticker="CORP",
-        )
-        char = EveCharacter.objects.create(
-            character_id=123,
-            character_name="Test Char",
-            corporation_id=corp.corporation_id,
-        )
-        set_primary_character(self.user, char)
-        group, _ = Group.objects.get_or_create(name="Alliance")
-        self.user.groups.add(group)
+        try:
+            DiscordUser.objects.create(id=1, user=self.user)
+            corp = EveCorporation.objects.create(
+                corporation_id=123,
+                introduction="",
+                biography="",
+                timezones="",
+                requirements="",
+                name="TestCorp",
+                ticker="CORP",
+            )
+            char = EveCharacter.objects.create(
+                character_id=123,
+                character_name="Test Char",
+                corporation_id=corp.corporation_id,
+            )
+            set_primary_character(self.user, char)
+            group, _ = Group.objects.get_or_create(name="Alliance")
+            self.user.groups.add(group)
 
-        with patch("discord.tasks.discord") as discord_mock:
-            sync_discord_nickname(self.user, force_update=True)
+            with patch("discord.tasks.discord") as discord_mock:
+                sync_discord_nickname(self.user, force_update=True)
 
-            discord_mock.update_user.assert_called()
+                discord_mock.update_user.assert_called()
+        finally:
+            reconnect_discord_group_signals()
 
     @patch("discord.tasks.discord")
     @patch("discord.helpers.discord")
     def test_sync_discord_user(self, task_client, helper_client):
         self.disconnect_signals()
+        try:
+            helper_client.get_user.return_value = {
+                "roles": ["Alliance", "Another"]
+            }
 
-        helper_client.get_user.return_value = {
-            "roles": ["Alliance", "Another"]
-        }
+            user = User.objects.create(id=1234)
+            DiscordUser.objects.create(
+                user=user,
+                id=12345,
+                discord_tag="XYZ",
+            )
+            group, _ = Group.objects.get_or_create(name="Alliance")
+            DiscordRole.objects.create(
+                role_id=1,
+                name=group.name,
+                group=group,
+            )
+            user.groups.add(group)
 
-        user = User.objects.create(id=1234)
-        DiscordUser.objects.create(
-            user=user,
-            id=12345,
-            discord_tag="XYZ",
-        )
-        group, _ = Group.objects.get_or_create(name="Alliance")
-        DiscordRole.objects.create(
-            role_id=1,
-            name=group.name,
-            group=group,
-        )
-        user.groups.add(group)
-
-        sync_discord_user(user.id)
+            sync_discord_user(user.id)
+        finally:
+            reconnect_discord_group_signals()
 
     def test_fake_login(self):
         User.objects.create(id=1234)
@@ -580,8 +749,9 @@ class DiscordGuildSyncTestCase(TestCase):
 
     @patch("discord.guilds.discord.get_bot_guilds")
     def test_sync_discord_guilds_from_api(self, mock_get_bot_guilds):
+        primary_guild_id = int(settings.DISCORD_GUILD_ID)
         mock_get_bot_guilds.return_value = [
-            {"id": 1041384161505722368, "name": "Minmatar"},
+            {"id": primary_guild_id, "name": "Primary"},
             {"id": 999, "name": "Other Server"},
         ]
 
@@ -589,12 +759,12 @@ class DiscordGuildSyncTestCase(TestCase):
 
         self.assertEqual(2, synced)
         self.assertTrue(
-            DiscordGuild.objects.get(guild_id=1041384161505722368).is_primary
+            DiscordGuild.objects.get(guild_id=primary_guild_id).is_primary
         )
         self.assertTrue(DiscordGuild.objects.get(guild_id=999).is_active)
 
         mock_get_bot_guilds.return_value = [
-            {"id": 1041384161505722368, "name": "Minmatar"},
+            {"id": primary_guild_id, "name": "Primary"},
         ]
         sync_discord_guilds()
         self.assertFalse(DiscordGuild.objects.get(guild_id=999).is_active)

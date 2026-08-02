@@ -3,10 +3,10 @@ from typing import List, Optional
 
 import requests
 from django.contrib.auth.models import Group, User, Permission
-from django.db.models import signals
 
 from discord.client import DiscordClient
 from discord.models import DiscordRole, DiscordUser
+from discord.sync_context import disable_discord_group_sync
 from audit.models import AuditEntry
 from eveonline.helpers.characters import user_primary_character
 from eveonline.models import EveCorporation, EvePlayer
@@ -17,35 +17,43 @@ logger = logging.getLogger(__name__)
 
 
 def offboard_user(user_id: int):
-    signals.m2m_changed.disconnect(
-        sender=User.groups.through, dispatch_uid="user_group_changed"
-    )
-    user = User.objects.get(id=user_id)
-    user.delete()
+    """
+    Delete a user without firing Discord m2m role sync on cascading group clears.
+
+    Uses a scoped skip flag (not a permanent signal disconnect) so the worker
+    keeps syncing Discord for other users afterward.
+    """
+    with disable_discord_group_sync():
+        user = User.objects.get(id=user_id)
+        user.delete()
 
 
 def offboard_group(group_id: int):
-    signals.m2m_changed.disconnect(
-        sender=User.groups.through, dispatch_uid="user_group_changed"
-    )
-    group = Group.objects.get(id=group_id)
-    # Delete Discord role from server and remove DiscordRole row before deleting Group
-    try:
-        discord_role = group.discord_group
-        if discord_role.role_id:
-            try:
-                DiscordClient().delete_role(discord_role.role_id)
-            except requests.HTTPError as e:
-                logger.warning(
-                    "Could not delete Discord role %s (id=%s): %s",
-                    discord_role.name,
-                    discord_role.role_id,
-                    e,
-                )
-        discord_role.delete()
-    except DiscordRole.DoesNotExist:
-        pass
-    group.delete()
+    """
+    Delete an auth Group and its Discord role without m2m Discord sync noise.
+
+    Scoped skip only for this delete; Discord sync stays enabled afterward.
+    """
+    with disable_discord_group_sync():
+        group = Group.objects.get(id=group_id)
+        # Delete Discord role from server and remove DiscordRole row before
+        # deleting Group
+        try:
+            discord_role = group.discord_group
+            if discord_role.role_id:
+                try:
+                    DiscordClient().delete_role(discord_role.role_id)
+                except requests.HTTPError as e:
+                    logger.warning(
+                        "Could not delete Discord role %s (id=%s): %s",
+                        discord_role.name,
+                        discord_role.role_id,
+                        e,
+                    )
+            discord_role.delete()
+        except DiscordRole.DoesNotExist:
+            pass
+        group.delete()
 
 
 def get_user_permissions(user_id: int) -> list[str]:

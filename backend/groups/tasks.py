@@ -15,6 +15,7 @@ from eveonline.models import EvePlayer
 from .helpers import (
     process_bulk_community_status_row,
     sync_tribe_chief_group_membership,
+    sync_user_community_groups,
 )
 from .models import (
     AffiliationType,
@@ -79,7 +80,25 @@ def update_affiliations():
     for user in User.objects.all():
         try:
             _update_affiliation_for_user(user, affiliation_rules)
+            # Always reconcile community groups so Discord strips/adds retry
+            # even when the affiliation row did not change.
+            sync_user_community_groups(user)
         except Exception as e:
+            log_affiliation_update_error(user, e)
+
+
+@app.task
+def sync_community_groups():
+    """
+    Desired-state reconcile of Trial / On Leave / affiliation auth groups.
+
+    Retries Discord fail-closed add/remove until membership matches
+    UserCommunityStatus + UserAffiliation. See docs/auth/discord-groups.md.
+    """
+    for user in User.objects.all().iterator(chunk_size=500):
+        try:
+            sync_user_community_groups(user)
+        except Exception as e:  # pylint: disable=broad-except
             log_affiliation_update_error(user, e)
 
 
@@ -368,29 +387,38 @@ def sync_eve_corporation_groups():
         to_add = target_user_ids - in_group_user_ids
         to_remove = in_group_user_ids - target_user_ids
 
-        try:
-            if to_add:
-                for user in User.objects.filter(id__in=to_add):
+        if to_add:
+            for user in User.objects.filter(id__in=to_add):
+                try:
                     user.groups.add(group)
                     logger.info(
                         "User %s qualifies for corporation group %s, adding",
                         user.id,
                         group.name,
                     )
-            if to_remove:
-                for user in User.objects.filter(id__in=to_remove):
+                except Exception as e:  # pylint: disable=broad-except
+                    logger.error(
+                        "Error adding user %s to corporation group %s: %s",
+                        user.id,
+                        corporation_group,
+                        e,
+                    )
+        if to_remove:
+            for user in User.objects.filter(id__in=to_remove):
+                try:
                     user.groups.remove(group)
                     logger.info(
                         "User %s no longer qualifies for corporation group %s, removing",
                         user.id,
                         group.name,
                     )
-        except Exception as e:
-            logger.error(
-                "Error syncing corporation group %s: %s",
-                corporation_group,
-                e,
-            )
+                except Exception as e:  # pylint: disable=broad-except
+                    logger.error(
+                        "Error removing user %s from corporation group %s: %s",
+                        user.id,
+                        corporation_group,
+                        e,
+                    )
 
 
 @app.task

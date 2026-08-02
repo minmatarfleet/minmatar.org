@@ -20,11 +20,12 @@ _previous_status_cache = {}
 
 
 @receiver(
-    signals.pre_delete,
+    signals.post_delete,
     sender=UserAffiliation,
-    dispatch_uid="user_affiliation_pre_delete",
+    dispatch_uid="user_affiliation_post_delete",
 )
-def user_affiliation_pre_delete(sender, instance, **kwargs):
+def user_affiliation_post_delete(sender, instance, **kwargs):
+    # Run after delete so sync_user_community_groups sees no affiliation row.
     logger.info("User affiliation deleted, syncing user community groups")
     sync_user_community_groups(instance.user)
     offboard_tribe_memberships_without_feature(instance.user)

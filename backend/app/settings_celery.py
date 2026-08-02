@@ -178,6 +178,13 @@ CELERYBEAT_GROUPS = [
         },
     ),
     (
+        "[Groups] Sync Community Groups",
+        {
+            "task": "groups.tasks.sync_community_groups",
+            "schedule": crontab(minute="20,50", hour="*"),
+        },
+    ),
+    (
         "[Groups] Sync Tribe Chief group",
         {
             "task": "groups.tasks.sync_tribe_chief_group",

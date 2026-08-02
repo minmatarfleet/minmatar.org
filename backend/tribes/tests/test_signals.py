@@ -1,10 +1,16 @@
 """Tests for tribes signals."""
 
+from unittest.mock import patch
+
 from django.contrib.auth.models import Group, User
 from django.db.models import signals as django_signals
 from django.test import TestCase
+from django.db import transaction
 from django.utils import timezone
 
+from discord.exceptions import DiscordRoleAssignmentError
+from discord.models import DiscordRole, DiscordUser
+from discord.signals import group_post_save, user_group_changed
 from tribes.helpers.tribe_auth_groups import (
     remove_tribe_auth_groups_for_inactive_membership,
 )
@@ -19,12 +25,6 @@ from tribes.models import (
 
 def setUpModule():
     """Disconnect Discord signals that hit the live API during tests."""
-    # pylint: disable-next=import-outside-toplevel
-    from discord.signals import (
-        group_post_save,
-        user_group_changed,
-    )  # noqa: PLC0415
-
     django_signals.post_save.disconnect(
         group_post_save,
         sender=Group,
@@ -202,3 +202,72 @@ class MembershipRankSignalTestCase(TestCase):
         self.membership.save()
 
         self.assertNotIn(self.strategic_group, self.user.groups.all())
+
+
+class TribeMembershipDiscordFailClosedTestCase(TestCase):
+    """Inactive membership must not stick when Discord role remove fails."""
+
+    def setUp(self):
+        # Reconnect Discord m2m sync only (module setup disconnects it).
+        # Leave group_post_save disconnected so Group.create does not hit Discord.
+        django_signals.m2m_changed.connect(
+            user_group_changed,
+            sender=User.groups.through,
+            dispatch_uid="user_group_changed",
+        )
+        self.tribe_auth_group = Group.objects.create(name="Tribe FC Auth")
+        self.group_auth_group = Group.objects.create(name="Group FC Auth")
+        self.tribe = Tribe.objects.create(
+            name="Capitals FC",
+            slug="capitals-fc",
+            group=self.tribe_auth_group,
+        )
+        self.tribe_group = TribeGroup.objects.create(
+            tribe=self.tribe,
+            name="Dreads FC",
+            group=self.group_auth_group,
+        )
+        self.user = User.objects.create(username="tribe_fc_user")
+
+    def tearDown(self):
+        django_signals.m2m_changed.disconnect(
+            user_group_changed,
+            sender=User.groups.through,
+            dispatch_uid="user_group_changed",
+        )
+
+    @patch("discord.signals.discord")
+    def test_inactive_rolls_back_when_discord_remove_fails(self, discord_mock):
+        discord_mock.get_roles.return_value = []
+        discord_mock.create_role.return_value.json.return_value = {"id": 200}
+        DiscordUser.objects.create(id=200, discord_tag="t", user=self.user)
+        for group, role_id in (
+            (self.group_auth_group, 201),
+            (self.tribe_auth_group, 202),
+        ):
+            if not DiscordRole.objects.filter(group=group).exists():
+                DiscordRole.objects.create(
+                    role_id=role_id, name=group.name, group=group
+                )
+
+        self.user.groups.add(self.group_auth_group)
+        self.user.groups.add(self.tribe_auth_group)
+
+        membership = TribeGroupMembership.objects.create(
+            user=self.user,
+            tribe_group=self.tribe_group,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+
+        discord_mock.remove_user_role.side_effect = ConnectionError("down")
+        membership.status = TribeGroupMembership.STATUS_INACTIVE
+        membership.left_at = timezone.now()
+        membership.history_inactive_reason = "left"
+
+        with self.assertRaises(DiscordRoleAssignmentError):
+            with transaction.atomic():
+                membership.save()
+
+        membership.refresh_from_db()
+        self.assertEqual(membership.status, TribeGroupMembership.STATUS_ACTIVE)
+        self.assertIn(self.group_auth_group, self.user.groups.all())

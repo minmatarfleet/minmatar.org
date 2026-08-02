@@ -149,6 +149,9 @@ def sync_user_community_groups(user: User) -> None:
     Active: affiliation group only.
     On Leave: On Leave group only (no affiliation group).
     Only adds/removes groups when membership actually changes to avoid Discord overhead.
+    Per-group add/remove so Discord fail-closed errors on one group do not skip
+    the rest of this user's diff (reconciler retries remaining). See
+    docs/auth/discord-groups.md.
     """
     trial_group, on_leave_group = _trial_and_on_leave_groups()
     affiliation = UserAffiliation.objects.filter(user=user).first()
@@ -189,10 +192,10 @@ def sync_user_community_groups(user: User) -> None:
     to_remove = current - desired_pks
     to_add = desired_pks - current
 
-    if to_remove:
-        user.groups.remove(*user.groups.filter(pk__in=to_remove))
-    if to_add:
-        user.groups.add(*user.groups.model.objects.filter(pk__in=to_add))
+    for group in AuthGroup.objects.filter(pk__in=to_remove):
+        user.groups.remove(group)
+    for group in AuthGroup.objects.filter(pk__in=to_add):
+        user.groups.add(group)
 
 
 def user_in_group_named(user: User, group_name: str) -> bool:
@@ -225,15 +228,38 @@ def sync_tribe_chief_group_membership() -> None:
     current_ids = set(chief_group.user_set.values_list("id", flat=True))
     to_add = desired_ids - current_ids
     to_remove = current_ids - desired_ids
+    added = 0
+    removed = 0
     if to_remove:
         for user in User.objects.filter(pk__in=to_remove):
-            user.groups.remove(chief_group)
+            try:
+                user.groups.remove(chief_group)
+                removed += 1
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.error(
+                    "Failed removing user %s from %s: %s",
+                    user.id,
+                    TRIBE_CHIEF_GROUP_NAME,
+                    exc,
+                )
     if to_add:
         for user in User.objects.filter(pk__in=to_add):
-            user.groups.add(chief_group)
-    if to_add or to_remove:
+            try:
+                user.groups.add(chief_group)
+                added += 1
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.error(
+                    "Failed adding user %s to %s: %s",
+                    user.id,
+                    TRIBE_CHIEF_GROUP_NAME,
+                    exc,
+                )
+    if added or removed or to_add or to_remove:
         logger.info(
-            "sync_tribe_chief_group_membership: added=%s removed=%s",
+            "sync_tribe_chief_group_membership: added=%s removed=%s "
+            "intended_add=%s intended_remove=%s",
+            added,
+            removed,
             len(to_add),
             len(to_remove),
         )
