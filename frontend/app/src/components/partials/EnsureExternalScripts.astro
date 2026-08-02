@@ -82,11 +82,12 @@
     }
 
     window.__ensureFlatpickr = window.__ensureFlatpickr || function () {
+        // CSS is bundled in styles/components/_flatpickr.scss (before theme overrides).
+        // Do not inject the CDN stylesheet — it appends after app CSS and forces a white calendar.
         return window.__ensureExternalScript(
             'flatpickr',
             'https://cdn.jsdelivr.net/npm/flatpickr',
             {
-                css: 'https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css',
                 ready: function () { return typeof flatpickr !== 'undefined' },
             }
         )

@@ -1,8 +1,13 @@
+/* Bundle base layout CSS before theme so CDN injection cannot win the cascade
+   (ClientRouter on-demand <link> appends after app CSS → white calendar + invisible days). */
+@import 'flatpickr/dist/flatpickr.min.css';
+
 .flatpickr-calendar {
     accent-color: var(--highlight);
 
     border-radius: 0;
-    background-color: var(--light-transparency-background);
+    /* Shorthand beats flatpickr's `background:#fff` if base CSS is ever loaded again. */
+    background: var(--light-transparency-background);
     backdrop-filter: blur(var(--transparency-backdrop-blur));
     box-shadow: none;
     border: solid 1px var(--border-color);
