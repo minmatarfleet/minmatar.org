@@ -79,13 +79,9 @@ const chartId = `guide-order-profit-bar-${Math.random().toString(36).slice(2, 9)
             })
             return true
         },
-        init() {
-            if (this.buildChart()) return
-            let tries = 0
-            const timer = setInterval(() => {
-                tries += 1
-                if (this.buildChart() || tries > 40) clearInterval(timer)
-            }, 100)
+        async init() {
+            await window.__ensureChartJs()
+            this.buildChart()
         },
     }`}
 >

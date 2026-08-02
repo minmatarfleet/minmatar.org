@@ -36,7 +36,8 @@ import ChartJsScript from '@components/partials/ChartJsScript.astro';
         damage_in: ${JSON.stringify(damage_in.map(damage => damage/10))},
         damage_out: ${JSON.stringify(damage_out.map(damage => damage/10))},
         reps_out: ${JSON.stringify(reps_out.map(rep => rep/10))},
-        init() {
+        async init() {
+            await window.__ensureChartJs()
             const ctx = document.getElementById("damage-log-chart").getContext("2d")
 
             Chart.defaults.borderColor = 'rgb(255, 255, 255, 0.05)'

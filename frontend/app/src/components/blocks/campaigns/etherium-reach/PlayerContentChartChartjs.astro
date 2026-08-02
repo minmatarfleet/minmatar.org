@@ -57,7 +57,8 @@ const beatsConfig = CAMPAIGN_BEATS.map((beat) => ({
         iskData: ${JSON.stringify(iskData)},
         fleetData: ${JSON.stringify(fleetData)},
         beatsConfig: ${JSON.stringify(beatsConfig)},
-        init() {
+        async init() {
+            await window.__ensureChartJs()
             var ctx = document.getElementById('player-content-chart').getContext('2d')
 
             Chart.defaults.borderColor = 'rgb(255, 255, 255, 0.05)'

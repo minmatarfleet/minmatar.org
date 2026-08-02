@@ -1,0 +1,151 @@
+---
+/**
+ * On-demand CDN/lib loaders for ClientRouter soft navigation.
+ *
+ * Alpine's MutationObserver inits new x-data after body swap *before*
+ * page-local is:inline scripts run. Components that call flatpickr /
+ * Chart / noUiSlider / ccpwgl in Alpine init() must await these helpers
+ * (defined once in FooterScripts, same pattern as LearningAlpine).
+ *
+ * Stylesheets are always injected into document.head — body <link> tags
+ * from swapped page content often do not apply under ClientRouter.
+ */
+---
+
+<script is:inline>
+    window.__externalScripts = window.__externalScripts || {}
+
+    window.__ensureStylesheet = window.__ensureStylesheet || function (key, href) {
+        const headLink = document.head.querySelector('link[data-lib="' + key + '-css"]')
+        if (headLink) {
+            if (headLink.sheet || headLink.dataset.loaded === '1') return Promise.resolve()
+            return new Promise(function (resolve) {
+                headLink.addEventListener('load', function () {
+                    headLink.dataset.loaded = '1'
+                    resolve()
+                }, { once: true })
+                headLink.addEventListener('error', resolve, { once: true })
+            })
+        }
+
+        return new Promise(function (resolve) {
+            const link = document.createElement('link')
+            link.rel = 'stylesheet'
+            link.href = href
+            link.dataset.lib = key + '-css'
+            link.addEventListener('load', function () {
+                link.dataset.loaded = '1'
+                resolve()
+            }, { once: true })
+            link.addEventListener('error', resolve, { once: true })
+            document.head.appendChild(link)
+        })
+    }
+
+    window.__ensureExternalScript = window.__ensureExternalScript || function (key, src, options) {
+        options = options || {}
+        const ready = options.ready || function () { return false }
+        const cssPromise = options.css
+            ? window.__ensureStylesheet(key, options.css)
+            : Promise.resolve()
+
+        if (ready()) return cssPromise
+
+        if (window.__externalScripts[key]) {
+            return Promise.all([cssPromise, window.__externalScripts[key]])
+        }
+
+        window.__externalScripts[key] = new Promise(function (resolve, reject) {
+            const existing = document.querySelector('script[data-lib="' + key + '"]')
+            if (existing) {
+                existing.addEventListener('load', resolve, { once: true })
+                existing.addEventListener('error', reject, { once: true })
+                queueMicrotask(function () {
+                    if (ready()) resolve()
+                })
+                return
+            }
+
+            const script = document.createElement('script')
+            script.src = src
+            script.dataset.lib = key
+            if (options.type) script.type = options.type
+            script.addEventListener('load', resolve, { once: true })
+            script.addEventListener('error', reject, { once: true })
+            document.head.appendChild(script)
+        }).catch(function (err) {
+            window.__externalScripts[key] = null
+            throw err
+        })
+
+        return Promise.all([cssPromise, window.__externalScripts[key]])
+    }
+
+    window.__ensureFlatpickr = window.__ensureFlatpickr || function () {
+        return window.__ensureExternalScript(
+            'flatpickr',
+            'https://cdn.jsdelivr.net/npm/flatpickr',
+            {
+                css: 'https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css',
+                ready: function () { return typeof flatpickr !== 'undefined' },
+            }
+        )
+    }
+
+    window.__ensureNoUiSlider = window.__ensureNoUiSlider || function () {
+        return window.__ensureExternalScript(
+            'nouislider',
+            'https://cdn.jsdelivr.net/npm/nouislider@15.6.0/dist/nouislider.min.js',
+            {
+                css: 'https://cdn.jsdelivr.net/npm/nouislider@15.6.0/dist/nouislider.min.css',
+                ready: function () { return typeof noUiSlider !== 'undefined' },
+            }
+        )
+    }
+
+    window.__ensureChartJs = window.__ensureChartJs || function () {
+        return window.__ensureExternalScript(
+            'chartjs',
+            'https://cdn.jsdelivr.net/npm/chart.js',
+            {
+                ready: function () { return typeof Chart !== 'undefined' },
+            }
+        )
+    }
+
+    window.__ensureCcpwgl = window.__ensureCcpwgl || function () {
+        if (typeof ccpwgl !== 'undefined' && typeof ccpwgl_int !== 'undefined' && typeof fitting !== 'undefined') {
+            return Promise.resolve()
+        }
+        if (window.__externalScripts.ccpwgl_bundle) return window.__externalScripts.ccpwgl_bundle
+
+        window.__externalScripts.ccpwgl_bundle = Promise.resolve()
+            .then(function () {
+                return window.__ensureExternalScript(
+                    'ccpwgl_int',
+                    '/js/ccpwgl/ccpwgl_int.min.js',
+                    { ready: function () { return typeof ccpwgl_int !== 'undefined' } }
+                )
+            })
+            .then(function () {
+                return window.__ensureExternalScript(
+                    'ccpwgl',
+                    '/js/ccpwgl/ccpwgl.js',
+                    { ready: function () { return typeof ccpwgl !== 'undefined' } }
+                )
+            })
+            .then(function () {
+                return window.__ensureExternalScript(
+                    'ccpwgl_minmatar',
+                    '/js/ccpwgl/minmatar.js',
+                    { ready: function () { return typeof fitting !== 'undefined' } }
+                )
+            })
+            .catch(function (err) {
+                window.__externalScripts.ccpwgl_bundle = null
+                throw err
+            })
+
+        return window.__externalScripts.ccpwgl_bundle
+    }
+</script>

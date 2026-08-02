@@ -12,7 +12,8 @@ const shipsData = [...SHIPS_DESTROYED_DAILY]
     x-data={`{
         DAYS: ${JSON.stringify(days)},
         shipsData: ${JSON.stringify(shipsData)},
-        init() {
+        async init() {
+            await window.__ensureChartJs()
             var ctx = document.getElementById('auga-daily-ships-chart').getContext('2d')
 
             Chart.defaults.borderColor = 'rgb(255, 255, 255, 0.05)'

@@ -8,14 +8,12 @@ const {
 } = Astro.props
 ---
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.6.0/dist/nouislider.min.css">
-<script is:inline src="https://cdn.jsdelivr.net/npm/nouislider@15.6.0/dist/nouislider.min.js"></script>
-
 <div
     class="[ multi-range-input ]"
     x-data={`{
         values: ${JSON.stringify(values)},
-        init() {
+        async init() {
+            await window.__ensureNoUiSlider()
             noUiSlider.create($el, {
                 start: [this.values[0], this.values[this.values.length - 1]],
                 connect: true,

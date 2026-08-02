@@ -24,7 +24,8 @@ const explorationData = EXPLORATION_GROSS_ISK.map(toBillions)
         rattingData: ${JSON.stringify(rattingData)},
         piData: ${JSON.stringify(piData)},
         explorationData: ${JSON.stringify(explorationData)},
-        init() {
+        async init() {
+            await window.__ensureChartJs()
             const ctx = document.getElementById('player-income-chart').getContext('2d')
 
             Chart.defaults.borderColor = 'rgb(255, 255, 255, 0.05)'
