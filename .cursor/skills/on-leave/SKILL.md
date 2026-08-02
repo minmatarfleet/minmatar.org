@@ -47,7 +47,7 @@ Override only from session context (quiet war window, user-named exempts).
 ```
 Task Progress:
 - [ ] Fetch (--max-fleets 6)
-- [ ] Drop auto-exempts (staff, directors) + rejoin grace + named exempts
+- [ ] Drop auto-exempts (staff, directors) + rejoin/restore grace + named exempts
 - [ ] Decide leave/keep; Story + Conf + reason
 - [ ] Emit report + CSV
 - [ ] Stop for executor review/upload
@@ -72,6 +72,13 @@ Task Progress:
 falls within the last **30 days**, and no fleets in the **30–180d** band before
 that (returning after a long gap). Example: one fleet yesterday after months
 dark → keep, do not flip.
+
+**Recent restore grace** (omit from recommend): any
+`UserCommunityStatusHistory` row in the last **30 days** with
+`from_status=on_leave` → `to_status=active` (or other non-leave). Someone a CEO
+just took off leave should not be flipped back on the next hygiene pass. Fetch
+exposes `restored_from_leave_at` (ISO date or `null`); treat non-null as omit.
+
 ## Signals
 
 | Signal | Model | Roll-up |
@@ -79,6 +86,7 @@ dark → keep, do not flip.
 | Fleets | `EveFleetInstanceMember` | Distinct instances across linked EVE IDs |
 | Kills | `EveCharacterKillmailAttacker` | Attackers; exclude self-victim |
 | Voice | `DiscordChannelActivityRecord` | `voice_minute` by Django `username` → hours |
+| Restore | `UserCommunityStatusHistory` | Latest `on_leave`→non-leave in last 30d → `restored_from_leave_at` |
 
 Fleets are primary. Kills/voice set Away vs OPSEC and break ties. Login,
 mining, PI, industry do not clear the fleet bar unless this run expands
@@ -87,7 +95,7 @@ when they matter.
 
 ## Decision rules (90d)
 
-1. Exempt / director / recent-rejoin grace → keep (omit).
+1. Exempt / director / recent-rejoin grace / recent-restore grace → keep (omit).
 2. Fleets ≥ 6 → keep (even low kills).
 3. Fleets 0–2, weak support (under ~5 kills and under ~5h voice) → **recommend**.
    Away if kills≈0 and voice≈0; else OPSEC. Conf **high**.

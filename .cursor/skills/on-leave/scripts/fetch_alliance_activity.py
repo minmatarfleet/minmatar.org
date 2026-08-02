@@ -33,9 +33,14 @@ from django.utils import timezone
 from discord.models import DiscordChannelActivityRecord
 from eveonline.models import EveCharacter, EveCharacterKillmailAttacker, EvePlayer
 from fleets.models import EveFleetInstanceMember
-from groups.models import UserAffiliation, UserCommunityStatus
+from groups.models import (
+    UserAffiliation,
+    UserCommunityStatus,
+    UserCommunityStatusHistory,
+)
 
 PRODUCTION_DB = "production_readonly"
+RESTORE_GRACE_DAYS = 30
 
 
 def fetch_activity(
@@ -46,6 +51,7 @@ def fetch_activity(
 ) -> dict:
     now = timezone.now()
     since = now - timedelta(days=days)
+    restore_since = now - timedelta(days=RESTORE_GRACE_DAYS)
 
     affiliations = list(
         UserAffiliation.objects.using(PRODUCTION_DB)
@@ -139,6 +145,23 @@ def fetch_activity(
             )
         }
 
+    # Latest on_leave → non-leave within restore grace window.
+    restored_at_by_user: dict[int, object] = {}
+    if active_user_ids:
+        for user_id, changed_at in (
+            UserCommunityStatusHistory.objects.using(PRODUCTION_DB)
+            .filter(
+                user_id__in=active_user_ids,
+                changed_at__gte=restore_since,
+                from_status=UserCommunityStatus.STATUS_ON_LEAVE,
+            )
+            .exclude(to_status=UserCommunityStatus.STATUS_ON_LEAVE)
+            .order_by("user_id", "-changed_at")
+            .values_list("user_id", "changed_at")
+        ):
+            if user_id not in restored_at_by_user:
+                restored_at_by_user[user_id] = changed_at
+
     members = []
     for user_id in active_user_ids:
         username = username_by_id.get(user_id)
@@ -149,6 +172,7 @@ def fetch_activity(
         if max_fleets is not None and fleets >= max_fleets:
             continue
         voice_min = voice_by_username.get(username, 0)
+        restored_at = restored_at_by_user.get(user_id)
         members.append(
             {
                 "username": username,
@@ -161,6 +185,9 @@ def fetch_activity(
                 "kills": sum(kills_by_char.get(cid, 0) for cid in char_ids),
                 "voice_minutes": voice_min,
                 "voice_hours": round(voice_min / 60, 1),
+                "restored_from_leave_at": (
+                    restored_at.strftime("%Y-%m-%d") if restored_at else None
+                ),
             }
         )
 

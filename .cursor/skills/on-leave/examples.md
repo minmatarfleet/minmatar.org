@@ -40,3 +40,7 @@ group or `EveCorporation.directors`); named CEOs/LTI this session.
 
 **Rejoin grace:** first 90d fleet within last 30d and no fleets in 30–180d prior
 (e.g. `_obiwand` — one fleet after a long gap) → keep.
+
+**Restore grace:** `on_leave` → `active` (or other non-leave) within last 30d in
+`UserCommunityStatusHistory` (fetch `restored_from_leave_at` set) → keep. Do not
+re-impose leave on someone a CEO just restored.
