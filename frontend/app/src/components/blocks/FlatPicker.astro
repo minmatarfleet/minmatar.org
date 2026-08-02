@@ -14,8 +14,7 @@ const {
 } = Astro.props
 ---
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-<script is:inline src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" data-lib="flatpickr-css">
 
 <div class="[ input-group ]">
     <slot name="icon" />
@@ -24,7 +23,42 @@ const {
         {...attributes}
         x-data={`{
             fp: null,
-            init() {
+            async init() {
+                // ClientRouter inits Alpine before page-local scripts run, so load
+                // flatpickr on demand (same race as LearningAlpine / FooterScripts).
+                if (typeof flatpickr === 'undefined') {
+                    if (!window.__flatpickrReady) {
+                        window.__flatpickrReady = new Promise((resolve, reject) => {
+                            if (!document.querySelector('link[data-lib="flatpickr-css"]')) {
+                                const link = document.createElement('link')
+                                link.rel = 'stylesheet'
+                                link.href = 'https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css'
+                                link.dataset.lib = 'flatpickr-css'
+                                document.head.appendChild(link)
+                            }
+                            const existing = document.querySelector('script[data-lib="flatpickr"]')
+                            if (existing) {
+                                existing.addEventListener('load', resolve, { once: true })
+                                existing.addEventListener('error', reject, { once: true })
+                                // Cached/already-executed scripts may not fire load again.
+                                queueMicrotask(() => {
+                                    if (typeof flatpickr !== 'undefined') resolve()
+                                })
+                                return
+                            }
+                            const script = document.createElement('script')
+                            script.src = 'https://cdn.jsdelivr.net/npm/flatpickr'
+                            script.dataset.lib = 'flatpickr'
+                            script.addEventListener('load', resolve, { once: true })
+                            script.addEventListener('error', reject, { once: true })
+                            document.head.appendChild(script)
+                        }).catch((err) => {
+                            window.__flatpickrReady = null
+                            throw err
+                        })
+                    }
+                    await window.__flatpickrReady
+                }
                 this.fp = flatpickr($el, ${JSON.stringify(options)});
             }
         }`}
