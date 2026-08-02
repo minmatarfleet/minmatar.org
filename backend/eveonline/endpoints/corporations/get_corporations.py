@@ -46,6 +46,7 @@ def get_corporations(
             "corporation_name": corporation.name,
             "type": corporation.type,
             "active": corporation.active,
+            "trial": corporation.trial,
         }
         if corporation.alliance:
             payload["alliance_id"] = corporation.alliance.alliance_id

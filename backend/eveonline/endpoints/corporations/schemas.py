@@ -45,6 +45,7 @@ class CorporationResponse(Schema):
     recruiters: List[CorporationRoleCharacterResponse] = []
     stewards: List[CorporationRoleCharacterResponse] = []
     active: bool
+    trial: bool = False
 
 
 class CorporationInfoResponse(Schema):
@@ -61,6 +62,7 @@ class CorporationInfoResponse(Schema):
     timezones: Optional[List[str]] = None
     requirements: Optional[List[str]] = None
     active: bool
+    trial: bool = False
 
 
 class CorporationMemberDetails(Schema):

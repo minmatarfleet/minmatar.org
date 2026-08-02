@@ -23,6 +23,10 @@ class EveCorporation(models.Model):
     ticker = models.CharField(max_length=255, blank=True, null=True)
     member_count = models.IntegerField(blank=True, null=True)
     recruitment_active = models.BooleanField(default=True)
+    trial = models.BooleanField(
+        default=False,
+        help_text="Whether this corporation is on trial with the alliance.",
+    )
     generate_corporation_groups = models.BooleanField(
         default=False,
         help_text="When enabled, create and sync Corp <TICKER>, Recruiter, Director, and Gunner groups.",

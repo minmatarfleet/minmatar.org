@@ -21,6 +21,7 @@ const append_extraction_corporation = async (api_corporations:Corporation[]) => 
 
         api_corporations.push({
             active: extraction_info.active,
+            trial: extraction_info.trial,
             alliance_id: extraction_info.alliance_id,
             alliance_name: extraction_info.alliance_name,
             biography: extraction_info.biography,
@@ -71,6 +72,7 @@ export async function get_corporations_list(corporation_type:CorporationType) {
             corporation_name: i.corporation_name,
             corporation_type: i.type,
             active: i.active,
+            trial: i.trial,
             biography: i.biography,
             executor_notes: i.executor_notes,
             introduction: i.introduction,
@@ -101,6 +103,7 @@ const add_status_to_corporation = async (access_token:string, api_corporation:Co
         alliance_name: api_corporation.alliance_name,
         corporation_type: api_corporation.type,
         active: api_corporation.active,
+        trial: api_corporation.trial,
         status: 'available',
         biography: api_corporation.biography,
         executor_notes: api_corporation.executor_notes,

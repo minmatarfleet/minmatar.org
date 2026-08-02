@@ -304,6 +304,7 @@ export interface Corporation {
     requirements:       string[];
     members:            CharacterCorp[];
     active:             boolean;
+    trial:              boolean;
 }
 
 export interface CorporationInfo {
@@ -320,6 +321,7 @@ export interface CorporationInfo {
     timezones:          string[];
     requirements:       string[];
     active:             boolean;
+    trial:              boolean;
 }
 
 export interface CharacterCorp {
