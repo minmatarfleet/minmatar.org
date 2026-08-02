@@ -815,6 +815,37 @@ class LpBuybackSideAwareMessagingTestCase(AppTestCase):
             f"lp_buyback:lp:{order.pk}",
         )
 
+    @patch("industry.helpers.lp_buyback_discord.discord")
+    def test_completed_closes_thread_without_message(self, discord_mock):
+        order = IndustryLoyaltyPointMarketOrder.objects.create(
+            loyalty_point=self.currency,
+            side=IndustryLoyaltyPointMarketOrder.Side.SELL,
+            quantity=1000,
+            isk_per_lp=800,
+            status=IndustryLoyaltyPointMarketOrder.Status.COMPLETED,
+            created_by=self.seller,
+            claimed_by=self.claimer,
+            discord_thread_id=555,
+        )
+        notify_order_status_changed(order)
+        discord_mock.create_message.assert_not_called()
+        discord_mock.close_thread.assert_called_once_with(channel_id=555)
+
+    @patch("industry.helpers.lp_buyback_discord.discord")
+    def test_cancelled_closes_thread_without_message(self, discord_mock):
+        order = IndustryLoyaltyPointMarketOrder.objects.create(
+            loyalty_point=self.currency,
+            side=IndustryLoyaltyPointMarketOrder.Side.SELL,
+            quantity=1000,
+            isk_per_lp=800,
+            status=IndustryLoyaltyPointMarketOrder.Status.CANCELLED,
+            created_by=self.seller,
+            discord_thread_id=777,
+        )
+        notify_order_status_changed(order)
+        discord_mock.create_message.assert_not_called()
+        discord_mock.close_thread.assert_called_once_with(channel_id=777)
+
 
 class LpBuybackDiscordAckApiTestCase(LoyaltyBuybackApiTestCase):
     def setUp(self):
