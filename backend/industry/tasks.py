@@ -136,9 +136,9 @@ def sync_industry_system_cost_indices_task() -> int:
 @app.task()
 def sync_loyalty_store_offers_task() -> int:
     """
-    Refresh cached pure LP+ISK loyalty-store offers.
+    Refresh cached loyalty-store offers (full ESI catalog).
 
-    Manual / admin / product-save driven — not on a beat schedule.
+    Periodic via Celery beat; also admin action / product-save / planner miss.
     """
     try:
         return sync_loyalty_store_offers()

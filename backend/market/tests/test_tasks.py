@@ -22,7 +22,12 @@ from market.helpers.contracts import fitting_cache
 from market.models import EveMarketContract, EveMarketContractError
 from market.tasks import (
     fetch_eve_market_contracts,
+    fetch_market_item_history,
     fetch_market_location_prices,
+)
+from industry.models import (
+    IndustryLpStoreOffer,
+    IndustryLpStoreOfferRequiredItem,
 )
 
 
@@ -59,6 +64,35 @@ class LocationPriceSyncTestCase(TestCase):
         fetch_market_location_prices()
 
         update_mock.assert_called_once_with(None, 60003760)
+
+
+class MarketHistoryLpCatalogTestCase(TestCase):
+    @patch("market.tasks.fetch_market_item_history_for_type.apply_async")
+    def test_includes_lp_store_offer_and_required_type_ids(self, apply_mock):
+        offer = IndustryLpStoreOffer.objects.create(
+            offer_id=1,
+            corporation_id=1000182,
+            type_id=32312,
+            lp_cost=1000,
+            isk_cost=1_000_000,
+            quantity=1,
+        )
+        IndustryLpStoreOfferRequiredItem.objects.create(
+            offer=offer,
+            type_id=17814,
+            quantity=2,
+        )
+
+        fetch_market_item_history()
+
+        scheduled = set()
+        for call in apply_mock.call_args_list:
+            if call.kwargs.get("args"):
+                scheduled.add(call.kwargs["args"][0])
+            elif call.args:
+                scheduled.add(call.args[0])
+        self.assertIn(32312, scheduled)
+        self.assertIn(17814, scheduled)
 
 
 class MarketTaskTestCase(TestCase):

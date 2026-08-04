@@ -16,7 +16,7 @@ from eveuniverse.models import (
     EveIndustryActivityProduct,
     EveType,
 )
-from market.models import EveMarketItemHistory
+from market.models import EveMarketItemHistory, EveMarketItemLocationPrice
 
 from industry.admin import IndustryLpStoreOfferAdmin
 from industry.helpers.lp_store_economics import (
@@ -28,6 +28,7 @@ from industry.helpers.loyalty_store import sync_loyalty_store_offers
 from industry.models import (
     IndustryLoyaltyPoint,
     IndustryLpStoreOffer,
+    IndustryLpStoreOfferRequiredItem,
     IndustryProduct,
     Strategy,
 )
@@ -37,12 +38,13 @@ UNTRACKED_CORP_ID = 9999999
 HULL_TYPE_ID = 17740
 BPC_TYPE_ID = 32312
 INPUT_TYPE_ID = 42424
+REQ_TYPE_ID = 42425
 JITA_REGION_ID = 10000002
 
 
 class LpStoreEconomicsHelperTestCase(TestCase):
     def setUp(self):
-        EveLocation.objects.create(
+        self.jita = EveLocation.objects.create(
             location_id=60003760,
             location_name="Jita IV - Moon 4 - Caldari Navy Assembly Plant",
             solar_system_id=30000142,
@@ -85,6 +87,12 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         self.input_type = EveType.objects.create(
             id=INPUT_TYPE_ID,
             name="LP Input Item",
+            published=True,
+            eve_group=group,
+        )
+        self.req_type = EveType.objects.create(
+            id=REQ_TYPE_ID,
+            name="LP Required Tag",
             published=True,
             eve_group=group,
         )
@@ -141,7 +149,19 @@ class LpStoreEconomicsHelperTestCase(TestCase):
                     "quantity": 1,
                     "required_items": [],
                 },
+                {
+                    "offer_id": 1004,
+                    "corporation_id": TLIB_CORP_ID,
+                    "type_id": INPUT_TYPE_ID,
+                    "lp_cost": 2_000,
+                    "isk_cost": 100_000,
+                    "quantity": 1,
+                    "required_items": [
+                        {"type_id": REQ_TYPE_ID, "quantity": 2}
+                    ],
+                },
             ],
+            enqueue_history=False,
         )
 
         EveMarketItemHistory.objects.create(
@@ -164,6 +184,16 @@ class LpStoreEconomicsHelperTestCase(TestCase):
             order_count=20,
             volume=100,
         )
+        EveMarketItemHistory.objects.create(
+            region_id=JITA_REGION_ID,
+            item=self.req_type,
+            date=date(2026, 7, 30),
+            average=Decimal("250000"),
+            highest=Decimal("260000"),
+            lowest=Decimal("240000"),
+            order_count=5,
+            volume=50,
+        )
 
     def test_tracked_corporation_ids_active_only(self):
         self.assertEqual(tracked_corporation_ids(), [TLIB_CORP_ID])
@@ -184,7 +214,7 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         offer = IndustryLpStoreOffer.objects.get(offer_id=1001)
         rows = offer_economics_for_queryset([offer])
         mock_plan.assert_called()
-        econ = rows[1001]
+        econ = rows[offer.pk]
         self.assertEqual(econ.kind, "blueprint")
         self.assertEqual(econ.market_type_id, HULL_TYPE_ID)
         self.assertEqual(econ.jita_sell, 250_000_000)
@@ -194,11 +224,14 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         self.assertEqual(econ.profit_vs_sell, 70_000_000)
         self.assertEqual(econ.isk_per_lp, 800.0)
         self.assertEqual(econ.acquisition_isk_per_unit, 100_000_000)
+        # (250M - 20M) / 100k LP = 2300
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 2300.0)
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_buy, 2300.0)
 
     def test_input_row_uses_acquisition_and_own_type(self):
         offer = IndustryLpStoreOffer.objects.get(offer_id=1002)
         rows = offer_economics_for_queryset([offer])
-        econ = rows[1002]
+        econ = rows[offer.pk]
         self.assertEqual(econ.kind, "input")
         self.assertEqual(econ.market_type_id, INPUT_TYPE_ID)
         self.assertEqual(econ.jita_sell, 1_500_000)
@@ -207,12 +240,48 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         self.assertEqual(econ.acquisition_isk_per_unit, 1_300_000)
         self.assertEqual(econ.cost_per_unit, 1_300_000)
         self.assertEqual(econ.profit_vs_sell, 200_000)
+        # (1.5M - 0.5M) / 1000 = 1000
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 1000.0)
+
+    def test_required_items_add_other_cost_to_conversion(self):
+        offer = IndustryLpStoreOffer.objects.get(offer_id=1004)
+        self.assertEqual(
+            IndustryLpStoreOfferRequiredItem.objects.filter(
+                offer=offer
+            ).count(),
+            1,
+        )
+        rows = offer_economics_for_queryset([offer])
+        econ = rows[offer.pk]
+        self.assertEqual(econ.other_cost, 500_000)  # 2 * 250k
+        self.assertIn("LP Required Tag x2", econ.required_items_summary)
+        # (1.5M - 100k - 500k) / 2000 = 450
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 450.0)
+        # acquisition: (2000*800 + 100k + 500k) / 1 = 2.2M
+        self.assertEqual(econ.acquisition_isk_per_unit, 2_200_000)
+
+    def test_location_price_distinguishes_buy_and_sell(self):
+        EveMarketItemLocationPrice.objects.create(
+            location=self.jita,
+            item=self.input_type,
+            sell_price=Decimal("2000000"),
+            buy_price=Decimal("1000000"),
+            split_price=Decimal("1500000"),
+        )
+        offer = IndustryLpStoreOffer.objects.get(offer_id=1002)
+        rows = offer_economics_for_queryset([offer])
+        econ = rows[offer.pk]
+        self.assertEqual(econ.jita_sell, 2_000_000)
+        self.assertEqual(econ.jita_buy, 1_000_000)
+        # sell: (2M - 0.5M) / 1000 = 1500; buy: (1M - 0.5M) / 1000 = 500
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 1500.0)
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_buy, 500.0)
 
     def test_untracked_corp_offer_still_computes_but_admin_filters(self):
         offer = IndustryLpStoreOffer.objects.get(offer_id=1003)
         rows = offer_economics_for_queryset([offer])
-        self.assertIn(1003, rows)
-        self.assertEqual(rows[1003].corporation_id, UNTRACKED_CORP_ID)
+        self.assertIn(offer.pk, rows)
+        self.assertEqual(rows[offer.pk].corporation_id, UNTRACKED_CORP_ID)
 
 
 class LpStoreOfferAdminTestCase(TestCase):
@@ -272,4 +341,6 @@ class LpStoreOfferAdminTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("jita_sell_display", self.admin.list_display)
         self.assertIn("jita_buy_display", self.admin.list_display)
+        self.assertIn("conversion_sell_display", self.admin.list_display)
+        self.assertIn("conversion_buy_display", self.admin.list_display)
         self.assertIn("cost_display", self.admin.list_display)

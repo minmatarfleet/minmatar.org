@@ -336,29 +336,72 @@ class IndustryLoyaltyPointLedgerEntry(models.Model):
 
 class IndustryLpStoreOffer(models.Model):
     """
-    Cached pure LP+ISK loyalty-store offers (no required items).
+    Cached ESI loyalty-store offers (including required-item offers).
 
-    Populated when navy/faction industry products are saved, or on first
-    planner miss / manual sync. Not polled on a schedule.
+    Populated on Celery beat, navy/faction product save, planner miss, or
+    manual admin sync. ESI reuses offer_id across militia corps, so identity
+    is (corporation_id, offer_id).
     """
 
-    offer_id = models.BigIntegerField(primary_key=True)
+    offer_id = models.BigIntegerField()
     corporation_id = models.BigIntegerField(db_index=True)
     type_id = models.BigIntegerField(db_index=True)
     lp_cost = models.PositiveIntegerField()
     isk_cost = models.BigIntegerField()
+    ak_cost = models.BigIntegerField(
+        default=0,
+        help_text="ESI ak_cost (EverMarks / alliance points); 0 when unused.",
+    )
     quantity = models.PositiveIntegerField(default=1)
     updated_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         verbose_name = "Industry LP store offer"
         verbose_name_plural = "Industry LP store offers"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["corporation_id", "offer_id"],
+                name="uniq_lp_store_offer_corp_offer",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["corporation_id", "type_id"],
+                name="industry_lp_offer_corp_type",
+            ),
+        ]
 
     def __str__(self) -> str:
         return (
-            f"offer {self.offer_id}: type={self.type_id} "
-            f"lp={self.lp_cost} isk={self.isk_cost} qty={self.quantity}"
+            f"offer {self.offer_id} corp={self.corporation_id}: "
+            f"type={self.type_id} lp={self.lp_cost} isk={self.isk_cost} "
+            f"qty={self.quantity}"
         )
+
+
+class IndustryLpStoreOfferRequiredItem(models.Model):
+    """One required input item for an LP store offer."""
+
+    offer = models.ForeignKey(
+        IndustryLpStoreOffer,
+        on_delete=models.CASCADE,
+        related_name="required_items",
+    )
+    type_id = models.BigIntegerField(db_index=True)
+    quantity = models.PositiveIntegerField()
+
+    class Meta:
+        verbose_name = "Industry LP store offer required item"
+        verbose_name_plural = "Industry LP store offer required items"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["offer", "type_id"],
+                name="uniq_lp_store_offer_req_type",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"offer {self.offer_id}: type={self.type_id} x{self.quantity}"
 
 
 class IndustryLoyaltyPointMarketOrder(models.Model):

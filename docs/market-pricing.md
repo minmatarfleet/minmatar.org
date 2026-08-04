@@ -77,7 +77,7 @@ Only need a coarse average / “has any price”?
 
 ## Correct examples in-repo
 
-- **LP store:** `industry.helpers.lp_store_economics` → `get_prices_by_type_id` (Forge history). Tests seed `EveMarketItemHistory`, not LocationPrice.
+- **LP store conversion:** `industry.helpers.lp_store_economics` — baseline `EveMarketItemLocationPrice` sell/buy when present, else Forge history via `get_prices_by_type_id`. Required-item “other cost” prices inputs at sell. Alliance buyback ISK/LP acquisition remains separate from conversion isk/lp rates.
 - **Buyback:** `buyback.helpers.pricing.get_baseline_buy_prices` — history only; docstring states not live order-book rows.
 - **Market admin contrast:** local book from LocationPrice, separate `jita_price` from history/`get_prices_by_type_id`.
 

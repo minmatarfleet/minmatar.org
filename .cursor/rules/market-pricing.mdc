@@ -14,16 +14,17 @@ See also: `docs/market-pricing.md`.
 
 | Need | Use | Helper |
 |------|-----|--------|
-| **Jita / Forge guide** (“Jita buy/sell”, appraisal baseline, LP economics) | `EveMarketItemHistory` for `price_baseline` region (The Forge when Jita is baseline), then `EveMarketPrice` | `market.helpers.pricing.get_prices_by_type_id` or `buyback.helpers.pricing.get_baseline_buy_prices` |
+| **Jita / Forge guide** (“Jita buy/sell”, appraisal baseline) | `EveMarketItemHistory` for `price_baseline` region (The Forge when Jita is baseline), then `EveMarketPrice` | `market.helpers.pricing.get_prices_by_type_id` or `buyback.helpers.pricing.get_baseline_buy_prices` |
 | **Live book at a hub/structure** (local sell/buy/split) | `EveMarketItemLocationPrice` | Synced via `market.helpers.location_price` for `prices_active` locations |
 | **Industry planner “Jita sell”** | Hybrid: baseline LocationPrice **sell**, else history | `industry.helpers.cost_breakdown.jita_sell_prices_by_type_id` |
+| **LP store conversion buy/sell** | Baseline LocationPrice buy/sell, else history | `industry.helpers.lp_store_economics` |
 | **Coarse CCP average only** | `eveuniverse.EveMarketPrice` | Last resort / filters — prefer history helpers above |
 
 ## Rules
 
 - For **Jita guide prices**, call `get_prices_by_type_id` / `get_baseline_buy_prices`. Never query `EveMarketItemLocationPrice` alone as “Jita”.
 - Jita NPC station buy orders are often **empty** in LocationPrice; that broke buyback when LocationPrice was used as the guide (#2548).
-- LP store / buyback / markup baselines use **regional history**, not live station rows.
+- LP store **conversion** rates use baseline LocationPrice sell/buy when present, else regional history (`get_prices_by_type_id`). Buyback / markup baselines use **regional history**, not live station rows alone.
 - `EveLocation.price_baseline` → which location’s **region** drives guide history (exactly one).
 - `EveLocation.prices_active` → sync LocationPrice from ESI (Jita can be prices_active without being a structure market).
 - `EveLocation.market_active` → alliance market sell-order / expectation flows — **not** the same as prices_active.
