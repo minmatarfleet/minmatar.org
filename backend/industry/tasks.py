@@ -19,9 +19,40 @@ from industry.helpers.notifications import (
     emit_order_created,
     emit_order_jobs_for_created_job_ids,
 )
+from industry.helpers.order_profit_breakdown import (
+    can_refresh_order_profit_breakdown,
+    refresh_order_profit_breakdown,
+)
 from industry.models import IndustryOrder, IndustryOrderItemAssignment
 
 logger = logging.getLogger(__name__)
+
+
+@app.task()
+def compute_order_profit_breakdown_task(order_id: int) -> bool:
+    """
+    Compute and store the order profit/price snapshot off the request thread.
+
+    Refresh is allowed while the order is open, or once when no snapshot
+    exists yet (including fulfilled orders that never got one).
+    """
+    try:
+        order = IndustryOrder.objects.get(pk=order_id)
+    except IndustryOrder.DoesNotExist:
+        logger.warning(
+            "Order %s not found for profit breakdown compute", order_id
+        )
+        return False
+    if not can_refresh_order_profit_breakdown(order):
+        return False
+    try:
+        refresh_order_profit_breakdown(order)
+        return True
+    except Exception:
+        logger.exception(
+            "Failed to store profit breakdown for order %s", order_id
+        )
+        return False
 
 
 @app.task()

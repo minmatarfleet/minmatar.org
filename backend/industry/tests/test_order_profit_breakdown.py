@@ -26,6 +26,7 @@ from industry.helpers.order_profit_breakdown import (
 )
 from industry.helpers.product_unit_cost import ProductUnitCost
 from industry.models import IndustryOrder, IndustryOrderItem
+from industry.tasks import compute_order_profit_breakdown_task
 from industry.test_utils import create_industry_order
 from tribes.models import Tribe, TribeGroup
 
@@ -260,6 +261,47 @@ class OrderProfitBreakdownTestCase(AppTestCase):
         order = IndustryOrder.objects.get(pk=order_id)
         self.assertIsNotNone(order.profit_breakdown)
         self.assertIsNotNone(order.profit_breakdown_computed_at)
+
+    @patch("industry.helpers.orders_profit_summary.plan_product_unit_cost")
+    @patch(
+        "industry.helpers.orders_profit_summary.jita_sell_prices_by_type_id"
+    )
+    def test_compute_task_stores_breakdown(self, mock_prices, mock_plan):
+        mock_prices.return_value = {self.eve_type.id: 1_500_000}
+        mock_plan.side_effect = lambda tid, **kw: self._unit_cost(
+            tid, self.eve_type.name
+        )
+        order = create_industry_order(
+            needed_by=(timezone.now() + timedelta(days=7)).date(),
+            character=self.character,
+            location=self.location,
+        )
+        IndustryOrderItem.objects.create(
+            order=order, eve_type=self.eve_type, quantity=2
+        )
+        self.assertIsNone(order.profit_breakdown)
+        self.assertTrue(compute_order_profit_breakdown_task(order.pk))
+        order.refresh_from_db()
+        self.assertIsNotNone(order.profit_breakdown)
+        self.assertIsNotNone(order.profit_breakdown_computed_at)
+
+    def test_compute_task_skips_fulfilled_with_snapshot(self):
+        order = create_industry_order(
+            needed_by=(timezone.now() + timedelta(days=7)).date(),
+            character=self.character,
+            location=self.location,
+        )
+        order.profit_breakdown = {"rows": [], "totals": {}}
+        order.profit_breakdown_computed_at = timezone.now()
+        order.fulfilled_at = timezone.now()
+        order.save(
+            update_fields=[
+                "profit_breakdown",
+                "profit_breakdown_computed_at",
+                "fulfilled_at",
+            ]
+        )
+        self.assertFalse(compute_order_profit_breakdown_task(order.pk))
 
     @patch("industry.helpers.orders_profit_summary.plan_product_unit_cost")
     @patch(
