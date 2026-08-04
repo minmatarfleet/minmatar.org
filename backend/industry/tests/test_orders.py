@@ -635,6 +635,7 @@ class OrderMutationApiTests(OrdersEndpointTestCase):
         )
         self.assertEqual(r.status_code, 200)
         self.assertIsNotNone(r.json().get("delivered_at"))
+        self.assertEqual(r.json().get("delivered_quantity"), 2)
 
         r2 = self.client.patch(
             url,
@@ -644,6 +645,7 @@ class OrderMutationApiTests(OrdersEndpointTestCase):
         )
         self.assertEqual(r2.status_code, 200)
         self.assertIsNone(r2.json().get("delivered_at"))
+        self.assertEqual(r2.json().get("delivered_quantity"), 0)
 
         r3 = self.client.patch(
             url,
@@ -652,6 +654,74 @@ class OrderMutationApiTests(OrdersEndpointTestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(r3.status_code, 200)
+
+    def test_patch_assignment_partial_delivery_batches(self):
+        order = create_industry_order(
+            needed_by=(timezone.now() + timedelta(days=7)).date(),
+            character=self.character,
+        )
+        item = IndustryOrderItem.objects.create(
+            order=order, eve_type=self.eve_type, quantity=50
+        )
+        assignee_user = self.user.__class__.objects.create(
+            username="partial_deliveree"
+        )
+        _acknowledge_orders_onboarding(assignee_user)
+        assignee = EveCharacter.objects.create(
+            character_id=999037,
+            character_name="Partial Deliveree",
+            user=assignee_user,
+        )
+        assignee_token = jwt.encode(
+            {"user_id": assignee_user.id},
+            settings.SECRET_KEY,
+            algorithm="HS256",
+        )
+        a = IndustryOrderItemAssignment.objects.create(
+            order_item=item, character=assignee, quantity=50
+        )
+        url = (
+            f"/api/industry/orders/{order.pk}/orderitems/{item.pk}"
+            f"/assignments/{a.pk}"
+        )
+
+        r1 = self.client.patch(
+            url,
+            data=json.dumps({"delivered": True, "quantity": 39}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {assignee_token}",
+        )
+        self.assertEqual(r1.status_code, 200)
+        body1 = r1.json()
+        self.assertEqual(body1.get("delivered_quantity"), 39)
+        self.assertIsNone(body1.get("delivered_at"))
+
+        r_over = self.client.patch(
+            url,
+            data=json.dumps({"delivered": True, "quantity": 12}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {assignee_token}",
+        )
+        self.assertEqual(r_over.status_code, 400)
+
+        r2 = self.client.patch(
+            url,
+            data=json.dumps({"delivered": True, "quantity": 11}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {assignee_token}",
+        )
+        self.assertEqual(r2.status_code, 200)
+        body2 = r2.json()
+        self.assertEqual(body2.get("delivered_quantity"), 50)
+        self.assertIsNotNone(body2.get("delivered_at"))
+
+        r3 = self.client.patch(
+            url,
+            data=json.dumps({"delivered": True, "quantity": 1}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {assignee_token}",
+        )
+        self.assertEqual(r3.status_code, 400)
 
     def test_patch_assignment_delivered_forbidden_for_stranger(self):
         order = create_industry_order(

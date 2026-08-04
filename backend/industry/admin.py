@@ -1259,6 +1259,7 @@ class IndustryOrderItemAssignmentInline(admin.TabularInline):
         "target_unit_price",
         "target_estimated_margin",
         "has_blueprints",
+        "delivered_quantity",
         "delivered_at",
     )
 
@@ -1309,6 +1310,7 @@ class IndustryOrderItemAssignmentAdmin(admin.ModelAdmin):
         "order_item",
         "character",
         "quantity",
+        "delivered_quantity",
         "target_unit_price",
         "target_estimated_margin",
         "has_blueprints",

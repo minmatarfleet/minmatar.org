@@ -174,10 +174,14 @@ class IndustryOrderItemAssignment(models.Model):
         blank=True,
         help_text="Target estimated margin (ISK); set in admin.",
     )
+    delivered_quantity = models.PositiveIntegerField(
+        default=0,
+        help_text="Units already delivered against this claim (supports partial deliveries).",
+    )
     delivered_at = models.DateTimeField(
         null=True,
         blank=True,
-        help_text="When this assignment was marked delivered.",
+        help_text="When this assignment was fully delivered.",
     )
     has_blueprints = models.BooleanField(
         default=False,
