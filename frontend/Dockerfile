@@ -1,4 +1,6 @@
-FROM node:lts AS base
+# Pin Node 22: node:lts floated to 24 and better-sqlite3 aborts on Statement
+# teardown (Assertion failed: (env) != nullptr in RemoveEnvironmentCleanupHook).
+FROM node:22-bookworm AS base
 WORKDIR /app
 
 # By copying only the package.json and package-lock.json here, we ensure that the following `-deps` steps are independent of the source code.
