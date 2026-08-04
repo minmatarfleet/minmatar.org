@@ -8,6 +8,27 @@ import { get_error_message, query_string } from '@helpers/string'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/industry/loyalty`
 
+export interface LoyaltyCapabilities {
+    can_manage: boolean
+    can_trade: boolean
+}
+
+export async function get_loyalty_capabilities(access_token: string) {
+    const ENDPOINT = `${API_ENDPOINT}/capabilities`
+    console.log(`Requesting: ${ENDPOINT}`)
+    const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${access_token}`,
+    }
+    const response = await fetch(ENDPOINT, { headers })
+    if (!response.ok) {
+        throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
+            cause: response.status,
+        })
+    }
+    return await response.json() as LoyaltyCapabilities
+}
+
 export async function get_loyalty_currencies() {
     const ENDPOINT = `${API_ENDPOINT}/currencies`
     console.log(`Requesting: ${ENDPOINT}`)

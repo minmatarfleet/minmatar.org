@@ -20,6 +20,7 @@ interface Props {
     orders: LoyaltyMarketOrder[]
     currencies: LoyaltyCurrency[]
     is_logged_in: boolean
+    can_manage_buyback?: boolean
     highlight_order_id: string | null
     default_currency_id: number | null
     default_isk_per_lp: number
@@ -37,6 +38,7 @@ const {
     orders,
     currencies,
     is_logged_in,
+    can_manage_buyback = false,
     highlight_order_id,
     default_currency_id,
     default_isk_per_lp,
@@ -160,6 +162,7 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
         max_sell_lp: 2500000,
         currencies: ${JSON.stringify(currencies)},
         is_logged_in: ${JSON.stringify(is_logged_in)},
+        can_manage_buyback: ${JSON.stringify(can_manage_buyback)},
         format_thousands(val) {
             const n = Number(String(val).replace(/,/g, '')) || 0
             return n.toLocaleString('en-US', {
@@ -260,6 +263,12 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                 const data = await response.json()
                 if (typeof data.detail === 'string') detail = data.detail
             } catch (e) {}
+            const normalized = String(detail).toLowerCase()
+            if (normalized === 'feature_denied') {
+                detail = this.form_side === 'buy'
+                    ? ${JSON.stringify(t('industry.loyalty.feature_denied_buy'))}
+                    : ${JSON.stringify(t('industry.loyalty.feature_denied'))}
+            }
             await show_alert_dialog({ title: detail })
         },
         async post_order() {
@@ -453,7 +462,13 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
             this.post_dialog_open = true
             this.$nextTick(() => document.getElementById('loyalty-post-quantity')?.focus())
         },
-        open_buy() {
+        async open_buy() {
+            if (!this.can_manage_buyback) {
+                await show_alert_dialog({
+                    title: ${JSON.stringify(t('industry.loyalty.feature_denied_buy'))},
+                })
+                return
+            }
             this.claim_dialog_open = false
             this.await_lp_dialog_open = false
             this.form_side = 'buy'
