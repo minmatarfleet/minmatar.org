@@ -612,6 +612,118 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         self.assertEqual(cancel.status_code, 200)
         self.assertEqual(cancel.json()["status"], "cancelled")
 
+    @patch("industry.helpers.lp_buyback_discord.notify_order_claims_released")
+    @patch("industry.helpers.lp_buyback_discord.notify_order_status_changed")
+    @patch("industry.helpers.lp_buyback_discord.notify_order_created")
+    def test_manager_can_release_claim_and_reopen(
+        self, unused_created, unused_status, unused_released
+    ):
+        create = self.client.post(
+            "/api/industry/loyalty/orders",
+            data=json.dumps(
+                {
+                    "loyalty_point_id": self.currency.pk,
+                    "side": "sell",
+                    "quantity": 100_000,
+                }
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        order_id = create.json()["id"]
+        claim = self.client.post(
+            f"/api/industry/loyalty/orders/{order_id}/claim",
+            data=json.dumps(
+                {
+                    "amount": 100_000,
+                    "destination_corporation_name": "Gallifrey Security Services",
+                }
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.manager_token}",
+        )
+        self.assertEqual(claim.status_code, 200, claim.content)
+        self.assertEqual(claim.json()["status"], "awaiting_lp")
+
+        release = self.client.delete(
+            f"/api/industry/loyalty/orders/{order_id}/claim",
+            HTTP_AUTHORIZATION=f"Bearer {self.manager_token}",
+        )
+        self.assertEqual(release.status_code, 200, release.content)
+        data = release.json()
+        self.assertEqual(data["status"], "open")
+        self.assertEqual(data["quantity_claimed"], 0)
+        self.assertEqual(data["quantity_remaining"], 100_000)
+        self.assertEqual(data["claims"], [])
+        self.assertIsNone(data["claimed_by_user_id"])
+        self.assertEqual(data["destination_character_name"], "")
+        self.assertEqual(
+            IndustryLoyaltyPointMarketOrderClaim.objects.filter(
+                order_id=order_id
+            ).count(),
+            0,
+        )
+
+    @patch("industry.helpers.lp_buyback_discord.notify_order_status_changed")
+    @patch("industry.helpers.lp_buyback_discord.notify_order_created")
+    def test_release_rejected_after_lp_received(
+        self, unused_created, unused_status
+    ):
+        create = self.client.post(
+            "/api/industry/loyalty/orders",
+            data=json.dumps(
+                {
+                    "loyalty_point_id": self.currency.pk,
+                    "side": "sell",
+                    "quantity": 50_000,
+                }
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        order_id = create.json()["id"]
+        self.client.post(
+            f"/api/industry/loyalty/orders/{order_id}/claim",
+            data=json.dumps(
+                {
+                    "amount": 50_000,
+                    "destination_corporation_name": "Gallifrey Security Services",
+                }
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.manager_token}",
+        )
+        self.client.patch(
+            f"/api/industry/loyalty/orders/{order_id}",
+            data=json.dumps({"status": "awaiting_isk"}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.manager_token}",
+        )
+        release = self.client.delete(
+            f"/api/industry/loyalty/orders/{order_id}/claim",
+            HTTP_AUTHORIZATION=f"Bearer {self.manager_token}",
+        )
+        self.assertEqual(release.status_code, 400)
+
+    def test_capabilities_for_manager_and_trader(self):
+        anon = self.client.get("/api/industry/loyalty/capabilities")
+        self.assertEqual(anon.status_code, 401)
+
+        trader = self.client.get(
+            "/api/industry/loyalty/capabilities",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(trader.status_code, 200)
+        self.assertTrue(trader.json()["can_trade"])
+        self.assertFalse(trader.json()["can_manage"])
+
+        manager = self.client.get(
+            "/api/industry/loyalty/capabilities",
+            HTTP_AUTHORIZATION=f"Bearer {self.manager_token}",
+        )
+        self.assertEqual(manager.status_code, 200)
+        self.assertTrue(manager.json()["can_manage"])
+
     def test_get_orders_defaults_to_active(self):
         open_order = IndustryLoyaltyPointMarketOrder.objects.create(
             loyalty_point=self.currency,

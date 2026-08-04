@@ -2,6 +2,18 @@
 
 from ninja import Router
 
+from industry.endpoints.loyalty.delete_order_claim import (
+    PATH as delete_order_claim_path,
+    ROUTE_SPEC as delete_order_claim_spec,
+    delete_order_claim,
+    METHOD as delete_order_claim_method,
+)
+from industry.endpoints.loyalty.get_capabilities import (
+    PATH as get_capabilities_path,
+    ROUTE_SPEC as get_capabilities_spec,
+    get_capabilities,
+    METHOD as get_capabilities_method,
+)
 from industry.endpoints.loyalty.get_currencies import (
     PATH as get_currencies_path,
     ROUTE_SPEC as get_currencies_spec,
@@ -55,6 +67,12 @@ router = Router(tags=["Industry - Loyalty"])
 
 _ROUTES = (
     (
+        get_capabilities_method,
+        get_capabilities_path,
+        get_capabilities_spec,
+        get_capabilities,
+    ),
+    (
         get_currencies_method,
         get_currencies_path,
         get_currencies_spec,
@@ -74,6 +92,12 @@ _ROUTES = (
         post_order_claim_path,
         post_order_claim_spec,
         post_order_claim,
+    ),
+    (
+        delete_order_claim_method,
+        delete_order_claim_path,
+        delete_order_claim_spec,
+        delete_order_claim,
     ),
     (
         post_order_discord_ack_method,

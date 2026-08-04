@@ -29,3 +29,29 @@ export async function POST({ params, request, cookies }: APIContext) {
         headers: { 'Content-Type': 'application/json' },
     })
 }
+
+export async function DELETE({ params, cookies }: APIContext) {
+    const auth_token = cookies.has('auth_token')
+        ? cookies.get('auth_token')?.value
+        : null
+
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+    }
+    if (auth_token)
+        headers.Authorization = `Bearer ${auth_token}`
+
+    const upstream = await fetch(
+        `${API_URL}/api/industry/loyalty/orders/${params.order_id}/claim`,
+        {
+            method: 'DELETE',
+            headers,
+        },
+    )
+
+    const data = await upstream.text()
+    return new Response(data, {
+        status: upstream.status,
+        headers: { 'Content-Type': 'application/json' },
+    })
+}

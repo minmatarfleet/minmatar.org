@@ -676,6 +676,7 @@ export const ui = {
         'industry.loyalty.form.error': 'Could not create order.',
         'industry.loyalty.action.error': 'Could not update order.',
         'industry.loyalty.action.claim': 'Claim',
+        'industry.loyalty.action.release_claim': 'Release claim',
         'industry.loyalty.action.awaiting_lp': 'Await LP',
         'industry.loyalty.action.lp_received': 'LP received',
         'industry.loyalty.action.isk_sent': 'ISK sent',
