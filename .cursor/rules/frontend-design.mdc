@@ -1,0 +1,53 @@
+---
+description: Rules for frontend design and methodology. Read before touching any UI code. Covers the htmx/Alpine split, design tokens, layout compositions, component conventions, naming, and a11y.
+globs: frontend/app/src/**/*.astro,frontend/app/src/**/*.scss,frontend/app/src/**/*.ts,frontend/app/tailwind.config.js
+alwaysApply: true
+---
+
+# Frontend design & methodology
+
+Read **`docs/frontend-design.md`** — it is the source of truth. The rules below are the non-negotiables.
+
+## 1. Interactivity & state management
+
+- **htmx owns all server state.** Any data fetching, mutation, partial re-render, or DOM update that reflects server state must use htmx (`hx-get`/`hx-post`/`hx-swap`/`hx-swap-oob`, `htmx.process()`) against server-rendered partials in `src/pages/partials/*_component.astro`. The server renders HTML; the client never builds DOM from JSON.
+- **Alpine.js is for minor, local UI interactivity only**: toggles, collapsibles, filters over already-rendered DOM, dialog open/close, small transient UI state.
+- **Forbidden**: Alpine calling endpoints (`fetch()`/axios), holding server data in Alpine state, or driving DOM updates from fetched data. If data must update the DOM, use an htmx partial.
+- After htmx injects a partial containing Alpine/htmx markup, call `htmx.process(element)` / `Alpine.initTree(element)`.
+- Do **not** add new Alpine `fetch()` callers. Existing ones (e.g. `LoyaltyOrderBook`, `PageProgressTracker`) are pending migration.
+
+## 2. Naming
+
+- **snake_case** for props, variables, functions, files, and CSS custom properties.
+- **PascalCase** for TypeScript interfaces and data types/type aliases (`PageCoverOptions`, `ButtonColors`).
+- Legacy camelCase props exist; do not copy them into new code.
+
+## 3. Design tokens — never hardcode values
+
+- Use the CSS custom properties in `src/styles/properties/`: colors (`--fleet-red`, `--fleet-yellow`, `--alliance-blue`, `--militia-purple`, `--green`, semantic `--foreground`/`--highlight`/`--background`), Utopia fluid space `--space-*` and type `--step-*`, fonts (`--heading-font`/`--button-font`/`--default-font`), layout widths, transitions (`--fast-transition`…`--slowest-transition`).
+- No raw `px`/`rem` for spacing/type; no hardcoded hex colors. For glass/transparency use the `.*-transparency` effect classes.
+- Z-index must derive from the layered chain in `_z-index.scss` (`--header` → `--neocom` → `--backdrop` → `--dialog` → `--page-finder` → `--alert` → `--dialog-close` → `--tooltips`). Never invent z-index values.
+
+## 4. Layout
+
+- Compose from `src/components/compositions/` (`Wrapper`, `Grid`, `FlexInline`, `Flexblock`, `FixedFluid`, `FluidFixed`, `Cover`, `Center`, `ScrollX`, `AspectRatio`, `BlockList`) instead of hand-rolling flex/grid.
+- Pass spacing via tokens. Reuse `Button`, `Badge`, `Tag`, `Card`, `Input` rather than restyling raw elements.
+
+## 5. Component conventions
+
+- One `.astro` component per file; `interface Props` with snake_case fields, defaults destructured from `Astro.props`, and `[propName: string]: any` for passthrough.
+- `delete attributes.class` then re-apply the caller class via `class:list={[...]}`, using bracket groups (`class:list={['[ button ]', Astro.props.class]}`).
+- Scoped `<style lang="scss">` by default; `is:global` only for shared classes. Pass props into CSS via `define:vars`.
+- Tailwind = utilities only; reference tokens with arbitrary values (`top-[var(--space-2xs)]`). No component-level `@apply` blobs.
+- User-visible strings via `@helpers/i18n` (`t`, `translatePath`); shared UI types via `@dtypes/layout_components`.
+
+## 6. Accessibility
+
+- Dark-only theme; never fight `body.color-blind-mode` (it swaps `--fleet-red`/`--green`/`--button-color` automatically).
+- Preserve `:focus-visible` outlines; `outline: none` only when an explicit visible alternative exists.
+- Gate hover/focus scale effects behind `@media (hover: hover)` and tactile press states behind `@media (hover: none)`.
+- Keep `SkipToContent` / `id="content"` and use `.visually-hidden` for screen-reader text.
+
+## 7. Verify
+
+Run from `frontend/app/`: `npm run check` and `npm run test` before finishing. No frontend change merges with failing `npm run check`.
