@@ -14,6 +14,11 @@ class LoyaltyCurrencyResponse(Schema):
     is_active: bool
 
 
+class LoyaltyCapabilitiesResponse(Schema):
+    can_manage: bool
+    can_trade: bool
+
+
 class LoyaltyMarketOrderClaimResponse(Schema):
     id: int
     amount: int

@@ -16,6 +16,7 @@ import type {
     OrderLpStockpile,
 } from '@dtypes/api.minmatar.org'
 import {
+    get_loyalty_capabilities,
     get_loyalty_currencies,
     get_loyalty_orders,
     get_loyalty_stockpiles,
@@ -35,6 +36,7 @@ let claim_characters: {
 let claim_corporations: string[] = []
 let default_claim_corporation = ''
 let default_claim_character = ''
+let can_manage_buyback = false
 
 try {
     [currencies, orders, order_history, stockpiles] = await Promise.all([
@@ -49,7 +51,11 @@ try {
 
 if (is_logged_in && auth_token) {
     try {
-        const summary = await get_characters_summary(auth_token)
+        const [summary, capabilities] = await Promise.all([
+            get_characters_summary(auth_token),
+            get_loyalty_capabilities(auth_token),
+        ])
+        can_manage_buyback = Boolean(capabilities.can_manage)
         claim_characters = (summary.characters ?? [])
             .map((character) => ({
                 character_name: character.character_name,
@@ -166,19 +172,22 @@ const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
                             >
                                 {t('industry.loyalty.post_sell')}
                             </Button>
-                            <Button
-                                class="[ loyalty-cta-row__button ]"
-                                color="green"
-                                x-on:click="$dispatch('loyalty-open-buy')"
-                            >
-                                {t('industry.loyalty.post_buy')}
-                            </Button>
+                            {can_manage_buyback && (
+                                <Button
+                                    class="[ loyalty-cta-row__button ]"
+                                    color="green"
+                                    x-on:click="$dispatch('loyalty-open-buy')"
+                                >
+                                    {t('industry.loyalty.post_buy')}
+                                </Button>
+                            )}
                         </div>
                     )}
                     <LoyaltyOrderBook
                         orders={orders}
                         currencies={currencies}
                         is_logged_in={is_logged_in}
+                        can_manage_buyback={can_manage_buyback}
                         highlight_order_id={highlight_order_id}
                         default_currency_id={default_currency_id}
                         default_isk_per_lp={default_isk_per_lp}
