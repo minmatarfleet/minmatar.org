@@ -11,7 +11,6 @@ from django.db import transaction
 from django.db.models import Count
 from django.utils import timezone
 
-from app.celery import app
 from eveonline.client import _esi_to_python, esi_provider
 from eveonline.models import EveLocation
 from industry.models import (
@@ -22,6 +21,7 @@ from industry.models import (
 )
 from market.helpers.pricing import JITA_REGION_ID
 from market.models.history import EveMarketItemHistory
+from market.tasks import fetch_market_item_history_for_type
 
 logger = logging.getLogger(__name__)
 
@@ -200,7 +200,6 @@ def _enqueue_history_for_missing_types(type_ids: Set[int]) -> None:
     """Bootstrap Forge history for LP catalog types missing recent rows."""
     if not type_ids:
         return
-    # Use send_task by name to avoid importing market.tasks (it imports us).
     baseline = EveLocation.objects.filter(price_baseline=True).first()
     region_id = (
         baseline.region_id
@@ -217,10 +216,8 @@ def _enqueue_history_for_missing_types(type_ids: Set[int]) -> None:
     )
     missing = sorted(tid for tid in type_ids if tid not in existing)
     for type_id in missing:
-        app.send_task(
-            "market.tasks.fetch_market_item_history_for_type",
-            args=[type_id],
-            queue="market",
+        fetch_market_item_history_for_type.apply_async(
+            args=[type_id], queue="market"
         )
     if missing:
         logger.info(
@@ -433,14 +430,3 @@ def resolve_isk_per_lp(
         if default is not None and default > 0:
             return float(default)
     return None
-
-
-def lp_catalog_type_ids() -> List[int]:
-    """Distinct type IDs from LP store offers and required items."""
-    offer_types = IndustryLpStoreOffer.objects.values_list(
-        "type_id", flat=True
-    ).distinct()
-    req_types = IndustryLpStoreOfferRequiredItem.objects.values_list(
-        "type_id", flat=True
-    ).distinct()
-    return sorted({int(t) for t in offer_types} | {int(t) for t in req_types})

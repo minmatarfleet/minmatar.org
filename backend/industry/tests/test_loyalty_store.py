@@ -4,11 +4,11 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
+from industry.helpers.lp_catalog import lp_catalog_type_ids
 from industry.helpers.loyalty_store import (
     ensure_loyalty_store_offers_for_product,
     get_offer_for_blueprint_type,
     is_pure_lp_isk_offer,
-    lp_catalog_type_ids,
     navy_bpc_cost_for_plan,
     resolve_isk_per_lp,
     sync_loyalty_store_offers,

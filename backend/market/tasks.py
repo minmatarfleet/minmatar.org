@@ -12,7 +12,7 @@ from eveonline.models import (
     EveCorporationContract,
     EveLocation,
 )
-from industry.helpers.loyalty_store import lp_catalog_type_ids
+from industry.helpers.lp_catalog import lp_catalog_type_ids
 from market.helpers import (
     clear_structure_sell_orders_for_location,
     create_or_update_contract,
