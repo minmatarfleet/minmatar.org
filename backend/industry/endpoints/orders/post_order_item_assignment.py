@@ -113,7 +113,14 @@ def post_order_item_assignment(
             assignment.has_blueprints = (
                 assignment.has_blueprints or payload.has_blueprints
             )
-            assignment.save(update_fields=["quantity", "has_blueprints"])
+            update_fields = ["quantity", "has_blueprints"]
+            if (
+                assignment.delivered_at is not None
+                and assignment.delivered_quantity < assignment.quantity
+            ):
+                assignment.delivered_at = None
+                update_fields.append("delivered_at")
+            assignment.save(update_fields=update_fields)
 
     assignment = IndustryOrderItemAssignment.objects.select_related(
         "character", "order_item", "order_item__order", "order_item__eve_type"

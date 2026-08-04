@@ -96,6 +96,7 @@ const rows = [...orders].sort((a, b) => {
                                 <th>{t('industry.loyalty.orders.col.currency')}</th>
                                 <th class="[ tabular ]">{t('industry.loyalty.orders.col.quantity')}</th>
                                 <th class="[ tabular ]">{t('industry.loyalty.orders.col.rate')}</th>
+                                <th class="[ tabular ]">{t('industry.loyalty.orders.col.total')}</th>
                                 <th>{t('industry.loyalty.orders.col.status')}</th>
                                 <th>{t('industry.loyalty.orders.col.purchasers')}</th>
                             </tr>
@@ -105,6 +106,11 @@ const rows = [...orders].sort((a, b) => {
                                 const status_color = STATUS_COLORS[order.status] ?? 'alliance-blue'
                                 const status_label = status_labels[order.status] ?? order.status
                                 const purchasers = order_purchasers(order)
+                                const quantity_claimed = order.quantity_claimed ?? 0
+                                const lp_for_total = quantity_claimed > 0
+                                    ? quantity_claimed
+                                    : order.quantity
+                                const isk_total = lp_for_total * order.isk_per_lp
                                 return (
                                     <tr id={`order-${order.id}`}>
                                         <td class="[ loyalty-history__date ]">
@@ -124,6 +130,9 @@ const rows = [...orders].sort((a, b) => {
                                         </td>
                                         <td class="[ tabular ]">
                                             {number_thousand_separator(order.isk_per_lp)}
+                                        </td>
+                                        <td class="[ tabular ]">
+                                            {number_thousand_separator(isk_total)}
                                         </td>
                                         <td>
                                             <Tag

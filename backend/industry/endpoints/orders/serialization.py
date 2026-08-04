@@ -56,6 +56,7 @@ def assignment_to_response(assignment) -> AssignmentResponse:
         quantity=assignment.quantity,
         target_unit_price=assignment.target_unit_price,
         target_estimated_margin=assignment.target_estimated_margin,
+        delivered_quantity=assignment.delivered_quantity,
         delivered_at=assignment.delivered_at,
         has_blueprints=assignment.has_blueprints,
     )

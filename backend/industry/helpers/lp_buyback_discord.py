@@ -14,6 +14,7 @@ from industry.helpers.lp_buyback_discord_buttons import (
     lp_sent_components,
 )
 from industry.helpers.lp_market_orders import (
+    claimed_quantity,
     currency_short_name,
     format_lp_quantity,
     remaining_quantity,
@@ -218,18 +219,52 @@ def _send_lp_line(
     return f"\n{prefix}Send LP to: **{dest}**"
 
 
+def _lp_quantity_for_isk(
+    order: IndustryLoyaltyPointMarketOrder,
+    *,
+    claim=None,
+) -> int:
+    """LP quantity used to compute ISK due for payment prompts."""
+    if claim is not None:
+        return int(claim.amount)
+    claimed = claimed_quantity(order)
+    if claimed > 0:
+        return claimed
+    return int(order.quantity)
+
+
+def _isk_due(
+    order: IndustryLoyaltyPointMarketOrder,
+    *,
+    claim=None,
+) -> int:
+    return _lp_quantity_for_isk(order, claim=claim) * int(order.isk_per_lp)
+
+
 def _pay_isk_line(
     order: IndustryLoyaltyPointMarketOrder,
     *,
     claim=None,
 ) -> str:
-    """ISK payout line for buy-order claims (claimer destination)."""
+    """ISK payout line (amount + destination)."""
     dest = _destination_label(order, claim=claim)
     if dest == "(unset)":
         return ""
     mention = _user_mention(isk_payer(order))
     prefix = f"{mention} " if mention else ""
-    return f"\n{prefix}Pay ISK to: **{dest}**"
+    isk = _isk_due(order, claim=claim)
+    return f"\n{prefix}Pay **{isk:,} ISK** to **{dest}**"
+
+
+def _isk_due_line(
+    order: IndustryLoyaltyPointMarketOrder,
+    *,
+    claim=None,
+) -> str:
+    """ISK total for sell claims where destination is set later."""
+    lp = _lp_quantity_for_isk(order, claim=claim)
+    isk = _isk_due(order, claim=claim)
+    return f"\nISK due: **{isk:,} ISK** ({lp:,} LP @ {order.isk_per_lp})"
 
 
 def _isk_payout_label(order: IndustryLoyaltyPointMarketOrder) -> str:
@@ -284,6 +319,7 @@ def notify_order_claimed(
             msg += _pay_isk_line(order, claim=claim)
         else:
             msg += _send_lp_line(order, sender, claim=claim)
+            msg += _isk_due_line(order, claim=claim)
         if remaining > 0:
             msg += f"\nRemaining: **{remaining:,}** LP (still open)"
         else:
@@ -294,6 +330,7 @@ def notify_order_claimed(
             msg += _pay_isk_line(order)
         else:
             msg += _send_lp_line(order, sender)
+            msg += _isk_due_line(order)
     msg += f"\n{order_site_url(order)}"
     post_order_status_update(order, message=msg)
 
@@ -314,12 +351,15 @@ def _awaiting_lp_message(order: IndustryLoyaltyPointMarketOrder) -> str:
 
 
 def _awaiting_isk_message(order: IndustryLoyaltyPointMarketOrder) -> str:
+    lp = _lp_quantity_for_isk(order)
+    isk = _isk_due(order)
     return "\n".join(
         [
             _user_mention(isk_payer(order)),
             "",
             ":moneybag: LP received — awaiting ISK payment",
-            f"Pay ISK to: **{_isk_payout_label(order)}**",
+            f"Pay **{isk:,} ISK** to **{_isk_payout_label(order)}**",
+            f"{lp:,} LP @ {order.isk_per_lp} ISK/LP",
             order_site_url(order),
         ]
     )

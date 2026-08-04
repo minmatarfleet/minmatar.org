@@ -56,6 +56,7 @@ class AssignmentResponse(BaseModel):
     quantity: int
     target_unit_price: Decimal | None = None
     target_estimated_margin: Decimal | None = None
+    delivered_quantity: int = 0
     delivered_at: datetime | None = None
     has_blueprints: bool = False
 
@@ -177,9 +178,15 @@ class PostOrderItemAssignmentRequest(BaseModel):
 
 
 class PatchOrderItemAssignmentRequest(BaseModel):
-    """Mark assignment delivery state."""
+    """Mark assignment delivery state.
+
+    Optional ``quantity`` is the size of this delivery batch. When omitted with
+    ``delivered=true``, remaining undelivered units are marked delivered
+    (backward compatible full delivery).
+    """
 
     delivered: bool
+    quantity: int | None = None
 
 
 class BlueprintCoordinatorWriteRequest(BaseModel):

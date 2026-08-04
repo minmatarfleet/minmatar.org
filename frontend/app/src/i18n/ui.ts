@@ -648,6 +648,7 @@ export const ui = {
         'industry.loyalty.orders.col.currency': 'Currency',
         'industry.loyalty.orders.col.quantity': 'Quantity',
         'industry.loyalty.orders.col.rate': 'ISK/LP',
+        'industry.loyalty.orders.col.total': 'Total ISK',
         'industry.loyalty.orders.col.status': 'Status',
         'industry.loyalty.orders.col.purchasers': 'Purchasers',
         'industry.loyalty.orders.col.actions': 'Actions',
