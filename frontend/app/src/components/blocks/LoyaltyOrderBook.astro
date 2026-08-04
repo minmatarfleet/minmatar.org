@@ -492,6 +492,7 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                                 <th>{t('industry.loyalty.orders.col.currency')}</th>
                                 <th class="[ tabular ]">{t('industry.loyalty.orders.col.quantity')}</th>
                                 <th class="[ tabular ]">{t('industry.loyalty.orders.col.rate')}</th>
+                                <th class="[ tabular ]">{t('industry.loyalty.orders.col.total')}</th>
                                 <th>{t('industry.loyalty.orders.col.status')}</th>
                                 <th>{t('industry.loyalty.orders.col.purchasers')}</th>
                                 <th class="[ loyalty-orders__actions-col ]">{t('industry.loyalty.orders.col.actions')}</th>
@@ -505,6 +506,10 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                                 const quantity_remaining = order.quantity_remaining ?? order.quantity
                                 const quantity_claimed = order.quantity_claimed ?? 0
                                 const can_claim = order.status === 'open' && quantity_remaining > 0
+                                const lp_for_total = quantity_claimed > 0
+                                    ? quantity_claimed
+                                    : order.quantity
+                                const isk_total = lp_for_total * order.isk_per_lp
                                 const status_color = STATUS_COLORS[order.status] ?? 'alliance-blue'
                                 const status_text_color = STATUS_TEXT_COLORS[order.status]
                                 const status_label = status_labels[order.status] ?? order.status
@@ -538,6 +543,13 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                                             )}
                                         </td>
                                         <td class="[ tabular ]">{number_thousand_separator(order.isk_per_lp)}</td>
+                                        <td class:list={[
+                                            'tabular',
+                                            'loyalty-orders__total',
+                                            { 'loyalty-orders__total--due': order.status === 'awaiting_isk' },
+                                        ]}>
+                                            {number_thousand_separator(isk_total)}
+                                        </td>
                                         <td>
                                             <Tag
                                                 text={status_label}
@@ -1050,6 +1062,11 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
         font-size: var(--step--2);
         opacity: 0.8;
         white-space: nowrap;
+    }
+
+    .loyalty-orders__total--due {
+        color: var(--green);
+        font-weight: 600;
     }
 
     .loyalty-orders__purchasers {

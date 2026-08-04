@@ -861,7 +861,8 @@ class LpBuybackSideAwareMessagingTestCase(AppTestCase):
         )
         msg = _awaiting_isk_message(order)
         self.assertIn("<@1001>", msg)
-        self.assertIn("Pay ISK to: **Seller ISK Corp**", msg)
+        self.assertIn("Pay **800,000 ISK** to **Seller ISK Corp**", msg)
+        self.assertIn("1,000 LP @ 800 ISK/LP", msg)
 
     def test_wtb_awaiting_isk_falls_back_to_claimer_name(self):
         order = IndustryLoyaltyPointMarketOrder.objects.create(
@@ -875,7 +876,29 @@ class LpBuybackSideAwareMessagingTestCase(AppTestCase):
         )
         msg = _awaiting_isk_message(order)
         self.assertIn("<@1001>", msg)
-        self.assertIn("Pay ISK to: **BearThatCares**", msg)
+        self.assertIn("Pay **800,000 ISK** to **BearThatCares**", msg)
+        self.assertIn("1,000 LP @ 800 ISK/LP", msg)
+
+    def test_wts_awaiting_isk_includes_isk_amount(self):
+        order = IndustryLoyaltyPointMarketOrder.objects.create(
+            loyalty_point=self.currency,
+            side=IndustryLoyaltyPointMarketOrder.Side.SELL,
+            quantity=267_000,
+            isk_per_lp=800,
+            status=IndustryLoyaltyPointMarketOrder.Status.AWAITING_ISK,
+            created_by=self.seller,
+            claimed_by=self.claimer,
+        )
+        IndustryLoyaltyPointMarketOrderClaim.objects.create(
+            order=order,
+            amount=267_000,
+            destination_corporation_name="Rattini Tribe",
+            claimed_by=self.claimer,
+        )
+        msg = _awaiting_isk_message(order)
+        self.assertIn("<@1002>", msg)
+        self.assertIn("Pay **213,600,000 ISK** to **WTS Pilot**", msg)
+        self.assertIn("267,000 LP @ 800 ISK/LP", msg)
 
     @patch("industry.helpers.lp_buyback_discord.discord")
     def test_awaiting_lp_posts_lp_sent_button(self, discord_mock):
