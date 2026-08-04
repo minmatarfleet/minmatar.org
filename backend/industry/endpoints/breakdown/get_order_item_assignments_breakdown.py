@@ -61,6 +61,7 @@ def get_order_item_assignments_breakdown(
                 quantity=assignment.quantity,
                 target_unit_price=assignment.target_unit_price,
                 target_estimated_margin=assignment.target_estimated_margin,
+                delivered_quantity=assignment.delivered_quantity,
                 delivered_at=assignment.delivered_at,
                 breakdown=NestedBreakdownNode.from_breakdown_dict(tree),
             )

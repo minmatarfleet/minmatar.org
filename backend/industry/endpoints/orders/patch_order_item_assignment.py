@@ -1,7 +1,6 @@
 """PATCH .../assignments/{assignment_id} — mark assignment delivered or not."""
 
 from django.db import transaction
-from django.utils import timezone
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
@@ -10,6 +9,7 @@ from industry.endpoints.orders.schemas import (
     PatchOrderItemAssignmentRequest,
 )
 from industry.endpoints.orders.serialization import assignment_to_response
+from industry.helpers.order_assignments import apply_assignment_delivery
 from industry.models import IndustryOrder, IndustryOrderItemAssignment
 from onboarding.orders_gate import require_current_orders_onboarding
 
@@ -20,6 +20,7 @@ ROUTE_SPEC = {
     "auth": AuthBearer(),
     "response": {
         200: AssignmentResponse,
+        400: ErrorResponse,
         403: ErrorResponse,
         404: ErrorResponse,
     },
@@ -64,11 +65,15 @@ def patch_order_item_assignment(
                 detail="Only the order owner or the assignee may update delivery status."
             )
 
-        if payload.delivered:
-            assignment.delivered_at = timezone.now()
-        else:
-            assignment.delivered_at = None
-        assignment.save(update_fields=["delivered_at"])
+        err = apply_assignment_delivery(
+            assignment,
+            delivered=payload.delivered,
+            quantity=payload.quantity,
+        )
+        if err:
+            return 400, ErrorResponse(detail=err)
+
+        assignment.save(update_fields=["delivered_quantity", "delivered_at"])
 
     assignment = IndustryOrderItemAssignment.objects.select_related(
         "character"

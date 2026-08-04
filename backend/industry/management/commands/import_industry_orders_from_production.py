@@ -242,6 +242,8 @@ class Command(BaseCommand):
                     quantity=asn.quantity,
                     target_unit_price=asn.target_unit_price,
                     target_estimated_margin=asn.target_estimated_margin,
+                    delivered_quantity=getattr(asn, "delivered_quantity", 0)
+                    or (asn.quantity if asn.delivered_at is not None else 0),
                     delivered_at=asn.delivered_at,
                 )
 
