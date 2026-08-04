@@ -1,7 +1,7 @@
 """Tests for industry admin customizations."""
 
 from datetime import timedelta
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
@@ -15,12 +15,16 @@ from app.test import TestCase
 from eveonline.models import EveCharacter
 from eveuniverse.models import EveCategory, EveGroup, EveType
 
-from industry.admin import _apply_industry_app_list
+from industry.admin import IndustryOrderAdmin, _apply_industry_app_list
 from industry.admin_views import (
     industry_order_hub_view,
     industry_orders_home_view,
 )
-from industry.models import IndustryOrderItem, IndustryOrderItemAssignment
+from industry.models import (
+    IndustryOrder,
+    IndustryOrderItem,
+    IndustryOrderItemAssignment,
+)
 from industry.test_utils import create_industry_order
 
 
@@ -134,6 +138,25 @@ class IndustryAdminCustomizationsTestCase(TestCase):
         self.assertEqual(response.status_code, 302)
         mock_refresh.assert_called_once()
         self.assertEqual(mock_refresh.call_args.args[0].pk, self.order.pk)
+
+    @patch("industry.admin.compute_order_profit_breakdown_task")
+    def test_save_related_enqueues_profit_breakdown(self, mock_task):
+        # pylint: disable=import-outside-toplevel
+        from django.contrib.admin.sites import AdminSite
+
+        admin_obj = IndustryOrderAdmin(IndustryOrder, AdminSite())
+        form = MagicMock()
+        form.instance = self.order
+        request = self.factory.post("/")
+        request.user = self.staff
+
+        with patch(
+            "django.contrib.admin.options.ModelAdmin.save_related",
+            return_value=None,
+        ):
+            admin_obj.save_related(request, form, [], change=True)
+
+        mock_task.delay.assert_called_once_with(self.order.pk)
 
     def test_apply_industry_app_list_hides_nested_models(self):
         self.staff.user_permissions.add(self.view_perm)

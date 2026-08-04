@@ -1,3 +1,5 @@
+import logging
+
 from django.contrib import admin
 from django.contrib import messages
 from django import forms
@@ -43,7 +45,10 @@ from industry.helpers.lp_store_economics import (
     offer_economics_for_queryset,
     tracked_corporation_ids,
 )
-from industry.tasks import sync_loyalty_store_offers_task
+from industry.tasks import (
+    compute_order_profit_breakdown_task,
+    sync_loyalty_store_offers_task,
+)
 from industry.models import (
     IndustryContractAssociation,
     IndustryLoyaltyPoint,
@@ -62,6 +67,8 @@ from industry.models import (
     MiningUpgradeCompletion,
 )
 from tribes.models import TribeGroup
+
+logger = logging.getLogger(__name__)
 
 
 class IndustryLoyaltyPointAccountInline(admin.TabularInline):
@@ -1025,6 +1032,19 @@ class IndustryOrderAdmin(admin.ModelAdmin):
                 is_active=True
             ).order_by("tribe__name", "name")
         return super().formfield_for_manytomany(db_field, request, **kwargs)
+
+    def save_related(self, request, form, formsets, change):
+        """Enqueue profit snapshot after order items exist on the order."""
+        super().save_related(request, form, formsets, change)
+        order = form.instance
+        if not order.pk:
+            return
+        try:
+            compute_order_profit_breakdown_task.delay(order.pk)
+        except Exception:  # noqa: BLE001 — never fail admin save on planner
+            logger.exception(
+                "Failed to enqueue profit breakdown for order %s", order.pk
+            )
 
     def changeform_view(
         self, request, object_id=None, form_url="", extra_context=None
