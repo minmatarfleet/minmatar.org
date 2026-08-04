@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
+from industry.helpers.lp_catalog import lp_catalog_type_ids
 from industry.helpers.loyalty_store import (
     ensure_loyalty_store_offers_for_product,
     get_offer_for_blueprint_type,
@@ -23,6 +24,7 @@ from eveuniverse.models import EveCategory, EveGroup, EveType
 # Typhoon Fleet Issue Blueprint
 TYFI_BP_TYPE_ID = 32312
 TLIB_CORP_ID = 1000182
+IMPERIAL_CORP_ID = 1000179
 
 TYFI_OFFERS = [
     {
@@ -70,25 +72,76 @@ class LoyaltyStoreHelperTestCase(TestCase):
         self.assertFalse(is_pure_lp_isk_offer(TYFI_OFFERS[1]))
         self.assertFalse(is_pure_lp_isk_offer(TYFI_OFFERS[2]))
         self.assertFalse(is_pure_lp_isk_offer(TYFI_OFFERS[3]))
-
-    def test_sync_keeps_only_pure_lp_isk(self):
-        with patch(
-            "industry.helpers.loyalty_store.fetch_loyalty_offers_from_esi"
-        ) as mock_fetch:
-            mock_fetch.side_effect = AssertionError("ESI should not be called")
-            count = sync_loyalty_store_offers(
-                corporation_ids=[TLIB_CORP_ID], offers=TYFI_OFFERS
+        self.assertFalse(
+            is_pure_lp_isk_offer(
+                {
+                    **TYFI_OFFERS[0],
+                    "ak_cost": 50,
+                }
             )
-        self.assertEqual(count, 1)
-        row = IndustryLpStoreOffer.objects.get()
-        self.assertEqual(row.offer_id, 16343)
-        self.assertEqual(row.lp_cost, 100_000)
-        self.assertEqual(row.isk_cost, 20_000_000)
-        self.assertEqual(row.quantity, 1)
+        )
+
+    def test_sync_stores_full_catalog_including_required_items(self):
+        count = sync_loyalty_store_offers(
+            corporation_ids=[TLIB_CORP_ID],
+            offers=TYFI_OFFERS,
+            enqueue_history=False,
+        )
+        self.assertEqual(count, 4)
+        self.assertEqual(IndustryLpStoreOffer.objects.count(), 4)
+        pure = IndustryLpStoreOffer.objects.get(offer_id=16343)
+        self.assertEqual(pure.lp_cost, 100_000)
+        self.assertEqual(pure.isk_cost, 20_000_000)
+        self.assertEqual(pure.ak_cost, 0)
+        self.assertEqual(pure.required_items.count(), 0)
+        req_offer = IndustryLpStoreOffer.objects.get(offer_id=19404)
+        reqs = list(
+            req_offer.required_items.values_list("type_id", "quantity")
+        )
+        self.assertEqual(reqs, [(17814, 2)])
+
+    def test_sync_keeps_colliding_offer_ids_across_corps(self):
+        offers = [
+            {
+                "offer_id": 4102,
+                "corporation_id": TLIB_CORP_ID,
+                "type_id": 3895,
+                "lp_cost": 15000,
+                "isk_cost": 10_000_000,
+                "quantity": 1,
+                "required_items": [],
+            },
+            {
+                "offer_id": 4102,
+                "corporation_id": IMPERIAL_CORP_ID,
+                "type_id": 9943,
+                "lp_cost": 5250,
+                "isk_cost": 5_250_000,
+                "quantity": 1,
+                "required_items": [],
+            },
+        ]
+        count = sync_loyalty_store_offers(
+            corporation_ids=[TLIB_CORP_ID, IMPERIAL_CORP_ID],
+            offers=offers,
+            enqueue_history=False,
+        )
+        self.assertEqual(count, 2)
+        self.assertEqual(IndustryLpStoreOffer.objects.count(), 2)
+        tlib = IndustryLpStoreOffer.objects.get(
+            corporation_id=TLIB_CORP_ID, offer_id=4102
+        )
+        imperial = IndustryLpStoreOffer.objects.get(
+            corporation_id=IMPERIAL_CORP_ID, offer_id=4102
+        )
+        self.assertEqual(tlib.type_id, 3895)
+        self.assertEqual(imperial.type_id, 9943)
 
     def test_navy_bpc_cost_at_800_isk_per_lp(self):
         sync_loyalty_store_offers(
-            corporation_ids=[TLIB_CORP_ID], offers=TYFI_OFFERS
+            corporation_ids=[TLIB_CORP_ID],
+            offers=TYFI_OFFERS,
+            enqueue_history=False,
         )
         cost = navy_bpc_cost_for_plan(TYFI_BP_TYPE_ID, 40, 800.0)
         self.assertIsNotNone(cost)
@@ -96,6 +149,18 @@ class LoyaltyStoreHelperTestCase(TestCase):
         self.assertEqual(cost.packs, 40)
         self.assertEqual(cost.total_isk, 40 * 100_000_000)
         self.assertEqual(cost.offer_id, 16343)
+
+    def test_planner_ignores_required_item_offers(self):
+        sync_loyalty_store_offers(
+            corporation_ids=[TLIB_CORP_ID],
+            offers=TYFI_OFFERS,
+            enqueue_history=False,
+        )
+        offer = get_offer_for_blueprint_type(TYFI_BP_TYPE_ID, isk_per_lp=800.0)
+        self.assertIsNotNone(offer)
+        assert offer is not None
+        self.assertEqual(offer.offer_id, 16343)
+        self.assertEqual(offer.required_items.count(), 0)
 
     def test_pack_quantity_ceil(self):
         sync_loyalty_store_offers(
@@ -111,6 +176,7 @@ class LoyaltyStoreHelperTestCase(TestCase):
                     "required_items": [],
                 }
             ],
+            enqueue_history=False,
         )
         cost = navy_bpc_cost_for_plan(999, 40, 800.0)
         self.assertIsNotNone(cost)
@@ -120,7 +186,9 @@ class LoyaltyStoreHelperTestCase(TestCase):
 
     def test_get_offer_skips_esi_when_cached(self):
         sync_loyalty_store_offers(
-            corporation_ids=[TLIB_CORP_ID], offers=TYFI_OFFERS
+            corporation_ids=[TLIB_CORP_ID],
+            offers=TYFI_OFFERS,
+            enqueue_history=False,
         )
         with patch(
             "industry.helpers.loyalty_store.sync_loyalty_store_offers"
@@ -130,6 +198,18 @@ class LoyaltyStoreHelperTestCase(TestCase):
         self.assertIsNotNone(offer)
         assert offer is not None
         self.assertEqual(offer.offer_id, 16343)
+
+    def test_lp_catalog_type_ids_includes_required(self):
+        sync_loyalty_store_offers(
+            corporation_ids=[TLIB_CORP_ID],
+            offers=TYFI_OFFERS,
+            enqueue_history=False,
+        )
+        ids = lp_catalog_type_ids()
+        self.assertIn(TYFI_BP_TYPE_ID, ids)
+        self.assertIn(17814, ids)
+        self.assertIn(17305, ids)
+        self.assertIn(93609, ids)
 
     def test_resolve_isk_per_lp_uses_loyalty_point_default(self):
         IndustryLoyaltyPoint.objects.update_or_create(

@@ -119,9 +119,9 @@ class OrderLpStockpileHelperTestCase(AppTestCase):
             },
         )
         IndustryLpStoreOffer.objects.update_or_create(
+            corporation_id=TLIB_CORP_ID,
             offer_id=910100,
             defaults={
-                "corporation_id": TLIB_CORP_ID,
                 "type_id": self.navy_bp.id,
                 "lp_cost": 10000,
                 "isk_cost": 1_000_000,

@@ -1,21 +1,27 @@
-"""ESI loyalty-store offers: sync pure LP+ISK rows into DB for the planner."""
+"""ESI loyalty-store offers: sync full catalog into DB for conversion + planner."""
 
 from __future__ import annotations
 
 import logging
 import math
 from dataclasses import dataclass
-from typing import Iterable, List, Optional, Sequence
+from typing import Iterable, List, Optional, Sequence, Set, Tuple
 
 from django.db import transaction
+from django.db.models import Count
 from django.utils import timezone
 
 from eveonline.client import _esi_to_python, esi_provider
+from eveonline.models import EveLocation
 from industry.models import (
     IndustryLoyaltyPoint,
     IndustryLpStoreOffer,
+    IndustryLpStoreOfferRequiredItem,
     IndustryProduct,
 )
+from market.helpers.pricing import JITA_REGION_ID
+from market.models.history import EveMarketItemHistory
+from market.tasks import fetch_market_item_history_for_type
 
 logger = logging.getLogger(__name__)
 
@@ -61,11 +67,19 @@ class NavyBpcCost:
         }
 
 
+@dataclass(frozen=True)
+class _OfferBuild:
+    offer: IndustryLpStoreOffer
+    required: Tuple[Tuple[int, int], ...]  # (type_id, quantity)
+
+
 def is_pure_lp_isk_offer(row: dict) -> bool:
-    """True for LP+ISK offers with no required items (navy BPC path)."""
+    """True for LP+ISK offers with no required items and no ak_cost (navy BPC)."""
     if not isinstance(row, dict):
         return False
     if row.get("required_items"):
+        return False
+    if int(row.get("ak_cost") or 0) > 0:
         return False
     lp_cost = int(row.get("lp_cost") or 0)
     isk_cost = int(row.get("isk_cost") or 0)
@@ -128,36 +142,88 @@ def fetch_loyalty_offers_from_esi(
     return offers
 
 
-def _instances_from_rows(
+def _builds_from_rows(
     rows: Iterable[dict],
     *,
     now,
-) -> List[IndustryLpStoreOffer]:
-    instances: List[IndustryLpStoreOffer] = []
-    seen_offer_ids: set[int] = set()
+) -> List[_OfferBuild]:
+    """Parse ESI rows into offer + required-item builds (all valid offers)."""
+    builds: List[_OfferBuild] = []
+    seen: Set[Tuple[int, int]] = set()
     for row in rows:
-        if not is_pure_lp_isk_offer(row):
+        if not isinstance(row, dict):
             continue
         offer_id = int(row.get("offer_id") or 0)
         type_id = int(row.get("type_id") or 0)
-        if offer_id <= 0 or type_id <= 0 or offer_id in seen_offer_ids:
+        corporation_id = int(
+            row.get("corporation_id") or row.get("corporationId") or 0
+        )
+        if offer_id <= 0 or type_id <= 0 or corporation_id <= 0:
             continue
-        seen_offer_ids.add(offer_id)
+        key = (corporation_id, offer_id)
+        if key in seen:
+            continue
+        seen.add(key)
         quantity = max(int(row.get("quantity") or 1), 1)
-        instances.append(
-            IndustryLpStoreOffer(
-                offer_id=offer_id,
-                corporation_id=int(
-                    row.get("corporation_id") or row.get("corporationId") or 0
+        required_raw = row.get("required_items") or []
+        required: list[tuple[int, int]] = []
+        if isinstance(required_raw, list):
+            seen_req: set[int] = set()
+            for item in required_raw:
+                if not isinstance(item, dict):
+                    continue
+                req_type = int(item.get("type_id") or 0)
+                req_qty = int(item.get("quantity") or 0)
+                if req_type <= 0 or req_qty <= 0 or req_type in seen_req:
+                    continue
+                seen_req.add(req_type)
+                required.append((req_type, req_qty))
+        builds.append(
+            _OfferBuild(
+                offer=IndustryLpStoreOffer(
+                    offer_id=offer_id,
+                    corporation_id=corporation_id,
+                    type_id=type_id,
+                    lp_cost=int(row.get("lp_cost") or 0),
+                    isk_cost=int(row.get("isk_cost") or 0),
+                    ak_cost=int(row.get("ak_cost") or 0),
+                    quantity=quantity,
+                    updated_at=now,
                 ),
-                type_id=type_id,
-                lp_cost=int(row["lp_cost"]),
-                isk_cost=int(row["isk_cost"]),
-                quantity=quantity,
-                updated_at=now,
+                required=tuple(required),
             )
         )
-    return instances
+    return builds
+
+
+def _enqueue_history_for_missing_types(type_ids: Set[int]) -> None:
+    """Bootstrap Forge history for LP catalog types missing recent rows."""
+    if not type_ids:
+        return
+    baseline = EveLocation.objects.filter(price_baseline=True).first()
+    region_id = (
+        baseline.region_id
+        if baseline and baseline.region_id
+        else JITA_REGION_ID
+    )
+    existing = set(
+        EveMarketItemHistory.objects.filter(
+            region_id=region_id,
+            item_id__in=type_ids,
+        )
+        .values_list("item_id", flat=True)
+        .distinct()
+    )
+    missing = sorted(tid for tid in type_ids if tid not in existing)
+    for type_id in missing:
+        fetch_market_item_history_for_type.apply_async(
+            args=[type_id], queue="market"
+        )
+    if missing:
+        logger.info(
+            "Enqueued Forge history bootstrap for %s LP catalog type(s)",
+            len(missing),
+        )
 
 
 def sync_loyalty_store_offers(
@@ -165,13 +231,14 @@ def sync_loyalty_store_offers(
     *,
     offers: Optional[Iterable[dict]] = None,
     replace_all: bool = False,
+    enqueue_history: bool = True,
 ) -> int:
     """
     Pull ESI loyalty offers (or use ``offers``) and upsert the local cache.
 
-    Only pure LP+ISK rows (no required items) are stored.
-    By default replaces offers only for the synced corporation IDs.
-    Returns the number of offers stored in this sync.
+    Stores the full catalog including required-item offers. Identity is
+    (corporation_id, offer_id). By default replaces offers only for the
+    synced corporation IDs. Returns the number of offers stored.
     """
     if corporation_ids is None:
         corporation_ids = corporation_ids_to_sync()
@@ -182,7 +249,7 @@ def sync_loyalty_store_offers(
         else fetch_loyalty_offers_from_esi(corp_ids)
     )
     now = timezone.now()
-    instances = _instances_from_rows(rows, now=now)
+    builds = _builds_from_rows(rows, now=now)
     with transaction.atomic():
         if replace_all:
             IndustryLpStoreOffer.objects.all().delete()
@@ -190,13 +257,56 @@ def sync_loyalty_store_offers(
             IndustryLpStoreOffer.objects.filter(
                 corporation_id__in=corp_ids
             ).delete()
-        IndustryLpStoreOffer.objects.bulk_create(instances)
+        IndustryLpStoreOffer.objects.bulk_create([b.offer for b in builds])
+        # Re-query PKs: bulk_create does not reliably set pk on all backends.
+        key_to_pk = {
+            (int(o.corporation_id), int(o.offer_id)): int(o.pk)
+            for o in IndustryLpStoreOffer.objects.filter(
+                corporation_id__in=corp_ids
+            ).only("id", "corporation_id", "offer_id")
+        }
+        req_rows: List[IndustryLpStoreOfferRequiredItem] = []
+        for build in builds:
+            offer_pk = key_to_pk.get(
+                (build.offer.corporation_id, build.offer.offer_id)
+            )
+            if offer_pk is None:
+                continue
+            for req_type_id, req_qty in build.required:
+                req_rows.append(
+                    IndustryLpStoreOfferRequiredItem(
+                        offer_id=offer_pk,
+                        type_id=req_type_id,
+                        quantity=req_qty,
+                    )
+                )
+        if req_rows:
+            IndustryLpStoreOfferRequiredItem.objects.bulk_create(req_rows)
+    catalog_types: Set[int] = {b.offer.type_id for b in builds}
+    for build in builds:
+        catalog_types.update(tid for tid, _ in build.required)
+    if enqueue_history:
+        _enqueue_history_for_missing_types(catalog_types)
     logger.info(
-        "Synced %s pure LP+ISK loyalty-store offer(s) for corp(s) %s",
-        len(instances),
+        "Synced %s loyalty-store offer(s) for corp(s) %s",
+        len(builds),
         corp_ids,
     )
-    return len(instances)
+    return len(builds)
+
+
+def _pure_offers_for_type(type_id: int) -> List[IndustryLpStoreOffer]:
+    """Persisted pure LP+ISK offers for a type (no required items, no ak)."""
+    return list(
+        IndustryLpStoreOffer.objects.filter(
+            type_id=type_id,
+            ak_cost=0,
+            lp_cost__gt=0,
+            isk_cost__gt=0,
+        )
+        .annotate(req_count=Count("required_items"))
+        .filter(req_count=0)
+    )
 
 
 def ensure_loyalty_store_offers_for_blueprint(
@@ -206,19 +316,16 @@ def ensure_loyalty_store_offers_for_blueprint(
     Ensure a pure offer exists for ``blueprint_type_id``; sync from ESI if missing.
     """
     blueprint_type_id = int(blueprint_type_id)
-    existing = IndustryLpStoreOffer.objects.filter(
-        type_id=blueprint_type_id
-    ).first()
-    if existing is not None:
-        return existing
+    existing = _pure_offers_for_type(blueprint_type_id)
+    if existing:
+        return existing[0]
     logger.info(
-        "No LP store offer for blueprint type %s; syncing from ESI",
+        "No pure LP store offer for blueprint type %s; syncing from ESI",
         blueprint_type_id,
     )
     sync_loyalty_store_offers()
-    return IndustryLpStoreOffer.objects.filter(
-        type_id=blueprint_type_id
-    ).first()
+    existing = _pure_offers_for_type(blueprint_type_id)
+    return existing[0] if existing else None
 
 
 def ensure_loyalty_store_offers_for_product(product_id: int) -> int:
@@ -244,7 +351,7 @@ def ensure_loyalty_store_offers_for_product(product_id: int) -> int:
     blueprint_type_id = get_blueprint_or_reaction_type_id(product.eve_type)
     if blueprint_type_id is None:
         return 0
-    if IndustryLpStoreOffer.objects.filter(type_id=blueprint_type_id).exists():
+    if _pure_offers_for_type(blueprint_type_id):
         return 0
     return sync_loyalty_store_offers()
 
@@ -260,10 +367,10 @@ def get_offer_for_blueprint_type(
     Reads DB first; syncs from ESI only when that type (or the table) is missing.
     """
     type_id = int(type_id)
-    rows = list(IndustryLpStoreOffer.objects.filter(type_id=type_id))
+    rows = _pure_offers_for_type(type_id)
     if not rows:
         ensure_loyalty_store_offers_for_blueprint(type_id)
-        rows = list(IndustryLpStoreOffer.objects.filter(type_id=type_id))
+        rows = _pure_offers_for_type(type_id)
     if not rows:
         return None
 

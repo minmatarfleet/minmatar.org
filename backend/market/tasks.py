@@ -12,6 +12,7 @@ from eveonline.models import (
     EveCorporationContract,
     EveLocation,
 )
+from industry.helpers.lp_catalog import lp_catalog_type_ids
 from market.helpers import (
     clear_structure_sell_orders_for_location,
     create_or_update_contract,
@@ -589,20 +590,28 @@ def fetch_market_item_history_for_type(type_id: int) -> int:
 @app.task()
 def fetch_market_item_history():
     """
-    Fire a task per unique type_id we track in EveMarketItemOrder; each task
-    processes that type_id across all unique location regions. Runs daily.
+    Fire a task per unique type_id we track for Forge/Jita guide history.
+
+    Union of EveMarketItemOrder items and LP store catalog types (offers +
+    required items). Runs daily.
     """
     logger.info("Starting fetch_market_item_history")
 
-    type_ids = list(
+    type_ids = set(
         EveMarketItemOrder.objects.values_list("item_id", flat=True).distinct()
     )
+    try:
+        type_ids.update(lp_catalog_type_ids())
+    except Exception:
+        logger.exception(
+            "Failed to load LP catalog type ids for market history"
+        )
 
     if not type_ids:
-        logger.info("No item orders, skipping market item history")
+        logger.info("No item types for market history, skipping")
         return
 
-    for type_id in type_ids:
+    for type_id in sorted(type_ids):
         fetch_market_item_history_for_type.apply_async(
             args=[type_id], queue="market"
         )

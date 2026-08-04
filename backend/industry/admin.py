@@ -715,10 +715,16 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
         "type_id",
         "lp_cost",
         "isk_cost",
+        "ak_cost",
         "quantity",
+        "required_items_display",
+        "other_cost_display",
         "isk_per_lp_display",
+        "conversion_sell_display",
+        "conversion_buy_display",
         "jita_sell_display",
         "jita_buy_display",
+        "volume_90d_display",
         "cost_display",
         "profit_vs_sell_display",
         "updated_at",
@@ -733,6 +739,7 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
         "type_id",
         "lp_cost",
         "isk_cost",
+        "ak_cost",
         "quantity",
         "updated_at",
     )
@@ -746,12 +753,14 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
                     "type_id",
                     "lp_cost",
                     "isk_cost",
+                    "ak_cost",
                     "quantity",
                     "updated_at",
                 ),
                 "description": (
                     "Read-only ESI cache for tracked LP currencies. "
-                    "Refresh via navy product sync, planner miss, or sync action."
+                    "Refresh via Celery beat, navy product sync, planner "
+                    "miss, or sync action."
                 ),
             },
         ),
@@ -762,6 +771,7 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
             super()
             .get_queryset(request)
             .filter(corporation_id__in=tracked_corporation_ids())
+            .prefetch_related("required_items")
         )
 
     def get_changelist_instance(self, request):
@@ -784,7 +794,7 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
         stash = cls._request_stash
         if not stash:
             return None
-        return stash.get(obj.offer_id)
+        return stash.get(obj.pk)
 
     @classmethod
     def _format_isk(cls, obj, attr: str) -> str:
@@ -795,6 +805,16 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
         if value is None:
             return "—"
         return f"{value:,}"
+
+    @classmethod
+    def _format_rate(cls, obj, attr: str) -> str:
+        econ = cls._econ_for(obj)
+        if econ is None:
+            return "—"
+        value = getattr(econ, attr)
+        if value is None:
+            return "—"
+        return f"{value:,.1f}"
 
     @admin.display(description="Item")
     def type_name_display(self, obj):
@@ -817,12 +837,31 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
         econ = self._econ_for(obj)
         return econ.kind if econ is not None else "—"
 
-    @admin.display(description="ISK/LP")
+    @admin.display(description="Required")
+    def required_items_display(self, obj):
+        econ = self._econ_for(obj)
+        if econ is None or not econ.required_items_summary:
+            return "—"
+        return econ.required_items_summary
+
+    @admin.display(description="Other cost")
+    def other_cost_display(self, obj):
+        return self._format_isk(obj, "other_cost")
+
+    @admin.display(description="Buyback ISK/LP")
     def isk_per_lp_display(self, obj):
         econ = self._econ_for(obj)
         if econ is None or econ.isk_per_lp is None:
             return "—"
         return f"{econ.isk_per_lp:,.0f}"
+
+    @admin.display(description="ISK/LP sell")
+    def conversion_sell_display(self, obj):
+        return self._format_rate(obj, "conversion_isk_per_lp_sell")
+
+    @admin.display(description="ISK/LP buy")
+    def conversion_buy_display(self, obj):
+        return self._format_rate(obj, "conversion_isk_per_lp_buy")
 
     @admin.display(description="Jita sell")
     def jita_sell_display(self, obj):
@@ -831,6 +870,10 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
     @admin.display(description="Jita buy")
     def jita_buy_display(self, obj):
         return self._format_isk(obj, "jita_buy")
+
+    @admin.display(description="90d volume")
+    def volume_90d_display(self, obj):
+        return self._format_isk(obj, "volume_90d")
 
     @admin.display(description="Cost")
     def cost_display(self, obj):
@@ -854,7 +897,7 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
             return
         self.message_user(
             request,
-            f"Synced {count} pure LP+ISK loyalty-store offer(s).",
+            f"Synced {count} loyalty-store offer(s).",
             level=messages.SUCCESS,
         )
 
