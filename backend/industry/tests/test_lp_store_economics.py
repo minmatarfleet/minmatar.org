@@ -737,6 +737,19 @@ class LpStoreOfferAdminTestCase(TestCase):
             published=True,
             eve_group=tags_group,
         )
+        # Navy rank insignias (not Criminal Tags group / '* Tag' suffix).
+        misc = EveGroup.objects.create(
+            id=314,
+            name="Miscellaneous",
+            published=True,
+            eve_category=EveCategory.objects.get(id=6),
+        )
+        insignia = EveType.objects.create(
+            id=15627,
+            name="Imperial Navy Colonel Insignia I",
+            published=True,
+            eve_group=misc,
+        )
         clean = IndustryLpStoreOffer.objects.create(
             offer_id=2200,
             corporation_id=TLIB_CORP_ID,
@@ -758,11 +771,32 @@ class LpStoreOfferAdminTestCase(TestCase):
             type_id=tag.id,
             quantity=2,
         )
+        with_insignia = IndustryLpStoreOffer.objects.create(
+            offer_id=2203,
+            corporation_id=TLIB_CORP_ID,
+            type_id=INPUT_TYPE_ID,
+            lp_cost=3_000,
+            isk_cost=0,
+            quantity=1,
+        )
+        IndustryLpStoreOfferRequiredItem.objects.create(
+            offer=with_insignia,
+            type_id=insignia.id,
+            quantity=10,
+        )
         tag_offer = IndustryLpStoreOffer.objects.create(
             offer_id=2202,
             corporation_id=TLIB_CORP_ID,
             type_id=tag.id,
             lp_cost=500,
+            isk_cost=0,
+            quantity=1,
+        )
+        insignia_offer = IndustryLpStoreOffer.objects.create(
+            offer_id=2204,
+            corporation_id=TLIB_CORP_ID,
+            type_id=insignia.id,
+            lp_cost=400,
             isk_cost=0,
             quantity=1,
         )
@@ -778,7 +812,9 @@ class LpStoreOfferAdminTestCase(TestCase):
         )
         self.assertIn(clean.offer_id, yes_ids)
         self.assertNotIn(with_tag.offer_id, yes_ids)
+        self.assertNotIn(with_insignia.offer_id, yes_ids)
         self.assertNotIn(tag_offer.offer_id, yes_ids)
+        self.assertNotIn(insignia_offer.offer_id, yes_ids)
 
         no = IndustryLpStoreExcludeTagsFilter(
             request, {"exclude_tags": "0"}, IndustryLpStoreOffer, self.admin
@@ -790,7 +826,9 @@ class LpStoreOfferAdminTestCase(TestCase):
         )
         self.assertNotIn(clean.offer_id, no_ids)
         self.assertIn(with_tag.offer_id, no_ids)
+        self.assertIn(with_insignia.offer_id, no_ids)
         self.assertIn(tag_offer.offer_id, no_ids)
+        self.assertIn(insignia_offer.offer_id, no_ids)
         self.assertEqual(
             yes.lookups(request, self.admin), (("1", "Yes"), ("0", "No"))
         )

@@ -113,11 +113,17 @@ def ensure_eve_types(type_ids: Iterable[int]) -> Set[int]:
 
 def tag_type_ids() -> List[int]:
     """
-    EveType IDs that are LP-store tags (Criminal Tags group or '* Tag' name).
+    EveType IDs that are LP-store tags / faction insignias.
+
+    Matches Criminal Tags group, names ending '* Tag', or names containing
+    'Insignia' (Imperial/Caldari/Gallente/Minmatar navy rank insignias used
+    as LP required items).
     """
     return list(
         EveType.objects.filter(
-            Q(eve_group_id=CRIMINAL_TAGS_GROUP_ID) | Q(name__iendswith=" Tag")
+            Q(eve_group_id=CRIMINAL_TAGS_GROUP_ID)
+            | Q(name__iendswith=" Tag")
+            | Q(name__icontains="Insignia")
         ).values_list("id", flat=True)
     )
 
