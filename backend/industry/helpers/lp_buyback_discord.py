@@ -282,6 +282,24 @@ def _isk_payout_label(order: IndustryLoyaltyPointMarketOrder) -> str:
     return _display_name(lp_sender(order))
 
 
+def notify_order_claims_released(
+    order: IndustryLoyaltyPointMarketOrder,
+    *,
+    released_by,
+    released_amount: int,
+) -> None:
+    """Announce that claims were released and the order is open again."""
+    actor = _display_name(released_by)
+    remaining = remaining_quantity(order)
+    msg = (
+        f":arrows_counterclockwise: Claim released by **{actor}** "
+        f"({int(released_amount):,} LP).\n"
+        f"Status: Open — **{remaining:,}** LP available\n"
+        f"{order_site_url(order)}"
+    )
+    post_order_status_update(order, message=msg)
+
+
 def notify_order_claimed(
     order: IndustryLoyaltyPointMarketOrder,
     *,

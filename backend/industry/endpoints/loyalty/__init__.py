@@ -2,6 +2,12 @@
 
 from ninja import Router
 
+from industry.endpoints.loyalty.delete_order_claim import (
+    PATH as delete_order_claim_path,
+    ROUTE_SPEC as delete_order_claim_spec,
+    delete_order_claim,
+    METHOD as delete_order_claim_method,
+)
 from industry.endpoints.loyalty.get_capabilities import (
     PATH as get_capabilities_path,
     ROUTE_SPEC as get_capabilities_spec,
@@ -86,6 +92,12 @@ _ROUTES = (
         post_order_claim_path,
         post_order_claim_spec,
         post_order_claim,
+    ),
+    (
+        delete_order_claim_method,
+        delete_order_claim_path,
+        delete_order_claim_spec,
+        delete_order_claim,
     ),
     (
         post_order_discord_ack_method,

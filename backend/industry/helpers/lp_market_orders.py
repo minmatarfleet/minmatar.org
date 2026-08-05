@@ -213,6 +213,78 @@ def claim_order(
     return locked
 
 
+RELEASEABLE_STATUSES = frozenset({OPEN, CLAIMED, AWAITING_LP})
+
+
+@transaction.atomic
+def release_order_claims(
+    order: IndustryLoyaltyPointMarketOrder,
+    user,
+    *,
+    release_all: bool = False,
+) -> IndustryLoyaltyPointMarketOrder:
+    """Remove claims and reopen the order before LP is marked received.
+
+    Claimers can drop their own claims; managers can clear every claim.
+    After awaiting_isk (LP already moved), release is not allowed.
+    """
+    locked = (
+        IndustryLoyaltyPointMarketOrder.objects.select_for_update()
+        .select_related("loyalty_point", "created_by", "claimed_by")
+        .prefetch_related("claims")
+        .get(pk=order.pk)
+    )
+    if locked.status not in RELEASEABLE_STATUSES:
+        raise LpMarketOrderError(
+            f"Cannot release claims while status is {locked.status}."
+        )
+
+    claims = list(locked.claims.all())
+    if not claims:
+        raise LpMarketOrderError("Order has no claims to release.")
+
+    if release_all:
+        to_delete = claims
+    else:
+        to_delete = [c for c in claims if c.claimed_by_id == user.pk]
+        if not to_delete:
+            raise LpMarketOrderError("You have no claims on this order.")
+
+    released_amount = sum(int(c.amount) for c in to_delete)
+    delete_ids = [c.pk for c in to_delete]
+    IndustryLoyaltyPointMarketOrderClaim.objects.filter(
+        pk__in=delete_ids
+    ).delete()
+
+    remaining_claims = [c for c in claims if c.pk not in delete_ids]
+    if remaining_claims:
+        locked.status = OPEN
+        first = remaining_claims[0]
+        locked.claimed_by = first.claimed_by
+        if locked.side == IndustryLoyaltyPointMarketOrder.Side.SELL:
+            locked.destination_character_name = (
+                first.destination_character_name
+                or first.destination_corporation_name
+                or ""
+            )
+    else:
+        locked.status = OPEN
+        locked.claimed_by = None
+        locked.destination_character_name = ""
+
+    locked.save()
+
+    # pylint: disable=import-outside-toplevel
+    from industry.helpers import lp_buyback_discord
+
+    lp_buyback_discord.notify_order_claims_released(
+        locked,
+        released_by=user,
+        released_amount=released_amount,
+    )
+    return locked
+
+
 @transaction.atomic
 def transition_order(
     order: IndustryLoyaltyPointMarketOrder,

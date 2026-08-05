@@ -20,6 +20,7 @@ interface Props {
     orders: LoyaltyMarketOrder[]
     currencies: LoyaltyCurrency[]
     is_logged_in: boolean
+    current_user_id?: number
     can_manage_buyback?: boolean
     highlight_order_id: string | null
     default_currency_id: number | null
@@ -38,6 +39,7 @@ const {
     orders,
     currencies,
     is_logged_in,
+    current_user_id = 0,
     can_manage_buyback = false,
     highlight_order_id,
     default_currency_id,
@@ -149,7 +151,7 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
         claim_remaining: 0,
         claim_amount: '',
         claim_isk_per_lp: 0,
-        claim_destination_choice: ${JSON.stringify(default_isk_destination)},
+        claim_destination_choice: '',
         claim_destination_other: '',
         claim_destination_other_value: ${JSON.stringify(CLAIM_DESTINATION_OTHER)},
         form_side: 'buy',
@@ -162,6 +164,7 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
         max_sell_lp: 2500000,
         currencies: ${JSON.stringify(currencies)},
         is_logged_in: ${JSON.stringify(is_logged_in)},
+        current_user_id: ${JSON.stringify(current_user_id)},
         can_manage_buyback: ${JSON.stringify(can_manage_buyback)},
         format_thousands(val) {
             const n = Number(String(val).replace(/,/g, '')) || 0
@@ -322,10 +325,8 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
             this.claim_remaining = Number(remaining) || 0
             this.claim_isk_per_lp = Number(iskPerLp) || 0
             this.claim_amount = this.format_thousands(this.claim_remaining)
-            const primary = this.claim_side === 'buy'
-                ? ${JSON.stringify(default_isk_destination)}
-                : ${JSON.stringify(default_lp_destination)}
-            this.claim_destination_choice = primary || this.claim_destination_other_value
+            // Require an explicit destination pick — do not default to primary corp.
+            this.claim_destination_choice = ''
             this.claim_destination_other = ''
             this.post_dialog_open = false
             this.await_lp_dialog_open = false
@@ -409,6 +410,22 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body),
                 })
+                if (!response.ok) {
+                    await this.show_response_error(response, ${JSON.stringify(t('industry.loyalty.action.error'))})
+                    return
+                }
+                window.location.reload()
+            } finally {
+                this.busy = false
+            }
+        },
+        async release_claim(orderId) {
+            this.busy = true
+            try {
+                const response = await fetch(
+                    ${JSON.stringify(translatePath('/api/industry/loyalty/orders/'))} + orderId + '/claim',
+                    { method: 'DELETE' },
+                )
                 if (!response.ok) {
                     await this.show_response_error(response, ${JSON.stringify(t('industry.loyalty.action.error'))})
                     return
@@ -517,10 +534,37 @@ const order_purchasers = (order: LoyaltyMarketOrder): PurchaserIcon[] => {
                             {orders.map((order) => {
                                 const highlighted = highlight_order_id === String(order.id)
                                 const can_act = ['open', 'claimed', 'awaiting_lp', 'awaiting_isk'].includes(order.status)
-                                const show_actions = is_logged_in && can_act
                                 const quantity_remaining = order.quantity_remaining ?? order.quantity
                                 const quantity_claimed = order.quantity_claimed ?? 0
-                                const can_claim = order.status === 'open' && quantity_remaining > 0
+                                const is_creator = current_user_id > 0
+                                    && order.created_by_user_id === current_user_id
+                                const has_own_claim = Boolean(
+                                    current_user_id > 0
+                                    && (order.claims ?? []).some(
+                                        (claim) => claim.claimed_by_user_id === current_user_id,
+                                    )
+                                )
+                                const can_claim = can_manage_buyback
+                                    && order.status === 'open'
+                                    && quantity_remaining > 0
+                                const can_cancel = order.status === 'open'
+                                    && (can_manage_buyback || is_creator)
+                                const can_release = (
+                                    order.status === 'claimed'
+                                    || order.status === 'awaiting_lp'
+                                    || (order.status === 'open' && quantity_claimed > 0)
+                                ) && (can_manage_buyback || has_own_claim)
+                                const show_manager_settle = can_manage_buyback
+                                const show_actions = is_logged_in && can_act && (
+                                    can_claim
+                                    || can_cancel
+                                    || can_release
+                                    || (show_manager_settle && (
+                                        order.status === 'claimed'
+                                        || order.status === 'awaiting_lp'
+                                        || order.status === 'awaiting_isk'
+                                    ))
+                                )
                                 const lp_for_total = quantity_claimed > 0
                                     ? quantity_claimed
                                     : order.quantity

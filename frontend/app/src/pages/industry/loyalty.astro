@@ -37,6 +37,7 @@ let claim_corporations: string[] = []
 let default_claim_corporation = ''
 let default_claim_character = ''
 let can_manage_buyback = false
+const current_user_id = user ? Number(user.user_id) : 0
 
 try {
     [currencies, orders, order_history, stockpiles] = await Promise.all([
@@ -187,6 +188,7 @@ const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
                         orders={orders}
                         currencies={currencies}
                         is_logged_in={is_logged_in}
+                        current_user_id={current_user_id}
                         can_manage_buyback={can_manage_buyback}
                         highlight_order_id={highlight_order_id}
                         default_currency_id={default_currency_id}
