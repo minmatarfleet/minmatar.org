@@ -11,6 +11,7 @@ aka “ItemPrice”) as the Jita guide — see docs/market-pricing.md and
 """
 
 from datetime import timedelta
+from typing import Dict, Iterable, List, Optional, Sequence
 
 from django.db.models import OuterRef, Subquery, Sum
 from django.utils import timezone
@@ -21,6 +22,7 @@ from market.models.history import EveMarketItemHistory
 
 JITA_REGION_ID = 10000002
 VOLUME_LOOKBACK_DAYS = 90
+VOLUME_WINDOWS: tuple[int, ...] = (1, 7, 30)
 
 
 def _baseline_region_id() -> int:
@@ -76,14 +78,17 @@ def get_prices_by_type_id(type_ids: list[int]) -> dict[int, int]:
     return prices
 
 
-def get_volume_90d_by_type_id(type_ids: list[int]) -> dict[int, int]:
-    """Return summed market history volume over the last 90 days by type ID."""
-    if not type_ids:
+def get_volume_by_type_id(type_ids: list[int], *, days: int) -> dict[int, int]:
+    """
+    Sum EveMarketItemHistory.volume over the last ``days`` calendar days
+    for the price_baseline region (Forge when Jita is baseline).
+    """
+    if not type_ids or days <= 0:
         return {}
 
     unique_ids = list({int(tid) for tid in type_ids})
     region_id = _baseline_region_id()
-    cutoff = timezone.now().date() - timedelta(days=VOLUME_LOOKBACK_DAYS)
+    cutoff = timezone.now().date() - timedelta(days=days)
     rows = (
         EveMarketItemHistory.objects.filter(
             region_id=region_id,
@@ -98,3 +103,53 @@ def get_volume_90d_by_type_id(type_ids: list[int]) -> dict[int, int]:
         for row in rows
         if row["total"] is not None
     }
+
+
+def get_volume_90d_by_type_id(type_ids: list[int]) -> dict[int, int]:
+    """Return summed market history volume over the last 90 days by type ID."""
+    return get_volume_by_type_id(type_ids, days=VOLUME_LOOKBACK_DAYS)
+
+
+def get_volume_windows_by_type_id(
+    type_ids: Iterable[int],
+    windows: Sequence[int] = VOLUME_WINDOWS,
+) -> Dict[int, Dict[int, Optional[int]]]:
+    """
+    Sum daily Forge/baseline history volume for each lookback window.
+
+    One history query covering the widest window; per-type/per-window sums
+    are computed in Python. Missing history → type omitted (callers treat
+    as None / "—").
+    """
+    unique_ids = list({int(tid) for tid in type_ids})
+    clean_windows = sorted({int(w) for w in windows if int(w) > 0})
+    if not unique_ids or not clean_windows:
+        return {}
+
+    region_id = _baseline_region_id()
+    today = timezone.now().date()
+    max_days = clean_windows[-1]
+    cutoff = today - timedelta(days=max_days)
+
+    # {type_id: [(date, volume), ...]}
+    by_type: Dict[int, List[tuple]] = {tid: [] for tid in unique_ids}
+    for item_id, hist_date, volume in EveMarketItemHistory.objects.filter(
+        region_id=region_id,
+        item_id__in=unique_ids,
+        date__gte=cutoff,
+    ).values_list("item_id", "date", "volume"):
+        by_type[int(item_id)].append((hist_date, int(volume or 0)))
+
+    out: Dict[int, Dict[int, Optional[int]]] = {}
+    for type_id, rows in by_type.items():
+        if not rows:
+            continue
+        window_totals: Dict[int, Optional[int]] = {}
+        for days in clean_windows:
+            win_cutoff = today - timedelta(days=days)
+            total = sum(vol for d, vol in rows if d >= win_cutoff)
+            # Include zero when we saw rows in the outer window but none in
+            # this shorter window (distinguish from completely missing).
+            window_totals[days] = int(total)
+        out[type_id] = window_totals
+    return out

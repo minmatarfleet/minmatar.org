@@ -4,7 +4,11 @@ from unittest.mock import patch
 
 from django.test import TestCase
 
-from industry.helpers.lp_catalog import lp_catalog_type_ids
+from industry.helpers.lp_catalog import (
+    expand_with_navy_hull_type_ids,
+    lp_catalog_type_ids,
+    lp_market_history_type_ids,
+)
 from industry.helpers.loyalty_store import (
     ensure_loyalty_store_offers_for_product,
     get_offer_for_blueprint_type,
@@ -210,6 +214,23 @@ class LoyaltyStoreHelperTestCase(TestCase):
         self.assertIn(17814, ids)
         self.assertIn(17305, ids)
         self.assertIn(93609, ids)
+
+    def test_lp_market_history_type_ids_includes_navy_hull(self):
+        sync_loyalty_store_offers(
+            corporation_ids=[TLIB_CORP_ID],
+            offers=TYFI_OFFERS,
+            enqueue_history=False,
+        )
+        hull_id = 17740
+        with patch(
+            "industry.helpers.lp_catalog.navy_bpc_to_hull_type_ids",
+            return_value={TYFI_BP_TYPE_ID: hull_id},
+        ):
+            expanded = expand_with_navy_hull_type_ids([TYFI_BP_TYPE_ID, 3895])
+            self.assertEqual(expanded, {TYFI_BP_TYPE_ID, hull_id, 3895})
+            history_ids = set(lp_market_history_type_ids())
+        self.assertIn(TYFI_BP_TYPE_ID, history_ids)
+        self.assertIn(hull_id, history_ids)
 
     def test_resolve_isk_per_lp_uses_loyalty_point_default(self):
         IndustryLoyaltyPoint.objects.update_or_create(
