@@ -41,7 +41,12 @@ from industry.helpers.lp_ledger import (
     resolve_offer_isk_per_lp,
     weighted_average_cost_isk_per_lp,
 )
+from industry.helpers.lp_catalog import (
+    supply_package_type_ids,
+    tag_type_ids,
+)
 from industry.helpers.lp_store_economics import (
+    annotate_lp_store_offer_sort_fields,
     offer_economics_for_queryset,
     tracked_corporation_ids,
 )
@@ -57,6 +62,7 @@ from industry.models import (
     IndustryLoyaltyPointLedgerEntry,
     IndustryLoyaltyPointPriceHistory,
     IndustryLpStoreOffer,
+    IndustryLpStoreOfferRequiredItem,
     IndustryOrder,
     IndustryOrderBlueprintCoordinator,
     IndustryOrderItem,
@@ -701,7 +707,51 @@ class IndustryLpStoreCurrencyListFilter(admin.SimpleListFilter):
     def queryset(self, request, queryset):
         if self.value() is None:
             return queryset
-        return queryset.filter(corporation_id=self.value())
+        return queryset.filter(corporation_id=int(self.value()))
+
+
+class IndustryLpStoreExcludeTagsFilter(admin.SimpleListFilter):
+    title = "exclude tags"
+    parameter_name = "exclude_tags"
+
+    def lookups(self, request, model_admin):
+        return (("1", "Yes"),)
+
+    def queryset(self, request, queryset):
+        if self.value() != "1":
+            return queryset
+        tag_ids = tag_type_ids()
+        if not tag_ids:
+            return queryset
+        # Hide offers that *are* tags or that require a tag as input.
+        req_offer_ids = IndustryLpStoreOfferRequiredItem.objects.filter(
+            type_id__in=tag_ids
+        ).values("offer_id")
+        return queryset.exclude(
+            Q(type_id__in=tag_ids) | Q(pk__in=req_offer_ids)
+        )
+
+
+class IndustryLpStoreExcludeSupplyPackagesFilter(admin.SimpleListFilter):
+    title = "exclude supply packages"
+    parameter_name = "exclude_supply_packages"
+
+    def lookups(self, request, model_admin):
+        return (("1", "Yes"),)
+
+    def queryset(self, request, queryset):
+        if self.value() != "1":
+            return queryset
+        package_ids = supply_package_type_ids()
+        if not package_ids:
+            return queryset
+        # Hide offers that *are* supply packages or require one as input.
+        req_offer_ids = IndustryLpStoreOfferRequiredItem.objects.filter(
+            type_id__in=package_ids
+        ).values("offer_id")
+        return queryset.exclude(
+            Q(type_id__in=package_ids) | Q(pk__in=req_offer_ids)
+        )
 
 
 @admin.register(IndustryLpStoreOffer)
@@ -715,8 +765,8 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
     list_display = (
         "type_name_display",
         "currency_display",
-        "lp_cost",
-        "isk_cost",
+        "lp_cost_display",
+        "isk_cost_display",
         "quantity",
         "required_items_display",
         "other_cost_display",
@@ -724,13 +774,16 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
         "jita_buy_display",
         "conversion_sell_display",
         "conversion_buy_display",
-        "volume_90d_display",
-        "isk_per_lp_display",
-        "cost_display",
-        "profit_vs_sell_display",
+        "volume_1d_display",
+        "volume_7d_display",
+        "volume_30d_display",
         "updated_at",
     )
-    list_filter = (IndustryLpStoreCurrencyListFilter,)
+    list_filter = (
+        IndustryLpStoreCurrencyListFilter,
+        IndustryLpStoreExcludeTagsFilter,
+        IndustryLpStoreExcludeSupplyPackagesFilter,
+    )
     search_fields = ("offer_id", "type_id", "corporation_id")
     ordering = ("corporation_id", "type_id")
     actions = ("sync_loyalty_store_offers_action",)
@@ -768,13 +821,17 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
     )
 
     def get_queryset(self, request):
-        return (
+        qs = (
             super()
             .get_queryset(request)
             .filter(corporation_id__in=tracked_corporation_ids())
         )
+        return annotate_lp_store_offer_sort_fields(qs)
 
     def get_search_results(self, request, queryset, search_term):
+        # queryset already has list filters applied (e.g. currency). Keep a
+        # copy so name search cannot reintroduce rows those filters excluded.
+        filtered_qs = queryset
         queryset, use_distinct = super().get_search_results(
             request, queryset, search_term
         )
@@ -787,7 +844,7 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
             )
         )
         if type_ids:
-            by_name = self.get_queryset(request).filter(type_id__in=type_ids)
+            by_name = filtered_qs.filter(type_id__in=type_ids)
             queryset |= by_name
             use_distinct = True
         return queryset, use_distinct
@@ -840,42 +897,71 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
             return "—"
         return f"{value:,.1f}"
 
-    @admin.display(description="Item")
+    @admin.display(description="Item", ordering="sort_type_name")
     def type_name_display(self, obj):
         econ = self._econ_for(obj)
         type_id = obj.type_id
-        kind = ""
+        is_blueprint = False
         if econ is None:
             name = (
                 EveType.objects.filter(id=type_id)
                 .values_list("name", flat=True)
                 .first()
-            ) or str(type_id)
+            )
+            resolved = bool(name)
+            name = name or str(type_id)
+            # Heuristic when stash is cold; prefer economics.kind when live.
+            is_blueprint = "blueprint" in str(name).lower()
         elif econ.kind == "blueprint" and econ.market_type_id != econ.type_id:
             name = f"{econ.market_type_name} (BPC)"
             type_id = econ.type_id
-            kind = "blueprint"
+            is_blueprint = True
+            resolved = bool(econ.market_type_name) and (
+                econ.market_type_name != str(econ.market_type_id)
+            )
         else:
             name = econ.type_name
             type_id = econ.type_id
-            kind = econ.kind or ""
-        meta = f"type {type_id}"
-        if kind:
-            meta = f"{kind} · {meta}"
+            is_blueprint = econ.kind == "blueprint"
+            resolved = bool(econ.type_name) and econ.type_name != str(type_id)
+
+        title = f"Type {type_id}"
+        image_path = "bp" if is_blueprint else "icon"
+        if resolved:
+            return format_html(
+                '<span class="lp-store-offer-item" title="{}">'
+                '<img class="lp-store-offer-item__icon" '
+                'src="https://images.evetech.net/types/{}/{}?size=32" '
+                'width="32" height="32" alt="" loading="lazy" '
+                'onerror="this.hidden=true;'
+                'this.nextElementSibling.hidden=false;" />'
+                '<span class="lp-store-offer-item__placeholder" '
+                'aria-hidden="true" hidden></span>'
+                '<span class="lp-store-offer-item__name">{}</span>'
+                "</span>",
+                title,
+                type_id,
+                image_path,
+                name,
+            )
         return format_html(
-            '<span class="lp-store-offer-item">'
-            '<img class="lp-store-offer-item__icon" '
-            'src="https://images.evetech.net/types/{}/icon?size=32" '
-            'width="32" height="32" alt="" loading="lazy" />'
-            '<span class="lp-store-offer-item__text">'
+            '<span class="lp-store-offer-item '
+            'lp-store-offer-item--missing" title="{}">'
+            '<span class="lp-store-offer-item__placeholder" '
+            'aria-hidden="true"></span>'
             '<span class="lp-store-offer-item__name">{}</span>'
-            '<span class="lp-store-offer-item__type">{}</span>'
-            "</span>"
             "</span>",
-            type_id,
+            title,
             name,
-            meta,
         )
+
+    @admin.display(description="LP cost", ordering="lp_cost")
+    def lp_cost_display(self, obj):
+        return f"{obj.lp_cost:,}"
+
+    @admin.display(description="ISK cost", ordering="isk_cost")
+    def isk_cost_display(self, obj):
+        return f"{obj.isk_cost:,}"
 
     @admin.display(description="Currency")
     def currency_display(self, obj):
@@ -909,31 +995,39 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
             return "—"
         return f"{econ.isk_per_lp:,.0f}"
 
-    @admin.display(description="ISK/LP sell")
+    @admin.display(description="ISK/LP sell", ordering="sort_conversion_sell")
     def conversion_sell_display(self, obj):
         return self._format_rate(obj, "conversion_isk_per_lp_sell")
 
-    @admin.display(description="ISK/LP buy")
+    @admin.display(description="ISK/LP buy", ordering="sort_conversion_buy")
     def conversion_buy_display(self, obj):
         return self._format_rate(obj, "conversion_isk_per_lp_buy")
 
-    @admin.display(description="Jita sell")
+    @admin.display(description="Jita sell", ordering="sort_jita_price")
     def jita_sell_display(self, obj):
         return self._format_isk(obj, "jita_sell")
 
-    @admin.display(description="Jita buy")
+    @admin.display(description="Jita buy", ordering="sort_jita_price")
     def jita_buy_display(self, obj):
         return self._format_isk(obj, "jita_buy")
 
-    @admin.display(description="90d volume")
-    def volume_90d_display(self, obj):
-        return self._format_isk(obj, "volume_90d")
+    @admin.display(description="1d vol", ordering="sort_volume_1d")
+    def volume_1d_display(self, obj):
+        return self._format_isk(obj, "volume_1d")
 
-    @admin.display(description="Cost")
+    @admin.display(description="7d vol", ordering="sort_volume_7d")
+    def volume_7d_display(self, obj):
+        return self._format_isk(obj, "volume_7d")
+
+    @admin.display(description="30d vol", ordering="sort_volume_30d")
+    def volume_30d_display(self, obj):
+        return self._format_isk(obj, "volume_30d")
+
+    @admin.display(description="Acquisition", ordering="sort_acquisition")
     def cost_display(self, obj):
         return self._format_isk(obj, "cost_per_unit")
 
-    @admin.display(description="Profit vs sell")
+    @admin.display(description="Profit vs sell", ordering="sort_profit")
     def profit_vs_sell_display(self, obj):
         return self._format_isk(obj, "profit_vs_sell")
 

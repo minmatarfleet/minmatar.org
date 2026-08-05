@@ -1,6 +1,6 @@
 """Tests for LP store offer economics (admin price tracking)."""
 
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -9,6 +9,7 @@ from django.contrib.admin.sites import AdminSite
 from django.contrib.auth import get_user_model
 from django.db import ProgrammingError
 from django.test import RequestFactory, TestCase
+from django.utils import timezone
 from eveonline.models import EveLocation
 from eveuniverse.models import (
     EveCategory,
@@ -20,7 +21,12 @@ from eveuniverse.models import (
 )
 from market.models import EveMarketItemHistory, EveMarketItemLocationPrice
 
-from industry.admin import IndustryLpStoreOfferAdmin
+from industry.admin import (
+    IndustryLpStoreCurrencyListFilter,
+    IndustryLpStoreExcludeSupplyPackagesFilter,
+    IndustryLpStoreExcludeTagsFilter,
+    IndustryLpStoreOfferAdmin,
+)
 from industry.helpers.lp_store_economics import (
     bpc_type_id_to_product_type_id,
     offer_economics_for_queryset,
@@ -36,6 +42,7 @@ from industry.models import (
 )
 
 TLIB_CORP_ID = 1000182
+IMPERIAL_CORP_ID = 1000179
 UNTRACKED_CORP_ID = 9999999
 HULL_TYPE_ID = 17740
 BPC_TYPE_ID = 32312
@@ -222,13 +229,92 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         self.assertEqual(econ.jita_sell, 250_000_000)
         self.assertEqual(econ.jita_buy, 250_000_000)
         self.assertEqual(econ.build_cost_per_unit, 180_000_000)
-        self.assertEqual(econ.cost_per_unit, 180_000_000)
-        self.assertEqual(econ.profit_vs_sell, 70_000_000)
+        # Cost/Profit are offer acquisition, not shared planner build cost.
+        self.assertEqual(econ.cost_per_unit, 100_000_000)
+        self.assertEqual(econ.profit_vs_sell, 150_000_000)
         self.assertEqual(econ.isk_per_lp, 800.0)
         self.assertEqual(econ.acquisition_isk_per_unit, 100_000_000)
         # (250M - 20M) / 100k LP = 2300
         self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 2300.0)
         self.assertAlmostEqual(econ.conversion_isk_per_lp_buy, 2300.0)
+
+    @patch(
+        "industry.helpers.lp_store_economics.plan_product_unit_cost",
+        return_value=type(
+            "U",
+            (),
+            {"cost_per": 180_000_000},
+        )(),
+    )
+    def test_blueprint_offers_differ_by_acquisition(self, mock_plan):
+        """Same hull BPC with different LP/ISK → different Cost/Profit."""
+        cheap = IndustryLpStoreOffer.objects.create(
+            offer_id=1010,
+            corporation_id=TLIB_CORP_ID,
+            type_id=BPC_TYPE_ID,
+            lp_cost=40_000,
+            isk_cost=0,
+            quantity=1,
+        )
+        dear = IndustryLpStoreOffer.objects.create(
+            offer_id=1011,
+            corporation_id=TLIB_CORP_ID,
+            type_id=BPC_TYPE_ID,
+            lp_cost=40_000,
+            isk_cost=10_000_000,
+            quantity=1,
+        )
+        rows = offer_economics_for_queryset([cheap, dear])
+        mock_plan.assert_called()
+        cheap_econ = rows[cheap.pk]
+        dear_econ = rows[dear.pk]
+        self.assertEqual(cheap_econ.build_cost_per_unit, 180_000_000)
+        self.assertEqual(dear_econ.build_cost_per_unit, 180_000_000)
+        # (40k*800 + 0) / 1 = 32M; (40k*800 + 10M) / 1 = 42M
+        self.assertEqual(cheap_econ.cost_per_unit, 32_000_000)
+        self.assertEqual(dear_econ.cost_per_unit, 42_000_000)
+        self.assertEqual(cheap_econ.profit_vs_sell, 218_000_000)
+        self.assertEqual(dear_econ.profit_vs_sell, 208_000_000)
+        self.assertNotEqual(cheap_econ.cost_per_unit, dear_econ.cost_per_unit)
+
+    def test_volume_windows_sum_daily_history(self):
+        today = timezone.now().date()
+        EveMarketItemHistory.objects.filter(item=self.input_type).delete()
+        EveMarketItemHistory.objects.create(
+            region_id=JITA_REGION_ID,
+            item=self.input_type,
+            date=today - timedelta(days=0),
+            average=Decimal("1500000"),
+            highest=Decimal("1600000"),
+            lowest=Decimal("1400000"),
+            order_count=1,
+            volume=10,
+        )
+        EveMarketItemHistory.objects.create(
+            region_id=JITA_REGION_ID,
+            item=self.input_type,
+            date=today - timedelta(days=3),
+            average=Decimal("1500000"),
+            highest=Decimal("1600000"),
+            lowest=Decimal("1400000"),
+            order_count=1,
+            volume=20,
+        )
+        EveMarketItemHistory.objects.create(
+            region_id=JITA_REGION_ID,
+            item=self.input_type,
+            date=today - timedelta(days=20),
+            average=Decimal("1500000"),
+            highest=Decimal("1600000"),
+            lowest=Decimal("1400000"),
+            order_count=1,
+            volume=40,
+        )
+        offer = IndustryLpStoreOffer.objects.get(offer_id=1002)
+        econ = offer_economics_for_queryset([offer])[offer.pk]
+        self.assertEqual(econ.volume_1d, 10)
+        self.assertEqual(econ.volume_7d, 30)
+        self.assertEqual(econ.volume_30d, 70)
 
     def test_input_row_uses_acquisition_and_own_type(self):
         offer = IndustryLpStoreOffer.objects.get(offer_id=1002)
@@ -375,16 +461,38 @@ class LpStoreOfferAdminTestCase(TestCase):
         finally:
             IndustryLpStoreOfferAdmin._request_stash = None
         self.assertIn("LP Input Item", html)
-        self.assertIn(f"type {INPUT_TYPE_ID}", html)
+        self.assertIn(f'Title="Type {INPUT_TYPE_ID}"'.lower(), html.lower())
+        self.assertNotIn("input ·", html)
+        self.assertNotIn(f"type {INPUT_TYPE_ID}", html)
         self.assertIn("lp-store-offer-item__name", html)
-        self.assertIn("images.evetech.net/types/", html)
+        self.assertIn("/icon?size=32", html)
+
+    def test_type_name_display_uses_bp_icon_for_blueprints(self):
+        # pylint: disable=protected-access
+        IndustryLpStoreOfferAdmin._request_stash = {
+            self.offer.pk: SimpleNamespace(
+                kind="blueprint",
+                type_id=32312,
+                type_name="Typhoon Fleet Issue Blueprint",
+                market_type_id=17740,
+                market_type_name="Typhoon Fleet Issue",
+            )
+        }
+        try:
+            html = str(self.admin.type_name_display(self.offer))
+        finally:
+            IndustryLpStoreOfferAdmin._request_stash = None
+        self.assertIn("Typhoon Fleet Issue (BPC)", html)
+        self.assertIn("/bp?size=32", html)
+        self.assertNotIn("blueprint ·", html)
 
     def test_type_name_display_falls_back_to_eve_type(self):
         # pylint: disable=protected-access
         IndustryLpStoreOfferAdmin._request_stash = None
         html = str(self.admin.type_name_display(self.offer))
         self.assertIn("LP Input Item", html)
-        self.assertIn(f"type {INPUT_TYPE_ID}", html)
+        self.assertIn(f'Title="Type {INPUT_TYPE_ID}"'.lower(), html.lower())
+        self.assertNotIn(f"type {INPUT_TYPE_ID}", html)
 
     def test_search_by_type_name(self):
         request = self.factory.get(
@@ -398,14 +506,191 @@ class LpStoreOfferAdminTestCase(TestCase):
             list(result.values_list("offer_id", flat=True)), [2001]
         )
 
+    def test_search_respects_currency_filter(self):
+        """Name search must not reintroduce offers from other currencies."""
+        IndustryLoyaltyPoint.objects.update_or_create(
+            corporation_id=IMPERIAL_CORP_ID,
+            defaults={
+                "name": "24th Imperial Crusade",
+                "default_isk_per_lp": 800,
+                "is_active": True,
+            },
+        )
+        IndustryLpStoreOffer.objects.create(
+            offer_id=2003,
+            corporation_id=IMPERIAL_CORP_ID,
+            type_id=INPUT_TYPE_ID,
+            lp_cost=2000,
+            isk_cost=100_000,
+            quantity=1,
+        )
+        request = self.factory.get(
+            "/admin/industry/industrylpstoreoffer/",
+            {"q": "LP Input", "currency": str(TLIB_CORP_ID)},
+        )
+        request.user = self.user
+        qs = self.admin.get_queryset(request)
+        currency_filter = IndustryLpStoreCurrencyListFilter(
+            request,
+            {"currency": str(TLIB_CORP_ID)},
+            IndustryLpStoreOffer,
+            self.admin,
+        )
+        qs = currency_filter.queryset(request, qs)
+        result, _ = self.admin.get_search_results(request, qs, "LP Input")
+        self.assertEqual(
+            list(result.values_list("offer_id", flat=True)), [2001]
+        )
+        self.assertEqual(
+            list(result.values_list("corporation_id", flat=True)),
+            [TLIB_CORP_ID],
+        )
+
     def test_list_display_fuzzwork_column_order(self):
         self.assertNotIn("kind_display", self.admin.list_display)
         self.assertNotIn("ak_cost", self.admin.list_display)
+        self.assertNotIn("volume_90d_display", self.admin.list_display)
         self.assertEqual(self.admin.list_display[0], "type_name_display")
         # Market prices before conversion rates (Fuzzwork-like).
         sell_i = self.admin.list_display.index("jita_sell_display")
         conv_i = self.admin.list_display.index("conversion_sell_display")
         self.assertLess(sell_i, conv_i)
+        self.assertIn("volume_1d_display", self.admin.list_display)
+        self.assertIn("volume_7d_display", self.admin.list_display)
+        self.assertIn("volume_30d_display", self.admin.list_display)
+
+    def test_lp_cost_and_acquisition_columns_are_sortable(self):
+        self.assertEqual(
+            self.admin.lp_cost_display.admin_order_field, "lp_cost"
+        )
+        self.assertEqual(
+            self.admin.cost_display.admin_order_field, "sort_acquisition"
+        )
+        request = self.factory.get("/admin/industry/industrylpstoreoffer/")
+        request.user = self.user
+        qs = self.admin.get_queryset(request)
+        ordered = list(
+            qs.order_by("lp_cost").values_list("offer_id", flat=True)
+        )
+        self.assertEqual(ordered, [2001])
+        # Sort annotation is queryable.
+        self.assertIsNotNone(
+            qs.order_by("sort_acquisition")
+            .values_list("sort_acquisition", flat=True)
+            .first()
+        )
+
+    def test_exclude_supply_packages_hides_required_package_offers(self):
+        """BPC output + Supply Package required item → excluded."""
+        misc = EveGroup.objects.create(
+            id=314,
+            name="Miscellaneous",
+            published=True,
+            eve_category=EveCategory.objects.get(id=6),
+        )
+        package = EveType.objects.create(
+            id=93609,
+            name="Imperial War Reserves Supply Package",
+            published=True,
+            eve_group=misc,
+        )
+        clean = IndustryLpStoreOffer.objects.create(
+            offer_id=2100,
+            corporation_id=TLIB_CORP_ID,
+            type_id=INPUT_TYPE_ID,
+            lp_cost=40_000,
+            isk_cost=0,
+            quantity=1,
+        )
+        with_pkg = IndustryLpStoreOffer.objects.create(
+            offer_id=2101,
+            corporation_id=TLIB_CORP_ID,
+            type_id=INPUT_TYPE_ID,
+            lp_cost=100_000,
+            isk_cost=100_000_000,
+            quantity=10,
+        )
+        IndustryLpStoreOfferRequiredItem.objects.create(
+            offer=with_pkg,
+            type_id=package.id,
+            quantity=3,
+        )
+        # Output itself is a supply package.
+        package_offer = IndustryLpStoreOffer.objects.create(
+            offer_id=2102,
+            corporation_id=TLIB_CORP_ID,
+            type_id=package.id,
+            lp_cost=5_000,
+            isk_cost=0,
+            quantity=1,
+        )
+        request = self.factory.get("/admin/industry/industrylpstoreoffer/")
+        request.user = self.user
+        filt = IndustryLpStoreExcludeSupplyPackagesFilter(
+            request,
+            {"exclude_supply_packages": "1"},
+            IndustryLpStoreOffer,
+            self.admin,
+        )
+        qs = filt.queryset(request, self.admin.get_queryset(request))
+        offer_ids = set(qs.values_list("offer_id", flat=True))
+        self.assertIn(clean.offer_id, offer_ids)
+        self.assertIn(self.offer.offer_id, offer_ids)
+        self.assertNotIn(with_pkg.offer_id, offer_ids)
+        self.assertNotIn(package_offer.offer_id, offer_ids)
+
+    def test_exclude_tags_hides_required_tag_offers(self):
+        tags_group = EveGroup.objects.create(
+            id=370,
+            name="Criminal Tags",
+            published=True,
+            eve_category=EveCategory.objects.get(id=6),
+        )
+        tag = EveType.objects.create(
+            id=17226,
+            name="Domination Gold Tag",
+            published=True,
+            eve_group=tags_group,
+        )
+        clean = IndustryLpStoreOffer.objects.create(
+            offer_id=2200,
+            corporation_id=TLIB_CORP_ID,
+            type_id=INPUT_TYPE_ID,
+            lp_cost=1_000,
+            isk_cost=0,
+            quantity=1,
+        )
+        with_tag = IndustryLpStoreOffer.objects.create(
+            offer_id=2201,
+            corporation_id=TLIB_CORP_ID,
+            type_id=INPUT_TYPE_ID,
+            lp_cost=2_000,
+            isk_cost=0,
+            quantity=1,
+        )
+        IndustryLpStoreOfferRequiredItem.objects.create(
+            offer=with_tag,
+            type_id=tag.id,
+            quantity=2,
+        )
+        tag_offer = IndustryLpStoreOffer.objects.create(
+            offer_id=2202,
+            corporation_id=TLIB_CORP_ID,
+            type_id=tag.id,
+            lp_cost=500,
+            isk_cost=0,
+            quantity=1,
+        )
+        request = self.factory.get("/admin/industry/industrylpstoreoffer/")
+        request.user = self.user
+        filt = IndustryLpStoreExcludeTagsFilter(
+            request, {"exclude_tags": "1"}, IndustryLpStoreOffer, self.admin
+        )
+        qs = filt.queryset(request, self.admin.get_queryset(request))
+        offer_ids = set(qs.values_list("offer_id", flat=True))
+        self.assertIn(clean.offer_id, offer_ids)
+        self.assertNotIn(with_tag.offer_id, offer_ids)
+        self.assertNotIn(tag_offer.offer_id, offer_ids)
 
     @patch("industry.admin.offer_economics_for_queryset")
     def test_changelist_renders_names_before_stash_clear(self, mock_econ):
@@ -424,7 +709,9 @@ class LpStoreOfferAdminTestCase(TestCase):
                 jita_buy=900_000,
                 conversion_isk_per_lp_sell=500.0,
                 conversion_isk_per_lp_buy=400.0,
-                volume_90d=12_000,
+                volume_1d=100,
+                volume_7d=700,
+                volume_30d=3_000,
                 isk_per_lp=800.0,
                 cost_per_unit=800_000,
                 profit_vs_sell=200_000,
@@ -458,7 +745,13 @@ class LpStoreOfferAdminTestCase(TestCase):
         self.assertIn("jita_buy_display", self.admin.list_display)
         self.assertIn("conversion_sell_display", self.admin.list_display)
         self.assertIn("conversion_buy_display", self.admin.list_display)
-        self.assertIn("cost_display", self.admin.list_display)
+        self.assertNotIn("isk_per_lp_display", self.admin.list_display)
+        self.assertNotIn("cost_display", self.admin.list_display)
+        self.assertNotIn("profit_vs_sell_display", self.admin.list_display)
+        self.assertIn("volume_1d_display", self.admin.list_display)
+        self.assertIn("volume_7d_display", self.admin.list_display)
+        self.assertIn("volume_30d_display", self.admin.list_display)
+        self.assertNotIn("volume_90d_display", self.admin.list_display)
 
     @patch(
         "industry.admin.offer_economics_for_queryset",

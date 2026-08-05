@@ -58,12 +58,13 @@
 
     .lp-store-offer-item {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       gap: 0.55em;
       line-height: 1.3;
     }
 
-    .lp-store-offer-item__icon {
+    .lp-store-offer-item__icon,
+    .lp-store-offer-item__placeholder {
       flex-shrink: 0;
       width: 32px;
       height: 32px;
@@ -71,20 +72,9 @@
       background: var(--darkened-bg, #222);
     }
 
-    .lp-store-offer-item__text {
-      display: flex;
-      flex-direction: column;
-      gap: 0.15em;
-      min-width: 0;
-    }
-
     .lp-store-offer-item__name {
       font-weight: 600;
-    }
-
-    .lp-store-offer-item__type {
-      color: var(--body-quiet-color, #888);
-      font-size: 0.85em;
+      min-width: 0;
     }
 
     #changelist #result_list td.field-conversion_sell_display,
@@ -92,12 +82,14 @@
     #changelist #result_list td.field-jita_sell_display,
     #changelist #result_list td.field-jita_buy_display,
     #changelist #result_list td.field-other_cost_display,
-    #changelist #result_list td.field-volume_90d_display,
+    #changelist #result_list td.field-volume_1d_display,
+    #changelist #result_list td.field-volume_7d_display,
+    #changelist #result_list td.field-volume_30d_display,
     #changelist #result_list td.field-isk_per_lp_display,
     #changelist #result_list td.field-cost_display,
     #changelist #result_list td.field-profit_vs_sell_display,
-    #changelist #result_list td.field-lp_cost,
-    #changelist #result_list td.field-isk_cost,
+    #changelist #result_list td.field-lp_cost_display,
+    #changelist #result_list td.field-isk_cost_display,
     #changelist #result_list td.field-quantity {
       font-variant-numeric: tabular-nums;
       text-align: right;
@@ -109,12 +101,14 @@
     #changelist #result_list th.column-jita_sell_display,
     #changelist #result_list th.column-jita_buy_display,
     #changelist #result_list th.column-other_cost_display,
-    #changelist #result_list th.column-volume_90d_display,
+    #changelist #result_list th.column-volume_1d_display,
+    #changelist #result_list th.column-volume_7d_display,
+    #changelist #result_list th.column-volume_30d_display,
     #changelist #result_list th.column-isk_per_lp_display,
     #changelist #result_list th.column-cost_display,
     #changelist #result_list th.column-profit_vs_sell_display,
-    #changelist #result_list th.column-lp_cost,
-    #changelist #result_list th.column-isk_cost,
+    #changelist #result_list th.column-lp_cost_display,
+    #changelist #result_list th.column-isk_cost_display,
     #changelist #result_list th.column-quantity {
       text-align: right;
     }

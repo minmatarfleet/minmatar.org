@@ -1,20 +1,34 @@
 """Economics helpers for admin LP store offer price tracking.
 
 Conversion rates (isk/lp buy & sell) use baseline LocationPrice buy/sell when
-present, else Forge history via get_prices_by_type_id. Alliance buyback
-acquisition/profit columns remain separate.
+present, else Forge history via get_prices_by_type_id. Admin Cost / Profit
+columns use per-offer acquisition (LP×buyback rate + ISK + required items),
+not planner build cost — Fuzzwork-style offer comparison.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import timedelta
 from typing import Dict, Iterable, List, Optional, Tuple
 
 from django.db import ProgrammingError
+from django.db.models import (
+    ExpressionWrapper,
+    F,
+    FloatField,
+    OuterRef,
+    Subquery,
+    Sum,
+    Value,
+)
+from django.db.models.functions import Coalesce, Greatest
+from django.utils import timezone
 from eveonline.models import EveLocation
 from eveuniverse.models import EveType
 
 from industry.helpers.blueprint_efficiency import is_faction_navy_hull
+from industry.helpers.lp_catalog import ensure_eve_types
 from industry.helpers.loyalty_store import resolve_isk_per_lp
 from industry.helpers.product_unit_cost import (
     TALWAR_FI_BPC_TYPE_ID,
@@ -29,10 +43,13 @@ from industry.models import (
     IndustryProduct,
 )
 from market.helpers.pricing import (
+    VOLUME_WINDOWS,
+    _baseline_region_id,
     get_prices_by_type_id,
-    get_volume_90d_by_type_id,
+    get_volume_windows_by_type_id,
 )
 from market.models import EveMarketItemLocationPrice
+from market.models.history import EveMarketItemHistory
 
 
 @dataclass(frozen=True)
@@ -57,7 +74,9 @@ class LpStoreOfferEconomics:
     jita_buy: Optional[int]
     conversion_isk_per_lp_sell: Optional[float]
     conversion_isk_per_lp_buy: Optional[float]
-    volume_90d: Optional[int]
+    volume_1d: Optional[int]
+    volume_7d: Optional[int]
+    volume_30d: Optional[int]
     build_cost_per_unit: Optional[int]
     cost_per_unit: Optional[int]
     kind: str
@@ -164,6 +183,96 @@ def _conversion_isk_per_lp(
     return (market_price * offer_qty - isk_cost - extras) / float(lp_cost)
 
 
+def annotate_lp_store_offer_sort_fields(queryset):
+    """
+    Annotate admin sort keys for economics columns.
+
+    Display values still come from offer_economics_for_queryset (accurate
+    hull mapping, required-item other cost). Sort annotations use offer
+    type_id history + currency default ISK/LP and ignore required-item
+    other cost — good enough for Fuzzwork-style ranking.
+    """
+    region_id = _baseline_region_id()
+    today = timezone.now().date()
+
+    type_name_sq = EveType.objects.filter(id=OuterRef("type_id")).values(
+        "name"
+    )[:1]
+    hist_avg_sq = (
+        EveMarketItemHistory.objects.filter(
+            region_id=region_id,
+            item_id=OuterRef("type_id"),
+        )
+        .order_by("-date")
+        .values("average")[:1]
+    )
+    currency_ipl_sq = IndustryLoyaltyPoint.objects.filter(
+        corporation_id=OuterRef("corporation_id"),
+        is_active=True,
+    ).values("default_isk_per_lp")[:1]
+
+    def _volume_sq(days: int):
+        cutoff = today - timedelta(days=days)
+        return (
+            EveMarketItemHistory.objects.filter(
+                region_id=region_id,
+                item_id=OuterRef("type_id"),
+                date__gte=cutoff,
+            )
+            .values("item_id")
+            .annotate(total=Sum("volume"))
+            .values("total")[:1]
+        )
+
+    qs = queryset.annotate(
+        sort_type_name=Subquery(type_name_sq),
+        sort_jita_price=Subquery(hist_avg_sq),
+        sort_volume_1d=Subquery(_volume_sq(1)),
+        sort_volume_7d=Subquery(_volume_sq(7)),
+        sort_volume_30d=Subquery(_volume_sq(30)),
+        sort_isk_per_lp=Subquery(currency_ipl_sq),
+    )
+    # Acquisition / conversion / profit approximations without other_cost.
+    qs = qs.annotate(
+        sort_acquisition=ExpressionWrapper(
+            (
+                F("lp_cost") * Coalesce(F("sort_isk_per_lp"), Value(0.0))
+                + F("isk_cost")
+            )
+            / Greatest(F("quantity"), Value(1)),
+            output_field=FloatField(),
+        ),
+        sort_conversion_sell=ExpressionWrapper(
+            (
+                Coalesce(F("sort_jita_price"), Value(0.0)) * F("quantity")
+                - F("isk_cost")
+            )
+            / Greatest(F("lp_cost"), Value(1)),
+            output_field=FloatField(),
+        ),
+        sort_conversion_buy=ExpressionWrapper(
+            (
+                Coalesce(F("sort_jita_price"), Value(0.0)) * F("quantity")
+                - F("isk_cost")
+            )
+            / Greatest(F("lp_cost"), Value(1)),
+            output_field=FloatField(),
+        ),
+        sort_profit=ExpressionWrapper(
+            Coalesce(F("sort_jita_price"), Value(0.0))
+            - (
+                (
+                    F("lp_cost") * Coalesce(F("sort_isk_per_lp"), Value(0.0))
+                    + F("isk_cost")
+                )
+                / Greatest(F("quantity"), Value(1))
+            ),
+            output_field=FloatField(),
+        ),
+    )
+    return qs
+
+
 def offer_economics_for_queryset(
     offers: Iterable[IndustryLpStoreOffer],
 ) -> Dict[int, LpStoreOfferEconomics]:
@@ -203,9 +312,12 @@ def offer_economics_for_queryset(
     }
     req_type_ids = {tid for items in req_by_offer.values() for tid, _ in items}
     market_type_ids = sorted(offer_type_ids | product_type_ids | req_type_ids)
+    ensure_eve_types(market_type_ids)
     history_prices = get_prices_by_type_id(market_type_ids)
     location_prices = _baseline_location_prices(market_type_ids)
-    volumes = get_volume_90d_by_type_id(market_type_ids)
+    volume_windows = get_volume_windows_by_type_id(
+        market_type_ids, windows=VOLUME_WINDOWS
+    )
     type_names = {
         tid: (name or str(tid))
         for tid, name in EveType.objects.filter(
@@ -258,12 +370,14 @@ def offer_economics_for_queryset(
             kind = "blueprint"
             market_type_id = product_type_id
             build_cost = build_costs.get(product_type_id)
-            cost_per_unit = build_cost
         else:
             kind = "input"
             market_type_id = type_id
             build_cost = None
-            cost_per_unit = acquisition
+
+        # Fuzzwork-style: Cost/Profit compare LP-store acquisition per unit,
+        # not planner build cost (which is identical across same-hull BPCs).
+        cost_per_unit = acquisition
 
         jita_sell, jita_buy = _resolve_sell_buy(
             market_type_id,
@@ -289,6 +403,7 @@ def offer_economics_for_queryset(
             other_cost=other_cost,
             lp_cost=offer.lp_cost,
         )
+        vols = volume_windows.get(market_type_id) or {}
 
         out[offer.pk] = LpStoreOfferEconomics(
             pk=offer.pk,
@@ -313,7 +428,9 @@ def offer_economics_for_queryset(
             jita_buy=jita_buy,
             conversion_isk_per_lp_sell=conv_sell,
             conversion_isk_per_lp_buy=conv_buy,
-            volume_90d=volumes.get(market_type_id),
+            volume_1d=vols.get(1),
+            volume_7d=vols.get(7),
+            volume_30d=vols.get(30),
             build_cost_per_unit=build_cost,
             cost_per_unit=cost_per_unit,
             kind=kind,

@@ -13,6 +13,7 @@ from django.utils import timezone
 
 from eveonline.client import _esi_to_python, esi_provider
 from eveonline.models import EveLocation
+from industry.helpers.lp_catalog import ensure_eve_types
 from industry.models import (
     IndustryLoyaltyPoint,
     IndustryLpStoreOffer,
@@ -285,6 +286,7 @@ def sync_loyalty_store_offers(
     catalog_types: Set[int] = {b.offer.type_id for b in builds}
     for build in builds:
         catalog_types.update(tid for tid, _ in build.required)
+    ensure_eve_types(catalog_types)
     if enqueue_history:
         _enqueue_history_for_missing_types(catalog_types)
     logger.info(
