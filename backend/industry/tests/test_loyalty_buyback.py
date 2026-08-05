@@ -1035,8 +1035,11 @@ class LpBuybackSideAwareMessagingTestCase(AppTestCase):
             f"lp_buyback:lp:{order.pk}",
         )
 
+    @patch("industry.helpers.lp_buyback_discord.time.sleep")
     @patch("industry.helpers.lp_buyback_discord.discord")
-    def test_completed_closes_thread_without_message(self, discord_mock):
+    def test_completed_posts_then_closes_thread(
+        self, discord_mock, sleep_mock
+    ):
         order = IndustryLoyaltyPointMarketOrder.objects.create(
             loyalty_point=self.currency,
             side=IndustryLoyaltyPointMarketOrder.Side.SELL,
@@ -1048,8 +1051,21 @@ class LpBuybackSideAwareMessagingTestCase(AppTestCase):
             discord_thread_id=555,
         )
         notify_order_status_changed(order)
-        discord_mock.create_message.assert_not_called()
+        discord_mock.create_message.assert_called_once()
+        payload = discord_mock.create_message.call_args.kwargs["payload"]
+        self.assertIn("ISK sent — order completed", payload["content"])
+        self.assertIn("**800,000 ISK** for 1,000 LP", payload["content"])
+        self.assertIn("<@1001>", payload["content"])
+        sleep_mock.assert_called_once_with(5)
         discord_mock.close_thread.assert_called_once_with(channel_id=555)
+        self.assertEqual(
+            [
+                call[0]
+                for call in discord_mock.method_calls
+                if call[0] in ("create_message", "close_thread")
+            ],
+            ["create_message", "close_thread"],
+        )
 
     @patch("industry.helpers.lp_buyback_discord.discord")
     def test_cancelled_closes_thread_without_message(self, discord_mock):

@@ -285,55 +285,58 @@ def release_order_claims(
     return locked
 
 
-@transaction.atomic
 def transition_order(
     order: IndustryLoyaltyPointMarketOrder,
     new_status: str,
     *,
     destination_character_name: str | None = None,
 ) -> IndustryLoyaltyPointMarketOrder:
-    locked = (
-        IndustryLoyaltyPointMarketOrder.objects.select_for_update()
-        .select_related("loyalty_point", "created_by", "claimed_by")
-        .get(pk=order.pk)
-    )
-    if new_status == locked.status:
-        return locked
-
-    allowed = ALLOWED_TRANSITIONS.get(locked.status, frozenset())
-    if new_status not in allowed:
-        raise LpMarketOrderError(
-            f"Cannot transition from {locked.status} to {new_status}."
+    with transaction.atomic():
+        locked = (
+            IndustryLoyaltyPointMarketOrder.objects.select_for_update()
+            .select_related("loyalty_point", "created_by", "claimed_by")
+            .get(pk=order.pk)
         )
+        if new_status == locked.status:
+            return locked
 
-    if new_status == AWAITING_LP:
-        dest = (
-            destination_character_name
-            if destination_character_name is not None
-            else locked.destination_character_name
-        )
-        if not dest or not str(dest).strip():
+        allowed = ALLOWED_TRANSITIONS.get(locked.status, frozenset())
+        if new_status not in allowed:
             raise LpMarketOrderError(
-                "destination_character_name is required when awaiting LP."
+                f"Cannot transition from {locked.status} to {new_status}."
             )
-        locked.destination_character_name = str(dest).strip()
-    elif destination_character_name is not None:
-        locked.destination_character_name = str(
-            destination_character_name
-        ).strip()
 
-    previous = locked.status
-    locked.status = new_status
-    if new_status == COMPLETED:
-        locked.completed_at = timezone.now()
-        if locked.side == IndustryLoyaltyPointMarketOrder.Side.SELL:
-            try:
-                post_sell_order_completion_ledger(locked)
-            except LpLedgerError as exc:
-                raise LpMarketOrderError(str(exc)) from exc
-    locked.save()
+        if new_status == AWAITING_LP:
+            dest = (
+                destination_character_name
+                if destination_character_name is not None
+                else locked.destination_character_name
+            )
+            if not dest or not str(dest).strip():
+                raise LpMarketOrderError(
+                    "destination_character_name is required when awaiting LP."
+                )
+            locked.destination_character_name = str(dest).strip()
+        elif destination_character_name is not None:
+            locked.destination_character_name = str(
+                destination_character_name
+            ).strip()
 
-    if previous != locked.status:
+        previous = locked.status
+        locked.status = new_status
+        if new_status == COMPLETED:
+            locked.completed_at = timezone.now()
+            if locked.side == IndustryLoyaltyPointMarketOrder.Side.SELL:
+                try:
+                    post_sell_order_completion_ledger(locked)
+                except LpLedgerError as exc:
+                    raise LpMarketOrderError(str(exc)) from exc
+        locked.save()
+        status_changed = previous != locked.status
+
+    # Notify after commit so COMPLETED can post + delay + archive without
+    # holding select_for_update (and so Discord work is not rolled back).
+    if status_changed:
         # pylint: disable=import-outside-toplevel
         from industry.helpers import lp_buyback_discord
 

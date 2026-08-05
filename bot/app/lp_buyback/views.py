@@ -41,8 +41,9 @@ async def _handle_ack(
 ) -> None:
     await interaction.response.defer(ephemeral=True)
 
-    # ISK sent completes the order and archives the thread. Confirm + clear
-    # buttons before the API close so nothing hits the thread afterward.
+    # ISK sent: clear buttons + settle interaction traffic, then the API posts
+    # a public "ISK sent" notice, waits, and archives (same delay as help
+    # tickets). Do not edit/followup the thread after the API returns.
     closes_thread = action == "isk_sent"
     if closes_thread:
         await _clear_message_buttons(interaction)
