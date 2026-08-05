@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 from django.db import ProgrammingError
 from django.db.models import (
@@ -58,6 +58,13 @@ from market.helpers.pricing import (
 )
 from market.models import EveMarketItemLocationPrice
 from market.models.history import EveMarketItemHistory
+
+# Forge 30d traded units below this (or missing history) = negligible LP
+# liquidity. Fuzzwork's "5% Volume" is order-book depth (qty within 5% of
+# best price); we only store LocationPrice bests, so 30d history volume is
+# the pragmatic viability proxy. Threshold 1 keeps thin ship markets
+# (1–5 hulls/month) while dropping truly dead / unsynced types.
+NEGLIGIBLE_LP_FORGE_VOLUME_30D = 1
 
 
 @dataclass(frozen=True)
@@ -120,6 +127,64 @@ def bpc_type_id_to_product_type_id() -> Dict[int, int]:
             continue
         mapping[int(bpc_id)] = int(eve_type.id)
     return mapping
+
+
+def market_type_ids_with_viable_forge_volume(
+    type_ids: Optional[Iterable[int]] = None,
+    *,
+    min_volume_30d: int = NEGLIGIBLE_LP_FORGE_VOLUME_30D,
+) -> Set[int]:
+    """
+    Market type IDs with Forge 30d history volume >= ``min_volume_30d``.
+
+    Types with no recent history rows are omitted (treated as negligible by
+    callers). Requires EveMarketItemHistory sync for LP catalog types.
+    When ``type_ids`` is given, only those IDs are considered.
+    """
+    region_id = _baseline_region_id()
+    cutoff = timezone.now().date() - timedelta(days=30)
+    qs = EveMarketItemHistory.objects.filter(
+        region_id=region_id,
+        date__gte=cutoff,
+    )
+    if type_ids is not None:
+        unique = {int(t) for t in type_ids if int(t) > 0}
+        if not unique:
+            return set()
+        qs = qs.filter(item_id__in=unique)
+    rows = (
+        qs.values("item_id")
+        .annotate(total=Sum("volume"))
+        .filter(total__gte=int(min_volume_30d))
+        .values_list("item_id", flat=True)
+    )
+    return {int(item_id) for item_id in rows}
+
+
+def offer_type_ids_with_viable_forge_volume(
+    offer_type_ids: Iterable[int],
+    *,
+    min_volume_30d: int = NEGLIGIBLE_LP_FORGE_VOLUME_30D,
+    bpc_to_hull: Optional[Dict[int, int]] = None,
+) -> Set[int]:
+    """
+    Offer ``type_id``s whose market type (hull for navy BPCs) clears the
+    30d Forge volume floor. Missing history → not viable.
+    """
+    unique = {int(t) for t in offer_type_ids if int(t) > 0}
+    if not unique:
+        return set()
+    mapping = (
+        bpc_to_hull
+        if bpc_to_hull is not None
+        else bpc_type_id_to_product_type_id()
+    )
+    market_ids = {mapping.get(tid, tid) for tid in unique}
+    viable_market = market_type_ids_with_viable_forge_volume(
+        market_ids,
+        min_volume_30d=min_volume_30d,
+    )
+    return {tid for tid in unique if mapping.get(tid, tid) in viable_market}
 
 
 def _acquisition_isk_per_unit(

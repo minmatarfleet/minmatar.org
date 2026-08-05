@@ -24,13 +24,16 @@ from market.models import EveMarketItemHistory, EveMarketItemLocationPrice
 from industry.admin import (
     IndustryLpStoreCurrencyListFilter,
     IndustryLpStoreExcludeChipsFilter,
+    IndustryLpStoreExcludeNegligibleVolumeFilter,
     IndustryLpStoreExcludeSupplyPackagesFilter,
     IndustryLpStoreExcludeTagsFilter,
     IndustryLpStoreOfferAdmin,
 )
 from industry.helpers.lp_store_economics import (
+    NEGLIGIBLE_LP_FORGE_VOLUME_30D,
     bpc_type_id_to_product_type_id,
     offer_economics_for_queryset,
+    offer_type_ids_with_viable_forge_volume,
     tracked_corporation_ids,
 )
 from industry.helpers.loyalty_store import sync_loyalty_store_offers
@@ -344,6 +347,40 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         self.assertEqual(econ.volume_1d, 10)
         self.assertEqual(econ.volume_7d, 30)
         self.assertEqual(econ.volume_30d, 70)
+
+    def test_offer_type_ids_viable_volume_uses_hull_for_bpc(self):
+        """Navy BPC offers are viable when the hull has 30d Forge volume."""
+        # History in setUp is on hull / input / req — not on BPC itself.
+        viable = offer_type_ids_with_viable_forge_volume(
+            [BPC_TYPE_ID, INPUT_TYPE_ID, 999001]
+        )
+        self.assertIn(BPC_TYPE_ID, viable)
+        self.assertIn(INPUT_TYPE_ID, viable)
+        self.assertNotIn(999001, viable)
+        self.assertGreaterEqual(NEGLIGIBLE_LP_FORGE_VOLUME_30D, 1)
+
+    def test_offer_type_ids_viable_volume_excludes_below_threshold(self):
+        dead = EveType.objects.create(
+            id=42426,
+            name="Dead LP Item",
+            published=True,
+            eve_group=self.hull.eve_group,
+        )
+        EveMarketItemHistory.objects.create(
+            region_id=JITA_REGION_ID,
+            item=dead,
+            date=timezone.now().date() - timedelta(days=2),
+            average=Decimal("100"),
+            highest=Decimal("100"),
+            lowest=Decimal("100"),
+            order_count=0,
+            volume=0,
+        )
+        viable = offer_type_ids_with_viable_forge_volume(
+            [dead.id],
+            min_volume_30d=1,
+        )
+        self.assertNotIn(dead.id, viable)
 
     def test_input_row_uses_acquisition_and_own_type(self):
         offer = IndustryLpStoreOffer.objects.get(offer_id=1002)
@@ -845,6 +882,128 @@ class LpStoreOfferAdminTestCase(TestCase):
         self.assertIn(chip_offer.offer_id, no_ids)
         self.assertEqual(
             yes.lookups(request, self.admin), (("1", "Yes"), ("0", "No"))
+        )
+
+    def test_exclude_negligible_volume_uses_market_type_and_history(self):
+        """Missing/zero 30d Forge volume → negligible; hull history covers BPC."""
+        group = EveGroup.objects.get(id=27)
+        hull = EveType.objects.create(
+            id=HULL_TYPE_ID,
+            name="Typhoon Fleet Issue",
+            published=True,
+            eve_group=group,
+        )
+        bpc = EveType.objects.create(
+            id=BPC_TYPE_ID,
+            name="Typhoon Fleet Issue Blueprint",
+            published=True,
+            eve_group=group,
+        )
+        EveIndustryActivityProduct.objects.create(
+            eve_type=bpc,
+            activity_id=1,
+            product_eve_type=hull,
+            quantity=1,
+        )
+        EveIndustryActivityDuration.objects.create(
+            eve_type=bpc, activity_id=1, time=100
+        )
+        with patch(
+            "industry.tasks.ensure_loyalty_store_offers_for_product_task.delay"
+        ):
+            IndustryProduct.objects.create(
+                eve_type=hull, strategy=Strategy.IMPORTED
+            )
+
+        dead = EveType.objects.create(
+            id=42427,
+            name="Dead LP Cosmetic",
+            published=True,
+            eve_group=group,
+        )
+        bpc_offer = IndustryLpStoreOffer.objects.create(
+            offer_id=2400,
+            corporation_id=TLIB_CORP_ID,
+            type_id=BPC_TYPE_ID,
+            lp_cost=100_000,
+            isk_cost=20_000_000,
+            quantity=1,
+        )
+        liquid = IndustryLpStoreOffer.objects.create(
+            offer_id=2401,
+            corporation_id=TLIB_CORP_ID,
+            type_id=INPUT_TYPE_ID,
+            lp_cost=1_000,
+            isk_cost=0,
+            quantity=1,
+        )
+        dead_offer = IndustryLpStoreOffer.objects.create(
+            offer_id=2402,
+            corporation_id=TLIB_CORP_ID,
+            type_id=dead.id,
+            lp_cost=500,
+            isk_cost=0,
+            quantity=1,
+        )
+        today = timezone.now().date()
+        EveMarketItemHistory.objects.create(
+            region_id=JITA_REGION_ID,
+            item=hull,
+            date=today - timedelta(days=1),
+            average=Decimal("250000000"),
+            highest=Decimal("260000000"),
+            lowest=Decimal("240000000"),
+            order_count=2,
+            volume=3,
+        )
+        EveMarketItemHistory.objects.create(
+            region_id=JITA_REGION_ID,
+            item=self.input_type,
+            date=today - timedelta(days=1),
+            average=Decimal("1500000"),
+            highest=Decimal("1600000"),
+            lowest=Decimal("1400000"),
+            order_count=5,
+            volume=50,
+        )
+
+        request = self.factory.get("/admin/industry/industrylpstoreoffer/")
+        request.user = self.user
+        yes = IndustryLpStoreExcludeNegligibleVolumeFilter(
+            request,
+            {"exclude_negligible_volume": "1"},
+            IndustryLpStoreOffer,
+            self.admin,
+        )
+        yes_ids = set(
+            yes.queryset(
+                request, self.admin.get_queryset(request)
+            ).values_list("offer_id", flat=True)
+        )
+        self.assertIn(bpc_offer.offer_id, yes_ids)
+        self.assertIn(liquid.offer_id, yes_ids)
+        self.assertNotIn(dead_offer.offer_id, yes_ids)
+
+        no = IndustryLpStoreExcludeNegligibleVolumeFilter(
+            request,
+            {"exclude_negligible_volume": "0"},
+            IndustryLpStoreOffer,
+            self.admin,
+        )
+        no_ids = set(
+            no.queryset(request, self.admin.get_queryset(request)).values_list(
+                "offer_id", flat=True
+            )
+        )
+        self.assertIn(dead_offer.offer_id, no_ids)
+        self.assertNotIn(bpc_offer.offer_id, no_ids)
+        self.assertNotIn(liquid.offer_id, no_ids)
+        self.assertEqual(
+            yes.lookups(request, self.admin), (("1", "Yes"), ("0", "No"))
+        )
+        self.assertIn(
+            IndustryLpStoreExcludeNegligibleVolumeFilter,
+            self.admin.list_filter,
         )
 
     @patch("industry.admin.offer_economics_for_queryset")

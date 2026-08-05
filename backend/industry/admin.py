@@ -49,6 +49,7 @@ from industry.helpers.lp_catalog import (
 from industry.helpers.lp_store_economics import (
     annotate_lp_store_offer_sort_fields,
     offer_economics_for_queryset,
+    offer_type_ids_with_viable_forge_volume,
     tracked_corporation_ids,
 )
 from industry.tasks import (
@@ -783,6 +784,31 @@ class IndustryLpStoreExcludeChipsFilter(admin.SimpleListFilter):
         return queryset.filter(chip_q)
 
 
+class IndustryLpStoreExcludeNegligibleVolumeFilter(admin.SimpleListFilter):
+    """
+    Hide (or isolate) offers with no/negligible Forge 30d market volume.
+
+    Uses market_type_id (hull for navy BPCs). Missing history counts as
+    negligible — run market history sync for LP catalog types first.
+    """
+
+    title = "exclude negligible volume"
+    parameter_name = "exclude_negligible_volume"
+
+    def lookups(self, request, model_admin):
+        return (("1", "Yes"), ("0", "No"))
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if value not in ("0", "1"):
+            return queryset
+        offer_type_ids = set(queryset.values_list("type_id", flat=True))
+        viable = offer_type_ids_with_viable_forge_volume(offer_type_ids)
+        if value == "1":
+            return queryset.filter(type_id__in=viable)
+        return queryset.exclude(type_id__in=viable)
+
+
 @admin.register(IndustryLpStoreOffer)
 class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
     _request_stash = None
@@ -813,6 +839,7 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
         IndustryLpStoreExcludeTagsFilter,
         IndustryLpStoreExcludeSupplyPackagesFilter,
         IndustryLpStoreExcludeChipsFilter,
+        IndustryLpStoreExcludeNegligibleVolumeFilter,
     )
     search_fields = ("offer_id", "type_id", "corporation_id")
     ordering = ("corporation_id", "type_id")
