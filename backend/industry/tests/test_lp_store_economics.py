@@ -30,6 +30,7 @@ from industry.admin import (
     IndustryLpStoreExcludeTagsFilter,
     IndustryLpStoreExcludeUselessOffersFilter,
     IndustryLpStoreOfferAdmin,
+    LpStoreOfferChangeList,
     ensure_lp_offer_econ_on_request,
     lp_offer_econ_cache_key,
 )
@@ -726,6 +727,70 @@ class LpStoreOfferAdminTestCase(TestCase):
             qs.order_by("lp_cost").values_list("offer_id", flat=True)
         )
         self.assertEqual(ordered, [2001])
+
+    @patch("industry.admin.offer_economics_for_queryset")
+    def test_conversion_sell_sort_matches_display_economics(self, mock_econ):
+        """o=-10 must order by real conversion sell, not SQL approx."""
+        other = IndustryLpStoreOffer.objects.create(
+            offer_id=2003,
+            corporation_id=TLIB_CORP_ID,
+            type_id=INPUT_TYPE_ID,
+            lp_cost=500,
+            isk_cost=0,
+            quantity=1,
+        )
+        low = self.offer
+        high = other
+        mock_econ.return_value = {
+            low.pk: SimpleNamespace(
+                conversion_isk_per_lp_sell=100.0,
+                conversion_isk_per_lp_buy=90.0,
+                jita_sell=1,
+                jita_buy=1,
+                volume_1d=0,
+                volume_7d=0,
+                volume_30d=10,
+                acquisition_isk_per_unit=1,
+                profit_vs_sell=1,
+            ),
+            high.pk: SimpleNamespace(
+                conversion_isk_per_lp_sell=9_000.0,
+                conversion_isk_per_lp_buy=8_000.0,
+                jita_sell=1,
+                jita_buy=1,
+                volume_1d=0,
+                volume_7d=0,
+                volume_30d=10,
+                acquisition_isk_per_unit=1,
+                profit_vs_sell=1,
+            ),
+        }
+        request = self.factory.get(
+            "/admin/industry/industrylpstoreoffer/",
+            {"o": "-10"},
+        )
+        request.user = self.user
+        cl = LpStoreOfferChangeList(
+            request,
+            IndustryLpStoreOffer,
+            list(self.admin.list_display),
+            self.admin.list_display_links,
+            self.admin.list_filter,
+            self.admin.date_hierarchy,
+            self.admin.search_fields,
+            self.admin.list_select_related,
+            self.admin.list_per_page,
+            self.admin.list_max_show_all,
+            self.admin.list_editable,
+            self.admin,
+            sortable_by=self.admin.get_sortable_by(request),
+            search_help_text=None,
+        )
+        ordered_pks = list(
+            cl.get_queryset(request).values_list("pk", flat=True)
+        )
+        self.assertEqual(ordered_pks[0], high.pk)
+        self.assertEqual(ordered_pks[1], low.pk)
 
     def test_exclude_supply_packages_hides_required_package_offers(self):
         """BPC output + Supply Package required item → excluded."""

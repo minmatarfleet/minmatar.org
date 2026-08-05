@@ -424,6 +424,8 @@ def annotate_lp_store_offer_sort_fields(queryset):
     qs = queryset.annotate(
         sort_type_name=Subquery(type_name_sq),
         sort_jita_price=Subquery(hist_avg_sq),
+        sort_jita_sell=Subquery(hist_avg_sq),
+        sort_jita_buy=Subquery(hist_avg_sq),
         sort_volume_1d=Subquery(_volume_sq(1)),
         sort_volume_7d=Subquery(_volume_sq(7)),
         sort_volume_30d=Subquery(_volume_sq(30)),

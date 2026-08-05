@@ -2,9 +2,10 @@ import logging
 
 from django.contrib import admin
 from django.contrib import messages
+from django.contrib.admin.views.main import ChangeList
 from django import forms
 from django.core.cache import cache
-from django.db.models import Count, Max, Q, Sum
+from django.db.models import Case, Count, IntegerField, Max, Q, Sum, When
 from django.http import HttpResponseRedirect
 from django.middleware.csrf import get_token
 from django.urls import path, reverse
@@ -930,6 +931,70 @@ class IndustryLpStoreExcludeBelowSetLpPriceFilter(admin.SimpleListFilter):
         return queryset.filter(pk__in=below)
 
 
+# Map admin order_by annotation names → LpStoreOfferEconomics attributes.
+# Approximate SQL annotations ignore other_cost/BOM/hull mapping; when these
+# keys appear in ordering we re-sort from request economics so the UI matches
+# displayed ISK/LP and volume columns.
+_LP_OFFER_ECON_ORDER_ATTR = {
+    "sort_conversion_sell": "conversion_isk_per_lp_sell",
+    "sort_conversion_buy": "conversion_isk_per_lp_buy",
+    "sort_jita_sell": "jita_sell",
+    "sort_jita_buy": "jita_buy",
+    "sort_volume_1d": "volume_1d",
+    "sort_volume_7d": "volume_7d",
+    "sort_volume_30d": "volume_30d",
+    "sort_acquisition": "acquisition_isk_per_unit",
+    "sort_profit": "profit_vs_sell",
+}
+
+
+class LpStoreOfferChangeList(ChangeList):
+    """ChangeList that sorts economics columns by display economics."""
+
+    def get_queryset(self, request, exclude_parameters=None):
+        qs = super().get_queryset(
+            request, exclude_parameters=exclude_parameters
+        )
+        ordering = list(self.get_ordering(request, qs) or [])
+        econ_terms = []
+        for term in ordering:
+            desc = term.startswith("-")
+            field = term[1:] if desc else term
+            if field in _LP_OFFER_ECON_ORDER_ATTR:
+                econ_terms.append((field, desc))
+        if not econ_terms:
+            return qs
+
+        economics = ensure_lp_offer_econ_on_request(request)
+        # Primary econ key only (matches typical single-column admin sort).
+        field, descending = econ_terms[0]
+        attr = _LP_OFFER_ECON_ORDER_ATTR[field]
+
+        def sort_key(obj):
+            econ = economics.get(obj.pk) if economics else None
+            if econ is None:
+                return (1, 0.0)
+            value = getattr(econ, attr, None)
+            if value is None:
+                return (1, 0.0)
+            return (0, float(value))
+
+        ordered = sorted(qs.order_by("pk"), key=sort_key, reverse=descending)
+        if not ordered:
+            return qs.order_by()
+        pk_order = [obj.pk for obj in ordered]
+        preserved = Case(
+            *[When(pk=pk, then=pos) for pos, pk in enumerate(pk_order)],
+            output_field=IntegerField(),
+        )
+        return (
+            qs.order_by()
+            .filter(pk__in=pk_order)
+            .annotate(_lp_econ_ord=preserved)
+            .order_by("_lp_econ_ord")
+        )
+
+
 @admin.register(IndustryLpStoreOffer)
 class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
     _request_stash = None
@@ -1006,6 +1071,9 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
             .filter(corporation_id__in=tracked_corporation_ids())
         )
         return annotate_lp_store_offer_sort_fields(qs)
+
+    def get_changelist(self, request, **kwargs):
+        return LpStoreOfferChangeList
 
     def get_search_results(self, request, queryset, search_term):
         # queryset already has list filters applied (e.g. currency). Keep a
@@ -1192,11 +1260,11 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
     def conversion_buy_display(self, obj):
         return self._format_rate(obj, "conversion_isk_per_lp_buy")
 
-    @admin.display(description="Jita sell", ordering="sort_jita_price")
+    @admin.display(description="Jita sell", ordering="sort_jita_sell")
     def jita_sell_display(self, obj):
         return self._format_isk(obj, "jita_sell")
 
-    @admin.display(description="Jita buy", ordering="sort_jita_price")
+    @admin.display(description="Jita buy", ordering="sort_jita_buy")
     def jita_buy_display(self, obj):
         return self._format_isk(obj, "jita_buy")
 
