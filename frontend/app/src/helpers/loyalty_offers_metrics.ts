@@ -8,7 +8,7 @@ export interface LoyaltyOffersMetrics {
     monthly_lp_volume: number
 }
 
-function conversion_for_side(
+export function conversion_for_side(
     offer: LoyaltyOffer,
     side: LoyaltyOffersSide,
 ): number | null {
@@ -19,6 +19,14 @@ function conversion_for_side(
     return offer.conversion_isk_per_lp_sell
 }
 
+export function conversion_ordering_key(side: LoyaltyOffersSide): string {
+    if (side === 'buy')
+        return 'conversion_buy'
+    if (side === 'avg_7d')
+        return 'conversion_avg_7d'
+    return 'conversion_sell'
+}
+
 /** LP needed to cover market volume (matches row volume tooltips). */
 export function offer_lp_for_volume(
     offer: LoyaltyOffer,
@@ -26,7 +34,7 @@ export function offer_lp_for_volume(
 ): number {
     if (volume == null || volume <= 0)
         return 0
-    const qty = Math.max(offer.quantity || 1, 1)
+    const qty = offer.quantity || 1
     return Math.ceil(volume / qty) * offer.lp_cost
 }
 

@@ -130,9 +130,7 @@ import MemberIcon from '@components/icons/MemberIcon.astro'
                                 data-tippy-content={`${row.pct.toFixed(0)}%`}
                                 x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
                                 style={`--progress-color: var(${row.progress_color}); --progress-glow-color: var(${row.progress_color});`}
-                            >
-                                {row.pct.toFixed(2)}%
-                            </Progress>
+                            />
                         </div>
 
                         <div class="[ basis-[4ch] shrink-0 text-right ]">

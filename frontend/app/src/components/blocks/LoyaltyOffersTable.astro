@@ -3,6 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { LoyaltyOffer } from '@dtypes/api.minmatar.org'
+import { conversion_ordering_key } from '@helpers/loyalty_offers_metrics'
 import { query_string } from '@helpers/string'
 
 interface Props {
@@ -22,11 +23,7 @@ const {
 
 const SLOT = '#loyalty-offers-slot'
 const PARTIAL = translatePath('/partials/loyalty_offers_component')
-const conversion_key = side === 'buy'
-    ? 'conversion_buy'
-    : side === 'avg_7d'
-        ? 'conversion_avg_7d'
-        : 'conversion_sell'
+const conversion_key = conversion_ordering_key(side)
 const default_ordering = `-${conversion_key}`
 
 function sort_url(column: string): string {
@@ -64,7 +61,7 @@ function sort_indicator(column: string): string {
 }
 
 import Flexblock from '@components/compositions/Flexblock.astro'
-import LoyaltyOffersRows from '@components/blocks/LoyaltyOffersRows.astro'
+import LoyaltyOfferItem from '@components/blocks/LoyaltyOfferItem.astro'
 ---
 
 <Flexblock class="[ loyalty-offers-table ]" gap="var(--space-s)">
@@ -102,10 +99,9 @@ import LoyaltyOffersRows from '@components/blocks/LoyaltyOffersRows.astro'
             </div>
 
             <div id="loyalty-offers-tbody">
-                <LoyaltyOffersRows
-                    offers={offers}
-                    side={side}
-                />
+                {offers.map((offer) => (
+                    <LoyaltyOfferItem offer={offer} side={side} />
+                ))}
             </div>
         </div>
     </div>

@@ -44,7 +44,6 @@ def get_offers(
     limit: Optional[int] = Query(None, ge=1, le=MAX_LIMIT),
     offset: int = Query(0, ge=0),
 ):
-    # Cold start after deploy: build snapshot once from local caches.
     if (
         not IndustryLpStoreOfferEconomics.objects.exists()
         and IndustryLpStoreOffer.objects.exists()
@@ -64,7 +63,6 @@ def get_offers(
         ordering=ordering or DEFAULT_API_ORDERING,
         limit=limit,
         offset=offset,
-        request=request,
     )
     items = [offer_economics_row_response(row) for row in page.rows]
     rebuilt_at = (

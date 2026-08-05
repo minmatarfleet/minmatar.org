@@ -3,6 +3,10 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import type { LoyaltyOffer } from '@dtypes/api.minmatar.org'
+import {
+    conversion_for_side,
+    offer_lp_for_volume,
+} from '@helpers/loyalty_offers_metrics'
 import { number_thousand_separator } from '@helpers/numbers'
 
 interface Props {
@@ -31,27 +35,15 @@ function format_rate(value: number | null | undefined): string {
 function volume_lp_tooltip(volume: number | null | undefined): string | undefined {
     if (volume == null)
         return undefined
-    const qty = Math.max(offer.quantity || 1, 1)
-    const packs = Math.ceil(volume / qty)
-    const total_lp = packs * offer.lp_cost
     return t('industry.loyalty.offers.volume_lp_tooltip').replace(
         '{lp}',
-        number_thousand_separator(total_lp),
+        number_thousand_separator(offer_lp_for_volume(offer, volume)),
     )
 }
 
 const is_blueprint = offer.kind === 'blueprint'
 const icon_type = is_blueprint ? 'bp' : 'icon'
-const conversion = side === 'buy'
-    ? offer.conversion_isk_per_lp_buy
-    : side === 'avg_7d'
-        ? offer.conversion_isk_per_lp_avg_7d
-        : offer.conversion_isk_per_lp_sell
-
-const volume_cells = [
-    { volume: offer.volume_7d },
-    { volume: offer.volume_30d },
-]
+const conversion = conversion_for_side(offer, side)
 ---
 
 <div class="[ loyalty-offer-item ]" role="row">
@@ -72,13 +64,16 @@ const volume_cells = [
     <div class="[ loyalty-offer-item__num ]" role="cell">{format_int(offer.quantity)}</div>
     <div class="[ loyalty-offer-item__num ]" role="cell">{format_int(offer.other_cost)}</div>
     <div class="[ loyalty-offer-item__num ]" role="cell">{format_rate(conversion)}</div>
-    {volume_cells.map(({ volume }) => (
-        <div
-            class="[ loyalty-offer-item__num ]"
-            role="cell"
-            data-tippy-content={volume_lp_tooltip(volume)}
-        >{format_int(volume)}</div>
-    ))}
+    <div
+        class="[ loyalty-offer-item__num ]"
+        role="cell"
+        data-tippy-content={volume_lp_tooltip(offer.volume_7d)}
+    >{format_int(offer.volume_7d)}</div>
+    <div
+        class="[ loyalty-offer-item__num ]"
+        role="cell"
+        data-tippy-content={volume_lp_tooltip(offer.volume_30d)}
+    >{format_int(offer.volume_30d)}</div>
 </div>
 
 <style lang="scss">

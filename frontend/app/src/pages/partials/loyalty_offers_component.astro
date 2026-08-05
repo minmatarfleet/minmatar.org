@@ -8,7 +8,11 @@ import {
     get_loyalty_offers,
 } from '@helpers/api.minmatar.org/loyalty'
 import { from_now_diff } from '@helpers/date'
-import { compute_loyalty_offers_metrics } from '@helpers/loyalty_offers_metrics'
+import {
+    compute_loyalty_offers_metrics,
+    conversion_ordering_key,
+    type LoyaltyOffersSide,
+} from '@helpers/loyalty_offers_metrics'
 import { query_string } from '@helpers/string'
 
 const params = Astro.url.searchParams
@@ -33,21 +37,16 @@ const exclude_skins = binary_param('exclude_skins')
 const exclude_useless_offers = binary_param('exclude_useless_offers')
 const exclude_below_set_lp_price = binary_param('exclude_below_set_lp_price')
 const side_raw = params.get('side')
-const side = side_raw === 'sell'
+const side: LoyaltyOffersSide = side_raw === 'sell'
     ? 'sell'
     : side_raw === 'avg_7d'
         ? 'avg_7d'
         : 'buy'
 const q = (params.get('q') || '').trim() || undefined
 const ordering_raw = params.get('ordering') || '-conversion_buy'
-const conversion_target = side === 'buy'
-    ? 'conversion_buy'
-    : side === 'avg_7d'
-        ? 'conversion_avg_7d'
-        : 'conversion_sell'
 const ordering = ordering_raw.replace(
     /conversion_(?:sell|buy|avg_7d)/g,
-    conversion_target,
+    conversion_ordering_key(side),
 )
 
 const filter_state = {

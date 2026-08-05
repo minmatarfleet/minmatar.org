@@ -32,7 +32,6 @@ from industry.helpers.lp_catalog import (
 )
 from industry.helpers.lp_store_economics import (
     LpStoreOfferEconomics,
-    annotate_lp_store_offer_sort_fields,
     offer_economics_for_queryset,
     offer_is_below_set_lp_price,
     tracked_corporation_ids,
@@ -187,14 +186,6 @@ def clear_lp_offer_econ_on_request(request) -> None:
         delattr(request, LP_OFFER_ECON_ATTR)
 
 
-def tracked_offers_queryset() -> QuerySet:
-    """Base queryset for tracked LP currencies, with sort annotations."""
-    qs = IndustryLpStoreOffer.objects.filter(
-        corporation_id__in=tracked_corporation_ids()
-    )
-    return annotate_lp_store_offer_sort_fields(qs)
-
-
 def _binary_type_filter(
     queryset: QuerySet,
     value: Optional[str],
@@ -252,7 +243,6 @@ def apply_exclude_useless_offers_filter(
 ) -> QuerySet:
     if value not in ("0", "1"):
         return queryset
-    # values_list avoids loading full offer rows; economics already has data.
     pks = list(queryset.values_list("pk", flat=True))
     if not pks:
         return queryset
@@ -321,49 +311,6 @@ def apply_search(queryset: QuerySet, search_term: Optional[str]) -> QuerySet:
     return filtered_qs.filter(q)
 
 
-def apply_offer_filters(
-    queryset: QuerySet,
-    *,
-    currency: Optional[int] = None,
-    exclude_tags: Optional[str] = None,
-    exclude_supply_packages: Optional[str] = None,
-    exclude_chips: Optional[str] = None,
-    exclude_skins: Optional[str] = None,
-    exclude_useless_offers: Optional[str] = None,
-    exclude_below_set_lp_price: Optional[str] = None,
-    side: str = "sell",
-    q: Optional[str] = None,
-    economics: Optional[Dict[int, LpStoreOfferEconomics]] = None,
-    request=None,
-) -> QuerySet:
-    """Apply all public/admin offer filters in admin-equivalent order."""
-    qs = apply_currency_filter(queryset, currency)
-    qs = apply_exclude_tags_filter(qs, exclude_tags)
-    qs = apply_exclude_supply_packages_filter(qs, exclude_supply_packages)
-    qs = apply_exclude_chips_filter(qs, exclude_chips)
-    qs = apply_exclude_skins_filter(qs, exclude_skins)
-
-    needs_econ = exclude_useless_offers in (
-        "0",
-        "1",
-    ) or exclude_below_set_lp_price in ("0", "1")
-    if needs_econ:
-        if economics is None:
-            economics = get_tracked_offer_economics(request=request)
-        qs = apply_exclude_useless_offers_filter(
-            qs, exclude_useless_offers, economics=economics
-        )
-        qs = apply_exclude_below_set_lp_price_filter(
-            qs,
-            exclude_below_set_lp_price,
-            economics=economics,
-            side=side if side in ("sell", "buy", "avg_7d") else "sell",
-        )
-
-    qs = apply_search(qs, q)
-    return qs
-
-
 def sort_offers_by_econ(
     queryset: QuerySet,
     *,
@@ -427,74 +374,11 @@ def parse_api_ordering(
     return descending, field
 
 
-def order_api_offers(
-    queryset: QuerySet,
-    *,
-    ordering: Optional[str] = None,
-    economics: Dict[int, LpStoreOfferEconomics],
-) -> QuerySet:
-    """Legacy helper retained for admin-style callers; prefer snapshot query."""
-    descending, field = parse_api_ordering(ordering)
-    # Map snapshot field names back to live sort when possible.
-    attr = field
-    if field == "offer_updated_at":
-        prefix = "-" if descending else ""
-        return queryset.order_by(f"{prefix}updated_at", "pk")
-    if field in ("lp_cost", "isk_cost", "quantity"):
-        prefix = "-" if descending else ""
-        return queryset.order_by(f"{prefix}{field}", "pk")
-
-    def sort_key(obj):
-        econ = economics.get(obj.pk) if economics else None
-        if econ is None:
-            return (1, "")
-        # Snapshot conversion_* map onto dataclass attrs.
-        econ_attr = {
-            "conversion_isk_per_lp_sell": "conversion_isk_per_lp_sell",
-            "conversion_isk_per_lp_buy": "conversion_isk_per_lp_buy",
-            "conversion_isk_per_lp_avg_7d": "conversion_isk_per_lp_avg_7d",
-            "type_name": "type_name",
-            "currency_name": "currency_name",
-            "other_cost": "other_cost",
-            "jita_sell": "jita_sell",
-            "jita_buy": "jita_buy",
-            "jita_avg_7d": "jita_avg_7d",
-            "volume_1d": "volume_1d",
-            "volume_7d": "volume_7d",
-            "volume_30d": "volume_30d",
-        }.get(attr, attr)
-        value = getattr(econ, econ_attr, None)
-        if value is None:
-            return (1, "")
-        if isinstance(value, str):
-            return (0, value.lower())
-        return (0, float(value))
-
-    ordered = sorted(queryset.order_by("pk"), key=sort_key, reverse=descending)
-    if not ordered:
-        return queryset.order_by()
-    pk_order = [obj.pk for obj in ordered]
-    preserved = Case(
-        *[When(pk=pk, then=pos) for pos, pk in enumerate(pk_order)],
-        output_field=IntegerField(),
-    )
-    return (
-        queryset.order_by()
-        .filter(pk__in=pk_order)
-        .annotate(_lp_econ_ord=preserved)
-        .order_by("_lp_econ_ord")
-    )
-
-
 def display_type_name(econ: LpStoreOfferEconomics) -> str:
     """Public display name, including (BPC) for blueprint copies."""
     if econ.kind == "blueprint" and econ.market_type_id != econ.type_id:
         return f"{econ.market_type_name} (BPC)"
     return econ.type_name
-
-
-def display_type_id(econ: LpStoreOfferEconomics) -> int:
-    return econ.type_id
 
 
 @dataclass(frozen=True)
@@ -572,14 +456,11 @@ def query_lp_store_offers(
     ordering: Optional[str] = None,
     limit: Optional[int] = None,
     offset: int = 0,
-    request=None,
 ) -> LpStoreOffersPage:
     """Filter and sort the hourly LP offer economics snapshot.
 
     When ``limit`` is None, returns the full filtered set (snapshot is small).
     """
-    # Unused request kept for call-site compatibility.
-    _ = request
     offers_side = normalize_offers_side(side)
     qs = IndustryLpStoreOfferEconomics.objects.all()
     if currency is not None:
@@ -601,7 +482,6 @@ def query_lp_store_offers(
     descending, field = parse_api_ordering(
         normalize_offers_ordering(ordering, offers_side)
     )
-    # Nulls last so missing rates sink when sorting best conversions first.
     if descending:
         qs = qs.order_by(F(field).desc(nulls_last=True), "offer_id")
     else:
@@ -636,10 +516,8 @@ __all__ = [
     "apply_exclude_supply_packages_filter",
     "apply_exclude_tags_filter",
     "apply_exclude_useless_offers_filter",
-    "apply_offer_filters",
     "apply_search",
     "clear_lp_offer_econ_on_request",
-    "display_type_id",
     "display_type_name",
     "ensure_lp_offer_econ_on_request",
     "get_tracked_offer_economics",
@@ -647,9 +525,7 @@ __all__ = [
     "lp_offer_econ_cache_key",
     "normalize_offers_ordering",
     "normalize_offers_side",
-    "order_api_offers",
     "parse_api_ordering",
     "query_lp_store_offers",
     "sort_offers_by_econ",
-    "tracked_offers_queryset",
 ]
