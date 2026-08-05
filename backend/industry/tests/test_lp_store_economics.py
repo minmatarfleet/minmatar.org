@@ -234,9 +234,11 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         self.assertEqual(econ.profit_vs_sell, 150_000_000)
         self.assertEqual(econ.isk_per_lp, 800.0)
         self.assertEqual(econ.acquisition_isk_per_unit, 100_000_000)
-        # (250M - 20M) / 100k LP = 2300
-        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 2300.0)
-        self.assertAlmostEqual(econ.conversion_isk_per_lp_buy, 2300.0)
+        # Other cost includes SDE manufacturing BOM (1× LP Input Item @ 1.5M).
+        self.assertEqual(econ.other_cost, 1_500_000)
+        # (250M - 20M - 1.5M) / 100k LP = 2285
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 2285.0)
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_buy, 2285.0)
 
     @patch(
         "industry.helpers.lp_store_economics.plan_product_unit_cost",
@@ -276,6 +278,32 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         self.assertEqual(cheap_econ.profit_vs_sell, 218_000_000)
         self.assertEqual(dear_econ.profit_vs_sell, 208_000_000)
         self.assertNotEqual(cheap_econ.cost_per_unit, dear_econ.cost_per_unit)
+        # Conversion subtracts BOM (1.5M); acquisition does not.
+        # cheap: (250M - 0 - 1.5M) / 40k = 6212.5
+        self.assertAlmostEqual(cheap_econ.conversion_isk_per_lp_sell, 6212.5)
+        self.assertEqual(cheap_econ.other_cost, 1_500_000)
+
+    def test_blueprint_pack_multiplies_build_materials_in_other_cost(self):
+        """Fuzzwork scales Materials to build by offer quantity."""
+        pack = IndustryLpStoreOffer.objects.create(
+            offer_id=1012,
+            corporation_id=TLIB_CORP_ID,
+            type_id=BPC_TYPE_ID,
+            lp_cost=100_000,
+            isk_cost=100_000_000,
+            quantity=10,
+        )
+        with patch(
+            "industry.helpers.lp_store_economics.plan_product_unit_cost",
+            return_value=type("U", (), {"cost_per": 180_000_000})(),
+        ):
+            econ = offer_economics_for_queryset([pack])[pack.pk]
+        # 10 runs × 1 input @ 1.5M
+        self.assertEqual(econ.other_cost, 15_000_000)
+        # (250M * 10 - 100M - 15M) / 100k = 23850
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 23850.0)
+        # Acquisition ignores BOM: (100k*800 + 100M) / 10 = 18M
+        self.assertEqual(econ.acquisition_isk_per_unit, 18_000_000)
 
     def test_volume_windows_sum_daily_history(self):
         today = timezone.now().date()
@@ -530,13 +558,15 @@ class LpStoreOfferAdminTestCase(TestCase):
         )
         request.user = self.user
         qs = self.admin.get_queryset(request)
+        # Django 5.2 SimpleListFilter stores params[name][-1].
         currency_filter = IndustryLpStoreCurrencyListFilter(
             request,
-            {"currency": str(TLIB_CORP_ID)},
+            {"currency": [str(TLIB_CORP_ID)]},
             IndustryLpStoreOffer,
             self.admin,
         )
         qs = currency_filter.queryset(request, qs)
+        self.assertEqual(list(qs.values_list("offer_id", flat=True)), [2001])
         result, _ = self.admin.get_search_results(request, qs, "LP Input")
         self.assertEqual(
             list(result.values_list("offer_id", flat=True)), [2001]
@@ -550,21 +580,23 @@ class LpStoreOfferAdminTestCase(TestCase):
         self.assertNotIn("kind_display", self.admin.list_display)
         self.assertNotIn("ak_cost", self.admin.list_display)
         self.assertNotIn("volume_90d_display", self.admin.list_display)
+        # Fuzzwork conversion rates only — not acquisition / buyback columns.
+        self.assertNotIn("isk_per_lp_display", self.admin.list_display)
+        self.assertNotIn("cost_display", self.admin.list_display)
+        self.assertNotIn("profit_vs_sell_display", self.admin.list_display)
         self.assertEqual(self.admin.list_display[0], "type_name_display")
         # Market prices before conversion rates (Fuzzwork-like).
         sell_i = self.admin.list_display.index("jita_sell_display")
         conv_i = self.admin.list_display.index("conversion_sell_display")
         self.assertLess(sell_i, conv_i)
+        self.assertIn("conversion_buy_display", self.admin.list_display)
         self.assertIn("volume_1d_display", self.admin.list_display)
         self.assertIn("volume_7d_display", self.admin.list_display)
         self.assertIn("volume_30d_display", self.admin.list_display)
 
-    def test_lp_cost_and_acquisition_columns_are_sortable(self):
+    def test_lp_cost_column_is_sortable(self):
         self.assertEqual(
             self.admin.lp_cost_display.admin_order_field, "lp_cost"
-        )
-        self.assertEqual(
-            self.admin.cost_display.admin_order_field, "sort_acquisition"
         )
         request = self.factory.get("/admin/industry/industrylpstoreoffer/")
         request.user = self.user
@@ -573,12 +605,6 @@ class LpStoreOfferAdminTestCase(TestCase):
             qs.order_by("lp_cost").values_list("offer_id", flat=True)
         )
         self.assertEqual(ordered, [2001])
-        # Sort annotation is queryable.
-        self.assertIsNotNone(
-            qs.order_by("sort_acquisition")
-            .values_list("sort_acquisition", flat=True)
-            .first()
-        )
 
     def test_exclude_supply_packages_hides_required_package_offers(self):
         """BPC output + Supply Package required item → excluded."""
@@ -626,18 +652,39 @@ class LpStoreOfferAdminTestCase(TestCase):
         )
         request = self.factory.get("/admin/industry/industrylpstoreoffer/")
         request.user = self.user
-        filt = IndustryLpStoreExcludeSupplyPackagesFilter(
+        yes = IndustryLpStoreExcludeSupplyPackagesFilter(
             request,
             {"exclude_supply_packages": "1"},
             IndustryLpStoreOffer,
             self.admin,
         )
-        qs = filt.queryset(request, self.admin.get_queryset(request))
-        offer_ids = set(qs.values_list("offer_id", flat=True))
-        self.assertIn(clean.offer_id, offer_ids)
-        self.assertIn(self.offer.offer_id, offer_ids)
-        self.assertNotIn(with_pkg.offer_id, offer_ids)
-        self.assertNotIn(package_offer.offer_id, offer_ids)
+        yes_ids = set(
+            yes.queryset(
+                request, self.admin.get_queryset(request)
+            ).values_list("offer_id", flat=True)
+        )
+        self.assertIn(clean.offer_id, yes_ids)
+        self.assertIn(self.offer.offer_id, yes_ids)
+        self.assertNotIn(with_pkg.offer_id, yes_ids)
+        self.assertNotIn(package_offer.offer_id, yes_ids)
+
+        no = IndustryLpStoreExcludeSupplyPackagesFilter(
+            request,
+            {"exclude_supply_packages": "0"},
+            IndustryLpStoreOffer,
+            self.admin,
+        )
+        no_ids = set(
+            no.queryset(request, self.admin.get_queryset(request)).values_list(
+                "offer_id", flat=True
+            )
+        )
+        self.assertNotIn(clean.offer_id, no_ids)
+        self.assertIn(with_pkg.offer_id, no_ids)
+        self.assertIn(package_offer.offer_id, no_ids)
+        self.assertEqual(
+            yes.lookups(request, self.admin), (("1", "Yes"), ("0", "No"))
+        )
 
     def test_exclude_tags_hides_required_tag_offers(self):
         tags_group = EveGroup.objects.create(
@@ -683,14 +730,32 @@ class LpStoreOfferAdminTestCase(TestCase):
         )
         request = self.factory.get("/admin/industry/industrylpstoreoffer/")
         request.user = self.user
-        filt = IndustryLpStoreExcludeTagsFilter(
+        yes = IndustryLpStoreExcludeTagsFilter(
             request, {"exclude_tags": "1"}, IndustryLpStoreOffer, self.admin
         )
-        qs = filt.queryset(request, self.admin.get_queryset(request))
-        offer_ids = set(qs.values_list("offer_id", flat=True))
-        self.assertIn(clean.offer_id, offer_ids)
-        self.assertNotIn(with_tag.offer_id, offer_ids)
-        self.assertNotIn(tag_offer.offer_id, offer_ids)
+        yes_ids = set(
+            yes.queryset(
+                request, self.admin.get_queryset(request)
+            ).values_list("offer_id", flat=True)
+        )
+        self.assertIn(clean.offer_id, yes_ids)
+        self.assertNotIn(with_tag.offer_id, yes_ids)
+        self.assertNotIn(tag_offer.offer_id, yes_ids)
+
+        no = IndustryLpStoreExcludeTagsFilter(
+            request, {"exclude_tags": "0"}, IndustryLpStoreOffer, self.admin
+        )
+        no_ids = set(
+            no.queryset(request, self.admin.get_queryset(request)).values_list(
+                "offer_id", flat=True
+            )
+        )
+        self.assertNotIn(clean.offer_id, no_ids)
+        self.assertIn(with_tag.offer_id, no_ids)
+        self.assertIn(tag_offer.offer_id, no_ids)
+        self.assertEqual(
+            yes.lookups(request, self.admin), (("1", "Yes"), ("0", "No"))
+        )
 
     @patch("industry.admin.offer_economics_for_queryset")
     def test_changelist_renders_names_before_stash_clear(self, mock_econ):

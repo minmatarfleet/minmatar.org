@@ -715,21 +715,23 @@ class IndustryLpStoreExcludeTagsFilter(admin.SimpleListFilter):
     parameter_name = "exclude_tags"
 
     def lookups(self, request, model_admin):
-        return (("1", "Yes"),)
+        return (("1", "Yes"), ("0", "No"))
 
     def queryset(self, request, queryset):
-        if self.value() != "1":
+        value = self.value()
+        if value not in ("0", "1"):
             return queryset
         tag_ids = tag_type_ids()
         if not tag_ids:
             return queryset
-        # Hide offers that *are* tags or that require a tag as input.
+        # Offers that *are* tags or that require a tag as input.
         req_offer_ids = IndustryLpStoreOfferRequiredItem.objects.filter(
             type_id__in=tag_ids
         ).values("offer_id")
-        return queryset.exclude(
-            Q(type_id__in=tag_ids) | Q(pk__in=req_offer_ids)
-        )
+        tag_q = Q(type_id__in=tag_ids) | Q(pk__in=req_offer_ids)
+        if value == "1":
+            return queryset.exclude(tag_q)
+        return queryset.filter(tag_q)
 
 
 class IndustryLpStoreExcludeSupplyPackagesFilter(admin.SimpleListFilter):
@@ -737,21 +739,23 @@ class IndustryLpStoreExcludeSupplyPackagesFilter(admin.SimpleListFilter):
     parameter_name = "exclude_supply_packages"
 
     def lookups(self, request, model_admin):
-        return (("1", "Yes"),)
+        return (("1", "Yes"), ("0", "No"))
 
     def queryset(self, request, queryset):
-        if self.value() != "1":
+        value = self.value()
+        if value not in ("0", "1"):
             return queryset
         package_ids = supply_package_type_ids()
         if not package_ids:
             return queryset
-        # Hide offers that *are* supply packages or require one as input.
+        # Offers that *are* supply packages or require one as input.
         req_offer_ids = IndustryLpStoreOfferRequiredItem.objects.filter(
             type_id__in=package_ids
         ).values("offer_id")
-        return queryset.exclude(
-            Q(type_id__in=package_ids) | Q(pk__in=req_offer_ids)
-        )
+        package_q = Q(type_id__in=package_ids) | Q(pk__in=req_offer_ids)
+        if value == "1":
+            return queryset.exclude(package_q)
+        return queryset.filter(package_q)
 
 
 @admin.register(IndustryLpStoreOffer)
