@@ -1,0 +1,70 @@
+---
+import Flexblock from '@components/compositions/Flexblock.astro'
+import LoyaltyOffersMetricsSkeleton from '@components/blocks/LoyaltyOffersMetricsSkeleton.astro'
+---
+
+<div class="[ loyalty-offers-skeleton solid-transparency ]" aria-hidden="true">
+    <Flexblock gap="var(--space-l)">
+        <LoyaltyOffersMetricsSkeleton />
+        <div class="[ loyalty-offers-skeleton__toolbar ]"></div>
+        <div class="[ loyalty-offers-skeleton__chips ]"></div>
+        <div class="[ loyalty-offers-skeleton__table ]">
+            <div class="[ loyalty-offers-skeleton__header ]"></div>
+            {Array.from({ length: 8 }).map(() => (
+                <div class="[ loyalty-offers-skeleton__row ]"></div>
+            ))}
+        </div>
+    </Flexblock>
+</div>
+
+<style lang="scss">
+    .loyalty-offers-skeleton {
+        padding-block: var(--space-m);
+        padding-inline: var(--space-s);
+    }
+
+    .loyalty-offers-skeleton__toolbar,
+    .loyalty-offers-skeleton__chips,
+    .loyalty-offers-skeleton__header,
+    .loyalty-offers-skeleton__row {
+        background: color-mix(in srgb, var(--background) 85%, var(--foreground));
+        border-radius: 2px;
+        animation: loyalty-offers-pulse 1.2s ease-in-out infinite;
+    }
+
+    .loyalty-offers-skeleton__toolbar {
+        height: var(--space-2xl);
+        width: min(100%, 36rem);
+    }
+
+    .loyalty-offers-skeleton__chips {
+        height: var(--space-l);
+        width: min(100%, 42rem);
+    }
+
+    .loyalty-offers-skeleton__table {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+    }
+
+    .loyalty-offers-skeleton__header {
+        height: var(--space-m);
+        width: 100%;
+    }
+
+    .loyalty-offers-skeleton__row {
+        height: var(--space-xl);
+        width: 100%;
+    }
+
+    @keyframes loyalty-offers-pulse {
+        0%,
+        100% {
+            opacity: 0.45;
+        }
+        50% {
+            opacity: 0.85;
+        }
+    }
+</style>

@@ -276,6 +276,8 @@ class LpAdminViewsTestCase(TestCase):
         self.assertContains(response, "Ledger entries")
         self.assertContains(response, "Market orders")
         self.assertContains(response, "LP store offers")
+        self.assertContains(response, "Open public catalog")
+        self.assertContains(response, "/industry/loyalty/offers/")
 
     def test_currency_change_records_price_history(self):
         url = reverse(

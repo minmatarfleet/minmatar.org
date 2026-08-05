@@ -1,4 +1,4 @@
-"""Exclude-useless-offers screening for LP store admin.
+"""Exclude-useless-offers screening for LP store catalogs.
 
 An offer is useless when it fails any of:
 1. Stockpile usefulness — cannot clear meaningful LP/ISK from a 250k–1M

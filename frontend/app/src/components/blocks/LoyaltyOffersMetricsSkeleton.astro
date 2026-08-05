@@ -1,0 +1,63 @@
+---
+import Grid from '@components/compositions/Grid.astro'
+---
+
+<section class="[ loyalty-offers-metrics-skeleton ]" aria-hidden="true">
+    <Grid
+        class="[ loyalty-offers-metrics-skeleton__grid ]"
+        min_item_width="220px"
+        row_gap="var(--space-s)"
+        column_gap="var(--space-s)"
+    >
+        {Array.from({ length: 3 }).map(() => (
+            <div class="[ loyalty-offers-metrics-skeleton__card ]">
+                <div class="[ skel skel-label ]"></div>
+                <div class="[ skel skel-value ]"></div>
+                <div class="[ skel skel-meta ]"></div>
+            </div>
+        ))}
+    </Grid>
+</section>
+
+<style lang="scss">
+    .loyalty-offers-metrics-skeleton .skel {
+        border-radius: 2px;
+        background: color-mix(in srgb, var(--background) 85%, var(--foreground));
+        animation: loyalty-offers-metrics-skel 1.2s ease-in-out infinite;
+    }
+
+    .loyalty-offers-metrics-skeleton__card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-m);
+        border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+        background: color-mix(in srgb, var(--background) 78%, transparent);
+    }
+
+    .skel-label {
+        width: 8rem;
+        height: 0.75rem;
+    }
+
+    .skel-value {
+        width: 5rem;
+        height: clamp(2rem, 4.5vw, 3rem);
+        max-width: 70%;
+    }
+
+    .skel-meta {
+        width: 9rem;
+        height: 0.75rem;
+    }
+
+    @keyframes loyalty-offers-metrics-skel {
+        0%,
+        100% {
+            opacity: 0.45;
+        }
+        50% {
+            opacity: 0.85;
+        }
+    }
+</style>

@@ -1,0 +1,132 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { DEFAULT_LOYALTY_OFFERS_PARAMS } from '@helpers/loyalty_offers_metrics'
+import { query_string } from '@helpers/string'
+
+const LOYALTY_OFFERS_PARTIAL_URL = translatePath(
+    `/partials/loyalty_offers_component?${query_string(DEFAULT_LOYALTY_OFFERS_PARAMS)}`,
+)
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Breadcrumb from '@components/blocks/Breadcrumb.astro'
+import LoyaltyOffersSkeleton from '@components/blocks/LoyaltyOffersSkeleton.astro'
+
+const page_title = t('industry.loyalty.offers.page_title')
+const breadcrumb_items = [
+    { label: t('market.page_title'), href: translatePath('/market/') },
+    { label: t('industry.loyalty.page_title'), href: translatePath('/industry/loyalty/') },
+    { label: page_title },
+]
+const offers_count_text = t('industry.loyalty.offers.showing_plural').replace('{count}', '0')
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('industry.loyalty.offers.meta_description')}
+    components={{
+        tippy: true,
+    }}
+>
+    <PageWide
+        cover={{
+            image: '/images/loyalty-points-cover.webp',
+            image_990: '/images/loyalty-points-cover.webp',
+            overlay: true,
+            scrollable: true,
+        }}
+        sticky={true}
+        x-data={`{
+            offers_count: 0,
+            last_updated_text: '',
+            offers_plural: '${t('industry.loyalty.offers.showing_plural')}',
+            offers_singular: '${t('industry.loyalty.offers.showing_singular')}',
+        }`}
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <Flexblock gap="var(--space-s)">
+                <Breadcrumb items={breadcrumb_items} />
+                <Flexblock gap="var(--space-3xs)">
+                    <PageTitle>{page_title}</PageTitle>
+                    <small
+                        x-text="(offers_count != 1 ? offers_plural : offers_singular).replace('{count}', String(offers_count))"
+                    >{offers_count_text}</small>
+                    <small x-show="last_updated_text" x-text="last_updated_text"></small>
+                </Flexblock>
+            </Flexblock>
+        </FlexInline>
+
+        <div
+            id="loyalty-offers-slot"
+            data-loyalty-offers-deferred="1"
+            hx-get={LOYALTY_OFFERS_PARTIAL_URL}
+            hx-trigger="load"
+            hx-swap="innerHTML"
+            hx-indicator=".loader"
+            aria-busy="true"
+            aria-live="polite"
+        >
+            <LoyaltyOffersSkeleton />
+        </div>
+    </PageWide>
+</Viewport>
+
+<script>
+    function refreshLoyaltyOffersSlot() {
+        const slot = document.getElementById('loyalty-offers-slot')
+        if (!slot)
+            return
+
+        slot.setAttribute('aria-busy', 'false')
+        if (typeof htmx !== 'undefined')
+            htmx.process(slot)
+        if (typeof Alpine !== 'undefined')
+            Alpine.initTree(slot)
+        if (typeof tippy === 'function') {
+            tippy('#loyalty-offers-slot [data-tippy-content]', {
+                delay: [100, 200],
+                arrow: true,
+            })
+        }
+    }
+
+    function isLoyaltyOffersRequest(event: any): boolean {
+        const path = String(
+            event.detail?.pathInfo?.requestPath
+                || event.detail?.xhr?.responseURL
+                || event.detail?.elt?.getAttribute?.('hx-get')
+                || '',
+        )
+        return path.includes('loyalty_offers_component')
+    }
+
+    function bindLoyaltyOffersDeferred() {
+        const slot = document.getElementById('loyalty-offers-slot')
+        if (!slot || slot.dataset.bound === '1')
+            return
+        slot.dataset.bound = '1'
+
+        document.body.addEventListener('htmx:afterSwap', (event: any) => {
+            if (!isLoyaltyOffersRequest(event))
+                return
+            refreshLoyaltyOffersSlot()
+        })
+
+        document.body.addEventListener('htmx:afterRequest', (event: any) => {
+            if (!isLoyaltyOffersRequest(event))
+                return
+            if (!event.detail?.successful) {
+                const root = document.getElementById('loyalty-offers-slot')
+                root?.setAttribute('aria-busy', 'false')
+            }
+        })
+    }
+
+    bindLoyaltyOffersDeferred()
+    document.addEventListener('astro:page-load', bindLoyaltyOffersDeferred)
+</script>

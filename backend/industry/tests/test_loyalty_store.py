@@ -2,7 +2,7 @@
 
 from unittest.mock import patch
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from industry.helpers.lp_catalog import (
     expand_with_navy_hull_type_ids,
@@ -10,7 +10,9 @@ from industry.helpers.lp_catalog import (
     lp_market_history_type_ids,
 )
 from industry.helpers.loyalty_store import (
+    ensure_loyalty_store_offers_for_blueprint,
     ensure_loyalty_store_offers_for_product,
+    fetch_loyalty_offers_from_esi,
     get_offer_for_blueprint_type,
     is_pure_lp_isk_offer,
     navy_bpc_cost_for_plan,
@@ -203,6 +205,19 @@ class LoyaltyStoreHelperTestCase(TestCase):
         assert offer is not None
         self.assertEqual(offer.offer_id, 16343)
 
+    def test_fetch_loyalty_offers_from_esi_refused_in_tests(self):
+        with self.assertRaises(RuntimeError) as ctx:
+            fetch_loyalty_offers_from_esi([TLIB_CORP_ID])
+        self.assertIn("Refusing live ESI HTTP", str(ctx.exception))
+
+    def test_ensure_blueprint_skips_esi_in_tests(self):
+        with patch(
+            "industry.helpers.loyalty_store.sync_loyalty_store_offers"
+        ) as mock_sync:
+            offer = ensure_loyalty_store_offers_for_blueprint(TYFI_BP_TYPE_ID)
+            mock_sync.assert_not_called()
+        self.assertIsNone(offer)
+
     def test_lp_catalog_type_ids_includes_required(self):
         sync_loyalty_store_offers(
             corporation_ids=[TLIB_CORP_ID],
@@ -250,6 +265,7 @@ class LoyaltyStoreHelperTestCase(TestCase):
             900.0,
         )
 
+    @override_settings(ALLOW_LIVE_ESI_IN_TESTS=True)
     @patch("industry.tasks.ensure_loyalty_store_offers_for_product_task.delay")
     @patch("industry.helpers.loyalty_store.sync_loyalty_store_offers")
     def test_ensure_for_product_syncs_when_offer_missing(
@@ -299,3 +315,52 @@ class LoyaltyStoreHelperTestCase(TestCase):
         count = ensure_loyalty_store_offers_for_product(product.pk)
         self.assertEqual(count, 3)
         sync_mock.assert_called_once()
+
+    @patch("industry.tasks.ensure_loyalty_store_offers_for_product_task.delay")
+    @patch("industry.helpers.loyalty_store.sync_loyalty_store_offers")
+    def test_ensure_for_product_skips_esi_in_tests(
+        self, sync_mock, delay_mock
+    ):
+        category = EveCategory.objects.create(
+            id=6, name="Ship", published=True
+        )
+        group = EveGroup.objects.create(
+            id=9011, name="Battleship", published=True, eve_category=category
+        )
+        hull = EveType.objects.create(
+            id=9012,
+            name="Skip Typhoon Fleet Issue",
+            published=True,
+            eve_group=group,
+        )
+        bp = EveType.objects.create(
+            id=9013,
+            name="Skip Typhoon Fleet Issue Blueprint",
+            published=True,
+            eve_group=group,
+        )
+        from eveuniverse.models import (  # pylint: disable=import-outside-toplevel
+            EveIndustryActivityDuration,
+            EveIndustryActivityMaterial,
+            EveIndustryActivityProduct,
+        )
+
+        EveIndustryActivityProduct.objects.create(
+            eve_type=bp, activity_id=1, product_eve_type=hull, quantity=1
+        )
+        EveIndustryActivityDuration.objects.create(
+            eve_type=bp, activity_id=1, time=100
+        )
+        EveIndustryActivityMaterial.objects.create(
+            eve_type=bp,
+            activity_id=1,
+            material_eve_type=hull,
+            quantity=1,
+        )
+        product = IndustryProduct.objects.create(
+            eve_type=hull, strategy=Strategy.IMPORTED
+        )
+        delay_mock.assert_called_once_with(product.pk)
+        count = ensure_loyalty_store_offers_for_product(product.pk)
+        self.assertEqual(count, 0)
+        sync_mock.assert_not_called()

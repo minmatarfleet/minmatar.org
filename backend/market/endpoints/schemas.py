@@ -32,16 +32,26 @@ class MarketContractHistoricalQuantityResponse(BaseModel):
     quantity: int
 
 
+class MarketContractSellerResponse(BaseModel):
+    character_id: int
+    character_name: str
+    quantity: int
+
+
 class MarketContractResponse(BaseModel):
     expectation_id: int | None = (
         None  # None when no expectation for this fitting at location
     )
     title: str
     fitting_id: int
+    ship_id: int
     structure_id: int | None = None
+    location_id: int
     location_name: str
     desired_quantity: int
     current_quantity: int
+    readiness: str
+    sellers: List[MarketContractSellerResponse]
     latest_contract_timestamp: str | None = None
     historical_quantity: List[MarketContractHistoricalQuantityResponse]
     doctrines: List[MarketContractDoctrineResponse]

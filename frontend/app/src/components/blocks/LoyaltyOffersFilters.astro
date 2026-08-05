@@ -1,0 +1,306 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { LoyaltyCurrency } from '@dtypes/api.minmatar.org'
+import {
+    DEFAULT_LOYALTY_OFFERS_PARAMS,
+    TLIB_CORP_ID,
+} from '@helpers/loyalty_offers_metrics'
+import { query_string } from '@helpers/string'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+import Button from '@components/blocks/Button.astro'
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
+
+interface Props {
+    currencies: LoyaltyCurrency[]
+    currency: number
+    exclude_tags?: string
+    exclude_supply_packages?: string
+    exclude_chips?: string
+    exclude_skins?: string
+    exclude_useless_offers?: string
+    exclude_below_set_lp_price?: string
+    side: 'sell' | 'buy' | 'avg_7d'
+    q: string
+    ordering: string
+    [propName: string]: any
+}
+
+const {
+    currencies,
+    currency,
+    exclude_tags,
+    exclude_supply_packages,
+    exclude_chips,
+    exclude_skins,
+    exclude_useless_offers,
+    exclude_below_set_lp_price,
+    side,
+    q,
+    ordering,
+} = Astro.props
+
+const SLOT = '#loyalty-offers-slot'
+const PARTIAL = translatePath('/partials/loyalty_offers_component')
+
+const selected_currency = currencies.some((c) => c.corporation_id === currency)
+    ? currency
+    : (currencies.find((c) => c.corporation_id === TLIB_CORP_ID)?.corporation_id
+        ?? currencies[0]?.corporation_id
+        ?? TLIB_CORP_ID)
+
+const base_params: Record<string, string> = {
+    currency: String(selected_currency),
+    side,
+    ordering,
+}
+if (exclude_tags)
+    base_params.exclude_tags = exclude_tags
+if (exclude_supply_packages)
+    base_params.exclude_supply_packages = exclude_supply_packages
+if (exclude_chips)
+    base_params.exclude_chips = exclude_chips
+if (exclude_skins)
+    base_params.exclude_skins = exclude_skins
+if (exclude_useless_offers)
+    base_params.exclude_useless_offers = exclude_useless_offers
+if (exclude_below_set_lp_price)
+    base_params.exclude_below_set_lp_price = exclude_below_set_lp_price
+if (q)
+    base_params.q = q
+
+function with_params(overrides: Record<string, string | undefined>): string {
+    const next: Record<string, string> = { ...base_params }
+    for (const [key, value] of Object.entries(overrides)) {
+        if (value === undefined || value === '')
+            delete next[key]
+        else
+            next[key] = value
+    }
+    return `${PARTIAL}?${query_string(next)}`
+}
+
+const default_reset_url = with_params({
+    ...DEFAULT_LOYALTY_OFFERS_PARAMS,
+    q: undefined,
+})
+
+const excludes = [
+    {
+        key: 'exclude_tags',
+        label: t('industry.loyalty.offers.exclude_tags'),
+        active: exclude_tags === '1',
+    },
+    {
+        key: 'exclude_supply_packages',
+        label: t('industry.loyalty.offers.exclude_packages'),
+        active: exclude_supply_packages === '1',
+    },
+    {
+        key: 'exclude_chips',
+        label: t('industry.loyalty.offers.exclude_chips'),
+        active: exclude_chips === '1',
+    },
+    {
+        key: 'exclude_skins',
+        label: t('industry.loyalty.offers.exclude_skins'),
+        active: exclude_skins === '1',
+    },
+    {
+        key: 'exclude_useless_offers',
+        label: t('industry.loyalty.offers.exclude_useless'),
+        active: exclude_useless_offers === '1',
+    },
+    {
+        key: 'exclude_below_set_lp_price',
+        label: t('industry.loyalty.offers.exclude_below_set'),
+        active: exclude_below_set_lp_price === '1',
+    },
+]
+
+const hx_include_filters =
+    ".loyalty-offers-filters__persist, .loyalty-offers-filters__search [name='q'], select[name='currency'], select[name='side']"
+---
+
+<Flexblock class="[ loyalty-offers-filters ]" gap="var(--space-s)">
+    <FlexInline
+        class="[ loyalty-offers-filters__toolbar ]"
+        gap="var(--space-s)"
+        justification="space-between"
+    >
+        <FlexInline gap="var(--space-s)" class="[ loyalty-offers-filters__controls ]">
+            <Select
+                name="currency"
+                size="sm"
+                width="16rem"
+                required
+                hx-get={PARTIAL}
+                hx-target={SLOT}
+                hx-swap="innerHTML"
+                hx-indicator=".loader"
+                hx-trigger="change"
+                hx-include={hx_include_filters}
+                class="[ loyalty-offers-filters__select ]"
+            >
+                {currencies.map((c) => (
+                    <option
+                        value={String(c.corporation_id)}
+                        selected={selected_currency === c.corporation_id}
+                    >
+                        {c.name}
+                    </option>
+                ))}
+            </Select>
+
+            <Select
+                name="side"
+                size="sm"
+                width="11rem"
+                hx-get={PARTIAL}
+                hx-target={SLOT}
+                hx-swap="innerHTML"
+                hx-indicator=".loader"
+                hx-trigger="change"
+                hx-include={hx_include_filters}
+                class="[ loyalty-offers-filters__select ]"
+            >
+                <option value="sell" selected={side === 'sell'}>
+                    {t('industry.loyalty.offers.side_sell')}
+                </option>
+                <option value="buy" selected={side === 'buy'}>
+                    {t('industry.loyalty.offers.side_buy')}
+                </option>
+                <option value="avg_7d" selected={side === 'avg_7d'}>
+                    {t('industry.loyalty.offers.side_avg_7d')}
+                </option>
+            </Select>
+
+            <form
+                class="[ loyalty-offers-filters__search ]"
+                hx-get={PARTIAL}
+                hx-target={SLOT}
+                hx-swap="innerHTML"
+                hx-indicator=".loader"
+                hx-trigger="submit, keyup changed delay:400ms from:find input"
+                hx-include={hx_include_filters}
+            >
+                <Input
+                    type="search"
+                    name="q"
+                    value={q}
+                    placeholder={t('industry.loyalty.offers.search_placeholder')}
+                    size="sm"
+                    width="18rem"
+                >
+                    <MagnifierIcon slot="icon" />
+                </Input>
+            </form>
+        </FlexInline>
+
+        <Button
+            size="sm"
+            color="transparent"
+            hx-get={default_reset_url}
+            hx-target={SLOT}
+            hx-swap="innerHTML"
+            hx-indicator=".loader"
+        >
+            {t('industry.loyalty.offers.clear_filters')}
+        </Button>
+    </FlexInline>
+
+    <FlexInline gap="var(--space-3xs)" class="[ loyalty-offers-filters__chips ]">
+        {excludes.map((item) => (
+            <button
+                type="button"
+                class:list={[
+                    '[ loyalty-offers-filters__chip ]',
+                    { 'loyalty-offers-filters__chip--active': item.active },
+                ]}
+                hx-get={with_params({
+                    [item.key]: item.active ? undefined : '1',
+                })}
+                hx-target={SLOT}
+                hx-swap="innerHTML"
+                hx-indicator=".loader"
+                aria-pressed={item.active ? 'true' : 'false'}
+            >
+                {item.label}
+            </button>
+        ))}
+    </FlexInline>
+
+    <div class="[ loyalty-offers-filters__persist ]" hidden>
+        <input type="hidden" name="ordering" value={ordering} />
+        {exclude_tags === '1' && <input type="hidden" name="exclude_tags" value="1" />}
+        {exclude_supply_packages === '1' && (
+            <input type="hidden" name="exclude_supply_packages" value="1" />
+        )}
+        {exclude_chips === '1' && <input type="hidden" name="exclude_chips" value="1" />}
+        {exclude_skins === '1' && <input type="hidden" name="exclude_skins" value="1" />}
+        {exclude_useless_offers === '1' && (
+            <input type="hidden" name="exclude_useless_offers" value="1" />
+        )}
+        {exclude_below_set_lp_price === '1' && (
+            <input type="hidden" name="exclude_below_set_lp_price" value="1" />
+        )}
+    </div>
+</Flexblock>
+
+<style lang="scss">
+    .loyalty-offers-filters__toolbar {
+        flex-wrap: wrap;
+        width: 100%;
+    }
+
+    .loyalty-offers-filters__controls {
+        flex-wrap: wrap;
+        flex: 1 1 auto;
+        align-items: center;
+    }
+
+    .loyalty-offers-filters__search {
+        display: flex;
+    }
+
+    .loyalty-offers-filters__chips {
+        flex-wrap: wrap;
+    }
+
+    .loyalty-offers-filters__chip {
+        appearance: none;
+        background: transparent;
+        border: solid 1px var(--border-color);
+        color: var(--foreground);
+        cursor: pointer;
+        font-family: var(--button-font);
+        font-size: var(--step--2);
+        letter-spacing: 0.02em;
+        padding-block: var(--space-3xs);
+        padding-inline: var(--space-xs);
+        text-transform: uppercase;
+        transition: border-color var(--fast-transition), color var(--fast-transition);
+
+        &--active {
+            border-color: var(--fleet-yellow);
+            color: var(--highlight);
+        }
+
+        @media (hover: hover) {
+            &:hover {
+                border-color: var(--highlight);
+                color: var(--highlight);
+            }
+        }
+
+        &:focus-visible {
+            outline: 1px solid var(--highlight);
+            outline-offset: 2px;
+        }
+    }
+</style>

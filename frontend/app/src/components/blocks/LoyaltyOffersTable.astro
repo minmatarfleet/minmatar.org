@@ -1,0 +1,167 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { LoyaltyOffer } from '@dtypes/api.minmatar.org'
+import { conversion_ordering_key } from '@helpers/loyalty_offers_metrics'
+import { query_string } from '@helpers/string'
+
+interface Props {
+    offers: LoyaltyOffer[]
+    filter_state: Record<string, string>
+    ordering: string
+    side: 'sell' | 'buy' | 'avg_7d'
+    [propName: string]: any
+}
+
+const {
+    offers,
+    filter_state,
+    ordering,
+    side,
+} = Astro.props
+
+const SLOT = '#loyalty-offers-slot'
+const PARTIAL = translatePath('/partials/loyalty_offers_component')
+const conversion_key = conversion_ordering_key(side)
+const default_ordering = `-${conversion_key}`
+
+function sort_url(column: string): string {
+    const next = { ...filter_state }
+    const current = ordering || default_ordering
+    if (current === column)
+        next.ordering = `-${column}`
+    else if (current === `-${column}`)
+        next.ordering = column
+    else
+        next.ordering = `-${column}`
+    return `${PARTIAL}?${query_string(next)}`
+}
+
+const columns = [
+    { key: 'type_name', label: t('industry.loyalty.offers.col.item'), sortable: true },
+    { key: 'quantity', label: t('industry.loyalty.offers.col.quantity'), sortable: true, numeric: true },
+    { key: 'other_cost', label: t('industry.loyalty.offers.col.other_cost'), sortable: true, numeric: true },
+    {
+        key: conversion_key,
+        label: t('industry.loyalty.offers.col.conversion'),
+        sortable: true,
+        numeric: true,
+    },
+    { key: 'volume_7d', label: t('industry.loyalty.offers.col.volume_7d'), sortable: true, numeric: true },
+    { key: 'volume_30d', label: t('industry.loyalty.offers.col.volume_30d'), sortable: true, numeric: true },
+] as const
+
+function sort_indicator(column: string): string {
+    if (ordering === column)
+        return ' ↑'
+    if (ordering === `-${column}`)
+        return ' ↓'
+    return ''
+}
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import LoyaltyOfferItem from '@components/blocks/LoyaltyOfferItem.astro'
+---
+
+<Flexblock class="[ loyalty-offers-table ]" gap="var(--space-s)">
+    <div
+        class="[ loyalty-offers-table__scroll ]"
+        tabindex="0"
+        role="region"
+        aria-label={t('industry.loyalty.offers.page_title')}
+    >
+        <div class="[ loyalty-offers-table__grid ]" role="table">
+            <div class="[ loyalty-offers-table__header ]" role="row">
+                {columns.map((col) => (
+                    <div
+                        role="columnheader"
+                        class:list={[
+                            { 'loyalty-offers-table__num': 'numeric' in col && col.numeric },
+                        ]}
+                    >
+                        {col.sortable ? (
+                            <button
+                                type="button"
+                                class="[ loyalty-offers-table__sort ]"
+                                hx-get={sort_url(col.key)}
+                                hx-target={SLOT}
+                                hx-swap="innerHTML"
+                                hx-indicator=".loader"
+                            >
+                                {col.label}{sort_indicator(col.key)}
+                            </button>
+                        ) : (
+                            col.label
+                        )}
+                    </div>
+                ))}
+            </div>
+
+            <div id="loyalty-offers-tbody">
+                {offers.map((offer) => (
+                    <LoyaltyOfferItem offer={offer} side={side} />
+                ))}
+            </div>
+        </div>
+    </div>
+</Flexblock>
+
+<style lang="scss">
+    .loyalty-offers-table__scroll {
+        overflow-x: auto;
+    }
+
+    .loyalty-offers-table__grid {
+        min-width: 40rem;
+    }
+
+    .loyalty-offers-table__header {
+        display: grid;
+        grid-template-columns:
+            minmax(14rem, 2fr)
+            minmax(3.5rem, 0.45fr)
+            minmax(5.5rem, 0.75fr)
+            minmax(5.5rem, 0.75fr)
+            minmax(4rem, 0.55fr)
+            minmax(4.5rem, 0.6fr);
+        gap: var(--space-s);
+        align-items: end;
+        padding-block: var(--space-2xs);
+        padding-inline: var(--space-2xs);
+        border-bottom: solid 1px var(--border-color);
+        color: var(--highlight);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        min-width: 40rem;
+    }
+
+    .loyalty-offers-table__num {
+        text-align: right;
+    }
+
+    .loyalty-offers-table__sort {
+        appearance: none;
+        background: transparent;
+        border: 0;
+        color: inherit;
+        cursor: pointer;
+        font: inherit;
+        letter-spacing: inherit;
+        padding: 0;
+        text-transform: inherit;
+
+        &:focus-visible {
+            outline: 1px solid var(--highlight);
+            outline-offset: 2px;
+        }
+
+        @media (hover: hover) {
+            &:hover {
+                color: var(--fleet-yellow);
+            }
+        }
+    }
+</style>

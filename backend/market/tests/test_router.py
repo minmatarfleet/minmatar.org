@@ -72,12 +72,98 @@ class MarketRouterTestCase(TestCase):
         self.assertEqual("[NVY-5] Atron", data[0]["title"])
         self.assertEqual(1, data[0]["current_quantity"])
         self.assertEqual(10, data[0]["desired_quantity"])
+        self.assertEqual(1, data[0]["ship_id"])
+        self.assertEqual(
+            expectation.location.location_id, data[0]["location_id"]
+        )
+        self.assertEqual("thin", data[0]["readiness"])
+        self.assertEqual(1, len(data[0]["sellers"]))
+        self.assertEqual(1, data[0]["sellers"][0]["character_id"])
+        self.assertEqual(1, data[0]["sellers"][0]["quantity"])
         self.assertIn(
             str(timestamp)[0:19], data[0]["latest_contract_timestamp"]
         )
         self.assertNotIn("responsibilities", data[0])
         self.assertIn("doctrines", data[0])
         self.assertIsInstance(data[0]["doctrines"], list)
+
+    def test_get_contracts_includes_ready_and_understocked(self):
+        """All fittings are returned, including at-target (ready) stock."""
+        loc = EveLocation.objects.create(
+            location_id=7777,
+            location_name="Mixed stock location",
+            solar_system_id=1,
+            solar_system_name="Somewhere",
+            market_active=True,
+        )
+        ready_fit = EveFitting.objects.create(
+            name="[NVY-5] Ready Fit",
+            ship_id=608,
+            description="At target",
+            eft_format="[Atron, [NVY-5] Ready Fit]",
+        )
+        thin_fit = EveFitting.objects.create(
+            name="[NVY-5] Thin Fit",
+            ship_id=587,
+            description="Under target",
+            eft_format="[Rifter, [NVY-5] Thin Fit]",
+        )
+        EveMarketContractExpectation.objects.create(
+            fitting=ready_fit,
+            location=loc,
+            quantity=2,
+        )
+        EveMarketContractExpectation.objects.create(
+            fitting=thin_fit,
+            location=loc,
+            quantity=5,
+        )
+        for i in range(2):
+            EveMarketContract.objects.create(
+                id=7000 + i,
+                location=loc,
+                fitting=ready_fit,
+                status="outstanding",
+                price=1.0,
+                issuer_external_id=1,
+            )
+        EveMarketContract.objects.create(
+            id=7100,
+            location=loc,
+            fitting=thin_fit,
+            status="outstanding",
+            price=1.0,
+            issuer_external_id=1,
+        )
+
+        response = self.client.get(
+            f"{BASE_URL}/contracts?location_id={loc.location_id}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        data = response.json()
+        self.assertEqual(
+            2,
+            len(data),
+            msg=f"expected 2 fittings, got {data!r}",
+        )
+        by_title = {row["title"]: row for row in data}
+        self.assertEqual("ready", by_title["[NVY-5] Ready Fit"]["readiness"])
+        self.assertEqual(2, by_title["[NVY-5] Ready Fit"]["current_quantity"])
+        self.assertEqual("thin", by_title["[NVY-5] Thin Fit"]["readiness"])
+        self.assertEqual(1, by_title["[NVY-5] Thin Fit"]["current_quantity"])
+        self.assertEqual(608, by_title["[NVY-5] Ready Fit"]["ship_id"])
+        self.assertEqual(1, len(by_title["[NVY-5] Ready Fit"]["sellers"]))
+        self.assertEqual(
+            2, by_title["[NVY-5] Ready Fit"]["sellers"][0]["quantity"]
+        )
+        # Higher fill first (100% -> 0%), then no-expectation
+        readiness_order = [row["readiness"] for row in data]
+        self.assertIn("thin", readiness_order)
+        self.assertIn("ready", readiness_order)
+        self.assertLess(
+            readiness_order.index("ready"), readiness_order.index("thin")
+        )
 
     def test_get_contracts_unknown_location_returns_empty(self):
         response = self.client.get(
@@ -123,6 +209,9 @@ class MarketRouterTestCase(TestCase):
         self.assertEqual(1, data[0]["current_quantity"])
         self.assertEqual(0, data[0]["desired_quantity"])
         self.assertIsNone(data[0]["expectation_id"])
+        self.assertEqual(2, data[0]["ship_id"])
+        self.assertEqual(loc.location_id, data[0]["location_id"])
+        self.assertEqual("unknown", data[0]["readiness"])
         self.assertNotIn("responsibilities", data[0])
         self.assertEqual([], data[0]["doctrines"])
 

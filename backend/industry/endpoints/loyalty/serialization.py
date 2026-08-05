@@ -6,6 +6,7 @@ from industry.endpoints.loyalty.schemas import (
     LoyaltyLedgerEntryResponse,
     LoyaltyMarketOrderClaimResponse,
     LoyaltyMarketOrderResponse,
+    LoyaltyOfferResponse,
 )
 from industry.helpers.lp_market_orders import (
     claimed_quantity,
@@ -16,6 +17,7 @@ from industry.models import (
     IndustryLoyaltyPointLedgerEntry,
     IndustryLoyaltyPointMarketOrder,
     IndustryLoyaltyPointMarketOrderClaim,
+    IndustryLpStoreOfferEconomics,
 )
 
 
@@ -126,4 +128,33 @@ def ledger_entry_response(
             _user_display_name(created_by) if created_by else None
         ),
         created_at=entry.created_at,
+    )
+
+
+def offer_economics_row_response(
+    row: IndustryLpStoreOfferEconomics,
+) -> LoyaltyOfferResponse:
+    return LoyaltyOfferResponse(
+        offer_id=int(row.esi_offer_id),
+        corporation_id=int(row.corporation_id),
+        type_id=int(row.type_id),
+        type_name=row.type_name,
+        currency_name=row.currency_name or "",
+        lp_cost=int(row.lp_cost),
+        isk_cost=int(row.isk_cost),
+        ak_cost=int(row.ak_cost),
+        quantity=int(row.quantity),
+        required_items_summary=row.required_items_summary or "",
+        other_cost=row.other_cost,
+        jita_sell=row.jita_sell,
+        jita_buy=row.jita_buy,
+        jita_avg_7d=row.jita_avg_7d,
+        conversion_isk_per_lp_sell=row.conversion_isk_per_lp_sell,
+        conversion_isk_per_lp_buy=row.conversion_isk_per_lp_buy,
+        conversion_isk_per_lp_avg_7d=row.conversion_isk_per_lp_avg_7d,
+        volume_1d=row.volume_1d,
+        volume_7d=row.volume_7d,
+        volume_30d=row.volume_30d,
+        kind=row.kind or "",
+        updated_at=row.offer_updated_at,
     )

@@ -110,6 +110,47 @@ def get_volume_90d_by_type_id(type_ids: list[int]) -> dict[int, int]:
     return get_volume_by_type_id(type_ids, days=VOLUME_LOOKBACK_DAYS)
 
 
+def get_volume_weighted_average_by_type_id(
+    type_ids: list[int], *, days: int = 7
+) -> dict[int, int]:
+    """
+    Volume-weighted average of daily history ``average`` over the last
+    ``days`` calendar days for the price_baseline region.
+
+    Weighted as sum(average × volume) / sum(volume). When volume sums to
+    zero but daily averages exist, falls back to a simple mean of those
+    averages. Types with no history rows in the window are omitted.
+    """
+    if not type_ids or days <= 0:
+        return {}
+
+    unique_ids = list({int(tid) for tid in type_ids})
+    region_id = _baseline_region_id()
+    cutoff = timezone.now().date() - timedelta(days=days)
+
+    by_type: Dict[int, List[tuple]] = {tid: [] for tid in unique_ids}
+    for item_id, average, volume in EveMarketItemHistory.objects.filter(
+        region_id=region_id,
+        item_id__in=unique_ids,
+        date__gte=cutoff,
+    ).values_list("item_id", "average", "volume"):
+        if average is None:
+            continue
+        by_type[int(item_id)].append((float(average), int(volume or 0)))
+
+    out: dict[int, int] = {}
+    for type_id, rows in by_type.items():
+        if not rows:
+            continue
+        total_vol = sum(vol for _, vol in rows)
+        if total_vol > 0:
+            weighted = sum(avg * vol for avg, vol in rows)
+            out[type_id] = int(round(weighted / total_vol))
+        else:
+            out[type_id] = int(round(sum(avg for avg, _ in rows) / len(rows)))
+    return out
+
+
 def get_volume_windows_by_type_id(
     type_ids: Iterable[int],
     windows: Sequence[int] = VOLUME_WINDOWS,

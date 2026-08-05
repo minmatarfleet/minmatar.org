@@ -379,6 +379,75 @@ class IndustryLpStoreOffer(models.Model):
         )
 
 
+class IndustryLpStoreOfferEconomics(models.Model):
+    """
+    Hourly rebuild of LP store offer market economics for the public catalog.
+
+    Built from cached ESI offers + local Jita/Forge prices (no ESI call).
+    Public offers API reads this table only.
+    """
+
+    offer = models.OneToOneField(
+        IndustryLpStoreOffer,
+        on_delete=models.CASCADE,
+        related_name="economics_row",
+        primary_key=True,
+    )
+    esi_offer_id = models.BigIntegerField(db_index=True)
+    corporation_id = models.BigIntegerField(db_index=True)
+    type_id = models.BigIntegerField(db_index=True)
+    type_name = models.CharField(max_length=255, db_index=True)
+    currency_name = models.CharField(max_length=128, blank=True, default="")
+    kind = models.CharField(max_length=32, blank=True, default="")
+    lp_cost = models.PositiveIntegerField()
+    isk_cost = models.BigIntegerField()
+    ak_cost = models.BigIntegerField(default=0)
+    quantity = models.PositiveIntegerField(default=1)
+    required_items_summary = models.CharField(
+        max_length=512, blank=True, default=""
+    )
+    other_cost = models.BigIntegerField(null=True, blank=True)
+    jita_sell = models.BigIntegerField(null=True, blank=True)
+    jita_buy = models.BigIntegerField(null=True, blank=True)
+    jita_avg_7d = models.BigIntegerField(null=True, blank=True)
+    conversion_isk_per_lp_sell = models.FloatField(null=True, blank=True)
+    conversion_isk_per_lp_buy = models.FloatField(null=True, blank=True)
+    conversion_isk_per_lp_avg_7d = models.FloatField(null=True, blank=True)
+    volume_1d = models.BigIntegerField(null=True, blank=True)
+    volume_7d = models.BigIntegerField(null=True, blank=True)
+    volume_30d = models.BigIntegerField(null=True, blank=True)
+    involves_tag = models.BooleanField(default=False, db_index=True)
+    involves_supply_package = models.BooleanField(default=False, db_index=True)
+    involves_chip = models.BooleanField(default=False, db_index=True)
+    involves_skin = models.BooleanField(default=False, db_index=True)
+    is_useless = models.BooleanField(default=False, db_index=True)
+    is_below_set_lp_price = models.BooleanField(default=False, db_index=True)
+    is_below_set_lp_price_buy = models.BooleanField(
+        default=False, db_index=True
+    )
+    is_below_set_lp_price_avg_7d = models.BooleanField(
+        default=False, db_index=True
+    )
+    offer_updated_at = models.DateTimeField()
+    rebuilt_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        verbose_name = "Industry LP store offer economics"
+        verbose_name_plural = "Industry LP store offer economics"
+        indexes = [
+            models.Index(
+                fields=["corporation_id", "-conversion_isk_per_lp_sell"],
+                name="industry_lp_econ_corp_conv",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return (
+            f"econ offer={self.esi_offer_id} corp={self.corporation_id} "
+            f"{self.type_name}"
+        )
+
+
 class IndustryLpStoreOfferRequiredItem(models.Model):
     """One required input item for an LP store offer."""
 

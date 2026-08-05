@@ -22,6 +22,7 @@ import {
     get_loyalty_stockpiles,
 } from '@helpers/api.minmatar.org/loyalty'
 import { get_characters_summary } from '@helpers/api.minmatar.org/characters'
+import { TLIB_CORP_ID } from '@helpers/loyalty_offers_metrics'
 
 let currencies: LoyaltyCurrency[] = []
 let orders: LoyaltyMarketOrder[] = []
@@ -83,7 +84,6 @@ if (is_logged_in && auth_token) {
 }
 
 const highlight_order_id = Astro.url.searchParams.get('order')
-const TLIB_CORP_ID = 1000182
 const default_currency = currencies.find((c) => c.corporation_id === TLIB_CORP_ID)
     ?? currencies[0]
     ?? null
@@ -135,19 +135,28 @@ const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
                 <Breadcrumb items={breadcrumb_items} />
                 <PageTitle>{page_title}</PageTitle>
             </Flexblock>
-            {user_is_staff && (
+            <FlexInline gap="var(--space-2xs)">
                 <Button
-                    href={admin_loyalty_url}
+                    href={translatePath('/industry/loyalty/offers/')}
                     size="sm"
                     color="transparent"
-                    narrow={true}
-                    new_tab={true}
-                    aria-label={t('industry.loyalty.edit_in_admin')}
-                    title={t('industry.loyalty.edit_in_admin')}
                 >
-                    <CogIcon slot="icon" />
+                    {t('industry.loyalty.view_offers')}
                 </Button>
-            )}
+                {user_is_staff && (
+                    <Button
+                        href={admin_loyalty_url}
+                        size="sm"
+                        color="transparent"
+                        narrow={true}
+                        new_tab={true}
+                        aria-label={t('industry.loyalty.edit_in_admin')}
+                        title={t('industry.loyalty.edit_in_admin')}
+                    >
+                        <CogIcon slot="icon" />
+                    </Button>
+                )}
+            </FlexInline>
         </FlexInline>
 
         <Flexblock gap="var(--space-xl)">

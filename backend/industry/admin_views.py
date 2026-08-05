@@ -1,5 +1,6 @@
 """Custom industry orders and loyalty admin views."""
 
+from django.conf import settings
 from django.db.models import Count
 from django.urls import reverse
 
@@ -23,6 +24,12 @@ from industry.models import (
     IndustryOrder,
     IndustryOrderItemAssignment,
 )
+
+
+def _web_base() -> str:
+    return getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org").rstrip(
+        "/"
+    )
 
 
 def _order_counts(order: IndustryOrder) -> dict:
@@ -161,7 +168,7 @@ def industry_loyalty_home_view(request):
         },
         "store_offers": {
             "count": IndustryLpStoreOffer.objects.count(),
-            "list_url": changelist_url("industrylpstoreoffer"),
+            "list_url": f"{_web_base()}/industry/loyalty/offers/",
         },
     }
     return render_loyalty_admin_view(

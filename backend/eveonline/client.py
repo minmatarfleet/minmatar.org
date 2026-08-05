@@ -31,6 +31,35 @@ ERROR_CALLING_ESI = 906
 ESI_BASE_URL = "https://esi.evetech.net/latest"
 ESI_COMPATIBILITY_DATE = "2026-06-09"
 
+
+def live_esi_allowed() -> bool:
+    """
+    Whether live ESI HTTP is permitted.
+
+    settings_test sets TESTING=True and ALLOW_LIVE_ESI_IN_TESTS=False.
+    Opt in only for intentional live runs or tests that mock the ESI
+    provider and need the real call path.
+    """
+    if not getattr(settings, "TESTING", False):
+        return True
+    return bool(getattr(settings, "ALLOW_LIVE_ESI_IN_TESTS", False))
+
+
+def assert_esi_http_allowed() -> None:
+    """
+    Block live ESI HTTP during Django unit tests unless explicitly enabled.
+
+    Prefer seeding local rows or passing mock payloads (e.g. offers=).
+    """
+    if live_esi_allowed():
+        return
+    raise RuntimeError(
+        "Refusing live ESI HTTP during unit tests. Seed local data, "
+        "pass mock payloads, patch the caller, or set "
+        "ALLOW_LIVE_ESI_IN_TESTS=True only for intentional live runs."
+    )
+
+
 esi_provider = ESIClientProvider(
     compatibility_date=ESI_COMPATIBILITY_DATE,
     ua_appname="MinmatarOrg",

@@ -4,6 +4,7 @@ from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
 from django.contrib.auth.models import User
+from django.test import override_settings
 from django.utils import timezone
 
 from app.test import TestCase
@@ -19,6 +20,7 @@ from industry.models import (
     IndustrySystemCostIndex,
 )
 from industry.tasks import (
+    rebuild_lp_store_offer_economics_task,
     sync_industry_jobs_for_order_assignees,
     sync_industry_system_cost_indices_task,
     sync_loyalty_store_offers_task,
@@ -105,6 +107,7 @@ class IndustryTasksTestCase(TestCase):
 
 
 class IndustryCostIndexSyncTestCase(TestCase):
+    @override_settings(ALLOW_LIVE_ESI_IN_TESTS=True)
     @patch("industry.helpers.cost_indices.esi_provider")
     def test_sync_upserts_manufacturing_and_reaction(self, esi_provider):
         IndustrySystemCostIndex.objects.create(
@@ -175,8 +178,18 @@ class IndustryCostIndexSyncTestCase(TestCase):
         self.assertEqual(sync_industry_system_cost_indices_task(), 42)
         sync_mock.assert_called_once()
 
+    @patch("industry.tasks.rebuild_lp_store_offer_economics_task.delay")
     @patch("industry.tasks.sync_loyalty_store_offers")
-    def test_loyalty_store_celery_task_delegates(self, sync_mock):
+    def test_loyalty_store_celery_task_delegates(
+        self, sync_mock, rebuild_delay
+    ):
         sync_mock.return_value = 17
         self.assertEqual(sync_loyalty_store_offers_task(), 17)
         sync_mock.assert_called_once()
+        rebuild_delay.assert_called_once()
+
+    @patch("industry.tasks.rebuild_lp_store_offer_economics")
+    def test_rebuild_lp_econ_celery_task_delegates(self, rebuild_mock):
+        rebuild_mock.return_value = 9
+        self.assertEqual(rebuild_lp_store_offer_economics_task(), 9)
+        rebuild_mock.assert_called_once()

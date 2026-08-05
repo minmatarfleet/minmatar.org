@@ -62,6 +62,8 @@ DISCORD_HOLY_RAT_WEBHOOK_RAT_CAVE = ""
 # Non-production placeholder; live verify must use app.settings + test guild.
 DISCORD_GUILD_ID = 1
 ALLOW_LIVE_DISCORD_IN_TESTS = False
+# Never hit esi.evetech.net from the unit suite unless a test opts in.
+ALLOW_LIVE_ESI_IN_TESTS = False
 DISCORD_PEOPLE_TEAM_CHANNEL_ID = int(
     os.environ.get("DISCORD_PEOPLE_TEAM_CHANNEL_ID", 1098974756356771870)
 )

@@ -3,7 +3,7 @@ import logging
 from django.utils import timezone
 from esi.exceptions import ESIErrorLimitException
 
-from eveonline.client import EsiResponse, esi_public
+from eveonline.client import EsiResponse, esi_public, live_esi_allowed
 from eveonline.helpers.characters.characters import orphan_character
 from eveonline.models import EveCharacter
 
@@ -77,6 +77,12 @@ def update_character_public_data(character_id: int) -> bool:
     """
     character = EveCharacter.objects.get(character_id=character_id)
     if character.esi_deleted:
+        return False
+    if not live_esi_allowed():
+        logger.info(
+            "Skipping character public data ESI for %s during tests",
+            character_id,
+        )
         return False
 
     response = esi_public().get_character_public_data(character_id)
