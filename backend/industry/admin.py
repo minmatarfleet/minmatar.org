@@ -49,6 +49,7 @@ from industry.helpers.lp_catalog import (
 from industry.helpers.lp_store_economics import (
     annotate_lp_store_offer_sort_fields,
     offer_economics_for_queryset,
+    offer_pks_below_set_lp_price,
     tracked_corporation_ids,
 )
 from industry.helpers.lp_store_useless import useless_offer_pks
@@ -811,6 +812,32 @@ class IndustryLpStoreExcludeUselessOffersFilter(admin.SimpleListFilter):
         return queryset.filter(pk__in=useless)
 
 
+class IndustryLpStoreExcludeBelowSetLpPriceFilter(admin.SimpleListFilter):
+    """
+    Hide (or isolate) offers whose ISK/LP sell is below set buyback.
+
+    Compares conversion_isk_per_lp_sell to IndustryLoyaltyPoint
+    default_isk_per_lp for the offer's corporation. Null conversion
+    counts as below set (missing prices → cannot beat buyback).
+    """
+
+    title = "exclude below set LP price"
+    parameter_name = "exclude_below_set_lp_price"
+
+    def lookups(self, request, model_admin):
+        return (("1", "Yes"), ("0", "No"))
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if value not in ("0", "1"):
+            return queryset
+        # ~1.5k tracked offers is fine to evaluate via economics helpers.
+        below = offer_pks_below_set_lp_price(queryset)
+        if value == "1":
+            return queryset.exclude(pk__in=below)
+        return queryset.filter(pk__in=below)
+
+
 @admin.register(IndustryLpStoreOffer)
 class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
     _request_stash = None
@@ -842,6 +869,7 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
         IndustryLpStoreExcludeSupplyPackagesFilter,
         IndustryLpStoreExcludeChipsFilter,
         IndustryLpStoreExcludeUselessOffersFilter,
+        IndustryLpStoreExcludeBelowSetLpPriceFilter,
     )
     search_fields = ("offer_id", "type_id", "corporation_id")
     ordering = ("corporation_id", "type_id")

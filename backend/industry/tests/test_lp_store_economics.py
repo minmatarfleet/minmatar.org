@@ -22,6 +22,7 @@ from eveuniverse.models import (
 from market.models import EveMarketItemHistory, EveMarketItemLocationPrice
 
 from industry.admin import (
+    IndustryLpStoreExcludeBelowSetLpPriceFilter,
     IndustryLpStoreCurrencyListFilter,
     IndustryLpStoreExcludeChipsFilter,
     IndustryLpStoreExcludeSupplyPackagesFilter,
@@ -34,6 +35,8 @@ from industry.helpers.lp_store_economics import (
     LpStoreOfferEconomics,
     bpc_type_id_to_product_type_id,
     offer_economics_for_queryset,
+    offer_is_below_set_lp_price,
+    offer_pks_below_set_lp_price,
     offer_type_ids_with_viable_forge_volume,
     tracked_corporation_ids,
 )
@@ -463,6 +466,67 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         self.assertEqual(rows[offer.pk].type_name, "LP Input Item")
         self.assertEqual(rows[offer.pk].required_items_summary, "")
         self.assertEqual(rows[offer.pk].other_cost, 0)
+
+    def test_offer_is_below_set_lp_price_vs_buyback(self):
+        """Null or conversion < default_isk_per_lp is below set; equal is not."""
+        offer = IndustryLpStoreOffer.objects.get(offer_id=1002)
+        # History average 1.5M, isk 500k, lp 1000 → conversion 1000; buyback 800.
+        econ = offer_economics_for_queryset([offer])[offer.pk]
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 1000.0)
+        self.assertEqual(econ.isk_per_lp, 800.0)
+        self.assertFalse(offer_is_below_set_lp_price(econ))
+
+        # Force below via high ISK cost: (1.5M - 1.4M) / 1000 = 100 < 800.
+        below = IndustryLpStoreOffer.objects.create(
+            offer_id=1050,
+            corporation_id=TLIB_CORP_ID,
+            type_id=INPUT_TYPE_ID,
+            lp_cost=1_000,
+            isk_cost=1_400_000,
+            quantity=1,
+        )
+        below_econ = offer_economics_for_queryset([below])[below.pk]
+        self.assertAlmostEqual(below_econ.conversion_isk_per_lp_sell, 100.0)
+        self.assertTrue(offer_is_below_set_lp_price(below_econ))
+
+        # Exact equality is at/above set price.
+        equal = IndustryLpStoreOffer.objects.create(
+            offer_id=1051,
+            corporation_id=TLIB_CORP_ID,
+            type_id=INPUT_TYPE_ID,
+            lp_cost=1_000,
+            isk_cost=700_000,  # (1.5M - 0.7M) / 1000 = 800
+            quantity=1,
+        )
+        equal_econ = offer_economics_for_queryset([equal])[equal.pk]
+        self.assertAlmostEqual(equal_econ.conversion_isk_per_lp_sell, 800.0)
+        self.assertFalse(offer_is_below_set_lp_price(equal_econ))
+
+        # No market price → null conversion → below set.
+        dead = EveType.objects.create(
+            id=42499,
+            name="Unpriced LP Cosmetic",
+            published=True,
+            eve_group=EveGroup.objects.get(id=27),
+        )
+        null_offer = IndustryLpStoreOffer.objects.create(
+            offer_id=1052,
+            corporation_id=TLIB_CORP_ID,
+            type_id=dead.id,
+            lp_cost=1_000,
+            isk_cost=0,
+            quantity=1,
+        )
+        null_econ = offer_economics_for_queryset([null_offer])[null_offer.pk]
+        self.assertIsNone(null_econ.conversion_isk_per_lp_sell)
+        self.assertTrue(offer_is_below_set_lp_price(null_econ))
+        below_pks = offer_pks_below_set_lp_price(
+            [offer, below, equal, null_offer]
+        )
+        self.assertNotIn(offer.pk, below_pks)
+        self.assertIn(below.pk, below_pks)
+        self.assertNotIn(equal.pk, below_pks)
+        self.assertIn(null_offer.pk, below_pks)
 
 
 class LpStoreOfferAdminTestCase(TestCase):
@@ -1031,6 +1095,105 @@ class LpStoreOfferAdminTestCase(TestCase):
         )
         self.assertIn(
             IndustryLpStoreExcludeUselessOffersFilter,
+            self.admin.list_filter,
+        )
+
+    def test_exclude_below_set_lp_price_yes_no(self):
+        """Yes hides below/null conversion; No isolates them."""
+        EveLocation.objects.create(
+            location_id=60003760,
+            location_name="Jita IV - Moon 4 - Caldari Navy Assembly Plant",
+            solar_system_id=30000142,
+            solar_system_name="Jita",
+            short_name="Jita",
+            region_id=JITA_REGION_ID,
+            price_baseline=True,
+            prices_active=True,
+        )
+        today = timezone.now().date()
+        EveMarketItemHistory.objects.create(
+            region_id=JITA_REGION_ID,
+            item=self.input_type,
+            date=today - timedelta(days=1),
+            average=Decimal("1500000"),
+            highest=Decimal("1600000"),
+            lowest=Decimal("1400000"),
+            order_count=5,
+            volume=50,
+        )
+        # Above set: (1.5M - 0) / 1000 = 1500 >= 800
+        above = IndustryLpStoreOffer.objects.create(
+            offer_id=2500,
+            corporation_id=TLIB_CORP_ID,
+            type_id=INPUT_TYPE_ID,
+            lp_cost=1_000,
+            isk_cost=0,
+            quantity=1,
+        )
+        # Below set: (1.5M - 1.4M) / 1000 = 100 < 800
+        below = IndustryLpStoreOffer.objects.create(
+            offer_id=2501,
+            corporation_id=TLIB_CORP_ID,
+            type_id=INPUT_TYPE_ID,
+            lp_cost=1_000,
+            isk_cost=1_400_000,
+            quantity=1,
+        )
+        dead = EveType.objects.create(
+            id=42498,
+            name="Dead Unpriced LP Item",
+            published=True,
+            eve_group=EveGroup.objects.get(id=27),
+        )
+        # Null conversion (no history) counts as below set.
+        no_price = IndustryLpStoreOffer.objects.create(
+            offer_id=2502,
+            corporation_id=TLIB_CORP_ID,
+            type_id=dead.id,
+            lp_cost=500,
+            isk_cost=0,
+            quantity=1,
+        )
+        # self.offer: lp 1000 isk 500k → conversion 1000 >= 800 → above
+
+        request = self.factory.get("/admin/industry/industrylpstoreoffer/")
+        request.user = self.user
+        yes = IndustryLpStoreExcludeBelowSetLpPriceFilter(
+            request,
+            {"exclude_below_set_lp_price": "1"},
+            IndustryLpStoreOffer,
+            self.admin,
+        )
+        yes_ids = set(
+            yes.queryset(
+                request, self.admin.get_queryset(request)
+            ).values_list("offer_id", flat=True)
+        )
+        self.assertIn(above.offer_id, yes_ids)
+        self.assertIn(self.offer.offer_id, yes_ids)
+        self.assertNotIn(below.offer_id, yes_ids)
+        self.assertNotIn(no_price.offer_id, yes_ids)
+
+        no = IndustryLpStoreExcludeBelowSetLpPriceFilter(
+            request,
+            {"exclude_below_set_lp_price": "0"},
+            IndustryLpStoreOffer,
+            self.admin,
+        )
+        no_ids = set(
+            no.queryset(request, self.admin.get_queryset(request)).values_list(
+                "offer_id", flat=True
+            )
+        )
+        self.assertIn(below.offer_id, no_ids)
+        self.assertIn(no_price.offer_id, no_ids)
+        self.assertNotIn(above.offer_id, no_ids)
+        self.assertNotIn(self.offer.offer_id, no_ids)
+        self.assertEqual(
+            yes.lookups(request, self.admin), (("1", "Yes"), ("0", "No"))
+        )
+        self.assertIn(
+            IndustryLpStoreExcludeBelowSetLpPriceFilter,
             self.admin.list_filter,
         )
 
