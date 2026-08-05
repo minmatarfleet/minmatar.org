@@ -49,9 +49,9 @@ from industry.helpers.lp_catalog import (
 from industry.helpers.lp_store_economics import (
     annotate_lp_store_offer_sort_fields,
     offer_economics_for_queryset,
-    offer_type_ids_with_viable_forge_volume,
     tracked_corporation_ids,
 )
+from industry.helpers.lp_store_useless import useless_offer_pks
 from industry.tasks import (
     compute_order_profit_breakdown_task,
     sync_loyalty_store_offers_task,
@@ -784,16 +784,18 @@ class IndustryLpStoreExcludeChipsFilter(admin.SimpleListFilter):
         return queryset.filter(chip_q)
 
 
-class IndustryLpStoreExcludeNegligibleVolumeFilter(admin.SimpleListFilter):
+class IndustryLpStoreExcludeUselessOffersFilter(admin.SimpleListFilter):
     """
-    Hide (or isolate) offers with no/negligible Forge 30d market volume.
+    Hide (or isolate) offers that are useless for LP conversion screening.
 
-    Uses market_type_id (hull for navy BPCs). Missing history counts as
-    negligible — run market history sync for LP catalog types first.
+    Yes = hide useless; No = show only useless. Uses offer_is_useless:
+    stockpile usefulness, profit vs buyback, below peer median, and
+    volume/volatility (Forge 30d + spread proxy). See
+    industry.helpers.lp_store_useless.
     """
 
-    title = "exclude negligible volume"
-    parameter_name = "exclude_negligible_volume"
+    title = "exclude useless offers"
+    parameter_name = "exclude_useless_offers"
 
     def lookups(self, request, model_admin):
         return (("1", "Yes"), ("0", "No"))
@@ -802,11 +804,11 @@ class IndustryLpStoreExcludeNegligibleVolumeFilter(admin.SimpleListFilter):
         value = self.value()
         if value not in ("0", "1"):
             return queryset
-        offer_type_ids = set(queryset.values_list("type_id", flat=True))
-        viable = offer_type_ids_with_viable_forge_volume(offer_type_ids)
+        # ~1.5k tracked offers is fine to evaluate in Python via economics.
+        useless = useless_offer_pks(queryset)
         if value == "1":
-            return queryset.filter(type_id__in=viable)
-        return queryset.exclude(type_id__in=viable)
+            return queryset.exclude(pk__in=useless)
+        return queryset.filter(pk__in=useless)
 
 
 @admin.register(IndustryLpStoreOffer)
@@ -839,7 +841,7 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
         IndustryLpStoreExcludeTagsFilter,
         IndustryLpStoreExcludeSupplyPackagesFilter,
         IndustryLpStoreExcludeChipsFilter,
-        IndustryLpStoreExcludeNegligibleVolumeFilter,
+        IndustryLpStoreExcludeUselessOffersFilter,
     )
     search_fields = ("offer_id", "type_id", "corporation_id")
     ordering = ("corporation_id", "type_id")

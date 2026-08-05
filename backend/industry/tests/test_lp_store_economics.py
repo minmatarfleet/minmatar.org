@@ -24,17 +24,32 @@ from market.models import EveMarketItemHistory, EveMarketItemLocationPrice
 from industry.admin import (
     IndustryLpStoreCurrencyListFilter,
     IndustryLpStoreExcludeChipsFilter,
-    IndustryLpStoreExcludeNegligibleVolumeFilter,
     IndustryLpStoreExcludeSupplyPackagesFilter,
     IndustryLpStoreExcludeTagsFilter,
+    IndustryLpStoreExcludeUselessOffersFilter,
     IndustryLpStoreOfferAdmin,
 )
 from industry.helpers.lp_store_economics import (
     NEGLIGIBLE_LP_FORGE_VOLUME_30D,
+    LpStoreOfferEconomics,
     bpc_type_id_to_product_type_id,
     offer_economics_for_queryset,
     offer_type_ids_with_viable_forge_volume,
     tracked_corporation_ids,
+)
+from industry.helpers.lp_store_useless import (
+    USELESS_BELOW_MEDIAN_RATIO,
+    USELESS_MAX_RELATIVE_SPREAD,
+    USELESS_MIN_ISK_FROM_STOCKPILE,
+    USELESS_STOCKPILE_LP_HIGH,
+    USELESS_STOCKPILE_LP_LOW,
+    CurrencyPeerStats,
+    offer_fails_below_peer_average,
+    offer_fails_profit,
+    offer_fails_stockpile_usefulness,
+    offer_fails_volume_or_volatility,
+    offer_is_useless,
+    peer_stats_by_corporation,
 )
 from industry.helpers.loyalty_store import sync_loyalty_store_offers
 from industry.models import (
@@ -922,63 +937,43 @@ class LpStoreOfferAdminTestCase(TestCase):
             yes.lookups(request, self.admin), (("1", "Yes"), ("0", "No"))
         )
 
-    def test_exclude_negligible_volume_uses_market_type_and_history(self):
-        """Missing/zero 30d Forge volume → negligible; hull history covers BPC."""
+    def test_exclude_useless_offers_filter_yes_no(self):
+        """Yes hides useless; No shows only useless (chip-filter pattern)."""
+        jita = EveLocation.objects.create(
+            location_id=60003760,
+            location_name="Jita IV - Moon 4 - Caldari Navy Assembly Plant",
+            solar_system_id=30000142,
+            solar_system_name="Jita",
+            short_name="Jita",
+            region_id=JITA_REGION_ID,
+            price_baseline=True,
+            prices_active=True,
+        )
         group = EveGroup.objects.get(id=27)
-        hull = EveType.objects.create(
-            id=HULL_TYPE_ID,
-            name="Typhoon Fleet Issue",
+        good_type = EveType.objects.create(
+            id=42430,
+            name="Useful LP Module",
             published=True,
             eve_group=group,
         )
-        bpc = EveType.objects.create(
-            id=BPC_TYPE_ID,
-            name="Typhoon Fleet Issue Blueprint",
-            published=True,
-            eve_group=group,
-        )
-        EveIndustryActivityProduct.objects.create(
-            eve_type=bpc,
-            activity_id=1,
-            product_eve_type=hull,
-            quantity=1,
-        )
-        EveIndustryActivityDuration.objects.create(
-            eve_type=bpc, activity_id=1, time=100
-        )
-        with patch(
-            "industry.tasks.ensure_loyalty_store_offers_for_product_task.delay"
-        ):
-            IndustryProduct.objects.create(
-                eve_type=hull, strategy=Strategy.IMPORTED
-            )
-
-        dead = EveType.objects.create(
-            id=42427,
+        dead_type = EveType.objects.create(
+            id=42431,
             name="Dead LP Cosmetic",
             published=True,
             eve_group=group,
         )
-        bpc_offer = IndustryLpStoreOffer.objects.create(
-            offer_id=2400,
+        good = IndustryLpStoreOffer.objects.create(
+            offer_id=2500,
             corporation_id=TLIB_CORP_ID,
-            type_id=BPC_TYPE_ID,
-            lp_cost=100_000,
-            isk_cost=20_000_000,
-            quantity=1,
-        )
-        liquid = IndustryLpStoreOffer.objects.create(
-            offer_id=2401,
-            corporation_id=TLIB_CORP_ID,
-            type_id=INPUT_TYPE_ID,
+            type_id=good_type.id,
             lp_cost=1_000,
             isk_cost=0,
             quantity=1,
         )
-        dead_offer = IndustryLpStoreOffer.objects.create(
-            offer_id=2402,
+        dead = IndustryLpStoreOffer.objects.create(
+            offer_id=2501,
             corporation_id=TLIB_CORP_ID,
-            type_id=dead.id,
+            type_id=dead_type.id,
             lp_cost=500,
             isk_cost=0,
             quantity=1,
@@ -986,30 +981,27 @@ class LpStoreOfferAdminTestCase(TestCase):
         today = timezone.now().date()
         EveMarketItemHistory.objects.create(
             region_id=JITA_REGION_ID,
-            item=hull,
+            item=good_type,
             date=today - timedelta(days=1),
-            average=Decimal("250000000"),
-            highest=Decimal("260000000"),
-            lowest=Decimal("240000000"),
-            order_count=2,
-            volume=3,
+            average=Decimal("2000000"),
+            highest=Decimal("2100000"),
+            lowest=Decimal("1900000"),
+            order_count=50,
+            volume=5_000,
         )
-        EveMarketItemHistory.objects.create(
-            region_id=JITA_REGION_ID,
-            item=self.input_type,
-            date=today - timedelta(days=1),
-            average=Decimal("1500000"),
-            highest=Decimal("1600000"),
-            lowest=Decimal("1400000"),
-            order_count=5,
-            volume=50,
+        EveMarketItemLocationPrice.objects.create(
+            location=jita,
+            item=good_type,
+            sell_price=Decimal("2000000"),
+            buy_price=Decimal("1900000"),
+            split_price=Decimal("1950000"),
         )
 
         request = self.factory.get("/admin/industry/industrylpstoreoffer/")
         request.user = self.user
-        yes = IndustryLpStoreExcludeNegligibleVolumeFilter(
+        yes = IndustryLpStoreExcludeUselessOffersFilter(
             request,
-            {"exclude_negligible_volume": "1"},
+            {"exclude_useless_offers": "1"},
             IndustryLpStoreOffer,
             self.admin,
         )
@@ -1018,13 +1010,12 @@ class LpStoreOfferAdminTestCase(TestCase):
                 request, self.admin.get_queryset(request)
             ).values_list("offer_id", flat=True)
         )
-        self.assertIn(bpc_offer.offer_id, yes_ids)
-        self.assertIn(liquid.offer_id, yes_ids)
-        self.assertNotIn(dead_offer.offer_id, yes_ids)
+        self.assertIn(good.offer_id, yes_ids)
+        self.assertNotIn(dead.offer_id, yes_ids)
 
-        no = IndustryLpStoreExcludeNegligibleVolumeFilter(
+        no = IndustryLpStoreExcludeUselessOffersFilter(
             request,
-            {"exclude_negligible_volume": "0"},
+            {"exclude_useless_offers": "0"},
             IndustryLpStoreOffer,
             self.admin,
         )
@@ -1033,14 +1024,13 @@ class LpStoreOfferAdminTestCase(TestCase):
                 "offer_id", flat=True
             )
         )
-        self.assertIn(dead_offer.offer_id, no_ids)
-        self.assertNotIn(bpc_offer.offer_id, no_ids)
-        self.assertNotIn(liquid.offer_id, no_ids)
+        self.assertIn(dead.offer_id, no_ids)
+        self.assertNotIn(good.offer_id, no_ids)
         self.assertEqual(
             yes.lookups(request, self.admin), (("1", "Yes"), ("0", "No"))
         )
         self.assertIn(
-            IndustryLpStoreExcludeNegligibleVolumeFilter,
+            IndustryLpStoreExcludeUselessOffersFilter,
             self.admin.list_filter,
         )
 
@@ -1120,4 +1110,170 @@ class LpStoreOfferAdminTestCase(TestCase):
         self.assertIn(
             "admin/industry/industrylpstoreoffer/change_list.html",
             self.admin.change_list_template,
+        )
+
+
+def _econ(**overrides) -> LpStoreOfferEconomics:
+    """Minimal viable economics row; override fields under test."""
+    base = {
+        "pk": 1,
+        "offer_id": 1,
+        "corporation_id": TLIB_CORP_ID,
+        "type_id": INPUT_TYPE_ID,
+        "type_name": "Test Offer",
+        "currency_name": "Tribal Liberation Force",
+        "isk_per_lp": 800.0,
+        "lp_cost": 1_000,
+        "isk_cost": 0,
+        "ak_cost": 0,
+        "quantity": 1,
+        "required_items_summary": "",
+        "other_cost": 0,
+        "acquisition_isk_per_unit": 800_000,
+        "market_type_id": INPUT_TYPE_ID,
+        "market_type_name": "Test Offer",
+        "jita_sell": 2_000_000,
+        "jita_buy": 1_900_000,
+        "conversion_isk_per_lp_sell": 2_000.0,
+        "conversion_isk_per_lp_buy": 1_900.0,
+        "volume_1d": 100,
+        "volume_7d": 700,
+        "volume_30d": 10_000,
+        "build_cost_per_unit": None,
+        "cost_per_unit": 800_000,
+        "kind": "input",
+        "profit_vs_sell": 1_200_000,
+    }
+    base.update(overrides)
+    return LpStoreOfferEconomics(**base)
+
+
+class OfferIsUselessHelperTestCase(TestCase):
+    def test_stockpile_unaffordable_from_high_band(self):
+        econ = _econ(lp_cost=USELESS_STOCKPILE_LP_HIGH + 1)
+        self.assertTrue(offer_fails_stockpile_usefulness(econ))
+        self.assertTrue(offer_is_useless(econ))
+
+    def test_stockpile_trivial_isk_from_low_dump(self):
+        econ = _econ(conversion_isk_per_lp_sell=100.0, volume_30d=1_000_000)
+        self.assertTrue(offer_fails_stockpile_usefulness(econ))
+        self.assertLess(
+            100.0 * USELESS_STOCKPILE_LP_LOW, USELESS_MIN_ISK_FROM_STOCKPILE
+        )
+
+    def test_stockpile_liquidity_exceeds_30d_volume(self):
+        econ = _econ(lp_cost=1_000, quantity=1, volume_30d=50)
+        self.assertTrue(offer_fails_stockpile_usefulness(econ))
+
+    def test_stockpile_useful_passes(self):
+        econ = _econ(
+            lp_cost=1_000,
+            conversion_isk_per_lp_sell=2_000.0,
+            volume_30d=50_000,
+        )
+        self.assertFalse(offer_fails_stockpile_usefulness(econ))
+
+    def test_profit_null_conversion(self):
+        self.assertTrue(
+            offer_fails_profit(_econ(conversion_isk_per_lp_sell=None))
+        )
+
+    def test_profit_at_or_below_buyback(self):
+        self.assertTrue(
+            offer_fails_profit(_econ(conversion_isk_per_lp_sell=800.0))
+        )
+        self.assertTrue(
+            offer_fails_profit(_econ(conversion_isk_per_lp_sell=500.0))
+        )
+        self.assertFalse(
+            offer_fails_profit(_econ(conversion_isk_per_lp_sell=801.0))
+        )
+
+    def test_profit_acquisition_ge_jita_sell(self):
+        econ = _econ(
+            conversion_isk_per_lp_sell=2_000.0,
+            acquisition_isk_per_unit=2_000_000,
+            jita_sell=2_000_000,
+        )
+        self.assertTrue(offer_fails_profit(econ))
+
+    def test_below_peer_median_ratio(self):
+        peers = CurrencyPeerStats(
+            median_conversion_sell=2_000.0, viable_count=5
+        )
+        floor = USELESS_BELOW_MEDIAN_RATIO * 2_000.0
+        self.assertTrue(
+            offer_fails_below_peer_average(
+                _econ(conversion_isk_per_lp_sell=floor - 1), peers
+            )
+        )
+        self.assertFalse(
+            offer_fails_below_peer_average(
+                _econ(conversion_isk_per_lp_sell=floor), peers
+            )
+        )
+        self.assertFalse(
+            offer_fails_below_peer_average(
+                _econ(conversion_isk_per_lp_sell=2_000.0), None
+            )
+        )
+
+    def test_volume_missing_or_negligible(self):
+        self.assertTrue(
+            offer_fails_volume_or_volatility(_econ(volume_30d=None))
+        )
+        self.assertTrue(
+            offer_fails_volume_or_volatility(
+                _econ(volume_30d=NEGLIGIBLE_LP_FORGE_VOLUME_30D - 1)
+            )
+        )
+        self.assertFalse(
+            offer_fails_volume_or_volatility(
+                _econ(volume_30d=NEGLIGIBLE_LP_FORGE_VOLUME_30D)
+            )
+        )
+
+    def test_volatility_missing_buy_or_wide_spread(self):
+        self.assertTrue(offer_fails_volume_or_volatility(_econ(jita_buy=None)))
+        sell = 1_000_000
+        buy = int(sell * (1.0 - USELESS_MAX_RELATIVE_SPREAD - 0.1))
+        self.assertTrue(
+            offer_fails_volume_or_volatility(
+                _econ(jita_sell=sell, jita_buy=buy)
+            )
+        )
+        tight_buy = int(sell * 0.95)
+        self.assertFalse(
+            offer_fails_volume_or_volatility(
+                _econ(jita_sell=sell, jita_buy=tight_buy)
+            )
+        )
+
+    def test_offer_is_useless_combined_or(self):
+        peers = CurrencyPeerStats(
+            median_conversion_sell=2_000.0, viable_count=3
+        )
+        self.assertFalse(offer_is_useless(_econ(), peers))
+        weak = _econ(conversion_isk_per_lp_sell=1_000.0)
+        self.assertTrue(offer_is_useless(weak, peers))
+        self.assertTrue(offer_fails_below_peer_average(weak, peers))
+        self.assertFalse(offer_fails_profit(weak))
+
+    def test_peer_stats_median_among_volume_viable(self):
+        economics = {
+            1: _econ(pk=1, conversion_isk_per_lp_sell=1_000.0, volume_30d=10),
+            2: _econ(pk=2, conversion_isk_per_lp_sell=2_000.0, volume_30d=10),
+            3: _econ(pk=3, conversion_isk_per_lp_sell=3_000.0, volume_30d=10),
+            4: _econ(
+                pk=4, conversion_isk_per_lp_sell=9_999.0, volume_30d=None
+            ),
+        }
+        stats = peer_stats_by_corporation(economics)
+        self.assertEqual(stats[TLIB_CORP_ID].median_conversion_sell, 2_000.0)
+        self.assertEqual(stats[TLIB_CORP_ID].viable_count, 3)
+
+    def test_list_filter_registers_useless_offers(self):
+        self.assertIn(
+            IndustryLpStoreExcludeUselessOffersFilter,
+            IndustryLpStoreOfferAdmin.list_filter,
         )
