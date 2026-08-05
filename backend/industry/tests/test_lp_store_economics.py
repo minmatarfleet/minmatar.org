@@ -2,6 +2,7 @@
 
 from datetime import date
 from decimal import Decimal
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.contrib.admin.sites import AdminSite
@@ -297,7 +298,19 @@ class LpStoreOfferAdminTestCase(TestCase):
         IndustryLoyaltyPoint.objects.exclude(
             corporation_id=TLIB_CORP_ID
         ).update(is_active=False)
-        IndustryLpStoreOffer.objects.create(
+        category = EveCategory.objects.create(
+            id=6, name="Ship", published=True
+        )
+        group = EveGroup.objects.create(
+            id=27, name="Battleship", published=True, eve_category=category
+        )
+        self.input_type = EveType.objects.create(
+            id=INPUT_TYPE_ID,
+            name="LP Input Item",
+            published=True,
+            eve_group=group,
+        )
+        self.offer = IndustryLpStoreOffer.objects.create(
             offer_id=2001,
             corporation_id=TLIB_CORP_ID,
             type_id=INPUT_TYPE_ID,
@@ -329,6 +342,41 @@ class LpStoreOfferAdminTestCase(TestCase):
         qs = self.admin.get_queryset(request)
         self.assertEqual(list(qs.values_list("offer_id", flat=True)), [2001])
 
+    def test_list_display_omits_type_id_column(self):
+        self.assertNotIn("type_id", self.admin.list_display)
+        self.assertIn("type_name_display", self.admin.list_display)
+
+    def test_type_name_display_includes_name_and_type_id(self):
+        # pylint: disable=protected-access
+        IndustryLpStoreOfferAdmin._request_stash = {
+            self.offer.pk: SimpleNamespace(
+                kind="input",
+                type_id=INPUT_TYPE_ID,
+                type_name="LP Input Item",
+                market_type_id=INPUT_TYPE_ID,
+                market_type_name="LP Input Item",
+            )
+        }
+        try:
+            html = str(self.admin.type_name_display(self.offer))
+        finally:
+            IndustryLpStoreOfferAdmin._request_stash = None
+        self.assertIn("LP Input Item", html)
+        self.assertIn(f"type {INPUT_TYPE_ID}", html)
+        self.assertIn("lp-store-offer-item__name", html)
+
+    def test_search_by_type_name(self):
+        request = self.factory.get(
+            "/admin/industry/industrylpstoreoffer/",
+            {"q": "LP Input"},
+        )
+        request.user = self.user
+        qs = self.admin.get_queryset(request)
+        result, _ = self.admin.get_search_results(request, qs, "LP Input")
+        self.assertEqual(
+            list(result.values_list("offer_id", flat=True)), [2001]
+        )
+
     @patch(
         "industry.admin.offer_economics_for_queryset",
         return_value={},
@@ -344,3 +392,21 @@ class LpStoreOfferAdminTestCase(TestCase):
         self.assertIn("conversion_sell_display", self.admin.list_display)
         self.assertIn("conversion_buy_display", self.admin.list_display)
         self.assertIn("cost_display", self.admin.list_display)
+
+    @patch(
+        "industry.admin.offer_economics_for_queryset",
+        return_value={},
+    )
+    def test_changelist_uses_sticky_item_template(self, mock_econ):
+        request = self.factory.get("/admin/industry/industrylpstoreoffer/")
+        request.user = self.user
+        response = self.admin.changelist_view(request)
+        self.assertEqual(response.status_code, 200)
+        response.render()
+        content = response.content.decode()
+        self.assertIn("position: sticky", content)
+        self.assertIn("field-type_name_display", content)
+        self.assertIn(
+            "admin/industry/industrylpstoreoffer/change_list.html",
+            self.admin.change_list_template,
+        )
