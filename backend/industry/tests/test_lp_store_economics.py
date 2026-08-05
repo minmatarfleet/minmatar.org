@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 from django.contrib.admin.sites import AdminSite
 from django.contrib.auth import get_user_model
+from django.db import ProgrammingError
 from django.test import RequestFactory, TestCase
 from eveonline.models import EveLocation
 from eveuniverse.models import (
@@ -284,6 +285,18 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         self.assertIn(offer.pk, rows)
         self.assertEqual(rows[offer.pk].corporation_id, UNTRACKED_CORP_ID)
 
+    @patch(
+        "industry.helpers.lp_store_economics.IndustryLpStoreOfferRequiredItem.objects"
+    )
+    def test_missing_required_items_table_still_computes(self, mock_req):
+        mock_req.filter.side_effect = ProgrammingError("no such table")
+        offer = IndustryLpStoreOffer.objects.get(offer_id=1002)
+        rows = offer_economics_for_queryset([offer])
+        self.assertIn(offer.pk, rows)
+        self.assertEqual(rows[offer.pk].type_name, "LP Input Item")
+        self.assertEqual(rows[offer.pk].required_items_summary, "")
+        self.assertEqual(rows[offer.pk].other_cost, 0)
+
 
 class LpStoreOfferAdminTestCase(TestCase):
     def setUp(self):
@@ -364,6 +377,14 @@ class LpStoreOfferAdminTestCase(TestCase):
         self.assertIn("LP Input Item", html)
         self.assertIn(f"type {INPUT_TYPE_ID}", html)
         self.assertIn("lp-store-offer-item__name", html)
+        self.assertIn("images.evetech.net/types/", html)
+
+    def test_type_name_display_falls_back_to_eve_type(self):
+        # pylint: disable=protected-access
+        IndustryLpStoreOfferAdmin._request_stash = None
+        html = str(self.admin.type_name_display(self.offer))
+        self.assertIn("LP Input Item", html)
+        self.assertIn(f"type {INPUT_TYPE_ID}", html)
 
     def test_search_by_type_name(self):
         request = self.factory.get(
@@ -376,6 +397,52 @@ class LpStoreOfferAdminTestCase(TestCase):
         self.assertEqual(
             list(result.values_list("offer_id", flat=True)), [2001]
         )
+
+    def test_list_display_fuzzwork_column_order(self):
+        self.assertNotIn("kind_display", self.admin.list_display)
+        self.assertNotIn("ak_cost", self.admin.list_display)
+        self.assertEqual(self.admin.list_display[0], "type_name_display")
+        # Market prices before conversion rates (Fuzzwork-like).
+        sell_i = self.admin.list_display.index("jita_sell_display")
+        conv_i = self.admin.list_display.index("conversion_sell_display")
+        self.assertLess(sell_i, conv_i)
+
+    @patch("industry.admin.offer_economics_for_queryset")
+    def test_changelist_renders_names_before_stash_clear(self, mock_econ):
+        """Regression: TemplateResponse must render while stash is live."""
+        mock_econ.return_value = {
+            self.offer.pk: SimpleNamespace(
+                kind="input",
+                type_id=INPUT_TYPE_ID,
+                type_name="LP Input Item",
+                market_type_id=INPUT_TYPE_ID,
+                market_type_name="LP Input Item",
+                currency_name="Tribal Liberation Force",
+                required_items_summary="",
+                other_cost=0,
+                jita_sell=1_000_000,
+                jita_buy=900_000,
+                conversion_isk_per_lp_sell=500.0,
+                conversion_isk_per_lp_buy=400.0,
+                volume_90d=12_000,
+                isk_per_lp=800.0,
+                cost_per_unit=800_000,
+                profit_vs_sell=200_000,
+            )
+        }
+        request = self.factory.get("/admin/industry/industrylpstoreoffer/")
+        request.user = self.user
+        response = self.admin.changelist_view(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(getattr(response, "is_rendered", False))
+        content = response.content.decode()
+        self.assertIn("LP Input Item", content)
+        self.assertIn("Tribal Liberation Force", content)
+        self.assertIn("1,000,000", content)
+        self.assertIn("500.0", content)
+        # Stash cleared after render.
+        # pylint: disable=protected-access
+        self.assertIsNone(IndustryLpStoreOfferAdmin._request_stash)
 
     @patch(
         "industry.admin.offer_economics_for_queryset",
@@ -402,7 +469,6 @@ class LpStoreOfferAdminTestCase(TestCase):
         request.user = self.user
         response = self.admin.changelist_view(request)
         self.assertEqual(response.status_code, 200)
-        response.render()
         content = response.content.decode()
         self.assertIn("position: sticky", content)
         self.assertIn("field-type_name_display", content)

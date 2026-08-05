@@ -5,7 +5,7 @@
   <style>
     /*
      * Wide economics table: keep checkbox + Item visible while scrolling
-     * horizontally, and allow long type names to wrap.
+     * horizontally, and allow long type names to wrap (Fuzzwork-style identity).
      */
     #changelist #result_list {
       border-collapse: separate;
@@ -31,8 +31,8 @@
       left: 2.5em;
       z-index: 1;
       background: var(--body-bg);
-      min-width: 14em;
-      max-width: 22em;
+      min-width: 16em;
+      max-width: 24em;
       box-shadow: 1px 0 0 var(--hairline-color, #ccc);
     }
 
@@ -43,7 +43,7 @@
 
     #changelist #result_list td.field-type_name_display {
       white-space: normal;
-      vertical-align: top;
+      vertical-align: middle;
     }
 
     #changelist #result_list tbody tr:nth-child(even) td.action-checkbox,
@@ -58,9 +58,24 @@
 
     .lp-store-offer-item {
       display: flex;
+      align-items: flex-start;
+      gap: 0.55em;
+      line-height: 1.3;
+    }
+
+    .lp-store-offer-item__icon {
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      border-radius: 3px;
+      background: var(--darkened-bg, #222);
+    }
+
+    .lp-store-offer-item__text {
+      display: flex;
       flex-direction: column;
       gap: 0.15em;
-      line-height: 1.3;
+      min-width: 0;
     }
 
     .lp-store-offer-item__name {
@@ -70,6 +85,38 @@
     .lp-store-offer-item__type {
       color: var(--body-quiet-color, #888);
       font-size: 0.85em;
+    }
+
+    #changelist #result_list td.field-conversion_sell_display,
+    #changelist #result_list td.field-conversion_buy_display,
+    #changelist #result_list td.field-jita_sell_display,
+    #changelist #result_list td.field-jita_buy_display,
+    #changelist #result_list td.field-other_cost_display,
+    #changelist #result_list td.field-volume_90d_display,
+    #changelist #result_list td.field-isk_per_lp_display,
+    #changelist #result_list td.field-cost_display,
+    #changelist #result_list td.field-profit_vs_sell_display,
+    #changelist #result_list td.field-lp_cost,
+    #changelist #result_list td.field-isk_cost,
+    #changelist #result_list td.field-quantity {
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    #changelist #result_list th.column-conversion_sell_display,
+    #changelist #result_list th.column-conversion_buy_display,
+    #changelist #result_list th.column-jita_sell_display,
+    #changelist #result_list th.column-jita_buy_display,
+    #changelist #result_list th.column-other_cost_display,
+    #changelist #result_list th.column-volume_90d_display,
+    #changelist #result_list th.column-isk_per_lp_display,
+    #changelist #result_list th.column-cost_display,
+    #changelist #result_list th.column-profit_vs_sell_display,
+    #changelist #result_list th.column-lp_cost,
+    #changelist #result_list th.column-isk_cost,
+    #changelist #result_list th.column-quantity {
+      text-align: right;
     }
   </style>
 {% endblock %}

@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Tuple
 
+from django.db import ProgrammingError
 from eveonline.models import EveLocation
 from eveuniverse.models import EveType
 
@@ -179,15 +180,16 @@ def offer_economics_for_queryset(
         pk: [] for pk in offer_ids
     }
 
-    for (
-        offer_pk,
-        type_id,
-        qty,
-    ) in IndustryLpStoreOfferRequiredItem.objects.filter(
-        offer_id__in=offer_ids
-    ).values_list(
-        "offer_id", "type_id", "quantity"
-    ):
+    try:
+        req_rows = list(
+            IndustryLpStoreOfferRequiredItem.objects.filter(
+                offer_id__in=offer_ids
+            ).values_list("offer_id", "type_id", "quantity")
+        )
+    except ProgrammingError:
+        # Migration for required-items table may not be applied yet.
+        req_rows = []
+    for offer_pk, type_id, qty in req_rows:
         req_by_offer.setdefault(int(offer_pk), []).append(
             (int(type_id), int(qty))
         )
