@@ -187,42 +187,6 @@ def offer_type_ids_with_viable_forge_volume(
     return {tid for tid in unique if mapping.get(tid, tid) in viable_market}
 
 
-def offer_is_below_set_lp_price(econ: LpStoreOfferEconomics) -> bool:
-    """
-    True when ISK/LP sell conversion is worse than alliance buyback.
-
-    Below-set means ``conversion_isk_per_lp_sell`` is null or strictly
-    less than the currency's ``default_isk_per_lp`` (``econ.isk_per_lp``).
-    Exact equality counts as at/above the set buy price.
-    """
-    rate = econ.conversion_isk_per_lp_sell
-    if rate is None:
-        return True
-    buyback = econ.isk_per_lp
-    if buyback is None:
-        return True
-    return float(rate) < float(buyback)
-
-
-def offer_pks_below_set_lp_price(
-    offers: Iterable[IndustryLpStoreOffer],
-) -> Set[int]:
-    """Primary keys of offers below the currency's set LP buy price."""
-    rows = list(offers)
-    if not rows:
-        return set()
-    economics = offer_economics_for_queryset(rows)
-    below: Set[int] = set()
-    for offer in rows:
-        pk = offer.pk
-        if pk is None:
-            continue
-        row = economics.get(pk)
-        if row is None or offer_is_below_set_lp_price(row):
-            below.add(pk)
-    return below
-
-
 def _acquisition_isk_per_unit(
     offer: IndustryLpStoreOffer,
     isk_per_lp: Optional[float],
