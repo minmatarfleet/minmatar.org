@@ -39,7 +39,7 @@ import ReferralLink from '@components/blocks/ReferralLink.astro';
 
 <main id="content" {...attributes}>
     {is_referral_page && user &&
-        <div class="[ fixed top-[var(--space-2xs)] right-[var(--space-2xs)] ]">
+        <div class="[ referral-wrapper ]">
             <ReferralLink user_id={user.user_id} position='left' />
         </div>
     }

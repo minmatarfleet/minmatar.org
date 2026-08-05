@@ -344,3 +344,10 @@ label {
         text-decoration: underline;
     }
 }
+
+.referral-wrapper {
+    position: fixed;
+    z-index: var(--neocom-z-index);
+    top: var(--space-2xs);
+    right: var(--space-2xs);
+}
