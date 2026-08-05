@@ -11,7 +11,7 @@ from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 
-from eveuniverse.models import EveGroup
+from eveuniverse.models import EveGroup, EveType
 
 from industry.admin_views import (
     industry_loyalty_home_view,
@@ -708,11 +708,13 @@ class IndustryLpStoreCurrencyListFilter(admin.SimpleListFilter):
 class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
     _request_stash = None
 
+    change_list_template = (
+        "admin/industry/industrylpstoreoffer/change_list.html"
+    )
     list_display = (
         "type_name_display",
         "currency_display",
         "kind_display",
-        "type_id",
         "lp_cost",
         "isk_cost",
         "ak_cost",
@@ -774,6 +776,24 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
             .prefetch_related("required_items")
         )
 
+    def get_search_results(self, request, queryset, search_term):
+        queryset, use_distinct = super().get_search_results(
+            request, queryset, search_term
+        )
+        term = (search_term or "").strip()
+        if not term:
+            return queryset, use_distinct
+        type_ids = list(
+            EveType.objects.filter(name__icontains=term).values_list(
+                "id", flat=True
+            )
+        )
+        if type_ids:
+            by_name = self.get_queryset(request).filter(type_id__in=type_ids)
+            queryset |= by_name
+            use_distinct = True
+        return queryset, use_distinct
+
     def get_changelist_instance(self, request):
         cl = super().get_changelist_instance(request)
         IndustryLpStoreOfferAdmin._request_stash = (
@@ -820,10 +840,22 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
     def type_name_display(self, obj):
         econ = self._econ_for(obj)
         if econ is None:
-            return str(obj.type_id)
-        if econ.kind == "blueprint" and econ.market_type_id != econ.type_id:
-            return f"{econ.market_type_name} (BPC {econ.type_id})"
-        return econ.type_name
+            name = str(obj.type_id)
+            type_id = obj.type_id
+        elif econ.kind == "blueprint" and econ.market_type_id != econ.type_id:
+            name = f"{econ.market_type_name} (BPC {econ.type_id})"
+            type_id = econ.type_id
+        else:
+            name = econ.type_name
+            type_id = econ.type_id
+        return format_html(
+            '<span class="lp-store-offer-item">'
+            '<span class="lp-store-offer-item__name">{}</span>'
+            '<span class="lp-store-offer-item__type">type {}</span>'
+            "</span>",
+            name,
+            type_id,
+        )
 
     @admin.display(description="Currency")
     def currency_display(self, obj):
