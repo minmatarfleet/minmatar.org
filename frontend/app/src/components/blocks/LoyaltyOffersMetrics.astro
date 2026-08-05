@@ -1,0 +1,122 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { LoyaltyOffersMetrics } from '@helpers/loyalty_offers_metrics'
+import { format_number, number_name, number_thousand_separator } from '@helpers/numbers'
+
+import Grid from '@components/compositions/Grid.astro'
+
+interface Props {
+    metrics: LoyaltyOffersMetrics
+    [propName: string]: any
+}
+
+const { metrics } = Astro.props
+
+const filters_applied = t('industry.loyalty.offers.metrics.filters_applied')
+const avg_meta = `${t('industry.loyalty.offers.metrics.avg_isk_lp_meta')} · ${filters_applied}`
+
+const avg_display = metrics.average_isk_per_lp != null
+    ? metrics.average_isk_per_lp.toLocaleString('en-US', {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+    })
+    : '—'
+
+function lp_display(value: number): string {
+    if (value <= 0)
+        return '0'
+    return format_number(value, 1)
+}
+
+function lp_tippy(value: number): string | undefined {
+    if (value <= 0)
+        return undefined
+    const compact = number_name(value, lang)
+    const exact = `${number_thousand_separator(value)} LP`
+    return compact ? `${compact} (${exact})` : exact
+}
+---
+
+<section
+    class="[ loyalty-offers-metrics ]"
+    aria-label={t('industry.loyalty.offers.metrics.aria_label')}
+>
+    <Grid
+        class="[ loyalty-offers-metrics__grid ]"
+        min_item_width="220px"
+        row_gap="var(--space-s)"
+        column_gap="var(--space-s)"
+    >
+        <article class="[ loyalty-offers-metrics__card ]">
+            <p class="[ loyalty-offers-metrics__label ]">
+                {t('industry.loyalty.offers.metrics.avg_isk_lp')}
+            </p>
+            <p class="[ loyalty-offers-metrics__value ]">{avg_display}</p>
+            <p class="[ loyalty-offers-metrics__meta ]">{avg_meta}</p>
+        </article>
+
+        <article class="[ loyalty-offers-metrics__card ]">
+            <p class="[ loyalty-offers-metrics__label ]">
+                {t('industry.loyalty.offers.metrics.weekly_lp')}
+            </p>
+            <p
+                class="[ loyalty-offers-metrics__value ]"
+                data-tippy-content={lp_tippy(metrics.weekly_lp_volume)}
+            >{lp_display(metrics.weekly_lp_volume)}</p>
+            <p class="[ loyalty-offers-metrics__meta ]">{filters_applied}</p>
+        </article>
+
+        <article class="[ loyalty-offers-metrics__card ]">
+            <p class="[ loyalty-offers-metrics__label ]">
+                {t('industry.loyalty.offers.metrics.monthly_lp')}
+            </p>
+            <p
+                class="[ loyalty-offers-metrics__value ]"
+                data-tippy-content={lp_tippy(metrics.monthly_lp_volume)}
+            >{lp_display(metrics.monthly_lp_volume)}</p>
+            <p class="[ loyalty-offers-metrics__meta ]">{filters_applied}</p>
+        </article>
+    </Grid>
+</section>
+
+<style lang="scss">
+    .loyalty-offers-metrics__card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-m);
+        border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+        background: color-mix(in srgb, var(--background) 78%, transparent);
+    }
+
+    .loyalty-offers-metrics__label {
+        margin: 0;
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
+    }
+
+    .loyalty-offers-metrics__value {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: clamp(2rem, 4.5vw, 3rem);
+        line-height: 0.95;
+        letter-spacing: -0.02em;
+        text-transform: uppercase;
+        color: var(--highlight);
+
+        &[data-tippy-content] {
+            cursor: help;
+            width: fit-content;
+        }
+    }
+
+    .loyalty-offers-metrics__meta {
+        margin: 0;
+        color: color-mix(in srgb, var(--foreground) 65%, transparent);
+        font-size: var(--step--1);
+    }
+</style>

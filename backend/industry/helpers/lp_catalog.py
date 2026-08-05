@@ -21,6 +21,9 @@ logger = logging.getLogger(__name__)
 # Eve SDE: Criminal Tags (Angel/Blood/Domination/Navy tags, etc.)
 CRIMINAL_TAGS_GROUP_ID = 370
 
+# Eve SDE: Permanent / time-limited ship SKINs (category "SKINs").
+SKINS_CATEGORY_ID = 91
+
 # Duplicated from product_unit_cost to avoid loyalty_store circular imports.
 TALWAR_FI_TYPE_ID = 91858
 TALWAR_FI_BPC_TYPE_ID = 91862
@@ -149,4 +152,13 @@ def chip_type_ids() -> List[int]:
         EveType.objects.filter(name__icontains="Nexus Chip").values_list(
             "id", flat=True
         )
+    )
+
+
+def skin_type_ids() -> List[int]:
+    """EveType IDs in the SKINs category (permanent and timed ship skins)."""
+    return list(
+        EveType.objects.filter(
+            eve_group__eve_category_id=SKINS_CATEGORY_ID
+        ).values_list("id", flat=True)
     )

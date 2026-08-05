@@ -1,0 +1,171 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { LoyaltyCurrency, LoyaltyOffersList } from '@dtypes/api.minmatar.org'
+import {
+    get_loyalty_currencies,
+    get_loyalty_offers,
+} from '@helpers/api.minmatar.org/loyalty'
+import { from_now_diff } from '@helpers/date'
+import { compute_loyalty_offers_metrics } from '@helpers/loyalty_offers_metrics'
+import { query_string } from '@helpers/string'
+
+const params = Astro.url.searchParams
+
+function binary_param(name: string): string | undefined {
+    const value = params.get(name)
+    if (value === '0' || value === '1')
+        return value
+    return undefined
+}
+
+const TLIB_CORP_ID = 1000182
+
+const currency_raw = params.get('currency')
+const currency = currency_raw && /^\d+$/.test(currency_raw)
+    ? parseInt(currency_raw, 10)
+    : TLIB_CORP_ID
+const exclude_tags = binary_param('exclude_tags')
+const exclude_supply_packages = binary_param('exclude_supply_packages')
+const exclude_chips = binary_param('exclude_chips')
+const exclude_skins = binary_param('exclude_skins')
+const exclude_useless_offers = binary_param('exclude_useless_offers')
+const exclude_below_set_lp_price = binary_param('exclude_below_set_lp_price')
+const side_raw = params.get('side')
+const side = side_raw === 'sell'
+    ? 'sell'
+    : side_raw === 'avg_7d'
+        ? 'avg_7d'
+        : 'buy'
+const q = (params.get('q') || '').trim() || undefined
+const ordering_raw = params.get('ordering') || '-conversion_buy'
+const conversion_target = side === 'buy'
+    ? 'conversion_buy'
+    : side === 'avg_7d'
+        ? 'conversion_avg_7d'
+        : 'conversion_sell'
+const ordering = ordering_raw.replace(
+    /conversion_(?:sell|buy|avg_7d)/g,
+    conversion_target,
+)
+
+const filter_state = {
+    currency: String(currency),
+    ...(exclude_tags ? { exclude_tags } : {}),
+    ...(exclude_supply_packages ? { exclude_supply_packages } : {}),
+    ...(exclude_chips ? { exclude_chips } : {}),
+    ...(exclude_skins ? { exclude_skins } : {}),
+    ...(exclude_useless_offers ? { exclude_useless_offers } : {}),
+    ...(exclude_below_set_lp_price ? { exclude_below_set_lp_price } : {}),
+    side,
+    ...(q ? { q } : {}),
+    ordering,
+}
+
+const partial_url = translatePath(
+    `/partials/loyalty_offers_component?${query_string(filter_state)}`,
+)
+
+let offers_list: LoyaltyOffersList = {
+    items: [],
+    total: 0,
+    limit: 0,
+    offset: 0,
+}
+let currencies: LoyaltyCurrency[] = []
+let fetching_error: Error | false = false
+
+try {
+    ;[offers_list, currencies] = await Promise.all([
+        get_loyalty_offers({
+            currency,
+            exclude_tags,
+            exclude_supply_packages,
+            exclude_chips,
+            exclude_skins,
+            exclude_useless_offers,
+            exclude_below_set_lp_price,
+            side,
+            q,
+            ordering,
+        }),
+        get_loyalty_currencies(),
+    ])
+} catch (error) {
+    fetching_error = error as Error
+}
+
+const delay = parseInt(params.get('delay') ?? '0')
+const last_updated_text = offers_list.rebuilt_at
+    ? t('last_updated_relative').replace(
+        '{time}',
+        from_now_diff(lang, new Date(offers_list.rebuilt_at)),
+    )
+    : ''
+const metrics = compute_loyalty_offers_metrics(offers_list.items, side)
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astro'
+import LoyaltyOffersFilters from '@components/blocks/LoyaltyOffersFilters.astro'
+import LoyaltyOffersMetrics from '@components/blocks/LoyaltyOffersMetrics.astro'
+import LoyaltyOffersTable from '@components/blocks/LoyaltyOffersTable.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+---
+
+{fetching_error !== false ? (
+    <ErrorRefetch
+        args={{
+            partial: partial_url,
+            error: fetching_error,
+            delay: delay,
+        }}
+    />
+) : (
+    <div class="[ loyalty-offers-panel solid-transparency ]">
+        <Flexblock gap="var(--space-l)" class="[ compensate-bottom-bar ]">
+            <UpdateAlpineVariables
+                variables={{
+                    offers_count: offers_list.total,
+                    last_updated_text: last_updated_text,
+                }}
+            />
+            <LoyaltyOffersMetrics metrics={metrics} />
+            <LoyaltyOffersFilters
+                currencies={currencies}
+                currency={currency}
+                exclude_tags={exclude_tags}
+                exclude_supply_packages={exclude_supply_packages}
+                exclude_chips={exclude_chips}
+                exclude_skins={exclude_skins}
+                exclude_useless_offers={exclude_useless_offers}
+                exclude_below_set_lp_price={exclude_below_set_lp_price}
+                side={side}
+                q={q || ''}
+                ordering={ordering}
+            />
+            {offers_list.items.length > 0 ? (
+                <LoyaltyOffersTable
+                    offers={offers_list.items}
+                    filter_state={filter_state}
+                    ordering={ordering}
+                    side={side}
+                />
+            ) : (
+                <p class="[ loyalty-offers-empty ]">{t('industry.loyalty.offers.empty')}</p>
+            )}
+        </Flexblock>
+    </div>
+)}
+
+<style lang="scss">
+    .loyalty-offers-panel {
+        padding-block: var(--space-m);
+        padding-inline: var(--space-s);
+    }
+
+    .loyalty-offers-empty {
+        color: var(--foreground);
+        font-size: var(--step-0);
+    }
+</style>

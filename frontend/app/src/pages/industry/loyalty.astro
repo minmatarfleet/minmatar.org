@@ -135,19 +135,28 @@ const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
                 <Breadcrumb items={breadcrumb_items} />
                 <PageTitle>{page_title}</PageTitle>
             </Flexblock>
-            {user_is_staff && (
+            <FlexInline gap="var(--space-2xs)">
                 <Button
-                    href={admin_loyalty_url}
+                    href={translatePath('/industry/loyalty/offers/')}
                     size="sm"
                     color="transparent"
-                    narrow={true}
-                    new_tab={true}
-                    aria-label={t('industry.loyalty.edit_in_admin')}
-                    title={t('industry.loyalty.edit_in_admin')}
                 >
-                    <CogIcon slot="icon" />
+                    {t('industry.loyalty.view_offers')}
                 </Button>
-            )}
+                {user_is_staff && (
+                    <Button
+                        href={admin_loyalty_url}
+                        size="sm"
+                        color="transparent"
+                        narrow={true}
+                        new_tab={true}
+                        aria-label={t('industry.loyalty.edit_in_admin')}
+                        title={t('industry.loyalty.edit_in_admin')}
+                    >
+                        <CogIcon slot="icon" />
+                    </Button>
+                )}
+            </FlexInline>
         </FlexInline>
 
         <Flexblock gap="var(--space-xl)">

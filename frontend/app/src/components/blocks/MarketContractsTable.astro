@@ -1,0 +1,173 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { Contract } from '@dtypes/api.minmatar.org'
+import { number_thousand_separator } from '@helpers/numbers'
+
+interface Props {
+    contracts:      Contract[];
+    init_tooltips?: boolean;
+}
+
+const {
+    contracts,
+    init_tooltips = false,
+} = Astro.props
+
+function fill_pct(current: number, expected: number): number {
+    if (expected <= 0)
+        return current > 0 ? 100 : 0
+    return Math.min(100, (current / expected) * 100)
+}
+
+function progress_color(pct: number, readiness: string): string {
+    if (readiness === 'empty' || pct < 10)
+        return '--fleet-red'
+    if (pct < 50)
+        return '--security-status-point-4'
+    return '--security-status-point-6'
+}
+
+const rows = contracts.map(contract => {
+    const pct = fill_pct(contract.current_quantity, contract.desired_quantity)
+    return {
+        ...contract,
+        pct,
+        progress_color: progress_color(pct, contract.readiness),
+    }
+})
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+import FixedFluid from '@components/compositions/FixedFluid.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import ItemBadge from '@components/blocks/ItemBadge.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import TippyProducer from '@components/blocks/TippyProducer.astro'
+import Progress from '@components/blocks/Progress.astro'
+import Tag from '@components/blocks/Tag.astro'
+import FittingLink from '@components/blocks/FittingLink.astro'
+
+import MemberIcon from '@components/icons/MemberIcon.astro'
+---
+
+<Flexblock gap="var(--space-2xs)" class="[ market-contracts-table ]">
+    {rows.map(row =>
+        <FixedFluid
+            width="350px"
+            class="[ market-contracts-row ][ w-full items-center! ]"
+            data-fitting-name={row.title}
+            x-show="show_stock_tile($el)"
+        >
+            <div>
+                <FittingLink fitting_id={row.fitting_id} class="[ market-contracts-row__fit ]">
+                    <ItemBadge
+                        item_name={row.title}
+                        type_id={row.ship_id}
+                        size={32}
+                        centered={true}
+                        title_el="h3"
+                    >
+                        <small>
+                            <span class="[ text-highlight ]">{number_thousand_separator(row.current_quantity)}</span>
+                            {row.desired_quantity > 0 &&
+                                <> / {number_thousand_separator(row.desired_quantity)}</>
+                            }
+                        </small>
+                    </ItemBadge>
+                </FittingLink>
+            </div>
+
+            <FlexInline
+                gap="var(--space-s)"
+                justification="space-between"
+                class="[ w-full flex-nowrap! items-center! ]"
+            >
+                <div class="[ min-w-0 grow ]">
+                    <FixedFluid width="32px" breakpoint="30%" gap="var(--space-2xs)" class="[ items-center! text-highlight ]">
+                        <div
+                            class="[ text-highlight h-[32px] ]"
+                            data-tippy-content={t('sellers')}
+                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                        >
+                            <MemberIcon size={32} />
+                        </div>
+
+                        <FlexInline gap="var(--space-3xs)">
+                            {row.sellers.map(seller =>
+                                <TippyProducer
+                                    producer_name={seller.character_name}
+                                    init_tooltip={init_tooltips}
+                                >
+                                    <CharacterPicture
+                                        character_id={seller.character_id}
+                                        character_name={seller.character_name}
+                                        quantity={seller.quantity}
+                                        size={32}
+                                    />
+                                    <div class="[ sr-only ]">{seller.character_name}</div>
+                                </TippyProducer>
+                            )}
+                            {row.sellers.length === 0 &&
+                                <Tag text={t('no_sellers')} />
+                            }
+                        </FlexInline>
+                    </FixedFluid>
+                </div>
+
+                {row.desired_quantity > 0 &&
+                    <FlexInline
+                        class="[ basis-[180px] min-w-[180px] shrink-0 flex-nowrap! items-center! ]"
+                        gap="var(--space-2xs)"
+                    >
+                        <div class="[ grow min-w-0 ]">
+                            <Progress
+                                class:list={['w-full', {
+                                    danger: row.readiness === 'empty' || row.pct < 10,
+                                }]}
+                                max="100"
+                                value={row.pct > 0 ? row.pct : 0.1}
+                                data-tippy-content={`${row.pct.toFixed(0)}%`}
+                                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                                style={`--progress-color: var(${row.progress_color}); --progress-glow-color: var(${row.progress_color});`}
+                            >
+                                {row.pct.toFixed(2)}%
+                            </Progress>
+                        </div>
+
+                        <div class="[ basis-[4ch] shrink-0 text-right ]">
+                            <small>{row.pct.toFixed(0)}%</small>
+                        </div>
+                    </FlexInline>
+                }
+            </FlexInline>
+        </FixedFluid>
+    )}
+</Flexblock>
+
+<style lang="scss">
+    .market-contracts-row {
+        padding-block: var(--space-2xs);
+        padding-inline: var(--space-3xs);
+        margin-block: calc(-1 * var(--space-3xs));
+        margin-inline: calc(-1 * var(--space-3xs));
+        transition: var(--fast-transition);
+
+        @media (hover: hover) {
+            &:hover {
+                background-color: var(--light-transparency-background);
+            }
+        }
+    }
+
+    .market-contracts-row__fit {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+
+        &:focus-visible {
+            outline: 2px solid var(--highlight);
+            outline-offset: 2px;
+        }
+    }
+</style>

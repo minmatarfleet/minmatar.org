@@ -26,6 +26,12 @@ from industry.endpoints.loyalty.get_ledger import (
     get_ledger,
     METHOD as get_ledger_method,
 )
+from industry.endpoints.loyalty.get_offers import (
+    PATH as get_offers_path,
+    ROUTE_SPEC as get_offers_spec,
+    get_offers,
+    METHOD as get_offers_method,
+)
 from industry.endpoints.loyalty.get_orders import (
     PATH as get_orders_path,
     ROUTE_SPEC as get_orders_spec,
@@ -79,6 +85,7 @@ _ROUTES = (
         get_stockpiles,
     ),
     (get_ledger_method, get_ledger_path, get_ledger_spec, get_ledger),
+    (get_offers_method, get_offers_path, get_offers_spec, get_offers),
     (
         get_capabilities_method,
         get_capabilities_path,

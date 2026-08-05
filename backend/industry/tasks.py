@@ -15,6 +15,9 @@ from industry.helpers.loyalty_store import (
     ensure_loyalty_store_offers_for_product,
     sync_loyalty_store_offers,
 )
+from industry.helpers.lp_store_offer_economics_rebuild import (
+    rebuild_lp_store_offer_economics,
+)
 from industry.helpers.notifications import (
     emit_order_created,
     emit_order_jobs_for_created_job_ids,
@@ -170,11 +173,28 @@ def sync_loyalty_store_offers_task() -> int:
     Refresh cached loyalty-store offers (full ESI catalog).
 
     Periodic via Celery beat; also admin action / product-save / planner miss.
+    Rebuilds economics snapshot afterwards from local price data.
     """
     try:
-        return sync_loyalty_store_offers()
+        count = sync_loyalty_store_offers()
+        rebuild_lp_store_offer_economics_task.delay()
+        return count
     except Exception:
         logger.exception("Failed to sync loyalty store offers")
+        raise
+
+
+@app.task()
+def rebuild_lp_store_offer_economics_task() -> int:
+    """
+    Rebuild LP store offer economics snapshot from local caches (no ESI).
+
+    Hourly Celery beat; also after ESI offer sync.
+    """
+    try:
+        return rebuild_lp_store_offer_economics()
+    except Exception:
+        logger.exception("Failed to rebuild LP store offer economics")
         raise
 
 

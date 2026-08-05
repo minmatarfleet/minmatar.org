@@ -1,20 +1,205 @@
 ---
-/* Unpublished — public stock browse removed; deep links redirect to Market Ops */
-
 import { i18n } from '@helpers/i18n'
-const { translatePath } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import { get_market_locations } from '@helpers/api.minmatar.org/locations'
-import { ops_redirect_target } from '@helpers/market_ops_redirect'
+import { query_string } from '@helpers/string'
+import {
+    ops_params_need_canonicalization,
+    resolve_ops_location_id,
+} from '@helpers/market_ops_redirect'
 
-let target = translatePath('/market/ops/')
+let fetch_error: Error | false = false
+let locations: Awaited<ReturnType<typeof get_market_locations>> = []
+let location_id: number | undefined
 
 try {
-    const locations = await get_market_locations()
-    target = ops_redirect_target(translatePath, locations, Astro.url.searchParams)
-} catch {
-    // Keep default ops URL when locations cannot be loaded.
+    locations = await get_market_locations()
+
+    location_id = resolve_ops_location_id(locations, Astro.url.searchParams)
+        ?? locations[0]?.location_id
+
+    if (
+        location_id != null
+        && ops_params_need_canonicalization(Astro.url.searchParams, location_id)
+    ) {
+        return Astro.redirect(
+            translatePath(`/market/contracts/?${query_string({ location_id })}`),
+        )
+    }
+} catch (error) {
+    fetch_error = error as Error
 }
 
-return Astro.redirect(target, 301)
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Breadcrumb from '@components/blocks/Breadcrumb.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import Input from '@components/blocks/Input.astro'
+import MarketContractsSkeleton from '@components/blocks/MarketContractsSkeleton.astro'
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
+
+const page_title = t('market_contracts.page_title')
+const contracts_count_text = t('showing_contracts_plural').replace('{count}', '0')
+
+const ops_href = location_id != null
+    ? translatePath(`/market/ops/?${query_string({ location_id })}`)
+    : translatePath('/market/ops/')
+
+const breadcrumb_items = [
+    { label: t('staging_supply.ops.page_title'), href: ops_href },
+    { label: page_title },
+]
+
+const MONITOR_PARTIAL = translatePath(
+    `/partials/market_contracts_component${
+        location_id != null
+            ? `?${query_string({ location_id })}`
+            : ''
+    }`,
+)
 ---
+
+<Viewport
+    title={page_title}
+    meta_description={t('market_contracts.meta_description')}
+    components={{
+        tippy: true,
+    }}
+>
+    <PageWide
+        cover={{
+            image: '/images/market-cover.jpg',
+            image_990: '/images/market-cover.jpg',
+            overlay: true,
+            scrollable: true,
+        }}
+        sticky={true}
+        x-data={`{
+            contracts_count: 0,
+            item_name_filter: '',
+            contracts_plural: '${t('showing_contracts_plural')}',
+            contracts_singular: '${t('showing_contracts_singular')}',
+            countVisibleElements(selector, parent = document) {
+                const elements = parent.querySelectorAll(selector)
+                let visible_count = 0
+
+                elements.forEach(element => {
+                    const is_visible = element.offsetParent !== null
+                    if (is_visible)
+                        visible_count++
+                })
+
+                return visible_count
+            },
+            show_stock_tile(el) {
+                const name = (el.dataset.fittingName || '').toLowerCase()
+                return this.item_name_filter === ''
+                    || name.includes(this.item_name_filter.toLowerCase())
+            },
+        }`}
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <Flexblock gap="var(--space-s)">
+                <Breadcrumb items={breadcrumb_items} />
+                <Flexblock gap="var(--space-3xs)">
+                    <PageTitle>{page_title}</PageTitle>
+                    <small
+                        x-text="(contracts_count != 1 ? contracts_plural : contracts_singular).replace('{count}', String(contracts_count))"
+                    >{contracts_count_text}</small>
+                </Flexblock>
+            </Flexblock>
+            <Input
+                type="text"
+                placeholder={t('search')}
+                x-model="item_name_filter"
+                x-on:keyup="setTimeout(function () { contracts_count = countVisibleElements('.market-contracts-row') })"
+                width="250px"
+            >
+                <MagnifierIcon slot="icon" />
+            </Input>
+        </FlexInline>
+
+        {fetch_error ?
+            <ErrorRefetch args={{
+                partial: translatePath(
+                    location_id != null
+                        ? `/market/contracts/?${query_string({ location_id })}`
+                        : '/market/contracts/'
+                ),
+                error: fetch_error,
+                delay: 0,
+            }} />
+            :
+            <div
+                id="market-contracts-slot"
+                data-market-contracts-deferred="1"
+                hx-get={MONITOR_PARTIAL}
+                hx-trigger="load"
+                hx-swap="innerHTML"
+                hx-indicator=".loader"
+                aria-busy="true"
+                aria-live="polite"
+            >
+                <MarketContractsSkeleton />
+            </div>
+        }
+    </PageWide>
+</Viewport>
+
+<script>
+    function refreshMarketContractsSlot() {
+        const slot = document.getElementById('market-contracts-slot')
+        if (!slot)
+            return
+
+        slot.setAttribute('aria-busy', 'false')
+        if (typeof htmx !== 'undefined')
+            htmx.process(slot)
+        if (typeof Alpine !== 'undefined')
+            Alpine.initTree(slot)
+        if (typeof tippy === 'function') {
+            tippy('#market-contracts-slot [data-tippy-content]', {
+                delay: [100, 200],
+                arrow: true,
+            })
+        }
+    }
+
+    function isMarketContractsRequest(event: any): boolean {
+        const path = String(
+            event.detail?.pathInfo?.requestPath
+                || event.detail?.xhr?.responseURL
+                || event.detail?.elt?.getAttribute?.('hx-get')
+                || '',
+        )
+        return path.includes('market_contracts_component')
+    }
+
+    function bindMarketContractsDeferred() {
+        const slot = document.getElementById('market-contracts-slot')
+        if (!slot || slot.dataset.bound === '1')
+            return
+        slot.dataset.bound = '1'
+
+        document.body.addEventListener('htmx:afterSwap', (event: any) => {
+            if (!isMarketContractsRequest(event))
+                return
+            refreshMarketContractsSlot()
+        })
+
+        document.body.addEventListener('htmx:afterRequest', (event: any) => {
+            if (!isMarketContractsRequest(event))
+                return
+            if (!event.detail?.successful) {
+                document.getElementById('market-contracts-slot')?.setAttribute('aria-busy', 'false')
+            }
+        })
+    }
+
+    bindMarketContractsDeferred()
+    document.addEventListener('astro:page-load', bindMarketContractsDeferred)
+</script>

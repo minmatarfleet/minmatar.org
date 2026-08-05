@@ -1,0 +1,20 @@
+---
+import type { LoyaltyOffer } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    offers: LoyaltyOffer[]
+    side?: 'sell' | 'buy' | 'avg_7d'
+    [propName: string]: any
+}
+
+const {
+    offers,
+    side = 'buy',
+} = Astro.props
+
+import LoyaltyOfferItem from '@components/blocks/LoyaltyOfferItem.astro'
+---
+
+{offers.map((offer) => (
+    <LoyaltyOfferItem offer={offer} side={side} />
+))}

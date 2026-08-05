@@ -102,3 +102,36 @@ class LoyaltyLedgerEntryResponse(Schema):
     created_by_user_id: Optional[int] = None
     created_by_name: Optional[str] = None
     created_at: datetime
+
+
+class LoyaltyOfferResponse(Schema):
+    offer_id: int
+    corporation_id: int
+    type_id: int
+    type_name: str
+    currency_name: str
+    lp_cost: int
+    isk_cost: int
+    ak_cost: int
+    quantity: int
+    required_items_summary: str
+    other_cost: Optional[int] = None
+    jita_sell: Optional[int] = None
+    jita_buy: Optional[int] = None
+    jita_avg_7d: Optional[int] = None
+    conversion_isk_per_lp_sell: Optional[float] = None
+    conversion_isk_per_lp_buy: Optional[float] = None
+    conversion_isk_per_lp_avg_7d: Optional[float] = None
+    volume_1d: Optional[int] = None
+    volume_7d: Optional[int] = None
+    volume_30d: Optional[int] = None
+    kind: str = ""
+    updated_at: datetime
+
+
+class LoyaltyOffersListResponse(Schema):
+    items: list[LoyaltyOfferResponse]
+    total: int
+    limit: int
+    offset: int
+    rebuilt_at: Optional[datetime] = None

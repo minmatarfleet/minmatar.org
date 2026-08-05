@@ -265,6 +265,8 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         # (250M - 20M - 1.5M) / 100k LP = 2285
         self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 2285.0)
         self.assertAlmostEqual(econ.conversion_isk_per_lp_buy, 2285.0)
+        self.assertEqual(econ.jita_avg_7d, 250_000_000)
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_avg_7d, 2285.0)
 
     @patch(
         "industry.helpers.lp_store_economics.plan_product_unit_cost",
@@ -728,7 +730,9 @@ class LpStoreOfferAdminTestCase(TestCase):
         )
         self.assertEqual(ordered, [2001])
 
-    @patch("industry.admin.offer_economics_for_queryset")
+    @patch(
+        "industry.helpers.lp_store_offers_query.offer_economics_for_queryset"
+    )
     def test_conversion_sell_sort_matches_display_economics(self, mock_econ):
         """o=-10 must order by real conversion sell, not SQL approx."""
         other = IndustryLpStoreOffer.objects.create(
@@ -1266,7 +1270,9 @@ class LpStoreOfferAdminTestCase(TestCase):
             self.admin.list_filter,
         )
 
-    @patch("industry.admin.offer_economics_for_queryset")
+    @patch(
+        "industry.helpers.lp_store_offers_query.offer_economics_for_queryset"
+    )
     def test_filters_reuse_request_scoped_economics(self, mock_econ):
         """Both econ filters share one catalog map; no second compute."""
         mock_econ.return_value = {
@@ -1304,7 +1310,9 @@ class LpStoreOfferAdminTestCase(TestCase):
         # Filters must reuse request._lp_offer_econ, not recompute.
         self.assertEqual(mock_econ.call_count, 1)
 
-    @patch("industry.admin.offer_economics_for_queryset")
+    @patch(
+        "industry.helpers.lp_store_offers_query.offer_economics_for_queryset"
+    )
     def test_ensure_populates_django_cache(self, mock_econ):
         """Cold ensure stores catalog map; second request hits Django cache."""
         economics = {
@@ -1332,7 +1340,9 @@ class LpStoreOfferAdminTestCase(TestCase):
         # pylint: disable=protected-access
         self.assertIs(getattr(request_b, "_lp_offer_econ"), second)
 
-    @patch("industry.admin.offer_economics_for_queryset")
+    @patch(
+        "industry.helpers.lp_store_offers_query.offer_economics_for_queryset"
+    )
     def test_changelist_both_econ_filters_computes_once(self, mock_econ):
         """Changelist with both Yes filters warms economics a single time."""
         mock_econ.return_value = {
@@ -1455,8 +1465,10 @@ def _econ(**overrides) -> LpStoreOfferEconomics:
         "market_type_name": "Test Offer",
         "jita_sell": 2_000_000,
         "jita_buy": 1_900_000,
+        "jita_avg_7d": 1_950_000,
         "conversion_isk_per_lp_sell": 2_000.0,
         "conversion_isk_per_lp_buy": 1_900.0,
+        "conversion_isk_per_lp_avg_7d": 1_950.0,
         "volume_1d": 100,
         "volume_7d": 700,
         "volume_30d": 10_000,

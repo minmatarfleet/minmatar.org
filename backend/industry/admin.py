@@ -4,16 +4,13 @@ from django.contrib import admin
 from django.contrib import messages
 from django.contrib.admin.views.main import ChangeList
 from django import forms
-from django.core.cache import cache
-from django.db.models import Case, Count, IntegerField, Max, Q, Sum, When
+from django.db.models import Q, Sum
 from django.http import HttpResponseRedirect
 from django.middleware.csrf import get_token
 from django.urls import path, reverse
 from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
-
-from market.models.history import EveMarketItemHistory
 
 from eveuniverse.models import EveGroup, EveType
 
@@ -45,18 +42,27 @@ from industry.helpers.lp_ledger import (
     resolve_offer_isk_per_lp,
     weighted_average_cost_isk_per_lp,
 )
-from industry.helpers.lp_catalog import (
-    chip_type_ids,
-    supply_package_type_ids,
-    tag_type_ids,
-)
 from industry.helpers.lp_store_economics import (
     annotate_lp_store_offer_sort_fields,
     offer_economics_for_queryset,
-    offer_pks_below_set_lp_price,
     tracked_corporation_ids,
 )
-from industry.helpers.lp_store_useless import useless_offer_pks
+from industry.helpers.lp_store_offers_query import (
+    LP_OFFER_ECON_ATTR,
+    LP_OFFER_ECON_ORDER_ATTR,
+    apply_currency_filter,
+    apply_exclude_below_set_lp_price_filter,
+    apply_exclude_chips_filter,
+    apply_exclude_skins_filter,
+    apply_exclude_supply_packages_filter,
+    apply_exclude_tags_filter,
+    apply_exclude_useless_offers_filter,
+    apply_search,
+    clear_lp_offer_econ_on_request,
+    ensure_lp_offer_econ_on_request,
+    lp_econ_filters_active,
+    sort_offers_by_econ,
+)
 from industry.tasks import (
     compute_order_profit_breakdown_task,
     sync_loyalty_store_offers_task,
@@ -69,7 +75,6 @@ from industry.models import (
     IndustryLoyaltyPointLedgerEntry,
     IndustryLoyaltyPointPriceHistory,
     IndustryLpStoreOffer,
-    IndustryLpStoreOfferRequiredItem,
     IndustryOrder,
     IndustryOrderBlueprintCoordinator,
     IndustryOrderItem,
@@ -82,89 +87,6 @@ from industry.models import (
 from tribes.models import TribeGroup
 
 logger = logging.getLogger(__name__)
-
-# Request attribute for one shared tracked-catalog economics map per
-# changelist (filters + list_display stash). Avoids N× full recomputes.
-_LP_OFFER_ECON_ATTR = "_lp_offer_econ"
-# Short-lived cross-request cache so toggling filters does not recompute
-# ~1.5k offers every time. Invalidates when offer/currency/history inputs
-# change; TTL bounds LocationPrice / planner staleness.
-_LP_OFFER_ECON_CACHE_PREFIX = "industry:lp_offer_econ:v1"
-_LP_OFFER_ECON_CACHE_TTL = 180
-_LP_ECON_FILTER_PARAMS = (
-    "exclude_useless_offers",
-    "exclude_below_set_lp_price",
-)
-
-
-def _lp_econ_filters_active(request) -> bool:
-    params = getattr(request, "GET", {})
-    return any(
-        params.get(name) in ("0", "1") for name in _LP_ECON_FILTER_PARAMS
-    )
-
-
-def lp_offer_econ_cache_key() -> str:
-    """
-    Cache key for the full tracked-catalog economics map.
-
-    Fingerprint includes tracked corps, offer count + max(updated_at),
-    active currency default_isk_per_lp rates, and max Forge history date
-    so offer sync / buyback edits / daily history refresh invalidate.
-    """
-    corp_ids = tracked_corporation_ids()
-    corp_key = ",".join(str(c) for c in sorted(corp_ids)) or "none"
-    if corp_ids:
-        offer_stats = IndustryLpStoreOffer.objects.filter(
-            corporation_id__in=corp_ids
-        ).aggregate(n=Count("pk"), max_u=Max("updated_at"))
-    else:
-        offer_stats = {"n": 0, "max_u": None}
-    currency_fp = (
-        ",".join(
-            f"{row.corporation_id}:{row.default_isk_per_lp}"
-            for row in IndustryLoyaltyPoint.objects.filter(
-                is_active=True
-            ).order_by("corporation_id")
-        )
-        or "none"
-    )
-    hist_max = EveMarketItemHistory.objects.aggregate(m=Max("date"))["m"]
-    n = int(offer_stats["n"] or 0)
-    max_u = offer_stats["max_u"]
-    max_u_s = max_u.isoformat() if max_u is not None else "none"
-    hist_s = hist_max.isoformat() if hist_max is not None else "none"
-    return (
-        f"{_LP_OFFER_ECON_CACHE_PREFIX}:{corp_key}|n={n}|u={max_u_s}"
-        f"|lp={currency_fp}|h={hist_s}"
-    )
-
-
-def ensure_lp_offer_econ_on_request(request):
-    """
-    Resolve economics for all tracked LP store offers.
-
-    Lookup order: request stash → Django cache → compute. Filters and
-    list_display share the request-scoped map; the cross-request cache
-    avoids recomputing when operators re-toggle exclude filters.
-    """
-    cached = getattr(request, _LP_OFFER_ECON_ATTR, None)
-    if cached is not None:
-        return cached
-    cache_key = lp_offer_econ_cache_key()
-    economics = cache.get(cache_key)
-    if economics is not None:
-        setattr(request, _LP_OFFER_ECON_ATTR, economics)
-        return economics
-    offers = list(
-        IndustryLpStoreOffer.objects.filter(
-            corporation_id__in=tracked_corporation_ids()
-        )
-    )
-    economics = offer_economics_for_queryset(offers)
-    setattr(request, _LP_OFFER_ECON_ATTR, economics)
-    cache.set(cache_key, economics, timeout=_LP_OFFER_ECON_CACHE_TTL)
-    return economics
 
 
 class IndustryLoyaltyPointAccountInline(admin.TabularInline):
@@ -797,7 +719,7 @@ class IndustryLpStoreCurrencyListFilter(admin.SimpleListFilter):
     def queryset(self, request, queryset):
         if self.value() is None:
             return queryset
-        return queryset.filter(corporation_id=int(self.value()))
+        return apply_currency_filter(queryset, int(self.value()))
 
 
 class IndustryLpStoreExcludeTagsFilter(admin.SimpleListFilter):
@@ -808,20 +730,7 @@ class IndustryLpStoreExcludeTagsFilter(admin.SimpleListFilter):
         return (("1", "Yes"), ("0", "No"))
 
     def queryset(self, request, queryset):
-        value = self.value()
-        if value not in ("0", "1"):
-            return queryset
-        tag_ids = tag_type_ids()
-        if not tag_ids:
-            return queryset
-        # Offers that *are* tags or that require a tag as input.
-        req_offer_ids = IndustryLpStoreOfferRequiredItem.objects.filter(
-            type_id__in=tag_ids
-        ).values("offer_id")
-        tag_q = Q(type_id__in=tag_ids) | Q(pk__in=req_offer_ids)
-        if value == "1":
-            return queryset.exclude(tag_q)
-        return queryset.filter(tag_q)
+        return apply_exclude_tags_filter(queryset, self.value())
 
 
 class IndustryLpStoreExcludeSupplyPackagesFilter(admin.SimpleListFilter):
@@ -832,20 +741,7 @@ class IndustryLpStoreExcludeSupplyPackagesFilter(admin.SimpleListFilter):
         return (("1", "Yes"), ("0", "No"))
 
     def queryset(self, request, queryset):
-        value = self.value()
-        if value not in ("0", "1"):
-            return queryset
-        package_ids = supply_package_type_ids()
-        if not package_ids:
-            return queryset
-        # Offers that *are* supply packages or require one as input.
-        req_offer_ids = IndustryLpStoreOfferRequiredItem.objects.filter(
-            type_id__in=package_ids
-        ).values("offer_id")
-        package_q = Q(type_id__in=package_ids) | Q(pk__in=req_offer_ids)
-        if value == "1":
-            return queryset.exclude(package_q)
-        return queryset.filter(package_q)
+        return apply_exclude_supply_packages_filter(queryset, self.value())
 
 
 class IndustryLpStoreExcludeChipsFilter(admin.SimpleListFilter):
@@ -856,20 +752,18 @@ class IndustryLpStoreExcludeChipsFilter(admin.SimpleListFilter):
         return (("1", "Yes"), ("0", "No"))
 
     def queryset(self, request, queryset):
-        value = self.value()
-        if value not in ("0", "1"):
-            return queryset
-        chip_ids = chip_type_ids()
-        if not chip_ids:
-            return queryset
-        # Offers that *are* nexus chips or require one as input.
-        req_offer_ids = IndustryLpStoreOfferRequiredItem.objects.filter(
-            type_id__in=chip_ids
-        ).values("offer_id")
-        chip_q = Q(type_id__in=chip_ids) | Q(pk__in=req_offer_ids)
-        if value == "1":
-            return queryset.exclude(chip_q)
-        return queryset.filter(chip_q)
+        return apply_exclude_chips_filter(queryset, self.value())
+
+
+class IndustryLpStoreExcludeSkinsFilter(admin.SimpleListFilter):
+    title = "exclude skins"
+    parameter_name = "exclude_skins"
+
+    def lookups(self, request, model_admin):
+        return (("1", "Yes"), ("0", "No"))
+
+    def queryset(self, request, queryset):
+        return apply_exclude_skins_filter(queryset, self.value())
 
 
 class IndustryLpStoreExcludeUselessOffersFilter(admin.SimpleListFilter):
@@ -878,7 +772,7 @@ class IndustryLpStoreExcludeUselessOffersFilter(admin.SimpleListFilter):
 
     Yes = hide useless; No = show only useless. Uses offer_is_useless:
     stockpile usefulness, profit vs buyback, below peer median, and
-    volume/volatility (Forge 30d + spread proxy). See
+    volume/volatility (Forge 30d + depth proxy). See
     industry.helpers.lp_store_useless.
 
     Economics come from ensure_lp_offer_econ_on_request (shared with the
@@ -896,19 +790,19 @@ class IndustryLpStoreExcludeUselessOffersFilter(admin.SimpleListFilter):
         if value not in ("0", "1"):
             return queryset
         economics = ensure_lp_offer_econ_on_request(request)
-        useless = useless_offer_pks(queryset, economics=economics)
-        if value == "1":
-            return queryset.exclude(pk__in=useless)
-        return queryset.filter(pk__in=useless)
+        return apply_exclude_useless_offers_filter(
+            queryset, value, economics=economics
+        )
 
 
 class IndustryLpStoreExcludeBelowSetLpPriceFilter(admin.SimpleListFilter):
     """
     Hide (or isolate) offers whose ISK/LP sell is below set buyback.
 
-    Compares conversion_isk_per_lp_sell to IndustryLoyaltyPoint
-    default_isk_per_lp for the offer's corporation. Null conversion
-    counts as below set (missing prices → cannot beat buyback).
+    Compares conversion_isk_per_lp_sell (or buy when side=buy) to
+    IndustryLoyaltyPoint default_isk_per_lp for the offer's corporation.
+    Null conversion counts as below set (missing prices → cannot beat
+    buyback).
 
     Reuses request-scoped catalog economics from
     ensure_lp_offer_econ_on_request when already warmed.
@@ -925,27 +819,9 @@ class IndustryLpStoreExcludeBelowSetLpPriceFilter(admin.SimpleListFilter):
         if value not in ("0", "1"):
             return queryset
         economics = ensure_lp_offer_econ_on_request(request)
-        below = offer_pks_below_set_lp_price(queryset, economics=economics)
-        if value == "1":
-            return queryset.exclude(pk__in=below)
-        return queryset.filter(pk__in=below)
-
-
-# Map admin order_by annotation names → LpStoreOfferEconomics attributes.
-# Approximate SQL annotations ignore other_cost/BOM/hull mapping; when these
-# keys appear in ordering we re-sort from request economics so the UI matches
-# displayed ISK/LP and volume columns.
-_LP_OFFER_ECON_ORDER_ATTR = {
-    "sort_conversion_sell": "conversion_isk_per_lp_sell",
-    "sort_conversion_buy": "conversion_isk_per_lp_buy",
-    "sort_jita_sell": "jita_sell",
-    "sort_jita_buy": "jita_buy",
-    "sort_volume_1d": "volume_1d",
-    "sort_volume_7d": "volume_7d",
-    "sort_volume_30d": "volume_30d",
-    "sort_acquisition": "acquisition_isk_per_unit",
-    "sort_profit": "profit_vs_sell",
-}
+        return apply_exclude_below_set_lp_price_filter(
+            queryset, value, economics=economics
+        )
 
 
 class LpStoreOfferChangeList(ChangeList):
@@ -960,38 +836,14 @@ class LpStoreOfferChangeList(ChangeList):
         for term in ordering:
             desc = term.startswith("-")
             field = term[1:] if desc else term
-            if field in _LP_OFFER_ECON_ORDER_ATTR:
+            if field in LP_OFFER_ECON_ORDER_ATTR:
                 econ_terms.append((field, desc))
         if not econ_terms:
             return qs
 
         economics = ensure_lp_offer_econ_on_request(request)
-        # Primary econ key only (matches typical single-column admin sort).
-        field, descending = econ_terms[0]
-        attr = _LP_OFFER_ECON_ORDER_ATTR[field]
-
-        def sort_key(obj):
-            econ = economics.get(obj.pk) if economics else None
-            if econ is None:
-                return (1, 0.0)
-            value = getattr(econ, attr, None)
-            if value is None:
-                return (1, 0.0)
-            return (0, float(value))
-
-        ordered = sorted(qs.order_by("pk"), key=sort_key, reverse=descending)
-        if not ordered:
-            return qs.order_by()
-        pk_order = [obj.pk for obj in ordered]
-        preserved = Case(
-            *[When(pk=pk, then=pos) for pos, pk in enumerate(pk_order)],
-            output_field=IntegerField(),
-        )
-        return (
-            qs.order_by()
-            .filter(pk__in=pk_order)
-            .annotate(_lp_econ_ord=preserved)
-            .order_by("_lp_econ_ord")
+        return sort_offers_by_econ(
+            qs, ordering_terms=econ_terms, economics=economics
         )
 
 
@@ -1025,6 +877,7 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
         IndustryLpStoreExcludeTagsFilter,
         IndustryLpStoreExcludeSupplyPackagesFilter,
         IndustryLpStoreExcludeChipsFilter,
+        IndustryLpStoreExcludeSkinsFilter,
         IndustryLpStoreExcludeUselessOffersFilter,
         IndustryLpStoreExcludeBelowSetLpPriceFilter,
     )
@@ -1076,33 +929,20 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
         return LpStoreOfferChangeList
 
     def get_search_results(self, request, queryset, search_term):
-        # queryset already has list filters applied (e.g. currency). Keep a
-        # copy so name search cannot reintroduce rows those filters excluded.
-        filtered_qs = queryset
-        queryset, use_distinct = super().get_search_results(
-            request, queryset, search_term
-        )
+        # queryset already has list filters applied (e.g. currency).
+        # apply_search keeps name hits within that filtered set.
         term = (search_term or "").strip()
         if not term:
-            return queryset, use_distinct
-        type_ids = list(
-            EveType.objects.filter(name__icontains=term).values_list(
-                "id", flat=True
-            )
-        )
-        if type_ids:
-            by_name = filtered_qs.filter(type_id__in=type_ids)
-            queryset |= by_name
-            use_distinct = True
-        return queryset, use_distinct
+            return queryset, False
+        return apply_search(queryset, term), True
 
     def get_changelist_instance(self, request):
         # Warm full-catalog economics before ChangeList applies filters so
         # exclude-useless / exclude-below-set share one compute with stash.
-        if _lp_econ_filters_active(request):
+        if lp_econ_filters_active(getattr(request, "GET", {})):
             ensure_lp_offer_econ_on_request(request)
         cl = super().get_changelist_instance(request)
-        cached = getattr(request, _LP_OFFER_ECON_ATTR, None)
+        cached = getattr(request, LP_OFFER_ECON_ATTR, None)
         if cached is not None:
             IndustryLpStoreOfferAdmin._request_stash = cached
         else:
@@ -1124,8 +964,7 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
             return response
         finally:
             IndustryLpStoreOfferAdmin._request_stash = None
-            if hasattr(request, _LP_OFFER_ECON_ATTR):
-                delattr(request, _LP_OFFER_ECON_ATTR)
+            clear_lp_offer_econ_on_request(request)
 
     @classmethod
     def _econ_for(cls, obj):

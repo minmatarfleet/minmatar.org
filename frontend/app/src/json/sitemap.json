@@ -446,6 +446,13 @@
         "description": "page_finder.staging_supply.ops.description"
     },
     {
+        "slug": "market_contracts",
+        "path": "/market/contracts/",
+        "publish": true,
+        "description": "page_finder.market_contracts.description",
+        "keywords": [ "market", "contracts", "fittings", "stock" ]
+    },
+    {
         "slug": "industry",
         "alt": "icon.industry.alt",
         "path": "/industry/",

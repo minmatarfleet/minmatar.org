@@ -828,14 +828,24 @@ export interface ContractDoctrine {
     role:   string;
 }
 
+export interface ContractSeller {
+    character_id:       number;
+    character_name:     string;
+    quantity:           number;
+}
+
 export interface Contract {
     expectation_id:             number | null;
     title:                      string;
     fitting_id:                 number;
+    ship_id:                    number;
     structure_id:               number | null;
+    location_id:                number;
     location_name:              string;
     desired_quantity:           number;
     current_quantity:           number;
+    readiness:                  string;
+    sellers:                    ContractSeller[];
     latest_contract_timestamp:  string | null;
     historical_quantity:        History[];
     doctrines:                  ContractDoctrine[];
@@ -1646,6 +1656,39 @@ export interface LoyaltyLedgerEntry {
     created_by_user_id:     number | null;
     created_by_name:        string | null;
     created_at:             Date | string;
+}
+
+export interface LoyaltyOffer {
+    offer_id:                       number;
+    corporation_id:                 number;
+    type_id:                        number;
+    type_name:                      string;
+    currency_name:                  string;
+    lp_cost:                        number;
+    isk_cost:                       number;
+    ak_cost:                        number;
+    quantity:                       number;
+    required_items_summary:         string;
+    other_cost:                     number | null;
+    jita_sell:                      number | null;
+    jita_buy:                       number | null;
+    jita_avg_7d:                    number | null;
+    conversion_isk_per_lp_sell:     number | null;
+    conversion_isk_per_lp_buy:      number | null;
+    conversion_isk_per_lp_avg_7d:   number | null;
+    volume_1d:                      number | null;
+    volume_7d:                      number | null;
+    volume_30d:                     number | null;
+    kind:                           string;
+    updated_at:                     Date | string;
+}
+
+export interface LoyaltyOffersList {
+    items:  LoyaltyOffer[];
+    total:  number;
+    limit:  number;
+    offset: number;
+    rebuilt_at?: Date | string | null;
 }
 
 export interface OrderBlueprintCoordinatorEveType {

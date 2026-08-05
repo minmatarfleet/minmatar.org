@@ -166,6 +166,13 @@ CELERYBEAT_INDUSTRY = [
             "schedule": crontab(minute=40, hour=6),
         },
     ),
+    (
+        "[Industry] Rebuild LP Store Offer Economics",
+        {
+            "task": "industry.tasks.rebuild_lp_store_offer_economics_task",
+            "schedule": crontab(minute=10),
+        },
+    ),
 ]
 
 # Groups

@@ -71,6 +71,14 @@ const MONITOR_PARTIAL = translatePath(
         <FlexInline slot="header" justification="space-between" class="[ w-full ]">
             <PageTitle>{page_title}</PageTitle>
             <FlexInline>
+                {location_id != null &&
+                    <Button
+                        href={translatePath(`/market/contracts/?${query_string({ location_id })}`)}
+                        size="sm"
+                    >
+                        {t('view_market_contracts')}
+                    </Button>
+                }
                 <Button href={admin_hub} size="sm">{t('edit_targets_admin')}</Button>
             </FlexInline>
         </FlexInline>
