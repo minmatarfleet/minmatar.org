@@ -1,4 +1,4 @@
-"""Economics helpers for admin LP store offer price tracking.
+"""Economics helpers for LP store offer price tracking.
 
 Conversion rates (isk/lp buy & sell) follow Fuzzwork's LP store formula:
   (market_price * qty - isk_cost - other_cost) / lp_cost
@@ -18,16 +18,7 @@ from datetime import timedelta
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 from django.db import ProgrammingError
-from django.db.models import (
-    ExpressionWrapper,
-    F,
-    FloatField,
-    OuterRef,
-    Subquery,
-    Sum,
-    Value,
-)
-from django.db.models.functions import Coalesce, Greatest
+from django.db.models import Sum
 from django.utils import timezone
 from eveonline.models import EveLocation
 from eveuniverse.models import EveIndustryActivityMaterial, EveType
@@ -99,6 +90,13 @@ class LpStoreOfferEconomics:
     cost_per_unit: Optional[int]
     kind: str
     profit_vs_sell: Optional[int]
+
+
+def display_type_name(econ: LpStoreOfferEconomics) -> str:
+    """Public display name, including (BPC) for blueprint copies."""
+    if econ.kind == "blueprint" and econ.market_type_id != econ.type_id:
+        return f"{econ.market_type_name} (BPC)"
+    return econ.type_name
 
 
 def tracked_corporation_ids() -> List[int]:
@@ -390,98 +388,6 @@ def _fuzzwork_other_cost(
     if lp_store_other is None or build_mats_other is None:
         return None
     return int(lp_store_other) + int(build_mats_other)
-
-
-def annotate_lp_store_offer_sort_fields(queryset):
-    """
-    Annotate admin sort keys for economics columns.
-
-    Display values still come from offer_economics_for_queryset (accurate
-    hull mapping, required-item other cost). Sort annotations use offer
-    type_id history + currency default ISK/LP and ignore required-item
-    other cost — good enough for Fuzzwork-style ranking.
-    """
-    region_id = _baseline_region_id()
-    today = timezone.now().date()
-
-    type_name_sq = EveType.objects.filter(id=OuterRef("type_id")).values(
-        "name"
-    )[:1]
-    hist_avg_sq = (
-        EveMarketItemHistory.objects.filter(
-            region_id=region_id,
-            item_id=OuterRef("type_id"),
-        )
-        .order_by("-date")
-        .values("average")[:1]
-    )
-    currency_ipl_sq = IndustryLoyaltyPoint.objects.filter(
-        corporation_id=OuterRef("corporation_id"),
-        is_active=True,
-    ).values("default_isk_per_lp")[:1]
-
-    def _volume_sq(days: int):
-        cutoff = today - timedelta(days=days)
-        return (
-            EveMarketItemHistory.objects.filter(
-                region_id=region_id,
-                item_id=OuterRef("type_id"),
-                date__gte=cutoff,
-            )
-            .values("item_id")
-            .annotate(total=Sum("volume"))
-            .values("total")[:1]
-        )
-
-    qs = queryset.annotate(
-        sort_type_name=Subquery(type_name_sq),
-        sort_jita_price=Subquery(hist_avg_sq),
-        sort_jita_sell=Subquery(hist_avg_sq),
-        sort_jita_buy=Subquery(hist_avg_sq),
-        sort_volume_1d=Subquery(_volume_sq(1)),
-        sort_volume_7d=Subquery(_volume_sq(7)),
-        sort_volume_30d=Subquery(_volume_sq(30)),
-        sort_isk_per_lp=Subquery(currency_ipl_sq),
-    )
-    # Acquisition / conversion / profit approximations without other_cost.
-    qs = qs.annotate(
-        sort_acquisition=ExpressionWrapper(
-            (
-                F("lp_cost") * Coalesce(F("sort_isk_per_lp"), Value(0.0))
-                + F("isk_cost")
-            )
-            / Greatest(F("quantity"), Value(1)),
-            output_field=FloatField(),
-        ),
-        sort_conversion_sell=ExpressionWrapper(
-            (
-                Coalesce(F("sort_jita_price"), Value(0.0)) * F("quantity")
-                - F("isk_cost")
-            )
-            / Greatest(F("lp_cost"), Value(1)),
-            output_field=FloatField(),
-        ),
-        sort_conversion_buy=ExpressionWrapper(
-            (
-                Coalesce(F("sort_jita_price"), Value(0.0)) * F("quantity")
-                - F("isk_cost")
-            )
-            / Greatest(F("lp_cost"), Value(1)),
-            output_field=FloatField(),
-        ),
-        sort_profit=ExpressionWrapper(
-            Coalesce(F("sort_jita_price"), Value(0.0))
-            - (
-                (
-                    F("lp_cost") * Coalesce(F("sort_isk_per_lp"), Value(0.0))
-                    + F("isk_cost")
-                )
-                / Greatest(F("quantity"), Value(1))
-            ),
-            output_field=FloatField(),
-        ),
-    )
-    return qs
 
 
 def offer_economics_for_queryset(

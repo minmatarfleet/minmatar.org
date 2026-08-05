@@ -384,8 +384,7 @@ class IndustryLpStoreOfferEconomics(models.Model):
     Hourly rebuild of LP store offer market economics for the public catalog.
 
     Built from cached ESI offers + local Jita/Forge prices (no ESI call).
-    Public offers API reads this table; admin changelist may still compute
-    live economics for mid-hour freshness.
+    Public offers API reads this table only.
     """
 
     offer = models.OneToOneField(

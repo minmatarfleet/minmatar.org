@@ -9,6 +9,9 @@ import {
 } from '@helpers/api.minmatar.org/loyalty'
 import { from_now_diff } from '@helpers/date'
 import {
+    DEFAULT_LOYALTY_OFFERS_PARAMS,
+    DEFAULT_LOYALTY_OFFERS_SIDE,
+    TLIB_CORP_ID,
     compute_loyalty_offers_metrics,
     conversion_ordering_key,
     type LoyaltyOffersSide,
@@ -23,8 +26,6 @@ function binary_param(name: string): string | undefined {
         return value
     return undefined
 }
-
-const TLIB_CORP_ID = 1000182
 
 const currency_raw = params.get('currency')
 const currency = currency_raw && /^\d+$/.test(currency_raw)
@@ -41,9 +42,10 @@ const side: LoyaltyOffersSide = side_raw === 'sell'
     ? 'sell'
     : side_raw === 'avg_7d'
         ? 'avg_7d'
-        : 'buy'
+        : DEFAULT_LOYALTY_OFFERS_SIDE
 const q = (params.get('q') || '').trim() || undefined
-const ordering_raw = params.get('ordering') || '-conversion_buy'
+const ordering_raw = params.get('ordering')
+    || DEFAULT_LOYALTY_OFFERS_PARAMS.ordering
 const ordering = ordering_raw.replace(
     /conversion_(?:sell|buy|avg_7d)/g,
     conversion_ordering_key(side),

@@ -2,24 +2,11 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
+import { DEFAULT_LOYALTY_OFFERS_PARAMS } from '@helpers/loyalty_offers_metrics'
 import { query_string } from '@helpers/string'
 
-const TLIB_CORP_ID = 1000182
-
-const DEFAULT_EXCLUDES = {
-    currency: String(TLIB_CORP_ID),
-    exclude_tags: '1',
-    exclude_supply_packages: '1',
-    exclude_chips: '1',
-    exclude_skins: '1',
-    exclude_useless_offers: '1',
-    exclude_below_set_lp_price: '1',
-    side: 'buy',
-    ordering: '-conversion_buy',
-}
-
 const LOYALTY_OFFERS_PARTIAL_URL = translatePath(
-    `/partials/loyalty_offers_component?${query_string(DEFAULT_EXCLUDES)}`,
+    `/partials/loyalty_offers_component?${query_string(DEFAULT_LOYALTY_OFFERS_PARAMS)}`,
 )
 
 import Viewport from '@layouts/Viewport.astro'

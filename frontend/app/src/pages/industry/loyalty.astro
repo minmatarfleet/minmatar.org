@@ -22,6 +22,7 @@ import {
     get_loyalty_stockpiles,
 } from '@helpers/api.minmatar.org/loyalty'
 import { get_characters_summary } from '@helpers/api.minmatar.org/characters'
+import { TLIB_CORP_ID } from '@helpers/loyalty_offers_metrics'
 
 let currencies: LoyaltyCurrency[] = []
 let orders: LoyaltyMarketOrder[] = []
@@ -83,7 +84,6 @@ if (is_logged_in && auth_token) {
 }
 
 const highlight_order_id = Astro.url.searchParams.get('order')
-const TLIB_CORP_ID = 1000182
 const default_currency = currencies.find((c) => c.corporation_id === TLIB_CORP_ID)
     ?? currencies[0]
     ?? null

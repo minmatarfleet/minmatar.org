@@ -2,6 +2,24 @@ import type { LoyaltyOffer } from '@dtypes/api.minmatar.org'
 
 export type LoyaltyOffersSide = 'sell' | 'buy' | 'avg_7d'
 
+/** Tribal Liberation Force — default currency on the public offers page. */
+export const TLIB_CORP_ID = 1000182
+
+export const DEFAULT_LOYALTY_OFFERS_SIDE: LoyaltyOffersSide = 'buy'
+
+/** Default query params for /industry/loyalty/offers/ and filter reset. */
+export const DEFAULT_LOYALTY_OFFERS_PARAMS: Record<string, string> = {
+    currency: String(TLIB_CORP_ID),
+    exclude_tags: '1',
+    exclude_supply_packages: '1',
+    exclude_chips: '1',
+    exclude_skins: '1',
+    exclude_useless_offers: '1',
+    exclude_below_set_lp_price: '1',
+    side: DEFAULT_LOYALTY_OFFERS_SIDE,
+    ordering: `-conversion_${DEFAULT_LOYALTY_OFFERS_SIDE}`,
+}
+
 export interface LoyaltyOffersMetrics {
     average_isk_per_lp: number | null
     weekly_lp_volume: number

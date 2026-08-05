@@ -3,6 +3,10 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import type { LoyaltyCurrency } from '@dtypes/api.minmatar.org'
+import {
+    DEFAULT_LOYALTY_OFFERS_PARAMS,
+    TLIB_CORP_ID,
+} from '@helpers/loyalty_offers_metrics'
 import { query_string } from '@helpers/string'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -43,7 +47,6 @@ const {
 
 const SLOT = '#loyalty-offers-slot'
 const PARTIAL = translatePath('/partials/loyalty_offers_component')
-const TLIB_CORP_ID = 1000182
 
 const selected_currency = currencies.some((c) => c.corporation_id === currency)
     ? currency
@@ -83,16 +86,8 @@ function with_params(overrides: Record<string, string | undefined>): string {
 }
 
 const default_reset_url = with_params({
-    currency: String(TLIB_CORP_ID),
+    ...DEFAULT_LOYALTY_OFFERS_PARAMS,
     q: undefined,
-    side: 'buy',
-    exclude_tags: '1',
-    exclude_supply_packages: '1',
-    exclude_chips: '1',
-    exclude_skins: '1',
-    exclude_useless_offers: '1',
-    exclude_below_set_lp_price: '1',
-    ordering: '-conversion_buy',
 })
 
 const excludes = [

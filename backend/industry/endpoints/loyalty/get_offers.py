@@ -9,14 +9,11 @@ from industry.endpoints.loyalty.schemas import LoyaltyOffersListResponse
 from industry.endpoints.loyalty.serialization import (
     offer_economics_row_response,
 )
-from industry.helpers.lp_store_offer_economics_rebuild import (
-    rebuild_lp_store_offer_economics,
-)
 from industry.helpers.lp_store_offers_query import (
     DEFAULT_API_ORDERING,
     query_lp_store_offers,
 )
-from industry.models import IndustryLpStoreOffer, IndustryLpStoreOfferEconomics
+from industry.models import IndustryLpStoreOfferEconomics
 
 PATH = "/offers"
 METHOD = "get"
@@ -25,7 +22,6 @@ ROUTE_SPEC = {
     "response": {200: LoyaltyOffersListResponse},
 }
 
-# Optional page size for tools; UI loads the full filtered set.
 MAX_LIMIT = 5000
 
 
@@ -44,12 +40,6 @@ def get_offers(
     limit: Optional[int] = Query(None, ge=1, le=MAX_LIMIT),
     offset: int = Query(0, ge=0),
 ):
-    if (
-        not IndustryLpStoreOfferEconomics.objects.exists()
-        and IndustryLpStoreOffer.objects.exists()
-    ):
-        rebuild_lp_store_offer_economics()
-
     page = query_lp_store_offers(
         currency=currency,
         exclude_tags=exclude_tags,

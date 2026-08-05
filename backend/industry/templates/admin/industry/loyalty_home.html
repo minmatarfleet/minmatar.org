@@ -56,7 +56,7 @@
     <div class="industry-card-grid">
       {% include "admin/industry/_hub_card.html" with title=_("Ledger entries") count=sections.ledger.count description=_("Immutable credit/debit lots with ISK/LP, balances, and market-order counterparties when from buyback.") list_url=sections.ledger.list_url list_label=_("View ledger") add_url=sections.ledger.add_url add_label=_("Post entry") %}
       {% include "admin/industry/_hub_card.html" with title=_("Market orders") count=sections.market_orders.count description=_("Open Conversion Team buyback orders (count shows open status). Manage claims, settlement status, and Discord threads.") list_url=sections.market_orders.open_list_url list_label=_("View open orders") add_url=sections.market_orders.add_url add_label=_("Add order") %}
-      {% include "admin/industry/_hub_card.html" with title=_("LP store offers") count=sections.store_offers.count description=_("Cached pure LP+ISK offers for tracked currencies, with Jita history prices and planner+LP cost. Read-only; sync via navy products or admin action.") list_url=sections.store_offers.list_url list_label=_("View offers") readonly=1 %}
+      {% include "admin/industry/_hub_card.html" with title=_("LP store offers") count=sections.store_offers.count description=_("Public catalog of tracked LP store offers with hourly market economics. Browse on the site; sync via navy products / Celery, rebuild economics hourly.") list_url=sections.store_offers.list_url list_label=_("Open public catalog") readonly=1 %}
     </div>
     <p class="industry-section-desc">
       <a href="{{ sections.market_orders.list_url }}">{% translate "View all market orders" %}</a>
