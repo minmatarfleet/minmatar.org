@@ -1,6 +1,6 @@
 """Tests for Amamake Typhoon build planner (formulas, facilities, plan tree)."""
 
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from eveuniverse.models import (
     EveCategory,
     EveGroup,
@@ -271,6 +271,7 @@ class LiveCostIndexResolutionTestCase(TestCase):
         self.assertAlmostEqual(mfg, 0.1238)
         self.assertAlmostEqual(rxn, 0.1155)
 
+    @override_settings(ALLOW_LIVE_ESI_IN_TESTS=True)
     @patch("industry.helpers.cost_indices.sync_industry_system_cost_indices")
     def test_resolve_cost_indices_syncs_when_cache_empty(self, sync_mock):
         def _seed():
@@ -287,6 +288,15 @@ class LiveCostIndexResolutionTestCase(TestCase):
         self.assertAlmostEqual(mfg, 0.11)
         self.assertAlmostEqual(rxn, 0.09)
         sync_mock.assert_called_once()
+
+    @patch("industry.helpers.cost_indices.sync_industry_system_cost_indices")
+    def test_resolve_cost_indices_refuses_esi_when_cache_empty_in_tests(
+        self, sync_mock
+    ):
+        with self.assertRaises(ValueError) as ctx:
+            resolve_cost_indices("amamake")
+        self.assertIn("refusing ESI sync", str(ctx.exception))
+        sync_mock.assert_not_called()
 
     @patch("industry.helpers.cost_indices.sync_industry_system_cost_indices")
     def test_resolve_cost_indices_skips_sync_when_both_overridden(

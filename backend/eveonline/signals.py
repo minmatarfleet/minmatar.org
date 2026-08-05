@@ -7,7 +7,7 @@ from esi.models import Token
 
 from discord.client import DiscordClient
 from eveonline.tasks import update_character_urgent
-from eveonline.client import EsiClient
+from eveonline.client import EsiClient, live_esi_allowed
 from eveonline.helpers.characters.public_data import (
     update_character_public_data,
 )
@@ -27,6 +27,8 @@ discord = DiscordClient()
 )
 def populate_eve_character_public_data(sender, instance, created, **kwargs):
     if created:
+        if not live_esi_allowed():
+            return
         logger.debug(
             "Populating public data for character %s", instance.character_id
         )
@@ -41,6 +43,8 @@ def populate_eve_character_public_data(sender, instance, created, **kwargs):
 def populate_eve_character_private_data(sender, instance, created, **kwargs):
     """Populate skills for a character"""
     if created:
+        if not live_esi_allowed():
+            return
         if not instance.token:
             return
 
@@ -60,6 +64,8 @@ def populate_eve_character_private_data(sender, instance, created, **kwargs):
 )
 def eve_alliance_post_save(sender, instance, created, **kwargs):
     if created:
+        if not live_esi_allowed():
+            return
         logger.info("Post create of alliance %s", instance.alliance_id)
         # esi_alliance = esi.client.Alliance.get_alliances_alliance_id(
         #     alliance_id=instance.alliance_id

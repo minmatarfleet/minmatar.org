@@ -4,6 +4,7 @@ from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
 from django.contrib.auth.models import User
+from django.test import override_settings
 from django.utils import timezone
 
 from app.test import TestCase
@@ -106,6 +107,7 @@ class IndustryTasksTestCase(TestCase):
 
 
 class IndustryCostIndexSyncTestCase(TestCase):
+    @override_settings(ALLOW_LIVE_ESI_IN_TESTS=True)
     @patch("industry.helpers.cost_indices.esi_provider")
     def test_sync_upserts_manufacturing_and_reaction(self, esi_provider):
         IndustrySystemCostIndex.objects.create(

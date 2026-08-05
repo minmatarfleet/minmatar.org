@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 
 from django.contrib.auth.models import User
 from django.db.models import signals
+from django.test import override_settings
 from esi.exceptions import ESIErrorLimitException, HTTPClientError
 from esi.models import Token
 
@@ -62,6 +63,7 @@ class CharacterPublicDataHelperTests(TestCase):
 
         self.assertFalse(updated)
 
+    @override_settings(ALLOW_LIVE_ESI_IN_TESTS=True)
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("eveonline.helpers.characters.public_data.esi_public")
     def test_update_character_public_data(self, esi_public):
@@ -86,6 +88,7 @@ class CharacterPublicDataHelperTests(TestCase):
         self.assertEqual(2001, character.corporation_id)
         self.assertEqual(1.2, character.security_status)
 
+    @override_settings(ALLOW_LIVE_ESI_IN_TESTS=True)
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("eveonline.signals.update_character_public_data")
     def test_populate_eve_character_public_data_signal(self, update_mock):
@@ -96,6 +99,17 @@ class CharacterPublicDataHelperTests(TestCase):
 
         update_mock.assert_called_once_with(10004)
 
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    @patch("eveonline.helpers.characters.public_data.esi_public")
+    def test_update_character_public_data_skips_during_tests(self, esi_public):
+        EveCharacter.objects.create(character_id=10008, character_name="Skip")
+
+        updated = update_character_public_data(10008)
+
+        self.assertFalse(updated)
+        esi_public.return_value.get_character_public_data.assert_not_called()
+
+    @override_settings(ALLOW_LIVE_ESI_IN_TESTS=True)
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("eveonline.helpers.characters.public_data.esi_public")
     def test_update_character_public_data_marks_deleted_on_404(
@@ -146,6 +160,7 @@ class CharacterPublicDataHelperTests(TestCase):
         self.assertFalse(updated)
         esi_public.return_value.get_character_public_data.assert_not_called()
 
+    @override_settings(ALLOW_LIVE_ESI_IN_TESTS=True)
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("eveonline.helpers.characters.public_data.esi_public")
     def test_update_character_public_data_raises_on_error_limit(

@@ -7,7 +7,12 @@ from typing import List, Tuple
 
 from django.utils import timezone
 
-from eveonline.client import _esi_to_python, esi_provider
+from eveonline.client import (
+    _esi_to_python,
+    assert_esi_http_allowed,
+    esi_provider,
+    live_esi_allowed,
+)
 from eveonline.helpers.db_sync import replace_with_bulk_create
 from industry.helpers.facility_profiles import AMAMAKE_SYSTEM_ID
 from industry.models import IndustrySystemCostIndex
@@ -37,6 +42,7 @@ def fetch_industry_systems_from_esi() -> List[dict]:
 
     Returns the raw list of system rows from ESI.
     """
+    assert_esi_http_allowed()
     try:
         rows = _esi_to_python(
             esi_provider.client.Industry.GetIndustrySystems().results(
@@ -95,12 +101,17 @@ def fetch_system_cost_indices(
 
     Reads the Celery-backed cache. If the system is missing (empty DB / first
     deploy), runs a one-shot ESI sync then re-reads. Steady-state planner
-    traffic does not call ESI.
+    traffic does not call ESI. Unit tests never auto-sync from ESI.
     """
     row = IndustrySystemCostIndex.objects.filter(
         solar_system_id=system_id
     ).first()
     if row is None:
+        if not live_esi_allowed():
+            raise ValueError(
+                f"No industry cost indices for system {system_id} "
+                "(refusing ESI sync during unit tests)"
+            )
         logger.info(
             "No cached cost indices for system %s; syncing from ESI once",
             system_id,

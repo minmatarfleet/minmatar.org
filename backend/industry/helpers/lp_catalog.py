@@ -8,6 +8,7 @@ from typing import Dict, Iterable, List, Set
 from django.db.models import Q
 from eveuniverse.models import EveType
 
+from eveonline.client import live_esi_allowed
 from industry.helpers.blueprint_efficiency import is_faction_navy_hull
 from industry.helpers.type_breakdown import get_blueprint_or_reaction_type_id
 from industry.models import (
@@ -87,7 +88,7 @@ def ensure_eve_types(type_ids: Iterable[int]) -> Set[int]:
     Batch-checks local existence, then calls get_or_create_esi only for
     missing IDs (no admin N+1). Returns the set of type IDs that were
     fetched (or attempted). Failures are logged and skipped so one bad
-    type does not break sync / economics.
+    type does not break sync / economics. Unit tests never call ESI.
     """
     unique = sorted({int(t) for t in type_ids if int(t) > 0})
     if not unique:
@@ -96,6 +97,14 @@ def ensure_eve_types(type_ids: Iterable[int]) -> Set[int]:
         EveType.objects.filter(id__in=unique).values_list("id", flat=True)
     )
     missing = [tid for tid in unique if tid not in existing]
+    if not missing:
+        return set()
+    if not live_esi_allowed():
+        logger.info(
+            "Skipping ESI ensure for %s missing EveType(s) during tests",
+            len(missing),
+        )
+        return set()
     fetched: Set[int] = set()
     for type_id in missing:
         try:

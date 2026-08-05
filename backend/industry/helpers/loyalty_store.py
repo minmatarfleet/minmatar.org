@@ -11,7 +11,12 @@ from django.db import transaction
 from django.db.models import Count
 from django.utils import timezone
 
-from eveonline.client import _esi_to_python, esi_provider
+from eveonline.client import (
+    _esi_to_python,
+    assert_esi_http_allowed,
+    esi_provider,
+    live_esi_allowed,
+)
 from eveonline.models import EveLocation
 from industry.helpers.lp_catalog import (
     ensure_eve_types,
@@ -115,6 +120,7 @@ def fetch_loyalty_offers_from_esi(
     corporation_ids: Sequence[int] | None = None,
 ) -> List[dict]:
     """Fetch loyalty-store offers for each corporation (public ESI, no token)."""
+    assert_esi_http_allowed()
     if corporation_ids is None:
         corporation_ids = corporation_ids_to_sync()
     offers: List[dict] = []
@@ -326,6 +332,13 @@ def ensure_loyalty_store_offers_for_blueprint(
     existing = _pure_offers_for_type(blueprint_type_id)
     if existing:
         return existing[0]
+    if not live_esi_allowed():
+        logger.info(
+            "No pure LP store offer for blueprint type %s; "
+            "skipping ESI sync during tests",
+            blueprint_type_id,
+        )
+        return None
     logger.info(
         "No pure LP store offer for blueprint type %s; syncing from ESI",
         blueprint_type_id,
@@ -359,6 +372,14 @@ def ensure_loyalty_store_offers_for_product(product_id: int) -> int:
     if blueprint_type_id is None:
         return 0
     if _pure_offers_for_type(blueprint_type_id):
+        return 0
+    if not live_esi_allowed():
+        logger.info(
+            "No pure LP store offer for product %s (blueprint %s); "
+            "skipping ESI sync during tests",
+            product_id,
+            blueprint_type_id,
+        )
         return 0
     return sync_loyalty_store_offers()
 
