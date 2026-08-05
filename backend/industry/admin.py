@@ -711,22 +711,21 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
     change_list_template = (
         "admin/industry/industrylpstoreoffer/change_list.html"
     )
+    # Fuzzwork-like order: identity, offer costs, requirements, market, rates.
     list_display = (
         "type_name_display",
         "currency_display",
-        "kind_display",
         "lp_cost",
         "isk_cost",
-        "ak_cost",
         "quantity",
         "required_items_display",
         "other_cost_display",
-        "isk_per_lp_display",
-        "conversion_sell_display",
-        "conversion_buy_display",
         "jita_sell_display",
         "jita_buy_display",
+        "conversion_sell_display",
+        "conversion_buy_display",
         "volume_90d_display",
+        "isk_per_lp_display",
         "cost_display",
         "profit_vs_sell_display",
         "updated_at",
@@ -773,7 +772,6 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
             super()
             .get_queryset(request)
             .filter(corporation_id__in=tracked_corporation_ids())
-            .prefetch_related("required_items")
         )
 
     def get_search_results(self, request, queryset, search_term):
@@ -802,10 +800,16 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
         return cl
 
     def changelist_view(self, request, extra_context=None):
+        # TemplateResponse renders after this method returns; force render
+        # while economics stash is still populated so list_display methods
+        # can resolve type names and market columns.
         try:
-            return super().changelist_view(
+            response = super().changelist_view(
                 request, extra_context=extra_context
             )
+            if hasattr(response, "render"):
+                response.render()
+            return response
         finally:
             IndustryLpStoreOfferAdmin._request_stash = None
 
@@ -839,35 +843,53 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
     @admin.display(description="Item")
     def type_name_display(self, obj):
         econ = self._econ_for(obj)
+        type_id = obj.type_id
+        kind = ""
         if econ is None:
-            name = str(obj.type_id)
-            type_id = obj.type_id
+            name = (
+                EveType.objects.filter(id=type_id)
+                .values_list("name", flat=True)
+                .first()
+            ) or str(type_id)
         elif econ.kind == "blueprint" and econ.market_type_id != econ.type_id:
-            name = f"{econ.market_type_name} (BPC {econ.type_id})"
+            name = f"{econ.market_type_name} (BPC)"
             type_id = econ.type_id
+            kind = "blueprint"
         else:
             name = econ.type_name
             type_id = econ.type_id
+            kind = econ.kind or ""
+        meta = f"type {type_id}"
+        if kind:
+            meta = f"{kind} · {meta}"
         return format_html(
             '<span class="lp-store-offer-item">'
+            '<img class="lp-store-offer-item__icon" '
+            'src="https://images.evetech.net/types/{}/icon?size=32" '
+            'width="32" height="32" alt="" loading="lazy" />'
+            '<span class="lp-store-offer-item__text">'
             '<span class="lp-store-offer-item__name">{}</span>'
-            '<span class="lp-store-offer-item__type">type {}</span>'
+            '<span class="lp-store-offer-item__type">{}</span>'
+            "</span>"
             "</span>",
-            name,
             type_id,
+            name,
+            meta,
         )
 
     @admin.display(description="Currency")
     def currency_display(self, obj):
         econ = self._econ_for(obj)
-        return (
-            econ.currency_name if econ is not None else str(obj.corporation_id)
+        if econ is not None:
+            return econ.currency_name
+        currency = (
+            IndustryLoyaltyPoint.objects.filter(
+                corporation_id=obj.corporation_id
+            )
+            .values_list("name", flat=True)
+            .first()
         )
-
-    @admin.display(description="Kind")
-    def kind_display(self, obj):
-        econ = self._econ_for(obj)
-        return econ.kind if econ is not None else "—"
+        return currency or str(obj.corporation_id)
 
     @admin.display(description="Required")
     def required_items_display(self, obj):
