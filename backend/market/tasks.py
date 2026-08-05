@@ -12,7 +12,7 @@ from eveonline.models import (
     EveCorporationContract,
     EveLocation,
 )
-from industry.helpers.lp_catalog import lp_catalog_type_ids
+from industry.helpers.lp_catalog import lp_market_history_type_ids
 from market.helpers import (
     clear_structure_sell_orders_for_location,
     create_or_update_contract,
@@ -601,7 +601,7 @@ def fetch_market_item_history():
         EveMarketItemOrder.objects.values_list("item_id", flat=True).distinct()
     )
     try:
-        type_ids.update(lp_catalog_type_ids())
+        type_ids.update(lp_market_history_type_ids())
     except Exception:
         logger.exception(
             "Failed to load LP catalog type ids for market history"
