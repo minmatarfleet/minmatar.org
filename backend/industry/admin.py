@@ -79,6 +79,42 @@ from tribes.models import TribeGroup
 
 logger = logging.getLogger(__name__)
 
+# Request attribute for one shared tracked-catalog economics map per
+# changelist (filters + list_display stash). Avoids N× full recomputes.
+_LP_OFFER_ECON_ATTR = "_lp_offer_econ"
+_LP_ECON_FILTER_PARAMS = (
+    "exclude_useless_offers",
+    "exclude_below_set_lp_price",
+)
+
+
+def _lp_econ_filters_active(request) -> bool:
+    params = getattr(request, "GET", {})
+    return any(
+        params.get(name) in ("0", "1") for name in _LP_ECON_FILTER_PARAMS
+    )
+
+
+def ensure_lp_offer_econ_on_request(request):
+    """
+    Compute economics for all tracked LP store offers once per request.
+
+    Admin filters and list_display share this map so changelist loads with
+    exclude-useless / exclude-below-set do not recompute ~1.5k offers
+    multiple times.
+    """
+    cached = getattr(request, _LP_OFFER_ECON_ATTR, None)
+    if cached is not None:
+        return cached
+    offers = list(
+        IndustryLpStoreOffer.objects.filter(
+            corporation_id__in=tracked_corporation_ids()
+        )
+    )
+    economics = offer_economics_for_queryset(offers)
+    setattr(request, _LP_OFFER_ECON_ATTR, economics)
+    return economics
+
 
 class IndustryLoyaltyPointAccountInline(admin.TabularInline):
     """Edit seller/stockpile holders directly from a loyalty currency."""
@@ -793,6 +829,9 @@ class IndustryLpStoreExcludeUselessOffersFilter(admin.SimpleListFilter):
     stockpile usefulness, profit vs buyback, below peer median, and
     volume/volatility (Forge 30d + spread proxy). See
     industry.helpers.lp_store_useless.
+
+    Economics come from ensure_lp_offer_econ_on_request (shared with the
+    below-set filter and list_display stash for this request).
     """
 
     title = "exclude useless offers"
@@ -805,8 +844,8 @@ class IndustryLpStoreExcludeUselessOffersFilter(admin.SimpleListFilter):
         value = self.value()
         if value not in ("0", "1"):
             return queryset
-        # ~1.5k tracked offers is fine to evaluate in Python via economics.
-        useless = useless_offer_pks(queryset)
+        economics = ensure_lp_offer_econ_on_request(request)
+        useless = useless_offer_pks(queryset, economics=economics)
         if value == "1":
             return queryset.exclude(pk__in=useless)
         return queryset.filter(pk__in=useless)
@@ -819,6 +858,9 @@ class IndustryLpStoreExcludeBelowSetLpPriceFilter(admin.SimpleListFilter):
     Compares conversion_isk_per_lp_sell to IndustryLoyaltyPoint
     default_isk_per_lp for the offer's corporation. Null conversion
     counts as below set (missing prices → cannot beat buyback).
+
+    Reuses request-scoped catalog economics from
+    ensure_lp_offer_econ_on_request when already warmed.
     """
 
     title = "exclude below set LP price"
@@ -831,8 +873,8 @@ class IndustryLpStoreExcludeBelowSetLpPriceFilter(admin.SimpleListFilter):
         value = self.value()
         if value not in ("0", "1"):
             return queryset
-        # ~1.5k tracked offers is fine to evaluate via economics helpers.
-        below = offer_pks_below_set_lp_price(queryset)
+        economics = ensure_lp_offer_econ_on_request(request)
+        below = offer_pks_below_set_lp_price(queryset, economics=economics)
         if value == "1":
             return queryset.exclude(pk__in=below)
         return queryset.filter(pk__in=below)
@@ -937,10 +979,18 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
         return queryset, use_distinct
 
     def get_changelist_instance(self, request):
+        # Warm full-catalog economics before ChangeList applies filters so
+        # exclude-useless / exclude-below-set share one compute with stash.
+        if _lp_econ_filters_active(request):
+            ensure_lp_offer_econ_on_request(request)
         cl = super().get_changelist_instance(request)
-        IndustryLpStoreOfferAdmin._request_stash = (
-            offer_economics_for_queryset(list(cl.result_list))
-        )
+        cached = getattr(request, _LP_OFFER_ECON_ATTR, None)
+        if cached is not None:
+            IndustryLpStoreOfferAdmin._request_stash = cached
+        else:
+            IndustryLpStoreOfferAdmin._request_stash = (
+                offer_economics_for_queryset(list(cl.result_list))
+            )
         return cl
 
     def changelist_view(self, request, extra_context=None):
@@ -956,6 +1006,8 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
             return response
         finally:
             IndustryLpStoreOfferAdmin._request_stash = None
+            if hasattr(request, _LP_OFFER_ECON_ATTR):
+                delattr(request, _LP_OFFER_ECON_ATTR)
 
     @classmethod
     def _econ_for(cls, obj):

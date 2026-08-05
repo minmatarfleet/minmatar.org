@@ -29,6 +29,7 @@ from industry.admin import (
     IndustryLpStoreExcludeTagsFilter,
     IndustryLpStoreExcludeUselessOffersFilter,
     IndustryLpStoreOfferAdmin,
+    ensure_lp_offer_econ_on_request,
 )
 from industry.helpers.lp_store_economics import (
     NEGLIGIBLE_LP_FORGE_VOLUME_30D,
@@ -1196,6 +1197,67 @@ class LpStoreOfferAdminTestCase(TestCase):
             IndustryLpStoreExcludeBelowSetLpPriceFilter,
             self.admin.list_filter,
         )
+
+    @patch("industry.admin.offer_economics_for_queryset")
+    def test_filters_reuse_request_scoped_economics(self, mock_econ):
+        """Both econ filters share one catalog map; no second compute."""
+        mock_econ.return_value = {
+            self.offer.pk: _econ(
+                pk=self.offer.pk,
+                offer_id=self.offer.offer_id,
+                conversion_isk_per_lp_sell=1_500.0,
+                volume_30d=10_000,
+            )
+        }
+        request = self.factory.get(
+            "/admin/industry/industrylpstoreoffer/"
+            "?exclude_useless_offers=1&exclude_below_set_lp_price=1"
+        )
+        request.user = self.user
+        qs = self.admin.get_queryset(request)
+
+        ensure_lp_offer_econ_on_request(request)
+        self.assertEqual(mock_econ.call_count, 1)
+
+        useless = IndustryLpStoreExcludeUselessOffersFilter(
+            request,
+            {"exclude_useless_offers": "1"},
+            IndustryLpStoreOffer,
+            self.admin,
+        )
+        below = IndustryLpStoreExcludeBelowSetLpPriceFilter(
+            request,
+            {"exclude_below_set_lp_price": "1"},
+            IndustryLpStoreOffer,
+            self.admin,
+        )
+        list(useless.queryset(request, qs))
+        list(below.queryset(request, qs))
+        # Filters must reuse request._lp_offer_econ, not recompute.
+        self.assertEqual(mock_econ.call_count, 1)
+
+    @patch("industry.admin.offer_economics_for_queryset")
+    def test_changelist_both_econ_filters_computes_once(self, mock_econ):
+        """Changelist with both Yes filters warms economics a single time."""
+        mock_econ.return_value = {
+            self.offer.pk: _econ(
+                pk=self.offer.pk,
+                offer_id=self.offer.offer_id,
+                conversion_isk_per_lp_sell=1_500.0,
+                volume_30d=10_000,
+            )
+        }
+        request = self.factory.get(
+            "/admin/industry/industrylpstoreoffer/"
+            "?exclude_useless_offers=1&exclude_below_set_lp_price=1"
+        )
+        request.user = self.user
+        response = self.admin.changelist_view(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(mock_econ.call_count, 1)
+        # pylint: disable=protected-access
+        self.assertIsNone(IndustryLpStoreOfferAdmin._request_stash)
+        self.assertFalse(hasattr(request, "_lp_offer_econ"))
 
     @patch("industry.admin.offer_economics_for_queryset")
     def test_changelist_renders_names_before_stash_clear(self, mock_econ):

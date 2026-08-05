@@ -206,12 +206,19 @@ def offer_is_below_set_lp_price(econ: LpStoreOfferEconomics) -> bool:
 
 def offer_pks_below_set_lp_price(
     offers: Iterable[IndustryLpStoreOffer],
+    *,
+    economics: Optional[Dict[int, LpStoreOfferEconomics]] = None,
 ) -> Set[int]:
-    """Primary keys of offers below the currency's set LP buy price."""
+    """Primary keys of offers below the currency's set LP buy price.
+
+    Pass a precomputed ``economics`` map (e.g. request-scoped catalog cache)
+    to avoid recomputing offer_economics_for_queryset per filter.
+    """
     rows = list(offers)
     if not rows:
         return set()
-    economics = offer_economics_for_queryset(rows)
+    if economics is None:
+        economics = offer_economics_for_queryset(rows)
     below: Set[int] = set()
     for offer in rows:
         pk = offer.pk
