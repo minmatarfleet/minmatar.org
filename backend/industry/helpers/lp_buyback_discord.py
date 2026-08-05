@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 
 from django.conf import settings
 
@@ -23,6 +24,10 @@ from industry.models import IndustryLoyaltyPointMarketOrder
 
 logger = logging.getLogger(__name__)
 discord = DiscordClient()
+
+# Match help tickets / bot ISK-sent: settle message traffic before archive so
+# Discord does not reopen the thread when a post lands after close.
+THREAD_ARCHIVE_DELAY_SECONDS = 5
 
 
 def order_site_url(order: IndustryLoyaltyPointMarketOrder) -> str:
@@ -365,6 +370,33 @@ def _awaiting_isk_message(order: IndustryLoyaltyPointMarketOrder) -> str:
     )
 
 
+def _completed_message(order: IndustryLoyaltyPointMarketOrder) -> str:
+    """Public completion notice; pings the LP sender (ISK recipient)."""
+    lp = _lp_quantity_for_isk(order)
+    isk = _isk_due(order)
+    mention = _user_mention(lp_sender(order))
+    lines: list[str] = []
+    if mention:
+        lines.extend([mention, ""])
+    lines.extend(
+        [
+            ":white_check_mark: ISK sent — order completed",
+            f"**{isk:,} ISK** for {lp:,} LP @ {order.isk_per_lp} ISK/LP",
+            order_site_url(order),
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _post_completed_then_archive(
+    order: IndustryLoyaltyPointMarketOrder,
+) -> None:
+    """Post completion, wait, then archive (avoids Discord reopen race)."""
+    post_order_status_update(order, message=_completed_message(order))
+    time.sleep(THREAD_ARCHIVE_DELAY_SECONDS)
+    close_order_thread(order)
+
+
 def notify_order_status_changed(
     order: IndustryLoyaltyPointMarketOrder,
 ) -> None:
@@ -381,7 +413,11 @@ def notify_order_status_changed(
             message=_awaiting_isk_message(order),
             components=isk_sent_components(order.pk),
         )
-    elif status in (order.Status.COMPLETED, order.Status.CANCELLED):
-        # Do not post a close/status message — Discord unarchives threads when
+    elif status == order.Status.COMPLETED:
+        # Post first, wait, then archive — never post after close (Discord
+        # unarchives). Caller must invoke after DB commit (see transition_order).
+        _post_completed_then_archive(order)
+    elif status == order.Status.CANCELLED:
+        # Do not post a cancel message — Discord unarchives threads when
         # anything is sent (including after archive), same race as help tickets.
         close_order_thread(order)
