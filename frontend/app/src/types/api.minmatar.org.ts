@@ -1524,6 +1524,7 @@ export interface OrderAssignment {
     quantity:                   number;
     target_unit_price:          number | null;
     target_estimated_margin:    number | null;
+    delivered_quantity:         number;
     delivered_at:               Date | null;
     has_blueprints:             boolean;
 }
