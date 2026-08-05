@@ -31,6 +31,8 @@ from industry.admin import (
     IndustryLpStoreExcludeUselessOffersFilter,
     IndustryLpStoreOfferAdmin,
     LpStoreOfferChangeList,
+)
+from industry.helpers.lp_store_offers_query import (
     ensure_lp_offer_econ_on_request,
     lp_offer_econ_cache_key,
 )

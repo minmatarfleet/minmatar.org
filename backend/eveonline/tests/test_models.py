@@ -10,6 +10,7 @@ from django.db import transaction
 from django.db.models import signals
 from django.db.utils import IntegrityError
 from django.contrib.auth.models import User
+from django.test import override_settings
 from esi.models import Token, Scope
 
 from app.test import TestCase
@@ -432,6 +433,7 @@ class EveCharacterTestCase(TestCase):
     Unit tests for the EveCharacter model
     """
 
+    @override_settings(ALLOW_LIVE_ESI_IN_TESTS=True)
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("eveonline.signals.update_character_public_data")
     def test_populate_eve_character_public_data(self, update_mock):
