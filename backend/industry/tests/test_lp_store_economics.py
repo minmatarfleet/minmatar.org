@@ -23,6 +23,7 @@ from market.models import EveMarketItemHistory, EveMarketItemLocationPrice
 
 from industry.admin import (
     IndustryLpStoreCurrencyListFilter,
+    IndustryLpStoreExcludeChipsFilter,
     IndustryLpStoreExcludeSupplyPackagesFilter,
     IndustryLpStoreExcludeTagsFilter,
     IndustryLpStoreOfferAdmin,
@@ -753,6 +754,95 @@ class LpStoreOfferAdminTestCase(TestCase):
         self.assertNotIn(clean.offer_id, no_ids)
         self.assertIn(with_tag.offer_id, no_ids)
         self.assertIn(tag_offer.offer_id, no_ids)
+        self.assertEqual(
+            yes.lookups(request, self.admin), (("1", "Yes"), ("0", "No"))
+        )
+
+    def test_exclude_chips_hides_required_and_output_chip_offers(self):
+        """Nexus Chip as required item or output → excluded; implants stay."""
+        misc = EveGroup.objects.create(
+            id=315,
+            name="Miscellaneous",
+            published=True,
+            eve_category=EveCategory.objects.get(id=6),
+        )
+        chip = EveType.objects.create(
+            id=17816,
+            name="Minmatar UUB Nexus Chip",
+            published=True,
+            eve_group=misc,
+        )
+        # Social Adaptation Chip must NOT match Nexus Chip detection.
+        implant = EveType.objects.create(
+            id=9956,
+            name="Social Adaptation Chip - Basic",
+            published=True,
+            eve_group=misc,
+        )
+        clean = IndustryLpStoreOffer.objects.create(
+            offer_id=2300,
+            corporation_id=TLIB_CORP_ID,
+            type_id=INPUT_TYPE_ID,
+            lp_cost=1_000,
+            isk_cost=0,
+            quantity=1,
+        )
+        with_chip = IndustryLpStoreOffer.objects.create(
+            offer_id=2301,
+            corporation_id=TLIB_CORP_ID,
+            type_id=INPUT_TYPE_ID,
+            lp_cost=2_000,
+            isk_cost=0,
+            quantity=1,
+        )
+        IndustryLpStoreOfferRequiredItem.objects.create(
+            offer=with_chip,
+            type_id=chip.id,
+            quantity=4,
+        )
+        chip_offer = IndustryLpStoreOffer.objects.create(
+            offer_id=2302,
+            corporation_id=TLIB_CORP_ID,
+            type_id=chip.id,
+            lp_cost=500,
+            isk_cost=0,
+            quantity=1,
+        )
+        implant_offer = IndustryLpStoreOffer.objects.create(
+            offer_id=2303,
+            corporation_id=TLIB_CORP_ID,
+            type_id=implant.id,
+            lp_cost=800,
+            isk_cost=0,
+            quantity=1,
+        )
+        request = self.factory.get("/admin/industry/industrylpstoreoffer/")
+        request.user = self.user
+        yes = IndustryLpStoreExcludeChipsFilter(
+            request, {"exclude_chips": "1"}, IndustryLpStoreOffer, self.admin
+        )
+        yes_ids = set(
+            yes.queryset(
+                request, self.admin.get_queryset(request)
+            ).values_list("offer_id", flat=True)
+        )
+        self.assertIn(clean.offer_id, yes_ids)
+        self.assertIn(implant_offer.offer_id, yes_ids)
+        self.assertNotIn(with_chip.offer_id, yes_ids)
+        self.assertNotIn(chip_offer.offer_id, yes_ids)
+
+        no = IndustryLpStoreExcludeChipsFilter(
+            request, {"exclude_chips": "0"}, IndustryLpStoreOffer, self.admin
+        )
+        no_ids = set(
+            no.queryset(request, self.admin.get_queryset(request)).values_list(
+                "offer_id", flat=True
+            )
+        )
+        self.assertNotIn(clean.offer_id, no_ids)
+        self.assertNotIn(implant_offer.offer_id, no_ids)
+        self.assertIn(with_chip.offer_id, no_ids)
+        self.assertIn(chip_offer.offer_id, no_ids)
         self.assertEqual(
             yes.lookups(request, self.admin), (("1", "Yes"), ("0", "No"))
         )

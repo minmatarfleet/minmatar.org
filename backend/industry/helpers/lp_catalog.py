@@ -82,3 +82,18 @@ def supply_package_type_ids() -> List[int]:
             "id", flat=True
         )
     )
+
+
+def chip_type_ids() -> List[int]:
+    """
+    EveType IDs whose name contains 'Nexus Chip' (faction LP store chips).
+
+    Matches Minmatar/Caldari/Gallente/Amarr Nexus Chips used as required
+    items. Deliberately avoids a broad '* Chip' suffix, which would also
+    catch Social Adaptation Chip implants.
+    """
+    return list(
+        EveType.objects.filter(name__icontains="Nexus Chip").values_list(
+            "id", flat=True
+        )
+    )

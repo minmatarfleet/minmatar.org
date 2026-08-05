@@ -42,6 +42,7 @@ from industry.helpers.lp_ledger import (
     weighted_average_cost_isk_per_lp,
 )
 from industry.helpers.lp_catalog import (
+    chip_type_ids,
     supply_package_type_ids,
     tag_type_ids,
 )
@@ -758,6 +759,30 @@ class IndustryLpStoreExcludeSupplyPackagesFilter(admin.SimpleListFilter):
         return queryset.filter(package_q)
 
 
+class IndustryLpStoreExcludeChipsFilter(admin.SimpleListFilter):
+    title = "exclude chips"
+    parameter_name = "exclude_chips"
+
+    def lookups(self, request, model_admin):
+        return (("1", "Yes"), ("0", "No"))
+
+    def queryset(self, request, queryset):
+        value = self.value()
+        if value not in ("0", "1"):
+            return queryset
+        chip_ids = chip_type_ids()
+        if not chip_ids:
+            return queryset
+        # Offers that *are* nexus chips or require one as input.
+        req_offer_ids = IndustryLpStoreOfferRequiredItem.objects.filter(
+            type_id__in=chip_ids
+        ).values("offer_id")
+        chip_q = Q(type_id__in=chip_ids) | Q(pk__in=req_offer_ids)
+        if value == "1":
+            return queryset.exclude(chip_q)
+        return queryset.filter(chip_q)
+
+
 @admin.register(IndustryLpStoreOffer)
 class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
     _request_stash = None
@@ -787,6 +812,7 @@ class IndustryLpStoreOfferAdmin(admin.ModelAdmin):
         IndustryLpStoreCurrencyListFilter,
         IndustryLpStoreExcludeTagsFilter,
         IndustryLpStoreExcludeSupplyPackagesFilter,
+        IndustryLpStoreExcludeChipsFilter,
     )
     search_fields = ("offer_id", "type_id", "corporation_id")
     ordering = ("corporation_id", "type_id")
