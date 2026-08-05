@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 from django.contrib.admin.sites import AdminSite
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.db import ProgrammingError
 from django.test import RequestFactory, TestCase
 from django.utils import timezone
@@ -30,6 +31,7 @@ from industry.admin import (
     IndustryLpStoreExcludeUselessOffersFilter,
     IndustryLpStoreOfferAdmin,
     ensure_lp_offer_econ_on_request,
+    lp_offer_econ_cache_key,
 )
 from industry.helpers.lp_store_economics import (
     NEGLIGIBLE_LP_FORGE_VOLUME_30D,
@@ -532,6 +534,7 @@ class LpStoreEconomicsHelperTestCase(TestCase):
 
 class LpStoreOfferAdminTestCase(TestCase):
     def setUp(self):
+        cache.clear()
         IndustryLoyaltyPoint.objects.update_or_create(
             corporation_id=TLIB_CORP_ID,
             defaults={
@@ -1235,6 +1238,34 @@ class LpStoreOfferAdminTestCase(TestCase):
         list(below.queryset(request, qs))
         # Filters must reuse request._lp_offer_econ, not recompute.
         self.assertEqual(mock_econ.call_count, 1)
+
+    @patch("industry.admin.offer_economics_for_queryset")
+    def test_ensure_populates_django_cache(self, mock_econ):
+        """Cold ensure stores catalog map; second request hits Django cache."""
+        economics = {
+            self.offer.pk: _econ(
+                pk=self.offer.pk,
+                offer_id=self.offer.offer_id,
+                conversion_isk_per_lp_sell=1_500.0,
+                volume_30d=10_000,
+            )
+        }
+        mock_econ.return_value = economics
+        request_a = self.factory.get("/admin/industry/industrylpstoreoffer/")
+        request_a.user = self.user
+        first = ensure_lp_offer_econ_on_request(request_a)
+        self.assertEqual(mock_econ.call_count, 1)
+        self.assertEqual(first, economics)
+        cache_key = lp_offer_econ_cache_key()
+        self.assertEqual(cache.get(cache_key), economics)
+
+        request_b = self.factory.get("/admin/industry/industrylpstoreoffer/")
+        request_b.user = self.user
+        second = ensure_lp_offer_econ_on_request(request_b)
+        self.assertEqual(mock_econ.call_count, 1)
+        self.assertEqual(second, economics)
+        # pylint: disable=protected-access
+        self.assertIs(getattr(request_b, "_lp_offer_econ"), second)
 
     @patch("industry.admin.offer_economics_for_queryset")
     def test_changelist_both_econ_filters_computes_once(self, mock_econ):

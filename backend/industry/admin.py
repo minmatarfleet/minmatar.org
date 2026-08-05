@@ -3,13 +3,16 @@ import logging
 from django.contrib import admin
 from django.contrib import messages
 from django import forms
-from django.db.models import Q, Sum
+from django.core.cache import cache
+from django.db.models import Count, Max, Q, Sum
 from django.http import HttpResponseRedirect
 from django.middleware.csrf import get_token
 from django.urls import path, reverse
 from django.utils import timezone
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
+
+from market.models.history import EveMarketItemHistory
 
 from eveuniverse.models import EveGroup, EveType
 
@@ -82,6 +85,11 @@ logger = logging.getLogger(__name__)
 # Request attribute for one shared tracked-catalog economics map per
 # changelist (filters + list_display stash). Avoids N× full recomputes.
 _LP_OFFER_ECON_ATTR = "_lp_offer_econ"
+# Short-lived cross-request cache so toggling filters does not recompute
+# ~1.5k offers every time. Invalidates when offer/currency/history inputs
+# change; TTL bounds LocationPrice / planner staleness.
+_LP_OFFER_ECON_CACHE_PREFIX = "industry:lp_offer_econ:v1"
+_LP_OFFER_ECON_CACHE_TTL = 180
 _LP_ECON_FILTER_PARAMS = (
     "exclude_useless_offers",
     "exclude_below_set_lp_price",
@@ -95,17 +103,58 @@ def _lp_econ_filters_active(request) -> bool:
     )
 
 
+def lp_offer_econ_cache_key() -> str:
+    """
+    Cache key for the full tracked-catalog economics map.
+
+    Fingerprint includes tracked corps, offer count + max(updated_at),
+    active currency default_isk_per_lp rates, and max Forge history date
+    so offer sync / buyback edits / daily history refresh invalidate.
+    """
+    corp_ids = tracked_corporation_ids()
+    corp_key = ",".join(str(c) for c in sorted(corp_ids)) or "none"
+    if corp_ids:
+        offer_stats = IndustryLpStoreOffer.objects.filter(
+            corporation_id__in=corp_ids
+        ).aggregate(n=Count("pk"), max_u=Max("updated_at"))
+    else:
+        offer_stats = {"n": 0, "max_u": None}
+    currency_fp = (
+        ",".join(
+            f"{row.corporation_id}:{row.default_isk_per_lp}"
+            for row in IndustryLoyaltyPoint.objects.filter(
+                is_active=True
+            ).order_by("corporation_id")
+        )
+        or "none"
+    )
+    hist_max = EveMarketItemHistory.objects.aggregate(m=Max("date"))["m"]
+    n = int(offer_stats["n"] or 0)
+    max_u = offer_stats["max_u"]
+    max_u_s = max_u.isoformat() if max_u is not None else "none"
+    hist_s = hist_max.isoformat() if hist_max is not None else "none"
+    return (
+        f"{_LP_OFFER_ECON_CACHE_PREFIX}:{corp_key}|n={n}|u={max_u_s}"
+        f"|lp={currency_fp}|h={hist_s}"
+    )
+
+
 def ensure_lp_offer_econ_on_request(request):
     """
-    Compute economics for all tracked LP store offers once per request.
+    Resolve economics for all tracked LP store offers.
 
-    Admin filters and list_display share this map so changelist loads with
-    exclude-useless / exclude-below-set do not recompute ~1.5k offers
-    multiple times.
+    Lookup order: request stash → Django cache → compute. Filters and
+    list_display share the request-scoped map; the cross-request cache
+    avoids recomputing when operators re-toggle exclude filters.
     """
     cached = getattr(request, _LP_OFFER_ECON_ATTR, None)
     if cached is not None:
         return cached
+    cache_key = lp_offer_econ_cache_key()
+    economics = cache.get(cache_key)
+    if economics is not None:
+        setattr(request, _LP_OFFER_ECON_ATTR, economics)
+        return economics
     offers = list(
         IndustryLpStoreOffer.objects.filter(
             corporation_id__in=tracked_corporation_ids()
@@ -113,6 +162,7 @@ def ensure_lp_offer_econ_on_request(request):
     )
     economics = offer_economics_for_queryset(offers)
     setattr(request, _LP_OFFER_ECON_ATTR, economics)
+    cache.set(cache_key, economics, timeout=_LP_OFFER_ECON_CACHE_TTL)
     return economics
 
 
