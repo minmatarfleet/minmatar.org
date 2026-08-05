@@ -1,9 +1,14 @@
 """Economics helpers for admin LP store offer price tracking.
 
-Conversion rates (isk/lp buy & sell) use baseline LocationPrice buy/sell when
-present, else Forge history via get_prices_by_type_id. Admin Cost / Profit
-columns use per-offer acquisition (LP×buyback rate + ISK + required items),
-not planner build cost — Fuzzwork-style offer comparison.
+Conversion rates (isk/lp buy & sell) follow Fuzzwork's LP store formula:
+  (market_price * qty - isk_cost - other_cost) / lp_cost
+where other_cost is LP-store required items plus, for blueprints, SDE
+manufacturing materials × offer quantity (Fuzzwork "Materials to build" at
+PE5 / ME0). Market prices use baseline LocationPrice buy/sell when present,
+else Forge history via get_prices_by_type_id.
+
+Acquisition (LP×buyback rate + ISK + LP required items only) stays separate
+from conversion — it is the LP-desk cost, not finished-hull build cost.
 """
 
 from __future__ import annotations
@@ -25,7 +30,7 @@ from django.db.models import (
 from django.db.models.functions import Coalesce, Greatest
 from django.utils import timezone
 from eveonline.models import EveLocation
-from eveuniverse.models import EveType
+from eveuniverse.models import EveIndustryActivityMaterial, EveType
 
 from industry.helpers.blueprint_efficiency import is_faction_navy_hull
 from industry.helpers.lp_catalog import ensure_eve_types
@@ -35,7 +40,10 @@ from industry.helpers.product_unit_cost import (
     TALWAR_FI_TYPE_ID,
     plan_product_unit_cost,
 )
-from industry.helpers.type_breakdown import get_blueprint_or_reaction_type_id
+from industry.helpers.type_breakdown import (
+    ACTIVITY_MANUFACTURING,
+    get_blueprint_or_reaction_type_id,
+)
 from industry.models import (
     IndustryLoyaltyPoint,
     IndustryLpStoreOffer,
@@ -183,6 +191,87 @@ def _conversion_isk_per_lp(
     return (market_price * offer_qty - isk_cost - extras) / float(lp_cost)
 
 
+def manufacturing_materials_by_blueprint_type_id(
+    type_ids: Iterable[int],
+) -> Dict[int, List[Tuple[int, int]]]:
+    """
+    SDE manufacturing bill of materials keyed by blueprint type_id.
+
+    Quantities are ME0 / max Production Efficiency (Fuzzwork PE5) base runs.
+    Blueprints with no manufacturing rows are omitted.
+    """
+    unique = list({int(t) for t in type_ids})
+    if not unique:
+        return {}
+    out: Dict[int, List[Tuple[int, int]]] = {}
+    for bpc_id, mat_id, qty in EveIndustryActivityMaterial.objects.filter(
+        eve_type_id__in=unique,
+        activity_id=ACTIVITY_MANUFACTURING,
+    ).values_list("eve_type_id", "material_eve_type_id", "quantity"):
+        out.setdefault(int(bpc_id), []).append((int(mat_id), int(qty)))
+    return out
+
+
+def _priced_material_pack_cost(
+    materials: List[Tuple[int, int]],
+    *,
+    runs: int,
+    location_prices: Dict[int, Tuple[Optional[int], Optional[int]]],
+    history_prices: Dict[int, int],
+) -> Optional[int]:
+    """Sum sell×qty×runs for a BOM; None if any material lacks a price."""
+    if not materials:
+        return 0
+    total = 0
+    for mat_type_id, mat_qty in materials:
+        sell, _ = _resolve_sell_buy(
+            mat_type_id,
+            location_prices=location_prices,
+            history_prices=history_prices,
+        )
+        if sell is None:
+            return None
+        total += sell * mat_qty * runs
+    return total
+
+
+def _lp_store_required_cost(
+    required: List[Tuple[int, int]],
+    *,
+    location_prices: Dict[int, Tuple[Optional[int], Optional[int]]],
+    history_prices: Dict[int, int],
+    type_names: Dict[int, str],
+) -> Tuple[Optional[int], List[str]]:
+    """Return (LP-desk other cost, summary parts) for required items."""
+    if not required:
+        return 0, []
+    total = 0
+    priced = True
+    parts: List[str] = []
+    for req_type_id, req_qty in required:
+        sell, _ = _resolve_sell_buy(
+            req_type_id,
+            location_prices=location_prices,
+            history_prices=history_prices,
+        )
+        name = type_names.get(req_type_id, str(req_type_id))
+        parts.append(f"{name} x{req_qty}")
+        if sell is None:
+            priced = False
+        else:
+            total += sell * req_qty
+    return (total if priced else None), parts
+
+
+def _fuzzwork_other_cost(
+    lp_store_other: Optional[int],
+    build_mats_other: Optional[int],
+) -> Optional[int]:
+    if lp_store_other is None or build_mats_other is None:
+        return None
+    return int(lp_store_other) + int(build_mats_other)
+
+
 def annotate_lp_store_offer_sort_fields(queryset):
     """
     Annotate admin sort keys for economics columns.
@@ -311,7 +400,13 @@ def offer_economics_for_queryset(
         bpc_to_product[tid] for tid in offer_type_ids if tid in bpc_to_product
     }
     req_type_ids = {tid for items in req_by_offer.values() for tid, _ in items}
-    market_type_ids = sorted(offer_type_ids | product_type_ids | req_type_ids)
+    bom_by_bpc = manufacturing_materials_by_blueprint_type_id(offer_type_ids)
+    bom_type_ids = {
+        mat_id for mats in bom_by_bpc.values() for mat_id, _ in mats
+    }
+    market_type_ids = sorted(
+        offer_type_ids | product_type_ids | req_type_ids | bom_type_ids
+    )
     ensure_eve_types(market_type_ids)
     history_prices = get_prices_by_type_id(market_type_ids)
     location_prices = _baseline_location_prices(market_type_ids)
@@ -344,26 +439,27 @@ def offer_economics_for_queryset(
         isk_per_lp = resolve_isk_per_lp(requested=None, corporation_id=corp_id)
 
         required = req_by_offer.get(int(offer.pk), []) if offer.pk else []
-        other_cost: Optional[int] = 0 if not required else None
-        req_parts: List[str] = []
-        if required:
-            total = 0
-            priced = True
-            for req_type_id, req_qty in required:
-                sell, _ = _resolve_sell_buy(
-                    req_type_id,
-                    location_prices=location_prices,
-                    history_prices=history_prices,
-                )
-                name = type_names.get(req_type_id, str(req_type_id))
-                req_parts.append(f"{name} x{req_qty}")
-                if sell is None:
-                    priced = False
-                else:
-                    total += sell * req_qty
-            other_cost = total if priced else None
+        lp_store_other, req_parts = _lp_store_required_cost(
+            required,
+            location_prices=location_prices,
+            history_prices=history_prices,
+            type_names=type_names,
+        )
 
-        acquisition = _acquisition_isk_per_unit(offer, isk_per_lp, other_cost)
+        # Fuzzwork: Other Cost = LP required items + materials to build
+        # (manufacturing BOM × offer quantity). Acquisition stays LP-desk only.
+        runs = max(offer.quantity, 1)
+        build_mats_other = _priced_material_pack_cost(
+            bom_by_bpc.get(type_id, []),
+            runs=runs,
+            location_prices=location_prices,
+            history_prices=history_prices,
+        )
+        other_cost = _fuzzwork_other_cost(lp_store_other, build_mats_other)
+
+        acquisition = _acquisition_isk_per_unit(
+            offer, isk_per_lp, lp_store_other
+        )
 
         product_type_id = bpc_to_product.get(type_id)
         if product_type_id is not None:
@@ -375,8 +471,8 @@ def offer_economics_for_queryset(
             market_type_id = type_id
             build_cost = None
 
-        # Fuzzwork-style: Cost/Profit compare LP-store acquisition per unit,
-        # not planner build cost (which is identical across same-hull BPCs).
+        # Cost/Profit compare LP-store acquisition per unit, not planner
+        # build cost (identical across same-hull BPCs) and not BOM other cost.
         cost_per_unit = acquisition
 
         jita_sell, jita_buy = _resolve_sell_buy(
@@ -391,14 +487,14 @@ def offer_economics_for_queryset(
         )
         conv_sell = _conversion_isk_per_lp(
             market_price=jita_sell,
-            offer_qty=max(offer.quantity, 1),
+            offer_qty=runs,
             isk_cost=offer.isk_cost,
             other_cost=other_cost,
             lp_cost=offer.lp_cost,
         )
         conv_buy = _conversion_isk_per_lp(
             market_price=jita_buy,
-            offer_qty=max(offer.quantity, 1),
+            offer_qty=runs,
             isk_cost=offer.isk_cost,
             other_cost=other_cost,
             lp_cost=offer.lp_cost,
