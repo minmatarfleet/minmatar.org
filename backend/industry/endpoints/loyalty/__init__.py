@@ -67,12 +67,6 @@ router = Router(tags=["Industry - Loyalty"])
 
 _ROUTES = (
     (
-        get_capabilities_method,
-        get_capabilities_path,
-        get_capabilities_spec,
-        get_capabilities,
-    ),
-    (
         get_currencies_method,
         get_currencies_path,
         get_currencies_spec,
@@ -85,6 +79,12 @@ _ROUTES = (
         get_stockpiles,
     ),
     (get_ledger_method, get_ledger_path, get_ledger_spec, get_ledger),
+    (
+        get_capabilities_method,
+        get_capabilities_path,
+        get_capabilities_spec,
+        get_capabilities,
+    ),
     (get_orders_method, get_orders_path, get_orders_spec, get_orders),
     (post_orders_method, post_orders_path, post_orders_spec, post_orders),
     (

@@ -164,6 +164,28 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         self.assertIn("Tribal Liberation Force", names)
         self.assertEqual(len(response.json()), 4)
 
+    def test_capabilities_for_manager_and_trader(self):
+        anon = self.client.get("/api/industry/loyalty/capabilities")
+        self.assertEqual(anon.status_code, 401)
+
+        trader = self.client.get(
+            "/api/industry/loyalty/capabilities",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(trader.status_code, 200)
+        self.assertFalse(trader.json()["can_manage"])
+        self.assertTrue(trader.json()["can_trade"])
+
+        manager = self.client.get(
+            "/api/industry/loyalty/capabilities",
+            HTTP_AUTHORIZATION=f"Bearer {self.manager_token}",
+        )
+        self.assertEqual(manager.status_code, 200)
+        self.assertTrue(manager.json()["can_manage"])
+        # Manage is tribe-gated; trade is affiliation-gated. This manager has
+        # Conversion tribe membership only, so can_trade stays false.
+        self.assertFalse(manager.json()["can_trade"])
+
     def test_get_stockpiles_public(self):
         response = self.client.get("/api/industry/loyalty/stockpiles")
         self.assertEqual(response.status_code, 200)
@@ -704,25 +726,6 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.manager_token}",
         )
         self.assertEqual(release.status_code, 400)
-
-    def test_capabilities_for_manager_and_trader(self):
-        anon = self.client.get("/api/industry/loyalty/capabilities")
-        self.assertEqual(anon.status_code, 401)
-
-        trader = self.client.get(
-            "/api/industry/loyalty/capabilities",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
-        )
-        self.assertEqual(trader.status_code, 200)
-        self.assertTrue(trader.json()["can_trade"])
-        self.assertFalse(trader.json()["can_manage"])
-
-        manager = self.client.get(
-            "/api/industry/loyalty/capabilities",
-            HTTP_AUTHORIZATION=f"Bearer {self.manager_token}",
-        )
-        self.assertEqual(manager.status_code, 200)
-        self.assertTrue(manager.json()["can_manage"])
 
     def test_get_orders_defaults_to_active(self):
         open_order = IndustryLoyaltyPointMarketOrder.objects.create(

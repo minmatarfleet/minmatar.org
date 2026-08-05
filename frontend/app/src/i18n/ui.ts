@@ -663,6 +663,10 @@ export const ui = {
         'industry.loyalty.status.cancelled': 'Cancelled',
         'industry.loyalty.post_sell': 'Sell Loyalty Points',
         'industry.loyalty.post_buy': 'Purchase Loyalty Points',
+        'industry.loyalty.feature_denied_buy':
+            'Only Conversion Team members can post buy orders. To sell your LP, use Sell Loyalty Points.',
+        'industry.loyalty.feature_denied':
+            'You do not have permission for this loyalty action.',
         'industry.loyalty.login_required': 'Log in to post or manage LP orders.',
         'industry.loyalty.form.currency': 'Currency',
         'industry.loyalty.form.quantity': 'Quantity',

@@ -173,13 +173,15 @@ const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
                             >
                                 {t('industry.loyalty.post_sell')}
                             </Button>
-                            <Button
-                                class="[ loyalty-cta-row__button ]"
-                                color="green"
-                                x-on:click="$dispatch('loyalty-open-buy')"
-                            >
-                                {t('industry.loyalty.post_buy')}
-                            </Button>
+                            {can_manage_buyback && (
+                                <Button
+                                    class="[ loyalty-cta-row__button ]"
+                                    color="green"
+                                    x-on:click="$dispatch('loyalty-open-buy')"
+                                >
+                                    {t('industry.loyalty.post_buy')}
+                                </Button>
+                            )}
                         </div>
                     )}
                     <LoyaltyOrderBook
