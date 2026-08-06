@@ -17,6 +17,7 @@ from industry.helpers.lp_store_offer_economics_rebuild import (
 from industry.models import (
     IndustryLoyaltyPoint,
     IndustryLpStoreOffer,
+    IndustryLpStoreOfferEconomics,
     IndustryLpStoreOfferRequiredItem,
 )
 
@@ -217,7 +218,22 @@ class LoyaltyOffersApiTestCase(AppTestCase):
         response = self.client.get(
             "/api/industry/loyalty/offers?exclude_tags=1"
             "&exclude_supply_packages=1&exclude_chips=1&exclude_skins=1"
+            "&exclude_blueprints=1"
             "&exclude_useless_offers=1&exclude_below_set_lp_price=1"
         )
         self.assertEqual(response.status_code, 200)
         self.assertIn("items", response.json())
+
+    def test_offers_exclude_blueprints(self):
+        IndustryLpStoreOfferEconomics.objects.filter(
+            offer=self.offer_a
+        ).update(kind="blueprint")
+        response = self.client.get(
+            "/api/industry/loyalty/offers?exclude_blueprints=1"
+            f"&currency={TLIB_CORP_ID}"
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        offer_ids = {item["offer_id"] for item in body["items"]}
+        self.assertNotIn(2001, offer_ids)
+        self.assertIn(2002, offer_ids)

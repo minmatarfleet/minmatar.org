@@ -106,7 +106,7 @@ We recommend various sized cap boosters, datacores, and small (frigate, destroye
 6. Move them back to Hek VIII - Moon 12 - Boundless Creation Factory
 7. Sell them locally on the market
 
-**Don't chase the ISK dragon too soon.** You're going to make hundreds of billions of ISK in loyalty points over your ISK career; saving a few hundred million at the start is meaningless.
+**Don't chase the ISK dragon too soon.** You're going to make hundreds of billions of ISK in loyalty points over your ISK career; saving a few hundred million at the start is meaningless. Focus on items that require no upfront capital, especially if they can be moved in a Sunesis or shuttle.
 
 ## Pitfalls
 

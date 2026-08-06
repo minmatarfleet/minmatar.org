@@ -660,8 +660,12 @@ export const ui = {
         'industry.loyalty.offers.exclude_packages': 'Exclude packages',
         'industry.loyalty.offers.exclude_chips': 'Exclude chips',
         'industry.loyalty.offers.exclude_skins': 'Exclude skins',
+        'industry.loyalty.offers.exclude_blueprints': 'Exclude blueprints',
         'industry.loyalty.offers.exclude_useless': 'Exclude useless offers',
         'industry.loyalty.offers.exclude_below_set': 'Exclude below set price',
+        'industry.loyalty.offers.low_volume_tag': 'Low volume',
+        'industry.loyalty.offers.low_volume_warning':
+            'Dangerous item: less than 1M LP moves per week. Thin volume can strand capital.',
         'industry.loyalty.offers.col.item': 'Item',
         'industry.loyalty.offers.col.currency': 'Currency',
         'industry.loyalty.offers.col.lp_cost': 'LP',

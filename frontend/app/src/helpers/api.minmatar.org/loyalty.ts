@@ -20,6 +20,7 @@ export interface LoyaltyOffersQuery {
     exclude_supply_packages?: string
     exclude_chips?: string
     exclude_skins?: string
+    exclude_blueprints?: string
     exclude_useless_offers?: string
     exclude_below_set_lp_price?: string
     side?: 'sell' | 'buy' | 'avg_7d'
@@ -71,6 +72,8 @@ export async function get_loyalty_offers(params?: LoyaltyOffersQuery) {
         query.exclude_chips = params.exclude_chips
     if (params?.exclude_skins)
         query.exclude_skins = params.exclude_skins
+    if (params?.exclude_blueprints)
+        query.exclude_blueprints = params.exclude_blueprints
     if (params?.exclude_useless_offers)
         query.exclude_useless_offers = params.exclude_useless_offers
     if (params?.exclude_below_set_lp_price)
