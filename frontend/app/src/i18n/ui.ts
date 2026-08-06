@@ -645,6 +645,7 @@ export const ui = {
         'industry.loyalty.offers.showing_plural': 'Showing {count} offers',
         'industry.loyalty.offers.showing_singular': 'Showing {count} offer',
         'industry.loyalty.offers.search_placeholder': 'Search item name or id…',
+        'industry.loyalty.offers.currency_label': 'Loyalty store',
         'industry.loyalty.offers.currency_all': 'All currencies',
         'industry.loyalty.offers.side_sell': 'Sell',
         'industry.loyalty.offers.side_buy': 'Buy',

@@ -1,33 +1,37 @@
 ---
 import Flexblock from '@components/compositions/Flexblock.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import LoyaltyOffersMetricsSkeleton from '@components/blocks/LoyaltyOffersMetricsSkeleton.astro'
 ---
 
-<div class="[ loyalty-offers-skeleton solid-transparency ]" aria-hidden="true">
+<div class="[ loyalty-offers-skeleton ]" aria-hidden="true">
     <Flexblock gap="var(--space-l)">
         <LoyaltyOffersMetricsSkeleton />
-        <div class="[ loyalty-offers-skeleton__toolbar ]"></div>
-        <div class="[ loyalty-offers-skeleton__chips ]"></div>
-        <div class="[ loyalty-offers-skeleton__table ]">
-            <div class="[ loyalty-offers-skeleton__header ]"></div>
-            {Array.from({ length: 8 }).map(() => (
-                <div class="[ loyalty-offers-skeleton__row ]"></div>
-            ))}
-        </div>
+        <ComponentBlock
+            class="[ loyalty-offers-skeleton__body ]"
+            padding_block="var(--space-m)"
+            padding_inline="var(--space-s)"
+        >
+            <Flexblock gap="var(--space-l)">
+                <div class="[ loyalty-offers-skeleton__toolbar ]"></div>
+                <div class="[ loyalty-offers-skeleton__chips ]"></div>
+                <div class="[ loyalty-offers-skeleton__table ]">
+                    <div class="[ loyalty-offers-skeleton__header ]"></div>
+                    {Array.from({ length: 8 }).map(() => (
+                        <div class="[ loyalty-offers-skeleton__row ]"></div>
+                    ))}
+                </div>
+            </Flexblock>
+        </ComponentBlock>
     </Flexblock>
 </div>
 
 <style lang="scss">
-    .loyalty-offers-skeleton {
-        padding-block: var(--space-m);
-        padding-inline: var(--space-s);
-    }
-
     .loyalty-offers-skeleton__toolbar,
     .loyalty-offers-skeleton__chips,
     .loyalty-offers-skeleton__header,
     .loyalty-offers-skeleton__row {
-        background: color-mix(in srgb, var(--background) 85%, var(--foreground));
+        background: color-mix(in srgb, var(--component-background) 70%, var(--foreground));
         border-radius: 2px;
         animation: loyalty-offers-pulse 1.2s ease-in-out infinite;
     }

@@ -114,6 +114,7 @@ import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astr
 import LoyaltyOffersFilters from '@components/blocks/LoyaltyOffersFilters.astro'
 import LoyaltyOffersMetrics from '@components/blocks/LoyaltyOffersMetrics.astro'
 import LoyaltyOffersTable from '@components/blocks/LoyaltyOffersTable.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 ---
 
@@ -126,49 +127,50 @@ import Flexblock from '@components/compositions/Flexblock.astro'
         }}
     />
 ) : (
-    <div class="[ loyalty-offers-panel solid-transparency ]">
-        <Flexblock gap="var(--space-l)" class="[ compensate-bottom-bar ]">
-            <UpdateAlpineVariables
-                variables={{
-                    offers_count: offers_list.total,
-                    last_updated_text: last_updated_text,
-                }}
-            />
-            <LoyaltyOffersMetrics metrics={metrics} />
-            <LoyaltyOffersFilters
-                currencies={currencies}
-                currency={currency}
-                exclude_tags={exclude_tags}
-                exclude_supply_packages={exclude_supply_packages}
-                exclude_chips={exclude_chips}
-                exclude_skins={exclude_skins}
-                exclude_blueprints={exclude_blueprints}
-                exclude_useless_offers={exclude_useless_offers}
-                exclude_below_set_lp_price={exclude_below_set_lp_price}
-                side={side}
-                q={q || ''}
-                ordering={ordering}
-            />
-            {offers_list.items.length > 0 ? (
-                <LoyaltyOffersTable
-                    offers={offers_list.items}
-                    filter_state={filter_state}
-                    ordering={ordering}
+    <Flexblock gap="var(--space-l)" class="[ loyalty-offers-panel compensate-bottom-bar ]">
+        <UpdateAlpineVariables
+            variables={{
+                offers_count: offers_list.total,
+                last_updated_text: last_updated_text,
+            }}
+        />
+        <LoyaltyOffersMetrics metrics={metrics} />
+        <ComponentBlock
+            class="[ loyalty-offers-panel__body ]"
+            padding_block="var(--space-m)"
+            padding_inline="var(--space-s)"
+        >
+            <Flexblock gap="var(--space-l)">
+                <LoyaltyOffersFilters
+                    currencies={currencies}
+                    currency={currency}
+                    exclude_tags={exclude_tags}
+                    exclude_supply_packages={exclude_supply_packages}
+                    exclude_chips={exclude_chips}
+                    exclude_skins={exclude_skins}
+                    exclude_blueprints={exclude_blueprints}
+                    exclude_useless_offers={exclude_useless_offers}
+                    exclude_below_set_lp_price={exclude_below_set_lp_price}
                     side={side}
+                    q={q || ''}
+                    ordering={ordering}
                 />
-            ) : (
-                <p class="[ loyalty-offers-empty ]">{t('industry.loyalty.offers.empty')}</p>
-            )}
-        </Flexblock>
-    </div>
+                {offers_list.items.length > 0 ? (
+                    <LoyaltyOffersTable
+                        offers={offers_list.items}
+                        filter_state={filter_state}
+                        ordering={ordering}
+                        side={side}
+                    />
+                ) : (
+                    <p class="[ loyalty-offers-empty ]">{t('industry.loyalty.offers.empty')}</p>
+                )}
+            </Flexblock>
+        </ComponentBlock>
+    </Flexblock>
 )}
 
 <style lang="scss">
-    .loyalty-offers-panel {
-        padding-block: var(--space-m);
-        padding-inline: var(--space-s);
-    }
-
     .loyalty-offers-empty {
         color: var(--foreground);
         font-size: var(--step-0);

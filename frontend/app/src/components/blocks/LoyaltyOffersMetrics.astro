@@ -6,6 +6,7 @@ import type { LoyaltyOffersMetrics } from '@helpers/loyalty_offers_metrics'
 import { format_number, number_name, number_thousand_separator } from '@helpers/numbers'
 
 import Grid from '@components/compositions/Grid.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 
 interface Props {
     metrics: LoyaltyOffersMetrics
@@ -49,15 +50,23 @@ function lp_tippy(value: number): string | undefined {
         row_gap="var(--space-s)"
         column_gap="var(--space-s)"
     >
-        <article class="[ loyalty-offers-metrics__card ]">
+        <ComponentBlock
+            class="[ loyalty-offers-metrics__card ]"
+            padding_block="var(--space-m)"
+            padding_inline="var(--space-m)"
+        >
             <p class="[ loyalty-offers-metrics__label ]">
                 {t('industry.loyalty.offers.metrics.avg_isk_lp')}
             </p>
             <p class="[ loyalty-offers-metrics__value ]">{avg_display}</p>
             <p class="[ loyalty-offers-metrics__meta ]">{avg_meta}</p>
-        </article>
+        </ComponentBlock>
 
-        <article class="[ loyalty-offers-metrics__card ]">
+        <ComponentBlock
+            class="[ loyalty-offers-metrics__card ]"
+            padding_block="var(--space-m)"
+            padding_inline="var(--space-m)"
+        >
             <p class="[ loyalty-offers-metrics__label ]">
                 {t('industry.loyalty.offers.metrics.weekly_lp')}
             </p>
@@ -66,9 +75,13 @@ function lp_tippy(value: number): string | undefined {
                 data-tippy-content={lp_tippy(metrics.weekly_lp_volume)}
             >{lp_display(metrics.weekly_lp_volume)}</p>
             <p class="[ loyalty-offers-metrics__meta ]">{filters_applied}</p>
-        </article>
+        </ComponentBlock>
 
-        <article class="[ loyalty-offers-metrics__card ]">
+        <ComponentBlock
+            class="[ loyalty-offers-metrics__card ]"
+            padding_block="var(--space-m)"
+            padding_inline="var(--space-m)"
+        >
             <p class="[ loyalty-offers-metrics__label ]">
                 {t('industry.loyalty.offers.metrics.monthly_lp')}
             </p>
@@ -77,18 +90,17 @@ function lp_tippy(value: number): string | undefined {
                 data-tippy-content={lp_tippy(metrics.monthly_lp_volume)}
             >{lp_display(metrics.monthly_lp_volume)}</p>
             <p class="[ loyalty-offers-metrics__meta ]">{filters_applied}</p>
-        </article>
+        </ComponentBlock>
     </Grid>
 </section>
 
 <style lang="scss">
-    .loyalty-offers-metrics__card {
+    .loyalty-offers-metrics :global(.loyalty-offers-metrics__card) {
         display: flex;
         flex-direction: column;
         gap: var(--space-3xs);
-        padding: var(--space-m);
-        border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
-        background: color-mix(in srgb, var(--background) 78%, transparent);
+        height: 100%;
+        box-sizing: border-box;
     }
 
     .loyalty-offers-metrics__label {
@@ -116,7 +128,7 @@ function lp_tippy(value: number): string | undefined {
 
     .loyalty-offers-metrics__meta {
         margin: 0;
-        color: color-mix(in srgb, var(--foreground) 65%, transparent);
+        color: var(--faded);
         font-size: var(--step--1);
     }
 </style>
