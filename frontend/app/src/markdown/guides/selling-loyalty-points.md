@@ -36,14 +36,14 @@ Please, don't try to convert loyalty points on day one — it's fairly complex a
 
 ### Overview
 
-If you want fast ISK without the hassle, sell to a broker. We recommend pilots start with this, because realistically it's faster to just keep running complexes.
+If you want fast ISK without the hassle, sell to a broker. We recommend pilots start with this if their alliance supports it, because it's usually better for new players to just keep running complexes.
 
 There are a few known brokers out there:
 
 | Broker | Where |
 | --- | --- |
 | **Minmatar Fleet** | [Loyalty Points](/industry/loyalty/) desk |
-| **LP Broker Discord** | Public LP broker communities |
+| **LP Broker Discord** | [Public LP broker Discord](https://discord.gg/a8zCcE65Xd) |
 | **Militia Discord(s)** | Ask in your militia for known converters |
 
 Be extremely careful of scams — loyalty point scams are fairly common. Only use trusted sources.
@@ -73,8 +73,8 @@ Unless you are in Caldari State, you will likely need to move your goods to a ma
 
 Use a freight service to ship goods, where it makes sense:
 
-- **Red Frog Freight** (usually 1–2% of cargo, meaningless margin to you)
-- **PushX** (similar prices)
+- **[Red Frog Freight](https://red-frog.org/)** (usually 1–2% of cargo, meaningless margin to you)
+- **[PushX](https://www.pushx.net/)** (similar prices)
 
 If you insist on moving things yourself, we recommend sticking to low volumes (under 25M ISK) of Navy Cap Booster 3200 / Navy Cap Booster 800 and various datacores.
 
@@ -94,6 +94,18 @@ From here, you'll see a table of offers that you can convert. There's a few thin
 
 We recommend various sized cap boosters, datacores, and small (frigate, destroyer, etc) blueprints for players to start with. You can sell the blueprints on public contract — just undercut people until you get the hang of it.
 
+### Example flow
+
+**Note:** This only works for Minmatar.
+
+1. Travel to Hek VIII - Moon 12 - Boundless Creation Factory
+2. Purchase an Iteron Mark V
+3. Purchase a **few million ISK** of Cap Booster XXXX
+4. Move them to the Hek VII - Tribal Liberation Force Logistic Support
+5. Convert them to Navy Cap Booster XXXX
+6. Move them back to Hek VIII - Moon 12 - Boundless Creation Factory
+7. Sell them locally on the market
+
 **Don't chase the ISK dragon too soon.** You're going to make hundreds of billions of ISK in loyalty points over your ISK career; saving a few hundred million at the start is meaningless.
 
 ## Pitfalls
@@ -102,7 +114,7 @@ We recommend various sized cap boosters, datacores, and small (frigate, destroye
 - **Ignoring required items** — navy upgrades that need a pile of T1 can erase the edge if you buy T1 retail in the wrong place.
 - **Dumping into a thin book** — one large sell order can push you below buyback rates; watch the spread and recent volume.
 - **Wrong price side** — planning on sell-side ISK/LP, then panic-selling into buy orders.
-- **Freight afterthought** — navy caps especially: product m³ can dominate. Quote PushX/Red Frog before you commit.
+- **Freight afterthought** — navy caps especially: product m³ can dominate. Quote [PushX](https://www.pushx.net/)/[Red Frog](https://red-frog.org/) before you commit.
 - **Skins, chips, packages, vanity** — exclude them unless you have a specific buyer.
 - **Standing / docking** — alts without TLIB access cannot cash out that character’s LP in that store.
 - **Opportunity cost** — time spent manufacturing, hauling, and babysitting orders is real. Brokers exist so you can stay in fleets.
