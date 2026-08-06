@@ -514,6 +514,164 @@ class OpsMonitorApiTestCase(TestCase):
         self.assertEqual(gap["units_90d"], 59)
         # qty-weighted avg price = (40*3M + 10*6M) / 50 = 3.6M → +80% vs 2M
         self.assertEqual(gap["avg_markup_pct"], 80.0)
+        # 50 listed ÷ (46/7 per day) ≈ 7.6 days of stock
+        self.assertEqual(gap["days_of_stock"], 7.6)
+        self.assertEqual(
+            gap["flags"],
+            ["understocked", "overpriced"],
+        )
+
+    def test_days_of_stock_null_without_recent_sales(self):
+        charge_cat, _ = EveCategory.objects.get_or_create(
+            id=8, defaults={"name": "Charge", "published": True}
+        )
+        charge_grp, _ = EveGroup.objects.get_or_create(
+            id=801,
+            defaults={
+                "name": "Hybrid Charge",
+                "published": True,
+                "eve_category": charge_cat,
+            },
+        )
+        item, _ = EveType.objects.update_or_create(
+            id=91021,
+            defaults={
+                "name": "No Sales Ammo",
+                "published": True,
+                "eve_group": charge_grp,
+            },
+        )
+        EveMarketItemExpectation.objects.create(
+            item=item,
+            location=self.loc,
+            quantity=100,
+        )
+        EveMarketItemOrder.objects.create(
+            location=self.loc,
+            item=item,
+            quantity=20,
+            price=2_000_000,
+            is_buy_order=False,
+        )
+
+        with patch(
+            "market.helpers.ops_monitor.get_prices_by_type_id",
+            return_value={item.pk: 2_000_000},
+        ):
+            data = build_ops_monitor(location_id=self.loc.location_id)
+
+        gap = next(
+            row
+            for row in data["sell_gaps"]
+            if row["item_name"] == "No Sales Ammo"
+        )
+        self.assertIsNone(gap["days_of_stock"])
+        self.assertEqual(gap["flags"], ["understocked"])
+
+    def test_seven_day_vwap_avoids_one_day_dip_false_overpriced(self):
+        """Listing fair vs 7d VWAP is not overpriced even if latest-day dipped."""
+        charge_cat, _ = EveCategory.objects.get_or_create(
+            id=8, defaults={"name": "Charge", "published": True}
+        )
+        charge_grp, _ = EveGroup.objects.get_or_create(
+            id=801,
+            defaults={
+                "name": "Hybrid Charge",
+                "published": True,
+                "eve_category": charge_cat,
+            },
+        )
+        item, _ = EveType.objects.update_or_create(
+            id=91022,
+            defaults={
+                "name": "Smoothed Baseline Ammo",
+                "published": True,
+                "eve_group": charge_grp,
+            },
+        )
+        EveMarketItemExpectation.objects.create(
+            item=item,
+            location=self.loc,
+            quantity=100,
+        )
+        # Listed at 2.0M — fair vs 2.0M 7d VWAP, but +100% vs a 1.0M one-day dip.
+        EveMarketItemOrder.objects.create(
+            location=self.loc,
+            item=item,
+            quantity=100,
+            price=2_000_000,
+            is_buy_order=False,
+        )
+
+        with (
+            patch(
+                "market.helpers.ops_monitor.get_volume_weighted_average_by_type_id",
+                return_value={item.pk: 2_000_000},
+            ),
+            patch(
+                "market.helpers.ops_monitor.get_prices_by_type_id",
+                return_value={item.pk: 1_000_000},
+            ),
+        ):
+            data = build_ops_monitor(location_id=self.loc.location_id)
+
+        self.assertEqual(
+            [row["item_name"] for row in data["sell_gaps"]],
+            [],
+        )
+        self.assertEqual(data["summary"]["sell_orders_viability_pct"], 100.0)
+
+    def test_overstocked_overpriced_flags_on_viability_gap(self):
+        charge_cat, _ = EveCategory.objects.get_or_create(
+            id=8, defaults={"name": "Charge", "published": True}
+        )
+        charge_grp, _ = EveGroup.objects.get_or_create(
+            id=801,
+            defaults={
+                "name": "Hybrid Charge",
+                "published": True,
+                "eve_category": charge_cat,
+            },
+        )
+        item, _ = EveType.objects.update_or_create(
+            id=91023,
+            defaults={
+                "name": "Fat Overpriced Ammo",
+                "published": True,
+                "eve_group": charge_grp,
+            },
+        )
+        EveMarketItemExpectation.objects.create(
+            item=item,
+            location=self.loc,
+            quantity=50,
+        )
+        EveMarketItemOrder.objects.create(
+            location=self.loc,
+            item=item,
+            quantity=120,
+            price=3_000_000,
+            is_buy_order=False,
+        )
+
+        with patch(
+            "market.helpers.ops_monitor.get_prices_by_type_id",
+            return_value={item.pk: 2_000_000},
+        ):
+            data = build_ops_monitor(location_id=self.loc.location_id)
+
+        gap = next(
+            row
+            for row in data["sell_gaps"]
+            if row["item_name"] == "Fat Overpriced Ammo"
+        )
+        self.assertFalse(gap["coverage_gap"])
+        self.assertTrue(gap["viability_gap"])
+        self.assertEqual(gap["avg_markup_pct"], 50.0)
+        self.assertEqual(
+            gap["flags"],
+            ["overstocked", "overpriced"],
+        )
 
     def test_understocked_contracts_summary_matches_list_cap(self):
         for i in range(55):
@@ -596,6 +754,8 @@ class OpsMonitorApiTestCase(TestCase):
         self.assertEqual(data["summary"]["sell_orders_health_pct"], 100.0)
         self.assertEqual(data["summary"]["sell_orders_viability_pct"], 11.0)
         self.assertEqual(data["summary"]["sell_gaps"], 1)
+        self.assertEqual(gap["flags"], ["overpriced"])
+        self.assertIsNone(gap["days_of_stock"])
 
     def test_boundary_price_counts_as_viable(self):
         charge_cat, _ = EveCategory.objects.get_or_create(

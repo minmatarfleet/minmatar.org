@@ -24,6 +24,8 @@ interface SellGapRow {
     units_30d:          number;
     units_90d:          number;
     avg_markup_pct:     number | null;
+    days_of_stock:      number | null;
+    flags:              string[];
     ships:              SellGapShip[];
 }
 
@@ -46,17 +48,53 @@ const {
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
+import type { TagColors } from '@dtypes/layout_components'
+
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
 import UsefulForShips from '@components/blocks/UsefulForShips.astro'
 import ClipboardButton from '@components/blocks/ClipboardButton.astro'
+import Tag from '@components/blocks/Tag.astro'
 
-function qty_label(row: SellGapRow): string {
-    return t('ops_sell_gap_qty')
-        .replace('{viable}', String(row.viable_quantity))
-        .replace('{expected}', String(row.expected_quantity))
+const FLAG_META: Record<string, { label: string; color: TagColors }> = {
+    understocked: {
+        label: t('ops_sell_gap_flag_understocked'),
+        color: 'fleet-red',
+    },
+    overstocked: {
+        label: t('ops_sell_gap_flag_overstocked'),
+        color: 'fleet-yellow',
+    },
+    underpriced: {
+        label: t('ops_sell_gap_flag_underpriced'),
+        color: 'green',
+    },
+    overpriced: {
+        label: t('ops_sell_gap_flag_overpriced'),
+        color: 'fleet-red',
+    },
+}
+
+function days_of_stock_label(row: SellGapRow): string {
+    if (row.days_of_stock == null) {
+        if (row.current_quantity > 0)
+            return t('ops_sell_gap_no_recent_sales')
+        return t('ops_sell_gap_days_of_stock_zero')
+    }
+    const days = Math.round(row.days_of_stock)
+    if (days === 1)
+        return t('ops_sell_gap_days_of_stock_one')
+    if (days === 0)
+        return t('ops_sell_gap_days_of_stock_zero')
+    return t('ops_sell_gap_days_of_stock').replace('{days}', String(days))
+}
+
+function flag_tags(flags: string[] | undefined) {
+    return (flags ?? [])
+        .map(flag => FLAG_META[flag])
+        .filter(Boolean)
 }
 
 const number_format = new Intl.NumberFormat('en-US')
@@ -246,7 +284,19 @@ const empty_label = t('ops_sell_gaps_empty_filter')
                                         <UsefulForShips ships={row.ships ?? []} size={28} max={10} />
                                     </Flexblock>
                                 </FlexInline>
-                                <span class="[ ops-qty ]">{qty_label(row)}</span>
+                                <FlexInline
+                                    gap="var(--space-2xs)"
+                                    class="[ ops-sell-gap__status ]"
+                                >
+                                    {flag_tags(row.flags).map(flag =>
+                                        <Tag
+                                            text={flag.label}
+                                            color={flag.color}
+                                            narrow={true}
+                                        />
+                                    )}
+                                    <span class="[ ops-qty ]">{days_of_stock_label(row)}</span>
+                                </FlexInline>
                             </FlexInline>
                         </ComponentBlock>
                         <div class="[ ops-sell-gap__metrics ]" aria-label={t('ops_sell_gap_metrics')}>
@@ -418,6 +468,13 @@ const empty_label = t('ops_sell_gaps_empty_filter')
             height: 48px;
             object-fit: contain;
         }
+    }
+
+    .ops-sell-gap__status {
+        flex-shrink: 0;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        align-items: center;
     }
 
     .ops-qty {

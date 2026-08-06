@@ -65,6 +65,8 @@ def _problem_sell_gaps(rows: list[dict]) -> list[dict]:
             "units_30d": int(row.get("units_30d", 0)),
             "units_90d": int(row.get("units_90d", 0)),
             "avg_markup_pct": row.get("avg_markup_pct"),
+            "days_of_stock": row.get("days_of_stock"),
+            "flags": list(row.get("flags") or []),
             "ships": row.get("ships") or [],
         }
         for row in rows
