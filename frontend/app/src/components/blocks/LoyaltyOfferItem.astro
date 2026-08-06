@@ -5,9 +5,12 @@ const { t } = i18n(Astro.url)
 import type { LoyaltyOffer } from '@dtypes/api.minmatar.org'
 import {
     conversion_for_side,
+    offer_is_low_weekly_lp_volume,
     offer_lp_for_volume,
 } from '@helpers/loyalty_offers_metrics'
 import { number_thousand_separator } from '@helpers/numbers'
+
+import Tag from '@components/blocks/Tag.astro'
 
 interface Props {
     offer: LoyaltyOffer
@@ -44,9 +47,16 @@ function volume_lp_tooltip(volume: number | null | undefined): string | undefine
 const is_blueprint = offer.kind === 'blueprint'
 const icon_type = is_blueprint ? 'bp' : 'icon'
 const conversion = conversion_for_side(offer, side)
+const is_low_volume = offer_is_low_weekly_lp_volume(offer)
 ---
 
-<div class="[ loyalty-offer-item ]" role="row">
+<div
+    class:list={[
+        '[ loyalty-offer-item ]',
+        { 'loyalty-offer-item--low-volume': is_low_volume },
+    ]}
+    role="row"
+>
     <div class="[ loyalty-offer-item__item ]" role="cell">
         <span class="[ loyalty-offer-item__item-inner ]">
             <img
@@ -59,6 +69,18 @@ const conversion = conversion_for_side(offer, side)
                 onerror="this.hidden=true"
             />
             <span class="[ loyalty-offer-item__name text-highlight ]">{offer.type_name}</span>
+            {is_low_volume && (
+                <span
+                    class="[ loyalty-offer-item__low-volume ]"
+                    data-tippy-content={t('industry.loyalty.offers.low_volume_warning')}
+                >
+                    <Tag
+                        text={t('industry.loyalty.offers.low_volume_tag')}
+                        color="fleet-red"
+                        narrow
+                    />
+                </span>
+            )}
         </span>
     </div>
     <div class="[ loyalty-offer-item__num ]" role="cell">{format_int(offer.quantity)}</div>
@@ -99,6 +121,10 @@ const conversion = conversion_for_side(offer, side)
                 background: color-mix(in srgb, var(--highlight) 6%, transparent);
             }
         }
+
+        &--low-volume {
+            background: color-mix(in srgb, var(--fleet-red) 6%, transparent);
+        }
     }
 
     .loyalty-offer-item__item-inner {
@@ -120,6 +146,11 @@ const conversion = conversion_for_side(offer, side)
         font-weight: 600;
         min-width: 0;
         overflow-wrap: anywhere;
+    }
+
+    .loyalty-offer-item__low-volume {
+        flex-shrink: 0;
+        cursor: help;
     }
 
     .loyalty-offer-item__num {

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { LoyaltyOffer } from '@dtypes/api.minmatar.org'
 import {
     compute_loyalty_offers_metrics,
+    offer_is_low_weekly_lp_volume,
     offer_lp_for_volume,
 } from '@helpers/loyalty_offers_metrics'
 
@@ -42,6 +43,29 @@ describe('offer_lp_for_volume', () => {
 
     it('returns 0 for missing volume', () => {
         expect(offer_lp_for_volume(offer({}), null)).toBe(0)
+    })
+})
+
+describe('offer_is_low_weekly_lp_volume', () => {
+    it('flags offers under 1M weekly LP', () => {
+        expect(offer_is_low_weekly_lp_volume(offer({
+            lp_cost: 100_000,
+            quantity: 1,
+            volume_7d: 9,
+        }))).toBe(true)
+    })
+
+    it('does not flag offers at or above 1M weekly LP', () => {
+        expect(offer_is_low_weekly_lp_volume(offer({
+            lp_cost: 100_000,
+            quantity: 1,
+            volume_7d: 10,
+        }))).toBe(false)
+    })
+
+    it('flags missing volume as low', () => {
+        expect(offer_is_low_weekly_lp_volume(offer({ volume_7d: null })))
+            .toBe(true)
     })
 })
 

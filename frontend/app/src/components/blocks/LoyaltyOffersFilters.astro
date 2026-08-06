@@ -23,6 +23,7 @@ interface Props {
     exclude_supply_packages?: string
     exclude_chips?: string
     exclude_skins?: string
+    exclude_blueprints?: string
     exclude_useless_offers?: string
     exclude_below_set_lp_price?: string
     side: 'sell' | 'buy' | 'avg_7d'
@@ -38,6 +39,7 @@ const {
     exclude_supply_packages,
     exclude_chips,
     exclude_skins,
+    exclude_blueprints,
     exclude_useless_offers,
     exclude_below_set_lp_price,
     side,
@@ -67,6 +69,8 @@ if (exclude_chips)
     base_params.exclude_chips = exclude_chips
 if (exclude_skins)
     base_params.exclude_skins = exclude_skins
+if (exclude_blueprints)
+    base_params.exclude_blueprints = exclude_blueprints
 if (exclude_useless_offers)
     base_params.exclude_useless_offers = exclude_useless_offers
 if (exclude_below_set_lp_price)
@@ -110,6 +114,11 @@ const excludes = [
         key: 'exclude_skins',
         label: t('industry.loyalty.offers.exclude_skins'),
         active: exclude_skins === '1',
+    },
+    {
+        key: 'exclude_blueprints',
+        label: t('industry.loyalty.offers.exclude_blueprints'),
+        active: exclude_blueprints === '1',
     },
     {
         key: 'exclude_useless_offers',
@@ -243,6 +252,9 @@ const hx_include_filters =
         )}
         {exclude_chips === '1' && <input type="hidden" name="exclude_chips" value="1" />}
         {exclude_skins === '1' && <input type="hidden" name="exclude_skins" value="1" />}
+        {exclude_blueprints === '1' && (
+            <input type="hidden" name="exclude_blueprints" value="1" />
+        )}
         {exclude_useless_offers === '1' && (
             <input type="hidden" name="exclude_useless_offers" value="1" />
         )}

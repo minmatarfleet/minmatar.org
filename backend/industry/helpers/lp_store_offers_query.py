@@ -96,6 +96,18 @@ def _apply_snapshot_binary_flag(
     return queryset.filter(**{field: True})
 
 
+def _apply_exclude_kind(
+    queryset: QuerySet,
+    value: Optional[str],
+    kind: str,
+) -> QuerySet:
+    if value not in ("0", "1"):
+        return queryset
+    if value == "1":
+        return queryset.exclude(kind=kind)
+    return queryset.filter(kind=kind)
+
+
 def _apply_snapshot_search(
     queryset: QuerySet, search_term: Optional[str]
 ) -> QuerySet:
@@ -116,6 +128,7 @@ def query_lp_store_offers(
     exclude_supply_packages: Optional[str] = None,
     exclude_chips: Optional[str] = None,
     exclude_skins: Optional[str] = None,
+    exclude_blueprints: Optional[str] = None,
     exclude_useless_offers: Optional[str] = None,
     exclude_below_set_lp_price: Optional[str] = None,
     side: Optional[str] = None,
@@ -138,6 +151,7 @@ def query_lp_store_offers(
     )
     qs = _apply_snapshot_binary_flag(qs, exclude_chips, "involves_chip")
     qs = _apply_snapshot_binary_flag(qs, exclude_skins, "involves_skin")
+    qs = _apply_exclude_kind(qs, exclude_blueprints, "blueprint")
     qs = _apply_snapshot_binary_flag(qs, exclude_useless_offers, "is_useless")
     below_flag = _SIDE_BELOW_SET_FLAG.get(offers_side, "is_below_set_lp_price")
     qs = _apply_snapshot_binary_flag(

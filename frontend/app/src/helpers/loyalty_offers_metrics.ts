@@ -14,8 +14,8 @@ export const DEFAULT_LOYALTY_OFFERS_PARAMS: Record<string, string> = {
     exclude_supply_packages: '1',
     exclude_chips: '1',
     exclude_skins: '1',
+    exclude_blueprints: '1',
     exclude_useless_offers: '1',
-    exclude_below_set_lp_price: '1',
     side: DEFAULT_LOYALTY_OFFERS_SIDE,
     ordering: `-conversion_${DEFAULT_LOYALTY_OFFERS_SIDE}`,
 }
@@ -54,6 +54,13 @@ export function offer_lp_for_volume(
         return 0
     const qty = offer.quantity || 1
     return Math.ceil(volume / qty) * offer.lp_cost
+}
+
+/** Weekly LP volume below this is treated as thin / dangerous liquidity. */
+export const LOW_WEEKLY_LP_VOLUME_THRESHOLD = 1_000_000
+
+export function offer_is_low_weekly_lp_volume(offer: LoyaltyOffer): boolean {
+    return offer_lp_for_volume(offer, offer.volume_7d) < LOW_WEEKLY_LP_VOLUME_THRESHOLD
 }
 
 export function compute_loyalty_offers_metrics(
