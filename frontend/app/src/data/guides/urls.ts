@@ -12,6 +12,7 @@ export const GUIDE_SLUG_BY_WIKI_PATH: Record<string, string> = {
     'guides/Abyss/Dark/Duo/Jackdaw': 'abyss-duo-jackdaws-t6-dark',
     'guides/Abyss/Firestorm/Trio/Nergal': 'abyss-nergal-trio-t6-firestorm',
     'guides/Abyss/Dark/Trio/Hawk': 'abyss-trio-hawk-t5-dark',
+    'capitals': 'capital-ship-basics',
 }
 
 export const GUIDES_INDEX_PATH = '/guides/'

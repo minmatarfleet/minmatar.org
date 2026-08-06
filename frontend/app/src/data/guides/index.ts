@@ -14,6 +14,8 @@ import * as abyss_trio_hawk_t5_dark from '@markdown/guides/abyss-trio-hawk-t5-da
 import * as zohar_hunting from '@markdown/guides/zohar-hunting.md'
 import * as bookmarks from '@markdown/guides/bookmarks.md'
 import * as selling_loyalty_points from '@markdown/guides/selling-loyalty-points.md'
+import * as capital_ship_basics from '@markdown/guides/capital-ship-basics.md'
+
 
 type GuideModule = {
     frontmatter: {
@@ -40,9 +42,10 @@ const guideModules: Record<string, GuideModule> = {
     'zohar-hunting': zohar_hunting,
     'bookmarks': bookmarks,
     'selling-loyalty-points': selling_loyalty_points,
+    'capital-ship-basics': capital_ship_basics,
 }
 
-export const guideCategories = ["Faction Warfare","PVP","PVE","Utility"] as const
+export const guideCategories = ["Faction Warfare","PVP","Capital Ships","PVE","Utility"] as const
 
 /** Preferred subsection order within a category (index page). */
 export const guideSectionsByCategory: Partial<Record<(typeof guideCategories)[number], readonly string[]>> = {
@@ -148,13 +151,64 @@ export const guides: GuideMeta[] = [
         slug: "new-player-fleet-guide",
         title: "New Player Fleet Guide",
         excerpt: "Voice, ships, fleet UI, and FAQ for your first militia fleet.",
-        category: "PVP",
+        category: "Utility",
         author: "Minmatar Fleet",
         authors: [{
             name: "Minmatar Fleet",
             id: 99011978,
             entity: 'alliance',
         }],
+    },
+    {
+        slug: "capital-ship-basics",
+        title: "Capital Ship Basics",
+        excerpt: "How Minmatar Fleet members use, lose, and fund their capital ships. Covers the high level fundamentals for all capital types.",
+        category: "Capital Ships",
+        author: "BearThatCares",
+        authors: [{
+            name: "BearThatCares",
+            id: 634915984,
+            entity: 'character',
+        }],
+    },
+    {
+        slug: "force-auxiliary-carrier-guide",
+        title: "FAX Guide",
+        excerpt: "Learn the basics of the Force Auxiliary Carrier. Which hulls are good, when to use what, and how to reach end-game remote repair content.",
+        category: "Capital Ships",
+        author: "BearThatCares",
+        authors: [{
+            name: "BearThatCares",
+            id: 634915984,
+            entity: 'character',
+        }],
+        path: "/guides/force-auxiliary-carrier-guide/",
+    },
+    {
+        slug: "dreadnought-guide",
+        title: "Dreadnought Guide",
+        excerpt: "Learn everything you need to know about the dreadnought. The meta, why armor is good, and which dreads to use in which situations.",
+        category: "Capital Ships",
+        author: "BearThatCares",
+        authors: [{
+            name: "BearThatCares",
+            id: 634915984,
+            entity: 'character',
+        }],
+        path: "/guides/dreadnought-guide/",
+    },
+    {
+        slug: "carrier-guide",
+        title: "Carrier Guide",
+        excerpt: "Learn about the carrier, one of the most beloved and useful capital classes in New Eden.",
+        category: "Capital Ships",
+        author: "BearThatCares",
+        authors: [{
+            name: "BearThatCares",
+            id: 634915984,
+            entity: 'character',
+        }],
+        path: "/guides/carrier-guide/",
     },
     {
         slug: "abyssals",

@@ -1,0 +1,203 @@
+---
+import CapitalGuideShipChip from '@components/blocks/capital-guide/CapitalGuideShipChip.astro'
+import { capitalTierLabels, fittingsForHull } from '@/data/capital-guide'
+import type { CapitalHull, CapitalTier, TierList, TierRow } from '@/data/capital-guide'
+import type { Fitting } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    list: TierList
+    hulls: Record<string, CapitalHull>
+    fitting_library: Fitting[]
+}
+
+const { list, hulls, fitting_library } = Astro.props
+
+const visible_rows = list.rows.filter((row) => row.hullIds.length > 0)
+const title_id = `${list.id}-title`
+
+function row_badge(row: TierRow): string {
+    return row.badge ?? row.tier
+}
+
+function row_label(row: TierRow): string | null {
+    if (row.label !== undefined) return row.label
+    if (row.tier in capitalTierLabels) {
+        return capitalTierLabels[row.tier as CapitalTier]
+    }
+    return null
+}
+---
+
+<div class="cap-tiers-block" id={list.id}>
+    <h3 id={title_id} class="cap-section__subtitle">{list.title}</h3>
+    <p class="cap-section__paragraph">{list.lead}</p>
+    <div class="cap-tiers" role="list">
+        {visible_rows.map((row) => {
+            const badge = row_badge(row)
+            const label = row_label(row)
+            return (
+                <div class="cap-tiers__row" role="listitem" data-tier={row.tier}>
+                    <div
+                        class:list={['cap-tiers__badge', `cap-tiers__badge--${row.tier.toLowerCase()}`]}
+                        title={label ?? badge}
+                        aria-label={label ? `${badge}: ${label}` : badge}
+                    >
+                        <span class="cap-tiers__badge-letter">{badge}</span>
+                        {label && <span class="cap-tiers__badge-label">{label}</span>}
+                    </div>
+                    <div class="cap-tiers__ships-wrap">
+                        <div class="cap-tiers__ships">
+                            {row.hullIds.map((hull_id) => {
+                                const hull = hulls[hull_id]
+                                if (!hull) return null
+                                const fittings = fittingsForHull(hull, fitting_library)
+                                return (
+                                    <CapitalGuideShipChip
+                                        hull={hull}
+                                        fittings={fittings}
+                                    />
+                                )
+                            })}
+                        </div>
+                    </div>
+                </div>
+            )
+        })}
+    </div>
+</div>
+
+<style lang="scss">
+    .cap-tiers-block,
+    .cap-tiers {
+        --cap-chip-width: 7.25rem;
+        --cap-tier-badge-width: 5.75rem;
+        --cap-tier-ship-gap: var(--space-xs);
+        --cap-tier-pad: var(--space-s);
+    }
+
+    .cap-tiers-block {
+        margin: 0 0 var(--space-l);
+    }
+
+    .cap-tiers {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+        background: color-mix(in srgb, var(--component-background) 88%, transparent);
+        overflow: hidden;
+    }
+
+    .cap-tiers__row {
+        display: grid;
+        grid-template-columns: var(--cap-tier-badge-width) minmax(0, 1fr);
+        align-items: stretch;
+        border-bottom: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+
+        &:last-child {
+            border-bottom: 0;
+        }
+    }
+
+    .cap-tiers__badge {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-3xs);
+        box-sizing: border-box;
+        width: 100%;
+        min-height: 100%;
+        padding: var(--space-s) var(--space-2xs);
+        font-family: var(--cap-display-font, var(--heading-font));
+        border-right: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+        text-align: center;
+    }
+
+    .cap-tiers__badge-letter {
+        font-size: var(--step-0);
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        line-height: 1.15;
+        text-transform: uppercase;
+        text-wrap: balance;
+    }
+
+    .cap-tiers__badge-label {
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        line-height: 1.15;
+        max-width: 100%;
+        text-wrap: balance;
+        opacity: 0.9;
+    }
+
+    .cap-tiers__badge--s {
+        background: color-mix(in srgb, var(--fleet-red) 85%, transparent);
+        color: var(--foreground);
+    }
+
+    .cap-tiers__badge--c {
+        background: color-mix(in srgb, var(--fleet-yellow) 80%, transparent);
+        color: var(--background, #111);
+    }
+
+    .cap-tiers__badge--lc {
+        background: color-mix(in srgb, var(--faded, #666) 55%, transparent);
+        color: var(--foreground);
+    }
+
+    .cap-tiers__badge--shield {
+        background: color-mix(in srgb, var(--alliance-blue) 75%, transparent);
+        color: var(--foreground);
+    }
+
+    .cap-tiers__badge--armor {
+        background: color-mix(in srgb, var(--fleet-red) 85%, transparent);
+        color: var(--foreground);
+    }
+
+    .cap-tiers__badge--both {
+        background: color-mix(in srgb, var(--fleet-yellow) 80%, transparent);
+        color: var(--background, #111);
+    }
+
+    .cap-tiers__ships-wrap {
+        min-width: 0;
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .cap-tiers__ships {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: stretch;
+        justify-content: flex-start;
+        gap: var(--cap-tier-ship-gap);
+        box-sizing: border-box;
+        width: max-content;
+        min-width: 100%;
+        min-height: 100%;
+        padding: var(--cap-tier-pad);
+    }
+
+    @media (max-width: 40rem) {
+        .cap-tiers-block,
+        .cap-tiers {
+            --cap-chip-width: 6.5rem;
+            --cap-tier-badge-width: 4.75rem;
+            --cap-tier-pad: var(--space-2xs);
+            --cap-tier-ship-gap: var(--space-2xs);
+        }
+
+        .cap-tiers__badge {
+            padding: var(--space-2xs) var(--space-3xs);
+        }
+
+        .cap-tiers__badge-letter {
+            font-size: var(--step--1);
+        }
+    }
+</style>

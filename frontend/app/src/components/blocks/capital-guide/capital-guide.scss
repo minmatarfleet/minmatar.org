@@ -1,0 +1,261 @@
+.cap-guide {
+    --cap-display-font: 'Orbitron', var(--heading-font);
+    --cap-body-font: 'Source Sans 3', var(--body-font);
+    --cap-panel-padding-block: var(--component-padding-block);
+    --cap-panel-padding-inline: var(--space-l-xl);
+    font-family: var(--cap-body-font);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-l);
+    width: 100%;
+    min-width: 0;
+}
+
+.cap-guide .cap-panel {
+    padding: var(--cap-panel-padding-block) var(--cap-panel-padding-inline);
+    background: color-mix(in srgb, var(--component-background) 72%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+    min-width: 0;
+}
+
+@media (max-width: 48rem) {
+    .cap-guide .cap-panel {
+        --cap-panel-padding-inline: var(--space-s);
+    }
+}
+
+.cap-guide .cap-section {
+    scroll-margin-top: calc(var(--header-height, 4rem) + var(--space-l));
+}
+
+.cap-guide .cap-section__title {
+    margin: 0 0 var(--space-m);
+    padding-bottom: var(--space-s);
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+    font-family: var(--cap-display-font);
+    font-size: clamp(var(--step-1), 2.5vw, var(--step-2));
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.cap-guide .cap-section__subtitle {
+    margin: var(--space-l) 0 var(--space-m);
+    font-family: var(--cap-display-font);
+    font-size: var(--step-0);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--highlight);
+}
+
+.cap-guide .cap-section__paragraph {
+    margin: 0 0 var(--space-m);
+    font-size: var(--step-0);
+    line-height: 1.7;
+    max-width: var(--max-text-width);
+}
+
+.cap-guide .cap-section__quote {
+    margin: 0 0 var(--space-m);
+    padding-left: var(--space-m);
+    border-left: 3px solid color-mix(in srgb, var(--fleet-red) 70%, transparent);
+    color: var(--text-color-secondary, var(--faded));
+    max-width: var(--max-text-width);
+    font-size: var(--step-0);
+    line-height: 1.7;
+
+    p {
+        margin: 0;
+    }
+}
+
+.cap-guide .cap-section__paragraph a {
+    color: var(--highlight);
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+
+    &:hover,
+    &:focus-visible {
+        color: var(--fleet-yellow);
+    }
+}
+
+.cap-guide .cap-section__list {
+    margin: 0 0 var(--space-m);
+    padding-left: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xs);
+    line-height: 1.65;
+    max-width: var(--max-text-width);
+    list-style: disc;
+}
+
+.cap-guide .cap-section__list--ordered {
+    list-style: decimal;
+}
+
+.cap-guide .cap-table-wrap {
+    width: 100%;
+    max-width: var(--max-text-width);
+    overflow-x: auto;
+    margin: 0;
+    padding-bottom: var(--space-l);
+}
+
+.cap-guide .cap-table {
+    width: 100%;
+    margin: 0;
+    border-collapse: collapse;
+    font-size: var(--step--1);
+    line-height: 1.5;
+}
+
+.cap-guide .cap-table th,
+.cap-guide .cap-table td {
+    padding: var(--space-2xs) var(--space-s);
+    border: 1px solid color-mix(in srgb, var(--border-color) 65%, transparent);
+    text-align: left;
+    vertical-align: top;
+}
+
+.cap-guide .cap-table thead th {
+    font-family: var(--cap-display-font);
+    font-size: var(--step--2);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: color-mix(in srgb, var(--component-background) 88%, transparent);
+    color: var(--highlight);
+}
+
+.cap-guide .cap-table tbody th {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.cap-guide .cap-table__hull-link {
+    display: inline-flex;
+    color: var(--highlight);
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible {
+        color: var(--fleet-yellow);
+        outline: none;
+
+        .cap-table__hull-name {
+            text-decoration: underline;
+            text-underline-offset: 0.15em;
+        }
+    }
+}
+
+.cap-guide .cap-table__hull-link--disabled {
+    color: inherit;
+    cursor: default;
+
+    &:hover,
+    &:focus-visible {
+        color: inherit;
+
+        .cap-table__hull-name {
+            text-decoration: none;
+        }
+    }
+}
+
+.cap-guide .cap-table__hull {
+    display: flex;
+    align-items: center;
+    gap: var(--space-s);
+}
+
+.cap-guide .cap-table__icon {
+    flex: 0 0 auto;
+    width: 2.5rem;
+    height: 2.5rem;
+
+    picture,
+    img {
+        display: block;
+        width: 2.5rem !important;
+        height: 2.5rem !important;
+        max-width: none;
+        object-fit: cover;
+    }
+}
+
+.cap-guide .cap-table__hull-name {
+    min-width: 0;
+}
+
+.cap-guide .cap-chiefs {
+    margin-top: var(--space-m);
+    align-items: flex-start;
+}
+
+.cap-guide .cap-skill-plans {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-m);
+    margin-top: var(--space-m);
+    max-width: var(--max-text-width);
+}
+
+.cap-guide .cap-skill-plan {
+    margin-top: 0;
+    max-width: none;
+    padding: var(--space-s);
+    border: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+    background: color-mix(in srgb, var(--component-background) 88%, transparent);
+}
+
+.cap-guide .cap-skill-plan__header {
+    width: 100%;
+    align-items: center;
+}
+
+.cap-guide .cap-skill-plan__toggle {
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.cap-guide .cap-skill-plan__title {
+    font-family: var(--cap-display-font, var(--heading-font));
+    font-size: var(--step--1);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--highlight);
+}
+
+.cap-guide .cap-skill-plan__body {
+    padding-top: var(--space-s);
+}
+
+.cap-guide .cap-skill-plan__list {
+    margin: 0;
+    padding: var(--space-s);
+    max-height: 22rem;
+    overflow: auto;
+    list-style: none;
+    counter-reset: skill-step;
+    font-family: var(--default-font);
+    font-size: var(--step--2);
+    line-height: 1.55;
+    background: color-mix(in srgb, var(--background) 55%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
+
+    li {
+        counter-increment: skill-step;
+        display: grid;
+        grid-template-columns: 2.5rem minmax(0, 1fr);
+        gap: var(--space-2xs);
+        padding-block: 0.1em;
+
+        &::before {
+            content: counter(skill-step);
+            color: var(--text-color-secondary, var(--faded));
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+    }
+}

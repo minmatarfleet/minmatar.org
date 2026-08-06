@@ -117,20 +117,7 @@ const shell_subtitle = guide.section
             >
                 <GuideShell title={guide.title} subtitle={shell_subtitle}>
                     <GuideContentsLayout sections={sections}>
-                        <GuideMarkdown
-                            html={guide_html}
-                            x-data={`{
-                                init_zoom() {
-                                    mediumZoom('.guide-md img', {
-                                        background: 'var(--solid-transparency-background)',
-                                        scrollOffset: 0,
-                                        margin: 24,
-                                        metaClick: false,
-                                    })
-                                }
-                            }`}
-                            x-init="init_zoom()"
-                        />
+                        <GuideMarkdown html={guide_html} />
 
                         <Button
                             class="[ w-fit! ]"

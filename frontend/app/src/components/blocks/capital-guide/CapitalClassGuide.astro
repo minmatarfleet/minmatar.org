@@ -1,0 +1,280 @@
+---
+import GuideContentsLayout from '@components/blocks/GuideContentsLayout.astro'
+import GuideShell from '@components/blocks/GuideShell.astro'
+import CapitalGuideTierList from '@components/blocks/capital-guide/CapitalGuideTierList.astro'
+import CapitalGuideMetaBlocks from '@components/blocks/capital-guide/CapitalGuideMetaBlocks.astro'
+import CapitalGuideSkillPlan from '@components/blocks/capital-guide/CapitalGuideSkillPlan.astro'
+import PilotBadge from '@components/blocks/PilotBadge.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import type {
+    CapitalHull,
+    CapitalSkillPlan,
+    CrosstrainingRow,
+    GuideInfoTable,
+    GuideSection,
+    MetaBlock,
+    TierList,
+} from '@/data/capital-guide'
+import type { Fitting, TribeCharacterRef } from '@dtypes/api.minmatar.org'
+
+interface GuideMeta {
+    title: string
+    edition: string
+    yc: string
+}
+
+interface Props {
+    guide_meta: GuideMeta
+    overview: string[]
+    overview_reasons?: string[]
+    overview_follow_up?: string
+    meta_blocks?: MetaBlock[]
+    ships_lead?: string
+    hulls?: Record<string, CapitalHull>
+    tier_lists?: TierList[]
+    info_tables?: GuideInfoTable[]
+    guidance_lead?: string
+    guidance_reasons?: string[]
+    guidance_reasons_ordered?: boolean
+    guidance_follow_up?: string
+    skill_plans?: CapitalSkillPlan[]
+    crosstraining_lead?: string
+    crosstraining_rows?: readonly CrosstrainingRow[]
+    crosstraining_column_header?: string
+    tribe: string[]
+    guide_sections: GuideSection[]
+    fitting_library?: Fitting[]
+    capitals_chief?: TribeCharacterRef | null
+    group_chief?: TribeCharacterRef | null
+    capitals_chief_label: string
+    group_chief_label: string
+    id_prefix: string
+    merge_meta_into_guidance?: boolean
+}
+
+const {
+    guide_meta,
+    overview,
+    overview_reasons = [],
+    overview_follow_up,
+    meta_blocks = [],
+    ships_lead,
+    hulls = {},
+    tier_lists = [],
+    info_tables = [],
+    guidance_lead,
+    guidance_reasons = [],
+    guidance_reasons_ordered = false,
+    guidance_follow_up,
+    skill_plans = [],
+    crosstraining_lead,
+    crosstraining_rows = [],
+    crosstraining_column_header = 'Capital',
+    tribe,
+    guide_sections,
+    fitting_library = [],
+    capitals_chief = null,
+    group_chief = null,
+    capitals_chief_label,
+    group_chief_label,
+    id_prefix,
+    merge_meta_into_guidance = false,
+} = Astro.props
+
+const show_meta = !merge_meta_into_guidance && meta_blocks.length > 0
+const show_ships = Boolean(ships_lead && tier_lists.length > 0)
+const show_crosstraining = Boolean(crosstraining_lead && crosstraining_rows.length > 0)
+const show_guidance = Boolean(
+    guidance_lead ||
+        guidance_reasons.length > 0 ||
+        guidance_follow_up ||
+        skill_plans.length > 0 ||
+        merge_meta_into_guidance,
+)
+const reasons_list_class = guidance_reasons_ordered
+    ? 'cap-section__list cap-section__list--ordered'
+    : 'cap-section__list'
+---
+
+<GuideShell
+    title={guide_meta.title}
+    subtitle={`${guide_meta.edition} · ${guide_meta.yc}`}
+>
+    <div class="cap-guide">
+        <GuideContentsLayout sections={guide_sections}>
+            <section id="overview" data-section-id="overview" class="cap-section cap-panel" aria-labelledby={`${id_prefix}-overview-title`}>
+                <h2 id={`${id_prefix}-overview-title`} class="cap-section__title">Overview</h2>
+                {overview.map((paragraph) => (
+                    <p class="cap-section__paragraph" set:html={paragraph} />
+                ))}
+                {overview_reasons.length > 0 && (
+                    <ul class="cap-section__list">
+                        {overview_reasons.map((reason) => (
+                            <li set:html={reason} />
+                        ))}
+                    </ul>
+                )}
+                {overview_follow_up && (
+                    <p class="cap-section__paragraph" set:html={overview_follow_up} />
+                )}
+            </section>
+
+            {show_meta && (
+                <section id="meta" data-section-id="meta" class="cap-section cap-panel" aria-labelledby={`${id_prefix}-meta-title`}>
+                    <h2 id={`${id_prefix}-meta-title`} class="cap-section__title">Meta</h2>
+                    <CapitalGuideMetaBlocks blocks={meta_blocks} fitting_library={fitting_library} />
+                </section>
+            )}
+
+            {show_ships && ships_lead && (
+                <section id="ships" data-section-id="ships" class="cap-section cap-panel" aria-labelledby={`${id_prefix}-ships-title`}>
+                    <h2 id={`${id_prefix}-ships-title`} class="cap-section__title">Ships</h2>
+                    <p class="cap-section__paragraph">{ships_lead}</p>
+                    {tier_lists.map((list) => (
+                        <CapitalGuideTierList
+                            list={list}
+                            hulls={hulls}
+                            fitting_library={fitting_library}
+                        />
+                    ))}
+                </section>
+            )}
+
+            {info_tables.map((table) => (
+                <section
+                    id={table.id}
+                    data-section-id={table.id}
+                    class="cap-section cap-panel"
+                    aria-labelledby={`${id_prefix}-${table.id}-title`}
+                >
+                    <h2 id={`${id_prefix}-${table.id}-title`} class="cap-section__title">{table.title}</h2>
+                    {table.lead && <p class="cap-section__paragraph" set:html={table.lead} />}
+                    <div class="cap-table-wrap">
+                        <table class="cap-table">
+                            <thead>
+                                <tr>
+                                    {table.headers.map((header) => (
+                                        <th scope="col">{header}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {table.rows.map((row) => (
+                                    <tr>
+                                        {row.map((cell, cell_index) =>
+                                            cell_index === 0 ? (
+                                                <th scope="row">{cell}</th>
+                                            ) : (
+                                                <td>{cell}</td>
+                                            ),
+                                        )}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            ))}
+
+            {show_guidance && (
+                <section id="guidance" data-section-id="guidance" class="cap-section cap-panel" aria-labelledby={`${id_prefix}-guidance-title`}>
+                    <h2 id={`${id_prefix}-guidance-title`} class="cap-section__title">Guidance</h2>
+                    {merge_meta_into_guidance && meta_blocks.length > 0 && (
+                        <CapitalGuideMetaBlocks blocks={meta_blocks} fitting_library={fitting_library} />
+                    )}
+                    {guidance_lead && <p class="cap-section__paragraph" set:html={guidance_lead} />}
+                    {guidance_reasons.length > 0 && (
+                        guidance_reasons_ordered ? (
+                            <ol class={reasons_list_class}>
+                                {guidance_reasons.map((reason) => (
+                                    <li set:html={reason} />
+                                ))}
+                            </ol>
+                        ) : (
+                            <ul class={reasons_list_class}>
+                                {guidance_reasons.map((reason) => (
+                                    <li set:html={reason} />
+                                ))}
+                            </ul>
+                        )
+                    )}
+                    {guidance_follow_up && (
+                        <p class="cap-section__paragraph" set:html={guidance_follow_up} />
+                    )}
+                    {skill_plans.length > 0 && (
+                        <div class="cap-skill-plans">
+                            {skill_plans.map((plan) => (
+                                <CapitalGuideSkillPlan
+                                    plan_id={plan.id}
+                                    title={plan.title}
+                                    copy_label={plan.copy_label}
+                                    skills={plan.skills}
+                                    id_prefix={id_prefix}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </section>
+            )}
+
+            {show_crosstraining && crosstraining_lead && (
+                <section id="crosstraining" data-section-id="crosstraining" class="cap-section cap-panel" aria-labelledby={`${id_prefix}-crosstraining-title`}>
+                    <h2 id={`${id_prefix}-crosstraining-title`} class="cap-section__title">Crosstraining</h2>
+                    <p class="cap-section__paragraph">{crosstraining_lead}</p>
+                    <div class="cap-table-wrap">
+                        <table class="cap-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">{crosstraining_column_header}</th>
+                                    <th scope="col">Useful subcapitals</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {crosstraining_rows.map((row) => (
+                                    <tr>
+                                        <th scope="row">{row.capitals}</th>
+                                        <td>{row.ships.join(', ')}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            )}
+
+            <section id="tribe" data-section-id="tribe" class="cap-section cap-panel" aria-labelledby={`${id_prefix}-tribe-title`}>
+                <h2 id={`${id_prefix}-tribe-title`} class="cap-section__title">Tribe</h2>
+                {tribe.map((paragraph) => (
+                    <p class="cap-section__paragraph" set:html={paragraph} />
+                ))}
+                {(capitals_chief || group_chief) && (
+                    <FlexInline class="cap-chiefs" gap="var(--space-l)">
+                        {capitals_chief && (
+                            <PilotBadge
+                                character_id={capitals_chief.character_id}
+                                character_name={capitals_chief.character_name}
+                                size={48}
+                            >
+                                <small>{capitals_chief_label}</small>
+                            </PilotBadge>
+                        )}
+                        {group_chief && (
+                            <PilotBadge
+                                character_id={group_chief.character_id}
+                                character_name={group_chief.character_name}
+                                size={48}
+                            >
+                                <small>{group_chief_label}</small>
+                            </PilotBadge>
+                        )}
+                    </FlexInline>
+                )}
+            </section>
+        </GuideContentsLayout>
+    </div>
+</GuideShell>
+
+<style lang="scss" is:global>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap');
+    @import './capital-guide.scss';
+</style>
