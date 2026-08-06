@@ -62,6 +62,7 @@ class OrdersProfitSummaryEndpointTestCase(AppTestCase):
             name=name,
             kind="T1",
             cost_per=1_000_000,
+            manufacturing_cost_per=1_000_000,
             jita_sell=1_500_000,
             profit_per=500_000,
             isk_per_lp=None,

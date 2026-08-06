@@ -79,7 +79,9 @@ class LpStoreOfferEconomicsRebuildTestCase(TestCase):
     def test_rebuild_writes_snapshot_rows(self):
         with patch(
             "industry.helpers.lp_store_economics.plan_product_unit_cost",
-            return_value=type("U", (), {"cost_per": None})(),
+            return_value=type(
+                "U", (), {"cost_per": None, "manufacturing_cost_per": None}
+            )(),
         ):
             count = rebuild_lp_store_offer_economics()
         self.assertEqual(count, 1)
@@ -121,7 +123,9 @@ class LpStoreOfferEconomicsRebuildTestCase(TestCase):
         )
         with patch(
             "industry.helpers.lp_store_economics.plan_product_unit_cost",
-            return_value=type("U", (), {"cost_per": None})(),
+            return_value=type(
+                "U", (), {"cost_per": None, "manufacturing_cost_per": None}
+            )(),
         ):
             rebuild_lp_store_offer_economics()
         row = IndustryLpStoreOfferEconomics.objects.get(offer=skin_offer)
@@ -132,7 +136,9 @@ class LpStoreOfferEconomicsRebuildTestCase(TestCase):
     def test_rebuild_replaces_previous_rows(self):
         with patch(
             "industry.helpers.lp_store_economics.plan_product_unit_cost",
-            return_value=type("U", (), {"cost_per": None})(),
+            return_value=type(
+                "U", (), {"cost_per": None, "manufacturing_cost_per": None}
+            )(),
         ):
             rebuild_lp_store_offer_economics()
             IndustryLpStoreOffer.objects.create(

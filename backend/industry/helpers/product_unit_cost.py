@@ -44,6 +44,9 @@ class ProductUnitCost:
     name: str
     kind: str  # "Navy" | "T1"
     cost_per: int
+    # Build cost excluding navy BPC LP/ISK (materials, jobs, taxes, freight).
+    # Same as cost_per for T1 / when no LP offer is priced in.
+    manufacturing_cost_per: int
     jita_sell: int
     profit_per: int
     isk_per_lp: Optional[float]
@@ -213,7 +216,9 @@ def plan_product_unit_cost(
         )
     else:
         batch_total = uncompressed_total_isk(plan, navy_bpc_isk=navy_isk)
+    mfg_batch_total = max(int(batch_total) - int(navy_isk), 0)
     cost_per = int(round(batch_total / batch))
+    manufacturing_cost_per = int(round(mfg_batch_total / batch))
 
     prices = sell_prices or jita_sell_prices_by_type_id([type_id])
     jita_sell = int(prices.get(type_id) or 0)
@@ -224,6 +229,7 @@ def plan_product_unit_cost(
         name=eve_type.name or str(type_id),
         kind=kind,
         cost_per=cost_per,
+        manufacturing_cost_per=manufacturing_cost_per,
         jita_sell=jita_sell,
         profit_per=profit_per,
         isk_per_lp=effective_lp if is_navy else None,
