@@ -20,8 +20,11 @@ from industry.helpers.compressed_ore import (
     build_compressed_ore_plan,
     compression_covered_materials,
 )
-from industry.helpers.cost_breakdown import build_plan_cost_breakdown
 from industry.helpers.facility_api import normalize_me_te
+from industry.helpers.plan_costing import (
+    FreightOptions,
+    cost_build_plan,
+)
 from industry.helpers.facility_profiles import (
     FACILITY_PROFILES,
     get_facility_reprocessing_tax,
@@ -172,10 +175,12 @@ def _plan_response_body(
     navy_bpc=None,
 ):
     navy_bpc_isk = navy_bpc.total_isk if navy_bpc is not None else 0
-    cost_breakdown = build_plan_cost_breakdown(
+    cost_breakdown = cost_build_plan(
         plan,
         compressed_ore=ore_plan,
         navy_bpc_isk=navy_bpc_isk,
+        input_freight=FreightOptions.alliance_default(),
+        include_line_items=True,
     )
     return {
         "product": {
@@ -226,7 +231,7 @@ def _plan_response_body(
         "estimated_materials_buy_isk": total_buy,
         "materials_tsv": materials_tsv,
         "compressed_ore": compressed_payload,
-        "cost_breakdown": cost_breakdown.to_dict(),
+        "cost_breakdown": cost_breakdown.to_legacy_breakdown_dict(),
         "navy_bpc": navy_bpc.to_dict() if navy_bpc is not None else None,
     }
 

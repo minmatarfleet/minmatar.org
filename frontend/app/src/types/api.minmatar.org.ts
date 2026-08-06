@@ -1672,6 +1672,8 @@ export interface LoyaltyOffer {
     quantity:                       number;
     required_items_summary:         string;
     other_cost:                     number | null;
+    input_cost_isk:                 number | null;
+    input_freight_isk:              number | null;
     jita_sell:                      number | null;
     jita_buy:                       number | null;
     jita_avg_7d:                    number | null;

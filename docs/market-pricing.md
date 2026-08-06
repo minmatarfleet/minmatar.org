@@ -77,9 +77,10 @@ Only need a coarse average / “has any price”?
 
 ## Correct examples in-repo
 
-- **LP store conversion:** `industry.helpers.lp_store_economics` — baseline `EveMarketItemLocationPrice` sell/buy when present, else Forge history via `get_prices_by_type_id`. **Other cost** = LP-store required items (sell) **plus**, for blueprints, Amamake build-planner manufacturing cost × offer quantity (compressed ore, job install, facility/SCC/reprocessing taxes, freight — excluding navy BPC LP/ISK, which stay in the conversion formula via `lp_cost` / `isk_cost`). Alliance buyback ISK/LP acquisition remains LP-desk only (required items, not build). Fuzzwork itself uses ME0 mineral BOM + a simulated 5% Jita buy; we diverge for navy BPCs by assuming an Amamake build.
+- **LP store conversion:** `industry.helpers.plan_costing.plan_lp_offer_conversion` (via `lp_store_economics`) — baseline `EveMarketItemLocationPrice` sell/buy when present, else Forge history via `get_prices_by_type_id`. **Net ISK/LP** = `(revenue − 3.37% sales tax − input − Red Frog input freight − Red Frog output freight) / LP`, where input = store ISK + required items + Amamake manufacturing (materials, jobs, facility/SCC/reprocessing taxes; **no** alliance route freight; navy BPC LP/ISK stay via `lp_cost` / `isk_cost`). Red Frog freight defaults to **45M ISK per 1.5B** cargo on **Jita ↔ Amo** (3% of required+materials inbound, 3% of revenue outbound). Alliance buyback ISK/LP acquisition remains LP-desk only (required items, not build). Interactive planner / profit / guide use the same `plan_item_cost` API with **alliance hub→facility** freight instead.
 - **Buyback:** `buyback.helpers.pricing.get_baseline_buy_prices` — history only; docstring states not live order-book rows.
 - **Market admin contrast:** local book from LocationPrice, separate `jita_price` from history/`get_prices_by_type_id`.
+- **Plan costing:** Prefer `industry.helpers.plan_costing.plan_item_cost` / `cost_build_plan` for all build ISK totals. Freight modes: `off`, `alliance_route`, `value_percent` (Red Frog). Do not call `build_plan_cost_breakdown` from new callers (legacy adapter only).
 
 ## Incorrect pattern (do not repeat)
 

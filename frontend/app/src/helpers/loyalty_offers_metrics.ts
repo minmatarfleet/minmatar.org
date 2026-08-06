@@ -20,10 +20,18 @@ export const DEFAULT_LOYALTY_OFFERS_PARAMS: Record<string, string> = {
     ordering: `-conversion_${DEFAULT_LOYALTY_OFFERS_SIDE}`,
 }
 
+/**
+ * Share of weekly LP volume a single actor can typically take across the
+ * filtered catalog without owning each item's book (~15–25% rule of thumb).
+ */
+export const STABLE_WEEKLY_CAPTURE_SHARE = 0.2
+
 export interface LoyaltyOffersMetrics {
     average_isk_per_lp: number | null
-    weekly_lp_volume: number
-    monthly_lp_volume: number
+    /** Sum of LP-equivalent 7d market volume across filtered offers. */
+    weekly_total_volume: number
+    /** Reasonable cash-out size: {@link STABLE_WEEKLY_CAPTURE_SHARE} of total. */
+    weekly_stable_volume: number
 }
 
 export function conversion_for_side(
@@ -35,6 +43,17 @@ export function conversion_for_side(
     if (side === 'avg_7d')
         return offer.conversion_isk_per_lp_avg_7d
     return offer.conversion_isk_per_lp_sell
+}
+
+export function market_price_for_side(
+    offer: LoyaltyOffer,
+    side: LoyaltyOffersSide,
+): number | null {
+    if (side === 'buy')
+        return offer.jita_buy
+    if (side === 'avg_7d')
+        return offer.jita_avg_7d
+    return offer.jita_sell
 }
 
 export function conversion_ordering_key(side: LoyaltyOffersSide): string {
@@ -67,16 +86,13 @@ export function compute_loyalty_offers_metrics(
     offers: LoyaltyOffer[],
     side: LoyaltyOffersSide,
 ): LoyaltyOffersMetrics {
-    let weekly_lp_volume = 0
-    let monthly_lp_volume = 0
+    let weekly_total_volume = 0
     let weighted_conversion = 0
     let weight_sum = 0
 
     for (const offer of offers) {
         const weekly_lp = offer_lp_for_volume(offer, offer.volume_7d)
-        const monthly_lp = offer_lp_for_volume(offer, offer.volume_30d)
-        weekly_lp_volume += weekly_lp
-        monthly_lp_volume += monthly_lp
+        weekly_total_volume += weekly_lp
 
         const conversion = conversion_for_side(offer, side)
         if (conversion == null || weekly_lp <= 0)
@@ -89,7 +105,7 @@ export function compute_loyalty_offers_metrics(
         average_isk_per_lp: weight_sum > 0
             ? weighted_conversion / weight_sum
             : null,
-        weekly_lp_volume,
-        monthly_lp_volume,
+        weekly_total_volume,
+        weekly_stable_volume: weekly_total_volume * STABLE_WEEKLY_CAPTURE_SHARE,
     }
 }

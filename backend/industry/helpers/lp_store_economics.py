@@ -1,13 +1,16 @@
 """Economics helpers for LP store offer price tracking.
 
-Conversion rates (isk/lp buy & sell) follow Fuzzwork's LP store formula:
-  (market_price * qty - isk_cost - other_cost) / lp_cost
-where other_cost is LP-store required items plus, for blueprints, Amamake
-build-planner manufacturing cost × offer quantity (compressed ore, job
-install, facility/SCC/reprocessing taxes, freight — excluding navy BPC
-LP/ISK, which stay in the formula via lp_cost / isk_cost). Market prices
-use baseline LocationPrice buy/sell when present, else Forge history via
-get_prices_by_type_id.
+Net conversion (ISK/LP) uses ``plan_lp_offer_conversion``:
+
+  revenue = market × qty
+  input = isk_cost + required items + Amamake mfg (no alliance freight)
+  input_freight = 3% Red Frog (Jita ↔ Amo) × (required + materials)
+  output_freight = 3% × revenue
+  sales_tax = 3.37% × revenue
+  net = (revenue − tax − input − freights) / lp_cost
+
+Market prices use baseline LocationPrice buy/sell when present, else Forge
+history via get_prices_by_type_id.
 
 Acquisition (LP×buyback rate + ISK + LP required items only) stays separate
 from conversion — it is the LP-desk cost, not finished-hull build cost.
@@ -28,10 +31,14 @@ from eveuniverse.models import EveType
 from industry.helpers.blueprint_efficiency import is_faction_navy_hull
 from industry.helpers.lp_catalog import ensure_eve_types
 from industry.helpers.loyalty_store import resolve_isk_per_lp
-from industry.helpers.product_unit_cost import (
+from industry.helpers.plan_costing import (
     TALWAR_FI_BPC_TYPE_ID,
     TALWAR_FI_TYPE_ID,
-    plan_product_unit_cost,
+    FreightOptions,
+    ItemPlanCost,
+    PlanCostOptions,
+    plan_item_cost,
+    plan_lp_offer_conversion,
 )
 from industry.helpers.type_breakdown import (
     get_blueprint_or_reaction_type_id,
@@ -75,6 +82,8 @@ class LpStoreOfferEconomics:
     quantity: int
     required_items_summary: str
     other_cost: Optional[int]
+    input_cost_isk: Optional[int]
+    input_freight_isk: Optional[int]
     acquisition_isk_per_unit: Optional[int]
     market_type_id: int
     market_type_name: str
@@ -304,6 +313,7 @@ def _conversion_isk_per_lp(
     other_cost: Optional[int],
     lp_cost: int,
 ) -> Optional[float]:
+    """Legacy helper kept for tests that call the old Fuzzwork formula."""
     if market_price is None or lp_cost <= 0:
         return None
     extras = int(other_cost or 0)
@@ -350,49 +360,76 @@ def _combine_other_cost(
 def _amamake_manufacturing_costs(
     product_type_ids: Iterable[int],
     batch_sizes: Iterable[int],
-) -> Tuple[Dict[int, int], Dict[Tuple[int, int], Optional[int]]]:
+) -> Tuple[
+    Dict[int, int],
+    Dict[Tuple[int, int], Optional[ItemPlanCost]],
+]:
     """
-    Amamake planner costs for navy hulls.
+    Amamake planner costs for navy hulls (alliance freight off).
 
     Returns:
       build_cost_per_unit: full unit cost at qty=1 (includes navy BPC LP)
-      mfg_cost_per: manufacturing-only unit cost keyed by (product, batch)
+      mfg_plans: manufacturing ItemPlanCost (no navy BPC, no freight)
+        keyed by (product, batch) for LP conversion input / freight basis
     """
     products = sorted({int(t) for t in product_type_ids})
     batches = sorted({max(int(q), 1) for q in batch_sizes})
     build_cost_per_unit: Dict[int, int] = {}
-    mfg_cost_per: Dict[Tuple[int, int], Optional[int]] = {}
+    mfg_plans: Dict[Tuple[int, int], Optional[ItemPlanCost]] = {}
     if not products:
-        return build_cost_per_unit, mfg_cost_per
+        return build_cost_per_unit, mfg_plans
 
     for product_type_id in products:
         try:
-            unit = plan_product_unit_cost(
-                product_type_id, quantity=1, use_production_lp=True
+            full = plan_item_cost(
+                product_type_id,
+                PlanCostOptions.lp_conversion_defaults(
+                    quantity=1,
+                    include_navy_bpc=True,
+                    use_production_lp=True,
+                    input_freight=FreightOptions.off(),
+                    output_freight=FreightOptions.off(),
+                    include_line_items=False,
+                ),
             )
         except ValueError:
             continue
-        build_cost_per_unit[product_type_id] = unit.cost_per
-        mfg_cost_per[(product_type_id, 1)] = unit.manufacturing_cost_per
+        build_cost_per_unit[product_type_id] = full.cost_per_isk
+        try:
+            mfg = plan_item_cost(
+                product_type_id,
+                PlanCostOptions.lp_conversion_defaults(
+                    quantity=1,
+                    include_navy_bpc=False,
+                    input_freight=FreightOptions.off(),
+                    output_freight=FreightOptions.off(),
+                    include_line_items=False,
+                ),
+            )
+            mfg_plans[(product_type_id, 1)] = mfg
+        except ValueError:
+            mfg_plans[(product_type_id, 1)] = None
 
     for product_type_id in products:
         for batch in batches:
             if batch == 1:
                 continue
             try:
-                unit = plan_product_unit_cost(
+                mfg = plan_item_cost(
                     product_type_id,
-                    quantity=batch,
-                    use_production_lp=True,
+                    PlanCostOptions.lp_conversion_defaults(
+                        quantity=batch,
+                        include_navy_bpc=False,
+                        input_freight=FreightOptions.off(),
+                        output_freight=FreightOptions.off(),
+                        include_line_items=False,
+                    ),
                 )
+                mfg_plans[(product_type_id, batch)] = mfg
             except ValueError:
-                mfg_cost_per[(product_type_id, batch)] = None
-                continue
-            mfg_cost_per[(product_type_id, batch)] = (
-                unit.manufacturing_cost_per
-            )
+                mfg_plans[(product_type_id, batch)] = None
 
-    return build_cost_per_unit, mfg_cost_per
+    return build_cost_per_unit, mfg_plans
 
 
 def offer_economics_for_queryset(
@@ -453,7 +490,7 @@ def offer_economics_for_queryset(
         ).values_list("id", "name")
     }
 
-    build_costs, mfg_cost_per = _amamake_manufacturing_costs(
+    build_costs, mfg_plans = _amamake_manufacturing_costs(
         product_type_ids, blueprint_batch_sizes
     )
 
@@ -475,14 +512,20 @@ def offer_economics_for_queryset(
 
         runs = max(offer.quantity, 1)
         product_type_id = bpc_to_product.get(type_id)
+        build_plan: Optional[ItemPlanCost] = None
         if product_type_id is not None:
             kind = "blueprint"
             market_type_id = product_type_id
             build_cost = build_costs.get(product_type_id)
-            # Amamake manufacturing (excl. navy BPC LP) × offer quantity.
-            # BPC LP/ISK remain in the conversion formula via lp_cost/isk_cost.
-            mfg_per = mfg_cost_per.get((product_type_id, runs))
-            build_other = None if mfg_per is None else int(mfg_per) * runs
+            build_plan = mfg_plans.get((product_type_id, runs))
+            if build_plan is not None:
+                build_other = (
+                    int(build_plan.materials_jita_sell_isk)
+                    + int(build_plan.total_job_costs_isk)
+                    + int(build_plan.taxes_isk)
+                )
+            else:
+                build_other = None
         else:
             kind = "input"
             market_type_id = type_id
@@ -510,27 +553,71 @@ def offer_economics_for_queryset(
             if jita_sell is not None and cost_per_unit is not None
             else None
         )
-        conv_sell = _conversion_isk_per_lp(
-            market_price=jita_sell,
-            offer_qty=runs,
-            isk_cost=offer.isk_cost,
-            other_cost=other_cost,
-            lp_cost=offer.lp_cost,
+
+        required_isk = 0 if lp_store_other is None else int(lp_store_other)
+        # When required items are unpriced, skip net conversion.
+        can_convert = lp_store_other is not None and (
+            product_type_id is None or build_plan is not None
         )
-        conv_buy = _conversion_isk_per_lp(
-            market_price=jita_buy,
-            offer_qty=runs,
-            isk_cost=offer.isk_cost,
-            other_cost=other_cost,
-            lp_cost=offer.lp_cost,
-        )
-        conv_avg_7d = _conversion_isk_per_lp(
-            market_price=jita_avg_7d,
-            offer_qty=runs,
-            isk_cost=offer.isk_cost,
-            other_cost=other_cost,
-            lp_cost=offer.lp_cost,
-        )
+
+        if can_convert:
+            conv_sell = (
+                None
+                if jita_sell is None
+                else plan_lp_offer_conversion(
+                    lp_cost=offer.lp_cost,
+                    isk_cost=offer.isk_cost,
+                    quantity=runs,
+                    market_price_isk=jita_sell,
+                    required_items_isk=required_isk,
+                    build_plan=build_plan,
+                    market_side="sell",
+                ).net_isk_per_lp
+            )
+            conv_buy = (
+                None
+                if jita_buy is None
+                else plan_lp_offer_conversion(
+                    lp_cost=offer.lp_cost,
+                    isk_cost=offer.isk_cost,
+                    quantity=runs,
+                    market_price_isk=jita_buy,
+                    required_items_isk=required_isk,
+                    build_plan=build_plan,
+                    market_side="buy",
+                ).net_isk_per_lp
+            )
+            conv_avg_7d = (
+                None
+                if jita_avg_7d is None
+                else plan_lp_offer_conversion(
+                    lp_cost=offer.lp_cost,
+                    isk_cost=offer.isk_cost,
+                    quantity=runs,
+                    market_price_isk=jita_avg_7d,
+                    required_items_isk=required_isk,
+                    build_plan=build_plan,
+                    market_side="avg_7d",
+                ).net_isk_per_lp
+            )
+            sample = plan_lp_offer_conversion(
+                lp_cost=offer.lp_cost,
+                isk_cost=offer.isk_cost,
+                quantity=runs,
+                market_price_isk=None,
+                required_items_isk=required_isk,
+                build_plan=build_plan,
+                market_side="sell",
+            )
+            input_cost_isk = sample.input_isk
+            input_freight_isk = sample.input_freight.isk
+        else:
+            conv_sell = None
+            conv_buy = None
+            conv_avg_7d = None
+            input_cost_isk = None
+            input_freight_isk = None
+
         vols = volume_windows.get(market_type_id) or {}
 
         out[offer.pk] = LpStoreOfferEconomics(
@@ -547,6 +634,8 @@ def offer_economics_for_queryset(
             quantity=offer.quantity,
             required_items_summary=", ".join(req_parts) if req_parts else "",
             other_cost=other_cost,
+            input_cost_isk=input_cost_isk,
+            input_freight_isk=input_freight_isk,
             acquisition_isk_per_unit=acquisition,
             market_type_id=market_type_id,
             market_type_name=type_names.get(

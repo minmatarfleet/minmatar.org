@@ -116,6 +116,8 @@ class LoyaltyOfferResponse(Schema):
     quantity: int
     required_items_summary: str
     other_cost: Optional[int] = None
+    input_cost_isk: Optional[int] = None
+    input_freight_isk: Optional[int] = None
     jita_sell: Optional[int] = None
     jita_buy: Optional[int] = None
     jita_avg_7d: Optional[int] = None

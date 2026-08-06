@@ -23,6 +23,11 @@ TLIB_CORP_ID = 1000182
 HULL_TYPE_ID = 17740
 JITA_REGION_ID = 10000002
 
+_AMAMAKE_PATCH = patch(
+    "industry.helpers.lp_store_economics._amamake_manufacturing_costs",
+    return_value=({}, {}),
+)
+
 
 class LpStoreOfferEconomicsRebuildTestCase(TestCase):
     def setUp(self):
@@ -77,12 +82,7 @@ class LpStoreOfferEconomicsRebuildTestCase(TestCase):
         )
 
     def test_rebuild_writes_snapshot_rows(self):
-        with patch(
-            "industry.helpers.lp_store_economics.plan_product_unit_cost",
-            return_value=type(
-                "U", (), {"cost_per": None, "manufacturing_cost_per": None}
-            )(),
-        ):
+        with _AMAMAKE_PATCH:
             count = rebuild_lp_store_offer_economics()
         self.assertEqual(count, 1)
         row = IndustryLpStoreOfferEconomics.objects.get(offer=self.offer)
@@ -121,12 +121,7 @@ class LpStoreOfferEconomicsRebuildTestCase(TestCase):
             isk_cost=0,
             quantity=1,
         )
-        with patch(
-            "industry.helpers.lp_store_economics.plan_product_unit_cost",
-            return_value=type(
-                "U", (), {"cost_per": None, "manufacturing_cost_per": None}
-            )(),
-        ):
+        with _AMAMAKE_PATCH:
             rebuild_lp_store_offer_economics()
         row = IndustryLpStoreOfferEconomics.objects.get(offer=skin_offer)
         self.assertTrue(row.involves_skin)
@@ -134,12 +129,7 @@ class LpStoreOfferEconomicsRebuildTestCase(TestCase):
         self.assertFalse(hull_row.involves_skin)
 
     def test_rebuild_replaces_previous_rows(self):
-        with patch(
-            "industry.helpers.lp_store_economics.plan_product_unit_cost",
-            return_value=type(
-                "U", (), {"cost_per": None, "manufacturing_cost_per": None}
-            )(),
-        ):
+        with _AMAMAKE_PATCH:
             rebuild_lp_store_offer_economics()
             IndustryLpStoreOffer.objects.create(
                 offer_id=3002,

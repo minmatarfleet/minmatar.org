@@ -16,9 +16,11 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro'
                 padding_block="var(--space-m)"
                 padding_inline="var(--space-m)"
             >
-                <div class="[ skel skel-label ]"></div>
+                <div class="[ loyalty-offers-metrics-skeleton__header ]">
+                    <div class="[ skel skel-label ]"></div>
+                    <div class="[ skel skel-info ]"></div>
+                </div>
                 <div class="[ skel skel-value ]"></div>
-                <div class="[ skel skel-meta ]"></div>
             </ComponentBlock>
         ))}
     </Grid>
@@ -33,6 +35,13 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro'
         box-sizing: border-box;
     }
 
+    .loyalty-offers-metrics-skeleton__header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: var(--space-2xs);
+    }
+
     .loyalty-offers-metrics-skeleton .skel {
         border-radius: 2px;
         background: color-mix(in srgb, var(--component-background) 70%, var(--foreground));
@@ -44,15 +53,17 @@ import ComponentBlock from '@components/blocks/ComponentBlock.astro'
         height: 0.75rem;
     }
 
+    .skel-info {
+        width: var(--space-s);
+        height: var(--space-s);
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
     .skel-value {
         width: 5rem;
         height: clamp(2rem, 4.5vw, 3rem);
         max-width: 70%;
-    }
-
-    .skel-meta {
-        width: 9rem;
-        height: 0.75rem;
     }
 
     @keyframes loyalty-offers-metrics-skel {
