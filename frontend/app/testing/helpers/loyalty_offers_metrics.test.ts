@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { LoyaltyOffer } from '@dtypes/api.minmatar.org'
 import {
+    STABLE_WEEKLY_CAPTURE_SHARE,
     compute_loyalty_offers_metrics,
     offer_is_low_weekly_lp_volume,
     offer_lp_for_volume,
@@ -91,8 +92,9 @@ describe('compute_loyalty_offers_metrics', () => {
         )
         // weights 10k and 30k LP → (1000*10k + 500*30k) / 40k = 625
         expect(metrics.average_isk_per_lp).toBe(625)
-        expect(metrics.weekly_lp_volume).toBe(40_000)
-        expect(metrics.monthly_lp_volume).toBe(80_000)
+        expect(metrics.weekly_total_volume).toBe(40_000)
+        expect(metrics.weekly_stable_volume)
+            .toBe(40_000 * STABLE_WEEKLY_CAPTURE_SHARE)
     })
 
     it('returns null average when no volume weight exists', () => {
@@ -101,7 +103,7 @@ describe('compute_loyalty_offers_metrics', () => {
             'sell',
         )
         expect(metrics.average_isk_per_lp).toBeNull()
-        expect(metrics.weekly_lp_volume).toBe(0)
-        expect(metrics.monthly_lp_volume).toBe(0)
+        expect(metrics.weekly_total_volume).toBe(0)
+        expect(metrics.weekly_stable_volume).toBe(0)
     })
 })

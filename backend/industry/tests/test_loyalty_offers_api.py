@@ -127,10 +127,8 @@ class LoyaltyOffersApiTestCase(AppTestCase):
             quantity=2,
         )
         with patch(
-            "industry.helpers.lp_store_economics.plan_product_unit_cost",
-            return_value=type(
-                "U", (), {"cost_per": None, "manufacturing_cost_per": None}
-            )(),
+            "industry.helpers.lp_store_economics._amamake_manufacturing_costs",
+            return_value=({}, {}),
         ):
             rebuild_lp_store_offer_economics()
 

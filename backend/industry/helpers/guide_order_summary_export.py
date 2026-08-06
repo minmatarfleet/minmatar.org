@@ -14,23 +14,15 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 from django.conf import settings
 from eveuniverse.models import EveType
 
-from industry.helpers.blueprint_efficiency import (
-    default_blueprint_me_te_percent,
-    is_faction_navy_hull,
-)
-from industry.helpers.build_planner import plan_build
-from industry.helpers.compressed_ore import build_compressed_ore_plan
-from industry.helpers.cost_breakdown import (
-    build_plan_cost_breakdown,
-    jita_sell_prices_by_type_id,
-)
-from industry.helpers.facility_profiles import get_facility_reprocessing_tax
+from industry.helpers.cost_breakdown import jita_sell_prices_by_type_id
 from industry.helpers.loyalty_store import (
     get_offer_for_blueprint_type,
-    navy_bpc_cost_for_plan,
     resolve_isk_per_lp,
 )
-from industry.helpers.reprocessing_skills import resolve_refine_rate
+from industry.helpers.plan_costing import (
+    PlanCostOptions,
+    plan_item_cost,
+)
 from industry.helpers.type_breakdown import get_blueprint_or_reaction_type_id
 
 ORDER_QTY = 100
@@ -298,85 +290,6 @@ def _isk_per_lp_for_faction(
     return float(lp_rates.get(faction, 1000.0))
 
 
-def _plan_product(
-    product_type_id: int,
-    *,
-    quantity: int,
-    facility: str,
-) -> Any:
-    eve_type = EveType.objects.filter(id=product_type_id).first()
-    if eve_type is None:
-        raise ValueError(f"Unknown product_type_id {product_type_id}")
-    me_pct, te_pct = default_blueprint_me_te_percent(eve_type)
-    return plan_build(
-        eve_type,
-        quantity=quantity,
-        blueprint_me=me_pct / 100.0,
-        blueprint_te=te_pct / 100.0,
-        facility=facility,
-    )
-
-
-def _compressed_cost(
-    plan,
-    *,
-    facility: str,
-    navy_bpc_isk: int,
-) -> int:
-    refine = resolve_refine_rate(
-        facility,
-        character=None,
-        use_reprocessing_implants=False,
-    )[0]
-    materials = {name: qty for _, (name, qty) in plan.leaf_materials.items()}
-    ore_plan = build_compressed_ore_plan(
-        materials,
-        refine_rate=refine,
-        reprocessing_tax=get_facility_reprocessing_tax(facility),
-    )
-    breakdown = build_plan_cost_breakdown(
-        plan,
-        compressed_ore=ore_plan,
-        navy_bpc_isk=navy_bpc_isk,
-    )
-    return int(breakdown.grand_total_isk)
-
-
-def _navy_bpc_isk(
-    *,
-    product_type_id: int,
-    bpc_type_id: Optional[int],
-    quantity: int,
-    isk_per_lp: Optional[float],
-) -> Tuple[int, Optional[float], Optional[int]]:
-    """Return (navy_bpc_isk, effective_isk_per_lp, corporation_id)."""
-    if isk_per_lp is None or float(isk_per_lp) <= 0:
-        return 0, None, None
-
-    blueprint_type_id = bpc_type_id
-    if blueprint_type_id is None:
-        eve_type = EveType.objects.filter(id=product_type_id).first()
-        if eve_type is None or not is_faction_navy_hull(eve_type):
-            return 0, None, None
-        blueprint_type_id = get_blueprint_or_reaction_type_id(eve_type)
-
-    if blueprint_type_id is None:
-        return 0, None, None
-
-    offer = get_offer_for_blueprint_type(int(blueprint_type_id))
-    corp_id = offer.corporation_id if offer is not None else None
-    rate = resolve_isk_per_lp(requested=isk_per_lp, corporation_id=corp_id)
-    if rate is None:
-        return 0, None, corp_id
-
-    cost = navy_bpc_cost_for_plan(
-        int(blueprint_type_id), quantity, float(rate)
-    )
-    if cost is None:
-        return 0, float(rate), corp_id
-    return int(cost.total_isk), float(rate), corp_id
-
-
 def _resolve_requested_isk_per_lp(
     candidate: Dict[str, Any],
     *,
@@ -419,8 +332,6 @@ def compute_row(
 ) -> GuideOrderRow:
     rates = lp_rates or DEFAULT_LP_RATES
     type_id = int(candidate["type_id"])
-    bom_type_id = int(candidate.get("bom_proxy_type_id") or type_id)
-    bpc_type_id = candidate.get("bpc_type_id")
     faction = candidate["faction"]
 
     requested_lp = _resolve_requested_isk_per_lp(
@@ -428,19 +339,27 @@ def compute_row(
         lp_rates=rates,
         use_production_lp=use_production_lp,
     )
-    navy_isk, effective_lp = _navy_bpc_isk(
-        product_type_id=type_id,
-        bpc_type_id=int(bpc_type_id) if bpc_type_id else None,
-        quantity=1,
-        isk_per_lp=requested_lp,
-    )[:2]
-
-    plan = _plan_product(bom_type_id, quantity=1, facility=facility)
-    cost_per = _compressed_cost(plan, facility=facility, navy_bpc_isk=navy_isk)
-
-    prices = sell_prices or jita_sell_prices_by_type_id([type_id])
-    jita_sell = int(prices.get(type_id) or 0)
-    profit_per = jita_sell - cost_per
+    # Cost via unified plan_item_cost (alliance freight, qty=1).
+    # Snapshot LP rates: pass isk_per_lp when not using production defaults.
+    item = plan_item_cost(
+        type_id,
+        PlanCostOptions.planner_defaults(
+            facility=facility,
+            quantity=1,
+            compressed=True,
+            isk_per_lp=requested_lp,
+            use_production_lp=use_production_lp,
+            include_navy_bpc=True,
+            include_line_items=False,
+        ),
+        sell_prices=sell_prices,
+    )
+    # When bom_proxy is set (Talwar FI), plan_item_cost already applies
+    # bom_and_bpc_overrides for that type_id.
+    cost_per = item.cost_per_isk
+    effective_lp = item.isk_per_lp
+    jita_sell = item.jita_sell_isk
+    profit_per = item.profit_per_isk
     order_profit = profit_per * quantity
 
     return GuideOrderRow(
@@ -453,7 +372,7 @@ def compute_row(
         jita_sell=jita_sell,
         profit_per=profit_per,
         order_profit=order_profit,
-        note=candidate.get("note"),
+        note=candidate.get("note") or item.note,
     )
 
 

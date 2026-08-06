@@ -15,9 +15,6 @@ interface Props {
 
 const { metrics } = Astro.props
 
-const filters_applied = t('industry.loyalty.offers.metrics.filters_applied')
-const avg_meta = `${t('industry.loyalty.offers.metrics.avg_isk_lp_meta')} · ${filters_applied}`
-
 const avg_display = metrics.average_isk_per_lp != null
     ? metrics.average_isk_per_lp.toLocaleString('en-US', {
         minimumFractionDigits: 1,
@@ -31,13 +28,45 @@ function lp_display(value: number): string {
     return format_number(value, 1)
 }
 
-function lp_tippy(value: number): string | undefined {
-    if (value <= 0)
-        return undefined
-    const compact = number_name(value, lang)
-    const exact = `${number_thousand_separator(value)} LP`
-    return compact ? `${compact} (${exact})` : exact
+function lp_exact(value: number): string {
+    return t('industry.loyalty.offers.metrics.lp_exact').replace(
+        '{lp}',
+        number_thousand_separator(Math.round(value)),
+    )
 }
+
+function volume_info(base: string, value: number): string {
+    const compact = number_name(value, lang)
+    const exact = lp_exact(value)
+    const amount = compact ? `${compact} (${exact})` : exact
+    return `${base} ${amount}`
+}
+
+const cards = [
+    {
+        label: t('industry.loyalty.offers.metrics.avg_isk_lp'),
+        value: avg_display,
+        info: t('industry.loyalty.offers.metrics.avg_isk_lp_info'),
+    },
+    {
+        label: t('industry.loyalty.offers.metrics.weekly_stable'),
+        value: lp_display(metrics.weekly_stable_volume),
+        info: volume_info(
+            t('industry.loyalty.offers.metrics.weekly_stable_info'),
+            metrics.weekly_stable_volume,
+        ),
+    },
+    {
+        label: t('industry.loyalty.offers.metrics.weekly_total'),
+        value: lp_display(metrics.weekly_total_volume),
+        info: volume_info(
+            t('industry.loyalty.offers.metrics.weekly_total_info'),
+            metrics.weekly_total_volume,
+        ),
+    },
+]
+
+const info_aria = t('industry.loyalty.offers.metrics.info_aria')
 ---
 
 <section
@@ -50,47 +79,26 @@ function lp_tippy(value: number): string | undefined {
         row_gap="var(--space-s)"
         column_gap="var(--space-s)"
     >
-        <ComponentBlock
-            class="[ loyalty-offers-metrics__card ]"
-            padding_block="var(--space-m)"
-            padding_inline="var(--space-m)"
-        >
-            <p class="[ loyalty-offers-metrics__label ]">
-                {t('industry.loyalty.offers.metrics.avg_isk_lp')}
-            </p>
-            <p class="[ loyalty-offers-metrics__value ]">{avg_display}</p>
-            <p class="[ loyalty-offers-metrics__meta ]">{avg_meta}</p>
-        </ComponentBlock>
-
-        <ComponentBlock
-            class="[ loyalty-offers-metrics__card ]"
-            padding_block="var(--space-m)"
-            padding_inline="var(--space-m)"
-        >
-            <p class="[ loyalty-offers-metrics__label ]">
-                {t('industry.loyalty.offers.metrics.weekly_lp')}
-            </p>
-            <p
-                class="[ loyalty-offers-metrics__value ]"
-                data-tippy-content={lp_tippy(metrics.weekly_lp_volume)}
-            >{lp_display(metrics.weekly_lp_volume)}</p>
-            <p class="[ loyalty-offers-metrics__meta ]">{filters_applied}</p>
-        </ComponentBlock>
-
-        <ComponentBlock
-            class="[ loyalty-offers-metrics__card ]"
-            padding_block="var(--space-m)"
-            padding_inline="var(--space-m)"
-        >
-            <p class="[ loyalty-offers-metrics__label ]">
-                {t('industry.loyalty.offers.metrics.monthly_lp')}
-            </p>
-            <p
-                class="[ loyalty-offers-metrics__value ]"
-                data-tippy-content={lp_tippy(metrics.monthly_lp_volume)}
-            >{lp_display(metrics.monthly_lp_volume)}</p>
-            <p class="[ loyalty-offers-metrics__meta ]">{filters_applied}</p>
-        </ComponentBlock>
+        {cards.map((card) => (
+            <ComponentBlock
+                class="[ loyalty-offers-metrics__card ]"
+                padding_block="var(--space-m)"
+                padding_inline="var(--space-m)"
+            >
+                <div class="[ loyalty-offers-metrics__header ]">
+                    <p class="[ loyalty-offers-metrics__label ]">{card.label}</p>
+                    <button
+                        type="button"
+                        class="[ loyalty-offers-metrics__info ]"
+                        data-tippy-content={card.info}
+                        aria-label={info_aria}
+                    >
+                        <span aria-hidden="true">i</span>
+                    </button>
+                </div>
+                <p class="[ loyalty-offers-metrics__value ]">{card.value}</p>
+            </ComponentBlock>
+        ))}
     </Grid>
 </section>
 
@@ -101,6 +109,14 @@ function lp_tippy(value: number): string | undefined {
         gap: var(--space-3xs);
         height: 100%;
         box-sizing: border-box;
+        position: relative;
+    }
+
+    .loyalty-offers-metrics__header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: var(--space-2xs);
     }
 
     .loyalty-offers-metrics__label {
@@ -111,6 +127,37 @@ function lp_tippy(value: number): string | undefined {
         color: var(--fleet-yellow);
     }
 
+    .loyalty-offers-metrics__info {
+        flex-shrink: 0;
+        display: inline-grid;
+        place-items: center;
+        width: var(--space-s);
+        height: var(--space-s);
+        margin: 0;
+        padding: 0;
+        border: 1px solid color-mix(in srgb, var(--faded) 70%, transparent);
+        border-radius: 50%;
+        background: transparent;
+        color: var(--faded);
+        font-family: var(--default-font);
+        font-size: var(--step--2);
+        font-weight: 600;
+        line-height: 1;
+        text-transform: lowercase;
+        cursor: help;
+
+        &:hover,
+        &:focus-visible {
+            color: var(--highlight);
+            border-color: var(--highlight);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--highlight);
+            outline-offset: 2px;
+        }
+    }
+
     .loyalty-offers-metrics__value {
         margin: 0;
         font-family: var(--heading-font);
@@ -119,16 +166,5 @@ function lp_tippy(value: number): string | undefined {
         letter-spacing: -0.02em;
         text-transform: uppercase;
         color: var(--highlight);
-
-        &[data-tippy-content] {
-            cursor: help;
-            width: fit-content;
-        }
-    }
-
-    .loyalty-offers-metrics__meta {
-        margin: 0;
-        color: var(--faded);
-        font-size: var(--step--1);
     }
 </style>

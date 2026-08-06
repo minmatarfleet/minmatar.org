@@ -146,6 +146,8 @@ def offer_economics_row_response(
         quantity=int(row.quantity),
         required_items_summary=row.required_items_summary or "",
         other_cost=row.other_cost,
+        input_cost_isk=row.input_cost_isk,
+        input_freight_isk=row.input_freight_isk,
         jita_sell=row.jita_sell,
         jita_buy=row.jita_buy,
         jita_avg_7d=row.jita_avg_7d,

@@ -407,6 +407,16 @@ class IndustryLpStoreOfferEconomics(models.Model):
         max_length=512, blank=True, default=""
     )
     other_cost = models.BigIntegerField(null=True, blank=True)
+    input_cost_isk = models.BigIntegerField(
+        null=True,
+        blank=True,
+        help_text="ISK cost + required items + Amamake mfg (no alliance freight).",
+    )
+    input_freight_isk = models.BigIntegerField(
+        null=True,
+        blank=True,
+        help_text="Red Frog value freight on required items + materials.",
+    )
     jita_sell = models.BigIntegerField(null=True, blank=True)
     jita_buy = models.BigIntegerField(null=True, blank=True)
     jita_avg_7d = models.BigIntegerField(null=True, blank=True)

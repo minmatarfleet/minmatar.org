@@ -15,11 +15,13 @@ In this guide, we are going to go over two ways to convert your loyalty points t
 
 Both styles are valid, so we'll let you make the decision.
 
-The loyalty point store allows you to convert loyalty points into items that you can sell on the market. The formula is easy:
+The loyalty point store allows you to convert loyalty points into items that you can sell on the market. Our net formula (after sales tax and freight) is:
 
 ```text
-ISK/LP ≈ (market price × quantity − ISK cost − other cost) / LP cost
+ISK/LP ≈ (market × qty − sales tax − ISK cost − other cost − input freight − output freight) / LP cost
 ```
+
+Sales tax is 3.37%. Freight is Red Frog style at 45M ISK per 1.5B cargo (3%) on Jita ↔ Amo for both inbound inputs and outbound sales.
 
 The best way to understand this is to look at an online tool. [Fuzzwork’s LP store](https://www.fuzzwork.co.uk/lpstore/buy/10000002/1000182/withblueprints) is the classic external table. We prefer [our tool](/industry/loyalty/offers/) for the same information, because it's much more accessible to new players.
 

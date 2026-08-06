@@ -28,6 +28,7 @@ from industry.helpers.lp_store_economics import (
     offer_type_ids_with_viable_forge_volume,
     tracked_corporation_ids,
 )
+from industry.helpers.plan_costing import ItemPlanCost
 from industry.helpers.lp_store_useless import (
     USELESS_BELOW_MEDIAN_RATIO,
     USELESS_MAX_RELATIVE_SPREAD,
@@ -59,6 +60,40 @@ BPC_TYPE_ID = 32312
 INPUT_TYPE_ID = 42424
 REQ_TYPE_ID = 42425
 JITA_REGION_ID = 10000002
+
+
+def _fake_mfg_plan(
+    *,
+    materials_isk: int = 40_000_000,
+    jobs_isk: int = 5_000_000,
+    taxes_isk: int = 5_000_000,
+    quantity: int = 1,
+) -> ItemPlanCost:
+    mfg = materials_isk + jobs_isk + taxes_isk
+    return ItemPlanCost(
+        type_id=HULL_TYPE_ID,
+        name="Republic Fleet Firetail",
+        kind="Navy",
+        output_quantity=quantity,
+        materials_jita_sell_isk=materials_isk,
+        total_job_costs_isk=jobs_isk,
+        taxes_isk=taxes_isk,
+        manufacturing_isk=mfg,
+        manufacturing_cost_per_isk=int(round(mfg / quantity)),
+        cost_per_isk=180_000_000,
+    )
+
+
+def _amamake_mock_return(batch_sizes=(1,)):
+    plans = {}
+    for batch in batch_sizes:
+        plans[(HULL_TYPE_ID, batch)] = _fake_mfg_plan(
+            materials_isk=40_000_000 * batch,
+            jobs_isk=5_000_000 * batch,
+            taxes_isk=5_000_000 * batch,
+            quantity=batch,
+        )
+    return {HULL_TYPE_ID: 180_000_000}, plans
 
 
 class LpStoreEconomicsHelperTestCase(TestCase):
@@ -222,15 +257,8 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         self.assertEqual(mapping[BPC_TYPE_ID], HULL_TYPE_ID)
 
     @patch(
-        "industry.helpers.lp_store_economics.plan_product_unit_cost",
-        return_value=type(
-            "U",
-            (),
-            {
-                "cost_per": 180_000_000,
-                "manufacturing_cost_per": 50_000_000,
-            },
-        )(),
+        "industry.helpers.lp_store_economics._amamake_manufacturing_costs",
+        return_value=_amamake_mock_return(),
     )
     def test_blueprint_row_uses_hull_market_and_build_cost(self, mock_plan):
         offer = IndustryLpStoreOffer.objects.get(offer_id=1001)
@@ -247,24 +275,19 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         self.assertEqual(econ.profit_vs_sell, 150_000_000)
         self.assertEqual(econ.isk_per_lp, 800.0)
         self.assertEqual(econ.acquisition_isk_per_unit, 100_000_000)
-        # Other cost = Amamake manufacturing (excl. navy BPC LP).
+        # Other cost = Amamake manufacturing (excl. navy BPC LP, no alliance freight).
         self.assertEqual(econ.other_cost, 50_000_000)
-        # (250M - 20M - 50M) / 100k LP = 1800
-        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 1800.0)
-        self.assertAlmostEqual(econ.conversion_isk_per_lp_buy, 1800.0)
+        self.assertEqual(econ.input_cost_isk, 70_000_000)
+        self.assertEqual(econ.input_freight_isk, 1_200_000)
+        # Net after 3.37% tax + Red Frog in/out freight.
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 1628.75)
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_buy, 1628.75)
         self.assertEqual(econ.jita_avg_7d, 250_000_000)
-        self.assertAlmostEqual(econ.conversion_isk_per_lp_avg_7d, 1800.0)
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_avg_7d, 1628.75)
 
     @patch(
-        "industry.helpers.lp_store_economics.plan_product_unit_cost",
-        return_value=type(
-            "U",
-            (),
-            {
-                "cost_per": 180_000_000,
-                "manufacturing_cost_per": 50_000_000,
-            },
-        )(),
+        "industry.helpers.lp_store_economics._amamake_manufacturing_costs",
+        return_value=_amamake_mock_return(),
     )
     def test_blueprint_offers_differ_by_acquisition(self, mock_plan):
         """Same hull BPC with different LP/ISK → different Cost/Profit."""
@@ -296,9 +319,7 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         self.assertEqual(cheap_econ.profit_vs_sell, 218_000_000)
         self.assertEqual(dear_econ.profit_vs_sell, 208_000_000)
         self.assertNotEqual(cheap_econ.cost_per_unit, dear_econ.cost_per_unit)
-        # Conversion subtracts Amamake mfg (50M); acquisition does not.
-        # cheap: (250M - 0 - 50M) / 40k = 5000
-        self.assertAlmostEqual(cheap_econ.conversion_isk_per_lp_sell, 5000.0)
+        self.assertAlmostEqual(cheap_econ.conversion_isk_per_lp_sell, 4571.875)
         self.assertEqual(cheap_econ.other_cost, 50_000_000)
 
     def test_blueprint_pack_multiplies_amamake_mfg_in_other_cost(self):
@@ -312,21 +333,13 @@ class LpStoreEconomicsHelperTestCase(TestCase):
             quantity=10,
         )
         with patch(
-            "industry.helpers.lp_store_economics.plan_product_unit_cost",
-            return_value=type(
-                "U",
-                (),
-                {
-                    "cost_per": 180_000_000,
-                    "manufacturing_cost_per": 50_000_000,
-                },
-            )(),
+            "industry.helpers.lp_store_economics._amamake_manufacturing_costs",
+            return_value=_amamake_mock_return(batch_sizes=(1, 10)),
         ):
             econ = offer_economics_for_queryset([pack])[pack.pk]
         # 10 runs × 50M Amamake mfg / hull
         self.assertEqual(econ.other_cost, 500_000_000)
-        # (250M * 10 - 100M - 500M) / 100k = 19000
-        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 19000.0)
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 17287.5)
         # Acquisition ignores build: (100k*800 + 100M) / 10 = 18M
         self.assertEqual(econ.acquisition_isk_per_unit, 18_000_000)
 
@@ -415,8 +428,10 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         self.assertEqual(econ.acquisition_isk_per_unit, 1_300_000)
         self.assertEqual(econ.cost_per_unit, 1_300_000)
         self.assertEqual(econ.profit_vs_sell, 200_000)
-        # (1.5M - 0.5M) / 1000 = 1000
-        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 1000.0)
+        # Net after tax + Red Frog output freight (no input freight).
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 904.45)
+        self.assertEqual(econ.input_cost_isk, 500_000)
+        self.assertEqual(econ.input_freight_isk, 0)
 
     def test_required_items_add_other_cost_to_conversion(self):
         offer = IndustryLpStoreOffer.objects.get(offer_id=1004)
@@ -430,8 +445,7 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         econ = rows[offer.pk]
         self.assertEqual(econ.other_cost, 500_000)  # 2 * 250k
         self.assertIn("LP Required Tag x2", econ.required_items_summary)
-        # (1.5M - 100k - 500k) / 2000 = 450
-        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 450.0)
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 394.725)
         # acquisition: (2000*800 + 100k + 500k) / 1 = 2.2M
         self.assertEqual(econ.acquisition_isk_per_unit, 2_200_000)
 
@@ -448,9 +462,8 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         econ = rows[offer.pk]
         self.assertEqual(econ.jita_sell, 2_000_000)
         self.assertEqual(econ.jita_buy, 1_000_000)
-        # sell: (2M - 0.5M) / 1000 = 1500; buy: (1M - 0.5M) / 1000 = 500
-        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 1500.0)
-        self.assertAlmostEqual(econ.conversion_isk_per_lp_buy, 500.0)
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 1372.6)
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_buy, 436.3)
 
     def test_untracked_corp_offer_still_computes_but_admin_filters(self):
         offer = IndustryLpStoreOffer.objects.get(offer_id=1003)
@@ -473,19 +486,19 @@ class LpStoreEconomicsHelperTestCase(TestCase):
     def test_offer_is_below_set_lp_price_vs_buyback(self):
         """Null or conversion < default_isk_per_lp is below set; equal is not."""
         offer = IndustryLpStoreOffer.objects.get(offer_id=1002)
-        # History average 1.5M, isk 500k, lp 1000 → conversion 1000; buyback 800.
+        # History average 1.5M → net ~904.45; buyback 800.
         econ = offer_economics_for_queryset([offer])[offer.pk]
-        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 1000.0)
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 904.45)
         self.assertEqual(econ.isk_per_lp, 800.0)
         self.assertFalse(offer_is_below_set_lp_price(econ))
 
-        # Force below via high ISK cost: (1.5M - 1.4M) / 1000 = 100 < 800.
+        # Force below via high ISK cost → net 100.
         below = IndustryLpStoreOffer.objects.create(
             offer_id=1050,
             corporation_id=TLIB_CORP_ID,
             type_id=INPUT_TYPE_ID,
             lp_cost=1_000,
-            isk_cost=1_400_000,
+            isk_cost=1_304_450,
             quantity=1,
         )
         below_econ = offer_economics_for_queryset([below])[below.pk]
@@ -498,7 +511,7 @@ class LpStoreEconomicsHelperTestCase(TestCase):
             corporation_id=TLIB_CORP_ID,
             type_id=INPUT_TYPE_ID,
             lp_cost=1_000,
-            isk_cost=700_000,  # (1.5M - 0.7M) / 1000 = 800
+            isk_cost=604_450,
             quantity=1,
         )
         equal_econ = offer_economics_for_queryset([equal])[equal.pk]
@@ -548,6 +561,8 @@ def _econ(**overrides) -> LpStoreOfferEconomics:
         "quantity": 1,
         "required_items_summary": "",
         "other_cost": 0,
+        "input_cost_isk": 0,
+        "input_freight_isk": 0,
         "acquisition_isk_per_unit": 800_000,
         "market_type_id": INPUT_TYPE_ID,
         "market_type_name": "Test Offer",

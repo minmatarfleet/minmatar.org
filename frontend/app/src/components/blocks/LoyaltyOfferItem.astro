@@ -5,9 +5,15 @@ const { t } = i18n(Astro.url)
 import type { LoyaltyOffer } from '@dtypes/api.minmatar.org'
 import {
     conversion_for_side,
+    market_price_for_side,
     offer_is_low_weekly_lp_volume,
     offer_lp_for_volume,
 } from '@helpers/loyalty_offers_metrics'
+import {
+    format_isk_per_lp_rate,
+    loyalty_conversion_breakdown,
+    loyalty_conversion_tip_lines,
+} from '@helpers/loyalty_conversion_breakdown'
 import { number_thousand_separator } from '@helpers/numbers'
 
 import Tag from '@components/blocks/Tag.astro'
@@ -26,15 +32,6 @@ function format_int(value: number | null | undefined): string {
     return number_thousand_separator(value)
 }
 
-function format_rate(value: number | null | undefined): string {
-    if (value == null)
-        return '—'
-    return value.toLocaleString('en-US', {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1,
-    })
-}
-
 function volume_lp_tooltip(volume: number | null | undefined): string | undefined {
     if (volume == null)
         return undefined
@@ -44,10 +41,90 @@ function volume_lp_tooltip(volume: number | null | undefined): string | undefine
     )
 }
 
+function escape_html(value: string): string {
+    return value
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+}
+
+function parse_required_item_line(part: string): string {
+    const trimmed = part.trim()
+    if (!trimmed)
+        return ''
+    const match = trimmed.match(/^(.*)\s+x(\d+)\s*$/i)
+    if (!match)
+        return escape_html(trimmed)
+    const name = match[1].trim()
+    const qty = Number.parseInt(match[2], 10)
+    return escape_html(
+        t('industry.loyalty.offers.other_cost_tip.item')
+            .replace('{name}', name)
+            .replace('{qty}', number_thousand_separator(qty)),
+    )
+}
+
 const is_blueprint = offer.kind === 'blueprint'
+
+function other_cost_tooltip(): string {
+    const summary = (offer.required_items_summary || '').trim()
+    const lines: string[] = []
+    const has_other = offer.other_cost != null && offer.other_cost > 0
+
+    if (summary) {
+        lines.push(escape_html(t('industry.loyalty.offers.other_cost_tip.required')))
+        for (const part of summary.split(',')) {
+            const line = parse_required_item_line(part)
+            if (line)
+                lines.push(line)
+        }
+    }
+
+    if (is_blueprint && has_other) {
+        lines.push(escape_html(t('industry.loyalty.offers.other_cost_tip.manufacturing')))
+    }
+
+    if (!lines.length && !has_other) {
+        return escape_html(t('industry.loyalty.offers.other_cost_tip.empty'))
+    }
+
+    if (offer.other_cost != null) {
+        lines.push(
+            escape_html(
+                t('industry.loyalty.offers.other_cost_tip.total').replace(
+                    '{value}',
+                    number_thousand_separator(offer.other_cost),
+                ),
+            ),
+        )
+    }
+
+    return lines.join('<br>')
+}
+
 const icon_type = is_blueprint ? 'bp' : 'icon'
 const conversion = conversion_for_side(offer, side)
 const is_low_volume = offer_is_low_weekly_lp_volume(offer)
+const other_cost_tippy = other_cost_tooltip()
+const breakdown = loyalty_conversion_breakdown({
+    lp_cost: offer.lp_cost,
+    quantity: offer.quantity,
+    market_price: market_price_for_side(offer, side),
+    input_cost_isk: offer.input_cost_isk,
+    input_freight_isk: offer.input_freight_isk,
+    isk_cost: offer.isk_cost,
+    other_cost: offer.other_cost,
+    net_isk_per_lp: conversion,
+})
+const conversion_tippy = loyalty_conversion_tip_lines(breakdown, {
+    finished_goods: t('industry.loyalty.offers.conversion_tip.finished_goods'),
+    other_cost: t('industry.loyalty.offers.conversion_tip.other_cost'),
+    input_freight: t('industry.loyalty.offers.conversion_tip.input_freight'),
+    sales_tax: t('industry.loyalty.offers.conversion_tip.sales_tax'),
+    output_freight: t('industry.loyalty.offers.conversion_tip.output_freight'),
+    net: t('industry.loyalty.offers.conversion_tip.net'),
+}).map(escape_html).join('<br>')
 ---
 
 <div
@@ -84,8 +161,16 @@ const is_low_volume = offer_is_low_weekly_lp_volume(offer)
         </span>
     </div>
     <div class="[ loyalty-offer-item__num ]" role="cell">{format_int(offer.quantity)}</div>
-    <div class="[ loyalty-offer-item__num ]" role="cell">{format_int(offer.other_cost)}</div>
-    <div class="[ loyalty-offer-item__num ]" role="cell">{format_rate(conversion)}</div>
+    <div
+        class="[ loyalty-offer-item__num ]"
+        role="cell"
+        data-tippy-content={other_cost_tippy}
+    >{format_int(offer.other_cost)}</div>
+    <div
+        class="[ loyalty-offer-item__num ]"
+        role="cell"
+        data-tippy-content={conversion_tippy}
+    >{format_isk_per_lp_rate(conversion)}</div>
     <div
         class="[ loyalty-offer-item__num ]"
         role="cell"

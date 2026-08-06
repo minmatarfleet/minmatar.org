@@ -1,6 +1,10 @@
 """
 Aggregate build-plan costs: Jita material sell, job installation, taxes,
-and alliance freight (when a hub→facility route exists).
+and freight (alliance route by default).
+
+Prefer ``industry.helpers.plan_costing.plan_item_cost`` /
+``cost_build_plan`` for new callers. ``build_plan_cost_breakdown`` remains
+as a thin legacy adapter for tests and gradual migration.
 """
 
 from __future__ import annotations
@@ -13,8 +17,6 @@ from eveuniverse.models import EveType
 
 from industry.helpers.build_planner import BuildPlan
 from industry.helpers.compressed_ore import CompressedOrePlan
-from industry.helpers.freight_costs import estimate_plan_freight
-from industry.helpers.type_breakdown import ACTIVITY_REACTION
 from market.helpers.pricing import get_prices_by_type_id
 from market.models import EveMarketItemLocationPrice
 
@@ -182,6 +184,14 @@ def reprocessing_output_value_isk(
     )
 
 
+# Circular import: plan_costing imports material helpers from this module;
+# this adapter calls cost_build_plan. Keep the import local.
+from industry.helpers.plan_costing import (  # noqa: E402  # pylint: disable=wrong-import-position,ungrouped-imports
+    FreightOptions,
+    cost_build_plan,
+)
+
+
 def build_plan_cost_breakdown(
     plan: BuildPlan,
     *,
@@ -189,138 +199,40 @@ def build_plan_cost_breakdown(
     navy_bpc_isk: int = 0,
 ) -> PlanCostBreakdown:
     """
-    Full build cost:
+    Full build cost with alliance inbound freight (legacy adapter).
 
-    materials (Jita sell) + job installation gross (system cost index × EIV,
-    after structure/FW role bonuses) + facility tax + SCC (both on EIV from
-    ESI adjusted prices at ME0) + reprocessing tax (when compressed ore is used)
-    + alliance freight (hub→facility) when a priced route exists
-    + navy BPC LP cost when provided.
+    New code should use ``industry.helpers.plan_costing.cost_build_plan``.
     """
-    mfg_gross = 0
-    rxn_gross = 0
-    facility_tax_isk = 0
-    scc_tax_isk = 0
-    for job in plan.jobs:
-        facility_tax_isk += job.job_cost.facility_tax_isk
-        scc_tax_isk += job.job_cost.scc_tax_isk
-        if job.activity_id == ACTIVITY_REACTION:
-            rxn_gross += job.job_cost.gross_cost
-        else:
-            mfg_gross += job.job_cost.gross_cost
-
-    total_job_costs = mfg_gross + rxn_gross
-    navy_bpc_isk = max(int(navy_bpc_isk), 0)
-
-    if compressed_ore is not None:
-        import_map = dict(compressed_ore.import_lines())
-        names = (
-            set(import_map)
-            | set(compressed_ore.expected_minerals)
-            | set(compressed_ore.expected_ice_products)
-        )
-        prices_by_name = _prices_by_name(names)
-        materials_isk = materials_jita_sell_isk_from_named(
-            import_map, prices_by_name=prices_by_name
-        )
-        output_value = reprocessing_output_value_isk(
-            compressed_ore, prices_by_name=prices_by_name
-        )
-        reprocessing_tax_isk = compressed_ore.tax_isk(float(output_value))
-        freight = estimate_plan_freight(
-            facility_key=plan.facility_key,
-            named_qtys=import_map,
-            collateral_isk=materials_isk,
-        )
-    else:
-        type_qtys = [
-            (tid, qty) for tid, (_, qty) in plan.leaf_materials.items()
-        ]
-        materials_isk = materials_jita_sell_isk_from_type_qtys(type_qtys)
-        reprocessing_tax_isk = 0
-        freight = estimate_plan_freight(
-            facility_key=plan.facility_key,
-            type_qtys=type_qtys,
-            collateral_isk=materials_isk,
-        )
-
-    taxes_isk = facility_tax_isk + scc_tax_isk + reprocessing_tax_isk
-    freight_isk = int(freight.freight_isk)
-    grand_total = (
-        materials_isk
-        + total_job_costs
-        + taxes_isk
-        + freight_isk
-        + navy_bpc_isk
+    item = cost_build_plan(
+        plan,
+        compressed_ore=compressed_ore,
+        navy_bpc_isk=navy_bpc_isk,
+        input_freight=FreightOptions.alliance_default(),
+        include_line_items=True,
     )
-    output_qty = max(int(plan.quantity), 1)
-    per_unit = grand_total / output_qty
-
-    freight_label = "Freight"
-    if freight.route_label:
-        freight_label = f"Freight ({freight.route_label})"
-
-    line_items: List[CostLineItem] = [
-        CostLineItem(
-            "materials_jita_sell",
-            "Materials",
-            materials_isk,
-        ),
-        CostLineItem(
-            "manufacturing_job_costs",
-            "Manufacturing job install",
-            mfg_gross,
-        ),
-        CostLineItem(
-            "reaction_job_costs",
-            "Reaction job install",
-            rxn_gross,
-        ),
-        CostLineItem(
-            "facility_tax",
-            "Facility tax",
-            facility_tax_isk,
-        ),
-        CostLineItem(
-            "scc_tax",
-            "SCC surcharge",
-            scc_tax_isk,
-        ),
-    ]
-    # Only when compressed ore is in use (show even if tax rounds to 0).
-    if compressed_ore is not None:
-        line_items.append(
-            CostLineItem(
-                "reprocessing_tax",
-                "Reprocessing tax",
-                reprocessing_tax_isk,
-            )
-        )
-    # Only surface freight when a priced route matched (omit invented rates).
-    if freight.has_route:
-        line_items.append(CostLineItem("freight", freight_label, freight_isk))
-    if navy_bpc_isk > 0:
-        line_items.append(
-            CostLineItem("navy_bpc_lp", "Navy BPC (LP)", navy_bpc_isk)
-        )
-
+    freight = item.input_freight
     return PlanCostBreakdown(
-        materials_jita_sell_isk=materials_isk,
-        manufacturing_job_costs_isk=mfg_gross,
-        reaction_job_costs_isk=rxn_gross,
-        total_job_costs_isk=total_job_costs,
-        facility_tax_isk=facility_tax_isk,
-        scc_tax_isk=scc_tax_isk,
-        reprocessing_tax_isk=reprocessing_tax_isk,
-        taxes_isk=taxes_isk,
-        freight_isk=freight_isk,
-        freight_volume_m3=float(freight.volume_m3),
-        freight_billable_m3=int(freight.billable_m3),
+        materials_jita_sell_isk=item.materials_jita_sell_isk,
+        manufacturing_job_costs_isk=item.manufacturing_job_costs_isk,
+        reaction_job_costs_isk=item.reaction_job_costs_isk,
+        total_job_costs_isk=item.total_job_costs_isk,
+        facility_tax_isk=item.facility_tax_isk,
+        scc_tax_isk=item.scc_tax_isk,
+        reprocessing_tax_isk=item.reprocessing_tax_isk,
+        taxes_isk=item.taxes_isk,
+        freight_isk=freight.isk,
+        freight_volume_m3=freight.volume_m3,
+        freight_billable_m3=freight.billable_m3,
         freight_route_id=freight.route_id,
         freight_route_label=freight.route_label,
-        navy_bpc_isk=navy_bpc_isk,
-        grand_total_isk=grand_total,
-        per_unit_isk=per_unit,
-        output_quantity=output_qty,
-        line_items=line_items,
+        navy_bpc_isk=item.navy_bpc_isk,
+        grand_total_isk=item.grand_total_isk,
+        per_unit_isk=item.per_unit_isk,
+        output_quantity=item.output_quantity,
+        line_items=[
+            CostLineItem(
+                key=row.key, label=row.label, amount_isk=row.amount_isk
+            )
+            for row in item.line_items
+        ],
     )

@@ -74,6 +74,8 @@ def economics_row_from_offer(
         quantity=int(offer.quantity),
         required_items_summary=(econ.required_items_summary or "")[:512],
         other_cost=econ.other_cost,
+        input_cost_isk=econ.input_cost_isk,
+        input_freight_isk=econ.input_freight_isk,
         jita_sell=econ.jita_sell,
         jita_buy=econ.jita_buy,
         jita_avg_7d=econ.jita_avg_7d,
