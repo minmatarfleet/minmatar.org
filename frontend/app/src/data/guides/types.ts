@@ -15,4 +15,9 @@ export type GuideMeta = {
     authors: Author[]
     path?: string
     hiddenFromIndex?: boolean
+    /**
+     * Map of section id → Contents group label (cruiser-guide style).
+     * Adjacent sections with the same group share one nav subheader.
+     */
+    contents_groups?: Record<string, string>
 }

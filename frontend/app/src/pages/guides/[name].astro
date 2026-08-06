@@ -3,9 +3,12 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { getGuideBySlug } from '@/data/guides'
-import { getGuideSeoImage } from '@/data/guides/covers'
+import { getGuideCoverImage, getGuideSeoImage } from '@/data/guides/covers'
 import { buildGuideJsonLd, getGuidePageSeo } from '@/data/guides/seo'
-import { pageProgressFromMarkdown } from '@helpers/pageProgress'
+import {
+    pageProgressFromMarkdown,
+    wrapMarkdownSectionsInPanels,
+} from '@helpers/pageProgress'
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 import { get_site_origin } from '@helpers/seo'
 
@@ -18,6 +21,7 @@ if (!guide) {
 
 const site_origin = get_site_origin(Astro.url.origin)
 const { module } = guide
+const cover_image = getGuideCoverImage(guide)
 const seo = getGuidePageSeo({
     guide,
     siteName: t('index.page_title'),
@@ -33,10 +37,17 @@ const structured_data = buildGuideJsonLd({
     ...seo,
 })
 
-const { html: guide_html, sections, ...progress } = pageProgressFromMarkdown({
+const { html: markdown_html, sections: markdown_sections, ...progress } = pageProgressFromMarkdown({
     page_key: `guides/${guide.slug}`,
     page_title: guide.title,
     markdown: module.rawContent(),
+})
+
+const guide_html = wrapMarkdownSectionsInPanels(markdown_html)
+
+const sections = markdown_sections.map((section) => {
+    const group = guide.contents_groups?.[section.id]
+    return group ? { ...section, group } : section
 })
 
 import Viewport from '@layouts/Viewport.astro'
@@ -47,12 +58,11 @@ import PageTitle from '@components/page/PageTitle.astro'
 import TextBox from '@components/layout/TextBox.astro'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
-import BlockList from '@components/compositions/BlockList.astro'
 
 import Button from '@components/blocks/Button.astro'
 import GuideContentsLayout from '@components/blocks/GuideContentsLayout.astro'
+import GuideMarkdown from '@components/blocks/GuideMarkdown.astro'
 import GuideShell from '@components/blocks/GuideShell.astro'
-import Tag from '@components/blocks/Tag.astro'
 import PageProgress from '@components/blocks/PageProgress.astro'
 import Wrapper from '@components/compositions/Wrapper.astro'
 
@@ -76,30 +86,27 @@ const shell_subtitle = guide.section
     <PageLanding
         wide={true}
         cover={{
-            image: '/images/guides-cover.jpg',
-            image_990: '/images/guides-cover-990.jpg',
+            image: cover_image,
+            image_990: cover_image,
             scrollable: true,
             overlay: true
         }}
     >
-        <Flexblock gap='var(--space-2xl)' data-page-progress-root>
-            <TextBox>
-                <Flexblock gap='var(--space-m)'>
-                    <div class="guide-header-top">
-                        <nav class="guide-breadcrumb" aria-label="Breadcrumb">
+        <Flexblock gap='var(--space-2xl)' class="guide-page" data-page-progress-root>
+            <TextBox max_width="var(--max-content-width)">
+                <Flexblock gap='var(--space-xl)'>
+                    <div class="guide-page__header-top">
+                        <nav class="guide-page__breadcrumb" aria-label="Breadcrumb">
                             <ol>
                                 <li><a href={translatePath('/guides/')}>{t('guides.page_title')}</a></li>
                                 <li aria-current="page">{guide.title}</li>
                             </ol>
                         </nav>
-                        <div class="guide-header-top__progress">
+                        <div class="guide-page__progress">
                             <PageProgress {...progress} />
                         </div>
                     </div>
-                    <Tag text={guide.category} />
                     <PageTitle is_landing={true}>{guide.title}</PageTitle>
-                    <p class="[ guide-excerpt ]">{guide.excerpt}</p>
-                    <small class="[ text-muted ]">{t('by_template').replace('{name}', guide.author)}</small>
                 </Flexblock>
             </TextBox>
 
@@ -110,32 +117,27 @@ const shell_subtitle = guide.section
             >
                 <GuideShell title={guide.title} subtitle={shell_subtitle}>
                     <GuideContentsLayout sections={sections}>
-                        <BlockList gap='var(--space-xl)'>
-                            <div
-                                class="[ prose ]"
-                                set:html={guide_html}
-                                x-data={`{
-                                    init_zoom() {
-                                        mediumZoom('.prose img', {
-                                            background: 'var(--solid-transparency-background)',
-                                            scrollOffset: 0,
-                                            margin: 24,
-                                            metaClick: false,
-                                        })
-                                    }
-                                }`}
-                                x-init="init_zoom()"
-                            />
+                        <GuideMarkdown
+                            html={guide_html}
+                            x-data={`{
+                                init_zoom() {
+                                    mediumZoom('.guide-md img', {
+                                        background: 'var(--solid-transparency-background)',
+                                        scrollOffset: 0,
+                                        margin: 24,
+                                        metaClick: false,
+                                    })
+                                }
+                            }`}
+                            x-init="init_zoom()"
+                        />
 
-                            <hr class="[ border-bottom ]" />
-
-                            <Button
-                                class="[ w-fit! ]"
-                                href={translatePath('/guides/')}
-                            >
-                                {t('guides.back_to_guides')}
-                            </Button>
-                        </BlockList>
+                        <Button
+                            class="[ w-fit! ]"
+                            href={translatePath('/guides/')}
+                        >
+                            {t('guides.back_to_guides')}
+                        </Button>
                     </GuideContentsLayout>
                 </GuideShell>
             </Wrapper>
@@ -144,7 +146,14 @@ const shell_subtitle = guide.section
 </Viewport>
 
 <style lang="scss">
-    .guide-header-top {
+    .guide-page {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow-x: clip;
+    }
+
+    .guide-page__header-top {
         display: flex;
         flex-wrap: wrap;
         justify-content: space-between;
@@ -153,12 +162,12 @@ const shell_subtitle = guide.section
         width: 100%;
     }
 
-    .guide-header-top__progress {
+    .guide-page__progress {
         flex: 0 0 auto;
         margin-left: auto;
     }
 
-    .guide-breadcrumb {
+    .guide-page__breadcrumb {
         margin: 0;
         min-width: 0;
 
@@ -170,12 +179,13 @@ const shell_subtitle = guide.section
             padding: 0;
             list-style: none;
             font-size: var(--step--1);
-            color: var(--muted-color);
+            color: var(--text-color-secondary, var(--faded));
         }
 
         li:not(:last-child)::after {
             content: '/';
             margin-left: var(--space-2xs);
+            color: var(--text-color-secondary, var(--faded));
         }
 
         a {
@@ -187,15 +197,5 @@ const shell_subtitle = guide.section
                 text-decoration: underline;
             }
         }
-    }
-
-    .guide-excerpt {
-        font-size: var(--step-1);
-        color: var(--muted-color);
-        max-width: 60ch;
-    }
-
-    .prose :global(h2[id]) {
-        scroll-margin-top: calc(var(--header-height, 4rem) + var(--space-l));
     }
 </style>
