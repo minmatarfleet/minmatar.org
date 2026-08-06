@@ -30,7 +30,7 @@ Although we recommend everyone try to convert their own loyalty points at some p
 1. Use a broker for your first 250M ISK. You will generate this in one day, and it will provide you the capital you need to convert your own loyalty points.
 2. Use high volume, lower value offers to convert your first billion ISK. You can do this in your first week of faction warfare.
 
-Please, don't try to convert loyalty points on day one — it's fairly complex and you need capital to do it. Much like yourself in your 20s: your income stream is your best moneymaker, not your capital.
+Please, don't try and maximize your loyalty point conversion tactics on day one — it's fairly complex and you need capital to do it. Much like yourself in your 20s: your income stream is your best moneymaker, not your capital. The best thing you can be doing for your first 5 billion ISK is running small complexes.
 
 ## Brokers
 
