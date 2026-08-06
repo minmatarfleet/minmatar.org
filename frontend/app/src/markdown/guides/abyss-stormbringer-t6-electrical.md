@@ -1,7 +1,7 @@
 ---
 title: 'Stormbringer - T6 Electrical'
 excerpt: 'Solo Stormbringer fit and room guide for T6 Electrical abyssals.'
-category: 'PVE'
+category: 'ISK Generation'
 author: 'Kae2'
 ---
 ## General Overview

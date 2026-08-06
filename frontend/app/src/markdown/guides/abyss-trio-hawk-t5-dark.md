@@ -1,7 +1,7 @@
 ---
 title: 'x3 Hawk - T5 Dark'
 excerpt: 'Triple Hawk fit and room guide for T5 Dark abyssals.'
-category: 'PVE'
+category: 'ISK Generation'
 author: 'Kae2'
 ---
 ## General Overview

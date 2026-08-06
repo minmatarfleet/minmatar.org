@@ -1,7 +1,7 @@
 ---
 title: 'Farming the Abyss'
 excerpt: 'Overview of abyssal deadspace: tiers, weather types, and links to solo, duo, and trio fit guides.'
-category: 'PVE'
+category: 'ISK Generation'
 author: 'Buppas'
 ---
 ## Before you start

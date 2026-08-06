@@ -1,7 +1,7 @@
 import type { CapitalHull, CrosstrainingRow, GuideSection, MetaBlock, TierList } from '@/data/capital-guide'
 
 export const guideMeta = {
-    title: 'Dreadnought Guide',
+    title: 'Dread Guide',
     edition: 'Web Edition',
     yc: 'YC 128',
     publisher: 'Minmatar Fleet Alliance',

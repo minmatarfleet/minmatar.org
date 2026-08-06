@@ -1,7 +1,7 @@
 ---
 title: 'Nergal/Retribution/Deacon - T6 Firestorm'
 excerpt: 'Trio Nergal, Retribution, and Deacon guide for T6 Firestorm abyssals.'
-category: 'PVE'
+category: 'ISK Generation'
 author: 'Buppas'
 ---
 ## General Overview

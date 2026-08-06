@@ -9,7 +9,7 @@ const CATEGORY_COVERS: Record<GuideMeta['category'], string> = {
     'Faction Warfare': '/images/guides/wiki_frontlines.png',
     'PVP': '/images/fleets-cover.jpg',
     'Capital Ships': '/images/capitals-cover.jpg',
-    'PVE': '/images/fitting-cover.jpg',
+    'ISK Generation': '/images/fitting-cover.jpg',
     'Utility': '/images/intel-cover.jpg',
 }
 

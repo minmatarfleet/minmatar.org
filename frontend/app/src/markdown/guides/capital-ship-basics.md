@@ -74,5 +74,5 @@ Once you've trained your skills, join the [Capitals tribe](/alliance/tribes/).
 ## Next Guides
 
 - Starting capital combat: [FAX Guide](/guides/force-auxiliary-carrier-guide/)
-- Damage and structure work: [Dreadnought Guide](/guides/dreadnought-guide/)
+- Damage and structure work: [Dread Guide](/guides/dreadnought-guide/)
 - Moving doctrines and conduits: [Carrier Guide](/guides/carrier-guide/)

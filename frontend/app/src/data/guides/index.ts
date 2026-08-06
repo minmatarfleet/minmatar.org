@@ -45,7 +45,7 @@ const guideModules: Record<string, GuideModule> = {
     'capital-ship-basics': capital_ship_basics,
 }
 
-export const guideCategories = ["Faction Warfare","PVP","Capital Ships","PVE","Utility"] as const
+export const guideCategories = ["Faction Warfare","PVP","Capital Ships","ISK Generation","Utility"] as const
 
 /** Preferred subsection order within a category (index page). */
 export const guideSectionsByCategory: Partial<Record<(typeof guideCategories)[number], readonly string[]>> = {
@@ -186,7 +186,7 @@ export const guides: GuideMeta[] = [
     },
     {
         slug: "dreadnought-guide",
-        title: "Dreadnought Guide",
+        title: "Dread Guide",
         excerpt: "Learn everything you need to know about the dreadnought. The meta, why armor is good, and which dreads to use in which situations.",
         category: "Capital Ships",
         author: "BearThatCares",
@@ -214,7 +214,7 @@ export const guides: GuideMeta[] = [
         slug: "abyssals",
         title: "Farming the Abyss",
         excerpt: "EVE Online abyssal deadspace overview: filament tiers, weather types, and links to solo, duo, and trio fit guides.",
-        category: "PVE",
+        category: "ISK Generation",
         author: "Buppas",
         authors: [{
             name: "Buppas",
@@ -226,7 +226,7 @@ export const guides: GuideMeta[] = [
         slug: "abyss-duo-jackdaws-t6-dark",
         title: "Duo Jackdaws - T6 Dark",
         excerpt: "Duo Jackdaw fit and room guide for T6 Dark abyssals.",
-        category: "PVE",
+        category: "ISK Generation",
         author: "Buppas",
         authors: [{
             name: "Buppas",
@@ -239,7 +239,7 @@ export const guides: GuideMeta[] = [
         slug: "level5-missions",
         title: "L5 Mission Farming",
         excerpt: "Blitz Minmatar level 5 missions in EVE Online: tactics, mission walkthroughs, and ship fits.",
-        category: "PVE",
+        category: "ISK Generation",
         author: "Buppas",
         authors: [{
             name: "Buppas",
@@ -251,7 +251,7 @@ export const guides: GuideMeta[] = [
         slug: "abyss-nergal-trio-t6-firestorm",
         title: "Nergal / Retribution / Deacon - T6 Firestorm",
         excerpt: "Trio Nergal, Retribution, and Deacon guide for T6 Firestorm abyssals.",
-        category: "PVE",
+        category: "ISK Generation",
         author: "Buppas",
         authors: [{
             name: "Buppas",
@@ -276,7 +276,7 @@ export const guides: GuideMeta[] = [
         slug: "abyss-stormbringer-t6-electrical",
         title: "Stormbringer - T6 Electrical",
         excerpt: "Solo Stormbringer fit and room guide for T6 Electrical abyssals.",
-        category: "PVE",
+        category: "ISK Generation",
         author: "Kae2",
         authors: [{
             name: "Kae2",
@@ -289,7 +289,7 @@ export const guides: GuideMeta[] = [
         slug: "abyss-trio-hawk-t5-dark",
         title: "x3 Hawk - T5 Dark",
         excerpt: "Triple Hawk fit and room guide for T5 Dark abyssals.",
-        category: "PVE",
+        category: "ISK Generation",
         author: "Kae2",
         authors: [{
             name: "Kae2",
@@ -302,7 +302,7 @@ export const guides: GuideMeta[] = [
         slug: "zohar-hunting",
         title: "Zohar's Chosen Angel Hunting",
         excerpt: "Hunt Zohar's Chosen Angel NPCs in insurgency systems: fitting, scanning, tactics, and cashing in.",
-        category: "PVE",
+        category: "ISK Generation",
         author: "Bobb Bobbington",
         authors: [{
             name: "Bobb Bobbington",
