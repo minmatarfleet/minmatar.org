@@ -73,8 +73,8 @@ Unless you are in Caldari State, you will likely need to move your goods to a ma
 
 Use a freight service to ship goods, where it makes sense:
 
-- **Red Frog Freight** (usually 1–2% of cargo, meaningless margin to you)
-- **PushX** (similar prices)
+- **[Red Frog Freight](https://red-frog.org/)** (usually 1–2% of cargo, meaningless margin to you)
+- **[PushX](https://www.pushx.net/)** (similar prices)
 
 If you insist on moving things yourself, we recommend sticking to low volumes (under 25M ISK) of Navy Cap Booster 3200 / Navy Cap Booster 800 and various datacores.
 
@@ -102,7 +102,7 @@ We recommend various sized cap boosters, datacores, and small (frigate, destroye
 - **Ignoring required items** — navy upgrades that need a pile of T1 can erase the edge if you buy T1 retail in the wrong place.
 - **Dumping into a thin book** — one large sell order can push you below buyback rates; watch the spread and recent volume.
 - **Wrong price side** — planning on sell-side ISK/LP, then panic-selling into buy orders.
-- **Freight afterthought** — navy caps especially: product m³ can dominate. Quote PushX/Red Frog before you commit.
+- **Freight afterthought** — navy caps especially: product m³ can dominate. Quote [PushX](https://www.pushx.net/)/[Red Frog](https://red-frog.org/) before you commit.
 - **Skins, chips, packages, vanity** — exclude them unless you have a specific buyer.
 - **Standing / docking** — alts without TLIB access cannot cash out that character’s LP in that store.
 - **Opportunity cost** — time spent manufacturing, hauling, and babysitting orders is real. Brokers exist so you can stay in fleets.
