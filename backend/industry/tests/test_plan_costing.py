@@ -11,6 +11,7 @@ from industry.helpers.plan_costing import (
     FreightMode,
     FreightOptions,
     ItemPlanCost,
+    PlanCostOptions,
     SalesTaxOptions,
     plan_lp_offer_conversion,
 )
@@ -30,6 +31,36 @@ class FreightOptionsTestCase(TestCase):
             FreightOptions.alliance_default().mode,
             FreightMode.alliance_route,
         )
+
+
+class PlanCostOptionsDefaultsTestCase(TestCase):
+    def test_lp_conversion_defaults_allow_include_navy_bpc_override(self):
+        # Callers pass include_navy_bpc / freight overrides; must not collide
+        # with factory hardcoded kwargs (MINMATAR-CELERY-K4).
+        with_bpc = PlanCostOptions.lp_conversion_defaults(
+            include_navy_bpc=True,
+            input_freight=FreightOptions.off(),
+            output_freight=FreightOptions.off(),
+        )
+        without_bpc = PlanCostOptions.lp_conversion_defaults(
+            include_navy_bpc=False,
+            input_freight=FreightOptions.off(),
+        )
+        self.assertTrue(with_bpc.include_navy_bpc)
+        self.assertFalse(without_bpc.include_navy_bpc)
+        self.assertEqual(with_bpc.input_freight.mode, FreightMode.off)
+        self.assertEqual(
+            PlanCostOptions.lp_conversion_defaults().include_navy_bpc,
+            False,
+        )
+
+    def test_planner_defaults_allow_freight_override(self):
+        opts = PlanCostOptions.planner_defaults(
+            input_freight=FreightOptions.off(),
+            include_navy_bpc=True,
+        )
+        self.assertEqual(opts.input_freight.mode, FreightMode.off)
+        self.assertTrue(opts.include_navy_bpc)
 
 
 class PlanLpOfferConversionTestCase(TestCase):

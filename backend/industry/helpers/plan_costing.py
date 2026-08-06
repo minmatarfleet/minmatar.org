@@ -159,21 +159,25 @@ class PlanCostOptions(BaseModel):
     def planner_defaults(cls, **kwargs) -> "PlanCostOptions":
         """Interactive planner / profit / guide: alliance inbound freight."""
         return cls(
-            input_freight=FreightOptions.alliance_default(),
-            output_freight=FreightOptions.off(),
-            sales_tax=SalesTaxOptions.off(),
-            **kwargs,
+            **{
+                "input_freight": FreightOptions.alliance_default(),
+                "output_freight": FreightOptions.off(),
+                "sales_tax": SalesTaxOptions.off(),
+                **kwargs,
+            }
         )
 
     @classmethod
     def lp_conversion_defaults(cls, **kwargs) -> "PlanCostOptions":
         """LP store net: Red Frog value freight; no alliance route."""
         return cls(
-            input_freight=FreightOptions.red_frog_jita_amo(),
-            output_freight=FreightOptions.red_frog_jita_amo(),
-            sales_tax=SalesTaxOptions.accounting_v(),
-            include_navy_bpc=False,
-            **kwargs,
+            **{
+                "input_freight": FreightOptions.red_frog_jita_amo(),
+                "output_freight": FreightOptions.red_frog_jita_amo(),
+                "sales_tax": SalesTaxOptions.accounting_v(),
+                "include_navy_bpc": False,
+                **kwargs,
+            }
         )
 
 
