@@ -36,7 +36,7 @@ Please, don't try to convert loyalty points on day one — it's fairly complex a
 
 ### Overview
 
-If you want fast ISK without the hassle, sell to a broker. We recommend pilots start with this, because realistically it's faster to just keep running complexes.
+If you want fast ISK without the hassle, sell to a broker. We recommend pilots start with this if their alliance supports it, because it's usually better for new players to just keep running complexes.
 
 There are a few known brokers out there:
 
