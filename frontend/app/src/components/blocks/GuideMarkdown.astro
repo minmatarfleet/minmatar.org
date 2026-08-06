@@ -3,6 +3,9 @@
  * Renders markdown guide HTML with cruiser-guide panel chrome.
  * Pass HTML from `wrapMarkdownSectionsInPanels(pageProgressFromMarkdown(...).html)`.
  */
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
 import './GuideMarkdown.scss'
 
 interface Props {
@@ -18,10 +21,38 @@ const {
 } = Astro.props
 
 delete attributes.class
+
+const character_modal_partial = translatePath('/partials/character_modal_component/')
 ---
 
 <div
     {...attributes}
     class:list={['guide-md', class_name]}
+    x-data={`{
+        init_guide_md() {
+            mediumZoom('.guide-md img', {
+                background: 'var(--solid-transparency-background)',
+                scrollOffset: 0,
+                margin: 24,
+                metaClick: false,
+            })
+        },
+        open_character_link(event) {
+            const anchor = event.target.closest('a[href]')
+            if (!anchor) return
+
+            const href = anchor.getAttribute('href') || ''
+            const match = href.match(/\\/characters\\/(\\d+)\\/?/)
+            if (!match) return
+
+            event.preventDefault()
+            event.stopPropagation()
+            show_modal({
+                partial: '${character_modal_partial}?character_id=' + match[1],
+            })
+        },
+    }`}
+    x-init="init_guide_md()"
+    x-on:click="open_character_link($event)"
     set:html={html}
 />

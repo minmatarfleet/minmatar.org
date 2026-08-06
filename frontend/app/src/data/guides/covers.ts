@@ -8,6 +8,7 @@ export const GUIDES_INDEX_COVER = {
 const CATEGORY_COVERS: Record<GuideMeta['category'], string> = {
     'Faction Warfare': '/images/guides/wiki_frontlines.png',
     'PVP': '/images/fleets-cover.jpg',
+    'Capital Ships': '/images/capitals-cover.jpg',
     'PVE': '/images/fitting-cover.jpg',
     'Utility': '/images/intel-cover.jpg',
 }
@@ -30,6 +31,10 @@ const GUIDE_COVERS: Record<string, string> = {
     'zohar-hunting': '/images/guides/guides/level5s/wrath_of_angels.png',
     'bookmarks': '/images/assets-cover.jpg',
     'selling-loyalty-points': '/images/loyalty-points-cover.webp',
+    'capital-ship-basics': '/images/capitals-cover.jpg',
+    'force-auxiliary-carrier-guide': '/images/faxes-cover.webp',
+    'dreadnought-guide': '/images/dreads-cover.webp',
+    'carrier-guide': '/images/carriers-cover.webp',
 }
 
 /** Flat 1200×630 share cards for og:image / Twitter — not used as page heroes. */

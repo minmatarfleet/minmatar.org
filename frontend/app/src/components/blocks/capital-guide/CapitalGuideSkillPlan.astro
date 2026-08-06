@@ -1,0 +1,58 @@
+---
+import ClipboardButton from '@components/blocks/ClipboardButton.astro'
+import CollapsableButton from '@components/blocks/CollapsableButton.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+interface Props {
+    title: string
+    copy_label: string
+    skills: readonly string[]
+    id_prefix: string
+    plan_id: string
+}
+
+const { title, copy_label, skills, id_prefix, plan_id } = Astro.props
+const skill_plan_id = `${id_prefix}-${plan_id}-skill-plan-copy`
+const list_id = `${id_prefix}-${plan_id}-skill-plan-list`
+const root_id = `${id_prefix}-${plan_id}-skill-plan`
+const skill_plan_text = skills.join('\n')
+---
+
+<div
+    id={root_id}
+    class="cap-skill-plan"
+    x-data={`{
+        expanded: false,
+        toggle_collapse() {
+            this.expanded = !this.expanded
+        }
+    }`}
+>
+    <FlexInline class="cap-skill-plan__header" gap="var(--space-s)" justification="space-between">
+        <CollapsableButton
+            class="cap-skill-plan__toggle"
+            pre_chevron={true}
+            x-on:click="toggle_collapse()"
+            x-bind:aria-expanded="expanded.toString()"
+            aria-controls={list_id}
+        >
+            <span class="cap-skill-plan__title">{title}</span>
+        </CollapsableButton>
+        <ClipboardButton id={skill_plan_id} narrow={true} text={copy_label}>
+            {skill_plan_text}
+        </ClipboardButton>
+    </FlexInline>
+    <div
+        id={list_id}
+        class="cap-skill-plan__body"
+        x-show="expanded"
+        x-collapse.duration.0ms
+        style="display: none"
+    >
+        <ol class="cap-skill-plan__list">
+            {skills.map((entry) => (
+                <li>{entry}</li>
+            ))}
+        </ol>
+    </div>
+</div>

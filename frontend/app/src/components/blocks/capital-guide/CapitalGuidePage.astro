@@ -1,0 +1,145 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { PageProgressProps } from '@helpers/pageProgress'
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import PageProgress from '@components/blocks/PageProgress.astro'
+
+interface Props {
+    page_title: string
+    meta_title: string
+    meta_description: string
+    meta_image: string
+    canonical_url: string
+    cover_image: string
+    cover_alt: string
+    structured_data: Record<string, unknown>
+    progress: PageProgressProps
+}
+
+const {
+    page_title,
+    meta_title,
+    meta_description,
+    meta_image,
+    canonical_url,
+    cover_image,
+    cover_alt,
+    structured_data,
+    progress,
+} = Astro.props
+---
+
+<Viewport
+    title={meta_title}
+    meta_description={meta_description}
+    meta_image={meta_image}
+    canonical_url={canonical_url}
+    og_type="article"
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(structured_data)} />
+
+    <PageLanding
+        wide={true}
+        cover={{
+            image: cover_image,
+            image_990: cover_image,
+            alt: cover_alt,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <Flexblock gap="var(--space-2xl)" class="cap-guide-page" data-page-progress-root>
+            <TextBox max_width="var(--max-content-width)">
+                <Flexblock gap="var(--space-xl)">
+                    <div class="cap-guide-page__header-top">
+                        <nav class="cap-guide-page__breadcrumb" aria-label="Breadcrumb">
+                            <ol>
+                                <li><a href={translatePath('/guides/')}>{t('guides.page_title')}</a></li>
+                                <li aria-current="page">{page_title}</li>
+                            </ol>
+                        </nav>
+                        <div class="cap-guide-page__progress">
+                            <PageProgress {...progress} />
+                        </div>
+                    </div>
+                    <PageTitle is_landing={true}>{page_title}</PageTitle>
+                </Flexblock>
+            </TextBox>
+
+            <Wrapper max_width="var(--max-content-width)" padding_inline="0" padding_block="0">
+                <slot />
+            </Wrapper>
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .cap-guide-page {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow-x: clip;
+    }
+
+    .cap-guide-page__header-top {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: var(--space-s);
+        width: 100%;
+    }
+
+    .cap-guide-page__progress {
+        flex: 0 0 auto;
+        margin-left: auto;
+    }
+
+    .cap-guide-page__breadcrumb {
+        margin: 0;
+        min-width: 0;
+
+        ol {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2xs);
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            font-size: var(--step--1);
+            color: var(--text-color-secondary, var(--faded));
+        }
+
+        li:not(:last-child)::after {
+            content: '/';
+            margin-left: var(--space-2xs);
+            color: var(--text-color-secondary, var(--faded));
+        }
+
+        a {
+            color: var(--highlight);
+            text-decoration: none;
+
+            &:hover,
+            &:focus-visible {
+                color: var(--fleet-yellow);
+                text-decoration: underline;
+            }
+        }
+
+        [aria-current='page'] {
+            color: var(--foreground);
+        }
+    }
+</style>

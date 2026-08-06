@@ -1,0 +1,128 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+import FittingLink from '@components/blocks/FittingLink.astro'
+import type { CapitalHull } from '@/data/capital-guide'
+import type { Fitting } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    hull: CapitalHull
+    fittings: Fitting[]
+}
+
+const { hull, fittings } = Astro.props
+const primary = fittings[0] ?? null
+const no_fitting_label = t('ships.capital_guide.no_fitting')
+const icon_size = 64
+---
+
+<div class="cap-chip">
+    {primary ? (
+        <FittingLink fitting_id={primary.id} class="cap-chip__hit">
+            <span class="cap-chip__icon">
+                <ItemPicture
+                    item_id={hull.shipId}
+                    item_name={hull.name}
+                    size={icon_size}
+                    icon_quality={128}
+                />
+            </span>
+            <span class="cap-chip__name">{hull.name}</span>
+        </FittingLink>
+    ) : (
+        <span class="cap-chip__hit cap-chip__hit--disabled" title={no_fitting_label}>
+            <span class="cap-chip__icon">
+                <ItemPicture
+                    item_id={hull.shipId}
+                    item_name={hull.name}
+                    size={icon_size}
+                    icon_quality={128}
+                />
+            </span>
+            <span class="cap-chip__name">{hull.name}</span>
+        </span>
+    )}
+</div>
+
+<style lang="scss">
+    .cap-chip {
+        flex: 0 0 var(--cap-chip-width, 7.25rem);
+        width: var(--cap-chip-width, 7.25rem);
+        min-width: 0;
+    }
+
+    .cap-chip__hit {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-2xs);
+        box-sizing: border-box;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: var(--space-2xs);
+        border: 1px solid transparent;
+        background: transparent;
+        color: inherit;
+        text-decoration: none;
+        text-align: center;
+        cursor: pointer;
+        font: inherit;
+
+        &:hover,
+        &:focus-visible {
+            border-color: color-mix(in srgb, var(--fleet-yellow) 45%, var(--border-color));
+            outline: none;
+        }
+    }
+
+    .cap-chip__hit--disabled {
+        cursor: default;
+        opacity: 0.72;
+
+        &:hover,
+        &:focus-visible {
+            border-color: transparent;
+        }
+    }
+
+    .cap-chip__icon {
+        display: block;
+        flex: 0 0 auto;
+        width: 4rem;
+        height: 4rem;
+
+        :global(picture) {
+            display: block;
+            width: 4rem;
+            height: 4rem;
+        }
+
+        :global(img) {
+            display: block;
+            width: 4rem !important;
+            height: 4rem !important;
+            max-width: none;
+            object-fit: cover;
+        }
+    }
+
+    .cap-chip__name {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        flex: 1 1 auto;
+        width: 100%;
+        min-height: calc(1.2em * 3);
+        margin: 0;
+        font-family: var(--cap-display-font, var(--heading-font));
+        font-size: var(--step--2);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        line-height: 1.2;
+        text-wrap: balance;
+        hyphens: auto;
+    }
+</style>

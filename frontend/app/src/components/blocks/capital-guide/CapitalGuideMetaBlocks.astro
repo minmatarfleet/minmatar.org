@@ -1,0 +1,96 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+import FittingLink from '@components/blocks/FittingLink.astro'
+import { fittingsForShipId, type MetaBlock } from '@/data/capital-guide'
+import type { Fitting } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    blocks: MetaBlock[]
+    fitting_library?: Fitting[]
+}
+
+const { blocks, fitting_library = [] } = Astro.props
+const no_fitting_label = t('ships.capital_guide.no_fitting')
+---
+
+{blocks.map((block) => {
+    if (block.type === 'paragraph') {
+        return <p class="cap-section__paragraph" set:html={block.html} />
+    }
+    if (block.type === 'quote') {
+        return (
+            <blockquote class="cap-section__quote">
+                <p>{block.text}</p>
+            </blockquote>
+        )
+    }
+    if (block.type === 'list') {
+        return (
+            <ul class="cap-section__list">
+                {block.items.map((item) => (
+                    <li set:html={item} />
+                ))}
+            </ul>
+        )
+    }
+    if (block.type === 'table') {
+        return (
+            <div class="cap-table-wrap">
+                <table class="cap-table">
+                    <thead>
+                        <tr>
+                            {block.headers.map((header) => (
+                                <th scope="col">{header}</th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {block.rows.map((row) => {
+                            const fittings =
+                                row.ship_id != null ? fittingsForShipId(row.ship_id, fitting_library) : []
+                            const primary = fittings[0] ?? null
+                            const hull_content = (
+                                <span class="cap-table__hull">
+                                    {row.ship_id != null && (
+                                        <span class="cap-table__icon">
+                                            <ItemPicture
+                                                item_id={row.ship_id}
+                                                item_name={row.cells[0]}
+                                                size={40}
+                                                icon_quality={64}
+                                            />
+                                        </span>
+                                    )}
+                                    <span class="cap-table__hull-name">{row.cells[0]}</span>
+                                </span>
+                            )
+                            return (
+                                <tr>
+                                    <th scope="row">
+                                        {primary ? (
+                                            <FittingLink fitting_id={primary.id} class="cap-table__hull-link">
+                                                {hull_content}
+                                            </FittingLink>
+                                        ) : row.ship_id != null ? (
+                                            <span class="cap-table__hull-link cap-table__hull-link--disabled" title={no_fitting_label}>
+                                                {hull_content}
+                                            </span>
+                                        ) : (
+                                            hull_content
+                                        )}
+                                    </th>
+                                    <td>{row.cells[1]}</td>
+                                </tr>
+                            )
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        )
+    }
+    const _exhaustive: never = block
+    return _exhaustive
+})}
