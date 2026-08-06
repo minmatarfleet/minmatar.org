@@ -1,5 +1,6 @@
 ---
 import Grid from '@components/compositions/Grid.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 ---
 
 <section class="[ loyalty-offers-metrics-skeleton ]" aria-hidden="true">
@@ -10,29 +11,32 @@ import Grid from '@components/compositions/Grid.astro'
         column_gap="var(--space-s)"
     >
         {Array.from({ length: 3 }).map(() => (
-            <div class="[ loyalty-offers-metrics-skeleton__card ]">
+            <ComponentBlock
+                class="[ loyalty-offers-metrics-skeleton__card ]"
+                padding_block="var(--space-m)"
+                padding_inline="var(--space-m)"
+            >
                 <div class="[ skel skel-label ]"></div>
                 <div class="[ skel skel-value ]"></div>
                 <div class="[ skel skel-meta ]"></div>
-            </div>
+            </ComponentBlock>
         ))}
     </Grid>
 </section>
 
 <style lang="scss">
-    .loyalty-offers-metrics-skeleton .skel {
-        border-radius: 2px;
-        background: color-mix(in srgb, var(--background) 85%, var(--foreground));
-        animation: loyalty-offers-metrics-skel 1.2s ease-in-out infinite;
-    }
-
-    .loyalty-offers-metrics-skeleton__card {
+    .loyalty-offers-metrics-skeleton :global(.loyalty-offers-metrics-skeleton__card) {
         display: flex;
         flex-direction: column;
         gap: var(--space-3xs);
-        padding: var(--space-m);
-        border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
-        background: color-mix(in srgb, var(--background) 78%, transparent);
+        height: 100%;
+        box-sizing: border-box;
+    }
+
+    .loyalty-offers-metrics-skeleton .skel {
+        border-radius: 2px;
+        background: color-mix(in srgb, var(--component-background) 70%, var(--foreground));
+        animation: loyalty-offers-metrics-skel 1.2s ease-in-out infinite;
     }
 
     .skel-label {

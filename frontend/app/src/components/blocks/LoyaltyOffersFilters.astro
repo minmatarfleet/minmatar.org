@@ -7,6 +7,7 @@ import {
     DEFAULT_LOYALTY_OFFERS_PARAMS,
     TLIB_CORP_ID,
 } from '@helpers/loyalty_offers_metrics'
+import { get_corporation_logo } from '@helpers/eve_image_server'
 import { query_string } from '@helpers/string'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -15,6 +16,14 @@ import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
 import Button from '@components/blocks/Button.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
+import CaretIcon from '@components/icons/CaretIcon.astro'
+
+const FACTION_ORDER: readonly number[] = [
+    1000182, // TLIB
+    1000179, // 24th
+    1000180, // State
+    1000181, // FDU
+]
 
 interface Props {
     currencies: LoyaltyCurrency[]
@@ -55,6 +64,19 @@ const selected_currency = currencies.some((c) => c.corporation_id === currency)
     : (currencies.find((c) => c.corporation_id === TLIB_CORP_ID)?.corporation_id
         ?? currencies[0]?.corporation_id
         ?? TLIB_CORP_ID)
+
+const sorted_currencies = [...currencies].sort((a, b) => {
+    const ai = FACTION_ORDER.indexOf(a.corporation_id)
+    const bi = FACTION_ORDER.indexOf(b.corporation_id)
+    const ao = ai === -1 ? FACTION_ORDER.length : ai
+    const bo = bi === -1 ? FACTION_ORDER.length : bi
+    if (ao !== bo) return ao - bo
+    return a.name.localeCompare(b.name)
+})
+
+const selected_currency_record = sorted_currencies.find(
+    (c) => c.corporation_id === selected_currency,
+) ?? sorted_currencies[0] ?? null
 
 const base_params: Record<string, string> = {
     currency: String(selected_currency),
@@ -133,7 +155,7 @@ const excludes = [
 ]
 
 const hx_include_filters =
-    ".loyalty-offers-filters__persist, .loyalty-offers-filters__search [name='q'], select[name='currency'], select[name='side']"
+    ".loyalty-offers-filters__persist, .loyalty-offers-filters__search [name='q'], select[name='side']"
 ---
 
 <Flexblock class="[ loyalty-offers-filters ]" gap="var(--space-s)">
@@ -143,28 +165,88 @@ const hx_include_filters =
         justification="space-between"
     >
         <FlexInline gap="var(--space-s)" class="[ loyalty-offers-filters__controls ]">
-            <Select
-                name="currency"
-                size="sm"
-                width="16rem"
-                required
-                hx-get={PARTIAL}
-                hx-target={SLOT}
-                hx-swap="innerHTML"
-                hx-indicator=".loader"
-                hx-trigger="change"
-                hx-include={hx_include_filters}
-                class="[ loyalty-offers-filters__select ]"
+            <div
+                class="[ loyalty-offers-filters__currency ]"
+                x-data={`{
+                    open: false,
+                    close() { this.open = false },
+                    toggle() { this.open = this.open ? false : true },
+                }`}
+                @keydown.escape.prevent.stop="close()"
+                @mousedown.outside="open && close()"
+                @htmx:before-request="close()"
             >
-                {currencies.map((c) => (
-                    <option
-                        value={String(c.corporation_id)}
-                        selected={selected_currency === c.corporation_id}
-                    >
-                        {c.name}
-                    </option>
-                ))}
-            </Select>
+                <button
+                    type="button"
+                    class="[ loyalty-offers-filters__currency-trigger ]"
+                    @click.prevent="toggle()"
+                    x-bind:aria-expanded="open"
+                    aria-haspopup="listbox"
+                    aria-controls="loyalty-offers-currency-options"
+                    aria-label={t('industry.loyalty.offers.currency_label')}
+                >
+                    {selected_currency_record && (
+                        <img
+                            class="[ loyalty-offers-filters__currency-logo ]"
+                            src={get_corporation_logo(selected_currency_record.corporation_id, 32)}
+                            width="20"
+                            height="20"
+                            alt=""
+                            loading="lazy"
+                        />
+                    )}
+                    <span class="[ loyalty-offers-filters__currency-name ]">
+                        {selected_currency_record?.name
+                            ?? t('industry.loyalty.offers.currency_label')}
+                    </span>
+                    <CaretIcon class="[ loyalty-offers-filters__currency-caret ]" />
+                </button>
+
+                <ul
+                    id="loyalty-offers-currency-options"
+                    class="[ loyalty-offers-filters__currency-options ]"
+                    role="listbox"
+                    x-show="open"
+                    x-cloak
+                    style="display: none"
+                >
+                    {sorted_currencies.map((c) => (
+                        <li role="presentation">
+                            <button
+                                type="button"
+                                role="option"
+                                class:list={[
+                                    '[ loyalty-offers-filters__currency-option ]',
+                                    {
+                                        'loyalty-offers-filters__currency-option--selected':
+                                            selected_currency === c.corporation_id,
+                                    },
+                                ]}
+                                aria-selected={selected_currency === c.corporation_id
+                                    ? 'true'
+                                    : 'false'}
+                                @click="close()"
+                                hx-get={with_params({
+                                    currency: String(c.corporation_id),
+                                })}
+                                hx-target={SLOT}
+                                hx-swap="innerHTML"
+                                hx-indicator=".loader"
+                            >
+                                <img
+                                    class="[ loyalty-offers-filters__currency-logo ]"
+                                    src={get_corporation_logo(c.corporation_id, 32)}
+                                    width="20"
+                                    height="20"
+                                    alt=""
+                                    loading="lazy"
+                                />
+                                <span>{c.name}</span>
+                            </button>
+                        </li>
+                    ))}
+                </ul>
+            </div>
 
             <Select
                 name="side"
@@ -204,7 +286,7 @@ const hx_include_filters =
                     value={q}
                     placeholder={t('industry.loyalty.offers.search_placeholder')}
                     size="sm"
-                    width="18rem"
+                    width="22rem"
                 >
                     <MagnifierIcon slot="icon" />
                 </Input>
@@ -245,6 +327,7 @@ const hx_include_filters =
     </FlexInline>
 
     <div class="[ loyalty-offers-filters__persist ]" hidden>
+        <input type="hidden" name="currency" value={String(selected_currency)} />
         <input type="hidden" name="ordering" value={ordering} />
         {exclude_tags === '1' && <input type="hidden" name="exclude_tags" value="1" />}
         {exclude_supply_packages === '1' && (
@@ -265,6 +348,10 @@ const hx_include_filters =
 </Flexblock>
 
 <style lang="scss">
+    [x-cloak] {
+        display: none !important;
+    }
+
     .loyalty-offers-filters__toolbar {
         flex-wrap: wrap;
         width: 100%;
@@ -276,8 +363,120 @@ const hx_include_filters =
         align-items: center;
     }
 
+    .loyalty-offers-filters__currency {
+        position: relative;
+        flex-shrink: 0;
+        width: 18rem;
+        max-width: 100%;
+    }
+
+    .loyalty-offers-filters__currency-trigger {
+        appearance: none;
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        width: 100%;
+        margin: 0;
+        padding-block: var(--space-2xs);
+        padding-inline: var(--space-xs-s) var(--space-m);
+        border: solid 1px var(--border-color);
+        background-color: rgba(85, 85, 85, 0.1);
+        backdrop-filter: blur(var(--input-backdrop-blur));
+        color: var(--form-color);
+        cursor: pointer;
+        text-align: left;
+        transition: border-color var(--fast-transition), background-color var(--fast-transition);
+
+        @media (hover: hover) {
+            &:hover {
+                border-color: var(--border-color-hover);
+            }
+        }
+
+        &:focus-visible {
+            outline: 1px solid var(--highlight);
+            outline-offset: 2px;
+        }
+
+        &[aria-expanded='true'] {
+            background-color: var(--component-background);
+        }
+    }
+
+    .loyalty-offers-filters__currency-name {
+        flex: 1 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: var(--step--1);
+    }
+
+    .loyalty-offers-filters__currency-logo {
+        flex-shrink: 0;
+        width: 20px;
+        height: 20px;
+        border-radius: 2px;
+        background-color: var(--background);
+    }
+
+    .loyalty-offers-filters__currency-caret {
+        flex-shrink: 0;
+        color: var(--highlight);
+    }
+
+    .loyalty-offers-filters__currency-options {
+        position: absolute;
+        inset-inline-start: 0;
+        inset-block-start: calc(100% + 2px);
+        z-index: var(--sticky-z-index);
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        width: max(100%, 18rem);
+        border: solid 1px var(--border-color);
+        background-color: var(--component-background);
+    }
+
+    .loyalty-offers-filters__currency-option {
+        appearance: none;
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        width: 100%;
+        margin: 0;
+        padding-block: var(--space-2xs);
+        padding-inline: var(--space-xs-s);
+        border: 0;
+        background: transparent;
+        color: var(--form-color);
+        cursor: pointer;
+        font-size: var(--step--1);
+        text-align: left;
+
+        @media (hover: hover) {
+            &:hover {
+                background-color: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+                color: var(--highlight);
+            }
+        }
+
+        &--selected {
+            background-color: color-mix(in srgb, var(--fleet-red) 35%, transparent);
+            color: var(--highlight);
+        }
+
+        &:focus-visible {
+            outline: 1px solid var(--highlight);
+            outline-offset: -2px;
+        }
+    }
+
     .loyalty-offers-filters__search {
         display: flex;
+        flex-shrink: 0;
+        width: 22rem;
+        max-width: 100%;
     }
 
     .loyalty-offers-filters__chips {
@@ -286,27 +485,39 @@ const hx_include_filters =
 
     .loyalty-offers-filters__chip {
         appearance: none;
+        margin: 0;
         background: transparent;
-        border: solid 1px var(--border-color);
-        color: var(--foreground);
+        border: solid 1px color-mix(in srgb, var(--fleet-yellow) 40%, transparent);
+        color: var(--fleet-yellow);
         cursor: pointer;
         font-family: var(--button-font);
         font-size: var(--step--2);
-        letter-spacing: 0.02em;
+        font-weight: 600;
+        letter-spacing: 0.06em;
         padding-block: var(--space-3xs);
         padding-inline: var(--space-xs);
         text-transform: uppercase;
-        transition: border-color var(--fast-transition), color var(--fast-transition);
+        transition:
+            border-color var(--fast-transition),
+            background-color var(--fast-transition),
+            color var(--fast-transition);
 
         &--active {
             border-color: var(--fleet-yellow);
-            color: var(--highlight);
+            background: var(--fleet-yellow);
+            color: var(--background);
         }
 
         @media (hover: hover) {
             &:hover {
-                border-color: var(--highlight);
-                color: var(--highlight);
+                border-color: var(--fleet-yellow);
+                background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+                color: var(--fleet-yellow);
+            }
+
+            &--active:hover {
+                background: var(--fleet-yellow);
+                color: var(--background);
             }
         }
 
