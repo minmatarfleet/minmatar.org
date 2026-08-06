@@ -29,6 +29,7 @@ const GUIDE_COVERS: Record<string, string> = {
     'pochven-standings': '/images/guides/pochven-map.png',
     'zohar-hunting': '/images/guides/guides/level5s/wrath_of_angels.png',
     'bookmarks': '/images/assets-cover.jpg',
+    'selling-loyalty-points': '/images/loyalty-points-cover.webp',
 }
 
 /** Flat 1200×630 share cards for og:image / Twitter — not used as page heroes. */

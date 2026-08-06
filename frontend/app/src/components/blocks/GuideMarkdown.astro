@@ -1,0 +1,27 @@
+---
+/**
+ * Renders markdown guide HTML with cruiser-guide panel chrome.
+ * Pass HTML from `wrapMarkdownSectionsInPanels(pageProgressFromMarkdown(...).html)`.
+ */
+import './GuideMarkdown.scss'
+
+interface Props {
+    html: string
+    class?: string
+    [propName: string]: any
+}
+
+const {
+    html,
+    class: class_name,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<div
+    {...attributes}
+    class:list={['guide-md', class_name]}
+    set:html={html}
+/>

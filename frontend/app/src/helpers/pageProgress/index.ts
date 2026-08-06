@@ -19,7 +19,8 @@ export {
     normalizeSectionIds,
     slugifySectionId,
 } from '@helpers/pageProgress/sections'
-export { parseMarkdownWithSections } from '@helpers/pageProgress/markdown'
+export { parseMarkdownWithSections, wrapMarkdownSectionsInPanels } from '@helpers/pageProgress/markdown'
+
 export {
     pageProgressFromMarkdown,
     pageProgressFromSections,

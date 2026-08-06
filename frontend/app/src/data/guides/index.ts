@@ -13,6 +13,7 @@ import * as abyss_stormbringer_t6_electrical from '@markdown/guides/abyss-stormb
 import * as abyss_trio_hawk_t5_dark from '@markdown/guides/abyss-trio-hawk-t5-dark.md'
 import * as zohar_hunting from '@markdown/guides/zohar-hunting.md'
 import * as bookmarks from '@markdown/guides/bookmarks.md'
+import * as selling_loyalty_points from '@markdown/guides/selling-loyalty-points.md'
 
 type GuideModule = {
     frontmatter: {
@@ -38,6 +39,7 @@ const guideModules: Record<string, GuideModule> = {
     'abyss-trio-hawk-t5-dark': abyss_trio_hawk_t5_dark,
     'zohar-hunting': zohar_hunting,
     'bookmarks': bookmarks,
+    'selling-loyalty-points': selling_loyalty_points,
 }
 
 export const guideCategories = ["Faction Warfare","PVP","PVE","Utility"] as const
@@ -85,6 +87,19 @@ export const guides: GuideMeta[] = [
             name: "A'Songala",
             id: 2120647389,
             entity: 'character',
+        }],
+    },
+    {
+        slug: "selling-loyalty-points",
+        title: "Selling Loyalty Points",
+        excerpt: "Convert Tribal Liberation Force LP into ISK: LP store offers, pitfalls, and alliance brokers.",
+        category: "Faction Warfare",
+        section: "Mechanics",
+        author: "Minmatar Fleet",
+        authors: [{
+            name: "Minmatar Fleet",
+            id: 99011978,
+            entity: 'alliance',
         }],
     },
     {
@@ -252,7 +267,7 @@ export const guides: GuideMeta[] = [
             id: 99011978,
             entity: 'alliance',
         }],
-    }
+    },
 ]
 
 export function getGuideBySlug(slug: string): (GuideMeta & { module: GuideModule }) | undefined {
