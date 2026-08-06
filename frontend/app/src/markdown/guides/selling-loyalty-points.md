@@ -43,7 +43,7 @@ There are a few known brokers out there:
 | Broker | Where |
 | --- | --- |
 | **Minmatar Fleet** | [Loyalty Points](/industry/loyalty/) desk |
-| **LP Broker Discord** | Public LP broker communities |
+| **LP Broker Discord** | [Public LP broker Discord](https://discord.gg/a8zCcE65Xd) |
 | **Militia Discord(s)** | Ask in your militia for known converters |
 
 Be extremely careful of scams — loyalty point scams are fairly common. Only use trusted sources.
