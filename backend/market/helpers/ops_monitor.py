@@ -30,7 +30,10 @@ from market.helpers.item_classification import (
 )
 from market.helpers.item_ships import item_ships_by_location
 from market.helpers.price_viability import is_price_viable
-from market.helpers.pricing import get_prices_by_type_id
+from market.helpers.pricing import (
+    get_prices_by_type_id,
+    get_volume_weighted_average_by_type_id,
+)
 from market.helpers.readiness import fitting_readiness, shortfall
 from market.models import (
     EveMarketContract,
@@ -51,6 +54,58 @@ _VOLUME_DAYS_3 = 3
 _VOLUME_DAYS_7 = 7
 _VOLUME_DAYS_30 = 30
 _VOLUME_DAYS_90 = 90  # matches inferred-sale retention window
+
+# Match admin sell-order markup bands (sell_orders.MARKUP_*).
+_MARKUP_UNDERPRICED_MAX = -5
+_MARKUP_NORMAL_MAX = 5
+
+# Markup flags use the same ±5% band as admin sell-order filters.
+_FLAG_UNDERSTOCKED = "understocked"
+_FLAG_OVERSTOCKED = "overstocked"
+_FLAG_UNDERPRICED = "underpriced"
+_FLAG_OVERPRICED = "overpriced"
+
+
+def _ops_baseline_by_type(type_ids: list[int]) -> dict[int, int]:
+    """
+    Forge guide for ops markup/viability: 7d volume-weighted average,
+    falling back to latest-day history when a type has no 7d rows.
+    """
+    if not type_ids:
+        return {}
+    baseline = get_volume_weighted_average_by_type_id(
+        type_ids, days=_VOLUME_DAYS_7
+    )
+    missing = [tid for tid in type_ids if tid not in baseline]
+    if missing:
+        baseline = {**baseline, **get_prices_by_type_id(missing)}
+    return baseline
+
+
+def _days_of_stock(current_quantity: int, weekly_units: int) -> float | None:
+    """Listed qty ÷ 7-day avg daily sales; None when there is no sales rate."""
+    if weekly_units <= 0:
+        return None
+    return round(current_quantity / (weekly_units / float(_VOLUME_DAYS_7)), 1)
+
+
+def _sell_gap_flags(
+    current: int,
+    expected: int,
+    avg_markup_pct: float | None,
+) -> list[str]:
+    flags: list[str] = []
+    if current < expected:
+        flags.append(_FLAG_UNDERSTOCKED)
+    elif current > expected:
+        flags.append(_FLAG_OVERSTOCKED)
+    if avg_markup_pct is not None:
+        if avg_markup_pct < _MARKUP_UNDERPRICED_MAX:
+            flags.append(_FLAG_UNDERPRICED)
+        elif avg_markup_pct > _MARKUP_NORMAL_MAX:
+            flags.append(_FLAG_OVERPRICED)
+    return flags
+
 
 # Matches frontend SHIP_TYPES_SORTED — small hulls first.
 SHIP_GROUP_ORDER = [
@@ -224,9 +279,7 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
         t.name: t for t in EveType.objects.filter(name__in=all_names)
     }
     target_type_ids = [t.id for t in type_by_name.values()]
-    baseline_by_type = (
-        get_prices_by_type_id(target_type_ids) if target_type_ids else {}
-    )
+    baseline_by_type = _ops_baseline_by_type(target_type_ids)
     stock_by_loc_item: dict[tuple[int, int], int] = {}
     viable_by_loc_item: dict[tuple[int, int], int] = {}
     # Quantity-weighted price sums for avg markup vs baseline.
@@ -358,6 +411,9 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
                     avg_markup_pct = round(
                         (avg_price / float(baseline) - 1.0) * 100.0, 1
                     )
+            weekly_units = weekly_units_by_loc_item.get(
+                (loc_pk, eve_type.id), 0
+            )
             sell_gaps.append(
                 {
                     "location_id": loc.location_id,
@@ -387,9 +443,7 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
                     "units_3d": units_3d_by_loc_item.get(
                         (loc_pk, eve_type.id), 0
                     ),
-                    "weekly_units": weekly_units_by_loc_item.get(
-                        (loc_pk, eve_type.id), 0
-                    ),
+                    "weekly_units": weekly_units,
                     "units_30d": units_30d_by_loc_item.get(
                         (loc_pk, eve_type.id), 0
                     ),
@@ -397,6 +451,8 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
                         (loc_pk, eve_type.id), 0
                     ),
                     "avg_markup_pct": avg_markup_pct,
+                    "days_of_stock": _days_of_stock(current, weekly_units),
+                    "flags": _sell_gap_flags(current, desired, avg_markup_pct),
                     "ships": ships_by_item.get(loc_pk, {}).get(name, []),
                 }
             )

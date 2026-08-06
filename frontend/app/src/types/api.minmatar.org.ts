@@ -1447,6 +1447,8 @@ export interface OpsMonitor {
         units_30d:          number;
         units_90d:          number;
         avg_markup_pct:     number | null;
+        days_of_stock:      number | null;
+        flags:              string[];
         ships: {
             ship_id:        number;
             fitting_name:   string;

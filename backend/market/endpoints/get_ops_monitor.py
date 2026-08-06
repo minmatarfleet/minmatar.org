@@ -46,6 +46,8 @@ class OpsSellGap(Schema):
     units_30d: int = 0
     units_90d: int = 0
     avg_markup_pct: Optional[float] = None
+    days_of_stock: Optional[float] = None
+    flags: List[str] = []
     ships: List[OpsSellGapShip] = []
 
 
