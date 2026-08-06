@@ -245,6 +245,16 @@ const conversion_tippy = loyalty_conversion_tip_lines(breakdown, {
 
         &[data-tippy-content] {
             cursor: help;
+            text-decoration: underline dotted color-mix(in srgb, currentColor 35%, transparent);
+            text-underline-offset: 0.2em;
+            transition: var(--fast-transition);
+
+            @media (hover: hover) {
+                &:hover {
+                    color: var(--fleet-yellow);
+                    text-decoration-color: currentColor;
+                }
+            }
         }
     }
 </style>
