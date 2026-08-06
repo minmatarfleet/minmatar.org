@@ -94,6 +94,18 @@ From here, you'll see a table of offers that you can convert. There's a few thin
 
 We recommend various sized cap boosters, datacores, and small (frigate, destroyer, etc) blueprints for players to start with. You can sell the blueprints on public contract — just undercut people until you get the hang of it.
 
+### Example flow
+
+**Note:** This only works for Minmatar.
+
+1. Travel to Hek VIII - Moon 12 - Boundless Creation Factory
+2. Purchase an Iteron Mark V
+3. Purchase a **few million ISK** of Cap Booster XXXX
+4. Move them to the Hek VII - Tribal Liberation Force Logistic Support
+5. Convert them to Navy Cap Booster XXXX
+6. Move them back to Hek VIII - Moon 12 - Boundless Creation Factory
+7. Sell them locally on the market
+
 **Don't chase the ISK dragon too soon.** You're going to make hundreds of billions of ISK in loyalty points over your ISK career; saving a few hundred million at the start is meaningless.
 
 ## Pitfalls
