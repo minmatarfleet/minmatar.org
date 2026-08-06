@@ -2,10 +2,12 @@
 
 Conversion rates (isk/lp buy & sell) follow Fuzzwork's LP store formula:
   (market_price * qty - isk_cost - other_cost) / lp_cost
-where other_cost is LP-store required items plus, for blueprints, SDE
-manufacturing materials × offer quantity (Fuzzwork "Materials to build" at
-PE5 / ME0). Market prices use baseline LocationPrice buy/sell when present,
-else Forge history via get_prices_by_type_id.
+where other_cost is LP-store required items plus, for blueprints, Amamake
+build-planner manufacturing cost × offer quantity (compressed ore, job
+install, facility/SCC/reprocessing taxes, freight — excluding navy BPC
+LP/ISK, which stay in the formula via lp_cost / isk_cost). Market prices
+use baseline LocationPrice buy/sell when present, else Forge history via
+get_prices_by_type_id.
 
 Acquisition (LP×buyback rate + ISK + LP required items only) stays separate
 from conversion — it is the LP-desk cost, not finished-hull build cost.
@@ -21,7 +23,7 @@ from django.db import ProgrammingError
 from django.db.models import Sum
 from django.utils import timezone
 from eveonline.models import EveLocation
-from eveuniverse.models import EveIndustryActivityMaterial, EveType
+from eveuniverse.models import EveType
 
 from industry.helpers.blueprint_efficiency import is_faction_navy_hull
 from industry.helpers.lp_catalog import ensure_eve_types
@@ -32,7 +34,6 @@ from industry.helpers.product_unit_cost import (
     plan_product_unit_cost,
 )
 from industry.helpers.type_breakdown import (
-    ACTIVITY_MANUFACTURING,
     get_blueprint_or_reaction_type_id,
 )
 from industry.models import (
@@ -309,50 +310,6 @@ def _conversion_isk_per_lp(
     return (market_price * offer_qty - isk_cost - extras) / float(lp_cost)
 
 
-def manufacturing_materials_by_blueprint_type_id(
-    type_ids: Iterable[int],
-) -> Dict[int, List[Tuple[int, int]]]:
-    """
-    SDE manufacturing bill of materials keyed by blueprint type_id.
-
-    Quantities are ME0 / max Production Efficiency (Fuzzwork PE5) base runs.
-    Blueprints with no manufacturing rows are omitted.
-    """
-    unique = list({int(t) for t in type_ids})
-    if not unique:
-        return {}
-    out: Dict[int, List[Tuple[int, int]]] = {}
-    for bpc_id, mat_id, qty in EveIndustryActivityMaterial.objects.filter(
-        eve_type_id__in=unique,
-        activity_id=ACTIVITY_MANUFACTURING,
-    ).values_list("eve_type_id", "material_eve_type_id", "quantity"):
-        out.setdefault(int(bpc_id), []).append((int(mat_id), int(qty)))
-    return out
-
-
-def _priced_material_pack_cost(
-    materials: List[Tuple[int, int]],
-    *,
-    runs: int,
-    location_prices: Dict[int, Tuple[Optional[int], Optional[int]]],
-    history_prices: Dict[int, int],
-) -> Optional[int]:
-    """Sum sell×qty×runs for a BOM; None if any material lacks a price."""
-    if not materials:
-        return 0
-    total = 0
-    for mat_type_id, mat_qty in materials:
-        sell, _ = _resolve_sell_buy(
-            mat_type_id,
-            location_prices=location_prices,
-            history_prices=history_prices,
-        )
-        if sell is None:
-            return None
-        total += sell * mat_qty * runs
-    return total
-
-
 def _lp_store_required_cost(
     required: List[Tuple[int, int]],
     *,
@@ -381,13 +338,61 @@ def _lp_store_required_cost(
     return (total if priced else None), parts
 
 
-def _fuzzwork_other_cost(
+def _combine_other_cost(
     lp_store_other: Optional[int],
-    build_mats_other: Optional[int],
+    build_other: Optional[int],
 ) -> Optional[int]:
-    if lp_store_other is None or build_mats_other is None:
+    if lp_store_other is None or build_other is None:
         return None
-    return int(lp_store_other) + int(build_mats_other)
+    return int(lp_store_other) + int(build_other)
+
+
+def _amamake_manufacturing_costs(
+    product_type_ids: Iterable[int],
+    batch_sizes: Iterable[int],
+) -> Tuple[Dict[int, int], Dict[Tuple[int, int], Optional[int]]]:
+    """
+    Amamake planner costs for navy hulls.
+
+    Returns:
+      build_cost_per_unit: full unit cost at qty=1 (includes navy BPC LP)
+      mfg_cost_per: manufacturing-only unit cost keyed by (product, batch)
+    """
+    products = sorted({int(t) for t in product_type_ids})
+    batches = sorted({max(int(q), 1) for q in batch_sizes})
+    build_cost_per_unit: Dict[int, int] = {}
+    mfg_cost_per: Dict[Tuple[int, int], Optional[int]] = {}
+    if not products:
+        return build_cost_per_unit, mfg_cost_per
+
+    for product_type_id in products:
+        try:
+            unit = plan_product_unit_cost(
+                product_type_id, quantity=1, use_production_lp=True
+            )
+        except ValueError:
+            continue
+        build_cost_per_unit[product_type_id] = unit.cost_per
+        mfg_cost_per[(product_type_id, 1)] = unit.manufacturing_cost_per
+
+    for product_type_id in products:
+        for batch in batches:
+            if batch == 1:
+                continue
+            try:
+                unit = plan_product_unit_cost(
+                    product_type_id,
+                    quantity=batch,
+                    use_production_lp=True,
+                )
+            except ValueError:
+                mfg_cost_per[(product_type_id, batch)] = None
+                continue
+            mfg_cost_per[(product_type_id, batch)] = (
+                unit.manufacturing_cost_per
+            )
+
+    return build_cost_per_unit, mfg_cost_per
 
 
 def offer_economics_for_queryset(
@@ -427,14 +432,11 @@ def offer_economics_for_queryset(
     product_type_ids = {
         bpc_to_product[tid] for tid in offer_type_ids if tid in bpc_to_product
     }
-    req_type_ids = {tid for items in req_by_offer.values() for tid, _ in items}
-    bom_by_bpc = manufacturing_materials_by_blueprint_type_id(offer_type_ids)
-    bom_type_ids = {
-        mat_id for mats in bom_by_bpc.values() for mat_id, _ in mats
+    blueprint_batch_sizes = {
+        max(o.quantity, 1) for o in rows if o.type_id in bpc_to_product
     }
-    market_type_ids = sorted(
-        offer_type_ids | product_type_ids | req_type_ids | bom_type_ids
-    )
+    req_type_ids = {tid for items in req_by_offer.values() for tid, _ in items}
+    market_type_ids = sorted(offer_type_ids | product_type_ids | req_type_ids)
     ensure_eve_types(market_type_ids)
     history_prices = get_prices_by_type_id(market_type_ids)
     avg_7d_prices = get_volume_weighted_average_by_type_id(
@@ -451,15 +453,9 @@ def offer_economics_for_queryset(
         ).values_list("id", "name")
     }
 
-    build_costs: Dict[int, int] = {}
-    for product_type_id in sorted(product_type_ids):
-        try:
-            unit = plan_product_unit_cost(
-                product_type_id, use_production_lp=True
-            )
-        except ValueError:
-            continue
-        build_costs[product_type_id] = unit.cost_per
+    build_costs, mfg_cost_per = _amamake_manufacturing_costs(
+        product_type_ids, blueprint_batch_sizes
+    )
 
     out: Dict[int, LpStoreOfferEconomics] = {}
     for offer in rows:
@@ -477,33 +473,30 @@ def offer_economics_for_queryset(
             type_names=type_names,
         )
 
-        # Fuzzwork: Other Cost = LP required items + materials to build
-        # (manufacturing BOM × offer quantity). Acquisition stays LP-desk only.
         runs = max(offer.quantity, 1)
-        build_mats_other = _priced_material_pack_cost(
-            bom_by_bpc.get(type_id, []),
-            runs=runs,
-            location_prices=location_prices,
-            history_prices=history_prices,
-        )
-        other_cost = _fuzzwork_other_cost(lp_store_other, build_mats_other)
-
-        acquisition = _acquisition_isk_per_unit(
-            offer, isk_per_lp, lp_store_other
-        )
-
         product_type_id = bpc_to_product.get(type_id)
         if product_type_id is not None:
             kind = "blueprint"
             market_type_id = product_type_id
             build_cost = build_costs.get(product_type_id)
+            # Amamake manufacturing (excl. navy BPC LP) × offer quantity.
+            # BPC LP/ISK remain in the conversion formula via lp_cost/isk_cost.
+            mfg_per = mfg_cost_per.get((product_type_id, runs))
+            build_other = None if mfg_per is None else int(mfg_per) * runs
         else:
             kind = "input"
             market_type_id = type_id
             build_cost = None
+            build_other = 0
+
+        other_cost = _combine_other_cost(lp_store_other, build_other)
+
+        acquisition = _acquisition_isk_per_unit(
+            offer, isk_per_lp, lp_store_other
+        )
 
         # Cost/Profit compare LP-store acquisition per unit, not planner
-        # build cost (identical across same-hull BPCs) and not BOM other cost.
+        # build cost (identical across same-hull BPCs) and not Amamake mfg.
         cost_per_unit = acquisition
 
         jita_sell, jita_buy = _resolve_sell_buy(

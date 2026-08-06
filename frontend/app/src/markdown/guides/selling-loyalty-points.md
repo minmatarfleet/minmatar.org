@@ -110,7 +110,7 @@ We recommend various sized cap boosters, datacores, and small (frigate, destroye
 
 ## Pitfalls
 
-- **Paper ISK/LP** — BPCs, rare modules, and low-volume navy hulls look rich and don’t clear.
+- **Paper ISK/LP** — BPCs, rare modules, and low-volume navy hulls can still look rich and don’t clear. Our BPC rates assume you build the hull in Amamake (planner costs), then sell the hull — not BPC contract flips.
 - **Ignoring required items** — navy upgrades that need a pile of T1 can erase the edge if you buy T1 retail in the wrong place.
 - **Dumping into a thin book** — one large sell order can push you below buyback rates; watch the spread and recent volume.
 - **Wrong price side** — planning on sell-side ISK/LP, then panic-selling into buy orders.

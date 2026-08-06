@@ -226,7 +226,10 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         return_value=type(
             "U",
             (),
-            {"cost_per": 180_000_000},
+            {
+                "cost_per": 180_000_000,
+                "manufacturing_cost_per": 50_000_000,
+            },
         )(),
     )
     def test_blueprint_row_uses_hull_market_and_build_cost(self, mock_plan):
@@ -244,20 +247,23 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         self.assertEqual(econ.profit_vs_sell, 150_000_000)
         self.assertEqual(econ.isk_per_lp, 800.0)
         self.assertEqual(econ.acquisition_isk_per_unit, 100_000_000)
-        # Other cost includes SDE manufacturing BOM (1× LP Input Item @ 1.5M).
-        self.assertEqual(econ.other_cost, 1_500_000)
-        # (250M - 20M - 1.5M) / 100k LP = 2285
-        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 2285.0)
-        self.assertAlmostEqual(econ.conversion_isk_per_lp_buy, 2285.0)
+        # Other cost = Amamake manufacturing (excl. navy BPC LP).
+        self.assertEqual(econ.other_cost, 50_000_000)
+        # (250M - 20M - 50M) / 100k LP = 1800
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 1800.0)
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_buy, 1800.0)
         self.assertEqual(econ.jita_avg_7d, 250_000_000)
-        self.assertAlmostEqual(econ.conversion_isk_per_lp_avg_7d, 2285.0)
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_avg_7d, 1800.0)
 
     @patch(
         "industry.helpers.lp_store_economics.plan_product_unit_cost",
         return_value=type(
             "U",
             (),
-            {"cost_per": 180_000_000},
+            {
+                "cost_per": 180_000_000,
+                "manufacturing_cost_per": 50_000_000,
+            },
         )(),
     )
     def test_blueprint_offers_differ_by_acquisition(self, mock_plan):
@@ -290,13 +296,13 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         self.assertEqual(cheap_econ.profit_vs_sell, 218_000_000)
         self.assertEqual(dear_econ.profit_vs_sell, 208_000_000)
         self.assertNotEqual(cheap_econ.cost_per_unit, dear_econ.cost_per_unit)
-        # Conversion subtracts BOM (1.5M); acquisition does not.
-        # cheap: (250M - 0 - 1.5M) / 40k = 6212.5
-        self.assertAlmostEqual(cheap_econ.conversion_isk_per_lp_sell, 6212.5)
-        self.assertEqual(cheap_econ.other_cost, 1_500_000)
+        # Conversion subtracts Amamake mfg (50M); acquisition does not.
+        # cheap: (250M - 0 - 50M) / 40k = 5000
+        self.assertAlmostEqual(cheap_econ.conversion_isk_per_lp_sell, 5000.0)
+        self.assertEqual(cheap_econ.other_cost, 50_000_000)
 
-    def test_blueprint_pack_multiplies_build_materials_in_other_cost(self):
-        """Fuzzwork scales Materials to build by offer quantity."""
+    def test_blueprint_pack_multiplies_amamake_mfg_in_other_cost(self):
+        """Amamake manufacturing cost scales by offer quantity."""
         pack = IndustryLpStoreOffer.objects.create(
             offer_id=1012,
             corporation_id=TLIB_CORP_ID,
@@ -307,14 +313,21 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         )
         with patch(
             "industry.helpers.lp_store_economics.plan_product_unit_cost",
-            return_value=type("U", (), {"cost_per": 180_000_000})(),
+            return_value=type(
+                "U",
+                (),
+                {
+                    "cost_per": 180_000_000,
+                    "manufacturing_cost_per": 50_000_000,
+                },
+            )(),
         ):
             econ = offer_economics_for_queryset([pack])[pack.pk]
-        # 10 runs × 1 input @ 1.5M
-        self.assertEqual(econ.other_cost, 15_000_000)
-        # (250M * 10 - 100M - 15M) / 100k = 23850
-        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 23850.0)
-        # Acquisition ignores BOM: (100k*800 + 100M) / 10 = 18M
+        # 10 runs × 50M Amamake mfg / hull
+        self.assertEqual(econ.other_cost, 500_000_000)
+        # (250M * 10 - 100M - 500M) / 100k = 19000
+        self.assertAlmostEqual(econ.conversion_isk_per_lp_sell, 19000.0)
+        # Acquisition ignores build: (100k*800 + 100M) / 10 = 18M
         self.assertEqual(econ.acquisition_isk_per_unit, 18_000_000)
 
     def test_volume_windows_sum_daily_history(self):

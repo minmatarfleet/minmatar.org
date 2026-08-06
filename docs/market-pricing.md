@@ -77,7 +77,7 @@ Only need a coarse average / “has any price”?
 
 ## Correct examples in-repo
 
-- **LP store conversion:** `industry.helpers.lp_store_economics` — baseline `EveMarketItemLocationPrice` sell/buy when present, else Forge history via `get_prices_by_type_id`. **Other cost** = LP-store required items (sell) **plus**, for blueprints, SDE manufacturing materials × offer quantity (Fuzzwork “Materials to build”). Alliance buyback ISK/LP acquisition remains LP-desk only (required items, not BOM). Fuzzwork itself uses a simulated 5% Jita buy (order-book percentile); we use LocationPrice/history, so thin-market rows can still diverge slightly.
+- **LP store conversion:** `industry.helpers.lp_store_economics` — baseline `EveMarketItemLocationPrice` sell/buy when present, else Forge history via `get_prices_by_type_id`. **Other cost** = LP-store required items (sell) **plus**, for blueprints, Amamake build-planner manufacturing cost × offer quantity (compressed ore, job install, facility/SCC/reprocessing taxes, freight — excluding navy BPC LP/ISK, which stay in the conversion formula via `lp_cost` / `isk_cost`). Alliance buyback ISK/LP acquisition remains LP-desk only (required items, not build). Fuzzwork itself uses ME0 mineral BOM + a simulated 5% Jita buy; we diverge for navy BPCs by assuming an Amamake build.
 - **Buyback:** `buyback.helpers.pricing.get_baseline_buy_prices` — history only; docstring states not live order-book rows.
 - **Market admin contrast:** local book from LocationPrice, separate `jita_price` from history/`get_prices_by_type_id`.
 
