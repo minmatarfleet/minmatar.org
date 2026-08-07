@@ -263,6 +263,15 @@ class MarketTaskTestCase(TestCase):
             is_public=True,
             expires_at=cutoff - timedelta(hours=1),
         )
+        EveMarketContract.objects.create(
+            id=10004,
+            title="Private expired before cutoff",
+            price=12.34,
+            issuer_external_id=1,
+            status="outstanding",
+            is_public=False,
+            expires_at=cutoff - timedelta(hours=1),
+        )
 
         completed = update_completed_contracts(cutoff)
 
@@ -273,7 +282,10 @@ class MarketTaskTestCase(TestCase):
 
         expired = update_expired_contracts(cutoff)
 
-        self.assertEqual(1, expired)
+        self.assertEqual(2, expired)
         self.assertEqual(
             "expired", EveMarketContract.objects.get(id=10003).status
+        )
+        self.assertEqual(
+            "expired", EveMarketContract.objects.get(id=10004).status
         )
