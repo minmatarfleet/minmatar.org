@@ -3,6 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
 import { get_player_icon } from '@helpers/eve_image_server'
+import { get_auth_url } from '@helpers/env'
 interface Props {
     active?:    boolean;
 }
@@ -11,10 +12,10 @@ const {
     active = false,
 } = Astro.props;
 
-import { get_auth_url } from '@helpers/env'
-
 const is_auth = Astro.cookies.has('auth_token')
-const href = is_auth ? translatePath('/account/') : get_auth_url()
+const href = is_auth
+    ? translatePath('/account/')
+    : get_auth_url(Astro.url.toString())
 const primary_pilot = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cookies.get('primary_pilot')?.value as string) : null
 const primary_pilot_avatar = primary_pilot ? get_player_icon(primary_pilot.character_id) : null
 const primary_pilot_name = primary_pilot ? primary_pilot.character_name : null

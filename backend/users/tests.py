@@ -100,7 +100,7 @@ class UserRouterTestCase(TestCase):
         username = "new_user"
 
         with patch("users.router.discord") as discord_request_mock:
-            discord_request_mock.exchange_code.return_value = {
+            discord_request_mock.complete_oauth_login.return_value = {
                 "id": 1000001,
                 "username": username,
                 "discriminator": "100",
@@ -115,6 +115,7 @@ class UserRouterTestCase(TestCase):
             self.assertIn(
                 "https://my.minmatar.org/auth/login?token=", response.url
             )
+            discord_request_mock.complete_oauth_login.assert_called_once()
 
             new_django_user = User.objects.filter(username=username).first()
             self.assertIsNotNone(new_django_user)
@@ -139,7 +140,7 @@ class UserRouterTestCase(TestCase):
         )
 
         with patch("users.router.discord") as discord_request_mock:
-            discord_request_mock.exchange_code.return_value = {
+            discord_request_mock.complete_oauth_login.return_value = {
                 "id": 1000002,
                 "username": username,
                 "discriminator": "12345",
@@ -154,6 +155,7 @@ class UserRouterTestCase(TestCase):
             self.assertIn(
                 "https://my.minmatar.org/auth/login?token=", response.url
             )
+            discord_request_mock.complete_oauth_login.assert_called_once()
 
             django_user = User.objects.filter(username=username).first()
             self.assertEqual(django_user, self.user)
@@ -163,25 +165,63 @@ class UserRouterTestCase(TestCase):
             self.assertTrue(discord_user.is_down_under)
             self.assertEqual("http://after.gif", discord_user.avatar)
 
-    @patch("users.router.discord.exchange_code")
-    def test_discord_login_redirect_error(self, exchange_mock):
+    @patch("users.router.discord.complete_oauth_login")
+    def test_discord_login_redirect_error(self, oauth_mock):
         request = MagicMock()
 
         discord_response = MagicMock()
         discord_response.status_code = 400
-        exchange_mock.side_effect = DiscordError.for_response(
+        oauth_mock.side_effect = DiscordError.for_response(
             "Error exchanging token", "EXCHG_CODE", discord_response
         )
         response = callback(request, code="100001")
         self.assertEqual(response.status_code, 302)
         self.assertIn("error=EXCHG_CODE", response.url)
 
-        exchange_mock.side_effect = DiscordError.for_response(
+        oauth_mock.side_effect = DiscordError.for_response(
             "Error fetching Discord profile", "GET_PROFILE", discord_response
         )
         response = callback(request, code="100001")
         self.assertEqual(response.status_code, 302)
         self.assertIn("error=GET_PROFILE", response.url)
+
+    def test_discord_login_guild_join_failure_does_not_create_user(self):
+        username = "join_fail_user"
+        discord_response = MagicMock()
+        discord_response.status_code = 403
+        join_error = DiscordError.for_response(
+            "Error adding Discord guild member",
+            "GUILD_JOIN",
+            discord_response,
+        )
+
+        with patch("users.router.discord") as discord_request_mock:
+            discord_request_mock.complete_oauth_login.side_effect = join_error
+
+            response = self.client.get(
+                "/api/users/callback?code=20003",
+            )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("error=GUILD_JOIN", response.url)
+        self.assertIn(f"id={join_error.id}", response.url)
+        self.assertFalse(User.objects.filter(username=username).exists())
+        discord_request_mock.complete_oauth_login.assert_called_once()
+
+    def test_login_requests_guilds_join_scope(self):
+        fake_user = settings.FAKE_LOGIN_USER_ID
+        del settings.FAKE_LOGIN_USER_ID
+
+        response = self.client.get(
+            "/api/users/login?redirect_url=abc123",
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("scope=identify%20guilds.join", response.url)
+        self.assertEqual(
+            "abc123", self.client.session["authentication_redirect_url"]
+        )
+
+        settings.FAKE_LOGIN_USER_ID = fake_user
 
     def test_discord_login_no_code(self):
         request = MagicMock()

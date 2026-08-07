@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from app.errors import create_error_id
 from authentication import AuthBearer
-from discord.client import DiscordClient, DiscordError
+from discord.client import DiscordClient, DiscordError, discord_authorize_url
 
 # from discord.models import DiscordUser
 from discord.tasks import sync_discord_user, sync_discord_nickname
@@ -29,7 +29,9 @@ from .helpers import get_user_profile, get_user_profiles, make_user_objects
 from .schemas import UserProfileSchema
 
 logger = logging.getLogger(__name__)
-auth_url_discord = f"https://discord.com/api/oauth2/authorize?client_id={settings.DISCORD_CLIENT_ID}&redirect_uri={settings.DISCORD_REDIRECT_URL}&response_type=code&scope=identify"  # pylint: disable=line-too-long
+auth_url_discord = discord_authorize_url(
+    settings.DISCORD_CLIENT_ID, settings.DISCORD_REDIRECT_URL
+)
 router = Router(tags=["Authentication"])
 discord = DiscordClient()
 
@@ -90,17 +92,19 @@ def callback(
     logger.debug("Recived discord callback with code: ...%s", code[-5:])
 
     try:
-        user = discord.exchange_code(code, settings.DISCORD_REDIRECT_URL)
+        user = discord.complete_oauth_login(
+            code, settings.DISCORD_REDIRECT_URL
+        )
     except DiscordError as e:
         logger.error(
-            "Error exchanging Discord code (%s): %d %s",
+            "Discord OAuth login failed (%s): %d %s",
             e.id,
             e.status_code,
             e.description,
         )
         return redirect(f"{redirect_url}?error={e.code}&id={e.id}")
 
-    logger.debug("Successfully exchanged code for user: %s", user["username"])
+    logger.debug("Discord OAuth login succeeded for: %s", user["username"])
 
     django_user = make_user_objects(user)
 

@@ -11,8 +11,14 @@ export const is_prod_mode = () => {
     return import.meta.env.PROD;
 }
 
-export const get_auth_url = () => {
-    return `${API_PUBLIC_URL}/api/users/login?redirect_url=${APP_URL}/auth/login`
+/** Canonical website login start — always through the Discord notice gate. */
+export const get_auth_url = (redirect_url: string = `${APP_URL}/account/`) => {
+    return `${APP_URL}/redirects/auth_init?redirect_url=${encodeURIComponent(redirect_url)}`
+}
+
+/** Backend Discord OAuth start (after the notice gate). */
+export const get_discord_oauth_start_url = () => {
+    return `${API_PUBLIC_URL}/api/users/login?redirect_url=${encodeURIComponent(`${APP_URL}/auth/login`)}`
 }
 
 export const get_friend_auth_url = () => {

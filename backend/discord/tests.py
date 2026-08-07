@@ -433,7 +433,7 @@ class DiscordTests(TestCase):
 
         with patch("discord.views.login"):
             with patch("discord.views.discord") as discord_client_mock:
-                discord_client_mock.exchange_code.return_value = {
+                discord_client_mock.complete_oauth_login.return_value = {
                     "id": 12345,
                     "username": "testuser",
                     "discriminator": "123",
@@ -446,6 +446,7 @@ class DiscordTests(TestCase):
 
                 discord_login_redirect(redirect_request_mock)
 
+        discord_client_mock.complete_oauth_login.assert_called_once()
         new_django_user = User.objects.filter(username="testuser").first()
         self.assertIsNotNone(new_django_user)
         new_discord_user = DiscordUser.objects.filter(
@@ -463,7 +464,7 @@ class DiscordTests(TestCase):
         )
 
         with patch("discord.views.discord") as discord_client_mock:
-            discord_client_mock.exchange_code.side_effect = error
+            discord_client_mock.complete_oauth_login.side_effect = error
 
             redirect_request_mock = Mock()
             redirect_request_mock.GET.get.return_value = "used-code"

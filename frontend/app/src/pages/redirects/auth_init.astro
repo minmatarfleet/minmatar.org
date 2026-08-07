@@ -1,10 +1,151 @@
 ---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_discord_oauth_start_url } from '@helpers/env'
+
 const redirect = Astro.url.searchParams.get('redirect_url')
 
 if (redirect)
     Astro.cookies.set('redirect_after_auth', redirect, { path: '/' })
 
-import { get_auth_url } from '@helpers/env'
+const AUTH_URL = get_discord_oauth_start_url()
+const HOME_URL = translatePath('/')
+const DISCORD_LOGIN_NOTICE_STORAGE_KEY = 'discord_login_notice_accepted'
+const DISCORD_LOGIN_NOTICE_ACCEPTED_VALUE = '1'
 
-return Astro.redirect(get_auth_url())
+import Viewport from '@layouts/Viewport.astro'
+import PageCover from '@components/page/partials/PageCover.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+import Button from '@components/blocks/Button.astro'
+import Markdown from '@components/blocks/Markdown.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 ---
+
+<Viewport
+    title={t('discord_login_notice_title')}
+    neocom={false}
+    meta_description={t('discord_login_notice_meta')}
+>
+    <script is:inline define:vars={{ AUTH_URL, DISCORD_LOGIN_NOTICE_STORAGE_KEY, DISCORD_LOGIN_NOTICE_ACCEPTED_VALUE }}>
+        try {
+            if (localStorage.getItem(DISCORD_LOGIN_NOTICE_STORAGE_KEY) === DISCORD_LOGIN_NOTICE_ACCEPTED_VALUE) {
+                window.location.replace(AUTH_URL)
+            }
+        } catch (e) {}
+    </script>
+
+    <PageCover
+        image="/images/account-cover.jpg"
+        image_990="/images/account-cover-990.jpg"
+        overlay={true}
+    />
+
+    <main
+        id="content"
+        class="[ auth-init ]"
+        x-data={`{
+            understand_leave_deletes_account: false,
+            storage_key: ${JSON.stringify(DISCORD_LOGIN_NOTICE_STORAGE_KEY)},
+            accepted_value: ${JSON.stringify(DISCORD_LOGIN_NOTICE_ACCEPTED_VALUE)},
+            auth_url: ${JSON.stringify(AUTH_URL)},
+            home_url: ${JSON.stringify(HOME_URL)},
+            accept_notice() {
+                if (!this.understand_leave_deletes_account) return
+                try {
+                    localStorage.setItem(this.storage_key, this.accepted_value)
+                } catch (e) {}
+                window.location.href = this.auth_url
+            },
+            cancel_notice() {
+                window.location.href = this.home_url
+            }
+        }`}
+    >
+        <Wrapper
+            class="[ auth-init-panel ]"
+            centered={true}
+            padding_block="var(--space-xl)"
+            padding_inline="var(--space-l)"
+            max_width="42rem"
+        >
+            <Flexblock gap="var(--space-l)">
+                <Flexblock gap="var(--space-m)">
+                    <h1 class="[ auth-init-title ]">{t('discord_login_notice_title')}</h1>
+                    <div class="[ discord-login-notice-content ]">
+                        <Markdown markdown={t('discord_login_notice_body')} />
+                    </div>
+                    <RadioCheckInput
+                        id="discord-login-notice-leave-checkbox"
+                        type="checkbox"
+                        x-model="understand_leave_deletes_account"
+                    >
+                        <span class="[ discord-login-notice-checkbox-label ]">{t('discord_login_notice_leave_checkbox')}</span>
+                    </RadioCheckInput>
+                </Flexblock>
+
+                <FlexInline justification="flex-end">
+                    <Button
+                        type="button"
+                        color="fleet-red"
+                        x-on:click="cancel_notice()"
+                    >
+                        {t('cancel')}
+                    </Button>
+                    <Button
+                        type="button"
+                        color="green"
+                        x-bind:disabled="!understand_leave_deletes_account"
+                        x-on:click="accept_notice()"
+                    >
+                        {t('continue_to_discord')}
+                    </Button>
+                </FlexInline>
+            </Flexblock>
+        </Wrapper>
+    </main>
+</Viewport>
+
+<style lang="scss">
+    .auth-init {
+        position: relative;
+        z-index: 1;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .auth-init-panel {
+        width: 100%;
+        background: var(--background);
+    }
+
+    .auth-init-title {
+        font-size: var(--step-3);
+        margin: 0;
+    }
+
+    .discord-login-notice-content {
+        :global(p),
+        :global(li) {
+            font-size: var(--step-0);
+        }
+
+        :global(ul) {
+            margin-block: var(--space-s);
+            padding-inline-start: var(--space-m);
+        }
+    }
+
+    .discord-login-notice-checkbox-label {
+        color: var(--fleet-yellow);
+        font-size: var(--step-0);
+    }
+
+    .auth-init :global(label:focus-within) {
+        text-decoration: none;
+    }
+</style>
