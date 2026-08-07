@@ -958,6 +958,15 @@ export interface PlannerPlanJob {
     job_cost_isk: number
 }
 
+export interface PlannerStockApplied {
+    type_id: number
+    name: string
+    needed: number
+    owned: number
+    used: number
+    remaining: number
+}
+
 export interface PlannerPlanRequest {
     product_type_id: number
     quantity: number
@@ -970,6 +979,7 @@ export interface PlannerPlanRequest {
     refine_rate?: number | null
     character_id?: number | null
     use_reprocessing_implants?: boolean
+    stock_paste?: string | null
 }
 
 export interface PlannerCostLineItem {
@@ -1010,6 +1020,8 @@ export interface PlannerPlanResponse {
     materials_tsv: string
     compressed_ore: PlannerCompressedOre | null
     cost_breakdown: PlannerCostBreakdown | null
+    stock_applied?: PlannerStockApplied[]
+    stock_unresolved?: string[]
 }
 
 export async function get_planner_facilities(access_token?: string) {

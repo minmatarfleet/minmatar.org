@@ -100,6 +100,8 @@ class PlanRequestSchema(Schema):
     use_reprocessing_implants: bool = False
     # ISK per LP for navy/faction BPC acquisition cost (omit to skip).
     isk_per_lp: Optional[float] = None
+    # Optional EVE inventory / assets / Multibuy paste; subtracts from shopping list.
+    stock_paste: Optional[str] = None
 
 
 class PlanProductSchema(Schema):
@@ -138,6 +140,15 @@ class PlanLeafMaterialSchema(Schema):
     quantity: int
     average_price: float = 0.0
     estimated_buy_isk: float = 0.0
+
+
+class PlanStockAppliedSchema(Schema):
+    type_id: int
+    name: str
+    needed: int
+    owned: int
+    used: int
+    remaining: int
 
 
 class PlanImportLineSchema(Schema):
@@ -263,3 +274,5 @@ class PlanResponseSchema(Schema):
     compressed_ore: Optional[PlanCompressedOreSchema] = None
     cost_breakdown: Optional[PlanCostBreakdownSchema] = None
     navy_bpc: Optional[PlanNavyBpcSchema] = None
+    stock_applied: List[PlanStockAppliedSchema] = []
+    stock_unresolved: List[str] = []

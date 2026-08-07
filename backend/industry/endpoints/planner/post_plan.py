@@ -10,6 +10,7 @@ from industry.endpoints.planner.schemas import (
     PlanLeafMaterialSchema,
     PlanRequestSchema,
     PlanResponseSchema,
+    PlanStockAppliedSchema,
 )
 from industry.helpers.blueprint_efficiency import (
     default_blueprint_me_te_percent,
@@ -34,6 +35,11 @@ from industry.helpers.loyalty_store import (
     navy_bpc_cost_for_plan,
     resolve_isk_per_lp,
 )
+from industry.helpers.plan_stock import (
+    apply_stock_to_compressed_ore_plan,
+    apply_stock_to_leaf_materials,
+    parse_stock_paste,
+)
 from industry.helpers.reprocessing_skills import (
     compression_ore_refine_yields,
     ore_refine_yields_payload,
@@ -48,7 +54,8 @@ ROUTE_SPEC = {
         "Plan manufacture + reaction jobs for a product at an alliance freeport "
         "(live ESI cost indices); optional compressed-ore/ice conversion. "
         "Anonymous callers get max-skill refine assumptions; character_id "
-        "requires authentication."
+        "requires authentication. Optional stock_paste subtracts on-hand "
+        "inventory from the shopping list."
     ),
     "auth": AuthOptional(),
     "response": {
@@ -113,31 +120,10 @@ def _leaf_materials_with_prices(plan):
     return leaf_materials, total_buy
 
 
-def _build_compressed_ore_section(plan, facility_key, character, payload):
-    """Return (compressed_payload, ore_plan) or (error_status, ErrorResponse)."""
-    try:
-        refine, rate_source, skills = resolve_refine_rate(
-            facility_key,
-            character=character,
-            use_reprocessing_implants=payload.use_reprocessing_implants,
-            refine_rate_override=payload.refine_rate,
-        )
-        ore_yields = compression_ore_refine_yields(
-            facility_key,
-            skills=skills,
-            use_reprocessing_implants=payload.use_reprocessing_implants,
-            refine_rate_override=payload.refine_rate,
-        )
-    except ValueError as exc:
-        return 400, ErrorResponse(detail=str(exc))
-
-    materials = {name: qty for _, (name, qty) in plan.leaf_materials.items()}
-    ore_plan = build_compressed_ore_plan(
-        materials,
-        refine_rate=refine,
-        reprocessing_tax=get_facility_reprocessing_tax(facility_key),
-    )
-    compressed_payload = {
+def _compressed_payload_from_ore_plan(
+    ore_plan, rate_source, skills, ore_yields
+) -> dict:
+    return {
         "refine_rate": ore_plan.refine_rate,
         "refine_rate_source": rate_source,
         "reprocessing_tax": ore_plan.reprocessing_tax,
@@ -162,7 +148,119 @@ def _build_compressed_ore_section(plan, facility_key, character, payload):
         ),
         "ore_yields": ore_refine_yields_payload(ore_yields),
     }
+
+
+def _build_compressed_ore_section(plan, facility_key, character, payload):
+    """Return (compressed_payload, ore_plan) or (error_status, ErrorResponse)."""
+    try:
+        refine, rate_source, skills = resolve_refine_rate(
+            facility_key,
+            character=character,
+            use_reprocessing_implants=payload.use_reprocessing_implants,
+            refine_rate_override=payload.refine_rate,
+        )
+        ore_yields = compression_ore_refine_yields(
+            facility_key,
+            skills=skills,
+            use_reprocessing_implants=payload.use_reprocessing_implants,
+            refine_rate_override=payload.refine_rate,
+        )
+    except ValueError as exc:
+        return 400, ErrorResponse(detail=str(exc))
+
+    materials = {name: qty for _, (name, qty) in plan.leaf_materials.items()}
+    ore_plan = build_compressed_ore_plan(
+        materials,
+        refine_rate=refine,
+        reprocessing_tax=get_facility_reprocessing_tax(facility_key),
+    )
+    compressed_payload = _compressed_payload_from_ore_plan(
+        ore_plan, rate_source, skills, ore_yields
+    )
     return compressed_payload, ore_plan
+
+
+def _stock_applied_payload(rows) -> list:
+    return [
+        PlanStockAppliedSchema(
+            type_id=row.type_id,
+            name=row.name,
+            needed=row.needed,
+            owned=row.owned,
+            used=row.used,
+            remaining=row.remaining,
+        )
+        for row in rows
+    ]
+
+
+def _apply_stock_paste(plan, payload):
+    """Subtract pasted inventory from leaf materials; return applied + stock."""
+    stock = parse_stock_paste(payload.stock_paste)
+    if not stock.by_type_id and not stock.unresolved_names:
+        return [], stock
+    remaining, applied = apply_stock_to_leaf_materials(
+        plan.leaf_materials,
+        stock.by_type_id,
+        stock_by_name=stock.by_name,
+    )
+    plan.leaf_materials = remaining
+    return applied, stock
+
+
+def _refresh_compressed_payload_after_stock(compressed_payload, ore_plan):
+    compressed_payload["materials_tsv"] = ore_plan.multibuy()
+    compressed_payload["import_lines"] = [
+        {"name": name, "quantity": qty}
+        for name, qty in ore_plan.import_lines()
+    ]
+    compressed_payload["belt_ore_compressed"] = dict(
+        ore_plan.belt_ore_compressed
+    )
+    compressed_payload["moon_ore_compressed"] = dict(
+        ore_plan.moon_ore_compressed
+    )
+    compressed_payload["ice_compressed"] = dict(ore_plan.ice_compressed)
+    compressed_payload["mineral_imports"] = dict(ore_plan.mineral_imports)
+    compressed_payload["pi_other_imports"] = dict(ore_plan.pi_other_imports)
+    compressed_payload["ice_imports"] = dict(ore_plan.ice_imports)
+    compressed_payload["other_imports"] = dict(ore_plan.other_imports)
+    compressed_payload["expected_minerals"] = dict(ore_plan.expected_minerals)
+    compressed_payload["expected_ice_products"] = dict(
+        ore_plan.expected_ice_products
+    )
+    compressed_payload["mineral_delta"] = dict(ore_plan.mineral_delta)
+    compressed_payload["reprocessing_tax"] = ore_plan.reprocessing_tax
+
+
+def _apply_stock_then_compress(plan, key, character, payload, stock):
+    """
+    Build compressed Multibuy from post-stock leaf demand.
+
+    Mineral / PI stock is subtracted from ``plan.leaf_materials`` first, so
+    ``build_compressed_ore_plan`` sizes less ore/ice when on-hand minerals
+    already cover part of the BOM. Remaining stock (e.g. Compressed Veldspar)
+    is then applied to the ore shopping list.
+
+    Returns ``(error, compressed_payload, ore_plan, ore_applied)`` where
+    ``error`` is an ``(status, ErrorResponse)`` tuple on failure.
+    """
+    result = _build_compressed_ore_section(plan, key, character, payload)
+    if isinstance(result[1], ErrorResponse):
+        return result, None, None, None
+    compressed_payload, ore_plan = result
+    ore_applied = []
+    if stock is not None and stock.by_name:
+        ore_applied = apply_stock_to_compressed_ore_plan(
+            ore_plan,
+            stock.by_name,
+            name_to_type_id=stock.name_to_type_id,
+        )
+        if ore_applied:
+            _refresh_compressed_payload_after_stock(
+                compressed_payload, ore_plan
+            )
+    return None, compressed_payload, ore_plan, ore_applied
 
 
 def _plan_response_body(
@@ -173,6 +271,8 @@ def _plan_response_body(
     compressed_payload,
     ore_plan,
     navy_bpc=None,
+    stock_applied=None,
+    stock_unresolved=None,
 ):
     navy_bpc_isk = navy_bpc.total_isk if navy_bpc is not None else 0
     cost_breakdown = cost_build_plan(
@@ -233,6 +333,8 @@ def _plan_response_body(
         "compressed_ore": compressed_payload,
         "cost_breakdown": cost_breakdown.to_legacy_breakdown_dict(),
         "navy_bpc": navy_bpc.to_dict() if navy_bpc is not None else None,
+        "stock_applied": _stock_applied_payload(stock_applied or []),
+        "stock_unresolved": list(stock_unresolved or []),
     }
 
 
@@ -359,16 +461,27 @@ def post_plan(request, payload: PlanRequestSchema):
     if isinstance(plan, tuple):
         return plan
 
+    stock_applied_rows = []
+    stock_unresolved = []
+    stock = None
+    if payload.stock_paste:
+        leaf_applied, stock = _apply_stock_paste(plan, payload)
+        stock_applied_rows.extend(leaf_applied)
+        stock_unresolved = list(stock.unresolved_names)
+
     leaf_materials, total_buy = _leaf_materials_with_prices(plan)
     materials_tsv = _leaf_materials_multibuy(leaf_materials)
     compressed_payload = None
     ore_plan = None
 
     if payload.compressed:
-        result = _build_compressed_ore_section(plan, key, character, payload)
-        if isinstance(result[1], ErrorResponse):
-            return result
-        compressed_payload, ore_plan = result
+        error, compressed_payload, ore_plan, ore_applied = (
+            _apply_stock_then_compress(plan, key, character, payload, stock)
+        )
+        if error is not None:
+            return error
+        if ore_applied:
+            stock_applied_rows.extend(ore_applied)
         materials_tsv = ore_plan.multibuy()
 
     navy_bpc = _resolve_navy_bpc(eve_type, payload)
@@ -381,4 +494,6 @@ def post_plan(request, payload: PlanRequestSchema):
         compressed_payload,
         ore_plan,
         navy_bpc=navy_bpc,
+        stock_applied=stock_applied_rows,
+        stock_unresolved=stock_unresolved,
     )

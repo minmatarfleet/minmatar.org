@@ -1,6 +1,6 @@
 """Tests for LP store offer economics helpers."""
 
-from datetime import date, timedelta
+from datetime import timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
@@ -218,10 +218,12 @@ class LpStoreEconomicsHelperTestCase(TestCase):
             enqueue_history=False,
         )
 
+        # Relative to now so 7d/30d lookbacks stay valid as calendar days pass.
+        history_date = timezone.now().date() - timedelta(days=1)
         EveMarketItemHistory.objects.create(
             region_id=JITA_REGION_ID,
             item=self.hull,
-            date=date(2026, 7, 30),
+            date=history_date,
             average=Decimal("250000000"),
             highest=Decimal("260000000"),
             lowest=Decimal("240000000"),
@@ -231,7 +233,7 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         EveMarketItemHistory.objects.create(
             region_id=JITA_REGION_ID,
             item=self.input_type,
-            date=date(2026, 7, 30),
+            date=history_date,
             average=Decimal("1500000"),
             highest=Decimal("1600000"),
             lowest=Decimal("1400000"),
@@ -241,7 +243,7 @@ class LpStoreEconomicsHelperTestCase(TestCase):
         EveMarketItemHistory.objects.create(
             region_id=JITA_REGION_ID,
             item=self.req_type,
-            date=date(2026, 7, 30),
+            date=history_date,
             average=Decimal("250000"),
             highest=Decimal("260000"),
             lowest=Decimal("240000"),
