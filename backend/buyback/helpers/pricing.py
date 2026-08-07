@@ -6,61 +6,22 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Optional
 
-from django.db.models import OuterRef, Subquery
-from eveonline.models import EveLocation
-from eveuniverse.models import EveMarketPrice, EveType
+from eveuniverse.models import EveType
 from industry.helpers.compressed_ore import (
     ORE_BATCH_SIZE,
     ore_materials_per_portion,
 )
-from market.helpers.pricing import JITA_REGION_ID
-from market.models import EveMarketItemHistory
+from market.helpers.pricing import get_history_averages_by_type_id
 
 from buyback.helpers.classify import BuybackCategory
 from buyback.models import DEFAULT_RATE_RULES
-
-
-def _baseline_region_id() -> int:
-    baseline = EveLocation.objects.filter(price_baseline=True).first()
-    if baseline and baseline.region_id:
-        return int(baseline.region_id)
-    return JITA_REGION_ID
 
 
 def _history_prices_by_type_id(type_ids: list[int]) -> dict[int, Decimal]:
     """Latest region history average, then EveMarketPrice average."""
     if not type_ids:
         return {}
-
-    unique_ids = list({int(tid) for tid in type_ids})
-    region_id = _baseline_region_id()
-    prices: dict[int, Decimal] = {}
-
-    latest_date = (
-        EveMarketItemHistory.objects.filter(
-            region_id=region_id,
-            item_id=OuterRef("item_id"),
-        )
-        .order_by("-date")
-        .values("date")[:1]
-    )
-    for type_id, average in EveMarketItemHistory.objects.filter(
-        region_id=region_id,
-        item_id__in=unique_ids,
-        date=Subquery(latest_date),
-    ).values_list("item_id", "average"):
-        if average is not None:
-            prices[int(type_id)] = Decimal(str(average))
-
-    missing = [tid for tid in unique_ids if tid not in prices]
-    if missing:
-        for type_id, average in EveMarketPrice.objects.filter(
-            eve_type_id__in=missing
-        ).values_list("eve_type_id", "average_price"):
-            if average is not None:
-                prices[int(type_id)] = Decimal(str(average))
-
-    return prices
+    return get_history_averages_by_type_id(type_ids)
 
 
 def get_baseline_buy_prices(

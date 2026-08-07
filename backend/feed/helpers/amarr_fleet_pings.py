@@ -14,6 +14,7 @@ from feed.constants import (
     AMARR_FLEET_PING_SESSION_SECONDS,
 )
 from feed.models import FeedAmarrFleetAlert, FeedAmarrFleetPing, FeedEvent
+from ratelimit import RateLimitException
 
 logger = logging.getLogger(__name__)
 
@@ -482,6 +483,15 @@ def maybe_notify_amarr_fleet(
             existing=existing,
             discord_client=client,
         )
+    except RateLimitException as exc:
+        # Expected after DiscordClient retries; do not logger.exception
+        # (that created CELERY-JV Sentry noise).
+        logger.warning(
+            "Amarr fleet ping rate-limited for cluster %s: %s",
+            snapshot["cluster_key"],
+            exc,
+        )
+        return False
     except Exception:
         logger.exception(
             "Failed to send/update Amarr fleet ping for cluster %s",

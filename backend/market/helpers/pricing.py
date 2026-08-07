@@ -11,9 +11,10 @@ aka “ItemPrice”) as the Jita guide — see docs/market-pricing.md and
 """
 
 from datetime import timedelta
+from decimal import Decimal
 from typing import Dict, Iterable, List, Optional, Sequence
 
-from django.db.models import OuterRef, Subquery, Sum
+from django.db.models import Max, Sum
 from django.utils import timezone
 
 from eveonline.models import EveLocation
@@ -32,6 +33,50 @@ def _baseline_region_id() -> int:
     return JITA_REGION_ID
 
 
+def get_history_averages_by_type_id(type_ids: list[int]) -> dict[int, Decimal]:
+    """
+    Latest EveMarketItemHistory.average (Decimal) for the price_baseline
+    region, with EveMarketPrice.average_price fallback.
+
+    MySQL-safe Max(date) per item + second filter (not correlated OuterRef).
+    """
+    if not type_ids:
+        return {}
+
+    unique_ids = list({int(tid) for tid in type_ids})
+    prices: dict[int, Decimal] = {}
+    region_id = _baseline_region_id()
+
+    latest = dict(
+        EveMarketItemHistory.objects.filter(
+            region_id=region_id,
+            item_id__in=unique_ids,
+        )
+        .values("item_id")
+        .annotate(max_date=Max("date"))
+        .values_list("item_id", "max_date")
+    )
+    if latest:
+        for type_id, hist_date, average in EveMarketItemHistory.objects.filter(
+            region_id=region_id,
+            item_id__in=list(latest),
+            date__in=set(latest.values()),
+        ).values_list("item_id", "date", "average"):
+            if latest.get(type_id) != hist_date or average is None:
+                continue
+            prices[int(type_id)] = Decimal(str(average))
+
+    missing = [tid for tid in unique_ids if tid not in prices]
+    if missing:
+        for type_id, average in EveMarketPrice.objects.filter(
+            eve_type_id__in=missing
+        ).values_list("eve_type_id", "average_price"):
+            if average is not None:
+                prices[int(type_id)] = Decimal(str(average))
+
+    return prices
+
+
 def get_prices_by_type_id(type_ids: list[int]) -> dict[int, int]:
     """
     Return Jita-baseline ISK guide prices for type IDs.
@@ -41,41 +86,15 @@ def get_prices_by_type_id(type_ids: list[int]) -> dict[int, int]:
     back to EveMarketPrice.average_price.
 
     This is regional history, not EveMarketItemLocationPrice live orders.
+    Integer ISK for most callers; use get_history_averages_by_type_id when
+    fractional averages matter (e.g. buyback).
     """
-    if not type_ids:
-        return {}
-
-    unique_ids = list({int(tid) for tid in type_ids})
-    prices: dict[int, int] = {}
-
-    region_id = _baseline_region_id()
-
-    latest_date = (
-        EveMarketItemHistory.objects.filter(
-            region_id=region_id,
-            item_id=OuterRef("item_id"),
-        )
-        .order_by("-date")
-        .values("date")[:1]
-    )
-    history_rows = EveMarketItemHistory.objects.filter(
-        region_id=region_id,
-        item_id__in=unique_ids,
-        date=Subquery(latest_date),
-    ).values_list("item_id", "average")
-    for type_id, average in history_rows:
-        if average is not None:
-            prices[int(type_id)] = int(average)
-
-    missing = [tid for tid in unique_ids if tid not in prices]
-    if missing:
-        for type_id, average in EveMarketPrice.objects.filter(
-            eve_type_id__in=missing
-        ).values_list("eve_type_id", "average_price"):
-            if average is not None:
-                prices[int(type_id)] = int(average)
-
-    return prices
+    return {
+        type_id: int(average)
+        for type_id, average in get_history_averages_by_type_id(
+            type_ids
+        ).items()
+    }
 
 
 def get_volume_by_type_id(type_ids: list[int], *, days: int) -> dict[int, int]:

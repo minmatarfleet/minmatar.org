@@ -15,6 +15,7 @@ from feed.helpers.amarr_fleet_pings import (
 from feed.models import FeedAmarrFleetAlert, FeedAmarrFleetPing, FeedEvent
 from feed.rollups.types import RollupResult
 from feed.rollups.writer import write_rollup_results
+from ratelimit import RateLimitException
 
 
 def make_amarr_fleet_ping_channel(
@@ -321,6 +322,20 @@ class AmarrFleetPingTestCase(TestCase):
         self.assertEqual(FeedAmarrFleetAlert.objects.count(), 1)
         self.assertEqual(FeedAmarrFleetPing.objects.count(), 1)
         mock_client.create_message.assert_called_once()
+
+    @patch("feed.helpers.amarr_fleet_pings.DiscordClient")
+    def test_rate_limit_logs_warning_not_exception(self, mock_client_cls):
+        mock_client = MagicMock()
+        mock_client_cls.return_value = mock_client
+        mock_client.create_message.side_effect = RateLimitException(
+            "Discord API rate limited", 1.0
+        )
+        event = _amarr_event()
+
+        with patch("feed.helpers.amarr_fleet_pings.logger") as mock_logger:
+            self.assertFalse(maybe_notify_amarr_fleet(event))
+            mock_logger.warning.assert_called()
+            mock_logger.exception.assert_not_called()
 
     @patch("feed.helpers.amarr_fleet_pings.DiscordClient")
     def test_writer_skips_historical_amarr_catchup(self, mock_client_cls):
