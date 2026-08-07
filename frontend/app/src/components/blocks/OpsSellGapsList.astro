@@ -111,8 +111,8 @@ function format_markup(pct: number | null): string {
 }
 
 const criteria_options = [
-    { id: 'coverage', label: t('ops_gap_filter_coverage') },
-    { id: 'viability', label: t('ops_gap_filter_viability') },
+    { id: 'understocked', label: t('ops_gap_filter_coverage') },
+    { id: 'overpriced', label: t('ops_gap_filter_viability') },
 ] as const
 
 const type_options = [
@@ -145,6 +145,18 @@ const show_jita = Boolean(jita_copy_label)
 const empty_label = t('ops_sell_gaps_empty_filter')
 ---
 
+<script>
+    import { ops_sell_gaps_row_visible } from '@helpers/ops_sell_gaps_filter'
+
+    declare global {
+        interface Window {
+            __opsSellGapsRowVisible?: typeof ops_sell_gaps_row_visible
+        }
+    }
+
+    window.__opsSellGapsRowVisible = ops_sell_gaps_row_visible
+</script>
+
 <div
     class="[ ops-sell-gaps ]"
     data-rows={rows_json}
@@ -167,14 +179,12 @@ const empty_label = t('ops_sell_gaps_empty_filter')
             return list.includes(id)
         },
         rowVisible(row) {
-            const criteria_ok = this.criteria.length === 0
-                || (this.criteria.includes('coverage') && row.coverage_gap)
-                || (this.criteria.includes('viability') && row.viability_gap)
-            const type_ok = this.types.length === 0
-                || this.types.includes(row.item_type)
-            const variant_ok = this.variants.length === 0
-                || this.variants.includes(row.item_variant)
-            return criteria_ok && type_ok && variant_ok
+            return window.__opsSellGapsRowVisible(
+                row,
+                this.criteria,
+                this.types,
+                this.variants,
+            )
         },
         get visibleRows() {
             return this.rows.filter(row => this.rowVisible(row))
