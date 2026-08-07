@@ -117,7 +117,7 @@ Loyalty points depend on site type and system type.
 | Large ADV-1 | 1 | 25,000 | 37,500 |
 | Large ADV-4 | 4 | 30,000 | 45,000 |
 | Open | up to 5 | 30,000 | 45,000 |
-| Battlefield | up to ~30 | 50,000 | 50,000 |
+| Battlefield | up to ~30 | 150,000 | 150,000 |
 
 Notes:
 
@@ -160,6 +160,7 @@ Destroying the i-hub flips the system and resets victory points to 0.
 
 - [Faction Warfare Basics](/guides/faction-warfare-basics/)
 - [Faction Warfare Advantage](/guides/faction-warfare-advantage/)
+- [Faction Warfare Battlefields](/guides/faction-warfare-battlefields/)
 - [New Player Fleet Guide](/guides/new-player-fleet-guide/)
 - [Guides index](/guides/)
 - [Amarr vs Minmatar Dotlan](https://evemaps.dotlan.net/map/Amarr_VS_Minmatar#sov)

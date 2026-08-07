@@ -102,7 +102,7 @@ For full advantage mechanics, see [Faction Warfare Advantage](/guides/faction-wa
 
 Battlefields are 30-man sites that reward significant income and significant advantage. Because they are lucrative, they are highly contested, and you will often see fleets clashing in battleships and battlecruisers over them.
 
-They respawn several times a day for each faction.
+They respawn several times a day for each faction. For grid layout, capture, ships, and fleet conduct, see [Faction Warfare Battlefields](/guides/faction-warfare-battlefields/).
 
 ## Loyalty Points
 
@@ -114,5 +114,6 @@ Loyalty point conversion is an absolute beast, and we have an entire team dedica
 
 - [Faction Warfare Complexes](/guides/faction-warfare-plexing/)
 - [Faction Warfare Advantage](/guides/faction-warfare-advantage/)
+- [Faction Warfare Battlefields](/guides/faction-warfare-battlefields/)
 - [New Player Fleet Guide](/guides/new-player-fleet-guide/)
 - [Guides index](/guides/)

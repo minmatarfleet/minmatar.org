@@ -134,10 +134,11 @@ Battlefields are 30-man sites in frontline systems. Winning one gives significan
 
 They have three capture points on one grid. Enemy rats or pilots within 30 km of a point pause progress. The acceleration gate only allows Tech I and Navy hulls.
 
-Because they are lucrative, they are highly contested, and you will often see fleets clashing in battleships and battlecruisers over them. They respawn several times a day for each faction.
+Because they are lucrative, they are highly contested, and you will often see fleets clashing in battleships and battlecruisers over them. They respawn several times a day for each faction. Full runbook: [Faction Warfare Battlefields](/guides/faction-warfare-battlefields/).
 
 ## Additional Resources
 
 - [Faction Warfare Basics](/guides/faction-warfare-basics/)
 - [Faction Warfare Complexes](/guides/faction-warfare-plexing/)
+- [Faction Warfare Battlefields](/guides/faction-warfare-battlefields/)
 - [Guides index](/guides/)
