@@ -83,7 +83,18 @@
         </td>
         <td>{{ row.protection_tier }}</td>
         <td>{{ row.pod_count }}</td>
-        <td>{{ row.refit_count }}</td>
+        <td>
+          {{ row.refit_count }}
+          {% if row.refits_needing_review %}
+          <span class="fittings-pending-badge">
+            {% blocktranslate count counter=row.refits_needing_review %}
+            {{ counter }} need review
+            {% plural %}
+            {{ counter }} need review
+            {% endblocktranslate %}
+          </span>
+          {% endif %}
+        </td>
         <td>
           {% if row.has_pending %}
           <span class="fittings-pending-badge">{% translate "Pending change" %}</span>

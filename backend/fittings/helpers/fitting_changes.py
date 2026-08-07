@@ -135,11 +135,13 @@ def apply_refit_payload(
             name=name,
             eft_format=payload["eft_format"],
             description=payload.get("description", ""),
+            needs_review=False,
         )
         return
     refit.name = name
     refit.eft_format = payload["eft_format"]
     refit.description = payload.get("description", "")
+    refit.needs_review = False
     refit.save()
 
 
@@ -210,7 +212,12 @@ def approve_fitting_change_request(
             fitting.undelete()
         apply_fitting_payload(fitting, payload)
     elif kind == "fitting_versioned":
+        eft_changed = (payload.get("eft_format") or "") != (
+            fitting.eft_format or ""
+        )
         apply_fitting_payload(fitting, payload)
+        if eft_changed:
+            fitting.refits.update(needs_review=True)
     elif kind == "fitting_delete":
         fitting.delete()
     elif kind == "refit_create":

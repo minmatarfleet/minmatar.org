@@ -45,6 +45,7 @@ from fittings.models import (
     EveDoctrineHistory,
     EveFitting,
     EveFittingHistory,
+    EveFittingRefit,
 )
 
 
@@ -501,6 +502,100 @@ class FittingChangeRequestTestCase(TestCase):
         self.assertEqual(
             1, EveFittingHistory.objects.filter(fitting=fitting).count()
         )
+
+    def test_approve_eft_change_marks_refits_needs_review(self):
+        fitting = EveFitting.objects.create(
+            name="Fit",
+            eft_format="[Rifter, Fit]",
+            ship_id=587,
+            description="d1",
+        )
+        refit = EveFittingRefit.objects.create(
+            base_fitting=fitting,
+            name="Scan",
+            eft_format="[Rifter, Scan]",
+            description="",
+        )
+        self.assertFalse(refit.needs_review)
+        payload = {
+            "eft_format": "[Rifter, Fit v2]",
+            "description": "d1",
+            "aliases": "",
+            "minimum_pod": "",
+            "recommended_pod": "",
+            "tags": [],
+        }
+        req = submit_fitting_change_request(
+            fitting,
+            change_kind="fitting_versioned",
+            payload=payload,
+            user=self.proposer,
+        )
+        approve_fitting_change_request(req, self.approver)
+        refit.refresh_from_db()
+        self.assertTrue(refit.needs_review)
+
+    def test_approve_description_only_does_not_mark_refits(self):
+        fitting = EveFitting.objects.create(
+            name="Fit",
+            eft_format="[Rifter, Fit]",
+            ship_id=587,
+            description="d1",
+        )
+        refit = EveFittingRefit.objects.create(
+            base_fitting=fitting,
+            name="Scan",
+            eft_format="[Rifter, Scan]",
+            description="",
+        )
+        payload = {
+            "eft_format": "[Rifter, Fit]",
+            "description": "d2",
+            "aliases": "",
+            "minimum_pod": "",
+            "recommended_pod": "",
+            "tags": [],
+        }
+        req = submit_fitting_change_request(
+            fitting,
+            change_kind="fitting_versioned",
+            payload=payload,
+            user=self.proposer,
+        )
+        approve_fitting_change_request(req, self.approver)
+        refit.refresh_from_db()
+        self.assertFalse(refit.needs_review)
+
+    def test_approve_refit_update_clears_needs_review(self):
+        fitting = EveFitting.objects.create(
+            name="Fit",
+            eft_format="[Rifter, Fit]",
+            ship_id=587,
+            description="d1",
+        )
+        refit = EveFittingRefit.objects.create(
+            base_fitting=fitting,
+            name="Scan",
+            eft_format="[Rifter, Scan]",
+            description="",
+            needs_review=True,
+        )
+        payload = {
+            "name": "Scan v2",
+            "eft_format": "[Rifter, Scan v2]",
+            "description": "updated",
+        }
+        req = submit_fitting_change_request(
+            fitting,
+            change_kind="refit_update",
+            payload=payload,
+            user=self.proposer,
+            refit=refit,
+        )
+        approve_fitting_change_request(req, self.approver)
+        refit.refresh_from_db()
+        self.assertEqual("Scan v2", refit.name)
+        self.assertFalse(refit.needs_review)
 
     def test_approve_fitting_create_publishes(self):
         fitting = EveFitting.objects.create(

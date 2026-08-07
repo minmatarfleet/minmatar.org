@@ -65,7 +65,12 @@ def fittings_manage_view(request):
         EveFitting.objects.annotate(
             _ship_name=Subquery(ship_sq),
             _pod_count=Count("pods", distinct=True),
-            _refit_count=Count("refits"),
+            _refit_count=Count("refits", distinct=True),
+            _refits_needing_review=Count(
+                "refits",
+                filter=Q(refits__needs_review=True),
+                distinct=True,
+            ),
         ),
         search,
     ).order_by("name")
@@ -79,6 +84,9 @@ def fittings_manage_view(request):
                 "ship_name": getattr(fitting, "_ship_name", None) or "—",
                 "pod_count": getattr(fitting, "_pod_count", 0),
                 "refit_count": getattr(fitting, "_refit_count", 0),
+                "refits_needing_review": getattr(
+                    fitting, "_refits_needing_review", 0
+                ),
                 "protection_tier": (tier if linked else f"{tier} (unlinked)"),
                 "has_pending": fitting.pk in pending_ids,
                 "edit_url": reverse(
