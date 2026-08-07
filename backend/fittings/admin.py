@@ -99,20 +99,49 @@ def _mark_refit_formset_handled(formset) -> None:
     formset.deleted_objects = []
 
 
-def _warn_if_refit_edited_after_fitting_queued(request, formset) -> None:
-    refit_edited = any(
-        inline_form.has_changed()
-        for inline_form in formset.forms
-        if inline_form.cleaned_data
-        and not inline_form.cleaned_data.get("DELETE")
-    )
-    if refit_edited:
+def _sync_refit_needs_review_only(inline_form) -> bool:
+    """
+    Persist needs_review immediately when that is the only change.
+
+    Returns True if the form was handled (no change-request queue needed).
+    """
+    if not inline_form.instance.pk:
+        return False
+    if set(inline_form.changed_data) != {"needs_review"}:
+        return False
+    new_val = bool(inline_form.cleaned_data.get("needs_review"))
+    refit = EveFittingRefit.objects.get(pk=inline_form.instance.pk)
+    if refit.needs_review != new_val:
+        refit.needs_review = new_val
+        refit.save(update_fields=["needs_review"])
+    return True
+
+
+def _handle_refits_when_fitting_queued(request, formset) -> None:
+    """Apply immediate needs_review toggles; warn about other skipped edits."""
+    needs_review_synced = False
+    other_edited = False
+    for inline_form in formset.forms:
+        if not inline_form.cleaned_data:
+            continue
+        if inline_form.cleaned_data.get("DELETE"):
+            if inline_form.instance.pk:
+                other_edited = True
+            continue
+        if _sync_refit_needs_review_only(inline_form):
+            needs_review_synced = True
+            continue
+        if inline_form.has_changed():
+            other_edited = True
+    if other_edited:
         messages.warning(
             request,
             "Fitting change was queued; inline refit edits were not "
             "included. Save refit changes in a separate submit after "
             "approval.",
         )
+    if needs_review_synced:
+        messages.info(request, "Refit needs-review flag(s) updated.")
 
 
 def _queue_refit_delete_request(
@@ -165,6 +194,45 @@ def _queue_refit_upsert_request(
         messages.error(request, str(exc))
         return False, True
     return False, False
+
+
+def _process_refit_inline_forms(
+    request, fitting, formset
+) -> tuple[bool, bool, bool]:
+    """
+    Queue refit create/update/delete requests; sync needs_review immediately.
+
+    Returns (queued, needs_review_synced, abort).
+    """
+    queued = False
+    needs_review_synced = False
+    for inline_form in formset.forms:
+        if not inline_form.cleaned_data:
+            continue
+        if inline_form.cleaned_data.get("DELETE"):
+            if inline_form.instance.pk:
+                q, abort = _queue_refit_delete_request(
+                    request, fitting, inline_form, request.user
+                )
+                if abort:
+                    return queued, needs_review_synced, True
+                queued = queued or q
+            continue
+
+        if not inline_form.has_changed():
+            continue
+
+        if _sync_refit_needs_review_only(inline_form):
+            needs_review_synced = True
+            continue
+
+        q, abort = _queue_refit_upsert_request(
+            request, fitting, inline_form, request.user
+        )
+        if abort:
+            return queued, needs_review_synced, True
+        queued = queued or q
+    return queued, needs_review_synced, False
 
 
 class ApprovalQueuedAdminMixin:  # pylint: disable=protected-access
@@ -290,6 +358,28 @@ class HasRefitsListFilter(admin.SimpleListFilter):
         return queryset
 
 
+class HasRefitsNeedingReviewListFilter(admin.SimpleListFilter):
+    title = "refits needing review"
+    parameter_name = "refits_needing_review"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("yes", "Yes"),
+            ("no", "No"),
+        )
+
+    def queryset(self, request, queryset):
+        needing = EveFittingRefit.objects.filter(
+            base_fitting_id=OuterRef("pk"),
+            needs_review=True,
+        )
+        if self.value() == "yes":
+            return queryset.filter(Exists(needing))
+        if self.value() == "no":
+            return queryset.filter(~Exists(needing))
+        return queryset
+
+
 class InDoctrineListFilter(admin.SimpleListFilter):
     title = "doctrine"
     parameter_name = "in_doctrine"
@@ -320,6 +410,7 @@ class EveFittingRefitInline(admin.StackedInline):
         "name",
         "eft_format",
         "description",
+        "needs_review",
         "created_at",
         "updated_at",
     )
@@ -396,6 +487,7 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
         SafeDeleteAdminFilter,
         HasFittingPodsListFilter,
         HasRefitsListFilter,
+        HasRefitsNeedingReviewListFilter,
         InDoctrineListFilter,
         FittingTagListFilter,
         KnownFittingListFilter,
@@ -478,8 +570,13 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
         )[:1]
         return qs.annotate(
             _pod_count=Count("pods", distinct=True),
-            _refit_count=Count("refits"),
-            _substitution_count=Count("module_substitutions"),
+            _refit_count=Count("refits", distinct=True),
+            _refits_needing_review=Count(
+                "refits",
+                filter=models.Q(refits__needs_review=True),
+                distinct=True,
+            ),
+            _substitution_count=Count("module_substitutions", distinct=True),
             _ship_name=Subquery(ship_sq),
         )
 
@@ -489,7 +586,11 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
 
     @admin.display(description="Refits", ordering="_refit_count")
     def refit_count(self, obj):
-        return getattr(obj, "_refit_count", 0)
+        total = getattr(obj, "_refit_count", 0)
+        needing = getattr(obj, "_refits_needing_review", 0)
+        if needing:
+            return f"{total} ({needing} review)"
+        return total
 
     @admin.display(description="Subs", ordering="_substitution_count")
     def substitution_count(self, obj):
@@ -689,7 +790,7 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
             return super().save_formset(request, form, formset, change)
 
         if getattr(request, "_change_request_queued", False):
-            _warn_if_refit_edited_after_fitting_queued(request, formset)
+            _handle_refits_when_fitting_queued(request, formset)
             _mark_refit_formset_handled(formset)
             return
 
@@ -698,39 +799,19 @@ class EveFittingAdmin(ApprovalQueuedAdminMixin, SafeDeleteAdmin):
             super().save_formset(request, form, formset, change)
             return
 
-        queued = False
-        for inline_form in formset.forms:
-            if not inline_form.cleaned_data:
-                continue
-            is_delete = inline_form.cleaned_data.get("DELETE")
-            if is_delete:
-                if inline_form.instance.pk:
-                    q, abort = _queue_refit_delete_request(
-                        request, fitting, inline_form, request.user
-                    )
-                    if abort:
-                        _mark_refit_formset_handled(formset)
-                        return
-                    queued = queued or q
-                continue
-
-            if not inline_form.has_changed():
-                continue
-
-            q, abort = _queue_refit_upsert_request(
-                request, fitting, inline_form, request.user
-            )
-            if abort:
-                _mark_refit_formset_handled(formset)
-                return
-            queued = queued or q
-
+        queued, needs_review_synced, abort = _process_refit_inline_forms(
+            request, fitting, formset
+        )
         _mark_refit_formset_handled(formset)
+        if abort:
+            return
         if queued:
             messages.warning(
                 request,
                 "Refit change(s) submitted for approval (live refits unchanged).",
             )
+        elif needs_review_synced:
+            messages.info(request, "Refit needs-review flag(s) updated.")
 
 
 EveFittingAdmin.highlight_deleted_field.short_description = "Name"

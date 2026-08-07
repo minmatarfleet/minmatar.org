@@ -288,6 +288,59 @@ class EveFittingAdminRefitInlineTestCase(TestCase):
         self.assertEqual("refit_create", req.change_kind)
         self.assertEqual("Scanning refit", req.payload["name"])
 
+    def test_needs_review_only_saves_immediately(self):
+        fitting = EveFitting.objects.create(
+            name="[ADV-5] Retribution",
+            eft_format="[Retribution, [ADV-5] Retribution]",
+            ship_id=608,
+            description="Base",
+        )
+        refit = EveFittingRefit.objects.create(
+            base_fitting=fitting,
+            name="Scanning refit",
+            eft_format="[Retribution, Scanning refit]\n\n[empty high slot]",
+            description="",
+            needs_review=True,
+        )
+        url = reverse("admin:fittings_evefitting_change", args=[fitting.pk])
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        csrf = re.search(
+            r'name="csrfmiddlewaretoken" value="([^"]+)"',
+            response.content.decode(),
+        ).group(1)
+        post = {
+            "csrfmiddlewaretoken": csrf,
+            "eft_format": fitting.eft_format,
+            "description": fitting.description,
+            "aliases": "",
+            "minimum_pod": "",
+            "recommended_pod": "",
+            **_empty_fitting_inline_formsets(
+                **{
+                    "refits-TOTAL_FORMS": "1",
+                    "refits-INITIAL_FORMS": "1",
+                    "refits-0-id": str(refit.pk),
+                    "refits-0-base_fitting": str(fitting.pk),
+                    "refits-0-eft_format": refit.eft_format,
+                    "refits-0-description": "",
+                    # Checkbox omitted = False (cleared).
+                }
+            ),
+            "_save": "Save",
+        }
+        response = self.client.post(url, post)
+        self.assertEqual(
+            response.status_code,
+            302,
+            response.content.decode()[:4000],
+        )
+        refit.refresh_from_db()
+        self.assertFalse(refit.needs_review)
+        self.assertFalse(
+            EveFittingChangeRequest.objects.filter(fitting=fitting).exists()
+        )
+
     def test_eft_change_queues_change_request(self):
         fitting = EveFitting.objects.create(
             name="[ADV-5] Retribution",

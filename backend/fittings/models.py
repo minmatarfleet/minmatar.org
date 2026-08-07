@@ -428,6 +428,13 @@ class EveFittingRefit(models.Model):
     name = models.CharField(max_length=255)
     eft_format = models.TextField()
     description = models.TextField(blank=True)
+    needs_review = models.BooleanField(
+        default=False,
+        help_text=(
+            "Set when the base fitting EFT changes; clear after reviewing "
+            "this refit."
+        ),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
