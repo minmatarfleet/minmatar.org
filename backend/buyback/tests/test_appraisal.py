@@ -322,6 +322,19 @@ class AcceptedItemsSeedTestCase(TestCase):
             compressed_buyback_ore_base("Compressed Crokite IV-Grade"),
             "Crokite",
         )
+        self.assertEqual(
+            compressed_buyback_ore_base("Compressed Mordunium"), "Mordunium"
+        )
+        self.assertEqual(
+            compressed_buyback_ore_base("Compressed Jaspet"), "Jaspet"
+        )
+        self.assertEqual(
+            compressed_buyback_ore_base("Compressed Hemorphite II-Grade"),
+            "Hemorphite",
+        )
+        self.assertEqual(
+            compressed_buyback_ore_base("Compressed Gneiss"), "Gneiss"
+        )
         self.assertIsNone(compressed_buyback_ore_base("Veldspar"))
         self.assertIsNone(compressed_buyback_ore_base("Compressed Blue Ice"))
         self.assertIsNone(compressed_buyback_ore_base("Compressed Arkonor"))
@@ -349,6 +362,22 @@ class AcceptedItemsSeedTestCase(TestCase):
             name="Oxygen",
             group_id=1042,
             group_name="Basic Commodities - Tier 1",
+            category_id=43,
+            category_name="Planetary Commodities",
+        )
+        p3 = _ensure_type(
+            type_id=2319,
+            name="Robotics",
+            group_id=1040,
+            group_name="Specialized Commodities - Tier 3",
+            category_id=43,
+            category_name="Planetary Commodities",
+        )
+        unused_p3 = _ensure_type(
+            type_id=2345,
+            name="Condensates",
+            group_id=1040,
+            group_name="Specialized Commodities - Tier 3",
             category_id=43,
             category_name="Planetary Commodities",
         )
@@ -381,7 +410,13 @@ class AcceptedItemsSeedTestCase(TestCase):
                         "type_id": p1.id,
                         "quantity": 10,
                         "children": [],
-                    }
+                    },
+                    {
+                        "name": "Robotics",
+                        "type_id": p3.id,
+                        "quantity": 1,
+                        "children": [],
+                    },
                 ],
             },
         )
@@ -398,14 +433,15 @@ class AcceptedItemsSeedTestCase(TestCase):
             order=order, eve_type=product, quantity=1
         )
         BuybackAcceptedItem.objects.create(
-            eve_type=unused_p1,
-            category=BuybackAcceptedItem.Category.P1,
+            eve_type=unused_p3,
+            category=BuybackAcceptedItem.Category.P3,
             active=True,
         )
 
         result = seed_accepted_items()
-        self.assertGreaterEqual(result["seeded"], 2)
-        self.assertEqual(result["pi_seeded"], 1)
+        # Ore + both published P1s + BOM P3.
+        self.assertGreaterEqual(result["seeded"], 4)
+        self.assertEqual(result["pi_seeded"], 3)
         self.assertTrue(
             BuybackAcceptedItem.objects.filter(
                 eve_type=ore, active=True, category="ore"
@@ -416,9 +452,21 @@ class AcceptedItemsSeedTestCase(TestCase):
                 eve_type=p1, active=True, category="p1"
             ).exists()
         )
+        # Full P1 catalog: unused P1 stays active.
+        self.assertTrue(
+            BuybackAcceptedItem.objects.filter(
+                eve_type=unused_p1, active=True, category="p1"
+            ).exists()
+        )
+        self.assertTrue(
+            BuybackAcceptedItem.objects.filter(
+                eve_type=p3, active=True, category="p3"
+            ).exists()
+        )
+        # P3 outside BOM lookback is deactivated.
         self.assertFalse(
             BuybackAcceptedItem.objects.filter(
-                eve_type=unused_p1, active=True
+                eve_type=unused_p3, active=True
             ).exists()
         )
         self.assertFalse(

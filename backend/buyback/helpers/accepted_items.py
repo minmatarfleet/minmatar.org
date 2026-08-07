@@ -35,9 +35,13 @@ BUYBACK_ORE_BASES = frozenset(
         "Coesite",
         # Lowsec / nullsec belt (incl. isogen-rich)
         "Hedbergite",
+        "Hemorphite",
+        "Jaspet",
+        "Gneiss",
         "Crokite",
         "Dark Ochre",
         # Equinox nullsec
+        "Mordunium",
         "Ytirium",
         "Eifyrium",
         "Ducinium",
@@ -51,11 +55,16 @@ HIGHSEC_ORE_BASES = BUYBACK_ORE_BASES
 _GRADE_SUFFIX_RE = re.compile(r"\s+(II|III|IV)-Grade$")
 _MOON_PREFIX_RE = re.compile(r"^(Brimful|Glistening)\s+")
 
-PI_GROUPS = frozenset({GROUP_P1, GROUP_P2, GROUP_P3, GROUP_P4})
+P1_P2_GROUPS = frozenset({GROUP_P1, GROUP_P2})
+P3_P4_GROUPS = frozenset({GROUP_P3, GROUP_P4})
 DEFAULT_PI_LOOKBACK_DAYS = 90
 PI_CATEGORIES = (
     BuybackAcceptedItem.Category.P1,
     BuybackAcceptedItem.Category.P2,
+    BuybackAcceptedItem.Category.P3,
+    BuybackAcceptedItem.Category.P4,
+)
+P3_P4_CATEGORIES = (
     BuybackAcceptedItem.Category.P3,
     BuybackAcceptedItem.Category.P4,
 )
@@ -112,8 +121,11 @@ def pi_type_ids_from_recent_orders(
     *, lookback_days: int = DEFAULT_PI_LOOKBACK_DAYS
 ) -> set[int]:
     """
-    Distinct P1–P4 type IDs appearing in BOMs of industry orders created in
+    Distinct P3–P4 type IDs appearing in BOMs of industry orders created in
     the lookback window.
+
+    P1/P2 are always accepted via ``iter_seed_all_p1_p2_eve_types``; only
+    higher-tier PI stays demand-driven from recent industry orders.
     """
     try:
         # Optional industry dependency for dynamic PI allowlist.
@@ -153,7 +165,7 @@ def pi_type_ids_from_recent_orders(
     return set(
         EveType.objects.filter(
             id__in=material_ids,
-            eve_group_id__in=PI_GROUPS,
+            eve_group_id__in=P3_P4_GROUPS,
             published=True,
         ).values_list("id", flat=True)
     )
@@ -169,9 +181,23 @@ def iter_seed_ore_eve_types() -> Iterable[EveType]:
             yield eve_type
 
 
-def iter_seed_pi_eve_types(
+def iter_seed_all_p1_p2_eve_types() -> Iterable[EveType]:
+    """All published P1 and P2 planetary commodities."""
+    yield from (
+        EveType.objects.filter(
+            published=True,
+            eve_group_id__in=P1_P2_GROUPS,
+        )
+        .select_related("eve_group")
+        .order_by("name")
+        .iterator()
+    )
+
+
+def iter_seed_p3_p4_eve_types(
     *, lookback_days: int = DEFAULT_PI_LOOKBACK_DAYS
 ) -> Iterable[EveType]:
+    """P3/P4 types that appear in recent industry-order BOMs."""
     type_ids = pi_type_ids_from_recent_orders(lookback_days=lookback_days)
     if not type_ids:
         return
@@ -181,6 +207,10 @@ def iter_seed_pi_eve_types(
         .order_by("name")
         .iterator()
     )
+
+
+# Back-compat alias: previously seeded all BOM PI tiers.
+iter_seed_pi_eve_types = iter_seed_p3_p4_eve_types
 
 
 def get_active_accepted_type_ids() -> set[int]:
@@ -213,11 +243,12 @@ def seed_accepted_items(
     pi_lookback_days: int = DEFAULT_PI_LOOKBACK_DAYS,
 ) -> dict[str, int]:
     """
-    Upsert compressed buyback ores + PI used in recent industry orders.
+    Upsert compressed buyback ores, all published P1/P2, and P3/P4 used in
+    recent industry orders.
 
-    PI rows outside the lookback BOM set are always deactivated. When
-    deactivate_missing is True, active ore rows not in the seed set are also
-    deactivated.
+    P3/P4 rows outside the lookback BOM set are always deactivated. P1/P2 are
+    kept as a full catalog. When deactivate_missing is True, active ore rows
+    not in the seed set are also deactivated.
     """
     created = 0
     updated = 0
@@ -231,7 +262,15 @@ def seed_accepted_items(
         elif result == "updated":
             updated += 1
 
-    for eve_type in iter_seed_pi_eve_types(lookback_days=pi_lookback_days):
+    for eve_type in iter_seed_all_p1_p2_eve_types():
+        result = _upsert_accepted(eve_type, seed_ids)
+        pi_seed_ids.add(eve_type.id)
+        if result == "created":
+            created += 1
+        elif result == "updated":
+            updated += 1
+
+    for eve_type in iter_seed_p3_p4_eve_types(lookback_days=pi_lookback_days):
         result = _upsert_accepted(eve_type, seed_ids)
         pi_seed_ids.add(eve_type.id)
         if result == "created":
@@ -242,7 +281,7 @@ def seed_accepted_items(
     deactivated_pi = (
         BuybackAcceptedItem.objects.filter(
             active=True,
-            category__in=PI_CATEGORIES,
+            category__in=P3_P4_CATEGORIES,
         )
         .exclude(eve_type_id__in=pi_seed_ids)
         .update(active=False)
