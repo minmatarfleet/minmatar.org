@@ -118,15 +118,35 @@ def get_fitting_for_contract(contract_summary: str) -> EveFitting | None:
     return None
 
 
+# Terminal ESI statuses that are not a completed sale — do not count as stock.
+_TERMINAL_NON_SALE_STATUSES = frozenset(
+    {
+        "expired",
+        "deleted",
+        "cancelled",
+        "rejected",
+        "failed",
+        "reversed",
+    }
+)
+
+
 def _map_contract_status(esi_status: str) -> str:
-    """Map ESI contract status to EveMarketContract status_choices."""
+    """Map ESI contract status to EveMarketContract status_choices.
+
+    Unknown / unexpected statuses map to expired so they cannot inflate stock.
+    """
     if esi_status in ("outstanding", "in_progress"):
         return "outstanding"
-    if esi_status == "finished":
+    if esi_status in ("finished", "finished_issuer", "finished_contractor"):
         return "finished"
-    if esi_status == "expired":
+    if esi_status in _TERMINAL_NON_SALE_STATUSES:
         return "expired"
-    return "outstanding"
+    if esi_status:
+        logger.warning(
+            "Unknown ESI contract status %r; mapping to expired", esi_status
+        )
+    return "expired"
 
 
 def create_or_update_contract_from_db_contract(
@@ -264,11 +284,11 @@ def update_completed_contracts(cutoff: datetime) -> int:
 
 
 def update_expired_contracts(cutoff: datetime) -> int:
+    """Mark outstanding contracts past expires_at as expired (public and private)."""
     updated = (
         EveMarketContract.objects.filter(status="outstanding")
-        .filter(is_public=True)
         .filter(expires_at__lt=cutoff)
         .update(status="expired")
     )
-    logger.info("Set %d public contracts to expired status", updated)
+    logger.info("Set %d contracts to expired status", updated)
     return updated
