@@ -763,6 +763,182 @@ class PlannerPlanEndpointTestCase(TestCase):
         leaf_ids = {m["type_id"] for m in data["leaf_materials"]}
         self.assertIn(adv.id, leaf_ids)
 
+    @patch("industry.helpers.build_planner.resolve_cost_indices")
+    def test_post_plan_stock_paste_reduces_leaf_materials(
+        self, resolve_indices
+    ):
+        resolve_indices.return_value = (0.05, 0.04, AMAMAKE_SYSTEM_ID)
+        baseline = self.client.post(
+            f"{BASE}/plans",
+            data={
+                "product_type_id": self.hull.id,
+                "quantity": 1,
+                "blueprint_me": 0,
+                "blueprint_te": 0,
+                "facility_key": "amamake",
+                "compressed": False,
+            },
+            content_type="application/json",
+            **self.auth,
+        )
+        self.assertEqual(baseline.status_code, 200, baseline.content)
+        base_leaf = next(
+            m
+            for m in baseline.json()["leaf_materials"]
+            if m["type_id"] == self.trit.id
+        )
+        needed = base_leaf["quantity"]
+        owned = max(1, needed // 4)
+
+        response = self.client.post(
+            f"{BASE}/plans",
+            data={
+                "product_type_id": self.hull.id,
+                "quantity": 1,
+                "blueprint_me": 0,
+                "blueprint_te": 0,
+                "facility_key": "amamake",
+                "compressed": False,
+                "stock_paste": f"Tritanium\t{owned}\nNotARealMineral\t99",
+            },
+            content_type="application/json",
+            **self.auth,
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        data = response.json()
+        leaf = next(
+            m for m in data["leaf_materials"] if m["type_id"] == self.trit.id
+        )
+        self.assertEqual(leaf["quantity"], needed - owned)
+        self.assertIn(f"Tritanium {needed - owned}", data["materials_tsv"])
+        applied = {row["name"]: row for row in data["stock_applied"]}
+        self.assertEqual(applied["Tritanium"]["needed"], needed)
+        self.assertEqual(applied["Tritanium"]["owned"], owned)
+        self.assertEqual(applied["Tritanium"]["used"], owned)
+        self.assertEqual(applied["Tritanium"]["remaining"], needed - owned)
+        self.assertEqual(data["stock_unresolved"], ["NotARealMineral"])
+
+    @patch("industry.helpers.build_planner.resolve_cost_indices")
+    def test_post_plan_stock_paste_reduces_compressed_demand(
+        self, resolve_indices
+    ):
+        resolve_indices.return_value = (0.05, 0.04, AMAMAKE_SYSTEM_ID)
+        baseline = self.client.post(
+            f"{BASE}/plans",
+            data={
+                "product_type_id": self.hull.id,
+                "quantity": 1,
+                "blueprint_me": 0,
+                "blueprint_te": 0,
+                "facility_key": "amamake",
+                "compressed": True,
+            },
+            content_type="application/json",
+            **self.auth,
+        )
+        self.assertEqual(baseline.status_code, 200, baseline.content)
+        base_tsv = baseline.json()["materials_tsv"]
+
+        response = self.client.post(
+            f"{BASE}/plans",
+            data={
+                "product_type_id": self.hull.id,
+                "quantity": 1,
+                "blueprint_me": 0,
+                "blueprint_te": 0,
+                "facility_key": "amamake",
+                "compressed": True,
+                "stock_paste": "Tritanium\t999999999",
+            },
+            content_type="application/json",
+            **self.auth,
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        data = response.json()
+        self.assertNotEqual(data["materials_tsv"], base_tsv)
+        self.assertTrue(data["stock_applied"])
+        trit_applied = next(
+            row for row in data["stock_applied"] if row["name"] == "Tritanium"
+        )
+        self.assertEqual(trit_applied["remaining"], 0)
+        # Fully covered Tritanium should not appear as a leaf buy.
+        leaf_ids = {m["type_id"] for m in data["leaf_materials"]}
+        self.assertNotIn(self.trit.id, leaf_ids)
+
+    @patch("industry.helpers.build_planner.resolve_cost_indices")
+    @patch("industry.helpers.compressed_ore.base_belt_ore_yields")
+    def test_post_plan_mineral_stock_resizes_compressed_ore(
+        self, base_belt_ore_yields, resolve_indices
+    ):
+        """On-hand minerals reduce leaf demand before compression → less ore."""
+        resolve_indices.return_value = (0.05, 0.04, AMAMAKE_SYSTEM_ID)
+        refine = 0.84
+        base_belt_ore_yields.return_value = {
+            "Veldspar": {"Tritanium": 4.0 * refine},
+            "Zeolites": {"Pyerite": 80.0 * refine, "Mexallon": 4.0 * refine},
+            "Plagioclase": {
+                "Tritanium": 1.75 * refine,
+                "Mexallon": 0.7 * refine,
+            },
+        }
+
+        baseline = self.client.post(
+            f"{BASE}/plans",
+            data={
+                "product_type_id": self.hull.id,
+                "quantity": 1,
+                "blueprint_me": 0,
+                "blueprint_te": 0,
+                "facility_key": "amamake",
+                "compressed": True,
+                "refine_rate": refine,
+            },
+            content_type="application/json",
+            **self.auth,
+        )
+        self.assertEqual(baseline.status_code, 200, baseline.content)
+        base_ore = baseline.json()["compressed_ore"]
+        base_veld = base_ore["belt_ore_compressed"].get(
+            "Compressed Veldspar", 0
+        )
+        self.assertGreater(base_veld, 0)
+
+        base_leaf = next(
+            m
+            for m in baseline.json()["leaf_materials"]
+            if m["type_id"] == self.trit.id
+        )
+        owned = max(1, base_leaf["quantity"] // 2)
+
+        response = self.client.post(
+            f"{BASE}/plans",
+            data={
+                "product_type_id": self.hull.id,
+                "quantity": 1,
+                "blueprint_me": 0,
+                "blueprint_te": 0,
+                "facility_key": "amamake",
+                "compressed": True,
+                "refine_rate": refine,
+                "stock_paste": f"Tritanium\t{owned}",
+            },
+            content_type="application/json",
+            **self.auth,
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        data = response.json()
+        ore = data["compressed_ore"]
+        stocked_veld = ore["belt_ore_compressed"].get("Compressed Veldspar", 0)
+        self.assertLess(stocked_veld, base_veld)
+        self.assertNotEqual(ore["materials_tsv"], base_ore["materials_tsv"])
+        trit_applied = next(
+            row for row in data["stock_applied"] if row["name"] == "Tritanium"
+        )
+        self.assertEqual(trit_applied["used"], owned)
+        self.assertEqual(
+            trit_applied["remaining"], base_leaf["quantity"] - owned
+        )
+
 
 class PlannerCorsTestCase(TestCase):
     def setUp(self):
