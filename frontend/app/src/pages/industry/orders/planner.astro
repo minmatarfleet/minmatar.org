@@ -247,6 +247,9 @@ const bucket_labels = JSON.stringify({
                             rate_loading: false,
                             error: '',
                             materials_tsv: '',
+                            stock_paste: '',
+                            stock_applied_count: 0,
+                            stock_unresolved_count: 0,
                             effective_refine: ${default_refine},
                             refine_source: 'facility_default',
                             skill_summary: '',
@@ -284,8 +287,29 @@ const bucket_labels = JSON.stringify({
                                     this.use_reprocessing_implants,
                                     this.isk_per_lp,
                                     this.build_fuel_blocks,
+                                    this.stock_paste,
                                     toggle_entries.join(','),
                                 ].join('|')
+                            },
+                            stockStatusText() {
+                                const parts = []
+                                if (this.stock_applied_count > 0) {
+                                    parts.push(
+                                        '${t('industry.orders.planner.stock_applied')}'.replace(
+                                            '{n}',
+                                            String(this.stock_applied_count)
+                                        )
+                                    )
+                                }
+                                if (this.stock_unresolved_count > 0) {
+                                    parts.push(
+                                        '${t('industry.orders.planner.stock_unresolved')}'.replace(
+                                            '{n}',
+                                            String(this.stock_unresolved_count)
+                                        )
+                                    )
+                                }
+                                return parts.join(' · ')
                             },
                             initPlannerAutoReplan() {
                                 this.$watch(
@@ -729,6 +753,8 @@ const bucket_labels = JSON.stringify({
                                         if (rate > 0)
                                             body.isk_per_lp = rate
                                     }
+                                    if (this.stock_paste && String(this.stock_paste).trim())
+                                        body.stock_paste = this.stock_paste
 
                                     const response = await fetch('/api/industry/planner/plans', {
                                         method: 'POST',
@@ -758,6 +784,8 @@ const bucket_labels = JSON.stringify({
                                     }
                                     this.cost_breakdown = data.cost_breakdown || null
                                     this.materials_tsv = data.materials_tsv || ''
+                                    this.stock_applied_count = (data.stock_applied || []).length
+                                    this.stock_unresolved_count = (data.stock_unresolved || []).length
                                     this.bindCostTooltip()
                                     if (data.compressed_ore) {
                                         this.effective_refine = data.compressed_ore.refine_rate
@@ -772,6 +800,8 @@ const bucket_labels = JSON.stringify({
                                     this.error = e.message || '${t('industry.orders.planner.error')}'
                                     this.materials_tsv = ''
                                     this.cost_breakdown = null
+                                    this.stock_applied_count = 0
+                                    this.stock_unresolved_count = 0
                                 } finally {
                                     if (gen === this._plan_generation)
                                         this.loading = false
@@ -1191,6 +1221,30 @@ const bucket_labels = JSON.stringify({
                                 </Flexblock>
                             </ComponentBlock>
 
+                            <ComponentBlock class="[ planner-stocks ]">
+                                <Flexblock gap='var(--space-s)'>
+                                    <Flexblock gap='var(--space-3xs)'>
+                                        <h2>{t('industry.orders.planner.stocks')}</h2>
+                                        <p class="[ text-gray planner-section-hint ]">
+                                            {t('industry.orders.planner.stocks_tip')}
+                                        </p>
+                                    </Flexblock>
+                                    <textarea
+                                        class="[ planner-tsv ]"
+                                        rows="6"
+                                        x-model="stock_paste"
+                                        placeholder={t('industry.orders.planner.stocks_placeholder')}
+                                        aria-label={t('industry.orders.planner.stocks')}
+                                    ></textarea>
+                                    <p
+                                        class="[ text-gray planner-section-hint ]"
+                                        x-show="stockStatusText()"
+                                        x-cloak
+                                        x-text="stockStatusText()"
+                                    ></p>
+                                </Flexblock>
+                            </ComponentBlock>
+
                             <ComponentBlock class="[ planner-shopping ]">
                                 <Flexblock gap='var(--space-s)'>
                                     <FlexInline
@@ -1353,6 +1407,12 @@ const bucket_labels = JSON.stringify({
     }
 
     .planner-shopping__header {
+        h2 {
+            margin: 0;
+        }
+    }
+
+    .planner-stocks {
         h2 {
             margin: 0;
         }
