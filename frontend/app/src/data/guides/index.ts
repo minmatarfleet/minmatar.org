@@ -3,6 +3,7 @@ import type { GuideMeta, Author } from '@/data/guides/types'
 import * as faction_warfare_basics from '@markdown/guides/faction-warfare-basics.md'
 import * as faction_warfare_advantage from '@markdown/guides/faction-warfare-advantage.md'
 import * as faction_warfare_plexing from '@markdown/guides/faction-warfare-plexing.md'
+import * as faction_warfare_battlefields from '@markdown/guides/faction-warfare-battlefields.md'
 import * as new_player_fleet_guide from '@markdown/guides/new-player-fleet-guide.md'
 import * as abyssals from '@markdown/guides/abyssals.md'
 import * as abyss_duo_jackdaws_t6_dark from '@markdown/guides/abyss-duo-jackdaws-t6-dark.md'
@@ -31,6 +32,7 @@ const guideModules: Record<string, GuideModule> = {
     'faction-warfare-basics': faction_warfare_basics,
     'faction-warfare-advantage': faction_warfare_advantage,
     'faction-warfare-plexing': faction_warfare_plexing,
+    'faction-warfare-battlefields': faction_warfare_battlefields,
     'new-player-fleet-guide': new_player_fleet_guide,
     'abyssals': abyssals,
     'abyss-duo-jackdaws-t6-dark': abyss_duo_jackdaws_t6_dark,
@@ -93,16 +95,42 @@ export const guides: GuideMeta[] = [
         }],
     },
     {
+        slug: "faction-warfare-battlefields",
+        title: "Faction Warfare Battlefields",
+        excerpt: "Learn how to run the most lucrative faction warfare site in the warzone, without getting AWOX'd.",
+        category: "Faction Warfare",
+        section: "Mechanics",
+        author: "Furl0w",
+        path: "/guides/faction-warfare-battlefields/",
+        authors: [
+            {
+                name: "Furl0w",
+                id: 2120153200,
+                entity: 'character',
+            },
+            {
+                name: "Silvatek",
+                id: 2119722788,
+                entity: 'character',
+            },
+            {
+                name: "Emberdark",
+                id: 2123859576,
+                entity: 'character',
+            },
+        ],
+    },
+    {
         slug: "selling-loyalty-points",
         title: "Selling Loyalty Points",
         excerpt: "Convert Tribal Liberation Force LP into ISK: LP store offers, pitfalls, and alliance brokers.",
         category: "Faction Warfare",
         section: "Mechanics",
-        author: "Minmatar Fleet",
+        author: "BearThatCares",
         authors: [{
-            name: "Minmatar Fleet",
-            id: 99011978,
-            entity: 'alliance',
+            name: "BearThatCares",
+            id: 634915984,
+            entity: 'character',
         }],
     },
     {
@@ -152,11 +180,11 @@ export const guides: GuideMeta[] = [
         title: "New Player Fleet Guide",
         excerpt: "Voice, ships, fleet UI, and FAQ for your first militia fleet.",
         category: "Utility",
-        author: "Minmatar Fleet",
+        author: "BearThatCares",
         authors: [{
-            name: "Minmatar Fleet",
-            id: 99011978,
-            entity: 'alliance',
+            name: "BearThatCares",
+            id: 634915984,
+            entity: 'character',
         }],
     },
     {

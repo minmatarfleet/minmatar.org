@@ -2,7 +2,7 @@
 title: 'Selling Loyalty Points'
 excerpt: 'Convert Tribal Liberation Force LP into ISK: LP store offers, pitfalls, and alliance brokers.'
 category: 'Faction Warfare'
-author: 'Minmatar Fleet'
+author: 'BearThatCares'
 ---
 ## Overview
 

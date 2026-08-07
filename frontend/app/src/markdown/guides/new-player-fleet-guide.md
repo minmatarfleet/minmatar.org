@@ -2,7 +2,7 @@
 title: 'New Player Fleet Guide'
 excerpt: 'Voice, ships, fleet UI, and FAQ for your first militia fleet.'
 category: 'Utility'
-author: 'Minmatar Fleet'
+author: 'BearThatCares'
 ---
 Fleets can be intimidating the first time. This guide covers voice, what to fly, the fleet UI, and common questions—enough to undock without panic. You do not need to memorize it all; skim before your first fleet and come back after.
 

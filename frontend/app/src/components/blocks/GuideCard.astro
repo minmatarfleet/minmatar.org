@@ -14,6 +14,8 @@ import Tile from '@components/blocks/Tile.astro'
 import PilotBadge from '@components/blocks/PilotBadge.astro'
 import CorporationBadge from '@components/blocks/CorporationBadge.astro'
 import AllianceBadge from '@components/blocks/AllianceBadge.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import VerticalCenter from '@components/blocks/VerticalCenter.astro'
 import Button from '@components/blocks/Button.astro'
 import ClipboardButton from '@components/blocks/ClipboardButton.astro'
 
@@ -26,6 +28,9 @@ interface Props {
 const { guide } = Astro.props
 const guidePath = guide.path ? translatePath(guide.path) : translatePath(`/guides/${guide.slug}/`)
 const guideUrl = guidePath
+const is_multiple_authors = guide.authors.length > 1
+const author = !is_multiple_authors ? guide.authors[0] : undefined
+const author_names = guide.authors.map((entry) => entry.name).join(', ')
 
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user: User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
@@ -47,42 +52,57 @@ const shareUrl = user
         narrow={true}
     >
         <Flexblock slot="subtitle">
-            <FlexInline>
-                {guide.authors.map(author =>
-                    <>{author.entity === 'character' &&
-                        <PilotBadge
-                            character_id={author.id}
-                            character_name={author.name}
-                            size={32}
-                            centered={true}
-                        >
-                            <small>{t('author')}</small>
-                        </PilotBadge>
-                    }</>
-                    <>{author.entity === 'corporation' &&
-                        <CorporationBadge
-                            corporation={{
-                                id: author.id,
-                                name: author.name,
-                                size: 'sm'
-                            }}
-                        >
-                            <small>{t('author')}</small>
-                        </CorporationBadge>
-                    }</>
-                    <>{author.entity === 'alliance' &&
-                        <AllianceBadge
-                            alliance={{
-                                id: author.id,
-                                name: author.name,
-                                size: 'sm'
-                            }}
-                        >
-                            <small>{t('author')}</small>
-                        </AllianceBadge>
-                    }</>
-                )}
-            </FlexInline>
+            {is_multiple_authors ? (
+                <FlexInline class="[ guide-card__authors ]" gap="var(--space-2xs)">
+                    <FlexInline gap="var(--space-3xs)">
+                        {guide.authors.map((entry) => (
+                            entry.entity === 'character' && (
+                                <CharacterPicture
+                                    character_id={entry.id}
+                                    character_name={entry.name}
+                                    size={32}
+                                    centered={true}
+                                />
+                            )
+                        ))}
+                    </FlexInline>
+                    <VerticalCenter>
+                        <Flexblock gap="0" class="[ w-full ]">
+                            <span class="[ text-highlight ]" set:text={author_names} />
+                            <small>{t('guides.multiple_authors')}</small>
+                        </Flexblock>
+                    </VerticalCenter>
+                </FlexInline>
+            ) : author?.entity === 'character' ? (
+                <PilotBadge
+                    character_id={author.id}
+                    character_name={author.name}
+                    size={32}
+                    centered={true}
+                >
+                    <small>{t('author')}</small>
+                </PilotBadge>
+            ) : author?.entity === 'corporation' ? (
+                <CorporationBadge
+                    corporation={{
+                        id: author.id,
+                        name: author.name,
+                        size: 'sm'
+                    }}
+                >
+                    <small>{t('author')}</small>
+                </CorporationBadge>
+            ) : author?.entity === 'alliance' ? (
+                <AllianceBadge
+                    alliance={{
+                        id: author.id,
+                        name: author.name,
+                        size: 'sm'
+                    }}
+                >
+                    <small>{t('author')}</small>
+                </AllianceBadge>
+            ) : null}
         </Flexblock>
     </Tile>
     <Wrapper
