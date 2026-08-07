@@ -2,13 +2,13 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import type { TribeCharacterRef, TribeGroup, SummaryCharacter, TribeMembership } from '@dtypes/api.minmatar.org'
+import type { TribeCharacterRef, TribeGroup, SummaryCharacter, TribeMembership, TribeAvailableCharacter } from '@dtypes/api.minmatar.org'
 interface Props {
-    chief:              TribeCharacterRef | null;
-    elders:             TribeCharacterRef[];
-    user_characters:    SummaryCharacter[];
-    tribe_group:        TribeGroup;
-    chief_membership:   TribeMembership | null;
+    chief:                  TribeCharacterRef | null;
+    elders:                 TribeCharacterRef[];
+    user_characters:        SummaryCharacter[];
+    tribe_group:            TribeGroup;
+    chief_membership:       TribeMembership | null;
 }
 
 const {
@@ -19,8 +19,10 @@ const {
     chief_membership,
 } = Astro.props
 
-const membership_character_ids = chief_membership?.characters.map(character => character.character_id)
-const available_characters = user_characters.filter(character => !membership_character_ids?.includes(character.character_id))
+const membership_character_ids = chief_membership ? chief_membership.characters.map(character => character.character_id) : []
+const available_characters = membership_character_ids.length > 0 ?
+    user_characters.filter(character => !membership_character_ids?.includes(character.character_id)) :
+    user_characters
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -43,13 +45,13 @@ import ButtonAddTribeCharacter from '@components/blocks/ButtonAddTribeCharacter.
             >
                 <small>{t('group_chief')}</small>
             </PilotBadge>
-            {chief_membership && available_characters.length > 0 &&
+            {available_characters.length > 0 &&
                 <ButtonAddTribeCharacter
                     id='leader-add-character'
                     title={tribe_group.name}
                     tribe_id={tribe_group.tribe_id}
                     group_id={tribe_group.id}
-                    membership_id={chief_membership.id}
+                    membership_id={chief_membership?.id || null}
                     pilots={available_characters}
                 />
             }

@@ -27,6 +27,7 @@ import type { TribeGroup, TribeMembership, SummaryCharacter } from '@dtypes/api.
 import {
     get_tribe_group,
     get_memberships,
+    apply_to_group,
     approve_membership,
     deny_membership,
     delete_membership,
@@ -48,14 +49,20 @@ if (Astro.request.method === "POST") {
     const status = Astro.url.searchParams.get('status')
 
     try {
-        if (isNaN(membership_id))
-            throw new Error(t('invalid_membership_id'))
+        if (isNaN(membership_id)) {
+            const membership = await apply_to_group(
+                auth_token as string,
+                tribe_id,
+                group_id,
+                [ character_id ]
+            )
 
-        if (status === 'approve')
+            await approve_membership(auth_token as string, tribe_id, group_id, membership.id)
+        } else if (status === 'approve')
             await approve_membership(auth_token as string, tribe_id, group_id, membership_id)
         else if (status === 'deny')
             await deny_membership(auth_token as string, tribe_id, group_id, membership_id)
-        else if (character_id)
+        else if (character_id) {
             await add_character_to_membership(
                 auth_token as string,
                 tribe_id,
@@ -63,7 +70,7 @@ if (Astro.request.method === "POST") {
                 membership_id,
                 character_id
             )
-        else
+        } else
             throw new Error(t('invalid_membership_action'))
     } catch (error) {
         update_membership_error = error.message

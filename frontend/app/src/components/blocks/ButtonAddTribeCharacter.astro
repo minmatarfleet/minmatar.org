@@ -9,7 +9,7 @@ interface Props {
     tribe_id:               number;
     group_id:               number;
     pilots:                 SummaryCharacter[];
-    membership_id:          number;
+    membership_id:          number | null;
     hidden?:                boolean;
     id:                     string;
 }
@@ -74,8 +74,8 @@ import StylessButton from '@components/blocks/StylessButton.astro';
                         <StylessButton
                             size='sm'
                             hx-post={`${TRIBE_GROUP_MEMBERSHIPS_PARTIAL_URL}&${query_string({
-                                membership_id: membership_id,
                                 character_id: pilot.character_id,
+                                ...(membership_id && { membership_id })
                             })}`}
                             hx-target={`#members`}
                             hx-indicator=".loader"
