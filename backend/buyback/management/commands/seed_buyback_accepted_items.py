@@ -8,8 +8,8 @@ from buyback.helpers.accepted_items import (
 
 class Command(BaseCommand):
     help = (
-        "Seed buyback accepted items (compressed buyback ores + PI used in "
-        "recent industry orders)."
+        "Seed buyback accepted items (compressed buyback ores, all published "
+        "P1/P2, and P3/P4 used in recent industry orders)."
     )
 
     def add_arguments(self, parser):
@@ -18,7 +18,8 @@ class Command(BaseCommand):
             action="store_true",
             help=(
                 "Also deactivate active ore rows not in the default ore seed "
-                "set. PI outside the lookback window is always deactivated."
+                "set. P3/P4 outside the lookback window are always "
+                "deactivated; P1/P2 stay as a full catalog."
             ),
         )
         parser.add_argument(
@@ -26,8 +27,9 @@ class Command(BaseCommand):
             type=int,
             default=DEFAULT_PI_LOOKBACK_DAYS,
             help=(
-                "Only accept PI appearing in industry-order BOMs created "
-                f"within this many days (default {DEFAULT_PI_LOOKBACK_DAYS})."
+                "Only accept P3/P4 appearing in industry-order BOMs created "
+                f"within this many days (default {DEFAULT_PI_LOOKBACK_DAYS}). "
+                "All published P1/P2 are always seeded."
             ),
         )
 
