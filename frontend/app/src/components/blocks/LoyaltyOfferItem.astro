@@ -21,10 +21,17 @@ import Tag from '@components/blocks/Tag.astro'
 interface Props {
     offer: LoyaltyOffer
     side?: 'sell' | 'buy' | 'avg_7d'
+    include_freight?: boolean
+    include_sales_tax?: boolean
     [propName: string]: any
 }
 
-const { offer, side = 'buy' } = Astro.props
+const {
+    offer,
+    side = 'buy',
+    include_freight = true,
+    include_sales_tax = true,
+} = Astro.props
 
 function format_int(value: number | null | undefined): string {
     if (value == null)
@@ -104,7 +111,13 @@ function other_cost_tooltip(): string {
 }
 
 const icon_type = is_blueprint ? 'bp' : 'icon'
-const conversion = conversion_for_side(offer, side)
+const cost_options = { include_freight, include_sales_tax }
+const conversion = conversion_for_side(
+    offer,
+    side,
+    include_freight,
+    include_sales_tax,
+)
 const is_low_volume = offer_is_low_weekly_lp_volume(offer)
 const other_cost_tippy = other_cost_tooltip()
 const breakdown = loyalty_conversion_breakdown({
@@ -115,16 +128,20 @@ const breakdown = loyalty_conversion_breakdown({
     input_freight_isk: offer.input_freight_isk,
     isk_cost: offer.isk_cost,
     other_cost: offer.other_cost,
-    net_isk_per_lp: conversion,
+    net_isk_per_lp: conversion_for_side(offer, side, true, true),
 })
-const conversion_tippy = loyalty_conversion_tip_lines(breakdown, {
-    finished_goods: t('industry.loyalty.offers.conversion_tip.finished_goods'),
-    other_cost: t('industry.loyalty.offers.conversion_tip.other_cost'),
-    input_freight: t('industry.loyalty.offers.conversion_tip.input_freight'),
-    sales_tax: t('industry.loyalty.offers.conversion_tip.sales_tax'),
-    output_freight: t('industry.loyalty.offers.conversion_tip.output_freight'),
-    net: t('industry.loyalty.offers.conversion_tip.net'),
-}).map(escape_html).join('<br>')
+const conversion_tippy = loyalty_conversion_tip_lines(
+    breakdown,
+    {
+        finished_goods: t('industry.loyalty.offers.conversion_tip.finished_goods'),
+        other_cost: t('industry.loyalty.offers.conversion_tip.other_cost'),
+        input_freight: t('industry.loyalty.offers.conversion_tip.input_freight'),
+        sales_tax: t('industry.loyalty.offers.conversion_tip.sales_tax'),
+        output_freight: t('industry.loyalty.offers.conversion_tip.output_freight'),
+        net: t('industry.loyalty.offers.conversion_tip.net'),
+    },
+    cost_options,
+).map(escape_html).join('<br>')
 ---
 
 <div

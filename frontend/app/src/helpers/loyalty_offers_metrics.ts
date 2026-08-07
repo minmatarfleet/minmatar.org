@@ -1,4 +1,9 @@
 import type { LoyaltyOffer } from '@dtypes/api.minmatar.org'
+import {
+    loyalty_conversion_breakdown,
+    net_isk_per_lp_for_cost_options,
+    type LoyaltyConversionCostOptions,
+} from '@helpers/loyalty_conversion_breakdown'
 
 export type LoyaltyOffersSide = 'sell' | 'buy' | 'avg_7d'
 
@@ -7,17 +12,61 @@ export const TLIB_CORP_ID = 1000182
 
 export const DEFAULT_LOYALTY_OFFERS_SIDE: LoyaltyOffersSide = 'buy'
 
+/** Default: net conversion includes Red Frog input/output freight. */
+export const DEFAULT_INCLUDE_FREIGHT = true
+
+/** Default: net conversion includes Accounting V sales tax. */
+export const DEFAULT_INCLUDE_SALES_TAX = true
+
 /** Default query params for /industry/loyalty/offers/ and filter reset. */
 export const DEFAULT_LOYALTY_OFFERS_PARAMS: Record<string, string> = {
     currency: String(TLIB_CORP_ID),
     exclude_tags: '1',
-    exclude_supply_packages: '1',
-    exclude_chips: '1',
-    exclude_skins: '1',
     exclude_blueprints: '1',
     exclude_useless_offers: '1',
+    include_freight: '1',
+    include_sales_tax: '1',
     side: DEFAULT_LOYALTY_OFFERS_SIDE,
     ordering: `-conversion_${DEFAULT_LOYALTY_OFFERS_SIDE}`,
+}
+
+/**
+ * Categories folded into the "Exclude useless offers" chip (packages, chips,
+ * skins). When that chip is on, these API flags are also set.
+ */
+export const USELESS_OFFER_EXCLUDE_BUNDLE = [
+    'exclude_supply_packages',
+    'exclude_chips',
+    'exclude_skins',
+] as const
+
+/** Expand exclude_useless_offers into its bundled category excludes. */
+export function expand_useless_offer_excludes(
+    exclude_useless_offers: string | undefined,
+): Record<string, string> {
+    if (exclude_useless_offers !== '1')
+        return {}
+    const out: Record<string, string> = { exclude_useless_offers: '1' }
+    for (const key of USELESS_OFFER_EXCLUDE_BUNDLE)
+        out[key] = '1'
+    return out
+}
+
+/**
+ * Toggle overrides for the useless chip (clears or sets the full bundle).
+ * Undefined values delete keys from the current filter URL.
+ */
+export function useless_offer_exclude_toggle(
+    enable: boolean,
+): Record<string, string | undefined> {
+    if (enable)
+        return expand_useless_offer_excludes('1')
+    const out: Record<string, string | undefined> = {
+        exclude_useless_offers: undefined,
+    }
+    for (const key of USELESS_OFFER_EXCLUDE_BUNDLE)
+        out[key] = undefined
+    return out
 }
 
 /**
@@ -34,15 +83,49 @@ export interface LoyaltyOffersMetrics {
     weekly_stable_volume: number
 }
 
+export function resolve_conversion_cost_options(
+    include_freight: boolean = DEFAULT_INCLUDE_FREIGHT,
+    include_sales_tax: boolean = DEFAULT_INCLUDE_SALES_TAX,
+): LoyaltyConversionCostOptions {
+    return {
+        include_freight,
+        include_sales_tax,
+    }
+}
+
 export function conversion_for_side(
     offer: LoyaltyOffer,
     side: LoyaltyOffersSide,
+    include_freight: boolean = DEFAULT_INCLUDE_FREIGHT,
+    include_sales_tax: boolean = DEFAULT_INCLUDE_SALES_TAX,
 ): number | null {
-    if (side === 'buy')
-        return offer.conversion_isk_per_lp_buy
-    if (side === 'avg_7d')
-        return offer.conversion_isk_per_lp_avg_7d
-    return offer.conversion_isk_per_lp_sell
+    const net_with_all_costs = side === 'buy'
+        ? offer.conversion_isk_per_lp_buy
+        : side === 'avg_7d'
+            ? offer.conversion_isk_per_lp_avg_7d
+            : offer.conversion_isk_per_lp_sell
+    const options = resolve_conversion_cost_options(
+        include_freight,
+        include_sales_tax,
+    )
+    if (options.include_freight && options.include_sales_tax)
+        return net_with_all_costs
+
+    const breakdown = loyalty_conversion_breakdown({
+        lp_cost: offer.lp_cost,
+        quantity: offer.quantity,
+        market_price: market_price_for_side(offer, side),
+        input_cost_isk: offer.input_cost_isk,
+        input_freight_isk: offer.input_freight_isk,
+        isk_cost: offer.isk_cost,
+        other_cost: offer.other_cost,
+        net_isk_per_lp: net_with_all_costs,
+    })
+    return net_isk_per_lp_for_cost_options(
+        net_with_all_costs,
+        breakdown,
+        options,
+    )
 }
 
 export function market_price_for_side(
@@ -54,6 +137,39 @@ export function market_price_for_side(
     if (side === 'avg_7d')
         return offer.jita_avg_7d
     return offer.jita_sell
+}
+
+/**
+ * Re-sort when freight/tax is excluded and ordering is by conversion — API
+ * order still uses fully-netted rates.
+ */
+export function sort_loyalty_offers(
+    offers: LoyaltyOffer[],
+    ordering: string,
+    side: LoyaltyOffersSide,
+    include_freight: boolean = DEFAULT_INCLUDE_FREIGHT,
+    include_sales_tax: boolean = DEFAULT_INCLUDE_SALES_TAX,
+): LoyaltyOffer[] {
+    if (include_freight && include_sales_tax)
+        return offers
+
+    const conversion_key = conversion_ordering_key(side)
+    const descending = ordering.startsWith('-')
+    const key = descending ? ordering.slice(1) : ordering
+    if (key !== conversion_key)
+        return offers
+
+    return [...offers].sort((a, b) => {
+        const av = conversion_for_side(a, side, include_freight, include_sales_tax)
+        const bv = conversion_for_side(b, side, include_freight, include_sales_tax)
+        if (av == null && bv == null)
+            return 0
+        if (av == null)
+            return 1
+        if (bv == null)
+            return -1
+        return descending ? bv - av : av - bv
+    })
 }
 
 export function conversion_ordering_key(side: LoyaltyOffersSide): string {
@@ -85,6 +201,8 @@ export function offer_is_low_weekly_lp_volume(offer: LoyaltyOffer): boolean {
 export function compute_loyalty_offers_metrics(
     offers: LoyaltyOffer[],
     side: LoyaltyOffersSide,
+    include_freight: boolean = DEFAULT_INCLUDE_FREIGHT,
+    include_sales_tax: boolean = DEFAULT_INCLUDE_SALES_TAX,
 ): LoyaltyOffersMetrics {
     let weekly_total_volume = 0
     let weighted_conversion = 0
@@ -94,7 +212,12 @@ export function compute_loyalty_offers_metrics(
         const weekly_lp = offer_lp_for_volume(offer, offer.volume_7d)
         weekly_total_volume += weekly_lp
 
-        const conversion = conversion_for_side(offer, side)
+        const conversion = conversion_for_side(
+            offer,
+            side,
+            include_freight,
+            include_sales_tax,
+        )
         if (conversion == null || weekly_lp <= 0)
             continue
         weighted_conversion += conversion * weekly_lp

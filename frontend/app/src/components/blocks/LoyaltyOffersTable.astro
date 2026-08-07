@@ -11,6 +11,8 @@ interface Props {
     filter_state: Record<string, string>
     ordering: string
     side: 'sell' | 'buy' | 'avg_7d'
+    include_freight?: boolean
+    include_sales_tax?: boolean
     [propName: string]: any
 }
 
@@ -19,6 +21,8 @@ const {
     filter_state,
     ordering,
     side,
+    include_freight = true,
+    include_sales_tax = true,
 } = Astro.props
 
 const SLOT = '#loyalty-offers-slot'
@@ -100,7 +104,12 @@ import LoyaltyOfferItem from '@components/blocks/LoyaltyOfferItem.astro'
 
             <div id="loyalty-offers-tbody">
                 {offers.map((offer) => (
-                    <LoyaltyOfferItem offer={offer} side={side} />
+                    <LoyaltyOfferItem
+                        offer={offer}
+                        side={side}
+                        include_freight={include_freight}
+                        include_sales_tax={include_sales_tax}
+                    />
                 ))}
             </div>
         </div>
