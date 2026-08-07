@@ -3,15 +3,15 @@ from collections import defaultdict
 from ninja import Router
 from pydantic import BaseModel
 
-from django.db.models import Min, OuterRef, Subquery, Sum
+from django.db.models import Min, Sum
 
 from eveonline.models import EveLocation
 from eveuniverse.models import EveType
 
 from market.endpoints.cache import get_cached
+from market.helpers.pricing import get_prices_by_type_id
 from market.models import EveMarketItemLocationPrice
 from market.models.contract import EveMarketContractExpectation
-from market.models.history import EveMarketItemHistory
 from market.models.item import (
     EveMarketFittingExpectation,
     EveMarketItemExpectation,
@@ -22,25 +22,21 @@ from market.models.item import (
 router = Router(tags=["Market"])
 
 
-def _get_baseline_prices() -> dict[str, float]:
-    """Latest market history average price per item in the price_baseline location's region."""
-    baseline = EveLocation.objects.filter(price_baseline=True).first()
-    if not baseline or not baseline.region_id:
+def _baseline_prices_by_name(type_info: dict) -> dict[str, float]:
+    """Jita/Forge guide prices keyed by item name for known sell-order types."""
+    id_to_name = {
+        int(info[0]): name
+        for name, info in type_info.items()
+        if info[0] is not None
+    }
+    if not id_to_name:
         return {}
-    latest_date = (
-        EveMarketItemHistory.objects.filter(
-            region_id=baseline.region_id,
-            item_id=OuterRef("item_id"),
-        )
-        .order_by("-date")
-        .values("date")[:1]
-    )
-    return dict(
-        EveMarketItemHistory.objects.filter(
-            region_id=baseline.region_id,
-            date=Subquery(latest_date),
-        ).values_list("item__name", "average")
-    )
+    by_id = get_prices_by_type_id(list(id_to_name))
+    return {
+        id_to_name[type_id]: float(price)
+        for type_id, price in by_id.items()
+        if type_id in id_to_name
+    }
 
 
 def _get_baseline_location_prices() -> (
@@ -178,7 +174,6 @@ def get_sell_orders(request, location_id: int | None = None):
         return []
 
     location_pks = [location.pk for location in location_list]
-    baseline_prices = _get_baseline_prices()
     baseline_location_prices = _get_baseline_location_prices()
     effective_by_location = get_effective_item_expectations_bulk(location_list)
     current_stock_by_location = _bulk_current_stock_by_location(location_pks)
@@ -202,6 +197,7 @@ def get_sell_orders(request, location_id: int | None = None):
             "eve_group__name",
         )
     )
+    baseline_prices = _baseline_prices_by_name(type_info)
 
     results = []
     for location in location_list:

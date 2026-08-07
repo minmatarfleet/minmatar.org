@@ -59,6 +59,22 @@ trace.LOG_SUCCESS = "Task %(name)s[%(id)s] succeeded in %(runtime)ss"
 SENTRY_CELERY_DSN = os.environ.get("SENTRY_CELERY_DSN", None)
 
 
+def _sentry_before_send(event, hint):
+    """
+    Drop expected django-esi refresh noise (CELERY-4).
+
+    Token.refresh logs ERROR \"Refresh impossible...\" then raises
+    TokenInvalidError; refresh_or_delete catches and deletes the token.
+    """
+    if event.get("logger") != "esi.models":
+        return event
+    logentry = event.get("logentry") or {}
+    message = logentry.get("message") or event.get("message") or ""
+    if isinstance(message, str) and message.startswith("Refresh impossible"):
+        return None
+    return event
+
+
 @signals.celeryd_init.connect
 def init_sentry(**_kwargs):
     sentry_sdk.init(
@@ -67,5 +83,6 @@ def init_sentry(**_kwargs):
         enable_tracing=True,
         traces_sample_rate=1.0,
         environment=settings.ENV,
+        before_send=_sentry_before_send,
         _experiments={"enable_logs": True},
     )

@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 
 from app.celery import app
 from discord.client import DiscordClient
+from discord.exceptions import DiscordRoleAssignmentError
 from discord.helpers import handle_discord_guild_member_error
 from eveonline.helpers.characters import (
     user_primary_character,
@@ -238,6 +239,17 @@ def log_affiliation_update_error(user: User, e):
     if handle_discord_guild_member_error(
         user, e, "update_affiliations", offboard_if_missing=False
     ):
+        return
+    # Discord 10007 is handled (info) then re-wrapped as this message;
+    # do not re-log as error (CELERY-M).
+    if isinstance(e, DiscordRoleAssignmentError) and (
+        "member not on Discord server" in str(e)
+    ):
+        logger.info(
+            "Discord member missing during affiliation sync for %s: %s",
+            user,
+            e,
+        )
         return
     if user_primary_character(user):
         logger.error("Error updating affiliations for user %s: %s", user, e)

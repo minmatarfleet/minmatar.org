@@ -18,6 +18,12 @@ logger = logging.getLogger(__name__)
 GUILD_ID = settings.DISCORD_GUILD_ID
 BASE_URL = "https://discord.com/api/v9"
 
+# Default giveup_log_level is ERROR and creates Sentry issues (CELERY-JT).
+_DISCORD_RATE_LIMIT_RETRY = {
+    "max_tries": 8,
+    "giveup_log_level": logging.WARNING,
+}
+
 
 retry_strategy = Retry(
     total=5,
@@ -89,7 +95,7 @@ class DiscordBaseClient:
     def check_ratelimit(self):
         pass
 
-    @on_exception(expo, RateLimitException, max_tries=8)
+    @on_exception(expo, RateLimitException, **_DISCORD_RATE_LIMIT_RETRY)
     def post(self, *args, **kwargs):
         """Post a resource using REST API"""
         _assert_discord_http_allowed()
@@ -108,7 +114,7 @@ class DiscordBaseClient:
         response.raise_for_status()
         return response
 
-    @on_exception(expo, RateLimitException, max_tries=8)
+    @on_exception(expo, RateLimitException, **_DISCORD_RATE_LIMIT_RETRY)
     def put(self, *args, **kwargs):
         """Put a resource using REST API"""
         _assert_discord_http_allowed()
@@ -125,7 +131,7 @@ class DiscordBaseClient:
         response.raise_for_status()
         return response
 
-    @on_exception(expo, RateLimitException, max_tries=8)
+    @on_exception(expo, RateLimitException, **_DISCORD_RATE_LIMIT_RETRY)
     def patch(self, *args, **kwargs):
         """Patch a resource using REST API"""
         _assert_discord_http_allowed()
@@ -142,7 +148,7 @@ class DiscordBaseClient:
         response.raise_for_status()
         return response
 
-    @on_exception(expo, RateLimitException, max_tries=8)
+    @on_exception(expo, RateLimitException, **_DISCORD_RATE_LIMIT_RETRY)
     def get(self, *args, **kwargs):
         """Get a resource using REST API"""
         _assert_discord_http_allowed()
@@ -159,7 +165,7 @@ class DiscordBaseClient:
         response.raise_for_status()
         return response.json()
 
-    @on_exception(expo, RateLimitException, max_tries=8)
+    @on_exception(expo, RateLimitException, **_DISCORD_RATE_LIMIT_RETRY)
     def delete(self, *args, **kwargs):
         """Delete a resource using REST API"""
         _assert_discord_http_allowed()
