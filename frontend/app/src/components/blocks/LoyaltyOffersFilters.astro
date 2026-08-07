@@ -6,6 +6,8 @@ import type { LoyaltyCurrency } from '@dtypes/api.minmatar.org'
 import {
     DEFAULT_LOYALTY_OFFERS_PARAMS,
     TLIB_CORP_ID,
+    expand_useless_offer_excludes,
+    useless_offer_exclude_toggle,
 } from '@helpers/loyalty_offers_metrics'
 import { get_corporation_logo } from '@helpers/eve_image_server'
 import { query_string } from '@helpers/string'
@@ -15,6 +17,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import Input from '@components/blocks/Input.astro'
 import Select from '@components/blocks/Select.astro'
 import Button from '@components/blocks/Button.astro'
+import RadioCheckInput from '@components/blocks/RadioCheckInput.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 import CaretIcon from '@components/icons/CaretIcon.astro'
 
@@ -29,12 +32,11 @@ interface Props {
     currencies: LoyaltyCurrency[]
     currency: number
     exclude_tags?: string
-    exclude_supply_packages?: string
-    exclude_chips?: string
-    exclude_skins?: string
     exclude_blueprints?: string
     exclude_useless_offers?: string
     exclude_below_set_lp_price?: string
+    include_freight?: string
+    include_sales_tax?: string
     side: 'sell' | 'buy' | 'avg_7d'
     q: string
     ordering: string
@@ -45,12 +47,11 @@ const {
     currencies,
     currency,
     exclude_tags,
-    exclude_supply_packages,
-    exclude_chips,
-    exclude_skins,
     exclude_blueprints,
     exclude_useless_offers,
     exclude_below_set_lp_price,
+    include_freight = '1',
+    include_sales_tax = '1',
     side,
     q,
     ordering,
@@ -78,23 +79,22 @@ const selected_currency_record = sorted_currencies.find(
     (c) => c.corporation_id === selected_currency,
 ) ?? sorted_currencies[0] ?? null
 
+const freight_included = include_freight !== '0'
+const sales_tax_included = include_sales_tax !== '0'
+const useless_excludes = expand_useless_offer_excludes(exclude_useless_offers)
+
 const base_params: Record<string, string> = {
     currency: String(selected_currency),
     side,
     ordering,
+    include_freight: freight_included ? '1' : '0',
+    include_sales_tax: sales_tax_included ? '1' : '0',
+    ...useless_excludes,
 }
 if (exclude_tags)
     base_params.exclude_tags = exclude_tags
-if (exclude_supply_packages)
-    base_params.exclude_supply_packages = exclude_supply_packages
-if (exclude_chips)
-    base_params.exclude_chips = exclude_chips
-if (exclude_skins)
-    base_params.exclude_skins = exclude_skins
 if (exclude_blueprints)
     base_params.exclude_blueprints = exclude_blueprints
-if (exclude_useless_offers)
-    base_params.exclude_useless_offers = exclude_useless_offers
 if (exclude_below_set_lp_price)
     base_params.exclude_below_set_lp_price = exclude_below_set_lp_price
 if (q)
@@ -113,6 +113,7 @@ function with_params(overrides: Record<string, string | undefined>): string {
 
 const default_reset_url = with_params({
     ...DEFAULT_LOYALTY_OFFERS_PARAMS,
+    ...expand_useless_offer_excludes(DEFAULT_LOYALTY_OFFERS_PARAMS.exclude_useless_offers),
     q: undefined,
 })
 
@@ -123,21 +124,6 @@ const excludes = [
         active: exclude_tags === '1',
     },
     {
-        key: 'exclude_supply_packages',
-        label: t('industry.loyalty.offers.exclude_packages'),
-        active: exclude_supply_packages === '1',
-    },
-    {
-        key: 'exclude_chips',
-        label: t('industry.loyalty.offers.exclude_chips'),
-        active: exclude_chips === '1',
-    },
-    {
-        key: 'exclude_skins',
-        label: t('industry.loyalty.offers.exclude_skins'),
-        active: exclude_skins === '1',
-    },
-    {
         key: 'exclude_blueprints',
         label: t('industry.loyalty.offers.exclude_blueprints'),
         active: exclude_blueprints === '1',
@@ -146,6 +132,8 @@ const excludes = [
         key: 'exclude_useless_offers',
         label: t('industry.loyalty.offers.exclude_useless'),
         active: exclude_useless_offers === '1',
+        // Packages / chips / skins ride along with this chip.
+        bundled: true,
     },
     {
         key: 'exclude_below_set_lp_price',
@@ -153,6 +141,16 @@ const excludes = [
         active: exclude_below_set_lp_price === '1',
     },
 ]
+
+function exclude_toggle_overrides(
+    key: string,
+    active: boolean,
+    bundled?: boolean,
+): Record<string, string | undefined> {
+    if (bundled && key === 'exclude_useless_offers')
+        return useless_offer_exclude_toggle(!active)
+    return { [key]: active ? undefined : '1' }
+}
 
 const hx_include_filters =
     ".loyalty-offers-filters__persist, .loyalty-offers-filters__search [name='q'], select[name='side']"
@@ -313,9 +311,9 @@ const hx_include_filters =
                     '[ loyalty-offers-filters__chip ]',
                     { 'loyalty-offers-filters__chip--active': item.active },
                 ]}
-                hx-get={with_params({
-                    [item.key]: item.active ? undefined : '1',
-                })}
+                hx-get={with_params(
+                    exclude_toggle_overrides(item.key, item.active, item.bundled),
+                )}
                 hx-target={SLOT}
                 hx-swap="innerHTML"
                 hx-indicator=".loader"
@@ -326,15 +324,57 @@ const hx_include_filters =
         ))}
     </FlexInline>
 
+    <FlexInline gap="var(--space-s)" class="[ loyalty-offers-filters__cost-options ]">
+        <div class="[ loyalty-offers-filters__freight ]">
+            <RadioCheckInput
+                type="checkbox"
+                name="include_freight_toggle"
+                value="1"
+                checked={freight_included ? 'checked' : undefined}
+                hx-get={with_params({
+                    include_freight: freight_included ? '0' : '1',
+                })}
+                hx-target={SLOT}
+                hx-swap="innerHTML"
+                hx-indicator=".loader"
+                hx-trigger="change"
+            >
+                <small>{t('industry.loyalty.offers.include_freight')}</small>
+            </RadioCheckInput>
+        </div>
+        <div class="[ loyalty-offers-filters__sales-tax ]">
+            <RadioCheckInput
+                type="checkbox"
+                name="include_sales_tax_toggle"
+                value="1"
+                checked={sales_tax_included ? 'checked' : undefined}
+                hx-get={with_params({
+                    include_sales_tax: sales_tax_included ? '0' : '1',
+                })}
+                hx-target={SLOT}
+                hx-swap="innerHTML"
+                hx-indicator=".loader"
+                hx-trigger="change"
+            >
+                <small>{t('industry.loyalty.offers.include_sales_tax')}</small>
+            </RadioCheckInput>
+        </div>
+    </FlexInline>
+
     <div class="[ loyalty-offers-filters__persist ]" hidden>
         <input type="hidden" name="currency" value={String(selected_currency)} />
         <input type="hidden" name="ordering" value={ordering} />
+        <input
+            type="hidden"
+            name="include_freight"
+            value={freight_included ? '1' : '0'}
+        />
+        <input
+            type="hidden"
+            name="include_sales_tax"
+            value={sales_tax_included ? '1' : '0'}
+        />
         {exclude_tags === '1' && <input type="hidden" name="exclude_tags" value="1" />}
-        {exclude_supply_packages === '1' && (
-            <input type="hidden" name="exclude_supply_packages" value="1" />
-        )}
-        {exclude_chips === '1' && <input type="hidden" name="exclude_chips" value="1" />}
-        {exclude_skins === '1' && <input type="hidden" name="exclude_skins" value="1" />}
         {exclude_blueprints === '1' && (
             <input type="hidden" name="exclude_blueprints" value="1" />
         )}
@@ -477,6 +517,16 @@ const hx_include_filters =
         flex-shrink: 0;
         width: 22rem;
         max-width: 100%;
+    }
+
+    .loyalty-offers-filters__freight,
+    .loyalty-offers-filters__sales-tax {
+        flex-shrink: 0;
+        align-items: center;
+    }
+
+    .loyalty-offers-filters__cost-options {
+        flex-wrap: wrap;
     }
 
     .loyalty-offers-filters__chips {

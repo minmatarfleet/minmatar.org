@@ -39,6 +39,17 @@ export interface LoyaltyConversionTipLabels {
     net: string
 }
 
+/** Which net-cost components are included in displayed ISK/LP. */
+export interface LoyaltyConversionCostOptions {
+    include_freight: boolean
+    include_sales_tax: boolean
+}
+
+export const DEFAULT_CONVERSION_COST_OPTIONS: LoyaltyConversionCostOptions = {
+    include_freight: true,
+    include_sales_tax: true,
+}
+
 function per_lp(amount: number | null | undefined, lp_cost: number): number | null {
     if (amount == null || lp_cost <= 0)
         return null
@@ -129,12 +140,65 @@ function tip_amount_line(
     return `${prefix} ${amount} ISK/LP (${label})`
 }
 
+/** Sum of input + output freight ISK/LP components (0 when missing). */
+export function freight_isk_per_lp_total(
+    breakdown: Pick<
+        LoyaltyConversionBreakdown,
+        'input_freight_isk_per_lp' | 'output_freight_isk_per_lp'
+    >,
+): number {
+    return (breakdown.input_freight_isk_per_lp ?? 0)
+        + (breakdown.output_freight_isk_per_lp ?? 0)
+}
+
+/**
+ * API net includes freight + sales tax. Add back any components that are
+ * toggled off in the UI.
+ */
+export function net_isk_per_lp_for_cost_options(
+    net_with_all_costs: number | null | undefined,
+    breakdown: Pick<
+        LoyaltyConversionBreakdown,
+        | 'input_freight_isk_per_lp'
+        | 'output_freight_isk_per_lp'
+        | 'sales_tax_isk_per_lp'
+    >,
+    options: LoyaltyConversionCostOptions,
+): number | null {
+    if (net_with_all_costs == null)
+        return null
+    let net = net_with_all_costs
+    if (!options.include_freight)
+        net += freight_isk_per_lp_total(breakdown)
+    if (!options.include_sales_tax)
+        net += breakdown.sales_tax_isk_per_lp ?? 0
+    return net
+}
+
+/** @deprecated Prefer {@link net_isk_per_lp_for_cost_options}. */
+export function net_isk_per_lp_for_freight_option(
+    net_with_freight: number | null | undefined,
+    breakdown: Pick<
+        LoyaltyConversionBreakdown,
+        'input_freight_isk_per_lp' | 'output_freight_isk_per_lp'
+    >,
+    include_freight: boolean,
+): number | null {
+    return net_isk_per_lp_for_cost_options(
+        net_with_freight,
+        { ...breakdown, sales_tax_isk_per_lp: 0 },
+        { include_freight, include_sales_tax: true },
+    )
+}
+
 /**
  * Ledger-style tippy lines. Skips null/zero cost rows; keeps finished goods + net.
+ * Omitted cost options skip their debit lines and are added back into net.
  */
 export function loyalty_conversion_tip_lines(
     breakdown: LoyaltyConversionBreakdown,
     labels: LoyaltyConversionTipLabels,
+    options: LoyaltyConversionCostOptions = DEFAULT_CONVERSION_COST_OPTIONS,
 ): string[] {
     const lines: string[] = []
 
@@ -148,9 +212,15 @@ export function loyalty_conversion_tip_lines(
 
     const debits: Array<[number | null, string]> = [
         [breakdown.input_isk_per_lp, labels.other_cost],
-        [breakdown.input_freight_isk_per_lp, labels.input_freight],
-        [breakdown.sales_tax_isk_per_lp, labels.sales_tax],
-        [breakdown.output_freight_isk_per_lp, labels.output_freight],
+        ...(options.include_freight
+            ? [[breakdown.input_freight_isk_per_lp, labels.input_freight] as const]
+            : []),
+        ...(options.include_sales_tax
+            ? [[breakdown.sales_tax_isk_per_lp, labels.sales_tax] as const]
+            : []),
+        ...(options.include_freight
+            ? [[breakdown.output_freight_isk_per_lp, labels.output_freight] as const]
+            : []),
     ]
     for (const [value, label] of debits) {
         if (value == null || value === 0)
@@ -158,10 +228,15 @@ export function loyalty_conversion_tip_lines(
         lines.push(tip_amount_line('minus', value, label))
     }
 
-    if (breakdown.net_isk_per_lp != null) {
+    const net = net_isk_per_lp_for_cost_options(
+        breakdown.net_isk_per_lp,
+        breakdown,
+        options,
+    )
+    if (net != null) {
         lines.push(tip_amount_line(
             'eq',
-            breakdown.net_isk_per_lp,
+            net,
             labels.net,
         ))
     }

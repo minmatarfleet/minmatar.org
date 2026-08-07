@@ -9,11 +9,15 @@ import {
 } from '@helpers/api.minmatar.org/loyalty'
 import { from_now_diff } from '@helpers/date'
 import {
+    DEFAULT_INCLUDE_FREIGHT,
+    DEFAULT_INCLUDE_SALES_TAX,
     DEFAULT_LOYALTY_OFFERS_PARAMS,
     DEFAULT_LOYALTY_OFFERS_SIDE,
     TLIB_CORP_ID,
     compute_loyalty_offers_metrics,
     conversion_ordering_key,
+    expand_useless_offer_excludes,
+    sort_loyalty_offers,
     type LoyaltyOffersSide,
 } from '@helpers/loyalty_offers_metrics'
 import { query_string } from '@helpers/string'
@@ -32,12 +36,23 @@ const currency = currency_raw && /^\d+$/.test(currency_raw)
     ? parseInt(currency_raw, 10)
     : TLIB_CORP_ID
 const exclude_tags = binary_param('exclude_tags')
-const exclude_supply_packages = binary_param('exclude_supply_packages')
-const exclude_chips = binary_param('exclude_chips')
-const exclude_skins = binary_param('exclude_skins')
 const exclude_blueprints = binary_param('exclude_blueprints')
 const exclude_useless_offers = binary_param('exclude_useless_offers')
 const exclude_below_set_lp_price = binary_param('exclude_below_set_lp_price')
+const useless_excludes = expand_useless_offer_excludes(exclude_useless_offers)
+const exclude_supply_packages = useless_excludes.exclude_supply_packages
+const exclude_chips = useless_excludes.exclude_chips
+const exclude_skins = useless_excludes.exclude_skins
+const include_freight_raw = binary_param('include_freight')
+const include_freight = include_freight_raw === '0'
+    ? '0'
+    : (include_freight_raw ?? (DEFAULT_INCLUDE_FREIGHT ? '1' : '0'))
+const include_freight_enabled = include_freight !== '0'
+const include_sales_tax_raw = binary_param('include_sales_tax')
+const include_sales_tax = include_sales_tax_raw === '0'
+    ? '0'
+    : (include_sales_tax_raw ?? (DEFAULT_INCLUDE_SALES_TAX ? '1' : '0'))
+const include_sales_tax_enabled = include_sales_tax !== '0'
 const side_raw = params.get('side')
 const side: LoyaltyOffersSide = side_raw === 'sell'
     ? 'sell'
@@ -55,12 +70,11 @@ const ordering = ordering_raw.replace(
 const filter_state = {
     currency: String(currency),
     ...(exclude_tags ? { exclude_tags } : {}),
-    ...(exclude_supply_packages ? { exclude_supply_packages } : {}),
-    ...(exclude_chips ? { exclude_chips } : {}),
-    ...(exclude_skins ? { exclude_skins } : {}),
     ...(exclude_blueprints ? { exclude_blueprints } : {}),
-    ...(exclude_useless_offers ? { exclude_useless_offers } : {}),
+    ...useless_excludes,
     ...(exclude_below_set_lp_price ? { exclude_below_set_lp_price } : {}),
+    include_freight,
+    include_sales_tax,
     side,
     ...(q ? { q } : {}),
     ordering,
@@ -107,7 +121,19 @@ const last_updated_text = offers_list.rebuilt_at
         from_now_diff(lang, new Date(offers_list.rebuilt_at)),
     )
     : ''
-const metrics = compute_loyalty_offers_metrics(offers_list.items, side)
+const offers = sort_loyalty_offers(
+    offers_list.items,
+    ordering,
+    side,
+    include_freight_enabled,
+    include_sales_tax_enabled,
+)
+const metrics = compute_loyalty_offers_metrics(
+    offers,
+    side,
+    include_freight_enabled,
+    include_sales_tax_enabled,
+)
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astro'
@@ -145,22 +171,23 @@ import Flexblock from '@components/compositions/Flexblock.astro'
                     currencies={currencies}
                     currency={currency}
                     exclude_tags={exclude_tags}
-                    exclude_supply_packages={exclude_supply_packages}
-                    exclude_chips={exclude_chips}
-                    exclude_skins={exclude_skins}
                     exclude_blueprints={exclude_blueprints}
                     exclude_useless_offers={exclude_useless_offers}
                     exclude_below_set_lp_price={exclude_below_set_lp_price}
+                    include_freight={include_freight}
+                    include_sales_tax={include_sales_tax}
                     side={side}
                     q={q || ''}
                     ordering={ordering}
                 />
-                {offers_list.items.length > 0 ? (
+                {offers.length > 0 ? (
                     <LoyaltyOffersTable
-                        offers={offers_list.items}
+                        offers={offers}
                         filter_state={filter_state}
                         ordering={ordering}
                         side={side}
+                        include_freight={include_freight_enabled}
+                        include_sales_tax={include_sales_tax_enabled}
                     />
                 ) : (
                     <p class="[ loyalty-offers-empty ]">{t('industry.loyalty.offers.empty')}</p>
