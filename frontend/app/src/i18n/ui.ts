@@ -398,7 +398,7 @@ export const ui = {
         'staging_supply.ops.page_title': 'Market Operations',
         'staging_supply.ops.leading_text': 'We don\'t hide our trillion-ISK market behind leadership teams. View the contracts and sell orders necessary to keep our alliance afloat so you can participate.',
         'staging_supply.ops.meta_description': 'Market tribe operations monitor for Minmatar Fleet staging supply health.',
-        'staging_supply.ops.tile_title': 'Market',
+        'staging_supply.ops.tile_title': 'Market operations',
         'staging_supply.ops.tile_description': 'We don\'t hide our trillion-ISK market behind leadership teams. View the contracts and sell orders necessary to keep our alliance afloat so you can participate.',
         'staging_supply.ops.tile_browse': 'Browse',
         'page_finder.staging_supply.ops.description': 'Market operations monitor queues.',
