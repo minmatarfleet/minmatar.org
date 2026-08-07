@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { translatePath } = i18n(Astro.url)
 
 import type { ButtonColors, ButtonSizes } from '@dtypes/layout_components';
 
@@ -8,7 +8,6 @@ interface Props {
     color?:         ButtonColors;
     size?:          ButtonSizes;
     narrow?:        boolean;
-    dialog_title:   string;
     [propName: string]: any;
 }
 
@@ -16,11 +15,11 @@ const {
     color = 'fleet-red',
     size = 'lg',
     narrow = false,
-    dialog_title,
+    dialog_title: _dialog_title,
     ...attributes
 } = Astro.props;
 
-const AUTH_REDIRECT_URL = `${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`
+const AUTH_REDIRECT_URL = `${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(Astro.url.toString())}`
 
 import Button from '@components/blocks/Button.astro';
 ---
@@ -30,22 +29,7 @@ import Button from '@components/blocks/Button.astro';
     color={color}
     size={size}
     narrow={narrow}
-    x-data={`{
-        disabled: false,
-        show_auth_request_dialog() {
-            this.disabled = true
-            
-            show_confirm_dialog({
-                title: '${dialog_title}',
-                partial: '${translatePath('/partials/authentication_missing_dialog/')}'
-            }).then( (accepted) => {
-                if (accepted)
-                    window.location.href = '${AUTH_REDIRECT_URL}'
-            })
-        }
-    }`}
-    x-on:click="show_auth_request_dialog()"
-    type="button"
+    x-on:click={`window.location.href = ${JSON.stringify(AUTH_REDIRECT_URL)}`}
     {...attributes}
 >
     <slot />

@@ -179,11 +179,25 @@ class DiscordBaseClient:
         return response
 
 
+DISCORD_OAUTH_SCOPES = "identify guilds.join"
+DISCORD_OAUTH_SCOPES_URL = "identify%20guilds.join"
+
+
+def discord_authorize_url(client_id: str, redirect_uri: str) -> str:
+    """Discord OAuth authorize URL for site login (identify + guilds.join)."""
+    return (
+        "https://discord.com/api/oauth2/authorize"
+        f"?client_id={client_id}"
+        f"&redirect_uri={redirect_uri}"
+        f"&response_type=code&scope={DISCORD_OAUTH_SCOPES_URL}"
+    )
+
+
 class DiscordClient(DiscordBaseClient):
     """Discord API Client"""
 
     def exchange_code(self, code: str, redirect_uri: str):
-        """Exchange a Discord OAuth2 code for an access token"""
+        """Exchange OAuth code for ``(user_profile, access_token)``."""
         _assert_discord_http_allowed()
         data = {
             "client_id": settings.DISCORD_CLIENT_ID,
@@ -191,7 +205,7 @@ class DiscordClient(DiscordBaseClient):
             "grant_type": "authorization_code",
             "code": code,
             "redirect_uri": redirect_uri,
-            "scope": "identify",
+            "scope": DISCORD_OAUTH_SCOPES,
         }
         logger.debug("Discord OAuth2 Token Body: %s", data)
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
@@ -220,6 +234,36 @@ class DiscordClient(DiscordBaseClient):
             )
 
         user = response.json()
+        return user, access_token
+
+    def add_guild_member(self, user_id: int | str, access_token: str) -> None:
+        """Add user to the guild via OAuth ``guilds.join`` (201/204 = success)."""
+        try:
+            self.put(
+                f"{BASE_URL}/guilds/{self.guild_id}/members/{user_id}",
+                json={"access_token": access_token},
+            )
+        except requests.exceptions.HTTPError as exc:
+            response = exc.response
+            if response is None:
+                raise
+            logger.error(
+                "Add Guild Member failed for user %s guild %s: %s %s",
+                user_id,
+                self.guild_id,
+                response.status_code,
+                response.text,
+            )
+            raise DiscordError.for_response(
+                "Error adding Discord guild member",
+                "GUILD_JOIN",
+                response,
+            ) from exc
+
+    def complete_oauth_login(self, code: str, redirect_uri: str) -> dict:
+        """Exchange OAuth code and add the user to the guild; fail closed on join."""
+        user, access_token = self.exchange_code(code, redirect_uri)
+        self.add_guild_member(user["id"], access_token)
         return user
 
     def get_channel(self, channel_id):

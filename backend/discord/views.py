@@ -8,13 +8,15 @@ from django.contrib.auth.models import User
 from django.http import HttpRequest
 from django.shortcuts import redirect
 
-from .client import DiscordClient, DiscordError
+from .client import DiscordClient, DiscordError, discord_authorize_url
 from users.helpers import make_user_objects
 
 discord = DiscordClient()
 
 logger = logging.getLogger(__name__)
-auth_url_discord = f"https://discord.com/api/oauth2/authorize?client_id={settings.DISCORD_CLIENT_ID}&redirect_uri={settings.DISCORD_ADMIN_REDIRECT_URL}&response_type=code&scope=identify"  # pylint: disable=line-too-long
+auth_url_discord = discord_authorize_url(
+    settings.DISCORD_CLIENT_ID, settings.DISCORD_ADMIN_REDIRECT_URL
+)
 
 
 def discord_login(request: HttpRequest):  # pylint: disable=unused-argument
@@ -59,10 +61,12 @@ def discord_login_redirect(request: HttpRequest):
     )
     code = request.GET.get("code")
     try:
-        user = discord.exchange_code(code, settings.DISCORD_ADMIN_REDIRECT_URL)
+        user = discord.complete_oauth_login(
+            code, settings.DISCORD_ADMIN_REDIRECT_URL
+        )
     except DiscordError as e:
         logger.error(
-            "Error exchanging Discord code for backend login (%s): %d %s",
+            "Discord OAuth backend login failed (%s): %d %s",
             e.id,
             e.status_code,
             e.description,
