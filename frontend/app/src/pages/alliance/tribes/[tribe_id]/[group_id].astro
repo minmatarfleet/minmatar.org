@@ -22,6 +22,10 @@ const group_id = parseInt(Astro?.params?.group_id ?? '')
 if (isNaN(tribe_id) || isNaN(group_id))
     return HTTP_400_Bad_Request()
 
+return Astro.redirect(translatePath(`/alliance/tribes/${tribe_id}/`))
+
+// TODO: Finish the landing page for groups. Is not quite ready yet
+
 import { apply_to_group, leave_group } from '@helpers/api.minmatar.org/tribes'
 import type { Alert } from '@dtypes/layout_components'
 
