@@ -380,4 +380,6 @@ export type CampaignTableRow = {
     tone?: CampaignRowTone
     /** Optional leading icon (e.g. EVE type icon) for the first cell. */
     icon_url?: string
+    /** Optional per-cell icons (same order as cells). Overrides icon_url when set for index 0. */
+    cell_icons?: readonly (string | undefined)[]
 }

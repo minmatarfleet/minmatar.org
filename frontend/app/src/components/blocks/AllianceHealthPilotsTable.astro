@@ -1,0 +1,57 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { AllianceHealthAttentionPilot } from '@dtypes/api.minmatar.org'
+import type { CampaignTableRow } from '@/data/campaigns/etherium-reach'
+
+import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
+import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
+
+interface Props {
+    pilots: AllianceHealthAttentionPilot[]
+    [propName: string]: any
+}
+
+const { pilots, ...attributes } = Astro.props
+delete attributes.class
+
+const headers = [
+    t('alliance.health.col.pilot'),
+    t('alliance.health.col.corp'),
+    t('alliance.health.col.status'),
+    t('alliance.health.col.days_quiet'),
+    t('alliance.health.col.active_months'),
+]
+
+const rows: CampaignTableRow[] = pilots.map((pilot) => ({
+    cells: [
+        pilot.pilot,
+        pilot.corp,
+        pilot.status,
+        String(pilot.days_quiet),
+        String(pilot.active_months),
+    ],
+    cell_icons: [
+        pilot.character_id ? get_player_icon(pilot.character_id, 64) : undefined,
+        pilot.corporation_id
+            ? get_corporation_logo(pilot.corporation_id, 64)
+            : undefined,
+    ],
+}))
+---
+
+<div class:list={['[ alliance-health-pilots ]', Astro.props.class]} {...attributes}>
+    <CampaignDataTable headers={headers} rows={rows} success_marker={false} />
+    {pilots.length === 0 && (
+        <p class="[ alliance-health-pilots__empty ]">{t('alliance.health.attention.empty')}</p>
+    )}
+</div>
+
+<style lang="scss">
+    .alliance-health-pilots__empty {
+        margin: var(--space-s) 0 0;
+        color: var(--foreground);
+        font-size: var(--step--1);
+    }
+</style>

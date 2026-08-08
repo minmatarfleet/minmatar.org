@@ -1,0 +1,198 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token')
+    ? (Astro.cookies.get('auth_token')?.value as string)
+    : null
+const user = auth_token ? (jose.decodeJwt(auth_token) as User) : false
+const is_superuser = user ? user?.is_superuser : false
+
+if (!user)
+    return Astro.redirect(
+        `${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`,
+    )
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = user ? await get_user_permissions(user?.username) : []
+
+const can_view_page =
+    is_superuser || user_permissions.includes('alliance.view_alliancehealth')
+
+if (!can_view_page) return HTTP_403_Forbidden()
+
+import type {
+    AllianceHealthAttention,
+    AllianceHealthAttentionBucket,
+    AllianceHealthCohorts,
+    AllianceHealthCorporations,
+    AllianceHealthOverview,
+} from '@dtypes/api.minmatar.org'
+import {
+    get_alliance_health_attention,
+    get_alliance_health_cohorts,
+    get_alliance_health_corporations,
+    get_alliance_health_overview,
+} from '@helpers/api.minmatar.org/alliance_health'
+
+let overview: AllianceHealthOverview | null = null
+let corporations: AllianceHealthCorporations | null = null
+let cohorts: AllianceHealthCohorts | null = null
+let attention: AllianceHealthAttention | null = null
+let data_fetching_error: any
+
+const initial_bucket: AllianceHealthAttentionBucket = 'fading'
+
+try {
+    ;[overview, corporations, cohorts, attention] = await Promise.all([
+        get_alliance_health_overview(auth_token as string),
+        get_alliance_health_corporations(auth_token as string),
+        get_alliance_health_cohorts(auth_token as string),
+        get_alliance_health_attention(auth_token as string, initial_bucket),
+    ])
+} catch (error) {
+    data_fetching_error = error
+}
+
+const ATTENTION_PARTIAL_URL = translatePath(
+    '/partials/alliance_health_attention_component',
+)
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import Tag from '@components/blocks/Tag.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import AllianceHealthSummary from '@components/blocks/AllianceHealthSummary.astro'
+import AllianceHealthMonthlyChart from '@components/blocks/AllianceHealthMonthlyChart.astro'
+import AllianceHealthMixChart from '@components/blocks/AllianceHealthMixChart.astro'
+import AllianceHealthAttention from '@components/blocks/AllianceHealthAttention.astro'
+import AllianceHealthPilotsTable from '@components/blocks/AllianceHealthPilotsTable.astro'
+import AllianceHealthCorpsTable from '@components/blocks/AllianceHealthCorpsTable.astro'
+import AllianceHealthCohortsTable from '@components/blocks/AllianceHealthCohortsTable.astro'
+
+const page_title = t('alliance.health.page_title')
+const as_of_tag = overview
+    ? t('alliance.health.updated').replace('{when}', overview.computed_at)
+    : ''
+---
+
+<Viewport title={page_title} components={{ alert_dialog: true }}>
+    <PageWide
+        padding_block="var(--space-2xl)"
+        cover={{
+            image: '/images/alliance-cover.jpg',
+            image_990: '/images/alliance-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <Flexblock slot="header" gap="var(--space-3xs)">
+            <PageTitle>{page_title}</PageTitle>
+            {as_of_tag && <Tag text={as_of_tag} color="fleet-yellow" />}
+        </Flexblock>
+
+        {
+            data_fetching_error ? (
+                <ErrorRefetch
+                    args={{
+                        partial: translatePath('/alliance/health'),
+                        error: data_fetching_error,
+                        delay: 0,
+                    }}
+                />
+            ) : overview && corporations && cohorts && attention ? (
+                <Flexblock gap="var(--space-2xl)">
+                    <TextBox>
+                        <p class="[ excerpt ]">{t('alliance.health.leading_text')}</p>
+                    </TextBox>
+
+                    <AllianceHealthSummary overview={overview} />
+
+                    <Flexblock gap="var(--space-m)">
+                        <Flexblock gap="var(--space-3xs)">
+                            <h2>{t('alliance.health.monthly.title')}</h2>
+                            <small>{t('alliance.health.monthly.caption')}</small>
+                        </Flexblock>
+                        <ComponentBlock padding_inline="var(--space-m)">
+                            <AllianceHealthMonthlyChart
+                                monthly={overview.monthly}
+                                goal_map={overview.goal_map}
+                            />
+                        </ComponentBlock>
+                    </Flexblock>
+
+                    <Flexblock gap="var(--space-m)">
+                        <Flexblock gap="var(--space-3xs)">
+                            <h2>{t('alliance.health.mix.title')}</h2>
+                            <small>{t('alliance.health.mix.caption')}</small>
+                        </Flexblock>
+                        <ComponentBlock padding_inline="var(--space-m)">
+                            <AllianceHealthMixChart signals={overview.signals_30d} />
+                        </ComponentBlock>
+                    </Flexblock>
+
+                    <Flexblock gap="var(--space-m)">
+                        <Flexblock gap="var(--space-3xs)">
+                            <h2>{t('alliance.health.attention.title')}</h2>
+                            <small>{t('alliance.health.attention.caption')}</small>
+                        </Flexblock>
+                        <AllianceHealthAttention
+                            quiet={overview.quiet}
+                            bucket={attention.bucket}
+                            partial_url={ATTENTION_PARTIAL_URL}
+                        >
+                            <AllianceHealthPilotsTable pilots={attention.pilots} />
+                        </AllianceHealthAttention>
+                    </Flexblock>
+
+                    <Flexblock gap="var(--space-m)">
+                        <Flexblock gap="var(--space-3xs)">
+                            <h2>{t('alliance.health.corps.title')}</h2>
+                            <small>{t('alliance.health.corps.caption')}</small>
+                        </Flexblock>
+                        <ComponentBlock padding_inline="var(--space-m)">
+                            <AllianceHealthCorpsTable
+                                corporations={corporations.corporations}
+                            />
+                        </ComponentBlock>
+                    </Flexblock>
+
+                    <Flexblock gap="var(--space-m)">
+                        <Flexblock gap="var(--space-3xs)">
+                            <h2>{t('alliance.health.cohorts.title')}</h2>
+                            <small>{t('alliance.health.cohorts.caption')}</small>
+                        </Flexblock>
+                        <ComponentBlock padding_inline="var(--space-m)">
+                            <AllianceHealthCohortsTable cohorts={cohorts.cohorts} />
+                        </ComponentBlock>
+                    </Flexblock>
+                </Flexblock>
+            ) : null
+        }
+    </PageWide>
+</Viewport>
+
+<style lang="scss">
+    .excerpt {
+        font-size: var(--step-1);
+        line-height: 1.6;
+    }
+
+    h2 {
+        margin: 0;
+    }
+
+    small {
+        color: var(--faded);
+    }
+</style>

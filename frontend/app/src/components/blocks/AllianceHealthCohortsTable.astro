@@ -1,0 +1,43 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { AllianceHealthCohortRow } from '@dtypes/api.minmatar.org'
+import type { CampaignTableRow } from '@/data/campaigns/etherium-reach'
+
+import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
+
+interface Props {
+    cohorts: AllianceHealthCohortRow[]
+    [propName: string]: any
+}
+
+const { cohorts, ...attributes } = Astro.props
+delete attributes.class
+
+const headers = [
+    t('alliance.health.col.month'),
+    t('alliance.health.col.applications'),
+    t('alliance.health.col.accepts'),
+    t('alliance.health.col.academy_accepts'),
+    t('alliance.health.col.fleet_first_week'),
+    t('alliance.health.col.fleet_1_30d'),
+    t('alliance.health.col.fleet_3_30d'),
+]
+
+const rows: CampaignTableRow[] = cohorts.map((row) => ({
+    cells: [
+        row.label,
+        String(row.applications),
+        String(row.accepts),
+        String(row.academy_accepts),
+        `${row.fleet_first_week_pct}%`,
+        `${row.fleet_1_30d_pct}%`,
+        `${row.fleet_3_30d_pct}%`,
+    ],
+}))
+---
+
+<div class:list={['[ alliance-health-cohorts ]', Astro.props.class]} {...attributes}>
+    <CampaignDataTable headers={headers} rows={rows} success_marker={false} />
+</div>

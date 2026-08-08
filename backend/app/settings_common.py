@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "discord.apps.DiscordConfig",
     "eveonline.apps.EveonlineConfig",
     "groups.apps.GroupsConfig",
+    "alliance.apps.AllianceConfig",
     "tribes.apps.TribesConfig",
     "applications.apps.ApplicationsConfig",
     "users.apps.UsersConfig",

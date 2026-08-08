@@ -250,6 +250,13 @@ CELERYBEAT_OTHER = [
         },
     ),
     (
+        "[Alliance] Refresh health snapshot",
+        {
+            "task": "alliance.tasks.refresh_alliance_health_snapshot",
+            "schedule": crontab(minute=25, hour="*"),
+        },
+    ),
+    (
         "[Misc] Check Fleets",
         {
             "task": "fleets.tasks.update_fleet_instances",

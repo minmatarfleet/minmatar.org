@@ -1,0 +1,46 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { AllianceHealthCorporationRow } from '@dtypes/api.minmatar.org'
+import type { CampaignTableRow } from '@/data/campaigns/etherium-reach'
+
+import { get_corporation_logo } from '@helpers/eve_image_server'
+import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
+
+interface Props {
+    corporations: AllianceHealthCorporationRow[]
+    [propName: string]: any
+}
+
+const { corporations, ...attributes } = Astro.props
+delete attributes.class
+
+const fmt_pct = (n: number) => `${n > 0 ? '+' : ''}${n}%`
+
+const headers = [
+    t('alliance.health.col.corp'),
+    t('alliance.health.col.characters'),
+    t('alliance.health.col.humans'),
+    t('alliance.health.col.active_90d'),
+    t('alliance.health.col.active_90d_pct'),
+    t('alliance.health.col.growth_90d_pct'),
+]
+
+const rows: CampaignTableRow[] = corporations.map((corp) => ({
+    cells: [
+        corp.name,
+        String(corp.characters),
+        String(corp.humans),
+        String(corp.active_90d),
+        `${corp.active_90d_pct}%`,
+        fmt_pct(corp.growth_90d_pct),
+    ],
+    icon_url: get_corporation_logo(corp.corporation_id, 64),
+    tone: corp.growth_90d_pct > 0 ? 'success' : corp.growth_90d_pct < 0 ? 'warning' : undefined,
+}))
+---
+
+<div class:list={['[ alliance-health-corps ]', Astro.props.class]} {...attributes}>
+    <CampaignDataTable headers={headers} rows={rows} success_marker={false} />
+</div>
