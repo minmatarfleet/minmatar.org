@@ -1299,7 +1299,7 @@ export const ui = {
         'alliance.health.cohorts.title': 'New player metrics',
         'alliance.health.cohorts.caption': 'Did people who joined that month make it into fleets early on?',
         'alliance.health.col.pilot': 'Pilot',
-        'alliance.health.col.corp': 'Corp',
+        'alliance.health.col.corp': 'Corporation',
         'alliance.health.col.status': 'Status',
         'alliance.health.col.days_quiet': 'Days quiet',
         'alliance.health.col.active_months': 'Active months this year',

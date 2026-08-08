@@ -55,7 +55,7 @@ def _month_key(dt: datetime | date) -> str:
 
 def _corp_display_name(corp: dict) -> str:
     if corp.get("corporation_id") == ACADEMY_CORP_ID:
-        return "Academy"
+        return "Minmatar Fleet Academy"
     return (
         corp.get("name")
         or corp.get("ticker")
