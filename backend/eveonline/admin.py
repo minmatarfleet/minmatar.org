@@ -677,7 +677,7 @@ EveLocationAdmin.highlight_deleted_field.short_description = "Location name"
 #
 # Split the single "eveonline" app section on the admin index page into logical
 # groups. Other apps are folded in: applications → Corporations,
-# structures/srp/fleets → Alliance, community-related apps → Community,
+# structures/srp/fleets/alliance → Alliance, community-related apps → Community,
 # fittings → Readiness, industry/freight → Supply, market/evelocation →
 # Staging Systems (first on the index), auth/django_celery_beat → System,
 # access_lists/sovereignty/industry extras → Experimental (last).
@@ -715,6 +715,7 @@ _STAGING_SYSTEMS_EVEONLINE_MODELS = {
 }
 
 _ALLIANCE_EXTRA_APPS = {
+    "alliance",
     "fleets",
     "structures",
     "srp",

@@ -192,6 +192,16 @@
         }
     },
     {
+        "slug": "alliance.health",
+        "path": "/alliance/health/",
+        "description": "page_finder.alliance.health.description",
+        "publish": true,
+        "keywords": [ "alliance", "health", "map", "retention" ],
+        "permissions" : {
+            "user": [ "alliance.view_alliancehealth" ]
+        }
+    },
+    {
         "slug": "corporations.members.unregistered",
         "path": "/alliance/corporations/members/unregistered/",
         "description": "page_finder.corporations.members.unregistered.description",

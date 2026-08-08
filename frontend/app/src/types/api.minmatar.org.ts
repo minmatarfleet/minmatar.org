@@ -1987,3 +1987,94 @@ export interface LearningImportResponse {
     completed_learning_slugs: string[];
     awards:                 LearningCertificateAward[];
 }
+
+export interface AllianceHealthStatusCounts {
+    active:     number;
+    trial:      number;
+    on_leave:   number;
+}
+
+export interface AllianceHealthSignals30 {
+    fleets:         number;
+    small_gang:     number;
+    solo:           number;
+    supply:         number;
+}
+
+export interface AllianceHealthQuietCounts {
+    fading:     number;
+    dark:       number;
+    seasonal:   number;
+}
+
+export interface AllianceHealthMonthlyPoint {
+    month:      string;
+    label:      string;
+    active:     number;
+    fleet:      number;
+    solo:       number;
+    supply:     number;
+}
+
+export interface AllianceHealthOverview {
+    computed_at:    string;
+    goal_map:       number;
+    map_7d:         number;
+    map_14d:        number;
+    map_30d:        number;
+    roster_people:  number;
+    status:         AllianceHealthStatusCounts;
+    signals_30d:    AllianceHealthSignals30;
+    quiet:          AllianceHealthQuietCounts;
+    monthly:        AllianceHealthMonthlyPoint[];
+}
+
+export type AllianceHealthAttentionBucket = 'fading' | 'dark' | 'seasonal'
+
+export interface AllianceHealthAttentionPilot {
+    user_id:            number;
+    pilot:              string;
+    corp:               string;
+    status:             string;
+    days_quiet:         number | string;
+    active_months:      number;
+    character_id?:      number | null;
+    corporation_id?:    number | null;
+}
+
+export interface AllianceHealthAttention {
+    computed_at:    string;
+    bucket:         AllianceHealthAttentionBucket;
+    pilots:         AllianceHealthAttentionPilot[];
+}
+
+export interface AllianceHealthCorporationRow {
+    corporation_id:     number;
+    name:               string;
+    characters:         number;
+    humans:             number;
+    active_90d:         number;
+    active_90d_pct:     number;
+    growth_90d_pct:     number;
+}
+
+export interface AllianceHealthCorporations {
+    computed_at:    string;
+    corporations:   AllianceHealthCorporationRow[];
+}
+
+export interface AllianceHealthCohortRow {
+    month:                  string;
+    label:                  string;
+    applications:           number;
+    accepts:                number;
+    academy_accepts:        number;
+    fleet_first_week_pct:   number;
+    fleet_1_30d_pct:        number;
+    fleet_3_30d_pct:        number;
+}
+
+export interface AllianceHealthCohorts {
+    computed_at:    string;
+    cohorts:        AllianceHealthCohortRow[];
+}

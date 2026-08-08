@@ -35,25 +35,30 @@ const { headers, rows, striped = false, success_marker = true } = Astro.props
                 rows.map((row) => (
                     <tr class:list={[row.tone && `er-table__row--${row.tone}`]}>
                         {
-                            row.cells.map((cell, index) => (
-                                <td class:list={[index > 0 && 'er-table__numeric']}>
-                                    {index === 0 && row.icon_url ? (
-                                        <span class="er-table__name">
-                                            <img
-                                                class="er-table__icon"
-                                                src={row.icon_url}
-                                                alt=""
-                                                width="24"
-                                                height="24"
-                                                loading="lazy"
-                                            />
-                                            <span>{cell}</span>
-                                        </span>
-                                    ) : (
-                                        cell
-                                    )}
-                                </td>
-                            ))
+                            row.cells.map((cell, index) => {
+                                const icon =
+                                    row.cell_icons?.[index]
+                                    ?? (index === 0 ? row.icon_url : undefined)
+                                return (
+                                    <td class:list={[index > 0 && 'er-table__numeric']}>
+                                        {icon ? (
+                                            <span class="er-table__name">
+                                                <img
+                                                    class="er-table__icon"
+                                                    src={icon}
+                                                    alt=""
+                                                    width="24"
+                                                    height="24"
+                                                    loading="lazy"
+                                                />
+                                                <span>{cell}</span>
+                                            </span>
+                                        ) : (
+                                            cell
+                                        )}
+                                    </td>
+                                )
+                            })
                         }
                     </tr>
                 ))

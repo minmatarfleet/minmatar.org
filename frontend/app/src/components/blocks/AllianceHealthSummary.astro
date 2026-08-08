@@ -1,0 +1,77 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { AllianceHealthOverview } from '@dtypes/api.minmatar.org'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
+import CountUpAnimation from '@components/blocks/CountUpAnimation.astro'
+
+interface Props {
+    overview: AllianceHealthOverview
+    [propName: string]: any
+}
+
+const { overview, ...attributes } = Astro.props
+delete attributes.class
+
+const at_risk = overview.quiet.fading + overview.quiet.dark
+---
+
+<section
+    class:list={['[ alliance-health-summary ]', Astro.props.class]}
+    aria-label={t('alliance.health.summary.aria')}
+>
+    <Flexblock gap="var(--space-m)">
+        <Flexblock gap="var(--space-3xs)">
+            <h2>{t('alliance.health.summary.title')}</h2>
+            <small>{t('alliance.health.summary.caption')}</small>
+        </Flexblock>
+
+        <div class="[ alliance-health-summary__stats ]">
+            <CampaignStat label={t('alliance.health.total_pilots')}>
+                <CountUpAnimation element="span" target={overview.roster_people} />
+            </CampaignStat>
+            <CampaignStat label={t('alliance.health.active_pilots')} tone="success">
+                <CountUpAnimation element="span" target={overview.map_30d} />
+            </CampaignStat>
+            <CampaignStat
+                label={t('alliance.health.at_risk')}
+                tone={at_risk > 0 ? 'danger' : 'success'}
+            >
+                <CountUpAnimation element="span" target={at_risk} />
+            </CampaignStat>
+        </div>
+    </Flexblock>
+</section>
+
+<style lang="scss">
+    h2 {
+        margin: 0;
+    }
+
+    small {
+        color: var(--faded);
+    }
+
+    .alliance-health-summary__stats {
+        display: grid;
+        width: 100%;
+        gap: var(--space-3xs);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+
+        :global(.card),
+        :global(.wrapper) {
+            min-width: 0;
+            width: 100%;
+            max-width: none;
+        }
+    }
+
+    @media (max-width: 900px) {
+        .alliance-health-summary__stats {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>

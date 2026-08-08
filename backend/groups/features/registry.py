@@ -257,6 +257,17 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         default_auth_group_names=_aff("Technology Team"),
         deny_community_statuses=(),
     ),
+    "alliance.health": FeatureDefinition(
+        code="alliance.health",
+        label="View alliance health",
+        scope=FeatureScope.STAFF,
+        description=(
+            "View alliance health dashboard (MAP, quiet pilots, corps, cohorts)."
+        ),
+        staff_permission="alliance.view_alliancehealth",
+        legacy_permission="alliance.view_alliancehealth",
+        deny_community_statuses=(),
+    ),
     "fittings.doctrine.approve": FeatureDefinition(
         code="fittings.doctrine.approve",
         label="Approve doctrine changes",

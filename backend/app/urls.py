@@ -26,6 +26,7 @@ from authentication import UnauthorizedError
 from tech.testdata import setup_test_data
 from tech.router import router as tech_router
 
+from alliance.router import router as alliance_router
 from applications.router import router as applications_router
 from combatlog.router import router as combatlog_router
 from discord.router import router as discord_router
@@ -57,6 +58,7 @@ from help_tickets.router import router as help_tickets_router
 
 api = NinjaAPI(title="Minmatar Fleet API", version="1.0.0")
 api.add_router("users/", users_router)
+api.add_router("alliance/", alliance_router)
 api.add_router("eveonline/", router)
 api.add_router("tribes/", tribes_router)
 api.add_router("applications/", applications_router)
