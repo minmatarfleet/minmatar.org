@@ -446,11 +446,18 @@
         "description": "page_finder.staging_supply.ops.description"
     },
     {
-        "slug": "market_contracts",
-        "path": "/market/contracts/",
+        "slug": "staging_supply.ops.contracts",
+        "path": "/market/ops/contracts/",
         "publish": true,
-        "description": "page_finder.market_contracts.description",
-        "keywords": [ "market", "contracts", "fittings", "stock" ]
+        "description": "page_finder.staging_supply.ops.contracts.description",
+        "keywords": [ "market", "ops", "contracts", "understocked", "fittings", "stock" ]
+    },
+    {
+        "slug": "staging_supply.ops.sell_orders",
+        "path": "/market/ops/sell_orders/",
+        "publish": true,
+        "description": "page_finder.staging_supply.ops.sell_orders.description",
+        "keywords": [ "market", "ops", "sell orders", "stock" ]
     },
     {
         "slug": "industry",

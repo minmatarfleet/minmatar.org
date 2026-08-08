@@ -123,7 +123,7 @@ import ItemPicture from '@components/blocks/ItemPicture.astro'
 
     .ops-stock-tile__ring {
         --ring-size: 118px;
-        --track: rgba(255, 255, 255, 0.12);
+        --track: color-mix(in srgb, var(--foreground) 12%, transparent);
         --fill: var(--fleet-yellow);
         position: relative;
         width: var(--ring-size);
@@ -155,7 +155,7 @@ import ItemPicture from '@components/blocks/ItemPicture.astro'
         height: calc(var(--ring-size) - 14px);
         border-radius: 50%;
         overflow: hidden;
-        background: #0b0b0b;
+        background: var(--background);
         display: grid;
         place-items: center;
 
@@ -173,8 +173,8 @@ import ItemPicture from '@components/blocks/ItemPicture.astro'
         bottom: -2px;
         min-width: 2.4rem;
         padding: 0.15rem 0.35rem;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        background: #111;
+        border: 1px solid color-mix(in srgb, var(--foreground) 15%, transparent);
+        background: var(--background);
         font-family: var(--heading-font);
         font-size: var(--step--2);
         letter-spacing: 0.04em;
@@ -215,7 +215,7 @@ import ItemPicture from '@components/blocks/ItemPicture.astro'
     }
 
     .ops-stock-tile__loc {
-        color: rgba(255, 255, 255, 0.55);
+        color: color-mix(in srgb, var(--foreground) 55%, transparent);
         font-size: var(--step--2);
         overflow: hidden;
         text-overflow: ellipsis;

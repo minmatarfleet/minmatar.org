@@ -1,5 +1,6 @@
 import type {
     Contract,
+    ContractMetrics,
     InferredSalesVolume,
     MarketOperatorStatistics,
     OpsMonitor,
@@ -23,8 +24,6 @@ export async function get_market_contracts(location_id: number) {
             headers: headers
         })
 
-        // console.log(response)
-
         if (!response.ok) {
             throw new Error(get_error_message(
                 response.status,
@@ -37,6 +36,32 @@ export async function get_market_contracts(location_id: number) {
         return await response.json() as Contract[];
     } catch (error) {
         throw new Error(`Error fetching contracts: ${error.message}`, { cause: error.cause });
+    }
+}
+
+export async function get_market_contracts_metrics(location_id: number) {
+    const headers = {
+        'Content-Type': 'application/json',
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/contracts/metrics?location_id=${location_id}`
+
+    try {
+        const response = await fetch(ENDPOINT, { headers })
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ), {
+                cause: response.status,
+            })
+        }
+        return await response.json() as ContractMetrics[]
+    } catch (error) {
+        throw new Error(
+            `Error fetching contract metrics: ${error.message}`,
+            { cause: error.cause },
+        )
     }
 }
 
@@ -62,7 +87,10 @@ export async function get_ops_monitor(location_id?: number) {
     }
 }
 
-export async function get_ops_monitor_history(location_id?: number, limit = 48) {
+export async function get_ops_monitor_history(
+    location_id?: number,
+    options: { days?: number; limit?: number } = { days: 30 },
+) {
     const headers = {
         'Content-Type': 'application/json',
     }
@@ -70,7 +98,10 @@ export async function get_ops_monitor_history(location_id?: number, limit = 48) 
     const params = new URLSearchParams()
     if (location_id !== undefined)
         params.set('location_id', String(location_id))
-    params.set('limit', String(limit))
+    if (options.days != null)
+        params.set('days', String(options.days))
+    else if (options.limit != null)
+        params.set('limit', String(options.limit))
 
     const ENDPOINT = `${API_ENDPOINT}/ops-monitor/history?${params.toString()}`
 

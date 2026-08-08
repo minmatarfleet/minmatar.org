@@ -1,0 +1,53 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_ops_monitor } from '@helpers/api.minmatar.org/market'
+import type { OpsMonitor } from '@dtypes/api.minmatar.org'
+import { query_string } from '@helpers/string'
+
+const location_id_param = Astro.url.searchParams.get('location_id')
+const parsed_location_id = location_id_param != null && location_id_param !== ''
+    ? parseInt(location_id_param, 10)
+    : NaN
+const location_id = Number.isNaN(parsed_location_id) ? undefined : parsed_location_id
+
+let monitor: OpsMonitor | null = null
+let fetching_error: Error | false = false
+
+try {
+    monitor = await get_ops_monitor(location_id)
+} catch (error) {
+    fetching_error = error as Error
+}
+
+const partial_url = translatePath(
+    `/partials/ops_sell_orders_component${
+        location_id != null
+            ? `?${query_string({ location_id })}`
+            : ''
+    }`,
+)
+
+import OpsSellGapsList from '@components/blocks/OpsSellGapsList.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+---
+
+{fetching_error !== false ?
+    <ErrorRefetch
+        args={{
+            partial: partial_url,
+            error: fetching_error,
+            delay: 0,
+        }}
+    />
+    : monitor ?
+        <OpsSellGapsList
+            rows={monitor.sell_gaps}
+            hide_location={true}
+            jita_copy_label={t('ops_copy_jita_buy_list')}
+            jita_copy_tip={t('ops_copy_jita_buy_list_tip')}
+            sales_history_days={monitor.summary.sales_history_days ?? 0}
+        />
+    : null
+}

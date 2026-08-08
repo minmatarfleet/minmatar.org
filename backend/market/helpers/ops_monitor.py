@@ -22,6 +22,7 @@ from django.utils import timezone
 from eveuniverse.models import EveType
 
 from eveonline.models import EveLocation
+from market.helpers.contract_match import fitting_type_quantities_bulk
 from market.helpers.contract_stock import outstanding_stock_q
 from market.helpers.item_classification import (
     ITEM_TYPE_OTHER,
@@ -59,8 +60,13 @@ _VOLUME_DAYS_90 = 90  # matches inferred-sale retention window
 _MARKUP_UNDERPRICED_MAX = -5
 _MARKUP_NORMAL_MAX = 5
 
-# Markup flags use the same ±5% band as admin sell-order filters.
+# Stock / markup flags (markup uses the same ±5% band as admin sell-order filters).
+# Understocked: fewer than this many days of stock remaining.
+_UNDERSTOCKED_DAYS = 7
+
+_FLAG_OUT_OF_STOCK = "out_of_stock"
 _FLAG_UNDERSTOCKED = "understocked"
+_FLAG_IN_STOCK = "in_stock"
 _FLAG_OVERSTOCKED = "overstocked"
 _FLAG_UNDERPRICED = "underpriced"
 _FLAG_OVERPRICED = "overpriced"
@@ -82,6 +88,27 @@ def _ops_baseline_by_type(type_ids: list[int]) -> dict[int, int]:
     return baseline
 
 
+def _fitting_baseline_isk(
+    type_quantities: dict[int, int],
+    baseline_by_type: dict[int, int],
+) -> int | None:
+    """
+    Sum of EFT type qty × Forge baseline.
+
+    Returns None when no constituent has a usable baseline (fail-open for
+    is_price_viable). Partial coverage still prices what we can.
+    """
+    total = 0
+    priced = False
+    for type_id, qty in type_quantities.items():
+        unit = baseline_by_type.get(type_id)
+        if unit is None or unit <= 0:
+            continue
+        total += int(qty) * int(unit)
+        priced = True
+    return total if priced else None
+
+
 def _days_of_stock(current_quantity: int, weekly_units: int) -> float | None:
     """Listed qty ÷ 7-day avg daily sales; None when there is no sales rate."""
     if weekly_units <= 0:
@@ -93,12 +120,17 @@ def _sell_gap_flags(
     current: int,
     expected: int,
     avg_markup_pct: float | None,
+    days_of_stock: float | None,
 ) -> list[str]:
     flags: list[str] = []
-    if current < expected:
+    if current == 0:
+        flags.append(_FLAG_OUT_OF_STOCK)
+    elif days_of_stock is not None and days_of_stock < _UNDERSTOCKED_DAYS:
         flags.append(_FLAG_UNDERSTOCKED)
-    elif current > expected:
-        flags.append(_FLAG_OVERSTOCKED)
+    else:
+        flags.append(_FLAG_IN_STOCK)
+        if current > expected:
+            flags.append(_FLAG_OVERSTOCKED)
     if avg_markup_pct is not None:
         if avg_markup_pct < _MARKUP_UNDERPRICED_MAX:
             flags.append(_FLAG_UNDERPRICED)
@@ -186,11 +218,13 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
                 "understocked_contracts": 0,
                 "sell_gaps": 0,
                 "contracts_health_pct": None,
+                "contracts_viability_pct": None,
                 "sell_orders_health_pct": None,
                 "sell_orders_viability_pct": None,
                 "overall_health_pct": None,
                 "contract_targets": 0,
                 "contract_fulfilled": 0,
+                "contract_viable_fulfilled": 0,
                 "sell_order_targets": 0,
                 "sell_order_fulfilled": 0,
                 "sell_order_viable_fulfilled": 0,
@@ -198,6 +232,7 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
                 "sell_orders_isk": 0.0,
                 "total_isk_on_market": 0.0,
                 "sales_history_days": 0,
+                "contract_history_days": 0,
             },
             "by_location": {},
         }
@@ -205,36 +240,129 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
     location_pks = [loc.pk for loc in locations]
     location_by_pk = {loc.pk: loc for loc in locations}
 
-    outstanding = {
-        (row["location_id"], row["fitting_id"]): row["count"]
-        for row in EveMarketContract.objects.filter(
-            outstanding_stock_q(),
-            location_id__in=location_pks,
-        )
-        .values("location_id", "fitting_id")
-        .annotate(count=Count("id"))
-    }
-
     expectations = list(
         EveMarketContractExpectation.objects.filter(
             location_id__in=location_pks
         ).select_related("fitting", "location")
     )
+    expectation_fittings = list(
+        {
+            expectation.fitting_id: expectation.fitting
+            for expectation in expectations
+            if expectation.fitting_id is not None
+        }.values()
+    )
+    fitting_qtys = fitting_type_quantities_bulk(expectation_fittings)
+    contract_type_ids = sorted(
+        {type_id for qtys in fitting_qtys.values() for type_id in qtys}
+    )
+    contract_baseline_by_type = _ops_baseline_by_type(contract_type_ids)
+    fitting_baseline_isk = {
+        fit_id: _fitting_baseline_isk(qtys, contract_baseline_by_type)
+        for fit_id, qtys in fitting_qtys.items()
+    }
+
+    outstanding: dict[tuple[int, int], int] = defaultdict(int)
+    viable_outstanding: dict[tuple[int, int], int] = defaultdict(int)
+    for row in EveMarketContract.objects.filter(
+        outstanding_stock_q(),
+        location_id__in=location_pks,
+    ).values("location_id", "fitting_id", "price"):
+        fitting_id = row["fitting_id"]
+        if fitting_id is None:
+            continue
+        key = (row["location_id"], fitting_id)
+        outstanding[key] += 1
+        if is_price_viable(row["price"], fitting_baseline_isk.get(fitting_id)):
+            viable_outstanding[key] += 1
+
+    # Finished contracts = completed sales of that fitting at the location.
+    now = timezone.now()
+    since_1 = now - timedelta(days=_VOLUME_DAYS_1)
+    since_3 = now - timedelta(days=_VOLUME_DAYS_3)
+    since_7 = now - timedelta(days=_VOLUME_DAYS_7)
+    since_30 = now - timedelta(days=_VOLUME_DAYS_30)
+    since_90 = now - timedelta(days=_VOLUME_DAYS_90)
+
+    def _finished_window_count(since):
+        return Coalesce(
+            Sum(
+                Case(
+                    When(completed_at__gte=since, then=1),
+                    default=0,
+                    output_field=IntegerField(),
+                )
+            ),
+            0,
+        )
+
+    units_1d_by_loc_fit: dict[tuple[int, int], int] = {}
+    units_3d_by_loc_fit: dict[tuple[int, int], int] = {}
+    weekly_units_by_loc_fit: dict[tuple[int, int], int] = {}
+    units_30d_by_loc_fit: dict[tuple[int, int], int] = {}
+    units_90d_by_loc_fit: dict[tuple[int, int], int] = {}
+    contract_history_days = 0
+    finished_qs = EveMarketContract.objects.filter(
+        status="finished",
+        location_id__in=location_pks,
+        fitting_id__isnull=False,
+        completed_at__gte=since_90,
+    )
+    for row in finished_qs.values("location_id", "fitting_id").annotate(
+        units_1d=_finished_window_count(since_1),
+        units_3d=_finished_window_count(since_3),
+        units_7d=_finished_window_count(since_7),
+        units_30d=_finished_window_count(since_30),
+        units_90d=Count("id"),
+    ):
+        key = (row["location_id"], row["fitting_id"])
+        units_1d_by_loc_fit[key] = row["units_1d"]
+        units_3d_by_loc_fit[key] = row["units_3d"]
+        weekly_units_by_loc_fit[key] = row["units_7d"]
+        units_30d_by_loc_fit[key] = row["units_30d"]
+        units_90d_by_loc_fit[key] = row["units_90d"]
+
+    earliest_finished = finished_qs.aggregate(earliest=Min("completed_at"))[
+        "earliest"
+    ]
+    if earliest_finished is not None:
+        contract_history_days = max(
+            1,
+            int((now - earliest_finished).total_seconds() // 86400) + 1,
+        )
 
     understocked_contracts = []
     contract_fill_ratios: list[float] = []
+    contract_viable_fill_ratios: list[float] = []
     contract_fill_ratios_by_loc: dict[int, list[float]] = defaultdict(list)
+    contract_viable_fill_ratios_by_loc: dict[int, list[float]] = defaultdict(
+        list
+    )
+    contract_targets_by_loc: dict[int, int] = defaultdict(int)
+    contract_fulfilled_by_loc: dict[int, int] = defaultdict(int)
+    contract_viable_fulfilled_by_loc: dict[int, int] = defaultdict(int)
     for expectation in expectations:
-        current = outstanding.get(
-            (expectation.location_id, expectation.fitting_id), 0
-        )
+        key = (expectation.location_id, expectation.fitting_id)
+        current = outstanding.get(key, 0)
+        viable = viable_outstanding.get(key, 0)
         if expectation.quantity > 0:
             ratio = min(1.0, current / expectation.quantity)
+            viable_ratio = min(1.0, viable / expectation.quantity)
             contract_fill_ratios.append(ratio)
+            contract_viable_fill_ratios.append(viable_ratio)
             contract_fill_ratios_by_loc[expectation.location_id].append(ratio)
+            contract_viable_fill_ratios_by_loc[expectation.location_id].append(
+                viable_ratio
+            )
+            contract_targets_by_loc[expectation.location_id] += 1
+            if current >= expectation.quantity:
+                contract_fulfilled_by_loc[expectation.location_id] += 1
+            if viable >= expectation.quantity:
+                contract_viable_fulfilled_by_loc[expectation.location_id] += 1
         level = fitting_readiness(current, expectation.quantity)
         if level in ("ready", "unknown"):
             continue
+        weekly_units = weekly_units_by_loc_fit.get(key, 0)
         understocked_contracts.append(
             {
                 "location_id": expectation.location.location_id,
@@ -244,10 +372,17 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
                 "fitting_name": expectation.fitting.name,
                 "ship_id": expectation.fitting.ship_id,
                 "current_quantity": current,
+                "viable_quantity": viable,
                 "expected_quantity": expectation.quantity,
                 "shortfall": shortfall(current, expectation.quantity),
                 "readiness": level,
                 "expectation_id": expectation.id,
+                "units_1d": units_1d_by_loc_fit.get(key, 0),
+                "units_3d": units_3d_by_loc_fit.get(key, 0),
+                "weekly_units": weekly_units,
+                "units_30d": units_30d_by_loc_fit.get(key, 0),
+                "units_90d": units_90d_by_loc_fit.get(key, 0),
+                "days_of_stock": _days_of_stock(current, weekly_units),
             }
         )
 
@@ -310,12 +445,6 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
     units_90d_by_loc_item: dict[tuple[int, int], int] = {}
     sales_history_days = 0
     if target_type_ids:
-        now = timezone.now()
-        since_1 = now - timedelta(days=_VOLUME_DAYS_1)
-        since_3 = now - timedelta(days=_VOLUME_DAYS_3)
-        since_7 = now - timedelta(days=_VOLUME_DAYS_7)
-        since_30 = now - timedelta(days=_VOLUME_DAYS_30)
-        since_90 = now - timedelta(days=_VOLUME_DAYS_90)
 
         def _windowed_sum(since):
             return Coalesce(
@@ -396,8 +525,6 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
                 sell_viable_fulfilled_by_loc[loc_pk] += 1
             coverage_gap = current < desired * _CRITICAL_RATIO
             viability_gap = viable < desired * _CRITICAL_RATIO
-            if not coverage_gap and not viability_gap:
-                continue
             avg_markup_pct = None
             if current > 0:
                 baseline = baseline_by_type.get(eve_type.id)
@@ -414,6 +541,7 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
             weekly_units = weekly_units_by_loc_item.get(
                 (loc_pk, eve_type.id), 0
             )
+            days_of_stock = _days_of_stock(current, weekly_units)
             sell_gaps.append(
                 {
                     "location_id": loc.location_id,
@@ -451,19 +579,28 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
                         (loc_pk, eve_type.id), 0
                     ),
                     "avg_markup_pct": avg_markup_pct,
-                    "days_of_stock": _days_of_stock(current, weekly_units),
-                    "flags": _sell_gap_flags(current, desired, avg_markup_pct),
+                    "days_of_stock": days_of_stock,
+                    "flags": _sell_gap_flags(
+                        current, desired, avg_markup_pct, days_of_stock
+                    ),
                     "ships": ships_by_item.get(loc_pk, {}).get(name, []),
                 }
             )
 
     sell_gaps.sort(key=lambda row: (-row["shortfall"], row["item_name"]))
+    critical_sell_gaps = sum(
+        1 for row in sell_gaps if row["coverage_gap"] or row["viability_gap"]
+    )
 
     contract_targets = len(contract_fill_ratios)
     contract_fulfilled = sum(
         1 for ratio in contract_fill_ratios if ratio >= 1.0
     )
+    contract_viable_fulfilled = sum(
+        1 for ratio in contract_viable_fill_ratios if ratio >= 1.0
+    )
     contracts_health_pct = _health_pct(contract_fill_ratios)
+    contracts_viability_pct = _health_pct(contract_viable_fill_ratios)
     sell_orders_health_pct = _health_pct(sell_fill_ratios)
     sell_orders_viability_pct = _health_pct(sell_viable_fill_ratios)
     overall_health_pct = _combined_health(
@@ -561,6 +698,9 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
     for loc in locations:
         loc_pk = loc.pk
         loc_contract_ratios = contract_fill_ratios_by_loc.get(loc_pk, [])
+        loc_contract_viable_ratios = contract_viable_fill_ratios_by_loc.get(
+            loc_pk, []
+        )
         loc_sell_ratios = sell_fill_ratios_by_loc.get(loc_pk, [])
         loc_sell_viable_ratios = sell_viable_fill_ratios_by_loc.get(loc_pk, [])
         loc_understocked = [
@@ -571,9 +711,15 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
         loc_sell_gaps = [
             row for row in sell_gaps if row["location_id"] == loc.location_id
         ]
+        loc_critical_sell_gaps = sum(
+            1
+            for row in loc_sell_gaps
+            if row["coverage_gap"] or row["viability_gap"]
+        )
         loc_contracts_isk = contracts_isk_by_loc.get(loc_pk, 0.0)
         loc_sell_orders_isk = sell_orders_isk_by_loc.get(loc_pk, 0.0)
         loc_contracts_health_pct = _health_pct(loc_contract_ratios)
+        loc_contracts_viability_pct = _health_pct(loc_contract_viable_ratios)
         loc_sell_orders_health_pct = _health_pct(loc_sell_ratios)
         loc_sell_orders_viability_pct = _health_pct(loc_sell_viable_ratios)
         loc_latest_contract = latest_contract_by_loc.get(loc_pk)
@@ -591,16 +737,18 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
             "sell_gaps": loc_sell_gaps,
             "summary": {
                 "understocked_contracts": min(len(loc_understocked), 50),
-                "sell_gaps": len(loc_sell_gaps),
+                "sell_gaps": loc_critical_sell_gaps,
                 "contracts_health_pct": loc_contracts_health_pct,
+                "contracts_viability_pct": loc_contracts_viability_pct,
                 "sell_orders_health_pct": loc_sell_orders_health_pct,
                 "sell_orders_viability_pct": loc_sell_orders_viability_pct,
                 "overall_health_pct": _combined_health(
                     loc_contracts_health_pct, loc_sell_orders_health_pct
                 ),
-                "contract_targets": len(loc_contract_ratios),
-                "contract_fulfilled": sum(
-                    1 for ratio in loc_contract_ratios if ratio >= 1.0
+                "contract_targets": contract_targets_by_loc.get(loc_pk, 0),
+                "contract_fulfilled": contract_fulfilled_by_loc.get(loc_pk, 0),
+                "contract_viable_fulfilled": (
+                    contract_viable_fulfilled_by_loc.get(loc_pk, 0)
                 ),
                 "sell_order_targets": sell_targets_by_loc.get(loc_pk, 0),
                 "sell_order_fulfilled": sell_fulfilled_by_loc.get(loc_pk, 0),
@@ -613,6 +761,7 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
                     loc_contracts_isk + loc_sell_orders_isk, 2
                 ),
                 "sales_history_days": sales_history_days,
+                "contract_history_days": contract_history_days,
             },
         }
 
@@ -628,13 +777,15 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
         "sell_gaps": sell_gaps,
         "summary": {
             "understocked_contracts": min(len(understocked_contracts), 50),
-            "sell_gaps": len(sell_gaps),
+            "sell_gaps": critical_sell_gaps,
             "contracts_health_pct": contracts_health_pct,
+            "contracts_viability_pct": contracts_viability_pct,
             "sell_orders_health_pct": sell_orders_health_pct,
             "sell_orders_viability_pct": sell_orders_viability_pct,
             "overall_health_pct": overall_health_pct,
             "contract_targets": contract_targets,
             "contract_fulfilled": contract_fulfilled,
+            "contract_viable_fulfilled": contract_viable_fulfilled,
             "sell_order_targets": sell_targets,
             "sell_order_fulfilled": sell_fulfilled,
             "sell_order_viable_fulfilled": sell_viable_fulfilled,
@@ -642,6 +793,7 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
             "sell_orders_isk": round(sell_orders_isk, 2),
             "total_isk_on_market": round(total_isk_on_market, 2),
             "sales_history_days": sales_history_days,
+            "contract_history_days": contract_history_days,
         },
         # Per-location breakdown of the same payload shape, so callers that
         # need every market-active location (e.g. snapshotting) can compute

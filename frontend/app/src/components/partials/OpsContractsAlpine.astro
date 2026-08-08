@@ -1,0 +1,36 @@
+---
+/**
+ * All Contracts (MarketContractsTable) filter helpers — must live in FooterScripts.
+ *
+ * Contracts content is loaded via htmx into a slot. Alpine.initTree runs on
+ * afterSwap before any page-local module script from the partial can execute
+ * (and Astro does not re-run those scripts from swapped HTML).
+ * Same pattern as OpsSellGapsAlpine / LearningAlpine in FooterScripts.
+ */
+---
+
+<script>
+    import {
+        ops_contracts_compare_rows,
+        ops_contracts_default_direction,
+        ops_contracts_next_order_state,
+        ops_contracts_row_visible,
+    } from '@helpers/ops_contracts_filter'
+
+    declare global {
+        interface Window {
+            __opsContractsCompareRows?: typeof ops_contracts_compare_rows
+            __opsContractsDefaultDirection?: typeof ops_contracts_default_direction
+            __opsContractsNextOrderState?: typeof ops_contracts_next_order_state
+            __opsContractsRowVisible?: typeof ops_contracts_row_visible
+        }
+    }
+
+    window.__opsContractsCompareRows = ops_contracts_compare_rows
+    window.__opsContractsDefaultDirection = ops_contracts_default_direction
+    window.__opsContractsNextOrderState = ops_contracts_next_order_state
+    window.__opsContractsRowVisible = ops_contracts_row_visible
+    // Contracts content is htmx-swapped; Alpine may init before this module.
+    // Notify open lists so filter/sort effects re-run with real helpers.
+    window.dispatchEvent(new Event('ops-contracts-helpers-ready'))
+</script>

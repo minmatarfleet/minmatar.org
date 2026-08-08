@@ -1,7 +1,7 @@
 ---
 title: 'Faction Warfare Complexes'
 excerpt: 'An in-depth breakdown for capturing complexes in faction warfare space'
-category: 'Faction Warfare'
+category: 'Faction Warfare Mechanics'
 author: 'BearThatCares'
 ---
 Faction warfare complexes (**plexes**) are where most fights and most LP happen. Capture them to earn loyalty points and push systems toward flipping for the Minmatar Republic.

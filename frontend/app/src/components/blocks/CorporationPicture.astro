@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { EvEImageServiceSize, ImageSize } from '@dtypes/layout_components'
+import type { EvEImageServiceSize, ImageSize, BadgeColors } from '@dtypes/layout_components'
 
 interface Props {
     corporation_id:         number;
@@ -11,6 +11,8 @@ interface Props {
     x_corporation_name?:    string | false;
     size?:                  ImageSize;
     icon_quality?:          EvEImageServiceSize;
+    quantity?:              number;
+    tag_color?:             BadgeColors;
 }
 
 const {
@@ -20,11 +22,15 @@ const {
     x_corporation_name = false,
     size = 64,
     icon_quality = 64,
+    quantity,
+    tag_color,
 } = Astro.props
 
 import { get_corporation_logo } from '@helpers/eve_image_server'
+
+import NotificationBadge from '@components/blocks/NotificationBadge.astro'
 ---
-<picture>
+<picture class="[ corporation-picture ]">
     <img
         loading="lazy"
         height={size}
@@ -39,15 +45,35 @@ import { get_corporation_logo } from '@helpers/eve_image_server'
                     return
 
                 show_modal({
-                    partial: '${translatePath('/partials/corporation_modal_component/')}?corporation_id='+(${x_corporation_id} ? ${x_corporation_id} : '${corporation_id.toString()}'),
+                    partial: '${translatePath('/partials/corporation_modal_component/')}?corporation_id='+(${x_corporation_id} ? ${x_corporation_id} : '${String(corporation_id ?? 0)}'),
                 })
             }
         }`}
         x-on:click.stop.prevent="show_corporation_modal()"
     />
+
+    {quantity &&
+        <NotificationBadge
+            class="[ quantity-badge ]"
+            color={tag_color ?? 'fleet-red'}
+            number={quantity}
+        />
+    }
 </picture>
 
 <style lang="scss">
+    picture {
+        position: relative;
+        display: inline-flex;
+
+        .quantity-badge {
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            z-index: 1;
+        }
+    }
+
     img {
         cursor: pointer;
         transition: var(--fast-transition);

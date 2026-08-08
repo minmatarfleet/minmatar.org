@@ -25,19 +25,16 @@ if (location_id == null) {
     }
 }
 
-const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
-
 const partial_url = translatePath(
-    `/partials/market_contracts_component${
+    `/partials/ops_contracts_component${
         location_id != null
             ? `?${query_string({ location_id })}`
             : ''
     }`,
 )
 
-import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import MarketContractsTable from '@components/blocks/MarketContractsTable.astro'
-import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 ---
 
@@ -46,23 +43,19 @@ import Flexblock from '@components/compositions/Flexblock.astro'
         args={{
             partial: partial_url,
             error: fetching_error,
-            delay: delay,
+            delay: 0,
         }}
     />
     :
-    <Flexblock gap="var(--space-l)">
+    <Flexblock gap="var(--space-s)" class="[ ops-contracts-browse ]">
         {contracts.length === 0 ?
             <p>{t('market_contracts.empty')}</p>
             :
             <MarketContractsTable
                 contracts={contracts}
+                location_id={location_id}
                 init_tooltips={true}
             />
         }
-        <UpdateAlpineVariables
-            variables={{
-                contracts_count: contracts.length,
-            }}
-        />
     </Flexblock>
 }

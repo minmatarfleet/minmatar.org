@@ -141,6 +141,42 @@ def last_non_capsule_ship_snapshot(
     )
 
 
+def peak_concurrent_ship_count(
+    *,
+    member_ids: list[int],
+    ship_type_id: int,
+    snapshots: list[tuple[int, int, object]] | None = None,
+) -> int:
+    """Peak number of members simultaneously in ``ship_type_id``.
+
+    ``snapshots`` is an optional prefetched list of
+    ``(member_id, ship_type_id, created_at)`` ordered by ``created_at``.
+    """
+    if not member_ids:
+        return 0
+    _, ship_snapshot_model = _fleet_models()
+    if snapshots is None:
+        snapshots = list(
+            ship_snapshot_model.objects.filter(member_id__in=member_ids)
+            .order_by("created_at")
+            .values_list("member_id", "ship_type_id", "created_at")
+        )
+    else:
+        member_id_set = set(member_ids)
+        snapshots = [row for row in snapshots if row[0] in member_id_set]
+
+    if not snapshots:
+        return 0
+
+    current: dict[int, int] = {}
+    peak = 0
+    for member_id, snap_ship_type_id, _ in snapshots:
+        current[member_id] = int(snap_ship_type_id)
+        count = sum(1 for sid in current.values() if sid == ship_type_id)
+        peak = max(peak, count)
+    return peak
+
+
 def effective_fleet_ship(
     member: EveFleetInstanceMember,
 ) -> tuple[int, str]:

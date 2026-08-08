@@ -54,6 +54,8 @@ class EveMarketContract(models.Model):
     assignee_id = models.BigIntegerField(null=True, blank=True)
     acceptor_id = models.BigIntegerField(null=True, blank=True)
     issuer_external_id = models.BigIntegerField()
+    # Set when the issuer character listed for a corporation (ESI for_corporation).
+    issuer_corporation_id = models.BigIntegerField(null=True, blank=True)
 
     is_public = models.BooleanField(default=False)
 

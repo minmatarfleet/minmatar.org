@@ -1,0 +1,166 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_market_locations } from '@helpers/api.minmatar.org/locations'
+import { query_string } from '@helpers/string'
+import {
+    ops_params_need_canonicalization,
+    resolve_ops_location_id,
+} from '@helpers/market_ops_redirect'
+
+let fetch_error: Error | false = false
+let locations: Awaited<ReturnType<typeof get_market_locations>> = []
+let location_id: number | undefined
+
+try {
+    locations = await get_market_locations()
+
+    location_id = resolve_ops_location_id(locations, Astro.url.searchParams)
+        ?? locations[0]?.location_id
+
+    if (
+        location_id != null
+        && ops_params_need_canonicalization(Astro.url.searchParams, location_id)
+    ) {
+        return Astro.redirect(
+            translatePath(`/market/ops/contracts/?${query_string({ location_id })}`),
+        )
+    }
+} catch (error) {
+    fetch_error = error as Error
+}
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Breadcrumb from '@components/blocks/Breadcrumb.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import MarketContractsSkeleton from '@components/blocks/MarketContractsSkeleton.astro'
+
+const page_title = t('staging_supply.ops.contracts.page_title')
+
+const ops_href = location_id != null
+    ? translatePath(`/market/ops/?${query_string({ location_id })}`)
+    : translatePath('/market/ops/')
+
+const breadcrumb_items = [
+    { label: t('staging_supply.ops.page_title'), href: ops_href },
+    { label: page_title },
+]
+
+const CONTRACTS_PARTIAL = translatePath(
+    `/partials/ops_contracts_component${
+        location_id != null
+            ? `?${query_string({ location_id })}`
+            : ''
+    }`,
+)
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('staging_supply.ops.contracts.meta_description')}
+    components={{
+        tippy: true,
+    }}
+>
+    <PageWide
+        cover={{
+            image: '/images/market-cover.jpg',
+            image_990: '/images/market-cover.jpg',
+            overlay: true,
+            scrollable: true,
+        }}
+        padding_block="var(--space-m) var(--space-xl)"
+        sticky={true}
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <Flexblock gap="var(--space-s)">
+                <Breadcrumb items={breadcrumb_items} />
+                <PageTitle>{page_title}</PageTitle>
+            </Flexblock>
+        </FlexInline>
+
+        {fetch_error ?
+            <ErrorRefetch args={{
+                partial: translatePath(
+                    location_id != null
+                        ? `/market/ops/contracts/?${query_string({ location_id })}`
+                        : '/market/ops/contracts/'
+                ),
+                error: fetch_error,
+                delay: 0,
+            }} />
+            :
+            <div
+                id="ops-contracts-slot"
+                data-ops-contracts-deferred="1"
+                hx-get={CONTRACTS_PARTIAL}
+                hx-trigger="load"
+                hx-swap="innerHTML"
+                hx-indicator=".loader"
+                aria-busy="true"
+                aria-live="polite"
+            >
+                <MarketContractsSkeleton />
+            </div>
+        }
+    </PageWide>
+</Viewport>
+
+<script>
+    function refreshOpsContractsSlot() {
+        const slot = document.getElementById('ops-contracts-slot')
+        if (!slot)
+            return
+
+        slot.setAttribute('aria-busy', 'false')
+        if (typeof htmx !== 'undefined')
+            htmx.process(slot)
+        if (typeof Alpine !== 'undefined')
+            Alpine.initTree(slot)
+        if (typeof tippy === 'function') {
+            tippy('#ops-contracts-slot [data-tippy-content]', {
+                delay: [100, 200],
+                arrow: true,
+            })
+        }
+    }
+
+    function isOpsContractsRequest(event: any): boolean {
+        const path = String(
+            event.detail?.pathInfo?.requestPath
+                || event.detail?.xhr?.responseURL
+                || event.detail?.elt?.getAttribute?.('hx-get')
+                || '',
+        )
+        return path.includes('ops_contracts_component')
+    }
+
+    function bindOpsContractsDeferred() {
+        const slot = document.getElementById('ops-contracts-slot')
+        if (!slot || slot.dataset.bound === '1')
+            return
+        slot.dataset.bound = '1'
+
+        document.body.addEventListener('htmx:afterSwap', (event: any) => {
+            if (!isOpsContractsRequest(event))
+                return
+            refreshOpsContractsSlot()
+        })
+
+        document.body.addEventListener('htmx:afterRequest', (event: any) => {
+            if (!isOpsContractsRequest(event))
+                return
+            if (!event.detail?.successful) {
+                document.getElementById('ops-contracts-slot')?.setAttribute('aria-busy', 'false')
+            }
+        })
+    }
+
+    bindOpsContractsDeferred()
+    document.addEventListener('astro:page-load', bindOpsContractsDeferred)
+</script>

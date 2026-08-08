@@ -30,16 +30,16 @@ export const metaBlocks: MetaBlock[] = [
         type: 'table',
         headers: ['Hull', 'Notes'],
         rows: [
-            { cells: ['Ninazu', 'Active armor fax, can also repair shield. Cheap.'], ship_id: 37607 },
+            { cells: ['Apostle', 'Recommended. Buffer armor fax, often in pairs.'], ship_id: 37604 },
+            { cells: ['Ninazu', 'Active armor fax, can also repair shield. Cheap escalation bait.'], ship_id: 37607 },
             { cells: ['Lif', 'Active shield fax, can also repair armor. Cheap. Extremely good against neutralizers.'], ship_id: 37606 },
             { cells: ['Minokawa', 'Buffer shield fax, often in pairs.'], ship_id: 37605 },
-            { cells: ['Apostle', 'Buffer armor fax, often in pairs.'], ship_id: 37604 },
         ],
     },
 ]
 
 export const guidanceLead =
-    'In Minmatar Fleet, we recommend pilots start with the <strong>Ninazu</strong> or <strong>Lif</strong>, and then train into the <strong>Apostle</strong>. Ninazu is slightly better than the Lif for our engagements, but the Lif cross-trains into a Nidhoggur.'
+    'In Minmatar Fleet, we recommend pilots start with the <strong>Apostle</strong>. It is our primary buffer armor fax. Train a <strong>Ninazu</strong> next if you want a cheaper active hull for starting escalations — it can also repair shield. The Lif is useful against heavy neut pressure and cross-trains into a Nidhoggur.'
 
 export const apostleSkillPlan: string[] = [
     'Drones 2',

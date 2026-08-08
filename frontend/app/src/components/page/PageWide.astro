@@ -21,12 +21,14 @@ import type { PageCoverOptions } from '@dtypes/layout_components'
 interface Props {
     cover?:                 false | PageCoverOptions;
     sticky?:                boolean;
+    padding_block?:         string;
     [propName: string]:     any;
 }
 
 const {
     cover,
     sticky = false,
+    padding_block = 'var(--space-xl)',
     ...attributes
 } = Astro.props;
 
@@ -52,7 +54,7 @@ import ReferralLink from '@components/blocks/ReferralLink.astro';
         <slot name="subheader" slot="subheader" />
     </PageHeader>
 
-    <PageBody max_width="var(--max-content-width)">
+    <PageBody max_width="var(--max-content-width)" padding_block={padding_block}>
         <slot />
     </PageBody>
 </main>

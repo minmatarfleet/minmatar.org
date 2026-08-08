@@ -6,8 +6,10 @@ export const GUIDES_INDEX_COVER = {
 }
 
 const CATEGORY_COVERS: Record<GuideMeta['category'], string> = {
-    'Faction Warfare': '/images/guides/wiki_frontlines.png',
+    'Faction Warfare Mechanics': '/images/guides/wiki_frontlines.png',
+    'Faction Warfare Ships': '/images/doctrines-cover.jpg',
     'PVP': '/images/fleets-cover.jpg',
+    'Subcapital Ships': '/images/doctrines-cover.jpg',
     'Capital Ships': '/images/capitals-cover.jpg',
     'ISK Generation': '/images/fitting-cover.jpg',
     'Utility': '/images/intel-cover.jpg',
@@ -32,6 +34,10 @@ const GUIDE_COVERS: Record<string, string> = {
     'zohar-hunting': '/images/guides/guides/level5s/wrath_of_angels.png',
     'bookmarks': '/images/assets-cover.jpg',
     'selling-loyalty-points': '/images/loyalty-points-cover.webp',
+    'subcapital-basics': '/images/readiness-cover.webp',
+    'subcapital-dps-guide': '/images/dps-card.jpg',
+    'subcapital-logi-guide': '/images/logistics-card.jpg',
+    'subcapital-support-guide': '/images/support-card.jpg',
     'capital-ship-basics': '/images/capitals-cover.jpg',
     'force-auxiliary-carrier-guide': '/images/faxes-cover.webp',
     'dreadnought-guide': '/images/dreads-cover.webp',

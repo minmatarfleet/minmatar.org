@@ -1,8 +1,11 @@
 import logging
+import math
 from datetime import datetime, timedelta
-from typing import List
+from statistics import median
+from typing import Iterable, List
 
 import pytz
+from django.db.models import Count
 from django.utils import timezone
 
 from eveonline.models import EveCharacter, EveCorporation, EveLocation
@@ -17,6 +20,10 @@ from market.models import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Finished contracts within this gap count as one fleet "burst".
+CONTRACT_BURST_GAP = timedelta(minutes=45)
+CONTRACT_BURST_LOOKBACK_DAYS = 30
 
 # pylint: disable=W1405
 
@@ -68,6 +75,121 @@ def get_historical_quantity_for_fitting(
         )
 
     return historical_quantity
+
+
+def finished_contract_volume_by_fitting(
+    *,
+    location: EveLocation,
+    fitting_ids: Iterable[int],
+    days: int = 28,
+) -> dict[int, int]:
+    """Finished-contract counts per fitting at a location for a rolling window.
+
+    Returns ``{fitting_id: volume}``. Missing fittings are omitted (callers
+    should default to 0).
+    """
+    fitting_id_list = [fid for fid in fitting_ids if fid is not None]
+    if not fitting_id_list:
+        return {}
+
+    since = timezone.now() - timedelta(days=days)
+    volumes: dict[int, int] = {}
+    for row in (
+        EveMarketContract.objects.filter(
+            location=location,
+            status="finished",
+            fitting_id__in=fitting_id_list,
+            completed_at__gte=since,
+        )
+        .values("fitting_id")
+        .annotate(volume=Count("id"))
+    ):
+        volumes[row["fitting_id"]] = int(row["volume"])
+    return volumes
+
+
+def cluster_completion_bursts(
+    completed_ats: list[datetime],
+    *,
+    gap: timedelta = CONTRACT_BURST_GAP,
+) -> list[int]:
+    """Return burst sizes from sorted completion times (gap starts a new burst)."""
+    if not completed_ats:
+        return []
+    times = sorted(t for t in completed_ats if t is not None)
+    if not times:
+        return []
+    bursts: list[int] = []
+    size = 1
+    for prev, nxt in zip(times, times[1:]):
+        if nxt - prev <= gap:
+            size += 1
+        else:
+            bursts.append(size)
+            size = 1
+    bursts.append(size)
+    return bursts
+
+
+def estimate_contract_burst_size(bursts: list[int]) -> int | None:
+    """Typical fleet pull size: median of multi-buy bursts, else median of all."""
+    if not bursts:
+        return None
+    multi = [size for size in bursts if size >= 2]
+    sample = multi if multi else bursts
+    return max(1, int(median(sample)))
+
+
+def fleets_remaining_from_stock(
+    outstanding: int,
+    burst_size: int | None,
+) -> int | None:
+    """How many typical fleet pulls the outstanding stock covers."""
+    if burst_size is None or burst_size < 1:
+        return None
+    if outstanding <= 0:
+        return 0
+    return int(math.ceil(outstanding / burst_size))
+
+
+def finished_contract_burst_size_by_fitting(
+    *,
+    location: EveLocation,
+    fitting_ids: Iterable[int],
+    lookback_days: int = CONTRACT_BURST_LOOKBACK_DAYS,
+    gap: timedelta = CONTRACT_BURST_GAP,
+) -> dict[int, int]:
+    """Typical burst size per fitting from finished contracts at a location.
+
+    Returns ``{fitting_id: burst_size}``. Fittings without finishes omitted.
+    """
+    fitting_id_list = [fid for fid in fitting_ids if fid is not None]
+    if not fitting_id_list:
+        return {}
+
+    since = timezone.now() - timedelta(days=lookback_days)
+    times_by_fitting: dict[int, list[datetime]] = {}
+    for fitting_id, completed_at in (
+        EveMarketContract.objects.filter(
+            location=location,
+            status="finished",
+            fitting_id__in=fitting_id_list,
+            completed_at__gte=since,
+            completed_at__isnull=False,
+        )
+        .order_by("fitting_id", "completed_at")
+        .values_list("fitting_id", "completed_at")
+    ):
+        times_by_fitting.setdefault(fitting_id, []).append(completed_at)
+
+    burst_sizes: dict[int, int] = {}
+    for fitting_id, times in times_by_fitting.items():
+        size = estimate_contract_burst_size(
+            cluster_completion_bursts(times, gap=gap)
+        )
+        if size is not None:
+            burst_sizes[fitting_id] = size
+    return burst_sizes
 
 
 # In-memory cache for get_fitting_for_contract (public contract title -> fitting)
@@ -186,11 +308,17 @@ def create_or_update_contract_from_db_contract(
         )
         return False
     status = _map_contract_status(db_contract.status or "")
+    issuer_corporation_id = None
+    if getattr(db_contract, "for_corporation", False):
+        issuer_corporation_id = getattr(
+            db_contract, "issuer_corporation_id", None
+        )
     contract, _ = EveMarketContract.objects.get_or_create(
         id=db_contract.contract_id,
         defaults={
             "price": db_contract.price or 0,
             "issuer_external_id": db_contract.issuer_id,
+            "issuer_corporation_id": issuer_corporation_id,
             "fitting": fitting,
         },
     )
@@ -205,6 +333,8 @@ def create_or_update_contract_from_db_contract(
     contract.is_public = False
     contract.assignee_id = db_contract.assignee_id
     contract.acceptor_id = db_contract.acceptor_id
+    contract.issuer_external_id = db_contract.issuer_id
+    contract.issuer_corporation_id = issuer_corporation_id
     contract.last_updated = timezone.now()
     contract.save()
     return True
@@ -226,6 +356,11 @@ def create_or_update_contract(esi_contract, location: EveLocation):
         defaults={
             "price": esi_contract["price"],
             "issuer_external_id": esi_contract["issuer_id"],
+            "issuer_corporation_id": (
+                esi_contract.get("issuer_corporation_id")
+                if esi_contract.get("for_corporation")
+                else None
+            ),
             "fitting": fitting,
         },
     )
@@ -237,6 +372,12 @@ def create_or_update_contract(esi_contract, location: EveLocation):
         contract.fitting = fitting
     contract.location = location
     contract.is_public = True
+    contract.issuer_external_id = esi_contract["issuer_id"]
+    contract.issuer_corporation_id = (
+        esi_contract.get("issuer_corporation_id")
+        if esi_contract.get("for_corporation")
+        else None
+    )
     contract.last_updated = timezone.now()
     contract.save()
 

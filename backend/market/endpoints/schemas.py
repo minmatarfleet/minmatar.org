@@ -33,9 +33,21 @@ class MarketContractHistoricalQuantityResponse(BaseModel):
 
 
 class MarketContractSellerResponse(BaseModel):
-    character_id: int
-    character_name: str
+    character_id: int | None = None
+    character_name: str | None = None
+    corporation_id: int | None = None
+    corporation_name: str | None = None
     quantity: int
+
+
+class MarketContractMetricsResponse(BaseModel):
+    """Deferred volume / fleet demand metrics for one fitting."""
+
+    fitting_id: int
+    volume_28d: int = 0
+    typical_fleet_size: int | None = None
+    fleets_remaining: int | None = None
+    fleets_per_month: float | None = None
 
 
 class MarketContractResponse(BaseModel):
@@ -53,5 +65,4 @@ class MarketContractResponse(BaseModel):
     readiness: str
     sellers: List[MarketContractSellerResponse]
     latest_contract_timestamp: str | None = None
-    historical_quantity: List[MarketContractHistoricalQuantityResponse]
     doctrines: List[MarketContractDoctrineResponse]

@@ -829,9 +829,19 @@ export interface ContractDoctrine {
 }
 
 export interface ContractSeller {
-    character_id:       number;
-    character_name:     string;
+    character_id:       number | null;
+    character_name:     string | null;
+    corporation_id:     number | null;
+    corporation_name:   string | null;
     quantity:           number;
+}
+
+export interface ContractMetrics {
+    fitting_id:             number;
+    volume_28d:             number;
+    typical_fleet_size:     number | null;
+    fleets_remaining:       number | null;
+    fleets_per_month:       number | null;
 }
 
 export interface Contract {
@@ -847,7 +857,6 @@ export interface Contract {
     readiness:                  string;
     sellers:                    ContractSeller[];
     latest_contract_timestamp:  string | null;
-    historical_quantity:        History[];
     doctrines:                  ContractDoctrine[];
 }
 
@@ -1396,11 +1405,13 @@ export interface OpsMonitorSummary {
     understocked_contracts:     number;
     sell_gaps:                  number;
     contracts_health_pct:       number | null;
+    contracts_viability_pct:    number | null;
     sell_orders_health_pct:     number | null;
     sell_orders_viability_pct:  number | null;
     overall_health_pct:         number | null;
     contract_targets:           number;
     contract_fulfilled:         number;
+    contract_viable_fulfilled:  number;
     sell_order_targets:         number;
     sell_order_fulfilled:       number;
     sell_order_viable_fulfilled: number;
@@ -1408,6 +1419,7 @@ export interface OpsMonitorSummary {
     sell_orders_isk:            number;
     total_isk_on_market:        number;
     sales_history_days:         number;
+    contract_history_days:      number;
 }
 
 export interface OpsMonitor {
@@ -1422,10 +1434,17 @@ export interface OpsMonitor {
         fitting_name:       string;
         ship_id:            number;
         current_quantity:   number;
+        viable_quantity:    number;
         expected_quantity:  number;
         shortfall:          number;
         readiness:          string;
         expectation_id:     number;
+        units_1d:           number;
+        units_3d:           number;
+        weekly_units:       number;
+        units_30d:          number;
+        units_90d:          number;
+        days_of_stock:      number | null;
     }[];
     sell_gaps: {
         location_id:        number;
@@ -1465,6 +1484,7 @@ export interface OpsMonitorHistoryPoint {
     short_name:                     string;
     trigger:                        string;
     contracts_health_pct:           number | null;
+    contracts_viability_pct:        number | null;
     sell_orders_health_pct:         number | null;
     sell_orders_viability_pct:      number | null;
     overall_health_pct:             number | null;
@@ -1472,6 +1492,7 @@ export interface OpsMonitorHistoryPoint {
     sell_gaps_count:                number;
     contract_targets:               number;
     contract_fulfilled:             number;
+    contract_viable_fulfilled:      number;
     sell_order_targets:             number;
     sell_order_fulfilled:           number;
     sell_order_viable_fulfilled:    number;

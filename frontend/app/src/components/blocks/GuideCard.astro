@@ -26,6 +26,7 @@ interface Props {
 }
 
 const { guide } = Astro.props
+const coming_soon = Boolean(guide.comingSoon)
 const guidePath = guide.path ? translatePath(guide.path) : translatePath(`/guides/${guide.slug}/`)
 const guideUrl = guidePath
 const is_multiple_authors = guide.authors.length > 1
@@ -40,7 +41,10 @@ const shareUrl = user
 ---
 
 <Flexblock
-    class="[ card component border light-transparency relative ]"
+    class:list={[
+        '[ card component border light-transparency relative ]',
+        { 'guide-card--coming-soon': coming_soon },
+    ]}
     gap='0'
 >
     <Tile
@@ -51,59 +55,61 @@ const shareUrl = user
         soft={false}
         narrow={true}
     >
-        <Flexblock slot="subtitle">
-            {is_multiple_authors ? (
-                <FlexInline class="[ guide-card__authors ]" gap="var(--space-2xs)">
-                    <FlexInline gap="var(--space-3xs)">
-                        {guide.authors.map((entry) => (
-                            entry.entity === 'character' && (
-                                <CharacterPicture
-                                    character_id={entry.id}
-                                    character_name={entry.name}
-                                    size={32}
-                                    centered={true}
-                                />
-                            )
-                        ))}
+        {coming_soon ? null : (
+            <Flexblock slot="subtitle">
+                {is_multiple_authors ? (
+                    <FlexInline class="[ guide-card__authors ]" gap="var(--space-2xs)">
+                        <FlexInline gap="var(--space-3xs)">
+                            {guide.authors.map((entry) => (
+                                entry.entity === 'character' && (
+                                    <CharacterPicture
+                                        character_id={entry.id}
+                                        character_name={entry.name}
+                                        size={32}
+                                        centered={true}
+                                    />
+                                )
+                            ))}
+                        </FlexInline>
+                        <VerticalCenter>
+                            <Flexblock gap="0" class="[ w-full ]">
+                                <span class="[ text-highlight ]" set:text={author_names} />
+                                <small>{t('guides.multiple_authors')}</small>
+                            </Flexblock>
+                        </VerticalCenter>
                     </FlexInline>
-                    <VerticalCenter>
-                        <Flexblock gap="0" class="[ w-full ]">
-                            <span class="[ text-highlight ]" set:text={author_names} />
-                            <small>{t('guides.multiple_authors')}</small>
-                        </Flexblock>
-                    </VerticalCenter>
-                </FlexInline>
-            ) : author?.entity === 'character' ? (
-                <PilotBadge
-                    character_id={author.id}
-                    character_name={author.name}
-                    size={32}
-                    centered={true}
-                >
-                    <small>{t('author')}</small>
-                </PilotBadge>
-            ) : author?.entity === 'corporation' ? (
-                <CorporationBadge
-                    corporation={{
-                        id: author.id,
-                        name: author.name,
-                        size: 'sm'
-                    }}
-                >
-                    <small>{t('author')}</small>
-                </CorporationBadge>
-            ) : author?.entity === 'alliance' ? (
-                <AllianceBadge
-                    alliance={{
-                        id: author.id,
-                        name: author.name,
-                        size: 'sm'
-                    }}
-                >
-                    <small>{t('author')}</small>
-                </AllianceBadge>
-            ) : null}
-        </Flexblock>
+                ) : author?.entity === 'character' ? (
+                    <PilotBadge
+                        character_id={author.id}
+                        character_name={author.name}
+                        size={32}
+                        centered={true}
+                    >
+                        <small>{t('author')}</small>
+                    </PilotBadge>
+                ) : author?.entity === 'corporation' ? (
+                    <CorporationBadge
+                        corporation={{
+                            id: author.id,
+                            name: author.name,
+                            size: 'sm'
+                        }}
+                    >
+                        <small>{t('author')}</small>
+                    </CorporationBadge>
+                ) : author?.entity === 'alliance' ? (
+                    <AllianceBadge
+                        alliance={{
+                            id: author.id,
+                            name: author.name,
+                            size: 'sm'
+                        }}
+                    >
+                        <small>{t('author')}</small>
+                    </AllianceBadge>
+                ) : null}
+            </Flexblock>
+        )}
     </Tile>
     <Wrapper
         class="[ pb-(--component-padding-block)! grow ]"
@@ -117,8 +123,14 @@ const shareUrl = user
         >
             <p class="[ excerpt ]">{guide.excerpt}</p>
             <FlexInline>
-                <Button size='sm' href={guideUrl}>{t('view')}</Button>
-                <ClipboardButton id={`guide-${guide.slug}`} text={t('share')}>{shareUrl}</ClipboardButton>
+                {coming_soon ? (
+                    <Button size='sm' off_disable={true} disabled>{t('guides.coming_soon')}</Button>
+                ) : (
+                    <>
+                        <Button size='sm' href={guideUrl}>{t('view')}</Button>
+                        <ClipboardButton id={`guide-${guide.slug}`} text={t('share')}>{shareUrl}</ClipboardButton>
+                    </>
+                )}
             </FlexInline>
         </Flexblock>
     </Wrapper>
@@ -134,6 +146,10 @@ const shareUrl = user
         &:hover h3 {
             color: var(--highlight);
         }
+    }
+
+    .guide-card--coming-soon {
+        opacity: 0.72;
     }
 
     h3 {
