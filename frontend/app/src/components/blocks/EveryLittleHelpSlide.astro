@@ -208,12 +208,11 @@ import StylessButton from '@components/blocks/StylessButton.astro';
     }
 
     @keyframes cyno_rotation {
-        0%, 100% {
-            transform: rotate(-3deg);
+        from {
+            transform: rotate(0deg);
         }
-
-        50% {
-            transform: rotate(3deg);
+        to {
+            transform: rotate(360deg);
         }
     }
 
@@ -282,7 +281,9 @@ import StylessButton from '@components/blocks/StylessButton.astro';
         }
 
         .cyno-rotation {
-            animation: cyno_rotation 60s linear infinite;
+            animation: cyno_rotation 1s ease-out;
+            animation-delay: 1.3s;
+            animation-iteration-count: 1;
         }
 
         .cyno {
