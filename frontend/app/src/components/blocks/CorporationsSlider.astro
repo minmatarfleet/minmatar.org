@@ -21,6 +21,7 @@ const CORPORATIONS_WITH_SLIDE = [
     'Straylight Systems',
     'The Dark Tribe',
     'The Ministry Of Ungentlemanly Warfare inc.',
+    'Every Little Helps.',
     'Minmatar Extraction Company',
 ]
 
@@ -68,6 +69,7 @@ import StraylightSystemsSlide from '@components/blocks/StraylightSystemsSlide.as
 import TheDarkTribeSlide from '@components/blocks/TheDarkTribeSlide.astro';
 import TheMinistryOfUngentlemanlyWarfareincSlide from '@components/blocks/TheMinistryOfUngentlemanlyWarfareincSlide.astro';
 import MinmatarExtractionCompany from '@components/blocks/MinmatarExtractionCompany.astro';
+import EveryLittleHelpSlide from '@components/blocks/EveryLittleHelpSlide.astro';
 import AssociatesSlide from '@components/blocks/AssociatesSlide.astro';
 import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.astro';
 ---
@@ -118,6 +120,13 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
                     }
                     {corporation.corporation_name == 'The Ministry Of Ungentlemanly Warfare inc.' &&
                         <TheMinistryOfUngentlemanlyWarfareincSlide
+                            corporation={corporation}
+                            is_user_corporation={corporation.corporation_id === user_corporation_id}
+                            picture_placement={index%2 == 0 ? 'left' : 'right'}
+                        />
+                    }
+                    {corporation.corporation_name == 'Every Little Helps.' &&
+                        <EveryLittleHelpSlide
                             corporation={corporation}
                             is_user_corporation={corporation.corporation_id === user_corporation_id}
                             picture_placement={index%2 == 0 ? 'left' : 'right'}
