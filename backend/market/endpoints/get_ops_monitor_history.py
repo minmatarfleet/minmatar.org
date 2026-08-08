@@ -15,6 +15,7 @@ class OpsMonitorHistoryProblemContract(Schema):
     fitting_name: str
     ship_id: int
     current_quantity: int
+    viable_quantity: int = 0
     expected_quantity: int
     shortfall: int
     readiness: str
@@ -59,6 +60,7 @@ class OpsMonitorHistoryPoint(Schema):
     short_name: str
     trigger: str
     contracts_health_pct: Optional[float] = None
+    contracts_viability_pct: Optional[float] = None
     sell_orders_health_pct: Optional[float] = None
     sell_orders_viability_pct: Optional[float] = None
     overall_health_pct: Optional[float] = None
@@ -66,6 +68,7 @@ class OpsMonitorHistoryPoint(Schema):
     sell_gaps_count: int
     contract_targets: int = 0
     contract_fulfilled: int = 0
+    contract_viable_fulfilled: int = 0
     sell_order_targets: int = 0
     sell_order_fulfilled: int = 0
     sell_order_viable_fulfilled: int = 0
@@ -82,7 +85,9 @@ class OpsMonitorHistoryPoint(Schema):
     "/ops-monitor/history",
     description=(
         "Historical staging supply health snapshots captured after market "
-        "ESI syncs (contracts / structure orders). Built from local DB only."
+        "ESI syncs (contracts / structure orders). Built from local DB only. "
+        "Pass days (e.g. 30) for a chart window; results are downsampled to "
+        "a readable point count. Without days, returns the newest limit rows."
     ),
     response=List[OpsMonitorHistoryPoint],
 )
@@ -90,5 +95,10 @@ def get_ops_monitor_history(
     request,
     location_id: int | None = None,
     limit: int = 48,
+    days: int | None = None,
 ):
-    return list_ops_monitor_snapshots(location_id=location_id, limit=limit)
+    return list_ops_monitor_snapshots(
+        location_id=location_id,
+        limit=limit,
+        days=days,
+    )

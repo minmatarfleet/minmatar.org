@@ -48,6 +48,7 @@ const {
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
+import { ops_sell_gaps_row_visible } from '@helpers/ops_sell_gaps_filter'
 import type { TagColors } from '@dtypes/layout_components'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -57,11 +58,23 @@ import ItemPicture from '@components/blocks/ItemPicture.astro'
 import UsefulForShips from '@components/blocks/UsefulForShips.astro'
 import ClipboardButton from '@components/blocks/ClipboardButton.astro'
 import Tag from '@components/blocks/Tag.astro'
+import Input from '@components/blocks/Input.astro'
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
+import OpsSellGapsSkeleton from '@components/blocks/OpsSellGapsSkeleton.astro'
 
-const FLAG_META: Record<string, { label: string; color: TagColors }> = {
+const FLAG_META: Record<string, { label: string; color: TagColors; tip?: string }> = {
+    out_of_stock: {
+        label: t('ops_sell_gap_flag_out_of_stock'),
+        color: 'fleet-red',
+    },
     understocked: {
         label: t('ops_sell_gap_flag_understocked'),
         color: 'fleet-red',
+        tip: t('ops_sell_gap_flag_understocked_tip'),
+    },
+    in_stock: {
+        label: t('ops_sell_gap_flag_in_stock'),
+        color: 'green',
     },
     overstocked: {
         label: t('ops_sell_gap_flag_overstocked'),
@@ -92,7 +105,11 @@ function days_of_stock_label(row: SellGapRow): string {
 }
 
 function flag_tags(flags: string[] | undefined) {
-    return (flags ?? [])
+    const list = flags ?? []
+    // Overstocked already implies in-stock; avoid duplicate tags.
+    const skip_in_stock = list.includes('overstocked')
+    return list
+        .filter(flag => !(skip_in_stock && flag === 'in_stock'))
         .map(flag => FLAG_META[flag])
         .filter(Boolean)
 }
@@ -111,8 +128,14 @@ function format_markup(pct: number | null): string {
 }
 
 const criteria_options = [
-    { id: 'understocked', label: t('ops_gap_filter_coverage') },
+    { id: 'out_of_stock', label: t('ops_gap_filter_out_of_stock') },
+    {
+        id: 'understocked',
+        label: t('ops_gap_filter_coverage'),
+        tip: t('ops_gap_filter_coverage_tip'),
+    },
     { id: 'overpriced', label: t('ops_gap_filter_viability') },
+    { id: 'in_stock', label: t('ops_gap_filter_in_stock') },
 ] as const
 
 const type_options = [
@@ -134,6 +157,12 @@ const variant_options = [
     { id: 'other', label: t('ops_gap_variant_other') },
 ] as const
 
+const order_by_options = [
+    { id: 'days_of_stock', label: t('ops_gap_order_days_of_stock') },
+    { id: 'markup', label: t('ops_gap_order_markup') },
+    { id: 'volume_7d', label: t('ops_gap_order_volume_7d') },
+] as const
+
 const show_volume_1d = sales_history_days >= 1
 const show_volume_3d = sales_history_days >= 3
 const show_volume_7d = sales_history_days >= 7
@@ -143,30 +172,114 @@ const show_volume_90d = sales_history_days >= 90
 const rows_json = JSON.stringify(rows)
 const show_jita = Boolean(jita_copy_label)
 const empty_label = t('ops_sell_gaps_empty_filter')
+const items_word = t('ops_sell_gaps_items_word')
+const items_tip = t('ops_sell_gaps_items_tip')
+const showing_template = t('ops_sell_gaps_showing')
+const [showing_before_template, showing_after_template = ''] = showing_template.split('{items}')
+const default_criteria = ['out_of_stock', 'understocked'] as const
+const initial_visible_count = rows.filter(row =>
+    ops_sell_gaps_row_visible(row, default_criteria, [], []),
+).length
+
+function fill_showing_part(template: string, visible: number, total: number) {
+    return template
+        .replace('{visible}', String(visible))
+        .replace('{total}', String(total))
+}
+
+const initial_showing_before = fill_showing_part(
+    showing_before_template,
+    initial_visible_count,
+    rows.length,
+)
+const initial_showing_after = fill_showing_part(
+    showing_after_template,
+    initial_visible_count,
+    rows.length,
+)
 ---
 
-<script>
-    import { ops_sell_gaps_row_visible } from '@helpers/ops_sell_gaps_filter'
-
-    declare global {
-        interface Window {
-            __opsSellGapsRowVisible?: typeof ops_sell_gaps_row_visible
-        }
-    }
-
-    window.__opsSellGapsRowVisible = ops_sell_gaps_row_visible
-</script>
+{/* Filter helpers: OpsSellGapsAlpine in FooterScripts (htmx-safe). */}
 
 <div
     class="[ ops-sell-gaps ]"
     data-rows={rows_json}
+    data-showing-before={showing_before_template}
+    data-showing-after={showing_after_template}
     x-data={`{
-        criteria: [],
+        criteria: ['out_of_stock', 'understocked'],
         types: [],
         variants: [],
+        order_by: 'days_of_stock',
+        order_dir: 'asc',
+        search: '',
+        search_query: '',
         rows: [],
+        showing_before_template: '',
+        showing_after_template: '',
+        filtering: false,
+        // Bumped when FooterScripts helpers register (or were already present).
+        // Must be read by rowVisible/sortRanks so late helper load re-runs effects.
+        helpers_epoch: 0,
+        _search_timer: null,
+        _filter_timer: null,
+        _helpers_listener: null,
         init() {
             this.rows = JSON.parse(this.$el.dataset.rows || '[]')
+            this.showing_before_template = this.$el.dataset.showingBefore || ''
+            this.showing_after_template = this.$el.dataset.showingAfter || ''
+            this.$watch('search', () => this.scheduleSearch())
+            this.syncHelpersEpoch()
+            this._helpers_listener = () => this.syncHelpersEpoch()
+            window.addEventListener(
+                'ops-sell-gaps-helpers-ready',
+                this._helpers_listener,
+            )
+        },
+        destroy() {
+            if (this._search_timer) {
+                clearTimeout(this._search_timer)
+                this._search_timer = null
+            }
+            if (this._filter_timer) {
+                clearTimeout(this._filter_timer)
+                this._filter_timer = null
+            }
+            if (this._helpers_listener) {
+                window.removeEventListener(
+                    'ops-sell-gaps-helpers-ready',
+                    this._helpers_listener,
+                )
+                this._helpers_listener = null
+            }
+        },
+        syncHelpersEpoch() {
+            if (
+                window.__opsSellGapsRowVisible
+                && window.__opsSellGapsCompareRows
+                && window.__opsSellGapsNextOrderState
+                && this.helpers_epoch === 0
+            )
+                this.helpers_epoch = 1
+        },
+        scheduleSearch() {
+            // Debounce typing: apply query + skeleton only after pause.
+            if (this._search_timer)
+                clearTimeout(this._search_timer)
+            this._search_timer = setTimeout(() => {
+                this._search_timer = null
+                this.search_query = this.search
+                this.pulseFilter()
+            }, 300)
+        },
+        pulseFilter() {
+            this.filtering = true
+            if (this._filter_timer)
+                clearTimeout(this._filter_timer)
+            this._filter_timer = setTimeout(() => {
+                this.filtering = false
+                this._filter_timer = null
+            }, 280)
         },
         toggle(list, id) {
             const i = list.indexOf(id)
@@ -174,23 +287,86 @@ const empty_label = t('ops_sell_gaps_empty_filter')
                 list.splice(i, 1)
             else
                 list.push(id)
+            this.pulseFilter()
+        },
+        setOrderBy(id) {
+            const next = window.__opsSellGapsNextOrderState?.(
+                this.order_by,
+                this.order_dir,
+                id,
+            )
+            if (next) {
+                this.order_by = next.order_by
+                this.order_dir = next.direction
+            } else if (this.order_by === id) {
+                this.order_dir = this.order_dir === 'asc' ? 'desc' : 'asc'
+            } else {
+                this.order_by = id
+                this.order_dir = window.__opsSellGapsDefaultDirection?.(id) ?? 'asc'
+            }
+            this.pulseFilter()
+        },
+        orderLabel(id, label) {
+            if (this.order_by !== id)
+                return label
+            return label + (this.order_dir === 'asc' ? ' ↑' : ' ↓')
         },
         active(list, id) {
             return list.includes(id)
         },
         rowVisible(row) {
-            return window.__opsSellGapsRowVisible(
-                row,
-                this.criteria,
-                this.types,
-                this.variants,
-            )
+            // Always touch reactive deps before the helper early-return so Alpine
+            // tracks them even when FooterScripts helpers are not registered yet.
+            const criteria = this.criteria
+            const types = this.types
+            const variants = this.variants
+            const search = this.search_query
+            // Track helpers_epoch so late FooterScripts registration re-filters.
+            this.helpers_epoch
+            const fn = window.__opsSellGapsRowVisible
+            if (!fn)
+                return true
+            return fn(row, criteria, types, variants, search)
         },
         get visibleRows() {
             return this.rows.filter(row => this.rowVisible(row))
         },
         get visibleCount() {
             return this.visibleRows.length
+        },
+        fillShowing(template) {
+            return template
+                .replace('{visible}', String(this.visibleCount))
+                .replace('{total}', String(this.rows.length))
+        },
+        get showingBefore() {
+            return this.fillShowing(this.showing_before_template)
+        },
+        get showingAfter() {
+            return this.fillShowing(this.showing_after_template)
+        },
+        get sortRanks() {
+            // Touch order_by / order_dir / helpers_epoch unconditionally — if
+            // compare was missing on first eval, Alpine must still subscribe so
+            // ORDER BY pills (and late helper registration) re-sort later.
+            const order_by = this.order_by
+            const order_dir = this.order_dir
+            this.helpers_epoch
+            const compare = window.__opsSellGapsCompareRows
+            const ranked = this.rows
+                .map((row, index) => ({ row, index }))
+                .filter(({ row }) => this.rowVisible(row))
+            if (compare)
+                ranked.sort((a, b) => compare(a.row, b.row, order_by, order_dir))
+            const ranks = {}
+            ranked.forEach((item, pos) => {
+                ranks[item.index] = pos
+            })
+            return ranks
+        },
+        cardOrder(index) {
+            const rank = this.sortRanks[index]
+            return rank === undefined ? 99999 : rank
         },
         get jitaBuyList() {
             return this.visibleRows
@@ -201,168 +377,250 @@ const empty_label = t('ops_sell_gaps_empty_filter')
     }`}
 >
     <Flexblock gap="var(--space-s)">
-        <h2>
-            <span>{t('ops_sell_gaps')}</span>
-            {' '}
-            (<span x-text="visibleCount">{rows.length}</span>)
-        </h2>
+        {rows.length > 0 &&
+            <FlexInline justification="flex-end" class="[ w-full ops-sell-gaps__heading ]">
+                <Input
+                    type="text"
+                    placeholder={t('search')}
+                    x-model="search"
+                    width="250px"
+                >
+                    <MagnifierIcon slot="icon" />
+                </Input>
+            </FlexInline>
+        }
 
         {rows.length > 0 &&
             <div class="[ ops-sell-gaps__sticky ]">
-                <Flexblock gap="var(--space-xs)" class="[ ops-sell-gaps__filters ]">
-                    <div class="[ ops-sell-gaps__filter-row ]">
-                        <span class="[ ops-sell-gaps__filter-label ]">{t('ops_gap_filter_criteria')}</span>
-                        <div class="[ ops-sell-gaps__chips ]">
-                            {criteria_options.map(opt =>
-                                <button
-                                    type="button"
-                                    class="[ ops-sell-gaps__chip ]"
-                                    x-bind:class={`active(criteria, '${opt.id}') && 'is-active'`}
-                                    x-on:click={`toggle(criteria, '${opt.id}')`}
-                                >{opt.label}</button>
-                            )}
+                <ComponentBlock
+                    class="[ ops-sell-gaps__filters ]"
+                    padding_block="var(--space-s)"
+                    padding_inline="var(--space-s)"
+                >
+                    <Flexblock gap="var(--space-xs)">
+                        <div class="[ ops-sell-gaps__filter-row ]">
+                            <span class="[ ops-sell-gaps__filter-label ]">{t('ops_gap_filter_criteria')}</span>
+                            <div class="[ ops-sell-gaps__chips ]">
+                                {criteria_options.map(opt =>
+                                    <button
+                                        type="button"
+                                        class="[ ops-sell-gaps__chip ]"
+                                        x-bind:class={`active(criteria, '${opt.id}') && 'is-active'`}
+                                        x-on:click={`toggle(criteria, '${opt.id}')`}
+                                        {...('tip' in opt && opt.tip
+                                            ? { 'data-tippy-content': opt.tip }
+                                            : {})}
+                                    >{opt.label}</button>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                    <div class="[ ops-sell-gaps__filter-row ]">
-                        <span class="[ ops-sell-gaps__filter-label ]">{t('ops_gap_filter_type')}</span>
-                        <div class="[ ops-sell-gaps__chips ]">
-                            {type_options.map(opt =>
-                                <button
-                                    type="button"
-                                    class="[ ops-sell-gaps__chip ]"
-                                    x-bind:class={`active(types, '${opt.id}') && 'is-active'`}
-                                    x-on:click={`toggle(types, '${opt.id}')`}
-                                >{opt.label}</button>
-                            )}
+                        <div class="[ ops-sell-gaps__filter-row ]">
+                            <span class="[ ops-sell-gaps__filter-label ]">{t('ops_gap_filter_type')}</span>
+                            <div class="[ ops-sell-gaps__chips ]">
+                                {type_options.map(opt =>
+                                    <button
+                                        type="button"
+                                        class="[ ops-sell-gaps__chip ]"
+                                        x-bind:class={`active(types, '${opt.id}') && 'is-active'`}
+                                        x-on:click={`toggle(types, '${opt.id}')`}
+                                    >{opt.label}</button>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                    <div class="[ ops-sell-gaps__filter-row ]">
-                        <span class="[ ops-sell-gaps__filter-label ]">{t('ops_gap_filter_variant')}</span>
-                        <div class="[ ops-sell-gaps__chips ]">
-                            {variant_options.map(opt =>
-                                <button
-                                    type="button"
-                                    class="[ ops-sell-gaps__chip ]"
-                                    x-bind:class={`active(variants, '${opt.id}') && 'is-active'`}
-                                    x-on:click={`toggle(variants, '${opt.id}')`}
-                                >{opt.label}</button>
-                            )}
+                        <div class="[ ops-sell-gaps__filter-row ]">
+                            <span class="[ ops-sell-gaps__filter-label ]">{t('ops_gap_filter_variant')}</span>
+                            <div class="[ ops-sell-gaps__chips ]">
+                                {variant_options.map(opt =>
+                                    <button
+                                        type="button"
+                                        class="[ ops-sell-gaps__chip ]"
+                                        x-bind:class={`active(variants, '${opt.id}') && 'is-active'`}
+                                        x-on:click={`toggle(variants, '${opt.id}')`}
+                                    >{opt.label}</button>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                </Flexblock>
+                        <div class="[ ops-sell-gaps__filter-row ]">
+                            <span class="[ ops-sell-gaps__filter-label ]">{t('ops_gap_order_by')}</span>
+                            <div class="[ ops-sell-gaps__chips ]">
+                                {order_by_options.map(opt =>
+                                    <button
+                                        type="button"
+                                        class="[ ops-sell-gaps__chip ]"
+                                        x-bind:class={`order_by === '${opt.id}' && 'is-active'`}
+                                        x-on:click={`setOrderBy('${opt.id}')`}
+                                        x-text={`orderLabel('${opt.id}', '${opt.label}')`}
+                                    >{opt.label}</button>
+                                )}
+                            </div>
+                        </div>
+                    </Flexblock>
+                </ComponentBlock>
             </div>
         }
 
         <div class="[ ops-sell-gaps__results ]">
-            <p
-                class="[ ops-sell-gaps__empty ]"
-                x-show="visibleCount === 0"
+            {/*
+              Skeleton uses x-cloak (hidden until Alpine). List/empty stay SSR-visible
+              so a missing helper or late init cannot leave a blank Stock panel.
+            */}
+            <div
+                x-show="filtering"
                 x-cloak
-            >{rows.length === 0 ? '—' : empty_label}</p>
+            >
+                <OpsSellGapsSkeleton />
+            </div>
 
-            <Flexblock gap="var(--space-2xs)">
-                {rows.map((row, index) =>
-                    <div
-                        class="[ ops-sell-gap-card ]"
-                        x-show={`rowVisible(rows[${index}])`}
-                        x-cloak
-                    >
-                        <ComponentBlock
-                            class="[ ops-sell-gap-card__main ]"
-                            padding_block="var(--space-2xs)"
-                            padding_inline="var(--space-s)"
+            <div x-show="!filtering">
+                <p
+                    class="[ ops-sell-gaps__empty ]"
+                    x-show="visibleCount === 0"
+                    style={initial_visible_count > 0 ? 'display: none' : undefined}
+                >{rows.length === 0 ? '—' : empty_label}</p>
+
+                <Flexblock gap="var(--space-2xs)" class="[ ops-sell-gaps__list ]">
+                    {rows.map((row, index) =>
+                        <div
+                            class="[ ops-sell-gap-card ]"
+                            x-show={`rowVisible(rows[${index}])`}
+                            x-bind:style={`{ order: cardOrder(${index}) }`}
+                            x-cloak
                         >
-                            <FlexInline
-                                gap="var(--space-s)"
-                                justification="space-between"
-                                class="[ w-full ops-sell-gap ]"
+                            <ComponentBlock
+                                class="[ ops-sell-gap-card__main ]"
+                                padding_block="var(--space-2xs)"
+                                padding_inline="var(--space-s)"
                             >
-                                <FlexInline gap="var(--space-s)" class="[ ops-sell-gap__main ]">
-                                    <div class="[ ops-sell-gap__item ]">
-                                        <ItemPicture
-                                            item_id={row.type_id}
-                                            item_name={row.item_name}
-                                            size={48}
-                                            icon_quality={64}
-                                        />
-                                    </div>
-                                    <Flexblock gap="var(--space-3xs)">
-                                        <strong>{row.item_name}</strong>
-                                        {!hide_location &&
-                                            <small>{row.short_name || row.location_name}</small>
-                                        }
-                                        <UsefulForShips ships={row.ships ?? []} size={28} max={10} />
-                                    </Flexblock>
-                                </FlexInline>
                                 <FlexInline
-                                    gap="var(--space-2xs)"
-                                    class="[ ops-sell-gap__status ]"
+                                    gap="var(--space-s)"
+                                    justification="space-between"
+                                    class="[ w-full ops-sell-gap ]"
                                 >
-                                    {flag_tags(row.flags).map(flag =>
-                                        <Tag
-                                            text={flag.label}
-                                            color={flag.color}
-                                            narrow={true}
-                                        />
-                                    )}
-                                    <span class="[ ops-qty ]">{days_of_stock_label(row)}</span>
+                                    <FlexInline gap="var(--space-s)" class="[ ops-sell-gap__main ]">
+                                        <div class="[ ops-sell-gap__item ]">
+                                            <ItemPicture
+                                                item_id={row.type_id}
+                                                item_name={row.item_name}
+                                                size={48}
+                                                icon_quality={64}
+                                            />
+                                        </div>
+                                        <Flexblock gap="var(--space-3xs)">
+                                            <strong>{row.item_name}</strong>
+                                            {!hide_location &&
+                                                <small>{row.short_name || row.location_name}</small>
+                                            }
+                                            <UsefulForShips ships={row.ships ?? []} size={28} max={10} />
+                                        </Flexblock>
+                                    </FlexInline>
+                                    <FlexInline
+                                        gap="var(--space-2xs)"
+                                        class="[ ops-sell-gap__status ]"
+                                    >
+                                        {flag_tags(row.flags).map(flag =>
+                                            <span
+                                                {...(flag.tip
+                                                    ? { 'data-tippy-content': flag.tip }
+                                                    : {})}
+                                            >
+                                                <Tag
+                                                    text={flag.label}
+                                                    color={flag.color}
+                                                    narrow={true}
+                                                />
+                                            </span>
+                                        )}
+                                        <span class="[ ops-qty ]">{days_of_stock_label(row)}</span>
+                                    </FlexInline>
                                 </FlexInline>
-                            </FlexInline>
-                        </ComponentBlock>
-                        <div class="[ ops-sell-gap__metrics ]" aria-label={t('ops_sell_gap_metrics')}>
-                            <span class="[ ops-sell-gap__metric ]">
-                                <span class="[ ops-sell-gap__metric-label ]">{t('ops_sell_gap_metric_listed')}</span>
-                                <span class="[ ops-sell-gap__metric-value ]">{format_units(row.current_quantity)}</span>
-                            </span>
-                            <span class="[ ops-sell-gap__sep ]" aria-hidden="true">·</span>
-                            <span class="[ ops-sell-gap__metric ]">
-                                <span class="[ ops-sell-gap__metric-label ]">{t('ops_sell_gap_metric_markup')}</span>
-                                <span class="[ ops-sell-gap__metric-value ]">{format_markup(row.avg_markup_pct)}</span>
-                            </span>
-                            <span class="[ ops-sell-gap__sep ]" aria-hidden="true">·</span>
-                            <span class="[ ops-sell-gap__metric ]">
-                                <span class="[ ops-sell-gap__metric-label ]">{t('ops_sell_gap_metric_1d')}</span>
-                                <span class="[ ops-sell-gap__metric-value ]">
-                                    {show_volume_1d ? format_units(row.units_1d) : '—'}
+                            </ComponentBlock>
+                            <div class="[ ops-sell-gap__metrics ]" aria-label={t('ops_sell_gap_metrics')}>
+                                <span class="[ ops-sell-gap__metric ]">
+                                    <span
+                                        class="[ ops-sell-gap__metric-label ]"
+                                        data-tippy-content={t('ops_sell_gap_metric_listed_tip')}
+                                    >{t('ops_sell_gap_metric_listed')}</span>
+                                    <span class="[ ops-sell-gap__metric-value ]">{format_units(row.current_quantity)}</span>
                                 </span>
-                            </span>
-                            <span class="[ ops-sell-gap__sep ]" aria-hidden="true">·</span>
-                            <span class="[ ops-sell-gap__metric ]">
-                                <span class="[ ops-sell-gap__metric-label ]">{t('ops_sell_gap_metric_3d')}</span>
-                                <span class="[ ops-sell-gap__metric-value ]">
-                                    {show_volume_3d ? format_units(row.units_3d) : '—'}
+                                <span class="[ ops-sell-gap__sep ]" aria-hidden="true">·</span>
+                                <span class="[ ops-sell-gap__metric ]">
+                                    <span
+                                        class="[ ops-sell-gap__metric-label ]"
+                                        data-tippy-content={t('ops_sell_gap_metric_markup_tip')}
+                                    >{t('ops_sell_gap_metric_markup')}</span>
+                                    <span class="[ ops-sell-gap__metric-value ]">{format_markup(row.avg_markup_pct)}</span>
                                 </span>
-                            </span>
-                            <span class="[ ops-sell-gap__sep ]" aria-hidden="true">·</span>
-                            <span class="[ ops-sell-gap__metric ]">
-                                <span class="[ ops-sell-gap__metric-label ]">{t('ops_sell_gap_metric_7d')}</span>
-                                <span class="[ ops-sell-gap__metric-value ]">
-                                    {show_volume_7d ? format_units(row.weekly_units) : '—'}
+                                <span class="[ ops-sell-gap__sep ]" aria-hidden="true">·</span>
+                                <span class="[ ops-sell-gap__metric ]">
+                                    <span
+                                        class="[ ops-sell-gap__metric-label ]"
+                                        data-tippy-content={t('ops_sell_gap_metric_1d_tip')}
+                                    >{t('ops_sell_gap_metric_1d')}</span>
+                                    <span class="[ ops-sell-gap__metric-value ]">
+                                        {show_volume_1d ? format_units(row.units_1d) : '—'}
+                                    </span>
                                 </span>
-                            </span>
-                            <span class="[ ops-sell-gap__sep ]" aria-hidden="true">·</span>
-                            <span class="[ ops-sell-gap__metric ]">
-                                <span class="[ ops-sell-gap__metric-label ]">{t('ops_sell_gap_metric_30d')}</span>
-                                <span class="[ ops-sell-gap__metric-value ]">
-                                    {show_volume_30d ? format_units(row.units_30d) : '—'}
+                                <span class="[ ops-sell-gap__sep ]" aria-hidden="true">·</span>
+                                <span class="[ ops-sell-gap__metric ]">
+                                    <span
+                                        class="[ ops-sell-gap__metric-label ]"
+                                        data-tippy-content={t('ops_sell_gap_metric_3d_tip')}
+                                    >{t('ops_sell_gap_metric_3d')}</span>
+                                    <span class="[ ops-sell-gap__metric-value ]">
+                                        {show_volume_3d ? format_units(row.units_3d) : '—'}
+                                    </span>
                                 </span>
-                            </span>
-                            <span class="[ ops-sell-gap__sep ]" aria-hidden="true">·</span>
-                            <span class="[ ops-sell-gap__metric ]">
-                                <span class="[ ops-sell-gap__metric-label ]">{t('ops_sell_gap_metric_90d')}</span>
-                                <span class="[ ops-sell-gap__metric-value ]">
-                                    {show_volume_90d ? format_units(row.units_90d) : '—'}
+                                <span class="[ ops-sell-gap__sep ]" aria-hidden="true">·</span>
+                                <span class="[ ops-sell-gap__metric ]">
+                                    <span
+                                        class="[ ops-sell-gap__metric-label ]"
+                                        data-tippy-content={t('ops_sell_gap_metric_7d_tip')}
+                                    >{t('ops_sell_gap_metric_7d')}</span>
+                                    <span class="[ ops-sell-gap__metric-value ]">
+                                        {show_volume_7d ? format_units(row.weekly_units) : '—'}
+                                    </span>
                                 </span>
-                            </span>
+                                <span class="[ ops-sell-gap__sep ]" aria-hidden="true">·</span>
+                                <span class="[ ops-sell-gap__metric ]">
+                                    <span
+                                        class="[ ops-sell-gap__metric-label ]"
+                                        data-tippy-content={t('ops_sell_gap_metric_30d_tip')}
+                                    >{t('ops_sell_gap_metric_30d')}</span>
+                                    <span class="[ ops-sell-gap__metric-value ]">
+                                        {show_volume_30d ? format_units(row.units_30d) : '—'}
+                                    </span>
+                                </span>
+                                <span class="[ ops-sell-gap__sep ]" aria-hidden="true">·</span>
+                                <span class="[ ops-sell-gap__metric ]">
+                                    <span
+                                        class="[ ops-sell-gap__metric-label ]"
+                                        data-tippy-content={t('ops_sell_gap_metric_90d_tip')}
+                                    >{t('ops_sell_gap_metric_90d')}</span>
+                                    <span class="[ ops-sell-gap__metric-value ]">
+                                        {show_volume_90d ? format_units(row.units_90d) : '—'}
+                                    </span>
+                                </span>
+                            </div>
                         </div>
-                    </div>
-                )}
-            </Flexblock>
+                    )}
+                </Flexblock>
+            </div>
         </div>
+
+        {rows.length > 0 &&
+            <p class="[ ops-sell-gaps__showing ]">
+                <span x-text="showingBefore">{initial_showing_before}</span>
+                <span
+                    class="[ ops-sell-gaps__term ]"
+                    data-tippy-content={items_tip}
+                >{items_word}</span>
+                <span x-text="showingAfter">{initial_showing_after}</span>
+            </p>
+        }
 
         {show_jita && rows.length > 0 &&
             <FlexInline justification="flex-end">
-                <div x-show="jitaBuyList.length > 0" x-cloak>
+                <div x-show="!filtering && jitaBuyList.length > 0" x-cloak>
                     <ClipboardButton
                         id="jita-buy-list-clipboard"
                         text={jita_copy_label}
@@ -376,17 +634,32 @@ const empty_label = t('ops_sell_gaps_empty_filter')
 </div>
 
 <style lang="scss">
+    .ops-sell-gaps__heading {
+        flex-wrap: wrap;
+        gap: var(--space-s);
+        align-items: center;
+    }
+
+    .ops-sell-gaps__showing {
+        margin: 0;
+        font-size: var(--step--1);
+        color: rgba(255, 255, 255, 0.55);
+    }
+
+    .ops-sell-gaps__term {
+        color: var(--highlight);
+        cursor: help;
+        border-bottom: 1px dotted color-mix(in srgb, var(--highlight) 55%, transparent);
+    }
+
+    .ops-sell-gaps__list {
+        width: 100%;
+    }
+
     .ops-sell-gaps__sticky {
         position: sticky;
         top: 0;
         z-index: 2;
-    }
-
-    .ops-sell-gaps__filters {
-        padding: var(--space-s);
-        border: 1px solid var(--border-color);
-        background: rgba(0, 0, 0, 0.88);
-        backdrop-filter: blur(6px);
     }
 
     .ops-sell-gaps__filter-row {
@@ -528,6 +801,8 @@ const empty_label = t('ops_sell_gaps_empty_filter')
         letter-spacing: 0.04em;
         text-transform: uppercase;
         color: rgba(255, 255, 255, 0.48);
+        cursor: help;
+        border-bottom: 1px dotted rgba(255, 255, 255, 0.28);
     }
 
     .ops-sell-gap__metric-value {

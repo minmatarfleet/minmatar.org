@@ -1,7 +1,7 @@
 ---
 title: 'Faction Warfare Advantage'
 excerpt: 'An in-depth breakdown for advantage in faction warfare.'
-category: 'Faction Warfare'
+category: 'Faction Warfare Mechanics'
 author: "A'Songala"
 ---
 ## Introduction

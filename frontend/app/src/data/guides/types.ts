@@ -9,12 +9,14 @@ export type GuideMeta = {
     title: string
     excerpt: string
     category: string
-    /** Optional index subsection within a category (e.g. Mechanics / Ships). */
+    /** Optional index subsection within a category. */
     section?: string
     author: string
     authors: Author[]
     path?: string
     hiddenFromIndex?: boolean
+    /** Shown on the guides index with a disabled Coming soon state (no page yet). */
+    comingSoon?: boolean
     /**
      * Map of section id → Contents group label (cruiser-guide style).
      * Adjacent sections with the same group share one nav subheader.

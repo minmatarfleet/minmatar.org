@@ -1,7 +1,7 @@
 ---
 title: 'Faction Warfare Basics'
 excerpt: 'An overview of the basic mechanics of faction warfare in EVE Online.'
-category: 'Faction Warfare'
+category: 'Faction Warfare Mechanics'
 author: 'BearThatCares'
 ---
 Faction warfare is the region that the Minmatar Fleet calls home. We may deploy around and participate in major campaigns, but our first and only true love will be faction warfare.
@@ -108,7 +108,7 @@ They respawn several times a day for each faction. For grid layout, capture, shi
 
 Loyalty points are the currency of faction warfare. Complexes, advantage sites, and battlefields reward loyalty points, which can be converted for items to sell on the market.
 
-Loyalty point conversion is an absolute beast, and we have an entire team dedicated to it. Read the [Selling Loyalty Points](/guides/selling-loyalty-points/) guide to sell through brokers or convert your own LP.
+Loyalty point conversion is an absolute beast, and we have an entire team dedicated to it. Read the [Faction Warfare Loyalty Points](/guides/selling-loyalty-points/) guide to sell through brokers or convert your own LP.
 
 ## Additional Resources
 

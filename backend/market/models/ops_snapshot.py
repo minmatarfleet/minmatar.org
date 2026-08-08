@@ -27,6 +27,7 @@ class EveMarketOpsMonitorSnapshot(models.Model):
     trigger = models.CharField(max_length=32, choices=TRIGGER_CHOICES)
 
     contracts_health_pct = models.FloatField(null=True, blank=True)
+    contracts_viability_pct = models.FloatField(null=True, blank=True)
     sell_orders_health_pct = models.FloatField(null=True, blank=True)
     sell_orders_viability_pct = models.FloatField(null=True, blank=True)
     overall_health_pct = models.FloatField(null=True, blank=True)
@@ -35,6 +36,7 @@ class EveMarketOpsMonitorSnapshot(models.Model):
     sell_gaps_count = models.PositiveIntegerField(default=0)
     contract_targets = models.PositiveIntegerField(default=0)
     contract_fulfilled = models.PositiveIntegerField(default=0)
+    contract_viable_fulfilled = models.PositiveIntegerField(default=0)
     sell_order_targets = models.PositiveIntegerField(default=0)
     sell_order_fulfilled = models.PositiveIntegerField(default=0)
     sell_order_viable_fulfilled = models.PositiveIntegerField(default=0)

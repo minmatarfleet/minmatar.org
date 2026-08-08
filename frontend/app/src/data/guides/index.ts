@@ -47,20 +47,17 @@ const guideModules: Record<string, GuideModule> = {
     'capital-ship-basics': capital_ship_basics,
 }
 
-export const guideCategories = ["Faction Warfare","PVP","Capital Ships","ISK Generation","Utility"] as const
+export const guideCategories = ["Faction Warfare Mechanics","Faction Warfare Ships","PVP","Subcapital Ships","Capital Ships","ISK Generation","Utility"] as const
 
 /** Preferred subsection order within a category (index page). */
-export const guideSectionsByCategory: Partial<Record<(typeof guideCategories)[number], readonly string[]>> = {
-    "Faction Warfare": ["Mechanics", "Ships"],
-}
+export const guideSectionsByCategory: Partial<Record<(typeof guideCategories)[number], readonly string[]>> = {}
 
 export const guides: GuideMeta[] = [
     {
         slug: "faction-warfare-basics",
         title: "Faction Warfare Basics",
         excerpt: "An overview of the basic mechanics of faction warfare in EVE Online.",
-        category: "Faction Warfare",
-        section: "Mechanics",
+        category: "Faction Warfare Mechanics",
         author: "BearThatCares",
         authors: [{
             name: "BearThatCares",
@@ -72,8 +69,7 @@ export const guides: GuideMeta[] = [
         slug: "faction-warfare-plexing",
         title: "Faction Warfare Complexes",
         excerpt: "An in-depth breakdown for capturing complexes in faction warfare space",
-        category: "Faction Warfare",
-        section: "Mechanics",
+        category: "Faction Warfare Mechanics",
         author: "BearThatCares",
         authors: [{
             name: "BearThatCares",
@@ -85,8 +81,7 @@ export const guides: GuideMeta[] = [
         slug: "faction-warfare-advantage",
         title: "Faction Warfare Advantage",
         excerpt: "An in-depth breakdown for advantage in faction warfare.",
-        category: "Faction Warfare",
-        section: "Mechanics",
+        category: "Faction Warfare Mechanics",
         author: "A'Songala",
         authors: [{
             name: "A'Songala",
@@ -98,8 +93,7 @@ export const guides: GuideMeta[] = [
         slug: "faction-warfare-battlefields",
         title: "Faction Warfare Battlefields",
         excerpt: "Learn how to run the most lucrative faction warfare site in the warzone, without getting AWOX'd.",
-        category: "Faction Warfare",
-        section: "Mechanics",
+        category: "Faction Warfare Mechanics",
         author: "Furl0w",
         path: "/guides/faction-warfare-battlefields/",
         authors: [
@@ -122,10 +116,9 @@ export const guides: GuideMeta[] = [
     },
     {
         slug: "selling-loyalty-points",
-        title: "Selling Loyalty Points",
+        title: "Faction Warfare Loyalty Points",
         excerpt: "Convert Tribal Liberation Force LP into ISK: LP store offers, pitfalls, and alliance brokers.",
-        category: "Faction Warfare",
-        section: "Mechanics",
+        category: "Faction Warfare Mechanics",
         author: "BearThatCares",
         authors: [{
             name: "BearThatCares",
@@ -137,8 +130,7 @@ export const guides: GuideMeta[] = [
         slug: "faction-warfare-cruiser-guide",
         title: "Faction Warfare Cruiser Guide",
         excerpt: "Fittings, roles, and 1v1 matchups for cruisers in faction warfare.",
-        category: "Faction Warfare",
-        section: "Ships",
+        category: "Faction Warfare Ships",
         author: "Dato Koppla",
         authors: [{
             name: "Dato Koppla",
@@ -151,8 +143,7 @@ export const guides: GuideMeta[] = [
         slug: "navy-destroyer-metagame",
         title: "Faction Warfare Destroyer Guide",
         excerpt: "Fittings, roles, and 1v1 matchups for destroyers in faction warfare.",
-        category: "Faction Warfare",
-        section: "Ships",
+        category: "Faction Warfare Ships",
         author: "Furl0w",
         authors: [{
             name: "Furl0w",
@@ -165,8 +156,7 @@ export const guides: GuideMeta[] = [
         slug: "navy-frigate-guide",
         title: "Faction Warfare Frigate Guide",
         excerpt: "Fittings, roles, and 1v1 matchups for frigates in faction warfare.",
-        category: "Faction Warfare",
-        section: "Ships",
+        category: "Faction Warfare Ships",
         author: "BearThatCares",
         authors: [{
             name: "BearThatCares",
@@ -174,6 +164,58 @@ export const guides: GuideMeta[] = [
             entity: 'character',
         }],
         path: "/guides/navy-frigate-guide/",
+    },
+    {
+        slug: "subcapital-basics",
+        title: "Subcapital Basics",
+        excerpt: "Fundamentals of flying subcapital ships in Minmatar Fleet doctrines.",
+        category: "Subcapital Ships",
+        author: "Minmatar Fleet",
+        authors: [{
+            name: "Minmatar Fleet",
+            id: 99011978,
+            entity: 'alliance',
+        }],
+        comingSoon: true,
+    },
+    {
+        slug: "subcapital-dps-guide",
+        title: "DPS Guide",
+        excerpt: "DPS roles, fittings, and expectations for fleet subcaps.",
+        category: "Subcapital Ships",
+        author: "Minmatar Fleet",
+        authors: [{
+            name: "Minmatar Fleet",
+            id: 99011978,
+            entity: 'alliance',
+        }],
+        comingSoon: true,
+    },
+    {
+        slug: "subcapital-logi-guide",
+        title: "Logi Guide",
+        excerpt: "Logistics roles, reps, and how to keep the fleet alive.",
+        category: "Subcapital Ships",
+        author: "Minmatar Fleet",
+        authors: [{
+            name: "Minmatar Fleet",
+            id: 99011978,
+            entity: 'alliance',
+        }],
+        comingSoon: true,
+    },
+    {
+        slug: "subcapital-support-guide",
+        title: "Support Guide",
+        excerpt: "Ewar, tackle, and other support roles in subcapital fleets.",
+        category: "Subcapital Ships",
+        author: "Minmatar Fleet",
+        authors: [{
+            name: "Minmatar Fleet",
+            id: 99011978,
+            entity: 'alliance',
+        }],
+        comingSoon: true,
     },
     {
         slug: "new-player-fleet-guide",
@@ -363,6 +405,11 @@ export function getIndexedGuides(): GuideMeta[] {
     return guides.filter((guide) => !guide.hiddenFromIndex)
 }
 
+/** Guides that are published and linkable (excludes coming soon placeholders). */
+export function getPublishedGuides(): GuideMeta[] {
+    return getIndexedGuides().filter((guide) => !guide.comingSoon)
+}
+
 export function getGuidesByCategory(): Record<string, GuideMeta[]> {
     const grouped: Record<string, GuideMeta[]> = {}
     for (const category of guideCategories) {
@@ -376,7 +423,7 @@ export type GuideCategorySection = {
     guides: GuideMeta[]
 }
 
-/** Split a category's guides into ordered subsections (Mechanics / Ships / …). */
+/** Split a category's guides into ordered subsections when configured. */
 export function getGuideSectionsForCategory(
     category: (typeof guideCategories)[number],
     categoryGuides: GuideMeta[],

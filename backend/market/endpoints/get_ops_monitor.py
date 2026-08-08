@@ -15,10 +15,17 @@ class OpsUnderstockedContract(Schema):
     fitting_name: str
     ship_id: int
     current_quantity: int
+    viable_quantity: int = 0
     expected_quantity: int
     shortfall: int
     readiness: str
     expectation_id: int
+    units_1d: int = 0
+    units_3d: int = 0
+    weekly_units: int = 0
+    units_30d: int = 0
+    units_90d: int = 0
+    days_of_stock: Optional[float] = None
 
 
 class OpsSellGapShip(Schema):
@@ -55,11 +62,13 @@ class OpsMonitorSummary(Schema):
     understocked_contracts: int
     sell_gaps: int
     contracts_health_pct: Optional[float] = None
+    contracts_viability_pct: Optional[float] = None
     sell_orders_health_pct: Optional[float] = None
     sell_orders_viability_pct: Optional[float] = None
     overall_health_pct: Optional[float] = None
     contract_targets: int = 0
     contract_fulfilled: int = 0
+    contract_viable_fulfilled: int = 0
     sell_order_targets: int = 0
     sell_order_fulfilled: int = 0
     sell_order_viable_fulfilled: int = 0
@@ -67,6 +76,7 @@ class OpsMonitorSummary(Schema):
     sell_orders_isk: float = 0.0
     total_isk_on_market: float = 0.0
     sales_history_days: int = 0
+    contract_history_days: int = 0
 
 
 class OpsMonitorResponse(Schema):

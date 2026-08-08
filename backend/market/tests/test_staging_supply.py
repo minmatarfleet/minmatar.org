@@ -8,7 +8,7 @@ from eveuniverse.models import EveCategory, EveGroup, EveType
 from app.test import TestCase
 from eveonline.models import EveLocation
 from fittings.models import EveFitting
-from market.helpers.ops_monitor import build_ops_monitor
+from market.helpers.ops_monitor import _sell_gap_flags, build_ops_monitor
 from market.helpers.readiness import (
     doctrine_readiness,
     fitting_readiness,
@@ -90,6 +90,8 @@ class OpsMonitorApiTestCase(TestCase):
         self.assertGreaterEqual(data["summary"]["understocked_contracts"], 1)
         self.assertNotIn("mismatched_contracts", data)
         self.assertIsNotNone(data["summary"]["contracts_health_pct"])
+        self.assertIn("contracts_viability_pct", data["summary"])
+        self.assertIn("contract_viable_fulfilled", data["summary"])
         self.assertIn("sell_orders_health_pct", data["summary"])
         self.assertIn("overall_health_pct", data["summary"])
         self.assertEqual(data["summary"]["contract_targets"], 1)
@@ -97,6 +99,71 @@ class OpsMonitorApiTestCase(TestCase):
         self.assertIn("total_isk_on_market", data["summary"])
         self.assertGreaterEqual(data["summary"]["contracts_isk"], 0)
         self.assertGreaterEqual(data["summary"]["sell_orders_isk"], 0)
+
+    def test_contract_viability_counts_fair_prices_only(self):
+        ship_cat, _ = EveCategory.objects.get_or_create(
+            id=6, defaults={"name": "Ship", "published": True}
+        )
+        frigate_grp, _ = EveGroup.objects.get_or_create(
+            id=25,
+            defaults={
+                "name": "Frigate",
+                "published": True,
+                "eve_category": ship_cat,
+            },
+        )
+        EveType.objects.update_or_create(
+            id=608,
+            defaults={
+                "name": "Atron",
+                "published": True,
+                "eve_group": frigate_grp,
+            },
+        )
+        # Replace the default understocked setup with a fully stocked target.
+        EveMarketContractExpectation.objects.filter(location=self.loc).delete()
+        EveMarketContract.objects.filter(location=self.loc).delete()
+        EveMarketContractExpectation.objects.create(
+            fitting=self.fit,
+            location=self.loc,
+            quantity=2,
+        )
+        EveMarketContract.objects.create(
+            id=101,
+            status="outstanding",
+            title="Fair Atron",
+            price=1_000_000,
+            issuer_external_id=1,
+            location=self.loc,
+            fitting=self.fit,
+            items_fetched=False,
+            match_score=0.0,
+        )
+        EveMarketContract.objects.create(
+            id=102,
+            status="outstanding",
+            title="Overpriced Atron",
+            price=2_000_000,
+            issuer_external_id=2,
+            location=self.loc,
+            fitting=self.fit,
+            items_fetched=False,
+            match_score=0.0,
+        )
+
+        with patch(
+            "market.helpers.ops_monitor._ops_baseline_by_type",
+            return_value={608: 1_000_000},
+        ):
+            data = build_ops_monitor(location_id=self.loc.location_id)
+
+        self.assertEqual(data["summary"]["contract_targets"], 1)
+        self.assertEqual(data["summary"]["contract_fulfilled"], 1)
+        self.assertEqual(data["summary"]["contract_viable_fulfilled"], 0)
+        self.assertEqual(data["summary"]["contracts_health_pct"], 100.0)
+        # One of two contracts is within +20% of 1M baseline → 50% viability fill
+        self.assertEqual(data["summary"]["contracts_viability_pct"], 50.0)
+        self.assertEqual(data["understocked_contracts"], [])
 
     def test_understocked_contracts_sorted_by_ship_size(self):
         ship_cat, _ = EveCategory.objects.get_or_create(
@@ -150,6 +217,86 @@ class OpsMonitorApiTestCase(TestCase):
         data = build_ops_monitor(location_id=self.loc.location_id)
         ship_ids = [row["ship_id"] for row in data["understocked_contracts"]]
         self.assertEqual(ship_ids, [608, 24692])
+
+    def test_understocked_contracts_include_finished_volume_windows(self):
+        now = timezone.now()
+        # Outstanding already created in setUp (id=1) → understocked vs qty 4.
+        EveMarketContract.objects.create(
+            id=101,
+            status="finished",
+            title="Finished recent",
+            price=1,
+            issuer_external_id=1,
+            location=self.loc,
+            fitting=self.fit,
+            completed_at=now - timedelta(hours=12),
+        )
+        EveMarketContract.objects.create(
+            id=102,
+            status="finished",
+            title="Finished 2d",
+            price=1,
+            issuer_external_id=1,
+            location=self.loc,
+            fitting=self.fit,
+            completed_at=now - timedelta(days=2),
+        )
+        EveMarketContract.objects.create(
+            id=103,
+            status="finished",
+            title="Finished 6d",
+            price=1,
+            issuer_external_id=1,
+            location=self.loc,
+            fitting=self.fit,
+            completed_at=now - timedelta(days=6),
+        )
+        EveMarketContract.objects.create(
+            id=104,
+            status="finished",
+            title="Finished 20d",
+            price=1,
+            issuer_external_id=1,
+            location=self.loc,
+            fitting=self.fit,
+            completed_at=now - timedelta(days=20),
+        )
+        EveMarketContract.objects.create(
+            id=105,
+            status="finished",
+            title="Finished 60d",
+            price=1,
+            issuer_external_id=1,
+            location=self.loc,
+            fitting=self.fit,
+            completed_at=now - timedelta(days=60),
+        )
+        # Outside 90d window.
+        EveMarketContract.objects.create(
+            id=106,
+            status="finished",
+            title="Finished old",
+            price=1,
+            issuer_external_id=1,
+            location=self.loc,
+            fitting=self.fit,
+            completed_at=now - timedelta(days=120),
+        )
+
+        data = build_ops_monitor(location_id=self.loc.location_id)
+        row = next(
+            r
+            for r in data["understocked_contracts"]
+            if r["fitting_id"] == self.fit.id
+        )
+        self.assertEqual(row["units_1d"], 1)
+        self.assertEqual(row["units_3d"], 2)
+        self.assertEqual(row["weekly_units"], 3)
+        self.assertEqual(row["units_30d"], 4)
+        self.assertEqual(row["units_90d"], 5)
+        # 1 outstanding ÷ (3/7 per day) ≈ 2.3 days of stock
+        self.assertEqual(row["days_of_stock"], 2.3)
+        self.assertGreaterEqual(data["summary"]["contract_history_days"], 60)
 
     def test_sell_gaps_include_useful_ship_icons(self):
         charge_cat, _ = EveCategory.objects.get_or_create(
@@ -514,11 +661,11 @@ class OpsMonitorApiTestCase(TestCase):
         self.assertEqual(gap["units_90d"], 59)
         # qty-weighted avg price = (40*3M + 10*6M) / 50 = 3.6M → +80% vs 2M
         self.assertEqual(gap["avg_markup_pct"], 80.0)
-        # 50 listed ÷ (46/7 per day) ≈ 7.6 days of stock
+        # 50 listed ÷ (46/7 per day) ≈ 7.6 days of stock (≥ 7 → in stock)
         self.assertEqual(gap["days_of_stock"], 7.6)
         self.assertEqual(
             gap["flags"],
-            ["understocked", "overpriced"],
+            ["in_stock", "overpriced"],
         )
 
     def test_days_of_stock_null_without_recent_sales(self):
@@ -566,7 +713,26 @@ class OpsMonitorApiTestCase(TestCase):
             if row["item_name"] == "No Sales Ammo"
         )
         self.assertIsNone(gap["days_of_stock"])
-        self.assertEqual(gap["flags"], ["understocked"])
+        # No sales rate → cannot be understocked by days; still listed → in stock
+        self.assertEqual(gap["flags"], ["in_stock"])
+
+    def test_understocked_flag_when_under_seven_days_of_stock(self):
+        self.assertEqual(
+            _sell_gap_flags(40, 100, None, 6.9),
+            ["understocked"],
+        )
+        self.assertEqual(
+            _sell_gap_flags(40, 100, None, 7.0),
+            ["in_stock"],
+        )
+        self.assertEqual(
+            _sell_gap_flags(0, 100, None, None),
+            ["out_of_stock"],
+        )
+        self.assertEqual(
+            _sell_gap_flags(120, 50, 12.0, 3.0),
+            ["understocked", "overpriced"],
+        )
 
     def test_seven_day_vwap_avoids_one_day_dip_false_overpriced(self):
         """Listing fair vs 7d VWAP is not overpriced even if latest-day dipped."""
@@ -617,8 +783,13 @@ class OpsMonitorApiTestCase(TestCase):
 
         self.assertEqual(
             [row["item_name"] for row in data["sell_gaps"]],
-            [],
+            ["Smoothed Baseline Ammo"],
         )
+        gap = data["sell_gaps"][0]
+        self.assertEqual(gap["flags"], ["in_stock"])
+        self.assertFalse(gap["coverage_gap"])
+        self.assertFalse(gap["viability_gap"])
+        self.assertEqual(data["summary"]["sell_gaps"], 0)
         self.assertEqual(data["summary"]["sell_orders_viability_pct"], 100.0)
 
     def test_overstocked_overpriced_flags_on_viability_gap(self):
@@ -670,7 +841,7 @@ class OpsMonitorApiTestCase(TestCase):
         self.assertEqual(gap["avg_markup_pct"], 50.0)
         self.assertEqual(
             gap["flags"],
-            ["overstocked", "overpriced"],
+            ["in_stock", "overstocked", "overpriced"],
         )
 
     def test_understocked_contracts_summary_matches_list_cap(self):
@@ -754,7 +925,7 @@ class OpsMonitorApiTestCase(TestCase):
         self.assertEqual(data["summary"]["sell_orders_health_pct"], 100.0)
         self.assertEqual(data["summary"]["sell_orders_viability_pct"], 11.0)
         self.assertEqual(data["summary"]["sell_gaps"], 1)
-        self.assertEqual(gap["flags"], ["overpriced"])
+        self.assertEqual(gap["flags"], ["in_stock", "overpriced"])
         self.assertIsNone(gap["days_of_stock"])
 
     def test_boundary_price_counts_as_viable(self):
@@ -798,8 +969,13 @@ class OpsMonitorApiTestCase(TestCase):
 
         self.assertEqual(
             [row["item_name"] for row in data["sell_gaps"]],
-            [],
+            ["Boundary Ammo"],
         )
+        self.assertEqual(
+            data["sell_gaps"][0]["flags"],
+            ["in_stock", "overpriced"],
+        )
+        self.assertEqual(data["summary"]["sell_gaps"], 0)
         self.assertEqual(data["summary"]["sell_orders_health_pct"], 100.0)
         self.assertEqual(data["summary"]["sell_orders_viability_pct"], 100.0)
         self.assertEqual(data["summary"]["sell_order_viable_fulfilled"], 1)
@@ -843,7 +1019,10 @@ class OpsMonitorApiTestCase(TestCase):
         ):
             data = build_ops_monitor(location_id=self.loc.location_id)
 
-        self.assertEqual(data["sell_gaps"], [])
+        self.assertEqual(len(data["sell_gaps"]), 1)
+        self.assertEqual(data["sell_gaps"][0]["item_name"], "No Baseline Ammo")
+        self.assertEqual(data["sell_gaps"][0]["flags"], ["in_stock"])
+        self.assertEqual(data["summary"]["sell_gaps"], 0)
         self.assertEqual(data["summary"]["sell_orders_viability_pct"], 100.0)
         self.assertEqual(data["summary"]["sell_order_viable_fulfilled"], 1)
 
@@ -886,5 +1065,13 @@ class OpsMonitorApiTestCase(TestCase):
         ):
             data = build_ops_monitor(location_id=self.loc.location_id)
 
-        self.assertEqual(data["sell_gaps"], [])
+        self.assertEqual(len(data["sell_gaps"]), 1)
+        self.assertEqual(data["sell_gaps"][0]["item_name"], "Cheap Ammo")
+        self.assertEqual(
+            data["sell_gaps"][0]["flags"],
+            ["in_stock", "overpriced"],
+        )
+        self.assertFalse(data["sell_gaps"][0]["coverage_gap"])
+        self.assertFalse(data["sell_gaps"][0]["viability_gap"])
+        self.assertEqual(data["summary"]["sell_gaps"], 0)
         self.assertEqual(data["summary"]["sell_orders_viability_pct"], 100.0)

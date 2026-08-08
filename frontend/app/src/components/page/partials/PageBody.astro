@@ -1,21 +1,23 @@
 ---
 interface Props {
-    max_width?: string;
-    neocom?:    boolean;
+    max_width?:     string;
+    neocom?:        boolean;
+    padding_block?: string;
 }
 
 const {
     max_width = '80rem',
     neocom = true,
+    padding_block = 'var(--space-xl)',
 } = Astro.props
 
 import Wrapper from '@components/compositions/Wrapper.astro';
 ---
 
 <div class="[ post-content ]">
-    <Wrapper padding_block="var(--space-xl)" neocom={neocom} max_width={max_width} centered={true}>
+    <Wrapper padding_block={padding_block} neocom={neocom} max_width={max_width} centered={true}>
         <slot />
-    </Wapper>
+    </Wrapper>
 </div>
 
 <style is:global lang="scss">

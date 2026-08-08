@@ -1,6 +1,9 @@
+from datetime import timedelta
 from unittest.mock import patch
 
 from django.test import Client
+from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 
 from app.test import TestCase
 from eveonline.client import EsiResponse
@@ -107,6 +110,58 @@ class OpsMonitorSnapshotTestCase(TestCase):
             location_id=self.loc.location_id, limit=2
         )
         self.assertEqual(len(rows), 2)
+
+    def test_list_snapshots_days_filters_and_downsamples(self):
+        now = timezone.now()
+        for hours_ago in (1, 2, 5, 10, 20, 40, 80, 200, 400, 800):
+            record_ops_monitor_snapshots(
+                trigger=EveMarketOpsMonitorSnapshot.TRIGGER_ORDERS,
+                location_id=self.loc.location_id,
+            )
+            snap = (
+                EveMarketOpsMonitorSnapshot.objects.filter(location=self.loc)
+                .order_by("-id")
+                .first()
+            )
+            EveMarketOpsMonitorSnapshot.objects.filter(pk=snap.pk).update(
+                captured_at=now - timedelta(hours=hours_ago)
+            )
+
+        # 30d window: drop the 800h (~33d) point; keep the rest (9).
+        rows = list_ops_monitor_snapshots(
+            location_id=self.loc.location_id, days=30
+        )
+        self.assertEqual(len(rows), 9)
+        oldest = min(rows, key=lambda r: r["captured_at"])
+        self.assertGreaterEqual(
+            parse_datetime(oldest["captured_at"]),
+            now - timedelta(days=30),
+        )
+
+        # Dense window downsamples to max_points.
+        rows_capped = list_ops_monitor_snapshots(
+            location_id=self.loc.location_id,
+            days=30,
+            max_points=4,
+        )
+        self.assertEqual(len(rows_capped), 4)
+        # Newest-first API order; endpoints of the series preserved.
+        self.assertEqual(rows_capped[0]["id"], rows[0]["id"])
+        self.assertEqual(rows_capped[-1]["id"], rows[-1]["id"])
+
+    def test_history_api_accepts_days(self):
+        record_ops_monitor_snapshots(
+            trigger=EveMarketOpsMonitorSnapshot.TRIGGER_ORDERS,
+            location_id=self.loc.location_id,
+        )
+        response = self.client.get(
+            f"{BASE_URL}/ops-monitor/history",
+            {"location_id": self.loc.location_id, "days": 30},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["location_id"], self.loc.location_id)
 
     def test_record_snapshot_for_all_locations_builds_once(self):
         """Snapshotting every location computes the shared queries once

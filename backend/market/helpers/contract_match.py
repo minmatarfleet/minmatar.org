@@ -34,19 +34,37 @@ def normalize_contract_items(raw_items: list[dict]) -> dict[int, int]:
 
 def fitting_type_quantities(fitting: EveFitting) -> dict[int, int]:
     """Full EFT type quantities including consumables (for missing/extra display)."""
-    per_name = parse_eft_items(fitting.eft_format)
-    if not per_name:
+    return fitting_type_quantities_bulk([fitting]).get(fitting.id, {})
+
+
+def fitting_type_quantities_bulk(
+    fittings: list[EveFitting],
+) -> dict[int, dict[int, int]]:
+    """
+    Full EFT type quantities for many fittings in one EveType lookup.
+
+    Returns ``{fitting_id: {type_id: qty}}``.
+    """
+    if not fittings:
         return {}
-    names = list(per_name.keys())
+    per_fitting_names: dict[int, dict[str, int]] = {}
+    all_names: set[str] = set()
+    for fitting in fittings:
+        names = parse_eft_items(fitting.eft_format)
+        per_fitting_names[fitting.id] = names
+        all_names.update(names.keys())
     name_to_id = dict(
-        EveType.objects.filter(name__in=names).values_list("name", "id")
+        EveType.objects.filter(name__in=all_names).values_list("name", "id")
     )
-    aggregated = defaultdict(int)
-    for name, qty in per_name.items():
-        type_id = name_to_id.get(name)
-        if type_id:
-            aggregated[type_id] += qty
-    return dict(aggregated)
+    result: dict[int, dict[int, int]] = {}
+    for fit_id, names in per_fitting_names.items():
+        aggregated: dict[int, int] = defaultdict(int)
+        for name, qty in names.items():
+            type_id = name_to_id.get(name)
+            if type_id:
+                aggregated[type_id] += qty
+        result[fit_id] = dict(aggregated)
+    return result
 
 
 def fitting_structural_type_quantities(fitting: EveFitting) -> dict[int, int]:

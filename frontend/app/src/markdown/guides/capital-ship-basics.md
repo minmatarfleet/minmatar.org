@@ -38,7 +38,7 @@ FAX, HAW dreads, and carriers usually start the chain. Anti-capital dreads escal
 
 | Role | Ship Class | Who Flies It | Recommended Ships |
 | --- | --- | --- | --- |
-| **[FAX](/guides/force-auxiliary-carrier-guide/)** | Force Auxiliary Carrier | Mains and dedicated alts | Lif or Ninazu, eventually Apostle |
+| **[FAX](/guides/force-auxiliary-carrier-guide/)** | Force Auxiliary Carrier | Mains and dedicated alts | Apostle, then Ninazu |
 | **[AC](/guides/dreadnought-guide/)** | Anti-capital dreadnought | Mostly alts | Revelation, RNI, or Zirnitra |
 | **[HAW](/guides/dreadnought-guide/)** | High Angle Weapons dreadnought | Mostly alts | Phoenix Navy Issue, Moros Navy Issue, Naglfar Fleet Issue |
 | **[BLAP](/guides/dreadnought-guide/)** | BLAP dreadnought | Mostly alts | Any dread, really |
@@ -66,7 +66,7 @@ Once you've learned how to make ISK with multiple accounts, you're able to feed 
 ## Training Path
 
 - **[Dreadnoughts](/guides/dreadnought-guide/).** Best trained on alts. Start with the Revelation, cross-train into laser battleships.
-- **[FAX](/guides/force-auxiliary-carrier-guide/).** Best trained on mains and alts. Start with Ninazu or Lif, as they can repair both armor and shield.
+- **[FAX](/guides/force-auxiliary-carrier-guide/).** Best trained on mains and alts. Start with the Apostle. Add a Ninazu if you want a cheaper active hull for starting escalations.
 - **[Carrier](/guides/carrier-guide/).** Best trained on mains and alts. Start with the Nidhoggur or Archon.
 
 Once you've trained your skills, join the [Capitals tribe](/alliance/tribes/).

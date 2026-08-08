@@ -1,5 +1,4 @@
 ---
-import Flexblock from '@components/compositions/Flexblock.astro'
 import Grid from '@components/compositions/Grid.astro'
 ---
 
@@ -8,79 +7,60 @@ import Grid from '@components/compositions/Grid.astro'
     aria-busy="true"
     aria-live="polite"
 >
-    <Flexblock gap="var(--space-xl)">
-        <section class="[ ops-monitor-skeleton__health ]">
-            <div class="[ ops-monitor-skeleton__overall ]">
+    <section class="[ ops-monitor-skeleton__health ]">
+        <Grid
+            class="[ ops-monitor-skeleton__split ]"
+            min_item_width="280px"
+            row_gap="var(--space-s)"
+            column_gap="var(--space-s)"
+        >
+            <div class="[ ops-monitor-skeleton__card ]">
                 <div class="[ skel skel-eyebrow ]"></div>
-                <div class="[ skel skel-pct ]"></div>
-                <div class="[ skel skel-bar ]"></div>
+                <div class="[ ops-monitor-skeleton__dual ]">
+                    <div class="[ ops-monitor-skeleton__metric ]">
+                        <div class="[ skel skel-line skel-line--short ]"></div>
+                        <div class="[ skel skel-card-pct ]"></div>
+                        <div class="[ skel skel-bar ]"></div>
+                        <div class="[ skel skel-line ]"></div>
+                    </div>
+                    <div class="[ ops-monitor-skeleton__metric ]">
+                        <div class="[ skel skel-line skel-line--short ]"></div>
+                        <div class="[ skel skel-card-pct ]"></div>
+                        <div class="[ skel skel-bar ]"></div>
+                        <div class="[ skel skel-line ]"></div>
+                    </div>
+                </div>
                 <div class="[ skel skel-line skel-line--med ]"></div>
                 <div class="[ skel skel-line skel-line--short ]"></div>
-                <div class="[ skel skel-line skel-line--short ]"></div>
+                <div class="[ skel skel-button ]"></div>
             </div>
-
-            <Grid
-                class="[ ops-monitor-skeleton__split ]"
-                min_item_width="280px"
-                row_gap="var(--space-s)"
-                column_gap="var(--space-s)"
-            >
-                <div class="[ ops-monitor-skeleton__card ]">
-                    <div class="[ skel skel-eyebrow ]"></div>
-                    <div class="[ skel skel-card-pct ]"></div>
-                    <div class="[ skel skel-bar ]"></div>
-                    <div class="[ skel skel-line ]"></div>
-                    <div class="[ skel skel-line skel-line--med ]"></div>
-                    <div class="[ skel skel-line skel-line--short ]"></div>
-                </div>
-                <div class="[ ops-monitor-skeleton__card ]">
-                    <div class="[ skel skel-eyebrow ]"></div>
-                    <div class="[ ops-monitor-skeleton__dual ]">
-                        <div class="[ ops-monitor-skeleton__metric ]">
-                            <div class="[ skel skel-line skel-line--short ]"></div>
-                            <div class="[ skel skel-card-pct ]"></div>
-                            <div class="[ skel skel-bar ]"></div>
-                            <div class="[ skel skel-line ]"></div>
-                        </div>
-                        <div class="[ ops-monitor-skeleton__metric ]">
-                            <div class="[ skel skel-line skel-line--short ]"></div>
-                            <div class="[ skel skel-card-pct ]"></div>
-                            <div class="[ skel skel-bar ]"></div>
-                            <div class="[ skel skel-line ]"></div>
-                        </div>
+            <div class="[ ops-monitor-skeleton__card ]">
+                <div class="[ skel skel-eyebrow ]"></div>
+                <div class="[ ops-monitor-skeleton__dual ]">
+                    <div class="[ ops-monitor-skeleton__metric ]">
+                        <div class="[ skel skel-line skel-line--short ]"></div>
+                        <div class="[ skel skel-card-pct ]"></div>
+                        <div class="[ skel skel-bar ]"></div>
+                        <div class="[ skel skel-line ]"></div>
                     </div>
-                    <div class="[ skel skel-line skel-line--med ]"></div>
-                    <div class="[ skel skel-line skel-line--short ]"></div>
+                    <div class="[ ops-monitor-skeleton__metric ]">
+                        <div class="[ skel skel-line skel-line--short ]"></div>
+                        <div class="[ skel skel-card-pct ]"></div>
+                        <div class="[ skel skel-bar ]"></div>
+                        <div class="[ skel skel-line ]"></div>
+                    </div>
                 </div>
-            </Grid>
-        </section>
-
-        <Flexblock gap="var(--space-l)">
-            <Flexblock gap="var(--space-s)">
-                <div class="[ skel skel-heading ]"></div>
-                <Grid
-                    class="[ ops-monitor-skeleton__tiles ]"
-                    min_item_width="140px"
-                    row_gap="var(--space-s)"
-                    column_gap="var(--space-s)"
-                >
-                    {Array.from({ length: 8 }).map(() =>
-                        <div class="[ skel skel-tile ]"></div>
-                    )}
-                </Grid>
-            </Flexblock>
-
-            <Flexblock gap="var(--space-s)">
-                <div class="[ skel skel-heading ]"></div>
-                <div class="[ skel skel-filters ]"></div>
-                <Flexblock gap="var(--space-2xs)">
-                    {Array.from({ length: 6 }).map(() =>
-                        <div class="[ skel skel-row ]"></div>
-                    )}
-                </Flexblock>
-            </Flexblock>
-        </Flexblock>
-    </Flexblock>
+                <div class="[ skel skel-line skel-line--med ]"></div>
+                <div class="[ skel skel-line skel-line--short ]"></div>
+                <div class="[ skel skel-button ]"></div>
+            </div>
+        </Grid>
+        <div class="[ ops-monitor-skeleton__chart ]">
+            <div class="[ skel skel-eyebrow ]"></div>
+            <div class="[ skel skel-chart ]"></div>
+            <div class="[ skel skel-line skel-line--med ]"></div>
+        </div>
+    </section>
 </div>
 
 <style lang="scss">
@@ -99,17 +79,7 @@ import Grid from '@components/compositions/Grid.astro'
     .ops-monitor-skeleton__health {
         display: flex;
         flex-direction: column;
-        gap: var(--space-l);
-        padding: var(--space-l) var(--space-m);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        background: rgba(0, 0, 0, 0.28);
-    }
-
-    .ops-monitor-skeleton__overall {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-2xs);
-        max-width: 28rem;
+        gap: var(--space-s);
     }
 
     .ops-monitor-skeleton__card {
@@ -119,6 +89,20 @@ import Grid from '@components/compositions/Grid.astro'
         padding: var(--space-m);
         border: 1px solid rgba(255, 255, 255, 0.1);
         background: rgba(0, 0, 0, 0.22);
+    }
+
+    .ops-monitor-skeleton__chart {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        padding: var(--space-m);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.22);
+    }
+
+    .skel-chart {
+        width: 100%;
+        height: clamp(8rem, 18vw, 12rem);
     }
 
     .ops-monitor-skeleton__dual {
@@ -137,12 +121,6 @@ import Grid from '@components/compositions/Grid.astro'
     .skel-eyebrow {
         width: 8rem;
         height: 0.75rem;
-    }
-
-    .skel-pct {
-        width: 11rem;
-        height: clamp(3.5rem, 8vw, 5.5rem);
-        max-width: 100%;
     }
 
     .skel-card-pct {
@@ -170,45 +148,10 @@ import Grid from '@components/compositions/Grid.astro'
         width: 7.5rem;
     }
 
-    .skel-heading {
-        width: 14rem;
-        max-width: 100%;
-        height: 1.35rem;
-    }
-
-    .skel-tile {
-        min-height: 9.5rem;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        background-color: rgba(85, 85, 85, 0.12);
-        background-image: linear-gradient(
-            90deg,
-            transparent 0%,
-            rgba(255, 255, 255, 0.08) 50%,
-            transparent 100%
-        );
-        background-size: 200% 100%;
-        animation: ops-monitor-skel 1.1s ease-in-out infinite;
-    }
-
-    .skel-filters {
-        width: 100%;
-        min-height: 6.5rem;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        background-color: rgba(85, 85, 85, 0.1);
-        background-image: linear-gradient(
-            90deg,
-            transparent 0%,
-            rgba(255, 255, 255, 0.07) 50%,
-            transparent 100%
-        );
-        background-size: 200% 100%;
-        animation: ops-monitor-skel 1.1s ease-in-out infinite;
-    }
-
-    .skel-row {
-        width: 100%;
-        height: 4.25rem;
-        border: 1px solid rgba(255, 255, 255, 0.06);
+    .skel-button {
+        width: 9rem;
+        height: 2rem;
+        margin-block-start: var(--space-2xs);
     }
 
     @keyframes ops-monitor-skel {

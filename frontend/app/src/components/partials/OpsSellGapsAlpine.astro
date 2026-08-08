@@ -1,0 +1,38 @@
+---
+/**
+ * Sell Orders (OpsSellGapsList) filter helpers — must live in FooterScripts.
+ *
+ * Sell-orders (and formerly ops-monitor) content is loaded via htmx into a slot.
+ * Alpine.initTree runs on afterSwap before any page-local module script from the
+ * partial can execute (and Astro does not re-run those scripts from swapped HTML).
+ * If __opsSellGapsRowVisible is missing, x-show/x-text throw, x-cloak stays, and
+ * the list renders blank below the filters.
+ * Same pattern as LearningAlpine / neocom_clock in FooterScripts.
+ */
+---
+
+<script>
+    import {
+        ops_sell_gaps_compare_rows,
+        ops_sell_gaps_default_direction,
+        ops_sell_gaps_next_order_state,
+        ops_sell_gaps_row_visible,
+    } from '@helpers/ops_sell_gaps_filter'
+
+    declare global {
+        interface Window {
+            __opsSellGapsCompareRows?: typeof ops_sell_gaps_compare_rows
+            __opsSellGapsDefaultDirection?: typeof ops_sell_gaps_default_direction
+            __opsSellGapsNextOrderState?: typeof ops_sell_gaps_next_order_state
+            __opsSellGapsRowVisible?: typeof ops_sell_gaps_row_visible
+        }
+    }
+
+    window.__opsSellGapsCompareRows = ops_sell_gaps_compare_rows
+    window.__opsSellGapsDefaultDirection = ops_sell_gaps_default_direction
+    window.__opsSellGapsNextOrderState = ops_sell_gaps_next_order_state
+    window.__opsSellGapsRowVisible = ops_sell_gaps_row_visible
+    // Sell-orders content is htmx-swapped; Alpine may init before this module.
+    // Notify open lists so filter/sort effects re-run with real helpers.
+    window.dispatchEvent(new Event('ops-sell-gaps-helpers-ready'))
+</script>

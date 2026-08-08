@@ -1,0 +1,58 @@
+---
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+interface Props {
+    cards?: number;
+}
+
+const { cards = 6 } = Astro.props
+---
+
+<div
+    class="[ ops-understocked-skeleton ]"
+    aria-busy="true"
+    aria-live="polite"
+>
+    <Flexblock gap="var(--space-2xs)">
+        {Array.from({ length: cards }).map(() =>
+            <div class="[ ops-understocked-skeleton__card ]">
+                <div class="[ skel skel-main ]"></div>
+                <div class="[ skel skel-metrics ]"></div>
+            </div>
+        )}
+    </Flexblock>
+</div>
+
+<style lang="scss">
+    .ops-understocked-skeleton .skel {
+        border-radius: 2px;
+        background: linear-gradient(
+            90deg,
+            color-mix(in srgb, var(--foreground) 6%, transparent) 0%,
+            color-mix(in srgb, var(--foreground) 12%, transparent) 50%,
+            color-mix(in srgb, var(--foreground) 6%, transparent) 100%
+        );
+        background-size: 200% 100%;
+        animation: ops-understocked-skel-shine 1.2s linear infinite;
+    }
+
+    .ops-understocked-skeleton__card {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .skel-main {
+        height: 4.2rem;
+        width: 100%;
+    }
+
+    .skel-metrics {
+        height: 1.6rem;
+        width: 100%;
+    }
+
+    @keyframes ops-understocked-skel-shine {
+        0% { background-position: 100% 0; }
+        100% { background-position: -100% 0; }
+    }
+</style>

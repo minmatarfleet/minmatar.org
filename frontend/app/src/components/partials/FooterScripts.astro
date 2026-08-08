@@ -1,11 +1,13 @@
 ---
 import { is_disabled_ccpwgl } from '@helpers/env';
 import LearningAlpine from '@components/partials/LearningAlpine.astro';
+import OpsSellGapsAlpine from '@components/partials/OpsSellGapsAlpine.astro';
 
 const DISABLED_CCPWGL = is_disabled_ccpwgl()
 ---
 
 <LearningAlpine />
+<OpsSellGapsAlpine />
 
 <script is:inline src="/js/clipboard.js"></script>
 <script is:inline src="/js/numbers.js"></script>

@@ -2,13 +2,14 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { getGuidesByCategory, guideCategories, getIndexedGuides } from '@/data/guides'
+import { getGuidesByCategory, getGuideSectionsForCategory, guideCategories, getIndexedGuides, getPublishedGuides } from '@/data/guides'
 import { GUIDES_INDEX_COVER } from '@/data/guides/covers'
 import { buildGuidesIndexJsonLd, getGuidesIndexSeo } from '@/data/guides/seo'
 import { get_site_origin } from '@helpers/seo'
 
 const site_origin = get_site_origin(Astro.url.origin)
 const indexedGuides = getIndexedGuides()
+const publishedGuides = getPublishedGuides()
 const seo = getGuidesIndexSeo({
     siteName: t('index.page_title'),
     siteOrigin: site_origin,
@@ -23,7 +24,7 @@ const structured_data = buildGuidesIndexJsonLd({
     metaDescription: seo.metaDescription,
     canonicalUrl: seo.canonicalUrl,
     metaImage: seo.metaImage,
-    guides: indexedGuides,
+    guides: publishedGuides,
     translatePath,
 })
 
@@ -83,6 +84,8 @@ const page_title = t('guides.page_title')
                 const categoryGuides = guidesByCategory[category] ?? []
                 if (!categoryGuides.length) return null
 
+                const sections = getGuideSectionsForCategory(category, categoryGuides)
+
                 return (
                     <Flexblock gap='var(--space-m)'>
                         <Flexblock gap='var(--space-3xs)'>
@@ -91,16 +94,25 @@ const page_title = t('guides.page_title')
                                 {categoryGuides.length} {categoryGuides.length === 1 ? 'guide' : 'guides'}
                             </small>
                         </Flexblock>
-                        <Grid
-                            class="[ w-full grid-fill ]"
-                            row_gap="var(--space-3xs)"
-                            column_gap="var(--space-3xs)"
-                            min_item_width="400px"
-                        >
-                            {categoryGuides.map((guide) => (
-                                <GuideCard guide={guide} />
+                        <Flexblock gap='var(--space-l)'>
+                            {sections.map((section) => (
+                                <Flexblock gap='var(--space-s)'>
+                                    {section.label && (
+                                        <h3 class="[ font-bold text-[var(--step-0)] ]">{section.label}</h3>
+                                    )}
+                                    <Grid
+                                        class="[ w-full grid-fill ]"
+                                        row_gap="var(--space-3xs)"
+                                        column_gap="var(--space-3xs)"
+                                        min_item_width="400px"
+                                    >
+                                        {section.guides.map((guide) => (
+                                            <GuideCard guide={guide} />
+                                        ))}
+                                    </Grid>
+                                </Flexblock>
                             ))}
-                        </Grid>
+                        </Flexblock>
                     </Flexblock>
                 )
             })}

@@ -1,7 +1,7 @@
 ---
 title: 'Faction Warfare Battlefields'
 excerpt: "Learn how to run the most lucrative faction warfare site in the warzone, without getting AWOX'd."
-category: 'Faction Warfare'
+category: 'Faction Warfare Mechanics'
 author: 'Furl0w'
 ---
 

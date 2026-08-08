@@ -1,0 +1,162 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_market_locations } from '@helpers/api.minmatar.org/locations'
+import { query_string } from '@helpers/string'
+import {
+    ops_params_need_canonicalization,
+    resolve_ops_location_id,
+} from '@helpers/market_ops_redirect'
+
+let fetch_error: Error | false = false
+let locations: Awaited<ReturnType<typeof get_market_locations>> = []
+let location_id: number | undefined
+
+try {
+    locations = await get_market_locations()
+
+    location_id = resolve_ops_location_id(locations, Astro.url.searchParams)
+        ?? locations[0]?.location_id
+
+    if (
+        location_id != null
+        && ops_params_need_canonicalization(Astro.url.searchParams, location_id)
+    ) {
+        return Astro.redirect(
+            translatePath(`/market/ops/sell_orders/?${query_string({ location_id })}`),
+        )
+    }
+} catch (error) {
+    fetch_error = error as Error
+}
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Breadcrumb from '@components/blocks/Breadcrumb.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import OpsSellGapsSkeleton from '@components/blocks/OpsSellGapsSkeleton.astro'
+
+const page_title = t('staging_supply.ops.sell_orders.page_title')
+
+const ops_href = location_id != null
+    ? translatePath(`/market/ops/?${query_string({ location_id })}`)
+    : translatePath('/market/ops/')
+
+const breadcrumb_items = [
+    { label: t('staging_supply.ops.page_title'), href: ops_href },
+    { label: page_title },
+]
+
+const SELL_ORDERS_PARTIAL = translatePath(
+    `/partials/ops_sell_orders_component${
+        location_id != null
+            ? `?${query_string({ location_id })}`
+            : ''
+    }`,
+)
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('staging_supply.ops.sell_orders.meta_description')}
+>
+    <PageWide
+        cover={{
+            image: '/images/market-cover.jpg',
+            image_990: '/images/market-cover.jpg',
+            overlay: true,
+            scrollable: true,
+        }}
+        padding_block="var(--space-m) var(--space-xl)"
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <Flexblock gap="var(--space-s)">
+                <Breadcrumb items={breadcrumb_items} />
+                <PageTitle>{page_title}</PageTitle>
+            </Flexblock>
+        </FlexInline>
+
+        {fetch_error ?
+            <ErrorRefetch args={{
+                partial: translatePath(
+                    location_id != null
+                        ? `/market/ops/sell_orders/?${query_string({ location_id })}`
+                        : '/market/ops/sell_orders/'
+                ),
+                error: fetch_error,
+                delay: 0,
+            }} />
+            :
+            <div
+                id="ops-sell-orders-slot"
+                data-ops-sell-orders-deferred="1"
+                hx-get={SELL_ORDERS_PARTIAL}
+                hx-trigger="load"
+                hx-swap="innerHTML"
+                hx-indicator=".loader"
+                aria-busy="true"
+                aria-live="polite"
+            >
+                <OpsSellGapsSkeleton rows={8} />
+            </div>
+        }
+    </PageWide>
+</Viewport>
+
+<script>
+    function refreshOpsSellOrdersSlot() {
+        const slot = document.getElementById('ops-sell-orders-slot')
+        if (!slot)
+            return
+
+        slot.setAttribute('aria-busy', 'false')
+        if (typeof htmx !== 'undefined')
+            htmx.process(slot)
+        if (typeof Alpine !== 'undefined')
+            Alpine.initTree(slot)
+        if (typeof tippy === 'function') {
+            tippy('#ops-sell-orders-slot [data-tippy-content]', {
+                delay: [100, 200],
+                arrow: true,
+            })
+        }
+    }
+
+    function isOpsSellOrdersRequest(event: any): boolean {
+        const path = String(
+            event.detail?.pathInfo?.requestPath
+                || event.detail?.xhr?.responseURL
+                || event.detail?.elt?.getAttribute?.('hx-get')
+                || '',
+        )
+        return path.includes('ops_sell_orders_component')
+    }
+
+    function bindOpsSellOrdersDeferred() {
+        const slot = document.getElementById('ops-sell-orders-slot')
+        if (!slot || slot.dataset.bound === '1')
+            return
+        slot.dataset.bound = '1'
+
+        document.body.addEventListener('htmx:afterSwap', (event: any) => {
+            if (!isOpsSellOrdersRequest(event))
+                return
+            refreshOpsSellOrdersSlot()
+        })
+
+        document.body.addEventListener('htmx:afterRequest', (event: any) => {
+            if (!isOpsSellOrdersRequest(event))
+                return
+            if (!event.detail?.successful) {
+                document.getElementById('ops-sell-orders-slot')?.setAttribute('aria-busy', 'false')
+            }
+        })
+    }
+
+    bindOpsSellOrdersDeferred()
+    document.addEventListener('astro:page-load', bindOpsSellOrdersDeferred)
+</script>
