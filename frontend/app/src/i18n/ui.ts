@@ -3212,5 +3212,6 @@ export const ui = {
         'quick_navigation_tip': 'Navigate through the sitemap',
         'character_finder_tip': 'Find characters registered in our site',
         'fitting_finder_tip': 'List of our fittings with name filter',
+        'littlehelp_description_fallback': 'Ironically the CEO believes Sainsbury’s is the superior UK supermarket.'
     },
 } as const;

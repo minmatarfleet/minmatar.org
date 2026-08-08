@@ -1,0 +1,300 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { CorporationObject } from '@dtypes/layout_components'
+
+import { query_string } from '@helpers/string';
+
+interface Props {
+    corporation:            CorporationObject;
+    is_user_corporation?:   boolean;
+    picture_placement?:     'left' | 'right';
+    
+}
+
+const {
+    corporation,
+    is_user_corporation = false,
+    picture_placement = 'left',
+} = Astro.props
+
+const BLUEBRICK_ID = 321858034
+const NUBNUB_RUSSELLS_ID = 96197553
+
+import { marked } from 'marked';
+import { renderer } from '@helpers/marked';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+
+import CorporationSlide from '@components/blocks/CorporationSlide.astro';
+import StylessButton from '@components/blocks/StylessButton.astro';
+---
+
+<CorporationSlide
+    id="littlehelp-slide"
+    ceo_image='/images/corporations/littlehelp/ceo.webp'
+    ceo_character_id={BLUEBRICK_ID}
+    corporation={corporation}
+    is_user_corporation={is_user_corporation}
+    picture_placement='left'
+    mirror_slide={picture_placement === 'right'}
+>
+    <StylessButton
+        class="[ co-ceo ]"
+        slot="coceo"
+        x-data={`{
+            show_character_modal() {
+                show_modal({
+                    partial: '${translatePath('/partials/character_modal_component/')}?${query_string({
+                        character_id: NUBNUB_RUSSELLS_ID.toString(),
+                    })}',
+                })
+            }
+        }`}
+        x-on:click="show_character_modal()"
+    >
+        <img src="/images/corporations/littlehelp/co-ceo.webp" />
+    </StylessButton>
+    
+    <img slot="ships" class="[ marshall ]" src="/images/corporations/littlehelp/marshall.webp" />
+    <img slot="ships" class="[ prospect ]" src="/images/corporations/littlehelp/prospect.webp" />
+    <img slot="ships" class="[ widow ]" src="/images/corporations/littlehelp/widow.webp" />
+    <div slot="ships" class="[ cyno-entrance ]">
+        <div class="[ cyno-rotation ]">
+            <img class="[ cyno ]" src="/images/corporations/littlehelp/cyno.webp" />
+        </div>
+    </div>
+
+    <Flexblock set:html={marked.parse(corporation.introduction ? corporation.introduction : t('littlehelp_description_fallback'), { renderer })} />
+</CorporationSlide>
+
+<style lang="scss">
+    .co-ceo {
+        z-index: 11;
+        position: absolute;
+        cursor: pointer;
+        transform: scale(0.5);
+        opacity: 0;
+        height: 99%;
+        left: -3%;
+        top: 0;
+        filter: drop-shadow(0px 0px 0px black);
+
+        img {
+            mask-image: linear-gradient(to bottom, black 70%, transparent 95%);
+            width: auto;
+            height: 100%;
+        }
+
+        &:focus-visible {
+            outline: none;
+        }
+
+        &:focus-visible,
+        &:hover {
+            img {
+                filter: drop-shadow(0px 0px 3px rgba(255, 255, 255, 0.75));
+            }
+        }
+    }
+
+    .marshall {
+        position: absolute;
+        top: 14%;
+        left: -39%;
+        height: auto;
+        width: 64%;
+        z-index: 0;
+        transform: scale(0);
+    }
+
+    .prospect {
+        position: absolute;
+        top: 41%;
+        left: -20%;
+        width: 60%;
+        height: auto;
+        z-index: 2;
+        transform: scale(0);
+    }
+
+    .widow {
+        position: absolute;
+        top: 39%;
+        left: -12%;
+        width: 63%;
+        height: auto;
+        z-index: 1;
+        transform: scale(0);
+    }
+
+    .cyno-entrance {
+        position: absolute;
+        top: -14%;
+        left: 33%;
+        width: 60%;
+        height: auto;
+        z-index: 2;
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    @keyframes marshall {
+        0% {
+            transform: scale(0);
+            top: 36%;
+            left: -23%;
+        }
+
+        30% {
+            transform: scale(1);
+            top: 8%;
+            left: 40%;
+        }
+
+        100% {
+            transform: scale(1.03);
+            top: 5%;
+            left: 43%;
+        }
+    }
+
+    @keyframes prospect {
+        0% {
+            transform: scale(0);
+            top: 36%;
+            left: -20%;
+        }
+
+        33% {
+            transform: scale(1);
+            top: 36%;
+            left: 45%;
+        }
+
+        100% {
+            transform: scale(1.04);
+            top: 36%;
+            left: 48%;
+        }
+    }
+
+    @keyframes widow {
+        0% {
+            transform: scale(0);
+            left: -10%;
+            top: 17%;
+        }
+
+        36% {
+            transform: scale(1);
+            top: 36%;
+            left: 36%;
+        }
+
+        100% {
+            transform: scale(1.03);
+            top: 37%;
+            left: 38%;
+        }
+    }
+
+    @keyframes cyno_entrance {
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @keyframes cyno_rotation {
+        0%, 100% {
+            transform: rotate(-3deg);
+        }
+
+        50% {
+            transform: rotate(3deg);
+        }
+    }
+
+    @keyframes cyno_bounce {
+        0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        50% {
+            opacity: 0.9;
+            transform: scale(0.99);
+        }
+    }
+
+    @keyframes coceo {
+        0% {
+            transform: scale(0.9);
+            opacity: 0;
+        }
+
+        20% {
+            opacity: 1;
+        }
+
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+</style>
+
+<style lang="scss" is:global>
+    #littlehelp-slide .ceo {
+        left: -13%;
+    }
+
+    .swiper-slide-active {
+        .marshall {
+            animation: marshall cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.7s;
+            animation-delay: 1.2s;
+            animation-iteration-count: 1;
+            transform-origin: center;
+            animation-fill-mode: forwards;
+        }
+        
+        .prospect {
+            animation: prospect cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.6s;
+            animation-delay: 1.3s;
+            animation-iteration-count: 1;
+            transform-origin: center;
+            animation-fill-mode: forwards;
+        }
+        
+        .widow {
+            animation: widow cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.5s;
+            animation-delay: 1.4s;
+            animation-iteration-count: 1;
+            transform-origin: center;
+            animation-fill-mode: forwards;
+        }
+
+        .cyno-entrance {
+            animation: cyno_entrance 1s ease-out 0.5s 1 forwards;
+            animation-delay: 3s;
+        }
+
+        .cyno-rotation {
+            animation: cyno_rotation 60s linear infinite;
+        }
+
+        .cyno {
+            animation: cyno_bounce 1s ease-in-out infinite;
+        }
+
+        #littlehelp-slide .co-ceo {
+            animation: coceo ease-out 3.2s;
+            animation-delay: 0.25s;
+            animation-iteration-count: 1;
+            transform-origin: bottom;
+            animation-fill-mode: forwards;
+        }
+    }
+</style>
