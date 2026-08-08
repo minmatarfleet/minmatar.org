@@ -38,7 +38,6 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-import OpsUnderstockedSkeleton from '@components/blocks/OpsUnderstockedSkeleton.astro'
 import MarketContractsSkeleton from '@components/blocks/MarketContractsSkeleton.astro'
 
 const page_title = t('staging_supply.ops.contracts.page_title')
@@ -77,67 +76,6 @@ const CONTRACTS_PARTIAL = translatePath(
         }}
         padding_block="var(--space-m) var(--space-xl)"
         sticky={true}
-        x-data={`{
-            contracts_count: 0,
-            item_name_filter: '',
-            item_name_query: '',
-            filtering: false,
-            _search_timer: null,
-            _filter_timer: null,
-            contracts_plural: '${t('showing_contracts_plural')}',
-            contracts_singular: '${t('showing_contracts_singular')}',
-            init() {
-                this.$watch('item_name_filter', () => this.scheduleSearch())
-            },
-            destroy() {
-                if (this._search_timer) {
-                    clearTimeout(this._search_timer)
-                    this._search_timer = null
-                }
-                if (this._filter_timer) {
-                    clearTimeout(this._filter_timer)
-                    this._filter_timer = null
-                }
-            },
-            scheduleSearch() {
-                // Debounce typing: apply query + skeleton only after pause.
-                if (this._search_timer)
-                    clearTimeout(this._search_timer)
-                this._search_timer = setTimeout(() => {
-                    this._search_timer = null
-                    this.item_name_query = this.item_name_filter
-                    this.pulseFilter()
-                }, 300)
-            },
-            pulseFilter() {
-                this.filtering = true
-                if (this._filter_timer)
-                    clearTimeout(this._filter_timer)
-                this._filter_timer = setTimeout(() => {
-                    this.filtering = false
-                    this._filter_timer = null
-                    this.contracts_count = this.countMatchingContracts()
-                }, 280)
-            },
-            countMatchingContracts() {
-                const filter = this.item_name_query.toLowerCase()
-                const rows = document.querySelectorAll('.market-contracts-row')
-                let matching = 0
-
-                rows.forEach(element => {
-                    const name = (element.dataset.fittingName || '').toLowerCase()
-                    if (filter === '' || name.includes(filter))
-                        matching++
-                })
-
-                return matching
-            },
-            show_stock_tile(el) {
-                const name = (el.dataset.fittingName || '').toLowerCase()
-                return this.item_name_query === ''
-                    || name.includes(this.item_name_query.toLowerCase())
-            },
-        }`}
     >
         <FlexInline slot="header" justification="space-between" class="[ w-full ]">
             <Flexblock gap="var(--space-s)">
@@ -167,10 +105,7 @@ const CONTRACTS_PARTIAL = translatePath(
                 aria-busy="true"
                 aria-live="polite"
             >
-                <Flexblock gap="var(--space-xl)">
-                    <OpsUnderstockedSkeleton />
-                    <MarketContractsSkeleton />
-                </Flexblock>
+                <MarketContractsSkeleton />
             </div>
         }
     </PageWide>

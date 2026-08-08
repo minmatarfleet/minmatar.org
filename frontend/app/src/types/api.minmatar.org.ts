@@ -829,9 +829,19 @@ export interface ContractDoctrine {
 }
 
 export interface ContractSeller {
-    character_id:       number;
-    character_name:     string;
+    character_id:       number | null;
+    character_name:     string | null;
+    corporation_id:     number | null;
+    corporation_name:   string | null;
     quantity:           number;
+}
+
+export interface ContractMetrics {
+    fitting_id:             number;
+    volume_28d:             number;
+    typical_fleet_size:     number | null;
+    fleets_remaining:       number | null;
+    fleets_per_month:       number | null;
 }
 
 export interface Contract {
@@ -847,7 +857,6 @@ export interface Contract {
     readiness:                  string;
     sellers:                    ContractSeller[];
     latest_contract_timestamp:  string | null;
-    historical_quantity:        History[];
     doctrines:                  ContractDoctrine[];
 }
 

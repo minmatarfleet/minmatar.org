@@ -1,160 +1,716 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { Contract } from '@dtypes/api.minmatar.org'
 import { number_thousand_separator } from '@helpers/numbers'
+import { query_string } from '@helpers/string'
+import {
+    OPS_CONTRACTS_DEFAULT_CRITERIA,
+    OPS_CONTRACTS_NO_DOCTRINE,
+    ops_contracts_row_visible,
+    ops_contracts_stock_status,
+    type OpsContractsFilterRow,
+} from '@helpers/ops_contracts_filter'
 
 interface Props {
     contracts:      Contract[];
+    location_id?:   number;
     init_tooltips?: boolean;
 }
 
 const {
     contracts,
+    location_id,
     init_tooltips = false,
 } = Astro.props
 
-function fill_pct(current: number, expected: number): number {
+function fill_pct(current: number, expected: number): number | null {
     if (expected <= 0)
-        return current > 0 ? 100 : 0
+        return null
     return Math.min(100, (current / expected) * 100)
 }
 
-function progress_color(pct: number, readiness: string): string {
-    if (readiness === 'empty' || pct < 10)
-        return '--fleet-red'
-    if (pct < 50)
-        return '--security-status-point-4'
-    return '--security-status-point-6'
+const filter_rows: OpsContractsFilterRow[] = contracts.map(contract => ({
+    fitting_id: contract.fitting_id,
+    title: contract.title,
+    stock_status: ops_contracts_stock_status(
+        contract.current_quantity,
+        contract.desired_quantity,
+    ),
+    doctrine_ids: (contract.doctrines ?? []).map(d => d.id),
+    fill_pct: fill_pct(contract.current_quantity, contract.desired_quantity),
+    volume_28d: 0,
+    fleets_remaining: null,
+    fleets_per_month: null,
+}))
+
+const rows = contracts.map((contract, index) => ({
+    ...contract,
+    filter_index: index,
+}))
+
+const doctrine_options = Array.from(
+    contracts
+        .flatMap(c => c.doctrines ?? [])
+        .reduce((map, doctrine) => {
+            if (!map.has(doctrine.id))
+                map.set(doctrine.id, doctrine.name)
+            return map
+        }, new Map<number, string>()),
+)
+    .map(([id, name]) => ({ id: String(id), label: name }))
+    .sort((a, b) => a.label.localeCompare(b.label))
+
+const has_no_doctrine = contracts.some(c => (c.doctrines ?? []).length === 0)
+
+const criteria_options = [
+    { id: 'unstocked', label: t('ops_contracts_filter_unstocked') },
+    { id: 'low_stock', label: t('ops_contracts_filter_low_stock') },
+    { id: 'in_stock', label: t('ops_contracts_filter_in_stock') },
+    { id: 'overstocked', label: t('ops_contracts_filter_overstocked') },
+] as const
+
+const order_by_options = [
+    { id: 'stock_fill', label: t('ops_contracts_order_stock') },
+    { id: 'volume_28d', label: t('ops_contracts_order_volume_28d') },
+    { id: 'fleets_remaining', label: t('ops_contracts_order_fleets_remaining') },
+] as const
+
+const rows_json = JSON.stringify(filter_rows)
+const empty_label = t('ops_contracts_empty_filter')
+const items_word = t('ops_contracts_items_word')
+const items_tip = t('ops_contracts_items_tip')
+const showing_template = t('ops_contracts_showing')
+const [showing_before_template, showing_after_template = ''] = showing_template.split('{items}')
+const default_criteria = [...OPS_CONTRACTS_DEFAULT_CRITERIA]
+const default_doctrines: string[] = []
+const initial_visible_count = filter_rows.filter(row =>
+    ops_contracts_row_visible(row, default_criteria, default_doctrines),
+).length
+const default_criteria_json = JSON.stringify(default_criteria)
+const metrics_partial_url = location_id != null
+    ? translatePath(
+        `/partials/ops_contracts_metrics_component?${query_string({ location_id })}`,
+    )
+    : null
+
+function fill_showing_part(template: string, visible: number, total: number) {
+    return template
+        .replace('{visible}', String(visible))
+        .replace('{total}', String(total))
 }
 
-const rows = contracts.map(contract => {
-    const pct = fill_pct(contract.current_quantity, contract.desired_quantity)
-    return {
-        ...contract,
-        pct,
-        progress_color: progress_color(pct, contract.readiness),
-    }
-})
+const initial_showing_before = fill_showing_part(
+    showing_before_template,
+    initial_visible_count,
+    rows.length,
+)
+const initial_showing_after = fill_showing_part(
+    showing_after_template,
+    initial_visible_count,
+    rows.length,
+)
 
 import FlexInline from '@components/compositions/FlexInline.astro'
-import FixedFluid from '@components/compositions/FixedFluid.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
-import ItemBadge from '@components/blocks/ItemBadge.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
 import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import CorporationPicture from '@components/blocks/CorporationPicture.astro'
 import TippyProducer from '@components/blocks/TippyProducer.astro'
-import Progress from '@components/blocks/Progress.astro'
 import Tag from '@components/blocks/Tag.astro'
 import FittingLink from '@components/blocks/FittingLink.astro'
-
-import MemberIcon from '@components/icons/MemberIcon.astro'
+import Input from '@components/blocks/Input.astro'
+import MarketContractsSkeleton from '@components/blocks/MarketContractsSkeleton.astro'
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
 ---
 
-<Flexblock gap="var(--space-2xs)" class="[ market-contracts-table ]">
-    {rows.map(row =>
-        <FixedFluid
-            width="350px"
-            class="[ market-contracts-row ][ w-full items-center! ]"
-            data-fitting-name={row.title}
-            x-show="show_stock_tile($el)"
-        >
-            <div>
-                <FittingLink fitting_id={row.fitting_id} class="[ market-contracts-row__fit ]">
-                    <ItemBadge
-                        item_name={row.title}
-                        type_id={row.ship_id}
-                        size={32}
-                        centered={true}
-                        title_el="h3"
-                    >
-                        <small>
-                            <span class="[ text-highlight ]">{number_thousand_separator(row.current_quantity)}</span>
-                            {row.desired_quantity > 0 &&
-                                <> / {number_thousand_separator(row.desired_quantity)}</>
-                            }
-                        </small>
-                    </ItemBadge>
-                </FittingLink>
+{/* Filter helpers: OpsContractsAlpine in FooterScripts (htmx-safe). */}
+
+<div
+    class="[ ops-contracts-list ]"
+    data-rows={rows_json}
+    data-showing-before={showing_before_template}
+    data-showing-after={showing_after_template}
+    data-default-criteria={default_criteria_json}
+    x-data={`{
+        criteria: ${default_criteria_json},
+        doctrines: [],
+        order_by: 'stock_fill',
+        order_dir: 'desc',
+        search: '',
+        search_query: '',
+        rows: [],
+        showing_before_template: '',
+        showing_after_template: '',
+        filtering: false,
+        helpers_epoch: 0,
+        metrics_ready: false,
+        _search_timer: null,
+        _filter_timer: null,
+        _helpers_listener: null,
+        _metrics_listener: null,
+        init() {
+            this.rows = JSON.parse(this.$el.dataset.rows || '[]')
+            this.showing_before_template = this.$el.dataset.showingBefore || ''
+            this.showing_after_template = this.$el.dataset.showingAfter || ''
+            this.$watch('search', () => this.scheduleSearch())
+            this.syncHelpersEpoch()
+            this._helpers_listener = () => this.syncHelpersEpoch()
+            window.addEventListener(
+                'ops-contracts-helpers-ready',
+                this._helpers_listener,
+            )
+            this._metrics_listener = () => this.applyDeferredMetrics()
+            document.body.addEventListener(
+                'htmx:afterSettle',
+                this._metrics_listener,
+            )
+        },
+        destroy() {
+            if (this._search_timer) {
+                clearTimeout(this._search_timer)
+                this._search_timer = null
+            }
+            if (this._filter_timer) {
+                clearTimeout(this._filter_timer)
+                this._filter_timer = null
+            }
+            if (this._helpers_listener) {
+                window.removeEventListener(
+                    'ops-contracts-helpers-ready',
+                    this._helpers_listener,
+                )
+                this._helpers_listener = null
+            }
+            if (this._metrics_listener) {
+                document.body.removeEventListener(
+                    'htmx:afterSettle',
+                    this._metrics_listener,
+                )
+                this._metrics_listener = null
+            }
+        },
+        applyDeferredMetrics() {
+            const payload = document.getElementById('ops-contracts-metrics-json')
+            const raw = payload?.dataset?.metrics
+            if (!raw || this.metrics_ready)
+                return
+            let metrics = []
+            try {
+                metrics = JSON.parse(raw)
+            } catch (_err) {
+                return
+            }
+            if (!Array.isArray(metrics) || metrics.length === 0)
+                return
+            const by_id = {}
+            metrics.forEach(row => {
+                by_id[row.fitting_id] = row
+            })
+            this.rows = this.rows.map(row => {
+                const metric = by_id[row.fitting_id]
+                if (!metric)
+                    return row
+                return {
+                    ...row,
+                    volume_28d: metric.volume_28d ?? 0,
+                    fleets_remaining: metric.fleets_remaining ?? null,
+                    fleets_per_month: metric.fleets_per_month ?? null,
+                }
+            })
+            this.metrics_ready = true
+            if (typeof tippy === 'function') {
+                tippy('.ops-contracts-list [data-tippy-content]', tippy_options)
+            }
+        },
+        syncHelpersEpoch() {
+            if (
+                window.__opsContractsRowVisible
+                && window.__opsContractsCompareRows
+                && window.__opsContractsNextOrderState
+                && this.helpers_epoch === 0
+            )
+                this.helpers_epoch = 1
+        },
+        scheduleSearch() {
+            if (this._search_timer)
+                clearTimeout(this._search_timer)
+            this._search_timer = setTimeout(() => {
+                this._search_timer = null
+                this.search_query = this.search
+                this.pulseFilter()
+            }, 300)
+        },
+        pulseFilter() {
+            this.filtering = true
+            if (this._filter_timer)
+                clearTimeout(this._filter_timer)
+            this._filter_timer = setTimeout(() => {
+                this.filtering = false
+                this._filter_timer = null
+            }, 280)
+        },
+        toggle(list, id) {
+            const i = list.indexOf(id)
+            if (i >= 0)
+                list.splice(i, 1)
+            else
+                list.push(id)
+            this.pulseFilter()
+        },
+        setOrderBy(id) {
+            const next = window.__opsContractsNextOrderState?.(
+                this.order_by,
+                this.order_dir,
+                id,
+            )
+            if (next) {
+                this.order_by = next.order_by
+                this.order_dir = next.direction
+            } else if (this.order_by === id) {
+                this.order_dir = this.order_dir === 'asc' ? 'desc' : 'asc'
+            } else {
+                this.order_by = id
+                this.order_dir = window.__opsContractsDefaultDirection?.(id) ?? 'desc'
+            }
+            this.pulseFilter()
+        },
+        orderLabel(id, label) {
+            if (this.order_by !== id)
+                return label
+            return label + (this.order_dir === 'asc' ? ' ↑' : ' ↓')
+        },
+        active(list, id) {
+            return list.includes(id)
+        },
+        rowVisible(row) {
+            const criteria = this.criteria
+            const doctrines = this.doctrines
+            const search = this.search_query
+            this.helpers_epoch
+            const fn = window.__opsContractsRowVisible
+            if (!fn)
+                return true
+            return fn(row, criteria, doctrines, search)
+        },
+        get visibleRows() {
+            return this.rows.filter(row => this.rowVisible(row))
+        },
+        get visibleCount() {
+            return this.visibleRows.length
+        },
+        fillShowing(template) {
+            return template
+                .replace('{visible}', String(this.visibleCount))
+                .replace('{total}', String(this.rows.length))
+        },
+        get showingBefore() {
+            return this.fillShowing(this.showing_before_template)
+        },
+        get showingAfter() {
+            return this.fillShowing(this.showing_after_template)
+        },
+        get sortRanks() {
+            const order_by = this.order_by
+            const order_dir = this.order_dir
+            this.helpers_epoch
+            const compare = window.__opsContractsCompareRows
+            const ranked = this.rows
+                .map((row, index) => ({ row, index }))
+                .filter(({ row }) => this.rowVisible(row))
+            if (compare)
+                ranked.sort((a, b) => compare(a.row, b.row, order_by, order_dir))
+            const ranks = {}
+            ranked.forEach((item, pos) => {
+                ranks[item.index] = pos
+            })
+            return ranks
+        },
+        cardOrder(index) {
+            const rank = this.sortRanks[index]
+            return rank === undefined ? 99999 : rank
+        },
+    }`}
+>
+    <Flexblock gap="var(--space-s)">
+        {rows.length > 0 &&
+            <FlexInline justification="flex-end" class="[ w-full ops-contracts-list__heading ]">
+                <Input
+                    type="text"
+                    placeholder={t('search')}
+                    x-model="search"
+                    width="250px"
+                >
+                    <MagnifierIcon slot="icon" />
+                </Input>
+            </FlexInline>
+        }
+
+        {rows.length > 0 &&
+            <div class="[ ops-contracts-list__sticky ]">
+                <ComponentBlock
+                    class="[ ops-contracts-list__filters ]"
+                    padding_block="var(--space-s)"
+                    padding_inline="var(--space-s)"
+                >
+                    <Flexblock gap="var(--space-xs)">
+                        <div class="[ ops-contracts-list__filter-row ]">
+                            <span class="[ ops-contracts-list__filter-label ]">{t('ops_gap_filter_criteria')}</span>
+                            <div class="[ ops-contracts-list__chips ]">
+                                {criteria_options.map(opt =>
+                                    <button
+                                        type="button"
+                                        class="[ ops-contracts-list__chip ]"
+                                        x-bind:class={`active(criteria, '${opt.id}') && 'is-active'`}
+                                        x-on:click={`toggle(criteria, '${opt.id}')`}
+                                    >{opt.label}</button>
+                                )}
+                            </div>
+                        </div>
+                        {(doctrine_options.length > 0 || has_no_doctrine) &&
+                            <div class="[ ops-contracts-list__filter-row ]">
+                                <span class="[ ops-contracts-list__filter-label ]">{t('doctrine')}</span>
+                                <div class="[ ops-contracts-list__chips ]">
+                                    {doctrine_options.map(opt =>
+                                        <button
+                                            type="button"
+                                            class="[ ops-contracts-list__chip ]"
+                                            x-bind:class={`active(doctrines, '${opt.id}') && 'is-active'`}
+                                            x-on:click={`toggle(doctrines, '${opt.id}')`}
+                                        >{opt.label}</button>
+                                    )}
+                                    {has_no_doctrine &&
+                                        <button
+                                            type="button"
+                                            class="[ ops-contracts-list__chip ]"
+                                            x-bind:class={`active(doctrines, '${OPS_CONTRACTS_NO_DOCTRINE}') && 'is-active'`}
+                                            x-on:click={`toggle(doctrines, '${OPS_CONTRACTS_NO_DOCTRINE}')`}
+                                        >{t('ops_contracts_filter_no_doctrine')}</button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        <div class="[ ops-contracts-list__filter-row ]">
+                            <span class="[ ops-contracts-list__filter-label ]">{t('ops_gap_order_by')}</span>
+                            <div class="[ ops-contracts-list__chips ]">
+                                {order_by_options.map(opt =>
+                                    <button
+                                        type="button"
+                                        class="[ ops-contracts-list__chip ]"
+                                        x-bind:class={`order_by === '${opt.id}' && 'is-active'`}
+                                        x-on:click={`setOrderBy('${opt.id}')`}
+                                        x-text={`orderLabel('${opt.id}', '${opt.label}')`}
+                                    >{opt.label}</button>
+                                )}
+                            </div>
+                        </div>
+                    </Flexblock>
+                </ComponentBlock>
+            </div>
+        }
+
+        <div class="[ ops-contracts-list__results ]">
+            <div
+                x-show="filtering"
+                x-cloak
+            >
+                <MarketContractsSkeleton />
             </div>
 
-            <FlexInline
-                gap="var(--space-s)"
-                justification="space-between"
-                class="[ w-full flex-nowrap! items-center! ]"
-            >
-                <div class="[ min-w-0 grow ]">
-                    <FixedFluid width="32px" breakpoint="30%" gap="var(--space-2xs)" class="[ items-center! text-highlight ]">
+            <div x-show="!filtering">
+                <p
+                    class="[ ops-contracts-list__empty ]"
+                    x-show="visibleCount === 0"
+                    style={initial_visible_count > 0 ? 'display: none' : undefined}
+                >{rows.length === 0 ? t('market_contracts.empty') : empty_label}</p>
+
+                <Flexblock gap="var(--space-2xs)" class="[ market-contracts-table ]">
+                    {rows.map(row =>
                         <div
-                            class="[ text-highlight h-[32px] ]"
-                            data-tippy-content={t('sellers')}
-                            x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                            class="[ market-contracts-card ]"
+                            x-show={`rowVisible(rows[${row.filter_index}])`}
+                            x-bind:style={`{ order: cardOrder(${row.filter_index}) }`}
                         >
-                            <MemberIcon size={32} />
-                        </div>
-
-                        <FlexInline gap="var(--space-3xs)">
-                            {row.sellers.map(seller =>
-                                <TippyProducer
-                                    producer_name={seller.character_name}
-                                    init_tooltip={init_tooltips}
+                            <ComponentBlock
+                                class="[ market-contracts-card__main ]"
+                                padding_block="calc(var(--space-2xs) * 1.15)"
+                                padding_inline="var(--space-s)"
+                            >
+                                <FlexInline
+                                    gap="var(--space-s)"
+                                    justification="space-between"
+                                    class="[ w-full market-contracts-row ]"
+                                    data-fitting-name={row.title}
                                 >
-                                    <CharacterPicture
-                                        character_id={seller.character_id}
-                                        character_name={seller.character_name}
-                                        quantity={seller.quantity}
-                                        size={32}
-                                    />
-                                    <div class="[ sr-only ]">{seller.character_name}</div>
-                                </TippyProducer>
-                            )}
-                            {row.sellers.length === 0 &&
-                                <Tag text={t('no_sellers')} />
-                            }
-                        </FlexInline>
-                    </FixedFluid>
-                </div>
+                                    <FlexInline gap="var(--space-s)" class="[ market-contracts-row__main ]">
+                                        <div class="[ market-contracts-row__item ]">
+                                            <ItemPicture
+                                                item_id={row.ship_id}
+                                                item_name={row.title}
+                                                size={37}
+                                                icon_quality={64}
+                                            />
+                                        </div>
+                                        <Flexblock gap="var(--space-3xs)">
+                                            <FittingLink fitting_id={row.fitting_id} class="[ market-contracts-row__fit ]">
+                                                <strong>{row.title}</strong>
+                                            </FittingLink>
+                                        </Flexblock>
+                                    </FlexInline>
 
-                {row.desired_quantity > 0 &&
-                    <FlexInline
-                        class="[ basis-[180px] min-w-[180px] shrink-0 flex-nowrap! items-center! ]"
-                        gap="var(--space-2xs)"
-                    >
-                        <div class="[ grow min-w-0 ]">
-                            <Progress
-                                class:list={['w-full', {
-                                    danger: row.readiness === 'empty' || row.pct < 10,
-                                }]}
-                                max="100"
-                                value={row.pct > 0 ? row.pct : 0.1}
-                                data-tippy-content={`${row.pct.toFixed(0)}%`}
-                                x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                                style={`--progress-color: var(${row.progress_color}); --progress-glow-color: var(${row.progress_color});`}
-                            />
-                        </div>
+                                    <FlexInline
+                                        gap="var(--space-s)"
+                                        class="[ market-contracts-row__status ]"
+                                    >
+                                        <FlexInline gap="var(--space-3xs)" class="[ market-contracts-row__sellers ]">
+                                            {row.sellers.map(seller =>
+                                                seller.corporation_id != null ?
+                                                    <TippyProducer
+                                                        producer_name={seller.corporation_name ?? String(seller.corporation_id)}
+                                                        init_tooltip={init_tooltips}
+                                                    >
+                                                        <CorporationPicture
+                                                            corporation_id={seller.corporation_id}
+                                                            corporation_name={seller.corporation_name ?? undefined}
+                                                            quantity={seller.quantity}
+                                                            size={37}
+                                                        />
+                                                        <div class="[ sr-only ]">{seller.corporation_name}</div>
+                                                    </TippyProducer>
+                                                    :
+                                                    seller.character_id != null ?
+                                                        <TippyProducer
+                                                            producer_name={seller.character_name ?? String(seller.character_id)}
+                                                            init_tooltip={init_tooltips}
+                                                        >
+                                                            <CharacterPicture
+                                                                character_id={seller.character_id}
+                                                                character_name={seller.character_name ?? undefined}
+                                                                quantity={seller.quantity}
+                                                                size={37}
+                                                            />
+                                                            <div class="[ sr-only ]">{seller.character_name}</div>
+                                                        </TippyProducer>
+                                                        : null
+                                            )}
+                                            {row.sellers.length === 0 &&
+                                                <Tag text={t('no_sellers')} />
+                                            }
+                                        </FlexInline>
+                                    </FlexInline>
+                                </FlexInline>
+                            </ComponentBlock>
 
-                        <div class="[ basis-[4ch] shrink-0 text-right ]">
-                            <small>{row.pct.toFixed(0)}%</small>
+                            <div
+                                id={`contract-metrics-${row.fitting_id}`}
+                                class="[ market-contracts-card__metrics ]"
+                                aria-label={t('ops_contract_metrics')}
+                            >
+                                <span class="[ market-contracts-card__metric ]">
+                                    <span
+                                        class="[ market-contracts-card__metric-label ]"
+                                        data-tippy-content={t('ops_contract_metric_qty_tip')}
+                                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                                    >{t('ops_contract_metric_qty')}</span>
+                                    <span class="[ market-contracts-card__metric-value ]">
+                                        {number_thousand_separator(row.current_quantity)}
+                                    </span>
+                                </span>
+                                <span class="[ market-contracts-card__metric ]">
+                                    <span
+                                        class="[ market-contracts-card__metric-label ]"
+                                        data-tippy-content={t('ops_contract_metric_28d_tip')}
+                                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                                    >{t('ops_contract_metric_28d')}</span>
+                                    <span
+                                        id={`contract-metric-volume-${row.fitting_id}`}
+                                        class="[ market-contracts-card__metric-skeleton ]"
+                                        aria-busy="true"
+                                    ></span>
+                                </span>
+                                <span class="[ market-contracts-card__metric ]">
+                                    <span
+                                        class="[ market-contracts-card__metric-label ]"
+                                        data-tippy-content={t('ops_contract_fleets_remaining_tip')}
+                                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                                    >{t('ops_contract_fleets_remaining')}</span>
+                                    <span
+                                        id={`contract-metric-fleets-available-${row.fitting_id}`}
+                                        class="[ market-contracts-card__metric-skeleton ]"
+                                        aria-busy="true"
+                                    ></span>
+                                </span>
+                                <span class="[ market-contracts-card__metric ]">
+                                    <span
+                                        class="[ market-contracts-card__metric-label ]"
+                                        data-tippy-content={t('ops_contract_metric_fleets_mo_tip')}
+                                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                                    >{t('ops_contract_metric_fleets_mo')}</span>
+                                    <span
+                                        id={`contract-metric-fleets-mo-${row.fitting_id}`}
+                                        class="[ market-contracts-card__metric-skeleton ]"
+                                        aria-busy="true"
+                                    ></span>
+                                </span>
+                            </div>
                         </div>
-                    </FlexInline>
-                }
-            </FlexInline>
-        </FixedFluid>
-    )}
-</Flexblock>
+                    )}
+                </Flexblock>
+            </div>
+        </div>
+
+        {metrics_partial_url &&
+            <div
+                class="[ ops-contracts-metrics-loader ]"
+                hx-get={metrics_partial_url}
+                hx-trigger="load"
+                hx-swap="none"
+                aria-hidden="true"
+            ></div>
+        }
+
+        {rows.length > 0 &&
+            <p class="[ ops-contracts-list__showing ]">
+                <span x-text="showingBefore">{initial_showing_before}</span>
+                <span
+                    class="[ ops-contracts-list__term ]"
+                    data-tippy-content={items_tip}
+                >{items_word}</span>
+                <span x-text="showingAfter">{initial_showing_after}</span>
+            </p>
+        }
+    </Flexblock>
+</div>
 
 <style lang="scss">
-    .market-contracts-row {
-        padding-block: var(--space-2xs);
-        padding-inline: var(--space-3xs);
-        margin-block: calc(-1 * var(--space-3xs));
-        margin-inline: calc(-1 * var(--space-3xs));
+    .ops-contracts-list__heading {
+        flex-wrap: wrap;
+        gap: var(--space-s);
+        align-items: center;
+    }
+
+    .ops-contracts-list__sticky {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+
+    .ops-contracts-list__filter-row {
+        display: grid;
+        grid-template-columns: 5.5rem 1fr;
+        align-items: baseline;
+        gap: var(--space-2xs) var(--space-s);
+
+        @media (max-width: 540px) {
+            grid-template-columns: 1fr;
+            gap: var(--space-3xs);
+        }
+    }
+
+    .ops-contracts-list__filter-label {
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
+    }
+
+    .ops-contracts-list__chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs);
+    }
+
+    .ops-contracts-list__chip {
+        appearance: none;
+        margin: 0;
+        padding: var(--space-3xs) var(--space-xs);
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 40%, transparent);
+        background: transparent;
+        color: var(--fleet-yellow);
+        font-family: var(--button-font);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        cursor: pointer;
         transition: var(--fast-transition);
 
         @media (hover: hover) {
             &:hover {
-                background-color: var(--light-transparency-background);
+                border-color: var(--fleet-yellow);
+                background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
             }
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--highlight);
+            outline-offset: 2px;
+        }
+
+        &.is-active {
+            border-color: var(--fleet-yellow);
+            background: var(--fleet-yellow);
+            color: var(--background);
+        }
+    }
+
+    .ops-contracts-list__results {
+        min-height: min(28rem, 55vh);
+    }
+
+    .ops-contracts-list__empty {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.55);
+    }
+
+    .ops-contracts-list__showing {
+        margin: 0;
+        font-size: var(--step--1);
+        color: rgba(255, 255, 255, 0.55);
+    }
+
+    .ops-contracts-list__term {
+        color: var(--highlight);
+        cursor: help;
+        border-bottom: 1px dotted color-mix(in srgb, var(--highlight) 55%, transparent);
+    }
+
+    .market-contracts-table {
+        width: 100%;
+    }
+
+    .market-contracts-card {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .market-contracts-card__main {
+        border-bottom: none;
+    }
+
+    .market-contracts-row {
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .market-contracts-row__main {
+        min-width: 0;
+        flex: 1;
+        align-items: center;
+    }
+
+    .market-contracts-row__item {
+        flex-shrink: 0;
+
+        :global(picture),
+        :global(img) {
+            width: 37px;
+            height: 37px;
+            object-fit: contain;
         }
     }
 
@@ -163,9 +719,79 @@ import MemberIcon from '@components/icons/MemberIcon.astro'
         text-decoration: none;
         color: inherit;
 
+        strong {
+            font-family: var(--heading-font);
+            font-size: calc(var(--step-0) * 1.15);
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            color: var(--highlight);
+        }
+
         &:focus-visible {
             outline: 2px solid var(--highlight);
             outline-offset: 2px;
         }
+    }
+
+    .market-contracts-row__status {
+        flex-shrink: 0;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        align-items: center;
+    }
+
+    :global(.market-contracts-card__metrics) {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: var(--space-2xs) var(--space-m);
+        padding: calc(0.12rem * 1.15) var(--space-s);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(0, 0, 0, 0.16);
+        line-height: 1.2;
+    }
+
+    :global(.market-contracts-card__metric-skeleton) {
+        display: inline-block;
+        width: 2.5rem;
+        height: calc(var(--step--2) * 1.15);
+        border-radius: 2px;
+        background: color-mix(in srgb, var(--foreground) 12%, transparent);
+        animation: market-contracts-metrics-pulse 1.1s ease-in-out infinite;
+        vertical-align: baseline;
+    }
+
+    @keyframes market-contracts-metrics-pulse {
+        0%, 100% { opacity: 0.45; }
+        50% { opacity: 0.9; }
+    }
+
+    :global(.market-contracts-card__metric) {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 0.3rem;
+        min-width: 0;
+        white-space: nowrap;
+    }
+
+    :global(.market-contracts-card__metric-label) {
+        font-family: var(--button-font);
+        font-size: calc(var(--step--2) * 1.15);
+        font-weight: 400;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.48);
+        cursor: help;
+        border-bottom: 1px dotted rgba(255, 255, 255, 0.28);
+    }
+
+    :global(.market-contracts-card__metric-value) {
+        font-size: calc(var(--step--2) * 1.15);
+        font-variant-numeric: tabular-nums;
+        color: var(--highlight);
+    }
+
+    [x-cloak] {
+        display: none !important;
     }
 </style>

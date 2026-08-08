@@ -6,13 +6,10 @@ test("CorporationPicture defaults", async () => {
   const container = await AstroContainer.create();
   const result = await container.renderToString(CorporationPicture, {
     props: {
-      corporations_id: 65,
+      corporation_id: 65,
       corporation_name: "death chick",
-    },
-    slots: {
-      default: "slotted chick",
     },
   });
 
-  // expect(result).toMatchSnapshot();
+  expect(result).toContain("death chick");
 });

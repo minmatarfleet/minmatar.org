@@ -1,5 +1,6 @@
 import type {
     Contract,
+    ContractMetrics,
     InferredSalesVolume,
     MarketOperatorStatistics,
     OpsMonitor,
@@ -23,8 +24,6 @@ export async function get_market_contracts(location_id: number) {
             headers: headers
         })
 
-        // console.log(response)
-
         if (!response.ok) {
             throw new Error(get_error_message(
                 response.status,
@@ -37,6 +36,32 @@ export async function get_market_contracts(location_id: number) {
         return await response.json() as Contract[];
     } catch (error) {
         throw new Error(`Error fetching contracts: ${error.message}`, { cause: error.cause });
+    }
+}
+
+export async function get_market_contracts_metrics(location_id: number) {
+    const headers = {
+        'Content-Type': 'application/json',
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/contracts/metrics?location_id=${location_id}`
+
+    try {
+        const response = await fetch(ENDPOINT, { headers })
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ), {
+                cause: response.status,
+            })
+        }
+        return await response.json() as ContractMetrics[]
+    } catch (error) {
+        throw new Error(
+            `Error fetching contract metrics: ${error.message}`,
+            { cause: error.cause },
+        )
     }
 }
 

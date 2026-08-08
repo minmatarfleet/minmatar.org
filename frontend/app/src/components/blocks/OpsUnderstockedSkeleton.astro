@@ -1,11 +1,12 @@
 ---
+import Grid from '@components/compositions/Grid.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 
 interface Props {
-    cards?: number;
+    tiles?: number;
 }
 
-const { cards = 6 } = Astro.props
+const { tiles = 6 } = Astro.props
 ---
 
 <div
@@ -13,14 +14,19 @@ const { cards = 6 } = Astro.props
     aria-busy="true"
     aria-live="polite"
 >
-    <Flexblock gap="var(--space-2xs)">
-        {Array.from({ length: cards }).map(() =>
-            <div class="[ ops-understocked-skeleton__card ]">
-                <div class="[ skel skel-main ]"></div>
-                <div class="[ skel skel-metrics ]"></div>
-            </div>
+    <Grid
+        min_item_width="140px"
+        row_gap="var(--space-s)"
+        column_gap="var(--space-s)"
+    >
+        {Array.from({ length: tiles }).map(() =>
+            <Flexblock gap="var(--space-2xs)" class="[ ops-understocked-skeleton__tile ]">
+                <div class="[ skel skel-ring ]"></div>
+                <div class="[ skel skel-name ]"></div>
+                <div class="[ skel skel-qty ]"></div>
+            </Flexblock>
         )}
-    </Flexblock>
+    </Grid>
 </div>
 
 <style lang="scss">
@@ -36,19 +42,28 @@ const { cards = 6 } = Astro.props
         animation: ops-understocked-skel-shine 1.2s linear infinite;
     }
 
-    .ops-understocked-skeleton__card {
-        display: flex;
-        flex-direction: column;
+    .ops-understocked-skeleton__tile {
+        align-items: center;
+        min-width: 0;
     }
 
-    .skel-main {
-        height: 4.2rem;
-        width: 100%;
+    .skel-ring {
+        width: 118px;
+        height: 118px;
+        border-radius: 50%;
+        margin-inline: auto;
     }
 
-    .skel-metrics {
-        height: 1.6rem;
-        width: 100%;
+    .skel-name {
+        height: var(--space-m);
+        width: 80%;
+        margin-inline: auto;
+    }
+
+    .skel-qty {
+        height: var(--space-s);
+        width: 40%;
+        margin-inline: auto;
     }
 
     @keyframes ops-understocked-skel-shine {

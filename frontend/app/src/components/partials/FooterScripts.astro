@@ -1,12 +1,14 @@
 ---
 import { is_disabled_ccpwgl } from '@helpers/env';
 import LearningAlpine from '@components/partials/LearningAlpine.astro';
+import OpsContractsAlpine from '@components/partials/OpsContractsAlpine.astro';
 import OpsSellGapsAlpine from '@components/partials/OpsSellGapsAlpine.astro';
 
 const DISABLED_CCPWGL = is_disabled_ccpwgl()
 ---
 
 <LearningAlpine />
+<OpsContractsAlpine />
 <OpsSellGapsAlpine />
 
 <script is:inline src="/js/clipboard.js"></script>
