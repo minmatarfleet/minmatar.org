@@ -249,6 +249,54 @@ class GroupTasksTestCase(TestCase):
             f"{other_corp.name} group", other_user.groups.all()[0].name
         )
 
+    @factory.django.mute_signals(
+        signals.pre_save, signals.post_save, signals.m2m_changed
+    )
+    def test_sync_eve_corporation_groups_any_linked_character(self):
+        corp_a = EveCorporation.objects.create(
+            corporation_id=100011,
+            name="CorpAlpha",
+        )
+        corp_b = EveCorporation.objects.create(
+            corporation_id=100012,
+            name="CorpBeta",
+        )
+        group_a = Group.objects.create(name=f"{corp_a.name} group")
+        group_b = Group.objects.create(name=f"{corp_b.name} group")
+        EveCorporationGroup.objects.create(corporation=corp_a, group=group_a)
+        EveCorporationGroup.objects.create(corporation=corp_b, group=group_b)
+
+        primary = EveCharacter.objects.create(
+            character_id=1011,
+            character_name="Primary Pilot",
+            corporation_id=corp_a.corporation_id,
+        )
+        set_primary_character(self.user, primary)
+        EveCharacter.objects.create(
+            character_id=1012,
+            character_name="Alt Pilot",
+            corporation_id=corp_b.corporation_id,
+            user=self.user,
+        )
+
+        sync_eve_corporation_groups()
+
+        self.assertEqual(
+            {group_a.name, group_b.name},
+            set(self.user.groups.values_list("name", flat=True)),
+        )
+
+        alt = EveCharacter.objects.get(character_id=1012)
+        alt.corporation_id = None
+        alt.save(update_fields=["corporation_id"])
+
+        sync_eve_corporation_groups()
+
+        self.assertEqual(
+            [group_a.name],
+            list(self.user.groups.values_list("name", flat=True)),
+        )
+
 
 class SyncTribeChiefGroupTestCase(TestCase):
     @factory.django.mute_signals(
