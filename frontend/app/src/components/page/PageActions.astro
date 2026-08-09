@@ -1,0 +1,39 @@
+---
+import FlexInline from '@components/compositions/FlexInline.astro';
+---
+
+<div id="desktop-actions" />
+
+<template x-if="viewport_width < 1280">
+    <template x-teleport="#mobile-actions">
+        <FlexInline
+            class="[ w-max ]"
+            x-data={`{
+                init() {
+                    $el.querySelectorAll('[data-size="lg"]').forEach(element => {
+                        element.setAttribute('data-size', 'sm');
+                    });
+                }
+            }`}
+        >
+            <slot />
+        </FlexInline>
+    </template>
+</template>
+
+<template x-if="viewport_width >= 1280">
+    <template x-teleport="#desktop-actions">
+        <FlexInline
+            class="[ w-max ]"
+            x-data={`{
+                init() {
+                    $el.querySelectorAll('[data-size="sm"]').forEach(element => {
+                        element.setAttribute('data-size', 'lg');
+                    });
+                }
+            }`}
+        >
+            <slot />
+        </FlexInline>
+    </template>
+</template>

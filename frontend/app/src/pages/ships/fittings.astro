@@ -98,6 +98,7 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
+import PageActions from '@components/page/PageActions.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import BlockList from '@components/compositions/BlockList.astro';
@@ -214,7 +215,8 @@ const structured_data = buildFittingsListJsonLd(
                     </small>
                 </Flexblock>
             </FlexInline>
-            <FlexInline class="[ !items-start ]">
+
+            <PageActions class="[ !items-start ]">
                 <Input
                     type="text"
                     placeholder={t('search')}
@@ -226,7 +228,7 @@ const structured_data = buildFittingsListJsonLd(
                     <MagnifierIcon slot="icon" />
                 </Input>
                 
-                <div class="[ hidden 2xl:!block ]">
+                <div>
                     <Select
                         x-model="fitting_tag_filter"
                         x-on:change="apply_tag_filter()"
@@ -238,7 +240,7 @@ const structured_data = buildFittingsListJsonLd(
                     </Select>
                 </div>
 
-                <div class="[ hidden xl:!block ]">
+                <div>
                     <Select
                         x-model="ship_type_filter"
                         x-on:change="setTimeout(() => refresh_ships_count(), 100)"
@@ -249,7 +251,7 @@ const structured_data = buildFittingsListJsonLd(
                         )}
                     </Select>
                 </div>
-            </FlexInline>
+            </PageActions>
         </FlexInline>
 
         <BlockList gap='var(--space-2xl)'>
