@@ -24,11 +24,20 @@ GROUP_ANCIENT_SALVAGE = 966
 
 SALVAGE_GROUPS = frozenset({GROUP_SALVAGED_MATERIALS, GROUP_ANCIENT_SALVAGE})
 
+_PI_GROUP_TO_CATEGORY = {
+    GROUP_P1: "p1",
+    GROUP_P2: "p2",
+    GROUP_P3: "p3",
+    GROUP_P4: "p4",
+}
+
 
 class BuybackCategory(str, Enum):
     ORE = "ore"
     P1 = "p1"
-    PI_OTHER = "pi_other"
+    P2 = "p2"
+    P3 = "p3"
+    P4 = "p4"
     SALVAGE = "salvage"
     EXCLUDED = "excluded"
     UNKNOWN = "unknown"
@@ -41,7 +50,7 @@ class Classification:
 
 
 def classify_eve_type(eve_type: EveType) -> Classification:
-    """Map an EveType to a buyback category (ore / P1 / PI / salvage / excluded)."""
+    """Map an EveType to a buyback category (ore / P1–P4 / salvage / excluded)."""
     group = getattr(eve_type, "eve_group", None)
     group_id = getattr(group, "id", None)
     category_id = getattr(group, "eve_category_id", None)
@@ -62,12 +71,14 @@ def classify_eve_type(eve_type: EveType) -> Classification:
     if category_id == CATEGORY_ASTEROID:
         return Classification(BuybackCategory.ORE)
 
-    if group_id == GROUP_P1:
-        return Classification(BuybackCategory.P1)
-    if group_id in {GROUP_P2, GROUP_P3, GROUP_P4}:
-        return Classification(BuybackCategory.PI_OTHER)
+    pi_value = _PI_GROUP_TO_CATEGORY.get(group_id)
+    if pi_value is not None:
+        return Classification(BuybackCategory(pi_value))
     if category_id == CATEGORY_PLANETARY_COMMODITIES:
-        return Classification(BuybackCategory.PI_OTHER)
+        return Classification(
+            BuybackCategory.UNKNOWN,
+            reject_reason="Unrecognized planetary commodity tier",
+        )
     if category_id == CATEGORY_PLANETARY_RESOURCES:
         return Classification(
             BuybackCategory.UNKNOWN,

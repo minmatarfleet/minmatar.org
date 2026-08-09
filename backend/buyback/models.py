@@ -7,24 +7,24 @@ BUYBACK_CONTRACT_TYPE = "item_exchange"
 BUYBACK_CORP_FALLBACK_NAME = "Minmatar Extraction Company"
 
 DEFAULT_ACCEPTED_CATEGORIES = [
-    "Compressed highsec ore",
-    "PI used in recent production",
+    "Materials imported for recent industry supply-chain orders (full Jita buy)",
+    "Other accepted ore and PI at surplus rate (90% Jita buy)",
 ]
 
 DEFAULT_RATE_RULES = {
     "ore_refine": 0.85,
-    "ore_jita_buy": 1.0,
-    "p1_jita_buy_cap": 0.9,
-    # P2+ (and other accepted non-ore, non-P1)
-    "other_jita_buy": 1.0,
+    "demand_jita_buy": 1.0,
+    "surplus_jita_buy": 0.9,
 }
 
 DEFAULT_EXCLUSIONS: list[str] = []
 
 DEFAULT_LEADING_TEXT = (
     "Alliance buyback via Minmatar Extraction Company. "
-    "Paste your items for an instant offer, then contract "
-    "compressed highsec ore and PI at Amo — paid within ~24 hours."
+    "We pay full Jita buy for materials our industry supply chain is "
+    "importing for recent orders, and 90% for other accepted ore and PI. "
+    "Paste your items for an instant offer, then contract at Amo — "
+    "paid within ~24 hours."
 )
 
 DEFAULT_DISCORD_THREAD_URL = (

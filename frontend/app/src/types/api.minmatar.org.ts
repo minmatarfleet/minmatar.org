@@ -1269,15 +1269,21 @@ export interface BuybackLocation {
 
 export interface BuybackRateRules {
     ore_refine:         number;
-    ore_jita_buy:       number;
-    p1_jita_buy_cap:    number;
-    other_jita_buy?:    number;
+    demand_jita_buy:    number;
+    surplus_jita_buy:   number;
+}
+
+export interface BuybackUsedInProduct {
+    type_id:    number;
+    name:       string;
 }
 
 export interface BuybackAcceptedItem {
     type_id:    number;
     name:       string;
     category:   string;
+    used_in?:   BuybackUsedInProduct[];
+    in_demand?: boolean;
 }
 
 export interface BuybackSettings {
@@ -1294,16 +1300,17 @@ export interface BuybackSettings {
 }
 
 export interface BuybackAppraisalLine {
-    type_id:        number | null;
-    name:           string;
-    quantity:       number;
-    category:       string;
-    rate:           number | null;
-    jita_buy:       number | null;
-    unit_price:     number | null;
-    line_total:     number | null;
-    accepted:       boolean;
-    reject_reason:  string | null;
+    type_id:            number | null;
+    name:               string;
+    quantity:           number;
+    category:           string;
+    rate:               number | null;
+    jita_buy:           number | null;
+    unit_price:         number | null;
+    line_total:         number | null;
+    accepted:           boolean;
+    reject_reason:      string | null;
+    rate_reason?:       string | null;
 }
 
 export interface BuybackAppraisal {

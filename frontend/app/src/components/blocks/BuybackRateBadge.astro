@@ -1,0 +1,61 @@
+---
+import { i18n } from '@helpers/i18n'
+import {
+    buyback_rate_badge,
+    buyback_rate_badge_from_in_demand,
+    type BuybackRateBadgeView,
+} from '@helpers/buyback_rate'
+
+interface Props {
+    rate_reason?: string | null
+    in_demand?: boolean
+    tippy?: boolean
+    [propName: string]: any
+}
+
+const { t } = i18n(Astro.url)
+
+const {
+    rate_reason = null,
+    in_demand,
+    tippy = true,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const badge: BuybackRateBadgeView | null =
+    typeof in_demand === 'boolean'
+        ? buyback_rate_badge_from_in_demand(in_demand)
+        : buyback_rate_badge(rate_reason)
+---
+
+{badge &&
+    <span
+        class:list={['[ buyback-rate-badge ]', badge.class_name, Astro.props.class]}
+        data-tippy-content={tippy ? t(badge.tip_key) : undefined}
+        {...attributes}
+    >{t(badge.text_key)}</span>
+}
+
+<style lang="scss" is:global>
+    .buyback-rate-badge {
+        flex-shrink: 0;
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        line-height: 1.2;
+        text-transform: uppercase;
+        white-space: nowrap;
+        color: var(--faded);
+        cursor: help;
+    }
+
+    .buyback-rate--demand.buyback-rate-badge {
+        color: var(--green);
+    }
+
+    .buyback-rate--surplus.buyback-rate-badge {
+        color: var(--faded);
+    }
+</style>

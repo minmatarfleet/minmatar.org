@@ -11,6 +11,12 @@ from buyback.helpers.classify import (
     classify_eve_type,
     resolve_types_by_name,
 )
+from buyback.helpers.demand import (
+    demand_type_ids_from_recent_orders,
+    mineral_name_to_id_for_ores,
+    rate_reason_for_in_demand,
+    type_in_demand,
+)
 from buyback.helpers.paste import PasteLine, parse_eve_paste
 from buyback.helpers.pricing import (
     PricedLine,
@@ -21,7 +27,6 @@ from buyback.helpers.pricing import (
     price_ore_line,
 )
 from buyback.models import EveBuybackSettings
-from industry.helpers.compressed_ore import ore_materials_per_portion
 
 
 @dataclass
@@ -33,12 +38,10 @@ class AppraisalResult:
     rate_rules: dict[str, float]
 
 
-def _rate_for_category(
-    category: BuybackCategory, rules: dict[str, float]
-) -> float:
-    if category == BuybackCategory.P1:
-        return float(rules.get("p1_jita_buy_cap", 0.9))
-    return float(rules.get("other_jita_buy", 1.0))
+def _jita_rate_for_demand(in_demand: bool, rules: dict[str, float]) -> float:
+    if in_demand:
+        return float(rules["demand_jita_buy"])
+    return float(rules["surplus_jita_buy"])
 
 
 def appraise_paste(
@@ -63,6 +66,7 @@ def appraise_paste(
     names = [line.name for line in paste_lines]
     types_by_name = resolve_types_by_name(names)
     accepted_type_ids = get_active_accepted_type_ids()
+    demand_ids = demand_type_ids_from_recent_orders()
 
     type_ids = [t.id for t in types_by_name.values() if t is not None]
     buy_by_id = get_baseline_buy_prices(type_ids)
@@ -72,14 +76,13 @@ def appraise_paste(
         eve_type = types_by_name.get(line.name)
         if eve_type is None or eve_type.id not in accepted_type_ids:
             continue
-        classification = classify_eve_type(eve_type)
-        if classification.category == BuybackCategory.ORE:
+        if classify_eve_type(eve_type).category == BuybackCategory.ORE:
             ore_names.append(line.name)
 
-    mineral_names: set[str] = set()
-    for ore_name in ore_names:
-        mineral_names.update(ore_materials_per_portion(ore_name).keys())
-    mineral_buy_by_name = get_baseline_buy_prices_by_name(list(mineral_names))
+    mineral_name_to_id = mineral_name_to_id_for_ores(ore_names)
+    mineral_buy_by_name = get_baseline_buy_prices_by_name(
+        list(mineral_name_to_id.keys())
+    )
 
     priced: list[PricedLine] = []
     for line in paste_lines:
@@ -137,6 +140,17 @@ def appraise_paste(
             )
             continue
 
+        category = classification.category.value
+        in_demand = type_in_demand(
+            type_id=eve_type.id,
+            category=category,
+            type_name=eve_type.name,
+            demand_ids=demand_ids,
+            mineral_name_to_id=mineral_name_to_id,
+        )
+        rate = _jita_rate_for_demand(in_demand, rules)
+        rate_reason = rate_reason_for_in_demand(in_demand)
+
         if classification.category == BuybackCategory.ORE:
             priced.append(
                 price_ore_line(
@@ -144,13 +158,13 @@ def appraise_paste(
                     quantity=line.quantity,
                     type_id=eve_type.id,
                     refine_rate=float(rules["ore_refine"]),
-                    ore_jita_buy=float(rules["ore_jita_buy"]),
+                    jita_share=rate,
                     mineral_buy_by_name=mineral_buy_by_name,
+                    rate_reason=rate_reason,
                 )
             )
             continue
 
-        rate = _rate_for_category(classification.category, rules)
         buy_price: Decimal | None = buy_by_id.get(eve_type.id)
         priced.append(
             price_flat_line(
@@ -160,6 +174,7 @@ def appraise_paste(
                 category=classification.category,
                 rate=rate,
                 buy_price=buy_price,
+                rate_reason=rate_reason,
             )
         )
 

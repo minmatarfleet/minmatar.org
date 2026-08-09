@@ -11,9 +11,8 @@ class BuybackLocationResponse(BaseModel):
 
 class BuybackRateRules(BaseModel):
     ore_refine: float = Field(default=0.85, ge=0, le=1)
-    ore_jita_buy: float = Field(default=1.0, ge=0, le=1)
-    p1_jita_buy_cap: float = Field(default=0.9, ge=0, le=1)
-    other_jita_buy: float = Field(default=1.0, ge=0, le=1)
+    demand_jita_buy: float = Field(default=1.0, ge=0, le=1)
+    surplus_jita_buy: float = Field(default=0.9, ge=0, le=1)
 
 
 class BuybackAppraiseRequest(BaseModel):
@@ -31,6 +30,7 @@ class BuybackAppraisalLine(BaseModel):
     line_total: Optional[float] = None
     accepted: bool
     reject_reason: Optional[str] = None
+    rate_reason: Optional[str] = None
 
 
 class BuybackAppraisalResponse(BaseModel):
@@ -41,10 +41,17 @@ class BuybackAppraisalResponse(BaseModel):
     rate_rules: BuybackRateRules
 
 
+class BuybackUsedInProduct(BaseModel):
+    type_id: int
+    name: str
+
+
 class BuybackAcceptedItemResponse(BaseModel):
     type_id: int
     name: str
     category: str
+    used_in: List[BuybackUsedInProduct] = []
+    in_demand: bool = False
 
 
 class BuybackSettingsResponse(BaseModel):
