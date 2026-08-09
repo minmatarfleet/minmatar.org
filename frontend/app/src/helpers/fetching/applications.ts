@@ -9,14 +9,14 @@ import {
     get_corporation_applications_by_id,
 } from '@helpers/api.minmatar.org/applications'
 import { get_user_character, get_users_character } from '@helpers/fetching/characters'
-import { get_all_corporations } from '@helpers/api.minmatar.org/corporations'
+import { get_alliance_corporations_with_extraction } from '@helpers/fetching/corporations'
 import { unique_values } from '@helpers/array'
 
 export async function get_all_applications(access_token:string) {
     let api_corporations:Corporation[]
     let applications:ApplicationOld[]
 
-    api_corporations = await get_all_corporations('alliance')
+    api_corporations = await get_alliance_corporations_with_extraction()
 
     applications = (await Promise.all(api_corporations.map(async (corporation) => {
         let applications:ApplicationOld[] = []
@@ -61,7 +61,7 @@ export async function get_all_corporations_applications(access_token:string, rec
     let api_corporations:Corporation[]
     let applications:CorporationApplications[]
 
-    api_corporations = await get_all_corporations('alliance')
+    api_corporations = await get_alliance_corporations_with_extraction()
 
     applications = (await Promise.all(api_corporations.map(async (corporation) => {
         const application:CorporationApplications = {
