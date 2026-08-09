@@ -8,6 +8,5 @@ const qs = Astro.url.searchParams.toString()
 const target = translatePath(
     `/partials/market_health_component${qs ? `?${qs}` : ''}`,
 )
-
 return Astro.redirect(target, 301)
 ---

@@ -2,22 +2,13 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { get_market_locations } from '@helpers/api.minmatar.org/locations'
 import {
     has_ops_deep_link_params,
-    ops_redirect_target,
+    ops_redirect_path,
 } from '@helpers/market_ops_redirect'
 
 if (has_ops_deep_link_params(Astro.url.searchParams)) {
-    try {
-        const locations = await get_market_locations()
-        return Astro.redirect(
-            ops_redirect_target(translatePath, locations, Astro.url.searchParams),
-            301,
-        )
-    } catch {
-        return Astro.redirect(translatePath('/market/ops/'), 301)
-    }
+    return Astro.redirect(ops_redirect_path(translatePath, 'monitor'), 301)
 }
 
 import Viewport from '@layouts/Viewport.astro';

@@ -146,6 +146,7 @@ def build_sell_order_health(  # noqa: C901
     sell_fill_ratios_by_loc: dict[int, list[float]] = defaultdict(list)
     sell_viable_fill_ratios_by_loc: dict[int, list[float]] = defaultdict(list)
     sell_targets_by_loc: dict[int, int] = defaultdict(int)
+    sell_listed_by_loc: dict[int, int] = defaultdict(int)
     sell_fulfilled_by_loc: dict[int, int] = defaultdict(int)
     sell_viable_fulfilled_by_loc: dict[int, int] = defaultdict(int)
     for loc_pk, name_map in effective.items():
@@ -160,13 +161,18 @@ def build_sell_order_health(  # noqa: C901
             viable = viable_by_loc_item.get((loc_pk, eve_type.id), 0)
             sell_targets_by_loc[loc_pk] += 1
             sell_ratio = min(1.0, current / desired)
-            sell_viable_ratio = min(1.0, viable / desired)
             sell_fill_ratios_by_loc[loc_pk].append(sell_ratio)
-            sell_viable_fill_ratios_by_loc[loc_pk].append(sell_viable_ratio)
             if current >= desired:
                 sell_fulfilled_by_loc[loc_pk] += 1
-            if viable >= desired:
-                sell_viable_fulfilled_by_loc[loc_pk] += 1
+            # Viability = price quality of what is listed, not empty shelves.
+            if current > 0:
+                sell_viable_ratio = min(1.0, viable / current)
+                sell_viable_fill_ratios_by_loc[loc_pk].append(
+                    sell_viable_ratio
+                )
+                sell_listed_by_loc[loc_pk] += 1
+                if viable >= current:
+                    sell_viable_fulfilled_by_loc[loc_pk] += 1
             coverage_gap = current < desired * CRITICAL_RATIO
             viability_gap = viable < desired * CRITICAL_RATIO
             avg_markup_pct = None
@@ -278,6 +284,7 @@ def build_sell_order_health(  # noqa: C901
                     sell_viable_fill_ratios_by_loc.get(loc_pk, [])
                 ),
                 "targets": sell_targets_by_loc.get(loc_pk, 0),
+                "listed_targets": sell_listed_by_loc.get(loc_pk, 0),
                 "fulfilled": sell_fulfilled_by_loc.get(loc_pk, 0),
                 "viable_fulfilled": sell_viable_fulfilled_by_loc.get(
                     loc_pk, 0

@@ -35,7 +35,28 @@ from market.helpers.health_common import (
 )
 from market.helpers.price_viability import is_price_viable
 from market.helpers.readiness import fitting_readiness, shortfall
-from market.models import EveMarketContract, EveMarketContractExpectation
+from market.models import (
+    EveMarketContract,
+    EveMarketContractExpectation,
+    EveMarketContractItem,
+)
+
+
+def _contract_contents_by_id(
+    contract_ids: list[int],
+) -> dict[int, dict[int, int]]:
+    """``{contract_id: {type_id: qty}}`` for included ESI contract items."""
+    if not contract_ids:
+        return {}
+    contents: dict[int, dict[int, int]] = defaultdict(lambda: defaultdict(int))
+    for row in EveMarketContractItem.objects.filter(
+        contract_id__in=contract_ids,
+        is_included=True,
+    ).values("contract_id", "type_id", "quantity"):
+        contents[row["contract_id"]][int(row["type_id"])] += int(
+            row["quantity"] or 1
+        )
+    return {cid: dict(qtys) for cid, qtys in contents.items()}
 
 
 def build_contract_health(  # noqa: C901
@@ -62,11 +83,27 @@ def build_contract_health(  # noqa: C901
             if expectation.fitting_id is not None
         }.values()
     )
+    # EFT baselines are a fallback when a contract has no fetched items yet.
     fitting_qtys = fitting_type_quantities_bulk(expectation_fittings)
-    contract_type_ids = sorted(
-        {type_id for qtys in fitting_qtys.values() for type_id in qtys}
+
+    outstanding_contracts = list(
+        EveMarketContract.objects.filter(
+            outstanding_stock_q(),
+            location_id__in=location_pks,
+            fitting_id__isnull=False,
+        ).values("id", "location_id", "fitting_id", "price")
     )
-    contract_baseline_by_type = forge_baseline_by_type(contract_type_ids)
+    contents_by_contract = _contract_contents_by_id(
+        [row["id"] for row in outstanding_contracts]
+    )
+    contract_type_ids = {
+        type_id for qtys in fitting_qtys.values() for type_id in qtys
+    }
+    for qtys in contents_by_contract.values():
+        contract_type_ids.update(qtys)
+    contract_baseline_by_type = forge_baseline_by_type(
+        sorted(contract_type_ids)
+    )
     fitting_baseline_by_fit = {
         fit_id: fitting_baseline_isk(qtys, contract_baseline_by_type)
         for fit_id, qtys in fitting_qtys.items()
@@ -74,18 +111,18 @@ def build_contract_health(  # noqa: C901
 
     outstanding: dict[tuple[int, int], int] = defaultdict(int)
     viable_outstanding: dict[tuple[int, int], int] = defaultdict(int)
-    for row in EveMarketContract.objects.filter(
-        outstanding_stock_q(),
-        location_id__in=location_pks,
-    ).values("location_id", "fitting_id", "price"):
+    for row in outstanding_contracts:
         fitting_id = row["fitting_id"]
-        if fitting_id is None:
-            continue
         key = (row["location_id"], fitting_id)
         outstanding[key] += 1
-        if is_price_viable(
-            row["price"], fitting_baseline_by_fit.get(fitting_id)
-        ):
+        contents = contents_by_contract.get(row["id"])
+        if contents:
+            baseline = fitting_baseline_isk(
+                contents, contract_baseline_by_type
+            )
+        else:
+            baseline = fitting_baseline_by_fit.get(fitting_id)
+        if is_price_viable(row["price"], baseline):
             viable_outstanding[key] += 1
 
     now = timezone.now()
@@ -139,6 +176,7 @@ def build_contract_health(  # noqa: C901
         list
     )
     contract_targets_by_loc: dict[int, int] = defaultdict(int)
+    contract_listed_by_loc: dict[int, int] = defaultdict(int)
     contract_fulfilled_by_loc: dict[int, int] = defaultdict(int)
     contract_viable_fulfilled_by_loc: dict[int, int] = defaultdict(int)
     for expectation in expectations:
@@ -147,16 +185,21 @@ def build_contract_health(  # noqa: C901
         viable = viable_outstanding.get(key, 0)
         if expectation.quantity > 0:
             ratio = min(1.0, current / expectation.quantity)
-            viable_ratio = min(1.0, viable / expectation.quantity)
             contract_fill_ratios_by_loc[expectation.location_id].append(ratio)
-            contract_viable_fill_ratios_by_loc[expectation.location_id].append(
-                viable_ratio
-            )
             contract_targets_by_loc[expectation.location_id] += 1
             if current >= expectation.quantity:
                 contract_fulfilled_by_loc[expectation.location_id] += 1
-            if viable >= expectation.quantity:
-                contract_viable_fulfilled_by_loc[expectation.location_id] += 1
+            # Viability = price quality of what is listed, not empty shelves.
+            if current > 0:
+                viable_ratio = min(1.0, viable / current)
+                contract_viable_fill_ratios_by_loc[
+                    expectation.location_id
+                ].append(viable_ratio)
+                contract_listed_by_loc[expectation.location_id] += 1
+                if viable >= current:
+                    contract_viable_fulfilled_by_loc[
+                        expectation.location_id
+                    ] += 1
         level = fitting_readiness(current, expectation.quantity)
         if level in ("ready", "unknown"):
             continue
@@ -244,6 +287,7 @@ def build_contract_health(  # noqa: C901
                     contract_viable_fill_ratios_by_loc.get(loc_pk, [])
                 ),
                 "targets": contract_targets_by_loc.get(loc_pk, 0),
+                "listed_targets": contract_listed_by_loc.get(loc_pk, 0),
                 "fulfilled": contract_fulfilled_by_loc.get(loc_pk, 0),
                 "viable_fulfilled": contract_viable_fulfilled_by_loc.get(
                     loc_pk, 0

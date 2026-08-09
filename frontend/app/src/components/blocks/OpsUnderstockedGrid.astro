@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
-import { query_string } from '@helpers/string'
+import { ops_redirect_path } from '@helpers/market_ops_redirect'
 
 interface UnderstockedContractRow {
     location_id:        number;
@@ -46,6 +46,8 @@ function tone_for(readiness: string, pct: number): string {
     return 'good'
 }
 
+const ops_href = ops_redirect_path(translatePath, 'monitor')
+
 const tiles = rows.map(row => {
     const pct = fill_pct(row.current_quantity, row.expected_quantity)
     return {
@@ -53,9 +55,7 @@ const tiles = rows.map(row => {
         pct,
         tone: tone_for(row.readiness, pct),
         label: short_fitting_name(row.fitting_name),
-        ops_href: translatePath(`/market/ops/?${query_string({
-            location_id: row.location_id,
-        })}`),
+        ops_href,
         title: [
             row.fitting_name,
             `${row.current_quantity}/${row.expected_quantity}`,

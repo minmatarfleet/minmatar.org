@@ -1459,6 +1459,7 @@ export interface KindHealthLatest {
     health_pct:         number | null;
     viability_pct:      number | null;
     targets:            number;
+    listed_targets:     number;
     fulfilled:          number;
     viable_fulfilled:   number;
     isk:                number;
@@ -1472,6 +1473,7 @@ export interface KindHealthHistoryPoint {
     health_pct:         number | null;
     viability_pct:      number | null;
     targets:            number;
+    listed_targets:     number;
     fulfilled:          number;
     viable_fulfilled:   number;
     isk:                number;
@@ -1505,6 +1507,7 @@ export interface LiveSellOrderSupply {
     health_pct:         number | null;
     viability_pct:      number | null;
     targets:            number;
+    listed_targets:     number;
     fulfilled:          number;
     viable_fulfilled:   number;
     isk:                number;

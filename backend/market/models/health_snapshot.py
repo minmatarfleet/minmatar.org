@@ -29,6 +29,7 @@ class EveMarketHealthSnapshot(models.Model):
     health_pct = models.FloatField(null=True, blank=True)
     viability_pct = models.FloatField(null=True, blank=True)
     targets = models.PositiveIntegerField(default=0)
+    listed_targets = models.PositiveIntegerField(default=0)
     fulfilled = models.PositiveIntegerField(default=0)
     viable_fulfilled = models.PositiveIntegerField(default=0)
     isk = models.FloatField(default=0.0)

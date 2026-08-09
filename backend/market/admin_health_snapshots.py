@@ -30,6 +30,7 @@ class EveMarketHealthSnapshotAdmin(admin.ModelAdmin):
         "health_pct",
         "viability_pct",
         "targets",
+        "listed_targets",
         "fulfilled",
         "viable_fulfilled",
         "isk",

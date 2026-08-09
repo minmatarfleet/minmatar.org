@@ -89,7 +89,7 @@ def fitting_baseline_isk(
     baseline_by_type: dict[int, int],
 ) -> int | None:
     """
-    Sum of EFT type qty × Forge baseline.
+    Sum of type qty × Forge baseline (EFT or contract contents).
 
     Returns None when no constituent has a usable baseline (fail-open for
     is_price_viable). Partial coverage still prices what we can.
@@ -217,6 +217,7 @@ def summary_fields(source) -> dict:
             "health_pct": source["health_pct"],
             "viability_pct": source["viability_pct"],
             "targets": source["targets"],
+            "listed_targets": source.get("listed_targets", 0),
             "fulfilled": source["fulfilled"],
             "viable_fulfilled": source["viable_fulfilled"],
             "isk": source["isk"],
@@ -227,6 +228,7 @@ def summary_fields(source) -> dict:
         "health_pct": source.health_pct,
         "viability_pct": source.viability_pct,
         "targets": source.targets,
+        "listed_targets": source.listed_targets,
         "fulfilled": source.fulfilled,
         "viable_fulfilled": source.viable_fulfilled,
         "isk": source.isk,

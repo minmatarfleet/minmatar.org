@@ -7,6 +7,7 @@ class HealthSummaryFields(Schema):
     health_pct: Optional[float] = None
     viability_pct: Optional[float] = None
     targets: int = 0
+    listed_targets: int = 0
     fulfilled: int = 0
     viable_fulfilled: int = 0
     isk: float = 0.0

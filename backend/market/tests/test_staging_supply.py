@@ -23,6 +23,7 @@ from market.helpers.readiness import (
 from market.models import (
     EveMarketContract,
     EveMarketContractExpectation,
+    EveMarketContractItem,
     EveMarketInferredSale,
 )
 from market.models.item import EveMarketItemExpectation, EveMarketItemOrder
@@ -151,7 +152,7 @@ class MarketHealthApiTestCase(TestCase):
             location=self.loc,
             quantity=2,
         )
-        EveMarketContract.objects.create(
+        fair = EveMarketContract.objects.create(
             id=101,
             status="outstanding",
             title="Fair Atron",
@@ -159,10 +160,10 @@ class MarketHealthApiTestCase(TestCase):
             issuer_external_id=1,
             location=self.loc,
             fitting=self.fit,
-            items_fetched=False,
-            match_score=0.0,
+            items_fetched=True,
+            match_score=1.0,
         )
-        EveMarketContract.objects.create(
+        over = EveMarketContract.objects.create(
             id=102,
             status="outstanding",
             title="Overpriced Atron",
@@ -170,9 +171,16 @@ class MarketHealthApiTestCase(TestCase):
             issuer_external_id=2,
             location=self.loc,
             fitting=self.fit,
-            items_fetched=False,
-            match_score=0.0,
+            items_fetched=True,
+            match_score=1.0,
         )
+        for contract in (fair, over):
+            EveMarketContractItem.objects.create(
+                contract=contract,
+                type_id=608,
+                quantity=1,
+                is_included=True,
+            )
 
         with patch(
             "market.helpers.contract_health.forge_baseline_by_type",
@@ -185,9 +193,151 @@ class MarketHealthApiTestCase(TestCase):
         self.assertEqual(contracts["summary"]["fulfilled"], 1)
         self.assertEqual(contracts["summary"]["viable_fulfilled"], 0)
         self.assertEqual(contracts["summary"]["health_pct"], 100.0)
-        # One of two contracts is within +20% of 1M baseline → 50% viability fill
+        # One of two contracts is within +20% of 1M contents baseline → 50%
         self.assertEqual(contracts["summary"]["viability_pct"], 50.0)
         self.assertEqual(contracts["rows"], [])
+
+    def test_contract_viability_uses_actual_contents(self):
+        """Upgraded modules raise the contents baseline and can make asks viable."""
+        ship_cat, _ = EveCategory.objects.get_or_create(
+            id=6, defaults={"name": "Ship", "published": True}
+        )
+        frigate_grp, _ = EveGroup.objects.get_or_create(
+            id=25,
+            defaults={
+                "name": "Frigate",
+                "published": True,
+                "eve_category": ship_cat,
+            },
+        )
+        module_cat, _ = EveCategory.objects.get_or_create(
+            id=7, defaults={"name": "Module", "published": True}
+        )
+        module_grp, _ = EveGroup.objects.get_or_create(
+            id=55,
+            defaults={
+                "name": "Energy Weapon",
+                "published": True,
+                "eve_category": module_cat,
+            },
+        )
+        EveType.objects.update_or_create(
+            id=608,
+            defaults={
+                "name": "Atron",
+                "published": True,
+                "eve_group": frigate_grp,
+            },
+        )
+        EveType.objects.update_or_create(
+            id=2048,
+            defaults={
+                "name": "Damage Control II",
+                "published": True,
+                "eve_group": module_grp,
+            },
+        )
+        EveMarketContractExpectation.objects.filter(location=self.loc).delete()
+        EveMarketContract.objects.filter(location=self.loc).delete()
+        EveMarketContractExpectation.objects.create(
+            fitting=self.fit,
+            location=self.loc,
+            quantity=1,
+        )
+        # Ask is 50% over bare hull EFT, but within +20% of hull+module contents.
+        contract = EveMarketContract.objects.create(
+            id=201,
+            status="outstanding",
+            title="Upgraded Atron",
+            price=1_500_000,
+            issuer_external_id=1,
+            location=self.loc,
+            fitting=self.fit,
+            items_fetched=True,
+            match_score=0.95,
+        )
+        EveMarketContractItem.objects.create(
+            contract=contract, type_id=608, quantity=1, is_included=True
+        )
+        EveMarketContractItem.objects.create(
+            contract=contract, type_id=2048, quantity=1, is_included=True
+        )
+
+        with patch(
+            "market.helpers.contract_health.forge_baseline_by_type",
+            return_value={608: 1_000_000, 2048: 400_000},
+        ):
+            contracts = _contract_at(self.loc.location_id)
+
+        # Contents baseline 1.4M → cap 1.68M; 1.5M ask is viable.
+        self.assertEqual(contracts["summary"]["viable_fulfilled"], 1)
+        self.assertEqual(contracts["summary"]["viability_pct"], 100.0)
+
+    def test_contract_viability_ignores_unstocked_targets(self):
+        """Empty doctrine lines drag coverage, not viability."""
+        ship_cat, _ = EveCategory.objects.get_or_create(
+            id=6, defaults={"name": "Ship", "published": True}
+        )
+        frigate_grp, _ = EveGroup.objects.get_or_create(
+            id=25,
+            defaults={
+                "name": "Frigate",
+                "published": True,
+                "eve_category": ship_cat,
+            },
+        )
+        EveType.objects.update_or_create(
+            id=608,
+            defaults={
+                "name": "Atron",
+                "published": True,
+                "eve_group": frigate_grp,
+            },
+        )
+        EveMarketContractExpectation.objects.filter(location=self.loc).delete()
+        EveMarketContract.objects.filter(location=self.loc).delete()
+        EveMarketContractExpectation.objects.create(
+            fitting=self.fit,
+            location=self.loc,
+            quantity=1,
+        )
+        empty_fit = EveFitting.objects.create(
+            name="[NVY-5] Empty Hull",
+            ship_id=609,
+            description="Testing",
+            eft_format="[Atron, Empty]",
+        )
+        EveMarketContractExpectation.objects.create(
+            fitting=empty_fit,
+            location=self.loc,
+            quantity=1,
+        )
+        listed = EveMarketContract.objects.create(
+            id=301,
+            status="outstanding",
+            title="Fair Atron",
+            price=1_000_000,
+            issuer_external_id=1,
+            location=self.loc,
+            fitting=self.fit,
+            items_fetched=True,
+            match_score=1.0,
+        )
+        EveMarketContractItem.objects.create(
+            contract=listed, type_id=608, quantity=1, is_included=True
+        )
+
+        with patch(
+            "market.helpers.contract_health.forge_baseline_by_type",
+            return_value={608: 1_000_000},
+        ):
+            contracts = _contract_at(self.loc.location_id)
+
+        self.assertEqual(contracts["summary"]["targets"], 2)
+        self.assertEqual(contracts["summary"]["listed_targets"], 1)
+        self.assertEqual(contracts["summary"]["health_pct"], 50.0)
+        self.assertEqual(contracts["summary"]["viability_pct"], 100.0)
+        self.assertEqual(contracts["summary"]["viable_fulfilled"], 1)
 
     def test_understocked_contracts_sorted_by_ship_size(self):
         ship_cat, _ = EveCategory.objects.get_or_create(
