@@ -105,14 +105,11 @@ const CONTRACTS_PARTIAL = translatePath(
         slot.setAttribute('aria-busy', 'false')
         if (typeof htmx !== 'undefined')
             htmx.process(slot)
-        if (typeof Alpine !== 'undefined')
+        if (typeof Alpine !== 'undefined') {
+            Alpine.destroyTree(slot)
             Alpine.initTree(slot)
-        if (typeof tippy === 'function') {
-            tippy('#ops-contracts-slot [data-tippy-content]', {
-                delay: [100, 200],
-                arrow: true,
-            })
         }
+        tippy('#ops-contracts-slot [data-tippy-content]', tippy_options)
     }
 
     function isOpsContractsRequest(event: any): boolean {

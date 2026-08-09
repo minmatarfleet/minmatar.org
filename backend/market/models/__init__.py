@@ -11,7 +11,7 @@ from market.models.inferred_sale import (
     EveMarketOrderBookSync,
 )
 from market.models.location_price import EveMarketItemLocationPrice
-from market.models.ops_snapshot import EveMarketOpsMonitorSnapshot
+from market.models.health_snapshot import EveMarketHealthSnapshot
 from market.models.item import (
     EveMarketBuyOrderExpectation,
     EveMarketFittingExpectation,
@@ -38,7 +38,7 @@ __all__ = [
     "EveMarketItemLocationPrice",
     "EveMarketItemOrder",
     "EveMarketItemTransaction",
-    "EveMarketOpsMonitorSnapshot",
+    "EveMarketHealthSnapshot",
     "EveMarketOrderBookSync",
     "EveTypeWithSellOrders",
     "_get_consumable_items",

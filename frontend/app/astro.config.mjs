@@ -21,9 +21,14 @@ const integrations = [
   //tailwind()
 ]
 
-if (SENTRY_AUTH_TOKEN)
+if (SENTRY_AUTH_TOKEN) {
+    const sentry_dsn = SENTRY_DSN || ''
+    const sentry_enabled = Boolean(sentry_dsn)
+        && !sentry_dsn.includes('DUMMY')
+        && process.env.NODE_ENV === 'production'
     integrations.push(sentry({
-        dsn: SENTRY_DSN,
+        dsn: sentry_dsn,
+        enabled: sentry_enabled,
         sourceMapsUploadOptions: {
             project: SENTRY_PROJECT,
             authToken: SENTRY_AUTH_TOKEN,
@@ -32,6 +37,7 @@ if (SENTRY_AUTH_TOKEN)
             enableLogs: true,
         },
     }))
+}
 
 // https://astro.build/config
 export default defineConfig({

@@ -3,27 +3,27 @@ import Grid from '@components/compositions/Grid.astro'
 ---
 
 <div
-    class="[ ops-monitor-skeleton ]"
+    class="[ market-health-skeleton ]"
     aria-busy="true"
     aria-live="polite"
 >
-    <section class="[ ops-monitor-skeleton__health ]">
+    <section class="[ market-health-skeleton__health ]">
         <Grid
-            class="[ ops-monitor-skeleton__split ]"
+            class="[ market-health-skeleton__split ]"
             min_item_width="280px"
             row_gap="var(--space-s)"
             column_gap="var(--space-s)"
         >
-            <div class="[ ops-monitor-skeleton__card ]">
+            <div class="[ market-health-skeleton__card ]">
                 <div class="[ skel skel-eyebrow ]"></div>
-                <div class="[ ops-monitor-skeleton__dual ]">
-                    <div class="[ ops-monitor-skeleton__metric ]">
+                <div class="[ market-health-skeleton__dual ]">
+                    <div class="[ market-health-skeleton__metric ]">
                         <div class="[ skel skel-line skel-line--short ]"></div>
                         <div class="[ skel skel-card-pct ]"></div>
                         <div class="[ skel skel-bar ]"></div>
                         <div class="[ skel skel-line ]"></div>
                     </div>
-                    <div class="[ ops-monitor-skeleton__metric ]">
+                    <div class="[ market-health-skeleton__metric ]">
                         <div class="[ skel skel-line skel-line--short ]"></div>
                         <div class="[ skel skel-card-pct ]"></div>
                         <div class="[ skel skel-bar ]"></div>
@@ -34,16 +34,16 @@ import Grid from '@components/compositions/Grid.astro'
                 <div class="[ skel skel-line skel-line--short ]"></div>
                 <div class="[ skel skel-button ]"></div>
             </div>
-            <div class="[ ops-monitor-skeleton__card ]">
+            <div class="[ market-health-skeleton__card ]">
                 <div class="[ skel skel-eyebrow ]"></div>
-                <div class="[ ops-monitor-skeleton__dual ]">
-                    <div class="[ ops-monitor-skeleton__metric ]">
+                <div class="[ market-health-skeleton__dual ]">
+                    <div class="[ market-health-skeleton__metric ]">
                         <div class="[ skel skel-line skel-line--short ]"></div>
                         <div class="[ skel skel-card-pct ]"></div>
                         <div class="[ skel skel-bar ]"></div>
                         <div class="[ skel skel-line ]"></div>
                     </div>
-                    <div class="[ ops-monitor-skeleton__metric ]">
+                    <div class="[ market-health-skeleton__metric ]">
                         <div class="[ skel skel-line skel-line--short ]"></div>
                         <div class="[ skel skel-card-pct ]"></div>
                         <div class="[ skel skel-bar ]"></div>
@@ -55,7 +55,7 @@ import Grid from '@components/compositions/Grid.astro'
                 <div class="[ skel skel-button ]"></div>
             </div>
         </Grid>
-        <div class="[ ops-monitor-skeleton__chart ]">
+        <div class="[ market-health-skeleton__chart ]">
             <div class="[ skel skel-eyebrow ]"></div>
             <div class="[ skel skel-chart ]"></div>
             <div class="[ skel skel-line skel-line--med ]"></div>
@@ -64,7 +64,7 @@ import Grid from '@components/compositions/Grid.astro'
 </div>
 
 <style lang="scss">
-    .ops-monitor-skeleton .skel {
+    .market-health-skeleton .skel {
         border-radius: 2px;
         background: linear-gradient(
             90deg,
@@ -73,16 +73,16 @@ import Grid from '@components/compositions/Grid.astro'
             rgba(255, 255, 255, 0.06) 100%
         );
         background-size: 200% 100%;
-        animation: ops-monitor-skel 1.1s ease-in-out infinite;
+        animation: market-health-skel 1.1s ease-in-out infinite;
     }
 
-    .ops-monitor-skeleton__health {
+    .market-health-skeleton__health {
         display: flex;
         flex-direction: column;
         gap: var(--space-s);
     }
 
-    .ops-monitor-skeleton__card {
+    .market-health-skeleton__card {
         display: flex;
         flex-direction: column;
         gap: var(--space-3xs);
@@ -91,7 +91,7 @@ import Grid from '@components/compositions/Grid.astro'
         background: rgba(0, 0, 0, 0.22);
     }
 
-    .ops-monitor-skeleton__chart {
+    .market-health-skeleton__chart {
         display: flex;
         flex-direction: column;
         gap: var(--space-xs);
@@ -105,13 +105,13 @@ import Grid from '@components/compositions/Grid.astro'
         height: clamp(8rem, 18vw, 12rem);
     }
 
-    .ops-monitor-skeleton__dual {
+    .market-health-skeleton__dual {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: var(--space-s);
     }
 
-    .ops-monitor-skeleton__metric {
+    .market-health-skeleton__metric {
         display: flex;
         flex-direction: column;
         gap: var(--space-3xs);
@@ -154,7 +154,7 @@ import Grid from '@components/compositions/Grid.astro'
         margin-block-start: var(--space-2xs);
     }
 
-    @keyframes ops-monitor-skel {
+    @keyframes market-health-skel {
         0% {
             background-position: 100% 0;
         }

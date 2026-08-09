@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from app.errors import create_error_id
 from authentication import AuthBearer
 from discord.client import DiscordClient, DiscordError, discord_authorize_url
+from discord.exceptions import DiscordRoleAssignmentError
 
 # from discord.models import DiscordUser
 from discord.tasks import sync_discord_user, sync_discord_nickname
@@ -25,7 +26,12 @@ from users.eve_sso import EVE_LOGIN_SCOPES
 from users.jwt_auth import decode_user_jwt, issue_discord_user_jwt
 from users.redirects import oauth_redirect
 
-from .helpers import get_user_profile, get_user_profiles, make_user_objects
+from .helpers import (
+    get_user_profile,
+    get_user_profiles,
+    make_user_objects,
+    offboard_user,
+)
 from .schemas import UserProfileSchema
 
 logger = logging.getLogger(__name__)
@@ -303,6 +309,18 @@ def sync_user(request, user_id: int):
     try:
         update_affiliation(user_id)
         sync_discord_user(user_id)
+    except DiscordRoleAssignmentError as e:
+        # Offboard inside affiliation's atomic block rolls back; redo outside.
+        if "member not on Discord server" not in str(e):
+            raise
+        if User.objects.filter(id=user_id).exists():
+            offboard_user(user_id)
+        return 410, ErrorResponse(
+            detail=(
+                "Account was offboarded because the Discord member "
+                "was not found on the server."
+            )
+        )
     except User.DoesNotExist:
         return 404, ErrorResponse(detail="User not found.")
     # sync_discord_user may offboard the account when Discord returns Unknown Member

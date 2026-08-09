@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t } = i18n(Astro.url)
 
-import type { OpsMonitorHistoryPoint } from '@dtypes/api.minmatar.org'
+import type { MarketHealthChartPoint } from '@dtypes/api.minmatar.org'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 
@@ -15,7 +15,7 @@ interface ChartSeries {
 }
 
 interface Props {
-    history: OpsMonitorHistoryPoint[]
+    history: MarketHealthChartPoint[]
     [propName: string]: any
 }
 

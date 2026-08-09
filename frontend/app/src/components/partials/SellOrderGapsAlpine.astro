@@ -1,0 +1,33 @@
+---
+/**
+ * SellOrderGapsList filter helpers — must live in FooterScripts.
+ *
+ * Sell-orders content is loaded via htmx into a slot. Alpine.initTree runs on
+ * afterSwap before page-local module scripts from the partial can execute.
+ * Same pattern as LearningAlpine / neocom_clock in FooterScripts.
+ */
+---
+
+<script>
+    import {
+        sell_order_gaps_compare_rows,
+        sell_order_gaps_default_direction,
+        sell_order_gaps_next_order_state,
+        sell_order_gaps_row_visible,
+    } from '@helpers/sell_order_gaps_filter'
+
+    declare global {
+        interface Window {
+            __sellOrderGapsCompareRows?: typeof sell_order_gaps_compare_rows
+            __sellOrderGapsDefaultDirection?: typeof sell_order_gaps_default_direction
+            __sellOrderGapsNextOrderState?: typeof sell_order_gaps_next_order_state
+            __sellOrderGapsRowVisible?: typeof sell_order_gaps_row_visible
+        }
+    }
+
+    window.__sellOrderGapsCompareRows = sell_order_gaps_compare_rows
+    window.__sellOrderGapsDefaultDirection = sell_order_gaps_default_direction
+    window.__sellOrderGapsNextOrderState = sell_order_gaps_next_order_state
+    window.__sellOrderGapsRowVisible = sell_order_gaps_row_visible
+    window.dispatchEvent(new Event('sell-order-gaps-helpers-ready'))
+</script>

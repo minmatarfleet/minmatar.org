@@ -406,7 +406,7 @@ def sync_eve_corporation_groups():
                         group.name,
                     )
                 except Exception as e:  # pylint: disable=broad-except
-                    logger.error(
+                    logger.warning(
                         "Error adding user %s to corporation group %s: %s",
                         user.id,
                         corporation_group,
@@ -422,7 +422,7 @@ def sync_eve_corporation_groups():
                         group.name,
                     )
                 except Exception as e:  # pylint: disable=broad-except
-                    logger.error(
+                    logger.warning(
                         "Error removing user %s from corporation group %s: %s",
                         user.id,
                         corporation_group,

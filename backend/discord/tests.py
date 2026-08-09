@@ -897,6 +897,39 @@ class DiscordChannelAdminFormTestCase(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("receive_lp_buyback", form.errors)
 
+    @patch("discord.forms.fetch_active_guild_channels")
+    @patch("discord.forms.get_guild_channel")
+    def test_duplicate_channel_id_rejected(
+        self, mock_get_channel, mock_fetch_active
+    ):
+        DiscordChannel.objects.create(
+            channel_id=123,
+            name="already",
+            channel_type="text",
+            guild=self.guild,
+        )
+        mock_fetch_active.return_value = [
+            {
+                "id": 123,
+                "name": "general",
+                "type": "text",
+                "guild_id": self.guild.guild_id,
+            },
+        ]
+        mock_get_channel.return_value = mock_fetch_active.return_value[0]
+        form = DiscordChannelAdminForm(
+            data={
+                "discord_channel_pick": "123",
+                "track_voice_activity": False,
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("discord_channel_pick", form.errors)
+        self.assertIn(
+            "already registered", form.errors["discord_channel_pick"][0]
+        )
+
 
 class DiscordOffboardSyncTests(TestCase):
     """A5/MG: offboard during sync must not 500, and message must be correct."""
@@ -964,6 +997,34 @@ class DiscordOffboardSyncTests(TestCase):
         )
         self.assertEqual(response.status_code, 410)
         self.assertIn(b"offboarded", response.content)
+
+    @patch("users.router.offboard_user")
+    @patch("users.router.sync_discord_user")
+    @patch("users.router.update_affiliation")
+    def test_sync_user_endpoint_returns_410_on_affiliation_member_missing(
+        self, mock_affiliation, mock_sync, mock_offboard
+    ):
+        """REST-API-MZ/MX: DiscordRoleAssignmentError rolls back in-atomic offboard."""
+        user_id = self.user.id
+        mock_affiliation.side_effect = DiscordRoleAssignmentError(
+            f"Cannot add user {user_id} to Discord role Guest: "
+            "member not on Discord server"
+        )
+
+        def delete_user(offboarded_user_id):
+            User.objects.filter(id=offboarded_user_id).delete()
+
+        mock_offboard.side_effect = delete_user
+        client = Client()
+        response = client.post(
+            f"/api/users/{user_id}/sync",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 410)
+        self.assertIn(b"offboarded", response.content)
+        mock_offboard.assert_called_once_with(user_id)
+        mock_sync.assert_not_called()
+        self.assertFalse(User.objects.filter(id=user_id).exists())
 
     @patch("users.router.sync_discord_user")
     @patch("users.router.update_affiliation")

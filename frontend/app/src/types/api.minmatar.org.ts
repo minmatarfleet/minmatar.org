@@ -1401,112 +1401,117 @@ export interface BlueprintDetail extends Blueprint {
     historical_jobs:        BlueprintIndustryJob[];
 }
 
-export interface OpsMonitorSummary {
-    understocked_contracts:     number;
-    sell_gaps:                  number;
-    contracts_health_pct:       number | null;
-    contracts_viability_pct:    number | null;
-    sell_orders_health_pct:     number | null;
-    sell_orders_viability_pct:  number | null;
-    overall_health_pct:         number | null;
-    contract_targets:           number;
-    contract_fulfilled:         number;
-    contract_viable_fulfilled:  number;
-    contract_listed_targets:    number;
-    sell_order_targets:         number;
-    sell_order_fulfilled:       number;
-    sell_order_viable_fulfilled: number;
-    sell_order_listed_targets:  number;
-    contracts_isk:              number;
-    sell_orders_isk:            number;
-    total_isk_on_market:        number;
-    sales_history_days:         number;
-    contract_history_days:      number;
+export interface ContractHealthProblem {
+    location_id:        number;
+    location_name:      string;
+    short_name:         string;
+    fitting_id:         number;
+    fitting_name:       string;
+    ship_id:            number;
+    current_quantity:   number;
+    viable_quantity:    number;
+    expected_quantity:  number;
+    shortfall:          number;
+    readiness:          string;
+    expectation_id:     number;
+    units_1d:           number;
+    units_3d:           number;
+    weekly_units:       number;
+    units_30d:          number;
+    units_90d:          number;
+    days_of_stock:      number | null;
 }
 
-export interface OpsMonitor {
-    synced_at:                  string;
-    contracts_synced_at:        string | null;
-    orders_synced_at:           string | null;
-    understocked_contracts:     {
-        location_id:        number;
-        location_name:      string;
-        short_name:         string;
-        fitting_id:         number;
-        fitting_name:       string;
-        ship_id:            number;
-        current_quantity:   number;
-        viable_quantity:    number;
-        expected_quantity:  number;
-        shortfall:          number;
-        readiness:          string;
-        expectation_id:     number;
-        units_1d:           number;
-        units_3d:           number;
-        weekly_units:       number;
-        units_30d:          number;
-        units_90d:          number;
-        days_of_stock:      number | null;
+export interface SellOrderHealthGap {
+    location_id:        number;
+    location_name:      string;
+    short_name:         string;
+    type_id:            number;
+    item_name:          string;
+    current_quantity:   number;
+    viable_quantity:    number;
+    expected_quantity:  number;
+    shortfall:          number;
+    coverage_gap:       boolean;
+    viability_gap:      boolean;
+    item_type:          string;
+    item_variant:       string;
+    units_1d:           number;
+    units_3d:           number;
+    weekly_units:       number;
+    units_30d:          number;
+    units_90d:          number;
+    avg_markup_pct:     number | null;
+    days_of_stock:      number | null;
+    flags:              string[];
+    ships: {
+        ship_id:        number;
+        fitting_name:   string;
     }[];
-    sell_gaps: {
-        location_id:        number;
-        location_name:      string;
-        short_name:         string;
-        type_id:            number;
-        item_name:          string;
-        current_quantity:   number;
-        viable_quantity:    number;
-        expected_quantity:  number;
-        shortfall:          number;
-        coverage_gap:       boolean;
-        viability_gap:      boolean;
-        item_type:          string;
-        item_variant:       string;
-        units_1d:           number;
-        units_3d:           number;
-        weekly_units:       number;
-        units_30d:          number;
-        units_90d:          number;
-        avg_markup_pct:     number | null;
-        days_of_stock:      number | null;
-        flags:              string[];
-        ships: {
-            ship_id:        number;
-            fitting_name:   string;
-        }[];
-    }[];
-    summary: OpsMonitorSummary;
 }
 
-export interface OpsMonitorHistoryPoint {
-    id:                             number;
+export interface KindHealthLatest {
+    id:                 number;
+    captured_at:        string;
+    location_id:        number;
+    location_name:      string;
+    short_name:         string;
+    health_pct:         number | null;
+    viability_pct:      number | null;
+    targets:            number;
+    listed_targets:     number;
+    fulfilled:          number;
+    viable_fulfilled:   number;
+    isk:                number;
+    synced_at:          string | null;
+    history_days:       number;
+}
+
+export interface KindHealthHistoryPoint {
+    id:                 number;
+    captured_at:        string;
+    health_pct:         number | null;
+    viability_pct:      number | null;
+    targets:            number;
+    listed_targets:     number;
+    fulfilled:          number;
+    viable_fulfilled:   number;
+    isk:                number;
+    synced_at:          string | null;
+    history_days:       number;
+}
+
+export interface KindHealth {
+    latest:     KindHealthLatest | null;
+    history:    KindHealthHistoryPoint[];
+}
+
+export interface MarketHealth {
+    contracts:      KindHealth;
+    sell_orders:    KindHealth;
+    chart:          MarketHealthChartPoint[];
+}
+
+export interface MarketHealthChartPoint {
     captured_at:                    string;
-    location_id:                    number;
-    location_name:                  string;
-    short_name:                     string;
-    trigger:                        string;
     contracts_health_pct:           number | null;
     contracts_viability_pct:        number | null;
     sell_orders_health_pct:         number | null;
     sell_orders_viability_pct:      number | null;
-    overall_health_pct:             number | null;
-    understocked_contracts_count:   number;
-    sell_gaps_count:                number;
-    contract_targets:               number;
-    contract_fulfilled:             number;
-    contract_viable_fulfilled:      number;
-    contract_listed_targets?:       number;
-    sell_order_targets:             number;
-    sell_order_fulfilled:           number;
-    sell_order_viable_fulfilled:    number;
-    sell_order_listed_targets?:     number;
-    contracts_isk:                  number;
-    sell_orders_isk:                number;
-    total_isk_on_market:            number;
-    contracts_synced_at:            string | null;
-    orders_synced_at:               string | null;
-    understocked_contracts:         OpsMonitor['understocked_contracts'];
-    sell_gaps:                      OpsMonitor['sell_gaps'];
+}
+
+export interface LiveSellOrderSupply {
+    location_id:        number;
+    synced_at:          string | null;
+    history_days:       number;
+    health_pct:         number | null;
+    viability_pct:      number | null;
+    targets:            number;
+    listed_targets:     number;
+    fulfilled:          number;
+    viable_fulfilled:   number;
+    isk:                number;
+    rows:               SellOrderHealthGap[];
 }
 
 export interface InferredSalesVolumeBucket {

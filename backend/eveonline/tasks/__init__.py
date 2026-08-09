@@ -22,6 +22,8 @@ __all__ = [
     "update_character_urgent",
     "update_alliance_characters",
     "update_all_character_public_data",
+    "queue_stale_character_corporation_history",
+    "sync_character_corporation_history_task",
     "fixup_character_tokens",
     "update_corporations",
     "sync_alliance_corporations",
@@ -35,6 +37,12 @@ update_character = characters.update_character
 update_character_urgent = characters.update_character_urgent
 update_alliance_characters = characters.update_alliance_characters
 update_all_character_public_data = characters.update_all_character_public_data
+queue_stale_character_corporation_history = (
+    characters.queue_stale_character_corporation_history
+)
+sync_character_corporation_history_task = (
+    characters.sync_character_corporation_history_task
+)
 fixup_character_tokens = players.fixup_character_tokens
 
 update_corporations = corporations.update_corporations

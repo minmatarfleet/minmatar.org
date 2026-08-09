@@ -2,7 +2,7 @@ from fittings.endpoints.eve_fittings.schemas import (
     FittingResponse,
     RefitResponse,
 )
-from fittings.models import EveFitting, EveFittingRefit
+from fittings.models import EveFitting, EveFittingRefit, FittingTag
 
 
 def make_refit_response(refit: EveFittingRefit) -> RefitResponse:
@@ -14,6 +14,11 @@ def make_refit_response(refit: EveFittingRefit) -> RefitResponse:
         created_at=refit.created_at,
         updated_at=refit.updated_at,
     )
+
+
+def _known_fitting_tags(slugs: list[str]) -> list[str]:
+    allowed = {c.value for c in FittingTag}
+    return [slug for slug in slugs if slug in allowed]
 
 
 def make_fitting_response(fitting: EveFitting) -> FittingResponse:
@@ -30,6 +35,6 @@ def make_fitting_response(fitting: EveFitting) -> FittingResponse:
         recommended_pod=fitting.recommended_pod,
         latest_version=fitting.latest_version,
         known_key=fitting.known_key or None,
-        tags=fitting.tag_slugs(),
+        tags=_known_fitting_tags(fitting.tag_slugs()),
         refits=refits,
     )
