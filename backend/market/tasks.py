@@ -26,7 +26,10 @@ from market.helpers import (
     update_region_market_history_for_type,
 )
 from market.helpers.contract_items import fetch_and_match_contract_items
-from market.helpers.ops_snapshot import record_ops_monitor_snapshots
+from market.helpers.health_snapshot import (
+    record_contract_health_snapshots,
+    record_sell_order_health_snapshots,
+)
 from market.helpers.attributed_orders import (
     allied_corporation_ids_for_order_sync,
     character_ids_for_attributed_order_sync,
@@ -41,7 +44,6 @@ from market.models import (
     EveMarketContractError,
     EveMarketItemOrder,
 )
-from market.models.ops_snapshot import EveMarketOpsMonitorSnapshot
 
 logger = logging.getLogger(__name__)
 
@@ -217,17 +219,17 @@ def fetch_market_location_prices_for_type(type_id: int) -> int:
 
 
 @app.task()
-def record_ops_monitor_snapshot_task(
-    trigger: str,
+def record_contract_health_snapshot_task(
     location_id: int | None = None,
 ) -> int:
-    """
-    Persist ops health from local DB after an ESI sync. Does not call ESI.
-    """
-    return record_ops_monitor_snapshots(
-        trigger=trigger,
-        location_id=location_id,
-    )
+    return record_contract_health_snapshots(location_id=location_id)
+
+
+@app.task()
+def record_sell_order_health_snapshot_task(
+    location_id: int | None = None,
+) -> int:
+    return record_sell_order_health_snapshots(location_id=location_id)
 
 
 @app.task()
@@ -248,12 +250,7 @@ def spawn_structure_sell_orders_pages(
         )
         for page in range(1, total_pages + 1)
     )
-    chord(header)(
-        record_ops_monitor_snapshot_task.si(
-            EveMarketOpsMonitorSnapshot.TRIGGER_ORDERS,
-            location_id,
-        )
-    )
+    chord(header)(record_sell_order_health_snapshot_task.si(location_id))
 
 
 @app.task()
@@ -262,7 +259,7 @@ def fetch_structure_sell_orders():
     Fetch structure market sell orders for all market-active locations.
 
     Per location: atomic order-book sync (infer sales + replace snapshot),
-    then record an ops-monitor health snapshot from local DB.
+    then record a sell-order health snapshot from local DB.
     Requires a character with esi-markets.structure_markets.v1 and docking
     access to each structure.
     """
@@ -320,8 +317,7 @@ def fetch_structure_sell_orders():
             sales_created,
             orders_written,
         )
-        record_ops_monitor_snapshot_task.delay(
-            EveMarketOpsMonitorSnapshot.TRIGGER_ORDERS,
+        record_sell_order_health_snapshot_task.delay(
             location.location_id,
         )
 
@@ -531,10 +527,7 @@ def fetch_eve_market_contracts():
     duration = (timezone.now() - start_time).total_seconds()
     logger.info("fetch_eve_market_contracts complete in %.1fs", duration)
 
-    # Snapshot from local DB after this ESI sync — no additional ESI calls.
-    record_ops_monitor_snapshot_task.delay(
-        EveMarketOpsMonitorSnapshot.TRIGGER_CONTRACTS,
-    )
+    record_contract_health_snapshot_task.delay()
 
 
 @app.task(queue="market")

@@ -40,6 +40,7 @@ from groups.helpers import (
     ensure_corporation_groups_for_corp,
     offboard_corporation_groups,
 )
+import eveonline.admin_history  # noqa: F401  # pylint: disable=unused-import
 
 admin.site.unregister(CallbackRedirect)
 admin.site.unregister(Token)
@@ -203,7 +204,7 @@ class EveCharacterAdmin(admin.ModelAdmin):
         "user",
         "esi_deleted",
     )
-    readonly_fields = ("esi_deleted_at",)
+    readonly_fields = ("esi_deleted_at", "corporation_history_synced_at")
     search_fields = (
         "character_name",
         "=character_id",

@@ -118,6 +118,16 @@ class DiscordChannelAdminForm(forms.ModelForm):
                     }
                 )
             cleaned_data["_selected_guild"] = guild
+            if DiscordChannel.objects.filter(
+                channel_id=channel["id"]
+            ).exists():
+                raise ValidationError(
+                    {
+                        "discord_channel_pick": (
+                            "This Discord channel is already registered."
+                        )
+                    }
+                )
 
         if (
             track_voice_activity

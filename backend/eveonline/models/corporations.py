@@ -284,3 +284,49 @@ class EveCorporationWalletJournalEntry(models.Model):
             f"Journal {self.ref_id} ({self.corporation.name}, "
             f"div {self.division}, {self.ref_type})"
         )
+
+
+class EveCorporationAllianceHistory(models.Model):
+    """Cached ESI corporation alliance-history row (public, no token)."""
+
+    corporation_id = models.BigIntegerField(db_index=True)
+    record_id = models.IntegerField()
+    alliance_id = models.BigIntegerField(null=True, blank=True)
+    start_date = models.DateTimeField()
+    is_deleted = models.BooleanField(
+        default=False,
+        help_text="True if the alliance has been closed (ESI flag).",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["corporation_id", "record_id"],
+                name="eveonline_corp_alliance_history_corp_record_uniq",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["corporation_id", "start_date"]),
+        ]
+        ordering = ["-start_date", "-record_id"]
+        verbose_name_plural = "Eve corporation alliance histories"
+
+    def __str__(self):
+        return (
+            f"corp {self.corporation_id} → alliance {self.alliance_id} "
+            f"@ {self.start_date} (record {self.record_id})"
+        )
+
+
+class EveCorporationAllianceHistorySync(models.Model):
+    """TTL marker for last ESI alliancehistory fetch per corporation."""
+
+    corporation_id = models.BigIntegerField(primary_key=True)
+    synced_at = models.DateTimeField()
+
+    def __str__(self):
+        return (
+            f"corp {self.corporation_id} alliance history @ {self.synced_at}"
+        )

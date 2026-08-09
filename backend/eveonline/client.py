@@ -228,6 +228,24 @@ class EsiClient:
                 e,
             )
             return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+        except HTTPClientError as e:
+            logger.warning(
+                "ESI operation.results() failed for %s: %s",
+                getattr(
+                    getattr(operation, "operation", None), "operationId", None
+                ),
+                e,
+            )
+            return EsiResponse(response_code=e.status_code, response=e)
+        except ESIErrorLimitException as e:
+            logger.warning(
+                "ESI operation.results() error-limited for %s: %s",
+                getattr(
+                    getattr(operation, "operation", None), "operationId", None
+                ),
+                e,
+            )
+            return EsiResponse(response_code=420, response=e)
         except Exception as e:
             logger.warning(
                 "ESI operation.results() failed for %s: %s",
@@ -299,6 +317,24 @@ class EsiClient:
         )
         # Single-object endpoint: result(), not results().
         return self._operation_result(operation)
+
+    def get_character_corporation_history(
+        self, character_id: int
+    ) -> EsiResponse:
+        """Public ESI corporation membership history for a character (no token)."""
+        operation = esi_provider.client.Character.GetCharactersCharacterIdCorporationhistory(
+            character_id=character_id
+        )
+        return self._operation_results(operation)
+
+    def get_corporation_alliance_history(
+        self, corporation_id: int
+    ) -> EsiResponse:
+        """Public ESI alliance history for a corporation (no token)."""
+        operation = esi_provider.client.Corporation.GetCorporationsCorporationIdAlliancehistory(
+            corporation_id=corporation_id
+        )
+        return self._operation_results(operation)
 
     def get_character_skills(self) -> EsiResponse:
         """Returns the skills for the character this ESI client was created for."""

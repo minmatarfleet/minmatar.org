@@ -44,6 +44,9 @@ from eveonline.helpers.characters.public_data import (
     mark_character_esi_deleted,
     update_character_public_data,
 )
+from eveonline.helpers.characters.corporation_history import (
+    sync_character_corporation_history,
+)
 from eveonline.helpers.characters.update import (
     update_character_assets,
     update_character_blueprints,
@@ -68,6 +71,7 @@ __all__ = [
     "orphan_character",
     "related_characters",
     "set_primary_character",
+    "sync_character_corporation_history",
     "update_character_assets",
     "update_character_blueprints",
     "update_character_contracts",

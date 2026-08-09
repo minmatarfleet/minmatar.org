@@ -132,7 +132,7 @@ def check_add_character_session_match(request, token):
     if str(token.character_id) == request.session["add_character_id"]:
         return None
     error_id = create_error_id()
-    logger.error(
+    logger.warning(
         "Incorrect character in token refresh, %s != %s (%s)",
         str(token.character_id),
         request.session["add_character_id"],

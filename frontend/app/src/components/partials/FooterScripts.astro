@@ -2,28 +2,29 @@
 import { is_disabled_ccpwgl } from '@helpers/env';
 import LearningAlpine from '@components/partials/LearningAlpine.astro';
 import OpsContractsAlpine from '@components/partials/OpsContractsAlpine.astro';
-import OpsSellGapsAlpine from '@components/partials/OpsSellGapsAlpine.astro';
+import SellOrderGapsAlpine from '@components/partials/SellOrderGapsAlpine.astro';
 
 const DISABLED_CCPWGL = is_disabled_ccpwgl()
 ---
 
 <LearningAlpine />
 <OpsContractsAlpine />
-<OpsSellGapsAlpine />
+<SellOrderGapsAlpine />
 
 <script is:inline src="/js/clipboard.js"></script>
 <script is:inline src="/js/numbers.js"></script>
 
-<!-- Tippy.js -->
-<script is:inline src="https://unpkg.com/@popperjs/core@2"></script>
-<script is:inline src="https://unpkg.com/tippy.js@6"></script>
 <script is:inline src="https://cdn.jsdelivr.net/npm/@tsparticles/confetti@3.0.3/tsparticles.confetti.bundle.min.js"></script>
 <script is:inline src="https://cdn.jsdelivr.net/npm/tsparticles/dist/tsparticles.min.js"></script>
 
 <script is:inline>
-    const canvas = document.getElementById("confetti-canvas");
+    window.__footer_confetti_canvas = window.__footer_confetti_canvas
+        || document.getElementById("confetti-canvas");
 
     (async () => {
+        const canvas = window.__footer_confetti_canvas;
+        if (!canvas || typeof confetti === 'undefined')
+            return;
         canvas.confetti = canvas.confetti || (await confetti.create(canvas, { resize: true }));
     })();
 
@@ -40,6 +41,10 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
     }
 
     function launch_confetti(images) {
+        const canvas = window.__footer_confetti_canvas;
+        if (!canvas || !canvas.confetti)
+            return;
+
         const sounds = [
             "1162202323502780416.ogg",
             "1162206878210723910.ogg",
@@ -71,33 +76,32 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
 </script>
 
 <script is:inline>
-    let ccpwgl_context = null
+    window.ccpwgl_context = window.ccpwgl_context ?? null
 
-    const tippy_options = {
-        delay: [ 100, 200 ],
-        arrow: true,
-        onShow(instance) {
-            htmx.process(instance.popper)
-        }
+    if (!window.__footer_scripts_bound) {
+        window.__footer_scripts_bound = true
+
+        document.addEventListener('astro:page-load', () => {
+            tippy('[data-tippy-content]', window.tippy_options)
+            document.querySelectorAll('.loader').forEach(e => e.classList.remove('active'))
+        }, { once: true })
+
+        document.addEventListener('astro:before-preparation', () => {
+            document.querySelectorAll('.loader').forEach(e => e.classList.add('active'))
+        })
+
+        document.addEventListener('astro:after-swap', () => {
+            tippy('[data-tippy-content]', window.tippy_options)
+            document.querySelectorAll('.loader').forEach(e => e.classList.remove('active'))
+            const content = document.getElementById('content')
+                || document.querySelector('.viewport-layout-inner')
+            if (content)
+                htmx.process(content)
+
+            if (window.ccpwgl_context)
+                window.ccpwgl_context = null
+        })
     }
-
-    document.addEventListener('astro:page-load', () => {
-        tippy('[data-tippy-content]', tippy_options)
-        document.querySelectorAll('.loader').forEach(e => e.classList.remove('active'))
-    }, { once: true })
-
-    document.addEventListener('astro:before-preparation', () => {
-        document.querySelectorAll('.loader').forEach(e => e.classList.add('active'))
-    })
-
-    document.addEventListener('astro:after-swap', () => {
-        tippy('[data-tippy-content]', tippy_options)
-        document.querySelectorAll('.loader').forEach(e => e.classList.remove('active'))
-        htmx.process(document.body)
-
-        if (ccpwgl_context)
-            ccpwgl_context = null
-    })
 </script>
 
 <script is:inline>

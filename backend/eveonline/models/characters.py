@@ -71,6 +71,11 @@ class EveCharacter(models.Model):
     # Used when no jump clone is marked is_active (home/medical body).
     active_implants = models.JSONField(default=list, blank=True)
     clones_synced_at = models.DateTimeField(null=True, blank=True)
+    corporation_history_synced_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When ESI corporation history was last synced for this character.",
+    )
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
 
@@ -95,6 +100,48 @@ class EveCharacter(models.Model):
             models.Index(fields=["character_name"]),
             models.Index(fields=["user"]),
         ]
+
+
+class EveCharacterCorporationHistory(models.Model):
+    """One ESI corporation-membership row for a character, with join-time enrichment."""
+
+    character = models.ForeignKey(
+        EveCharacter,
+        on_delete=models.CASCADE,
+        related_name="corporation_history",
+    )
+    record_id = models.IntegerField(
+        help_text="ESI record_id; canonical order when start_date ties."
+    )
+    corporation_id = models.BigIntegerField(db_index=True)
+    start_date = models.DateTimeField()
+    is_deleted = models.BooleanField(
+        default=False,
+        help_text="True if the corporation has been deleted (ESI flag).",
+    )
+    alliance_id = models.BigIntegerField(null=True, blank=True)
+    faction_id = models.BigIntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["character", "record_id"],
+                name="eveonline_char_corp_history_character_record_uniq",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["character", "start_date"]),
+        ]
+        ordering = ["-start_date", "-record_id"]
+        verbose_name_plural = "Eve character corporation histories"
+
+    def __str__(self):
+        return (
+            f"{self.character.character_id} → corp {self.corporation_id} "
+            f"@ {self.start_date} (record {self.record_id})"
+        )
 
 
 class EveTag(models.Model):

@@ -255,6 +255,36 @@ class EsiClientTest(SimpleTestCase):
         self.assertEqual(response.response_code, 420)
         self.assertIsInstance(response.response, ESIErrorLimitException)
 
+    def test_operation_results_maps_error_limit_to_420(self):
+        client = EsiClient(634915984)
+        operation = MagicMock()
+        operation.results.side_effect = ESIErrorLimitException(reset=12)
+        operation.operation.operationId = (
+            "GetCharactersCharacterIdCorporationhistory"
+        )
+
+        # pylint: disable-next=protected-access
+        response = client._operation_results(operation)
+
+        self.assertEqual(response.response_code, 420)
+        self.assertIsInstance(response.response, ESIErrorLimitException)
+
+    def test_operation_results_preserves_http_client_error_status(self):
+        client = EsiClient(634915984)
+        operation = MagicMock()
+        operation.results.side_effect = HTTPClientError(
+            404, {}, {"error": "x"}
+        )
+        operation.operation.operationId = (
+            "GetCorporationsCorporationIdAlliancehistory"
+        )
+
+        # pylint: disable-next=protected-access
+        response = client._operation_results(operation)
+
+        self.assertEqual(response.response_code, 404)
+        self.assertIsInstance(response.response, HTTPClientError)
+
     def test_error_text_includes_underlying_exception_for_906(self):
         response = EsiResponse(
             response_code=ERROR_CALLING_ESI,
