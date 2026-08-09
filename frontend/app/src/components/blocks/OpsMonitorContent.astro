@@ -5,7 +5,7 @@ const { lang, t, translatePath } = i18n(Astro.url)
 import type { OpsMonitor, OpsMonitorHistoryPoint } from '@dtypes/api.minmatar.org'
 import { from_now_diff } from '@helpers/date'
 import { format_isk } from '@helpers/numbers'
-import { query_string } from '@helpers/string'
+import { ops_redirect_path } from '@helpers/market_ops_redirect'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
@@ -17,18 +17,13 @@ import OpsMonitorHistoryChart from '@components/blocks/OpsMonitorHistoryChart.as
 interface Props {
     monitor: OpsMonitor
     history?: OpsMonitorHistoryPoint[]
-    location_id?: number
 }
 
-const { monitor, history = [], location_id } = Astro.props
+const { monitor, history = [] } = Astro.props
 const summary = monitor.summary
 
-const contracts_href = location_id != null
-    ? translatePath(`/market/ops/contracts/?${query_string({ location_id })}`)
-    : translatePath('/market/ops/contracts/')
-const sell_orders_href = location_id != null
-    ? translatePath(`/market/ops/sell_orders/?${query_string({ location_id })}`)
-    : translatePath('/market/ops/sell_orders/')
+const contracts_href = ops_redirect_path(translatePath, 'contracts')
+const sell_orders_href = ops_redirect_path(translatePath, 'sell_orders')
 
 function health_tone(pct: number | null | undefined): 'good' | 'warn' | 'bad' | 'none' {
     if (pct == null)
@@ -38,6 +33,15 @@ function health_tone(pct: number | null | undefined): 'good' | 'warn' | 'bad' | 
     if (pct >= 40)
         return 'warn'
     return 'bad'
+}
+
+function progress_classes(tone: ReturnType<typeof health_tone>) {
+    return {
+        success: tone === 'good',
+        warning: tone === 'warn',
+        danger: tone === 'bad',
+        disabled: tone === 'none',
+    }
 }
 
 function format_pct(pct: number | null | undefined): string {
@@ -71,13 +75,13 @@ function on_target_parts(fulfilled: number, targets: number) {
     )
 }
 
-function viable_fulfilled_parts(fulfilled: number, targets: number) {
+function listed_viable_parts(fulfilled: number, listed: number) {
     return term_parts(
         'ops_health_viable_fulfilled',
         '{viable}',
         'ops_health_viable_word',
         fulfilled,
-        targets,
+        listed,
     )
 }
 
@@ -99,19 +103,21 @@ const sell_viability_tone = health_tone(summary.sell_orders_viability_pct)
 const contracts_on_target = summary.contract_targets > 0
     ? on_target_parts(summary.contract_fulfilled, summary.contract_targets)
     : null
-const contracts_viable = summary.contract_targets > 0
-    ? viable_fulfilled_parts(
+const contracts_listed = summary.contract_listed_targets ?? 0
+const contracts_viable = contracts_listed > 0
+    ? listed_viable_parts(
         summary.contract_viable_fulfilled ?? 0,
-        summary.contract_targets,
+        contracts_listed,
     )
     : null
 const sell_on_target = summary.sell_order_targets > 0
     ? on_target_parts(summary.sell_order_fulfilled, summary.sell_order_targets)
     : null
-const sell_viable = summary.sell_order_targets > 0
-    ? viable_fulfilled_parts(
+const sell_listed = summary.sell_order_listed_targets ?? 0
+const sell_viable = sell_listed > 0
+    ? listed_viable_parts(
         summary.sell_order_viable_fulfilled,
-        summary.sell_order_targets,
+        sell_listed,
     )
     : null
 ---
@@ -126,6 +132,13 @@ const sell_viable = summary.sell_order_targets > 0
         >
             <article class="[ ops-health__card ]">
                 <p class="[ ops-health__card-label ]">{t('ops_health_contracts')}</p>
+                <p
+                    class="[ ops-health__card-meta ops-health__sync-age ]"
+                    title={monitor.contracts_synced_at || undefined}
+                >
+                    {t('ops_sync_age_contracts')
+                        .replace('{age}', sync_age_label(monitor.contracts_synced_at))}
+                </p>
                 <div class="[ ops-health__dual ]">
                     <div
                         class:list={['ops-health__metric', `ops-health__metric--${contracts_tone}`]}
@@ -133,14 +146,7 @@ const sell_viable = summary.sell_order_targets > 0
                         <p class="[ ops-health__metric-label ]">{t('ops_health_coverage')}</p>
                         <p class="[ ops-health__card-pct ]">{format_pct(summary.contracts_health_pct)}</p>
                         <Progress
-                            class:list={[
-                                'ops-health__bar',
-                                {
-                                    success: contracts_tone === 'good',
-                                    danger: contracts_tone === 'bad',
-                                    disabled: contracts_tone === 'none',
-                                },
-                            ]}
+                            class:list={['ops-health__bar', progress_classes(contracts_tone)]}
                             max="100"
                             value={summary.contracts_health_pct != null ? Math.max(summary.contracts_health_pct, 0.1) : 0.1}
                         />
@@ -164,14 +170,7 @@ const sell_viable = summary.sell_order_targets > 0
                         <p class="[ ops-health__metric-label ]">{t('ops_health_viability')}</p>
                         <p class="[ ops-health__card-pct ]">{format_pct(summary.contracts_viability_pct)}</p>
                         <Progress
-                            class:list={[
-                                'ops-health__bar',
-                                {
-                                    success: contracts_viability_tone === 'good',
-                                    danger: contracts_viability_tone === 'bad',
-                                    disabled: contracts_viability_tone === 'none',
-                                },
-                            ]}
+                            class:list={['ops-health__bar', progress_classes(contracts_viability_tone)]}
                             max="100"
                             value={summary.contracts_viability_pct != null ? Math.max(summary.contracts_viability_pct, 0.1) : 0.1}
                         />
@@ -185,30 +184,36 @@ const sell_viable = summary.sell_order_targets > 0
                                     >{contracts_viable.word}</span>
                                     {contracts_viable.after}
                                 </>
-                                : t('ops_health_no_targets')
+                                :
+                                summary.contract_targets > 0
+                                    ? t('ops_health_no_listed')
+                                    : t('ops_health_no_targets')
                             }
                         </p>
                     </div>
                 </div>
-                <p
-                    class="[ ops-health__card-meta ops-health__sync-age ]"
-                    title={monitor.contracts_synced_at || undefined}
+                <FlexInline
+                    class="[ ops-health__card-footer ]"
+                    justification="space-between"
                 >
-                    {t('ops_sync_age_contracts')
-                        .replace('{age}', sync_age_label(monitor.contracts_synced_at))}
-                </p>
-                <p class="[ ops-health__card-meta ops-health__card-meta--isk ]">
-                    {isk_label('ops_health_isk_in_contracts', summary.contracts_isk)}
-                </p>
-                <FlexInline class="[ ops-health__card-actions ]">
-                    <Button href={contracts_href} size="sm">
+                    <Button href={contracts_href} size="sm" color="transparent">
                         {t('view_ops_contracts')}
                     </Button>
+                    <p class="[ ops-health__card-meta ops-health__card-meta--isk ]">
+                        {isk_label('ops_health_isk_in_contracts', summary.contracts_isk)}
+                    </p>
                 </FlexInline>
             </article>
 
             <article class="[ ops-health__card ]">
                 <p class="[ ops-health__card-label ]">{t('ops_health_sell_orders')}</p>
+                <p
+                    class="[ ops-health__card-meta ops-health__sync-age ]"
+                    title={monitor.orders_synced_at || undefined}
+                >
+                    {t('ops_sync_age_orders')
+                        .replace('{age}', sync_age_label(monitor.orders_synced_at))}
+                </p>
                 <div class="[ ops-health__dual ]">
                     <div
                         class:list={['ops-health__metric', `ops-health__metric--${sell_tone}`]}
@@ -216,14 +221,7 @@ const sell_viable = summary.sell_order_targets > 0
                         <p class="[ ops-health__metric-label ]">{t('ops_health_coverage')}</p>
                         <p class="[ ops-health__card-pct ]">{format_pct(summary.sell_orders_health_pct)}</p>
                         <Progress
-                            class:list={[
-                                'ops-health__bar',
-                                {
-                                    success: sell_tone === 'good',
-                                    danger: sell_tone === 'bad',
-                                    disabled: sell_tone === 'none',
-                                },
-                            ]}
+                            class:list={['ops-health__bar', progress_classes(sell_tone)]}
                             max="100"
                             value={summary.sell_orders_health_pct != null ? Math.max(summary.sell_orders_health_pct, 0.1) : 0.1}
                         />
@@ -247,14 +245,7 @@ const sell_viable = summary.sell_order_targets > 0
                         <p class="[ ops-health__metric-label ]">{t('ops_health_viability')}</p>
                         <p class="[ ops-health__card-pct ]">{format_pct(summary.sell_orders_viability_pct)}</p>
                         <Progress
-                            class:list={[
-                                'ops-health__bar',
-                                {
-                                    success: sell_viability_tone === 'good',
-                                    danger: sell_viability_tone === 'bad',
-                                    disabled: sell_viability_tone === 'none',
-                                },
-                            ]}
+                            class:list={['ops-health__bar', progress_classes(sell_viability_tone)]}
                             max="100"
                             value={summary.sell_orders_viability_pct != null ? Math.max(summary.sell_orders_viability_pct, 0.1) : 0.1}
                         />
@@ -268,25 +259,24 @@ const sell_viable = summary.sell_order_targets > 0
                                     >{sell_viable.word}</span>
                                     {sell_viable.after}
                                 </>
-                                : t('ops_health_no_targets')
+                                :
+                                summary.sell_order_targets > 0
+                                    ? t('ops_health_no_listed')
+                                    : t('ops_health_no_targets')
                             }
                         </p>
                     </div>
                 </div>
-                <p
-                    class="[ ops-health__card-meta ops-health__sync-age ]"
-                    title={monitor.orders_synced_at || undefined}
+                <FlexInline
+                    class="[ ops-health__card-footer ]"
+                    justification="space-between"
                 >
-                    {t('ops_sync_age_orders')
-                        .replace('{age}', sync_age_label(monitor.orders_synced_at))}
-                </p>
-                <p class="[ ops-health__card-meta ops-health__card-meta--isk ]">
-                    {isk_label('ops_health_isk_in_sell_orders', summary.sell_orders_isk)}
-                </p>
-                <FlexInline class="[ ops-health__card-actions ]">
-                    <Button href={sell_orders_href} size="sm">
+                    <Button href={sell_orders_href} size="sm" color="transparent">
                         {t('view_ops_sell_orders')}
                     </Button>
+                    <p class="[ ops-health__card-meta ops-health__card-meta--isk ]">
+                        {isk_label('ops_health_isk_in_sell_orders', summary.sell_orders_isk)}
+                    </p>
                 </FlexInline>
             </article>
         </Grid>
@@ -304,10 +294,11 @@ const sell_viable = summary.sell_order_targets > 0
 
     .ops-health__card-label {
         margin: 0;
-        font-size: var(--step--1);
-        letter-spacing: 0.08em;
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: var(--fleet-yellow);
+        color: rgba(255, 255, 255, 0.85);
     }
 
     .ops-health__bar {
@@ -318,36 +309,37 @@ const sell_viable = summary.sell_order_targets > 0
 
     .ops-health__card-meta {
         margin: 0;
-        color: rgba(255, 255, 255, 0.65);
+        color: rgba(255, 255, 255, 0.55);
         font-size: var(--step--1);
     }
 
     .ops-health__sync-age {
-        margin-block-start: auto;
-        padding-block-start: var(--space-xs);
+        margin-block-end: var(--space-2xs);
         font-size: var(--step--2);
-        color: var(--fleet-yellow);
-        opacity: 0.85;
+        color: rgba(255, 255, 255, 0.45);
     }
 
     .ops-health__term {
-        color: var(--highlight);
+        color: rgba(255, 255, 255, 0.85);
         cursor: help;
-        border-bottom: 1px dotted color-mix(in srgb, var(--highlight) 55%, transparent);
+        border-bottom: 1px dotted color-mix(in srgb, var(--highlight) 40%, transparent);
     }
 
     .ops-health__card-meta--isk {
         margin: 0;
-        padding-block-start: var(--space-3xs);
-        font-family: var(--heading-font);
-        font-size: var(--step-0);
-        letter-spacing: 0.02em;
+        line-height: 1;
+        font-size: var(--step--1);
+        letter-spacing: 0.04em;
+        text-align: end;
         text-transform: uppercase;
-        color: var(--highlight);
+        color: rgba(255, 255, 255, 0.5);
     }
 
-    .ops-health__card-actions {
+    .ops-health__card-footer {
+        margin-block-start: auto;
         padding-block-start: var(--space-xs);
+        width: 100%;
+        align-items: center;
     }
 
     .ops-health__card {
@@ -367,12 +359,14 @@ const sell_viable = summary.sell_order_targets > 0
         letter-spacing: -0.02em;
         text-transform: uppercase;
         color: var(--highlight);
+        min-height: 1em;
     }
 
     .ops-health__dual {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: var(--space-s);
+        align-items: start;
     }
 
     .ops-health__metric {
@@ -387,7 +381,8 @@ const sell_viable = summary.sell_order_targets > 0
         font-size: var(--step--1);
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        color: rgba(255, 255, 255, 0.7);
+        color: rgba(255, 255, 255, 0.55);
+        min-height: 1.2em;
     }
 
     .ops-health__card--good .ops-health__card-pct,

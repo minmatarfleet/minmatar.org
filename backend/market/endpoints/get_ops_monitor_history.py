@@ -69,9 +69,11 @@ class OpsMonitorHistoryPoint(Schema):
     contract_targets: int = 0
     contract_fulfilled: int = 0
     contract_viable_fulfilled: int = 0
+    contract_listed_targets: int = 0
     sell_order_targets: int = 0
     sell_order_fulfilled: int = 0
     sell_order_viable_fulfilled: int = 0
+    sell_order_listed_targets: int = 0
     contracts_isk: float = 0.0
     sell_orders_isk: float = 0.0
     total_isk_on_market: float = 0.0

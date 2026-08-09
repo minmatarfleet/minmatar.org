@@ -39,6 +39,7 @@ from market.helpers.readiness import fitting_readiness, shortfall
 from market.models import (
     EveMarketContract,
     EveMarketContractExpectation,
+    EveMarketContractItem,
     EveMarketInferredSale,
 )
 from market.models.item import (
@@ -93,7 +94,7 @@ def _fitting_baseline_isk(
     baseline_by_type: dict[int, int],
 ) -> int | None:
     """
-    Sum of EFT type qty × Forge baseline.
+    Sum of type qty × Forge baseline (EFT or contract contents).
 
     Returns None when no constituent has a usable baseline (fail-open for
     is_price_viable). Partial coverage still prices what we can.
@@ -107,6 +108,23 @@ def _fitting_baseline_isk(
         total += int(qty) * int(unit)
         priced = True
     return total if priced else None
+
+
+def _contract_contents_by_id(
+    contract_ids: list[int],
+) -> dict[int, dict[int, int]]:
+    """``{contract_id: {type_id: qty}}`` for included ESI contract items."""
+    if not contract_ids:
+        return {}
+    contents: dict[int, dict[int, int]] = defaultdict(lambda: defaultdict(int))
+    for row in EveMarketContractItem.objects.filter(
+        contract_id__in=contract_ids,
+        is_included=True,
+    ).values("contract_id", "type_id", "quantity"):
+        contents[row["contract_id"]][int(row["type_id"])] += int(
+            row["quantity"] or 1
+        )
+    return {cid: dict(qtys) for cid, qtys in contents.items()}
 
 
 def _days_of_stock(current_quantity: int, weekly_units: int) -> float | None:
@@ -225,9 +243,11 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
                 "contract_targets": 0,
                 "contract_fulfilled": 0,
                 "contract_viable_fulfilled": 0,
+                "contract_listed_targets": 0,
                 "sell_order_targets": 0,
                 "sell_order_fulfilled": 0,
                 "sell_order_viable_fulfilled": 0,
+                "sell_order_listed_targets": 0,
                 "contracts_isk": 0.0,
                 "sell_orders_isk": 0.0,
                 "total_isk_on_market": 0.0,
@@ -252,11 +272,27 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
             if expectation.fitting_id is not None
         }.values()
     )
+    # EFT baselines are a fallback when a contract has no fetched items yet.
     fitting_qtys = fitting_type_quantities_bulk(expectation_fittings)
-    contract_type_ids = sorted(
-        {type_id for qtys in fitting_qtys.values() for type_id in qtys}
+
+    outstanding_contracts = list(
+        EveMarketContract.objects.filter(
+            outstanding_stock_q(),
+            location_id__in=location_pks,
+            fitting_id__isnull=False,
+        ).values("id", "location_id", "fitting_id", "price")
     )
-    contract_baseline_by_type = _ops_baseline_by_type(contract_type_ids)
+    contents_by_contract = _contract_contents_by_id(
+        [row["id"] for row in outstanding_contracts]
+    )
+    contract_type_ids = {
+        type_id for qtys in fitting_qtys.values() for type_id in qtys
+    }
+    for qtys in contents_by_contract.values():
+        contract_type_ids.update(qtys)
+    contract_baseline_by_type = _ops_baseline_by_type(
+        sorted(contract_type_ids)
+    )
     fitting_baseline_isk = {
         fit_id: _fitting_baseline_isk(qtys, contract_baseline_by_type)
         for fit_id, qtys in fitting_qtys.items()
@@ -264,16 +300,18 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
 
     outstanding: dict[tuple[int, int], int] = defaultdict(int)
     viable_outstanding: dict[tuple[int, int], int] = defaultdict(int)
-    for row in EveMarketContract.objects.filter(
-        outstanding_stock_q(),
-        location_id__in=location_pks,
-    ).values("location_id", "fitting_id", "price"):
+    for row in outstanding_contracts:
         fitting_id = row["fitting_id"]
-        if fitting_id is None:
-            continue
         key = (row["location_id"], fitting_id)
         outstanding[key] += 1
-        if is_price_viable(row["price"], fitting_baseline_isk.get(fitting_id)):
+        contents = contents_by_contract.get(row["id"])
+        if contents:
+            baseline = _fitting_baseline_isk(
+                contents, contract_baseline_by_type
+            )
+        else:
+            baseline = fitting_baseline_isk.get(fitting_id)
+        if is_price_viable(row["price"], baseline):
             viable_outstanding[key] += 1
 
     # Finished contracts = completed sales of that fitting at the location.
@@ -339,6 +377,7 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
         list
     )
     contract_targets_by_loc: dict[int, int] = defaultdict(int)
+    contract_listed_by_loc: dict[int, int] = defaultdict(int)
     contract_fulfilled_by_loc: dict[int, int] = defaultdict(int)
     contract_viable_fulfilled_by_loc: dict[int, int] = defaultdict(int)
     for expectation in expectations:
@@ -347,18 +386,23 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
         viable = viable_outstanding.get(key, 0)
         if expectation.quantity > 0:
             ratio = min(1.0, current / expectation.quantity)
-            viable_ratio = min(1.0, viable / expectation.quantity)
             contract_fill_ratios.append(ratio)
-            contract_viable_fill_ratios.append(viable_ratio)
             contract_fill_ratios_by_loc[expectation.location_id].append(ratio)
-            contract_viable_fill_ratios_by_loc[expectation.location_id].append(
-                viable_ratio
-            )
             contract_targets_by_loc[expectation.location_id] += 1
             if current >= expectation.quantity:
                 contract_fulfilled_by_loc[expectation.location_id] += 1
-            if viable >= expectation.quantity:
-                contract_viable_fulfilled_by_loc[expectation.location_id] += 1
+            # Viability = price quality of what is listed, not empty shelves.
+            if current > 0:
+                viable_ratio = min(1.0, viable / current)
+                contract_viable_fill_ratios.append(viable_ratio)
+                contract_viable_fill_ratios_by_loc[
+                    expectation.location_id
+                ].append(viable_ratio)
+                contract_listed_by_loc[expectation.location_id] += 1
+                if viable >= current:
+                    contract_viable_fulfilled_by_loc[
+                        expectation.location_id
+                    ] += 1
         level = fitting_readiness(current, expectation.quantity)
         if level in ("ready", "unknown"):
             continue
@@ -492,11 +536,13 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
             )
 
     sell_targets = 0
+    sell_listed = 0
     sell_fulfilled = 0
     sell_viable_fulfilled = 0
     sell_fill_ratios_by_loc: dict[int, list[float]] = defaultdict(list)
     sell_viable_fill_ratios_by_loc: dict[int, list[float]] = defaultdict(list)
     sell_targets_by_loc: dict[int, int] = defaultdict(int)
+    sell_listed_by_loc: dict[int, int] = defaultdict(int)
     sell_fulfilled_by_loc: dict[int, int] = defaultdict(int)
     sell_viable_fulfilled_by_loc: dict[int, int] = defaultdict(int)
     for loc_pk, name_map in effective.items():
@@ -512,17 +558,22 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
             sell_targets += 1
             sell_targets_by_loc[loc_pk] += 1
             sell_ratio = min(1.0, current / desired)
-            sell_viable_ratio = min(1.0, viable / desired)
             sell_fill_ratios.append(sell_ratio)
             sell_fill_ratios_by_loc[loc_pk].append(sell_ratio)
-            sell_viable_fill_ratios.append(sell_viable_ratio)
-            sell_viable_fill_ratios_by_loc[loc_pk].append(sell_viable_ratio)
             if current >= desired:
                 sell_fulfilled += 1
                 sell_fulfilled_by_loc[loc_pk] += 1
-            if viable >= desired:
-                sell_viable_fulfilled += 1
-                sell_viable_fulfilled_by_loc[loc_pk] += 1
+            if current > 0:
+                sell_viable_ratio = min(1.0, viable / current)
+                sell_viable_fill_ratios.append(sell_viable_ratio)
+                sell_viable_fill_ratios_by_loc[loc_pk].append(
+                    sell_viable_ratio
+                )
+                sell_listed += 1
+                sell_listed_by_loc[loc_pk] += 1
+                if viable >= current:
+                    sell_viable_fulfilled += 1
+                    sell_viable_fulfilled_by_loc[loc_pk] += 1
             coverage_gap = current < desired * _CRITICAL_RATIO
             viability_gap = viable < desired * _CRITICAL_RATIO
             avg_markup_pct = None
@@ -593,6 +644,7 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
     )
 
     contract_targets = len(contract_fill_ratios)
+    contract_listed_targets = len(contract_viable_fill_ratios)
     contract_fulfilled = sum(
         1 for ratio in contract_fill_ratios if ratio >= 1.0
     )
@@ -750,11 +802,15 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
                 "contract_viable_fulfilled": (
                     contract_viable_fulfilled_by_loc.get(loc_pk, 0)
                 ),
+                "contract_listed_targets": contract_listed_by_loc.get(
+                    loc_pk, 0
+                ),
                 "sell_order_targets": sell_targets_by_loc.get(loc_pk, 0),
                 "sell_order_fulfilled": sell_fulfilled_by_loc.get(loc_pk, 0),
                 "sell_order_viable_fulfilled": (
                     sell_viable_fulfilled_by_loc.get(loc_pk, 0)
                 ),
+                "sell_order_listed_targets": sell_listed_by_loc.get(loc_pk, 0),
                 "contracts_isk": round(loc_contracts_isk, 2),
                 "sell_orders_isk": round(loc_sell_orders_isk, 2),
                 "total_isk_on_market": round(
@@ -786,9 +842,11 @@ def build_ops_monitor(*, location_id: int | None = None) -> dict:  # noqa: C901
             "contract_targets": contract_targets,
             "contract_fulfilled": contract_fulfilled,
             "contract_viable_fulfilled": contract_viable_fulfilled,
+            "contract_listed_targets": contract_listed_targets,
             "sell_order_targets": sell_targets,
             "sell_order_fulfilled": sell_fulfilled,
             "sell_order_viable_fulfilled": sell_viable_fulfilled,
+            "sell_order_listed_targets": sell_listed,
             "contracts_isk": round(contracts_isk, 2),
             "sell_orders_isk": round(sell_orders_isk, 2),
             "total_isk_on_market": round(total_isk_on_market, 2),

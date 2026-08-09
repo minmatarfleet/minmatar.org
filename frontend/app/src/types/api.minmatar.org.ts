@@ -1412,9 +1412,11 @@ export interface OpsMonitorSummary {
     contract_targets:           number;
     contract_fulfilled:         number;
     contract_viable_fulfilled:  number;
+    contract_listed_targets:    number;
     sell_order_targets:         number;
     sell_order_fulfilled:       number;
     sell_order_viable_fulfilled: number;
+    sell_order_listed_targets:  number;
     contracts_isk:              number;
     sell_orders_isk:            number;
     total_isk_on_market:        number;
@@ -1493,9 +1495,11 @@ export interface OpsMonitorHistoryPoint {
     contract_targets:               number;
     contract_fulfilled:             number;
     contract_viable_fulfilled:      number;
+    contract_listed_targets?:       number;
     sell_order_targets:             number;
     sell_order_fulfilled:           number;
     sell_order_viable_fulfilled:    number;
+    sell_order_listed_targets?:     number;
     contracts_isk:                  number;
     sell_orders_isk:                number;
     total_isk_on_market:            number;
