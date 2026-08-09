@@ -6,6 +6,7 @@ from eveonline.models.characters import (
     EveCharacterBlueprint,
     EveCharacterClone,
     EveCharacterContract,
+    EveCharacterCorporationHistory,
     EveCharacterIndustryJob,
     EveCharacterKillmail,
     EveCharacterKillmailAttacker,
@@ -22,6 +23,8 @@ from eveonline.models.characters import (
 )
 from eveonline.models.corporations import (
     EveCorporation,
+    EveCorporationAllianceHistory,
+    EveCorporationAllianceHistorySync,
     EveCorporationBlueprint,
     EveCorporationContract,
     EveCorporationIndustryJob,
@@ -36,6 +39,7 @@ __all__ = [
     "EveCharacterBlueprint",
     "EveCharacterClone",
     "EveCharacterContract",
+    "EveCharacterCorporationHistory",
     "EveCharacterIndustryJob",
     "EveCharacterKillmail",
     "EveCharacterKillmailAttacker",
@@ -47,6 +51,8 @@ __all__ = [
     "EveCharacterSkillset",
     "EveCharacterTag",
     "EveCorporation",
+    "EveCorporationAllianceHistory",
+    "EveCorporationAllianceHistorySync",
     "EveCorporationBlueprint",
     "EveCorporationContract",
     "EveCorporationIndustryJob",

@@ -38,7 +38,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
-import OpsSellGapsSkeleton from '@components/blocks/OpsSellGapsSkeleton.astro'
+import SellOrderGapsSkeleton from '@components/blocks/SellOrderGapsSkeleton.astro'
 
 const page_title = t('staging_supply.ops.sell_orders.page_title')
 
@@ -52,7 +52,7 @@ const breadcrumb_items = [
 ]
 
 const SELL_ORDERS_PARTIAL = translatePath(
-    `/partials/ops_sell_orders_component${
+    `/partials/sell_order_gaps_component${
         location_id != null
             ? `?${query_string({ location_id })}`
             : ''
@@ -101,7 +101,7 @@ const SELL_ORDERS_PARTIAL = translatePath(
                 aria-busy="true"
                 aria-live="polite"
             >
-                <OpsSellGapsSkeleton rows={8} />
+                <SellOrderGapsSkeleton rows={8} />
             </div>
         }
     </PageWide>
@@ -116,14 +116,11 @@ const SELL_ORDERS_PARTIAL = translatePath(
         slot.setAttribute('aria-busy', 'false')
         if (typeof htmx !== 'undefined')
             htmx.process(slot)
-        if (typeof Alpine !== 'undefined')
+        if (typeof Alpine !== 'undefined') {
+            Alpine.destroyTree(slot)
             Alpine.initTree(slot)
-        if (typeof tippy === 'function') {
-            tippy('#ops-sell-orders-slot [data-tippy-content]', {
-                delay: [100, 200],
-                arrow: true,
-            })
         }
+        tippy('#ops-sell-orders-slot [data-tippy-content]', tippy_options)
     }
 
     function isOpsSellOrdersRequest(event: any): boolean {
@@ -133,7 +130,7 @@ const SELL_ORDERS_PARTIAL = translatePath(
                 || event.detail?.elt?.getAttribute?.('hx-get')
                 || '',
         )
-        return path.includes('ops_sell_orders_component')
+        return path.includes('sell_order_gaps_component')
     }
 
     function bindOpsSellOrdersDeferred() {

@@ -6,7 +6,13 @@ from django.core.exceptions import ValidationError
 from django.db.models import signals
 
 from app.test import TestCase
-from fittings.models import EveFitting, EveFittingPod, FittingTag
+from fittings.endpoints.eve_fittings.serialization import make_fitting_response
+from fittings.models import (
+    EveFitting,
+    EveFittingPod,
+    EveFittingTag,
+    FittingTag,
+)
 
 
 def _normalize_pod_text(text: str) -> str:
@@ -65,6 +71,38 @@ class EveFittingPodTest(TestCase):
         pod.escape_frigate_fittings.add(ship_fit)
         with self.assertRaises(ValidationError):
             pod.clean()
+
+    def test_unsaved_pod_clean_skips_m2m(self):
+        """Admin add calls full_clean before PK exists (REST-API-M3)."""
+        pod = EveFittingPod(name="Unsaved Pod", priority=1, pod_format="A")
+        pod.full_clean()
+
+
+class FittingResponseSerializationTest(TestCase):
+    @factory.django.mute_signals(signals.pre_save, signals.post_save)
+    def test_make_fitting_response_filters_unknown_tags(self):
+        """REST-API-M8: stale tag slugs must not 500 the fittings list."""
+        fitting = EveFitting.objects.create(
+            name="Tagged Fit",
+            ship_id=670,
+            description="desc",
+            eft_format="[Thorax, Test]\n",
+            minimum_pod="",
+            recommended_pod="",
+        )
+        fitting.set_tag_slugs(
+            [FittingTag.FACTION_WARFARE], write_history=False
+        )
+        stale, _ = EveFittingTag.objects.get_or_create(
+            slug="lowsec",
+            defaults={"label": "Lowsec"},
+        )
+        fitting.tags.add(stale)
+
+        response = make_fitting_response(fitting)
+
+        self.assertIn(FittingTag.FACTION_WARFARE, response.tags)
+        self.assertNotIn("lowsec", response.tags)
 
 
 class LegacyPodMigrationTest(TestCase):

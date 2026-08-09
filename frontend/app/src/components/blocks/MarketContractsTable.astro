@@ -285,6 +285,18 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
         active(list, id) {
             return list.includes(id)
         },
+        toggle_criteria(id) {
+            this.toggle(this.criteria, id)
+        },
+        criteria_active(id) {
+            return this.active(this.criteria, id)
+        },
+        toggle_doctrines(id) {
+            this.toggle(this.doctrines, id)
+        },
+        doctrines_active(id) {
+            return this.active(this.doctrines, id)
+        },
         rowVisible(row) {
             const criteria = this.criteria
             const doctrines = this.doctrines
@@ -363,8 +375,8 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
                                     <button
                                         type="button"
                                         class="[ ops-contracts-list__chip ]"
-                                        x-bind:class={`active(criteria, '${opt.id}') && 'is-active'`}
-                                        x-on:click={`toggle(criteria, '${opt.id}')`}
+                                        x-bind:class={`criteria_active('${opt.id}') && 'is-active'`}
+                                        x-on:click={`toggle_criteria('${opt.id}')`}
                                     >{opt.label}</button>
                                 )}
                             </div>
@@ -377,16 +389,16 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
                                         <button
                                             type="button"
                                             class="[ ops-contracts-list__chip ]"
-                                            x-bind:class={`active(doctrines, '${opt.id}') && 'is-active'`}
-                                            x-on:click={`toggle(doctrines, '${opt.id}')`}
+                                            x-bind:class={`doctrines_active('${opt.id}') && 'is-active'`}
+                                            x-on:click={`toggle_doctrines('${opt.id}')`}
                                         >{opt.label}</button>
                                     )}
                                     {has_no_doctrine &&
                                         <button
                                             type="button"
                                             class="[ ops-contracts-list__chip ]"
-                                            x-bind:class={`active(doctrines, '${OPS_CONTRACTS_NO_DOCTRINE}') && 'is-active'`}
-                                            x-on:click={`toggle(doctrines, '${OPS_CONTRACTS_NO_DOCTRINE}')`}
+                                            x-bind:class={`doctrines_active('${OPS_CONTRACTS_NO_DOCTRINE}') && 'is-active'`}
+                                            x-on:click={`toggle_doctrines('${OPS_CONTRACTS_NO_DOCTRINE}')`}
                                         >{t('ops_contracts_filter_no_doctrine')}</button>
                                     }
                                 </div>

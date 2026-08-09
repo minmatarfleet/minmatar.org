@@ -6,20 +6,30 @@
             return this.pagination_icons[index]
         },
         init() {
-            this.swiper = new Swiper('#corporations-list', {
-                slidesPerView: 1,
-                loop: false,
-                effect: 'fade',
-                hashNavigation: true,
-                fadeEffect: {
-                    crossFade: true
-                },
-                pagination: false,
-                navigation: {
-                    nextEl: '#corporations-list-swiper-button-next',
-                    prevEl: '#corporations-list-swiper-button-prev',
-                },
-            });
+            const INIT_WORKAROUND_TIMER_MS = 100
+            const el = this.$el.closest('#corporations-list') || document.getElementById('corporations-list')
+            if (!(el instanceof Element))
+                return
+            setTimeout(() => {
+                if (this.swiper) {
+                    this.swiper.destroy(true, true)
+                    this.swiper = null
+                }
+                this.swiper = new Swiper(el, {
+                    slidesPerView: 1,
+                    loop: false,
+                    effect: 'fade',
+                    hashNavigation: true,
+                    fadeEffect: {
+                        crossFade: true
+                    },
+                    pagination: false,
+                    navigation: {
+                        nextEl: '#corporations-list-swiper-button-next',
+                        prevEl: '#corporations-list-swiper-button-prev',
+                    },
+                });
+            }, INIT_WORKAROUND_TIMER_MS)
         }
     }`}
 >
@@ -28,7 +38,6 @@
 
 <style lang="scss" is:global>
     .swiper-slide .tag {
-        transform: scale(1.2);
-        transform-origin: top left;
+        pointer-events: none;
     }
 </style>

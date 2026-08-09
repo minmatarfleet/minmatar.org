@@ -1,4 +1,4 @@
-const number_name = (val, locale) => {
+window.number_name = window.number_name || function number_name(val, locale) {
     if (val == '')
         return;
 
@@ -19,8 +19,13 @@ const number_name = (val, locale) => {
     return `${is_approxixmation(shorten_number, val) ? '≈ ' : ''}${shorten_number}`;
 }
 
-const isPowerOf10 = n => Math.log10(n) % 1 === 0;
+window.isPowerOf10 = window.isPowerOf10 || function isPowerOf10(n) {
+    return Math.log10(n) % 1 === 0;
+};
 
 function is_approxixmation(shorten_number, val) {
-    return !isPowerOf10( val/parseFloat(shorten_number.split(' ')[0]) );
+    return !window.isPowerOf10( val/parseFloat(shorten_number.split(' ')[0]) );
 }
+
+var number_name = window.number_name;
+var isPowerOf10 = window.isPowerOf10;

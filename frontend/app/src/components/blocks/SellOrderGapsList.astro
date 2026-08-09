@@ -48,7 +48,7 @@ const {
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import { ops_sell_gaps_row_visible } from '@helpers/ops_sell_gaps_filter'
+import { sell_order_gaps_row_visible } from '@helpers/sell_order_gaps_filter'
 import type { TagColors } from '@dtypes/layout_components'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -60,7 +60,7 @@ import ClipboardButton from '@components/blocks/ClipboardButton.astro'
 import Tag from '@components/blocks/Tag.astro'
 import Input from '@components/blocks/Input.astro'
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
-import OpsSellGapsSkeleton from '@components/blocks/OpsSellGapsSkeleton.astro'
+import SellOrderGapsSkeleton from '@components/blocks/SellOrderGapsSkeleton.astro'
 
 const FLAG_META: Record<string, { label: string; color: TagColors; tip?: string }> = {
     out_of_stock: {
@@ -178,7 +178,7 @@ const showing_template = t('ops_sell_gaps_showing')
 const [showing_before_template, showing_after_template = ''] = showing_template.split('{items}')
 const default_criteria = ['out_of_stock', 'understocked'] as const
 const initial_visible_count = rows.filter(row =>
-    ops_sell_gaps_row_visible(row, default_criteria, [], []),
+    sell_order_gaps_row_visible(row, default_criteria, [], []),
 ).length
 
 function fill_showing_part(template: string, visible: number, total: number) {
@@ -199,7 +199,7 @@ const initial_showing_after = fill_showing_part(
 )
 ---
 
-{/* Filter helpers: OpsSellGapsAlpine in FooterScripts (htmx-safe). */}
+{/* Filter helpers: SellOrderGapsAlpine in FooterScripts (htmx-safe). */}
 
 <div
     class="[ ops-sell-gaps ]"
@@ -232,7 +232,7 @@ const initial_showing_after = fill_showing_part(
             this.syncHelpersEpoch()
             this._helpers_listener = () => this.syncHelpersEpoch()
             window.addEventListener(
-                'ops-sell-gaps-helpers-ready',
+                'sell-order-gaps-helpers-ready',
                 this._helpers_listener,
             )
         },
@@ -247,7 +247,7 @@ const initial_showing_after = fill_showing_part(
             }
             if (this._helpers_listener) {
                 window.removeEventListener(
-                    'ops-sell-gaps-helpers-ready',
+                    'sell-order-gaps-helpers-ready',
                     this._helpers_listener,
                 )
                 this._helpers_listener = null
@@ -255,9 +255,9 @@ const initial_showing_after = fill_showing_part(
         },
         syncHelpersEpoch() {
             if (
-                window.__opsSellGapsRowVisible
-                && window.__opsSellGapsCompareRows
-                && window.__opsSellGapsNextOrderState
+                window.__sellOrderGapsRowVisible
+                && window.__sellOrderGapsCompareRows
+                && window.__sellOrderGapsNextOrderState
                 && this.helpers_epoch === 0
             )
                 this.helpers_epoch = 1
@@ -290,7 +290,7 @@ const initial_showing_after = fill_showing_part(
             this.pulseFilter()
         },
         setOrderBy(id) {
-            const next = window.__opsSellGapsNextOrderState?.(
+            const next = window.__sellOrderGapsNextOrderState?.(
                 this.order_by,
                 this.order_dir,
                 id,
@@ -302,7 +302,7 @@ const initial_showing_after = fill_showing_part(
                 this.order_dir = this.order_dir === 'asc' ? 'desc' : 'asc'
             } else {
                 this.order_by = id
-                this.order_dir = window.__opsSellGapsDefaultDirection?.(id) ?? 'asc'
+                this.order_dir = window.__sellOrderGapsDefaultDirection?.(id) ?? 'asc'
             }
             this.pulseFilter()
         },
@@ -314,6 +314,24 @@ const initial_showing_after = fill_showing_part(
         active(list, id) {
             return list.includes(id)
         },
+        toggle_criteria(id) {
+            this.toggle(this.criteria, id)
+        },
+        criteria_active(id) {
+            return this.active(this.criteria, id)
+        },
+        toggle_types(id) {
+            this.toggle(this.types, id)
+        },
+        types_active(id) {
+            return this.active(this.types, id)
+        },
+        toggle_variants(id) {
+            this.toggle(this.variants, id)
+        },
+        variants_active(id) {
+            return this.active(this.variants, id)
+        },
         rowVisible(row) {
             // Always touch reactive deps before the helper early-return so Alpine
             // tracks them even when FooterScripts helpers are not registered yet.
@@ -323,7 +341,7 @@ const initial_showing_after = fill_showing_part(
             const search = this.search_query
             // Track helpers_epoch so late FooterScripts registration re-filters.
             this.helpers_epoch
-            const fn = window.__opsSellGapsRowVisible
+            const fn = window.__sellOrderGapsRowVisible
             if (!fn)
                 return true
             return fn(row, criteria, types, variants, search)
@@ -352,7 +370,7 @@ const initial_showing_after = fill_showing_part(
             const order_by = this.order_by
             const order_dir = this.order_dir
             this.helpers_epoch
-            const compare = window.__opsSellGapsCompareRows
+            const compare = window.__sellOrderGapsCompareRows
             const ranked = this.rows
                 .map((row, index) => ({ row, index }))
                 .filter(({ row }) => this.rowVisible(row))
@@ -405,8 +423,8 @@ const initial_showing_after = fill_showing_part(
                                     <button
                                         type="button"
                                         class="[ ops-sell-gaps__chip ]"
-                                        x-bind:class={`active(criteria, '${opt.id}') && 'is-active'`}
-                                        x-on:click={`toggle(criteria, '${opt.id}')`}
+                                        x-bind:class={`criteria_active('${opt.id}') && 'is-active'`}
+                                        x-on:click={`toggle_criteria('${opt.id}')`}
                                         {...('tip' in opt && opt.tip
                                             ? { 'data-tippy-content': opt.tip }
                                             : {})}
@@ -421,8 +439,8 @@ const initial_showing_after = fill_showing_part(
                                     <button
                                         type="button"
                                         class="[ ops-sell-gaps__chip ]"
-                                        x-bind:class={`active(types, '${opt.id}') && 'is-active'`}
-                                        x-on:click={`toggle(types, '${opt.id}')`}
+                                        x-bind:class={`types_active('${opt.id}') && 'is-active'`}
+                                        x-on:click={`toggle_types('${opt.id}')`}
                                     >{opt.label}</button>
                                 )}
                             </div>
@@ -434,8 +452,8 @@ const initial_showing_after = fill_showing_part(
                                     <button
                                         type="button"
                                         class="[ ops-sell-gaps__chip ]"
-                                        x-bind:class={`active(variants, '${opt.id}') && 'is-active'`}
-                                        x-on:click={`toggle(variants, '${opt.id}')`}
+                                        x-bind:class={`variants_active('${opt.id}') && 'is-active'`}
+                                        x-on:click={`toggle_variants('${opt.id}')`}
                                     >{opt.label}</button>
                                 )}
                             </div>
@@ -468,7 +486,7 @@ const initial_showing_after = fill_showing_part(
                 x-show="filtering"
                 x-cloak
             >
-                <OpsSellGapsSkeleton />
+                <SellOrderGapsSkeleton />
             </div>
 
             <div x-show="!filtering">

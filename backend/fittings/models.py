@@ -373,6 +373,8 @@ class EveFittingPod(MinmatarSoftDeleteModel):
 
     def clean(self):
         super().clean()
+        if self.pk is None:
+            return
         invalid = [
             fitting.name
             for fitting in self.escape_frigate_fittings.all()

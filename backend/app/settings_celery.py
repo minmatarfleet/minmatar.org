@@ -88,6 +88,14 @@ CELERYBEAT_CHARACTERS = [
         },
     ),
     (
+        "[Characters] Queue stale corporation history",
+        {
+            "task": "eveonline.tasks.characters.queue_stale_character_corporation_history",
+            "schedule": crontab(minute="5,35", hour="*"),
+            "options": {"queue": "eveonline"},
+        },
+    ),
+    (
         "[Characters] Update Players",
         {
             "task": "eveonline.tasks.players.update_players",
@@ -95,7 +103,6 @@ CELERYBEAT_CHARACTERS = [
         },
     ),
 ]
-
 # Corporations (eveonline tasks use queue="eveonline" for admin "Run" and beat)
 CELERYBEAT_CORPORATIONS = [
     (
