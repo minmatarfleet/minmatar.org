@@ -4,6 +4,145 @@ Real responses that worked. Add entries here after you send outreach — no temp
 
 ---
 
+## 2026-08-08 / 2026-08-09 scout run
+
+### Casual PvE returner, no PvP, no null/WH (missions / L5 / abyssals)
+**Thread:** [Retirement home](https://www.reddit.com/r/evejobs/comments/1vjd9t1/retirement_home/)  
+**Routed:** Minmatar Fleet Associates  
+**Author:** BearThatCares
+
+**Scout draft:**
+> Twelve years away and wanting missions, level fives, and abyssals without a PvP tax is the Minmatar Fleet Associates lane, highsec bulwark systems where casual logons and doing your own thing are normal. discord.gg/minmatar and ask for Keldor
+
+**Sent:**
+> Twelve years away and wanting missions, level fives, and abyssals without a PvP tax is the Minmatar Fleet Associates lane, highsec bulwark systems where casual logons and doing your own thing are normal. [discord.gg/minmatar](http://discord.gg/minmatar) and ask for Keldor
+>
+> [https://youtu.be/XCApG7Pt6m4](https://youtu.be/XCApG7Pt6m4?si=74LEXH9NPREy9rh4)
+
+**What changed and why:**
+- Scout paragraph shipped; added Rock Hoppin' YouTube as second block even though OP did not ask for mining fleets — MFA PvE/casual proof close, same family as UK industry returner.
+- Left unused capital pilot unsaid — do not pitch Rattini when they explicitly refuse PvP.
+
+**Routing note:** Explicit no-PvP + missions/abyssals + not null/WH → MFA + Keldor. Rock Hoppin' OK as atmosphere proof for casual highsec; Extraction ad optional when rocks are not the ask.
+
+---
+
+### Forum: US/EUTZ multi-box, unused capital, leaving pirate null for lowsec
+**Thread:** [【US/EUTZ】57+40+40M PILOT looking for low-sec corp](https://forums.eveonline.com/t/us-eutz-57-40-40m-pilot-looking-for-low-sec-corp/515826)  
+**Routed:** Rattini Tribe  
+**Author:** BearThatCares
+
+**Scout draft (not sent):**
+> Leaving pirate null for lowsec fights on a work schedule that still leaves vacation weeks free is what Soltech Armada flies daily out of Amamake in Minmatar faction warfare, room for your combat accounts to learn without structure-timer babysitting. [Ad] or discord.gg/minmatar — Rattini Tribe (same alliance) if you want that unused capital account in the mix
+
+**Sent:**
+> If you’re coming to lowsec, you need to come to faction warfare space. Nothing is hotter right now. Rattini Tribe is probably the best fit for you since you have a capital ship and are unexperienced- we’ll help you lose your first dread!
+>
+> [zkill alliance] · [corporations directory] · [my.minmatar.org]
+
+**What changed and why:**
+- Scout Soltech-primary + Rattini aside → **Rattini primary**. Unused capital account + “enrich PvP experience” beats Soltech learning seat when a dread is sitting idle.
+- Direct-answer open (`coming to lowsec` → FW space) then corp + humor ownership (`lose your first dread`) — stronger than vacation-week schedule weave.
+- Forum close: alliance zkill + corp directory + site, not a single corp ad — lets them self-serve bios after the Rattini hook.
+- Used `probably the best fit` once; still avoid stacking salesy fit language across a run.
+
+**Routing note:** Explicit lowsec seeker + unused/unexperienced capital → Rattini, not Soltech-first. Soltech stays the default when there is no capital hook.
+
+---
+
+### WH-only seeker with IRL-first limit (was scout-skipped; still replied)
+**Thread:** [Returning player looking for a chill wormhole corp, USTZ](https://www.reddit.com/r/evejobs/comments/1vj61j6/returning_player_looking_for_a_chill_wormhole/)  
+**Routed:** alliance FW redirect (no named corp)  
+**Author:** BearThatCares
+
+**Sent:**
+> > The biggest limitation is real life. I'm not looking for EVE to become a second job.
+> If this is what you're after, steer clear of wormholes this go around. Pick faction warfare, where you can just log on and get 10-15 kills and a few hundred million ISK in a single hour or two play session with no scanning or other bullshit.
+>
+> [my.minmatar.org](https://my.minmatar.org/)
+>
+> [discord.gg/minmatar](https://discord.gg/minmatar)
+>
+> [Bring Fun Shit](https://youtu.be/7-eGTtq9vWo)
+
+**Why it worked:**
+- Quote their IRL limit, then blunt WH vs FW — do not soft-pitch Soltech into a WH-locked thread.
+- Concrete session math (10–15 kills, hundreds of millions, 1–2 hours, no scanning) kills “will there be content without a second job?”
+- Alliance door + discord + Bring Fun Shit video; no corp name in a saturated WH meat market.
+
+**Routing note:** WH-only + IRL-first is **not** a silent skip. Draft a FW redirect. Do not force a named corp when they locked jspace.
+
+---
+
+### WH returner, PvP/PI, west coast (was scout-skipped; still replied)
+**Thread:** [Looking for a WH corp. PVP/PI](https://www.reddit.com/r/evejobs/comments/1veu0tj/looking_for_a_wh_corp_pvppi/)  
+**Routed:** alliance FW redirect (no named corp)  
+**Author:** BearThatCares
+
+**Sent:**
+> Wormholes ain't it right now, chief. Faction warfare is extremely hot right now, highly recommend trying that out before you dive back into the holes.
+>
+> [my.minmatar.org](https://my.minmatar.org/)
+>
+> [Bring Fun Shit](https://youtu.be/7-eGTtq9vWo)
+>
+> Source: Ran a WH alliance
+
+**Why it worked:** Blunt WH-dead / FW-hot + WH-operator credibility line (`Source: Ran a WH alliance`). Same Bring Fun Shit video close as the chill-WH thread. Site only — discord optional when the video + claim carry it.
+
+**Routing note:** Short WH-locked LFC still gets a redirect reply. Credibility line lands when OP already lived in jspace.
+
+---
+
+### Forum: sov-null mining multiboxer (was scout-skipped; still replied)
+**Thread:** [Returning Mining Multiboxer Looking for Sov Nullsec Home](https://forums.eveonline.com/t/returning-mining-multiboxer-looking-for-sov-nullsec-home/516114)  
+**Routed:** Minmatar Extraction Company / MFA  
+**Author:** BearThatCares
+
+**Sent:**
+> The new highsec bulwark systems have extremely lucrative mining, it’s almost not worth going out to null at the current time. Minmatar Extraction Company has 4 mining fleets per day, with roughly 24/7 coverage across all timezones.
+>
+> [corporations directory](https://my.minmatar.org/alliance/corporations/)
+
+**Why it worked:** Lead with CCP highsec bulwark economics (same family as “CCP strong sites” for the five-friend EU miners), then Extraction fleet density (`4 mining fleets per day` / `24/7`) as the fear-kill for empty fleet promises. No apology for skipping sov. Corp directory close for self-serve.
+
+**Routing note:** Hard sov-null mining lock is **not** a silent skip when the ask is rocks + multibox. Pitch Extraction / MFA; never “we have sov too.”
+
+---
+
+### Not replied this run (still open / left alone)
+- [Looking for Corp / Alliance](https://www.reddit.com/r/evejobs/comments/1vhj3gd/looking_for_corp_alliance/) — EUTZ NS Indy/CRAB + PAPs + super. No BearThatCares reply found; true hard nullbloc lifestyle lock may stay unanswered.
+
+---
+
+## Patterns (2026-08-08 / 2026-08-09 run)
+
+| Situation | What landed |
+|-----------|-------------|
+| Casual no-PvP missions/abyssals | Scout MFA+Keldor shippable; add Rock Hoppin' YouTube; ignore idle caps |
+| Lowsec learner with unused capital | Rattini primary + “lose your first dread”; not Soltech-first |
+| WH-only / WH returner | Still reply: blunt FW redirect + Bring Fun Shit video; quote IRL limit when present; WH-alliance credibility when OP lived in jspace |
+| Sov-null mining multibox | Still reply: bulwark economics + Extraction 4 fleets/day 24/7; corp directory; no sov pitch |
+| Scout “skipped” list | Means poor **corp route**, not “do not message.” Put redirect drafts in Open prospects (corp fit = FW redirect / Extraction) |
+| Bring Fun Shit video | `youtu.be/7-eGTtq9vWo` — **required** PvP/FW proof close (plus optional fresh AAR) |
+| Rock Hoppin' video | `youtu.be/XCApG7Pt6m4` — **required** mining/industry proof close |
+| True skip? | Dedicated nullbloc Indy/CRAB + PAP lifestyle with no opening past sov may still get no reply |
+
+### Corp routing map (recruiter update, 2026-08-09)
+
+Complementary seats — phrase by what each corp offers, not as a hierarchy. Confirm the corp is on the API (or has a live ad) before naming it.
+
+| Corp | Route |
+|------|--------|
+| Rattini Tribe | All-TZ veterans + multi-boxers; capital pilots — cap AARs / videos |
+| Soltech Armada | USTZ / late USTZ; daily Amamake seat past brand-new, without a capital/multi-box focus |
+| FOSFO (FASFO) | Experienced small-gang, UK especially — only when on API or linking live ad |
+| Banshee Squadron | Small tight-knit EUTZ new players, UK especially |
+| The Dark Tribe (TDT) | Late-night USTZ, smaller/tight-knit home for newer pilots (watch SP/KB requirements) |
+| Minmatar Fleet Academy (L3ARN) | All-TZ new players feeder |
+
+---
+
 ## 2026-07-31 scout run
 
 ### Returning EU FW alt, ~2m SP alpha, voice + fleets, open faction
