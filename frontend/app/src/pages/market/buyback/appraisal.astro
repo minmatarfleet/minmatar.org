@@ -65,21 +65,33 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import ClipboardButton from '@components/blocks/ClipboardButton.astro';
 import Button from '@components/blocks/Button.astro';
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
+import ItemPicture from '@components/blocks/ItemPicture.astro';
+import Tag from '@components/blocks/Tag.astro';
+import BuybackRateBadge from '@components/blocks/BuybackRateBadge.astro';
+import { buyback_rate_badge } from '@helpers/buyback_rate'
 
 const location_short = settings.location.short_name
 const page_title = t('buyback.appraisal.page_title')
 
 const category_label = (category: string) => {
     switch (category) {
-        case 'ore': return 'Ore'
-        case 'p1': return 'P1'
-        case 'p2': return 'P2'
-        case 'p3': return 'P3'
-        case 'p4': return 'P4'
-        case 'pi_other': return 'PI'
-        case 'salvage': return 'Salvage'
-        case 'excluded': return 'Excluded'
+        case 'ore': return t('buyback.info.group.ore')
+        case 'p1': return t('buyback.info.group.p1')
+        case 'p2': return t('buyback.info.group.p2')
+        case 'p3': return t('buyback.info.group.p3')
+        case 'p4': return t('buyback.info.group.p4')
         default: return category
+    }
+}
+
+const category_tag_color = (category: string) => {
+    switch (category) {
+        case 'ore': return 'fleet-yellow'
+        case 'p1':
+        case 'p2': return 'alliance-blue'
+        case 'p3':
+        case 'p4': return 'militia-purple'
+        default: return 'fleet-red'
     }
 }
 
@@ -97,9 +109,6 @@ const format_isk = (value: number | null) => {
 <Viewport
     title={page_title}
     meta_description={t('buyback.appraisal.meta_description')}
-    components={{
-        tippy: true,
-    }}
 >
     <PageWide
         cover={{
@@ -179,23 +188,58 @@ const format_isk = (value: number | null) => {
                                         <th class="[ buyback-appraisal-table__num ]">{t('buyback.appraisal.qty')}</th>
                                         <th>{t('buyback.appraisal.category')}</th>
                                         <th class="[ buyback-appraisal-table__num ]">{t('buyback.appraisal.jita_buy')}</th>
-                                        <th class="[ buyback-appraisal-table__num ]">{t('buyback.appraisal.rate')}</th>
+                                        <th>{t('buyback.appraisal.rate')}</th>
                                         <th class="[ buyback-appraisal-table__num ]">{t('buyback.appraisal.unit_price')}</th>
                                         <th class="[ buyback-appraisal-table__num ]">{t('buyback.appraisal.line_total')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {accepted.map((line) =>
-                                        <tr>
-                                            <td>{line.name}</td>
-                                            <td class="[ buyback-appraisal-table__num ]">{line.quantity.toLocaleString()}</td>
-                                            <td>{category_label(line.category)}</td>
-                                            <td class="[ buyback-appraisal-table__num ]">{format_isk(line.jita_buy ?? null)}</td>
-                                            <td class="[ buyback-appraisal-table__num ]">{format_rate(line.rate)}</td>
-                                            <td class="[ buyback-appraisal-table__num ]">{format_isk(line.unit_price)}</td>
-                                            <td class="[ buyback-appraisal-table__num ]">{format_isk(line.line_total)}</td>
-                                        </tr>
-                                    )}
+                                    {accepted.map((line) => {
+                                        const badge = buyback_rate_badge(line.rate_reason)
+                                        return (
+                                            <tr>
+                                                <td>
+                                                    <FlexInline
+                                                        gap='var(--space-3xs)'
+                                                        class="[ buyback-appraisal-item ]"
+                                                    >
+                                                        {line.type_id != null &&
+                                                            <ItemPicture
+                                                                item_id={line.type_id}
+                                                                item_name={line.name}
+                                                                size={24}
+                                                                icon_quality={32}
+                                                            />
+                                                        }
+                                                        <span class="[ buyback-appraisal-item__name ]">{line.name}</span>
+                                                    </FlexInline>
+                                                </td>
+                                                <td class="[ buyback-appraisal-table__num ]">{line.quantity.toLocaleString()}</td>
+                                                <td>
+                                                    <Tag
+                                                        text={category_label(line.category)}
+                                                        color={category_tag_color(line.category)}
+                                                        narrow={true}
+                                                    />
+                                                </td>
+                                                <td class="[ buyback-appraisal-table__num ]">{format_isk(line.jita_buy)}</td>
+                                                <td>
+                                                    <FlexInline
+                                                        gap='var(--space-3xs)'
+                                                        class:list={[
+                                                            '[ buyback-appraisal-rate ]',
+                                                            badge?.class_name ?? '',
+                                                        ]}
+                                                    >
+                                                        <span class="[ buyback-appraisal-rate__pct ]">{format_rate(line.rate)}</span>
+                                                        <BuybackRateBadge rate_reason={line.rate_reason} />
+                                                    </FlexInline>
+                                                </td>
+                                                <td class="[ buyback-appraisal-table__num ]">{format_isk(line.unit_price)}</td>
+                                                <td class="[ buyback-appraisal-table__num buyback-appraisal-table__total ]">{format_isk(line.line_total)}</td>
+                                            </tr>
+                                        )
+                                    })}
                                 </tbody>
                             </table>
                         </div>
@@ -216,8 +260,23 @@ const format_isk = (value: number | null) => {
                                     </thead>
                                     <tbody>
                                         {rejected.map((line) =>
-                                            <tr>
-                                                <td>{line.name}</td>
+                                            <tr class="[ buyback-appraisal-table__rejected ]">
+                                                <td>
+                                                    <FlexInline
+                                                        gap='var(--space-3xs)'
+                                                        class="[ buyback-appraisal-item ]"
+                                                    >
+                                                        {line.type_id != null &&
+                                                            <ItemPicture
+                                                                item_id={line.type_id}
+                                                                item_name={line.name}
+                                                                size={24}
+                                                                icon_quality={32}
+                                                            />
+                                                        }
+                                                        <span class="[ buyback-appraisal-item__name ]">{line.name}</span>
+                                                    </FlexInline>
+                                                </td>
                                                 <td class="[ buyback-appraisal-table__num ]">{line.quantity.toLocaleString()}</td>
                                                 <td>{line.reject_reason || '—'}</td>
                                             </tr>
@@ -281,9 +340,9 @@ const format_isk = (value: number | null) => {
         th,
         td {
             text-align: left;
-            padding: var(--space-3xs) var(--space-2xs);
+            padding: var(--space-2xs) var(--space-2xs);
             border-bottom: 1px solid var(--border-color);
-            vertical-align: top;
+            vertical-align: middle;
         }
 
         th {
@@ -291,12 +350,62 @@ const format_isk = (value: number | null) => {
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.03em;
+            font-size: var(--step--2);
+        }
+
+        @media (hover: hover) {
+            tbody tr:hover {
+                background-color: var(--border-color-hover);
+            }
         }
 
         &__num {
             text-align: right;
             font-variant-numeric: tabular-nums;
             white-space: nowrap;
+        }
+
+        &__total {
+            font-weight: 600;
+            color: var(--highlight);
+        }
+
+        &__rejected {
+            opacity: 0.75;
+        }
+    }
+
+    .buyback-appraisal-item {
+        align-items: center;
+        min-width: 0;
+
+        :global(picture),
+        :global(img) {
+            flex-shrink: 0;
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+
+        &__name {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    .buyback-appraisal-rate {
+        align-items: center;
+        flex-wrap: nowrap;
+
+        &__pct {
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        &--surplus {
+            opacity: 0.9;
         }
     }
 </style>

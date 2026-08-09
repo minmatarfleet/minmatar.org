@@ -55,21 +55,43 @@ def get_baseline_buy_prices_by_name(
     }
 
 
+_PUBLIC_RATE_KEYS = ("ore_refine", "demand_jita_buy", "surplus_jita_buy")
+
+
 def merge_rate_rules(raw) -> dict[str, float]:
+    """
+    Merge stored rate_rules into the live public keys.
+
+    Legacy admin JSON may still have other_jita_buy / p1_jita_buy_cap; those
+    map to demand / surplus only when the new keys are absent.
+    """
     rules = dict(DEFAULT_RATE_RULES)
-    if isinstance(raw, dict):
-        for key in (
-            "ore_refine",
-            "ore_jita_buy",
-            "p1_jita_buy_cap",
-            "other_jita_buy",
-        ):
-            if key in raw and raw[key] is not None:
-                try:
-                    rules[key] = float(raw[key])
-                except (TypeError, ValueError):
-                    pass
-    return rules
+    if not isinstance(raw, dict):
+        return rules
+
+    for key in _PUBLIC_RATE_KEYS:
+        if key in raw and raw[key] is not None:
+            try:
+                rules[key] = float(raw[key])
+            except (TypeError, ValueError):
+                pass
+
+    if "demand_jita_buy" not in raw and "other_jita_buy" in raw:
+        try:
+            rules["demand_jita_buy"] = float(raw["other_jita_buy"])
+        except (TypeError, ValueError):
+            pass
+    if "surplus_jita_buy" not in raw and "p1_jita_buy_cap" in raw:
+        try:
+            rules["surplus_jita_buy"] = float(raw["p1_jita_buy_cap"])
+        except (TypeError, ValueError):
+            pass
+    return {key: rules[key] for key in _PUBLIC_RATE_KEYS}
+
+
+def public_rate_rules(raw=None) -> dict[str, float]:
+    """Live rate knobs for API responses (never exposes legacy keys)."""
+    return merge_rate_rules(raw)
 
 
 @dataclass
@@ -85,6 +107,7 @@ class PricedLine:
     reject_reason: Optional[str] = None
     refine_outputs: Optional[dict[str, int]] = None
     jita_buy: Optional[float] = None
+    rate_reason: Optional[str] = None
 
 
 def _prorated_refine_outputs(
@@ -118,8 +141,9 @@ def price_ore_line(
     quantity: int,
     type_id: int | None,
     refine_rate: float,
-    ore_jita_buy: float,
+    jita_share: float,
     mineral_buy_by_name: dict[str, Decimal],
+    rate_reason: str | None = None,
 ) -> PricedLine:
     outputs = _prorated_refine_outputs(name, quantity, refine_rate)
     if not outputs:
@@ -159,14 +183,14 @@ def price_ore_line(
     mineral_isk = sum(
         float(mineral_buy_by_name[m]) * qty for m, qty in outputs.items()
     )
-    line_total = mineral_isk * ore_jita_buy
+    line_total = mineral_isk * jita_share
     unit_price = line_total / quantity if quantity else 0.0
     return PricedLine(
         type_id=type_id,
         name=name,
         quantity=quantity,
         category=BuybackCategory.ORE.value,
-        rate=ore_jita_buy,
+        rate=jita_share,
         unit_price=round(unit_price, 2),
         line_total=round(line_total, 2),
         accepted=True,
@@ -174,6 +198,7 @@ def price_ore_line(
             m: int(round(q)) for m, q in outputs.items() if round(q) > 0
         },
         jita_buy=None,
+        rate_reason=rate_reason,
     )
 
 
@@ -185,6 +210,7 @@ def price_flat_line(
     category: BuybackCategory,
     rate: float,
     buy_price: Decimal | None,
+    rate_reason: str | None = None,
 ) -> PricedLine:
     if buy_price is None:
         return PricedLine(
@@ -211,4 +237,5 @@ def price_flat_line(
         line_total=round(line_total, 2),
         accepted=True,
         jita_buy=round(jita_buy, 2),
+        rate_reason=rate_reason,
     )

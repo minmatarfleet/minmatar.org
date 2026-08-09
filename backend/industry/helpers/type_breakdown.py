@@ -17,7 +17,8 @@ Industry product flow (import vs build): ordered products can be marked Import
 (we source by importing) or Build (we build; direct components are import
 unless they are also Build, then we recurse). Use get_direct_components() for
 one level, resolve_product_to_imports() / resolve_order_to_imports() for the
-full resolved import list.
+full resolved import list, and resolve_type_to_demand_import_leaves() when an
+imported root still has a blueprint whose components should count as demand.
 """
 
 import copy
@@ -451,9 +452,18 @@ def _collect_type_ids_from_breakdown(
     """Collect all type_id values from a nested breakdown tree."""
     tid = node.get("type_id")
     if tid is not None:
-        out.add(tid)
-    for child in node.get("children", []):
+        out.add(int(tid))
+    for child in node.get("children") or []:
         _collect_type_ids_from_breakdown(child, out)
+
+
+def type_ids_in_breakdown(node: Dict[str, Any] | None) -> Set[int]:
+    """Return every type_id in a nested industry breakdown dict tree."""
+    if not node:
+        return set()
+    out: Set[int] = set()
+    _collect_type_ids_from_breakdown(node, out)
+    return out
 
 
 def _enrich_node_with_industry_product_id(
@@ -554,6 +564,78 @@ def resolve_order_to_imports(order: IndustryOrder) -> Dict[int, int]:
     agg: Dict[int, int] = {}
     for item in order.items.select_related("eve_type"):
         _resolve_product_to_imports_impl(
+            item.eve_type, item.quantity, agg, set()
+        )
+    return agg
+
+
+def _resolve_type_to_demand_import_leaves_impl(
+    eve_type: EveType,
+    quantity: int,
+    agg: Dict[int, int],
+    visited: Set[int],
+) -> None:
+    """
+    Resolve import leaves for supply-chain demand.
+
+    Like resolve_product_to_imports for strategy=produced. If the type is not
+    produced (or has no IndustryProduct) but has a manufacturing/reaction
+    blueprint, expand one level of components: produced children recurse;
+    others are import leaves. Pure import leaves with no blueprint stay leaves.
+    """
+    if eve_type.id in visited:
+        agg[eve_type.id] = agg.get(eve_type.id, 0) + quantity
+        return
+
+    product = IndustryProduct.objects.filter(eve_type=eve_type).first()
+    if product and product.strategy == Strategy.PRODUCED:
+        _resolve_product_to_imports_impl(eve_type, quantity, agg, visited)
+        return
+
+    if get_blueprint_or_reaction_type_id(eve_type) is None:
+        agg[eve_type.id] = agg.get(eve_type.id, 0) + quantity
+        return
+
+    visited.add(eve_type.id)
+    try:
+        for comp_type, comp_qty in get_direct_components(eve_type, quantity):
+            comp_product = IndustryProduct.objects.filter(
+                eve_type=comp_type
+            ).first()
+            if (
+                comp_product
+                and comp_product.strategy == Strategy.PRODUCED
+                and comp_type.id not in visited
+            ):
+                _resolve_type_to_demand_import_leaves_impl(
+                    comp_type, comp_qty, agg, visited
+                )
+            else:
+                agg[comp_type.id] = agg.get(comp_type.id, 0) + comp_qty
+    finally:
+        visited.discard(eve_type.id)
+
+
+def resolve_type_to_demand_import_leaves(
+    eve_type: EveType,
+    quantity: int = 1,
+) -> Dict[int, int]:
+    """
+    Flat type_id → qty of supply-chain demand import leaves for one ordered
+    type (see _resolve_type_to_demand_import_leaves_impl).
+    """
+    agg: Dict[int, int] = {}
+    _resolve_type_to_demand_import_leaves_impl(eve_type, quantity, agg, set())
+    return agg
+
+
+def resolve_order_to_demand_import_leaves(
+    order: IndustryOrder,
+) -> Dict[int, int]:
+    """Aggregate demand import leaves across all items on an order."""
+    agg: Dict[int, int] = {}
+    for item in order.items.select_related("eve_type"):
+        _resolve_type_to_demand_import_leaves_impl(
             item.eve_type, item.quantity, agg, set()
         )
     return agg

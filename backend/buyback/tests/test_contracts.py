@@ -102,16 +102,18 @@ class BuybackSettingsEndpointTestCase(TestCase):
         self.assertFalse(data["active"])
         self.assertEqual(data["corporation_id"], BUYBACK_CORPORATION_ID)
         self.assertEqual(data["assignee_name"], "Minmatar Extraction Company")
-        self.assertIn("Compressed highsec ore", data["accepted_categories"])
-        self.assertIn(
-            "PI used in recent production", data["accepted_categories"]
+        self.assertTrue(
+            any(
+                "supply-chain" in category.lower()
+                or "import" in category.lower()
+                for category in data["accepted_categories"]
+            )
         )
         self.assertEqual(data["exclusions"], [])
         self.assertEqual(data["accepted_items"], [])
         self.assertEqual(data["rate_rules"]["ore_refine"], 0.85)
-        self.assertEqual(data["rate_rules"]["ore_jita_buy"], 1.0)
-        self.assertEqual(data["rate_rules"]["p1_jita_buy_cap"], 0.9)
-        self.assertEqual(data["rate_rules"]["other_jita_buy"], 1.0)
+        self.assertEqual(data["rate_rules"]["demand_jita_buy"], 1.0)
+        self.assertEqual(data["rate_rules"]["surplus_jita_buy"], 0.9)
         self.assertIsNone(data["location"])
 
     def test_get_settings_with_location(self):

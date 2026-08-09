@@ -5,13 +5,7 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from django.test import Client, TestCase
-from django.utils import timezone
-from eveuniverse.models import EveCategory, EveGroup, EveType
 
-from buyback.helpers.accepted_items import (
-    compressed_buyback_ore_base,
-    seed_accepted_items,
-)
 from buyback.helpers.classify import BuybackCategory, classify_eve_type
 from buyback.helpers.paste import parse_eve_paste
 from buyback.helpers.pricing import (
@@ -22,54 +16,14 @@ from buyback.helpers.pricing import (
     price_ore_line,
 )
 from buyback.models import BuybackAcceptedItem, EveBuybackSettings
-from eveonline.models import EveCharacter, EveLocation
-from industry.models import IndustryOrder, IndustryOrderItem, IndustryProduct
+from buyback.tests.helpers import BASE_URL, ensure_type
+from eveonline.models import EveLocation
+from industry.models import IndustryProduct
 from market.models import EveMarketItemHistory
 
-BASE_URL = "/api/buyback"
 
-
-def _ensure_type(
-    *,
-    type_id: int,
-    name: str,
-    group_id: int,
-    group_name: str,
-    category_id: int,
-    category_name: str,
-) -> EveType:
-    category, _ = EveCategory.objects.get_or_create(
-        id=category_id,
-        defaults={"name": category_name, "published": True},
-    )
-    if category.name != category_name:
-        category.name = category_name
-        category.save(update_fields=["name"])
-    group, _ = EveGroup.objects.get_or_create(
-        id=group_id,
-        defaults={
-            "name": group_name,
-            "eve_category": category,
-            "published": True,
-        },
-    )
-    if group.name != group_name or group.eve_category_id != category.id:
-        group.name = group_name
-        group.eve_category = category
-        group.save()
-    eve_type, _ = EveType.objects.get_or_create(
-        id=type_id,
-        defaults={
-            "name": name,
-            "eve_group": group,
-            "published": True,
-        },
-    )
-    if eve_type.name != name or eve_type.eve_group_id != group.id:
-        eve_type.name = name
-        eve_type.eve_group = group
-        eve_type.save()
-    return eve_type
+def _ensure_type(**kwargs):
+    return ensure_type(**kwargs)
 
 
 class ParseEvePasteTestCase(TestCase):
@@ -169,7 +123,7 @@ class ClassifyBuybackTestCase(TestCase):
             classify_eve_type(self.p1).category, BuybackCategory.P1
         )
         self.assertEqual(
-            classify_eve_type(self.p2).category, BuybackCategory.PI_OTHER
+            classify_eve_type(self.p2).category, BuybackCategory.P2
         )
         self.assertEqual(
             classify_eve_type(self.salvage).category, BuybackCategory.SALVAGE
@@ -186,11 +140,34 @@ class ClassifyBuybackTestCase(TestCase):
 
 
 class PriceBuybackTestCase(TestCase):
-    def test_merge_rate_rules_includes_other(self):
+    def test_merge_rate_rules_includes_demand_surplus(self):
         rules = merge_rate_rules({})
-        self.assertEqual(rules["other_jita_buy"], 1.0)
-        rules = merge_rate_rules({"other_jita_buy": 0.95})
-        self.assertEqual(rules["other_jita_buy"], 0.95)
+        self.assertEqual(rules["demand_jita_buy"], 1.0)
+        self.assertEqual(rules["surplus_jita_buy"], 0.9)
+        self.assertEqual(
+            set(rules), {"ore_refine", "demand_jita_buy", "surplus_jita_buy"}
+        )
+
+    def test_merge_rate_rules_legacy_fallback(self):
+        rules = merge_rate_rules(
+            {"other_jita_buy": 0.95, "p1_jita_buy_cap": 0.8}
+        )
+        self.assertEqual(rules["demand_jita_buy"], 0.95)
+        self.assertEqual(rules["surplus_jita_buy"], 0.8)
+        self.assertNotIn("other_jita_buy", rules)
+        self.assertNotIn("p1_jita_buy_cap", rules)
+
+    def test_merge_rate_rules_new_keys_win(self):
+        rules = merge_rate_rules(
+            {
+                "demand_jita_buy": 1.0,
+                "surplus_jita_buy": 0.85,
+                "other_jita_buy": 0.5,
+                "p1_jita_buy_cap": 0.5,
+            }
+        )
+        self.assertEqual(rules["demand_jita_buy"], 1.0)
+        self.assertEqual(rules["surplus_jita_buy"], 0.85)
 
     def test_price_flat_p1(self):
         line = price_flat_line(
@@ -213,7 +190,7 @@ class PriceBuybackTestCase(TestCase):
             quantity=100,
             type_id=62516,
             refine_rate=1.0,
-            ore_jita_buy=1.0,
+            jita_share=1.0,
             mineral_buy_by_name={
                 "Tritanium": Decimal("4"),
                 "Pyerite": Decimal("20"),
@@ -232,7 +209,7 @@ class PriceBuybackTestCase(TestCase):
             quantity=43,
             type_id=62516,
             refine_rate=1.0,
-            ore_jita_buy=1.0,
+            jita_share=1.0,
             mineral_buy_by_name={"Tritanium": Decimal("5")},
         )
         self.assertTrue(line.accepted)
@@ -296,182 +273,6 @@ class BaselineBuyPriceHistoryTestCase(TestCase):
         by_name = get_baseline_buy_prices_by_name(["Tritanium", "Water"])
         self.assertEqual(by_name["Tritanium"], Decimal("3.93"))
         self.assertEqual(by_name["Water"], Decimal("100.00"))
-
-
-class AcceptedItemsSeedTestCase(TestCase):
-    def test_compressed_buyback_ore_base_matches_variants(self):
-        self.assertEqual(
-            compressed_buyback_ore_base("Compressed Veldspar"), "Veldspar"
-        )
-        self.assertEqual(
-            compressed_buyback_ore_base("Compressed Veldspar II-Grade"),
-            "Veldspar",
-        )
-        self.assertEqual(
-            compressed_buyback_ore_base("Compressed Brimful Zeolites"),
-            "Zeolites",
-        )
-        self.assertEqual(
-            compressed_buyback_ore_base("Compressed Hedbergite III-Grade"),
-            "Hedbergite",
-        )
-        self.assertEqual(
-            compressed_buyback_ore_base("Compressed Ytirium"), "Ytirium"
-        )
-        self.assertEqual(
-            compressed_buyback_ore_base("Compressed Crokite IV-Grade"),
-            "Crokite",
-        )
-        self.assertEqual(
-            compressed_buyback_ore_base("Compressed Mordunium"), "Mordunium"
-        )
-        self.assertEqual(
-            compressed_buyback_ore_base("Compressed Jaspet"), "Jaspet"
-        )
-        self.assertEqual(
-            compressed_buyback_ore_base("Compressed Hemorphite II-Grade"),
-            "Hemorphite",
-        )
-        self.assertEqual(
-            compressed_buyback_ore_base("Compressed Gneiss"), "Gneiss"
-        )
-        self.assertIsNone(compressed_buyback_ore_base("Veldspar"))
-        self.assertIsNone(compressed_buyback_ore_base("Compressed Blue Ice"))
-        self.assertIsNone(compressed_buyback_ore_base("Compressed Arkonor"))
-
-    @patch("eveonline.signals.update_character_public_data")
-    def test_seed_upserts_allowlist(self, unused_mock_public):
-        ore = _ensure_type(
-            type_id=62516,
-            name="Compressed Veldspar",
-            group_id=462,
-            group_name="Veldspar",
-            category_id=25,
-            category_name="Asteroid",
-        )
-        p1 = _ensure_type(
-            type_id=3645,
-            name="Water",
-            group_id=1042,
-            group_name="Basic Commodities - Tier 1",
-            category_id=43,
-            category_name="Planetary Commodities",
-        )
-        unused_p1 = _ensure_type(
-            type_id=3683,
-            name="Oxygen",
-            group_id=1042,
-            group_name="Basic Commodities - Tier 1",
-            category_id=43,
-            category_name="Planetary Commodities",
-        )
-        p3 = _ensure_type(
-            type_id=2319,
-            name="Robotics",
-            group_id=1040,
-            group_name="Specialized Commodities - Tier 3",
-            category_id=43,
-            category_name="Planetary Commodities",
-        )
-        unused_p3 = _ensure_type(
-            type_id=2345,
-            name="Condensates",
-            group_id=1040,
-            group_name="Specialized Commodities - Tier 3",
-            category_id=43,
-            category_name="Planetary Commodities",
-        )
-        product = _ensure_type(
-            type_id=999001,
-            name="Test Hull",
-            group_id=25,
-            group_name="Frigate",
-            category_id=6,
-            category_name="Ship",
-        )
-        _ensure_type(
-            type_id=34,
-            name="Tritanium",
-            group_id=18,
-            group_name="Mineral",
-            category_id=4,
-            category_name="Material",
-        )
-        IndustryProduct.objects.create(
-            eve_type=product,
-            strategy="imported",
-            breakdown={
-                "name": "Test Hull",
-                "type_id": product.id,
-                "quantity": 1,
-                "children": [
-                    {
-                        "name": "Water",
-                        "type_id": p1.id,
-                        "quantity": 10,
-                        "children": [],
-                    },
-                    {
-                        "name": "Robotics",
-                        "type_id": p3.id,
-                        "quantity": 1,
-                        "children": [],
-                    },
-                ],
-            },
-        )
-        character = EveCharacter.objects.create(
-            character_id=9001,
-            character_name="Seed Tester",
-        )
-        order = IndustryOrder.objects.create(
-            character=character,
-            needed_by=timezone.now().date(),
-            public_short_code="ABC",
-        )
-        IndustryOrderItem.objects.create(
-            order=order, eve_type=product, quantity=1
-        )
-        BuybackAcceptedItem.objects.create(
-            eve_type=unused_p3,
-            category=BuybackAcceptedItem.Category.P3,
-            active=True,
-        )
-
-        result = seed_accepted_items()
-        # Ore + both published P1s + BOM P3.
-        self.assertGreaterEqual(result["seeded"], 4)
-        self.assertEqual(result["pi_seeded"], 3)
-        self.assertTrue(
-            BuybackAcceptedItem.objects.filter(
-                eve_type=ore, active=True, category="ore"
-            ).exists()
-        )
-        self.assertTrue(
-            BuybackAcceptedItem.objects.filter(
-                eve_type=p1, active=True, category="p1"
-            ).exists()
-        )
-        # Full P1 catalog: unused P1 stays active.
-        self.assertTrue(
-            BuybackAcceptedItem.objects.filter(
-                eve_type=unused_p1, active=True, category="p1"
-            ).exists()
-        )
-        self.assertTrue(
-            BuybackAcceptedItem.objects.filter(
-                eve_type=p3, active=True, category="p3"
-            ).exists()
-        )
-        # P3 outside BOM lookback is deactivated.
-        self.assertFalse(
-            BuybackAcceptedItem.objects.filter(
-                eve_type=unused_p3, active=True
-            ).exists()
-        )
-        self.assertFalse(
-            BuybackAcceptedItem.objects.filter(eve_type_id=34).exists()
-        )
 
 
 class AppraiseEndpointTestCase(TestCase):
@@ -574,16 +375,18 @@ class AppraiseEndpointTestCase(TestCase):
         data = response.json()
         self.assertEqual(data["accepted_count"], 2)
         self.assertEqual(data["rejected_count"], 1)
-        # Water: 100 * 0.9 * 10 = 900; Coolant: 9000 * 1.0 * 2 = 18000
-        self.assertEqual(data["offer_total"], 18900.0)
+        # No recent-order demand → surplus rate 0.9 for both.
+        # Water: 100 * 0.9 * 10 = 900; Coolant: 9000 * 0.9 * 2 = 16200
+        self.assertEqual(data["offer_total"], 17100.0)
         self.assertNotIn("janice_url", data)
         by_name = {line["name"]: line for line in data["lines"]}
         self.assertTrue(by_name["Water"]["accepted"])
         self.assertEqual(by_name["Water"]["rate"], 0.9)
+        self.assertEqual(by_name["Water"]["rate_reason"], "accepted_surplus")
         self.assertEqual(by_name["Water"]["jita_buy"], 100.0)
         self.assertEqual(by_name["Water"]["unit_price"], 90.0)
         self.assertTrue(by_name["Coolant"]["accepted"])
-        self.assertEqual(by_name["Coolant"]["rate"], 1.0)
+        self.assertEqual(by_name["Coolant"]["rate"], 0.9)
         self.assertEqual(by_name["Coolant"]["jita_buy"], 9000.0)
         self.assertFalse(by_name["Compressed Blue Ice"]["accepted"])
 
@@ -617,9 +420,11 @@ class AppraiseEndpointTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data["accepted_count"], 1)
-        self.assertEqual(data["offer_total"], 400.0)
+        # Tritanium not in demand → surplus 0.9 × 400.
+        self.assertEqual(data["offer_total"], 360.0)
         by_name = {line["name"]: line for line in data["lines"]}
         self.assertTrue(by_name["Compressed Veldspar"]["accepted"])
+        self.assertEqual(by_name["Compressed Veldspar"]["rate"], 0.9)
 
     @patch(
         "buyback.helpers.pricing._prorated_refine_outputs",
@@ -656,13 +461,63 @@ class AppraiseEndpointTestCase(TestCase):
             "Item type is not accepted for buyback",
         )
 
-    def test_settings_includes_other_jita_buy_and_accepted_items(self):
+    def test_settings_includes_demand_surplus_and_accepted_items(self):
         response = self.client.get(f"{BASE_URL}/settings")
         self.assertEqual(response.status_code, 200)
         data = response.json()
-        self.assertEqual(data["rate_rules"]["other_jita_buy"], 1.0)
+        self.assertEqual(data["rate_rules"]["demand_jita_buy"], 1.0)
+        self.assertEqual(data["rate_rules"]["surplus_jita_buy"], 0.9)
         self.assertEqual(data["exclusions"], [])
         names = {item["name"] for item in data["accepted_items"]}
         self.assertIn("Compressed Veldspar", names)
         self.assertIn("Water", names)
         self.assertNotIn("Scorched Telemetry Processor", names)
+        water = next(
+            item for item in data["accepted_items"] if item["name"] == "Water"
+        )
+        self.assertIn("in_demand", water)
+        self.assertFalse(water["in_demand"])
+
+    def test_settings_accepted_items_include_used_in(self):
+        product = _ensure_type(
+            type_id=999002,
+            name="Used-In Hull",
+            group_id=25,
+            group_name="Frigate",
+            category_id=6,
+            category_name="Ship",
+        )
+        IndustryProduct.objects.create(
+            eve_type=product,
+            strategy="imported",
+            breakdown={
+                "name": "Used-In Hull",
+                "type_id": product.id,
+                "quantity": 1,
+                "children": [
+                    {
+                        "name": "Water",
+                        "type_id": self.p1.id,
+                        "quantity": 10,
+                        "children": [],
+                    },
+                    {
+                        "name": "Coolant",
+                        "type_id": self.p2.id,
+                        "quantity": 2,
+                        "children": [],
+                    },
+                ],
+            },
+        )
+        response = self.client.get(f"{BASE_URL}/settings")
+        self.assertEqual(response.status_code, 200)
+        by_name = {
+            item["name"]: item for item in response.json()["accepted_items"]
+        }
+        water_used = {entry["name"] for entry in by_name["Water"]["used_in"]}
+        coolant_used = {
+            entry["name"] for entry in by_name["Coolant"]["used_in"]
+        }
+        self.assertIn("Used-In Hull", water_used)
+        self.assertIn("Used-In Hull", coolant_used)
