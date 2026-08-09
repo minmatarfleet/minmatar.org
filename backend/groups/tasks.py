@@ -1,6 +1,7 @@
 import csv
 import io
 import logging
+from collections import defaultdict
 
 from django.contrib.auth.models import User
 
@@ -11,7 +12,7 @@ from discord.helpers import handle_discord_guild_member_error
 from eveonline.helpers.characters import (
     user_primary_character,
 )
-from eveonline.models import EvePlayer
+from eveonline.models import EveCharacter
 
 from .helpers import (
     process_bulk_community_status_row,
@@ -270,10 +271,9 @@ def _user_qualifies_for_corporation_group(user, corporation_group):
     )
 
     if group_type == EveCorporationGroup.GROUP_TYPE_MEMBER:
-        primary = user_primary_character(user)
-        if not primary or primary.corporation_id is None:
-            return False
-        return primary.corporation_id == corp.corporation_id
+        return EveCharacter.objects.filter(
+            user=user, corporation_id=corp.corporation_id
+        ).exists()
 
     if group_type == EveCorporationGroup.GROUP_TYPE_RECRUITER:
         return corp.recruiters.filter(user=user).exists()
@@ -288,7 +288,7 @@ def _user_qualifies_for_corporation_group(user, corporation_group):
 
 def _target_user_ids_for_corporation_group(
     corporation_group,
-    user_primary_corp,
+    user_corp_ids,
     recruiter_user_ids,
     director_user_ids,
     steward_user_ids,
@@ -301,8 +301,8 @@ def _target_user_ids_for_corporation_group(
     if group_type == EveCorporationGroup.GROUP_TYPE_MEMBER:
         return {
             user_id
-            for user_id, corporation_id in user_primary_corp.items()
-            if corporation_id == corp.corporation_id
+            for user_id, corp_ids in user_corp_ids.items()
+            if corp.corporation_id in corp_ids
         }
     if group_type == EveCorporationGroup.GROUP_TYPE_RECRUITER:
         return set(recruiter_user_ids)
@@ -316,7 +316,7 @@ def _target_user_ids_for_corporation_group(
 def _user_qualifies_cached(
     user_id,
     corporation_group,
-    user_primary_corp,
+    user_corp_ids,
     recruiter_user_ids,
     director_user_ids,
     steward_user_ids,
@@ -331,10 +331,7 @@ def _user_qualifies_cached(
     )
 
     if group_type == EveCorporationGroup.GROUP_TYPE_MEMBER:
-        primary_corp_id = user_primary_corp.get(user_id)
-        if primary_corp_id is None:
-            return False
-        return primary_corp_id == corp.corporation_id
+        return corp.corporation_id in user_corp_ids.get(user_id, ())
 
     if group_type == EveCorporationGroup.GROUP_TYPE_RECRUITER:
         return user_id in recruiter_user_ids
@@ -350,15 +347,15 @@ def _user_qualifies_cached(
 def sync_eve_corporation_groups():
     """
     Sync Django auth group membership for corporation groups based on
-    character ownership: member = primary in corp, recruiter/director/gunner
-    = character in corp's role set.
+    character ownership: member = any linked character in corp,
+    recruiter/director/gunner = user in corp's role set.
     Uses bulk lookups to avoid N+1 queries.
     """
-    user_primary_corp = dict(
-        EvePlayer.objects.filter(primary_character__isnull=False).values_list(
-            "user_id", "primary_character__corporation_id"
-        )
-    )
+    user_corp_ids = defaultdict(set)
+    for user_id, corporation_id in EveCharacter.objects.filter(
+        user__isnull=False, corporation_id__isnull=False
+    ).values_list("user_id", "corporation_id"):
+        user_corp_ids[user_id].add(corporation_id)
 
     for corporation_group in EveCorporationGroup.objects.select_related(
         "corporation", "group"
@@ -391,7 +388,7 @@ def sync_eve_corporation_groups():
 
         target_user_ids = _target_user_ids_for_corporation_group(
             corporation_group,
-            user_primary_corp,
+            user_corp_ids,
             recruiter_user_ids,
             director_user_ids,
             steward_user_ids,
