@@ -34,6 +34,7 @@ const count_text = t(indexedGuides.length !== 1 ? 'guides_plural' : 'guides_sing
 import Viewport from '@layouts/Viewport.astro'
 
 import PageWide from '@components/page/PageWide.astro'
+import PageActions from '@components/page/PageActions.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -74,9 +75,9 @@ const page_title = t('guides.page_title')
                 </PageTitle>
                 <small>{count_text}</small>
             </Flexblock>
-            <FlexInline>
+            <PageActions>
                 <ButtonSubmitGuide />
-            </FlexInline>
+            </PageActions>
         </FlexInline>
 
         <Flexblock gap='var(--space-2xl)'>

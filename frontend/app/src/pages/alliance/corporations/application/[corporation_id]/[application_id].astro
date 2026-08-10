@@ -59,6 +59,7 @@ const CORPORATION_APPLICATION_PARTIAL_URL = `${translatePath('/partials/corporat
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import TextBox from '@components/layout/TextBox.astro';
@@ -97,12 +98,12 @@ const page_title = `${application?.character_name ?? ''} ${t('application').toLo
             <PageTitle>
                 {page_title}
             </PageTitle>
-            <FlexInline>
+            <PageActions>
                 <Button class="[ !hidden md:!flex ]" href={translatePath('/alliance/corporations/applications/')}>
                     <MagnifierIcon slot="icon" />
                     {t('view_applications')}
                 </Button>
-            </FlexInline>
+            </PageActions>
         </FlexInline>
 
         <Flexblock gap="var(--space-xl)">

@@ -38,6 +38,7 @@ const SKILLSETS_LIST_PARTIAL_URL = translatePath('/partials/skillsets_list_compo
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -93,12 +94,12 @@ const page_title = `${character_skillsets?.character_name ?? ''} ${t('skillsets'
                     </small>
                 </Flexblock>
             </FlexInline>
-            <FlexInline>
+            <PageActions>
                 <Button class="[ !hidden md:!flex ]" href={translatePath(`/character/assets?character_id=${character_id}`)}>
                     <MagnifierIcon slot="icon" />
                     {t('view_assets')}
                 </Button>
-            </FlexInline>
+            </PageActions>
         </FlexInline>
 
         {get_character_skillsets_error ?

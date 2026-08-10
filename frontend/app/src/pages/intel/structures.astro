@@ -21,6 +21,7 @@ import structures from '@json/page/intel/structures.json';
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -103,7 +104,7 @@ const page_title = t('intel.structures.page_title');
                     </small>
                 </Flexblock>
             </FlexInline>
-            <FlexInline class="[ !items-start ]">
+            <PageActions class="[ !items-start ]">
                 <Input type="text"
                     placeholder={t('search')}
                     x-model="structure_name_filter"
@@ -136,7 +137,7 @@ const page_title = t('intel.structures.page_title');
                         )}
                     </Select>
                 </div>
-            </FlexInline>
+            </PageActions>
         </FlexInline>
 
         <BlockList role="list" gap='var(--space-3xs)'>

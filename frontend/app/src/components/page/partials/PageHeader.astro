@@ -13,6 +13,7 @@ const {
 } = Astro.props;
 
 import Wrapper from '@components/compositions/Wrapper.astro';
+import XFadeScroll from '@components/compositions/XFadeScroll.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 ---
@@ -27,14 +28,14 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 
         <div class="[ subheader-bar ]">
             <Wrapper class="[ w-full ]" centered={true} max_width={max_width} neocom={neocom} padding_block='0'>
-                <div class="[ x-scrollable-fading ]">
-                    <div class="scroll-content">
-                        <FlexInline class="[ w-full w-max ]">
+                <XFadeScroll flex>
+                    <div class="[ scroll-content ][ w-full ]">
+                        <FlexInline class="[ w-max xl:w-full items-start! ]">
+                            <div id="mobile-actions" class="[ xl:hidden! ]" />
                             <slot name="subheader" />
-                            <div id="mobile-actions" />
                         </FlexInline>
                     </div>
-                </div>
+                </XFadeScroll>
             </Wrapper>
         </div>
     </Flexblock>
@@ -91,6 +92,13 @@ import Flexblock from '@components/compositions/Flexblock.astro';
                     font-size: var(--step-1) !important;
                 }
             }
+        }
+    }
+
+    @media screen and (max-width: 1279px) {
+        .subheader-bar:not(:has(a, input, button)) {
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
         }
     }
 </style>

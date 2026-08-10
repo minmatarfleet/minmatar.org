@@ -10,7 +10,8 @@ import FlexInline from '@components/compositions/FlexInline.astro';
             class="[ w-max ]"
             x-data={`{
                 init() {
-                    $el.querySelectorAll('[data-size="lg"]').forEach(element => {
+                    document.querySelectorAll('.post-header [data-size="lg"]').forEach(element => {
+                        element.setAttribute('old-data-size', element.getAttribute('data-size'));
                         element.setAttribute('data-size', 'sm');
                     });
                 }
@@ -27,8 +28,9 @@ import FlexInline from '@components/compositions/FlexInline.astro';
             class="[ w-max ]"
             x-data={`{
                 init() {
-                    $el.querySelectorAll('[data-size="sm"]').forEach(element => {
-                        element.setAttribute('data-size', 'lg');
+                    document.querySelectorAll('.post-header [data-size="sm"]').forEach(element => {
+                        const old_size = element.getAttribute('old-data-size');
+                        if (old_size) element.setAttribute('data-size', old_size);
                     });
                 }
             }`}

@@ -47,6 +47,7 @@ const PROPAGANDA_POSTS_LIST_PARTIAL_URL = `${translatePath('/partials/propaganda
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 import PageSubheader from '@components/page/PageSubheader.astro';
 
@@ -84,6 +85,7 @@ const leading_text = t('propaganda.leading_text');
         x-data={`{
             count_text: '${count_text}',
         }`}
+        no_main_padding={!post_editor}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <Flexblock gap="var(--space-3xs)">
@@ -93,14 +95,14 @@ const leading_text = t('propaganda.leading_text');
                 <small x-text="count_text">{count_text}</small>
             </Flexblock>
             {post_editor &&
-                <FlexInline>
+                <PageActions>
                     <Button
                         href={translatePath('/alliance/propaganda/new/editor')}
                         color='green'
                     >
                         {t('create_post')}
                     </Button>
-                </FlexInline>
+                </PageActions>
             }
         </FlexInline>
 

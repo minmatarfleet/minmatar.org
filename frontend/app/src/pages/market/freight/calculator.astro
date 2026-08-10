@@ -36,6 +36,7 @@ import { renderer } from '@helpers/marked'
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -80,14 +81,11 @@ const page_title = t('freight.calculator.page_title');
                     {page_title}
                 </PageTitle>
             </FlexInline>
-            <FlexInline>
-                <Button
-                    href={translatePath('/market/freight/contracts/')}
-                    size='sm'
-                >
+            <PageActions>
+                <Button href={translatePath('/market/freight/contracts/')}>
                     {t('view_freight_contracts')}
                 </Button>
-            </FlexInline>
+            </PageActions>
         </FlexInline>
 
         <Flexblock>

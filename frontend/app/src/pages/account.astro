@@ -80,6 +80,7 @@ const fix_esi_token_error = Astro.url.searchParams.get('error') as string
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 import PageSubheader from '@components/page/PageSubheader.astro';
 
@@ -137,12 +138,12 @@ const page_title = t('account.page_title');
             <PageTitle>
                 {page_title}
             </PageTitle>
-            <FlexInline>
+            <PageActions>
                 <Button href={translatePath('/auth/logout/')}>
                     <LogoutIcon slot="icon" />
                     {t('logout')}
                 </Button>
-            </FlexInline>
+            </PageActions>
         </FlexInline>
 
         <PageSubheader slot="subheader">

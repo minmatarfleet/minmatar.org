@@ -60,9 +60,10 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import SRPTable from '@components/blocks/SRPTable.astro';
-import SRPFiltersSwiper from '@components/blocks/SRPFiltersSwiper.astro';
+import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro';
 import UpdateAlpineVariables from '@components/blocks/UpdateAlpineVariables.astro'
 import NumberNameTooltip from '@components/blocks/NumberNameTooltip.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
 ---
         
 {fetch_srp_error ?
@@ -84,14 +85,25 @@ import NumberNameTooltip from '@components/blocks/NumberNameTooltip.astro'
         {killmails_text} (<NumberNameTooltip number={stats_overview?.pending_total ?? 0} /> ISK)
     </small>
 
-    <SRPFiltersSwiper ship_types={ship_types} />
-
     <PageSubheader
         id="subheader-oob"
         hx-swap-oob="true"
         is_empty={!can_view_all_srp || ship_types.length === 0}
     >
-        {can_view_all_srp && ship_types.length > 0 && <SRPFiltersSwiper ship_types={ship_types} /> }
+        {can_view_all_srp && ship_types.length > 0 &&
+            <FlexInline>
+                <label>{t('filters')}</label>
+                <>{ship_types.map(type =>
+                    <UnstyledRadioCheckButton
+                        type='checkbox'
+                        name="srp_ship_type_filter"
+                        x-model="srp_ship_type_filter"
+                        label={type}
+                        value={type}
+                    />
+                )}</>
+            </FlexInline>
+        }
     </PageSubheader>
 
     <Flexblock class="[ w-full ]" gap='var(--space-xl)'>
@@ -102,6 +114,7 @@ import NumberNameTooltip from '@components/blocks/NumberNameTooltip.astro'
                 readonly={!can_view_all_srp}
                 fleet_title={true}
                 can_add_srp={can_add_srp}
+                filterable={true}
             />
         )}
         {!fleetless && <div id="srp-table-0" class="[ hidden ]" />}

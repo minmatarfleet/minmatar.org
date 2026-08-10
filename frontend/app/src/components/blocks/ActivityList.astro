@@ -35,18 +35,18 @@ if (current_page - 1 < 1 && current_page + 2 <= total_pages)
 
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
-import BlockList from '@components/compositions/BlockList.astro';
 
 import GenericActivityItem from '@components/blocks/GenericActivityItem.astro'
 import ActivityPaginationButton from '@components/blocks/ActivityPaginationButton.astro'
+import Table from '@components/blocks/Table.astro'
 ---
 <Flexblock id="activity-list" gap='var(--space-xl)'>
-    <BlockList role="list">
+    <Table>
         {activities.map(activity =>
             <GenericActivityItem activity={activity} />
         )}
         {activities.length === 0 && <p>{t('no_activities')}</p>}
-    </BlockList>
+    </Table>
 
     {total_pages > 1 &&
         <FlexInline justification='center'>

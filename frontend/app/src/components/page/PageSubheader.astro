@@ -17,7 +17,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 ---
 
 <FlexInline
-    class:list={[ 'subheader-content', { 'is-empty': subheader_content === null } ]}
+    class:list={[ 'subheader-content', { 'is-empty': subheader_content === null }, Astro.props.class ]}
     {...attributes}
 >
     <slot />

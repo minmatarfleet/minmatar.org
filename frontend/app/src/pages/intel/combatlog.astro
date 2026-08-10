@@ -63,6 +63,7 @@ const COMBATLOG_LIST_PARTIAL_URL = translatePath('/partials/combatlog_list_compo
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -103,7 +104,7 @@ const page_description = t('intel.combatlog.leading_text');
                     </PageTitle>
                 </Flexblock>
             </FlexInline>
-            <FlexInline>
+            <PageActions>
                 <AnalizeCombatLogButton
                     color={'green'}
                     target="#combatlog"
@@ -112,7 +113,7 @@ const page_description = t('intel.combatlog.leading_text');
                 >
                     {t('paste_combatlog')}
                 </AnalizeCombatLogButton>
-            </FlexInline>
+            </PageActions>
         </FlexInline>
         
         <div id="combatlog">

@@ -37,7 +37,9 @@ const alert = {
 } as Alert
 ---
 
-<div id="add-moon-result"
+<div
+    id="add-moon-result"
+    class="[ hidden ]"
     x-data={`{
         init() {
             show_alert_dialog(${JSON.stringify(alert)})

@@ -46,6 +46,7 @@ const CORPORATIONS_APPLICATIONS_PARTIAL_URL = translatePath('/partials/corporati
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 import PageSubheader from '@components/page/PageSubheader.astro';
 
@@ -125,7 +126,7 @@ const page_title = t('corporations.applications.page_title')
             <PageTitle>
                 {page_title}
             </PageTitle>
-            <FlexInline>
+            <PageActions>
                 <Input type="text"
                     placeholder={t('search')}
                     x-model="character_name"
@@ -147,7 +148,7 @@ const page_title = t('corporations.applications.page_title')
                         </template>
                     </Select>
                 </div>
-            </FlexInline>
+            </PageActions>
         </FlexInline>
 
         <PageSubheader slot="subheader">

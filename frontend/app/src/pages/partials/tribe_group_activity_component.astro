@@ -38,6 +38,7 @@ const count_text = t('activity_count_text').replace('{count}', String(activities
 const TRIBE_GROUP_ACTIVITY_PARTIAL_URL = translatePath(`/partials/tribe_group_activity_component?tribe_id=${tribe_id}&group_id=${group_id}`)
 
 import PageTitle from '@components/page/PageTitle.astro'
+import PageActions from '@components/page/PageActions.astro'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
@@ -72,7 +73,7 @@ const page_title = tribe_group ? `${tribe_group.name} ${t('tribes.detail.activit
                 </PageTitle>
                 <small x-text="count_text">{count_text}</small>
             </Flexblock>
-            <FlexInline>
+            <PageActions>
                 {tribe_group &&
                     <Button
                         href={translatePath(`/alliance/tribes/${tribe_group?.tribe_id}`)}
@@ -80,7 +81,7 @@ const page_title = tribe_group ? `${tribe_group.name} ${t('tribes.detail.activit
                         {t('back_to_tribe_template').replace('{name}', tribe_group?.tribe_name ?? '')}
                     </Button>
                 }
-            </FlexInline>
+            </PageActions>
         </FlexInline>
         :
         <div x-init="window.scrollTo({ top: 0 }); $el.remove()" />

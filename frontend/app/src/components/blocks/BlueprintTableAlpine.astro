@@ -11,7 +11,7 @@ import BlueprintTableItemAlpine from '@components/blocks/BlueprintTableItemAlpin
 import Table from '@components/blocks/Table.astro';
 ---
 
-<Table id="blueprint-table">
+<Table id="blueprint-table" width='70rem'>
     <template x-for="blueprint in blueprints_sorted">
         <BlueprintTableItemAlpine is_copy={is_copy} />
     </template>

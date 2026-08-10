@@ -38,6 +38,7 @@ const TRIBE_GROUP_ACTIVITY_PARTIAL_URL = translatePath(`/partials/tribe_group_ac
 import Viewport from '@layouts/Viewport.astro'
 
 import PageWide from '@components/page/PageWide.astro'
+import PageActions from '@components/page/PageActions.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -76,7 +77,7 @@ const page_title = tribe_group ? `${tribe_group.name} ${t('tribes.detail.activit
                 <PageTitle>{page_title}</PageTitle>
                 <small x-text="count_text">{count_text}</small>
             </Flexblock>
-            <FlexInline>
+            <PageActions>
                 {tribe_group &&
                     <Button
                         href={translatePath(`/alliance/tribes/${tribe_group?.tribe_id}`)}
@@ -84,7 +85,7 @@ const page_title = tribe_group ? `${tribe_group.name} ${t('tribes.detail.activit
                         {t('back_to_tribe_template').replace('{name}', tribe_group?.tribe_name ?? '')}
                     </Button>
                 }
-            </FlexInline>
+            </PageActions>
         </FlexInline>
 
         {fetch_error ? (

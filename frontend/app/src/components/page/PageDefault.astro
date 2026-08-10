@@ -35,10 +35,12 @@ import PageBody from '@components/page/partials/PageBody.astro';
 import PageCover from '@components/page/partials/PageCover.astro';
 import DebugTag from '@components/blocks/DebugTag.astro';
 
+const subheader_content = await Astro.slots.render('subheader');
+
 import ReferralLink from '@components/blocks/ReferralLink.astro';
 ---
 
-<main id="content" {...attributes}>
+<main id="content" class={subheader_content ? "[ pb-(--space-2xl) xl:pb-0 ]" : undefined} {...attributes}></main>
     {is_referral_page && user &&
         <div class="[ referral-wrapper ]">
             <ReferralLink user_id={user.user_id} position='left' />

@@ -50,6 +50,7 @@ import {
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -84,11 +85,11 @@ const page_description = doctrine?.description
                     {page_title}
                 </PageTitle>
             </Flexblock>
-            <FlexInline>
+            <PageActions>
                 <Button href={translatePath(`/ships/doctrines${active_location_id ? `?location_id=${active_location_id}` : '/'}`)} class="[ !hidden md:!flex ]">
                     {t('keep_browsing')}
                 </Button>
-            </FlexInline>
+            </PageActions>
         </FlexInline>
 
         {fetch_doctrine_error ?

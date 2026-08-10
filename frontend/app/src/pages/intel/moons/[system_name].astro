@@ -49,6 +49,7 @@ import { number_name } from '@helpers/numbers.ts'
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 import PageSubheader from '@components/page/PageSubheader.astro';
 
@@ -104,12 +105,12 @@ const page_title = `${system_name} ${t('moons')}`;
                     </small>
                 </Flexblock>
             </FlexInline>
-            <FlexInline>
+            <PageActions>
                 <FindSystemButton id="moon_select_system" list_partial={MOON_SYSTEMS_LIST_PARTIAL_URL} />
                 <Button href={translatePath('/intel/moons/')}>
                     {t('region_view')}
                 </Button>
-            </FlexInline>
+            </PageActions>
         </FlexInline>
 
         <PageSubheader slot="subheader">   

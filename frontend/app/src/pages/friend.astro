@@ -29,6 +29,7 @@ const REFRESH_DISCORD_ROLES_PARTIAL_URL = `${translatePath('/partials/refresh_di
 import GuestsViewport from '@layouts/GuestsViewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -75,12 +76,12 @@ const page_title = t('friend.page_title');
                     {page_title}
                 </PageTitle>
             </FlexInline>
-            <FlexInline>
+            <PageActions>
                 <Button class="[ !hidden md:!flex ]" href={translatePath('/friend/logout/')}>
                     <LogoutIcon slot="icon" />
                     {t('logout')}
                 </Button>
-            </FlexInline>
+            </PageActions>
         </FlexInline>
         
         <Flexblock gap='var(--space-xl)'>

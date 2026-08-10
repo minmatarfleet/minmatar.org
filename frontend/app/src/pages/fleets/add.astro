@@ -122,6 +122,7 @@ const FLEET_FORM_PARTIAL_URL = translatePath('/partials/fleet_form_component')
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import TextBox from '@components/layout/TextBox.astro';
@@ -173,7 +174,7 @@ const eve_time = eve_datetime.toISOString().slice(11, 16)
                     {page_title}
                 </PageTitle>
             </FlexInline>
-            <FlexInline>
+            <PageActions>
                 <Button class="[ !hidden md:!flex ]" href={translatePath('/fleets/upcoming/')}>
                     <FleetIcon slot="icon" />
                     {t('upcoming_fleets')}
@@ -182,7 +183,7 @@ const eve_time = eve_datetime.toISOString().slice(11, 16)
                     <HistoryIcon slot="icon" />
                     {t('fleet_history')}
                 </Button>
-            </FlexInline>
+            </PageActions>
         </FlexInline>
 
         <Flexblock gap="var(--space-xl)">
