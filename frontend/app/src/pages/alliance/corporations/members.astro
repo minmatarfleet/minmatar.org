@@ -143,15 +143,13 @@ const page_title = t('corporations.members.page_title')
                     <MagnifierIcon slot="icon" />
                 </Input>
                 
-                <div class="[ hidden 2xl:!block ]">
-                    <SelectFinder
-                        size={32}
-                        placeholder={t('corporations')}
-                        options="corporations_options"
-                        model="corporation_filter"
-                        width='280px'
-                    />
-                </div>
+                <SelectFinder
+                    size={32}
+                    placeholder={t('corporations')}
+                    options="corporations_options"
+                    model="corporation_filter"
+                    width='280px'
+                />
             </PageActions>
         </FlexInline>
 

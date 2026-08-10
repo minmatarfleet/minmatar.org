@@ -136,18 +136,16 @@ const page_title = t('corporations.applications.page_title')
                     <MagnifierIcon slot="icon" />
                 </Input>
                 
-                <div class="[ hidden 2xl:!block ]">
-                    <Select
-                        x-model="corporation_filter"
-                        width='280px'
-                        x-on:change="filter()"
-                    >
-                        <option selected value="-1">{t('corporations')}</option>
-                        <template x-for="corporation in corporations_options">
-                            <option x-bind:value="corporation.value" x-text="corporation.label" />
-                        </template>
-                    </Select>
-                </div>
+                <Select
+                    x-model="corporation_filter"
+                    width='280px'
+                    x-on:change="filter()"
+                >
+                    <option selected value="-1">{t('corporations')}</option>
+                    <template x-for="corporation in corporations_options">
+                        <option x-bind:value="corporation.value" x-text="corporation.label" />
+                    </template>
+                </Select>
             </PageActions>
         </FlexInline>
 

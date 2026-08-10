@@ -113,7 +113,7 @@ const page_title = t('freight.contract.page_title');
                 </PageTitle>
             </FlexInline>
             <PageActions>
-                <Button class="[ !hidden sm:block! ]" href={translatePath(`/market/freight/contracts?${query_string({ location_name: location_name })}`)}>
+                <Button href={translatePath(`/market/freight/contracts?${query_string({ location_name: location_name })}`)}>
                     {t('freight_contracts')}
                 </Button>
             </PageActions>

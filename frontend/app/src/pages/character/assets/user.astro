@@ -118,14 +118,12 @@ const page_title = t('assets.user.page_title')
                     <MagnifierIcon slot="icon" />
                 </Input>
                 
-                <div class="[ hidden 2xl:!block ]">
-                    <SelectFinder
-                        placeholder={t('accessible_stations')}
-                        options="locations_options"
-                        model="asset_station"
-                        width='280px'
-                    />
-                </div>
+                <SelectFinder
+                    placeholder={t('accessible_stations')}
+                    options="locations_options"
+                    model="asset_station"
+                    width='280px'
+                />
             </PageActions>
         </FlexInline>
 
