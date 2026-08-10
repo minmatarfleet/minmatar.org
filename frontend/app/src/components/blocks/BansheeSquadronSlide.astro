@@ -1,0 +1,163 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CorporationObject } from '@dtypes/layout_components'
+
+interface Props {
+    corporation:            CorporationObject;
+    is_user_corporation?:   boolean;
+    picture_placement?:     'left' | 'right';
+    
+}
+
+const {
+    corporation,
+    is_user_corporation = false,
+    picture_placement = 'left',
+} = Astro.props
+
+const KAYRA_NATHUUL_ID = 93389269
+
+import CorporationSlide from '@components/blocks/CorporationSlide.astro';
+---
+
+<CorporationSlide
+    id="banshee-slide"
+    ceo_image='/images/corporations/banshee/ceo.webp'
+    ceo_character_id={KAYRA_NATHUUL_ID}
+    corporation={corporation}
+    is_user_corporation={is_user_corporation}
+    picture_placement='left'
+    mirror_slide={picture_placement === 'right'}
+>
+    <img slot="ships" class="[ thrasher ]" src="/images/corporations/banshee/thrasher.webp" />
+    <img slot="ships" class="[ hurricane ]" src="/images/corporations/banshee/hurricane.webp" />
+    <img slot="ships" class="[ stabber ]" src="/images/corporations/banshee/stabber.webp" />
+
+    <p>{corporation.introduction ? corporation.introduction : t('banshee_description_fallback') }</p>
+</CorporationSlide>
+
+<style lang="scss">
+    .thrasher {
+        position: absolute;
+        top: 40%;
+        left: 5%;
+        height: auto;
+        width: 58%;
+        z-index: 2;
+        transform: scale(0);
+    }
+
+    .hurricane {
+        position: absolute;
+        top: 48%;
+        left: -40%;
+        width: 73%;
+        height: auto;
+        z-index: 1;
+        transform: scale(0);
+    }
+
+    .stabber {
+        position: absolute;
+        left: -25%;
+        top: 34%;
+        width: 61%;
+        height: auto;
+        z-index: 1;
+        transform: scale(0);
+    }
+
+    @keyframes thrasher {
+        0% {
+            transform: scale(0);
+            top: 33%;
+            left: -15%;
+        }
+
+        30% {
+            transform: scale(1);
+            top: 33%;
+            left: 46%;
+        }
+
+        100% {
+            transform: scale(1.04);
+            top: 33%;
+            left: 49%;
+        }
+    }
+
+    @keyframes hurricane {
+        0% {
+            transform: scale(0);
+            top: 21%;
+            left: -15%;
+        }
+
+        33% {
+            transform: scale(1);
+            top: 2%;
+            left: 27%;
+        }
+
+        100% {
+            transform: scale(1.03);
+            top: 0%;
+            left: 30%;
+        }
+    }
+
+    @keyframes stabber_3 {
+        0% {
+            transform: scale(0);
+            left: -22%;
+            top: 10%;
+        }
+
+        33% {
+            transform: scale(1);
+            top: 48%;
+            left: 36%;
+        }
+
+        100% {
+            transform: scale(1.03);
+            top: 49%;
+            left: 39%;
+        }
+    }
+</style>
+
+<style lang="scss" is:global>
+    #banshee-slide .ceo {
+        left: -10%;
+    }
+
+    .swiper-slide-active {
+        .thrasher {
+            animation: thrasher cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.7s;
+            animation-delay: 1.3s;
+            animation-iteration-count: 1;
+            transform-origin: center;
+            animation-fill-mode: forwards;
+        }
+        
+        .hurricane {
+            animation: hurricane cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.6s;
+            animation-delay: 1.2s;
+            animation-iteration-count: 1;
+            transform-origin: center;
+            animation-fill-mode: forwards;
+        }
+        
+        .stabber {
+            animation: stabber_3 cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.5s;
+            animation-delay: 1.4s;
+            animation-iteration-count: 1;
+            transform-origin: center;
+            animation-fill-mode: forwards;
+        }
+    }
+</style>

@@ -3289,6 +3289,7 @@ export const ui = {
         'quick_navigation_tip': 'Navigate through the sitemap',
         'character_finder_tip': 'Find characters registered in our site',
         'fitting_finder_tip': 'List of our fittings with name filter',
-        'littlehelp_description_fallback': 'Ironically the CEO believes Sainsbury’s is the superior UK supermarket.'
+        'littlehelp_description_fallback': 'Ironically the CEO believes Sainsbury’s is the superior UK supermarket.',
+        'banshee_description_fallback': 'We are a group of high fun, low sodium friends and fleet mates who enjoy the EVE online as a social experiment experience. Our primary content is small gang PvP and chill hangout sessions.'
     },
 } as const;
