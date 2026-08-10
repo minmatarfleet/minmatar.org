@@ -18,7 +18,6 @@ from django.utils import timezone
 from eveuniverse.models import EveType
 
 from market.helpers.health_common import (
-    CRITICAL_RATIO,
     VOLUME_DAYS_1,
     VOLUME_DAYS_3,
     VOLUME_DAYS_7,
@@ -173,8 +172,10 @@ def build_sell_order_health(  # noqa: C901
                 sell_listed_by_loc[loc_pk] += 1
                 if viable >= current:
                     sell_viable_fulfilled_by_loc[loc_pk] += 1
-            coverage_gap = current < desired * CRITICAL_RATIO
-            viability_gap = viable < desired * CRITICAL_RATIO
+            # Presence: coverage gap = empty shelf; viability = listed but
+            # nothing within-reason priced.
+            coverage_gap = current == 0
+            viability_gap = current > 0 and viable == 0
             avg_markup_pct = None
             if current > 0:
                 baseline = baseline_by_type.get(eve_type.id)

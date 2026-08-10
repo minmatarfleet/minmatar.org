@@ -187,8 +187,8 @@ class PinningExpectationsTestCase(TestCase):
             quantity=500,
         )
         effective = get_effective_item_expectations(self.location)
-        self.assertEqual(effective["Fusion S"], 500)
-        self.assertNotEqual(effective["Fusion S"], 20000)
+        self.assertEqual(effective["Fusion S"], 1)
+        self.assertIn("Rifter", effective)
 
     def test_pinned_item_excluded_from_fitting_sum(self):
         EveMarketItemExpectation.objects.create(
@@ -197,7 +197,7 @@ class PinningExpectationsTestCase(TestCase):
             quantity=3,
         )
         effective = get_effective_item_expectations(self.location)
-        self.assertEqual(effective["Rifter"], 3)
+        self.assertEqual(effective["Rifter"], 1)
 
 
 class BuyOrderSyncTestCase(TestCase):
@@ -632,7 +632,7 @@ class SellOrderRowsTestCase(TestCase):
         self.assertEqual(rows["Fusion S"]["current_qty"], 12)
         acolyte = rows["Acolyte I"]
         self.assertEqual(acolyte["current_qty"], 0)
-        self.assertEqual(acolyte["desired_qty"], 50)
+        self.assertEqual(acolyte["desired_qty"], 1)
         self.assertEqual(acolyte["recommended_qty"], 50)
         self.assertIn("[FL33T] Augoror", acolyte["references"])
         self.assertIn("consumable", acolyte["sources"])
@@ -646,10 +646,10 @@ class SellOrderRowsTestCase(TestCase):
             row["item_name"]: row
             for row in build_unified_sell_order_rows(self.location)
         }
-        self.assertEqual(rows["Acolyte I"]["desired_qty"], 75)
+        self.assertEqual(rows["Acolyte I"]["desired_qty"], 1)
         self.assertTrue(rows["Acolyte I"]["is_pinned"])
 
-    def test_recommended_qty_scales_with_contract_expectation_quantity(self):
+    def test_recommended_qty_uses_one_fit_not_contract_quantity(self):
         EveMarketContractExpectation.objects.create(
             location=self.location,
             fitting=self.fitting,
@@ -659,7 +659,8 @@ class SellOrderRowsTestCase(TestCase):
             row["item_name"]: row
             for row in build_unified_sell_order_rows(self.location)
         }
-        self.assertEqual(rows["Acolyte I"]["recommended_qty"], 150)
+        self.assertEqual(rows["Acolyte I"]["recommended_qty"], 50)
+        self.assertEqual(rows["Acolyte I"]["desired_qty"], 1)
 
     def test_filter_search_and_stock_filters(self):
         rows = [
@@ -675,7 +676,7 @@ class SellOrderRowsTestCase(TestCase):
             {
                 "item_name": "Fusion S",
                 "current_qty": 0,
-                "desired_qty": 100,
+                "desired_qty": 1,
                 "recommended_qty": 0,
                 "references": "",
                 "sources": "pinned",
@@ -684,7 +685,7 @@ class SellOrderRowsTestCase(TestCase):
             {
                 "item_name": "Augoror",
                 "current_qty": 10,
-                "desired_qty": 100,
+                "desired_qty": 1,
                 "recommended_qty": 0,
                 "references": "[FL33T] Augoror",
                 "sources": "non-doctrine ship",
@@ -693,7 +694,7 @@ class SellOrderRowsTestCase(TestCase):
             {
                 "item_name": "Damage Control II",
                 "current_qty": 150,
-                "desired_qty": 100,
+                "desired_qty": 1,
                 "recommended_qty": 0,
                 "references": "[FL33T] Augoror",
                 "sources": "fitting",
@@ -701,17 +702,18 @@ class SellOrderRowsTestCase(TestCase):
             },
             {
                 "item_name": "Multispectrum Coating II",
-                "current_qty": 30,
-                "desired_qty": 100,
+                "current_qty": 0,
+                "reasonable_qty": 0,
+                "desired_qty": 1,
                 "recommended_qty": 0,
                 "references": "[FL33T] Augoror",
                 "sources": "fitting",
                 "markup_pct": 2,
             },
             {
-                "item_name": "Overstocked Hull",
+                "item_name": "Listed Hull",
                 "current_qty": 250,
-                "desired_qty": 100,
+                "desired_qty": 1,
                 "recommended_qty": 0,
                 "references": "[FL33T] Augoror",
                 "sources": "non-doctrine ship",
@@ -727,53 +729,43 @@ class SellOrderRowsTestCase(TestCase):
         no_stock = filter_sell_order_rows(rows, stock_filter="no_stock")
         self.assertEqual(
             [row["item_name"] for row in no_stock],
-            ["Fusion S"],
+            ["Fusion S", "Multispectrum Coating II"],
         )
 
-        very_understocked = filter_sell_order_rows(
-            rows, stock_filter="very_understocked"
+        in_stock = filter_sell_order_rows(rows, stock_filter="in_stock")
+        self.assertEqual(
+            [row["item_name"] for row in in_stock],
+            ["Augoror", "Damage Control II", "Listed Hull"],
+        )
+
+    def test_stock_level_is_presence_only(self):
+        self.assertEqual(
+            _stock_level(
+                {
+                    "current_qty": 0,
+                    "desired_qty": 1,
+                }
+            ),
+            "no_stock",
         )
         self.assertEqual(
-            [row["item_name"] for row in very_understocked],
-            ["Augoror"],
+            _stock_level(
+                {
+                    "current_qty": 150,
+                    "reasonable_qty": 10,
+                    "desired_qty": 1,
+                }
+            ),
+            "in_stock",
         )
-
-        understocked = filter_sell_order_rows(
-            rows, stock_filter="understocked"
+        self.assertIsNone(
+            _stock_level(
+                {
+                    "current_qty": 0,
+                    "desired_qty": 0,
+                }
+            )
         )
-        self.assertEqual(
-            [row["item_name"] for row in understocked],
-            ["Multispectrum Coating II"],
-        )
-
-        overstocked = filter_sell_order_rows(rows, stock_filter="overstocked")
-        self.assertEqual(
-            [row["item_name"] for row in overstocked],
-            ["Damage Control II"],
-        )
-
-        very_overstocked = filter_sell_order_rows(
-            rows, stock_filter="very_overstocked"
-        )
-        self.assertEqual(
-            [row["item_name"] for row in very_overstocked],
-            ["Overstocked Hull"],
-        )
-
-    def test_stock_level_uses_reasonable_qty_when_present(self):
-        row = {
-            "current_qty": 150,
-            "reasonable_qty": 10,
-            "desired_qty": 100,
-        }
-        self.assertEqual(_stock_level(row), "very_understocked")
-
-        overstocked_row = {
-            "current_qty": 250,
-            "reasonable_qty": 150,
-            "desired_qty": 100,
-        }
-        self.assertEqual(_stock_level(overstocked_row), "overstocked")
 
     def test_reasonable_listing_thresholds(self):
         self.assertTrue(
@@ -1154,7 +1146,7 @@ class SellOrderRowsTestCase(TestCase):
             {
                 "item_name": "Acolyte I",
                 "current_qty": 0,
-                "desired_qty": 75,
+                "desired_qty": 1,
                 "recommended_qty": 50,
                 "is_pinned": True,
             }
@@ -1168,7 +1160,10 @@ class SellOrderRowsTestCase(TestCase):
         self.assertIn("pinned-hover", pinned_html)
         self.assertIn("pinned-icon", pinned_html)
         self.assertIn("Acolyte I", pinned_html)
-        self.assertIn("You set the target stock", pinned_html)
+        self.assertIn(
+            "You pinned this item so it stays on the tracking catalog",
+            pinned_html,
+        )
 
 
 class ExpectationsAdminViewsTestCase(TestCase):
@@ -1265,13 +1260,13 @@ class ExpectationsAdminViewsTestCase(TestCase):
             EveMarketFittingExpectation.objects.get(
                 location=self.location, fitting=non_doctrine
             ).quantity,
-            6,
+            1,
         )
         self.assertEqual(
             EveMarketContractExpectation.objects.get(
                 location=self.location, fitting=self.fitting
             ).quantity,
-            9,
+            1,
         )
 
     def test_fitting_expectations_render_on_single_page(self):
@@ -1326,7 +1321,10 @@ class ExpectationsAdminViewsTestCase(TestCase):
             )
             post_request = self.factory.post(
                 f"{url}?p=2",
-                {f"quantity_{page2_fitting_id}": "8"},
+                {
+                    "presence_tracking": "1",
+                    f"tracked_{page2_fitting_id}": "on",
+                },
             )
             post_request.user = user
             post_request.session = {}
@@ -1342,7 +1340,7 @@ class ExpectationsAdminViewsTestCase(TestCase):
             EveMarketFittingExpectation.objects.get(
                 location=self.location, fitting_id=page2_fitting_id
             ).quantity,
-            8,
+            1,
         )
 
     def test_contract_expectations_include_all_doctrine_fittings(self):

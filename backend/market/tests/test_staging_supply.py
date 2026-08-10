@@ -113,14 +113,15 @@ class MarketHealthApiTestCase(TestCase):
     def test_build_contract_and_sell_health_queues(self):
         contracts = _contract_at(self.loc.location_id)
         sells = _sell_at(self.loc.location_id)
-        self.assertGreaterEqual(len(contracts["rows"]), 1)
+        # Outstanding contract satisfies presence desired=1 → ready, omitted.
+        self.assertEqual(contracts["rows"], [])
         self.assertNotIn("mismatched_contracts", contracts)
         self.assertIsNotNone(contracts["summary"]["health_pct"])
         self.assertIn("viability_pct", contracts["summary"])
         self.assertIn("viable_fulfilled", contracts["summary"])
         self.assertIn("health_pct", sells["summary"])
         self.assertEqual(contracts["summary"]["targets"], 1)
-        self.assertEqual(contracts["summary"]["fulfilled"], 0)
+        self.assertEqual(contracts["summary"]["fulfilled"], 1)
         self.assertGreaterEqual(contracts["summary"]["isk"], 0)
         self.assertGreaterEqual(sells["summary"]["isk"], 0)
 
@@ -390,12 +391,16 @@ class MarketHealthApiTestCase(TestCase):
 
         contracts = _contract_at(self.loc.location_id)
         _sell_at(self.loc.location_id)
+        # Atron has an outstanding contract → presence-ready → omitted.
         ship_ids = [row["ship_id"] for row in contracts["rows"]]
-        self.assertEqual(ship_ids, [608, 24692])
+        self.assertEqual(ship_ids, [24692])
 
     def test_understocked_contracts_include_finished_volume_windows(self):
         now = timezone.now()
-        # Outstanding already created in setUp (id=1) → understocked vs qty 4.
+        # Remove outstanding stock so this fit is understocked (presence).
+        EveMarketContract.objects.filter(
+            id=1, location=self.loc, fitting=self.fit
+        ).delete()
         EveMarketContract.objects.create(
             id=101,
             status="finished",
@@ -468,8 +473,8 @@ class MarketHealthApiTestCase(TestCase):
         self.assertEqual(row["weekly_units"], 3)
         self.assertEqual(row["units_30d"], 4)
         self.assertEqual(row["units_90d"], 5)
-        # 1 outstanding ÷ (3/7 per day) ≈ 2.3 days of stock
-        self.assertEqual(row["days_of_stock"], 2.3)
+        # No outstanding ÷ (3/7 per day) → 0 days of stock
+        self.assertEqual(row["days_of_stock"], 0.0)
         self.assertGreaterEqual(contracts["summary"]["history_days"], 60)
 
     def test_sell_gaps_include_useful_ship_icons(self):
@@ -618,7 +623,7 @@ class MarketHealthApiTestCase(TestCase):
         )
         for row in sells["rows"]:
             self.assertTrue(row["coverage_gap"])
-            self.assertTrue(row["viability_gap"])
+            self.assertFalse(row["viability_gap"])
             self.assertEqual(row["item_type"], "consumable")
             self.assertEqual(row["units_1d"], 0)
             self.assertEqual(row["units_3d"], 0)
@@ -652,18 +657,11 @@ class MarketHealthApiTestCase(TestCase):
             location=self.loc,
             quantity=100,
         )
-        # Coverage OK (100 listed) but only 11 at a viable price.
+        # Listed, but nothing at a viable price → viability gap only.
         EveMarketItemOrder.objects.create(
             location=self.loc,
             item=item,
-            quantity=11,
-            price=2_200_000,
-            is_buy_order=False,
-        )
-        EveMarketItemOrder.objects.create(
-            location=self.loc,
-            item=item,
-            quantity=89,
+            quantity=100,
             price=3_000_000,
             is_buy_order=False,
         )
@@ -681,12 +679,12 @@ class MarketHealthApiTestCase(TestCase):
             if row["item_name"] == "Viability Only Ammo"
         )
         self.assertEqual(gap["current_quantity"], 100)
-        self.assertEqual(gap["viable_quantity"], 11)
+        self.assertEqual(gap["viable_quantity"], 0)
         self.assertFalse(gap["coverage_gap"])
         self.assertTrue(gap["viability_gap"])
         self.assertEqual(gap["item_type"], "consumable")
 
-    def test_both_gaps_when_stock_is_thin(self):
+    def test_no_gaps_when_any_fair_stock_is_listed(self):
         charge_cat, _ = EveCategory.objects.get_or_create(
             id=8, defaults={"name": "Charge", "published": True}
         )
@@ -731,8 +729,9 @@ class MarketHealthApiTestCase(TestCase):
             for row in sells["rows"]
             if row["item_name"] == "Thin Stock Ammo"
         )
-        self.assertTrue(gap["coverage_gap"])
-        self.assertTrue(gap["viability_gap"])
+        # Presence desired=1; any fair listing covers both gap kinds.
+        self.assertFalse(gap["coverage_gap"])
+        self.assertFalse(gap["viability_gap"])
         self.assertEqual(gap["item_type"], "consumable")
 
     def test_gap_row_includes_volume_windows_and_markup(self):
@@ -915,6 +914,11 @@ class MarketHealthApiTestCase(TestCase):
             sell_gap_flags(120, 50, 12.0, 3.0),
             ["understocked", "overpriced"],
         )
+        # Presence targets do not emit overstocked from qty vs expected.
+        self.assertEqual(
+            sell_gap_flags(120, 1, None, None),
+            ["in_stock"],
+        )
 
     def test_seven_day_vwap_avoids_one_day_dip_false_overpriced(self):
         """Listing fair vs 7d VWAP is not overpriced even if latest-day dipped."""
@@ -977,7 +981,7 @@ class MarketHealthApiTestCase(TestCase):
         )
         self.assertEqual(sells["summary"]["viability_pct"], 100.0)
 
-    def test_overstocked_overpriced_flags_on_viability_gap(self):
+    def test_overpriced_flags_on_viability_gap(self):
         charge_cat, _ = EveCategory.objects.get_or_create(
             id=8, defaults={"name": "Charge", "published": True}
         )
@@ -1027,7 +1031,7 @@ class MarketHealthApiTestCase(TestCase):
         self.assertEqual(gap["avg_markup_pct"], 50.0)
         self.assertEqual(
             gap["flags"],
-            ["in_stock", "overstocked", "overpriced"],
+            ["in_stock", "overpriced"],
         )
 
     def test_understocked_contracts_returns_all_rows(self):
@@ -1045,7 +1049,8 @@ class MarketHealthApiTestCase(TestCase):
             )
 
         contracts = _contract_at(self.loc.location_id)
-        self.assertEqual(len(contracts["rows"]), 56)
+        # setUp atron has outstanding stock → ready → omitted; 55 empty only.
+        self.assertEqual(len(contracts["rows"]), 55)
 
     def test_overpriced_stock_counts_as_coverage_not_viability(self):
         charge_cat, _ = EveCategory.objects.get_or_create(
@@ -1101,9 +1106,11 @@ class MarketHealthApiTestCase(TestCase):
         )
         self.assertEqual(gap["current_quantity"], 100)
         self.assertEqual(gap["viable_quantity"], 11)
-        self.assertEqual(gap["shortfall"], 89)
+        # Presence desired=1; shortfall uses viable vs desired.
+        self.assertEqual(gap["shortfall"], 0)
         self.assertFalse(gap["coverage_gap"])
-        self.assertTrue(gap["viability_gap"])
+        # Some viable stock remains → not a viability gap.
+        self.assertFalse(gap["viability_gap"])
         self.assertEqual(gap["item_type"], "consumable")
         self.assertEqual(sells["summary"]["targets"], 1)
         self.assertEqual(sells["summary"]["fulfilled"], 1)
@@ -1116,7 +1123,7 @@ class MarketHealthApiTestCase(TestCase):
                 for r in sells["rows"]
                 if r["coverage_gap"] or r["viability_gap"]
             ),
-            1,
+            0,
         )
         self.assertEqual(gap["flags"], ["in_stock", "overpriced"])
         self.assertIsNone(gap["days_of_stock"])

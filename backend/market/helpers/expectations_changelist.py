@@ -174,12 +174,12 @@ def _format_doctrine_display(
     return f"{count} doctrines", "\n".join(doctrine_names), doctrine_names
 
 
-def _quantity_input(fitting_id: int, quantity: int | None) -> str:
-    value = "" if quantity is None else quantity
+def _track_checkbox(fitting_id: int, quantity: int | None) -> str:
+    checked = " checked" if quantity not in (None, 0) else ""
     return format_html(
-        '<input type="number" name="quantity_{}" value="{}" min="0" step="1" class="vIntegerField">',
+        '<input type="checkbox" name="tracked_{}" value="on"{}>',
         fitting_id,
-        value,
+        checked,
     )
 
 
@@ -200,9 +200,9 @@ class LocationFittingExpectationsModelAdmin(admin.ModelAdmin):
     def display_fitting_name(self, obj: FittingExpectationListItem):
         return obj.fitting_name
 
-    @admin.display(description=_("How many to stock"), ordering="quantity")
+    @admin.display(description=_("Track"), ordering="quantity")
     def display_quantity(self, obj: FittingExpectationListItem):
-        return _quantity_input(obj.fitting_id, obj.quantity)
+        return _track_checkbox(obj.fitting_id, obj.quantity)
 
     @admin.display(description=_("Items in fit"), ordering="item_count")
     def display_item_count(self, obj: FittingExpectationListItem):
@@ -252,9 +252,9 @@ class LocationContractExpectationsModelAdmin(admin.ModelAdmin):
     def display_current(self, obj: ContractExpectationListItem):
         return obj.current
 
-    @admin.display(description=_("How many to offer"), ordering="quantity")
+    @admin.display(description=_("Track"), ordering="quantity")
     def display_quantity(self, obj: ContractExpectationListItem):
-        return _quantity_input(obj.fitting_id, obj.quantity)
+        return _track_checkbox(obj.fitting_id, obj.quantity)
 
     @admin.display(description=_("Completed sales"), ordering="sold")
     def display_sold(self, obj: ContractExpectationListItem):

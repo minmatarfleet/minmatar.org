@@ -232,7 +232,7 @@ def seed_market_expectations():
         _, created = EveMarketContractExpectation.objects.get_or_create(
             fitting=doctrine_fitting.fitting,
             location=location,
-            defaults={"quantity": 5},
+            defaults={"quantity": 1},
         )
         if created:
             expectations_created += 1

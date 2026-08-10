@@ -61,11 +61,10 @@ const no_target = {
 }
 
 describe('ops_contracts_stock_status', () => {
-    it('maps qty vs target into criteria buckets', () => {
-        expect(ops_contracts_stock_status(0, 10)).toBe('unstocked')
-        expect(ops_contracts_stock_status(4, 10)).toBe('low_stock')
-        expect(ops_contracts_stock_status(10, 10)).toBe('in_stock')
-        expect(ops_contracts_stock_status(12, 10)).toBe('overstocked')
+    it('maps presence vs tracking into criteria buckets', () => {
+        expect(ops_contracts_stock_status(0, 1)).toBe('unstocked')
+        expect(ops_contracts_stock_status(1, 1)).toBe('in_stock')
+        expect(ops_contracts_stock_status(12, 1)).toBe('in_stock')
         expect(ops_contracts_stock_status(5, 0)).toBeNull()
     })
 })
@@ -77,14 +76,14 @@ describe('ops_contracts_row_visible', () => {
         expect(ops_contracts_row_visible(no_target, [], [], '')).toBe(true)
     })
 
-    it('defaults to unstocked + low stock', () => {
-        expect(OPS_CONTRACTS_DEFAULT_CRITERIA).toEqual(['unstocked', 'low_stock'])
+    it('defaults to unstocked only', () => {
+        expect(OPS_CONTRACTS_DEFAULT_CRITERIA).toEqual(['unstocked'])
         expect(
             ops_contracts_row_visible(unstocked, OPS_CONTRACTS_DEFAULT_CRITERIA, [], ''),
         ).toBe(true)
         expect(
             ops_contracts_row_visible(low_stock, OPS_CONTRACTS_DEFAULT_CRITERIA, [], ''),
-        ).toBe(true)
+        ).toBe(false)
         expect(
             ops_contracts_row_visible(in_stock, OPS_CONTRACTS_DEFAULT_CRITERIA, [], ''),
         ).toBe(false)
