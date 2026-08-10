@@ -597,6 +597,37 @@ class FittingChangeRequestTestCase(TestCase):
         self.assertEqual("Scan v2", refit.name)
         self.assertFalse(refit.needs_review)
 
+    def test_approve_refit_delete_clears_refit_and_keeps_request(self):
+        fitting = EveFitting.objects.create(
+            name="Fit",
+            eft_format="[Rifter, Fit]",
+            ship_id=587,
+            description="d1",
+        )
+        refit = EveFittingRefit.objects.create(
+            base_fitting=fitting,
+            name="Scan",
+            eft_format="[Rifter, Scan]",
+            description="",
+        )
+        payload = {
+            "name": refit.name,
+            "eft_format": refit.eft_format,
+            "description": "",
+        }
+        req = submit_fitting_change_request(
+            fitting,
+            change_kind="refit_delete",
+            payload=payload,
+            user=self.proposer,
+            refit=refit,
+        )
+        approve_fitting_change_request(req, self.approver)
+        self.assertFalse(EveFittingRefit.objects.filter(pk=refit.pk).exists())
+        req.refresh_from_db()
+        self.assertEqual(ChangeRequestStatus.APPROVED, req.status)
+        self.assertIsNone(req.refit_id)
+
     def test_approve_fitting_create_publishes(self):
         fitting = EveFitting.objects.create(
             name="New Fit",

@@ -225,9 +225,12 @@ def approve_fitting_change_request(
     elif kind == "refit_update":
         apply_refit_payload(change_request.refit, fitting, payload)
     elif kind == "refit_delete":
-        apply_refit_payload(
-            change_request.refit, fitting, payload, delete=True
-        )
+        # Drop the cached FK before delete(); otherwise the in-memory
+        # refit has pk=None and change_request.save() raises
+        # "unsaved related object 'refit'".
+        refit = change_request.refit
+        change_request.refit = None
+        apply_refit_payload(refit, fitting, payload, delete=True)
     else:
         raise ValueError(f"Unknown fitting change kind: {kind}")
 
@@ -235,14 +238,15 @@ def approve_fitting_change_request(
     change_request.reviewed_by = user
     change_request.reviewed_at = timezone.now()
     change_request.review_note = review_note or ""
-    change_request.save(
-        update_fields=[
-            "status",
-            "reviewed_by",
-            "reviewed_at",
-            "review_note",
-        ]
-    )
+    update_fields = [
+        "status",
+        "reviewed_by",
+        "reviewed_at",
+        "review_note",
+    ]
+    if kind == "refit_delete":
+        update_fields.append("refit")
+    change_request.save(update_fields=update_fields)
 
 
 @transaction.atomic

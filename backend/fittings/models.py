@@ -731,7 +731,9 @@ class EveFittingChangeRequest(models.Model):
     )
     refit = models.ForeignKey(
         EveFittingRefit,
-        on_delete=models.CASCADE,
+        # SET_NULL: approving refit_delete removes the refit; keep the
+        # request row for audit and avoid save() failing on a cleared pk.
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="change_requests",
