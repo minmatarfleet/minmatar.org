@@ -1,0 +1,78 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import {
+    get_buyback_stock,
+    get_buyback_stock_stats,
+    get_buyback_ledger,
+} from '@helpers/api.minmatar.org/buybacks'
+import type {
+    BuybackOnHand,
+    BuybackLedger,
+    BuybackStockStats,
+} from '@dtypes/api.minmatar.org'
+
+const [stock, ledger, stats]: [
+    BuybackOnHand | null,
+    BuybackLedger | null,
+    BuybackStockStats | null,
+] = await Promise.all([
+    get_buyback_stock().catch(() => null),
+    get_buyback_ledger({
+        reason: 'sold_order,sold_contract',
+        limit: 40,
+    }).catch(() => null),
+    get_buyback_stock_stats().catch(() => null),
+])
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+import Breadcrumb from '@components/blocks/Breadcrumb.astro'
+import BuybackStockLedger from '@components/blocks/BuybackStockLedger.astro'
+import BuybackStockMetrics from '@components/blocks/BuybackStockMetrics.astro'
+
+const page_title = t('buyback_stocks.page_title')
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('buyback_stocks.meta_description')}
+    components={{
+        tippy: true,
+    }}
+>
+    <PageWide
+        cover={{
+            image: '/images/mining-cover.webp',
+            image_990: '/images/mining-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <Flexblock slot="header" gap="var(--space-s)">
+            <Breadcrumb items={[
+                { label: t('buyback.page_title'), href: translatePath('/market/buyback/') },
+                { label: page_title },
+            ]} />
+            <PageTitle>
+                {page_title}
+            </PageTitle>
+        </Flexblock>
+
+        <Flexblock gap='var(--space-xl)'>
+            {stats &&
+                <BuybackStockMetrics stats={stats} />
+            }
+            <BuybackStockLedger
+                stock_items={stock?.items ?? []}
+                ledger_entries={ledger?.entries ?? []}
+            />
+        </Flexblock>
+    </PageWide>
+</Viewport>

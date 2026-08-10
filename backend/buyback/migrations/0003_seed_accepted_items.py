@@ -8,10 +8,9 @@ from buyback.models import (
 
 
 def seed_and_refresh_settings(apps, schema_editor):
-    from buyback.helpers.accepted_items import seed_accepted_items
-
-    seed_accepted_items()
-
+    # Do not call live seed_accepted_items() here — the current model may have
+    # columns that do not exist yet at this migration step. Allowlist seeding
+    # is done via seed_buyback_accepted_items / refresh_buyback_ledger.
     EveBuybackSettings = apps.get_model("buyback", "EveBuybackSettings")
     EveBuybackSettings.objects.filter(pk=1).update(
         accepted_categories=list(DEFAULT_ACCEPTED_CATEGORIES),

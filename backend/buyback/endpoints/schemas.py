@@ -52,6 +52,9 @@ class BuybackAcceptedItemResponse(BaseModel):
     category: str
     used_in: List[BuybackUsedInProduct] = []
     in_demand: bool = False
+    demand_status: str = "surplus"
+    demand_quantity: int = 0
+    stockpile_quantity: int = 0
 
 
 class BuybackSettingsResponse(BaseModel):
@@ -65,6 +68,49 @@ class BuybackSettingsResponse(BaseModel):
     exclusions: List[str]
     discord_thread_url: str
     leading_text: str
+
+
+class BuybackOnHandItem(BaseModel):
+    type_id: int
+    name: str
+    category: Optional[str] = None
+    quantity: int
+    demand_status: Optional[str] = None
+    isk_value: Optional[float] = None
+
+
+class BuybackOnHandResponse(BaseModel):
+    items: List[BuybackOnHandItem]
+    updated_at: Optional[str] = None
+
+
+class BuybackStockStatsResponse(BaseModel):
+    stockpile_value: int
+    remaining_isk: Optional[int] = None
+    turnover_value: int
+    window_days: int = 30
+
+
+class BuybackLedgerEntryResponse(BaseModel):
+    id: int
+    reason: str
+    type_id: int
+    name: str
+    quantity: int
+    occurred_at: str
+    unit_price: Optional[float] = None
+    isk_total: Optional[float] = None
+    isk_value: Optional[float] = None
+    source_id: str
+    location_id: Optional[int] = None
+    counterparty_id: Optional[int] = None
+    counterparty_name: Optional[str] = None
+    counterparty_kind: Optional[str] = None
+
+
+class BuybackLedgerResponse(BaseModel):
+    entries: List[BuybackLedgerEntryResponse]
+    count: int
 
 
 class BuybackContractResponse(BaseModel):

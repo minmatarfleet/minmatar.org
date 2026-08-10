@@ -72,6 +72,9 @@ const leading_text = settings?.leading_text?.trim() || ''
                 </PageTitle>
             </FlexInline>
             <PageActions>
+                <Button href={translatePath('/market/buyback/stocks/')}>
+                    {t('view_buyback_stocks')}
+                </Button>
                 <Button href={translatePath('/market/buyback/contracts/')}>
                     {t('view_buyback_contracts')}
                 </Button>
@@ -109,7 +112,7 @@ const leading_text = settings?.leading_text?.trim() || ''
                         }
 
                         <ComponentBlock>
-                            <BuybackFAQs discord_thread_url={settings?.discord_thread_url || ''} />
+                            <BuybackFAQs />
                         </ComponentBlock>
                     </Flexblock>
                 </>

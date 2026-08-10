@@ -1,0 +1,104 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { BuybackStockStats } from '@dtypes/api.minmatar.org'
+import { format_isk, number_name } from '@helpers/numbers.ts'
+
+import Grid from '@components/compositions/Grid.astro'
+
+interface Props {
+    stats: BuybackStockStats
+}
+
+const { stats } = Astro.props
+
+function isk_display(value: number | null | undefined): string {
+    if (value == null) return '—'
+    return `${format_isk(value)} ISK`
+}
+
+function isk_tip(value: number | null | undefined): string | undefined {
+    if (value == null) return undefined
+    return number_name(value, lang) || value.toLocaleString()
+}
+---
+
+<section
+    class="[ buyback-stock-metrics ]"
+    aria-label={t('buyback.stocks.metrics.aria_label')}
+>
+    <Grid
+        class="[ buyback-stock-metrics__grid ]"
+        min_item_width="200px"
+        row_gap="var(--space-s)"
+        column_gap="var(--space-s)"
+    >
+        <article class="[ buyback-stock-metrics__card ]">
+            <p class="[ buyback-stock-metrics__label ]">
+                {t('buyback.stocks.metrics.stockpile_value')}
+            </p>
+            <p class="[ buyback-stock-metrics__value ]">
+                <span data-tippy-content={isk_tip(stats.stockpile_value)}>
+                    {isk_display(stats.stockpile_value)}
+                </span>
+            </p>
+        </article>
+
+        <article class="[ buyback-stock-metrics__card ]">
+            <p class="[ buyback-stock-metrics__label ]">
+                {t('buyback.stocks.metrics.remaining_isk')}
+            </p>
+            <p class="[ buyback-stock-metrics__value ]">
+                <span data-tippy-content={isk_tip(stats.remaining_isk)}>
+                    {isk_display(stats.remaining_isk)}
+                </span>
+            </p>
+        </article>
+
+        <article class="[ buyback-stock-metrics__card ]">
+            <p class="[ buyback-stock-metrics__label ]">
+                {t('buyback.stocks.metrics.turnover')}
+            </p>
+            <p class="[ buyback-stock-metrics__value ]">
+                <span data-tippy-content={isk_tip(stats.turnover_value)}>
+                    {isk_display(stats.turnover_value)}
+                </span>
+            </p>
+        </article>
+    </Grid>
+</section>
+
+<style lang="scss">
+    .buyback-stock-metrics__card {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-m);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.22);
+    }
+
+    .buyback-stock-metrics__label {
+        margin: 0;
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
+    }
+
+    .buyback-stock-metrics__value {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: clamp(2rem, 4.5vw, 3rem);
+        line-height: 0.95;
+        letter-spacing: -0.02em;
+        text-transform: uppercase;
+        color: var(--highlight);
+    }
+
+    .buyback-stock-metrics__value :global(span[data-tippy-content]:not([data-tippy-content=""])) {
+        border-bottom: none;
+        cursor: help;
+    }
+</style>

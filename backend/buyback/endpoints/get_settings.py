@@ -10,7 +10,6 @@ from buyback.endpoints.schemas import (
     BuybackUsedInProduct,
 )
 from buyback.helpers.annotate import annotate_active_accepted_items
-from buyback.helpers.pricing import public_rate_rules
 from buyback.models import (
     BUYBACK_CORPORATION_ID,
     EveBuybackSettings,
@@ -36,7 +35,7 @@ def get_settings(request):
         )
 
     active = bool(settings.active and location)
-    rates = public_rate_rules(settings.rate_rules)
+    rates = settings.rates()
 
     return BuybackSettingsResponse(
         active=active,
@@ -57,6 +56,9 @@ def get_settings(request):
                     for entry in item.used_in
                 ],
                 in_demand=item.in_demand,
+                demand_status=item.demand_status,
+                demand_quantity=item.demand_quantity,
+                stockpile_quantity=item.stockpile_quantity,
             )
             for item in annotate_active_accepted_items()
         ],

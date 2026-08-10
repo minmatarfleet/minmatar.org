@@ -705,6 +705,82 @@ class EsiClient:
 
         return EsiResponse(response_code=SUCCESS, data=all_entries)
 
+    def get_corporation_assets(self, corporation_id: int) -> EsiResponse:
+        """
+        All corporation assets (paginated). Requires
+        esi-assets.read_corporation_assets.v1.
+        """
+        token, status = self._valid_token(
+            ["esi-assets.read_corporation_assets.v1"]
+        )
+        if status > 0:
+            return EsiResponse(status)
+
+        operation = (
+            esi_provider.client.Assets.GetCorporationsCorporationIdAssets(
+                corporation_id=corporation_id,
+                token=token,
+            )
+        )
+        return self._operation_results(operation, use_etag=False)
+
+    def get_corporation_wallets(self, corporation_id: int) -> EsiResponse:
+        """
+        Corporation wallet balances for divisions 1–7.
+        Requires esi-wallet.read_corporation_wallets.v1
+        (Accountant / Junior_Accountant).
+        """
+        token, status = self._valid_token(
+            ["esi-wallet.read_corporation_wallets.v1"]
+        )
+        if status > 0:
+            return EsiResponse(status)
+
+        url = f"{ESI_BASE_URL}/corporations/{corporation_id}/wallets/"
+        headers = self._bearer_headers(token)
+        try:
+            resp = requests.get(url, headers=headers, timeout=30)
+        except Exception as e:
+            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+        if resp.status_code >= 400:
+            return EsiResponse(response_code=resp.status_code)
+
+        data = resp.json() if resp.content else []
+        return EsiResponse(response_code=SUCCESS, data=data)
+
+    def get_corporation_wallet_transactions(
+        self, corporation_id: int
+    ) -> EsiResponse:
+        """
+        Market wallet transactions for divisions 1–7.
+        Requires esi-wallet.read_corporation_wallets.v1.
+        """
+        token, status = self._valid_token(
+            ["esi-wallet.read_corporation_wallets.v1"]
+        )
+        if status > 0:
+            return EsiResponse(status)
+
+        all_entries: list = []
+        for division in range(1, 8):
+            url = (
+                f"{ESI_BASE_URL}/corporations/{corporation_id}/"
+                f"wallets/{division}/transactions/"
+            )
+            headers = self._bearer_headers(token)
+            try:
+                resp = requests.get(url, headers=headers, timeout=30)
+            except Exception as e:
+                return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+            if resp.status_code >= 400:
+                return EsiResponse(response_code=resp.status_code)
+            entries = resp.json() if resp.content else []
+            for entry in entries:
+                entry["division"] = division
+                all_entries.append(entry)
+
+        return EsiResponse(response_code=SUCCESS, data=all_entries)
+
     def get_public_contracts(self, region_id) -> EsiResponse:
         operation = esi_provider.client.Contracts.GetContractsPublicRegionId(
             region_id=region_id,

@@ -444,6 +444,12 @@
         "description": "page_finder.buyback_contracts.description"
     },
     {
+        "slug": "buyback_stocks",
+        "path": "/market/buyback/stocks/",
+        "publish": true,
+        "description": "page_finder.buyback_stocks.description"
+    },
+    {
         "slug": "buyback_contracts.history",
         "path": "/market/buyback/contracts/history/",
         "publish": true,
