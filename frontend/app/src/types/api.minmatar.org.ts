@@ -1284,6 +1284,9 @@ export interface BuybackAcceptedItem {
     category:   string;
     used_in?:   BuybackUsedInProduct[];
     in_demand?: boolean;
+    demand_status?: string;
+    demand_quantity?: number;
+    stockpile_quantity?: number;
 }
 
 export interface BuybackSettings {
@@ -1297,6 +1300,55 @@ export interface BuybackSettings {
     exclusions:             string[];
     discord_thread_url:     string;
     leading_text:           string;
+}
+
+export interface BuybackOnHandItem {
+    type_id: number;
+    name: string;
+    category: string | null;
+    quantity: number;
+    demand_status: string | null;
+    isk_value?: number | null;
+}
+
+export interface BuybackOnHand {
+    items: BuybackOnHandItem[];
+    updated_at: string | null;
+}
+
+export interface BuybackStockStats {
+    stockpile_value: number;
+    remaining_isk: number | null;
+    turnover_value: number;
+    window_days: number;
+}
+
+export type BuybackLedgerReason =
+    | 'in_contract'
+    | 'sold_order'
+    | 'sold_contract'
+    | 'unknown'
+
+export interface BuybackLedgerEntry {
+    id: number;
+    reason: BuybackLedgerReason | string;
+    type_id: number;
+    name: string;
+    quantity: number;
+    occurred_at: string;
+    unit_price: number | null;
+    isk_total: number | null;
+    isk_value?: number | null;
+    source_id: string;
+    location_id: number | null;
+    counterparty_id?: number | null;
+    counterparty_name?: string | null;
+    counterparty_kind?: string | null;
+}
+
+export interface BuybackLedger {
+    entries: BuybackLedgerEntry[];
+    count: number;
 }
 
 export interface BuybackAppraisalLine {

@@ -5,18 +5,11 @@ const { t } = i18n(Astro.url)
 
 interface Props {
     is_contract_page?: boolean
-    discord_thread_url?: string
 }
 
 const {
     is_contract_page = false,
-    discord_thread_url = '',
 } = Astro.props
-
-const discord_url = (discord_thread_url || '').trim()
-const pay_faq = discord_url
-    ? t('buyback.faq.2_text').replace('{discord_url}', discord_url)
-    : t('buyback.faq.2_text_plain')
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FixedFluid from '@components/compositions/FixedFluid.astro'
@@ -42,9 +35,7 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro'
             <p>{t('buyback.faq.contract_text')}</p>
         }
         <h4>{t('buyback.faq.2_title')}</h4>
-        <Markdown markdown={pay_faq} inline={true} />
-        <h4>{t('buyback.faq.3_title')}</h4>
-        <p>{t('buyback.faq.3_text')}</p>
+        <p>{t('buyback.faq.2_text')}</p>
     </div>
 </Flexblock>
 

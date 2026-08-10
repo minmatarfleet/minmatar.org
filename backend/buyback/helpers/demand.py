@@ -103,3 +103,13 @@ def type_in_demand(
 
 def rate_reason_for_in_demand(in_demand: bool) -> str:
     return RATE_REASON_SUPPLY_CHAIN if in_demand else RATE_REASON_SURPLUS
+
+
+def stored_demand_by_type_id() -> dict[int, bool]:
+    """type_id → in_demand from persisted BuybackAcceptedItem metrics."""
+    return {
+        item.eve_type_id: item.in_demand
+        for item in BuybackAcceptedItem.objects.filter(active=True).only(
+            "eve_type_id", "demand_status"
+        )
+    }

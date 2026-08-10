@@ -46,6 +46,9 @@ HISTORY_BATCH_ROWS = 5000
 SETTINGS_COPY_FIELDS = (
     "assignee_name",
     "accepted_categories",
+    "demand_jita_buy",
+    "surplus_jita_buy",
+    "ore_refine",
     "rate_rules",
     "exclusions",
     "discord_thread_url",

@@ -170,10 +170,7 @@ const page_title = t('buyback.contract.page_title');
         </Flexblock>
 
         <ComponentBlock slot="aside">
-            <BuybackFAQs
-                is_contract_page={true}
-                discord_thread_url={settings.discord_thread_url || ''}
-            />
+            <BuybackFAQs is_contract_page={true} />
         </ComponentBlock>
     </PageAside>
 </Viewport>

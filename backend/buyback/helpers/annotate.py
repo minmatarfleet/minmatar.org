@@ -4,11 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from buyback.helpers.demand import (
-    demand_type_ids_from_recent_orders,
-    mineral_name_to_id_for_ores,
-    type_in_demand,
-)
+from buyback.helpers.demand import mineral_name_to_id_for_ores
 from buyback.models import BuybackAcceptedItem
 from industry.helpers.compressed_ore import ore_materials_per_portion
 from industry.helpers.type_breakdown import type_ids_in_breakdown
@@ -28,6 +24,9 @@ class AnnotatedAcceptedItem:
     category: str
     used_in: list[UsedInProduct]
     in_demand: bool
+    demand_status: str
+    demand_quantity: int
+    stockpile_quantity: int
 
 
 def used_in_by_material_type_id() -> dict[int, list[UsedInProduct]]:
@@ -95,9 +94,8 @@ def used_in_for_accepted_type(
 
 
 def annotate_active_accepted_items() -> list[AnnotatedAcceptedItem]:
-    """Active allowlist rows with used_in + in_demand for settings API."""
+    """Active allowlist rows with used_in + stored demand/stockpile metrics."""
     material_used_in = used_in_by_material_type_id()
-    demand_ids = demand_type_ids_from_recent_orders()
     active_items = list(
         BuybackAcceptedItem.objects.filter(active=True)
         .select_related("eve_type")
@@ -124,13 +122,10 @@ def annotate_active_accepted_items() -> list[AnnotatedAcceptedItem]:
                     material_used_in=material_used_in,
                     mineral_name_to_id=mineral_name_to_id,
                 ),
-                in_demand=type_in_demand(
-                    type_id=item.eve_type_id,
-                    category=item.category,
-                    type_name=item.eve_type.name,
-                    demand_ids=demand_ids,
-                    mineral_name_to_id=mineral_name_to_id,
-                ),
+                in_demand=item.in_demand,
+                demand_status=item.demand_status,
+                demand_quantity=int(item.demand_quantity or 0),
+                stockpile_quantity=int(item.stockpile_quantity or 0),
             )
         )
     return annotated

@@ -140,7 +140,11 @@ class DemandBuybackRateTestCase(TestCase):
             order=order, eve_type=hull, quantity=1
         )
         BuybackAcceptedItem.objects.create(
-            eve_type=p2, category=BuybackAcceptedItem.Category.P2
+            eve_type=p2,
+            category=BuybackAcceptedItem.Category.P2,
+            demand_status=BuybackAcceptedItem.DemandStatus.HIGH,
+            demand_quantity=5,
+            metrics_updated_at=timezone.now(),
         )
         EveLocation.objects.create(
             location_id=60003760,

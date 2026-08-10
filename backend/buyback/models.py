@@ -1,3 +1,4 @@
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from eveonline.models import EveCorporationContract, EveLocation
@@ -5,6 +6,12 @@ from eveonline.models import EveCorporationContract, EveLocation
 BUYBACK_CORPORATION_ID = 98838663
 BUYBACK_CONTRACT_TYPE = "item_exchange"
 BUYBACK_CORP_FALLBACK_NAME = "Minmatar Extraction Company"
+
+# Amo - Minmatar Ore Reprocessing (contract destination / CorpDeliveries)
+DEFAULT_STOCKPILE_STRUCTURE_ID = 1040765104287
+# Corp office hangar under that structure (Director CorpSAG1)
+DEFAULT_STOCKPILE_OFFICE_ID = 1055001268953
+DEFAULT_STOCKPILE_HANGAR_FLAG = "CorpSAG1"
 
 DEFAULT_ACCEPTED_CATEGORIES = [
     "Materials imported for recent industry supply-chain orders (full Jita buy)",
@@ -20,11 +27,8 @@ DEFAULT_RATE_RULES = {
 DEFAULT_EXCLUSIONS: list[str] = []
 
 DEFAULT_LEADING_TEXT = (
-    "Alliance buyback via Minmatar Extraction Company. "
-    "We pay full Jita buy for materials our industry supply chain is "
-    "importing for recent orders, and 90% for other accepted ore and PI. "
-    "Paste your items for an instant offer, then contract at Amo — "
-    "paid within ~24 hours."
+    "Alliance buyback by Minmatar Extraction Company. "
+    "Paste your items for an instant offer, then contract your goods in Amo."
 )
 
 DEFAULT_DISCORD_THREAD_URL = (
@@ -94,6 +98,21 @@ class EveBuybackSettings(models.Model):
         default=_default_accepted_categories,
         blank=True,
     )
+    demand_jita_buy = models.FloatField(
+        default=DEFAULT_RATE_RULES["demand_jita_buy"],
+        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
+        help_text="Share of Jita buy paid for in-demand items (1.0 = 100%).",
+    )
+    surplus_jita_buy = models.FloatField(
+        default=DEFAULT_RATE_RULES["surplus_jita_buy"],
+        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
+        help_text="Share of Jita buy paid for surplus accepted items.",
+    )
+    ore_refine = models.FloatField(
+        default=DEFAULT_RATE_RULES["ore_refine"],
+        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
+        help_text="Assumed refine yield for compressed ore pricing.",
+    )
     rate_rules = models.JSONField(
         default=_default_rate_rules,
         blank=True,
@@ -111,6 +130,23 @@ class EveBuybackSettings(models.Model):
         default=DEFAULT_LEADING_TEXT,
     )
     active = models.BooleanField(default=True)
+    stockpile_structure_id = models.BigIntegerField(
+        default=DEFAULT_STOCKPILE_STRUCTURE_ID,
+        help_text="Structure location_id for CorpDeliveries (Amo).",
+    )
+    stockpile_office_id = models.BigIntegerField(
+        default=DEFAULT_STOCKPILE_OFFICE_ID,
+        help_text="Office location_id for the kept-stock hangar.",
+    )
+    stockpile_hangar_flag = models.CharField(
+        max_length=32,
+        default=DEFAULT_STOCKPILE_HANGAR_FLAG,
+        help_text="ESI location_flag for kept stock (e.g. CorpSAG1).",
+    )
+    stockpile_include_deliveries = models.BooleanField(
+        default=True,
+        help_text="Include CorpDeliveries at the structure in on-hand stock.",
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -119,10 +155,22 @@ class EveBuybackSettings(models.Model):
 
     def save(self, *args, **kwargs):
         self.pk = 1
+        self.rate_rules = {
+            "ore_refine": float(self.ore_refine),
+            "demand_jita_buy": float(self.demand_jita_buy),
+            "surplus_jita_buy": float(self.surplus_jita_buy),
+        }
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         pass
+
+    def rates(self) -> dict[str, float]:
+        return {
+            "ore_refine": float(self.ore_refine),
+            "demand_jita_buy": float(self.demand_jita_buy),
+            "surplus_jita_buy": float(self.surplus_jita_buy),
+        }
 
     @classmethod
     def load(cls):
@@ -143,6 +191,11 @@ class BuybackAcceptedItem(models.Model):
         P3 = "p3", "P3"
         P4 = "p4", "P4"
 
+    class DemandStatus(models.TextChoices):
+        SURPLUS = "surplus", "Surplus"
+        LOW = "low", "Low"
+        HIGH = "high", "High"
+
     eve_type = models.OneToOneField(
         "eveuniverse.EveType",
         on_delete=models.CASCADE,
@@ -153,6 +206,14 @@ class BuybackAcceptedItem(models.Model):
         max_length=16,
         choices=Category.choices,
     )
+    demand_status = models.CharField(
+        max_length=16,
+        choices=DemandStatus.choices,
+        default=DemandStatus.SURPLUS,
+    )
+    demand_quantity = models.BigIntegerField(default=0)
+    stockpile_quantity = models.BigIntegerField(default=0)
+    metrics_updated_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -160,6 +221,85 @@ class BuybackAcceptedItem(models.Model):
         verbose_name_plural = "Buyback accepted items"
         ordering = ["category", "eve_type__name"]
 
+    @property
+    def in_demand(self) -> bool:
+        return self.demand_status != self.DemandStatus.SURPLUS
+
     def __str__(self):
         status = "active" if self.active else "inactive"
         return f"{self.eve_type.name} ({self.category}, {status})"
+
+
+class BuybackLedgerEntry(models.Model):
+    """Material movement for the buyback stock ledger."""
+
+    class Reason(models.TextChoices):
+        IN_CONTRACT = "in_contract", "In (contract)"
+        SOLD_ORDER = "sold_order", "Sold (sell order)"
+        SOLD_CONTRACT = "sold_contract", "Sold (contract)"
+        UNKNOWN = "unknown", "Unknown"
+
+    reason = models.CharField(max_length=32, choices=Reason.choices)
+    eve_type = models.ForeignKey(
+        "eveuniverse.EveType",
+        on_delete=models.CASCADE,
+        related_name="buyback_ledger_entries",
+    )
+    quantity = models.BigIntegerField()
+    occurred_at = models.DateTimeField()
+    unit_price = models.DecimalField(
+        max_digits=20, decimal_places=2, null=True, blank=True
+    )
+    isk_total = models.DecimalField(
+        max_digits=20, decimal_places=2, null=True, blank=True
+    )
+    source_id = models.CharField(max_length=64)
+    location_id = models.BigIntegerField(null=True, blank=True)
+    counterparty_id = models.BigIntegerField(null=True, blank=True)
+    counterparty_name = models.CharField(
+        max_length=255, blank=True, default=""
+    )
+    counterparty_kind = models.CharField(
+        max_length=16,
+        blank=True,
+        default="",
+        help_text="character, corporation, or empty when unknown",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Buyback ledger entry"
+        verbose_name_plural = "Buyback ledger entries"
+        ordering = ["-occurred_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["reason", "source_id", "eve_type"],
+                name="buyback_ledger_reason_source_type_uniq",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["occurred_at"]),
+            models.Index(fields=["reason", "occurred_at"]),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.reason} {self.quantity}×{self.eve_type_id} "
+            f"@ {self.occurred_at}"
+        )
+
+
+class BuybackHangarSnapshot(models.Model):
+    """Point-in-time qty by type_id in tracked buyback hangars."""
+
+    taken_at = models.DateTimeField(db_index=True)
+    quantities = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Buyback hangar snapshot"
+        verbose_name_plural = "Buyback hangar snapshots"
+        ordering = ["-taken_at"]
+
+    def __str__(self):
+        return f"Hangar snapshot @ {self.taken_at}"

@@ -143,6 +143,24 @@ CELERYBEAT_CORPORATIONS = [
     ),
 ]
 
+# Buyback stock ledger + weekly metrics
+CELERYBEAT_BUYBACK = [
+    (
+        "[Buyback] Sync stock ledger (contracts, sells, hangar)",
+        {
+            "task": "buyback.tasks.sync_buyback_ledger_task",
+            "schedule": crontab(minute=25, hour="*"),
+        },
+    ),
+    (
+        "[Buyback] Refresh accepted-item demand/stockpile metrics",
+        {
+            "task": "buyback.tasks.refresh_buyback_accepted_item_metrics_task",
+            "schedule": crontab(minute=0, hour=14, day_of_week=1),
+        },
+    ),
+]
+
 # Industry (order assignees' jobs from ESI + cost-index cache)
 CELERYBEAT_INDUSTRY = [
     (
@@ -420,6 +438,7 @@ CELERYBEAT_SCHEDULE = dict(
     CELERYBEAT_MARKET
     + CELERYBEAT_CHARACTERS
     + CELERYBEAT_CORPORATIONS
+    + CELERYBEAT_BUYBACK
     + CELERYBEAT_INDUSTRY
     + CELERYBEAT_GROUPS
     + CELERYBEAT_TRIBES

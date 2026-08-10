@@ -12,17 +12,15 @@ from buyback.helpers.classify import (
     resolve_types_by_name,
 )
 from buyback.helpers.demand import (
-    demand_type_ids_from_recent_orders,
     mineral_name_to_id_for_ores,
     rate_reason_for_in_demand,
-    type_in_demand,
+    stored_demand_by_type_id,
 )
 from buyback.helpers.paste import PasteLine, parse_eve_paste
 from buyback.helpers.pricing import (
     PricedLine,
     get_baseline_buy_prices,
     get_baseline_buy_prices_by_name,
-    merge_rate_rules,
     price_flat_line,
     price_ore_line,
 )
@@ -51,7 +49,7 @@ def appraise_paste(
 ) -> AppraisalResult:
     """Appraise an EVE paste with buyback rate rules and baseline Jita buy."""
     buyback_settings = settings or EveBuybackSettings.load()
-    rules = merge_rate_rules(buyback_settings.rate_rules)
+    rules = buyback_settings.rates()
 
     paste_lines: list[PasteLine] = parse_eve_paste(paste)
     if not paste_lines:
@@ -66,7 +64,7 @@ def appraise_paste(
     names = [line.name for line in paste_lines]
     types_by_name = resolve_types_by_name(names)
     accepted_type_ids = get_active_accepted_type_ids()
-    demand_ids = demand_type_ids_from_recent_orders()
+    demand_by_type_id = stored_demand_by_type_id()
 
     type_ids = [t.id for t in types_by_name.values() if t is not None]
     buy_by_id = get_baseline_buy_prices(type_ids)
@@ -140,14 +138,7 @@ def appraise_paste(
             )
             continue
 
-        category = classification.category.value
-        in_demand = type_in_demand(
-            type_id=eve_type.id,
-            category=category,
-            type_name=eve_type.name,
-            demand_ids=demand_ids,
-            mineral_name_to_id=mineral_name_to_id,
-        )
+        in_demand = bool(demand_by_type_id.get(eve_type.id, False))
         rate = _jita_rate_for_demand(in_demand, rules)
         rate_reason = rate_reason_for_in_demand(in_demand)
 
