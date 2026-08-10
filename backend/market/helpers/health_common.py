@@ -118,6 +118,13 @@ def sell_gap_flags(
     avg_markup_pct: float | None,
     days_of_stock_value: float | None,
 ) -> list[str]:
+    """
+    Stock flags for ops gaps.
+
+    Presence targets are 1; depth uses days_of_stock (understocked < 7d).
+    ``expected`` is retained for call-site compat but unused for bands.
+    """
+    _ = expected
     flags: list[str] = []
     if current == 0:
         flags.append(FLAG_OUT_OF_STOCK)
@@ -128,8 +135,6 @@ def sell_gap_flags(
         flags.append(FLAG_UNDERSTOCKED)
     else:
         flags.append(FLAG_IN_STOCK)
-        if current > expected:
-            flags.append(FLAG_OVERSTOCKED)
     if avg_markup_pct is not None:
         if avg_markup_pct < MARKUP_UNDERPRICED_MAX:
             flags.append(FLAG_UNDERPRICED)

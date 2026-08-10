@@ -103,7 +103,7 @@ def get_market_item_trends(item_id):
 
 @admin.register(EveMarketContractExpectation)
 class EveMarketContractExpectationAdmin(admin.ModelAdmin):
-    """Contract expectations: fitting + quantity per location; stock levels from outstanding contracts."""
+    """Contract expectations: tracked fittings per location; presence via outstanding contracts."""
 
     list_display = (
         "fitting",
@@ -291,7 +291,7 @@ class EveMarketBuyOrderExpectationAdmin(admin.ModelAdmin):
 
 @admin.register(EveMarketFittingExpectation)
 class EveMarketFittingExpectationAdmin(admin.ModelAdmin):
-    """Fitting expectations: a fitting × quantity per location, decomposed into item-level expectations."""
+    """Fitting expectations: tracked fittings per location, decomposed into item catalog entries."""
 
     list_display = (
         "fitting",
@@ -495,7 +495,7 @@ class EveTypeWithSellOrdersAdmin(admin.ModelAdmin):
 
 @admin.register(EveMarketItemExpectation)
 class EveMarketItemExpectationAdmin(admin.ModelAdmin):
-    """Item seeding: EVE type + target quantity per location, tracked on sell orders."""
+    """Item pins: EVE types forced onto the sell-order catalog at a location."""
 
     list_display = (
         "item",

@@ -87,10 +87,7 @@ class SellOrderStockListFilter(admin.SimpleListFilter):
     def lookups(self, request, model_admin):
         return (
             ("no_stock", _("Nothing listed")),
-            ("very_understocked", _("Far below target")),
-            ("understocked", _("Below target")),
-            ("overstocked", _("Above target")),
-            ("very_overstocked", _("Far above target")),
+            ("in_stock", _("Listed")),
         )
 
     def queryset(self, request, queryset):
@@ -153,7 +150,7 @@ class LocationSellOrdersModelAdmin(admin.ModelAdmin):
             '<span class="item-name-text">{}</span>'
             "</span>",
             PINNED_ITEM_ICON,
-            _("You set the target stock for this item manually."),
+            _("You pinned this item so it stays on the tracking catalog."),
             obj.item_name,
         )
 
@@ -171,17 +168,20 @@ class LocationSellOrdersModelAdmin(admin.ModelAdmin):
             naturaltime(obj.last_synced_at),
         )
 
-    @admin.display(description=_("Target stock"))
+    @admin.display(description=_("Pin track"))
     def display_desired_qty(self, obj: SellOrderListItem):
-        if obj.is_editable:
-            return format_html(
-                '<input type="number" name="desired_{}" value="{}" min="0" step="1" class="vIntegerField">',
-                obj.type_id,
-                obj.desired_qty,
-            )
-        return obj.desired_qty
+        if not obj.is_editable or not obj.type_id:
+            return _("Yes") if obj.desired_qty else "—"
+        checked = " checked" if obj.is_pinned else ""
+        return format_html(
+            '<input type="checkbox" name="tracked_{}" value="on"{}'
+            ' title="{}">',
+            obj.type_id,
+            checked,
+            _("Pin this item on the tracking catalog (presence)."),
+        )
 
-    @admin.display(description=_("Suggested stock"))
+    @admin.display(description=_("Suggested (1 fit)"))
     def display_recommended_qty(self, obj: SellOrderListItem):
         if not obj.recommended_qty:
             return obj.recommended_qty
@@ -192,8 +192,8 @@ class LocationSellOrdersModelAdmin(admin.ModelAdmin):
             "</span>",
             obj.recommended_qty,
             _(
-                "Ammo, charges, and refit modules for doctrine fittings for sale, "
-                "multiplied by how many of each ship you configured."
+                "Ammo, charges, and refit modules for one doctrine fit "
+                "(advisory only; depth uses sales volume)."
             ),
         )
 

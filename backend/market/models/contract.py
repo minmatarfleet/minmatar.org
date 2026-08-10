@@ -7,6 +7,12 @@ from market.helpers.contract_stock import outstanding_stock_q
 
 
 class EveMarketContractExpectation(models.Model):
+    """
+    Catalog entry: track that a doctrine fitting should have at least one
+    outstanding matched contract at a location. ``quantity`` is schema-compat
+    only (normalized to 1); fulfillment is presence.
+    """
+
     fitting = models.ForeignKey(EveFitting, on_delete=models.CASCADE)
     location = models.ForeignKey(EveLocation, on_delete=models.RESTRICT)
     quantity = models.IntegerField(default=1)
@@ -24,7 +30,8 @@ class EveMarketContractExpectation(models.Model):
 
     @property
     def desired_quantity(self):
-        return self.quantity
+        """Presence target: tracked rows always desire at least one contract."""
+        return 1
 
     @property
     def is_fulfilled(self):
@@ -32,11 +39,8 @@ class EveMarketContractExpectation(models.Model):
 
     @property
     def is_understocked(self):
-        understocked_percentage = 0.5
-        return (
-            self.current_quantity
-            < self.desired_quantity * understocked_percentage
-        )
+        """Legacy prop: no outstanding contracts. Depth uses sell-order volume."""
+        return self.current_quantity < 1
 
 
 class EveMarketContract(models.Model):

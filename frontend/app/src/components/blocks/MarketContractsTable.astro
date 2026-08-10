@@ -28,7 +28,8 @@ const {
 function fill_pct(current: number, expected: number): number | null {
     if (expected <= 0)
         return null
-    return Math.min(100, (current / expected) * 100)
+    // Presence: 100% when any outstanding contract exists.
+    return current > 0 ? 100 : 0
 }
 
 const filter_rows: OpsContractsFilterRow[] = contracts.map(contract => ({
@@ -66,9 +67,7 @@ const has_no_doctrine = contracts.some(c => (c.doctrines ?? []).length === 0)
 
 const criteria_options = [
     { id: 'unstocked', label: t('ops_contracts_filter_unstocked') },
-    { id: 'low_stock', label: t('ops_contracts_filter_low_stock') },
     { id: 'in_stock', label: t('ops_contracts_filter_in_stock') },
-    { id: 'overstocked', label: t('ops_contracts_filter_overstocked') },
 ] as const
 
 const order_by_options = [

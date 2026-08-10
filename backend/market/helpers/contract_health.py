@@ -183,11 +183,12 @@ def build_contract_health(  # noqa: C901
         key = (expectation.location_id, expectation.fitting_id)
         current = outstanding.get(key, 0)
         viable = viable_outstanding.get(key, 0)
-        if expectation.quantity > 0:
-            ratio = min(1.0, current / expectation.quantity)
+        desired = expectation.desired_quantity
+        if desired > 0:
+            ratio = min(1.0, current / desired)
             contract_fill_ratios_by_loc[expectation.location_id].append(ratio)
             contract_targets_by_loc[expectation.location_id] += 1
-            if current >= expectation.quantity:
+            if current >= desired:
                 contract_fulfilled_by_loc[expectation.location_id] += 1
             # Viability = price quality of what is listed, not empty shelves.
             if current > 0:
@@ -200,7 +201,7 @@ def build_contract_health(  # noqa: C901
                     contract_viable_fulfilled_by_loc[
                         expectation.location_id
                     ] += 1
-        level = fitting_readiness(current, expectation.quantity)
+        level = fitting_readiness(current, desired)
         if level in ("ready", "unknown"):
             continue
         weekly_units = weekly_units_by_loc_fit.get(key, 0)
@@ -214,8 +215,8 @@ def build_contract_health(  # noqa: C901
                 "ship_id": expectation.fitting.ship_id,
                 "current_quantity": current,
                 "viable_quantity": viable,
-                "expected_quantity": expectation.quantity,
-                "shortfall": shortfall(current, expectation.quantity),
+                "expected_quantity": desired,
+                "shortfall": shortfall(current, desired),
                 "readiness": level,
                 "expectation_id": expectation.id,
                 "units_1d": units_1d_by_loc_fit.get(key, 0),

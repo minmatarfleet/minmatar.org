@@ -37,11 +37,6 @@ SOURCE_REFIT = "refit"
 SOURCE_CONSUMABLE = "consumable"
 SOURCE_NON_DOCTRINE_SHIP = "non-doctrine ship"
 
-# Stock bands use desired_qty as target.
-STOCK_VERY_UNDERSTOCKED_MAX_RATIO = 0.25
-STOCK_UNDERSTOCKED_MAX_RATIO = 0.50
-STOCK_OVERSTOCKED_MAX_RATIO = 2.0
-
 MARKUP_VERY_UNDERPRICED_MAX = -20
 MARKUP_UNDERPRICED_MAX = -5
 MARKUP_NORMAL_MAX = 5
@@ -138,6 +133,7 @@ def _fitting_ship_name(eft_format: str) -> str | None:
 
 
 def _stock_level(row: dict) -> str | None:
+    """Presence stock band for admin filters: listed vs nothing listed."""
     current = row.get("reasonable_qty")
     if current is None:
         current = row.get("current_qty") or 0
@@ -146,16 +142,7 @@ def _stock_level(row: dict) -> str | None:
         return None
     if current == 0:
         return "no_stock"
-    ratio = current / target
-    if ratio < STOCK_VERY_UNDERSTOCKED_MAX_RATIO:
-        return "very_understocked"
-    if ratio < STOCK_UNDERSTOCKED_MAX_RATIO:
-        return "understocked"
-    if ratio > STOCK_OVERSTOCKED_MAX_RATIO:
-        return "very_overstocked"
-    if ratio > 1:
-        return "overstocked"
-    return None
+    return "in_stock"
 
 
 def _markup_level(row: dict) -> str | None:
@@ -220,7 +207,7 @@ def _new_row(item_name: str) -> dict:
 
 
 def get_sell_order_recommendations(location) -> list[dict]:
-    """Consumables and refit modules scaled by contract expectation quantity."""
+    """One-fit consumable/refit advisory amounts for tracked contract fittings."""
     recommendations = []
     seen = set()
 
@@ -238,7 +225,6 @@ def get_sell_order_recommendations(location) -> list[dict]:
 
     for cexp in contract_expectations:
         fitting = cexp.fitting
-        contract_qty = cexp.quantity
         for item_name, qty in _get_consumable_items(fitting).items():
             key = ("consumable", item_name, fitting.pk)
             if key in seen:
@@ -247,7 +233,7 @@ def get_sell_order_recommendations(location) -> list[dict]:
             recommendations.append(
                 {
                     "item_name": item_name,
-                    "quantity": qty * contract_qty,
+                    "quantity": qty,
                     "fitting_name": fitting.name,
                     "source": fitting.name,
                     "kind": "consumable",
@@ -262,7 +248,7 @@ def get_sell_order_recommendations(location) -> list[dict]:
                 recommendations.append(
                     {
                         "item_name": item_name,
-                        "quantity": qty * contract_qty,
+                        "quantity": qty,
                         "fitting_name": fitting.name,
                         "source": f"{fitting.name} refit: {refit.name}",
                         "kind": "refit",
@@ -282,22 +268,60 @@ def _sell_orders_queryset(location):
     )
 
 
-def save_sell_order_desired_quantities(
-    location, post_data, allowed_ids: set[int] | None = None
-) -> int:
-    """Persist desired quantities as pinned item expectations. Returns rows saved."""
-    updated = 0
-    prefix = "desired_"
+def _checkbox_tracked_type_ids(
+    post_data, *, allowed_ids: set[int] | None
+) -> set[int]:
+    tracked_ids: set[int] = set()
     for key, raw_value in post_data.items():
-        if not key.startswith(prefix):
+        if not key.startswith("tracked_"):
             continue
-        type_id = int(key.removeprefix(prefix))
+        if raw_value in (None, "", "0", "false", "False", "off"):
+            continue
+        type_id = int(key.removeprefix("tracked_"))
+        if allowed_ids is not None and type_id not in allowed_ids:
+            continue
+        tracked_ids.add(type_id)
+    return tracked_ids
+
+
+def _apply_item_pin_track_set(
+    location,
+    *,
+    ids_to_consider: set[int],
+    tracked_ids: set[int],
+) -> int:
+    updated = 0
+    for type_id in ids_to_consider:
+        if type_id in tracked_ids:
+            EveMarketItemExpectation.objects.update_or_create(
+                location=location,
+                item_id=type_id,
+                defaults={"quantity": 1},
+            )
+            updated += 1
+            continue
+        deleted, _ = EveMarketItemExpectation.objects.filter(
+            location=location,
+            item_id=type_id,
+        ).delete()
+        if deleted:
+            updated += 1
+    return updated
+
+
+def _save_sell_order_pins_legacy(
+    location, post_data, allowed_ids: set[int] | None
+) -> int:
+    updated = 0
+    for key, raw_value in post_data.items():
+        if not key.startswith("desired_"):
+            continue
+        type_id = int(key.removeprefix("desired_"))
         if allowed_ids is not None and type_id not in allowed_ids:
             continue
         if raw_value in (None, ""):
             continue
-        quantity = int(raw_value)
-        if quantity <= 0:
+        if int(raw_value) <= 0:
             deleted, _ = EveMarketItemExpectation.objects.filter(
                 location=location,
                 item_id=type_id,
@@ -308,10 +332,36 @@ def save_sell_order_desired_quantities(
         EveMarketItemExpectation.objects.update_or_create(
             location=location,
             item_id=type_id,
-            defaults={"quantity": quantity},
+            defaults={"quantity": 1},
         )
         updated += 1
     return updated
+
+
+def save_sell_order_desired_quantities(
+    location, post_data, allowed_ids: set[int] | None = None
+) -> int:
+    """
+    Persist pin track on/off as item expectations (presence qty=1).
+
+    Prefers ``tracked_<type_id>`` checkboxes among ``allowed_ids``. Also
+    accepts legacy ``desired_<type_id>`` (positive → pin, ≤0 → unpin).
+    """
+    has_tracked = bool(post_data.get("presence_tracking")) or any(
+        key.startswith("tracked_") for key in post_data
+    )
+    if not has_tracked:
+        return _save_sell_order_pins_legacy(location, post_data, allowed_ids)
+
+    tracked_ids = _checkbox_tracked_type_ids(
+        post_data, allowed_ids=allowed_ids
+    )
+    ids_to_consider = allowed_ids if allowed_ids is not None else tracked_ids
+    return _apply_item_pin_track_set(
+        location,
+        ids_to_consider=ids_to_consider,
+        tracked_ids=tracked_ids,
+    )
 
 
 def build_unified_sell_order_rows(  # noqa: C901
@@ -327,24 +377,23 @@ def build_unified_sell_order_rows(  # noqa: C901
             rows_by_name[item_name] = _new_row(item_name)
         return rows_by_name[item_name]
 
-    pinned: dict[str, int] = {}
+    pinned_names: set[str] = set()
     pinned_expectations = {}
     for exp in EveMarketItemExpectation.objects.filter(
         location=location
     ).select_related("item"):
-        pinned[exp.item.name] = exp.quantity
+        pinned_names.add(exp.item.name)
         pinned_expectations[exp.item_id] = exp.pk
-    pinned_names = set(pinned.keys())
 
     for fexp in EveMarketFittingExpectation.objects.filter(
         location=location
     ).select_related("fitting"):
         ship_name = _fitting_ship_name(fexp.fitting.eft_format)
-        for item_name, qty in fexp.get_item_quantities().items():
+        for item_name in fexp.get_item_names():
             if item_name in pinned_names:
                 continue
             row = row_for(item_name)
-            row["desired_qty"] = max(row["desired_qty"], qty)
+            row["desired_qty"] = 1
             row["references"].add(fexp.fitting.name)
             if item_name == ship_name:
                 row["sources"].add(SOURCE_NON_DOCTRINE_SHIP)
@@ -354,18 +403,17 @@ def build_unified_sell_order_rows(  # noqa: C901
     for cexp in EveMarketContractExpectation.objects.filter(
         location=location
     ).select_related("fitting"):
-        for item_name, qty in _get_consumable_items(cexp.fitting).items():
+        for item_name in _get_consumable_items(cexp.fitting):
             if item_name in pinned_names:
                 continue
-            total = qty * cexp.quantity
             row = row_for(item_name)
-            row["desired_qty"] = max(row["desired_qty"], total)
+            row["desired_qty"] = 1
             row["references"].add(cexp.fitting.name)
             row["sources"].add("contract consumable")
 
-    for item_name, qty in pinned.items():
+    for item_name in pinned_names:
         row = row_for(item_name)
-        row["desired_qty"] = qty
+        row["desired_qty"] = 1
         row["sources"].add("pinned")
 
     for rec in get_sell_order_recommendations(location):

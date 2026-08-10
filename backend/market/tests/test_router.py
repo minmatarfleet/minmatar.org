@@ -78,12 +78,12 @@ class MarketRouterTestCase(TestCase):
         self.assertEqual(1, len(data))
         self.assertEqual("[NVY-5] Atron", data[0]["title"])
         self.assertEqual(1, data[0]["current_quantity"])
-        self.assertEqual(10, data[0]["desired_quantity"])
+        self.assertEqual(1, data[0]["desired_quantity"])
         self.assertEqual(1, data[0]["ship_id"])
         self.assertEqual(
             expectation.location.location_id, data[0]["location_id"]
         )
-        self.assertEqual("thin", data[0]["readiness"])
+        self.assertEqual("ready", data[0]["readiness"])
         self.assertEqual(1, len(data[0]["sellers"]))
         self.assertEqual(1, data[0]["sellers"][0]["character_id"])
         self.assertEqual(1, data[0]["sellers"][0]["quantity"])
@@ -284,11 +284,11 @@ class MarketRouterTestCase(TestCase):
             description="At target",
             eft_format="[Atron, [NVY-5] Ready Fit]",
         )
-        thin_fit = EveFitting.objects.create(
-            name="[NVY-5] Thin Fit",
+        empty_fit = EveFitting.objects.create(
+            name="[NVY-5] Empty Fit",
             ship_id=587,
-            description="Under target",
-            eft_format="[Rifter, [NVY-5] Thin Fit]",
+            description="No stock",
+            eft_format="[Rifter, [NVY-5] Empty Fit]",
         )
         EveMarketContractExpectation.objects.create(
             fitting=ready_fit,
@@ -296,7 +296,7 @@ class MarketRouterTestCase(TestCase):
             quantity=2,
         )
         EveMarketContractExpectation.objects.create(
-            fitting=thin_fit,
+            fitting=empty_fit,
             location=loc,
             quantity=5,
         )
@@ -309,14 +309,6 @@ class MarketRouterTestCase(TestCase):
                 price=1.0,
                 issuer_external_id=1,
             )
-        EveMarketContract.objects.create(
-            id=7100,
-            location=loc,
-            fitting=thin_fit,
-            status="outstanding",
-            price=1.0,
-            issuer_external_id=1,
-        )
 
         response = self.client.get(
             f"{BASE_URL}/contracts?location_id={loc.location_id}",
@@ -332,19 +324,21 @@ class MarketRouterTestCase(TestCase):
         by_title = {row["title"]: row for row in data}
         self.assertEqual("ready", by_title["[NVY-5] Ready Fit"]["readiness"])
         self.assertEqual(2, by_title["[NVY-5] Ready Fit"]["current_quantity"])
-        self.assertEqual("thin", by_title["[NVY-5] Thin Fit"]["readiness"])
-        self.assertEqual(1, by_title["[NVY-5] Thin Fit"]["current_quantity"])
+        self.assertEqual(1, by_title["[NVY-5] Ready Fit"]["desired_quantity"])
+        self.assertEqual("empty", by_title["[NVY-5] Empty Fit"]["readiness"])
+        self.assertEqual(0, by_title["[NVY-5] Empty Fit"]["current_quantity"])
+        self.assertEqual(1, by_title["[NVY-5] Empty Fit"]["desired_quantity"])
         self.assertEqual(608, by_title["[NVY-5] Ready Fit"]["ship_id"])
         self.assertEqual(1, len(by_title["[NVY-5] Ready Fit"]["sellers"]))
         self.assertEqual(
             2, by_title["[NVY-5] Ready Fit"]["sellers"][0]["quantity"]
         )
-        # Higher fill first (100% -> 0%), then no-expectation
+        # Ready before empty when sorting by fill.
         readiness_order = [row["readiness"] for row in data]
-        self.assertIn("thin", readiness_order)
+        self.assertIn("empty", readiness_order)
         self.assertIn("ready", readiness_order)
         self.assertLess(
-            readiness_order.index("ready"), readiness_order.index("thin")
+            readiness_order.index("ready"), readiness_order.index("empty")
         )
 
     def test_get_contracts_unknown_location_returns_empty(self):
