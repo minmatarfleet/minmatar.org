@@ -171,6 +171,7 @@ const TRIBE_GROUP_MEMBERSHIPS_PARTIAL_URL = translatePath(`/partials/tribe_group
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 import PageTitle from '@components/page/PageTitle.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageSubheader from '@components/page/PageSubheader.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -211,7 +212,7 @@ const page_title = t('tribes.groups.membership.page_title').replace('{group}', t
                     </PageTitle>
                     <small x-text="count_text">{count_text}</small>
                 </Flexblock>
-                <FlexInline>
+                <PageActions>
                     <Input type="text"
                         placeholder={t('search')}
                         x-model="item_name_filter"
@@ -220,7 +221,7 @@ const page_title = t('tribes.groups.membership.page_title').replace('{group}', t
                     >
                         <MagnifierIcon slot="icon" />
                     </Input>
-                </FlexInline>
+                </PageActions>
             </FlexInline>
 
             <PageSubheader

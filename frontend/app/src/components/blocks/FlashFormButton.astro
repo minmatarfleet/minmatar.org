@@ -88,128 +88,130 @@ import TutorialIcon from '@components/icons/TutorialIcon.astro';
         {t('flash_form')}
     </Button>
 
-    <Dialog
-        breakout={true}
-        non_centered={true}
-        class="[ flash-form-dialog ][ w-full max-w-[450px] component overflow-y-auto ]"
-        x-bind:class="(flash_form_dialog_open ? 'open' : '')"
-        x-bind:aria-hidden="flash_form_dialog_open == false"
-        x-trap="flash_form_dialog_open"
-        x-bind:inert="!flash_form_dialog_open"
-        @keyup.escape.window="close_dialog()"
-        @mousedown.outside="open && close_dialog()"
-    >
-        <form
-            method="POST"
-            action={translatePath('/fleets/add/')}
-            x-on:submit="close_dialog()"
+    <template x-teleport="body">
+        <Dialog
+            breakout={true}
+            non_centered={true}
+            class="[ flash-form-dialog ][ w-full max-w-[450px] component overflow-y-auto ]"
+            x-bind:class="(flash_form_dialog_open ? 'open' : '')"
+            x-bind:aria-hidden="flash_form_dialog_open == false"
+            x-trap="flash_form_dialog_open"
+            x-bind:inert="!flash_form_dialog_open"
+            @keyup.escape.window="close_dialog()"
+            @mousedown.outside="open && close_dialog()"
         >
-            <Flexblock gap="var(--space-l)">
-                <h3>{t('flash_form')}</h3>
+            <form
+                method="POST"
+                action={translatePath('/fleets/add/')}
+                x-on:submit="close_dialog()"
+            >
+                <Flexblock gap="var(--space-l)">
+                    <h3>{t('flash_form')}</h3>
 
-                <Flexblock>
-                    <Markdown markdown={t('flash_form_dialog_text')} inline={true} />
+                    <Flexblock>
+                        <Markdown markdown={t('flash_form_dialog_text')} inline={true} />
 
-                    <BlockList class="[ w-full ]">
-                        <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
-                            <label>{t('select_audience')}</label>
-                            <FlexInline class="[ audiences ]">
-                                {audiences.map((option) =>
-                                    <StylessButton
-                                        x-on:click={`audience = ${option.id}`}
-                                        type="button"
-                                        data-tippy-content={option.display_name}
-                                    >
-                                        <img
-                                            class:list={{ selected: option.id === default_audience}}
-                                            x-bind:class={`{ 'selected': audience === ${option.id} }`}
-                                            src={option.image_url ?? '/images/fleet-logo.svg'}
-                                            height="96"
-                                            width="96"
-                                            alt={option.display_name}
-                                        />
-                                    </StylessButton>
-                                )}
-                                <div class="[ visually-hidden ]">
-                                    <Select
-                                        class="[ pointer-events-none ]"
-                                        id="audience"
-                                        name="audience_id"
-                                        x-model="audience"
-                                        tabindex="-1"
-                                        required
-                                    >
-                                        {audiences_select_options.map((option) => 
-                                            <option value={option.value}>
-                                                {option.label}
-                                            </option>
-                                        )}
-                                    </Select>
-                                </div>
-                            </FlexInline>
-                        </Flexblock>
-                        <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
-                            <label for="description">{t('description')}</label>
-                            <Textarea id="description" name="description" x-model="description" rows="4" required></Textarea>
-                        </Flexblock>
-                        <SwitchSquare
-                            class="[ w-full ]"
-                            name="disable_motd"
-                            label={t('disable_motd')}
-                            description={t('disable_motd_description')}
-                        />
-                        <input type="hidden" name="doctrine_id" value="-1" />
-                        <input type="hidden" name="fleet_type" value="non_strategic" />
-                        <input type="hidden" name="flash_form" value="1" />
-                        <input type="hidden" name="start_tracking" value="on" />
-                    </BlockList>
-                </Flexblock>
-
-                <CollapsibleBlock>
-                    <FixedFluid
-                        width='48'
-                        breakpoint='70%'
-                        slot="head"
-                        class="[ w-full items-center ]"
-                    >
-                        <picture class="[ hidden sm:block! ]">
-                            <TutorialIcon />
-                        </picture>
-                        <Flexblock gap='var(--space-3xs)'>
-                            <h4>{t('flash_form_express')}</h4>
-                            <small>{t('flash_form_hint')}</small>
-                        </Flexblock>
-                    </FixedFluid>
-
-                    <Flexblock class="[ mt-5 ]">
-                        {audiences.map((option) =>
-                            <FlexInline gap="var(--space-s)" class="[ w-full !items-center ]">
-                                <p class="basis-[250px]"><a href={translatePath(`/fleets/flash_form?audience=${option.id}`)}>{option.display_name}</a></p>
-                                <ClipboardButton id={`copy-form-express-${option.id}`} class="[ hidden md:flex relative ]">{translatePath(`/fleets/flash_form?audience=${option.id}`)}</ClipboardButton>
-                            </FlexInline>
-                        )}
+                        <BlockList class="[ w-full ]">
+                            <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+                                <label>{t('select_audience')}</label>
+                                <FlexInline class="[ audiences ]">
+                                    {audiences.map((option) =>
+                                        <StylessButton
+                                            x-on:click={`audience = ${option.id}`}
+                                            type="button"
+                                            data-tippy-content={option.display_name}
+                                        >
+                                            <img
+                                                class:list={{ selected: option.id === default_audience}}
+                                                x-bind:class={`{ 'selected': audience === ${option.id} }`}
+                                                src={option.image_url ?? '/images/fleet-logo.svg'}
+                                                height="96"
+                                                width="96"
+                                                alt={option.display_name}
+                                            />
+                                        </StylessButton>
+                                    )}
+                                    <div class="[ visually-hidden ]">
+                                        <Select
+                                            class="[ pointer-events-none ]"
+                                            id="audience"
+                                            name="audience_id"
+                                            x-model="audience"
+                                            tabindex="-1"
+                                            required
+                                        >
+                                            {audiences_select_options.map((option) => 
+                                                <option value={option.value}>
+                                                    {option.label}
+                                                </option>
+                                            )}
+                                        </Select>
+                                    </div>
+                                </FlexInline>
+                            </Flexblock>
+                            <Flexblock class="[ w-full ]" gap="var(--space-3xs)">
+                                <label for="description">{t('description')}</label>
+                                <Textarea id="description" name="description" x-model="description" rows="4" required></Textarea>
+                            </Flexblock>
+                            <SwitchSquare
+                                class="[ w-full ]"
+                                name="disable_motd"
+                                label={t('disable_motd')}
+                                description={t('disable_motd_description')}
+                            />
+                            <input type="hidden" name="doctrine_id" value="-1" />
+                            <input type="hidden" name="fleet_type" value="non_strategic" />
+                            <input type="hidden" name="flash_form" value="1" />
+                            <input type="hidden" name="start_tracking" value="on" />
+                        </BlockList>
                     </Flexblock>
-                </CollapsibleBlock>
 
-                <FlexInline justification='flex-end'>
-                    <Button
-                        size='sm'
-                        type="submit"
-                        color='green'
-                    >
-                        {t('start_formation')}
-                    </Button>
-                    <Button
-                        type="button"
-                        size='sm'
-                        x-on:click="close_dialog()"
-                    >
-                        {t('close')}
-                    </Button>
-                </FlexInline>
-            </Flexblock>
-        </form>
-    </Dialog>
+                    <CollapsibleBlock>
+                        <FixedFluid
+                            width='48'
+                            breakpoint='70%'
+                            slot="head"
+                            class="[ w-full items-center ]"
+                        >
+                            <picture class="[ hidden sm:block! ]">
+                                <TutorialIcon />
+                            </picture>
+                            <Flexblock gap='var(--space-3xs)'>
+                                <h4>{t('flash_form_express')}</h4>
+                                <small>{t('flash_form_hint')}</small>
+                            </Flexblock>
+                        </FixedFluid>
+
+                        <Flexblock class="[ mt-5 ]">
+                            {audiences.map((option) =>
+                                <FlexInline gap="var(--space-s)" class="[ w-full !items-center ]">
+                                    <p class="basis-[250px]"><a href={translatePath(`/fleets/flash_form?audience=${option.id}`)}>{option.display_name}</a></p>
+                                    <ClipboardButton id={`copy-form-express-${option.id}`} class="[ hidden md:flex relative ]">{translatePath(`/fleets/flash_form?audience=${option.id}`)}</ClipboardButton>
+                                </FlexInline>
+                            )}
+                        </Flexblock>
+                    </CollapsibleBlock>
+
+                    <FlexInline justification='flex-end'>
+                        <Button
+                            size='sm'
+                            type="submit"
+                            color='green'
+                        >
+                            {t('start_formation')}
+                        </Button>
+                        <Button
+                            type="button"
+                            size='sm'
+                            x-on:click="close_dialog()"
+                        >
+                            {t('close')}
+                        </Button>
+                    </FlexInline>
+                </Flexblock>
+            </form>
+        </Dialog>
+    </template>
 </div>
 
 <style lang="scss">

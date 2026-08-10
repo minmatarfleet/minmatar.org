@@ -92,6 +92,7 @@ const default_isk_per_lp = default_currency?.default_isk_per_lp ?? 800
 
 import Viewport from '@layouts/Viewport.astro'
 import PageWide from '@components/page/PageWide.astro'
+import PageActions from '@components/page/PageActions.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
@@ -135,10 +136,9 @@ const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
                 <Breadcrumb items={breadcrumb_items} />
                 <PageTitle>{page_title}</PageTitle>
             </Flexblock>
-            <FlexInline gap="var(--space-2xs)">
+            <PageActions>
                 <Button
                     href={translatePath('/industry/loyalty/offers/')}
-                    size="sm"
                     color="transparent"
                 >
                     {t('industry.loyalty.view_offers')}
@@ -146,7 +146,6 @@ const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
                 {user_is_staff && (
                     <Button
                         href={admin_loyalty_url}
-                        size="sm"
                         color="transparent"
                         narrow={true}
                         new_tab={true}
@@ -156,7 +155,7 @@ const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
                         <CogIcon slot="icon" />
                     </Button>
                 )}
-            </FlexInline>
+            </PageActions>
         </FlexInline>
 
         <Flexblock gap="var(--space-xl)">

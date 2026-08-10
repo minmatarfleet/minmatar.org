@@ -1,20 +1,26 @@
 ---
 interface Props {
     min_content_width?: string;
+    fade?:              boolean;
     [propName: string]: any;
 }
 
 const {
     min_content_width = '400px',
+    fade = false,
     ...attributes
 } = Astro.props;
 
 delete attributes.class
+
+import XFadeScroll from '@components/compositions/XFadeScroll.astro';
+
+const Wrapper = fade ? XFadeScroll : 'div';
 ---
 
-<div class:list={['scrollx', Astro.props.class]} {...attributes}>
+<Wrapper class:list={['scrollx', Astro.props.class]} {...attributes}>
     <slot />
-</div>
+</Wrapper>
 
 <style lang="scss" is:global define:vars={{
     scrollx_min_content_width: min_content_width

@@ -1,0 +1,75 @@
+---
+interface Props {
+    flex?:      boolean;
+    fade_size?: string;
+    [propName: string]: any;
+}
+
+const {
+    flex = false,
+    fade_size = 'var(--space-s)',
+    ...attributes
+} = Astro.props;
+
+delete attributes.class;
+---
+
+<div
+    class:list={['xfade-scroll', Astro.props.class, { flex }]}
+    x-data="edge_fade()"
+    {...attributes}
+>
+    <slot />
+</div>
+
+<script is:inline>
+    if (!window.edge_fade) {
+        window.edge_fade = function () {
+            return {
+                init() {
+                    const el = this.$el;
+                    const update = () => {
+                        el.classList.toggle('fade-start', el.scrollLeft > 0);
+                        el.classList.toggle('fade-end', el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+                    };
+                    update();
+                    el._xfade_ro = new ResizeObserver(update);
+                    el._xfade_ro.observe(el);
+                    if (el.firstElementChild) el._xfade_ro.observe(el.firstElementChild);
+                    el.addEventListener('scroll', update, { passive: true });
+                },
+            };
+        };
+    }
+</script>
+
+<style lang="scss" define:vars={{
+    xfade_size: fade_size
+}}>
+    .xfade-scroll {
+        overflow-x: auto;
+
+        -webkit-mask-image: linear-gradient(to right,
+            transparent 0,
+            black var(--x-fade-start, 0),
+            black calc(100% - var(--x-fade-end, -1px)),
+            transparent 100%);
+        mask-image: linear-gradient(to right,
+            transparent 0,
+            black var(--x-fade-start, 0),
+            black calc(100% - var(--x-fade-end, -1px)),
+            transparent 100%);
+
+        &.fade-start {
+            --x-fade-start: var(--xfade_size);
+        }
+
+        &.fade-end {
+            --x-fade-end: var(--xfade_size);
+        }
+
+        &.flex {
+            display: flex;
+        }
+    }
+</style>

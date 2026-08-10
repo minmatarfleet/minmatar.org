@@ -103,6 +103,7 @@ if (tag_ids.length === 0)
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import TextBox from '@components/layout/TextBox.astro';
@@ -219,7 +220,7 @@ const page_title = post?.title ?? t('new_post')
                     </PageTitle>
                 </TextBox>
                 
-                <FlexInline>
+                <PageActions>
                     <Button
                         type="submit"
                         name="action"
@@ -246,7 +247,7 @@ const page_title = post?.title ?? t('new_post')
                             t('publish')
                         }
                     </Button>
-                </FlexInline>
+                </PageActions>
             </FlexInline>
 
             <Flexblock>

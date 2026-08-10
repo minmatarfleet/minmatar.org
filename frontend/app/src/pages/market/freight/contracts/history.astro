@@ -13,6 +13,7 @@ const FREIGHT_CONTRACTS_PARTIAL_URL = translatePath(`/partials/freight_contracts
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -96,11 +97,10 @@ const can_download_csv = Boolean(auth_token && user)
                     <small x-show="last_updated_text" x-text="last_updated_text"></small>
                 </Flexblock>
             </Flexblock>
-            <FlexInline>
+            <PageActions>
                 {can_download_csv &&
                     <Button
                         href={csv_url}
-                        size='sm'
                         data-tippy-content={t('download_freight_contracts_csv_tip')}
                     >
                         {t('download_freight_contracts_csv')}
@@ -115,7 +115,7 @@ const can_download_csv = Boolean(auth_token && user)
                 >
                     <MagnifierIcon slot="icon" />
                 </Input>
-            </FlexInline>
+            </PageActions>
         </FlexInline>
 
         <div

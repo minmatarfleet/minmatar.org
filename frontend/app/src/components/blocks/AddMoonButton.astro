@@ -39,6 +39,7 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
     {iconed && <AddIcon slot="icon" />}    
     {t('add_moon')}
 
+    
     <form
         slot="dialog" 
         hx-post={ADD_MOON_RESULT_PARTIAL_URL}
@@ -89,4 +90,4 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
     </form>
 </DialogButton>
         
-<div id="add-moon-result" />
+<div id="add-moon-result" class="[ hidden ]" />

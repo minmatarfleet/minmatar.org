@@ -74,6 +74,7 @@ import { query_string } from '@helpers/string';
 
 import Viewport from '@layouts/Viewport.astro';
 import PageAside from '@components/page/PageAside.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import Context from '@components/layout/Context.astro';
@@ -111,11 +112,11 @@ const page_title = t('freight.contract.page_title');
                     {page_title}
                 </PageTitle>
             </FlexInline>
-            <FlexInline>
+            <PageActions>
                 <Button class="[ !hidden sm:block! ]" href={translatePath(`/market/freight/contracts?${query_string({ location_name: location_name })}`)}>
                     {t('freight_contracts')}
                 </Button>
-            </FlexInline>
+            </PageActions>
         </FlexInline>
 
         <Flexblock gap='var(--space-xl)'>

@@ -133,6 +133,7 @@ import { marked } from 'marked';
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 import PageSubheader from '@components/page/PageSubheader.astro';
 
@@ -237,7 +238,7 @@ import { navigate } from "astro:transitions/client";
                     </FlexInline>
                 </Flexblock>
             </FlexInline>
-            <FlexInline>
+            <PageActions>
                 <div 
                     x-show="window.innerWidth > 1820"
                     style="display: none"
@@ -254,7 +255,7 @@ import { navigate } from "astro:transitions/client";
                 <ClipboardButton id="fit-clipboard" size='lg' text={t('copy_eft')}>
                     {fitting?.eft_format as string}
                 </ClipboardButton>
-            </FlexInline>
+            </PageActions>
         </FlexInline>
 
         <PageSubheader slot="subheader">

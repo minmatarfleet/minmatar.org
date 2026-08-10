@@ -41,6 +41,7 @@ const BLUEPRINTS_PARTIAL_URL = translatePath('/partials/blueprints_component')
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 import PageSubheader from '@components/page/PageSubheader.astro';
 
@@ -48,6 +49,7 @@ import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import BlockList from '@components/compositions/BlockList.astro';
 import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
 
 import BlueprintTableAlpine from '@components/blocks/BlueprintTableAlpine.astro'
 import Input from '@components/blocks/Input.astro'
@@ -111,74 +113,78 @@ const page_title = t('industry.blueprints.page_title');
             <PageTitle>
                 {page_title}
             </PageTitle>
-            <FlexInline>
+            <PageActions>
                 <Button href={translatePath('/industry/blueprints/copies/')}>
                     {t('find_copies')}
                 </Button>
-            </FlexInline>
+            </PageActions>
         </FlexInline>
 
-        <PageSubheader slot="subheader" justification='center'>
-            <Flexblock class="[ basis-200 ]" gap='var(--space-2xs)'>
-                <Form
-                    hx-get={BLUEPRINTS_PARTIAL_URL}
-                    hx-trigger="submit"
-                    hx-target="#blueprint-table"
-                    hx-indicator=".loader"
-                    block_submit={true}
-                >
-                    <FlexInlineSiblings
-                        min-shink-width='250px'
-                        shrinkable-sibbling='first'
+        <PageSubheader slot="subheader" justification='center' class="[ w-full ]">
+            <Wrapper padding_block='0' padding_inline='0' max_width='48rem' class="[ w-full ]">
+                <Flexblock gap='var(--space-2xs)'>
+                    <Form
+                        class="[ w-full ]"
+                        hx-get={BLUEPRINTS_PARTIAL_URL}
+                        hx-trigger="submit"
+                        hx-target="#blueprint-table"
+                        hx-indicator=".loader"
+                        block_submit={true}
                     >
-                        <Input
-                            type="text"
-                            placeholder={t('find_blueprints_placeholder')}
-                            name="blueprint_query"
-                            x-model="blueprint_query"
-                            x-init="$el.focus()"
+                        <FlexInlineSiblings
+                            min-shink-width='250px'
+                            shrinkable-sibbling='first'
                         >
-                            <MagnifierIcon slot="icon" />
-                        </Input>
-                        <Button
-                            type="submit"
-                            off_disable={true}
-                            x-bind:disabled="blueprint_query.length < 3"
-                            disabled
-                        >
-                            {t('search')}
-                        </Button>
-                    </FlexInlineSiblings>
-                </Form>
+                            <Input
+                                class="[ min-w-[560px] ]"
+                                type="text"
+                                placeholder={t('find_blueprints_placeholder')}
+                                name="blueprint_query"
+                                x-model="blueprint_query"
+                                x-init="$el.focus()"
+                            >
+                                <MagnifierIcon slot="icon" />
+                            </Input>
+                            <Button
+                                type="submit"
+                                off_disable={true}
+                                x-bind:disabled="blueprint_query.length < 3"
+                                disabled
+                            >
+                                {t('search')}
+                            </Button>
+                        </FlexInlineSiblings>
+                    </Form>
 
-                <FlexInline>
-                    <h4>{t('sort_by')}</h4>
+                    <FlexInline>
+                        <h4>{t('sort_by')}</h4>
 
-                    <UnstyledRadioCheckButton
-                        label={t('best_efficiency')}
-                        type='radio'
-                        x-model="sorting"
-                        value="best_efficiency"
-                        x-on:change="filter()"
-                    />
+                        <UnstyledRadioCheckButton
+                            label={t('best_efficiency')}
+                            type='radio'
+                            x-model="sorting"
+                            value="best_efficiency"
+                            x-on:change="filter()"
+                        />
 
-                    <UnstyledRadioCheckButton
-                        label={t('material_efficiency')}
-                        type='radio'
-                        x-model="sorting"
-                        value="material_efficiency"
-                        x-on:change="filter()"
-                    />
+                        <UnstyledRadioCheckButton
+                            label={t('material_efficiency')}
+                            type='radio'
+                            x-model="sorting"
+                            value="material_efficiency"
+                            x-on:change="filter()"
+                        />
 
-                    <UnstyledRadioCheckButton
-                        label={t('time_efficiency')}
-                        type='radio'
-                        x-model="sorting"
-                        value="time_efficiency"
-                        x-on:change="filter()"
-                    />
-                </FlexInline>
-            </Flexblock>
+                        <UnstyledRadioCheckButton
+                            label={t('time_efficiency')}
+                            type='radio'
+                            x-model="sorting"
+                            value="time_efficiency"
+                            x-on:change="filter()"
+                        />
+                    </FlexInline>
+                </Flexblock>
+            </Wrapper>
         </PageSubheader>
         
         <BlockList>

@@ -11,18 +11,22 @@ const {
 
 delete attributes.class
 
+const subheader_content = await Astro.slots.render('default');
+
 import FlexInline from '@components/compositions/FlexInline.astro';
 ---
 
 <FlexInline
-    class:list={[ 'subheader-content', { 'is-empty': is_empty } ]}
+    class:list={[ 'subheader-content', { 'is-empty': subheader_content === null }, Astro.props.class ]}
     {...attributes}
 >
     <slot />
 </FlexInline>
 
-<style>
-    .subheader-content:not(.is-empty) {
-        padding-bottom: var(--space-s);
+<style lang="scss">
+    @media screen and (min-width: 1280px) {
+        .subheader-content:not(.is-empty) {
+            padding-bottom: var(--space-s);
+        }
     }
 </style>

@@ -55,6 +55,7 @@ characters_assets.map( (character_assets) => {
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 import PageSubheader from '@components/page/PageSubheader.astro';
 
@@ -108,7 +109,7 @@ const page_title = t('assets.user.page_title')
                     </PageTitle>
                 </Flexblock>
             </FlexInline>
-            <FlexInline>
+            <PageActions>
                 <Input type="text"
                     placeholder={t('search')}
                     x-model="asset_name"
@@ -125,7 +126,7 @@ const page_title = t('assets.user.page_title')
                         width='280px'
                     />
                 </div>
-            </FlexInline>
+            </PageActions>
         </FlexInline>
 
         <PageSubheader

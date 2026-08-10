@@ -56,6 +56,7 @@ import Viewport from '@layouts/Viewport.astro';
 import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 import PageSubheader from '@components/page/PageSubheader.astro';
+import PageActions from '@components/page/PageActions.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -93,14 +94,14 @@ const page_description = t('page_finder.fleets.history.description');
                     <small id="count-text-oob">{count_text}</small>
                 </Flexblock>
             </FlexInline>
-            <FlexInline>
+            <PageActions>
                 {can_add_fleets &&
                     <Button color={'green'} href={translatePath('/fleets/add/')}>
                         <AddIcon slot="icon" />
                         {t('schedule_fleet')}
                     </Button>
                 }
-            </FlexInline>
+            </PageActions>
         </FlexInline>
 
         <PageSubheader slot="subheader">

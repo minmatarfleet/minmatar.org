@@ -49,6 +49,7 @@ const STRUCTURE_TIMERS_LIST_PARTIAL_URL = translatePath(`/partials/structure_tim
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 import PageSubheader from '@components/page/PageSubheader.astro';
 
@@ -94,14 +95,14 @@ const page_title = t('intel.timers.history.page_title');
                     </small>
                 </Flexblock>
             </FlexInline>
-            <FlexInline>
-                {can_add_timers &&
+            {can_add_timers &&
+                <PageActions>
                     <Button color={'green'} href={translatePath('/intel/timers/add/')}>
                         <AddIcon slot="icon" />
                         {t('add_structure_timer')}
                     </Button>
-                }
-            </FlexInline>
+                </PageActions>
+            }
         </FlexInline>
 
         <PageSubheader slot="subheader">

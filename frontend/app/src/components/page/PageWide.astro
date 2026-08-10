@@ -22,6 +22,7 @@ interface Props {
     cover?:                 false | PageCoverOptions;
     sticky?:                boolean;
     padding_block?:         string;
+    no_main_padding?:       boolean;
     [propName: string]:     any;
 }
 
@@ -29,16 +30,19 @@ const {
     cover,
     sticky = false,
     padding_block = 'var(--space-xl)',
+    no_main_padding = false,
     ...attributes
 } = Astro.props;
 
 import { is_referral_url } from '@helpers/fetching/referrals'
 const is_referral_page = user ? is_referral_url(Astro.url.pathname, lang) : false
 
+const subheader_content = await Astro.slots.render('subheader');
+
 import ReferralLink from '@components/blocks/ReferralLink.astro';
 ---
 
-<main id="content" {...attributes}>
+<main id="content" class={subheader_content && !no_main_padding ? "[ pb-(--space-2xl) xl:pb-0 ]" : undefined} {...attributes}>
     {is_referral_page && user &&
         <div class="[ referral-wrapper ]">
             <ReferralLink user_id={user.user_id} position='left' />

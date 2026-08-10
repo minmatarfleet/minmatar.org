@@ -59,67 +59,69 @@ import BlockList from '@components/compositions/BlockList.astro';
         {title}
     </Button>
 
-    <div class="[ system-finder-dialog ]">
-        <Dialog
-            breakout={true}
-            non_centered={true}
-            thin={true}
-            class="[ w-full max-w-[500px] ]"
-            x-bind:class="(system_finder_open ? 'open' : '')"
-            x-bind:aria-hidden="system_finder_open == false"
-            x-trap="system_finder_open"
-            x-bind:inert="!system_finder_open"
-            @keyup.escape.window="close_dialog()"
-            @mousedown.outside="open && close_dialog()"
-            style="--dialog-max-width: 500px"
-        >
-            <Flexblock gap="0">
-                <Input
-                    class="[ relative z-10 ]"
-                    placeholder={t('find_system_placeholder')}
-                    autocomplete="off"
-                    name="system"
-                    x-model="search"
-                    hx-get={list_partial}
-                    hx-trigger="keyup changed delay:1s"
-                    hx-target={`#${id}-list`}
-                    hx-indicator=".loader"
-                >
-                    <MagnifierIcon slot="icon" />
-                </Input>
+    <template x-teleport="body">
+        <div class="[ system-finder-dialog ]">
+            <Dialog
+                breakout={true}
+                non_centered={true}
+                thin={true}
+                class="[ w-full max-w-[500px] ]"
+                x-bind:class="(system_finder_open ? 'open' : '')"
+                x-bind:aria-hidden="system_finder_open == false"
+                x-trap="system_finder_open"
+                x-bind:inert="!system_finder_open"
+                @keyup.escape.window="close_dialog()"
+                @mousedown.outside="open && close_dialog()"
+                style="--dialog-max-width: 500px"
+            >
+                <Flexblock gap="0">
+                    <Input
+                        class="[ relative z-10 ]"
+                        placeholder={t('find_system_placeholder')}
+                        autocomplete="off"
+                        name="system"
+                        x-model="search"
+                        hx-get={list_partial}
+                        hx-trigger="keyup changed delay:1s"
+                        hx-target={`#${id}-list`}
+                        hx-indicator=".loader"
+                    >
+                        <MagnifierIcon slot="icon" />
+                    </Input>
 
-                <div class="[ relative ]">
-                    <Flexblock gap='var(--space-3xs)'>
-                        <BlockList
-                            id={`${id}-list`}
-                            class="[ system-finder-list ][ light-transparency w-full ]"
-                            gap='var(--space-3xs)'
-                            x-ref="system_finder_list"
-                        />
+                    <div class="[ relative ]">
+                        <Flexblock gap='var(--space-3xs)'>
+                            <BlockList
+                                id={`${id}-list`}
+                                class="[ system-finder-list ][ light-transparency w-full ]"
+                                gap='var(--space-3xs)'
+                                x-ref="system_finder_list"
+                            />
 
-                        <FlexInline justification='center'>
-                            <FlexInline gap="var(--space-3xs)">
-                                <span class="[ text-[var(--highlight)] ]">(</span>
-                                <Kbd>Shift</Kbd>
-                                <span class="[ text-[var(--highlight)] ]">+</span>
-                                <span class="[ text-[var(--highlight)] ]">)</span>
-                                <Kbd>Tab</Kbd>
-                                <small>to navigate</small>
+                            <FlexInline justification='center'>
+                                <FlexInline gap="var(--space-3xs)">
+                                    <span class="[ text-[var(--highlight)] ]">(</span>
+                                    <Kbd>Shift</Kbd>
+                                    <span class="[ text-[var(--highlight)] ]">+</span>
+                                    <span class="[ text-[var(--highlight)] ]">)</span>
+                                    <Kbd>Tab</Kbd>
+                                    <small>to navigate</small>
+                                </FlexInline>
+                                <FlexInline gap="var(--space-3xs)">
+                                    <Kbd>Enter</Kbd>
+                                    <small>to select</small>
+                                </FlexInline>
+                                <FlexInline gap="var(--space-3xs)">
+                                    <Kbd>Esc</Kbd>
+                                    <small>to close</small>
+                                </FlexInline>
                             </FlexInline>
-                            <FlexInline gap="var(--space-3xs)">
-                                <Kbd>Enter</Kbd>
-                                <small>to select</small>
-                            </FlexInline>
-                            <FlexInline gap="var(--space-3xs)">
-                                <Kbd>Esc</Kbd>
-                                <small>to close</small>
-                            </FlexInline>
-                        </FlexInline>
-                    </Flexblock>
-                </div>
-            </Flexblock>
-        </Dialog>
-    </div>
+                        </Flexblock>
+                    </div>
+                </Flexblock>
+            </Dialog>
+        </div>
+    </template>
 </div>
 
 <style lang="scss">

@@ -41,6 +41,7 @@ const PROPAGANDA_POSTS_LIST_PARTIAL_URL = `${translatePath('/partials/propaganda
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 import PageSubheader from '@components/page/PageSubheader.astro';
 
@@ -85,11 +86,11 @@ const leading_text = t('propaganda.my_posts.leading_text');
                 </PageTitle>
                 <small x-text="count_text">{count_text}</small>
             </Flexblock>
-            <FlexInline>
+            <PageActions>
                 <Button href={translatePath('/alliance/propaganda/')}>
                     {t('back_to_propaganda')}
                 </Button>
-            </FlexInline>
+            </PageActions>
         </FlexInline>
 
         <PageSubheader slot="subheader">

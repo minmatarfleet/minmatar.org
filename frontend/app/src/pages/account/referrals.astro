@@ -30,6 +30,7 @@ const REFERRAL_STATS_PARTIAL_URL = translatePath('/partials/referral_stats_compo
 import Viewport from '@layouts/Viewport.astro';
 
 import PageDefault from '@components/page/PageDefault.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import TextBox from '@components/layout/TextBox.astro';
@@ -66,11 +67,11 @@ const page_title = t('account.referral.page_title');
             <PageTitle>
                 {page_title}
             </PageTitle>
-            <FlexInline>
+            <PageActions>
                 <Button class="[ !hidden md:!flex ]" href={translatePath('/account/')}>
                     {t('account_details')}
                 </Button>
-            </FlexInline>
+            </PageActions>
         </FlexInline>
         
         <Flexblock gap="var(--space-xl)">

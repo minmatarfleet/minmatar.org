@@ -106,6 +106,7 @@ import Viewport from '@layouts/Viewport.astro';
 
 import PageTitle from '@components/page/PageTitle.astro';
 import PageDefault from '@components/page/PageDefault.astro';
+import PageActions from '@components/page/PageActions.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -180,12 +181,12 @@ const page_title = t('intel.timers.add.page_title');
             <PageTitle>
                 {page_title}
             </PageTitle>
-            <FlexInline>
+            <PageActions>
                 <Button class="[ !hidden md:!flex ]" href={translatePath('/intel/timers/active/')}>
                     <MagnifierIcon slot="icon" />
                     {t('view_structure_timers')}
                 </Button>
-            </FlexInline>
+            </PageActions>
         </FlexInline>
 
         <CountdownConverter

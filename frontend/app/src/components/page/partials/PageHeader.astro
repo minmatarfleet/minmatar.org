@@ -13,43 +13,32 @@ const {
 } = Astro.props;
 
 import Wrapper from '@components/compositions/Wrapper.astro';
-
-const subheader_content = await Astro.slots.render('subheader');
+import XFadeScroll from '@components/compositions/XFadeScroll.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+import Flexblock from '@components/compositions/Flexblock.astro';
 ---
 
-<div id="top-sentinel"></div>
-<div
-    class:list={[ 'post-header relative lg:top-0', { 'lg:sticky!': sticky } ]}
-    x-data={`{
-        sticky: false,
-        init() {
-            const observer = new IntersectionObserver(
-                ([entry]) => {
-                    if (getComputedStyle($el).position !== 'sticky') return
+<div class:list={[ 'post-header-wrapper ] relative lg:top-0', { 'xl:sticky!': sticky } ]}>
+    <Flexblock class="[ post-header ]" gap='0'>
+        <div class="[ relative z-10 ]">
+            <Wrapper class="[ main-bar ][ w-full ]" padding_block="var(--space-xs)" max_width={max_width} neocom={neocom} centered={true}>
+                <slot />
+            </Wrapper>
+        </div>
 
-                    if (!entry.isIntersecting)
-                        this.sticky = true
-                    else
-                        this.sticky = false
-                },
-            )
-            
-            observer.observe(document.getElementById('top-sentinel'))
-        }
-    }`}
-    x-bind:class="{ glass: sticky }"
->
-    <div class="[ relative z-10 ]">
-        <Wrapper class="[ main-bar ][ w-full ]" padding_block="var(--space-xs)" max_width={max_width} neocom={neocom} centered={true}>
-            <slot />
-        </Wrapper>
-    </div>
-
-    <div class:list={[ 'subheader-bar' ]}>
-        <Wrapper class="[ w-full ]" centered={true} max_width={max_width} neocom={neocom} centered={true} padding_block='0'>
-            <slot name="subheader" />
-        </Wrapper>
-    </div>
+        <div class="[ subheader-bar ]">
+            <Wrapper class="[ w-full ]" centered={true} max_width={max_width} neocom={neocom} padding_block='0'>
+                <XFadeScroll flex>
+                    <div class="[ scroll-content ][ w-full ]">
+                        <FlexInline class="[ w-max xl:w-full items-start! ]">
+                            <div id="mobile-actions" class="[ xl:hidden! ]" />
+                            <slot name="subheader" />
+                        </FlexInline>
+                    </div>
+                </XFadeScroll>
+            </Wrapper>
+        </div>
+    </Flexblock>
 </div>
 
 <style lang="scss" is:global>
@@ -62,44 +51,83 @@ const subheader_content = await Astro.slots.render('subheader');
         font-size: var(--step-4) !important;
     }
 
-    .post-header.glass h1 {
-        transition: var(--fast-transition);
-        font-size: var(--step-1) !important;
-    }
-</style>
-
-<style lang="scss">
-    #top-sentinel {
-        position: absolute;
-        top: 0;
-        height: 1px;
-        width: 1px;
-        pointer-events: none;
-    }
-
-    .glass {
+    .post-header {
         background-color: var(--dark-transparency-background-mobile);
+        padding-top: 0;
 
         @media screen and (min-width: 980px) {
             background-color: var(--dark-transparency-background);
             backdrop-filter: blur(var(--transparency-backdrop-blur));
         }
+    }
+
+    .post-header-wrapper {
+        z-index: var(--header-z-index);
+    }
+    
+    @supports (container-type: scroll-state) {
+        .post-header-wrapper {
+            container-type: scroll-state;
+            container-name: sticky-heading;
+        }
+
+        .post-header {
+            background-color: transparent;
+            padding-top: var(--space-xl);
+            backdrop-filter: none;
+        }
+
+        @container sticky-heading scroll-state(stuck: top) {
+            .post-header {
+                background-color: var(--dark-transparency-background-mobile);
+                padding-top: 0;
+
+                @media screen and (min-width: 980px) {
+                    background-color: var(--dark-transparency-background);
+                    backdrop-filter: blur(var(--transparency-backdrop-blur));
+                }
+
+                h1 {
+                    transition: var(--fast-transition);
+                    font-size: var(--step-1) !important;
+                }
+            }
+        }
+    }
+
+    @media screen and (max-width: 1279px) {
+        .subheader-bar:not(:has(a, input, button)) {
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+        }
+    }
+</style>
+
+<style lang="scss">
+
+    .subheader-bar {
+        width: 100%;
+
+        @media screen and (max-width: 1279px) {
+            position: fixed;
+            bottom: 0;
+            background-color: var(--dark-transparency-background);
+            backdrop-filter: blur(var(--transparency-backdrop-blur));
+            padding-top: var(--space-xs);
+            padding-bottom: var(--space-xs);
+
+            :global(.subheader-content) {
+                width: max-content;
+            }
+        }
 
         @media screen and (max-width: 979px) {
-            .subheader-bar {
-                display: none;
-            }
+            background-color: var(--dark-transparency-background-mobile);
         }
     }
     
     .post-header {
         transition: var(--fast-transition);
-        z-index: var(--header-z-index);
-        padding-top: var(--space-xl);
-
-        &.glass {
-            padding-top: 0;
-        }
 
         .main-bar {
             position: relative;

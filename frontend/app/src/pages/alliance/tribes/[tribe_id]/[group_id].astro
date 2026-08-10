@@ -74,6 +74,7 @@ const TRIBE_GROUP_PARTIAL_URL = translatePath(`/partials/tribe_group_component?t
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import TextBox from '@components/layout/TextBox.astro';
@@ -126,14 +127,14 @@ const meta_description = await strip_markdown(tribe_group?.description ?? '')
                     </PilotBadge>
                 }
             </Flexblock>
-            <FlexInline gap="var(--space-2xs)">
+            <PageActions>
                 <Button href={translatePath(`/alliance/tribes/${tribe_id}/${group_id}/activity`)} size="sm">
                     {t('tribes.detail.activity')}
                 </Button>
                 <Button href={translatePath(`/alliance/tribes/${tribe_group?.tribe_id}`)}>
                     {t('back_to_tribe_template').replace('{name}', tribe_group?.tribe_name ?? '')}
                 </Button>
-            </FlexInline>
+            </PageActions>
         </FlexInline>
 
         <Flexblock gap='var(--space-2xl)'>

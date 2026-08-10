@@ -86,6 +86,7 @@ const MOON_TRACKING_SYSTEMS_PARTIAL_URL = `${translatePath('/partials/moon_track
 import Viewport from '@layouts/Viewport.astro';
 
 import PageWide from '@components/page/PageWide.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 import PageSubheader from '@components/page/PageSubheader.astro';
 
@@ -138,12 +139,10 @@ const page_title = t('intel.moon_tracking.page_title');
                     </small>
                 </Flexblock>
             </FlexInline>
-            <FlexInline>
+            <PageActions>
                 <FindSystemButton id="moon_select_system" list_partial={MOON_SYSTEMS_LIST_PARTIAL_URL} />
-                <div class="[ hidden xl:!block ]">
-                    <AddMoonButton />
-                </div>
-            </FlexInline>
+                <AddMoonButton />
+            </PageActions>
         </FlexInline>
 
         <PageSubheader slot="subheader">   

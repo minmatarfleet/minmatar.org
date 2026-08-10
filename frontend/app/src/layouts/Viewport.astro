@@ -151,6 +151,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 		class="[ viewport-layout ]"
 		x-bind:class="[ color_blind_mode ? 'color-blind-mode' : '', `ui-scaling-${ui_scaling}` ]"
 		x-data={`{
+			viewport_width: window.innerWidth,
         	ui_scaling: $persist(100),
         	show_color_blind_prompt: $persist(true),
         	color_blind_mode: $persist(false),
@@ -180,6 +181,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 				post_header_height = post_header ? post_header.offsetHeight : 0
 			}, 250)
 		`}
+		x-on:resize.window.debounce.100ms="viewport_width = window.innerWidth"
 		x-init="rifter_animation_init"
 		x-ref="body"
 	>

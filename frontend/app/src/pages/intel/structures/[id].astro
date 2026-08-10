@@ -27,6 +27,7 @@ import { get_item_icon, get_alliance_logo, get_corporation_logo } from '@helpers
 import Viewport from '@layouts/Viewport.astro';
 
 import PageAside from '@components/page/PageAside.astro';
+import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
@@ -66,7 +67,7 @@ const page_title = structure.name;
                     {page_title}
                 </PageTitle>
             </FlexInline>
-            <FlexInline>
+            <PageActions>
                 <Button class="[ !hidden md:!flex ]" href={translatePath('/intel/structures/')}>
                     <MagnifierIcon slot="icon" />
                     {t('view_structures')}
@@ -75,7 +76,7 @@ const page_title = structure.name;
                     <AddIcon slot="icon" />
                     {t('add_structure')}
                 </Button>
-            </FlexInline>
+            </PageActions>
         </FlexInline>
 
         <Flexblock gap='var(--space-xl)'>
