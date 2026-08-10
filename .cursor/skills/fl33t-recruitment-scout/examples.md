@@ -4,6 +4,192 @@ Real responses that worked. Add entries here after you send outreach — no temp
 
 ---
 
+## 2026-08-10 scout run
+
+### Returning US Central, 12m SP, PvE-leaning learner
+**Thread:** [Returning player looking for new home](https://www.reddit.com/r/evejobs/comments/1vkg3q7/returning_player_looking_for_new_home/)  
+**Routed:** Minmatar Fleet Academy  
+**Author:** BearThatCares
+
+**Sent (matched scout draft):**
+> Minmatar Fleet Academy runs USTZ fleets for returning US Central pilots still figuring the game out, so twelve million SP in Caldari missiles turns into real fights instead of more solo PvE while work hours stay flexible. [Ad](https://www.reddit.com/r/evejobs/comments/1vh3ktm/minmatar_fleet_academy_new_players_that_learn_by/) or [discord.gg/minmatar](http://discord.gg/minmatar)
+>
+> [https://youtu.be/7-eGTtq9vWo](https://youtu.be/7-eGTtq9vWo)
+
+**Formatting:** One pitch paragraph with markdown ad + discord inline, blank line, Bring Fun Shit alone as second block. Clean Reddit shape — keep this as the default for short Academy pitches.
+
+**Routing note:** Returning ~12m SP, US Central, little PvP / mainly PvE but wants a home while learning → Academy, not MFA (they left combat learning open).
+
+---
+
+### 103m SP, WH lean + indy, open to pitches
+**Thread:** [103M SP Pilot looks for New Corp/ Alliance.](https://www.reddit.com/r/evejobs/comments/1vk5h07/103m_sp_pilot_looks_for_new_corp_alliance/)  
+**Routed:** Rattini Tribe (+ Extraction aside)  
+**Author:** BearThatCares
+
+**Scout draft (not sent as one block):**
+> Not sure a wormhole static is required when you have already lived everywhere and still want the indy accounts busy — Rattini Tribe feeds capitals in Minmatar faction warfare across all TZs without structure-timer babysitting. [Ad] or discord.gg/minmatar — Minmatar Extraction Company (same alliance) if the rocks need a named home + Bring Fun Shit + 700B AAR
+
+**Sent:**
+> Not sure a wormhole static is required when you have already lived everywhere and still want the indy accounts busy — Rattini Tribe feeds capitals in Minmatar faction warfare across all TZs without wormhole chain babysitting. Hundreds of kills a day, not tens.
+> [Ad](https://www.reddit.com/r/evejobs/comments/1vg6p9z/rattini_tribe_relentlessly_feeding_capitals_in_a/)
+>
+> Minmatar Extraction Company (same alliance) if the rocks need a named home [https://youtu.be/7-eGTtq9vWo](https://youtu.be/7-eGTtq9vWo)
+>
+> Recent 700B AAR: [https://www.reddit.com/r/Eve/comments/1vcyik3/aar_700b_down_in_ahbazon/](https://www.reddit.com/r/Eve/comments/1vcyik3/aar_700b_down_in_ahbazon/)
+>
+> Discord: [discord.gg/minmatar](http://discord.gg/minmatar)
+
+**What changed and why:**
+- `structure-timer babysitting` → `wormhole chain babysitting` — sharper when OP is WH-leaning; answers their actual lifestyle, not null timers.
+- Added kill-density beat (`Hundreds of kills a day, not tens`) as the fear-kill for quiet WH statics.
+- Split into multi-block (pitch / ad / Extraction+video / AAR / Discord).
+
+**Formatting issues to avoid next time:**
+- Bring Fun Shit got glued onto the Extraction sentence instead of its own proof line — keep video on its own block.
+- Discord labeled at the bottom is fine on long multi-block Reddit replies; do not mash proof into the secondary-corp sentence.
+
+**Routing note:** High-SP vet leaning WH but not locked + indy side path → Rattini primary, Extraction named aside. Cap AAR earns a dedicated line.
+
+---
+
+### Amarr FW returner, AUTZ preferred
+**Thread:** [Eve returnee looking for an Amarr FW Corp (preferably AUTZ)](https://www.reddit.com/r/evejobs/comments/1viklqm/eve_returnee_looking_for_an_amarr_fw_corp/)  
+**Routed:** Rattini Tribe  
+**Author:** BearThatCares
+
+**Scout draft (not sent):**
+> Skip Amarr if the real ask is AUTZ faction warfare content — Rattini Tribe runs that window in Minmatar militia and will walk a 34m SP single-box returner through FW without caring which empire you enlisted under last decade. [Ad] or discord.gg/minmatar + Bring Fun Shit
+
+**Sent:**
+> Skip Amarr if the real ask is AUTZ faction warfare content. Rattini Tribe runs that window (30+ man fleets) in Minmatar militia and will walk a 34m SP single-box returner through FW without caring which empire you enlisted under last decade. [Ad](https://www.reddit.com/r/evejobs/comments/1vg6p9z/rattini_tribe_relentlessly_feeding_capitals_in_a/)
+>
+> [https://youtu.be/7-eGTtq9vWo](https://youtu.be/7-eGTtq9vWo)
+>
+> [https://discord.gg/minmatar](https://discord.gg/minmatar)
+>
+> Open invite if wherever you land doesn't work out!
+
+**What changed and why:**
+- Added `(30+ man fleets)` as concrete AUTZ content proof — answers “will there be fleets in my window?” better than TZ name alone.
+- Escape hatch close (`Open invite if wherever you land doesn't work out!`) — good when OP named a competitor militia; leaves the door without arguing Amarr vs Minmatar forever.
+- Em dash between sentences → period; multi-block video then discord.
+
+**Formatting:** Pitch+ad first block, video alone, discord alone, optional human closer. Clean.
+
+**Routing note:** Explicit Amarr FW + AUTZ → still pitch Rattini/Minmatar on TZ content. Do not route Amarr corps.
+
+---
+
+### Weekend EUTZ nano gang (no corp required)
+**Thread:** [Looking for a small nano gang](https://www.reddit.com/r/evejobs/comments/1vfi8gj/looking_for_a_small_nano_gang/)  
+**Routed:** FOSFO (live ad; not on corporations API)  
+**Author:** BearThatCares
+
+**Scout draft:**
+> FOSFO is the tight EUTZ Minmatar FW skirmish crew for weekend nano between 17 and 21, … [Ad] + Bring Fun Shit
+
+**Sent:**
+> FOSFO is the tight EUTZ Minmatar FW skirmish crew for weekend nano between 5 and 15, small roster, thick skin, and room for a logi-happy pilot who already funds their own toys. [Ad](https://www.reddit.com/r/evejobs/comments/1vjpa3b/fosfo_eutz_fw_skirmish_tight_crew_thick_skin/)
+
+**Formatting / content issues:**
+- OP asked **17:00–21:00 EVE**; sent **5 and 15** — wrong window. Keep their stated EVE hours unless intentionally converting and labeling the TZ.
+- Bring Fun Shit omitted — still required for PvP/FW closes even on short FOSFO ad-only replies.
+- Otherwise short corp-first + ad is the right length for a “don’t need a corp” nano ask.
+
+**Routing note:** Weekend EUTZ nano + live FOSFO ad → intentional ad link OK while corp is missing from API. French/German + little English is a soft fit warning, not an auto-skip.
+
+---
+
+### Forum: USTZ mature military vet, small-group pirate PvP
+**Thread:** [Returning EVE Veteran and Old Military Vet…](https://forums.eveonline.com/t/returning-eve-veteran-and-old-military-vet-looking-for-like-minded-age-group-and-pvp-corp/516193)  
+**Routed:** Soltech Armada  
+**Author:** BearThatCares
+
+**Sent (matched scout draft):**
+> USTZ small-group pirate hunting with adults who drink dark beer and skip mega-bloc drama is Soltech Armada out of Amamake — IRL-first, daily fights, no free-ship tax required. [Reddit ad](https://www.reddit.com/r/evejobs/comments/1vivf0y/sltar_soltech_armada_good_fights_arent_found/) or discord.gg/minmatar
+>
+> **https://youtu.be/7-eGTtq9vWo**
+
+**Formatting note:** Eve forums onebox Reddit URLs as the word `Reddit` — readable enough inline (`Reddit or discord.gg/minmatar`). Prefer bare `discord.gg/minmatar` on forums (no markdown required). Bold YouTube URL as its own paragraph is the house proof close.
+
+**Routing note:** Mature USTZ small-group / anti-bloc → Soltech. Dark-beer / discipline weave from OP lands without question-form mirroring.
+
+---
+
+### Forum: manufacturing returner, pochven station, JF/freighter
+**Thread:** [Returning from long hiatus](https://forums.eveonline.com/t/returning-from-long-hiatus/516201)  
+**Routed:** Minmatar Fleet Associates / Extraction  
+**Author:** BearThatCares
+
+**Scout draft (not sent cleanly):**
+> A manufacturing main over sixty million SP staring at a station that woke up in pochven is the Minmatar Fleet Associates restart, highsec bulwarks for research and production with Extraction Company Amo fleets when you want rocks with a group. discord.gg/minmatar and ask for Keldor, or [mining ad] + Rock Hoppin'
+
+**Sent:**
+> A manufacturing main over 60mSP staring at a station that woke up in pochven is the Minmatar Fleet Associates restart, highsec bulwarks for research and production with MinmatarExtraction Company.
+>
+> Amo fleets when you want rocks with a group.
+>
+> discord.gg/minmatar and ask for Keldor, or [Reddit](https://www.reddit.com/r/evejobs/comments/1vecqzl/minmatar_extraction_company_amo_mining_fleets_100/)
+>
+> **https://youtu.be/XCApG7Pt6m4**
+
+**Formatting issues:**
+- `MinmatarExtraction Company` missing space — keep `Minmatar Extraction Company`.
+- `Amo fleets…` orphaned as its own paragraph — keep corp + Amo fleets in one sentence/block so it does not read like a fragment.
+- Forums onebox shows `Reddit` again for the mining ad — acceptable; scout can still draft the full URL.
+
+**Routing note:** Manufacturing primary + pochven logistics + relearn combat later → MFA + Extraction + Keldor + Rock Hoppin'. Do not pitch Academy/FW first.
+
+---
+
+### Forum: two brothers, ex-Goons, lowsec chill + highsec indy
+**Thread:** [Looking for a low sec corp for me and my brother](https://forums.eveonline.com/t/looking-for-a-low-sec-corp-for-me-and-my-brother/516186)  
+**Routed:** Soltech Armada + Minmatar Extraction Company  
+**Author:** BearThatCares
+
+**Scout draft (not sent):**
+> … Soltech Armada for the Ishtar evenings, Minmatar Extraction Company for the mining foreman seat. [corp directory] + Bring Fun Shit
+
+**Sent:**
+> Leaving Goons for lowsec chill with highsec access for the orca and research alts is the Minmatar Fleet setup for two brothers — Soltech Armada for the PvP evenings, Minmatar Extraction Company for the mining foreman seat.
+>
+> [corporations directory](https://my.minmatar.org/alliance/corporations/)
+>
+> **https://youtu.be/7-eGTtq9vWo**
+
+**What changed and why:**
+- `Ishtar evenings` → `PvP evenings` — drop ship-name mirror; OP already named Ishtar/Gila.
+- Corp directory onebox (same family as prior dual-route forum sends) + Bring Fun Shit as PvP-primary proof. Rock Hoppin' optional when mining is co-equal; here lowsec was the stated play.
+
+**Formatting:** Pitch paragraph / directory onebox / bold YouTube — clean forum multi-block.
+
+**Routing note:** Pair of returners, PvP + orca/indy split, want lowsec + highsec access → dual Soltech + Extraction; link corp directory, not a single ad.
+
+---
+
+### Not replied this run
+- [Looking for Corp / Alliance](https://www.reddit.com/r/evejobs/comments/1vhj3gd/looking_for_corp_alliance/) — EUTZ NS Indy/CRAB + PAPs + super. Still unanswered; true nullbloc lock.
+
+---
+
+## Patterns (2026-08-10 run)
+
+| Situation | What landed |
+|-----------|-------------|
+| Returning US learner ~12m SP | Scout Academy draft shippable; ad+discord then Bring Fun Shit second block |
+| High-SP WH lean + indy | Rattini; swap structure-timer → wormhole-chain babysitting; add kill-density beat; keep video off the Extraction line |
+| Amarr FW + AUTZ | Rattini + 30+ man fleets beat + open-invite escape hatch |
+| Weekend EUTZ nano / no corp | FOSFO live ad OK; **do not rewrite OP’s EVE hours wrong**; still close with Bring Fun Shit |
+| Mature USTZ anti-bloc PvP | Scout Soltech draft shippable; forums onebox Reddit ads as `Reddit` |
+| Manufacturing / pochven return | MFA + Extraction + Keldor + Rock Hoppin'; avoid missing spaces and orphaned Amo-fleets lines |
+| Two brothers PvP + orca | Dual Soltech + Extraction; `PvP evenings` over ship mirror; corp directory + Bring Fun Shit |
+| Formatting default (Reddit) | Pitch paragraph with links → blank line → proof video alone |
+| Formatting default (Forums) | Pitch paragraph → ad/directory (onebox OK) → **bold** YouTube URL alone |
+| True skip | Nullbloc Indy/CRAB + PAP + super still no reply |
+
+---
+
 ## 2026-08-08 / 2026-08-09 scout run
 
 ### Casual PvE returner, no PvP, no null/WH (missions / L5 / abyssals)
