@@ -40,7 +40,7 @@ const subheader_content = await Astro.slots.render('subheader');
 import ReferralLink from '@components/blocks/ReferralLink.astro';
 ---
 
-<main id="content" class={subheader_content ? "[ pb-(--space-2xl) xl:pb-0 ]" : undefined} {...attributes}></main>
+<main id="content" class={subheader_content ? "[ pb-(--space-2xl) xl:pb-0 ]" : undefined} {...attributes}>
     {is_referral_page && user &&
         <div class="[ referral-wrapper ]">
             <ReferralLink user_id={user.user_id} position='left' />

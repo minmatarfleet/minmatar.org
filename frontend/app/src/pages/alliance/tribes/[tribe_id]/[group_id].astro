@@ -128,7 +128,7 @@ const meta_description = await strip_markdown(tribe_group?.description ?? '')
                 }
             </Flexblock>
             <PageActions>
-                <Button href={translatePath(`/alliance/tribes/${tribe_id}/${group_id}/activity`)} size="sm">
+                <Button href={translatePath(`/alliance/tribes/${tribe_id}/${group_id}/activity`)}>
                     {t('tribes.detail.activity')}
                 </Button>
                 <Button href={translatePath(`/alliance/tribes/${tribe_group?.tribe_id}`)}>

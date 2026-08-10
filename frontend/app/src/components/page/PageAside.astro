@@ -30,7 +30,7 @@ import DebugTag from '@components/blocks/DebugTag.astro';
 const subheader_content = await Astro.slots.render('subheader');
 ---
 
-<main id="content" class={subheader_content ? "[ pb-(--space-2xl) xl:pb-0 ]" : undefined} {...attributes}></main>
+<main id="content" class={subheader_content ? "[ pb-(--space-2xl) xl:pb-0 ]" : undefined} {...attributes}>
     {cover && <PageCover {...cover} /> }
 
     <PageHeader max_width="var(--max-content-width)" sticky={sticky}>

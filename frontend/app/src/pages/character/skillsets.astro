@@ -95,7 +95,7 @@ const page_title = `${character_skillsets?.character_name ?? ''} ${t('skillsets'
                 </Flexblock>
             </FlexInline>
             <PageActions>
-                <Button class="[ !hidden md:!flex ]" href={translatePath(`/character/assets?character_id=${character_id}`)}>
+                <Button href={translatePath(`/character/assets?character_id=${character_id}`)}>
                     <MagnifierIcon slot="icon" />
                     {t('view_assets')}
                 </Button>

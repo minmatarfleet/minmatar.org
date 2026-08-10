@@ -86,7 +86,9 @@ const page_description = doctrine?.description
                 </PageTitle>
             </Flexblock>
             <PageActions>
-                <Button href={translatePath(`/ships/doctrines${active_location_id ? `?location_id=${active_location_id}` : '/'}`)} class="[ !hidden md:!flex ]">
+                <Button
+                    href={translatePath(`/ships/doctrines${active_location_id ? `?location_id=${active_location_id}` : '/'}`)}
+                >
                     {t('keep_browsing')}
                 </Button>
             </PageActions>

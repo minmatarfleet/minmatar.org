@@ -86,7 +86,7 @@ const page_title = t('intel.add_structure.page_title');
                 <PageTitle x-text={`structure_name != '' ? structure_name : '${page_title}'`} />
             </FlexInline>
             <PageActions>
-                <Button class="[ !hidden md:!flex ]" href={translatePath('/intel/structures/')}>
+                <Button href={translatePath('/intel/structures/')}>
                     <MagnifierIcon slot="icon" />
                     {t('view_structures')}
                 </Button>

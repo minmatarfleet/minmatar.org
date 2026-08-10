@@ -122,11 +122,11 @@ const page_title = `${t('fleet')} ${fleet_id}`;
                 </PageTitle>
             </FlexInline>
             <PageActions>
-                <Button class="[ !hidden md:!flex ]" href={translatePath('/fleets/history/')}>
+                <Button href={translatePath('/fleets/history/')}>
                     <FleetIcon slot="icon" />
                     {t('fleet_history')}
                 </Button>
-                <Button color={'green'} class="[ !hidden lg:!flex ]" href={translatePath('/fleets/add/')}>
+                <Button color={'green'} href={translatePath('/fleets/add/')}>
                     <AddIcon slot="icon" />
                     {t('schedule_fleet')}
                 </Button>
