@@ -7,8 +7,11 @@ import { query_string } from '@helpers/string'
 import {
     ops_params_need_canonicalization,
     ops_redirect_path,
-    resolve_ops_location_id,
 } from '@helpers/market_ops_redirect'
+
+if (ops_params_need_canonicalization(Astro.url.searchParams)) {
+    return Astro.redirect(ops_redirect_path(translatePath, 'monitor'), 301)
+}
 
 let fetch_error: Error | false = false
 let locations: Awaited<ReturnType<typeof get_market_locations>> = []
@@ -16,16 +19,7 @@ let location_id: number | undefined
 
 try {
     locations = await get_market_locations()
-
-    location_id = resolve_ops_location_id(locations, Astro.url.searchParams)
-        ?? locations[0]?.location_id
-
-    if (
-        location_id != null
-        && ops_params_need_canonicalization(Astro.url.searchParams, location_id)
-    ) {
-        return Astro.redirect(ops_redirect_path(translatePath, location_id))
-    }
+    location_id = locations[0]?.location_id
 } catch (error) {
     fetch_error = error as Error
 }
@@ -40,7 +34,8 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import Markdown from '@components/blocks/Markdown.astro';
-import OpsMonitorSkeleton from '@components/blocks/OpsMonitorSkeleton.astro';
+import MarketHealthSkeleton from '@components/blocks/MarketHealthSkeleton.astro';
+import CogIcon from '@components/icons/buttons/CogIcon.astro';
 
 const page_title = t('staging_supply.ops.page_title')
 const api_base = import.meta.env.API_URL || ''
@@ -49,7 +44,7 @@ const admin_hub = location_id != null
     : `${api_base}/admin/market/locations/`
 
 const MONITOR_PARTIAL = translatePath(
-    `/partials/ops_monitor_component${
+    `/partials/market_health_component${
         location_id != null
             ? `?${query_string({ location_id })}`
             : ''
@@ -72,7 +67,16 @@ const MONITOR_PARTIAL = translatePath(
         <FlexInline slot="header" justification="space-between" class="[ w-full ]">
             <PageTitle>{page_title}</PageTitle>
             <PageActions>
-                <Button href={admin_hub}>{t('edit_targets_admin')}</Button>
+                <Button
+                    href={admin_hub}
+                    color="transparent"
+                    narrow={true}
+                    new_tab={true}
+                    aria-label={t('edit_targets_admin')}
+                    title={t('edit_targets_admin')}
+                >
+                    <CogIcon slot="icon" />
+                </Button>
             </PageActions>
         </FlexInline>
 
@@ -83,18 +87,14 @@ const MONITOR_PARTIAL = translatePath(
 
             {fetch_error ?
                 <ErrorRefetch args={{
-                    partial: translatePath(
-                        location_id != null
-                            ? `/market/ops/?${query_string({ location_id })}`
-                            : '/market/ops/'
-                    ),
+                    partial: ops_redirect_path(translatePath, 'monitor'),
                     error: fetch_error,
                     delay: 0,
                 }} />
                 :
                 <div
-                    id="ops-monitor-slot"
-                    data-ops-monitor-deferred="1"
+                    id="market-health-slot"
+                    data-market-health-deferred="1"
                     hx-get={MONITOR_PARTIAL}
                     hx-trigger="load"
                     hx-swap="innerHTML"
@@ -102,7 +102,7 @@ const MONITOR_PARTIAL = translatePath(
                     aria-busy="true"
                     aria-live="polite"
                 >
-                    <OpsMonitorSkeleton />
+                    <MarketHealthSkeleton />
                 </div>
             }
         </Flexblock>
@@ -110,8 +110,8 @@ const MONITOR_PARTIAL = translatePath(
 </Viewport>
 
 <script>
-    function refreshOpsMonitorSlot() {
-        const slot = document.getElementById('ops-monitor-slot')
+    function refreshMarketHealthSlot() {
+        const slot = document.getElementById('market-health-slot')
         if (!slot)
             return
 
@@ -120,46 +120,41 @@ const MONITOR_PARTIAL = translatePath(
             htmx.process(slot)
         if (typeof Alpine !== 'undefined')
             Alpine.initTree(slot)
-        if (typeof tippy === 'function') {
-            tippy('#ops-monitor-slot [data-tippy-content]', {
-                delay: [100, 200],
-                arrow: true,
-            })
-        }
+        tippy('#market-health-slot [data-tippy-content]', tippy_options)
     }
 
-    function isOpsMonitorRequest(event: any): boolean {
+    function isMarketHealthRequest(event: any): boolean {
         const path = String(
             event.detail?.pathInfo?.requestPath
                 || event.detail?.xhr?.responseURL
                 || event.detail?.elt?.getAttribute?.('hx-get')
                 || '',
         )
-        return path.includes('ops_monitor_component')
+        return path.includes('market_health_component')
     }
 
-    function bindOpsMonitorDeferred() {
-        const slot = document.getElementById('ops-monitor-slot')
+    function bindMarketHealthDeferred() {
+        const slot = document.getElementById('market-health-slot')
         if (!slot || slot.dataset.bound === '1')
             return
         slot.dataset.bound = '1'
 
         document.body.addEventListener('htmx:afterSwap', (event: any) => {
-            if (!isOpsMonitorRequest(event))
+            if (!isMarketHealthRequest(event))
                 return
-            refreshOpsMonitorSlot()
+            refreshMarketHealthSlot()
         })
 
         document.body.addEventListener('htmx:afterRequest', (event: any) => {
-            if (!isOpsMonitorRequest(event))
+            if (!isMarketHealthRequest(event))
                 return
             if (!event.detail?.successful) {
-                const root = document.getElementById('ops-monitor-slot')
+                const root = document.getElementById('market-health-slot')
                 root?.setAttribute('aria-busy', 'false')
             }
         })
     }
 
-    bindOpsMonitorDeferred()
-    document.addEventListener('astro:page-load', bindOpsMonitorDeferred)
+    bindMarketHealthDeferred()
+    document.addEventListener('astro:page-load', bindMarketHealthDeferred)
 </script>

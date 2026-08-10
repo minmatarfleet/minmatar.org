@@ -1,0 +1,25 @@
+<script is:inline>
+	window.tippy = window.tippy || function () {}
+	window.tippy_options = window.tippy_options || { delay: [100, 200], arrow: true }
+</script>
+
+<script>
+	import tippy from 'tippy.js'
+
+	declare global {
+		interface Window {
+			tippy: typeof tippy
+			tippy_options: Record<string, unknown>
+			htmx: { process: (el: Element) => void }
+		}
+	}
+
+	window.tippy = tippy
+	window.tippy_options = {
+		delay: [100, 200],
+		arrow: true,
+		onShow(instance: { popper: Element }) {
+			window.htmx.process(instance.popper)
+		},
+	}
+</script>

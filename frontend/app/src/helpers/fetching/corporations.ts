@@ -9,13 +9,17 @@ import type { CorporationObject, CorporationStatusType, CorporationMembers, Char
 import { get_all_corporations, get_corporation_info, get_corporation_by_id } from '@helpers/api.minmatar.org/corporations'
 import { get_corporation_applications, get_corporation_applications_by_id } from '@helpers/api.minmatar.org/applications'
 
-const MINMATAR_EXTRACTION_COMPANY_ID = 98838663
+export const MINMATAR_EXTRACTION_COMPANY_ID = 98838663
 
 // Minmatar Extraction Company is an associate corporation (Minmatar Fleet
 // Associates), so the "alliance" corporations endpoint does not return it.
 // It is recruiting through the alliance corporations page, so it gets
-// fetched separately and appended to the list.
-const append_extraction_corporation = async (api_corporations:Corporation[]) => {
+// fetched separately and appended to the list (corp page, transfer finder,
+// applications list).
+export const append_extraction_corporation = async (api_corporations:Corporation[]) => {
+    if (api_corporations.some((corporation) => corporation.corporation_id === MINMATAR_EXTRACTION_COMPANY_ID))
+        return
+
     try {
         const extraction_info = await get_corporation_info(MINMATAR_EXTRACTION_COMPANY_ID)
 
@@ -41,14 +45,20 @@ const append_extraction_corporation = async (api_corporations:Corporation[]) => 
     }
 }
 
+/** Alliance MFA corps plus M-EXC (associate that recruits via the alliance page). */
+export async function get_alliance_corporations_with_extraction() {
+    const api_corporations = await get_all_corporations('alliance')
+    await append_extraction_corporation(api_corporations)
+    return api_corporations
+}
+
 export async function get_corporations_list_auth(access_token:string, user_id:number, corporation_type:CorporationType) {
     let api_corporations:Corporation[] = []
     let corporations:CorporationObject[] = []
 
-    api_corporations = await get_all_corporations(corporation_type)
-
-    if (corporation_type === 'alliance')
-        await append_extraction_corporation(api_corporations)
+    api_corporations = corporation_type === 'alliance'
+        ? await get_alliance_corporations_with_extraction()
+        : await get_all_corporations(corporation_type)
 
     corporations = await Promise.all(api_corporations.map(async (api_corp) => add_status_to_corporation(access_token, api_corp, user_id) ));
     
@@ -59,10 +69,9 @@ export async function get_corporations_list(corporation_type:CorporationType) {
     let api_corporations:Corporation[] = []
     let corporations:CorporationObject[] = []
 
-    api_corporations = await get_all_corporations(corporation_type)
-
-    if (corporation_type === 'alliance')
-        await append_extraction_corporation(api_corporations)
+    api_corporations = corporation_type === 'alliance'
+        ? await get_alliance_corporations_with_extraction()
+        : await get_all_corporations(corporation_type)
 
     corporations = api_corporations.map( (i):CorporationObject => {
         return {

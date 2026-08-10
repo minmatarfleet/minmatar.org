@@ -43,8 +43,9 @@ class EveTypeWithSellOrders(EveType):
 
 class EveMarketItemExpectation(models.Model):
     """
-    Seed definition: track a target quantity of an EVE type (e.g. 1000 missiles)
-    at a location, measured by current sell orders.
+    Catalog entry: track that an EVE type should be present on sell orders
+    at a location. ``quantity`` is kept for schema compat and normalized to 1;
+    fulfillment is presence (any listed stock).
     """
 
     item = models.ForeignKey(EveType, on_delete=models.CASCADE)
@@ -66,7 +67,8 @@ class EveMarketItemExpectation(models.Model):
 
     @property
     def desired_quantity(self):
-        return self.quantity
+        """Presence target: tracked rows always desire at least one unit."""
+        return 1
 
     @property
     def is_fulfilled(self):
@@ -74,11 +76,8 @@ class EveMarketItemExpectation(models.Model):
 
     @property
     def is_understocked(self):
-        understocked_percentage = 0.5
-        return (
-            self.current_quantity
-            < self.desired_quantity * understocked_percentage
-        )
+        """Legacy prop: empty shelf. Depth understock uses days_of_stock."""
+        return self.current_quantity < 1
 
 
 class EveMarketBuyOrderExpectation(models.Model):
@@ -227,9 +226,9 @@ def parse_eft_items(eft_format):
 
 class EveMarketFittingExpectation(models.Model):
     """
-    Track a target number of a fitting at a location.  The fitting is
-    decomposed into its ship + modules so each component appears as an
-    item-level expectation on the market.
+    Catalog entry: track that a fitting's components should be present on
+    the market at a location. Decomposed into ship + modules as item names.
+    ``quantity`` is schema-compat only (normalized to 1).
     """
 
     fitting = models.ForeignKey(EveFitting, on_delete=models.CASCADE)
@@ -240,15 +239,18 @@ class EveMarketFittingExpectation(models.Model):
         unique_together = [["fitting", "location"]]
 
     def __str__(self):
-        return f"{self.fitting.name} x{self.quantity} - {self.location.location_name}"
+        return f"{self.fitting.name} - {self.location.location_name}"
+
+    def get_item_names(self):
+        """Item names from one fit (presence catalog; no BOM multipliers)."""
+        return set(parse_eft_items(self.fitting.eft_format).keys())
 
     def get_item_quantities(self):
         """
-        Decompose the fitting and multiply by the expectation quantity.
-        Returns {item_name: total_quantity_needed}.
+        Presence map for fitting components: each item name → 1.
+        Callers that need BOM line qtys should use parse_eft_items.
         """
-        per_fit = parse_eft_items(self.fitting.eft_format)
-        return {name: qty * self.quantity for name, qty in per_fit.items()}
+        return {name: 1 for name in self.get_item_names()}
 
 
 _STRUCTURAL_CATEGORIES = frozenset({"Ship", "Module", "Subsystem"})
@@ -283,91 +285,86 @@ def _get_consumable_items(fitting):
 
 def get_effective_item_expectations(location):
     """
-    Combine fitting-derived expectations and contract consumables, with manual
-    item expectations (pinned) overriding fitting-derived quantities for those
-    items. Pinned items are excluded from fitting piggyback.
-    """
-    pinned = {}
-    for exp in EveMarketItemExpectation.objects.filter(
-        location=location
-    ).select_related("item"):
-        pinned[exp.item.name] = exp.quantity
+    Catalog of item names that should be present on sell orders at a location.
 
-    pinned_names = set(pinned.keys())
-    effective = defaultdict(int)
+    Sources: fitting expectations, contract consumables, and pinned item
+    expectations. Pinned names are excluded from fitting/contract piggyback.
+    Values are always presence targets (1).
+    """
+    pinned_names = set(
+        EveMarketItemExpectation.objects.filter(location=location)
+        .select_related("item")
+        .values_list("item__name", flat=True)
+    )
+    effective: dict[str, int] = {}
 
     for fexp in EveMarketFittingExpectation.objects.filter(
         location=location
     ).select_related("fitting"):
-        for name, qty in fexp.get_item_quantities().items():
+        for name in fexp.get_item_names():
             if name in pinned_names:
                 continue
-            effective[name] = max(effective[name], qty)
+            effective[name] = 1
 
     for cexp in EveMarketContractExpectation.objects.filter(
         location=location
     ).select_related("fitting"):
-        consumables = _get_consumable_items(cexp.fitting)
-        for name, qty in consumables.items():
+        for name in _get_consumable_items(cexp.fitting):
             if name in pinned_names:
                 continue
-            total = qty * cexp.quantity
-            effective[name] = max(effective[name], total)
+            effective[name] = 1
 
-    for name, qty in pinned.items():
-        effective[name] = qty
+    for name in pinned_names:
+        effective[name] = 1
 
-    return dict(effective)
+    return effective
 
 
 def get_effective_item_expectations_bulk(locations):
     """
     Like get_effective_item_expectations but for many locations at once.
-    Returns {location.pk: {item_name: quantity}}.
+    Returns {location.pk: {item_name: 1}}.
     """
     location_list = list(locations)
     if not location_list:
         return {}
 
     location_pks = [location.pk for location in location_list]
-    effective_by_location = {
-        location_pk: defaultdict(int) for location_pk in location_pks
+    effective_by_location: dict[int, dict[str, int]] = {
+        location_pk: {} for location_pk in location_pks
     }
-    pinned_by_location = {location_pk: {} for location_pk in location_pks}
+    pinned_by_location: dict[int, set[str]] = {
+        location_pk: set() for location_pk in location_pks
+    }
 
     for exp in EveMarketItemExpectation.objects.filter(
         location_id__in=location_pks
     ).select_related("item"):
-        pinned_by_location[exp.location_id][exp.item.name] = exp.quantity
+        pinned_by_location[exp.location_id].add(exp.item.name)
 
     for fexp in EveMarketFittingExpectation.objects.filter(
         location_id__in=location_pks
     ).select_related("fitting"):
         location_effective = effective_by_location[fexp.location_id]
         pinned_names = pinned_by_location[fexp.location_id]
-        for name, qty in fexp.get_item_quantities().items():
+        for name in fexp.get_item_names():
             if name in pinned_names:
                 continue
-            location_effective[name] = max(location_effective[name], qty)
+            location_effective[name] = 1
 
     for cexp in EveMarketContractExpectation.objects.filter(
         location_id__in=location_pks
     ).select_related("fitting"):
         location_effective = effective_by_location[cexp.location_id]
         pinned_names = pinned_by_location[cexp.location_id]
-        consumables = _get_consumable_items(cexp.fitting)
-        for name, qty in consumables.items():
+        for name in _get_consumable_items(cexp.fitting):
             if name in pinned_names:
                 continue
-            total = qty * cexp.quantity
-            location_effective[name] = max(location_effective[name], total)
+            location_effective[name] = 1
 
     for location_pk, pinned in pinned_by_location.items():
         location_effective = effective_by_location[location_pk]
-        for name, qty in pinned.items():
-            location_effective[name] = qty
+        for name in pinned:
+            location_effective[name] = 1
 
-    return {
-        location_pk: dict(effective)
-        for location_pk, effective in effective_by_location.items()
-    }
+    return effective_by_location

@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t } = i18n(Astro.url)
 
-import type { OpsMonitorHistoryPoint } from '@dtypes/api.minmatar.org'
+import type { MarketHealthChartPoint } from '@dtypes/api.minmatar.org'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 
@@ -15,7 +15,7 @@ interface ChartSeries {
 }
 
 interface Props {
-    history: OpsMonitorHistoryPoint[]
+    history: MarketHealthChartPoint[]
     [propName: string]: any
 }
 
@@ -129,14 +129,7 @@ const has_plottable = series.some((entry) =>
     {...attributes}
 >
     <Flexblock gap="var(--space-s)">
-        <FlexInline justification="space-between" gap="var(--space-s)">
-            <h2 class="[ ops-history-chart__title ]">{t('ops_history_chart_title')}</h2>
-            {points.length > 0 &&
-                <p class="[ ops-history-chart__meta ]">
-                    {t('ops_history_chart_points').replace('{count}', String(points.length))}
-                </p>
-            }
-        </FlexInline>
+        <h2 class="[ ops-history-chart__title ]">{t('ops_history_chart_title')}</h2>
 
         {points.length === 0 || !has_plottable ?
             <p class="[ ops-history-chart__empty ]">{t('ops_history_chart_empty')}</p>
@@ -249,7 +242,6 @@ const has_plottable = series.some((entry) =>
         color: var(--fleet-yellow);
     }
 
-    .ops-history-chart__meta,
     .ops-history-chart__empty {
         margin: 0;
         color: color-mix(in srgb, var(--highlight) 70%, var(--faded));

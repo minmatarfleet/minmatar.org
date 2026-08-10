@@ -21,7 +21,7 @@
   {% include "admin/market/_learn_more_start.html" %}
     <p>
       {% blocktranslate trimmed %}
-      Use <strong>Monitor</strong> pages to see current market health and problems.
+      Use <strong>Monitor</strong> pages to see current market health.
       Use <strong>Configure</strong> pages to set how many ships and items should
       be available — those targets drive the suggestions on the market status page.
       {% endblocktranslate %}
@@ -85,7 +85,7 @@
         {% endblocktranslate %}
       </p>
       <a href="{% url 'admin:market_location_fitting_expectations' location.pk %}" class="button">
-        {% translate "Configure quantities" %}
+        {% translate "Configure tracking" %}
       </a>
     </div>
 
@@ -98,7 +98,7 @@
         {% endblocktranslate %}
       </p>
       <a href="{% url 'admin:market_location_contract_expectations' location.pk %}" class="button">
-        {% translate "Configure quantities" %}
+        {% translate "Configure tracking" %}
       </a>
     </div>
 

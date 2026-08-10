@@ -142,7 +142,7 @@ def market_location_fitting_expectations_view(request, location_id):
             url_name="admin:market_location_fitting_expectations",
             change_perm=CHANGE_FITTING_EXPECTATIONS,
             save_fn=save_fitting_expectation_quantities,
-            success_message="Quantities saved.",
+            success_message="Tracking saved.",
             allowed_ids=_allowed_fitting_ids(page_context),
         )
 
@@ -171,7 +171,7 @@ def market_location_contract_expectations_view(request, location_id):
             url_name="admin:market_location_contract_expectations",
             change_perm=CHANGE_CONTRACT_EXPECTATIONS,
             save_fn=save_contract_expectation_quantities,
-            success_message="Quantities saved.",
+            success_message="Tracking saved.",
             allowed_ids=_allowed_fitting_ids(page_context),
         )
 
@@ -200,7 +200,7 @@ def market_location_sell_orders_view(request, location_id):
             url_name="admin:market_location_sell_orders",
             change_perm=CHANGE_ITEM_EXPECTATIONS,
             save_fn=save_sell_order_desired_quantities,
-            success_message="Target stock saved.",
+            success_message="Tracking saved.",
             allowed_ids=_allowed_type_ids(page_context),
         )
 

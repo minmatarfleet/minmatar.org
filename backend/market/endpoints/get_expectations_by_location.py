@@ -44,7 +44,7 @@ def get_expectations_by_location(
                     fitting_id=e.fitting.id,
                     fitting_name=e.fitting.name,
                     expectation_id=e.id,
-                    quantity=e.quantity,
+                    quantity=e.desired_quantity,
                 )
                 for e in data["expectations"]
             ],

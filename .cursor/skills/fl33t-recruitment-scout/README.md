@@ -16,7 +16,8 @@ implementation.
 
 **Agent (primary):**
 
-1. Pre-scout: corp profiles from `api.minmatar.org`, recent `u/MinmatarFleet` ads
+1. Pre-scout: corp profiles from `api.minmatar.org`, recent `u/MinmatarFleet` ads,
+   recent AARs / capital videos from `u/BearThatCares`
 2. Scout: find LFC posts on Reddit and EVE Forums
 3. Judge responded vs open, route to corp, draft outreach
 
@@ -28,6 +29,7 @@ implementation.
 |--------|---------|--------|
 | `fetch_corporations.py` | Corp profiles from public API | No |
 | `fetch_recruitment_ads.py` | `u/MinmatarFleet` ads (default 30d) | Yes |
+| `fetch_proof_media.py` | `u/BearThatCares` AARs / capital videos (default 45d) | Yes |
 | `fetch_reddit.py` | Raw subreddit `/new` (default 7d) | Yes |
 | `fetch_forums.py` | Forum recruitment-center latest (default 7d) | No |
 | `match_corp_ads.py` | Map ad URLs → corp names | No |
@@ -45,6 +47,7 @@ set -a && source ../../../backend/.env && set +a
 
 python scripts/fetch_corporations.py --json
 python scripts/fetch_recruitment_ads.py --days 30 --json
+python scripts/fetch_proof_media.py --days 45 --json
 python scripts/fetch_reddit.py --days 7 --json
 python scripts/fetch_forums.py --days 7 --json
 ```
@@ -55,6 +58,13 @@ Corp recruitment ads are posted by **`u/MinmatarFleet`** on `r/evejobs`.
 
 Browse manually: https://www.reddit.com/user/MinmatarFleet/submitted/
 
+### Proof media (AARs / capital videos)
+
+Recent battle reports and capital fight videos are pulled from
+**`u/BearThatCares`** submissions (configurable via `reddit.proof_accounts`).
+
+Browse manually: https://www.reddit.com/user/BearThatCares/submitted/
+
 ## Configuration
 
 `config.json` tells the fetchers where to look. Triage and routing live in the skill.
@@ -64,9 +74,12 @@ Browse manually: https://www.reddit.com/user/MinmatarFleet/submitted/
 | `api_base_url` | Base URL for corporation API |
 | `corporation_types` | Corp groups to load (`alliance`, `associate`, etc.) |
 | `reddit.recruitment_account` | Recruitment Reddit user (`MinmatarFleet`) |
+| `reddit.proof_accounts` | Reddit users for AAR / capital video pre-scout |
 | `reddit.subreddits` | Subreddits for raw `/new` fetch |
 | `forums.recruitment_center_category` | Forum category slug |
 | `discord_invite` | Invite link for outreach closers (skill only) |
+| `proof_videos.mining` | Rock Hoppin' — required mining/industry close |
+| `proof_videos.pvp` | Bring Fun Shit — required PvP/FW close |
 
 ### Reddit OAuth
 

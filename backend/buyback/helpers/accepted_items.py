@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from datetime import timedelta
-from typing import Any, Iterable
+from typing import Iterable
 
 from django.db import transaction
 from django.utils import timezone
@@ -17,6 +17,11 @@ from buyback.helpers.classify import (
     GROUP_P4,
 )
 from buyback.models import BuybackAcceptedItem
+from industry.helpers.type_breakdown import (
+    get_breakdown_for_industry_product,
+    type_ids_in_breakdown,
+)
+from industry.models import IndustryOrder
 
 # Compressed belt/moon ores accepted for buyback. Highsec bases plus selected
 # lowsec/nullsec ores (isogen-bearing and Equinox) requested for alliance take.
@@ -64,10 +69,6 @@ PI_CATEGORIES = (
     BuybackAcceptedItem.Category.P3,
     BuybackAcceptedItem.Category.P4,
 )
-P3_P4_CATEGORIES = (
-    BuybackAcceptedItem.Category.P3,
-    BuybackAcceptedItem.Category.P4,
-)
 
 
 def compressed_buyback_ore_base(name: str) -> str | None:
@@ -102,21 +103,6 @@ def category_for_eve_type(eve_type: EveType) -> str | None:
     return None
 
 
-def _type_ids_in_breakdown(node: dict[str, Any] | None) -> set[int]:
-    """Collect every type_id in a nested industry breakdown tree."""
-    if not node:
-        return set()
-    ids: set[int] = set()
-    stack: list[dict[str, Any]] = [node]
-    while stack:
-        current = stack.pop()
-        type_id = current.get("type_id")
-        if type_id is not None:
-            ids.add(int(type_id))
-        stack.extend(current.get("children") or [])
-    return ids
-
-
 def pi_type_ids_from_recent_orders(
     *, lookback_days: int = DEFAULT_PI_LOOKBACK_DAYS
 ) -> set[int]:
@@ -124,20 +110,8 @@ def pi_type_ids_from_recent_orders(
     Distinct P3–P4 type IDs appearing in BOMs of industry orders created in
     the lookback window.
 
-    P1/P2 are always accepted via ``iter_seed_all_p1_p2_eve_types``; only
-    higher-tier PI stays demand-driven from recent industry orders.
+    All published P1/P2 are seeded via ``iter_seed_all_p1_p2_eve_types``.
     """
-    try:
-        # Optional industry dependency for dynamic PI allowlist.
-        from industry.helpers.type_breakdown import (  # pylint: disable=import-outside-toplevel
-            get_breakdown_for_industry_product,
-        )
-        from industry.models import (  # pylint: disable=import-outside-toplevel
-            IndustryOrder,
-        )
-    except Exception:
-        return set()
-
     since = timezone.now() - timedelta(days=lookback_days)
     material_ids: set[int] = set()
     try:
@@ -154,7 +128,7 @@ def pi_type_ids_from_recent_orders(
                     )
                 except Exception:
                     continue
-                material_ids.update(_type_ids_in_breakdown(tree))
+                material_ids.update(type_ids_in_breakdown(tree))
     except Exception:
         # Industry tables may not exist yet during early buyback migrations.
         return set()
@@ -182,7 +156,7 @@ def iter_seed_ore_eve_types() -> Iterable[EveType]:
 
 
 def iter_seed_all_p1_p2_eve_types() -> Iterable[EveType]:
-    """All published P1 and P2 planetary commodities."""
+    """All published P1 and P2 planetary commodities (surplus unless in demand)."""
     yield from (
         EveType.objects.filter(
             published=True,
@@ -209,7 +183,7 @@ def iter_seed_p3_p4_eve_types(
     )
 
 
-# Back-compat alias: previously seeded all BOM PI tiers.
+# Back-compat alias.
 iter_seed_pi_eve_types = iter_seed_p3_p4_eve_types
 
 
@@ -246,9 +220,10 @@ def seed_accepted_items(
     Upsert compressed buyback ores, all published P1/P2, and P3/P4 used in
     recent industry orders.
 
-    P3/P4 rows outside the lookback BOM set are always deactivated. P1/P2 are
-    kept as a full catalog. When deactivate_missing is True, active ore rows
-    not in the seed set are also deactivated.
+    Full P1/P2 stay on the allowlist (surplus rate unless in supply-chain
+    demand). P3/P4 outside the lookback BOM set are deactivated. When
+    deactivate_missing is True, active ore rows not in the seed set are also
+    deactivated.
     """
     created = 0
     updated = 0
@@ -281,7 +256,7 @@ def seed_accepted_items(
     deactivated_pi = (
         BuybackAcceptedItem.objects.filter(
             active=True,
-            category__in=P3_P4_CATEGORIES,
+            category__in=PI_CATEGORIES,
         )
         .exclude(eve_type_id__in=pi_seed_ids)
         .update(active=False)

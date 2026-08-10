@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-    ops_sell_gaps_compare_rows,
-    ops_sell_gaps_default_direction,
-    ops_sell_gaps_next_order_state,
-    ops_sell_gaps_row_visible,
-} from '@helpers/ops_sell_gaps_filter'
+    sell_order_gaps_compare_rows,
+    sell_order_gaps_default_direction,
+    sell_order_gaps_next_order_state,
+    sell_order_gaps_row_visible,
+} from '@helpers/sell_order_gaps_filter'
 
 const understocked_overpriced = {
     item_name: 'Heavy Neutron Blaster II',
@@ -67,43 +67,43 @@ const in_stock_only = {
     avg_markup_pct: 3,
 }
 
-describe('ops_sell_gaps_row_visible', () => {
+describe('sell_order_gaps_row_visible', () => {
     it('shows all rows when no filters are selected', () => {
-        expect(ops_sell_gaps_row_visible(overstocked_overpriced, [], [], [])).toBe(true)
-        expect(ops_sell_gaps_row_visible(understocked_only, [], [], [])).toBe(true)
-        expect(ops_sell_gaps_row_visible(in_stock_only, [], [], [])).toBe(true)
+        expect(sell_order_gaps_row_visible(overstocked_overpriced, [], [], [])).toBe(true)
+        expect(sell_order_gaps_row_visible(understocked_only, [], [], [])).toBe(true)
+        expect(sell_order_gaps_row_visible(in_stock_only, [], [], [])).toBe(true)
     })
 
     it('filters Out of Stock to empty-stock rows', () => {
         expect(
-            ops_sell_gaps_row_visible(out_of_stock, ['out_of_stock'], [], []),
+            sell_order_gaps_row_visible(out_of_stock, ['out_of_stock'], [], []),
         ).toBe(true)
         expect(
-            ops_sell_gaps_row_visible(understocked_only, ['out_of_stock'], [], []),
+            sell_order_gaps_row_visible(understocked_only, ['out_of_stock'], [], []),
         ).toBe(false)
         expect(
-            ops_sell_gaps_row_visible(in_stock_only, ['out_of_stock'], [], []),
+            sell_order_gaps_row_visible(in_stock_only, ['out_of_stock'], [], []),
         ).toBe(false)
     })
 
     it('filters Understocked to understocked-tagged rows', () => {
         expect(
-            ops_sell_gaps_row_visible(understocked_overpriced, ['understocked'], [], []),
+            sell_order_gaps_row_visible(understocked_overpriced, ['understocked'], [], []),
         ).toBe(true)
         expect(
-            ops_sell_gaps_row_visible(understocked_only, ['understocked'], [], []),
+            sell_order_gaps_row_visible(understocked_only, ['understocked'], [], []),
         ).toBe(true)
         expect(
-            ops_sell_gaps_row_visible(overstocked_overpriced, ['understocked'], [], []),
+            sell_order_gaps_row_visible(overstocked_overpriced, ['understocked'], [], []),
         ).toBe(false)
         expect(
-            ops_sell_gaps_row_visible(out_of_stock, ['understocked'], [], []),
+            sell_order_gaps_row_visible(out_of_stock, ['understocked'], [], []),
         ).toBe(false)
     })
 
     it('ORs stock-status Criteria chips (default Out of Stock + Understocked)', () => {
         expect(
-            ops_sell_gaps_row_visible(
+            sell_order_gaps_row_visible(
                 out_of_stock,
                 ['out_of_stock', 'understocked'],
                 [],
@@ -111,7 +111,7 @@ describe('ops_sell_gaps_row_visible', () => {
             ),
         ).toBe(true)
         expect(
-            ops_sell_gaps_row_visible(
+            sell_order_gaps_row_visible(
                 understocked_only,
                 ['out_of_stock', 'understocked'],
                 [],
@@ -119,7 +119,7 @@ describe('ops_sell_gaps_row_visible', () => {
             ),
         ).toBe(true)
         expect(
-            ops_sell_gaps_row_visible(
+            sell_order_gaps_row_visible(
                 in_stock_only,
                 ['out_of_stock', 'understocked'],
                 [],
@@ -130,28 +130,28 @@ describe('ops_sell_gaps_row_visible', () => {
 
     it('filters In Stock to in-stock-tagged rows', () => {
         expect(
-            ops_sell_gaps_row_visible(in_stock_only, ['in_stock'], [], []),
+            sell_order_gaps_row_visible(in_stock_only, ['in_stock'], [], []),
         ).toBe(true)
         expect(
-            ops_sell_gaps_row_visible(overstocked_overpriced, ['in_stock'], [], []),
+            sell_order_gaps_row_visible(overstocked_overpriced, ['in_stock'], [], []),
         ).toBe(true)
         expect(
-            ops_sell_gaps_row_visible(understocked_only, ['in_stock'], [], []),
+            sell_order_gaps_row_visible(understocked_only, ['in_stock'], [], []),
         ).toBe(false)
     })
 
     it('filters Overpriced to overpriced-tagged rows', () => {
         expect(
-            ops_sell_gaps_row_visible(overstocked_overpriced, ['overpriced'], [], []),
+            sell_order_gaps_row_visible(overstocked_overpriced, ['overpriced'], [], []),
         ).toBe(true)
         expect(
-            ops_sell_gaps_row_visible(understocked_only, ['overpriced'], [], []),
+            sell_order_gaps_row_visible(understocked_only, ['overpriced'], [], []),
         ).toBe(false)
     })
 
     it('ANDs Overpriced with stock-status Criteria', () => {
         expect(
-            ops_sell_gaps_row_visible(
+            sell_order_gaps_row_visible(
                 understocked_overpriced,
                 ['understocked', 'overpriced'],
                 [],
@@ -159,7 +159,7 @@ describe('ops_sell_gaps_row_visible', () => {
             ),
         ).toBe(true)
         expect(
-            ops_sell_gaps_row_visible(
+            sell_order_gaps_row_visible(
                 understocked_only,
                 ['understocked', 'overpriced'],
                 [],
@@ -167,7 +167,7 @@ describe('ops_sell_gaps_row_visible', () => {
             ),
         ).toBe(false)
         expect(
-            ops_sell_gaps_row_visible(
+            sell_order_gaps_row_visible(
                 overstocked_overpriced,
                 ['in_stock', 'overpriced'],
                 [],
@@ -175,7 +175,7 @@ describe('ops_sell_gaps_row_visible', () => {
             ),
         ).toBe(true)
         expect(
-            ops_sell_gaps_row_visible(
+            sell_order_gaps_row_visible(
                 overstocked_overpriced,
                 ['understocked', 'overpriced'],
                 [],
@@ -186,7 +186,7 @@ describe('ops_sell_gaps_row_visible', () => {
 
     it('ORs Type chips within the group', () => {
         expect(
-            ops_sell_gaps_row_visible(
+            sell_order_gaps_row_visible(
                 understocked_only,
                 [],
                 ['hull', 'drone'],
@@ -194,7 +194,7 @@ describe('ops_sell_gaps_row_visible', () => {
             ),
         ).toBe(true)
         expect(
-            ops_sell_gaps_row_visible(
+            sell_order_gaps_row_visible(
                 overstocked_overpriced,
                 [],
                 ['hull', 'drone'],
@@ -205,22 +205,22 @@ describe('ops_sell_gaps_row_visible', () => {
 
     it('filters by item name search (case-insensitive substring)', () => {
         expect(
-            ops_sell_gaps_row_visible(understocked_only, [], [], [], 'rif'),
+            sell_order_gaps_row_visible(understocked_only, [], [], [], 'rif'),
         ).toBe(true)
         expect(
-            ops_sell_gaps_row_visible(understocked_only, [], [], [], 'RIFTER'),
+            sell_order_gaps_row_visible(understocked_only, [], [], [], 'RIFTER'),
         ).toBe(true)
         expect(
-            ops_sell_gaps_row_visible(understocked_only, [], [], [], 'nanite'),
+            sell_order_gaps_row_visible(understocked_only, [], [], [], 'nanite'),
         ).toBe(false)
         expect(
-            ops_sell_gaps_row_visible(overstocked_overpriced, [], [], [], '  paste  '),
+            sell_order_gaps_row_visible(overstocked_overpriced, [], [], [], '  paste  '),
         ).toBe(true)
     })
 
     it('treats missing flags as empty', () => {
         expect(
-            ops_sell_gaps_row_visible(
+            sell_order_gaps_row_visible(
                 { item_type: 'other', item_variant: 'other' },
                 ['understocked'],
                 [],
@@ -230,14 +230,14 @@ describe('ops_sell_gaps_row_visible', () => {
     })
 })
 
-describe('ops_sell_gaps_compare_rows', () => {
+describe('sell_order_gaps_compare_rows', () => {
     it('defaults to days of stock ascending (least remaining first)', () => {
         const sorted = [
             out_of_stock,
             understocked_overpriced,
             understocked_only,
             overstocked_overpriced,
-        ].sort((a, b) => ops_sell_gaps_compare_rows(a, b))
+        ].sort((a, b) => sell_order_gaps_compare_rows(a, b))
 
         expect(sorted.map(row => row.item_name)).toEqual([
             'Scourge Torpedo',
@@ -253,7 +253,7 @@ describe('ops_sell_gaps_compare_rows', () => {
             understocked_overpriced,
             understocked_only,
             overstocked_overpriced,
-        ].sort((a, b) => ops_sell_gaps_compare_rows(a, b, 'days_of_stock'))
+        ].sort((a, b) => sell_order_gaps_compare_rows(a, b, 'days_of_stock'))
 
         expect(sorted.map(row => row.item_name)).toEqual([
             'Scourge Torpedo',
@@ -269,7 +269,7 @@ describe('ops_sell_gaps_compare_rows', () => {
             understocked_overpriced,
             overstocked_overpriced,
             out_of_stock,
-        ].sort((a, b) => ops_sell_gaps_compare_rows(a, b, 'markup'))
+        ].sort((a, b) => sell_order_gaps_compare_rows(a, b, 'markup'))
 
         expect(sorted.map(row => row.item_name)).toEqual([
             'Nanite Repair Paste',
@@ -285,7 +285,7 @@ describe('ops_sell_gaps_compare_rows', () => {
             understocked_overpriced,
             overstocked_overpriced,
             out_of_stock,
-        ].sort((a, b) => ops_sell_gaps_compare_rows(a, b, 'volume_7d'))
+        ].sort((a, b) => sell_order_gaps_compare_rows(a, b, 'volume_7d'))
 
         expect(sorted.map(row => row.item_name)).toEqual([
             'Scourge Torpedo',
@@ -301,7 +301,7 @@ describe('ops_sell_gaps_compare_rows', () => {
             understocked_overpriced,
             understocked_only,
             overstocked_overpriced,
-        ].sort((a, b) => ops_sell_gaps_compare_rows(a, b, 'not_a_real_sort'))
+        ].sort((a, b) => sell_order_gaps_compare_rows(a, b, 'not_a_real_sort'))
 
         expect(sorted.map(row => row.item_name)).toEqual([
             'Scourge Torpedo',
@@ -317,7 +317,7 @@ describe('ops_sell_gaps_compare_rows', () => {
             understocked_overpriced,
             understocked_only,
             overstocked_overpriced,
-        ].sort((a, b) => ops_sell_gaps_compare_rows(a, b, 'days_of_stock', 'desc'))
+        ].sort((a, b) => sell_order_gaps_compare_rows(a, b, 'days_of_stock', 'desc'))
 
         expect(sorted.map(row => row.item_name)).toEqual([
             'Nanite Repair Paste',
@@ -333,7 +333,7 @@ describe('ops_sell_gaps_compare_rows', () => {
             understocked_overpriced,
             overstocked_overpriced,
             out_of_stock,
-        ].sort((a, b) => ops_sell_gaps_compare_rows(a, b, 'markup', 'asc'))
+        ].sort((a, b) => sell_order_gaps_compare_rows(a, b, 'markup', 'asc'))
 
         expect(sorted.map(row => row.item_name)).toEqual([
             'Rifter',
@@ -344,20 +344,20 @@ describe('ops_sell_gaps_compare_rows', () => {
     })
 })
 
-describe('ops_sell_gaps_next_order_state', () => {
+describe('sell_order_gaps_next_order_state', () => {
     it('selects a new key with its default direction', () => {
         expect(
-            ops_sell_gaps_next_order_state('days_of_stock', 'asc', 'markup'),
+            sell_order_gaps_next_order_state('days_of_stock', 'asc', 'markup'),
         ).toEqual({ order_by: 'markup', direction: 'desc' })
-        expect(ops_sell_gaps_default_direction('volume_7d')).toBe('desc')
+        expect(sell_order_gaps_default_direction('volume_7d')).toBe('desc')
     })
 
     it('flips direction when the active pill is clicked again', () => {
         expect(
-            ops_sell_gaps_next_order_state('days_of_stock', 'asc', 'days_of_stock'),
+            sell_order_gaps_next_order_state('days_of_stock', 'asc', 'days_of_stock'),
         ).toEqual({ order_by: 'days_of_stock', direction: 'desc' })
         expect(
-            ops_sell_gaps_next_order_state('markup', 'desc', 'markup'),
+            sell_order_gaps_next_order_state('markup', 'desc', 'markup'),
         ).toEqual({ order_by: 'markup', direction: 'asc' })
     })
 })

@@ -91,51 +91,119 @@ def filter_contract_expectation_rows(
     return filtered
 
 
-def _save_fitting_quantity_expectations(
+def _checkbox_tracked_ids(
+    post_data,
+    *,
+    prefix: str,
+    allowed_ids: set[int] | None,
+) -> set[int]:
+    tracked_ids: set[int] = set()
+    for key, raw_value in post_data.items():
+        if not key.startswith(prefix):
+            continue
+        if raw_value in (None, "", "0", "false", "False", "off"):
+            continue
+        object_id = int(key.removeprefix(prefix))
+        if allowed_ids is not None and object_id not in allowed_ids:
+            continue
+        tracked_ids.add(object_id)
+    return tracked_ids
+
+
+def _apply_fitting_track_set(
+    location,
+    model_class,
+    *,
+    ids_to_consider: set[int],
+    tracked_ids: set[int],
+) -> int:
+    updated = 0
+    for fitting_id in ids_to_consider:
+        if fitting_id in tracked_ids:
+            model_class.objects.update_or_create(
+                location=location,
+                fitting_id=fitting_id,
+                defaults={"quantity": 1},
+            )
+            updated += 1
+            continue
+        deleted, _ = model_class.objects.filter(
+            location=location,
+            fitting_id=fitting_id,
+        ).delete()
+        if deleted:
+            updated += 1
+    return updated
+
+
+def _save_fitting_track_legacy(
     location,
     post_data,
     model_class,
     *,
-    prefix: str = "quantity_",
-    allowed_ids: set[int] | None = None,
+    allowed_ids: set[int] | None,
 ) -> int:
     updated = 0
     for key, raw_value in post_data.items():
-        if not key.startswith(prefix):
+        if not key.startswith("quantity_"):
             continue
-        fitting_id = int(key.removeprefix(prefix))
+        fitting_id = int(key.removeprefix("quantity_"))
         if allowed_ids is not None and fitting_id not in allowed_ids:
             continue
-        if raw_value in (None, ""):
-            deleted, _ = model_class.objects.filter(
+        should_track = raw_value not in (None, "") and int(raw_value) > 0
+        if should_track:
+            model_class.objects.update_or_create(
                 location=location,
                 fitting_id=fitting_id,
-            ).delete()
-            if deleted:
-                updated += 1
+                defaults={"quantity": 1},
+            )
+            updated += 1
             continue
-        quantity = int(raw_value)
-        if quantity <= 0:
-            deleted, _ = model_class.objects.filter(
-                location=location,
-                fitting_id=fitting_id,
-            ).delete()
-            if deleted:
-                updated += 1
-            continue
-        model_class.objects.update_or_create(
+        deleted, _ = model_class.objects.filter(
             location=location,
             fitting_id=fitting_id,
-            defaults={"quantity": quantity},
-        )
-        updated += 1
+        ).delete()
+        if deleted:
+            updated += 1
     return updated
+
+
+def _save_fitting_track_expectations(
+    location,
+    post_data,
+    model_class,
+    *,
+    allowed_ids: set[int] | None = None,
+) -> int:
+    """
+    Track on/off for fittings via ``tracked_<fitting_id>`` checkboxes.
+
+    When ``presence_tracking`` is set, every id in ``allowed_ids`` is
+    created (qty=1) or deleted. Also accepts legacy ``quantity_<id>``
+    (positive → track, ≤0 → untrack).
+    """
+    if post_data.get("presence_tracking"):
+        tracked_ids = _checkbox_tracked_ids(
+            post_data, prefix="tracked_", allowed_ids=allowed_ids
+        )
+        ids_to_consider = (
+            allowed_ids if allowed_ids is not None else tracked_ids
+        )
+        return _apply_fitting_track_set(
+            location,
+            model_class,
+            ids_to_consider=ids_to_consider,
+            tracked_ids=tracked_ids,
+        )
+    return _save_fitting_track_legacy(
+        location, post_data, model_class, allowed_ids=allowed_ids
+    )
 
 
 def save_fitting_expectation_quantities(
     location, post_data, allowed_ids: set[int] | None = None
 ) -> int:
-    return _save_fitting_quantity_expectations(
+    return _save_fitting_track_expectations(
         location,
         post_data,
         EveMarketFittingExpectation,
@@ -146,7 +214,7 @@ def save_fitting_expectation_quantities(
 def save_contract_expectation_quantities(
     location, post_data, allowed_ids: set[int] | None = None
 ) -> int:
-    return _save_fitting_quantity_expectations(
+    return _save_fitting_track_expectations(
         location,
         post_data,
         EveMarketContractExpectation,
@@ -343,21 +411,20 @@ def build_location_fitting_expectations_context(
         "help_text": (
             f"Showing {len(filtered_rows)} of {len(all_rows)} non-doctrine ship fits."
         ),
-        "save_button_label": "Save quantities",
+        "save_button_label": "Save tracking",
         "page_title": "Non-doctrine fittings for sale",
         "page_intro": (
-            "Set how many of each non-doctrine ship fit you want stocked at this location."
+            "Choose which non-doctrine ship fits should be present on the market "
+            "at this location. Depth and restock are driven by sales volume."
         ),
         "page_help_bullets": [
             (
-                "How many to stock",
-                "Complete ship fits you want listed on the market.",
+                "Track",
+                "When checked, this fit's hull and modules are on the sell-order catalog.",
             ),
             (
                 "Shared modules",
-                "If several fits use the same module, the market status page uses "
-                "the highest quantity needed — not the sum — so one listing can "
-                "cover multiple fits.",
+                "If several fits use the same module, one listing covers all of them.",
             ),
             (
                 "Items in fit",
@@ -424,12 +491,12 @@ def build_location_contract_expectations_context(
         "help_text": (
             f"Showing {len(filtered_rows)} of {len(all_rows)} fleet ship fits."
         ),
-        "save_button_label": "Save quantities",
+        "save_button_label": "Save tracking",
         "page_title": "Doctrine fittings for sale",
         "page_intro": (
-            "Configure how many of each doctrine ship should be offered — this page "
-            "is per ship fit, not individual contract listings. "
-            "Suggested stock on the market status page is calculated from these quantities."
+            "Choose which doctrine ships should have at least one outstanding "
+            "contract at this location. Suggested sell-order items (ammo, refits) "
+            "come from one fit's contents; restock depth uses sales volume."
         ),
         "mismatched_contracts_url": reverse(
             "admin:market_location_contracts",

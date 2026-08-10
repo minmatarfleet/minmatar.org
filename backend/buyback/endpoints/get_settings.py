@@ -7,25 +7,16 @@ from buyback.endpoints.schemas import (
     BuybackLocationResponse,
     BuybackRateRules,
     BuybackSettingsResponse,
+    BuybackUsedInProduct,
 )
+from buyback.helpers.annotate import annotate_active_accepted_items
+from buyback.helpers.pricing import public_rate_rules
 from buyback.models import (
     BUYBACK_CORPORATION_ID,
-    BuybackAcceptedItem,
     EveBuybackSettings,
 )
 
 router = Router(tags=["Buyback"])
-
-
-def _parse_rate_rules(raw) -> BuybackRateRules:
-    if not isinstance(raw, dict):
-        return BuybackRateRules()
-    return BuybackRateRules(
-        ore_refine=raw.get("ore_refine", 0.85),
-        ore_jita_buy=raw.get("ore_jita_buy", 1.0),
-        p1_jita_buy_cap=raw.get("p1_jita_buy_cap", 0.9),
-        other_jita_buy=raw.get("other_jita_buy", 1.0),
-    )
 
 
 @router.get(
@@ -45,17 +36,7 @@ def get_settings(request):
         )
 
     active = bool(settings.active and location)
-
-    accepted_items = [
-        BuybackAcceptedItemResponse(
-            type_id=item.eve_type_id,
-            name=item.eve_type.name,
-            category=item.category,
-        )
-        for item in BuybackAcceptedItem.objects.filter(active=True)
-        .select_related("eve_type")
-        .order_by("category", "eve_type__name")
-    ]
+    rates = public_rate_rules(settings.rate_rules)
 
     return BuybackSettingsResponse(
         active=active,
@@ -63,8 +44,27 @@ def get_settings(request):
         corporation_id=BUYBACK_CORPORATION_ID,
         location=location,
         accepted_categories=settings.accepted_categories,
-        accepted_items=accepted_items,
-        rate_rules=_parse_rate_rules(settings.rate_rules),
+        accepted_items=[
+            BuybackAcceptedItemResponse(
+                type_id=item.type_id,
+                name=item.name,
+                category=item.category,
+                used_in=[
+                    BuybackUsedInProduct(
+                        type_id=entry.type_id,
+                        name=entry.name,
+                    )
+                    for entry in item.used_in
+                ],
+                in_demand=item.in_demand,
+            )
+            for item in annotate_active_accepted_items()
+        ],
+        rate_rules=BuybackRateRules(
+            ore_refine=rates["ore_refine"],
+            demand_jita_buy=rates["demand_jita_buy"],
+            surplus_jita_buy=rates["surplus_jita_buy"],
+        ),
         exclusions=settings.exclusions,
         discord_thread_url=settings.discord_thread_url,
         leading_text=settings.leading_text,

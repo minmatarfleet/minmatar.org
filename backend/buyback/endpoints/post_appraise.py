@@ -9,6 +9,7 @@ from buyback.endpoints.schemas import (
     BuybackRateRules,
 )
 from buyback.helpers.appraise import appraise_paste
+from buyback.helpers.pricing import public_rate_rules
 from buyback.models import EveBuybackSettings
 
 router = Router(tags=["Buyback"])
@@ -25,6 +26,7 @@ router = Router(tags=["Buyback"])
 def post_appraise(request, payload: BuybackAppraiseRequest):
     settings = EveBuybackSettings.load()
     result = appraise_paste(payload.paste, settings=settings)
+    rates = public_rate_rules(result.rate_rules)
 
     return BuybackAppraisalResponse(
         lines=[
@@ -39,6 +41,7 @@ def post_appraise(request, payload: BuybackAppraiseRequest):
                 line_total=line.line_total,
                 accepted=line.accepted,
                 reject_reason=line.reject_reason,
+                rate_reason=line.rate_reason,
             )
             for line in result.lines
         ],
@@ -46,9 +49,8 @@ def post_appraise(request, payload: BuybackAppraiseRequest):
         accepted_count=result.accepted_count,
         rejected_count=result.rejected_count,
         rate_rules=BuybackRateRules(
-            ore_refine=result.rate_rules.get("ore_refine", 0.85),
-            ore_jita_buy=result.rate_rules.get("ore_jita_buy", 1.0),
-            p1_jita_buy_cap=result.rate_rules.get("p1_jita_buy_cap", 0.9),
-            other_jita_buy=result.rate_rules.get("other_jita_buy", 1.0),
+            ore_refine=rates["ore_refine"],
+            demand_jita_buy=rates["demand_jita_buy"],
+            surplus_jita_buy=rates["surplus_jita_buy"],
         ),
     )

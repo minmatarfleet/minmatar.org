@@ -1,8 +1,16 @@
 import type { Location } from '@dtypes/api.minmatar.org'
-import { query_string } from '@helpers/string'
 
 export const AMAMAKE_LOCATION_ID = 1022167642188
 export const R_6KYM_2_LOCATION_ID = 1053229023468
+
+/** Canonical market-ops page paths (no location query — single staging). */
+export const OPS_PATHS = {
+    monitor: '/market/ops/',
+    contracts: '/market/ops/contracts/',
+    sell_orders: '/market/ops/sell_orders/',
+} as const
+
+export type OpsPathKey = keyof typeof OPS_PATHS
 
 /** Staging slug -> location_id when the slug appears in legacy query params. */
 const STAGING_SLUG_LOCATION_IDS: Record<string, number> = {
@@ -83,44 +91,29 @@ export function has_ops_deep_link_params(searchParams: URLSearchParams): boolean
         || searchParams.has('doctrine_name')
 }
 
+/**
+ * Single staging for now: page URLs should not carry location/doctrine query
+ * params. Canonicalize by stripping them.
+ */
 export function ops_params_need_canonicalization(
     searchParams: URLSearchParams,
-    resolved_location_id?: number,
+    _resolved_location_id?: number,
 ): boolean {
-    if (
-        searchParams.has('location_name')
-        || searchParams.has('doctrine_id')
-        || searchParams.has('doctrine_name')
-    ) {
-        return true
-    }
-
-    const location_id_param = searchParams.get('location_id')
-    if (!location_id_param)
-        return resolved_location_id != null
-
-    const parsed = parseInt(location_id_param, 10)
-    if (Number.isNaN(parsed))
-        return true
-
-    return resolved_location_id != null && parsed !== resolved_location_id
+    return has_ops_deep_link_params(searchParams)
 }
 
 export function ops_redirect_path(
     translatePath: (path: string) => string,
-    location_id?: number,
+    page: OpsPathKey = 'monitor',
 ): string {
-    if (location_id != null)
-        return translatePath(`/market/ops/?${query_string({ location_id })}`)
-
-    return translatePath('/market/ops/')
+    return translatePath(OPS_PATHS[page])
 }
 
+/** Legacy /market deep links and /market/jobs → Market Ops monitor. */
 export function ops_redirect_target(
     translatePath: (path: string) => string,
-    locations: Location[],
-    searchParams: URLSearchParams,
+    _locations?: Location[],
+    _searchParams?: URLSearchParams,
 ): string {
-    const location_id = resolve_ops_location_id(locations, searchParams)
-    return ops_redirect_path(translatePath, location_id)
+    return ops_redirect_path(translatePath, 'monitor')
 }

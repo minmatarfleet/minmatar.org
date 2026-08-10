@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
-import { query_string } from '@helpers/string'
+import { ops_redirect_path } from '@helpers/market_ops_redirect'
 
 interface UnderstockedContractRow {
     location_id:        number;
@@ -28,37 +28,34 @@ const {
     hide_location = false,
 } = Astro.props
 
-function fill_pct(current: number, expected: number): number {
-    if (expected <= 0)
-        return 100
-    return Math.min(100, Math.round((current / expected) * 100))
-}
-
 function short_fitting_name(name: string): string {
     return name.replace(/^\[FL33T\]\s*/i, '').replace(/^\[.*?\]\s*/, '')
 }
 
-function tone_for(readiness: string, pct: number): string {
-    if (readiness === 'empty' || pct <= 20)
+function tone_for(readiness: string, present: boolean): string {
+    if (readiness === 'empty' || !present)
         return 'bad'
-    if (pct < 100)
-        return 'warn'
     return 'good'
 }
 
+const ops_href = ops_redirect_path(translatePath, 'monitor')
+
 const tiles = rows.map(row => {
-    const pct = fill_pct(row.current_quantity, row.expected_quantity)
+    const present = row.current_quantity > 0
+    const pct = present ? 100 : 0
     return {
         ...row,
         pct,
-        tone: tone_for(row.readiness, pct),
+        present,
+        tone: tone_for(row.readiness, present),
         label: short_fitting_name(row.fitting_name),
-        ops_href: translatePath(`/market/ops/?${query_string({
-            location_id: row.location_id,
-        })}`),
+        ops_href,
+        qty_label: present
+            ? String(row.current_quantity)
+            : 'Missing',
         title: [
             row.fitting_name,
-            `${row.current_quantity}/${row.expected_quantity}`,
+            present ? `${row.current_quantity} listed` : 'Missing',
         ].join(' · '),
     }
 })
@@ -97,11 +94,11 @@ import ItemPicture from '@components/blocks/ItemPicture.astro'
                             icon_quality={128}
                         />
                     </div>
-                    <span class="[ ops-stock-tile__pct ]">{tile.pct}%</span>
+                    <span class="[ ops-stock-tile__pct ]">{tile.present ? 'OK' : '0'}</span>
                 </div>
                 <Flexblock gap="var(--space-3xs)" class="[ ops-stock-tile__meta ]">
                     <strong class="[ ops-stock-tile__name ]">{tile.label}</strong>
-                    <span class="[ ops-stock-tile__qty ]">{tile.current_quantity}/{tile.expected_quantity}</span>
+                    <span class="[ ops-stock-tile__qty ]">{tile.qty_label}</span>
                     {!hide_location &&
                         <small class="[ ops-stock-tile__loc ]">{tile.short_name || tile.location_name}</small>
                     }

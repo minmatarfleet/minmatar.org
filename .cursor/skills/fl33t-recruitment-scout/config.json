@@ -2,8 +2,21 @@
   "api_base_url": "https://api.minmatar.org/api",
   "corporation_types": ["alliance", "associate"],
   "discord_invite": "discord.gg/minmatar",
+  "proof_videos": {
+    "mining": {
+      "title": "Rock Hoppin'",
+      "url": "https://youtu.be/XCApG7Pt6m4",
+      "use_for": "mining, industry, Extraction, MFA rock fleets, highsec bulwark miners"
+    },
+    "pvp": {
+      "title": "Bring Fun Shit",
+      "url": "https://youtu.be/7-eGTtq9vWo",
+      "use_for": "PvP, FW, Rattini, Soltech, TDT, Banshee, FOSFO, Academy combat, WH-to-FW redirects"
+    }
+  },
   "reddit": {
     "recruitment_account": "MinmatarFleet",
+    "proof_accounts": ["BearThatCares"],
     "subreddits": ["evejobs", "eve"]
   },
   "forums": {

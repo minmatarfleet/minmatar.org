@@ -28,7 +28,8 @@ const {
 function fill_pct(current: number, expected: number): number | null {
     if (expected <= 0)
         return null
-    return Math.min(100, (current / expected) * 100)
+    // Presence: 100% when any outstanding contract exists.
+    return current > 0 ? 100 : 0
 }
 
 const filter_rows: OpsContractsFilterRow[] = contracts.map(contract => ({
@@ -66,9 +67,7 @@ const has_no_doctrine = contracts.some(c => (c.doctrines ?? []).length === 0)
 
 const criteria_options = [
     { id: 'unstocked', label: t('ops_contracts_filter_unstocked') },
-    { id: 'low_stock', label: t('ops_contracts_filter_low_stock') },
     { id: 'in_stock', label: t('ops_contracts_filter_in_stock') },
-    { id: 'overstocked', label: t('ops_contracts_filter_overstocked') },
 ] as const
 
 const order_by_options = [
@@ -285,6 +284,18 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
         active(list, id) {
             return list.includes(id)
         },
+        toggle_criteria(id) {
+            this.toggle(this.criteria, id)
+        },
+        criteria_active(id) {
+            return this.active(this.criteria, id)
+        },
+        toggle_doctrines(id) {
+            this.toggle(this.doctrines, id)
+        },
+        doctrines_active(id) {
+            return this.active(this.doctrines, id)
+        },
         rowVisible(row) {
             const criteria = this.criteria
             const doctrines = this.doctrines
@@ -363,8 +374,8 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
                                     <button
                                         type="button"
                                         class="[ ops-contracts-list__chip ]"
-                                        x-bind:class={`active(criteria, '${opt.id}') && 'is-active'`}
-                                        x-on:click={`toggle(criteria, '${opt.id}')`}
+                                        x-bind:class={`criteria_active('${opt.id}') && 'is-active'`}
+                                        x-on:click={`toggle_criteria('${opt.id}')`}
                                     >{opt.label}</button>
                                 )}
                             </div>
@@ -377,16 +388,16 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
                                         <button
                                             type="button"
                                             class="[ ops-contracts-list__chip ]"
-                                            x-bind:class={`active(doctrines, '${opt.id}') && 'is-active'`}
-                                            x-on:click={`toggle(doctrines, '${opt.id}')`}
+                                            x-bind:class={`doctrines_active('${opt.id}') && 'is-active'`}
+                                            x-on:click={`toggle_doctrines('${opt.id}')`}
                                         >{opt.label}</button>
                                     )}
                                     {has_no_doctrine &&
                                         <button
                                             type="button"
                                             class="[ ops-contracts-list__chip ]"
-                                            x-bind:class={`active(doctrines, '${OPS_CONTRACTS_NO_DOCTRINE}') && 'is-active'`}
-                                            x-on:click={`toggle(doctrines, '${OPS_CONTRACTS_NO_DOCTRINE}')`}
+                                            x-bind:class={`doctrines_active('${OPS_CONTRACTS_NO_DOCTRINE}') && 'is-active'`}
+                                            x-on:click={`toggle_doctrines('${OPS_CONTRACTS_NO_DOCTRINE}')`}
                                         >{t('ops_contracts_filter_no_doctrine')}</button>
                                     }
                                 </div>

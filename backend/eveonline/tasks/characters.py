@@ -1,6 +1,8 @@
 import logging
 
 from django.contrib.auth.models import User
+from django.db.models import Q
+from django.utils import timezone
 from esi.exceptions import ESIErrorLimitException
 from esi.models import Token
 
@@ -17,6 +19,10 @@ from eveonline.helpers.characters import (
     update_character_planets as refresh_character_planets,
     update_character_skills as refresh_character_skills,
 )
+from eveonline.helpers.characters.corporation_history import (
+    CORPORATION_HISTORY_TTL,
+    sync_character_corporation_history,
+)
 from eveonline.models import EveCharacter, EveAlliance
 from eveonline.utils import get_esi_downtime_countdown
 
@@ -32,6 +38,9 @@ SCOPE_PLANETS = ["esi-planets.manage_planets.v1"]
 SCOPE_BLUEPRINTS = ["esi-characters.read_blueprints.v1"]
 SCOPE_CLONES = ["esi-clones.read_clones.v1"]
 SCOPE_IMPLANTS = ["esi-clones.read_implants.v1"]
+
+# Pace initial/stale corporation-history backfill (~10 chars/min).
+CORPORATION_HISTORY_BACKFILL_BATCH = 50
 
 
 def _refresh_contracts_and_reconcile(eve_character_id: int) -> None:
@@ -120,7 +129,7 @@ def update_character_urgent(eve_character_id):
 
 @app.task
 def update_all_character_public_data() -> int:
-    """Refresh public ESI fields (including security status) for every character."""
+    """Refresh public ESI fields (corp-change history sync lives in public_data)."""
     character_ids = list(
         EveCharacter.objects.filter(esi_deleted=False).values_list(
             "character_id", flat=True
@@ -145,6 +154,51 @@ def update_all_character_public_data() -> int:
         len(character_ids),
     )
     return updated
+
+
+@app.task(rate_limit="10/m")
+def sync_character_corporation_history_task(eve_character_id: int) -> bool:
+    """Paced single-character corporation history sync (backfill / stale TTL)."""
+    character = EveCharacter.objects.filter(
+        character_id=eve_character_id, esi_deleted=False
+    ).first()
+    if not character:
+        return False
+    try:
+        return sync_character_corporation_history(character)
+    except ESIErrorLimitException:
+        logger.warning(
+            "ESI error limited syncing corporation history for %s",
+            eve_character_id,
+        )
+        raise
+
+
+@app.task
+def queue_stale_character_corporation_history(
+    batch_size: int = CORPORATION_HISTORY_BACKFILL_BATCH,
+) -> int:
+    """Queue paced history syncs for characters with null/stale synced_at."""
+    cutoff = timezone.now() - CORPORATION_HISTORY_TTL
+    character_ids = list(
+        EveCharacter.objects.filter(esi_deleted=False)
+        .filter(
+            Q(corporation_history_synced_at__isnull=True)
+            | Q(corporation_history_synced_at__lt=cutoff)
+        )
+        .order_by("corporation_history_synced_at", "character_id")
+        .values_list("character_id", flat=True)[:batch_size]
+    )
+    for character_id in character_ids:
+        sync_character_corporation_history_task.apply_async(
+            args=[character_id],
+            queue="eveonline",
+        )
+    logger.info(
+        "Queued corporation history sync for %d character(s)",
+        len(character_ids),
+    )
+    return len(character_ids)
 
 
 @app.task

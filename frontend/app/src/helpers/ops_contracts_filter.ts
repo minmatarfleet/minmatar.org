@@ -17,7 +17,6 @@ export const OPS_CONTRACTS_NO_DOCTRINE = 'none'
 
 export const OPS_CONTRACTS_DEFAULT_CRITERIA: readonly OpsContractsCriteriaId[] = [
     'unstocked',
-    'low_stock',
 ]
 
 export const OPS_CONTRACTS_DEFAULT_ORDER_BY: OpsContractsOrderById = 'stock_fill'
@@ -69,8 +68,9 @@ function is_sort_direction(value: string): value is OpsContractsSortDirection {
 }
 
 /**
- * Map outstanding qty vs expectation to a Criteria chip id.
- * Returns null when there is no positive target quantity.
+ * Map outstanding contracts vs tracking to a Criteria chip id.
+ * Presence-only: tracked fittings are unstocked or in stock.
+ * Returns null when the fitting is not tracked.
  */
 export function ops_contracts_stock_status(
     current_quantity: number,
@@ -80,10 +80,6 @@ export function ops_contracts_stock_status(
         return null
     if (current_quantity <= 0)
         return 'unstocked'
-    if (current_quantity < desired_quantity)
-        return 'low_stock'
-    if (current_quantity > desired_quantity)
-        return 'overstocked'
     return 'in_stock'
 }
 

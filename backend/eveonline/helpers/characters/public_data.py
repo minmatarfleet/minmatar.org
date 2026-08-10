@@ -1,10 +1,13 @@
 import logging
 
 from django.utils import timezone
-from esi.exceptions import ESIErrorLimitException
 
 from eveonline.client import EsiResponse, esi_public, live_esi_allowed
 from eveonline.helpers.characters.characters import orphan_character
+from eveonline.helpers.characters.corporation_history import (
+    sync_character_corporation_history,
+)
+from eveonline.helpers.esi import raise_if_esi_error_limited
 from eveonline.models import EveCharacter
 
 logger = logging.getLogger(__name__)
@@ -49,13 +52,6 @@ def is_character_deleted_response(response: EsiResponse) -> bool:
     return DELETED_CHARACTER_ERROR in text
 
 
-def is_esi_error_limited_response(response: EsiResponse) -> bool:
-    """True when ESI error budget is exhausted (HTTP 420 / ESIErrorLimitException)."""
-    if response.response_code == 420:
-        return True
-    return isinstance(response.response, ESIErrorLimitException)
-
-
 def mark_character_esi_deleted(character: EveCharacter) -> None:
     """Flag a biomassed character and detach user/token so we stop ESI calls."""
     character.esi_deleted = True
@@ -85,15 +81,14 @@ def update_character_public_data(character_id: int) -> bool:
         )
         return False
 
+    previous_corporation_id = character.corporation_id
+
     response = esi_public().get_character_public_data(character_id)
     if not response.success():
         if is_character_deleted_response(response):
             mark_character_esi_deleted(character)
             return False
-        if is_esi_error_limited_response(response):
-            if isinstance(response.response, ESIErrorLimitException):
-                raise response.response
-            raise ESIErrorLimitException()
+        raise_if_esi_error_limited(response)
         logger.warning(
             "ESI error %s fetching public data for character %s",
             response.response_code,
@@ -109,4 +104,13 @@ def update_character_public_data(character_id: int) -> bool:
             character.character_name,
             character_id,
         )
+
+    corporation_changed = (
+        previous_corporation_id is not None
+        and character.corporation_id is not None
+        and character.corporation_id != previous_corporation_id
+    )
+    if corporation_changed:
+        sync_character_corporation_history(character)
+
     return updated

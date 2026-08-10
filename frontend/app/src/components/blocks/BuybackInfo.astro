@@ -6,6 +6,7 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
+import BuybackRateBadge from '@components/blocks/BuybackRateBadge.astro'
 
 const { t } = i18n(Astro.url)
 
@@ -55,6 +56,45 @@ interface DisplayItem {
     type_id: number
     name: string
     variants?: BuybackAcceptedItem[]
+    used_in?: { type_id: number; name: string }[]
+    used_in_is_ore?: boolean
+    in_demand?: boolean
+}
+
+const USED_IN_TOOLTIP_LIMIT = 12
+
+function merge_used_in(
+    items: BuybackAcceptedItem[],
+): { type_id: number; name: string }[] {
+    const by_id = new Map<number, string>()
+    for (const item of items) {
+        for (const entry of item.used_in ?? []) {
+            by_id.set(entry.type_id, entry.name)
+        }
+    }
+    return [...by_id.entries()]
+        .map(([type_id, name]) => ({ type_id, name }))
+        .sort((a, b) => a.name.localeCompare(b.name))
+}
+
+function used_in_tip_html(
+    used_in: { type_id: number; name: string }[],
+    ore_note = false,
+): string {
+    if (used_in.length === 0) return ''
+    const shown = used_in.slice(0, USED_IN_TOOLTIP_LIMIT)
+    const extra = used_in.length - shown.length
+    const lines = [
+        `<strong>${t('buyback.info.used_in')}</strong>`,
+        ...(ore_note ? [`<em>${t('buyback.info.used_in_ore_note')}</em>`] : []),
+        ...shown.map((entry) => entry.name),
+    ]
+    if (extra > 0) {
+        lines.push(
+            t('buyback.info.used_in_more').replace('{count}', String(extra)),
+        )
+    }
+    return lines.join('<br>')
 }
 
 const CATEGORY_ORDER = ['ore', 'p1', 'p2', 'p3', 'p4'] as const
@@ -68,13 +108,25 @@ const CATEGORY_LABELS: Record<(typeof CATEGORY_ORDER)[number], string> = {
 
 const accepted_items = settings.accepted_items ?? []
 
+function sort_display_items(items: DisplayItem[]): DisplayItem[] {
+    return items.slice().sort((a, b) => {
+        const demand_delta = Number(Boolean(b.in_demand)) - Number(Boolean(a.in_demand))
+        if (demand_delta !== 0) return demand_delta
+        return a.name.localeCompare(b.name)
+    })
+}
+
 function display_items_for_category(category: (typeof CATEGORY_ORDER)[number]): DisplayItem[] {
     const items = accepted_items.filter((item) => item.category === category)
     if (category !== 'ore') {
-        return items
-            .slice()
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map((item) => ({ type_id: item.type_id, name: item.name }))
+        return sort_display_items(
+            items.map((item) => ({
+                type_id: item.type_id,
+                name: item.name,
+                used_in: item.used_in ?? [],
+                in_demand: Boolean(item.in_demand),
+            })),
+        )
     }
 
     const by_base = new Map<string, BuybackAcceptedItem[]>()
@@ -102,15 +154,21 @@ function display_items_for_category(category: (typeof CATEGORY_ORDER)[number]): 
                 type_id: preferred.type_id,
                 name: base,
                 variants,
+                used_in: merge_used_in(variants),
+                used_in_is_ore: true,
+                in_demand: variants.some((variant) => Boolean(variant.in_demand)),
             }
         })
 
-    const extras = leftover
-        .slice()
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map((item) => ({ type_id: item.type_id, name: item.name }))
+    const extras = leftover.map((item) => ({
+        type_id: item.type_id,
+        name: item.name,
+        used_in: item.used_in ?? [],
+        used_in_is_ore: true,
+        in_demand: Boolean(item.in_demand),
+    }))
 
-    return [...grouped, ...extras]
+    return sort_display_items([...grouped, ...extras])
 }
 
 const grouped_items = CATEGORY_ORDER
@@ -139,16 +197,36 @@ const grouped_items = CATEGORY_ORDER
                                 {group.items.map((item) => {
                                     const variants = item.variants ?? []
                                     const show_variants = variants.length > 1
-                                    const tip_html = show_variants
+                                    const variants_tip_html = show_variants
                                         ? `<strong>${t('buyback.info.ore_variants')}</strong><br>${variants
                                             .map((v) => v.name)
                                             .join('<br>')}`
                                         : ''
+                                    const used_in = item.used_in ?? []
+                                    const used_in_tip = used_in_tip_html(
+                                        used_in,
+                                        Boolean(item.used_in_is_ore),
+                                    )
+                                    const item_tippy = used_in_tip
+                                        ? `tippy($el, {
+                                            content: ${JSON.stringify(used_in_tip)},
+                                            allowHTML: true,
+                                            delay: [100, 200],
+                                            arrow: true,
+                                        })`
+                                        : undefined
                                     return (
                                         <li>
                                             <FlexInline
                                                 gap='var(--space-3xs)'
-                                                class="[ buyback-info__item ]"
+                                                class:list={[
+                                                    '[ buyback-info__item ]',
+                                                    used_in_tip ? '[ buyback-info__item--has-used-in ]' : '',
+                                                    item.in_demand
+                                                        ? ''
+                                                        : '[ buyback-info__item--surplus ]',
+                                                ]}
+                                                x-init={item_tippy}
                                             >
                                                 <ItemPicture
                                                     item_id={item.type_id}
@@ -157,13 +235,16 @@ const grouped_items = CATEGORY_ORDER
                                                     icon_quality={32}
                                                 />
                                                 <span>{item.name}</span>
+                                                <BuybackRateBadge
+                                                    in_demand={Boolean(item.in_demand)}
+                                                />
                                                 {show_variants && (
                                                     <button
                                                         type="button"
                                                         class="[ buyback-info__variants ]"
                                                         aria-label={t('buyback.info.ore_variants')}
                                                         x-init={`tippy($el, {
-                                                            content: ${JSON.stringify(tip_html)},
+                                                            content: ${JSON.stringify(variants_tip_html)},
                                                             allowHTML: true,
                                                             delay: [100, 200],
                                                             arrow: true,
@@ -262,6 +343,14 @@ const grouped_items = CATEGORY_ORDER
         .buyback-info__item {
             align-items: center;
             min-width: 0;
+        }
+
+        .buyback-info__item--has-used-in {
+            cursor: help;
+        }
+
+        .buyback-info__item--surplus {
+            opacity: 0.85;
         }
 
         .buyback-info__item > span:first-of-type {

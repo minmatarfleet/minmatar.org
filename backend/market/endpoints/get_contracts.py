@@ -202,7 +202,7 @@ def fetch_eve_market_contracts(request, location_id: int):
             fitting = expectation.fitting
             expectation_id = expectation.id
             title = fitting.name
-            desired_quantity = expectation.quantity
+            desired_quantity = expectation.desired_quantity
         else:
             sample = (
                 contracts_at_location.filter(fitting_id=fitting_id)

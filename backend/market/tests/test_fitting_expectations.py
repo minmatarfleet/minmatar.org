@@ -146,17 +146,17 @@ class EveMarketFittingExpectationTestCase(TestCase):
             ship_id=587,
         )
 
-    def test_get_item_quantities_multiplies_by_expectation(self):
+    def test_get_item_quantities_is_presence(self):
         exp = EveMarketFittingExpectation.objects.create(
             fitting=self.fitting,
             location=self.location,
             quantity=10,
         )
         items = exp.get_item_quantities()
-        self.assertEqual(items["Rifter"], 10)
-        self.assertEqual(items["Damage Control II"], 10)
-        self.assertEqual(items["150mm Light Prototype Automatic Cannon"], 30)
-        self.assertEqual(items["Fusion S"], 20000)
+        self.assertEqual(items["Rifter"], 1)
+        self.assertEqual(items["Damage Control II"], 1)
+        self.assertEqual(items["150mm Light Prototype Automatic Cannon"], 1)
+        self.assertEqual(items["Fusion S"], 1)
 
     def test_str(self):
         exp = EveMarketFittingExpectation.objects.create(
@@ -165,7 +165,8 @@ class EveMarketFittingExpectationTestCase(TestCase):
             quantity=5,
         )
         self.assertIn("AC Rifter", str(exp))
-        self.assertIn("x5", str(exp))
+        self.assertIn("Staging Keepstar", str(exp))
+        self.assertNotIn("x5", str(exp))
 
 
 class GetEffectiveItemExpectationsTestCase(TestCase):
@@ -203,19 +204,19 @@ class GetEffectiveItemExpectationsTestCase(TestCase):
             item=self.dc2_type, location=self.location, quantity=10
         )
         result = get_effective_item_expectations(self.location)
-        self.assertEqual(result["Damage Control II"], 10)
+        self.assertEqual(result["Damage Control II"], 1)
 
     def test_fitting_only(self):
         EveMarketFittingExpectation.objects.create(
             fitting=self.fitting_a, location=self.location, quantity=15
         )
         result = get_effective_item_expectations(self.location)
-        self.assertEqual(result["Damage Control II"], 15)
-        self.assertEqual(result["Rifter"], 15)
+        self.assertEqual(result["Damage Control II"], 1)
+        self.assertEqual(result["Rifter"], 1)
 
     def test_pinned_overrides_fitting_max(self):
         """
-        Pinned item expectation overrides fitting-derived quantity for that item.
+        Pinned item expectation still wins for that item (presence target 1).
         """
         EveMarketItemExpectation.objects.create(
             item=self.dc2_type, location=self.location, quantity=10
@@ -227,7 +228,7 @@ class GetEffectiveItemExpectationsTestCase(TestCase):
             fitting=self.fitting_b, location=self.location, quantity=15
         )
         result = get_effective_item_expectations(self.location)
-        self.assertEqual(result["Damage Control II"], 10)
+        self.assertEqual(result["Damage Control II"], 1)
 
     def test_individual_larger_than_fittings(self):
         EveMarketItemExpectation.objects.create(
@@ -237,10 +238,10 @@ class GetEffectiveItemExpectationsTestCase(TestCase):
             fitting=self.fitting_a, location=self.location, quantity=10
         )
         result = get_effective_item_expectations(self.location)
-        self.assertEqual(result["Damage Control II"], 50)
+        self.assertEqual(result["Damage Control II"], 1)
 
     def test_fitting_with_multiple_of_same_module(self):
-        """A fitting with 3× guns: 10 fittings → 30 guns expected."""
+        """A fitting with 3× guns still contributes presence 1 per item name."""
         fitting_c = EveFitting.objects.create(
             name="Fit C",
             eft_format=(
@@ -256,8 +257,8 @@ class GetEffectiveItemExpectationsTestCase(TestCase):
             fitting=fitting_c, location=self.location, quantity=10
         )
         result = get_effective_item_expectations(self.location)
-        self.assertEqual(result["150mm Light Prototype Automatic Cannon"], 30)
-        self.assertEqual(result["Damage Control II"], 10)
+        self.assertEqual(result["150mm Light Prototype Automatic Cannon"], 1)
+        self.assertEqual(result["Damage Control II"], 1)
 
     def test_empty_location(self):
         result = get_effective_item_expectations(self.location)
@@ -363,8 +364,8 @@ class ContractExpectationConsumablesTestCase(TestCase):
             quantity=5,
         )
         result = get_effective_item_expectations(self.location)
-        self.assertEqual(result["Fusion S"], 10000)
-        self.assertEqual(result["Republic Fleet EMP S"], 3600)
+        self.assertEqual(result["Fusion S"], 1)
+        self.assertEqual(result["Republic Fleet EMP S"], 1)
 
     def test_contract_does_not_add_ship_or_modules(self):
         EveMarketContractExpectation.objects.create(
@@ -378,7 +379,7 @@ class ContractExpectationConsumablesTestCase(TestCase):
         self.assertNotIn("150mm Light Prototype Automatic Cannon", result)
 
     def test_max_across_contract_and_item_expectations(self):
-        """Contract gives 10 000 Fusion S; item expectation gives 15 000 → max wins."""
+        """Pinned and contract consumables both resolve to presence 1."""
         fusion_type = EveType.objects.get(name="Fusion S")
         EveMarketItemExpectation.objects.create(
             item=fusion_type, location=self.location, quantity=15000
@@ -389,7 +390,7 @@ class ContractExpectationConsumablesTestCase(TestCase):
             quantity=5,
         )
         result = get_effective_item_expectations(self.location)
-        self.assertEqual(result["Fusion S"], 15000)
+        self.assertEqual(result["Fusion S"], 1)
 
     def test_contract_consumable_larger_than_item_expectation(self):
         """Pinned item expectation overrides contract consumable contribution."""
@@ -403,10 +404,10 @@ class ContractExpectationConsumablesTestCase(TestCase):
             quantity=5,
         )
         result = get_effective_item_expectations(self.location)
-        self.assertEqual(result["Fusion S"], 5000)
+        self.assertEqual(result["Fusion S"], 1)
 
     def test_multiple_contract_expectations_max(self):
-        """Two contract expectations for different fittings; max per item wins."""
+        """Two contract expectations still contribute presence 1 per item."""
         fitting_b = EveFitting.objects.create(
             name="Big Ammo Rifter",
             eft_format="[Rifter, Big Ammo Rifter]\n\nDamage Control II\n\nFusion S x5000\n",
@@ -423,5 +424,4 @@ class ContractExpectationConsumablesTestCase(TestCase):
             quantity=3,
         )
         result = get_effective_item_expectations(self.location)
-        # fitting: 2000*5=10000, fitting_b: 5000*3=15000
-        self.assertEqual(result["Fusion S"], 15000)
+        self.assertEqual(result["Fusion S"], 1)

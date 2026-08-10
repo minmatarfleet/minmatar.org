@@ -6,8 +6,12 @@ import { get_market_locations } from '@helpers/api.minmatar.org/locations'
 import { query_string } from '@helpers/string'
 import {
     ops_params_need_canonicalization,
-    resolve_ops_location_id,
+    ops_redirect_path,
 } from '@helpers/market_ops_redirect'
+
+if (ops_params_need_canonicalization(Astro.url.searchParams)) {
+    return Astro.redirect(ops_redirect_path(translatePath, 'contracts'), 301)
+}
 
 let fetch_error: Error | false = false
 let locations: Awaited<ReturnType<typeof get_market_locations>> = []
@@ -15,18 +19,7 @@ let location_id: number | undefined
 
 try {
     locations = await get_market_locations()
-
-    location_id = resolve_ops_location_id(locations, Astro.url.searchParams)
-        ?? locations[0]?.location_id
-
-    if (
-        location_id != null
-        && ops_params_need_canonicalization(Astro.url.searchParams, location_id)
-    ) {
-        return Astro.redirect(
-            translatePath(`/market/ops/contracts/?${query_string({ location_id })}`),
-        )
-    }
+    location_id = locations[0]?.location_id
 } catch (error) {
     fetch_error = error as Error
 }
@@ -42,12 +35,8 @@ import MarketContractsSkeleton from '@components/blocks/MarketContractsSkeleton.
 
 const page_title = t('staging_supply.ops.contracts.page_title')
 
-const ops_href = location_id != null
-    ? translatePath(`/market/ops/?${query_string({ location_id })}`)
-    : translatePath('/market/ops/')
-
 const breadcrumb_items = [
-    { label: t('staging_supply.ops.page_title'), href: ops_href },
+    { label: t('staging_supply.ops.page_title'), href: ops_redirect_path(translatePath, 'monitor') },
     { label: page_title },
 ]
 
@@ -86,11 +75,7 @@ const CONTRACTS_PARTIAL = translatePath(
 
         {fetch_error ?
             <ErrorRefetch args={{
-                partial: translatePath(
-                    location_id != null
-                        ? `/market/ops/contracts/?${query_string({ location_id })}`
-                        : '/market/ops/contracts/'
-                ),
+                partial: ops_redirect_path(translatePath, 'contracts'),
                 error: fetch_error,
                 delay: 0,
             }} />
@@ -120,14 +105,11 @@ const CONTRACTS_PARTIAL = translatePath(
         slot.setAttribute('aria-busy', 'false')
         if (typeof htmx !== 'undefined')
             htmx.process(slot)
-        if (typeof Alpine !== 'undefined')
+        if (typeof Alpine !== 'undefined') {
+            Alpine.destroyTree(slot)
             Alpine.initTree(slot)
-        if (typeof tippy === 'function') {
-            tippy('#ops-contracts-slot [data-tippy-content]', {
-                delay: [100, 200],
-                arrow: true,
-            })
         }
+        tippy('#ops-contracts-slot [data-tippy-content]', tippy_options)
     }
 
     function isOpsContractsRequest(event: any): boolean {

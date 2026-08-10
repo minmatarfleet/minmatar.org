@@ -4,20 +4,7 @@
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
-import { get_market_locations } from '@helpers/api.minmatar.org/locations'
-import { query_string } from '@helpers/string'
-import { resolve_ops_location_id } from '@helpers/market_ops_redirect'
+import { ops_redirect_path } from '@helpers/market_ops_redirect'
 
-let target = translatePath('/market/ops/sell_orders/')
-
-try {
-    const locations = await get_market_locations()
-    const location_id = resolve_ops_location_id(locations, Astro.url.searchParams)
-    if (location_id != null)
-        target = translatePath(`/market/ops/sell_orders/?${query_string({ location_id })}`)
-} catch {
-    // Keep default sell-orders URL when locations cannot be loaded.
-}
-
-return Astro.redirect(target, 301)
+return Astro.redirect(ops_redirect_path(translatePath, 'sell_orders'), 301)
 ---

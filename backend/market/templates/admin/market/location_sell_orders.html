@@ -135,7 +135,7 @@
   </p>
 
   {% include "admin/market/_learn_more_start.html" %}
-    <p>{% translate "Items to keep stocked at this structure, based on your configuration." %}</p>
+    <p>{% translate "Items that should be present on the market at this structure. Restock depth uses sales volume (about 7 days of cover)." %}</p>
     <ul class="market-help-list">
       <li>
         <strong>{% translate "Listed now" %}</strong> —
@@ -146,16 +146,16 @@
         {% translate "how long ago that import ran for this item (hover for exact time)." %}
       </li>
       <li>
-        <strong>{% translate "Target stock" %}</strong> —
-        {% translate "how many you want listed; edit here and save, or set via the configure pages above. A pin on the item name means you set it manually on this page." %}
+        <strong>{% translate "Pin track" %}</strong> —
+        {% translate "manually keep this item on the catalog even if no fit requires it. Fits and doctrines are configured on the pages above." %}
       </li>
       <li>
-        <strong>{% translate "Suggested stock" %}</strong> —
-        {% translate "ammo, charges, and refit modules for doctrine fittings for sale, based on how many doctrine ships you configured. Hover the number for details." %}
+        <strong>{% translate "Suggested (1 fit)" %}</strong> —
+        {% translate "ammo, charges, and refit modules for one doctrine fit (advisory only)." %}
       </li>
       <li>
         <strong>{% translate "Needed for" %}</strong> —
-        {% translate "which ship fits drive this item's target or suggestion. Hover to see names." %}
+        {% translate "which ship fits put this item on the catalog. Hover to see names." %}
       </li>
     </ul>
   {% include "admin/market/_learn_more_end.html" %}
@@ -181,13 +181,14 @@
 
       <form method="post" id="changelist-form" action="{{ form_action }}">
         {% csrf_token %}
+        <input type="hidden" name="presence_tracking" value="1">
         {% result_list cl %}
         {% pagination cl %}
 
         {% if cl.result_count %}
         <div class="submit-row">
           <p class="help">{% translate "Only the rows on this page are saved when you click Save." %}</p>
-          <input type="submit" value="{% translate 'Save target stock' %}" class="default">
+          <input type="submit" value="{% translate 'Save tracking' %}" class="default">
         </div>
         {% endif %}
       </form>
