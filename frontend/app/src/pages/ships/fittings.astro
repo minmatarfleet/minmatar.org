@@ -57,19 +57,21 @@ const search_tag = Astro.url.searchParams.get('tag')
 const initial_tag_filter =
     search_tag && tag_options.some((o) => o.value === search_tag) ? search_tag : '-1'
 
-/** Only fittings that carry the selected tag (or all fittings when unfiltered). */
-const fittings_for_list =
-    initial_tag_filter === '-1'
-        ? fittings
-        : fittings.filter((fitting) => (fitting.tags ?? []).includes(initial_tag_filter))
+const initial_name_filter = Astro.url.searchParams.get('q') ?? ''
 
-let fitting_ship_types = unique_values(fittings_for_list.map((fitting) => fitting.ship_type))
+let fitting_ship_types = unique_values(fittings.map((fitting) => fitting.ship_type))
 fitting_ship_types = fitting_ship_types.sort((a, b) => SHIP_TYPES_SORTED.indexOf(a) - SHIP_TYPES_SORTED.indexOf(b))
+
+const search_ship_type = Astro.url.searchParams.get('ship_type')
+const initial_ship_type_filter =
+    search_ship_type && fitting_ship_types.includes(search_ship_type)
+        ? search_ship_type
+        : '-1'
 
 let fittings_grouped_by_ship_type:FittingItem[][] = []
 fitting_ship_types.forEach((fitting_ship_type) => {
     fittings_grouped_by_ship_type.push(
-        fittings_for_list.filter((fitting) => fitting.ship_type === fitting_ship_type).sort((a, b) => a.ship_name.localeCompare(b.ship_name))
+        fittings.filter((fitting) => fitting.ship_type === fitting_ship_type).sort((a, b) => a.ship_name.localeCompare(b.ship_name))
     )
 })
 
@@ -159,9 +161,9 @@ const structured_data = buildFittingsListJsonLd(
         }}
         sticky={true}
         x-data={`{
-            fitting_name_filter: '',
+            fitting_name_filter: ${JSON.stringify(initial_name_filter)},
             fitting_tag_filter: ${JSON.stringify(initial_tag_filter)},
-            ship_type_filter: '-1',
+            ship_type_filter: ${JSON.stringify(initial_ship_type_filter)},
             ships_count: ${ships_count},
             countVisibleElements(selector, parent = document) {
                 const elements = parent.querySelectorAll(selector)
@@ -178,12 +180,28 @@ const structured_data = buildFittingsListJsonLd(
             refresh_ships_count() {
                 this.ships_count = this.countVisibleElements('.fitting-card')
             },
-            apply_tag_filter() {
-                const tag = this.fitting_tag_filter === '-1' ? null : this.fitting_tag_filter
+            sync_filters_to_url() {
                 const url = new URL(window.location.href)
-                if (tag) url.searchParams.set('tag', tag)
+                const q = this.fitting_name_filter.trim()
+                if (q) url.searchParams.set('q', q)
+                else url.searchParams.delete('q')
+
+                if (this.fitting_tag_filter !== '-1')
+                    url.searchParams.set('tag', this.fitting_tag_filter)
                 else url.searchParams.delete('tag')
-                window.location.assign(url.pathname + url.search)
+
+                if (this.ship_type_filter !== '-1')
+                    url.searchParams.set('ship_type', this.ship_type_filter)
+                else url.searchParams.delete('ship_type')
+
+                const next = url.pathname + url.search + url.hash
+                if (next !== window.location.pathname + window.location.search + window.location.hash)
+                    history.replaceState(null, '', next)
+            },
+            on_filters_changed() {
+                this.sync_filters_to_url()
+                // Wait for x-show to update the DOM before counting.
+                setTimeout(() => this.refresh_ships_count())
             },
             // Read filters in the expression (not only inside a method) so Alpine tracks them.
             show_item(el) {
@@ -202,7 +220,12 @@ const structured_data = buildFittingsListJsonLd(
                 )
             },
         }`}
-        x-init="$nextTick(() => refresh_ships_count())"
+        x-init={`
+            $nextTick(() => refresh_ships_count());
+            $watch('fitting_name_filter', () => on_filters_changed());
+            $watch('fitting_tag_filter', () => on_filters_changed());
+            $watch('ship_type_filter', () => on_filters_changed());
+        `}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <FlexInline>
@@ -221,7 +244,6 @@ const structured_data = buildFittingsListJsonLd(
                     type="text"
                     placeholder={t('search')}
                     x-model="fitting_name_filter"
-                    x-on:keyup="setTimeout(() => refresh_ships_count())"
                     x-init="$el.focus()"
                     width='250px'
                 >
@@ -231,7 +253,6 @@ const structured_data = buildFittingsListJsonLd(
                 <div>
                     <Select
                         x-model="fitting_tag_filter"
-                        x-on:change="apply_tag_filter()"
                     >
                         <option value="-1" selected={initial_tag_filter === '-1'}>{t('all_fitting_types')}</option>
                         {tag_options.map(({ value, label }) => 
@@ -243,11 +264,10 @@ const structured_data = buildFittingsListJsonLd(
                 <div>
                     <Select
                         x-model="ship_type_filter"
-                        x-on:change="setTimeout(() => refresh_ships_count(), 100)"
                     >
-                        <option selected value="-1">{t('all_ship_type')}</option>
+                        <option value="-1" selected={initial_ship_type_filter === '-1'}>{t('all_ship_type')}</option>
                         {fitting_ship_types.map((option) => 
-                            <option value={option}>{option}</option>
+                            <option value={option} selected={initial_ship_type_filter === option}>{option}</option>
                         )}
                     </Select>
                 </div>
