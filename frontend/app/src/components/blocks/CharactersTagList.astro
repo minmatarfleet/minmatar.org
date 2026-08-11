@@ -52,6 +52,7 @@ import Badge from '@components/blocks/Badge.astro';
                         <StylessButton
                             class="w-full character-selector"
                             href={translatePath(`/account/tags/${character.character_id}`)}
+                            x-on:click.prevent={`leave('${translatePath(`/account/tags/${character.character_id}`)}')`}
                         >
                             <Badge
                                 character_id={character.character_id}
@@ -83,6 +84,7 @@ import Badge from '@components/blocks/Badge.astro';
                 name="tag"
                 value={tag.id}
                 checked={active_tags?.includes(tag.id)}
+                x-on:change="is_dirty = true"
             >
                 <Flexblock gap='var(--space-3xs)'>
                     <h3>{t(`${tag.description}_tag` as any) ?? tag.description}</h3>

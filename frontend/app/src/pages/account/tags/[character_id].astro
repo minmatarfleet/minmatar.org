@@ -29,6 +29,9 @@ try {
 }
 
 const CHARACTER_TAG_LIST_PARTIAL_URL = `${translatePath('/partials/character_tag_list_component')}?character_id=${active_character}`
+const LEARNING_CENTER_URL = translatePath('/learning-center/')
+const unsaved_title = JSON.stringify(t('unsaved_changes_dialog_title'))
+const unsaved_content = JSON.stringify(t('unsaved_changes_dialog_text'))
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -40,6 +43,7 @@ import TextBox from '@components/layout/TextBox.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
+import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import CharactersTagList from '@components/blocks/CharactersTagList.astro'
 
@@ -50,17 +54,84 @@ const page_title = t('account.tags.page_title');
     title={page_title}
     components={{
         alert_dialog: true,
+        confirm_dialog: true,
         modal: true
     }}
 >
     <form
         hx-post={CHARACTER_TAG_LIST_PARTIAL_URL}
-        hx-trigger="change"
+        hx-trigger="submit"
         hx-target="#character-tag-list"
         hx-indicator=".loader"
         hx-swap="outerHTML transition:true"
-        hx-sync="this:abort"
-        hx-disabled-elt="find input[name=tag]"
+        x-data={`{
+            is_dirty: false,
+            allowing_leave: false,
+            unsaved_title: ${unsaved_title},
+            unsaved_content: ${unsaved_content},
+            leave(url) {
+                if (!this.is_dirty) {
+                    this.allowing_leave = true
+                    navigate(url)
+                    return
+                }
+
+                show_confirm_dialog({
+                    title: this.unsaved_title,
+                    content: this.unsaved_content,
+                }).then((accepted) => {
+                    if (!accepted)
+                        return
+
+                    this.is_dirty = false
+                    this.allowing_leave = true
+                    navigate(url)
+                })
+            },
+            on_before_preparation(event) {
+                if (this.allowing_leave || !this.is_dirty) {
+                    this.allowing_leave = false
+                    return
+                }
+
+                event.preventDefault()
+                document.querySelectorAll('.loader').forEach(loader => loader.classList.remove('active'))
+
+                const url = event.to?.href
+                if (!url)
+                    return
+
+                show_confirm_dialog({
+                    title: this.unsaved_title,
+                    content: this.unsaved_content,
+                }).then((accepted) => {
+                    if (!accepted)
+                        return
+
+                    this.is_dirty = false
+                    this.allowing_leave = true
+                    navigate(url)
+                })
+            },
+            on_before_unload(event) {
+                if (!this.is_dirty)
+                    return
+
+                event.preventDefault()
+                event.returnValue = ''
+            },
+            init() {
+                this._on_before_preparation = (event) => this.on_before_preparation(event)
+                this._on_before_unload = (event) => this.on_before_unload(event)
+                document.addEventListener('astro:before-preparation', this._on_before_preparation)
+                window.addEventListener('beforeunload', this._on_before_unload)
+            },
+            destroy() {
+                document.removeEventListener('astro:before-preparation', this._on_before_preparation)
+                window.removeEventListener('beforeunload', this._on_before_unload)
+            },
+        }`}
+        x-on:submit="is_dirty = false"
     >
         <PageWide
             cover={{
@@ -74,6 +145,27 @@ const page_title = t('account.tags.page_title');
                 <PageTitle>
                     {page_title}
                 </PageTitle>
+                <FlexInline>
+                    <Button
+                        href={LEARNING_CENTER_URL}
+                        x-on:click.prevent={`leave('${LEARNING_CENTER_URL}')`}
+                    >
+                        {t('learning_center.back')}
+                    </Button>
+                    <FlexInline
+                        class="[ animate-fade-in-up ]"
+                        x-show="is_dirty"
+                        style="display: none"
+                    >
+                        <Button
+                            color='green'
+                            off_disable={true}
+                            x-bind:disabled="!is_dirty"
+                        >
+                            {t('update')}
+                        </Button>
+                    </FlexInline>
+                </FlexInline>
             </FlexInline>
             
             <Flexblock gap="var(--space-xl)">
