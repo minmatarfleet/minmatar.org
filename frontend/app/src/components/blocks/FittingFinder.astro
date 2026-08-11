@@ -47,6 +47,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 <div
     class="[ fittings-finder ]"    
     x-data={`{
+        fittings_finder_open: false,
         search: '',
         filtered_fittings: [ false ],
         fittings: ${JSON.stringify(fittings)},

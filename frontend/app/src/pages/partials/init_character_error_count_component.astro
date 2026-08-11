@@ -34,4 +34,4 @@ try {
 }
 ---
 
-<div x-init={`set_character_errors_count(${character_errors_count}); $el.remove()`} />
+<div x-init={`typeof set_character_errors_count === 'function' && set_character_errors_count(${character_errors_count}); $el.remove()`} />

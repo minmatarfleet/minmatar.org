@@ -128,7 +128,7 @@ const page_title = t('account.page_title');
             scrollable: true,
             overlay: true
         }}
-        x-init={`set_character_errors_count(${character_errors.length})`}
+        x-init={`typeof set_character_errors_count === 'function' && set_character_errors_count(${character_errors.length})`}
     >        
         {fix_esi_token_error &&
             <div class="[ toast ][ animate-fade-in-up ]" set:html={t(fix_esi_token_error as any) ?? fix_esi_token_error} x-on:click="$el.remove()"></div>

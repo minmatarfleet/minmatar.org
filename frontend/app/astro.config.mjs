@@ -73,6 +73,9 @@ export default defineConfig({
         ],
     },
     vite: {
+        define: {
+            'import.meta.env.PUBLIC_SENTRY_DSN': JSON.stringify(SENTRY_DSN || ''),
+        },
         server: {
             hmr: false,
             watch: {

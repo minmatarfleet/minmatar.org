@@ -75,6 +75,7 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 <div
     class="[ pages-finder ]"    
     x-data={`{
+        pages_finder_open: false,
         search: '',
         filtered_pages: [ false ],
         pages: ${JSON.stringify(filter_pages)},

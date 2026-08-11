@@ -22,27 +22,6 @@ delete attributes.class;
     <slot />
 </div>
 
-<script is:inline>
-    if (!window.edge_fade) {
-        window.edge_fade = function () {
-            return {
-                init() {
-                    const el = this.$el;
-                    const update = () => {
-                        el.classList.toggle('fade-start', el.scrollLeft > 0);
-                        el.classList.toggle('fade-end', el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
-                    };
-                    update();
-                    el._xfade_ro = new ResizeObserver(update);
-                    el._xfade_ro.observe(el);
-                    if (el.firstElementChild) el._xfade_ro.observe(el.firstElementChild);
-                    el.addEventListener('scroll', update, { passive: true });
-                },
-            };
-        };
-    }
-</script>
-
 <style lang="scss" define:vars={{
     xfade_size: fade_size
 }}>

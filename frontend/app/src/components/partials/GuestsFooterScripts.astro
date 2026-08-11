@@ -1,6 +1,28 @@
 <script is:inline src="/js/clipboard.js"></script>
 
 <script is:inline>
+    // Must live in FooterScripts: ClientRouter inits x-data before page-local scripts run.
+    if (!window.edge_fade) {
+        window.edge_fade = function () {
+            return {
+                init() {
+                    const el = this.$el;
+                    const update = () => {
+                        el.classList.toggle('fade-start', el.scrollLeft > 0);
+                        el.classList.toggle('fade-end', el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+                    };
+                    update();
+                    el._xfade_ro = new ResizeObserver(update);
+                    el._xfade_ro.observe(el);
+                    if (el.firstElementChild) el._xfade_ro.observe(el.firstElementChild);
+                    el.addEventListener('scroll', update, { passive: true });
+                },
+            };
+        };
+    }
+</script>
+
+<script is:inline>
     if (!window.__guests_footer_scripts_bound) {
         window.__guests_footer_scripts_bound = true
 

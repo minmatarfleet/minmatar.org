@@ -318,13 +318,17 @@ export const PersonaFinderXData = `
     },`
     
 export const PageFinderXData = `
-    pages_finder_open: false,
     async show_pages_finder() {
-        this.pages_finder_open = true
-        document.querySelector('.pages-finder input').focus()
-        
+        const root = document.querySelector('.pages-finder')
+        if (!root || typeof Alpine === 'undefined')
+            return false
+
+        const data = Alpine.$data(root)
+        data.pages_finder_open = true
+        root.querySelector('input')?.focus()
+
         const result = await this.pages_finder_accept()
-        this.pages_finder_open = false
+        data.pages_finder_open = false
         return result.action == 'accept' ? result.page_id : false
     },
     pages_finder_accept() {
@@ -351,13 +355,17 @@ export const CharacterFinderXData = `
     },`
 
 export const FittingFinderXData = `
-    fittings_finder_open: false,
     async show_fittings_finder() {
-        this.fittings_finder_open = true
-        document.querySelector('.fittings-finder input').focus()
-        
+        const root = document.querySelector('.fittings-finder')
+        if (!root || typeof Alpine === 'undefined')
+            return false
+
+        const data = Alpine.$data(root)
+        data.fittings_finder_open = true
+        root.querySelector('input')?.focus()
+
         const result = await this.fittings_finder_accept()
-        this.fittings_finder_open = false
+        data.fittings_finder_open = false
         return result.action == 'accept' ? result.fitting_id : false
     },
     fittings_finder_accept() {

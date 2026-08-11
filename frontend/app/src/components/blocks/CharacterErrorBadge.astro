@@ -25,7 +25,7 @@ try {
 import NotificationBadge from '@components/blocks/NotificationBadge.astro';
 ---
 
-<div x-init={`set_character_errors_count(${character_errors_count})`}>
+<div x-init={`typeof set_character_errors_count === 'function' && set_character_errors_count(${character_errors_count})`}>
     <template x-if="character_errors_count > 0">
         <NotificationBadge class="[ animate-fade-in-up ]" number={1} x-text="character_errors_count" />
     </template>

@@ -63,7 +63,7 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
         }}
     />
     :
-    <div x-init={`total_scanned = ${total_scanned}; $el.remove()`} />
+    <div x-init={`typeof total_scanned !== 'undefined' && (total_scanned = ${total_scanned}); $el.remove()`} />
     <Flexblock gap='var(--space-2xl)'>
         {planet_moons.map(planet => {
             const progress = planet?.moons ? planet.scanned / planet.moons.length * 100 : 0
