@@ -10,7 +10,7 @@
     "start": "astro dev",
     "check": "export $(cat .env.BUILDONLY) && astro check --minimumSeverity error",
     "build": "export $(cat .env.BUILDONLY) && astro check && astro build",
-    "prodbuild": "export $(cat .env.BUILDONLY) && astro check --minimumSeverity error && astro build",
+    "prodbuild": "bash -c 'set -a; . ./.env.BUILDONLY; [ -f .env ] && . ./.env; set +a; astro check --minimumSeverity error && astro build'",
     "generate": "drizzle-kit generate --config=drizzle.config.ts",
     "push": "drizzle-kit push",
     "preview": "astro preview",

@@ -29,6 +29,7 @@ if (SENTRY_AUTH_TOKEN) {
     integrations.push(sentry({
         dsn: sentry_dsn,
         enabled: sentry_enabled,
+        environment: sentry_enabled ? 'production' : undefined,
         sourceMapsUploadOptions: {
             project: SENTRY_PROJECT,
             authToken: SENTRY_AUTH_TOKEN,

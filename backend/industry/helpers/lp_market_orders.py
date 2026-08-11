@@ -103,11 +103,11 @@ def create_order(
     )
     order.loyalty_point = currency
     order.created_by = created_by
-    # Circular with lp_buyback_discord (format helpers live here).
+    # Discord off-request so gunicorn cannot abort on Discord retries.
     # pylint: disable=import-outside-toplevel
-    from industry.helpers import lp_buyback_discord
+    from industry.tasks import notify_lp_buyback_order_created_task
 
-    lp_buyback_discord.notify_order_created(order)
+    notify_lp_buyback_order_created_task.delay(order.pk)
     return order
 
 
@@ -204,12 +204,15 @@ def claim_order(
     locked.save()
 
     # pylint: disable=import-outside-toplevel
-    from industry.helpers import lp_buyback_discord
+    from industry.tasks import (
+        notify_lp_buyback_order_claimed_task,
+        notify_lp_buyback_order_status_changed_task,
+    )
 
     if locked.status == AWAITING_LP:
-        lp_buyback_discord.notify_order_status_changed(locked)
+        notify_lp_buyback_order_status_changed_task.delay(locked.pk)
     else:
-        lp_buyback_discord.notify_order_claimed(locked, claim=claim)
+        notify_lp_buyback_order_claimed_task.delay(locked.pk, claim.pk)
     return locked
 
 
@@ -275,12 +278,10 @@ def release_order_claims(
     locked.save()
 
     # pylint: disable=import-outside-toplevel
-    from industry.helpers import lp_buyback_discord
+    from industry.tasks import notify_lp_buyback_order_claims_released_task
 
-    lp_buyback_discord.notify_order_claims_released(
-        locked,
-        released_by=user,
-        released_amount=released_amount,
+    notify_lp_buyback_order_claims_released_task.delay(
+        locked.pk, user.pk, released_amount
     )
     return locked
 
@@ -334,13 +335,13 @@ def transition_order(
         locked.save()
         status_changed = previous != locked.status
 
-    # Notify after commit so COMPLETED can post + delay + archive without
-    # holding select_for_update (and so Discord work is not rolled back).
+    # Notify after commit via Celery so Discord sleep/archive never blocks
+    # the request worker (and so Discord work is not rolled back).
     if status_changed:
         # pylint: disable=import-outside-toplevel
-        from industry.helpers import lp_buyback_discord
+        from industry.tasks import notify_lp_buyback_order_status_changed_task
 
-        lp_buyback_discord.notify_order_status_changed(locked)
+        notify_lp_buyback_order_status_changed_task.delay(locked.pk)
     return locked
 
 

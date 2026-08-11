@@ -235,7 +235,7 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json()), 2)
 
-    @patch("industry.helpers.lp_buyback_discord.notify_order_created")
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
     def test_post_sell_requires_trade_feature(self, unused_notify):
         response = self.client.post(
             "/api/industry/loyalty/orders",
@@ -256,7 +256,7 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         self.assertEqual(body["isk_per_lp"], 800)
         self.assertEqual(body["status"], "open")
 
-    @patch("industry.helpers.lp_buyback_discord.notify_order_created")
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
     def test_post_sell_at_max_lp_allowed(self, unused_notify):
         response = self.client.post(
             "/api/industry/loyalty/orders",
@@ -273,7 +273,7 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         self.assertEqual(response.status_code, 201, response.content)
         self.assertEqual(response.json()["quantity"], MAX_SELL_LP)
 
-    @patch("industry.helpers.lp_buyback_discord.notify_order_created")
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
     def test_post_sell_over_max_lp_rejected(self, unused_notify):
         response = self.client.post(
             "/api/industry/loyalty/orders",
@@ -290,7 +290,7 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         self.assertEqual(response.status_code, 400, response.content)
         self.assertIn("2,500,000", response.json()["detail"])
 
-    @patch("industry.helpers.lp_buyback_discord.notify_order_created")
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
     def test_post_buy_over_max_sell_lp_allowed(self, unused_notify):
         response = self.client.post(
             "/api/industry/loyalty/orders",
@@ -311,7 +311,7 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
             response.json()["destination_character_name"], "Buyer Corp"
         )
 
-    @patch("industry.helpers.lp_buyback_discord.notify_order_created")
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
     def test_post_buy_requires_destination(self, unused_notify):
         response = self.client.post(
             "/api/industry/loyalty/orders",
@@ -328,7 +328,7 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         self.assertEqual(response.status_code, 400, response.content)
         self.assertIn("destination", response.json()["detail"].lower())
 
-    @patch("industry.helpers.lp_buyback_discord.notify_order_created")
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
     def test_post_buy_requires_manage(self, unused_notify):
         denied = self.client.post(
             "/api/industry/loyalty/orders",
@@ -360,9 +360,9 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         )
         self.assertEqual(ok.status_code, 201, ok.content)
 
-    @patch("industry.helpers.lp_buyback_discord.notify_order_created")
-    @patch("industry.helpers.lp_buyback_discord.notify_order_claimed")
-    @patch("industry.helpers.lp_buyback_discord.notify_order_status_changed")
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
+    @patch("industry.tasks.notify_lp_buyback_order_claimed_task.delay")
+    @patch("industry.tasks.notify_lp_buyback_order_status_changed_task.delay")
     def test_claim_and_settle_lifecycle(
         self,
         unused_status_notify,
@@ -449,9 +449,9 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         self.assertEqual(row["seller_user_id"], self.user.pk)
         self.assertEqual(row["counterparty_user_id"], self.manager.pk)
 
-    @patch("industry.helpers.lp_buyback_discord.notify_order_created")
-    @patch("industry.helpers.lp_buyback_discord.notify_order_claimed")
-    @patch("industry.helpers.lp_buyback_discord.notify_order_status_changed")
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
+    @patch("industry.tasks.notify_lp_buyback_order_claimed_task.delay")
+    @patch("industry.tasks.notify_lp_buyback_order_status_changed_task.delay")
     def test_buy_completion_does_not_post_ledger(
         self,
         unused_status_notify,
@@ -515,9 +515,9 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         )
         self.assertEqual(account_balance(self.stockpile), 100_000)
 
-    @patch("industry.helpers.lp_buyback_discord.notify_order_created")
-    @patch("industry.helpers.lp_buyback_discord.notify_order_claimed")
-    @patch("industry.helpers.lp_buyback_discord.notify_order_status_changed")
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
+    @patch("industry.tasks.notify_lp_buyback_order_claimed_task.delay")
+    @patch("industry.tasks.notify_lp_buyback_order_status_changed_task.delay")
     def test_partial_claims_until_fully_claimed(
         self,
         unused_status_notify,
@@ -610,7 +610,7 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         )
         self.assertEqual(third.status_code, 400)
 
-    @patch("industry.helpers.lp_buyback_discord.notify_order_created")
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
     def test_creator_can_cancel_open(self, unused_notify):
         create = self.client.post(
             "/api/industry/loyalty/orders",
@@ -634,9 +634,9 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         self.assertEqual(cancel.status_code, 200)
         self.assertEqual(cancel.json()["status"], "cancelled")
 
-    @patch("industry.helpers.lp_buyback_discord.notify_order_claims_released")
-    @patch("industry.helpers.lp_buyback_discord.notify_order_status_changed")
-    @patch("industry.helpers.lp_buyback_discord.notify_order_created")
+    @patch("industry.tasks.notify_lp_buyback_order_claims_released_task.delay")
+    @patch("industry.tasks.notify_lp_buyback_order_status_changed_task.delay")
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
     def test_manager_can_release_claim_and_reopen(
         self, unused_created, unused_status, unused_released
     ):
@@ -686,8 +686,8 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
             0,
         )
 
-    @patch("industry.helpers.lp_buyback_discord.notify_order_status_changed")
-    @patch("industry.helpers.lp_buyback_discord.notify_order_created")
+    @patch("industry.tasks.notify_lp_buyback_order_status_changed_task.delay")
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
     def test_release_rejected_after_lp_received(
         self, unused_created, unused_status
     ):
@@ -1115,7 +1115,7 @@ class LpBuybackDiscordAckApiTestCase(LoyaltyBuybackApiTestCase):
             destination_character_name="CT Alt",
         )
 
-    @patch("industry.helpers.lp_buyback_discord.notify_order_status_changed")
+    @patch("industry.tasks.notify_lp_buyback_order_status_changed_task.delay")
     def test_lp_sent_by_expected_party(self, unused_notify):
         order = self._sell_order_awaiting_lp()
         response = self.client.post(
@@ -1127,7 +1127,7 @@ class LpBuybackDiscordAckApiTestCase(LoyaltyBuybackApiTestCase):
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.json()["status"], "awaiting_isk")
 
-    @patch("industry.helpers.lp_buyback_discord.notify_order_status_changed")
+    @patch("industry.tasks.notify_lp_buyback_order_status_changed_task.delay")
     def test_isk_sent_by_manager(self, unused_notify):
         order = self._sell_order_awaiting_lp()
         order.status = IndustryLoyaltyPointMarketOrder.Status.AWAITING_ISK

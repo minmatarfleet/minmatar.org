@@ -26,9 +26,142 @@ from industry.helpers.order_profit_breakdown import (
     can_refresh_order_profit_breakdown,
     refresh_order_profit_breakdown,
 )
-from industry.models import IndustryOrder, IndustryOrderItemAssignment
+from industry.models import (
+    IndustryLoyaltyPointMarketOrder,
+    IndustryLoyaltyPointMarketOrderClaim,
+    IndustryOrder,
+    IndustryOrderItemAssignment,
+)
 
 logger = logging.getLogger(__name__)
+
+
+@app.task()
+def notify_lp_buyback_order_created_task(order_id: int) -> None:
+    """Create Discord forum thread for a new LP buyback order (off request)."""
+    # pylint: disable=import-outside-toplevel
+    from industry.helpers.lp_buyback_discord import notify_order_created
+
+    try:
+        order = IndustryLoyaltyPointMarketOrder.objects.select_related(
+            "loyalty_point", "created_by"
+        ).get(pk=order_id)
+    except IndustryLoyaltyPointMarketOrder.DoesNotExist:
+        logger.warning(
+            "LP buyback order %s not found for Discord create notify", order_id
+        )
+        return
+    try:
+        notify_order_created(order)
+    except Exception:
+        logger.exception(
+            "Failed Discord create notify for LP buyback order %s", order_id
+        )
+        raise
+
+
+@app.task()
+def notify_lp_buyback_order_claimed_task(
+    order_id: int, claim_id: int | None = None
+) -> None:
+    """Post Discord claim update for an LP buyback order (off request)."""
+    # pylint: disable=import-outside-toplevel
+    from industry.helpers.lp_buyback_discord import notify_order_claimed
+
+    try:
+        order = IndustryLoyaltyPointMarketOrder.objects.select_related(
+            "loyalty_point", "created_by", "claimed_by"
+        ).get(pk=order_id)
+    except IndustryLoyaltyPointMarketOrder.DoesNotExist:
+        logger.warning(
+            "LP buyback order %s not found for Discord claim notify", order_id
+        )
+        return
+    claim = None
+    if claim_id is not None:
+        claim = (
+            IndustryLoyaltyPointMarketOrderClaim.objects.select_related(
+                "claimed_by"
+            )
+            .filter(pk=claim_id, order_id=order_id)
+            .first()
+        )
+    try:
+        notify_order_claimed(order, claim=claim)
+    except Exception:
+        logger.exception(
+            "Failed Discord claim notify for LP buyback order %s", order_id
+        )
+        raise
+
+
+@app.task()
+def notify_lp_buyback_order_status_changed_task(order_id: int) -> None:
+    """Post Discord status update for an LP buyback order (off request)."""
+    # pylint: disable=import-outside-toplevel
+    from industry.helpers.lp_buyback_discord import notify_order_status_changed
+
+    try:
+        order = IndustryLoyaltyPointMarketOrder.objects.select_related(
+            "loyalty_point", "created_by", "claimed_by"
+        ).get(pk=order_id)
+    except IndustryLoyaltyPointMarketOrder.DoesNotExist:
+        logger.warning(
+            "LP buyback order %s not found for Discord status notify", order_id
+        )
+        return
+    try:
+        notify_order_status_changed(order)
+    except Exception:
+        logger.exception(
+            "Failed Discord status notify for LP buyback order %s", order_id
+        )
+        raise
+
+
+@app.task()
+def notify_lp_buyback_order_claims_released_task(
+    order_id: int, released_by_user_id: int, released_amount: int
+) -> None:
+    """Post Discord claims-released update (off request)."""
+    # pylint: disable=import-outside-toplevel
+    from django.contrib.auth import get_user_model
+
+    from industry.helpers.lp_buyback_discord import (
+        notify_order_claims_released,
+    )
+
+    try:
+        order = IndustryLoyaltyPointMarketOrder.objects.select_related(
+            "loyalty_point", "created_by", "claimed_by"
+        ).get(pk=order_id)
+    except IndustryLoyaltyPointMarketOrder.DoesNotExist:
+        logger.warning(
+            "LP buyback order %s not found for Discord release notify",
+            order_id,
+        )
+        return
+    user_model = get_user_model()
+    try:
+        released_by = user_model.objects.get(pk=released_by_user_id)
+    except user_model.DoesNotExist:
+        logger.warning(
+            "User %s not found for LP buyback release notify (order %s)",
+            released_by_user_id,
+            order_id,
+        )
+        return
+    try:
+        notify_order_claims_released(
+            order,
+            released_by=released_by,
+            released_amount=released_amount,
+        )
+    except Exception:
+        logger.exception(
+            "Failed Discord release notify for LP buyback order %s", order_id
+        )
+        raise
 
 
 @app.task()

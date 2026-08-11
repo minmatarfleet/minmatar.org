@@ -56,14 +56,14 @@ import StylessButton from '@components/blocks/StylessButton.astro';
         button_dialog_open: false,
         open_dialog() {
             this.button_dialog_open = true
-            ${inside_swiper ? 'if (swiper) swiper.allowTouchMove = false' : ''}
+            ${inside_swiper ? 'if (swiper != null) swiper.allowTouchMove = false' : ''}
             ${transparent && "$refs.body.classList.add('overflow-hidden')"}
         },
         close_dialog() {
             if (!this.button_dialog_open) return
 
             this.button_dialog_open = false
-            ${inside_swiper ? 'if (swiper) swiper.allowTouchMove = true' : ''}
+            ${inside_swiper ? 'if (swiper != null) swiper.allowTouchMove = true' : ''}
             ${transparent && "$refs.body.classList.remove('overflow-hidden')"}
         }
     }`}

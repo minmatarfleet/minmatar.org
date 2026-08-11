@@ -20,8 +20,13 @@ RUN npm run check
 FROM build-deps AS build
 COPY app/ .
 
+# Sentry DSN/auth are decided at build time by @sentry/astro. Mount frontend/.env
+# (compose secret) so real values override .env.BUILDONLY DUMMYs; runtime env_file
+# alone cannot re-enable a build that baked enabled:false.
 ENV NODE_OPTIONS=--max_old_space_size=4096
-RUN npm run prodbuild
+ENV NODE_ENV=production
+RUN --mount=type=secret,id=frontend_env,dst=/app/.env,required=false \
+    npm run prodbuild
 
 FROM base AS runtime
 COPY --from=prod-deps /app/node_modules ./node_modules

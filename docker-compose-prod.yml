@@ -74,6 +74,8 @@ services:
         build:
             context: ./frontend/
             dockerfile: Dockerfile
+            secrets:
+                - frontend_env
         depends_on:
             - app
         environment:
@@ -126,6 +128,10 @@ services:
         - 3000:3000
         env_file:
             - .env
+
+secrets:
+    frontend_env:
+        file: ./frontend/.env
 
 volumes:
     redis: {}

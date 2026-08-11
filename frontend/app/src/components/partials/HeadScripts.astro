@@ -4,8 +4,6 @@ import TippyBootstrap from '@components/partials/TippyBootstrap.astro'
 
 <script is:inline src="/js/countdown.js"></script>
 
-<TippyBootstrap />
-
 <script>
 	import { navigate } from 'astro:transitions/client'
 
@@ -31,6 +29,11 @@ import TippyBootstrap from '@components/partials/TippyBootstrap.astro'
 />
 
 <script is:inline src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+<!-- Tippy before Alpine so x-init="tippy(...)" never races a Vite ESM assign -->
+<script defer src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy.umd.min.js"></script>
+<TippyBootstrap />
 
 <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/mask@3.x.x/dist/cdn.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
