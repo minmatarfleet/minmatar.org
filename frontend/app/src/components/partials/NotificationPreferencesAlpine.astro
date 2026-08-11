@@ -1,0 +1,79 @@
+---
+/**
+ * Notification preferences Alpine factory — must live in FooterScripts.
+ *
+ * ClientRouter can init child x-show/x-for (error, features) before a large
+ * inline x-data object on the component is healthy. Define the factory once
+ * here (LearningAlpine pattern); the component only passes JSON args.
+ */
+---
+
+<script is:inline>
+	if (!window.notification_preferences) {
+		window.notification_preferences = function (features, api_base, auth_token, save_error) {
+			return {
+				features: Array.isArray(features) ? features : [],
+				saving: false,
+				error: '',
+				async setChannel(type_key, channel, enabled) {
+					this.saving = true
+					this.error = ''
+					try {
+						const response = await fetch(api_base + '/preferences', {
+							method: 'PUT',
+							headers: {
+								'Content-Type': 'application/json',
+								'Authorization': 'Bearer ' + auth_token,
+							},
+							body: JSON.stringify({
+								preferences: [{
+									notification_type: type_key,
+									channel: channel,
+									enabled: enabled,
+								}],
+							}),
+						})
+						if (response.ok) {
+							this.features = await response.json()
+						} else {
+							this.error = save_error
+						}
+					} catch (e) {
+						this.error = save_error
+					} finally {
+						this.saving = false
+					}
+				},
+				async setTopic(type_key, subscribed) {
+					this.saving = true
+					this.error = ''
+					try {
+						const url = api_base + '/topics/' + encodeURIComponent(type_key)
+						const response = await fetch(url, {
+							method: subscribed ? 'POST' : 'DELETE',
+							headers: {
+								'Content-Type': 'application/json',
+								'Authorization': 'Bearer ' + auth_token,
+							},
+						})
+						if (response.ok || response.status === 204) {
+							const pref_res = await fetch(api_base + '/preferences', {
+								headers: {
+									'Authorization': 'Bearer ' + auth_token,
+								},
+							})
+							if (pref_res.ok) this.features = await pref_res.json()
+							else this.error = save_error
+						} else {
+							this.error = save_error
+						}
+					} catch (e) {
+						this.error = save_error
+					} finally {
+						this.saving = false
+					}
+				},
+			}
+		}
+	}
+</script>

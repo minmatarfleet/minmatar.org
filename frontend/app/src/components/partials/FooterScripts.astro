@@ -3,6 +3,7 @@ import { is_disabled_ccpwgl } from '@helpers/env';
 import LearningAlpine from '@components/partials/LearningAlpine.astro';
 import OpsContractsAlpine from '@components/partials/OpsContractsAlpine.astro';
 import SellOrderGapsAlpine from '@components/partials/SellOrderGapsAlpine.astro';
+import NotificationPreferencesAlpine from '@components/partials/NotificationPreferencesAlpine.astro';
 
 const DISABLED_CCPWGL = is_disabled_ccpwgl()
 ---
@@ -10,6 +11,7 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
 <LearningAlpine />
 <OpsContractsAlpine />
 <SellOrderGapsAlpine />
+<NotificationPreferencesAlpine />
 
 <script is:inline src="/js/clipboard.js"></script>
 <script is:inline src="/js/numbers.js"></script>
@@ -95,8 +97,15 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
             document.querySelectorAll('.loader').forEach(e => e.classList.remove('active'))
             const content = document.getElementById('content')
                 || document.querySelector('.viewport-layout-inner')
-            if (content)
+            if (content) {
                 htmx.process(content)
+                if (typeof Alpine !== 'undefined')
+                    Alpine.initTree(content)
+            }
+
+            const fittings_finder = document.querySelector('.fittings-finder')
+            if (fittings_finder && typeof Alpine !== 'undefined')
+                Alpine.initTree(fittings_finder)
 
             if (window.ccpwgl_context)
                 window.ccpwgl_context = null

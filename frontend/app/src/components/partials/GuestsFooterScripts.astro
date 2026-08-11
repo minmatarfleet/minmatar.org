@@ -34,8 +34,11 @@
             tippy('[data-tippy-content]', window.tippy_options)
             const content = document.getElementById('content')
                 || document.querySelector('.viewport-layout-inner')
-            if (content)
+            if (content) {
                 htmx.process(content)
+                if (typeof Alpine !== 'undefined')
+                    Alpine.initTree(content)
+            }
         })
     }
 </script>
