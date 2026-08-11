@@ -34,6 +34,9 @@ export async function fetch_freight_routes() {
             expiration_days: api_freight_route.expiration_days,
             days_to_complete: api_freight_route.days_to_complete,
             collateral_modifier: api_freight_route.collateral_modifier ?? 0,
+            route_type: api_freight_route.route_type ?? 'rate',
+            max_m3: api_freight_route.max_m3 ?? 350000,
+            max_collateral: api_freight_route.max_collateral ?? null,
         }
     }
 

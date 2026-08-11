@@ -14,7 +14,10 @@ const {
     default_route,
 } = Astro.props
 
-const MAXIMUM_CARGO = 350000
+const DEFAULT_MAX_M3 = 350000
+const max_cargo_template = t('freight_maximum_cargo')
+const maximum_cargo_msg = t('maximum_cargo')
+const invalid_collateral_msg = t('invalid_collateral')
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
@@ -26,15 +29,101 @@ import NumberInput from '@components/blocks/NumberInput.astro';
 ---
 
 <form
+    id="freight-calculator-form"
     method="POST"
     action={translatePath('/market/freight/contract')}
     x-data={`{
         route_id: '${default_route}',
-        routes_options: ${JSON.stringify(freight_routes_data.routes)},
-        contract_size: '',
+        route_details: ${JSON.stringify(freight_routes_data.route_details)},
+        volume_error: '',
+        collateral_error: '',
         submitted: false,
+        get selected_details() {
+            return this.route_details[this.route_id] || {}
+        },
+        get max_m3() {
+            const value = this.selected_details.max_m3
+            return value == null ? ${DEFAULT_MAX_M3} : value
+        },
+        get max_collateral() {
+            return this.selected_details.max_collateral ?? null
+        },
+        get max_cargo_tip() {
+            return '${max_cargo_template}'.replace('{maximum}', this.max_m3.toLocaleString())
+        },
+        volume_input() {
+            return this.$el.querySelector('#contract_size')
+        },
+        collateral_input() {
+            return this.$el.querySelector('#collateral')
+        },
+        parse_money(value) {
+            if (value == null || value === '') return NaN
+            return parseFloat(String(value).replaceAll(',', ''))
+        },
+        validate_volume(show_empty) {
+            const input = this.volume_input()
+            if (!input) return true
+            const current_val = this.parse_money(input.value)
+            let message = ''
+            if (!Number.isFinite(current_val) || current_val < 0) {
+                if (show_empty || String(input.value).trim() !== '')
+                    message = '${t('invalid_contract_size')}'
+            } else if (current_val > this.max_m3) {
+                message = '${maximum_cargo_msg}'.replace('{maximum}', this.max_m3.toLocaleString())
+            }
+            this.volume_error = message
+            input.setCustomValidity(message)
+            return message === ''
+        },
+        validate_collateral(show_empty) {
+            const input = this.collateral_input()
+            if (!input) return true
+            const current_val = this.parse_money(input.value)
+            const max_collateral = this.max_collateral
+            let message = ''
+            if (!Number.isFinite(current_val) || current_val < 0) {
+                if (show_empty || String(input.value).trim() !== '')
+                    message = '${invalid_collateral_msg}'
+            } else if (max_collateral != null && current_val > max_collateral) {
+                message = 'Maximum collateral is ' + max_collateral.toLocaleString() + ' ISK'
+            }
+            this.collateral_error = message
+            input.setCustomValidity(message)
+            return message === ''
+        },
+        validate_all(show_empty) {
+            const volume_ok = this.validate_volume(show_empty)
+            const collateral_ok = this.validate_collateral(show_empty)
+            return volume_ok && collateral_ok
+        },
+        on_route_change() {
+            this.validate_all(false)
+        },
+        on_field_input(event) {
+            const name = event.target && event.target.name
+            if (name === 'contract_size') this.validate_volume(false)
+            if (name === 'collateral') this.validate_collateral(false)
+        },
+        on_submit(event) {
+            if (!this.validate_all(true)) {
+                event.preventDefault()
+                this.submitted = false
+                const first_invalid = this.volume_error
+                    ? this.volume_input()
+                    : this.collateral_input()
+                first_invalid?.reportValidity?.()
+                first_invalid?.focus?.()
+                return
+            }
+            this.submitted = true
+        },
+        init() {
+            this.$watch('route_id', () => this.on_route_change())
+        },
     }`}
-    x-on:submit="submitted = true"
+    x-on:input="on_field_input($event)"
+    x-on:submit="on_submit($event)"
 >
     <Flexblock class="[ w-full ]" gap='var(--space-m)'>
         <h2>{t('freight.calculator.calculator_title')}</h2>
@@ -43,7 +132,12 @@ import NumberInput from '@components/blocks/NumberInput.astro';
             <VerticalCenter>
                 <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
                     <label for="route">{t('route')}</label>
-                    <Select id="route" name="route" x-model="route_id">
+                    <Select
+                        id="route"
+                        name="route"
+                        x-model="route_id"
+                        x-on:change="on_route_change()"
+                    >
                         {freight_routes_data.routes.map((option) => 
                             <option value={option.value}>{option.label}</option>
                         )}
@@ -54,41 +148,47 @@ import NumberInput from '@components/blocks/NumberInput.astro';
             <VerticalCenter>
                 <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
                     <label for="contract_size">
-                        <span data-tippy-content={t('freight_maximum_cargo').replace('{maximum}', MAXIMUM_CARGO.toLocaleString())}>
+                        <span x-bind:data-tippy-content="max_cargo_tip">
                             {t('contract_size')} (m<sup>3</sup>)
                         </span>
                     </label>
-                    <NumberInput
-                        id="contract_size"
-                        name="contract_size"
-                        required
-                        placeholder={t('freight.volume_placeholder')}
-                        model="contract_size"
-                        x-data={`{
-                            MAXIMUM_CARGO: ${MAXIMUM_CARGO},
-                            update_validity() {
-                                const current_val = parseFloat($el.value.replaceAll(',', ''))
-
-                                if (current_val > this.MAXIMUM_CARGO)
-                                    $el.setCustomValidity('${t('maximum_cargo')}'.replace('{maximum}', this.MAXIMUM_CARGO.toLocaleString()))
-                                else
-                                    $el.setCustomValidity('')
-                            }
-                        }`}
-                        x-on:input="update_validity()"
-                    />
+                    <Flexblock gap="var(--space-3xs)" class="[ w-full ]">
+                        <NumberInput
+                            id="contract_size"
+                            name="contract_size"
+                            required
+                            placeholder={t('freight.volume_placeholder')}
+                            model="contract_size"
+                        />
+                        <p
+                            class="[ freight-field-error ]"
+                            x-show="volume_error"
+                            x-text="volume_error"
+                            x-cloak
+                        ></p>
+                    </Flexblock>
                 </FixedFluid>
             </VerticalCenter>
 
             <VerticalCenter>
                 <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
-                    <label for="collateral"><span data-tippy-content={t('freight.calculator.faq_2_text')}>{t('collateral')} (ISK)</span></label>
-                    <NumberInput
-                        id="collateral"
-                        name="collateral"
-                        model="collateral"
-                        required
-                    />
+                    <label for="collateral">
+                        <span data-tippy-content={t('freight.calculator.faq_2_text')}>{t('collateral')} (ISK)</span>
+                    </label>
+                    <Flexblock gap="var(--space-3xs)" class="[ w-full ]">
+                        <NumberInput
+                            id="collateral"
+                            name="collateral"
+                            model="collateral"
+                            required
+                        />
+                        <p
+                            class="[ freight-field-error ]"
+                            x-show="collateral_error"
+                            x-text="collateral_error"
+                            x-cloak
+                        ></p>
+                    </Flexblock>
                 </FixedFluid>
             </VerticalCenter>
         </Flexblock>
@@ -96,3 +196,11 @@ import NumberInput from '@components/blocks/NumberInput.astro';
         <Button x-bind:disabled="submitted" type="submit" class="[ w-full ]">{t('calculate')}</Button>
     </Flexblock>
 </form>
+
+<style lang="scss">
+    .freight-field-error {
+        color: var(--fleet-red);
+        font-size: var(--step--1);
+        margin: 0;
+    }
+</style>

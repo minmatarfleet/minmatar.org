@@ -41,6 +41,10 @@ class FreightContract(EveCorporationContract):
 class EveFreightRoute(models.Model):
     """Model for a freight route. One direction only; set up the reverse as a separate route."""
 
+    class RouteType(models.TextChoices):
+        RATE = "rate", "Rate (ISK/m³ + collateral %)"
+        FIXED = "fixed", "Fixed fee (max m³ + max collateral)"
+
     origin_location = models.ForeignKey(
         EveLocation,
         on_delete=models.CASCADE,
@@ -53,13 +57,39 @@ class EveFreightRoute(models.Model):
         related_name="destination_freight_routes",
         null=True,
     )
+    route_type = models.CharField(
+        max_length=16,
+        choices=RouteType.choices,
+        default=RouteType.RATE,
+        help_text=(
+            "Rate: isk_per_m3 and collateral_modifier. "
+            "Fixed: flat fee with max volume and max collateral."
+        ),
+    )
     isk_per_m3 = models.BigIntegerField(
         default=0,
-        help_text="Flat ISK charged per m³ for this route.",
+        help_text="Flat ISK charged per m³ for this route (rate type only).",
     )
     collateral_modifier = models.FloatField(
         default=0,
-        help_text="Optional: extra ISK per 1 ISK collateral (e.g. 0.01 = 1%% of collateral).",
+        help_text=(
+            "Optional: extra ISK per 1 ISK collateral "
+            "(e.g. 0.01 = 1%% of collateral). Rate type only."
+        ),
+    )
+    fixed_fee_millions = models.FloatField(
+        default=0,
+        help_text="Flat reward in millions of ISK (fixed type only).",
+    )
+    max_m3 = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text="Maximum contract volume in m³ (fixed type).",
+    )
+    max_collateral = models.BigIntegerField(
+        null=True,
+        blank=True,
+        help_text="Maximum collateral in ISK (fixed type).",
     )
     expiration_days = models.PositiveSmallIntegerField(
         default=3,

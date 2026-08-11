@@ -67,13 +67,22 @@ class FreightRouteAdmin(admin.ModelAdmin):
     list_display = (
         "origin_location",
         "destination_location",
+        "route_type",
         "isk_per_m3",
         "collateral_modifier",
+        "fixed_fee_millions",
+        "max_m3",
+        "max_collateral",
         "expiration_days",
         "days_to_complete",
         "active",
     )
-    list_filter = ("active", "origin_location", "destination_location")
+    list_filter = (
+        "active",
+        "route_type",
+        "origin_location",
+        "destination_location",
+    )
     list_per_page = 50
     search_fields = (
         "origin_location__location_name",
@@ -85,6 +94,49 @@ class FreightRouteAdmin(admin.ModelAdmin):
     ordering = (
         "origin_location__location_name",
         "destination_location__location_name",
+    )
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "origin_location",
+                    "destination_location",
+                    "route_type",
+                    "active",
+                ),
+            },
+        ),
+        (
+            "Rate pricing",
+            {
+                "description": (
+                    "Used when route type is Rate: "
+                    "reward = isk_per_m3 × m³ + collateral %."
+                ),
+                "fields": ("isk_per_m3", "collateral_modifier"),
+            },
+        ),
+        (
+            "Fixed pricing",
+            {
+                "description": (
+                    "Used when route type is Fixed: flat fee with "
+                    "maximum volume and maximum collateral."
+                ),
+                "fields": (
+                    "fixed_fee_millions",
+                    "max_m3",
+                    "max_collateral",
+                ),
+            },
+        ),
+        (
+            "Contract timing",
+            {
+                "fields": ("expiration_days", "days_to_complete"),
+            },
+        ),
     )
 
     def get_changeform_initial_data(self, request):

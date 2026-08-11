@@ -765,6 +765,9 @@ export interface FreightRouteDetails {
     expiration_days:     number;
     days_to_complete:   number;
     collateral_modifier: number;
+    route_type:         'rate' | 'fixed';
+    max_m3:             number | null;
+    max_collateral:     number | null;
 }
 
 export interface FreightRoutesData {
