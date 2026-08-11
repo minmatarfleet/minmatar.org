@@ -23,6 +23,9 @@ CELERY_IMPORTS = (
     "tribes.tasks",
     "feed.tasks",
     "notifications.tasks",
+    "buyback.tasks",
+    "alliance.tasks",
+    "fittings.tasks",
 )
 
 
