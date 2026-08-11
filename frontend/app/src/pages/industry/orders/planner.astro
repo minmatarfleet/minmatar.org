@@ -1292,26 +1292,26 @@ const bucket_labels = JSON.stringify({
                                                 <span
                                                     class="[ planner-tip ]"
                                                     x-ref="cost_total"
-                                                    x-text="formatIsk(cost_breakdown.grand_total_isk) + ' ISK'"
+                                                    x-text="formatIsk(cost_breakdown?.grand_total_isk) + ' ISK'"
                                                 ></span>
                                             </TextGroup>
                                             <TextGroup title={t('industry.orders.planner.per_unit_cost')}>
                                                 <span
                                                     class="[ planner-tip ]"
                                                     x-ref="cost_per_unit"
-                                                    x-text="formatIsk(Math.round(cost_breakdown.per_unit_isk)) + ' ISK'"
+                                                    x-text="formatIsk(Math.round(cost_breakdown?.per_unit_isk ?? 0)) + ' ISK'"
                                                 ></span>
                                             </TextGroup>
                                             <div
                                                 class="[ planner-cost-summary__cell ]"
-                                                x-show="cost_breakdown.freight_volume_m3 > 0"
+                                                x-show="cost_breakdown?.freight_volume_m3 > 0"
                                                 x-cloak
                                             >
                                                 <TextGroup title={t('industry.orders.planner.freight')}>
                                                     <span
                                                         class="[ planner-tip ]"
                                                         data-tippy-content={t('industry.orders.planner.freight_tip')}
-                                                        x-text="cost_breakdown.freight_route_id
+                                                        x-text="cost_breakdown?.freight_route_id
                                                             ? (formatIsk(cost_breakdown.freight_isk) + ' ISK · '
                                                                 + Number(cost_breakdown.freight_volume_m3).toLocaleString(undefined, { maximumFractionDigits: 2 })
                                                                 + ' m³')
@@ -1321,14 +1321,14 @@ const bucket_labels = JSON.stringify({
                                             </div>
                                             <div
                                                 class="[ planner-cost-summary__cell ]"
-                                                x-show="cost_breakdown.navy_bpc_isk > 0"
+                                                x-show="cost_breakdown?.navy_bpc_isk > 0"
                                                 x-cloak
                                             >
                                                 <TextGroup title={t('industry.orders.planner.navy_bpc_cost')}>
                                                     <span
                                                         class="[ planner-tip ]"
                                                         data-tippy-content={t('industry.orders.planner.navy_bpc_cost_tip')}
-                                                        x-text="formatIsk(cost_breakdown.navy_bpc_isk) + ' ISK'"
+                                                        x-text="formatIsk(cost_breakdown?.navy_bpc_isk) + ' ISK'"
                                                     ></span>
                                                 </TextGroup>
                                             </div>

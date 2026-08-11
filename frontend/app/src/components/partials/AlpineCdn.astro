@@ -1,0 +1,34 @@
+---
+/**
+ * Load Alpine CDN plugins + core exactly once per browser session.
+ *
+ * ClientRouter re-runs head scripts via replaceWith on soft nav. Re-executing
+ * alpinejs@cdn calls Alpine.start() again → alpine:init → persist tries to
+ * redefine $persist (MINMATAR-FRONTEND-EA) and other plugins double-bind.
+ */
+---
+
+<script is:inline>
+	(function () {
+		if (window.__minmatar_alpine_cdn_loaded)
+			return
+		window.__minmatar_alpine_cdn_loaded = true
+
+		const urls = [
+			'https://cdn.jsdelivr.net/npm/@alpinejs/mask@3.16.0/dist/cdn.min.js',
+			'https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.16.0/dist/cdn.min.js',
+			'https://cdn.jsdelivr.net/npm/@alpinejs/anchor@3.16.0/dist/cdn.min.js',
+			'https://cdn.jsdelivr.net/npm/@alpinejs/intersect@3.16.0/dist/cdn.min.js',
+			'https://cdn.jsdelivr.net/npm/@alpinejs/persist@3.16.0/dist/cdn.min.js',
+			'https://cdn.jsdelivr.net/npm/@alpinejs/focus@3.16.0/dist/cdn.min.js',
+			'https://cdn.jsdelivr.net/npm/alpinejs@3.16.0/dist/cdn.min.js',
+		]
+
+		urls.forEach(function (src) {
+			const script = document.createElement('script')
+			script.src = src
+			script.defer = true
+			document.head.appendChild(script)
+		})
+	})()
+</script>

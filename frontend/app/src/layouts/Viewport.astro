@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { lang, t, translatePath } = i18n(Astro.url)
+const { lang, t } = i18n(Astro.url)
 
 const middleware_error = Astro.cookies.has('middleware_error') ? (Astro.cookies.get('middleware_error')?.value as string) : false
 if (middleware_error) Astro.cookies.delete('middleware_error', { path: '/' })
@@ -42,6 +42,7 @@ import PersistentModal from '@components/blocks/PersistentModal.astro';
 import Modal from '@components/blocks/Modal.astro';
 import PersonaFinder from '@components/blocks/PersonasFinder.astro';
 import PageFinder from '@components/blocks/PageFinder.astro';
+import FittingFinder from '@components/blocks/FittingFinder.astro';
 import CorporationFinder from '@components/blocks/CorporationFinder.astro';
 import AllianceFinder from '@components/blocks/AllianceFinder.astro';
 import {
@@ -91,8 +92,6 @@ const resolved_canonical_url = canonical_url ?? new URL(Astro.url.pathname, site
 const use_large_image_card = meta_image !== default_meta_image
 
 components.modal = components.modal ?? true
- 
-const FITTING_FINDER_PARTIAL_URL = translatePath('/partials/fitting_finder_component')
 
 import '@fontsource-variable/montserrat';
 import '@fontsource/qahiri';
@@ -227,12 +226,7 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 			<CharacterFinder />
 		}
 
-		<div
-			transition:persist
-			hx-get={FITTING_FINDER_PARTIAL_URL}
-			hx-trigger="load"
-			hx-indicator=".loader"
-		/>
+		<FittingFinder transition:persist />
 
 		<PageFinder transition:persist />
 

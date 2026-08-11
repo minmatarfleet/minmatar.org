@@ -21,74 +21,13 @@ const channel_labels: Record<string, string> = {
 
 const api_base = `${import.meta.env.API_URL}/api/notifications`
 const save_error = t('notification_preferences_save_error')
+const features_json = JSON.stringify(features ?? [])
 ---
 
 <Flexblock
     gap="var(--space-l)"
     class="[ w-full ]"
-    x-data={`{
-        features: ${JSON.stringify(features)},
-        saving: false,
-        error: '',
-        async setChannel(typeKey, channel, enabled) {
-            this.saving = true
-            this.error = ''
-            try {
-                const response = await fetch('${api_base}/preferences', {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ${auth_token}',
-                    },
-                    body: JSON.stringify({
-                        preferences: [{
-                            notification_type: typeKey,
-                            channel: channel,
-                            enabled: enabled,
-                        }],
-                    }),
-                })
-                if (response.ok) {
-                    this.features = await response.json()
-                } else {
-                    this.error = '${save_error}'
-                }
-            } catch (e) {
-                this.error = '${save_error}'
-            } finally {
-                this.saving = false
-            }
-        },
-        async setTopic(typeKey, subscribed) {
-            this.saving = true
-            this.error = ''
-            try {
-                const url = '${api_base}/topics/' + encodeURIComponent(typeKey)
-                const response = await fetch(url, {
-                    method: subscribed ? 'POST' : 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ${auth_token}',
-                    },
-                })
-                if (response.ok || response.status === 204) {
-                    const prefRes = await fetch('${api_base}/preferences', {
-                        headers: {
-                            'Authorization': 'Bearer ${auth_token}',
-                        },
-                    })
-                    if (prefRes.ok) this.features = await prefRes.json()
-                    else this.error = '${save_error}'
-                } else {
-                    this.error = '${save_error}'
-                }
-            } catch (e) {
-                this.error = '${save_error}'
-            } finally {
-                this.saving = false
-            }
-        },
-    }`}
+    x-data={`notification_preferences(${features_json}, ${JSON.stringify(api_base)}, ${JSON.stringify(auth_token)}, ${JSON.stringify(save_error)})`}
 >
     <h2>{t('notification_preferences')}</h2>
     <p>{t('notification_preferences_description')}</p>

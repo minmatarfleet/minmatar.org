@@ -187,13 +187,15 @@ const fittings_list_url = seo_input.fittingsListUrl
 const ships_url = seo_input.shipsUrl
 ---
 
-<script define:vars={{ render_view }}>
-import { navigate } from "astro:transitions/client";
-
+<script is:inline define:vars={{ render_view }}>
     const render_enabled = JSON.parse(localStorage.getItem('_x_render_enabled') ?? 'true')
 
-    if (window.innerWidth > 1820 && render_enabled === true)
-        navigate(render_view)
+    if (window.innerWidth > 1820 && render_enabled === true) {
+        if (typeof window.navigate === 'function')
+            window.navigate(render_view)
+        else
+            window.location.assign(render_view)
+    }
 </script>
 
 <Viewport

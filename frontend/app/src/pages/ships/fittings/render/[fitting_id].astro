@@ -141,13 +141,15 @@ import ItemBadge from '@components/blocks/ItemBadge.astro'
 import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro'
 ---
 
-<script define:vars={{ normal_view }}>
-import { navigate } from "astro:transitions/client";
-
+<script is:inline define:vars={{ normal_view }}>
     const render_enabled = JSON.parse(localStorage.getItem('_x_render_enabled') ?? 'true')
 
-    if (window.innerWidth < 1820 || render_enabled === false)
-        navigate(normal_view)
+    if (window.innerWidth < 1820 || render_enabled === false) {
+        if (typeof window.navigate === 'function')
+            window.navigate(normal_view)
+        else
+            window.location.assign(normal_view)
+    }
 </script>
 
 <Viewport
