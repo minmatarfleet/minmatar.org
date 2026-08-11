@@ -17,7 +17,7 @@ let origin:string = ''
 let destination:string = ''
 let expiration_days:number = 3
 let days_to_complete:number = 3
-const MAXIMUM_CARGO = 350000
+const DEFAULT_MAX_M3 = 350000
 
 if (Astro.request.method !== "POST")
     return Astro.redirect(translatePath('/market/freight/calculator'))
@@ -30,12 +30,20 @@ try {
     route = data.get("route") as string
     contract_size = parseInt((data.get("contract_size") as string).replaceAll(',', ''), 10) || 0
 
-    if (isNaN(contract_size) || contract_size < 0 || contract_size > MAXIMUM_CARGO)
+    const details = freight_routes_data.route_details[route]
+    const max_m3 = details?.max_m3 ?? DEFAULT_MAX_M3
+    const max_collateral = details?.max_collateral ?? null
+
+    if (isNaN(contract_size) || contract_size < 0 || (max_m3 != null && contract_size > max_m3))
         throw new Error(t('invalid_contract_size'), { cause: 400 })
 
     collateral = parseInt((data.get("collateral") as string).replaceAll(',', ''), 10) || 0
 
-    if (isNaN(collateral) || collateral < 0)
+    if (
+        isNaN(collateral)
+        || collateral < 0
+        || (max_collateral != null && collateral > max_collateral)
+    )
         throw new Error(t('invalid_collateral'), { cause: 400 })
     
     const route_id = freight_routes_data.route_translation[route]
@@ -45,7 +53,6 @@ try {
     cost = route_cost.cost
     origin = freight_routes_data.stations[route][0]
     destination = freight_routes_data.stations[route][1]
-    const details = freight_routes_data.route_details[route]
 
     if (details) {
         expiration_days = details.expiration_days

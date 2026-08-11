@@ -69,6 +69,9 @@ class FreightRouterTestCase(TestCase):
         self.assertIn("days_to_complete", routes[0])
         self.assertEqual(routes[0]["expiration_days"], 3)
         self.assertEqual(routes[0]["days_to_complete"], 3)
+        self.assertEqual(routes[0]["route_type"], "rate")
+        self.assertEqual(routes[0]["max_m3"], 350000)
+        self.assertIsNone(routes[0]["max_collateral"])
 
     def test_freight_cost(self):
         loc1 = EveLocation.objects.create(
@@ -101,6 +104,119 @@ class FreightRouterTestCase(TestCase):
         self.assertEqual(route.id, response.json()["route_id"])
         # 100 * 10 + ceil(0.25 * 2000) = 1000 + 500 = 1500
         self.assertEqual(1500, response.json()["cost"])
+
+    def test_fixed_freight_cost_flat_fee(self):
+        loc1 = EveLocation.objects.create(
+            location_id=1,
+            location_name="Location 1",
+            short_name="Loc1",
+            solar_system_id=1,
+            solar_system_name="System 1",
+        )
+        loc2 = EveLocation.objects.create(
+            location_id=2,
+            location_name="Location 2",
+            short_name="Loc2",
+            solar_system_id=2,
+            solar_system_name="System 2",
+        )
+        route = EveFreightRoute.objects.create(
+            origin_location=loc1,
+            destination_location=loc2,
+            route_type=EveFreightRoute.RouteType.FIXED,
+            fixed_fee_millions=25,
+            max_m3=950000,
+            max_collateral=5_000_000_000,
+            isk_per_m3=999,  # ignored for fixed
+            collateral_modifier=0.99,
+        )
+
+        response_a = self.client.get(
+            f"{BASE_URL}/routes/{route.id}/cost?m3=10000&collateral=1000000",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        response_b = self.client.get(
+            f"{BASE_URL}/routes/{route.id}/cost"
+            f"?m3=500000&collateral=2000000000",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(200, response_a.status_code)
+        self.assertEqual(200, response_b.status_code)
+        self.assertEqual(25_000_000, response_a.json()["cost"])
+        self.assertEqual(25_000_000, response_b.json()["cost"])
+
+        routes = self.client.get(
+            f"{BASE_URL}/routes",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        ).json()
+        self.assertEqual(1, len(routes))
+        self.assertEqual(routes[0]["route_type"], "fixed")
+        self.assertEqual(routes[0]["max_m3"], 950000)
+        self.assertEqual(routes[0]["max_collateral"], 5_000_000_000)
+
+    def test_fixed_freight_cost_rejects_over_max_m3(self):
+        loc1 = EveLocation.objects.create(
+            location_id=1,
+            location_name="Location 1",
+            short_name="Loc1",
+            solar_system_id=1,
+            solar_system_name="System 1",
+        )
+        loc2 = EveLocation.objects.create(
+            location_id=2,
+            location_name="Location 2",
+            short_name="Loc2",
+            solar_system_id=2,
+            solar_system_name="System 2",
+        )
+        route = EveFreightRoute.objects.create(
+            origin_location=loc1,
+            destination_location=loc2,
+            route_type=EveFreightRoute.RouteType.FIXED,
+            fixed_fee_millions=10,
+            max_m3=950000,
+            max_collateral=5_000_000_000,
+        )
+
+        response = self.client.get(
+            f"{BASE_URL}/routes/{route.id}/cost?m3=950001&collateral=1",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(400, response.status_code)
+        self.assertIn("Volume", response.json()["detail"])
+
+    def test_fixed_freight_cost_rejects_over_max_collateral(self):
+        loc1 = EveLocation.objects.create(
+            location_id=1,
+            location_name="Location 1",
+            short_name="Loc1",
+            solar_system_id=1,
+            solar_system_name="System 1",
+        )
+        loc2 = EveLocation.objects.create(
+            location_id=2,
+            location_name="Location 2",
+            short_name="Loc2",
+            solar_system_id=2,
+            solar_system_name="System 2",
+        )
+        route = EveFreightRoute.objects.create(
+            origin_location=loc1,
+            destination_location=loc2,
+            route_type=EveFreightRoute.RouteType.FIXED,
+            fixed_fee_millions=10,
+            max_m3=950000,
+            max_collateral=5_000_000_000,
+        )
+
+        response = self.client.get(
+            f"{BASE_URL}/routes/{route.id}/cost"
+            f"?m3=100&collateral=5000000001",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(400, response.status_code)
+        self.assertIn("Collateral", response.json()["detail"])
 
 
 class FreightContractProxyTestCase(TestCase):

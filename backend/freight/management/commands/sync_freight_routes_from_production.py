@@ -29,8 +29,12 @@ LOCATION_SKIP_COPY = frozenset(
     {"location_id", "deleted", "deleted_by_cascade"}
 )
 ROUTE_FIELDS = (
+    "route_type",
     "isk_per_m3",
     "collateral_modifier",
+    "fixed_fee_millions",
+    "max_m3",
+    "max_collateral",
     "expiration_days",
     "days_to_complete",
     "active",
@@ -224,11 +228,20 @@ class Command(BaseCommand):
             if route.destination_location
             else "?"
         )
-        collat_pct = route.collateral_modifier * 100
+        if route.route_type == EveFreightRoute.RouteType.FIXED:
+            pricing = (
+                f"fixed {route.fixed_fee_millions:g}M ISK, "
+                f"max_m3={route.max_m3}, "
+                f"max_collateral={route.max_collateral}"
+            )
+        else:
+            collat_pct = route.collateral_modifier * 100
+            pricing = (
+                f"{route.isk_per_m3} isk/m³, " f"{collat_pct:g}% collateral"
+            )
         self.stdout.write(
             f"{prefix}{origin} → {dest}: "
-            f"{route.isk_per_m3} isk/m³, "
-            f"{collat_pct:g}% collateral, "
+            f"{route.route_type}, {pricing}, "
             f"active={route.active}"
         )
 

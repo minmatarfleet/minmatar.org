@@ -76,6 +76,12 @@ echo "Starting MariaDB + Redis..."
 docker compose up -d --force-recreate redis
 docker compose up -d
 
+echo "Running database migrations..."
+(
+  cd "$ROOT/backend"
+  pipenv run python manage.py migrate --noinput
+)
+
 echo "Starting app services (Ctrl+C to stop all)..."
 echo
 

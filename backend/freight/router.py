@@ -1,10 +1,16 @@
-from typing import List
+from typing import List, Optional
 
 from ninja import Router
 from pydantic import BaseModel
 
 from freight.endpoints import router as endpoints_router
-from freight.helpers.pricing import route_cost_isk
+from freight.helpers.pricing import (
+    FreightContractValidationError,
+    route_cost_isk,
+    route_max_collateral,
+    route_max_m3,
+    validate_route_contract,
+)
 from .models import EveFreightRoute
 
 router = Router(tags=["Freight"])
@@ -24,6 +30,9 @@ class EveFreightRouteResponse(BaseModel):
     expiration_days: int
     days_to_complete: int
     collateral_modifier: float
+    route_type: str
+    max_m3: Optional[int] = None
+    max_collateral: Optional[int] = None
 
 
 class EveFreightRouteCostResponse(BaseModel):
@@ -52,6 +61,9 @@ def get_routes(request):
                 expiration_days=route.expiration_days,
                 days_to_complete=route.days_to_complete,
                 collateral_modifier=route.collateral_modifier,
+                route_type=route.route_type,
+                max_m3=route_max_m3(route),
+                max_collateral=route_max_collateral(route),
             )
         )
     return response
@@ -59,12 +71,19 @@ def get_routes(request):
 
 @router.get(
     "/routes/{route_id}/cost",
-    response={200: EveFreightRouteCostResponse, 404: dict},
+    response={200: EveFreightRouteCostResponse, 400: dict, 404: dict},
 )
 def get_route_cost(request, route_id: int, m3: int, collateral: int = 0):
-    """Cost = isk_per_m3 * m3 + ceil(collateral_modifier * collateral)."""
+    """
+    Rate: isk_per_m3 * m3 + ceil(collateral_modifier * collateral).
+    Fixed: flat fee; rejects if m3 or collateral exceed route maxima.
+    """
     route = EveFreightRoute.objects.filter(id=route_id, active=True).first()
     if not route:
         return 404, {"detail": "Route not found."}
+    try:
+        validate_route_contract(route, m3, collateral)
+    except FreightContractValidationError as exc:
+        return 400, {"detail": str(exc)}
     cost = route_cost_isk(route, m3, collateral)
     return EveFreightRouteCostResponse(route_id=route.id, cost=cost)

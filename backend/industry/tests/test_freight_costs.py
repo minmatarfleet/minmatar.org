@@ -212,3 +212,17 @@ class FreightCostsTestCase(TestCase):
         )
         # 600*1 + ceil(1.5) = 600 + 2
         self.assertEqual(est.freight_isk, 600 + math.ceil(0.015 * 100))
+
+    def test_estimate_freight_cost_fixed_route(self):
+        self.route.route_type = EveFreightRoute.RouteType.FIXED
+        self.route.fixed_fee_millions = 12.5
+        self.route.max_m3 = 950000
+        self.route.max_collateral = 5_000_000_000
+        self.route.save()
+        est = estimate_freight_cost(
+            facility_key="amamake",
+            volume_m3=100.5,
+            collateral_isk=1_000_000,
+        )
+        self.assertTrue(est.has_route)
+        self.assertEqual(est.freight_isk, 12_500_000)
