@@ -1771,7 +1771,7 @@ export const ui = {
         'view_corporations': 'View corporations',
         'error_status_corp': 'Error retrieving status',
         'authentication_missing_dialog': 'The following action requires authentication. A [Minmatar Discord](https://discord.com/invite/3hZfahmkFx) user account is needed to continue. Would you like to proceed with authentication?',
-        'discord_login_notice_title': 'Before you continue',
+        'discord_login_notice_title': '⚠️ Before you continue',
         'discord_login_notice_meta': 'Minmatar Fleet accounts are tied to Discord. Login adds you to Minmatar Fleet Discord; leaving deletes your Minmatar Fleet account and all data.',
         'discord_login_notice_body': 'Minmatar Fleet accounts are tied to your Discord account.\n\n- Upon logging in, we will add you to the Minmatar Fleet Discord server\n- Upon leaving, we delete your Minmatar Fleet account and all data to respect your privacy\n\nLeaving Discord means starting over for Minmatar Fleet — you will need to sign up again, add your accounts again, and re-submit any applications for corporations and tribe groups.',
         'continue_to_discord': 'Continue to Discord',
