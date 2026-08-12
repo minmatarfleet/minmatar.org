@@ -74,12 +74,19 @@ class EveFreightRoute(models.Model):
         default=0,
         help_text=(
             "Optional: extra ISK per 1 ISK collateral "
-            "(e.g. 0.01 = 1%% of collateral). Rate type only."
+            "(e.g. 0.01 = 1%% of collateral). Applies to both route types."
         ),
     )
     fixed_fee_millions = models.FloatField(
         default=0,
         help_text="Flat reward in millions of ISK (fixed type only).",
+    )
+    xl_fee_millions = models.FloatField(
+        default=0,
+        help_text=(
+            "Extra flat reward in millions of ISK added when the contract "
+            "volume exceeds 350,000 m³ (fixed type only)."
+        ),
     )
     max_m3 = models.PositiveIntegerField(
         null=True,

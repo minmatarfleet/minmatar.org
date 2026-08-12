@@ -33,6 +33,7 @@ ROUTE_FIELDS = (
     "isk_per_m3",
     "collateral_modifier",
     "fixed_fee_millions",
+    "xl_fee_millions",
     "max_m3",
     "max_collateral",
     "expiration_days",
@@ -228,14 +229,16 @@ class Command(BaseCommand):
             if route.destination_location
             else "?"
         )
+        collat_pct = route.collateral_modifier * 100
         if route.route_type == EveFreightRoute.RouteType.FIXED:
             pricing = (
                 f"fixed {route.fixed_fee_millions:g}M ISK, "
+                f"xl {route.xl_fee_millions:g}M ISK, "
+                f"{collat_pct:g}% collateral, "
                 f"max_m3={route.max_m3}, "
                 f"max_collateral={route.max_collateral}"
             )
         else:
-            collat_pct = route.collateral_modifier * 100
             pricing = (
                 f"{route.isk_per_m3} isk/m³, " f"{collat_pct:g}% collateral"
             )
