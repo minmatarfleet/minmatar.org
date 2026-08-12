@@ -1,0 +1,138 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { FittingBuyOrderListItem } from '@helpers/api.minmatar.org/fitting_buy_orders'
+import { format_date_short } from '@helpers/date'
+import {
+    fitting_buy_status_color,
+    fitting_buy_status_label,
+} from '@helpers/fitting_buy_status'
+
+interface Props {
+    order: FittingBuyOrderListItem
+}
+
+const { order } = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+import Tag from '@components/blocks/Tag.astro'
+import MarketEvEIcon from '@components/icons/MarketEvEIcon.astro'
+---
+
+<a
+    href={translatePath(`/market/fitting_orders/${order.id}/`)}
+    class="[ fitting-buy-order-item-link ]"
+>
+    <div class="[ fitting-buy-order-item__row ]">
+        <Flexblock gap="var(--space-3xs)" class="[ fitting-buy-order-item__owner ]">
+            <h3>{order.owner_username}</h3>
+            <small>{t('fitting_buy.order_id').replace('{id}', String(order.id))}</small>
+        </Flexblock>
+
+        <div class="[ fitting-buy-order-item__ships ]">
+            <FlexInline gap="var(--space-2xs)" class="[ items-center min-w-0 ]">
+                <div
+                    class="[ text-highlight h-[32px] fitting-buy-market-icon ]"
+                    title={t('fitting_buy.ships')}
+                >
+                    <MarketEvEIcon />
+                </div>
+                <FlexInline gap="var(--space-2xs)" class="[ flex-wrap min-w-0 ]">
+                    {order.ships.length === 0 ? (
+                        <small>—</small>
+                    ) : (
+                        order.ships.map((ship) => (
+                            <span title={`${ship.fitting_name} × ${ship.quantity}`}>
+                                <ItemPicture
+                                    item_id={ship.ship_id}
+                                    item_name={ship.fitting_name}
+                                    quantity={ship.quantity}
+                                    size={32}
+                                />
+                                <span class="[ visually-hidden ]">
+                                    {ship.fitting_name} × {ship.quantity}
+                                </span>
+                            </span>
+                        ))
+                    )}
+                </FlexInline>
+            </FlexInline>
+        </div>
+
+        <Flexblock gap="var(--space-3xs)" class="[ fitting-buy-order-item__status ]">
+            <Tag
+                text={fitting_buy_status_label(order.status, t)}
+                color={fitting_buy_status_color(order.status)}
+                narrow={true}
+            />
+            <small>{format_date_short(lang, order.updated_at)}</small>
+        </Flexblock>
+    </div>
+</a>
+
+<style lang="scss">
+    .fitting-buy-order-item-link {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        min-width: 0;
+        max-width: 100%;
+        padding-block: var(--space-2xs);
+        padding-inline: var(--space-3xs);
+        margin-block: calc(-1 * var(--space-2xs));
+        margin-inline: calc(-1 * var(--space-3xs));
+        transition: var(--fast-transition);
+
+        &:focus-visible {
+            outline: 2px solid var(--highlight);
+            outline-offset: 2px;
+        }
+
+        @media (hover: hover) {
+            &:hover {
+                background-color: var(--light-transparency-background);
+            }
+        }
+    }
+
+    .fitting-buy-order-item__row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-s);
+        min-width: 0;
+        width: 100%;
+    }
+
+    .fitting-buy-order-item__owner {
+        flex: 1 1 10rem;
+        min-width: 0;
+
+        h3 {
+            margin: 0;
+            overflow-wrap: anywhere;
+        }
+    }
+
+    .fitting-buy-order-item__ships {
+        flex: 2 1 12rem;
+        min-width: 0;
+    }
+
+    .fitting-buy-order-item__status {
+        flex: 0 1 auto;
+        min-width: 0;
+    }
+
+    .fitting-buy-market-icon {
+        flex-shrink: 0;
+
+        :global(img) {
+            width: 32px;
+            height: 32px;
+        }
+    }
+</style>

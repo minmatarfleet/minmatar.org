@@ -54,6 +54,14 @@ CONTRACT_ITEMS_FETCH_INTERVAL_SECONDS = 6
 CONTRACT_ITEMS_SCHEDULE_CACHE_TTL = 3600
 
 
+@app.task(queue="market")
+def run_fitting_buy_jita_check_task(check_id: int):
+    # pylint: disable=import-outside-toplevel
+    from market.helpers.fitting_buy_check import run_fitting_buy_jita_check
+
+    run_fitting_buy_jita_check(check_id)
+
+
 @app.task()
 def expire_unknown_eve_market_contracts():
     """

@@ -1,0 +1,268 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token')
+    ? (Astro.cookies.get('auth_token')?.value as string)
+    : false
+const user: User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_logged_in = !!(user && auth_token)
+
+import {
+    list_fitting_buy_orders,
+    type FittingBuyOrderListItem,
+} from '@helpers/api.minmatar.org/fitting_buy_orders'
+
+const mine = Astro.url.searchParams.get('mine') === '1'
+let orders: FittingBuyOrderListItem[] = []
+let fetch_error: string | false = false
+
+if (is_logged_in) {
+    try {
+        orders = await list_fitting_buy_orders(auth_token as string, { mine })
+    } catch (error) {
+        fetch_error = (error as Error).message
+    }
+}
+
+const orders_count = orders.length
+const orders_count_text = (
+    orders_count !== 1
+        ? t('fitting_buy.showing_plural')
+        : t('fitting_buy.showing_singular')
+).replace('{count}', String(orders_count))
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Table from '@components/blocks/Table.astro'
+import Breadcrumb from '@components/blocks/Breadcrumb.astro'
+import FittingBuyOrderItem from '@components/blocks/FittingBuyOrderItem.astro'
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
+
+const page_title = t('fitting_buy.page_title')
+const leading_text = t('fitting_buy.leading_text')
+const breadcrumb_items = [
+    { label: t('intel.page_title'), href: translatePath('/intel/') },
+    { label: page_title },
+]
+---
+
+<Viewport title={page_title} meta_description={t('fitting_buy.meta_description')}>
+    <PageWide
+        cover={{
+            image: '/images/market-cover.jpg',
+            image_990: '/images/market-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+        sticky={true}
+        x-data={`{
+            orders_count: ${orders_count},
+            item_name_filter: '',
+            orders_plural: '${t('fitting_buy.showing_plural')}',
+            orders_singular: '${t('fitting_buy.showing_singular')}',
+            countVisibleElements(selector, parent = document) {
+                const elements = parent.querySelectorAll(selector)
+                let visible_count = 0
+                elements.forEach(element => {
+                    if (element.offsetParent !== null)
+                        visible_count++
+                })
+                return visible_count
+            },
+            show_item(el) {
+                if (this.item_name_filter === '')
+                    return true
+                return el.textContent.toLowerCase().includes(this.item_name_filter.toLowerCase())
+            },
+        }`}
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <Flexblock gap="var(--space-s)">
+                <Breadcrumb items={breadcrumb_items} />
+                <Flexblock gap="var(--space-3xs)">
+                    <PageTitle>{page_title}</PageTitle>
+                    <small x-text="(orders_count != 1 ? orders_plural : orders_singular).replace('{count}', String(orders_count))">
+                        {orders_count_text}
+                    </small>
+                </Flexblock>
+            </Flexblock>
+            {is_logged_in && (
+                <Button size="sm" href={translatePath('/market/fitting_orders/new/')}>
+                    {t('fitting_buy.create_order')}
+                </Button>
+            )}
+        </FlexInline>
+
+        <Flexblock gap="var(--space-xl)" class="[ compensate-bottom-bar ]">
+            <TextBox>
+                <p class="[ excerpt ]">{leading_text}</p>
+            </TextBox>
+
+            {!is_logged_in ? (
+                <p>{t('fitting_buy.login_required')}</p>
+            ) : fetch_error ? (
+                <p class="[ text-[var(--fleet-red)] ]">{fetch_error}</p>
+            ) : (
+                <Flexblock gap="var(--space-s)" class="[ fitting-buy-orders-browse ]">
+                    <FlexInline
+                        justification="space-between"
+                        class="[ w-full fitting-buy-orders__toolbar ]"
+                        gap="var(--space-s)"
+                    >
+                        <FlexInline gap="var(--space-3xs)" class="[ fitting-buy-orders__chips ]">
+                            <a
+                                href={translatePath('/market/fitting_orders/')}
+                                class:list={[
+                                    '[ fitting-buy-orders__chip ]',
+                                    { 'is-active': !mine },
+                                ]}
+                                aria-pressed={!mine ? 'true' : 'false'}
+                            >
+                                {t('fitting_buy.all_orders')}
+                            </a>
+                            <a
+                                href={translatePath('/market/fitting_orders/?mine=1')}
+                                class:list={[
+                                    '[ fitting-buy-orders__chip ]',
+                                    { 'is-active': mine },
+                                ]}
+                                aria-pressed={mine ? 'true' : 'false'}
+                            >
+                                {t('fitting_buy.mine_only')}
+                            </a>
+                        </FlexInline>
+                        {orders.length > 0 && (
+                            <div class="[ fitting-buy-orders__search ]">
+                                <Input
+                                    type="text"
+                                    placeholder={t('search')}
+                                    x-model="item_name_filter"
+                                    x-on:keyup="setTimeout(function () { orders_count = countVisibleElements('.fitting-buy-order-item') })"
+                                    x-init="$el.focus()"
+                                    width="250px"
+                                >
+                                    <MagnifierIcon slot="icon" />
+                                </Input>
+                            </div>
+                        )}
+                    </FlexInline>
+
+                    {orders.length === 0 ? (
+                        <Flexblock gap="var(--space-s)">
+                            <p>{t('fitting_buy.no_orders')}</p>
+                            <Button size="sm" href={translatePath('/market/fitting_orders/new/')}>
+                                {t('fitting_buy.create_order')}
+                            </Button>
+                        </Flexblock>
+                    ) : (
+                        <Table width="100%" responsive={false}>
+                            {orders.map((order) => (
+                                <div class="[ fitting-buy-order-item ]" x-show="show_item($el)">
+                                    <FittingBuyOrderItem order={order} />
+                                </div>
+                            ))}
+                            <p class="[ no-result-text ]">{t('no_results')}</p>
+                        </Table>
+                    )}
+                </Flexblock>
+            )}
+        </Flexblock>
+    </PageWide>
+</Viewport>
+
+<style lang="scss">
+    :not([style="display: none;"]) ~ .no-result-text {
+        display: none;
+    }
+
+    .fitting-buy-orders-browse {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .fitting-buy-orders__toolbar {
+        align-items: center;
+        min-width: 0;
+    }
+
+    .fitting-buy-orders__chips {
+        flex-wrap: wrap;
+    }
+
+    .fitting-buy-orders__search {
+        flex: 1 1 12rem;
+        min-width: 0;
+        max-width: 100%;
+
+        :global(.input-group) {
+            max-width: 100%;
+            width: 100%;
+            margin-inline-start: auto;
+        }
+
+        @media (min-width: 541px) {
+            flex: 0 1 16rem;
+
+            :global(.input-group) {
+                max-width: 250px;
+            }
+        }
+    }
+
+    .fitting-buy-orders__chip {
+        appearance: none;
+        display: inline-flex;
+        align-items: center;
+        margin: 0;
+        padding: var(--space-3xs) var(--space-xs);
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 40%, transparent);
+        background: transparent;
+        color: var(--fleet-yellow);
+        font-family: var(--button-font);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-decoration: none;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition:
+            border-color var(--fast-transition),
+            background-color var(--fast-transition),
+            color var(--fast-transition);
+
+        @media (hover: hover) {
+            &:hover {
+                border-color: var(--fleet-yellow);
+                background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+                color: var(--fleet-yellow);
+            }
+
+            &.is-active:hover {
+                background: var(--fleet-yellow);
+                color: var(--background);
+            }
+        }
+
+        &:focus-visible {
+            outline: 1px solid var(--highlight);
+            outline-offset: 2px;
+        }
+
+        &.is-active {
+            border-color: var(--fleet-yellow);
+            background: var(--fleet-yellow);
+            color: var(--background);
+        }
+    }
+</style>

@@ -5,6 +5,14 @@ from market.models.contract import (
     EveMarketContractExpectation,
     EveMarketContractItem,
 )
+from market.models.fitting_buy_order import (
+    FittingBuyJitaCheck,
+    FittingBuyJitaCheckStatus,
+    FittingBuyOrder,
+    FittingBuyOrderItem,
+    FittingBuyOrderLine,
+    FittingBuyOrderStatus,
+)
 from market.models.history import EveMarketItemHistory
 from market.models.inferred_sale import (
     EveMarketInferredSale,
@@ -41,6 +49,12 @@ __all__ = [
     "EveMarketHealthSnapshot",
     "EveMarketOrderBookSync",
     "EveTypeWithSellOrders",
+    "FittingBuyJitaCheck",
+    "FittingBuyJitaCheckStatus",
+    "FittingBuyOrder",
+    "FittingBuyOrderItem",
+    "FittingBuyOrderLine",
+    "FittingBuyOrderStatus",
     "_get_consumable_items",
     "get_effective_item_expectations",
     "parse_eft_items",

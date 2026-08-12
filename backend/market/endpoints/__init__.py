@@ -20,6 +20,9 @@ from market.endpoints.get_sell_order_supply import (
     router as get_sell_order_supply_router,
 )
 from market.endpoints.get_sell_orders import router as get_sell_orders_router
+from market.endpoints.fitting_buy_orders import (
+    router as fitting_buy_orders_router,
+)
 
 router = Router(tags=["Market"])
 router.add_router("", get_character_statistics_router)
@@ -32,5 +35,6 @@ router.add_router("", get_sell_orders_router)
 router.add_router("", get_inferred_sales_volume_router)
 router.add_router("", get_sell_order_supply_router)
 router.add_router("", get_market_health_router)
+router.add_router("", fitting_buy_orders_router)
 
 __all__ = ["router"]

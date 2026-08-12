@@ -556,7 +556,8 @@
         "path": "/intel/",
         "publish": true,
         "icon": "/images/icons/48px-Satellite.png",
-        "description": "page_finder.intel.description"
+        "description": "page_finder.intel.description",
+        "keywords": [ "tools", "fitting orders", "timers", "moons", "combatlog" ]
     },
     {
         "slug": "intel.timers",

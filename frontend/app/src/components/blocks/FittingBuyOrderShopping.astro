@@ -1,0 +1,798 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { FittingBuyOrderDetail } from '@helpers/api.minmatar.org/fitting_buy_orders'
+import { format_number, number_thousand_separator } from '@helpers/numbers'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Button from '@components/blocks/Button.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+import ClipboardButton from '@components/blocks/ClipboardButton.astro'
+import Input from '@components/blocks/Input.astro'
+import DialogButton from '@components/blocks/DialogButton.astro'
+import Tag from '@components/blocks/Tag.astro'
+import FittingBuyPurchaseListSkeleton from '@components/blocks/FittingBuyPurchaseListSkeleton.astro'
+
+interface Props {
+    order: FittingBuyOrderDetail
+    is_owner: boolean
+    partial_base: string
+    jita_running: boolean
+    jita_done: number
+    jita_total: number
+    jita_progress_pct: number
+    jita_skeleton_rows: number
+    shopping_summary: string
+    multibuy_id: string
+}
+
+const {
+    order,
+    is_owner,
+    partial_base,
+    jita_running,
+    jita_done,
+    jita_total,
+    jita_progress_pct,
+    jita_skeleton_rows,
+    shopping_summary,
+    multibuy_id,
+} = Astro.props
+
+const type_name_by_id = Object.fromEntries(
+    order.items.map((item) => [item.type_id, item.type_name])
+)
+
+const fmt = (value: number | null | undefined) =>
+    value == null ? '—' : number_thousand_separator(value, lang)
+
+const fmt_price = (value: string | null) => {
+    if (!value) return '—'
+    const num = Number(value)
+    return Number.isNaN(num) ? value : number_thousand_separator(Math.round(num), lang)
+}
+
+const price_delta_label = (
+    original_min: string | null | undefined,
+    alt_min: string | null | undefined,
+) => {
+    if (!original_min || !alt_min)
+        return null
+    const original = Number(original_min)
+    const alternate = Number(alt_min)
+    if (Number.isNaN(original) || Number.isNaN(alternate) || original === 0)
+        return null
+    const delta = alternate - original
+    const pct = Math.round((delta / original) * 100)
+    const sign = delta > 0 ? '+' : ''
+    return t('fitting_buy.price_delta')
+        .replace('{delta}', `${sign}${format_number(delta)}`)
+        .replace('{pct}', `${sign}${number_thousand_separator(pct, lang)}%`)
+}
+
+const fmt_fit = (value: number | null | undefined) => {
+    if (value == null)
+        return '—'
+    return Number.isInteger(value) ? String(value) : String(value)
+}
+
+const cpu_pg_label = (
+    cpu: number | null | undefined,
+    pg: number | null | undefined,
+) => {
+    if (cpu == null && pg == null)
+        return null
+    return t('fitting_buy.cpu_pg')
+        .replace('{cpu}', fmt_fit(cpu))
+        .replace('{pg}', fmt_fit(pg))
+}
+---
+
+<ComponentBlock class="[ fitting-buy-section fitting-buy-shopping ]" heavier={true}>
+    <Flexblock gap="var(--space-s)">
+        <FlexInline
+            justification="space-between"
+            class="[ w-full flex-wrap items-start fitting-buy-shopping__header ]"
+            gap="var(--space-s)"
+        >
+            <Flexblock gap="var(--space-3xs)">
+                <h2>{t('fitting_buy.shopping_list')}</h2>
+                {shopping_summary && (
+                    <p class="[ fitting-buy-hint ]">{shopping_summary}</p>
+                )}
+                {order.active_jita_check?.error && (
+                    <p class="[ text-[var(--fleet-red)] ]">{order.active_jita_check.error}</p>
+                )}
+            </Flexblock>
+            {!jita_running && (
+                <FlexInline gap="var(--space-xs)" class="[ flex-wrap items-center ]">
+                    {order.multibuy && is_owner && (
+                        <form
+                            hx-post={partial_base}
+                            hx-target="#fitting-buy-order"
+                            hx-swap="outerHTML"
+                            x-on:submit={`copyFitToClipboard('${multibuy_id}')`}
+                        >
+                            <input type="hidden" name="action" value="mark_pending_fitting" />
+                            <textarea class="[ hidden ]" id={multibuy_id} readonly>{order.multibuy}</textarea>
+                            <Button
+                                type="submit"
+                                size="sm"
+                                title={t('fitting_buy.copy_multibuy_tip')}
+                            >
+                                {t('fitting_buy.copy_multibuy')}
+                            </Button>
+                        </form>
+                    )}
+                    {order.multibuy && !is_owner && (
+                        <ClipboardButton
+                            id={multibuy_id}
+                            size="sm"
+                            text={t('fitting_buy.copy_multibuy')}
+                        >
+                            {order.multibuy}
+                        </ClipboardButton>
+                    )}
+                    {is_owner && (
+                        <form
+                            hx-post={partial_base}
+                            hx-target="#fitting-buy-order"
+                            hx-swap="outerHTML"
+                        >
+                            <input type="hidden" name="action" value="refresh_jita" />
+                            <Button
+                                type="submit"
+                                size="sm"
+                                color="transparent"
+                                title={t('fitting_buy.jita_refresh_tip')}
+                            >
+                                {t('fitting_buy.refresh_jita')}
+                            </Button>
+                        </form>
+                    )}
+                </FlexInline>
+            )}
+        </FlexInline>
+
+        {jita_running ? (
+            <Flexblock gap="var(--space-s)" id="jita-check-indicator">
+                <Flexblock gap="var(--space-xs)">
+                    <p class="[ fitting-buy-hint ]">
+                        {jita_total > 0
+                            ? t('fitting_buy.jita_progress_detail')
+                                .replace('{done}', String(jita_done))
+                                .replace('{total}', String(jita_total))
+                                .replace('{pct}', String(jita_progress_pct))
+                            : t('fitting_buy.jita_progress')}
+                    </p>
+                    <div
+                        class="[ fitting-buy-jita-progress ]"
+                        role="progressbar"
+                        aria-valuemin={0}
+                        aria-valuemax={jita_total || 100}
+                        aria-valuenow={jita_done}
+                        aria-label={t('fitting_buy.jita_progress')}
+                    >
+                        <div
+                            class="[ fitting-buy-jita-progress__bar ]"
+                            style={`width: ${jita_progress_pct}%`}
+                        ></div>
+                    </div>
+                    {jita_total > 0 && (
+                        <p class="[ fitting-buy-jita-progress__count ]">
+                            {jita_done}/{jita_total}
+                        </p>
+                    )}
+                </Flexblock>
+                <FittingBuyPurchaseListSkeleton rows={jita_skeleton_rows} />
+            </Flexblock>
+        ) : order.items.length === 0 ? (
+            <p class="[ text-[var(--highlight)] ]">{t('fitting_buy.no_items')}</p>
+        ) : (
+            <div class="[ fitting-buy-table-wrap ]">
+                <table class="[ fitting-buy-table ]">
+                    <thead>
+                        <tr>
+                            <th>{t('fitting_buy.item')}</th>
+                            <th class="[ is-num ]">{t('fitting_buy.needed')}</th>
+                            <th class="[ is-num ]">{t('fitting_buy.on_hand')}</th>
+                            <th class="[ is-num ]">{t('fitting_buy.to_buy')}</th>
+                            <th class="[ is-num ]">{t('fitting_buy.jita_volume')}</th>
+                            <th class="[ is-num ]">{t('fitting_buy.shortfall')}</th>
+                            <th class="[ is-num ]">{t('fitting_buy.unit_price')}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {order.items.map((item) => {
+                            const allocate_buy = item.allocate_buy_qty ?? item.buy_qty
+                            const alloc_by_id = Object.fromEntries(
+                                (item.allocations ?? []).map((row) => [row.type_id, row.qty])
+                            )
+                            const has_alloc = (item.allocations ?? []).length > 0
+                            const preferred_default = has_alloc
+                                ? (alloc_by_id[item.type_id] ?? 0)
+                                : (item.jita_sell_volume == null
+                                    ? allocate_buy
+                                    : Math.min(allocate_buy, item.jita_sell_volume))
+                            const alloc_rows = item.can_allocate ? [
+                                {
+                                    type_id: item.type_id,
+                                    type_name: item.type_name,
+                                    jita_sell_volume: item.jita_sell_volume,
+                                    jita_sell_min: item.jita_sell_min,
+                                    qty: preferred_default,
+                                    is_original: true,
+                                    price_delta: null as string | null,
+                                    cpu_pg: cpu_pg_label(item.cpu, item.pg),
+                                },
+                                ...(item.alternates ?? []).map((alt) => ({
+                                    type_id: alt.type_id,
+                                    type_name: alt.type_name,
+                                    jita_sell_volume: alt.jita_sell_volume ?? null,
+                                    jita_sell_min: alt.jita_sell_min ?? null,
+                                    qty: has_alloc ? (alloc_by_id[alt.type_id] ?? 0) : 0,
+                                    is_original: false,
+                                    price_delta: price_delta_label(
+                                        item.jita_sell_min,
+                                        alt.jita_sell_min,
+                                    ),
+                                    cpu_pg: cpu_pg_label(alt.cpu, alt.pg),
+                                })),
+                            ] : []
+                            const qtys_json = JSON.stringify(
+                                Object.fromEntries(alloc_rows.map((row) => [String(row.type_id), row.qty]))
+                            )
+                            const depths_json = JSON.stringify(
+                                Object.fromEntries(alloc_rows.map((row) => [String(row.type_id), row.jita_sell_volume]))
+                            )
+                            const from_name = item.allocated_from_type_id
+                                ? type_name_by_id[item.allocated_from_type_id]
+                                : null
+                            return (
+                                <tr class:list={[
+                                    { 'is-short': item.is_short },
+                                    { 'is-stocked': item.buy_qty === 0 },
+                                    { 'is-split-variant': !!item.allocated_from_type_id },
+                                ]}>
+                                    <td>
+                                        <FlexInline gap="var(--space-2xs)" class="[ items-center min-w-0 ]">
+                                            <ItemPicture
+                                                item_id={item.type_id}
+                                                item_name={item.type_name}
+                                                size={32}
+                                                icon_quality={32}
+                                            />
+                                            <Flexblock gap="var(--space-3xs)" class="[ min-w-0 ]">
+                                                <FlexInline gap="var(--space-3xs)" class="[ items-center min-w-0 flex-wrap ]">
+                                                    <span class="[ break-words ]">{item.type_name}</span>
+                                                    {is_owner && item.can_allocate && alloc_rows.length > 0 && (
+                                                        <DialogButton
+                                                            styless={true}
+                                                            size="sm"
+                                                            max_width="40rem"
+                                                            title={t('fitting_buy.allocate_open')}
+                                                            aria-label={t('fitting_buy.allocate_open')}
+                                                        >
+                                                            <span class="[ fitting-buy-alloc-trigger ]">
+                                                                <svg
+                                                                    class="[ fitting-buy-alloc-icon ]"
+                                                                    xmlns="http://www.w3.org/2000/svg"
+                                                                    viewBox="0 0 24 24"
+                                                                    width="16"
+                                                                    height="16"
+                                                                    aria-hidden="true"
+                                                                >
+                                                                    <path
+                                                                        fill="currentColor"
+                                                                        d="M4 6h7v2H4V6zm0 5h11v2H4v-2zm0 5h7v2H4v-2zm13.59-9.41L16 8.17V4h-2v6h6v-2h-2.17l2.58-2.59-1.82-1.82zM14 16.83l1.59 1.58 1.82-1.82L16 15.17V20h2v-6h-6v2h2.17z"
+                                                                    />
+                                                                </svg>
+                                                            </span>
+                                                            <Fragment slot="header">
+                                                                <Flexblock gap="var(--space-3xs)">
+                                                                    <h3>{t('fitting_buy.allocate_title')}</h3>
+                                                                    <p class="[ fitting-buy-hint ]">{item.type_name}</p>
+                                                                </Flexblock>
+                                                            </Fragment>
+                                                            <Fragment slot="dialog">
+                                                                <form
+                                                                    hx-post={partial_base}
+                                                                    hx-target="#fitting-buy-order"
+                                                                    hx-swap="outerHTML"
+                                                                    x-on:htmx:after-request="if ($event.detail.successful) close_dialog()"
+                                                                    novalidate
+                                                                    class="[ fitting-buy-alloc-form ]"
+                                                                >
+                                                                    <input type="hidden" name="action" value="save_allocations" />
+                                                                    <input type="hidden" name="preferred_type_id" value={item.type_id} />
+                                                                    <div
+                                                                        class="[ fitting-buy-alloc-panel ]"
+                                                                        data-sum-template={t('fitting_buy.allocate_sum')}
+                                                                        data-remaining-template={t('fitting_buy.allocate_remaining')}
+                                                                        data-over-template={t('fitting_buy.allocate_over')}
+                                                                        data-complete-template={t('fitting_buy.allocate_complete')}
+                                                                        x-data={`{
+                                                                            buy_qty: ${allocate_buy},
+                                                                            qtys: ${qtys_json},
+                                                                            depths: ${depths_json},
+                                                                            sum() {
+                                                                                return Object.values(this.qtys).reduce((n, v) => n + (parseInt(v, 10) || 0), 0)
+                                                                            },
+                                                                            remaining() {
+                                                                                return this.buy_qty - this.sum()
+                                                                            },
+                                                                            progress_pct() {
+                                                                                if (this.buy_qty <= 0) return 0
+                                                                                return Math.min(100, Math.round((this.sum() / this.buy_qty) * 100))
+                                                                            },
+                                                                            over_depth(id) {
+                                                                                const cap = this.depths[id]
+                                                                                if (cap === null || cap === undefined) return false
+                                                                                return (parseInt(this.qtys[id], 10) || 0) > cap
+                                                                            },
+                                                                            can_save() {
+                                                                                if (this.remaining() < 0) return false
+                                                                                return !Object.keys(this.qtys).some((id) => this.over_depth(id))
+                                                                            },
+                                                                            status_text() {
+                                                                                const left = this.remaining()
+                                                                                if (left > 0)
+                                                                                    return this.$root.dataset.remainingTemplate.replace('{count}', left)
+                                                                                if (left < 0)
+                                                                                    return this.$root.dataset.overTemplate.replace('{count}', Math.abs(left))
+                                                                                return this.$root.dataset.completeTemplate
+                                                                            }
+                                                                        }`}
+                                                                    >
+                                                                        <Flexblock gap="var(--space-m)">
+                                                                            <div class="[ fitting-buy-alloc-progress ]">
+                                                                                <FlexInline
+                                                                                    justification="space-between"
+                                                                                    class="[ w-full items-baseline flex-wrap ]"
+                                                                                    gap="var(--space-xs)"
+                                                                                >
+                                                                                    <strong
+                                                                                        class="[ fitting-buy-alloc-progress__sum ]"
+                                                                                        x-text="$root.dataset.sumTemplate.replace('{sum}', sum()).replace('{need}', buy_qty)"
+                                                                                    ></strong>
+                                                                                    <span
+                                                                                        class="[ fitting-buy-alloc-progress__status ]"
+                                                                                        x-bind:class="{
+                                                                                            'is-over': remaining() < 0,
+                                                                                            'is-complete': remaining() === 0,
+                                                                                        }"
+                                                                                        x-text="status_text()"
+                                                                                    ></span>
+                                                                                </FlexInline>
+                                                                                <div
+                                                                                    class="[ fitting-buy-alloc-progress__track ]"
+                                                                                    role="progressbar"
+                                                                                    x-bind:aria-valuenow="sum()"
+                                                                                    x-bind:aria-valuemax="buy_qty"
+                                                                                    aria-valuemin="0"
+                                                                                >
+                                                                                    <div
+                                                                                        class="[ fitting-buy-alloc-progress__bar ]"
+                                                                                        x-bind:class="{ 'is-over': remaining() < 0 }"
+                                                                                        x-bind:style="`width: ${progress_pct()}%`"
+                                                                                    ></div>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            <ul class="[ fitting-buy-alloc-list ]">
+                                                                                {alloc_rows.map((row) => (
+                                                                                    <li class:list={[
+                                                                                        '[ fitting-buy-alloc-row ]',
+                                                                                        { 'is-original': row.is_original },
+                                                                                    ]}>
+                                                                                        <ItemPicture
+                                                                                            item_id={row.type_id}
+                                                                                            item_name={row.type_name}
+                                                                                            size={32}
+                                                                                            icon_quality={32}
+                                                                                        />
+                                                                                        <div class="[ fitting-buy-alloc-row__copy ]">
+                                                                                            <FlexInline gap="var(--space-2xs)" class="[ items-center flex-wrap min-w-0 ]">
+                                                                                                <span class="[ fitting-buy-alloc-row__name ]">{row.type_name}</span>
+                                                                                                {row.is_original && (
+                                                                                                    <Tag
+                                                                                                        text={t('fitting_buy.allocate_original')}
+                                                                                                        color="alliance-blue"
+                                                                                                    />
+                                                                                                )}
+                                                                                            </FlexInline>
+                                                                                            <p class="[ fitting-buy-alloc-row__meta ]">
+                                                                                                {row.cpu_pg && (
+                                                                                                    <span class="[ fitting-buy-alloc-fit ]">{row.cpu_pg}</span>
+                                                                                                )}
+                                                                                                {row.cpu_pg && ' · '}
+                                                                                                {row.jita_sell_volume == null
+                                                                                                    ? '—'
+                                                                                                    : t('fitting_buy.jita_available').replace(
+                                                                                                        '{count}',
+                                                                                                        fmt(row.jita_sell_volume),
+                                                                                                    )}
+                                                                                                {row.price_delta && (
+                                                                                                    <>
+                                                                                                        {' · '}
+                                                                                                        <span class="[ fitting-buy-alloc-delta ]">{row.price_delta}</span>
+                                                                                                    </>
+                                                                                                )}
+                                                                                            </p>
+                                                                                        </div>
+                                                                                        <label class="[ fitting-buy-alloc-qty-wrap ]">
+                                                                                            <span class="[ visually-hidden ]">{t('fitting_buy.allocate_qty_label')}</span>
+                                                                                            <Input
+                                                                                                type="number"
+                                                                                                size="sm"
+                                                                                                name={`qty_${row.type_id}`}
+                                                                                                min="0"
+                                                                                                step="1"
+                                                                                                class="[ fitting-buy-alloc-qty ]"
+                                                                                                x-model.number={`qtys['${row.type_id}']`}
+                                                                                                x-bind:aria-invalid={`over_depth('${row.type_id}')`}
+                                                                                            />
+                                                                                        </label>
+                                                                                    </li>
+                                                                                ))}
+                                                                            </ul>
+
+                                                                            <div class="[ fitting-buy-alloc-footer ]">
+                                                                                <button
+                                                                                    type="submit"
+                                                                                    class="[ button fitting-buy-alloc-submit ]"
+                                                                                    data-size="sm"
+                                                                                    x-bind:disabled="typeof can_save === 'function' && !can_save()"
+                                                                                >
+                                                                                    {t('fitting_buy.allocate_submit')}
+                                                                                </button>
+                                                                            </div>
+                                                                        </Flexblock>
+                                                                    </div>
+                                                                </form>
+                                                            </Fragment>
+                                                        </DialogButton>
+                                                    )}
+                                                </FlexInline>
+                                                {from_name && (
+                                                    <small class="[ fitting-buy-hint ]">
+                                                        {t('fitting_buy.allocate_split_badge').replace('{name}', from_name)}
+                                                    </small>
+                                                )}
+                                            </Flexblock>
+                                        </FlexInline>
+                                    </td>
+                                    <td class="[ is-num ]">{fmt(item.needed_qty)}</td>
+                                    <td class="[ is-num ]">{fmt(item.stock_qty)}</td>
+                                    <td class="[ is-num ]">{fmt(item.buy_qty)}</td>
+                                    <td class="[ is-num ]">{fmt(item.jita_sell_volume)}</td>
+                                    <td class="[ is-num ]">{fmt(item.shortfall)}</td>
+                                    <td class="[ is-num ]">{fmt_price(item.unit_price)}</td>
+                                </tr>
+                            )
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        )}
+    </Flexblock>
+</ComponentBlock>
+
+<style lang="scss">
+    .fitting-buy-shopping {
+        h2 {
+            margin: 0;
+            font-size: var(--step-1);
+        }
+    }
+
+    .fitting-buy-hint {
+        color: var(--highlight);
+        font-size: var(--step--1);
+    }
+
+    .fitting-buy-jita-progress {
+        width: 100%;
+        height: var(--space-2xs);
+        background-color: var(--border-color);
+        overflow: hidden;
+    }
+
+    .fitting-buy-jita-progress__bar {
+        height: 100%;
+        background-color: var(--fleet-yellow);
+        transition: width var(--fast-transition);
+    }
+
+    .fitting-buy-jita-progress__count {
+        margin: 0;
+        font-size: var(--step--1);
+        font-variant-numeric: tabular-nums;
+        color: var(--highlight);
+    }
+
+    .fitting-buy-table-wrap {
+        overflow-x: auto;
+        max-width: 100%;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .fitting-buy-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: var(--step--1);
+
+        th,
+        td {
+            text-align: left;
+            padding: var(--space-2xs) var(--space-xs);
+            border-bottom: 1px solid var(--border-color);
+            white-space: nowrap;
+        }
+
+        th:first-child,
+        td:first-child {
+            white-space: normal;
+            min-width: 12rem;
+        }
+
+        .is-num {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        tr.is-short td {
+            color: var(--fleet-red);
+        }
+
+        tr.is-stocked td {
+            opacity: 0.55;
+        }
+
+        tr.is-split-variant td:first-child {
+            padding-left: var(--space-m);
+        }
+    }
+
+    .fitting-buy-alloc-trigger {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--fleet-yellow);
+        padding: var(--space-3xs);
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: var(--fast-transition);
+
+        &:focus-visible {
+            outline: 1px solid var(--foreground);
+            outline-offset: 2px;
+        }
+
+        @media (hover: hover) {
+            &:hover,
+            &:focus-visible {
+                color: var(--foreground);
+                border-color: var(--border-color);
+            }
+        }
+    }
+
+    .fitting-buy-alloc-icon {
+        display: block;
+        width: var(--space-s);
+        height: var(--space-s);
+    }
+
+    .fitting-buy-alloc-form,
+    .fitting-buy-alloc-panel {
+        width: 100%;
+        min-width: 0;
+        overflow-x: hidden;
+    }
+
+    .fitting-buy-alloc-progress {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    .fitting-buy-alloc-progress__sum {
+        font-size: var(--step-1);
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+        color: var(--foreground);
+    }
+
+    .fitting-buy-alloc-progress__status {
+        font-size: var(--step--1);
+        font-variant-numeric: tabular-nums;
+        color: var(--highlight);
+
+        &.is-complete {
+            color: var(--green);
+        }
+
+        &.is-over {
+            color: var(--fleet-red);
+        }
+    }
+
+    .fitting-buy-alloc-progress__track {
+        width: 100%;
+        max-width: 100%;
+        height: var(--space-3xs);
+        background-color: var(--border-color);
+        overflow: hidden;
+    }
+
+    .fitting-buy-alloc-progress__bar {
+        height: 100%;
+        background-color: var(--fleet-yellow);
+        transition: width var(--fast-transition);
+
+        &.is-over {
+            background-color: var(--fleet-red);
+        }
+    }
+
+    .fitting-buy-alloc-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .fitting-buy-alloc-row {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) 7ch;
+        gap: var(--space-xs);
+        align-items: center;
+        padding-block: var(--space-2xs);
+        border-bottom: 1px solid var(--border-color);
+        min-width: 0;
+
+        &:first-child {
+            padding-top: 0;
+        }
+
+        &:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        &.is-original {
+            background: var(--light-transparency-background);
+            margin-inline: 0;
+            padding-inline: var(--space-2xs);
+        }
+    }
+
+    .fitting-buy-alloc-row__copy {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .fitting-buy-alloc-row__name {
+        font-weight: 500;
+        color: var(--foreground);
+        overflow-wrap: anywhere;
+    }
+
+    .fitting-buy-alloc-row__meta {
+        margin: 0;
+        color: var(--highlight);
+        font-size: var(--step--1);
+    }
+
+    .fitting-buy-alloc-delta {
+        font-variant-numeric: tabular-nums;
+        color: var(--foreground);
+    }
+
+    .fitting-buy-alloc-fit {
+        font-variant-numeric: tabular-nums;
+        color: var(--foreground);
+    }
+
+    .fitting-buy-alloc-qty-wrap {
+        width: 7ch;
+        justify-self: end;
+    }
+
+    .fitting-buy-alloc-footer {
+        display: flex;
+        justify-content: flex-end;
+        padding-top: var(--space-2xs);
+        border-top: 1px solid var(--border-color);
+    }
+
+    .fitting-buy-alloc-submit {
+        font-family: var(--button-font);
+        font-size: var(--step--1);
+        font-weight: 600;
+        color: var(--button-color);
+        background-color: var(--fleet-red);
+        border: 1px solid var(--fleet-red);
+        padding: var(--space-2xs) var(--space-s);
+        cursor: pointer;
+        transition: var(--fast-transition);
+
+        &:focus-visible {
+            outline: 1px solid var(--foreground);
+            outline-offset: 2px;
+        }
+
+        &:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        @media (hover: hover) {
+            &:hover:not(:disabled),
+            &:focus-visible:not(:disabled) {
+                transform: scale(1.05);
+            }
+        }
+
+        @media (hover: none) {
+            &:active:not(:disabled) {
+                transform: scale(0.95);
+            }
+        }
+    }
+
+    :global(.fitting-buy-alloc-qty) {
+        width: 7ch;
+        max-width: 7ch;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        appearance: textfield;
+        -moz-appearance: textfield;
+
+        &[aria-invalid="true"] {
+            border-color: var(--fleet-red);
+        }
+
+        &::-webkit-outer-spin-button,
+        &::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .fitting-buy-alloc-row {
+            grid-template-columns: auto minmax(0, 1fr);
+            grid-template-areas:
+                "icon copy"
+                "icon qty";
+        }
+
+        .fitting-buy-alloc-row > :first-child {
+            grid-area: icon;
+        }
+
+        .fitting-buy-alloc-row__copy {
+            grid-area: copy;
+        }
+
+        .fitting-buy-alloc-qty-wrap {
+            grid-area: qty;
+            justify-self: start;
+        }
+
+        .fitting-buy-table th:first-child,
+        .fitting-buy-table td:first-child {
+            min-width: 8rem;
+        }
+    }
+</style>

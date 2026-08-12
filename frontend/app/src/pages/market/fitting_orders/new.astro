@@ -1,0 +1,420 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token')
+    ? (Astro.cookies.get('auth_token')?.value as string)
+    : false
+const user: User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_logged_in = !!(user && auth_token)
+
+if (!is_logged_in)
+    return Astro.redirect(translatePath('/market/fitting_orders/'))
+
+import { create_fitting_buy_order } from '@helpers/api.minmatar.org/fitting_buy_orders'
+import { get_fittings } from '@helpers/api.minmatar.org/ships'
+import type { Fitting } from '@dtypes/api.minmatar.org'
+
+let fittings: Fitting[] = []
+let fetch_error: string | false = false
+let submitted_lines: { fitting_id: number; quantity: number }[] = []
+
+if (Astro.request.method === 'POST') {
+    try {
+        const form = await Astro.request.formData()
+        const raw_lines = String(form.get('lines_json') ?? '[]')
+        const parsed = JSON.parse(raw_lines) as { fitting_id: number; quantity: number }[]
+        submitted_lines = (Array.isArray(parsed) ? parsed : [])
+            .map((row) => ({
+                fitting_id: Number(row.fitting_id),
+                quantity: Math.max(1, Number(row.quantity) || 1),
+            }))
+            .filter((row) => row.fitting_id > 0)
+
+        if (submitted_lines.length === 0)
+            throw new Error(t('fitting_buy.empty_cart'))
+
+        const created = await create_fitting_buy_order(auth_token as string, {
+            lines: submitted_lines,
+        })
+        return Astro.redirect(translatePath(`/market/fitting_orders/${created.id}/`))
+    } catch (error) {
+        fetch_error = (error as Error).message
+    }
+}
+
+try {
+    fittings = await get_fittings()
+    fittings = [...fittings].sort((a, b) => a.name.localeCompare(b.name))
+} catch (error) {
+    fetch_error = (error as Error).message
+}
+
+const fitting_by_id = new Map(fittings.map((fit) => [fit.id, fit]))
+const cart_seed = submitted_lines
+    .map((row) => {
+        const fit = fitting_by_id.get(row.fitting_id)
+        if (!fit) return null
+        return {
+            fitting_id: row.fitting_id,
+            fitting_name: fit.name,
+            ship_id: fit.ship_id,
+            quantity: row.quantity,
+        }
+    })
+    .filter((row): row is NonNullable<typeof row> => row !== null)
+const cart_seed_json = JSON.stringify(cart_seed)
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FluidFixed from '@components/compositions/FluidFixed.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Breadcrumb from '@components/blocks/Breadcrumb.astro'
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
+
+const page_title = t('fitting_buy.create_page_title')
+const breadcrumb_items = [
+    { label: t('intel.page_title'), href: translatePath('/intel/') },
+    { label: t('fitting_buy.page_title'), href: translatePath('/market/fitting_orders/') },
+    { label: page_title },
+]
+const fittings_json = JSON.stringify(
+    fittings.map((fit) => ({
+        id: fit.id,
+        name: fit.name,
+        ship_id: fit.ship_id,
+    }))
+)
+const quantity_label = t('fitting_buy.quantity')
+---
+
+<Viewport title={page_title} meta_description={t('fitting_buy.meta_description')}>
+    <PageWide
+        cover={{
+            image: '/images/market-cover.jpg',
+            image_990: '/images/market-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+        padding_block="var(--space-m) var(--space-xl)"
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <Flexblock gap="var(--space-s)">
+                <Breadcrumb items={breadcrumb_items} />
+                <PageTitle>{page_title}</PageTitle>
+            </Flexblock>
+        </FlexInline>
+
+        <Flexblock
+            gap="var(--space-l)"
+            x-data={`{
+                fittings: ${fittings_json},
+                search: '',
+                result_qty: {},
+                cart: ${cart_seed_json},
+                get filtered() {
+                    const q = this.search.trim().toLowerCase()
+                    if (!q) return []
+                    return this.fittings.filter(f => f.name.toLowerCase().includes(q)).slice(0, 24)
+                },
+                get_result_qty(fitting_id) {
+                    return Math.max(1, parseInt(this.result_qty[fitting_id], 10) || 1)
+                },
+                set_result_qty(fitting_id, value) {
+                    this.result_qty[fitting_id] = Math.max(1, parseInt(value, 10) || 1)
+                },
+                add_fitting(fitting) {
+                    const qty = this.get_result_qty(fitting.id)
+                    const existing = this.cart.find(row => row.fitting_id === fitting.id)
+                    if (existing) existing.quantity += qty
+                    else this.cart.push({
+                        fitting_id: fitting.id,
+                        fitting_name: fitting.name,
+                        ship_id: fitting.ship_id,
+                        quantity: qty,
+                    })
+                    delete this.result_qty[fitting.id]
+                    this.search = ''
+                },
+                remove_fitting(fitting_id) {
+                    this.cart = this.cart.filter(row => row.fitting_id !== fitting_id)
+                },
+                set_qty(fitting_id, value) {
+                    const row = this.cart.find(r => r.fitting_id === fitting_id)
+                    if (!row) return
+                    row.quantity = Math.max(1, parseInt(value, 10) || 1)
+                },
+                lines_json() {
+                    return JSON.stringify(this.cart.map(row => ({
+                        fitting_id: row.fitting_id,
+                        quantity: row.quantity,
+                    })))
+                },
+            }`}
+        >
+            <TextBox>
+                <p>{t('fitting_buy.create_leading')}</p>
+            </TextBox>
+
+            {fetch_error && (
+                <ComponentBlock>
+                    <p class="[ text-[var(--fleet-red)] ]">{fetch_error}</p>
+                </ComponentBlock>
+            )}
+
+            <FluidFixed width="22rem" gap="var(--space-l)" class="[ fitting-buy-columns ]">
+                <ComponentBlock class="[ fitting-buy-panel ]">
+                    <Flexblock gap="var(--space-s)" class="[ fitting-buy-panel-body ]">
+                        <h3>{t('fitting_buy.search_fittings')}</h3>
+                        <label class="[ block w-full ]">
+                            <span class="[ visually-hidden ]">{t('fitting_buy.search_fittings')}</span>
+                            <Input
+                                type="search"
+                                x-model="search"
+                                placeholder={t('fitting_buy.search_fittings')}
+                                x-init="$el.focus()"
+                            >
+                                <MagnifierIcon slot="icon" />
+                            </Input>
+                        </label>
+
+                        <p
+                            class="[ text-[var(--step--1)] text-[var(--highlight)] ]"
+                            x-show="!search.trim()"
+                            x-cloak
+                        >
+                            {t('fitting_buy.search_hint')}
+                        </p>
+
+                        <ul class="[ fitting-buy-search-results ]" x-show="search.trim()" x-cloak>
+                            <template x-for="fitting in filtered" :key="fitting.id">
+                                <li>
+                                    <FlexInline
+                                        justification="space-between"
+                                        class="[ w-full flex-wrap ]"
+                                        gap="var(--space-s)"
+                                    >
+                                        <FlexInline gap="var(--space-2xs)" class="[ items-center min-w-0 ]">
+                                            <img
+                                                class="[ fitting-buy-icon ]"
+                                                :src="`https://images.evetech.net/types/${fitting.ship_id}/icon?size=32`"
+                                                :alt="fitting.name"
+                                                width="32"
+                                                height="32"
+                                            />
+                                            <span class="[ truncate ]" x-text="fitting.name"></span>
+                                        </FlexInline>
+                                        <FlexInline gap="var(--space-2xs)" class="[ items-center ]">
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                class="[ fitting-buy-qty ]"
+                                                :value="get_result_qty(fitting.id)"
+                                                x-on:change="set_result_qty(fitting.id, $event.target.value)"
+                                                x-on:click.stop
+                                                aria-label={quantity_label}
+                                            />
+                                            <button
+                                                type="button"
+                                                class="[ fitting-buy-action ]"
+                                                x-on:click="add_fitting(fitting)"
+                                            >
+                                                {t('fitting_buy.add_fitting')}
+                                            </button>
+                                        </FlexInline>
+                                    </FlexInline>
+                                </li>
+                            </template>
+                        </ul>
+                        <p
+                            class="[ text-[var(--step--1)] ]"
+                            x-show="search.trim() && filtered.length === 0"
+                            x-cloak
+                        >
+                            {t('fitting_buy.no_matching_fittings')}
+                        </p>
+                    </Flexblock>
+                </ComponentBlock>
+
+                <ComponentBlock class="[ fitting-buy-panel fitting-buy-cart-panel ]">
+                    <Flexblock gap="var(--space-s)" class="[ fitting-buy-panel-body ]">
+                        <h3>{t('fitting_buy.order_cart')}</h3>
+                        <p x-show="cart.length === 0" x-cloak class="[ text-[var(--highlight)] fitting-buy-cart-empty ]">
+                            {t('fitting_buy.empty_cart')}
+                        </p>
+                        <ul class="[ fitting-buy-cart ]" x-show="cart.length > 0" x-cloak>
+                            <template x-for="row in cart" :key="row.fitting_id">
+                                <li>
+                                    <FlexInline justification="space-between" class="[ w-full flex-wrap ]" gap="var(--space-s)">
+                                        <FlexInline gap="var(--space-2xs)" class="[ items-center min-w-0 ]">
+                                            <img
+                                                class="[ fitting-buy-icon ]"
+                                                :src="`https://images.evetech.net/types/${row.ship_id}/icon?size=32`"
+                                                :alt="row.fitting_name"
+                                                width="32"
+                                                height="32"
+                                            />
+                                            <span class="[ truncate ]" x-text="row.fitting_name"></span>
+                                        </FlexInline>
+                                        <FlexInline gap="var(--space-2xs)" class="[ items-center ]">
+                                            <input
+                                                type="number"
+                                                min="1"
+                                                class="[ fitting-buy-qty ]"
+                                                :value="row.quantity"
+                                                x-on:change="set_qty(row.fitting_id, $event.target.value)"
+                                                aria-label={quantity_label}
+                                            />
+                                            <button
+                                                type="button"
+                                                class="[ fitting-buy-action ]"
+                                                x-on:click="remove_fitting(row.fitting_id)"
+                                            >
+                                                {t('fitting_buy.remove')}
+                                            </button>
+                                        </FlexInline>
+                                    </FlexInline>
+                                </li>
+                            </template>
+                        </ul>
+
+                        <form method="post" class="[ fitting-buy-submit ]">
+                            <input type="hidden" name="lines_json" :value="lines_json()" />
+                            <Button
+                                type="submit"
+                                size="sm"
+                                off_disable={true}
+                                x-bind:disabled="cart.length === 0"
+                            >
+                                {t('fitting_buy.submit_order')}
+                            </Button>
+                        </form>
+                    </Flexblock>
+                </ComponentBlock>
+            </FluidFixed>
+        </Flexblock>
+    </PageWide>
+</Viewport>
+
+<style lang="scss">
+    .fitting-buy-columns {
+        align-items: stretch;
+        min-width: 0;
+        max-width: 100%;
+
+        > :global(.fitting-buy-panel) {
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        @media (max-width: 640px) {
+            > :global(*) {
+                flex-basis: 100%;
+                min-width: 100%;
+            }
+        }
+    }
+
+    .fitting-buy-panel-body {
+        flex: 1;
+        min-height: 0;
+    }
+
+    .fitting-buy-cart-empty {
+        flex: 1;
+    }
+
+    .fitting-buy-submit {
+        margin-block-start: auto;
+    }
+
+    .fitting-buy-search-results,
+    .fitting-buy-cart {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        max-height: 24rem;
+        overflow-y: auto;
+        flex: 1;
+        min-height: 0;
+    }
+
+    .fitting-buy-search-results li,
+    .fitting-buy-cart li {
+        padding: var(--space-2xs) 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .fitting-buy-icon {
+        flex-shrink: 0;
+        width: 2rem;
+        height: 2rem;
+    }
+
+    .fitting-buy-qty {
+        width: 4.5rem;
+        background: transparent;
+        color: var(--foreground);
+        border: 1px solid var(--border-color);
+        padding: var(--space-3xs) var(--space-2xs);
+        font-family: var(--default-font);
+        font-size: var(--step--1);
+        appearance: textfield;
+        -moz-appearance: textfield;
+
+        &::-webkit-outer-spin-button,
+        &::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    }
+
+    .fitting-buy-action {
+        background: var(--fleet-red);
+        color: var(--button-color);
+        border: 0;
+        padding: var(--space-3xs) var(--space-xs);
+        font-family: var(--button-font);
+        font-size: var(--step--1);
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: var(--fast-transition);
+
+        &:focus-visible {
+            outline: 2px solid var(--highlight);
+            outline-offset: 2px;
+        }
+
+        @media (hover: hover) {
+            &:hover {
+                transform: scale(1.05);
+            }
+        }
+
+        @media (hover: none) {
+            &:active {
+                transform: scale(0.95);
+            }
+        }
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+</style>

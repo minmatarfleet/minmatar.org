@@ -26,6 +26,7 @@ import AddMoonButton from '@components/blocks/AddMoonButton.astro';
 import CalendarEVEIcon from '@components/icons/CalendarEVEIcon.astro';
 import PlanetEVEIcon from '@components/icons/PlanetEVEIcon.astro';
 import LogEVEIcon from '@components/icons/LogEVEIcon.astro';
+import FitsEvEIcon from '@components/icons/FitsEvEIcon.astro';
 ---
 
 <Wrapper
@@ -88,6 +89,18 @@ import LogEVEIcon from '@components/icons/LogEVEIcon.astro';
             <LogEVEIcon class="[ ml-[-6px] ]" slot="icon" />
                 
             <Button size='sm' href={translatePath('/intel/combatlog/')}>
+                {t('enter')}
+            </Button>
+        </Tile>
+
+        <Tile
+            title={t('fitting_buy.page_title')}
+            description={t('fitting_buy.leading_text')}
+            cover='/images/fittings-tile-background.webp'
+        >
+            <FitsEvEIcon class="[ ml-[-6px] ]" slot="icon" />
+
+            <Button size='sm' href={translatePath('/market/fitting_orders/')}>
                 {t('enter')}
             </Button>
         </Tile>
