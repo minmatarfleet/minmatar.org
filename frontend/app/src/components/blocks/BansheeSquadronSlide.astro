@@ -33,7 +33,7 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
 >
     <img slot="ships" class="[ thrasher ]" src="/images/corporations/banshee/thrasher.webp" />
     <img slot="ships" class="[ hurricane ]" src="/images/corporations/banshee/hurricane.webp" />
-    <img slot="ships" class="[ stabber ]" src="/images/corporations/banshee/stabber.webp" />
+    <img slot="ships" class="[ stabber_3 ]" src="/images/corporations/banshee/stabber.webp" />
 
     <p>{corporation.introduction ? corporation.introduction : t('banshee_description_fallback') }</p>
 </CorporationSlide>
@@ -59,7 +59,7 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
         transform: scale(0);
     }
 
-    .stabber {
+    .stabber_3 {
         position: absolute;
         left: -25%;
         top: 34%;
@@ -152,7 +152,7 @@ import CorporationSlide from '@components/blocks/CorporationSlide.astro';
             animation-fill-mode: forwards;
         }
         
-        .stabber {
+        .stabber_3 {
             animation: stabber_3 cubic-bezier(0.390, 0.575, 0.565, 1.000) both 2.5s;
             animation-delay: 1.4s;
             animation-iteration-count: 1;
