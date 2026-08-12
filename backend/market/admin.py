@@ -23,6 +23,10 @@ from market.models import (
     EveMarketItemTransaction,
     EveMarketOrderBookSync,
     EveTypeWithSellOrders,
+    FittingBuyOrder,
+    FittingBuyOrderItem,
+    FittingBuyOrderLine,
+    FittingBuyJitaCheck,
 )
 from market.models.item import parse_eft_items
 from market.admin_location_views import (
@@ -854,6 +858,51 @@ def _market_get_app_list(request, app_label=None):
 
 
 _original_admin_urls = None
+
+
+@admin.register(FittingBuyOrder)
+class FittingBuyOrderAdmin(admin.ModelAdmin):
+    list_display = ("id", "owner", "status", "jita_checked_at", "updated_at")
+    list_display_links = ("id",)
+    list_filter = ("status",)
+    search_fields = ("owner__username", "notes")
+    raw_id_fields = ("owner",)
+
+
+@admin.register(FittingBuyOrderLine)
+class FittingBuyOrderLineAdmin(admin.ModelAdmin):
+    list_display = ("id", "order", "fitting", "quantity")
+    raw_id_fields = ("order", "fitting")
+
+
+@admin.register(FittingBuyOrderItem)
+class FittingBuyOrderItemAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "order",
+        "eve_type",
+        "needed_qty",
+        "stock_qty",
+        "buy_qty",
+        "jita_sell_volume",
+        "unit_price",
+    )
+    raw_id_fields = ("order", "eve_type")
+
+
+@admin.register(FittingBuyJitaCheck)
+class FittingBuyJitaCheckAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "order",
+        "status",
+        "done_count",
+        "total_count",
+        "started_by",
+        "created_at",
+    )
+    list_filter = ("status",)
+    raw_id_fields = ("order", "started_by")
 
 
 def _get_custom_admin_urls():

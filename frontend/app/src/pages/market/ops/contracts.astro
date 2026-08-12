@@ -30,6 +30,7 @@ import PageTitle from '@components/page/PageTitle.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Breadcrumb from '@components/blocks/Breadcrumb.astro'
+import Button from '@components/blocks/Button.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import MarketContractsSkeleton from '@components/blocks/MarketContractsSkeleton.astro'
 
@@ -71,6 +72,9 @@ const CONTRACTS_PARTIAL = translatePath(
                 <Breadcrumb items={breadcrumb_items} />
                 <PageTitle>{page_title}</PageTitle>
             </Flexblock>
+            <Button size="sm" href={translatePath('/market/fitting_orders/')}>
+                {t('fitting_buy.view_multifit_orders')}
+            </Button>
         </FlexInline>
 
         {fetch_error ?

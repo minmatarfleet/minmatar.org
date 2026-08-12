@@ -43,11 +43,31 @@ export async function parse_markdown(text:string) {
     return await marked.parseInline(text)
 }
 
+function format_response_detail(detail: unknown): string | null {
+    if (typeof detail === 'string') {
+        const error_msg = parse_error_message(detail)
+        return error_msg ? error_msg : detail
+    }
+    if (Array.isArray(detail)) {
+        const parts = detail.map((item) => {
+            if (typeof item === 'string')
+                return item
+            if (item && typeof item === 'object' && 'msg' in item)
+                return String((item as { msg: unknown }).msg)
+            return null
+        }).filter((part): part is string => !!part)
+        return parts.length > 0 ? parts.join('; ') : null
+    }
+    if (detail == null)
+        return null
+    return String(detail)
+}
+
 export async function parse_response_error(response:Response, endpoint:string) {
     try {
         const parsed_error = await response.json()
-        const error_msg = parse_error_message(parsed_error.detail)
-        return error_msg ? error_msg : parsed_error?.detail
+        const detail = format_response_detail(parsed_error?.detail)
+        return detail || get_error_message(response.status, endpoint)
     } catch (e) {
         return get_error_message(
             response.status,
@@ -70,6 +90,8 @@ export async function strip_markdown(text:string) {
 }
 
 export const parse_error_message = (error_details:string) => {
+    if (typeof error_details !== 'string')
+        return null
     // Regular expression to match the error message inside the single quotes after "error": 
     const regex = /'error': '([^']+)'/;
     const match = error_details.match(regex);

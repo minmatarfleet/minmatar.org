@@ -1,0 +1,574 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+import { HTTP_400_Bad_Request, HTTP_403_Forbidden } from '@helpers/http_responses'
+
+const auth_token = Astro.cookies.has('auth_token')
+    ? (Astro.cookies.get('auth_token')?.value as string)
+    : false
+const user: User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_logged_in = !!(user && auth_token)
+
+if (!is_logged_in)
+    return HTTP_403_Forbidden()
+
+const order_id = parseInt(Astro.url.searchParams.get('order_id') ?? '', 10)
+if (isNaN(order_id) || order_id < 1)
+    return HTTP_400_Bad_Request()
+
+import {
+    apply_fitting_buy_swap,
+    put_fitting_buy_allocations,
+    get_fitting_buy_order,
+    patch_fitting_buy_order,
+    paste_fitting_buy_landed_prices,
+    poll_fitting_buy_jita_check,
+    start_fitting_buy_jita_check,
+    type FittingBuyOrderDetail,
+} from '@helpers/api.minmatar.org/fitting_buy_orders'
+import {
+    fitting_buy_status_color,
+    fitting_buy_status_label,
+} from '@helpers/fitting_buy_status'
+import { format_date_time } from '@helpers/date'
+
+let order: FittingBuyOrderDetail | null = null
+let error_message: string | false = false
+let check_id = parseInt(Astro.url.searchParams.get('check_id') ?? '', 10)
+let poll_check = Astro.url.searchParams.get('poll') === '1'
+
+const PARTIAL_BASE = translatePath(`/partials/fitting_buy_order_component?order_id=${order_id}`)
+const token = auth_token as string
+
+async function handle_post_action(action: string, form: FormData) {
+    switch (action) {
+        case 'stock':
+            order = await patch_fitting_buy_order(token, order_id, {
+                stock_paste: String(form.get('stock_paste') ?? ''),
+            })
+            return
+        case 'swap':
+            order = await apply_fitting_buy_swap(
+                token,
+                order_id,
+                parseInt(String(form.get('line_id') ?? ''), 10),
+                {
+                    preferred_type_id: parseInt(String(form.get('preferred_type_id') ?? ''), 10),
+                    substitute_type_id: parseInt(String(form.get('substitute_type_id') ?? ''), 10),
+                    notes: String(form.get('notes') ?? ''),
+                },
+            )
+            return
+        case 'save_allocations': {
+            const preferred_type_id = parseInt(String(form.get('preferred_type_id') ?? ''), 10)
+            const entries: { type_id: number; qty: number }[] = []
+            for (const [key, value] of form.entries()) {
+                if (!key.startsWith('qty_'))
+                    continue
+                const type_id = parseInt(key.slice(4), 10)
+                const qty = parseInt(String(value ?? ''), 10)
+                if (isNaN(type_id) || isNaN(qty))
+                    continue
+                entries.push({ type_id, qty })
+            }
+            order = await put_fitting_buy_allocations(token, order_id, {
+                preferred_type_id,
+                entries,
+            })
+            return
+        }
+        case 'mark_pending_fitting': {
+            const current = await get_fitting_buy_order(token, order_id)
+            if (current.is_owner && current.status === 'draft') {
+                order = await patch_fitting_buy_order(token, order_id, {
+                    status: 'pending_fitting',
+                })
+            } else {
+                order = current
+            }
+            return
+        }
+        case 'refresh_jita': {
+            const check = await start_fitting_buy_jita_check(token, order_id, {
+                force_refresh: true,
+            })
+            check_id = check.id
+            poll_check = true
+            order = {
+                ...(await get_fitting_buy_order(token, order_id)),
+                active_jita_check: check,
+            }
+            return
+        }
+        case 'landed_prices': {
+            const result = await paste_fitting_buy_landed_prices(
+                token,
+                order_id,
+                String(form.get('paste') ?? ''),
+            )
+            order = result.order
+            return
+        }
+        default:
+            order = await get_fitting_buy_order(token, order_id)
+    }
+}
+
+try {
+    if (Astro.request.method === 'POST') {
+        const form = await Astro.request.formData()
+        await handle_post_action(String(form.get('action') ?? ''), form)
+        // Swaps / stock / etc. may kick off a quiet Jita check — keep polling.
+        if (
+            order?.active_jita_check
+            && (order.active_jita_check.status === 'pending'
+                || order.active_jita_check.status === 'running')
+        ) {
+            check_id = order.active_jita_check.id
+            poll_check = true
+        }
+    } else if (poll_check && !isNaN(check_id)) {
+        const polled = await poll_fitting_buy_jita_check(token, order_id, check_id)
+        if (polled.order)
+            order = polled.order
+        else
+            order = await get_fitting_buy_order(token, order_id)
+
+        poll_check = polled.check.status === 'pending' || polled.check.status === 'running'
+        order = {
+            ...order,
+            active_jita_check: polled.check,
+        }
+    } else {
+        order = await get_fitting_buy_order(token, order_id)
+        if (order.active_jita_check &&
+            (order.active_jita_check.status === 'pending' || order.active_jita_check.status === 'running')) {
+            check_id = order.active_jita_check.id
+            poll_check = true
+        } else if (
+            order.is_owner
+            && !order.jita_checked_at
+            && order.items.some((item) => item.buy_qty > 0)
+        ) {
+            try {
+                const check = await start_fitting_buy_jita_check(token, order_id, {
+                    force_refresh: false,
+                })
+                check_id = check.id
+                poll_check = true
+                order = {
+                    ...order,
+                    active_jita_check: check,
+                }
+            } catch {
+                // Throttled or nothing to buy — show the list without depth.
+            }
+        }
+    }
+} catch (error) {
+    const err = error as Error
+    error_message = err?.message || String(error)
+    if (!order) {
+        try {
+            order = await get_fitting_buy_order(token, order_id)
+        } catch {
+            // Keep the detail message even if the follow-up fetch fails.
+        }
+    }
+}
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Button from '@components/blocks/Button.astro'
+import Tag from '@components/blocks/Tag.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+import ClipboardButton from '@components/blocks/ClipboardButton.astro'
+import FittingBuyOrderShopping from '@components/blocks/FittingBuyOrderShopping.astro'
+
+const is_owner = order?.is_owner ?? false
+const buy_items = order?.items.filter((i) => i.buy_qty > 0) ?? []
+const buy_type_count = buy_items.length
+const short_count = buy_items.filter((i) => i.is_short).length
+const show_fitting_actions = !!(
+    order
+    && (order.status === 'pending_fitting' || order.status === 'purchased')
+)
+const jita_running = !!(
+    poll_check
+    || order?.active_jita_check?.status === 'running'
+    || order?.active_jita_check?.status === 'pending'
+)
+const jita_done = order?.active_jita_check?.done_count ?? 0
+const jita_total = order?.active_jita_check?.total_count ?? 0
+const jita_progress_pct = jita_total > 0
+    ? Math.min(100, Math.round((jita_done / jita_total) * 100))
+    : 0
+const jita_skeleton_rows = Math.min(Math.max(jita_total || buy_type_count || 8, 4), 12)
+const poll_url = `${PARTIAL_BASE}&poll=1&check_id=${check_id}`
+const hx_attrs = poll_check
+    ? {
+        'hx-get': poll_url,
+        'hx-trigger': 'every 1s',
+        'hx-swap': 'outerHTML',
+      }
+    : {}
+
+const shopping_summary = (() => {
+    if (!order || order.items.length === 0)
+        return ''
+    const types = t('fitting_buy.types_to_buy').replace('{count}', String(buy_type_count))
+    if (short_count > 0)
+        return `${types} · ${t('fitting_buy.short_count').replace('{count}', String(short_count))}`
+    return types
+})()
+
+const multibuy_id = order ? `fitting-buy-multibuy-${order.id}` : ''
+const fits_bundle_id = order ? `fitting-buy-fits-${order.id}` : ''
+const fits_tip = show_fitting_actions
+    ? t('fitting_buy.fit_one_by_one_tip')
+    : t('fitting_buy.fits_tip')
+---
+
+<div id="fitting-buy-order" class="[ fitting-buy-order ]" {...hx_attrs}>
+    {error_message && (
+        <ComponentBlock>
+            <p class="[ text-[var(--fleet-red)] ]">{error_message}</p>
+        </ComponentBlock>
+    )}
+
+    {order && (
+        <Flexblock gap="var(--space-xl)">
+            <FlexInline gap="var(--space-s)" class="[ items-center flex-wrap fitting-buy-meta ]">
+                <Tag
+                    text={fitting_buy_status_label(order.status, t)}
+                    color={fitting_buy_status_color(order.status)}
+                />
+                <small class="[ fitting-buy-meta__text ]">
+                    {order.owner_username}
+                    {order.jita_checked_at && (
+                        <>
+                            {' · '}
+                            {t('fitting_buy.as_of')}{' '}
+                            {format_date_time(lang, order.jita_checked_at)}
+                        </>
+                    )}
+                </small>
+                {!is_owner && (
+                    <small class="[ text-[var(--highlight)] ]">{t('fitting_buy.read_only')}</small>
+                )}
+            </FlexInline>
+
+            {!is_owner && order.notes && (
+                <p class="[ fitting-buy-notes-ro ]">{order.notes}</p>
+            )}
+
+            <ComponentBlock
+                class:list={[
+                    '[ fitting-buy-section ]',
+                    { 'fitting-buy-section--fitting': show_fitting_actions },
+                ]}
+                heavier={show_fitting_actions}
+            >
+                <Flexblock gap="var(--space-s)">
+                    <FlexInline
+                        justification="space-between"
+                        class="[ w-full flex-wrap items-start ]"
+                        gap="var(--space-s)"
+                    >
+                        <Flexblock gap="var(--space-3xs)">
+                            <h2>{t('fitting_buy.fit_cart')}</h2>
+                            {show_fitting_actions && (
+                                <p class="[ fitting-buy-fit-label ]">{t('fitting_buy.fit_one_by_one')}</p>
+                            )}
+                            <p class="[ fitting-buy-hint ]">{fits_tip}</p>
+                        </Flexblock>
+                        {show_fitting_actions && order.fits_eft && (
+                            <ClipboardButton
+                                id={fits_bundle_id}
+                                size="sm"
+                                color="transparent"
+                                text={t('fitting_buy.copy_all_fittings')}
+                                title={t('fitting_buy.copy_all_fittings_tip')}
+                            >
+                                {order.fits_eft}
+                            </ClipboardButton>
+                        )}
+                    </FlexInline>
+
+                    {order.lines.length === 0 ? (
+                        <p class="[ text-[var(--highlight)] ]">{t('fitting_buy.no_fits')}</p>
+                    ) : (
+                        <ul class="[ fitting-buy-lines ]">
+                            {order.lines.map((line) => (
+                                <li>
+                                    <FlexInline
+                                        justification="space-between"
+                                        class="[ w-full flex-wrap items-center ]"
+                                        gap="var(--space-s)"
+                                    >
+                                        <FlexInline gap="var(--space-2xs)" class="[ items-center min-w-0 ]">
+                                            <ItemPicture
+                                                item_id={line.ship_id}
+                                                item_name={line.fitting_name}
+                                                quantity={line.quantity}
+                                                size={32}
+                                            />
+                                            <div class="[ min-w-0 ]">
+                                                <strong class="[ break-words ]">{line.fitting_name}</strong>
+                                                <div class="[ fitting-buy-line-meta ]">
+                                                    {t('fitting_buy.hulls_qty').replace(
+                                                        '{count}',
+                                                        String(line.quantity),
+                                                    )}
+                                                    {line.has_swaps && (
+                                                        <> · {t('fitting_buy.swapped')}</>
+                                                    )}
+                                                    {!show_fitting_actions && line.max_completable != null && (
+                                                        <>
+                                                            {' · '}
+                                                            <span class:list={[{
+                                                                'is-short': line.max_completable < line.quantity,
+                                                            }]}>
+                                                                {t('fitting_buy.completable')}{' '}
+                                                                {line.max_completable}/{line.quantity}
+                                                            </span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </FlexInline>
+                                        {show_fitting_actions && line.eft && (
+                                            <ClipboardButton
+                                                id={`fitting-buy-line-eft-${line.id}`}
+                                                size="sm"
+                                                text={t('fitting_buy.copy_fitting')}
+                                            >
+                                                {line.eft}
+                                            </ClipboardButton>
+                                        )}
+                                    </FlexInline>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </Flexblock>
+            </ComponentBlock>
+
+            {is_owner && (
+                <ComponentBlock class="[ fitting-buy-section ]">
+                    <Flexblock gap="var(--space-s)">
+                        <Flexblock gap="var(--space-3xs)">
+                            <h2>{t('fitting_buy.stock_paste')}</h2>
+                            <p class="[ fitting-buy-hint ]">{t('fitting_buy.stock_paste_tip')}</p>
+                        </Flexblock>
+                        <form
+                            hx-post={PARTIAL_BASE}
+                            hx-target="#fitting-buy-order"
+                            hx-swap="outerHTML"
+                        >
+                            <input type="hidden" name="action" value="stock" />
+                            <Flexblock gap="var(--space-xs)">
+                                <textarea
+                                    name="stock_paste"
+                                    rows="5"
+                                    class="[ fitting-buy-textarea ]"
+                                    placeholder={t('fitting_buy.stock_placeholder')}
+                                    aria-label={t('fitting_buy.stock_paste')}
+                                >{order.stock_paste}</textarea>
+                                <Button type="submit" size="sm">{t('fitting_buy.apply_stock')}</Button>
+                            </Flexblock>
+                        </form>
+                        {order.unresolved_stock_names.length > 0 && (
+                            <p class="[ text-[var(--fleet-red)] text-[var(--step--1)] ]">
+                                {t('fitting_buy.unresolved_stock')}: {order.unresolved_stock_names.join(', ')}
+                            </p>
+                        )}
+                    </Flexblock>
+                </ComponentBlock>
+            )}
+
+            <FittingBuyOrderShopping
+                order={order}
+                is_owner={is_owner}
+                partial_base={PARTIAL_BASE}
+                jita_running={jita_running}
+                jita_done={jita_done}
+                jita_total={jita_total}
+                jita_progress_pct={jita_progress_pct}
+                jita_skeleton_rows={jita_skeleton_rows}
+                shopping_summary={shopping_summary}
+                multibuy_id={multibuy_id}
+            />
+
+            {order.substitutions.length > 0 && (
+                <ComponentBlock class="[ fitting-buy-section ]">
+                    <Flexblock gap="var(--space-s)">
+                        <Flexblock gap="var(--space-3xs)">
+                            <h2>{t('fitting_buy.recommended_swap')}</h2>
+                            <p class="[ fitting-buy-hint ]">{t('fitting_buy.swaps_tip')}</p>
+                        </Flexblock>
+                        <ul class="[ fitting-buy-subs ]">
+                            {order.substitutions.map((sub) => {
+                                const line = order.lines.find((l) => l.fitting_id === sub.fitting_id)
+                                return (
+                                    <li>
+                                        <FlexInline
+                                            justification="space-between"
+                                            class="[ w-full flex-wrap items-center ]"
+                                            gap="var(--space-s)"
+                                        >
+                                            <FlexInline gap="var(--space-2xs)" class="[ items-center min-w-0 flex-wrap ]">
+                                                <ItemPicture
+                                                    item_id={sub.preferred_type_id}
+                                                    item_name={sub.preferred_name}
+                                                    size={32}
+                                                    icon_quality={32}
+                                                />
+                                                <strong class="[ break-words ]">{sub.preferred_name}</strong>
+                                                <span aria-hidden="true">→</span>
+                                                <ItemPicture
+                                                    item_id={sub.substitute_type_id}
+                                                    item_name={sub.substitute_name}
+                                                    size={32}
+                                                    icon_quality={32}
+                                                />
+                                                <span class="[ text-[var(--highlight)] break-words ]">{sub.substitute_name}</span>
+                                                {sub.notes && (
+                                                    <span class="[ fitting-buy-hint ]"> — {sub.notes}</span>
+                                                )}
+                                            </FlexInline>
+                                            {is_owner && line && (
+                                                <form
+                                                    hx-post={PARTIAL_BASE}
+                                                    hx-target="#fitting-buy-order"
+                                                    hx-swap="outerHTML"
+                                                >
+                                                    <input type="hidden" name="action" value="swap" />
+                                                    <input type="hidden" name="line_id" value={line.id} />
+                                                    <input type="hidden" name="preferred_type_id" value={sub.preferred_type_id} />
+                                                    <input type="hidden" name="substitute_type_id" value={sub.substitute_type_id} />
+                                                    <input type="hidden" name="notes" value={sub.notes} />
+                                                    <Button type="submit" size="sm">{t('fitting_buy.apply_swap')}</Button>
+                                                </form>
+                                            )}
+                                        </FlexInline>
+                                    </li>
+                                )
+                            })}
+                        </ul>
+                    </Flexblock>
+                </ComponentBlock>
+            )}
+
+            {is_owner && (
+                <ComponentBlock class="[ fitting-buy-section ]">
+                    <Flexblock gap="var(--space-s)">
+                        <Flexblock gap="var(--space-3xs)">
+                            <h2>{t('fitting_buy.landed_prices')}</h2>
+                            <p class="[ fitting-buy-hint ]">{t('fitting_buy.landed_prices_tip')}</p>
+                        </Flexblock>
+                        <form
+                            hx-post={PARTIAL_BASE}
+                            hx-target="#fitting-buy-order"
+                            hx-swap="outerHTML"
+                        >
+                            <input type="hidden" name="action" value="landed_prices" />
+                            <Flexblock gap="var(--space-xs)">
+                                <textarea
+                                    name="paste"
+                                    rows="4"
+                                    class="[ fitting-buy-textarea ]"
+                                    placeholder={t('fitting_buy.landed_placeholder')}
+                                    aria-label={t('fitting_buy.landed_prices')}
+                                ></textarea>
+                                <Button type="submit" size="sm">{t('fitting_buy.apply_prices')}</Button>
+                            </Flexblock>
+                        </form>
+                    </Flexblock>
+                </ComponentBlock>
+            )}
+        </Flexblock>
+    )}
+</div>
+
+<style lang="scss">
+    .fitting-buy-order {
+        min-width: 0;
+        max-width: 100%;
+
+        h2 {
+            margin: 0;
+            font-size: var(--step-1);
+        }
+
+        h3 {
+            margin: 0;
+            font-size: var(--step-0);
+        }
+    }
+
+    .fitting-buy-meta__text,
+    .fitting-buy-hint,
+    .fitting-buy-line-meta {
+        color: var(--highlight);
+        font-size: var(--step--1);
+    }
+
+    .fitting-buy-fit-label {
+        margin: 0;
+        color: var(--fleet-yellow);
+        font-size: var(--step--1);
+        font-weight: 500;
+    }
+
+    .fitting-buy-line-meta .is-short {
+        color: var(--fleet-red);
+    }
+
+    .fitting-buy-notes-ro {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--foreground);
+        max-width: var(--max-text-width);
+    }
+
+    .fitting-buy-textarea {
+        width: 100%;
+        background: transparent;
+        color: var(--foreground);
+        border: 1px solid var(--border-color);
+        padding: var(--space-2xs);
+        font-family: var(--default-font);
+        font-size: var(--step--1);
+        resize: vertical;
+    }
+
+    .fitting-buy-lines,
+    .fitting-buy-subs {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .fitting-buy-lines li,
+    .fitting-buy-subs li {
+        padding-block: var(--space-2xs);
+        border-bottom: 1px solid var(--border-color);
+
+        &:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        &:first-child {
+            padding-top: 0;
+        }
+    }
+</style>

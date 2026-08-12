@@ -1,0 +1,111 @@
+---
+import Flexblock from '@components/compositions/Flexblock.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import FittingBuyPurchaseListSkeleton from '@components/blocks/FittingBuyPurchaseListSkeleton.astro'
+
+interface Props {
+    fit_rows?: number
+    purchase_rows?: number
+}
+
+const {
+    fit_rows = 3,
+    purchase_rows = 8,
+} = Astro.props
+---
+
+<div
+    class="[ fitting-buy-order-skeleton ]"
+    aria-busy="true"
+    aria-live="polite"
+>
+    <Flexblock gap="var(--space-l)">
+        <ComponentBlock class="[ fitting-buy-section ]">
+            <Flexblock gap="var(--space-s)">
+                <div class="[ skel skel-title ]"></div>
+                <div class="[ skel skel-subtitle ]"></div>
+                <Flexblock gap="var(--space-2xs)">
+                    {Array.from({ length: fit_rows }).map(() => (
+                        <div class="[ fitting-buy-order-skeleton__fit ]">
+                            <div class="[ skel skel-icon ]"></div>
+                            <div class="[ skel skel-fit-name ]"></div>
+                        </div>
+                    ))}
+                </Flexblock>
+            </Flexblock>
+        </ComponentBlock>
+
+        <ComponentBlock class="[ fitting-buy-section ]">
+            <Flexblock gap="var(--space-s)">
+                <div class="[ skel skel-title ]"></div>
+                <div class="[ skel skel-subtitle skel-subtitle--wide ]"></div>
+                <div class="[ skel skel-textarea ]"></div>
+            </Flexblock>
+        </ComponentBlock>
+
+        <ComponentBlock class="[ fitting-buy-section ]" heavier={true}>
+            <Flexblock gap="var(--space-s)">
+                <div class="[ skel skel-title ]"></div>
+                <div class="[ skel skel-subtitle ]"></div>
+                <FittingBuyPurchaseListSkeleton rows={purchase_rows} />
+            </Flexblock>
+        </ComponentBlock>
+    </Flexblock>
+</div>
+
+<style lang="scss">
+    .fitting-buy-order-skeleton .skel {
+        border-radius: 2px;
+        background: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.12) 50%,
+            rgba(255, 255, 255, 0.06) 100%
+        );
+        background-size: 200% 100%;
+        animation: fitting-buy-order-skel 1.1s ease-in-out infinite;
+    }
+
+    .fitting-buy-order-skeleton__fit {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        padding-block: var(--space-2xs);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .skel-title {
+        width: min(12rem, 40%);
+        height: 1.25rem;
+    }
+
+    .skel-subtitle {
+        width: min(18rem, 60%);
+        height: 0.75rem;
+    }
+
+    .skel-subtitle--wide {
+        width: min(28rem, 85%);
+    }
+
+    .skel-icon {
+        flex-shrink: 0;
+        width: 32px;
+        height: 32px;
+    }
+
+    .skel-fit-name {
+        width: min(16rem, 55%);
+        height: 0.9rem;
+    }
+
+    .skel-textarea {
+        width: 100%;
+        height: 6rem;
+    }
+
+    @keyframes fitting-buy-order-skel {
+        0% { background-position: 100% 0; }
+        100% { background-position: -100% 0; }
+    }
+</style>

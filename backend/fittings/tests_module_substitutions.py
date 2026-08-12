@@ -84,6 +84,46 @@ class ModuleSubstitutionHelpersTestCase(TestCase):
         self.assertNotIn("50MN Microwarpdrive II", variant_names)
         self.assertNotIn("5MN Afterburner II", variant_names)
 
+    def test_variants_require_same_damage_type(self):
+        category, _ = EveCategory.objects.get_or_create(
+            id=7,
+            defaults={"name": "Module", "published": True},
+        )
+        hardeners, _ = EveGroup.objects.get_or_create(
+            id=328,
+            defaults={
+                "name": "Armor Hardener",
+                "eve_category": category,
+                "published": True,
+            },
+        )
+        explosive_t2 = _make_type(
+            11269, "Armor Explosive Hardener II", hardeners
+        )
+        explosive_compact = _make_type(
+            16357, "Experimental Enduring Explosive Armor Hardener", hardeners
+        )
+        kinetic_t2 = _make_type(11271, "Armor Kinetic Hardener II", hardeners)
+        em_t2 = _make_type(11267, "Armor EM Hardener II", hardeners)
+        omni_t2 = _make_type(
+            112690, "Armor Multispectrum Hardener II", hardeners
+        )
+
+        self.assertTrue(types_are_variants(explosive_t2, explosive_compact))
+        self.assertFalse(types_are_variants(explosive_t2, kinetic_t2))
+        self.assertFalse(types_are_variants(explosive_t2, em_t2))
+        self.assertFalse(types_are_variants(explosive_t2, omni_t2))
+
+        variant_names = set(
+            variant_types_for(explosive_t2).values_list("name", flat=True)
+        )
+        self.assertIn(
+            "Experimental Enduring Explosive Armor Hardener", variant_names
+        )
+        self.assertNotIn("Armor Kinetic Hardener II", variant_names)
+        self.assertNotIn("Armor EM Hardener II", variant_names)
+        self.assertNotIn("Armor Multispectrum Hardener II", variant_names)
+
 
 class ModuleSubstitutionAutocompleteViewTestCase(TestCase):
     """Admin autocomplete AJAX is scoped to the fitting / preferred module."""

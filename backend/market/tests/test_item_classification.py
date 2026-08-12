@@ -28,10 +28,13 @@ from market.helpers.item_classification import (
     ITEM_TYPE_RIG,
     ITEM_VARIANT_DEADSPACE,
     ITEM_VARIANT_FACTION,
+    ITEM_VARIANT_OTHER,
     ITEM_VARIANT_T1,
     ITEM_VARIANT_T2,
     META_GROUP_DEADSPACE,
     META_GROUP_FACTION,
+    META_GROUP_OFFICER,
+    META_GROUP_STORYLINE,
     classify_items,
 )
 
@@ -312,3 +315,45 @@ class ItemClassificationTestCase(TestCase):
 
     def test_empty_input(self):
         self.assertEqual(classify_items([]), {})
+
+    def test_officer_and_storyline_are_other(self):
+        officer = EveType.objects.create(
+            id=920020,
+            name="Chelm's Modified Adaptive Nano Plating",
+            published=True,
+            eve_group=self.armor,
+        )
+        EveTypeDogmaAttribute.objects.create(
+            eve_type=officer,
+            eve_dogma_attribute_id=DOGMA_META_GROUP_ID,
+            value=META_GROUP_OFFICER,
+        )
+        EveTypeDogmaAttribute.objects.create(
+            eve_type=officer,
+            eve_dogma_attribute_id=DOGMA_TECH_LEVEL_ID,
+            value=1.0,
+        )
+        storyline = EveType.objects.create(
+            id=920021,
+            name="Inherent Implants 'Lancer' Small Energy Turret",
+            published=True,
+            eve_group=self.weapon,
+        )
+        EveTypeDogmaAttribute.objects.create(
+            eve_type=storyline,
+            eve_dogma_attribute_id=DOGMA_META_GROUP_ID,
+            value=META_GROUP_STORYLINE,
+        )
+        EveTypeDogmaAttribute.objects.create(
+            eve_type=storyline,
+            eve_dogma_attribute_id=DOGMA_TECH_LEVEL_ID,
+            value=1.0,
+        )
+
+        classified = classify_items([officer.id, storyline.id])
+        self.assertEqual(
+            classified[officer.id].item_variant, ITEM_VARIANT_OTHER
+        )
+        self.assertEqual(
+            classified[storyline.id].item_variant, ITEM_VARIANT_OTHER
+        )

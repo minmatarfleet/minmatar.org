@@ -15,8 +15,10 @@ from eveuniverse.models import (
 DOGMA_META_GROUP_ID = 1692
 DOGMA_TECH_LEVEL_ID = 422
 META_GROUP_T2 = 2.0
+META_GROUP_STORYLINE = 3.0  # named / storyline
 META_GROUP_FACTION = 4.0
-META_GROUP_DEADSPACE = 6.0  # A/B/C/X-Type; officer is 5
+META_GROUP_OFFICER = 5.0
+META_GROUP_DEADSPACE = 6.0  # A/B/C/X-Type
 
 EFFECT_HI_POWER = 12
 EFFECT_LO_POWER = 11
@@ -106,6 +108,9 @@ def _classify_variant(
         return ITEM_VARIANT_DEADSPACE
     if tech == 2.0 or meta == META_GROUP_T2:
         return ITEM_VARIANT_T2
+    # Officer + named/storyline before the T1 catch-all (tech is often still 1).
+    if meta in (META_GROUP_STORYLINE, META_GROUP_OFFICER):
+        return ITEM_VARIANT_OTHER
     if meta is None or meta in (0.0, 1.0) or tech in (None, 1.0):
         return ITEM_VARIANT_T1
     return ITEM_VARIANT_OTHER

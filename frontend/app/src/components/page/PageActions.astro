@@ -1,41 +1,75 @@
 ---
 import FlexInline from '@components/compositions/FlexInline.astro';
+
+interface Props {
+    [propName: string]: any;
+}
+
+const {
+    ...attributes
+} = Astro.props;
+
+delete attributes.class
 ---
 
-<div id="desktop-actions" />
+{/*
+  Keep the slot in the live DOM (header), then move that same node into
+  #mobile-actions below xl.
 
-<template x-if="viewport_width < 1280">
-    <template x-teleport="#mobile-actions">
+  Do not restore nested <template x-if="viewport_width …"> +
+  <template x-teleport="#mobile-actions">. Alpine x-data starts a new scope,
+  so viewport_width on <body> is invisible here — both branches stay false,
+  the slot never leaves the inert <template>, and search/filters disappear
+  site-wide. Render first, then appendChild the initialized node.
+*/}
+<div
+    class="[ page-actions ]"
+    x-data={`{
+        place_actions() {
+            const is_mobile = window.innerWidth < 1280
+            const mobile_target = document.getElementById('mobile-actions')
+            const desktop_target = this.$refs.desktop_actions
+            const actions = this.$refs.actions
+            if (!actions)
+                return
+
+            const target = (is_mobile && mobile_target) ? mobile_target : desktop_target
+            if (!target)
+                return
+
+            if (is_mobile && mobile_target) {
+                Array.from(mobile_target.children).forEach((child) => {
+                    if (child !== actions && child.classList.contains('page-actions-slot'))
+                        child.remove()
+                })
+            }
+
+            if (actions.parentElement !== target)
+                target.appendChild(actions)
+
+            if (is_mobile) {
+                document.querySelectorAll('.post-header [data-size="lg"]').forEach(element => {
+                    element.setAttribute('old-data-size', element.getAttribute('data-size'));
+                    element.setAttribute('data-size', 'sm');
+                });
+            } else {
+                document.querySelectorAll('.post-header [data-size="sm"]').forEach(element => {
+                    const old_size = element.getAttribute('old-data-size');
+                    if (old_size) element.setAttribute('data-size', old_size);
+                });
+            }
+        }
+    }`}
+    x-init="$nextTick(() => place_actions())"
+    x-on:resize.window.debounce.100ms="place_actions()"
+>
+    <div x-ref="desktop_actions">
         <FlexInline
-            class="[ w-max ]"
-            x-data={`{
-                init() {
-                    document.querySelectorAll('.post-header [data-size="lg"]').forEach(element => {
-                        element.setAttribute('old-data-size', element.getAttribute('data-size'));
-                        element.setAttribute('data-size', 'sm');
-                    });
-                }
-            }`}
+            class:list={['[ w-max ]', 'page-actions-slot', Astro.props.class]}
+            x-ref="actions"
+            {...attributes}
         >
             <slot />
         </FlexInline>
-    </template>
-</template>
-
-<template x-if="viewport_width >= 1280">
-    <template x-teleport="#desktop-actions">
-        <FlexInline
-            class="[ w-max ]"
-            x-data={`{
-                init() {
-                    document.querySelectorAll('.post-header [data-size="sm"]').forEach(element => {
-                        const old_size = element.getAttribute('old-data-size');
-                        if (old_size) element.setAttribute('data-size', old_size);
-                    });
-                }
-            }`}
-        >
-            <slot />
-        </FlexInline>
-    </template>
-</template>
+    </div>
+</div>

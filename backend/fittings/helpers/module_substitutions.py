@@ -81,8 +81,42 @@ _GENERIC_WORDS = frozenset(
         "warp",
         "ship",
         "module",
+        # Product-family nouns shared across damage-type siblings
+        "hardener",
+        "hardening",
+        "membrane",
+        "coating",
+        "plating",
+        "field",
+        "resistance",
+        "resist",
+        "energized",
+        "nano",
+        "invulnerability",
+        "dissipation",
+        "warding",
+        "amplifier",
     }
 )
+
+# Damage / spectrum tokens that must match when present on either name.
+# Aliases collapse alternate EVE naming (Heat Dissipation = thermal, etc.).
+_FAMILY_KEY_WORDS = frozenset(
+    {
+        "em",
+        "thermal",
+        "heat",
+        "kinetic",
+        "explosive",
+        "multispectrum",
+        "adaptive",
+    }
+)
+_FAMILY_KEY_NORMALIZE = {
+    "heat": "thermal",
+    "adaptive": "omni",
+    "multispectrum": "omni",
+}
 
 
 def fitting_item_names(eft_format: str) -> list[str]:
@@ -125,6 +159,14 @@ def family_words(name: str) -> frozenset[str]:
     return frozenset(words)
 
 
+def family_keys(name: str) -> frozenset[str]:
+    """Normalized damage/spectrum keys present in a module name."""
+    keys: set[str] = set()
+    for word in family_words(name) & _FAMILY_KEY_WORDS:
+        keys.add(_FAMILY_KEY_NORMALIZE.get(word, word))
+    return frozenset(keys)
+
+
 def types_are_variants(preferred: EveType, candidate: EveType) -> bool:
     """True when candidate is a meta/faction/T1–T2 sibling of preferred."""
     if preferred.pk == candidate.pk:
@@ -133,6 +175,12 @@ def types_are_variants(preferred: EveType, candidate: EveType) -> bool:
         return False
     if size_token(preferred.name) != size_token(candidate.name):
         return False
+    preferred_keys = family_keys(preferred.name)
+    candidate_keys = family_keys(candidate.name)
+    # Explosive hardeners must not match Kinetic / EM / omni siblings.
+    if preferred_keys or candidate_keys:
+        if preferred_keys != candidate_keys:
+            return False
     preferred_words = family_words(preferred.name)
     candidate_words = family_words(candidate.name)
     if not preferred_words or not candidate_words:
@@ -168,12 +216,24 @@ def variant_types_for(eve_type: EveType) -> QuerySet[EveType]:
     preferred_words = family_words(eve_type.name)
     distinctive = preferred_words - _GENERIC_WORDS
     match_words = distinctive or preferred_words
+    # Prefer damage-type tokens so the DB prefilter stays on the same resist.
+    key_words = preferred_words & _FAMILY_KEY_WORDS
+    if key_words:
+        match_words = key_words
     if not match_words:
         return EveType.objects.none()
 
     name_q = Q()
     for word in match_words:
         name_q |= Q(name__icontains=word)
+    # Omni aliases: Adaptive <-> Multispectrum
+    if family_keys(eve_type.name) == frozenset({"omni"}):
+        name_q |= Q(name__icontains="adaptive") | Q(
+            name__icontains="multispectrum"
+        )
+    # Thermal shield hardeners are often named Heat Dissipation Field.
+    if "thermal" in family_keys(eve_type.name) or "heat" in preferred_words:
+        name_q |= Q(name__icontains="thermal") | Q(name__icontains="heat")
     candidates = candidates.filter(name_q)
 
     matching_ids = [

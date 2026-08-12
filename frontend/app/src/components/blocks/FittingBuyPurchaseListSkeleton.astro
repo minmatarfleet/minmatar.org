@@ -1,0 +1,118 @@
+---
+interface Props {
+    rows?: number
+}
+
+const { rows = 8 } = Astro.props
+---
+
+<div
+    class="[ fitting-buy-purchase-skeleton ]"
+    aria-busy="true"
+    aria-live="polite"
+>
+    <div class="[ fitting-buy-purchase-skeleton__head ]" aria-hidden="true">
+        <div class="[ skel skel-head skel-head--item ]"></div>
+        <div class="[ skel skel-head skel-head--num ]"></div>
+        <div class="[ skel skel-head skel-head--num ]"></div>
+        <div class="[ skel skel-head skel-head--num ]"></div>
+        <div class="[ skel skel-head skel-head--num ]"></div>
+        <div class="[ skel skel-head skel-head--num ]"></div>
+        <div class="[ skel skel-head skel-head--num ]"></div>
+    </div>
+    {Array.from({ length: rows }).map(() => (
+        <div class="[ fitting-buy-purchase-skeleton__row ]" aria-hidden="true">
+            <div class="[ fitting-buy-purchase-skeleton__item ]">
+                <div class="[ skel skel-icon ]"></div>
+                <div class="[ skel skel-name ]"></div>
+            </div>
+            <div class="[ skel skel-num ]"></div>
+            <div class="[ skel skel-num ]"></div>
+            <div class="[ skel skel-num ]"></div>
+            <div class="[ skel skel-num ]"></div>
+            <div class="[ skel skel-num ]"></div>
+            <div class="[ skel skel-num ]"></div>
+        </div>
+    ))}
+</div>
+
+<style lang="scss">
+    .fitting-buy-purchase-skeleton .skel {
+        border-radius: 2px;
+        background: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.12) 50%,
+            rgba(255, 255, 255, 0.06) 100%
+        );
+        background-size: 200% 100%;
+        animation: fitting-buy-purchase-skel 1.1s ease-in-out infinite;
+    }
+
+    .fitting-buy-purchase-skeleton__head,
+    .fitting-buy-purchase-skeleton__row {
+        display: grid;
+        grid-template-columns:
+            minmax(10rem, 1.6fr)
+            repeat(6, minmax(3.5rem, 1fr));
+        gap: var(--space-xs);
+        align-items: center;
+        padding-block: var(--space-2xs);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .fitting-buy-purchase-skeleton__item {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    .skel-icon {
+        flex-shrink: 0;
+        width: 32px;
+        height: 32px;
+    }
+
+    .skel-name {
+        width: min(14rem, 70%);
+        height: 0.9rem;
+    }
+
+    .skel-num {
+        height: 0.85rem;
+        width: 70%;
+        margin-inline-start: auto;
+    }
+
+    .skel-head {
+        height: 0.65rem;
+        opacity: 0.7;
+    }
+
+    .skel-head--item {
+        width: 4rem;
+    }
+
+    .skel-head--num {
+        width: 2.5rem;
+        margin-inline-start: auto;
+    }
+
+    @media (max-width: 640px) {
+        .fitting-buy-purchase-skeleton__head,
+        .fitting-buy-purchase-skeleton__row {
+            grid-template-columns: minmax(8rem, 1fr) repeat(3, minmax(2.5rem, 1fr));
+        }
+
+        .fitting-buy-purchase-skeleton__head > :nth-child(n + 5),
+        .fitting-buy-purchase-skeleton__row > :nth-child(n + 5) {
+            display: none;
+        }
+    }
+
+    @keyframes fitting-buy-purchase-skel {
+        0% { background-position: 100% 0; }
+        100% { background-position: -100% 0; }
+    }
+</style>
