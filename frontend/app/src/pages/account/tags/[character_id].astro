@@ -71,7 +71,6 @@ const page_title = t('account.tags.page_title');
             unsaved_content: ${unsaved_content},
             leave(url) {
                 if (!this.is_dirty) {
-                    this.allowing_leave = true
                     navigate(url)
                     return
                 }
@@ -98,20 +97,8 @@ const page_title = t('account.tags.page_title');
                 document.querySelectorAll('.loader').forEach(loader => loader.classList.remove('active'))
 
                 const url = event.to?.href
-                if (!url)
-                    return
-
-                show_confirm_dialog({
-                    title: this.unsaved_title,
-                    content: this.unsaved_content,
-                }).then((accepted) => {
-                    if (!accepted)
-                        return
-
-                    this.is_dirty = false
-                    this.allowing_leave = true
-                    navigate(url)
-                })
+                if (url)
+                    this.leave(url)
             },
             on_before_unload(event) {
                 if (!this.is_dirty)
