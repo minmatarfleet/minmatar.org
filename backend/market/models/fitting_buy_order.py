@@ -95,6 +95,14 @@ class FittingBuyOrderLine(models.Model):
             "to this line."
         ),
     )
+    swap_hull_qty = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text=(
+            "When set with swaps, this many hulls use the swapped EFT; "
+            "the rest keep the original fit. Null means all hulls are swapped."
+        ),
+    )
     sort_order = models.PositiveIntegerField(default=0)
 
     class Meta:

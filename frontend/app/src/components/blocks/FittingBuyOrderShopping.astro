@@ -26,6 +26,8 @@ interface Props {
     jita_progress_pct: number
     jita_skeleton_rows: number
     shopping_summary: string
+    purchase_list_error?: string
+    allow_multibuy?: boolean
     multibuy_id: string
 }
 
@@ -39,8 +41,12 @@ const {
     jita_progress_pct,
     jita_skeleton_rows,
     shopping_summary,
+    purchase_list_error = '',
+    allow_multibuy = true,
     multibuy_id,
 } = Astro.props
+
+const can_copy_multibuy = !!(order.multibuy && allow_multibuy)
 
 const type_name_by_id = Object.fromEntries(
     order.items.map((item) => [item.type_id, item.type_name])
@@ -91,7 +97,7 @@ const cpu_pg_label = (
 }
 ---
 
-<ComponentBlock class="[ fitting-buy-section fitting-buy-shopping ]" heavier={true}>
+<ComponentBlock class="[ fitting-buy-section fitting-buy-shopping w-full ]" heavier={true}>
     <Flexblock gap="var(--space-s)">
         <FlexInline
             justification="space-between"
@@ -103,13 +109,16 @@ const cpu_pg_label = (
                 {shopping_summary && (
                     <p class="[ fitting-buy-hint ]">{shopping_summary}</p>
                 )}
+                {purchase_list_error && (
+                    <p class="[ text-[var(--fleet-red)] ]">{purchase_list_error}</p>
+                )}
                 {order.active_jita_check?.error && (
                     <p class="[ text-[var(--fleet-red)] ]">{order.active_jita_check.error}</p>
                 )}
             </Flexblock>
             {!jita_running && (
                 <FlexInline gap="var(--space-xs)" class="[ flex-wrap items-center ]">
-                    {order.multibuy && is_owner && (
+                    {can_copy_multibuy && is_owner && (
                         <form
                             hx-post={partial_base}
                             hx-target="#fitting-buy-order"
@@ -127,7 +136,7 @@ const cpu_pg_label = (
                             </Button>
                         </form>
                     )}
-                    {order.multibuy && !is_owner && (
+                    {can_copy_multibuy && !is_owner && (
                         <ClipboardButton
                             id={multibuy_id}
                             size="sm"
@@ -254,7 +263,7 @@ const cpu_pg_label = (
                             return (
                                 <tr class:list={[
                                     { 'is-short': item.is_short },
-                                    { 'is-stocked': item.buy_qty === 0 },
+                                    { 'is-stocked': item.buy_qty === 0 && item.needed_qty > 0 },
                                     { 'is-split-variant': !!item.allocated_from_type_id },
                                 ]}>
                                     <td>
@@ -483,6 +492,9 @@ const cpu_pg_label = (
 
 <style lang="scss">
     .fitting-buy-shopping {
+        width: 100%;
+        max-width: 100%;
+
         h2 {
             margin: 0;
             font-size: var(--step-1);
@@ -516,12 +528,14 @@ const cpu_pg_label = (
 
     .fitting-buy-table-wrap {
         overflow-x: auto;
+        width: 100%;
         max-width: 100%;
         -webkit-overflow-scrolling: touch;
     }
 
     .fitting-buy-table {
         width: 100%;
+        table-layout: fixed;
         border-collapse: collapse;
         font-size: var(--step--1);
 
@@ -536,20 +550,24 @@ const cpu_pg_label = (
         th:first-child,
         td:first-child {
             white-space: normal;
+            width: 36%;
             min-width: 12rem;
         }
 
         .is-num {
             text-align: right;
             font-variant-numeric: tabular-nums;
+            width: 10.5%;
         }
 
         tr.is-short td {
             color: var(--fleet-red);
+            background-color: color-mix(in srgb, var(--fleet-red) 14%, transparent);
         }
 
         tr.is-stocked td {
-            opacity: 0.55;
+            color: var(--green);
+            background-color: color-mix(in srgb, var(--green) 14%, transparent);
         }
 
         tr.is-split-variant td:first-child {

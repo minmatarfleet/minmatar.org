@@ -6,6 +6,7 @@ from market.endpoints.fitting_buy_orders.common import (
     get_order_or_404,
     require_owner,
 )
+from market.helpers.fitting_buy_check import ensure_jita_check
 from market.helpers.fitting_buy_plan import sync_order_items
 from market.helpers.fitting_buy_serialize import (
     FittingBuyOrderDetailSchema,
@@ -39,4 +40,5 @@ def delete_fitting_buy_line(request, order_id: int, line_id: int):
         return 404, ErrorResponse(detail="Line not found.")
     line.delete()
     sync_order_items(order)
+    ensure_jita_check(order, request.user, quiet=True)
     return serialize_order_detail(order, request.user)

@@ -9,6 +9,7 @@ from market.endpoints.fitting_buy_orders.common import (
     get_order_or_404,
     require_owner,
 )
+from market.helpers.fitting_buy_check import ensure_jita_check
 from market.helpers.fitting_buy_plan import sync_order_items
 from market.helpers.fitting_buy_serialize import (
     FittingBuyOrderDetailSchema,
@@ -62,7 +63,15 @@ def post_fitting_buy_line(
     )
     if not created:
         line.quantity = payload.quantity
-        line.save(update_fields=["quantity"])
+        fields = ["quantity"]
+        if (
+            line.swap_hull_qty is not None
+            and line.swap_hull_qty > payload.quantity
+        ):
+            line.swap_hull_qty = payload.quantity
+            fields.append("swap_hull_qty")
+        line.save(update_fields=fields)
 
     sync_order_items(order)
+    ensure_jita_check(order, request.user, quiet=True)
     return serialize_order_detail(order, request.user)

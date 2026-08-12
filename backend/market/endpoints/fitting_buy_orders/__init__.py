@@ -8,6 +8,12 @@ from market.endpoints.fitting_buy_orders.delete_line import (
     ROUTE_SPEC as delete_line_spec,
     delete_fitting_buy_line,
 )
+from market.endpoints.fitting_buy_orders.delete_order import (
+    PATH as delete_order_path,
+    METHOD as delete_order_method,
+    ROUTE_SPEC as delete_order_spec,
+    delete_fitting_buy_order,
+)
 from market.endpoints.fitting_buy_orders.get_check_jita import (
     PATH as get_check_jita_path,
     METHOD as get_check_jita_method,
@@ -96,6 +102,12 @@ _ROUTES = (
         patch_order_path,
         patch_order_spec,
         patch_fitting_buy_order,
+    ),
+    (
+        delete_order_method,
+        delete_order_path,
+        delete_order_spec,
+        delete_fitting_buy_order,
     ),
     (post_line_method, post_line_path, post_line_spec, post_fitting_buy_line),
     (

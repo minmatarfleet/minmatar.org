@@ -61,7 +61,13 @@ def effective_eft_for_line(
         type_names = dict(
             EveType.objects.filter(id__in=type_ids).values_list("id", "name")
         )
-    return _apply_swaps_to_eft(eft, swaps, type_names)
+    return apply_swaps_to_eft(eft, swaps, type_names)
+
+
+def apply_swaps_to_eft(
+    eft: str, swaps: list | None, names: dict[int, str]
+) -> str:
+    return _apply_swaps_to_eft(eft, swaps, names)
 
 
 def effective_efts_for_lines(
