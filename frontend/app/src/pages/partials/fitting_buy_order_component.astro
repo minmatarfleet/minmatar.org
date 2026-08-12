@@ -27,6 +27,9 @@ import {
     paste_fitting_buy_landed_prices,
     poll_fitting_buy_jita_check,
     start_fitting_buy_jita_check,
+    upsert_fitting_buy_line,
+    delete_fitting_buy_line,
+    delete_fitting_buy_order,
     type FittingBuyOrderDetail,
 } from '@helpers/api.minmatar.org/fitting_buy_orders'
 import {
@@ -50,6 +53,29 @@ async function handle_post_action(action: string, form: FormData) {
                 stock_paste: String(form.get('stock_paste') ?? ''),
             })
             return
+        case 'update_line': {
+            const fitting_id = parseInt(String(form.get('fitting_id') ?? ''), 10)
+            const quantity = parseInt(String(form.get('quantity') ?? ''), 10)
+            order = await upsert_fitting_buy_line(token, order_id, {
+                fitting_id,
+                quantity: Math.max(1, quantity || 1),
+            })
+            return
+        }
+        case 'remove_line': {
+            const line_id = parseInt(String(form.get('line_id') ?? ''), 10)
+            order = await delete_fitting_buy_line(token, order_id, line_id)
+            return
+        }
+        case 'delete_order': {
+            await delete_fitting_buy_order(token, order_id)
+            return new Response(null, {
+                status: 200,
+                headers: {
+                    'HX-Redirect': translatePath('/market/fitting_orders/'),
+                },
+            })
+        }
         case 'swap':
             order = await apply_fitting_buy_swap(
                 token,
@@ -120,7 +146,9 @@ async function handle_post_action(action: string, form: FormData) {
 try {
     if (Astro.request.method === 'POST') {
         const form = await Astro.request.formData()
-        await handle_post_action(String(form.get('action') ?? ''), form)
+        const action_result = await handle_post_action(String(form.get('action') ?? ''), form)
+        if (action_result instanceof Response)
+            return action_result
         // Swaps / stock / etc. may kick off a quiet Jita check — keep polling.
         if (
             order?.active_jita_check
@@ -184,14 +212,18 @@ import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Button from '@components/blocks/Button.astro'
+import ButtonConfirm from '@components/blocks/ButtonConfirm.astro'
 import Tag from '@components/blocks/Tag.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
 import ClipboardButton from '@components/blocks/ClipboardButton.astro'
 import FittingBuyOrderShopping from '@components/blocks/FittingBuyOrderShopping.astro'
 
+const MAX_PURCHASE_TYPES = 100
 const is_owner = order?.is_owner ?? false
+const can_edit_lines = !!(is_owner && order && order.status !== 'archived')
 const buy_items = order?.items.filter((i) => i.buy_qty > 0) ?? []
 const buy_type_count = buy_items.length
+const purchase_list_too_large = buy_type_count > MAX_PURCHASE_TYPES
 const short_count = buy_items.filter((i) => i.is_short).length
 const show_fitting_actions = !!(
     order
@@ -226,11 +258,12 @@ const shopping_summary = (() => {
     return types
 })()
 
+const purchase_list_error = purchase_list_too_large
+    ? t('fitting_buy.purchase_list_too_large').replace('{count}', String(buy_type_count))
+    : ''
+
 const multibuy_id = order ? `fitting-buy-multibuy-${order.id}` : ''
-const fits_bundle_id = order ? `fitting-buy-fits-${order.id}` : ''
-const fits_tip = show_fitting_actions
-    ? t('fitting_buy.fit_one_by_one_tip')
-    : t('fitting_buy.fits_tip')
+const quantity_label = t('fitting_buy.quantity')
 ---
 
 <div id="fitting-buy-order" class="[ fitting-buy-order ]" {...hx_attrs}>
@@ -260,6 +293,26 @@ const fits_tip = show_fitting_actions
                 {!is_owner && (
                     <small class="[ text-[var(--highlight)] ]">{t('fitting_buy.read_only')}</small>
                 )}
+                {is_owner && (
+                    <div class="[ fitting-buy-delete ]">
+                        <ButtonConfirm
+                            label={t('fitting_buy.delete_order')}
+                            size="sm"
+                            color="transparent"
+                        >
+                            <form
+                                hx-post={PARTIAL_BASE}
+                                hx-target="#fitting-buy-order"
+                                hx-swap="outerHTML"
+                            >
+                                <input type="hidden" name="action" value="delete_order" />
+                                <Button type="submit" size="sm">
+                                    {t('fitting_buy.confirm_delete_order')}
+                                </Button>
+                            </form>
+                        </ButtonConfirm>
+                    </div>
+                )}
             </FlexInline>
 
             {!is_owner && order.notes && (
@@ -274,37 +327,36 @@ const fits_tip = show_fitting_actions
                 heavier={show_fitting_actions}
             >
                 <Flexblock gap="var(--space-s)">
-                    <FlexInline
-                        justification="space-between"
-                        class="[ w-full flex-wrap items-start ]"
-                        gap="var(--space-s)"
-                    >
-                        <Flexblock gap="var(--space-3xs)">
-                            <h2>{t('fitting_buy.fit_cart')}</h2>
-                            {show_fitting_actions && (
-                                <p class="[ fitting-buy-fit-label ]">{t('fitting_buy.fit_one_by_one')}</p>
-                            )}
-                            <p class="[ fitting-buy-hint ]">{fits_tip}</p>
-                        </Flexblock>
-                        {show_fitting_actions && order.fits_eft && (
-                            <ClipboardButton
-                                id={fits_bundle_id}
-                                size="sm"
-                                color="transparent"
-                                text={t('fitting_buy.copy_all_fittings')}
-                                title={t('fitting_buy.copy_all_fittings_tip')}
-                            >
-                                {order.fits_eft}
-                            </ClipboardButton>
-                        )}
-                    </FlexInline>
+                    <h2>{t('fitting_buy.fit_cart')}</h2>
 
                     {order.lines.length === 0 ? (
                         <p class="[ text-[var(--highlight)] ]">{t('fitting_buy.no_fits')}</p>
                     ) : (
                         <ul class="[ fitting-buy-lines ]">
-                            {order.lines.map((line) => (
-                                <li>
+                            {order.lines.flatMap((line) => {
+                                const fit_copies = (line.fit_copies?.length
+                                    ? line.fit_copies
+                                    : [{
+                                        quantity: line.quantity,
+                                        eft: line.eft,
+                                        is_swapped: line.has_swaps,
+                                        variant_type_id: null,
+                                        variant_name: '',
+                                    }])
+                                const show_split_rows = fit_copies.length > 1
+
+                                return fit_copies.map((copy, row_index) => {
+                                    // Only label rows when the line is split, or a named variant.
+                                    // A lone full-qty row should not say "Swapped fit".
+                                    const label = show_split_rows
+                                        ? (copy.is_swapped
+                                            ? (copy.variant_name || t('fitting_buy.swapped_fit'))
+                                            : t('fitting_buy.original_fit'))
+                                        : (copy.is_swapped && copy.variant_name
+                                            ? copy.variant_name
+                                            : null)
+                                    return (
+                                <li class:list={[{ 'is-swapped-fit': show_split_rows && copy.is_swapped }]}>
                                     <FlexInline
                                         justification="space-between"
                                         class="[ w-full flex-wrap items-center ]"
@@ -314,20 +366,26 @@ const fits_tip = show_fitting_actions
                                             <ItemPicture
                                                 item_id={line.ship_id}
                                                 item_name={line.fitting_name}
-                                                quantity={line.quantity}
+                                                quantity={copy.quantity}
                                                 size={32}
                                             />
                                             <div class="[ min-w-0 ]">
                                                 <strong class="[ break-words ]">{line.fitting_name}</strong>
                                                 <div class="[ fitting-buy-line-meta ]">
+                                                    {label && (
+                                                        <span class:list={[
+                                                            'fitting-buy-fit-kind',
+                                                            { 'is-swapped': copy.is_swapped },
+                                                        ]}>
+                                                            {label}
+                                                        </span>
+                                                    )}
+                                                    {label && ' · '}
                                                     {t('fitting_buy.hulls_qty').replace(
                                                         '{count}',
-                                                        String(line.quantity),
+                                                        String(copy.quantity),
                                                     )}
-                                                    {line.has_swaps && (
-                                                        <> · {t('fitting_buy.swapped')}</>
-                                                    )}
-                                                    {!show_fitting_actions && line.max_completable != null && (
+                                                    {!show_fitting_actions && !show_split_rows && line.max_completable != null && (
                                                         <>
                                                             {' · '}
                                                             <span class:list={[{
@@ -341,18 +399,63 @@ const fits_tip = show_fitting_actions
                                                 </div>
                                             </div>
                                         </FlexInline>
-                                        {show_fitting_actions && line.eft && (
-                                            <ClipboardButton
-                                                id={`fitting-buy-line-eft-${line.id}`}
-                                                size="sm"
-                                                text={t('fitting_buy.copy_fitting')}
-                                            >
-                                                {line.eft}
-                                            </ClipboardButton>
-                                        )}
+                                        <FlexInline gap="var(--space-2xs)" class="[ items-center flex-wrap ]">
+                                            {can_edit_lines && row_index === 0 && (
+                                                <>
+                                                    <form
+                                                        class="[ fitting-buy-qty-form ]"
+                                                        hx-post={PARTIAL_BASE}
+                                                        hx-target="#fitting-buy-order"
+                                                        hx-swap="outerHTML"
+                                                        hx-trigger="change"
+                                                    >
+                                                        <input type="hidden" name="action" value="update_line" />
+                                                        <input type="hidden" name="fitting_id" value={line.fitting_id} />
+                                                        <label class="[ fitting-buy-qty-label ]">
+                                                            <span class="[ visually-hidden ]">{quantity_label}</span>
+                                                            <input
+                                                                type="number"
+                                                                name="quantity"
+                                                                min="1"
+                                                                step="1"
+                                                                value={line.quantity}
+                                                                class="[ fitting-buy-qty ]"
+                                                                aria-label={quantity_label}
+                                                            />
+                                                        </label>
+                                                    </form>
+                                                    <form
+                                                        hx-post={PARTIAL_BASE}
+                                                        hx-target="#fitting-buy-order"
+                                                        hx-swap="outerHTML"
+                                                    >
+                                                        <input type="hidden" name="action" value="remove_line" />
+                                                        <input type="hidden" name="line_id" value={line.id} />
+                                                        <Button
+                                                            type="submit"
+                                                            size="sm"
+                                                            color="transparent"
+                                                        >
+                                                            {t('fitting_buy.remove')}
+                                                        </Button>
+                                                    </form>
+                                                </>
+                                            )}
+                                            {show_fitting_actions && copy.eft && (
+                                                <ClipboardButton
+                                                    id={`fitting-buy-line-eft-${line.id}-${row_index}`}
+                                                    size="sm"
+                                                    text={t('fitting_buy.copy_fitting')}
+                                                >
+                                                    {copy.eft}
+                                                </ClipboardButton>
+                                            )}
+                                        </FlexInline>
                                     </FlexInline>
                                 </li>
-                            ))}
+                                    )
+                                })
+                            })}
                         </ul>
                     )}
                 </Flexblock>
@@ -401,6 +504,8 @@ const fits_tip = show_fitting_actions
                 jita_progress_pct={jita_progress_pct}
                 jita_skeleton_rows={jita_skeleton_rows}
                 shopping_summary={shopping_summary}
+                purchase_list_error={purchase_list_error}
+                allow_multibuy={!purchase_list_too_large}
                 multibuy_id={multibuy_id}
             />
 
@@ -518,15 +623,22 @@ const fits_tip = show_fitting_actions
         font-size: var(--step--1);
     }
 
-    .fitting-buy-fit-label {
-        margin: 0;
-        color: var(--fleet-yellow);
-        font-size: var(--step--1);
-        font-weight: 500;
-    }
-
     .fitting-buy-line-meta .is-short {
         color: var(--fleet-red);
+    }
+
+    .fitting-buy-fit-kind {
+        color: var(--foreground);
+
+        &.is-swapped {
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .fitting-buy-lines li.is-swapped-fit {
+        border-left: 2px solid var(--fleet-yellow);
+        padding-left: var(--space-2xs);
+        margin-left: calc(var(--space-2xs) * -1);
     }
 
     .fitting-buy-notes-ro {
@@ -569,6 +681,43 @@ const fits_tip = show_fitting_actions
 
         &:first-child {
             padding-top: 0;
+        }
+    }
+
+    .fitting-buy-delete {
+        margin-inline-start: auto;
+    }
+
+    .fitting-buy-qty-form {
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .fitting-buy-qty-label {
+        display: inline-flex;
+    }
+
+    .fitting-buy-qty {
+        width: 4.5rem;
+        background: transparent;
+        color: var(--foreground);
+        border: 1px solid var(--border-color);
+        padding: var(--space-3xs) var(--space-2xs);
+        font-family: var(--default-font);
+        font-size: var(--step--1);
+        font-variant-numeric: tabular-nums;
+        appearance: textfield;
+        -moz-appearance: textfield;
+
+        &:focus-visible {
+            outline: 1px solid var(--foreground);
+            outline-offset: 2px;
+        }
+
+        &::-webkit-outer-spin-button,
+        &::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
     }
 </style>

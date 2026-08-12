@@ -8,6 +8,14 @@ export interface FittingBuySwap {
     notes?: string
 }
 
+export interface FittingBuyFitCopy {
+    quantity: number
+    eft: string
+    is_swapped: boolean
+    variant_type_id: number | null
+    variant_name: string
+}
+
 export interface FittingBuyLine {
     id: number
     fitting_id: number
@@ -18,7 +26,11 @@ export interface FittingBuyLine {
     max_completable: number | null
     sort_order: number
     eft: string
+    original_eft: string
+    original_quantity: number
+    swapped_quantity: number
     has_swaps: boolean
+    fit_copies: FittingBuyFitCopy[]
 }
 
 export interface FittingBuyAlternate {
@@ -196,6 +208,18 @@ export async function patch_fitting_buy_order(
         body: JSON.stringify(payload),
     })
     return await parse_json_or_throw(response, 'PATCH', endpoint) as FittingBuyOrderDetail
+}
+
+export async function delete_fitting_buy_order(
+    access_token: string,
+    order_id: number,
+) {
+    const endpoint = `${API_ENDPOINT}/fitting-buy-orders/${order_id}`
+    const response = await fetch(endpoint, {
+        method: 'DELETE',
+        headers: auth_headers(access_token),
+    })
+    return await parse_json_or_throw(response, 'DELETE', endpoint)
 }
 
 export async function upsert_fitting_buy_line(

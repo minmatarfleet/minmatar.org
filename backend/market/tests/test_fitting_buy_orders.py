@@ -505,6 +505,49 @@ class FittingBuyApiTestCase(TestCase):
         )
         self.assertEqual(response.status_code, 200)
 
+    @patch("market.endpoints.fitting_buy_orders.post_line.ensure_jita_check")
+    @patch("market.endpoints.fitting_buy_orders.delete_line.ensure_jita_check")
+    def test_owner_can_update_and_remove_lines(
+        self, mock_delete_check, mock_post_check
+    ):
+        order = FittingBuyOrder.objects.create(owner=self.owner)
+        line = FittingBuyOrderLine.objects.create(
+            order=order,
+            fitting=self.fitting,
+            quantity=1,
+        )
+        sync_order_items(order)
+
+        updated = self.client.post(
+            f"/fitting-buy-orders/{order.id}/lines",
+            json={"fitting_id": self.fitting.id, "quantity": 5},
+            headers=_auth_headers(self.owner),
+        )
+        self.assertEqual(updated.status_code, 200)
+        self.assertEqual(updated.json()["lines"][0]["quantity"], 5)
+        mock_post_check.assert_called_once()
+
+        deleted = self.client.delete(
+            f"/fitting-buy-orders/{order.id}/lines/{line.id}",
+            headers=_auth_headers(self.owner),
+        )
+        self.assertEqual(deleted.status_code, 200)
+        self.assertEqual(deleted.json()["lines"], [])
+        mock_delete_check.assert_called_once()
+
+        forbidden = self.client.delete(
+            f"/fitting-buy-orders/{order.id}",
+            headers=_auth_headers(self.other),
+        )
+        self.assertEqual(forbidden.status_code, 403)
+
+        removed = self.client.delete(
+            f"/fitting-buy-orders/{order.id}",
+            headers=_auth_headers(self.owner),
+        )
+        self.assertEqual(removed.status_code, 204)
+        self.assertFalse(FittingBuyOrder.objects.filter(pk=order.id).exists())
+
 
 class FittingBuyAlternateSwapTestCase(TestCase):
     def setUp(self):
@@ -639,28 +682,45 @@ class FittingBuyAlternateSwapTestCase(TestCase):
     @patch(
         "market.endpoints.fitting_buy_orders.post_order_swap.ensure_jita_check"
     )
-    def test_order_swap_rewrites_bom_and_eft(self, mock_ensure):
+    def test_order_swap_splits_completable_and_short(self, mock_ensure):
         self.assertIsNotNone(mock_ensure)
+        # Jita only covers 3 of 10 — apply swap should keep 3 original + 7 swapped.
         updated = apply_swap_on_order(
             self.order,
             preferred_type_id=self.preferred.id,
             substitute_type_id=self.compact.id,
         )
         self.assertEqual(updated, 1)
-        plan = build_shopping_plan(self.order)
-        self.assertNotIn(self.preferred.id, plan.buy)
-        self.assertEqual(plan.buy.get(self.compact.id), 10)
         line = self.order.lines.get()
+        self.assertEqual(line.quantity, 10)
+        self.assertEqual(line.swap_hull_qty, 7)
         self.assertEqual(line.swaps[0]["substitute_type_id"], self.compact.id)
+
+        plan = build_shopping_plan(self.order)
+        self.assertEqual(plan.buy.get(self.preferred.id), 3)
+        self.assertEqual(plan.buy.get(self.compact.id), 7)
+
+        detail = serialize_order_detail(self.order, self.owner)
+        self.assertEqual(len(detail["lines"]), 1)
+        row = detail["lines"][0]
+        self.assertTrue(row["has_swaps"])
+        self.assertEqual(row["original_quantity"], 3)
+        self.assertEqual(row["swapped_quantity"], 7)
+        self.assertIn(self.preferred.name, row["original_eft"])
+        self.assertIn(self.compact.name, row["eft"])
+        self.assertNotIn(self.preferred.name, row["eft"])
+        self.assertIn(self.preferred.name, detail["multibuy"])
+        self.assertIn(self.compact.name, detail["multibuy"])
 
         response = self.client.post(
             f"/fitting-buy-orders/{self.order.id}/swaps",
             json={
-                "preferred_type_id": self.compact.id,
+                "preferred_type_id": self.preferred.id,
                 "substitute_type_id": self.alternate.id,
             },
             headers=_auth_headers(self.owner),
         )
+        # Preferred still on the original portion — endpoint should still match.
         self.assertEqual(response.status_code, 200)
         body = response.json()
         buy_items = {
@@ -669,12 +729,7 @@ class FittingBuyAlternateSwapTestCase(TestCase):
             if item["buy_qty"] > 0
         }
         self.assertIn(self.alternate.id, buy_items)
-        self.assertNotIn(self.preferred.id, buy_items)
-        self.assertEqual(buy_items[self.alternate.id]["buy_qty"], 10)
-        self.assertEqual(buy_items[self.alternate.id]["needed_qty"], 10)
-        self.assertIn(self.alternate.name, body["lines"][0]["eft"])
-        self.assertIn(self.alternate.name, body["multibuy"])
-        self.assertNotIn(self.preferred.name, body["multibuy"])
+        self.assertTrue(body["lines"][0]["has_swaps"])
 
 
 class FittingBuyAllocationTestCase(TestCase):
@@ -869,6 +924,15 @@ class FittingBuyAllocationTestCase(TestCase):
         detail = serialize_order_detail(self.order, self.owner)
         self.assertIn(f"{self.compact.name} 8", detail["multibuy"])
         self.assertIn(f"{self.preferred.name} 12", detail["multibuy"])
+        line = detail["lines"][0]
+        copies = line["fit_copies"]
+        self.assertEqual(len(copies), 2)
+        by_swapped = {copy["is_swapped"]: copy for copy in copies}
+        self.assertEqual(by_swapped[False]["quantity"], 12)
+        self.assertEqual(by_swapped[True]["quantity"], 8)
+        self.assertIn(self.compact.name, by_swapped[True]["eft"])
+        self.assertNotIn(self.compact.name, by_swapped[False]["eft"])
+        self.assertEqual(by_swapped[True]["variant_name"], self.compact.name)
 
     def test_clamps_to_jita_depth(self):
         set_allocations(

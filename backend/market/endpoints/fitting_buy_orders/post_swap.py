@@ -15,7 +15,7 @@ from market.helpers.fitting_buy_serialize import (
     FittingBuyOrderDetailSchema,
     serialize_order_detail,
 )
-from market.helpers.fitting_buy_swap import apply_swap_on_line
+from market.helpers.fitting_buy_swap import apply_swap_on_line_split
 from market.models.fitting_buy_order import FittingBuyOrderLine
 
 PATH = "/fitting-buy-orders/{order_id}/lines/{line_id}/swaps"
@@ -68,8 +68,9 @@ def post_fitting_buy_swap(
     if payload.substitute_type_id not in types:
         return 404, ErrorResponse(detail="Substitute module type not found.")
 
-    apply_swap_on_line(
+    apply_swap_on_line_split(
         line,
+        order,
         preferred_type_id=payload.preferred_type_id,
         substitute_type_id=payload.substitute_type_id,
         notes=payload.notes or "",

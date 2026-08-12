@@ -58,6 +58,7 @@ def line_type_quantities(
     lines: Iterable[FittingBuyOrderLine],
     *,
     include_hull: bool,
+    apply_line_swaps: bool = True,
 ) -> list[LineBom]:
     lines = list(lines)
     if not lines:
@@ -72,13 +73,46 @@ def line_type_quantities(
             ship_id = hull_ids.get(line.fitting_id)
             if ship_id:
                 per_ship.pop(ship_id, None)
-        per_ship = _apply_swaps(per_ship, line.swaps)
-        total = {tid: qty * line.quantity for tid, qty in per_ship.items()}
+
+        quantity = int(line.quantity)
+        swaps = line.swaps if apply_line_swaps else None
+        swap_hull_qty = None
+        if apply_line_swaps and swaps:
+            raw_swap_qty = getattr(line, "swap_hull_qty", None)
+            if raw_swap_qty is not None:
+                swap_hull_qty = max(0, min(quantity, int(raw_swap_qty)))
+
+        if (
+            swaps
+            and swap_hull_qty is not None
+            and 0 < swap_hull_qty < quantity
+        ):
+            original_qty = quantity - swap_hull_qty
+            swapped_per = _apply_swaps(per_ship, swaps)
+            total: dict[int, int] = {}
+            for tid, qty in per_ship.items():
+                total[tid] = total.get(tid, 0) + qty * original_qty
+            for tid, qty in swapped_per.items():
+                total[tid] = total.get(tid, 0) + qty * swap_hull_qty
+            result.append(
+                LineBom(
+                    line_id=line.id,
+                    fitting_id=line.fitting_id,
+                    quantity=quantity,
+                    per_ship=swapped_per,
+                    total=total,
+                )
+            )
+            continue
+
+        if apply_line_swaps:
+            per_ship = _apply_swaps(per_ship, swaps)
+        total = {tid: qty * quantity for tid, qty in per_ship.items()}
         result.append(
             LineBom(
                 line_id=line.id,
                 fitting_id=line.fitting_id,
-                quantity=line.quantity,
+                quantity=quantity,
                 per_ship=per_ship,
                 total=total,
             )

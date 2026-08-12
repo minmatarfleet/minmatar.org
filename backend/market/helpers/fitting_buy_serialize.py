@@ -19,6 +19,7 @@ from market.helpers.fitting_buy_alternates import (
     shopping_alternate_types_for,
 )
 from market.helpers.fitting_buy_eft import effective_efts_for_lines
+from market.helpers.fitting_buy_fit_copies import build_fit_copies_by_line
 from market.helpers.fitting_buy_plan import (
     build_shopping_plan,
     compute_max_completable,
@@ -53,6 +54,14 @@ class FittingBuySwapSchema(Schema):
     notes: str = ""
 
 
+class FittingBuyFitCopySchema(Schema):
+    quantity: int
+    eft: str
+    is_swapped: bool = False
+    variant_type_id: int | None = None
+    variant_name: str = ""
+
+
 class FittingBuyLineSchema(Schema):
     id: int
     fitting_id: int
@@ -63,7 +72,11 @@ class FittingBuyLineSchema(Schema):
     max_completable: int | None = None
     sort_order: int = 0
     eft: str = ""
+    original_eft: str = ""
+    original_quantity: int = 0
+    swapped_quantity: int = 0
     has_swaps: bool = False
+    fit_copies: list[FittingBuyFitCopySchema] = []
 
 
 class FittingBuyItemSchema(Schema):
@@ -487,6 +500,7 @@ def serialize_order_detail(  # noqa: C901
         order.lines.select_related("fitting").order_by("sort_order", "id")
     )
     eft_by_line = effective_efts_for_lines(order_lines)
+    fit_copies_by_line = build_fit_copies_by_line(order, order_lines)
     lines = []
     for line in order_lines:
         swaps = []
@@ -502,23 +516,44 @@ def serialize_order_detail(  # noqa: C901
                     "notes": str(swap.get("notes") or ""),
                 }
             )
+        original_eft = line.fitting.eft_format or ""
+        swapped_eft = eft_by_line.get(line.id, "")
+        quantity = int(line.quantity)
+        fit_copies = fit_copies_by_line.get(line.id) or [
+            {
+                "quantity": quantity,
+                "eft": swapped_eft if swaps else original_eft,
+                "is_swapped": bool(swaps),
+                "variant_type_id": None,
+                "variant_name": "",
+            }
+        ]
+        original_quantity = sum(
+            copy["quantity"] for copy in fit_copies if not copy["is_swapped"]
+        )
+        swapped_quantity = sum(
+            copy["quantity"] for copy in fit_copies if copy["is_swapped"]
+        )
         lines.append(
             {
                 "id": line.id,
                 "fitting_id": line.fitting_id,
                 "fitting_name": line.fitting.name,
                 "ship_id": line.fitting.ship_id,
-                "quantity": line.quantity,
+                "quantity": quantity,
                 "swaps": swaps,
                 "max_completable": (
                     max_completable.get(line.id) if checked else None
                 ),
                 "sort_order": line.sort_order,
-                "eft": eft_by_line.get(line.id, ""),
-                "has_swaps": bool(swaps),
+                "eft": swapped_eft if swaps else original_eft,
+                "original_eft": original_eft,
+                "original_quantity": original_quantity,
+                "swapped_quantity": swapped_quantity,
+                "has_swaps": bool(swaps) or swapped_quantity > 0,
+                "fit_copies": fit_copies,
             }
         )
-
     fitting_ids = [line.fitting_id for line in order_lines]
     short_preferred_ids = {
         item["type_id"]
@@ -575,8 +610,9 @@ def serialize_order_detail(  # noqa: C901
         "multibuy": multibuy_tsv(effective_buy, type_names),
         "fits_eft": "\n\n".join(
             block
-            for line in order_lines
-            if (block := eft_by_line.get(line.id, "").strip())
+            for line_data in lines
+            for copy in line_data["fit_copies"]
+            if (block := (copy.get("eft") or "").strip())
         ),
         "unresolved_stock_names": plan.unresolved_stock_names,
         "substitutions": subs,
