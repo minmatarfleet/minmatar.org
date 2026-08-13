@@ -242,6 +242,16 @@ class EveOnlineTaskTests(TestCase):
             response_code=200,
             data=[],
         )
+        mock_esi_client.get_corporation_titles.return_value = EsiResponse(
+            response_code=200,
+            data=[],
+        )
+        mock_esi_client.get_corporation_member_titles.return_value = (
+            EsiResponse(
+                response_code=200,
+                data=[],
+            )
+        )
 
         with patch(
             "eveonline.models.corporations.EsiClient"
