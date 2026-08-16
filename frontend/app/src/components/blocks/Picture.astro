@@ -13,6 +13,8 @@ interface Props {
     mask?:          boolean;
     zoomable?:      boolean;
     placeholder?:   string;
+    /** Crop to a shared aspect ratio so reel/card thumbnails align. */
+    thumbnail?:     boolean;
     astro_image?:   AstroImageOptions;
 }
 
@@ -24,23 +26,24 @@ const {
     mask = false,
     zoomable = false,
     placeholder,
+    thumbnail = false,
     astro_image,
 } = Astro.props
 
 import ZoomableImage from "@components/blocks/ZoomableImage.astro";
 ---
 
-<picture class="animated">
+<picture class:list={['animated', { 'fixed-thumbnail': thumbnail }]}>
     {zoomable ?
         <ZoomableImage
-            class:list={[{ mask }, 'h-auto']}
+            class:list={[{ mask }, thumbnail ? 'thumbnail-fill' : 'h-auto']}
             src={src}
             alt={alt ? alt : undefined}
             loading="lazy"
             astro_image={astro_image ? astro_image : undefined}
         /> :
         <img
-            class:list={{ mask }}
+            class:list={{ mask, 'thumbnail-fill': thumbnail }}
             loading="lazy"
             height={narrow ? 412 : size}
             width={size}
@@ -60,6 +63,31 @@ import ZoomableImage from "@components/blocks/ZoomableImage.astro";
     img {
         object-fit: cover;
         width: 100%;
+    }
+
+    .fixed-thumbnail {
+        display: block;
+        width: 100%;
+        aspect-ratio: 3 / 4;
+        overflow: hidden;
+
+        :global(figure),
+        :global(img) {
+            width: 100%;
+            height: 100%;
+        }
+
+        :global(figure) {
+            margin: 0;
+            display: block;
+        }
+
+        :global(.thumbnail-fill) {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
     }
 
     .mask:not(.medium-zoom-image--opened) {

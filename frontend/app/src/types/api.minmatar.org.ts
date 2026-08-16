@@ -53,6 +53,7 @@ export interface TribeGroup {
     id:                     number;
     tribe_id:               number;
     tribe_name:             string;
+    code?:                  string;
     name:                   string;
     description:            string;
     discord_channel_id:     number | null;

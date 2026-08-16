@@ -10,6 +10,7 @@ interface Props {
     editor_id?:     number;
     is_editing:     boolean;
     hash:           string;
+    as_subsection?: boolean;
 }
 
 const {
@@ -21,9 +22,10 @@ const {
     editor_id,
     is_editing,
     hash,
+    as_subsection = false,
 } = Astro.props
 
-import { slugify } from '@helpers/string'
+const HeadingTag = as_subsection ? 'h3' : 'h2'
 
 import TextBox from '@components/layout/TextBox.astro';
 
@@ -43,28 +45,30 @@ import PostersReel from '@components/blocks/PostersReel.astro';
                 2xl:block!
             ]"
             src={cover}
+            alt=""
         />
     }
 
     <Flexblock gap='var(--space-l)'>
         <TextBox>
             <Flexblock>
-                <h2 id={hash}>{title}</h2>
+                <HeadingTag id={hash}>{title}</HeadingTag>
                 {!is_editing && <p>{description}</p>}
             </Flexblock>
         </TextBox>
         <Wrapper
             padding_block='0'
             padding_inline='0'
-            max_width='var(--max-col-width)'
+            max_width={cover ? 'var(--max-col-width)' : '100%'}
         >
             <PostersReel
                 posts={posts}
                 small={true}
-                swiper_id={slugify(title).toLowerCase()}
+                swiper_id={hash.toLowerCase()}
                 is_video={is_video}
                 editor_id={editor_id ? editor_id : undefined}
                 is_editing={is_editing}
+                has_cover={Boolean(cover)}
             />
         </Wrapper>
     </Flexblock>
@@ -73,10 +77,24 @@ import PostersReel from '@components/blocks/PostersReel.astro';
 <style lang="scss">
     .cover {
         position: absolute;
+        top: 50%;
         right: 0;
+        left: calc(var(--max-col-width) + 3.5rem);
+        translate: 0 -50%;
         z-index: -1;
         max-height: 580px;
-        top: 50%;
-        translate: 0 -50%;
+        width: auto;
+        max-width: calc(100% - var(--max-col-width) - 3.5rem);
+        object-fit: contain;
+        object-position: left center;
+        pointer-events: none;
+    }
+
+    h2 {
+        font-size: var(--step-3);
+    }
+
+    h3 {
+        font-size: var(--step-1);
     }
 </style>

@@ -1,0 +1,102 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { getPublishedGuides } from '@/data/guides'
+
+import TextBox from '@components/layout/TextBox.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+
+import LandingSwiper from '@components/blocks/LandingSwiper.astro'
+import GuidePostCard from '@components/blocks/GuidePostCard.astro'
+
+const guides = getPublishedGuides()
+const swiper_id = 'guides-reel-swiper'
+---
+
+{guides.length > 0 &&
+    <section class="[ content-section relative ]">
+        <Flexblock gap='var(--space-l)'>
+            <TextBox>
+                <Flexblock>
+                    <h2 id="Guides">{t('content.guides.section_title')}</h2>
+                    <p>{t('content.guides.section_leading_text')}</p>
+                </Flexblock>
+            </TextBox>
+
+            <Wrapper
+                padding_block='0'
+                padding_inline='0'
+                max_width='100%'
+            >
+                <Wrapper
+                    class="[ guides-reel ]"
+                    padding_block='0'
+                    padding_inline='0'
+                    max_width='100%'
+                >
+                    <div id={swiper_id} class="[ swiper ][ w-full pb-10! ]">
+                        <LandingSwiper swiper_selector={`#${swiper_id}`} align='end' gap={10}>
+                            {guides.map((guide) => (
+                                <div
+                                    class="[ swiper-slide ]"
+                                    style="margin-right: 10px"
+                                >
+                                    <GuidePostCard guide={guide} />
+                                </div>
+                            ))}
+                        </LandingSwiper>
+                    </div>
+
+                    <div id={`${swiper_id}-button-prev`} class="[ swiper-button-prev hidden lg:block! ]"></div>
+                    <div id={`${swiper_id}-button-next`} class="[ swiper-button-next hidden lg:block! ]"></div>
+                </Wrapper>
+            </Wrapper>
+        </Flexblock>
+    </section>
+}
+
+<style lang="scss">
+    h2 {
+        font-size: var(--step-3);
+    }
+
+    .guides-reel {
+        position: relative;
+    }
+
+    .swiper-button-prev,
+    .swiper-button-next {
+        --swiper-navigation-color: var(--highlight);
+        --swiper-navigation-sides-offset: -46px;
+
+        opacity: 0;
+        z-index: 1;
+    }
+
+    .swiper-initialized ~ .swiper-button-prev,
+    .swiper-initialized ~ .swiper-button-next {
+        opacity: 1;
+    }
+
+    .swiper-initialized ~ .swiper-button-next.swiper-button-disabled,
+    .swiper-initialized ~ .swiper-button-prev.swiper-button-disabled {
+        opacity: 0;
+    }
+
+    .swiper-button-next.swiper-button-disabled,
+    .swiper-button-prev.swiper-button-disabled {
+        --swiper-navigation-color: var(--fleet-yellow);
+        opacity: 1;
+    }
+
+    .swiper-button-prev,
+    .swiper-button-next {
+        transform: translateY(-1.25rem);
+    }
+
+    .swiper-slide {
+        width: min(100%, 320px);
+    }
+</style>

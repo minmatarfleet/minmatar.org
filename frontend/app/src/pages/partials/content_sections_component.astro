@@ -1,0 +1,99 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
+const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = (user ? user?.is_superuser : false)
+
+import { is_thinkspeak_member } from '@helpers/thinkspeak'
+
+const can_manage_content = Boolean(
+    user && (is_superuser || (auth_token && await is_thinkspeak_member(auth_token)))
+)
+const post_editor = can_manage_content ? (user as User).user_id : false
+
+import type { PostListUI } from '@dtypes/layout_components'
+import { fetch_posts_grouped_by_tags, fetch_posts } from '@helpers/fetching/posts'
+
+let posts: Record<string, PostListUI[]> = {}
+let news_reel_posts: PostListUI[] = []
+let post_fetching_error: Error | false = false
+const PAGE_LENGTH = 10
+
+try {
+    const posts_grouped = await fetch_posts_grouped_by_tags({ status: 'published' })
+    posts = posts_grouped.posts_by_tag
+
+    const paginated_posts = await fetch_posts({
+        page_num: 1,
+        page_size: PAGE_LENGTH,
+        status: 'published',
+    })
+
+    news_reel_posts = paginated_posts.chunk
+} catch (error) {
+    post_fetching_error = error as Error
+}
+
+const CONTENT_SECTIONS_PARTIAL_URL = `${translatePath('/partials/content_sections_component')}?state=published`
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+
+import PageSubheader from '@components/page/PageSubheader.astro'
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import AllianceCampaignStrip from '@components/blocks/AllianceCampaignStrip.astro'
+import GuidesStrip from '@components/blocks/GuidesStrip.astro'
+import PropagandaReels from '@components/blocks/PropagandaReels.astro'
+import StoreBanner from '@components/blocks/StoreBanner.astro'
+import NewsReel from '@components/blocks/NewsReel.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+---
+
+{post_fetching_error ?
+    <ErrorRefetch
+        args={{
+            partial: CONTENT_SECTIONS_PARTIAL_URL,
+            error: post_fetching_error,
+            delay: delay,
+        }}
+    />
+    :
+    <>
+        <PageSubheader
+            id="subheader-oob"
+            hx-swap-oob="true"
+            is_empty={true}
+        />
+
+        <div id="content-sections">
+            <Flexblock class="[ pb-[64px] ]" gap='var(--space-2xl)'>
+                <AllianceCampaignStrip />
+                <PropagandaReels
+                    posts={posts}
+                    editor_id={post_editor ? post_editor : undefined}
+                    is_editing={false}
+                    show_section_header={true}
+                />
+                <GuidesStrip />
+                <Wrapper
+                    class="[ w-full ]"
+                    max_width="700px"
+                    padding_inline="0"
+                    padding_block="0"
+                    centered={true}
+                >
+                    <StoreBanner thin={true} />
+                </Wrapper>
+                <NewsReel
+                    posts={news_reel_posts}
+                    show_manage_content={can_manage_content}
+                />
+            </Flexblock>
+        </div>
+    </>
+}

@@ -19,9 +19,13 @@ const {
 } = Astro.props
 
 function getRedditImageWidth(url) {
-    const u = new URL(url)
-    const width = u.searchParams.get("width")
-    return width ? parseInt(width, 10) : null
+    try {
+        const u = new URL(url)
+        const width = u.searchParams.get("width")
+        return width ? parseInt(width, 10) : null
+    } catch {
+        return null
+    }
 }
 
 const width = getRedditImageWidth(src)
@@ -61,5 +65,20 @@ const zoomSrc = `/_image?href=${encodeURIComponent(src).replaceAll('amp%3B', '')
 <style lang="scss">
     img {
         min-height: 125px;
+    }
+
+    :global(figure:has(.thumbnail-fill)),
+    figure:has(:global(.thumbnail-fill)) {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+    }
+
+    :global(img.thumbnail-fill) {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        min-height: 0;
     }
 </style>

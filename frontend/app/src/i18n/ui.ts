@@ -62,6 +62,21 @@ export const ui = {
         'alliance.values.page_title': 'Alliance Values',
         'alliance.playstyle.page_title': 'Our playstyle',
 
+        'content.page_title': 'Our content',
+        'content.leading_text': 'Campaigns, propaganda, and guides from Minmatar Fleet.',
+        'content.meta_description': 'Minmatar Fleet content stream: campaigns, system sieges, guides, and propaganda.',
+        'content.back_to_content': 'Back to our content',
+        'content.posts_page_note': 'Showing posts for this page.',
+        'content.post_count_singular': 'COUNT post in the stream',
+        'content.post_count_plural': 'COUNT posts in the stream',
+        'content.filter.all': 'All',
+        'content.filter.campaigns': 'Campaigns',
+        'content.filter.posts': 'Posts',
+        'content.kind.campaign': 'Campaign',
+        'content.kind.siege': 'System Siege',
+        'content.kind.post': 'Post',
+        'content.manage_my_content': 'Manage my content',
+
         'guides.page_title': 'Guides',
         'guides.back_to_guides': 'Back to guides',
         'guides.progress': 'Progress',
@@ -134,9 +149,13 @@ export const ui = {
         'brand.leading_text': 'Official FL33T fonts, colours, logos, and icons for alliance branding.',
 
         'campaigns.section_title': 'Our campaigns',
-        'campaigns.section_leading_text': 'After-action reports from our wars — combat stats, headlines, and the pilots who flew them.',
+        'campaigns.section_leading_text': 'After-action reports from our wars and system sieges — combat stats, headlines, and the pilots who flew them.',
         'campaigns.isk_destroyed': 'ISK destroyed',
         'campaigns.view_report': 'View report',
+
+        'content.propaganda.section_title': 'Our propaganda',
+        'content.guides.section_title': 'Our guides',
+        'content.guides.section_leading_text': 'How we fight, farm, and fly — written for Minmatar Fleet pilots.',
 
         'campaigns.sieges.section_title': 'System sieges',
         'campaigns.sieges.section_leading_text':
@@ -1398,7 +1417,7 @@ export const ui = {
         'corporations.cover_alt': 'Outspace starry sky',
         
         'dna.leading_text': 'Minmatar Fleet breaks from the traditional alliance mold-embracing a bit of chaos, acting first, and sorting out the questions later. Learn what makes us tick.',
-        'community.leading_text': 'Get to know our community: corporations, specialized interest groups, teams, tribes, and the propaganda that gives our culture its voice.',
+        'community.leading_text': 'Get to know our community: corporations, specialized interest groups, teams, tribes, and the guides that help new pilots find their footing.',
 
         'corporations.list.page_title': 'Corporations',
         'corporations.list.leading_text': 'Strong corporations build strong alliances. Learn more about the corporations, CEOs, and membership that make up the Minmatar Fleet Alliance. Perhaps you can submit an application of your own!',
@@ -1981,6 +2000,7 @@ export const ui = {
         'page_finder.story.description': 'Learn more about our story.',
         'page_finder.values.description': 'What we expect from every FL33T member.',
         'page_finder.playstyle.description': 'Learn more about our playstyle.',
+        'page_finder.content.description': 'Our content stream — campaigns, sieges, and propaganda.',
         'page_finder.guides.description': 'EVE Online guides for faction warfare plexing, navy destroyer metagame, abyssal deadspace, L5 missions, and fleet tools.',
         'page_finder.brand.description': 'Official FL33T fonts, colours, logos, and icons.',
         'page_finder.teams.description': 'Teams landing page.',
@@ -2910,7 +2930,7 @@ export const ui = {
         'deleted': 'Deleted',
         'propaganda_post_singular': 'COUNT propaganda post',
         'propaganda_post_plural': 'COUNT propaganda posts',
-        'find_in_propaganda': 'Find more in propaganda',
+        'find_in_propaganda': 'Find more in our content',
         'rust_and_blood': 'Rust and Blood',
         'rust_and_blood_tooltip': 'Western style comic strip about the happenings on the Warzone.',
         'waifu_wars': 'The Waifu Wars',

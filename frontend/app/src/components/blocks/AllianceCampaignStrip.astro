@@ -2,72 +2,99 @@
 import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
-import { getCampaigns, getSieges } from '@/data/campaigns'
+import { getAllCampaigns } from '@/data/campaigns'
 
-import Grid from '@components/compositions/Grid.astro'
-import Flexblock from '@components/compositions/Flexblock.astro'
-
-import CampaignSubcard from '@components/blocks/CampaignSubcard.astro'
 import TextBox from '@components/layout/TextBox.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
 
-const campaigns = getCampaigns()
-const sieges = getSieges()
+import LandingSwiper from '@components/blocks/LandingSwiper.astro'
+import CampaignPostCard from '@components/blocks/CampaignPostCard.astro'
+
+const campaigns = getAllCampaigns()
+const swiper_id = 'campaigns-reel-swiper'
 ---
 
-<Flexblock gap='var(--space-2xl)'>
+<section class="[ content-section relative ]">
     <Flexblock gap='var(--space-l)'>
-        <Flexblock gap='var(--space-m)'>
-            <h2>{t('campaigns.section_title')}</h2>
-
-            <TextBox>
+        <TextBox>
+            <Flexblock>
+                <h2 id="Campaigns">{t('campaigns.section_title')}</h2>
                 <p>{t('campaigns.section_leading_text')}</p>
-            </TextBox>
-        </Flexblock>
-
-        <Grid
-            class="[ w-full grid-fill ]"
-            row_gap="var(--space-3xs)"
-            column_gap="var(--space-3xs)"
-            min_item_width="350px"
-            role="list"
-        >
-            {campaigns.map((campaign) => (
-                <div role="listitem">
-                    <CampaignSubcard campaign={campaign} />
-                </div>
-            ))}
-        </Grid>
-    </Flexblock>
-
-    {sieges.length > 0 && (
-        <Flexblock gap='var(--space-l)'>
-            <Flexblock gap='var(--space-m)'>
-                <h2>{t('campaigns.sieges.section_title')}</h2>
-
-                <TextBox>
-                    <p>{t('campaigns.sieges.section_leading_text')}</p>
-                </TextBox>
             </Flexblock>
+        </TextBox>
 
-            <Grid
-                class="[ w-full grid-fill ]"
-                row_gap="var(--space-3xs)"
-                column_gap="var(--space-3xs)"
-                min_item_width="350px"
-                role="list"
+        <Wrapper
+            padding_block='0'
+            padding_inline='0'
+            max_width='100%'
+        >
+            <Wrapper
+                class="[ campaigns-reel ]"
+                padding_block='0'
+                padding_inline='0'
+                max_width='100%'
             >
-                {sieges.map((siege) => (
-                    <div role="listitem">
-                        <CampaignSubcard campaign={siege} />
-                    </div>
-                ))}
-            </Grid>
-        </Flexblock>
-    )}
-</Flexblock>
+                <div id={swiper_id} class="[ swiper ][ w-full pb-10! ]">
+                    <LandingSwiper swiper_selector={`#${swiper_id}`} align='end' gap={10}>
+                        {campaigns.map((campaign) => (
+                            <div
+                                class="[ swiper-slide ]"
+                                style="margin-right: 10px"
+                            >
+                                <CampaignPostCard campaign={campaign} />
+                            </div>
+                        ))}
+                    </LandingSwiper>
+                </div>
+
+                <div id={`${swiper_id}-button-prev`} class="[ swiper-button-prev hidden lg:block! ]"></div>
+                <div id={`${swiper_id}-button-next`} class="[ swiper-button-next hidden lg:block! ]"></div>
+            </Wrapper>
+        </Wrapper>
+    </Flexblock>
+</section>
 
 <style lang="scss">
     h2 {
-        font-size: var(--step-4);
+        font-size: var(--step-3);
+    }
+
+    .campaigns-reel {
+        position: relative;
+    }
+
+    .swiper-button-prev,
+    .swiper-button-next {
+        --swiper-navigation-color: var(--highlight);
+        --swiper-navigation-sides-offset: -46px;
+
+        opacity: 0;
+        z-index: 1;
+    }
+
+    .swiper-initialized ~ .swiper-button-prev,
+    .swiper-initialized ~ .swiper-button-next {
+        opacity: 1;
+    }
+
+    .swiper-initialized ~ .swiper-button-next.swiper-button-disabled,
+    .swiper-initialized ~ .swiper-button-prev.swiper-button-disabled {
+        opacity: 0;
+    }
+
+    .swiper-button-next.swiper-button-disabled,
+    .swiper-button-prev.swiper-button-disabled {
+        --swiper-navigation-color: var(--fleet-yellow);
+        opacity: 1;
+    }
+
+    .swiper-button-prev,
+    .swiper-button-next {
+        transform: translateY(-1.25rem);
+    }
+
+    .swiper-slide {
+        width: min(100%, 320px);
     }
 </style>

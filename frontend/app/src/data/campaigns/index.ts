@@ -17,6 +17,8 @@ export type CampaignMeta = {
     iskDestroyed: number
     sortOrder: number
     kind: CampaignKind
+    /** Campaign/siege end date for content-stream sorting. */
+    published_at: Date
 }
 
 export const campaigns: CampaignMeta[] = [
@@ -30,6 +32,7 @@ export const campaigns: CampaignMeta[] = [
         iskDestroyed: ETHERIUM_ISK,
         sortOrder: 1,
         kind: 'campaign',
+        published_at: new Date('2026-06-18T00:00:00Z'),
     },
     {
         slug: 'providence',
@@ -41,6 +44,7 @@ export const campaigns: CampaignMeta[] = [
         iskDestroyed: PROVIDENCE_ISK,
         sortOrder: 2,
         kind: 'campaign',
+        published_at: new Date('2025-03-31T00:00:00Z'),
     },
     {
         slug: 'scalding-pass',
@@ -52,6 +56,7 @@ export const campaigns: CampaignMeta[] = [
         iskDestroyed: SCALDING_ISK,
         sortOrder: 3,
         kind: 'campaign',
+        published_at: new Date('2024-05-31T00:00:00Z'),
     },
     {
         slug: 'hek',
@@ -63,6 +68,7 @@ export const campaigns: CampaignMeta[] = [
         iskDestroyed: HEK_ISK,
         sortOrder: 4,
         kind: 'campaign',
+        published_at: new Date('2023-11-30T00:00:00Z'),
     },
     {
         slug: AUGA_SLUG,
@@ -74,6 +80,7 @@ export const campaigns: CampaignMeta[] = [
         iskDestroyed: AUGA_ISK,
         sortOrder: 1,
         kind: 'siege',
+        published_at: new Date('2026-07-18T00:00:00Z'),
     },
 ]
 
@@ -87,6 +94,12 @@ export function getSieges(): CampaignMeta[] {
     return campaigns
         .filter((c) => c.kind === 'siege')
         .sort((a, b) => a.sortOrder - b.sortOrder)
+}
+
+export function getAllCampaigns(): CampaignMeta[] {
+    return [...campaigns].sort(
+        (a, b) => b.published_at.getTime() - a.published_at.getTime(),
+    )
 }
 
 export { formatIsk }
