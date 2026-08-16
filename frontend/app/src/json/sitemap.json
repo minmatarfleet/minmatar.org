@@ -58,10 +58,17 @@
     },
     {
         "slug": "alliance.playstyle",
-        "path": "/alliance/playstyle/",
-        "publish": true,
+        "path": "/alliance/content/",
+        "publish": false,
         "description": "page_finder.playstyle.description",
         "keywords": [ "playstyle" ]
+    },
+    {
+        "slug": "alliance.content",
+        "path": "/alliance/content/",
+        "publish": true,
+        "description": "page_finder.content.description",
+        "keywords": [ "content", "campaigns", "sieges", "propaganda" ]
     },
     {
         "slug": "brand",
@@ -279,10 +286,10 @@
     {
         "slug": "propaganda",
         "alt": "icon.tv.alt",
-        "path": "/alliance/propaganda/",
+        "path": "/alliance/content/",
         "publish": true,
         "icon": "/images/icons/48px-Scopenetwork.png",
-        "description": "page_finder.propaganda.description"
+        "description": "page_finder.content.description"
     },
     {
         "slug": "posts_create",

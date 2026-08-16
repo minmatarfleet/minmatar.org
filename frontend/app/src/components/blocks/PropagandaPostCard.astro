@@ -18,6 +18,7 @@ const {
 
 // Remove extra amp; characters from the URI for reddit images
 const image_sanitized = post.image ? post.image.replaceAll('amp;', '') : undefined
+const post_href = translatePath(`/alliance/propaganda/${post.post_id}`)
 
 import { get_player_icon } from '@helpers/eve_image_server'
 import { format_date } from '@helpers/date'
@@ -29,44 +30,72 @@ import PostActions from '@components/blocks/PostActions.astro';
 import Tag from '@components/blocks/Tag.astro';
 ---
 
-<PictureCard
-    src={post.image ? post.image : get_player_icon(post.author.character_id, 512)}
-    alt={post.title}
-    narrow={true}
-    zoomable={post.image ? true : false}
-    astro_image={image_sanitized ? {
-        src: image_sanitized,
-        width: 300,
-        height: 300,
-        format: 'webp',
-        quality: 65,
-        alt: post.title,
-        loading: 'lazy',
-    } : undefined}
-    data-desature={post.state === 'trash' ? 'mild' : undefined}
->
-    {(post.user_id === editor_id && is_editing) &&
-        <PostActions
-            post={post}
-            slot="actions"
-        />
-    }
-    <Flexblock gap='var(--space-3xs)'>
-        {is_editing &&
-            <Tag
-                id={`post-tag-${post.post_id}`}
-                text={t(post.state as any) ?? post.state}
-                color={post.state === 'published' ? 'green' : undefined}
+<div class="[ propaganda-post-card ]">
+    <PictureCard
+        src={post.image ? post.image : get_player_icon(post.author.character_id, 512)}
+        alt={post.title}
+        narrow={true}
+        thumbnail={true}
+        zoomable={false}
+        astro_image={image_sanitized ? {
+            src: image_sanitized,
+            width: 300,
+            height: 400,
+            format: 'webp',
+            quality: 65,
+            alt: post.title,
+            loading: 'lazy',
+        } : undefined}
+        data-desature={post.state === 'trash' ? 'mild' : undefined}
+    >
+        {(post.user_id === editor_id && is_editing) &&
+            <PostActions
+                post={post}
+                slot="actions"
             />
         }
-        <small>{format_date(lang, post.date_posted)}</small>
-        <a href={translatePath(`/alliance/propaganda/${post.post_id}`)}>
-            <h3>{post.title}</h3>
-        </a>
-    </Flexblock>
-</PictureCard>
+        <Flexblock gap='var(--space-3xs)'>
+            {is_editing &&
+                <Tag
+                    id={`post-tag-${post.post_id}`}
+                    text={t(post.state as any) ?? post.state}
+                    color={post.state === 'published' ? 'green' : undefined}
+                />
+            }
+            <small>{format_date(lang, post.date_posted)}</small>
+            <a href={post_href}>
+                <h3>{post.title}</h3>
+            </a>
+        </Flexblock>
+    </PictureCard>
+
+    {!is_editing &&
+        <a
+            class="[ propaganda-post-card__hitbox ]"
+            href={post_href}
+            aria-label={post.title}
+        ></a>
+    }
+</div>
 
 <style lang="scss">
+    .propaganda-post-card {
+        position: relative;
+    }
+
+    .propaganda-post-card__hitbox {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+    }
+
+    .propaganda-post-card :global(.card-body),
+    .propaganda-post-card :global(.card-actions),
+    .propaganda-post-card :global(.visible-actions) {
+        position: relative;
+        z-index: 2;
+    }
+
     h3 {
         font-size: var(--step-0);
     }

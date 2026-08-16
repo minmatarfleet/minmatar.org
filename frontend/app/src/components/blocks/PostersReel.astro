@@ -8,6 +8,7 @@ interface Props {
     is_video?:  boolean;
     editor_id?: number;
     is_editing: boolean;
+    has_cover?: boolean;
 }
 
 const {
@@ -17,6 +18,7 @@ const {
     is_video = false,
     editor_id,
     is_editing,
+    has_cover = false,
 } = Astro.props
 
 import Wrapper from '@components/compositions/Wrapper.astro';
@@ -27,7 +29,7 @@ import PropagandaVideoPost from '@components/blocks/PropagandaVideoPost.astro';
 ---
 
 <Wrapper
-    class:list={[ 'posters-reel', { 'posters-reel-small': small} ]}
+    class:list={[ 'posters-reel', { 'posters-reel-small': small, 'posters-reel--with-cover': has_cover } ]}
     padding_block='0'
     padding_inline='0'
     max_width='100%'
@@ -86,7 +88,12 @@ import PropagandaVideoPost from '@components/blocks/PropagandaVideoPost.astro';
         --swiper-navigation-sides-offset: -46px;
 
         opacity: 0;
-        z-index: 1;
+        z-index: 2;
+        filter: drop-shadow(0 0 0.35rem var(--background)) drop-shadow(0 0 0.75rem var(--background));
+    }
+
+    .posters-reel--with-cover .swiper-button-next {
+        --swiper-navigation-sides-offset: 0.5rem;
     }
 
     .swiper-initialized ~ .swiper-button-prev,

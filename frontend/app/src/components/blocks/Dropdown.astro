@@ -73,6 +73,7 @@ import CollapsableButton from "@components/blocks/CollapsableButton.astro";
 
     .button-dropdown-panel {
         min-width: var(--button-dropdown-min-width, 0px);
-        width: max-content;
+        width: var(--button-dropdown-min-width, max-content);
+        box-sizing: border-box;
     }
 </style>

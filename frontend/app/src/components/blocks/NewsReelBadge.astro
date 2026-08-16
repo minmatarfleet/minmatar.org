@@ -12,7 +12,7 @@ const {
     post,
 } = Astro.props
 
-const MEDIA_ICON = {
+const MEDIA_ICON: Record<string, string> = {
     'Metropolis': '/images/icons/Metropilis.png',
     'Frontlines': '/images/icons/Frontlines.png',
     'Metro Daily News': '/images/icons/Metro-Daily-News.png',
@@ -21,29 +21,47 @@ const MEDIA_ICON = {
     'Waifu Wars': '/images/icons/Waifu-Wars.png',
 }
 
+const SERIES_LABEL: Record<string, string> = {
+    'Metropolis': 'Metropolis Daily News',
+    'Frontlines': 'Frontlines',
+    'Propaganda': 'Propaganda Poster',
+    'Metro Daily News': 'Metro Daily News',
+    'The Cope': 'The COPE',
+    'Videos': 'Videos',
+    'Rust and Blood': 'Rust and Blood',
+    'Waifu Wars': 'Waifu Wars',
+}
+
+const tag = post.tags?.[0]
+const series = (tag && SERIES_LABEL[tag]) ? SERIES_LABEL[tag] : (tag || 'Post')
+const short_title = `${series} #${post.post_id}`
+
 import { format_date } from '@helpers/date'
 
-import Badge from '@components/blocks/Badge.astro';
-import CharacterPicture from '@components/blocks/CharacterPicture.astro';
-import StylessButton from '@components/blocks/StylessButton.astro';
-
+import Badge from '@components/blocks/Badge.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
 ---
 
-<StylessButton href={translatePath(`/alliance/propaganda/${post.post_id}`)}>
+<StylessButton
+    class="[ news-reel-badge ]"
+    href={translatePath(`/alliance/propaganda/${post.post_id}`)}
+    title={post.title}
+>
     <Badge
-        class="[ items-center! text-nowrap! ]"
-        title={post.title}
+        class="[ items-center! ]"
+        title={short_title}
         size={32}
     >
         <picture slot="picture">
-            {MEDIA_ICON[post.tags[0]] ?
+            {(tag && MEDIA_ICON[tag]) ?
                 <img
                     class="[ w-auto ]"
-                    src={MEDIA_ICON[post.tags[0]]}
+                    src={MEDIA_ICON[tag]}
                     loading='lazy'
                     height={32}
                     width={32}
-                    alt={post.tags[0]}
+                    alt={tag}
                 /> :
                 post.author.character_id > 0 ?
                     <CharacterPicture
@@ -64,3 +82,10 @@ import StylessButton from '@components/blocks/StylessButton.astro';
         <small class="[ text-foreground ]">{format_date(lang, post.date_posted)}</small>
     </Badge>
 </StylessButton>
+
+<style lang="scss">
+    .news-reel-badge :global(.title) {
+        white-space: nowrap;
+        text-wrap: nowrap;
+    }
+</style>
