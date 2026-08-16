@@ -2,6 +2,30 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
+import type { CreatorAccount } from '@dtypes/api.minmatar.org'
+import { get_my_creator_accounts } from '@helpers/api.minmatar.org/creators'
+
+const auth_token = Astro.cookies.has('auth_token')
+    ? (Astro.cookies.get('auth_token')?.value as string)
+    : false
+
+let accounts: CreatorAccount[] = []
+if (auth_token) {
+    try {
+        accounts = await get_my_creator_accounts(auth_token)
+    } catch {
+        accounts = []
+    }
+}
+
+const by_provider = Object.fromEntries(
+    accounts.map((account) => [account.provider, account]),
+) as Partial<Record<'twitch' | 'youtube' | 'reddit', CreatorAccount>>
+
+const twitch = by_provider.twitch
+const youtube = by_provider.youtube
+const reddit = by_provider.reddit
+
 import Dropdown from '@components/blocks/Dropdown.astro'
 ---
 
@@ -34,6 +58,58 @@ import Dropdown from '@components/blocks/Dropdown.astro'
         >
             {t('trash')}
         </a>
+
+        {twitch ?
+            <span class="[ manage-content-menu__item manage-content-menu__item--connected ]">
+                {t('content.connect.twitch_connected').replace(
+                    'USERNAME',
+                    twitch.platform_username || twitch.platform_user_id,
+                )}
+            </span>
+            :
+            <a
+                class="[ manage-content-menu__item ]"
+                href={translatePath('/alliance/content/connect/twitch')}
+            >
+                {t('content.connect.twitch')}
+            </a>
+        }
+
+        {youtube ?
+            <span class="[ manage-content-menu__item manage-content-menu__item--connected ]">
+                {t('content.connect.youtube_connected').replace(
+                    'USERNAME',
+                    youtube.platform_username || youtube.platform_user_id,
+                )}
+            </span>
+            :
+            <a
+                class="[ manage-content-menu__item ]"
+                href={translatePath('/alliance/content/connect/youtube')}
+            >
+                {t('content.connect.youtube')}
+            </a>
+        }
+
+        {reddit ?
+            <span class="[ manage-content-menu__item manage-content-menu__item--connected ]">
+                {t('content.connect.reddit_connected').replace(
+                    'USERNAME',
+                    reddit.platform_username || reddit.platform_user_id,
+                )}
+            </span>
+            :
+            <button
+                type="button"
+                class="[ manage-content-menu__item ]"
+                x-data
+                x-on:click={`show_modal({
+                    partial: '${translatePath('/partials/link_reddit_modal_component')}',
+                })`}
+            >
+                {t('content.connect.reddit')}
+            </button>
+        }
     </nav>
 </Dropdown>
 
@@ -47,8 +123,6 @@ import Dropdown from '@components/blocks/Dropdown.astro'
         min-width: var(--button-dropdown-min-width, 12rem);
         padding: var(--space-3xs);
         background: var(--background);
-        border: solid 1px var(--border-color);
-        box-sizing: border-box;
     }
 
     .manage-content-menu__label {
@@ -92,6 +166,18 @@ import Dropdown from '@components/blocks/Dropdown.astro'
         &:first-child:focus-visible {
             background: color-mix(in srgb, var(--green) 25%, transparent);
             color: var(--highlight);
+        }
+
+        &--connected {
+            color: var(--green);
+            font-weight: 500;
+            cursor: default;
+            pointer-events: none;
+        }
+
+        &:is(button) {
+            cursor: pointer;
+            font: inherit;
         }
     }
 </style>

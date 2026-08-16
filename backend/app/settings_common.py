@@ -17,6 +17,7 @@ CELERY_IMPORTS = (
     "market.tasks",
     "industry.tasks",
     "reddit.tasks",
+    "creators.tasks",
     "tribes.tasks",
     "feed.tasks",
     "notifications.tasks",
@@ -98,6 +99,8 @@ INSTALLED_APPS = [
     "audit",
     # Reddit integration
     "reddit",
+    # Creator Twitch / YouTube / Reddit OAuth + ingest
+    "creators.apps.CreatorsConfig",
     "feed.apps.FeedConfig",
     "help_tickets.apps.HelpTicketsConfig",
 ]

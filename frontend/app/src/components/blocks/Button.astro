@@ -68,7 +68,7 @@ const nested_x_data = external ? `{
     {...attributes}
     data-size={size}
     style={`--button_background_color: ${button_background_color}; --inner_button_color: ${button_color}`}
-    disabled={Element === 'button' ? 'disabled' : undefined}
+    disabled={Element === 'button' && !off_disable ? 'disabled' : undefined}
     x-init={Element === 'button' && !off_disable ? '$el.removeAttribute("disabled")' : undefined}
 
     target={external || new_tab ? '_blank' : undefined }

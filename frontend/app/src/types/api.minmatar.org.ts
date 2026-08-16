@@ -2056,3 +2056,14 @@ export interface AllianceHealthCohorts {
     computed_at:    string;
     cohorts:        AllianceHealthCohortRow[];
 }
+
+export interface CreatorAccount {
+    provider:           string;
+    platform_user_id:   string;
+    platform_username:  string;
+    is_live:            boolean;
+    live_title:         string;
+    live_started_at:    string | null;
+    token_invalid:      boolean;
+    last_synced_at:     string | null;
+}

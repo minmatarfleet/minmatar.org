@@ -1,0 +1,24 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import { get_api_url, get_app_url, get_auth_url } from '@helpers/env'
+
+const auth_token = Astro.cookies.has('auth_token')
+    ? (Astro.cookies.get('auth_token')?.value as string)
+    : false
+
+if (!auth_token) {
+    return Astro.redirect(
+        `${get_auth_url(Astro.url.toString())}`
+    )
+}
+
+const return_url = get_app_url(translatePath('/alliance/content/'))
+const connect_url =
+    `${get_api_url()}/api/creators/twitch/connect` +
+    `?redirect_url=${encodeURIComponent(return_url)}` +
+    `&token=${encodeURIComponent(auth_token)}`
+
+return Astro.redirect(connect_url)
+---

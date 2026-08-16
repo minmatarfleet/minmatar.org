@@ -324,6 +324,20 @@ CELERYBEAT_OTHER = [
         },
     ),
     (
+        "[Creators] Poll Twitch live status",
+        {
+            "task": "creators.tasks.poll_creator_twitch_live",
+            "schedule": crontab(minute="*/2"),
+        },
+    ),
+    (
+        "[Creators] Sync YouTube / Twitch media",
+        {
+            "task": "creators.tasks.sync_creator_media",
+            "schedule": crontab(minute=20),
+        },
+    ),
+    (
         "[Misc] Remove orphan discord user roles",
         {
             "task": "discord.tasks.remove_roles_from_unregistered_guild_members",
