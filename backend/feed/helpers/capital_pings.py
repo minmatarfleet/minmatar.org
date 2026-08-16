@@ -35,6 +35,7 @@ from feed.helpers.ingest import parse_r2z2_payload
 from feed.helpers.killmail_classify import attacker_pilot_count, is_npc_kill
 from feed.helpers.system_distance import light_years_between_systems
 from feed.models import FeedCapitalAlert, FeedCapitalPing
+from requests.exceptions import HTTPError
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,13 @@ CAPITAL_ALERT_COLOR = 0x18ED09
 ZKILL_CHARACTER_URL = "https://zkillboard.com/character/{character_id}/"
 # Concord NPC corp — skip when attributing capital attackers.
 _CONCORD_CORPORATION_ID = 1000125
+_DISCORD_EDIT_SOFT_FAIL_STATUSES = frozenset({400, 404, 500, 502, 503, 504})
+
+
+def _is_discord_edit_soft_fail(exc: BaseException) -> bool:
+    if not isinstance(exc, HTTPError) or exc.response is None:
+        return False
+    return exc.response.status_code in _DISCORD_EDIT_SOFT_FAIL_STATUSES
 
 
 def _capital_ping_channel_ids() -> list[int]:
@@ -823,6 +831,57 @@ def _record_capital_ping(
     )
 
 
+def _upsert_capital_alert_for_notify(
+    *,
+    killmail_id: int,
+    existing: FeedCapitalAlert | None,
+    solar_system_id: int,
+    system_name: str,
+    distance_ly: float,
+    capitals: list[dict[str, Any]],
+    kill: dict[str, Any] | None,
+    composition: list[tuple[str, int]],
+    discord_client: DiscordClient,
+) -> FeedCapitalAlert | None:
+    """Create or update a capital alert; soft-fail expected Discord HTTP errors."""
+    try:
+        if existing is None:
+            return _create_capital_alert(
+                solar_system_id=solar_system_id,
+                system_name=system_name,
+                distance_ly=distance_ly,
+                capitals=capitals,
+                kill=kill,
+                composition=composition,
+                discord_client=discord_client,
+            )
+        return _update_capital_alert(
+            existing,
+            solar_system_id=solar_system_id,
+            system_name=system_name,
+            distance_ly=distance_ly,
+            capitals=capitals,
+            kill=kill,
+            composition=composition,
+            discord_client=discord_client,
+        )
+    except Exception as exc:
+        # Stale Discord message IDs (400/404) or transient 5xx on PATCH
+        # (CELERY-KD / JM). Do not logger.exception — Sentry noise.
+        if _is_discord_edit_soft_fail(exc):
+            logger.warning(
+                "Capital ping Discord HTTP %s for killmail %s: %s",
+                getattr(exc.response, "status_code", "?"),
+                killmail_id,
+                exc,
+            )
+            return None
+        logger.exception(
+            "Failed to send/update capital ping for killmail %s", killmail_id
+        )
+        return None
+
+
 def maybe_notify_capital_kill(
     payload: dict[str, Any],
     *,
@@ -872,34 +931,18 @@ def maybe_notify_capital_kill(
     )
     created = existing is None
 
-    try:
-        if existing is None:
-            alert = _create_capital_alert(
-                solar_system_id=int(solar_system_id),
-                system_name=system_name,
-                distance_ly=distance_ly,
-                capitals=capitals,
-                kill=kill,
-                composition=composition,
-                discord_client=client,
-            )
-            if alert is None:
-                return False
-        else:
-            alert = _update_capital_alert(
-                existing,
-                solar_system_id=int(solar_system_id),
-                system_name=system_name,
-                distance_ly=distance_ly,
-                capitals=capitals,
-                kill=kill,
-                composition=composition,
-                discord_client=client,
-            )
-    except Exception:
-        logger.exception(
-            "Failed to send/update capital ping for killmail %s", killmail_id
-        )
+    alert = _upsert_capital_alert_for_notify(
+        killmail_id=int(killmail_id),
+        existing=existing,
+        solar_system_id=int(solar_system_id),
+        system_name=system_name,
+        distance_ly=distance_ly,
+        capitals=capitals,
+        kill=kill,
+        composition=composition,
+        discord_client=client,
+    )
+    if alert is None:
         return False
 
     _record_capital_ping(

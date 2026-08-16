@@ -41,7 +41,16 @@ import Button from '@components/blocks/Button.astro';
     narrow={is_button ? narrow : undefined}
     x-bind:href={DISABLED_CCPWGL ? 'link' : undefined}
     x-data={DISABLED_CCPWGL ? `{
-        render_enabled: $persist(true),
+        // Read Alpine Persist's key without $persist — soft nav can init
+        // before the persist plugin registers (MINMATAR-FRONTEND-EN / EP).
+        render_enabled: (() => {
+            try {
+                const raw = localStorage.getItem('_x_render_enabled')
+                return raw === null ? true : JSON.parse(raw)
+            } catch (e) {
+                return true
+            }
+        })(),
         link: '${render_view}',
         init() {
             if (window.innerWidth > 1820 && this.render_enabled === true)
