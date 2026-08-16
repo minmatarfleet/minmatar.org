@@ -2,7 +2,8 @@
 Fetch corporation roles from ESI and print them (for debugging recruiter/director sync).
 
 Requires a director or CEO of the corporation to have logged in with
-esi-corporations.read_corporation_membership.v1.
+esi-corporations.read_corporation_membership.v1. Title-granted roles are
+included when a director also has esi-corporations.read_titles.v1.
 
 Usage:
   pipenv run python manage.py corporation_roles_esi 98696436
@@ -14,14 +15,13 @@ from django.core.management.base import BaseCommand
 
 from eveonline.client import EsiClient
 from eveonline.helpers.corporations.update import (
+    SCOPE_CORPORATION_MEMBERSHIP,
+    SCOPE_CORPORATION_TITLES,
     _all_roles_for_member,
+    _fetch_title_granted_roles,
     get_director_with_scope,
 )
 from eveonline.models import EveCorporation
-
-SCOPE_CORPORATION_MEMBERSHIP = [
-    "esi-corporations.read_corporation_membership.v1"
-]
 
 
 class Command(BaseCommand):
@@ -85,11 +85,35 @@ class Command(BaseCommand):
             f"ESI returned {len(roles_data)} role entries (all pages)."
         )
 
-        if not roles_data:
+        title_roles_by_character = _fetch_title_granted_roles(
+            corporation, character
+        )
+        if title_roles_by_character:
+            self.stdout.write(
+                f"Loaded title grants for {len(title_roles_by_character)} members "
+                f"(requires {SCOPE_CORPORATION_TITLES[0]})."
+            )
+        else:
+            self.stdout.write(
+                self.style.WARNING(
+                    "No title grants loaded (missing titles scope or ESI error); "
+                    "showing direct roles only."
+                )
+            )
+
+        if not roles_data and not title_roles_by_character:
             self.stdout.write("No role entries.")
             return
 
-        character_ids = [e["character_id"] for e in roles_data]
+        roles_by_character = {
+            entry.get("character_id"): entry
+            for entry in roles_data
+            if entry.get("character_id") is not None
+        }
+        character_ids = sorted(
+            set(roles_by_character) | set(title_roles_by_character)
+        )
+
         try:
             resolved = EsiClient(None).resolve_universe_names(character_ids)
             id_to_name = {r["id"]: r["name"] for r in resolved.results()}
@@ -97,15 +121,17 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING(f"Resolve names failed: {e}"))
             id_to_name = {}
 
-        for entry in roles_data:
-            char_id = entry.get("character_id")
+        for char_id in character_ids:
             name = id_to_name.get(char_id, f"<id={char_id}>")
             if (
                 character_filter
                 and character_filter.lower() not in name.lower()
             ):
                 continue
-            all_roles = _all_roles_for_member(entry)
+            entry = roles_by_character.get(char_id) or {}
+            direct_roles = _all_roles_for_member(entry)
+            title_roles = title_roles_by_character.get(char_id, set())
+            all_roles = direct_roles | title_roles
             has_personnel_manager = "Personnel_Manager" in all_roles
             self.stdout.write("")
             self.stdout.write(f"  character_id={char_id}  name={name!r}")
@@ -119,18 +145,19 @@ class Command(BaseCommand):
             self.stdout.write(
                 f"    roles_at_other: {sorted(entry.get('roles_at_other') or [])}"
             )
+            self.stdout.write(f"    title_granted: {sorted(title_roles)}")
             self.stdout.write(
-                f"    _all_roles_for_member (used by sync): {sorted(all_roles)}"
+                f"    effective (roles + titles, used by sync): {sorted(all_roles)}"
             )
             if has_personnel_manager:
                 self.stdout.write(
                     self.style.SUCCESS(
-                        "    Personnel_Manager in roles? Yes → would be recruiter in app"
+                        "    Personnel_Manager effective? Yes → would be recruiter in app"
                     )
                 )
             else:
                 self.stdout.write(
-                    "    Personnel_Manager in roles? No → would NOT be recruiter in app (need Personnel_Manager)"
+                    "    Personnel_Manager effective? No → would NOT be recruiter in app"
                 )
 
         self.stdout.write("")

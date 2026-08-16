@@ -1,6 +1,7 @@
 """Helpers to update a corporation's ESI-derived data (public info, members, roles, contracts, industry jobs)."""
 
 import logging
+from collections import defaultdict
 from decimal import Decimal
 
 from django.db import models
@@ -24,6 +25,7 @@ logger = logging.getLogger(__name__)
 SCOPE_CORPORATION_MEMBERSHIP = [
     "esi-corporations.read_corporation_membership.v1"
 ]
+SCOPE_CORPORATION_TITLES = ["esi-corporations.read_titles.v1"]
 SCOPE_CORPORATION_CONTRACTS = ["esi-contracts.read_corporation_contracts.v1"]
 SCOPE_CHARACTER_CONTRACTS = ["esi-contracts.read_character_contracts.v1"]
 SCOPE_CORPORATION_INDUSTRY_JOBS = ["esi-industry.read_corporation_jobs.v1"]
@@ -182,6 +184,82 @@ def _all_roles_for_member(role_data):
     return all_roles
 
 
+def title_granted_roles_by_character(titles, member_titles):
+    """
+    Map character_id -> roles granted by their corp titles.
+
+    `titles` is the /corporations/{id}/titles/ payload; `member_titles` is
+    /corporations/{id}/members/titles/. Title role lists use the same
+    roles / roles_at_* shape as member role entries.
+    """
+    title_roles = {
+        title["title_id"]: _all_roles_for_member(title)
+        for title in titles or []
+        if title.get("title_id") is not None
+    }
+    granted = defaultdict(set)
+    for entry in member_titles or []:
+        character_id = entry.get("character_id")
+        if character_id is None:
+            continue
+        for title_id in entry.get("titles") or []:
+            granted[character_id].update(title_roles.get(title_id, ()))
+    return granted
+
+
+def _fetch_title_granted_roles(corporation, membership_character):
+    """
+    Load title-granted roles for corp members, or {} if titles ESI is unavailable.
+    Prefers the membership token character when they also have titles scope.
+    """
+    titles_character = None
+    if Token.get_token(
+        membership_character.character_id, SCOPE_CORPORATION_TITLES
+    ):
+        titles_character = membership_character
+    else:
+        titles_character = get_director_with_scope(
+            corporation, SCOPE_CORPORATION_TITLES
+        )
+    if not titles_character:
+        logger.debug(
+            "No director with %s for corporation %s (%s); "
+            "syncing roles without title grants",
+            SCOPE_CORPORATION_TITLES[0],
+            corporation.name,
+            corporation.corporation_id,
+        )
+        return {}
+
+    esi = EsiClient(titles_character)
+    esi_titles = esi.get_corporation_titles(corporation.corporation_id)
+    if not esi_titles.success():
+        logger.warning(
+            "ESI error %s fetching titles for corporation %s (%s)",
+            esi_titles.response_code,
+            corporation.name,
+            corporation.corporation_id,
+        )
+        return {}
+
+    esi_member_titles = esi.get_corporation_member_titles(
+        corporation.corporation_id
+    )
+    if not esi_member_titles.success():
+        logger.warning(
+            "ESI error %s fetching member titles for corporation %s (%s)",
+            esi_member_titles.response_code,
+            corporation.name,
+            corporation.corporation_id,
+        )
+        return {}
+
+    return title_granted_roles_by_character(
+        esi_titles.results() or [],
+        esi_member_titles.results() or [],
+    )
+
+
 def update_corporation_populate(corporation_id: int) -> None:
     """Fetch public corporation details from ESI and save. May delete corp if NPC."""
     corporation = EveCorporation.objects.filter(
@@ -273,14 +351,25 @@ def update_corporation_members_and_roles(corporation_id: int) -> None:
         return
 
     roles_data = esi_roles.results() or []
+    title_roles_by_character = _fetch_title_granted_roles(
+        corporation, character
+    )
+
+    roles_by_character = {
+        entry.get("character_id"): entry
+        for entry in roles_data
+        if entry.get("character_id") is not None
+    }
+    character_ids = set(roles_by_character) | set(title_roles_by_character)
+
     director_ids = []
     recruiter_ids = []
     steward_ids = []
-    for entry in roles_data:
-        char_id = entry.get("character_id")
-        if char_id is None:
-            continue
-        all_roles = _all_roles_for_member(entry)
+    for char_id in character_ids:
+        all_roles = _all_roles_for_member(
+            roles_by_character.get(char_id) or {}
+        )
+        all_roles |= title_roles_by_character.get(char_id, set())
         char, _ = EveCharacter.objects.get_or_create(
             character_id=char_id, defaults={}
         )
