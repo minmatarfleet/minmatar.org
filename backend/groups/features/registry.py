@@ -170,6 +170,15 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         legacy_permission="posts.delete_evepost",
         default_affiliation_names=_aff("Alliance"),
     ),
+    "creators.connect": FeatureDefinition(
+        code="creators.connect",
+        label="Connect creator accounts",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description=(
+            "Link Twitch, YouTube, and Reddit accounts for Our content."
+        ),
+        default_tribe_group_codes=_tribe_codes("pulse.thinkspeak"),
+    ),
     "industry.order.submit": FeatureDefinition(
         code="industry.order.submit",
         label="Submit industry orders",

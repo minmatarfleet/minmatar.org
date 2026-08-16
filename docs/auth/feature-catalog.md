@@ -45,6 +45,7 @@ Unless noted, features deny community status `on_leave` on the scope path. The o
 | `posts.create` | `affiliation` | `posts.add_evepost` | Alliance |
 | `posts.edit` | `affiliation` | `posts.change_evepost` | Alliance (author check in endpoint) |
 | `posts.delete` | `affiliation` | `posts.delete_evepost` | Alliance (author check in endpoint) |
+| `creators.connect` | `tribe_membership` | — | Thinkspeak (`pulse.thinkspeak`) |
 
 ## Industry
 

@@ -161,6 +161,21 @@ REDDIT_PASSWORD = os.environ.get("REDDIT_PASSWORD", "")
 REDDIT_CLIENT_ID = os.environ.get("REDDIT_CLIENT_ID", "")
 REDDIT_SECRET = os.environ.get("REDDIT_SECRET", "")
 
+TWITCH_CLIENT_ID = os.environ.get("TWITCH_CLIENT_ID", "test-twitch-client")
+TWITCH_CLIENT_SECRET = os.environ.get(
+    "TWITCH_CLIENT_SECRET", "test-twitch-secret"
+)
+TWITCH_REDIRECT_URL = os.environ.get(
+    "TWITCH_REDIRECT_URL", "http://testserver/api/creators/twitch/callback"
+)
+YOUTUBE_CLIENT_ID = os.environ.get("YOUTUBE_CLIENT_ID", "test-youtube-client")
+YOUTUBE_CLIENT_SECRET = os.environ.get(
+    "YOUTUBE_CLIENT_SECRET", "test-youtube-secret"
+)
+YOUTUBE_REDIRECT_URL = os.environ.get(
+    "YOUTUBE_REDIRECT_URL", "http://testserver/api/creators/youtube/callback"
+)
+
 # Notifications (web push / Discord DM / Eve mail)
 NOTIFICATIONS_EVE_MAIL_CHARACTER_ID = int(
     os.environ.get("NOTIFICATIONS_EVE_MAIL_CHARACTER_ID", "634915984")
