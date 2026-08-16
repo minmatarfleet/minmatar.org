@@ -1,0 +1,19 @@
+---
+import * as page from '@markdown/legal/terms.md'
+import { marked } from 'marked'
+import { renderer } from '@helpers/marked'
+import { strip_markdown } from '@helpers/string'
+
+import LegalDocument from '@components/page/LegalDocument.astro'
+
+const page_title = page.frontmatter.title as string
+const page_description = page.frontmatter.excerpt as string
+const html = await marked.parse(page.rawContent(), { renderer })
+---
+
+<LegalDocument
+    page_title={page_title}
+    page_description={await strip_markdown(page_description)}
+    html={html}
+    current="terms"
+/>
