@@ -20,11 +20,12 @@ const {
     x-data={`{
         hide_external_link_disclaimer: $persist(false),
         show_external_link_disclaimer() {
-            show_alert_dialog({
-                title: '${t('leaving_website')}',
+            const root_data = Alpine.$data(document.body)
+            if (!root_data || !root_data.show_alert_dialog) return Promise.resolve(false)
+            return root_data.show_alert_dialog({
+                title: '${t('leaving_website').replace(/'/g, "\\'")}',
                 partial: '${translatePath('/partials/external_link_disclaimer_dialog/')}',
-            }).then(accepted => {
-                if (accepted) window.open('${href}', '_blank')
+                accept_href: '${href}',
             })
         }
     }`}

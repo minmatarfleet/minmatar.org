@@ -35,10 +35,31 @@ const x_data = attributes['x-data'] ?? ''
 const x_data_elements = x_data ? x_data.slice(1, -1) : ''
 const x_on = attributes['x-on:click.prevent'] ?? undefined
 
+delete attributes['x-data']
+delete attributes['x-on:click.prevent']
+
 const button_background_color = `var(--${color})`;
 const button_color = (color !== 'transparent' ? 'var(--button-color)' : 'var(--highlight)');
 
 const Element = href ? 'a' : 'button';
+
+const leaving_website_title = t('leaving_website').replace(/'/g, "\\'")
+const external_disclaimer_partial = translatePath('/partials/external_link_disclaimer_dialog/')
+const nested_x_data = external ? `{
+        hide_external_link_disclaimer: $persist(false),
+        show_external_link_disclaimer() {
+            const root_data = Alpine.$data(document.body)
+            if (!root_data || !root_data.show_alert_dialog) return Promise.resolve(false)
+            return root_data.show_alert_dialog({
+                title: '${leaving_website_title}',
+                partial: '${external_disclaimer_partial}',
+                accept_href: '${href}',
+            })
+        },
+        ${x_data_elements}
+    }` : (x_data_elements ? `{
+        ${x_data_elements}
+    }` : undefined)
 ---
 
 <Element
@@ -52,20 +73,7 @@ const Element = href ? 'a' : 'button';
 
     target={external || new_tab ? '_blank' : undefined }
     rel={external ? 'nofollow noopener noreferrer' : (new_tab ? 'noopener noreferrer' : undefined) }
-    x-data={external ? `{
-        hide_external_link_disclaimer: $persist(false),
-        show_external_link_disclaimer() {
-            show_alert_dialog({
-                title: '${t('leaving_website')}',
-                partial: '${translatePath('/partials/external_link_disclaimer_dialog/')}',
-            }).then(accepted => {
-                if (accepted) window.open('${href}', '_blank')
-            })
-        },
-        ${x_data_elements}
-    }` : `{
-        ${x_data_elements}
-    }`}
+    x-data={nested_x_data}
     x-on:click.prevent={external ?
         `hide_external_link_disclaimer ? window.open('${href}', '_blank') : show_external_link_disclaimer()` :
         x_on

@@ -57,11 +57,7 @@ const features_json = JSON.stringify(features ?? [])
                                 :checked="ch.enabled"
                                 @change="setChannel(ntype.key, ch.channel, $event.target.checked)"
                             />
-                            <span x-text="({
-                                web: '${channel_labels.web}',
-                                discord: '${channel_labels.discord}',
-                                eve_mail: '${channel_labels.eve_mail}',
-                            })[ch.channel] || ch.channel"></span>
+                            <span x-text={`(${JSON.stringify(channel_labels)})[ch.channel] || ch.channel`}></span>
                         </label>
                     </template>
                 </Flexblock>
