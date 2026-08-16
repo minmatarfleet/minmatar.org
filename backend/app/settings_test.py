@@ -103,10 +103,6 @@ CACHES = {
     }
 }
 
-# MUMBLE
-MUMBLE_MURMUR_HOST = os.environ.get("MUMBLE_MURMUR_HOST", "")
-MUMBLE_MURMUR_PORT = os.environ.get("MUMBLE_MURMUR_PORT", "")
-
 # Always use SQLite for tests - no database permissions needed
 DATABASES = {
     "default": {

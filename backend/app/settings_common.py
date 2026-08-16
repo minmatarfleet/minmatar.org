@@ -18,7 +18,6 @@ CELERY_IMPORTS = (
     "freight.tasks",
     "market.tasks",
     "industry.tasks",
-    "mumble.tasks",
     "reddit.tasks",
     "tribes.tasks",
     "feed.tasks",
@@ -63,8 +62,6 @@ INSTALLED_APPS = [
     "structures.apps.StructuresConfig",
     "access_lists.apps.AccessListsConfig",
     "fleets.apps.FleetsConfig",
-    # Mumble
-    "mumble.apps.MumbleConfig",
     # Reminders
     "reminders.apps.RemindersConfig",
     # Freight

@@ -566,12 +566,6 @@ export interface FleetPatchRequest {
 export const tracking_status = ['pending', 'active', 'complete', 'cancelled', 'unknown'] as const
 export type TrackingStatus = typeof tracking_status[number]
 
-export interface MumbleInformation {
-    username:   string;
-    password:   string;
-    url:        string;
-}
-
 export interface Audience {
     id:                     number;
     display_name:           string;

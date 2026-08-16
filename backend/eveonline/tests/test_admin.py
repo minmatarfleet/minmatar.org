@@ -237,17 +237,6 @@ class AdminAppListGroupingTestCase(TestCase):
         self.assertIn("auditentry", system_models)
         self.assertNotIn("auditentry", community_models)
 
-    def test_mumble_access_under_system_not_community(self):
-        request = self.factory.get("/admin/")
-        request.user = self.admin_user
-        app_list = admin.site.get_app_list(request)
-
-        system_models = self._model_names(app_list, "System")
-        community_models = self._model_names(app_list, "Community")
-
-        self.assertIn("mumbleaccess", system_models)
-        self.assertNotIn("mumbleaccess", community_models)
-
     def test_fleets_under_alliance_not_standalone(self):
         request = self.factory.get("/admin/")
         request.user = self.admin_user

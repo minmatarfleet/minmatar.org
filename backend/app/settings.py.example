@@ -112,10 +112,6 @@ ESI_USER_CONTACT_EMAIL = os.environ.get(
     "ESI_USER_CONTACT_EMAIL", "admin@minmatar.org"
 )
 
-# MUMBLE
-MUMBLE_MURMUR_HOST = os.environ.get("MUMBLE_MURMUR_HOST", "")
-MUMBLE_MURMUR_PORT = os.environ.get("MUMBLE_MURMUR_PORT", "")
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',

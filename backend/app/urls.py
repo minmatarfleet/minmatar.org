@@ -43,7 +43,6 @@ from moons.router import moons_paste_router, moons_router
 from onboarding.router import router as onboarding_router
 from page_progress.router import router as page_progress_router
 from learning.router import router as learning_router
-from mumble.router import router as mumble_router
 from posts.router import router as posts_router
 from referrals.router import router as referrals_router
 from reminders.router import router as reminders_router
@@ -65,7 +64,6 @@ api.add_router("applications/", applications_router)
 api.add_router("fittings/", fittings_router)
 api.add_router("doctrines/", doctrines_router)
 api.add_router("structures/", structures_router)
-api.add_router("mumble/", mumble_router)
 api.add_router("fleets", fleets_router)
 api.add_router("freight", freight_router)
 api.add_router("buyback", buyback_router)
