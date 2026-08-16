@@ -15,8 +15,18 @@ from feed.constants import (
 )
 from feed.models import FeedAmarrFleetAlert, FeedAmarrFleetPing, FeedEvent
 from ratelimit import RateLimitException
+from requests.exceptions import HTTPError
 
 logger = logging.getLogger(__name__)
+
+_DISCORD_EDIT_SOFT_FAIL_STATUSES = frozenset({400, 404, 500, 502, 503, 504})
+
+
+def _is_discord_edit_soft_fail(exc: BaseException) -> bool:
+    if not isinstance(exc, HTTPError) or exc.response is None:
+        return False
+    return exc.response.status_code in _DISCORD_EDIT_SOFT_FAIL_STATUSES
+
 
 AMARR_FLEET_ALERT_TITLE = "Amarr fleet spotted"
 # Matches mobile fleetYellow (#f1d9a0) used for Amarr feed accents.
@@ -490,6 +500,21 @@ def maybe_notify_amarr_fleet(
             "Amarr fleet ping rate-limited for cluster %s: %s",
             snapshot["cluster_key"],
             exc,
+        )
+        return False
+    except HTTPError as exc:
+        # Transient Discord 5xx or stale message 4xx on PATCH (CELERY-JM / KD).
+        if _is_discord_edit_soft_fail(exc):
+            logger.warning(
+                "Amarr fleet ping Discord HTTP %s for cluster %s: %s",
+                getattr(exc.response, "status_code", "?"),
+                snapshot["cluster_key"],
+                exc,
+            )
+            return False
+        logger.exception(
+            "Failed to send/update Amarr fleet ping for cluster %s",
+            snapshot["cluster_key"],
         )
         return False
     except Exception:

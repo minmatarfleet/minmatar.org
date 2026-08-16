@@ -40,6 +40,7 @@ from feed.models import (
     FeedCharacterAffiliation,
 )
 from feed.tests.helpers import make_killmail_payload
+from requests.exceptions import HTTPError
 
 
 def make_test_solar_system(
@@ -603,6 +604,31 @@ class CapitalPingTestCase(TestCase):
             "[Pilot 90000005](https://zkillboard.com/character/90000005/)",
             description,
         )
+
+    @patch("feed.helpers.capital_pings.DiscordClient")
+    def test_discord_http_400_logs_warning_not_exception(
+        self, mock_client_cls
+    ):
+        mock_client = MagicMock()
+        response = MagicMock()
+        response.status_code = 400
+        mock_client.create_message.side_effect = HTTPError(
+            "400 Bad Request", response=response
+        )
+        mock_client_cls.return_value = mock_client
+
+        payload = make_killmail_payload(
+            136500060,
+            solar_system_id=AMAMAKE_SOLAR_SYSTEM_ID,
+            ship_type_id=17726,
+            attacker_ship_type_id=73790,
+            attacker_count=6,
+            faction_id=FACTION_AMARR,
+        )
+        with patch("feed.helpers.capital_pings.logger") as mock_logger:
+            self.assertFalse(maybe_notify_capital_kill(payload))
+            mock_logger.warning.assert_called()
+            mock_logger.exception.assert_not_called()
 
     @patch("feed.helpers.capital_pings.DiscordClient")
     def test_maybe_notify_skips_minmatar_republic_capitals(

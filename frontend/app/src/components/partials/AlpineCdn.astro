@@ -5,6 +5,10 @@
  * ClientRouter re-runs head scripts via replaceWith on soft nav. Re-executing
  * alpinejs@cdn calls Alpine.start() again → alpine:init → persist tries to
  * redefine $persist (MINMATAR-FRONTEND-EA) and other plugins double-bind.
+ *
+ * Scripts must load in order (plugins before alpinejs). Dynamically inserted
+ * `defer` scripts can run out of order like async, which leaves $persist
+ * undefined (MINMATAR-FRONTEND-EP / FR). Chain on onload instead.
  */
 ---
 
@@ -24,11 +28,20 @@
 			'https://cdn.jsdelivr.net/npm/alpinejs@3.16.0/dist/cdn.min.js',
 		]
 
-		urls.forEach(function (src) {
+		function load_next(index) {
+			if (index >= urls.length)
+				return
 			const script = document.createElement('script')
-			script.src = src
-			script.defer = true
+			script.src = urls[index]
+			script.onload = function () {
+				load_next(index + 1)
+			}
+			script.onerror = function () {
+				load_next(index + 1)
+			}
 			document.head.appendChild(script)
-		})
+		}
+
+		load_next(0)
 	})()
 </script>

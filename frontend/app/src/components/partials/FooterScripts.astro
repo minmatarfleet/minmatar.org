@@ -97,15 +97,13 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
             document.querySelectorAll('.loader').forEach(e => e.classList.remove('active'))
             const content = document.getElementById('content')
                 || document.querySelector('.viewport-layout-inner')
-            if (content) {
+            if (content)
                 htmx.process(content)
-                if (typeof Alpine !== 'undefined')
-                    Alpine.initTree(content)
-            }
-
-            const fittings_finder = document.querySelector('.fittings-finder')
-            if (fittings_finder && typeof Alpine !== 'undefined')
-                Alpine.initTree(fittings_finder)
+            // Init from body so page bindings see Viewport x-data
+            // (color_blind_mode, ui_scaling, show_modal, get_*_icon, …).
+            // initTree(content) alone orphans those expressions after soft nav.
+            if (typeof Alpine !== 'undefined')
+                Alpine.initTree(document.body)
 
             if (window.ccpwgl_context)
                 window.ccpwgl_context = null
