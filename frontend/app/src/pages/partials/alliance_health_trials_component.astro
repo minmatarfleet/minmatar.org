@@ -1,0 +1,71 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token')
+    ? (Astro.cookies.get('auth_token')?.value as string)
+    : null
+const user = auth_token ? (jose.decodeJwt(auth_token) as User) : false
+const is_superuser = user ? user?.is_superuser : false
+
+if (!user) return HTTP_403_Forbidden()
+
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = user ? await get_user_permissions(user?.username) : []
+
+const can_view_page =
+    is_superuser || user_permissions.includes('alliance.view_alliancehealth')
+
+if (!can_view_page) return HTTP_403_Forbidden()
+
+import type {
+    AllianceHealthTrialBucket,
+    AllianceHealthTrialPilot,
+} from '@dtypes/api.minmatar.org'
+import { get_alliance_health_trials } from '@helpers/api.minmatar.org/alliance_health'
+import AllianceHealthTrialsTable from '@components/blocks/AllianceHealthTrialsTable.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+
+const raw_bucket = Astro.url.searchParams.get('bucket') ?? 'approve'
+const bucket: AllianceHealthTrialBucket =
+    raw_bucket === 'too_early' ||
+    raw_bucket === 'fail' ||
+    raw_bucket === 'nudge' ||
+    raw_bucket === 'approve'
+        ? raw_bucket
+        : 'approve'
+
+let pilots: AllianceHealthTrialPilot[] = []
+let data_fetching_error: any
+
+try {
+    const trials = await get_alliance_health_trials(
+        auth_token as string,
+        bucket,
+    )
+    pilots = trials.pilots
+} catch (error) {
+    data_fetching_error = error
+}
+
+const PARTIAL_URL = `${translatePath('/partials/alliance_health_trials_component')}?bucket=${bucket}`
+---
+
+{
+    data_fetching_error ? (
+        <ErrorRefetch
+            args={{
+                partial: PARTIAL_URL,
+                error: data_fetching_error,
+                delay: 0,
+            }}
+        />
+    ) : (
+        <AllianceHealthTrialsTable pilots={pilots} />
+    )
+}

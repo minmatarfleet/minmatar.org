@@ -1,0 +1,73 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { AllianceHealthTrialPilot } from '@dtypes/api.minmatar.org'
+import type { CampaignTableRow } from '@/data/campaigns/etherium-reach'
+
+import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
+import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
+
+interface Props {
+    pilots: AllianceHealthTrialPilot[]
+    [propName: string]: any
+}
+
+const { pilots, ...attributes } = Astro.props
+delete attributes.class
+
+const headers = [
+    t('alliance.health.col.pilot'),
+    t('alliance.health.col.corp'),
+    t('alliance.health.col.in_alliance'),
+    t('alliance.health.col.fleets'),
+    t('alliance.health.col.kills'),
+    t('alliance.health.col.small'),
+    t('alliance.health.col.voice'),
+    t('alliance.health.col.slice_30d'),
+    t('alliance.health.col.last'),
+    t('alliance.health.col.path'),
+    t('alliance.health.col.conf'),
+    t('alliance.health.col.reason'),
+]
+
+const rows: CampaignTableRow[] = pilots.map((pilot) => ({
+    cells: [
+        pilot.pilot,
+        pilot.corp,
+        pilot.alliance_days == null ? '—' : `${pilot.alliance_days}d`,
+        String(pilot.fleets),
+        String(pilot.kills),
+        String(pilot.kills_small),
+        `${pilot.voice_hours}h`,
+        pilot.slice_30d,
+        pilot.days_since_activity == null
+            ? '—'
+            : `${pilot.days_since_activity}d`,
+        pilot.path,
+        pilot.conf,
+        pilot.reason,
+    ],
+    cell_icons: [
+        pilot.character_id ? get_player_icon(pilot.character_id, 64) : undefined,
+        pilot.corporation_id
+            ? get_corporation_logo(pilot.corporation_id, 64)
+            : undefined,
+    ],
+}))
+---
+
+<div class:list={['[ alliance-health-trials ]', Astro.props.class]} {...attributes}>
+    <CampaignDataTable headers={headers} rows={rows} success_marker={false} />
+    {pilots.length === 0 && (
+        <p class="[ alliance-health-trials__empty ]">{t('alliance.health.trials.empty')}</p>
+    )}
+</div>
+
+<style lang="scss">
+    .alliance-health-trials__empty {
+        margin: var(--space-s) 0 0;
+        color: var(--foreground);
+        font-size: var(--step--1);
+    }
+</style>

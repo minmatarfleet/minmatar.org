@@ -31,36 +31,53 @@ import type {
     AllianceHealthAttentionBucket,
     AllianceHealthCohorts,
     AllianceHealthCorporations,
+    AllianceHealthLeave,
     AllianceHealthOverview,
+    AllianceHealthTrialBucket,
+    AllianceHealthTrials,
 } from '@dtypes/api.minmatar.org'
 import {
     get_alliance_health_attention,
     get_alliance_health_cohorts,
     get_alliance_health_corporations,
+    get_alliance_health_leave,
     get_alliance_health_overview,
+    get_alliance_health_trials,
 } from '@helpers/api.minmatar.org/alliance_health'
 
 let overview: AllianceHealthOverview | null = null
 let corporations: AllianceHealthCorporations | null = null
 let cohorts: AllianceHealthCohorts | null = null
 let attention: AllianceHealthAttention | null = null
+let trials: AllianceHealthTrials | null = null
+let leave: AllianceHealthLeave | null = null
 let data_fetching_error: any
 
 const initial_bucket: AllianceHealthAttentionBucket = 'fading'
+const initial_trial_bucket: AllianceHealthTrialBucket = 'approve'
 
 try {
-    ;[overview, corporations, cohorts, attention] = await Promise.all([
-        get_alliance_health_overview(auth_token as string),
-        get_alliance_health_corporations(auth_token as string),
-        get_alliance_health_cohorts(auth_token as string),
-        get_alliance_health_attention(auth_token as string, initial_bucket),
-    ])
+    ;[overview, corporations, cohorts, attention, trials, leave] =
+        await Promise.all([
+            get_alliance_health_overview(auth_token as string),
+            get_alliance_health_corporations(auth_token as string),
+            get_alliance_health_cohorts(auth_token as string),
+            get_alliance_health_attention(auth_token as string, initial_bucket),
+            get_alliance_health_trials(
+                auth_token as string,
+                initial_trial_bucket,
+            ),
+            get_alliance_health_leave(auth_token as string),
+        ])
 } catch (error) {
     data_fetching_error = error
 }
 
 const ATTENTION_PARTIAL_URL = translatePath(
     '/partials/alliance_health_attention_component',
+)
+const TRIALS_PARTIAL_URL = translatePath(
+    '/partials/alliance_health_trials_component',
 )
 
 import Viewport from '@layouts/Viewport.astro'
@@ -76,6 +93,9 @@ import AllianceHealthMonthlyChart from '@components/blocks/AllianceHealthMonthly
 import AllianceHealthMixChart from '@components/blocks/AllianceHealthMixChart.astro'
 import AllianceHealthAttention from '@components/blocks/AllianceHealthAttention.astro'
 import AllianceHealthPilotsTable from '@components/blocks/AllianceHealthPilotsTable.astro'
+import AllianceHealthTrials from '@components/blocks/AllianceHealthTrials.astro'
+import AllianceHealthTrialsTable from '@components/blocks/AllianceHealthTrialsTable.astro'
+import AllianceHealthLeaveTable from '@components/blocks/AllianceHealthLeaveTable.astro'
 import AllianceHealthCorpsTable from '@components/blocks/AllianceHealthCorpsTable.astro'
 import AllianceHealthCohortsTable from '@components/blocks/AllianceHealthCohortsTable.astro'
 
@@ -83,6 +103,11 @@ const page_title = t('alliance.health.page_title')
 const as_of_tag = overview
     ? t('alliance.health.updated').replace('{when}', overview.computed_at)
     : ''
+const leave_caption =
+    leave &&
+    t('alliance.health.leave.kept_exempt')
+        .replace('{kept}', String(leave.counts.kept))
+        .replace('{exempt}', String(leave.counts.exempt))
 ---
 
 <Viewport title={page_title} components={{ alert_dialog: true }}>
@@ -110,7 +135,12 @@ const as_of_tag = overview
                         delay: 0,
                     }}
                 />
-            ) : overview && corporations && cohorts && attention ? (
+            ) : overview &&
+              corporations &&
+              cohorts &&
+              attention &&
+              trials &&
+              leave ? (
                 <Flexblock gap="var(--space-2xl)">
                     <TextBox>
                         <p class="[ excerpt ]">{t('alliance.health.leading_text')}</p>
@@ -138,6 +168,31 @@ const as_of_tag = overview
                         </Flexblock>
                         <ComponentBlock padding_inline="var(--space-m)">
                             <AllianceHealthMixChart signals={overview.signals_30d} />
+                        </ComponentBlock>
+                    </Flexblock>
+
+                    <Flexblock gap="var(--space-m)">
+                        <Flexblock gap="var(--space-3xs)">
+                            <h2>{t('alliance.health.trials.title')}</h2>
+                            <small>{t('alliance.health.trials.caption')}</small>
+                        </Flexblock>
+                        <AllianceHealthTrials
+                            counts={overview.hygiene?.trial ?? trials.counts}
+                            bucket={trials.bucket}
+                            partial_url={TRIALS_PARTIAL_URL}
+                        >
+                            <AllianceHealthTrialsTable pilots={trials.pilots} />
+                        </AllianceHealthTrials>
+                    </Flexblock>
+
+                    <Flexblock gap="var(--space-m)">
+                        <Flexblock gap="var(--space-3xs)">
+                            <h2>{t('alliance.health.leave.title')}</h2>
+                            <small>{t('alliance.health.leave.caption')}</small>
+                            {leave_caption && <small>{leave_caption}</small>}
+                        </Flexblock>
+                        <ComponentBlock padding_inline="var(--space-m)">
+                            <AllianceHealthLeaveTable pilots={leave.pilots} />
                         </ComponentBlock>
                     </Flexblock>
 

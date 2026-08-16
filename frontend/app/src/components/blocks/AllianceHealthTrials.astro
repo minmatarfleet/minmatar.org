@@ -1,0 +1,89 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type {
+    AllianceHealthTrialBucket,
+    AllianceHealthTrialCounts,
+} from '@dtypes/api.minmatar.org'
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Button from '@components/blocks/Button.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+
+interface Props {
+    counts: AllianceHealthTrialCounts
+    bucket: AllianceHealthTrialBucket
+    partial_url: string
+    [propName: string]: any
+}
+
+const { counts, bucket, partial_url, ...attributes } = Astro.props
+delete attributes.class
+
+const tabs: {
+    id: AllianceHealthTrialBucket
+    count: number
+    label: string
+}[] = [
+    {
+        id: 'approve',
+        count: counts.approve,
+        label: t('alliance.health.bucket.approve'),
+    },
+    {
+        id: 'too_early',
+        count: counts.too_early,
+        label: t('alliance.health.bucket.too_early'),
+    },
+    {
+        id: 'fail',
+        count: counts.fail,
+        label: t('alliance.health.bucket.fail'),
+    },
+    {
+        id: 'nudge',
+        count: counts.nudge,
+        label: t('alliance.health.bucket.nudge'),
+    },
+]
+---
+
+<section
+    class:list={['[ alliance-health-trials-tabs ]', Astro.props.class]}
+    aria-label={t('alliance.health.trials.aria')}
+    x-data={`{ trial_bucket: '${bucket}' }`}
+>
+    <Flexblock gap="var(--space-m)">
+        <FlexInline gap="var(--space-2xs)">
+            {tabs.map((tab) => (
+                <Button
+                    size="sm"
+                    x-bind:class={`trial_bucket === '${tab.id}' ? 'active' : ''`}
+                    color="transparent"
+                    x-on:click={`trial_bucket = '${tab.id}'`}
+                    hx-get={`${partial_url}?bucket=${tab.id}`}
+                    hx-target="#alliance-health-trials-table"
+                    hx-swap="innerHTML"
+                    hx-indicator=".loader"
+                >
+                    {tab.label} ({tab.count})
+                </Button>
+            ))}
+        </FlexInline>
+
+        <ComponentBlock padding_inline="var(--space-m)">
+            <div id="alliance-health-trials-table">
+                <slot />
+            </div>
+        </ComponentBlock>
+    </Flexblock>
+</section>
+
+<style lang="scss">
+    .alliance-health-trials-tabs :global(.button.active) {
+        border-color: var(--alliance-blue);
+        color: var(--highlight);
+    }
+</style>
