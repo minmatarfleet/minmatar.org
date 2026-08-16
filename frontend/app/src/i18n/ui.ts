@@ -91,6 +91,9 @@ export const ui = {
         'content.connect.reddit_placeholder': 'https://www.reddit.com/user/YourName/',
         'content.connect.reddit_modal_success': 'Reddit linked. Refreshing…',
         'content.connect.reddit_auth_required': 'Log in to link Reddit.',
+        'content.connect.feature_denied':
+            'Connecting Twitch, YouTube, or Reddit is limited to Thinkspeak members. Ask in Discord if you should be in that group.',
+        'content.connect.success': 'Creator account connected.',
 
         'guides.page_title': 'Guides',
         'guides.back_to_guides': 'Back to guides',

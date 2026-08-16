@@ -4,7 +4,9 @@ from django.db.models import signals
 from django.dispatch import receiver
 
 from groups.helpers import sync_user_community_groups
+from groups.helpers.feature_access import clear_feature_cache
 from groups.models import (
+    PilotFeature,
     UserAffiliation,
     UserCommunityStatus,
     UserCommunityStatusHistory,
@@ -92,3 +94,31 @@ def user_community_status_post_save(sender, instance, created, **kwargs):
         )
     logger.info("User community status saved, syncing user community groups")
     sync_user_community_groups(instance.user)
+
+
+@receiver(
+    signals.post_save,
+    sender=PilotFeature,
+    dispatch_uid="pilot_feature_post_save",
+)
+def pilot_feature_post_save(sender, instance, **kwargs):
+    clear_feature_cache()
+
+
+@receiver(
+    signals.m2m_changed,
+    sender=PilotFeature.affiliations.through,
+    dispatch_uid="pilot_feature_affiliations_changed",
+)
+@receiver(
+    signals.m2m_changed,
+    sender=PilotFeature.tribe_groups.through,
+    dispatch_uid="pilot_feature_tribe_groups_changed",
+)
+@receiver(
+    signals.m2m_changed,
+    sender=PilotFeature.auth_groups.through,
+    dispatch_uid="pilot_feature_auth_groups_changed",
+)
+def pilot_feature_wiring_changed(sender, instance, **kwargs):
+    clear_feature_cache()

@@ -16,7 +16,7 @@ const can_manage_content = Boolean(
 )
 const post_editor = can_manage_content ? (user as User).user_id : false
 
-import type { PostListUI } from '@dtypes/layout_components'
+import type { Alert, PostListUI } from '@dtypes/layout_components'
 import { fetch_posts_grouped_by_tags, fetch_posts } from '@helpers/fetching/posts'
 
 let posts: Record<string, PostListUI[]> = {}
@@ -40,6 +40,21 @@ try {
 }
 
 const CONTENT_SECTIONS_PARTIAL_URL = `${translatePath('/partials/content_sections_component')}?state=published`
+
+let connect_alert: Alert | false = false
+const connect_error = Astro.url.searchParams.get('error')
+const connected_provider = Astro.url.searchParams.get('connected')
+if (connect_error === 'FEATURE_DENIED') {
+    connect_alert = {
+        title: t('content.page_title'),
+        content: t('content.connect.feature_denied'),
+    }
+} else if (connected_provider) {
+    connect_alert = {
+        title: t('content.page_title'),
+        content: t('content.connect.success'),
+    }
+}
 
 import Viewport from '@layouts/Viewport.astro'
 
@@ -79,6 +94,11 @@ const page_title = t('content.page_title')
         }}
         wide={true}
         no_main_padding={false}
+        x-data={`{
+            init() {
+                ${connect_alert ? `show_alert_dialog(${JSON.stringify(connect_alert)})` : ''}
+            }
+        }`}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
             <Flexblock gap="var(--space-3xs)">
