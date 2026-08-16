@@ -71,6 +71,7 @@ class FreightRouteAdmin(admin.ModelAdmin):
         "isk_per_m3",
         "collateral_modifier",
         "fixed_fee_millions",
+        "xl_fee_millions",
         "max_m3",
         "max_collateral",
         "expiration_days",
@@ -108,24 +109,36 @@ class FreightRouteAdmin(admin.ModelAdmin):
             },
         ),
         (
+            "Collateral",
+            {
+                "description": (
+                    "Applies to both route types: "
+                    "reward += collateral_modifier × collateral."
+                ),
+                "fields": ("collateral_modifier",),
+            },
+        ),
+        (
             "Rate pricing",
             {
                 "description": (
                     "Used when route type is Rate: "
                     "reward = isk_per_m3 × m³ + collateral %."
                 ),
-                "fields": ("isk_per_m3", "collateral_modifier"),
+                "fields": ("isk_per_m3",),
             },
         ),
         (
             "Fixed pricing",
             {
                 "description": (
-                    "Used when route type is Fixed: flat fee with "
-                    "maximum volume and maximum collateral."
+                    "Used when route type is Fixed: flat fee, plus the XL "
+                    "cargo fee above 350,000 m³, plus collateral %. "
+                    "Capped by maximum volume and maximum collateral."
                 ),
                 "fields": (
                     "fixed_fee_millions",
+                    "xl_fee_millions",
                     "max_m3",
                     "max_collateral",
                 ),

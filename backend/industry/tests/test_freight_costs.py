@@ -216,6 +216,7 @@ class FreightCostsTestCase(TestCase):
     def test_estimate_freight_cost_fixed_route(self):
         self.route.route_type = EveFreightRoute.RouteType.FIXED
         self.route.fixed_fee_millions = 12.5
+        self.route.xl_fee_millions = 5
         self.route.max_m3 = 950000
         self.route.max_collateral = 5_000_000_000
         self.route.save()
@@ -225,4 +226,25 @@ class FreightCostsTestCase(TestCase):
             collateral_isk=1_000_000,
         )
         self.assertTrue(est.has_route)
-        self.assertEqual(est.freight_isk, 12_500_000)
+        # Under 350k m³, so no XL fee: 12.5M + ceil(0.015 * 1M).
+        self.assertEqual(
+            est.freight_isk, 12_500_000 + math.ceil(0.015 * 1_000_000)
+        )
+
+    def test_estimate_freight_cost_fixed_route_xl_volume(self):
+        self.route.route_type = EveFreightRoute.RouteType.FIXED
+        self.route.fixed_fee_millions = 12.5
+        self.route.xl_fee_millions = 5
+        self.route.max_m3 = 950000
+        self.route.max_collateral = 5_000_000_000
+        self.route.save()
+        est = estimate_freight_cost(
+            facility_key="amamake",
+            volume_m3=400_000,
+            collateral_isk=1_000_000,
+        )
+        self.assertTrue(est.has_route)
+        self.assertEqual(
+            est.freight_isk,
+            12_500_000 + 5_000_000 + math.ceil(0.015 * 1_000_000),
+        )

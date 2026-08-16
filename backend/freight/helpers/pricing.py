@@ -7,7 +7,8 @@ from typing import Optional, Union
 
 from freight.models import EveFreightRoute
 
-# Default max volume for rate routes (UI / API exposure).
+# Default max volume for rate routes (UI / API exposure), and the volume
+# above which a fixed route also charges its XL cargo fee.
 STANDARD_MAX_M3 = 350_000
 
 
@@ -56,6 +57,13 @@ def validate_route_contract(
         )
 
 
+def _millions_to_isk(millions: Union[int, float]) -> int:
+    """Convert a fee expressed in millions of ISK to whole ISK."""
+    # Rounded rather than truncated: 2.9 * 1_000_000 is 2899999.9999999995
+    # in binary floating point, which would truncate to one ISK short.
+    return round(float(millions) * 1_000_000)
+
+
 def route_cost_isk(
     route: EveFreightRoute,
     m3: Union[int, float],
@@ -65,13 +73,17 @@ def route_cost_isk(
     Courier reward for a route.
 
     Rate: ``isk_per_m3 * m3 + ceil(collateral_modifier * collateral)``.
-    Fixed: ``fixed_fee_millions * 1_000_000`` (volume/collateral ignored).
+    Fixed: ``fixed_fee_millions + xl_fee_millions (when volume exceeds
+    STANDARD_MAX_M3) + ceil(collateral_modifier * collateral)``.
     """
-    if route.route_type == EveFreightRoute.RouteType.FIXED:
-        return int(float(route.fixed_fee_millions) * 1_000_000)
-
     volume = max(0, int(m3))
     coll = max(0, int(collateral))
-    return int(route.isk_per_m3) * volume + math.ceil(
-        float(route.collateral_modifier) * coll
-    )
+    collateral_fee = math.ceil(float(route.collateral_modifier) * coll)
+
+    if route.route_type == EveFreightRoute.RouteType.FIXED:
+        reward = _millions_to_isk(route.fixed_fee_millions)
+        if volume > STANDARD_MAX_M3:
+            reward += _millions_to_isk(route.xl_fee_millions)
+        return reward + collateral_fee
+
+    return int(route.isk_per_m3) * volume + collateral_fee
