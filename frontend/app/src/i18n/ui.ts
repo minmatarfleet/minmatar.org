@@ -2226,7 +2226,7 @@ export const ui = {
         'grant_permission': 'Grant notifications permission',
         'notification_preferences': 'Notification settings',
         'notification_preferences_description': 'Pick how we reach you. Keep it simple — turn on only what you actually read.',
-        'notification_channel_web': 'Phone / browser popup',
+        'notification_channel_web': 'Browser notification',
         'notification_channel_discord': 'Discord message',
         'notification_channel_eve_mail': 'Eve mail',
         'notification_topic_subscribe': 'Also include me even if I haven\'t built lately',
