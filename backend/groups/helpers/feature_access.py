@@ -2,38 +2,83 @@
 
 from __future__ import annotations
 
+import time
+from dataclasses import dataclass
+
 from django.contrib.auth.models import AnonymousUser
 
 from groups.features.registry import FEATURE_DEFINITIONS
 from groups.features.types import FeatureScope
 from groups.models import PilotFeature, UserAffiliation, UserCommunityStatus
-from tribes.models import TribeGroupMembership
+from tribes.models import TribeGroup, TribeGroupMembership
 
 FEATURE_DENIED_DETAIL = "feature_denied"
+_CACHE_TTL_SECONDS = 30
 
-_feature_cache: dict[str, PilotFeature | None] | None = None
+
+@dataclass(frozen=True)
+class _FeatureSnapshot:
+    code: str
+    scope: str
+    legacy_permission: str
+    staff_permission: str
+    deny_community_statuses: tuple[str, ...]
+    affiliation_ids: frozenset[int]
+    tribe_group_ids: frozenset[int]
+    auth_group_ids: frozenset[int]
+
+
+_feature_cache: dict[str, _FeatureSnapshot] | None = None
+_feature_cache_at: float | None = None
 
 
 def clear_feature_cache() -> None:
     """Clear the in-process feature cache (for tests)."""
-    global _feature_cache  # pylint: disable=global-statement
+    global _feature_cache, _feature_cache_at  # pylint: disable=global-statement
     _feature_cache = None
+    _feature_cache_at = None
 
 
-def _load_feature_cache() -> dict[str, PilotFeature | None]:
-    global _feature_cache  # pylint: disable=global-statement
-    if _feature_cache is not None:
+def _load_feature_cache() -> dict[str, _FeatureSnapshot]:
+    global _feature_cache, _feature_cache_at  # pylint: disable=global-statement
+    now = time.monotonic()
+    if (
+        _feature_cache is not None
+        and _feature_cache_at is not None
+        and now - _feature_cache_at < _CACHE_TTL_SECONDS
+    ):
         return _feature_cache
     features = PilotFeature.objects.filter(is_active=True).prefetch_related(
         "affiliations",
         "tribe_groups",
         "auth_groups",
     )
-    _feature_cache = {feature.code: feature for feature in features}
+    snapshots: dict[str, _FeatureSnapshot] = {}
+    for feature in features:
+        snapshots[feature.code] = _FeatureSnapshot(
+            code=feature.code,
+            scope=feature.scope,
+            legacy_permission=feature.legacy_permission or "",
+            staff_permission=feature.staff_permission or "",
+            deny_community_statuses=tuple(
+                feature.deny_community_statuses or []
+            ),
+            affiliation_ids=frozenset(
+                feature.affiliations.values_list("pk", flat=True)
+            ),
+            tribe_group_ids=frozenset(
+                feature.tribe_groups.values_list("pk", flat=True)
+            ),
+            auth_group_ids=frozenset(
+                feature.auth_groups.values_list("pk", flat=True)
+            ),
+        )
+    _feature_cache = snapshots
+    _feature_cache_at = now
     return _feature_cache
 
 
-def _get_feature(code: str) -> PilotFeature | None:
+def _get_feature(code: str) -> _FeatureSnapshot | None:
     return _load_feature_cache().get(code)
 
 
@@ -63,32 +108,29 @@ def _has_legacy_permission(user, permission: str) -> bool:
     return user.has_perm(permission)
 
 
-def _community_status_blocks_scope(feature: PilotFeature, user) -> bool:
+def _community_status_blocks_scope(feature: _FeatureSnapshot, user) -> bool:
     status = user_community_status(user)
     if not status:
         return False
-    denied = feature.deny_community_statuses or []
-    return status in denied
+    return status in feature.deny_community_statuses
 
 
-def _evaluate_affiliation(feature: PilotFeature, user) -> bool:
+def _evaluate_affiliation(feature: _FeatureSnapshot, user) -> bool:
     affiliation = user_affiliation(user)
     if affiliation is None:
         return False
-    wired_ids = {row.pk for row in feature.affiliations.all()}
-    return affiliation.pk in wired_ids
+    return affiliation.pk in feature.affiliation_ids
 
 
 def _evaluate_tribe_membership(
-    feature: PilotFeature, user, tribe_group=None
+    feature: _FeatureSnapshot, user, tribe_group=None
 ) -> bool:
-    wired_ids = {row.pk for row in feature.tribe_groups.all()}
-    if not wired_ids:
+    if not feature.tribe_group_ids:
         return False
     qs = TribeGroupMembership.objects.filter(
         user=user,
         status=TribeGroupMembership.STATUS_ACTIVE,
-        tribe_group_id__in=wired_ids,
+        tribe_group_id__in=feature.tribe_group_ids,
     )
     if tribe_group is not None:
         qs = qs.filter(tribe_group_id=tribe_group.pk)
@@ -96,40 +138,44 @@ def _evaluate_tribe_membership(
 
 
 def _evaluate_tribe_group_target(
-    feature: PilotFeature, user, tribe_group
+    feature: _FeatureSnapshot, user, tribe_group
 ) -> bool:
     if tribe_group is None:
         return False
     if not _evaluate_affiliation(feature, user):
         return False
-    wired_ids = {row.pk for row in feature.tribe_groups.all()}
-    if wired_ids:
-        return tribe_group.pk in wired_ids
+    if feature.tribe_group_ids:
+        return tribe_group.pk in feature.tribe_group_ids
     return True
 
 
 def _evaluate_tribe_chief(
-    feature: PilotFeature, user, tribe=None, tribe_group=None
+    feature: _FeatureSnapshot, user, tribe=None, tribe_group=None
 ) -> bool:
     staff_perm = feature.staff_permission or feature.legacy_permission
     if staff_perm and _has_legacy_permission(user, staff_perm):
         return True
     if tribe_group is not None:
-        wired_ids = {row.pk for row in feature.tribe_groups.all()}
-        if wired_ids and tribe_group.pk not in wired_ids:
+        if (
+            feature.tribe_group_ids
+            and tribe_group.pk not in feature.tribe_group_ids
+        ):
             return False
         if tribe_group.chief_id == user.pk:
             return True
         return tribe_group.tribe.chief_id == user.pk
     if tribe is not None:
         return tribe.chief_id == user.pk
-    wired_groups = list(feature.tribe_groups.all())
-    if wired_groups:
-        for group in wired_groups:
-            if group.chief_id == user.pk:
-                return True
-            if group.tribe.chief_id == user.pk:
-                return True
+    if not feature.tribe_group_ids:
+        return False
+    groups = TribeGroup.objects.filter(
+        pk__in=feature.tribe_group_ids
+    ).select_related("tribe")
+    for group in groups:
+        if group.chief_id == user.pk:
+            return True
+        if group.tribe.chief_id == user.pk:
+            return True
     return False
 
 
@@ -137,7 +183,7 @@ def _user_auth_group_ids(user) -> set[int]:
     return set(user.groups.values_list("pk", flat=True))
 
 
-def _evaluate_resource_match(feature: PilotFeature, user, fleet) -> bool:
+def _evaluate_resource_match(feature: _FeatureSnapshot, user, fleet) -> bool:
     if fleet is None:
         return _evaluate_affiliation(feature, user)
     if _evaluate_affiliation(feature, user):
@@ -157,20 +203,19 @@ def _evaluate_resource_match(feature: PilotFeature, user, fleet) -> bool:
     return False
 
 
-def _evaluate_auth_group(feature: PilotFeature, user) -> bool:
-    wired_ids = {row.pk for row in feature.auth_groups.all()}
-    if not wired_ids:
+def _evaluate_auth_group(feature: _FeatureSnapshot, user) -> bool:
+    if not feature.auth_group_ids:
         return False
-    return bool(_user_auth_group_ids(user) & wired_ids)
+    return bool(_user_auth_group_ids(user) & feature.auth_group_ids)
 
 
-def _evaluate_staff(feature: PilotFeature, user) -> bool:
+def _evaluate_staff(feature: _FeatureSnapshot, user) -> bool:
     staff_perm = feature.staff_permission or feature.legacy_permission
     return _has_legacy_permission(user, staff_perm)
 
 
 def _evaluate_scope(
-    feature: PilotFeature,
+    feature: _FeatureSnapshot,
     user,
     *,
     tribe=None,

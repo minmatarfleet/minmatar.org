@@ -15,7 +15,7 @@ from groups.management.commands.sync_pilot_features import (
     Command as SyncCommand,
 )
 from groups.models import AffiliationType, PilotFeature, UserAffiliation
-from tribes.models import Tribe, TribeGroup
+from tribes.models import Tribe, TribeGroup, TribeGroupMembership
 
 
 class FeatureAccessTestCase(TestCase):
@@ -146,6 +146,24 @@ class FeatureAccessTestCase(TestCase):
     def test_inactive_user_denied(self):
         user = User.objects.create_user(username="inactive", is_active=False)
         self.assertFalse(can_use_feature(user, "fleets.create"))
+
+    def test_tribe_membership_wiring_change_updates_cache(self):
+        user = User.objects.create_user(username="thinkspeak_user")
+        tribe = Tribe.objects.create(name="Pulse", slug="pulse")
+        tribe_group = TribeGroup.objects.create(
+            tribe=tribe, name="Thinkspeak", code="pulse.thinkspeak"
+        )
+        TribeGroupMembership.objects.create(
+            user=user,
+            tribe_group=tribe_group,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+        feature = PilotFeature.objects.get(code="creators.connect")
+        feature.tribe_groups.clear()
+        clear_feature_cache()
+        self.assertFalse(can_use_feature(user, "creators.connect"))
+        feature.tribe_groups.set([tribe_group])
+        self.assertTrue(can_use_feature(user, "creators.connect"))
 
     def test_unknown_feature_checks_registry_legacy(self):
         user = User.objects.create_user(username="unknown_perm_user")

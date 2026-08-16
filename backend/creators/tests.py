@@ -64,8 +64,8 @@ class CreatorAccountsTestCase(TestCase):
             {"redirect_url": "https://example.com/done"},
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
-        self.assertEqual(response.status_code, 403)
-        self.assertEqual(response.json()["feature"], "creators.connect")
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("error=FEATURE_DENIED", response["Location"])
 
     def test_list_accounts_requires_thinkspeak(self):
         response = self.client.get(
@@ -368,6 +368,20 @@ class CreatorAccountsTestCase(TestCase):
 
     def test_connect_accepts_token_query_param(self):
         self._grant_thinkspeak()
+        response = self.client.get(
+            "/api/creators/twitch/connect",
+            {
+                "redirect_url": "https://example.com/done",
+                "token": self.token,
+            },
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("id.twitch.tv/oauth2/authorize", response["Location"])
+
+    def test_connect_prefers_token_over_session_user(self):
+        self._grant_thinkspeak()
+        other = User.objects.create_user("not-thinkspeak")
+        self.client.force_login(other)
         response = self.client.get(
             "/api/creators/twitch/connect",
             {

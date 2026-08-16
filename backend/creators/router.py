@@ -31,7 +31,10 @@ from creators.service import (
     link_reddit_username,
     upsert_account_from_oauth,
 )
-from groups.helpers.feature_access import require_feature
+from groups.helpers.feature_access import (
+    FEATURE_DENIED_DETAIL,
+    require_feature,
+)
 from users.redirects import oauth_redirect
 
 logger = logging.getLogger(__name__)
@@ -50,6 +53,32 @@ SESSION_PROVIDER_KEY = "creators_oauth_provider"
 SESSION_USER_KEY = "creators_oauth_user_id"
 
 FEATURE_CONNECT = "creators.connect"
+
+
+def _connect_user(request, token: Optional[str]):
+    """Prefer the browser JWT query param over a Django session user."""
+    if token:
+        authenticated = AuthBearer().authenticate(request, token)
+        if authenticated is not None:
+            return authenticated
+    auth = getattr(request, "auth", None)
+    if isinstance(auth, User) and getattr(auth, "is_authenticated", False):
+        return auth
+    user = request.user
+    if (
+        user is None
+        or isinstance(user, AnonymousUser)
+        or not getattr(user, "is_authenticated", False)
+    ):
+        return None
+    return user
+
+
+def _denied_response(redirect_url: str, code: str):
+    if not redirect_url:
+        return 403, {"detail": FEATURE_DENIED_DETAIL, "feature": code}
+    sep = "&" if "?" in redirect_url else "?"
+    return oauth_redirect(f"{redirect_url}{sep}error=FEATURE_DENIED")
 
 
 def _iso(dt) -> str | None:
@@ -198,22 +227,13 @@ def connect_provider(
     redirect_url: str,
     token: Optional[str] = None,
 ):
-    user = request.user
-    if (
-        user is None
-        or isinstance(user, AnonymousUser)
-        or not getattr(user, "is_authenticated", False)
-    ):
-        if token:
-            user = AuthBearer().authenticate(request, token)
-        else:
-            user = None
+    user = _connect_user(request, token)
     if user is None:
         return 401, {"detail": "Unauthorized"}
 
     denied = require_feature(user, FEATURE_CONNECT)
     if denied:
-        return denied
+        return _denied_response(redirect_url, FEATURE_CONNECT)
     if provider == CreatorProvider.REDDIT:
         return 400, {"detail": "use_put_reddit_username"}
     if provider not in OAUTH_PROVIDERS:
