@@ -231,13 +231,6 @@ const page_title = t('tribes.groups.membership.page_title').replace('{group}', t
             >
                 {tribe_group &&
                     <Button
-                        href={translatePath(`/alliance/tribes/${tribe_group.tribe_id}/${tribe_group.id}/activities`)}
-                        size='sm'
-                    >
-                        {t('activities')}
-                    </Button>
-
-                    <Button
                         href={translatePath(`/alliance/tribes/${tribe_group?.tribe_id}`)}
                         size='sm'
                     >

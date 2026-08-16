@@ -1337,33 +1337,6 @@ class EsiClient:
             data=resp.json() if resp.content else None,
         )
 
-    def get_character_access_lists(self) -> EsiResponse:
-        """
-        List access list IDs managed by this character.
-        Requires esi-access.read_lists.v1.
-        """
-        url = f"{ESI_BASE_URL}/characters/{self.character_id}/access-lists/"
-        return self._authenticated_esi_get(
-            url,
-            ["esi-access.read_lists.v1"],
-        )
-
-    def get_character_access_list_detail(
-        self, access_list_id: int
-    ) -> EsiResponse:
-        """
-        Return membership for a single access list managed by this character.
-        Requires esi-access.read_lists.v1.
-        """
-        url = (
-            f"{ESI_BASE_URL}/characters/{self.character_id}/access-lists/"
-            f"{access_list_id}/"
-        )
-        return self._authenticated_esi_get(
-            url,
-            ["esi-access.read_lists.v1"],
-        )
-
     def get_corp_structures(self, corp_id: int) -> EsiResponse:
         """
         Returns all the structures owned by a corp

@@ -47,7 +47,6 @@ import {
 	PageFinderXData,
 	CharacterFinderXData,
 	FittingFinderXData,
-	MemberFinderXData,
 	CorporationFinderXData,
 	AllianceFinderXData,
 	UtilitiesXData,
@@ -130,7 +129,6 @@ import PilotBadge from '@components/blocks/PilotBadge.astro'
 			${components?.alliance_finder ? AllianceFinderXData : ''}
 			${components?.modal ? ModalXData : ''}
 			${user ? CharacterFinderXData : ''}
-			${user_is_officer || user_is_director ? MemberFinderXData : ''}
             ${PageFinderXData}
             ${FittingFinderXData}
             ${UtilitiesXData}

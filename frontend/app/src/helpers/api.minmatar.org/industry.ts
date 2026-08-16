@@ -1,7 +1,5 @@
 import type {
     IndustryOrder,
-    BaseIndustryOrder,
-    NestedIndustryOrder,
     Product,
     Blueprint,
     BlueprintDetail,
@@ -174,67 +172,7 @@ export async function refresh_order_profit_breakdown(
     }
 }
 
-export async function get_orders_summary_nested() {
-    const headers = {
-        'Content-Type': 'application/json',
-    }
 
-    const ENDPOINT = `${API_ENDPOINT}/summary/nested`
-
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
-                cause: response.status
-            })
-        }
-
-        return await response.json() as { roots: NestedIndustryOrder[] };
-    } catch (error) {
-        throw new Error(`Error fetching contracts: ${error.message}`, { cause: error.cause });
-    }
-}
-
-export async function get_orders_summary_flat() {
-    const headers = {
-        'Content-Type': 'application/json',
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/summary/flat`
-
-    console.log(`Requesting: ${ENDPOINT}`)
-
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: headers
-        })
-
-        // console.log(response)
-
-        if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
-                cause: response.status
-            })
-        }
-
-        return await response.json() as { items: BaseIndustryOrder[] };
-    } catch (error) {
-        throw new Error(`Error fetching contracts: ${error.message}`, { cause: error.cause });
-    }
-}
 
 export async function get_products() {
     const headers = {

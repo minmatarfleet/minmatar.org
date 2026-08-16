@@ -29,7 +29,6 @@ from help_tickets.models import (
 from tribes.models import (
     Tribe,
     TribeGroup,
-    TribeGroupActivity,
     TribeGroupRequirement,
     TribeGroupRequirementAssetType,
     TribeGroupRequirementSkill,
@@ -56,7 +55,6 @@ def clear_reference_data() -> dict[str, int]:
     _delete("HelpTicket", HelpTicket.objects)
     _delete("HelpRequestCategory", HelpRequestCategory.objects)
     _delete("HelpTicketPanel", HelpTicketPanel.objects)
-    _delete("TribeGroupActivity", TribeGroupActivity.objects)
     _delete("TribeGroupRequirementSkill", TribeGroupRequirementSkill.objects)
     _delete(
         "TribeGroupRequirementAssetType",

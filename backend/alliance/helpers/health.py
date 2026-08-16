@@ -3,7 +3,7 @@
 Unit: site User with ≥1 linked character currently in an MFA alliance corp.
 Active signals (no Discord voice): fleet attendance, killmail attack
 (solo / small-gang / other), supply (mining, PI, industry jobs/assignments,
-freight, LP market, buyback, supply-tribe activity).
+freight, LP market, buyback).
 """
 
 from __future__ import annotations
@@ -36,7 +36,6 @@ from industry.models import (
     IndustryLoyaltyPointMarketOrder,
     IndustryOrderItemAssignment,
 )
-from tribes.models import TribeGroup, TribeGroupActivityRecord
 
 ALLIANCE_ID = 99011978
 ACADEMY_CORP_ID = 98741376
@@ -311,24 +310,6 @@ def compute_alliance_health(  # noqa: C901
         uid = pk_to_user.get(pk)
         if uid is not None and last_update is not None:
             events.append((uid, last_update, "supply"))
-
-    supply_group_ids = list(
-        TribeGroup.objects.filter(code__startswith="supply.").values_list(
-            "id", flat=True
-        )
-    )
-    if supply_group_ids:
-        for uid, occurred_at in (
-            TribeGroupActivityRecord.objects.filter(
-                tribe_group_activity__tribe_group_id__in=supply_group_ids,
-                occurred_at__gte=hist_start,
-                user_id__in=roster_user_ids,
-            )
-            .values_list("user_id", "occurred_at")
-            .iterator(chunk_size=5000)
-        ):
-            if uid is not None and occurred_at is not None:
-                events.append((uid, occurred_at, "supply"))
 
     map_signals = frozenset({"fleet", "solo", "small_gang", "kill", "supply"})
 

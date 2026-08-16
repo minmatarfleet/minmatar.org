@@ -16,7 +16,6 @@ from industry.models.lp_store import (
     IndustryLpStoreOfferEconomics,
     IndustryLpStoreOfferRequiredItem,
 )
-from industry.models.mining import MiningUpgradeCompletion
 from industry.models.order import (
     IndustryOrder,
     IndustryOrderBlueprintCoordinator,
@@ -50,6 +49,5 @@ __all__ = [
     "IndustryOrderPiCoordinator",
     "IndustryProduct",
     "IndustrySystemCostIndex",
-    "MiningUpgradeCompletion",
     "Strategy",
 ]

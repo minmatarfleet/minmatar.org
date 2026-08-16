@@ -51,7 +51,7 @@ Task Progress:
 | PI colonies | `EveCharacterPlanet` | ESI-synced colonies; prefer over tax ISK for “has PI” audits |
 | Requirements | `TribeGroupRequirement` → `TribeGroupRequirementAssetType` / `…Skill` | OR across requirements; AND within one |
 | Batch check | `characters_meeting_requirements_batch(..., using=DB)` | Full reqs (assets **and** skills) |
-| Activity | `TribeGroupActivity` + `TribeGroupActivityRecord` | `occurred_at`; filter by group + window |
+| Activity | Source ledgers + `town_hall_report` / report queries | Mining ledger, PI, fleets, etc. — not a tribe activity log |
 | Chiefs | `Tribe.chief`, `TribeGroup.chief` | Never mark inactive via audit scripts |
 
 **Asset-only vs full requirements:** For “no matching hull,” filter `EveCharacterAsset` by requirement type IDs (or `asset_met`). Do not use the full batch helper alone — skill gaps fail `met` even when a hull exists.
@@ -119,7 +119,7 @@ Optionally check other capital groups (`EveType` / `EveGroup` names `Dreadnought
 
 ### Activity gaps
 
-**Generic:** Use `TribeGroupActivityRecord` for the group’s configured activities over a window (e.g. 30/90d). Flag active members with zero (or below-threshold) records. Combine with qualification gaps only when the user asks for both.
+**Generic:** Use the group’s report bindings / source ledgers (mining, PI, fleets, industry) over a window via `town_hall_report` or direct queries. Flag active members with zero (or below-threshold) contribution. Combine with qualification gaps only when the user asks for both.
 
 **Mining (`supply.mining`):** Prefer the member report (includes zero-activity roster rows; town hall truncates top-N):
 

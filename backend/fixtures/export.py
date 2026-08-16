@@ -31,7 +31,6 @@ from market.models import (
 from tribes.models import (
     Tribe,
     TribeGroup,
-    TribeGroupActivity,
     TribeGroupRequirement,
     TribeGroupRequirementAssetType,
     TribeGroupRequirementSkill,
@@ -81,7 +80,6 @@ class ExportBundle:
     tribe_requirement_asset_types: list[TribeGroupRequirementAssetType] = (
         field(default_factory=list)
     )
-    tribe_activities: list[TribeGroupActivity] = field(default_factory=list)
     fleet_audiences: list[EveFleetAudience] = field(default_factory=list)
     market_item_expectations: list[EveMarketItemExpectation] = field(
         default_factory=list
@@ -177,11 +175,6 @@ def collect_reference_data(
         .order_by("pk")
     )
     bundle.tribe_requirement_asset_types = list(asset_type_qs)
-    bundle.tribe_activities = list(
-        TribeGroupActivity.objects.using(source_db)
-        .filter(tribe_group_id__in=tribe_group_pks)
-        .order_by("pk")
-    )
 
     bundle.fleet_audiences = list(
         EveFleetAudience.objects.using(source_db)
@@ -227,7 +220,6 @@ def bundle_counts(bundle: ExportBundle) -> dict[str, int]:
         "tribes.TribeGroupRequirementAssetType": len(
             bundle.tribe_requirement_asset_types
         ),
-        "tribes.TribeGroupActivity": len(bundle.tribe_activities),
         "fleets.EveFleetAudience": len(bundle.fleet_audiences),
         "market.EveMarketItemExpectation": len(
             bundle.market_item_expectations
@@ -305,7 +297,6 @@ def serialize_bundle(bundle: ExportBundle) -> dict[str, list[dict]]:
         + list(bundle.tribe_requirements)
         + list(bundle.tribe_requirement_skills)
         + list(bundle.tribe_requirement_asset_types)
-        + list(bundle.tribe_activities)
     )
     market_objects = (
         list(bundle.market_item_expectations)

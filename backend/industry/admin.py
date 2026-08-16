@@ -23,7 +23,6 @@ from industry.forms import (
     IndustryLoyaltyPointAccountAdminForm,
     IndustryLoyaltyPointLedgerEntryAdminForm,
     IndustryOrderAdminForm,
-    MiningUpgradeCompletionAdminForm,
 )
 from industry.helpers.admin_permissions import (
     industry_orders_index_link_perms,
@@ -58,7 +57,6 @@ from industry.models import (
     IndustryOrderMineralCoordinator,
     IndustryOrderPiCoordinator,
     IndustryProduct,
-    MiningUpgradeCompletion,
 )
 from tribes.models import TribeGroup
 
@@ -1259,23 +1257,6 @@ class IndustryProductAdmin(admin.ModelAdmin):
                 pass
 
 
-@admin.register(MiningUpgradeCompletion)
-class MiningUpgradeCompletionAdmin(admin.ModelAdmin):
-    form = MiningUpgradeCompletionAdminForm
-    list_display = (
-        "sov_system",
-        "site_name",
-        "completed_at",
-        "completed_by",
-    )
-    list_filter = ("sov_system",)
-    date_hierarchy = "completed_at"
-    ordering = ("-completed_at",)
-    raw_id_fields = ("completed_by",)
-    search_fields = ("site_name", "sov_system__system_name")
-    fields = ("sov_system", "site_name", "completed_at", "completed_by")
-
-
 INDUSTRY_ORDERS_HIDDEN_MODELS = {
     "industryorder",
     "industryorderitem",
@@ -1298,13 +1279,11 @@ INDUSTRY_SUPPLY_EXCLUDED_MODELS = (
     | INDUSTRY_LOYALTY_HIDDEN_MODELS
     | {
         "industryproduct",
-        "miningupgradecompletion",
     }
 )
 
 INDUSTRY_EXPERIMENTAL_VISIBLE_RENAMES = {
     "industryproduct": "Products",
-    "miningupgradecompletion": "Mining completions",
 }
 
 INDUSTRY_SUPPLY_EXTRA_INDEX_LINKS = [
