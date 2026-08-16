@@ -67,6 +67,7 @@ class OrderProfitBreakdownTestCase(AppTestCase):
             solar_system_id=300001,
             solar_system_name="Test System",
             short_name="SNP",
+            staging_active=True,
         )
         self.token = jwt.encode(
             {"user_id": self.user.id},
@@ -249,6 +250,8 @@ class OrderProfitBreakdownTestCase(AppTestCase):
         body = {
             "needed_by": needed,
             "character_id": self.character.character_id,
+            "location_id": self.location.location_id,
+            "contract_to": self.character.character_name,
             "items": [{"eve_type_id": self.eve_type.id, "quantity": 3}],
         }
         response = self.client.post(
