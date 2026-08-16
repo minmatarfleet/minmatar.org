@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -16,9 +16,17 @@ import {
     get_learning_me,
     get_learning_persona_recommendation,
 } from '@helpers/api.minmatar.org/learning'
-import { get_characters_summary_sorted } from '@helpers/fetching/characters'
+import { get_primary_characters } from '@helpers/api.minmatar.org/characters'
+import { get_characters_summary_sorted, get_skillsets } from '@helpers/fetching/characters'
 import { get_user_permissions } from '@helpers/permissions'
 import { PERSONA_COOKIE } from '@helpers/learning'
+import { getPublishedGuides } from '@/data/guides'
+import { GUIDES_INDEX_COVER } from '@/data/guides/covers'
+import { buildLandingCollectionJsonLd, getLearningHubSeo } from '@/data/guides/seo'
+import { LEARNING_HUB_PATH } from '@/data/guides/urls'
+import { get_site_origin } from '@helpers/seo'
+import { get_api_url } from '@helpers/env'
+import type { CharacterBasic, Skillset } from '@dtypes/layout_components'
 
 import Viewport from '@layouts/Viewport.astro'
 import PageLanding from '@components/page/PageLanding.astro'
@@ -41,6 +49,13 @@ const unavailable = Astro.url.searchParams.get('unavailable') === '1'
 let me: LearningMeResponse | null = null
 let recommendation: LearningPersonaRecommendation | null = null
 let readiness_character_id = 0
+let skillsets: Skillset[] = []
+let skillsets_character: CharacterBasic | null = null
+let certificates_admin_href: string | null = null
+let skillsets_admin_href: string | null = null
+const skillsets_login_href = auth_token
+    ? null
+    : `${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`
 
 if (auth_token) {
     try {
@@ -54,6 +69,36 @@ if (auth_token) {
         if (user_permissions.includes('eveonline.add_evecharactertag')) {
             const character_summary = await get_characters_summary_sorted(auth_token)
             readiness_character_id = character_summary.characters?.[0]?.character_id ?? 0
+        }
+
+        const api_base = get_api_url()
+        if (
+            user.is_superuser
+            || user_permissions.includes('learning.change_certificate')
+            || user_permissions.includes('learning.view_certificate')
+        ) {
+            certificates_admin_href = `${api_base}/admin/learning/certificate/`
+        }
+        if (
+            user.is_superuser
+            || user_permissions.includes('eveonline.change_eveskillset')
+            || user_permissions.includes('eveonline.view_eveskillset')
+        ) {
+            skillsets_admin_href = `${api_base}/admin/eveonline/eveskillset/`
+        }
+
+        try {
+            const primary = await get_primary_characters(auth_token)
+            if (primary?.character_id) {
+                const primary_skillsets = await get_skillsets(auth_token, primary.character_id)
+                skillsets = primary_skillsets.skillsets
+                skillsets_character = {
+                    character_id: primary_skillsets.character_id,
+                    character_name: primary_skillsets.character_name,
+                }
+            }
+        } catch (skillsets_error) {
+            console.error(skillsets_error)
         }
     } catch (e) {
         console.error(e)
@@ -71,7 +116,6 @@ const persona_candidates = [
 const persona = persona_candidates[0] ?? null
 const persona_confirmed = Boolean(me?.persona_confirmed || cookie_persona || query_persona)
 
-// Logged-in first visit: show picker with recommendation pre-selected.
 const show_persona_gate =
     !persona_confirmed ||
     (Boolean(auth_token) && me !== null && !me.persona_confirmed && !query_persona && !cookie_persona)
@@ -88,17 +132,39 @@ try {
 }
 
 const completed_slugs = me?.completed_learning_slugs ?? []
+const site_origin = get_site_origin(Astro.url.origin)
+const seo = getLearningHubSeo({
+    siteName: t('index.page_title'),
+    siteOrigin: site_origin,
+    translatePath,
+    t,
+    coverImage: GUIDES_INDEX_COVER.image,
+})
+const structured_data = buildLandingCollectionJsonLd({
+    siteName: t('index.page_title'),
+    siteOrigin: site_origin,
+    metaTitle: seo.metaTitle,
+    metaDescription: seo.metaDescription,
+    canonicalUrl: seo.canonicalUrl,
+    metaImage: seo.metaImage,
+    guides: getPublishedGuides(),
+    translatePath,
+})
 
-const page_title = t('learning_center.page_title')
+const page_title = t('learning.page_title')
 ---
 
 <Viewport
-    title={page_title}
-    meta_description={t('learning_center.meta_description')}
+    title={seo.metaTitle}
+    meta_description={seo.metaDescription}
+    meta_image={seo.metaImage}
+    canonical_url={seo.canonicalUrl}
     components={{
         alert_dialog: true,
+        modal: true,
     }}
 >
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(structured_data)} />
     <PageLanding
         cover={{
             image: '/images/alliance-cover.jpg',
@@ -124,13 +190,19 @@ const page_title = t('learning_center.page_title')
                 needs_persona={show_persona_gate}
                 persona_confirmed_on_server={Boolean(me?.persona_confirmed)}
                 readiness_character_id={readiness_character_id}
+                catalog_path={LEARNING_HUB_PATH}
+                skillsets={skillsets}
+                skillsets_character={skillsets_character}
+                skillsets_login_href={skillsets_login_href}
+                certificates_admin_href={certificates_admin_href}
+                skillsets_admin_href={skillsets_admin_href}
             >
                 <Flexblock slot="intro" gap="var(--space-l)">
                     <TextBox>
                         <PageTitle is_landing={true}>{page_title}</PageTitle>
                     </TextBox>
                     <TextBox>
-                        <p class="[ excerpt ]">{t('learning_center.leading_text')}</p>
+                        <p class="[ excerpt ]">{t('learning.leading_text')}</p>
                     </TextBox>
                 </Flexblock>
             </LearningCenterHub>

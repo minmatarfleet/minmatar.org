@@ -27,7 +27,7 @@ export const overviewReasons = [
 ]
 
 export const overviewFollowUp =
-    'If this is your first guide, read <a href="/guides/capital-ship-basics/">Capital Ship Basics</a> first.'
+    'If this is your first guide, read <a href="/learning/guides/capital-ship-basics/">Capital Ship Basics</a> first.'
 
 export const metaBlocks: MetaBlock[] = [
     {

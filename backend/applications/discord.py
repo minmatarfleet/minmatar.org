@@ -108,7 +108,7 @@ def notify_application_accepted(application) -> None:
     message = ":tada: Your application has been accepted!\n"
     message += "- Read our [alliance values](https://my.minmatar.org/alliance/values/)\n"
     message += "- Apply in-game\n- Follow these [onboarding steps](https://wiki.minmatar.org/en/alliance/Onboarding)\n"
-    message += "- Familiarize yourself with our [guides](https://my.minmatar.org/guides/)\n"
+    message += "- Familiarize yourself with our [Learning](https://my.minmatar.org/learning/)\n"
     message += "- [We are Minmatar (FL33T Alliance)](https://www.youtube.com/watch?v=JMddiOzaDsA)"
     discord.create_message(
         channel_id=application.discord_thread_id, message=message

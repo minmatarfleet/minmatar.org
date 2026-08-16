@@ -1,0 +1,275 @@
+---
+import { i18n } from '@helpers/i18n'
+import type { LearningCertificate } from '@dtypes/api.minmatar.org'
+import type { Author } from '@/data/guides/types'
+import { guides } from '@/data/guides'
+import { certificatePath } from '@/data/guides/urls'
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import CorporationBadge from '@components/blocks/CorporationBadge.astro'
+import AllianceBadge from '@components/blocks/AllianceBadge.astro'
+import Button from '@components/blocks/Button.astro'
+
+const { t, translatePath } = i18n(Astro.url)
+
+interface Props {
+    certificate: LearningCertificate
+    completed_slugs: string[]
+    cover: string
+    progress_label: string
+}
+
+const {
+    certificate,
+    completed_slugs,
+    cover,
+    progress_label,
+} = Astro.props
+
+const slugs = certificate.learnings.map((l) => l.slug)
+const total = certificate.learning_count || slugs.length
+const done = slugs.filter((slug) => completed_slugs.includes(slug)).length
+const percent = total > 0 ? Math.round((100 * done) / total) : 0
+const slugs_json = JSON.stringify(slugs)
+const href = translatePath(certificatePath(certificate.slug))
+
+const guides_count_text = t(total !== 1 ? 'guides_plural' : 'guides_singular')
+    .replace('{count}', String(total))
+
+const authors_by_key = new Map<string, Author>()
+for (const learning of certificate.learnings) {
+    const guide = guides.find((entry) => entry.slug === learning.slug)
+    if (!guide) continue
+    for (const author of guide.authors) {
+        const key = `${author.entity}:${author.id}`
+        if (!authors_by_key.has(key)) authors_by_key.set(key, author)
+    }
+}
+const authors = [...authors_by_key.values()]
+const character_authors = authors.filter((a) => a.entity === 'character')
+const sole_author = authors.length === 1 ? authors[0] : undefined
+---
+
+<article class="[ certificate-card card component border light-transparency ]">
+    <a class="[ certificate-card__cover ]" href={href} tabindex="-1" aria-hidden="true">
+        <img src={cover} alt="" loading="lazy" />
+    </a>
+
+    <div class="[ certificate-card__body ]">
+        <div class="[ certificate-card__content ]">
+            <h3 class="[ certificate-card__title ]">
+                <a href={href}>{certificate.title}</a>
+            </h3>
+
+            <p class="[ certificate-card__meta ]">
+                <span>{guides_count_text}</span>
+                <span aria-hidden="true">·</span>
+                <span
+                    x-text={`typeof certPercent === 'function' ? '${progress_label}: ' + certPercent(${slugs_json}) + '%' : '${progress_label}: ${percent}%'`}
+                >
+                    {progress_label}: {percent}%
+                </span>
+            </p>
+
+            <div class="[ certificate-card__authors ]">
+                {character_authors.length > 0 ? (
+                    <FlexInline gap="var(--space-3xs)">
+                        {character_authors.map((entry) => (
+                            <CharacterPicture
+                                character_id={entry.id}
+                                character_name={entry.name}
+                                tooltip={entry.name}
+                                size={24}
+                                centered={true}
+                            />
+                        ))}
+                    </FlexInline>
+                ) : sole_author?.entity === 'corporation' ? (
+                    <CorporationBadge
+                        corporation={{
+                            id: sole_author.id,
+                            name: sole_author.name,
+                            size: 'sm',
+                        }}
+                    />
+                ) : sole_author?.entity === 'alliance' ? (
+                    <AllianceBadge
+                        alliance={{
+                            id: sole_author.id,
+                            name: sole_author.name,
+                            size: 'sm',
+                        }}
+                    />
+                ) : null}
+            </div>
+
+            <p class="[ certificate-card__excerpt ]">{certificate.summary}</p>
+        </div>
+
+        <div class="[ certificate-card__footer ]">
+            <div class="[ certificate-card__progress ]">
+                <span
+                    class="[ certificate-card__progress-label ]"
+                    x-text={`typeof certCompletedCount === 'function' ? certCompletedCount(${slugs_json}) + ' / ' + ${total} : '${done} / ${total}'`}
+                >
+                    {done} / {total}
+                </span>
+                <div class="[ progress-bar ]" aria-hidden="true">
+                    <div
+                        class="[ progress-bar__fill ]"
+                        style={`width: ${percent}%`}
+                        x-bind:style={`typeof certPercent === 'function' ? ('width: ' + certPercent(${slugs_json}) + '%') : 'width: ${percent}%'`}
+                    ></div>
+                </div>
+            </div>
+
+            <div class="[ certificate-card__actions ]">
+                <Button size="sm" href={href}>{t('view')}</Button>
+            </div>
+        </div>
+    </div>
+</article>
+
+<style lang="scss">
+    .certificate-card {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+        padding: 0;
+    }
+
+    .certificate-card__cover {
+        position: relative;
+        display: block;
+        aspect-ratio: 2 / 1;
+        overflow: hidden;
+        flex-shrink: 0;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            filter: brightness(0.4) saturate(0.75);
+        }
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: linear-gradient(
+                to bottom,
+                rgb(0 0 0 / 35%) 0%,
+                rgb(0 0 0 / 55%) 100%
+            );
+        }
+    }
+
+    .certificate-card__body {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        gap: var(--space-s);
+        padding: var(--space-s);
+        min-height: 0;
+    }
+
+    .certificate-card__content {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        flex: 1;
+        min-height: 0;
+    }
+
+    .certificate-card__title {
+        margin: 0;
+        font-size: var(--step-0);
+        line-height: 1.2;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        min-height: calc(2 * 1.2em);
+
+        a {
+            color: inherit;
+            text-decoration: none;
+
+            @media (hover: hover) {
+                &:hover,
+                &:focus-visible {
+                    color: var(--highlight);
+                }
+            }
+        }
+    }
+
+    .certificate-card__meta {
+        margin: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs) var(--space-2xs);
+        color: var(--fleet-yellow);
+        font-size: var(--step--1);
+        line-height: 1.3;
+        min-height: calc(1 * 1.3em);
+    }
+
+    .certificate-card__authors {
+        display: flex;
+        align-items: center;
+        min-height: 24px;
+    }
+
+    .certificate-card__excerpt {
+        margin: 0;
+        color: var(--muted-color);
+        font-size: var(--step--1);
+        line-height: 1.4;
+    }
+
+    .certificate-card__footer {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        margin-block-start: auto;
+        flex-shrink: 0;
+    }
+
+    .certificate-card__progress {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .certificate-card__progress-label {
+        font-size: var(--step--2);
+        color: var(--highlight);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .certificate-card__actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-3xs) var(--space-xs);
+    }
+
+    .progress-bar {
+        width: 100%;
+        height: 4px;
+        background: rgb(255 255 255 / 22%);
+
+        &__fill {
+            height: 100%;
+            background: var(--fleet-red);
+            transition: width var(--fast-transition);
+        }
+    }
+</style>

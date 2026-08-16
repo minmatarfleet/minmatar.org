@@ -2,15 +2,14 @@
 import { i18n } from '@helpers/i18n'
 import type { GuideMeta } from '@/data/guides/types'
 import { getGuideCoverImage } from '@/data/guides/covers'
+import { guidePath as guide_path_for_slug } from '@/data/guides/urls'
 import { get_app_url } from '@helpers/env'
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
-import Wrapper from '@components/compositions/Wrapper.astro'
 
-import Tile from '@components/blocks/Tile.astro'
 import PilotBadge from '@components/blocks/PilotBadge.astro'
 import CorporationBadge from '@components/blocks/CorporationBadge.astro'
 import AllianceBadge from '@components/blocks/AllianceBadge.astro'
@@ -27,144 +26,212 @@ interface Props {
 
 const { guide } = Astro.props
 const coming_soon = Boolean(guide.comingSoon)
-const guidePath = guide.path ? translatePath(guide.path) : translatePath(`/guides/${guide.slug}/`)
-const guideUrl = guidePath
+const guide_href = translatePath(guide_path_for_slug(guide.slug))
 const is_multiple_authors = guide.authors.length > 1
 const author = !is_multiple_authors ? guide.authors[0] : undefined
 const author_names = guide.authors.map((entry) => entry.name).join(', ')
+const cover = getGuideCoverImage(guide)
 
 const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
 const user: User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
-const shareUrl = user
-    ? `${get_app_url(guidePath)}?ref=${user.user_id}`
-    : get_app_url(guidePath)
+const share_url = user
+    ? `${get_app_url(guide_href)}?ref=${user.user_id}`
+    : get_app_url(guide_href)
 ---
 
-<Flexblock
+<article
     class:list={[
-        '[ card component border light-transparency relative ]',
+        '[ guide-card card component border light-transparency ]',
         { 'guide-card--coming-soon': coming_soon },
     ]}
-    gap='0'
 >
-    <Tile
-        title={guide.title}
-        cover={getGuideCoverImage(guide)}
-        alt={guide.title}
-        transparent={true}
-        soft={false}
-        narrow={true}
-    >
-        {coming_soon ? null : (
-            <Flexblock slot="subtitle">
-                {is_multiple_authors ? (
-                    <FlexInline class="[ guide-card__authors ]" gap="var(--space-2xs)">
-                        <FlexInline gap="var(--space-3xs)">
-                            {guide.authors.map((entry) => (
-                                entry.entity === 'character' && (
-                                    <CharacterPicture
-                                        character_id={entry.id}
-                                        character_name={entry.name}
-                                        size={32}
-                                        centered={true}
-                                    />
-                                )
-                            ))}
+    {coming_soon ? (
+        <div class="[ guide-card__cover ]" aria-hidden="true">
+            <img src={cover} alt="" loading="lazy" />
+        </div>
+    ) : (
+        <a class="[ guide-card__cover ]" href={guide_href} tabindex="-1" aria-hidden="true">
+            <img src={cover} alt="" loading="lazy" />
+        </a>
+    )}
+
+    <div class="[ guide-card__body ]">
+        <Flexblock gap="var(--space-xs)">
+            {coming_soon ? (
+                <h3 class="[ guide-card__title ]">{guide.title}</h3>
+            ) : (
+                <h3 class="[ guide-card__title ]">
+                    <a href={guide_href}>{guide.title}</a>
+                </h3>
+            )}
+
+            {!coming_soon && (
+                <div class="[ guide-card__author ]">
+                    {is_multiple_authors ? (
+                        <FlexInline class="[ guide-card__authors ]" gap="var(--space-2xs)">
+                            <FlexInline gap="var(--space-3xs)">
+                                {guide.authors.map((entry) => (
+                                    entry.entity === 'character' && (
+                                        <CharacterPicture
+                                            character_id={entry.id}
+                                            character_name={entry.name}
+                                            size={24}
+                                            centered={true}
+                                        />
+                                    )
+                                ))}
+                            </FlexInline>
+                            <VerticalCenter>
+                                <Flexblock gap="0" class="[ w-full ]">
+                                    <span class="[ text-highlight ]" set:text={author_names} />
+                                    <small>{t('guides.multiple_authors')}</small>
+                                </Flexblock>
+                            </VerticalCenter>
                         </FlexInline>
-                        <VerticalCenter>
-                            <Flexblock gap="0" class="[ w-full ]">
-                                <span class="[ text-highlight ]" set:text={author_names} />
-                                <small>{t('guides.multiple_authors')}</small>
-                            </Flexblock>
-                        </VerticalCenter>
-                    </FlexInline>
-                ) : author?.entity === 'character' ? (
-                    <PilotBadge
-                        character_id={author.id}
-                        character_name={author.name}
-                        size={32}
-                        centered={true}
-                    >
-                        <small>{t('author')}</small>
-                    </PilotBadge>
-                ) : author?.entity === 'corporation' ? (
-                    <CorporationBadge
-                        corporation={{
-                            id: author.id,
-                            name: author.name,
-                            size: 'sm'
-                        }}
-                    >
-                        <small>{t('author')}</small>
-                    </CorporationBadge>
-                ) : author?.entity === 'alliance' ? (
-                    <AllianceBadge
-                        alliance={{
-                            id: author.id,
-                            name: author.name,
-                            size: 'sm'
-                        }}
-                    >
-                        <small>{t('author')}</small>
-                    </AllianceBadge>
-                ) : null}
-            </Flexblock>
-        )}
-    </Tile>
-    <Wrapper
-        class="[ pb-(--component-padding-block)! grow ]"
-        padding_inline='var(--component-padding-block)'
-        padding_block='0'
-        max_width='100%'
-    >
-         <Flexblock
-            class="[ justify-between! h-full ]"
-            gap='var(--space-l)'
-        >
-            <p class="[ excerpt ]">{guide.excerpt}</p>
-            <FlexInline>
-                {coming_soon ? (
-                    <Button size='sm' off_disable={true} disabled>{t('guides.coming_soon')}</Button>
-                ) : (
-                    <>
-                        <Button size='sm' href={guideUrl}>{t('view')}</Button>
-                        <ClipboardButton id={`guide-${guide.slug}`} text={t('share')}>{shareUrl}</ClipboardButton>
-                    </>
-                )}
-            </FlexInline>
+                    ) : author?.entity === 'character' ? (
+                        <PilotBadge
+                            character_id={author.id}
+                            character_name={author.name}
+                            size={24}
+                            centered={true}
+                        >
+                            <small>{t('author')}</small>
+                        </PilotBadge>
+                    ) : author?.entity === 'corporation' ? (
+                        <CorporationBadge
+                            corporation={{
+                                id: author.id,
+                                name: author.name,
+                                size: 'sm'
+                            }}
+                        >
+                            <small>{t('author')}</small>
+                        </CorporationBadge>
+                    ) : author?.entity === 'alliance' ? (
+                        <AllianceBadge
+                            alliance={{
+                                id: author.id,
+                                name: author.name,
+                                size: 'sm'
+                            }}
+                        >
+                            <small>{t('author')}</small>
+                        </AllianceBadge>
+                    ) : null}
+                </div>
+            )}
+
+            <p class="[ guide-card__excerpt ]">{guide.excerpt}</p>
         </Flexblock>
-    </Wrapper>
-</Flexblock>
+
+        <div class="[ guide-card__actions ]">
+            {coming_soon ? (
+                <Button size="sm" off_disable={true} disabled>{t('guides.coming_soon')}</Button>
+            ) : (
+                <>
+                    <Button size="sm" href={guide_href}>{t('view')}</Button>
+                    <ClipboardButton
+                        id={`guide-${guide.slug}`}
+                        text={t('share')}
+                        size="sm"
+                        color="transparent"
+                    >
+                        {share_url}
+                    </ClipboardButton>
+                </>
+            )}
+        </div>
+    </div>
+</article>
 
 <style lang="scss">
-    .guide-card-link {
-        display: block;
-        text-decoration: none;
-        color: inherit;
+    .guide-card {
+        display: flex;
+        flex-direction: column;
         height: 100%;
-
-        &:hover h3 {
-            color: var(--highlight);
-        }
+        overflow: hidden;
+        padding: 0;
     }
 
     .guide-card--coming-soon {
         opacity: 0.72;
     }
 
-    h3 {
-        font-size: var(--step-0);
-        line-height: 1.25;
-        transition: color 0.15s ease;
+    .guide-card__cover {
+        position: relative;
+        display: block;
+        aspect-ratio: 2 / 1;
+        overflow: hidden;
+        flex-shrink: 0;
+
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            // Quiet the cover so it reads as atmosphere, not the focal point
+            filter: brightness(0.4) saturate(0.75);
+        }
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: linear-gradient(
+                to bottom,
+                rgb(0 0 0 / 35%) 0%,
+                rgb(0 0 0 / 55%) 100%
+            );
+        }
     }
 
-    .excerpt {
+    .guide-card__body {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: var(--space-s);
+        flex: 1;
+        padding: var(--space-s);
+    }
+
+    .guide-card__title {
+        margin: 0;
+        font-size: var(--step-0);
+        line-height: 1.2;
+
+        a {
+            color: inherit;
+            text-decoration: none;
+
+            @media (hover: hover) {
+                &:hover,
+                &:focus-visible {
+                    color: var(--highlight);
+                }
+            }
+        }
+    }
+
+    .guide-card__author {
+        margin-block-end: var(--space-2xs);
+
+        :global(small) {
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .guide-card__excerpt {
+        margin: 0;
         color: var(--muted-color);
         font-size: var(--step--1);
         line-height: 1.4;
-        display: -webkit-box;
-        -webkit-line-clamp: 3;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
+    }
+
+    .guide-card__actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-3xs) var(--space-xs);
     }
 </style>

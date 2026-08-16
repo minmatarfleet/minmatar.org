@@ -1,0 +1,189 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { getGuideBySlug } from '@/data/guides'
+import { getGuideCoverImage, getGuideSeoImage } from '@/data/guides/covers'
+import { buildGuideJsonLd, getGuidePageSeo } from '@/data/guides/seo'
+import {
+    pageProgressFromMarkdown,
+    wrapMarkdownSectionsInPanels,
+} from '@helpers/pageProgress'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import { get_site_origin } from '@helpers/seo'
+import { LEARNING_HUB_PATH } from '@/data/guides/urls'
+
+const slug = Astro.params.name ?? ''
+const guide = getGuideBySlug(slug)
+
+if (!guide) {
+    return HTTP_404_Not_Found()
+}
+
+const site_origin = get_site_origin(Astro.url.origin)
+const { module } = guide
+const cover_image = getGuideCoverImage(guide)
+const seo = getGuidePageSeo({
+    guide,
+    siteName: t('index.page_title'),
+    siteOrigin: site_origin,
+    translatePath,
+    t,
+    coverImage: getGuideSeoImage(guide),
+})
+const structured_data = buildGuideJsonLd({
+    guide,
+    siteName: t('index.page_title'),
+    siteOrigin: site_origin,
+    ...seo,
+})
+
+const { html: markdown_html, sections: markdown_sections, ...progress } = pageProgressFromMarkdown({
+    page_key: `guides/${guide.slug}`,
+    page_title: guide.title,
+    markdown: module.rawContent(),
+})
+
+const guide_html = wrapMarkdownSectionsInPanels(markdown_html)
+
+const sections = markdown_sections.map((section) => {
+    const group = guide.contents_groups?.[section.id]
+    return group ? { ...section, group } : section
+})
+
+import Viewport from '@layouts/Viewport.astro'
+
+import PageLanding from '@components/page/PageLanding.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import TextBox from '@components/layout/TextBox.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+import Button from '@components/blocks/Button.astro'
+import GuideContentsLayout from '@components/blocks/GuideContentsLayout.astro'
+import GuideMarkdown from '@components/blocks/GuideMarkdown.astro'
+import GuideShell from '@components/blocks/GuideShell.astro'
+import PageProgress from '@components/blocks/PageProgress.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+
+const shell_subtitle = guide.section
+    ? `${guide.category} · ${guide.section}`
+    : guide.category
+---
+
+<Viewport
+    title={seo.metaTitle}
+    meta_description={seo.metaDescription}
+    meta_image={seo.metaImage}
+    canonical_url={seo.canonicalUrl}
+    og_type="article"
+    components={{
+        alert_dialog: true,
+    }}
+>
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(structured_data)} />
+
+    <PageLanding
+        wide={true}
+        cover={{
+            image: cover_image,
+            image_990: cover_image,
+            scrollable: true,
+            overlay: true
+        }}
+    >
+        <Flexblock gap='var(--space-2xl)' class="guide-page" data-page-progress-root>
+            <TextBox max_width="var(--max-content-width)">
+                <Flexblock gap='var(--space-xl)'>
+                    <div class="guide-page__header-top">
+                        <nav class="guide-page__breadcrumb" aria-label="Breadcrumb">
+                            <ol>
+                                <li><a href={translatePath(LEARNING_HUB_PATH)}>{t('learning.page_title')}</a></li>
+                                <li aria-current="page">{guide.title}</li>
+                            </ol>
+                        </nav>
+                        <div class="guide-page__progress">
+                            <PageProgress {...progress} />
+                        </div>
+                    </div>
+                    <PageTitle is_landing={true}>{guide.title}</PageTitle>
+                </Flexblock>
+            </TextBox>
+
+            <Wrapper
+                max_width="var(--max-content-width)"
+                padding_inline="0"
+                padding_block="0"
+            >
+                <GuideShell title={guide.title} subtitle={shell_subtitle}>
+                    <GuideContentsLayout sections={sections}>
+                        <GuideMarkdown html={guide_html} />
+
+                        <Button
+                            class="[ w-fit! ]"
+                            href={translatePath(LEARNING_HUB_PATH)}
+                        >
+                            {t('learning.back')}
+                        </Button>
+                    </GuideContentsLayout>
+                </GuideShell>
+            </Wrapper>
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .guide-page {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        overflow-x: clip;
+    }
+
+    .guide-page__header-top {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: var(--space-s);
+        width: 100%;
+    }
+
+    .guide-page__progress {
+        flex: 0 0 auto;
+        margin-left: auto;
+    }
+
+    .guide-page__breadcrumb {
+        margin: 0;
+        min-width: 0;
+
+        ol {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-2xs);
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            font-size: var(--step--1);
+            color: var(--text-color-secondary, var(--faded));
+        }
+
+        li:not(:last-child)::after {
+            content: '/';
+            margin-left: var(--space-2xs);
+            color: var(--text-color-secondary, var(--faded));
+        }
+
+        a {
+            color: var(--highlight);
+            text-decoration: none;
+
+            &:hover,
+            &:focus-visible {
+                text-decoration: underline;
+            }
+        }
+    }
+</style>

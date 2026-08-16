@@ -43,13 +43,13 @@ class LearningHelpersTestCase(TestCase):
         self.l1 = Learning.objects.create(
             slug="intro",
             title="Intro",
-            url="/guides/intro/",
+            url="/learning/guides/intro/",
             content_kind="guide",
         )
         self.l2 = Learning.objects.create(
             slug="advanced",
             title="Advanced",
-            url="/guides/advanced/",
+            url="/learning/guides/advanced/",
             content_kind="guide",
         )
         self.cert = Certificate.objects.create(
@@ -125,7 +125,7 @@ class LearningHelpersTestCase(TestCase):
         unpublished = Learning.objects.create(
             slug="draft-extra",
             title="Draft Extra",
-            url="/guides/draft/",
+            url="/learning/guides/draft/",
             content_kind="guide",
             published=False,
         )
@@ -217,13 +217,13 @@ class LearningApiTestCase(TestCase):
         self.l1 = Learning.objects.create(
             slug="fw-basics",
             title="FW Basics",
-            url="/guides/faction-warfare-basics/",
+            url="/learning/guides/faction-warfare-basics/",
             content_kind="guide",
         )
         self.l2 = Learning.objects.create(
             slug="fw-plexing",
             title="FW Plexing",
-            url="/guides/faction-warfare-plexing/",
+            url="/learning/guides/faction-warfare-plexing/",
             content_kind="guide",
         )
         self.cert = Certificate.objects.create(

@@ -2,11 +2,11 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { Skillset, CharacterBasic, SkillsetMissingSkillUI } from '@dtypes/layout_components'
+import type { Skillset, CharacterBasic } from '@dtypes/layout_components'
 
 interface Props {
-    skillset:  Skillset;
-    character: CharacterBasic;
+    skillset: Skillset
+    character: CharacterBasic
 }
 
 const {
@@ -14,40 +14,37 @@ const {
     character,
 } = Astro.props
 
-const skillset_missing_skills:SkillsetMissingSkillUI = {
-    skillsets: skillset,
-    character: character,
-}
+import FixedFluid from '@components/compositions/FixedFluid.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
 
-import FixedFluid from '@components/compositions/FixedFluid.astro';
-import Flexblock from '@components/compositions/Flexblock.astro';
-import Wrapper from '@components/compositions/Wrapper.astro';
+import StylessButton from '@components/blocks/StylessButton.astro'
+import Progress from '@components/blocks/Progress.astro'
 
-import StylessButton from '@components/blocks/StylessButton.astro';
-import Progress from '@components/blocks/Progress.astro';
+const missing_skills_partial = translatePath('/partials/missing_skills_modal_component/')
+const modal_partial_url = `${missing_skills_partial}?character_id=${character.character_id}&skillset_name=${encodeURIComponent(skillset.name)}`
 ---
 <StylessButton
     class="[ skillset-item ]"
     x-data={`{
         show_missing_skills_modal() {
             show_modal({
-                partial: '${translatePath('/partials/missing_skills_modal_component/')}',
-                partial_params: ${JSON.stringify(skillset_missing_skills)}
+                partial: ${JSON.stringify(modal_partial_url)},
             })
         }
     }`}
     x-on:click="show_missing_skills_modal()"
 >
-    <FixedFluid width='var(--space-m)' gap='0' breakpoint='10%'>
+    <FixedFluid width="var(--space-m)" gap="0" breakpoint="10%">
         <span class="[ background ]"></span>
-        <Flexblock gap='0' class="[ min-h-[var(--sikillset-height)] ]">
-            <Wrapper class="[ background !pb-[var(--space-2xs)] h-[92px] ]" padding_inline='0' padding_block='var(--space-m)'>
+        <Flexblock gap="0" class="[ min-h-[var(--sikillset-height)] ]">
+            <Wrapper class="[ background !pb-[var(--space-2xs)] h-[92px] ]" padding_inline="0" padding_block="var(--space-m)">
                 <h3>{skillset.name}</h3>
             </Wrapper>
             <div class="[ progress-container ]">
                 <Progress class="[ w-full ]" max="100" value={skillset.progress}>{skillset.progress}%</Progress>
             </div>
-            <Wrapper class="[ background !pb-[var(--space-2xs)] grow ]" padding_inline='0' padding_block='var(--space-2xs)'>
+            <Wrapper class="[ background !pb-[var(--space-2xs)] grow ]" padding_inline="0" padding_block="var(--space-2xs)">
                 {skillset.missing_skills.length === 0 ?
                     <small class="text-[var(--green)]"><b>{t('completed')}</b></small>
                     :
@@ -64,6 +61,8 @@ import Progress from '@components/blocks/Progress.astro';
         --sikillset-background-hover-color: rgba(100, 100, 100, 0.5);
         --sikillset-height: 142px;
 
+        display: block;
+        width: 100%;
         padding: 0 10px 0 11px;
         position: relative;
 

@@ -121,7 +121,7 @@ Notes:
 - Cap-booster-hungry fits are awkward on a long PvE-style site.
 - When the fleet is armor, kitchen-sink armor fits play nicer with logistics.
 - A battleship with Tech I guns is often better than no battleship if the FC called battleships.
-- For named doctrines and fittings, see the Fields doctrines below, the full [Doctrines](/ships/doctrines/list/) list, and the [Faction Warfare Cruiser Guide](/guides/faction-warfare-cruiser-guide/).
+- For named doctrines and fittings, see the Fields doctrines below, the full [Doctrines](/ships/doctrines/list/) list, and the [Faction Warfare Cruiser Guide](/learning/guides/faction-warfare-cruiser-guide/).
 
 If you cannot fly a useful role yet, join voice, ask what to bring, or plex in-system until the fleet calls you back for payout—do not park an empty frigate on the Minmatar landing.
 
@@ -152,9 +152,9 @@ Sitting AFK in an empty hull still counts toward the 30-pilot share and dilutes 
 
 ## Additional Resources
 
-- [Faction Warfare Basics](/guides/faction-warfare-basics/)
-- [Faction Warfare Advantage](/guides/faction-warfare-advantage/)
-- [Faction Warfare Complexes](/guides/faction-warfare-plexing/)
-- [New Player Fleet Guide](/guides/new-player-fleet-guide/)
+- [Faction Warfare Basics](/learning/guides/faction-warfare-basics/)
+- [Faction Warfare Advantage](/learning/guides/faction-warfare-advantage/)
+- [Faction Warfare Complexes](/learning/guides/faction-warfare-plexing/)
+- [New Player Fleet Guide](/learning/guides/new-player-fleet-guide/)
 - [Doctrines](/ships/doctrines/list/)
 - [Guides index](/guides/)

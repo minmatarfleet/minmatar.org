@@ -58,7 +58,7 @@ def get_fleet_discord_notification(
                     {
                         "style": 5,
                         "label": "New Player Instructions",
-                        "url": "https://minmatar.org/guides/new-player-fleet-guide/",
+                        "url": "https://my.minmatar.org/learning/guides/new-player-fleet-guide/",
                         "disabled": False,
                         "type": 2,
                     },

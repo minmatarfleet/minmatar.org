@@ -70,7 +70,7 @@ describe('learning localStore', () => {
         expect(certificateProgressPercent(['a', 'b', 'c'], ['a', 'c'])).toBe(67)
         expect(certificateProgressPercent([], [])).toBe(0)
         expect(isExternalLearningUrl('https://wiki.minmatar.org/x')).toBe(true)
-        expect(isExternalLearningUrl('/guides/abyssals/')).toBe(false)
+        expect(isExternalLearningUrl('/learning/guides/abyssals/')).toBe(false)
     })
 
     it('open new-tab tip is unseen until marked on confirm', () => {
@@ -145,7 +145,7 @@ describe('learning localStore', () => {
         const showTip = vi.fn()
 
         const result = await openLearningWithNewTabTip({
-            url: '/guides/abyssals/',
+            url: '/learning/guides/abyssals/',
             hasSeenTip: true,
             markTipSeen,
             showTip,
@@ -155,6 +155,6 @@ describe('learning localStore', () => {
         expect(result).toBe('opened_direct')
         expect(showTip).not.toHaveBeenCalled()
         expect(markTipSeen).not.toHaveBeenCalled()
-        expect(openUrl).toHaveBeenCalledWith('/guides/abyssals/')
+        expect(openUrl).toHaveBeenCalledWith('/learning/guides/abyssals/')
     })
 })

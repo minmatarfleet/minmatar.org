@@ -3,43 +3,63 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import type { SkillsetMissingSkillUI } from '@dtypes/layout_components'
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
 
 interface Props {
-    skillset_missing_skills:    SkillsetMissingSkillUI;
+    skillset_missing_skills: SkillsetMissingSkillUI
+    characters?: SummaryCharacter[]
+    skillset_name?: string
+    partial_url?: string
 }
 
 const {
     skillset_missing_skills,
+    characters = [],
+    skillset_name = skillset_missing_skills.skillsets.name,
+    partial_url = '',
 } = Astro.props
 
-import TextBox from '@components/layout/TextBox.astro';
-import Flexblock from '@components/compositions/Flexblock.astro';
-import FixedFluid from '@components/compositions/FixedFluid.astro';
-import Wrapper from '@components/compositions/Wrapper.astro';
+import TextBox from '@components/layout/TextBox.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import FixedFluid from '@components/compositions/FixedFluid.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
 
-import SkillItem from '@components/blocks/SkillItem.astro';
-import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+import SkillItem from '@components/blocks/SkillItem.astro'
+import ClipboardButton from '@components/blocks/ClipboardButton.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
 
 const missing_skills = skillset_missing_skills.skillsets.missing_skills
-const CURRENT_SKILL_LEVEL = {}
-missing_skills.forEach( (skill) => {
-    CURRENT_SKILL_LEVEL[skill.skill_name] = Math.min(skill.skill_level, CURRENT_SKILL_LEVEL[skill.skill_name] ?? 5)
+const CURRENT_SKILL_LEVEL: Record<string, number> = {}
+missing_skills.forEach((skill) => {
+    CURRENT_SKILL_LEVEL[skill.skill_name] = Math.min(
+        skill.skill_level,
+        CURRENT_SKILL_LEVEL[skill.skill_name] ?? 5,
+    )
 })
 
-const skills_names:string[] = missing_skills.map( (skill) => `${skill.skill_name} ${skill.skill_name}\n` )
-const clipboard_text:string = skills_names.join('')
+const skills_names: string[] = missing_skills.map(
+    (skill) => `${skill.skill_name} ${skill.skill_name}\n`,
+)
+const clipboard_text: string = skills_names.join('')
+
+const show_character_select = characters.length > 1 && Boolean(partial_url)
+const selected_character_id = skillset_missing_skills.character.character_id
+const selected_character = characters.find((c) => c.character_id === selected_character_id)
+    ?? characters[0]
 ---
 
 <Wrapper
+    id="skillset-missing-skills"
     class="[ skillset-missing-skills ]"
-    padding_block='var(--component-padding-block)'
-    padding_inline='var(--space-l-xl)'
+    padding_block="var(--component-padding-block)"
+    padding_inline="var(--space-l-xl)"
 >
     <Flexblock>
         <FixedFluid
             class="[ items-center ]"
             fluid_first={true}
-            width='150px'
+            width="150px"
         >
             {missing_skills.length > 0 &&
                 <div class="[ flex justify-end ]">
@@ -54,8 +74,64 @@ const clipboard_text:string = skills_names.join('')
             </Flexblock>
         </FixedFluid>
 
+        {show_character_select &&
+            <Flexblock gap="var(--space-3xs)">
+                <span class="[ skillset-missing-skills__char-label ]" id="skillset-character-label">
+                    {t('character')}
+                    {selected_character &&
+                        <span class="[ skillset-missing-skills__char-name ]">
+                            · {selected_character.character_name}
+                            {selected_character.is_primary ? ` (${t('main')})` : ''}
+                        </span>
+                    }
+                </span>
+                <FlexInline
+                    gap="var(--space-2xs)"
+                    class="[ skillset-missing-skills__portraits ]"
+                    role="group"
+                    aria-labelledby="skillset-character-label"
+                >
+                    {characters.map((character) => {
+                        const is_active = character.character_id === selected_character_id
+                        const swap_url = `${partial_url}?character_id=${character.character_id}&skillset_name=${encodeURIComponent(skillset_name)}`
+                        const label = character.is_primary
+                            ? `${character.character_name} (${t('main')})`
+                            : character.character_name
+
+                        return (
+                            <button
+                                type="button"
+                                class:list={[
+                                    'skillset-missing-skills__portrait',
+                                    is_active && 'is-active',
+                                ]}
+                                aria-pressed={is_active ? 'true' : 'false'}
+                                aria-label={label}
+                                title={label}
+                                disabled={is_active}
+                                hx-get={is_active ? undefined : swap_url}
+                                hx-target={is_active ? undefined : '#skillset-missing-skills'}
+                                hx-swap={is_active ? undefined : 'outerHTML transition:true'}
+                                hx-indicator={is_active ? undefined : '.loader'}
+                            >
+                                <CharacterPicture
+                                    character_id={character.character_id}
+                                    character_name={character.character_name}
+                                    tooltip={label}
+                                    size={40}
+                                    icon_quality={64}
+                                    centered={true}
+                                    inert={true}
+                                />
+                            </button>
+                        )
+                    })}
+                </FlexInline>
+            </Flexblock>
+        }
+
         <Flexblock gap="var(--space-3xs)" class="[ max-h-[430px] overflow-y-auto ]">
-            {missing_skills.map( (missing_skill) => 
+            {missing_skills.map((missing_skill) =>
                 <SkillItem
                     current_skill_level={CURRENT_SKILL_LEVEL[missing_skill.skill_name]}
                     skill={missing_skill}
@@ -72,9 +148,54 @@ const clipboard_text:string = skills_names.join('')
     </Flexblock>
 </Wrapper>
 
-<style>
+<style lang="scss">
     .skillset-missing-skills {
         max-height: min(800px, 90vh);
         overflow-y: auto;
+    }
+
+    .skillset-missing-skills__char-label {
+        font-size: var(--step--1);
+        color: var(--foreground);
+    }
+
+    .skillset-missing-skills__char-name {
+        color: var(--fleet-yellow);
+    }
+
+    .skillset-missing-skills__portraits {
+        flex-wrap: wrap;
+    }
+
+    .skillset-missing-skills__portrait {
+        appearance: none;
+        margin: 0;
+        padding: 0;
+        border: 2px solid transparent;
+        background: transparent;
+        cursor: pointer;
+        line-height: 0;
+        transition: border-color var(--fast-transition);
+
+        &:focus-visible {
+            outline: 1px solid var(--highlight);
+            outline-offset: 2px;
+        }
+
+        @media (hover: hover) {
+            &:hover:not(:disabled) {
+                border-color: color-mix(in srgb, var(--fleet-yellow) 55%, transparent);
+            }
+        }
+
+        &.is-active {
+            border-color: var(--fleet-yellow);
+            cursor: default;
+        }
+
+        :global(picture),
+        :global(img) {
+            pointer-events: none;
+        }
     }
 </style>

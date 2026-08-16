@@ -10,7 +10,7 @@ export const guideMeta = {
     coverImage: '/images/fits-cover.jpg',
     seoImage: '/images/guides/seo/navy-frigate-guide.png',
     coverAlt: 'EVE Online faction warfare frigates in a Scout complex fight',
-    firstEditionUrl: 'https://my.minmatar.org/guides/navy-frigate-guide/',
+    firstEditionUrl: 'https://my.minmatar.org/learning/guides/navy-frigate-guide/',
     firstEditionRedditUrl: 'https://patreon.com/EVEFrigates',
 }
 
@@ -63,17 +63,17 @@ export const additionalResources: GuideResource[] = [
     },
     {
         title: 'Faction Warfare Complexes (this site)',
-        href: '/guides/faction-warfare-plexing/',
+        href: '/learning/guides/faction-warfare-plexing/',
         note: 'Landing, gates, site sizes, and LP/VP tables for the plexes you are fighting in.',
     },
     {
         title: 'Faction Warfare Basics (this site)',
-        href: '/guides/faction-warfare-basics/',
+        href: '/learning/guides/faction-warfare-basics/',
         note: 'Warzone map, system types, contested vs advantage.',
     },
     {
         title: 'Faction Warfare Destroyer Guide (this site)',
-        href: '/guides/navy-destroyer-metagame/',
+        href: '/learning/guides/navy-destroyer-metagame/',
         note: 'When you graduate Scouts into Smalls and start seeing navy destroyers on d-scan.',
     },
 ]
