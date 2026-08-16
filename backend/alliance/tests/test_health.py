@@ -126,6 +126,14 @@ class AllianceHealthComputeTestCase(TestCase):
         self.assertEqual(payload["roster_people"], 2)
         self.assertEqual(payload["status"]["active"], 1)
         self.assertEqual(payload["status"]["trial"], 1)
+        hygiene = payload["hygiene"]
+        self.assertIn("trial", hygiene)
+        self.assertIn("leave", hygiene)
+        self.assertIn("approve", hygiene["trial"]["counts"])
+        self.assertIn("recommended", hygiene["leave"]["counts"])
+        # Trial user with no activity and short tenure → nudge (new trial)
+        # or fail if tenure ≥60d; test corp has no history so fallback.
+        self.assertGreaterEqual(hygiene["trial"]["counts"]["nudge"], 0)
 
     def test_quiet_dark_when_no_activity(self):
         payload = compute_alliance_health(now=self.now)
@@ -223,6 +231,65 @@ class AllianceHealthEndpointTestCase(TestCase):
                         "fleet_3_30d_pct": 25.0,
                     }
                 ],
+                "hygiene": {
+                    "trial": {
+                        "counts": {
+                            "approve": 1,
+                            "too_early": 2,
+                            "fail": 3,
+                            "nudge": 4,
+                            "hold": 5,
+                        },
+                        "buckets": {
+                            "approve": [
+                                {
+                                    "user_id": 10,
+                                    "username": "ready_pilot",
+                                    "pilot": "Ready Pilot",
+                                    "corp": "Test Corp",
+                                    "corporation_id": 1,
+                                    "character_id": 100,
+                                    "alliance_days": 70,
+                                    "fleets": 5,
+                                    "kills": 12,
+                                    "kills_small": 9,
+                                    "voice_hours": 6.0,
+                                    "slice_30d": "2F/4K/2h",
+                                    "days_since_activity": 8,
+                                    "path": "Mixed",
+                                    "conf": "high",
+                                    "reason": "Mixed — 5 fleets, 9 small-gang",
+                                }
+                            ],
+                            "too_early": [],
+                            "fail": [],
+                            "nudge": [],
+                        },
+                    },
+                    "leave": {
+                        "counts": {
+                            "recommended": 1,
+                            "kept": 2,
+                            "exempt": 3,
+                        },
+                        "recommended": [
+                            {
+                                "user_id": 20,
+                                "username": "quiet_active",
+                                "pilot": "Quiet Active",
+                                "corp": "Test Corp",
+                                "corporation_id": 1,
+                                "character_id": 200,
+                                "fleets": 0,
+                                "kills": 0,
+                                "voice_hours": 0.0,
+                                "story": "Away",
+                                "conf": "high",
+                                "reason": "Away — 0 fleets, 0 kills, 0h voice (90d)",
+                            }
+                        ],
+                    },
+                },
             },
         )
 
@@ -279,6 +346,56 @@ class AllianceHealthEndpointTestCase(TestCase):
         )
         self.assertEqual(cohorts.status_code, 200)
         self.assertEqual(cohorts.json()["cohorts"][0]["accepts"], 8)
+
+    def test_overview_includes_hygiene_counts(self):
+        response = self.client.get(
+            "/api/alliance/health/overview",
+            **self._auth(self.staff_token),
+        )
+        self.assertEqual(response.status_code, 200)
+        hygiene = response.json()["hygiene"]
+        self.assertEqual(hygiene["trial"]["approve"], 1)
+        self.assertEqual(hygiene["leave"]["recommended"], 1)
+
+    def test_trials_approve_bucket(self):
+        response = self.client.get(
+            "/api/alliance/health/trials?bucket=approve",
+            **self._auth(self.staff_token),
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["bucket"], "approve")
+        self.assertEqual(len(body["pilots"]), 1)
+        self.assertEqual(body["pilots"][0]["username"], "ready_pilot")
+        self.assertEqual(body["counts"]["approve"], 1)
+
+    def test_trials_csv(self):
+        response = self.client.get(
+            "/api/alliance/health/trials?bucket=approve&format=csv",
+            **self._auth(self.staff_token),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/csv", response["Content-Type"])
+        self.assertIn("ready_pilot,active,", response.content.decode())
+
+    def test_leave_recommended(self):
+        response = self.client.get(
+            "/api/alliance/health/leave",
+            **self._auth(self.staff_token),
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(len(body["pilots"]), 1)
+        self.assertEqual(body["pilots"][0]["story"], "Away")
+        self.assertEqual(body["counts"]["recommended"], 1)
+
+    def test_leave_csv(self):
+        response = self.client.get(
+            "/api/alliance/health/leave?format=csv",
+            **self._auth(self.staff_token),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("quiet_active,on_leave,", response.content.decode())
 
     def test_503_without_snapshot(self):
         AllianceHealthSnapshot.objects.all().delete()

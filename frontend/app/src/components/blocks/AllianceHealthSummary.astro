@@ -17,6 +17,10 @@ const { overview, ...attributes } = Astro.props
 delete attributes.class
 
 const at_risk = overview.quiet.fading + overview.quiet.dark
+const hygiene = overview.hygiene ?? {
+    trial: { approve: 0, too_early: 0, fail: 0, nudge: 0, hold: 0 },
+    leave: { recommended: 0, kept: 0, exempt: 0 },
+}
 ---
 
 <section
@@ -42,6 +46,36 @@ const at_risk = overview.quiet.fading + overview.quiet.dark
             >
                 <CountUpAnimation element="span" target={at_risk} />
             </CampaignStat>
+            <CampaignStat
+                label={t('alliance.health.come_off_trial')}
+                tone={hygiene.trial.approve > 0 ? 'success' : undefined}
+            >
+                <CountUpAnimation element="span" target={hygiene.trial.approve} />
+            </CampaignStat>
+            <CampaignStat label={t('alliance.health.too_early')}>
+                <CountUpAnimation element="span" target={hygiene.trial.too_early} />
+            </CampaignStat>
+            <CampaignStat
+                label={t('alliance.health.fail_trial')}
+                tone={hygiene.trial.fail > 0 ? 'danger' : undefined}
+            >
+                <CountUpAnimation element="span" target={hygiene.trial.fail} />
+            </CampaignStat>
+            <CampaignStat
+                label={t('alliance.health.ceo_nudge')}
+                tone={hygiene.trial.nudge > 0 ? 'info' : undefined}
+            >
+                <CountUpAnimation element="span" target={hygiene.trial.nudge} />
+            </CampaignStat>
+            <CampaignStat
+                label={t('alliance.health.put_on_leave')}
+                tone={hygiene.leave.recommended > 0 ? 'danger' : undefined}
+            >
+                <CountUpAnimation
+                    element="span"
+                    target={hygiene.leave.recommended}
+                />
+            </CampaignStat>
         </div>
     </Flexblock>
 </section>
@@ -59,7 +93,7 @@ const at_risk = overview.quiet.fading + overview.quiet.dark
         display: grid;
         width: 100%;
         gap: var(--space-3xs);
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
 
         :global(.card),
         :global(.wrapper) {
@@ -69,7 +103,13 @@ const at_risk = overview.quiet.fading + overview.quiet.dark
         }
     }
 
-    @media (max-width: 900px) {
+    @media (max-width: 1100px) {
+        .alliance-health-summary__stats {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 600px) {
         .alliance-health-summary__stats {
             grid-template-columns: 1fr;
         }

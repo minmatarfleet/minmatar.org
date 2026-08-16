@@ -1,7 +1,8 @@
 # Trial Approval — decision examples
 
-90d window + 30d recent slice. Paths co-equal: fleets, solo/small-gang, voice.
-Approve needs path strength **and** recent activity. Report always pairs with CSV.
+90d window + 30d recent slice + **≥ 60 days in alliance**. Paths co-equal:
+fleets, solo/small-gang, voice. Approve needs path strength, recent activity,
+**and** tenure. Report always pairs with CSV.
 
 ## Report + CSV pair
 
@@ -23,6 +24,17 @@ bob,active,Mixed — 5 fleets, 9 small-gang, 6h voice (90d; last 8d)
 | 1 | 8 | 0h | 2K | 12d | Small-gang | high | Small-gang — 8 small-gang kills with one fleet touch. |
 | 2 | 3 | 12h | 1F/4h | 3d | Voice | high | Voice — 12h voice with fleet + kill touch. |
 | 3 | 5 | 5h | 1F/2K | 15d | Mixed | medium | Mixed — medium fleets, small-gang, and voice. |
+
+Tenure assumed ≥ 60d for every approve row above.
+
+## Hold — too early
+
+Path + recency would clear, but < 60 days in alliance → **hold**, do not approve.
+
+| Fleets | Small | Voice | 30d | Last | In alliance | Note |
+|-------:|------:|------:|-----|------|------------:|------|
+| 8 | 40 | 6h | 8F/20K | 2d | 18d | Strong first month; wait for 60d. |
+| 4 | 12 | 2h | 4F/8K | 5d | 41d | On track; re-eval at 60d. |
 
 ## Hold — front-loaded / stale
 

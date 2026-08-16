@@ -4,7 +4,10 @@ import type {
     AllianceHealthAttentionBucket,
     AllianceHealthCohorts,
     AllianceHealthCorporations,
+    AllianceHealthLeave,
     AllianceHealthOverview,
+    AllianceHealthTrialBucket,
+    AllianceHealthTrials,
 } from '@dtypes/api.minmatar.org'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/alliance/health`
@@ -49,6 +52,21 @@ export async function get_alliance_health_attention(
         access_token,
         `/attention${query ? `?${query}` : ''}`,
     )
+}
+
+export async function get_alliance_health_trials(
+    access_token: string,
+    bucket: AllianceHealthTrialBucket = 'approve',
+) {
+    const query = query_string({ bucket })
+    return get_json<AllianceHealthTrials>(
+        access_token,
+        `/trials${query ? `?${query}` : ''}`,
+    )
+}
+
+export async function get_alliance_health_leave(access_token: string) {
+    return get_json<AllianceHealthLeave>(access_token, '/leave')
 }
 
 export async function get_alliance_health_corporations(access_token: string) {

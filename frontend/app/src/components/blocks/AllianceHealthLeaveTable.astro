@@ -1,0 +1,63 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { AllianceHealthLeavePilot } from '@dtypes/api.minmatar.org'
+import type { CampaignTableRow } from '@/data/campaigns/etherium-reach'
+
+import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
+import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
+
+interface Props {
+    pilots: AllianceHealthLeavePilot[]
+    [propName: string]: any
+}
+
+const { pilots, ...attributes } = Astro.props
+delete attributes.class
+
+const headers = [
+    t('alliance.health.col.pilot'),
+    t('alliance.health.col.corp'),
+    t('alliance.health.col.fleets'),
+    t('alliance.health.col.kills'),
+    t('alliance.health.col.voice'),
+    t('alliance.health.col.story'),
+    t('alliance.health.col.conf'),
+    t('alliance.health.col.reason'),
+]
+
+const rows: CampaignTableRow[] = pilots.map((pilot) => ({
+    cells: [
+        pilot.pilot,
+        pilot.corp,
+        String(pilot.fleets),
+        String(pilot.kills),
+        `${pilot.voice_hours}h`,
+        pilot.story,
+        pilot.conf,
+        pilot.reason,
+    ],
+    cell_icons: [
+        pilot.character_id ? get_player_icon(pilot.character_id, 64) : undefined,
+        pilot.corporation_id
+            ? get_corporation_logo(pilot.corporation_id, 64)
+            : undefined,
+    ],
+}))
+---
+
+<div class:list={['[ alliance-health-leave ]', Astro.props.class]} {...attributes}>
+    <CampaignDataTable headers={headers} rows={rows} success_marker={false} />
+    {pilots.length === 0 && (
+        <p class="[ alliance-health-leave__empty ]">{t('alliance.health.leave.empty')}</p>
+    )}
+</div>
+
+<style lang="scss">
+    .alliance-health-leave__empty {
+        margin: var(--space-s) 0 0;
+        color: var(--foreground);
+        font-size: var(--step--1);
+    }
+</style>

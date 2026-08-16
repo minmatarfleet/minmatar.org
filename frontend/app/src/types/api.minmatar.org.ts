@@ -2005,9 +2005,35 @@ export interface AllianceHealthOverview {
     signals_30d:    AllianceHealthSignals30;
     quiet:          AllianceHealthQuietCounts;
     monthly:        AllianceHealthMonthlyPoint[];
+    hygiene:        AllianceHealthHygieneCounts;
+}
+
+export interface AllianceHealthTrialCounts {
+    approve:    number;
+    too_early:  number;
+    fail:       number;
+    nudge:      number;
+    hold:       number;
+}
+
+export interface AllianceHealthLeaveCounts {
+    recommended:    number;
+    kept:           number;
+    exempt:         number;
+}
+
+export interface AllianceHealthHygieneCounts {
+    trial:  AllianceHealthTrialCounts;
+    leave:  AllianceHealthLeaveCounts;
 }
 
 export type AllianceHealthAttentionBucket = 'fading' | 'dark' | 'seasonal'
+
+export type AllianceHealthTrialBucket =
+    | 'approve'
+    | 'too_early'
+    | 'fail'
+    | 'nudge'
 
 export interface AllianceHealthAttentionPilot {
     user_id:            number;
@@ -2024,6 +2050,53 @@ export interface AllianceHealthAttention {
     computed_at:    string;
     bucket:         AllianceHealthAttentionBucket;
     pilots:         AllianceHealthAttentionPilot[];
+}
+
+export interface AllianceHealthTrialPilot {
+    user_id:                number;
+    username:               string;
+    pilot:                  string;
+    corp:                   string;
+    corporation_id?:        number | null;
+    character_id?:          number | null;
+    alliance_days?:         number | null;
+    fleets:                 number;
+    kills:                  number;
+    kills_small:            number;
+    voice_hours:            number;
+    slice_30d:              string;
+    days_since_activity?:   number | null;
+    path:                   string;
+    conf:                   string;
+    reason:                 string;
+}
+
+export interface AllianceHealthTrials {
+    computed_at:    string;
+    bucket:         AllianceHealthTrialBucket;
+    counts:         AllianceHealthTrialCounts;
+    pilots:         AllianceHealthTrialPilot[];
+}
+
+export interface AllianceHealthLeavePilot {
+    user_id:            number;
+    username:           string;
+    pilot:              string;
+    corp:               string;
+    corporation_id?:    number | null;
+    character_id?:      number | null;
+    fleets:             number;
+    kills:              number;
+    voice_hours:        number;
+    story:              string;
+    conf:               string;
+    reason:             string;
+}
+
+export interface AllianceHealthLeave {
+    computed_at:    string;
+    counts:         AllianceHealthLeaveCounts;
+    pilots:         AllianceHealthLeavePilot[];
 }
 
 export interface AllianceHealthCorporationRow {
