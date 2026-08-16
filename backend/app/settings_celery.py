@@ -232,15 +232,8 @@ CELERYBEAT_GROUPS = [
     ),
 ]
 
-# Tribes (activity records from killmails, mining, etc.)
+# Tribes
 CELERYBEAT_TRIBES = [
-    (
-        "[Tribes] Process tribe group activities",
-        {
-            "task": "tribes.tasks.process_tribe_group_activities",
-            "schedule": crontab(minute=0, hour=3),
-        },
-    ),
     (
         "[Tribes] Ensure tribe chiefs are group members",
         {
@@ -259,13 +252,6 @@ CELERYBEAT_TRIBES = [
 
 # Misc (Celery, Fleets, ESI, Reminders, Reddit, Discord)
 CELERYBEAT_OTHER = [
-    (
-        "[Misc] Sync executor access lists",
-        {
-            "task": "access_lists.tasks.sync_executor_access_lists_task",
-            "schedule": crontab(minute=20, hour="*/6"),
-        },
-    ),
     (
         "[Misc] Backend Cleanup",
         {

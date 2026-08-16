@@ -681,7 +681,7 @@ EveLocationAdmin.highlight_deleted_field.short_description = "Location name"
 # structures/srp/fleets/alliance → Alliance, community-related apps → Community,
 # fittings → Readiness, industry/freight → Supply, market/evelocation →
 # Staging Systems (first on the index), auth/django_celery_beat → System,
-# access_lists/sovereignty/industry extras → Experimental (last).
+# industry extras → Experimental (last).
 # ---------------------------------------------------------------------------
 
 _CHARACTER_MODELS = {
@@ -730,13 +730,12 @@ _COMMUNITY_APPS = {
     "tribes",
 }
 
-_EXPERIMENTAL_APPS = {
-    "access_lists",
-    "sovereignty",
-}
+_EXPERIMENTAL_APPS = set()
 
 _HIDDEN_ABSORBED_APPS = {
     "posts",
+    "access_lists",
+    "sovereignty",
 }
 
 _HIDDEN_NAV_MODELS = {
@@ -749,14 +748,10 @@ _HIDDEN_NAV_MODELS = {
     "evecorporationindustryjob",
     "industryorderitem",
     "industryorderitemassignment",
-    "eveaccesslistmember",
 }
 
 _EXPERIMENTAL_MODELS = {
-    "eveaccesslist",
     "industryproduct",
-    "miningupgradecompletion",
-    "systemsovereigntyconfig",
 }
 
 _SUPPLY_INDUSTRY_MODELS = {
@@ -886,7 +881,7 @@ def _build_experimental_section(*, absorbed, eveonline_app):
     if not experimental_models:
         return None
     return {
-        **(absorbed.get("access_lists") or eveonline_app),
+        **(absorbed.get("industry") or eveonline_app),
         "name": "Experimental",
         "models": experimental_models,
     }

@@ -9,13 +9,11 @@ CACHE_URL = "redis://localhost:6379/2"
 CELERY_IMPORTS = (
     "eveonline.tasks",
     "structures.tasks",
-    "access_lists.tasks",
     "groups.tasks",
     "discord.tasks",
     "fleets.tasks",
     "reminders.tasks",
     "moons.tasks",
-    "freight.tasks",
     "market.tasks",
     "industry.tasks",
     "reddit.tasks",

@@ -50,8 +50,6 @@ Unless noted, features deny community status `on_leave` on the scope path. The o
 
 | Code | Scope | Legacy permission | Default wiring |
 |------|-------|-------------------|----------------|
-| `industry.mining.view` | `affiliation` | `industry.view_miningupgradecompletion` | Alliance |
-| `industry.mining.submit` | `affiliation` | `industry.add_miningupgradecompletion` | Alliance |
 | `industry.order.submit` | `tribe_chief` | — | Industry tribe groups (`industry.subcapital-production`, `industry.capital-production`, `industry.mining`, `industry.planetary-interaction`) |
 
 ## Staff / administration

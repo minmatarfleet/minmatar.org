@@ -304,13 +304,11 @@ class AdminAppListGroupingTestCase(TestCase):
 
         experimental_models = self._model_names(app_list, "Experimental")
         experimental_names = self._display_names(app_list, "Experimental")
-        self.assertIn("eveaccesslist", experimental_models)
         self.assertIn("industryproduct", experimental_models)
-        self.assertIn("miningupgradecompletion", experimental_models)
-        self.assertIn("systemsovereigntyconfig", experimental_models)
         self.assertIn("products", experimental_names)
-        self.assertIn("mining completions", experimental_names)
-        self.assertNotIn("eveaccesslistmember", experimental_models)
+        self.assertNotIn("eveaccesslist", experimental_models)
+        self.assertNotIn("miningupgradecompletion", experimental_models)
+        self.assertNotIn("systemsovereigntyconfig", experimental_models)
 
     def test_hidden_models_not_in_sidebar(self):
         request = self.factory.get("/admin/")

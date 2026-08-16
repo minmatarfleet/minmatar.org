@@ -5,16 +5,8 @@ import type {
     TribeAvailableCharacter,
     TribeGroupOutputSummary,
     TribeLeaderboardEntry,
-    TribeActivity,
-    TribeGroupActivityList,
-    TribeActivityMetrics,
-    TribeMemberActivity,
-    TribeActivityLeaderboardList,
-    ActivityType,
-    LogActivityPayload,
     CharacterMembership,
 } from '@dtypes/api.minmatar.org'
-import { activity_types }  from '@dtypes/api.minmatar.org'
 import { get_error_message, query_string } from '@helpers/string'
 
 const API_ENDPOINT = `${import.meta.env.API_URL}/api/tribes`
@@ -104,27 +96,6 @@ export async function get_tribe_group(tribe_id: number, group_id:number): Promis
         return await response.json() as TribeGroup
     } catch (error) {
         throw new Error(`Error fetching tribe groups: ${error.message}`, { cause: error.cause })
-    }
-}
-
-export async function get_tribe_group_activity(
-    tribe_id: number,
-    group_id: number,
-    limit: number = 20,
-    offset: number = 0,
-): Promise<TribeGroupActivityList> {
-    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}/activity?limit=${limit}&offset=${offset}`
-    try {
-        const response = await fetch(ENDPOINT, {
-            headers: { 'Content-Type': 'application/json' },
-        })
-        if (!response.ok)
-            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
-                cause: response.status
-            })
-        return await response.json() as TribeGroupActivityList
-    } catch (error) {
-        throw new Error(`Error fetching tribe group activity: ${error.message}`, { cause: error.cause })
     }
 }
 
@@ -373,50 +344,6 @@ export async function deny_membership(
     }
 }
 
-export async function log_activity(
-    access_token: string,
-    tribe_id: number,
-    group_id: number,
-    payload: Omit<LogActivityPayload, 'activity_type'> & { activity_type: string },
-) {
-    const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${access_token}`,
-    }
-
-    const rawType = (payload.activity_type as string).toLowerCase()
-
-    const activity_type = activity_types.includes(rawType as ActivityType)
-        ? (rawType as ActivityType)
-        : 'custom'
-
-    const body: LogActivityPayload = {
-        ...payload,
-        activity_type,
-        description: payload.description ?? '',
-    }
-
-    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/groups/${group_id}/activities`
-
-    console.log(`Requesting POST: ${ENDPOINT}`)
-    try {
-        const response = await fetch(ENDPOINT, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(body),
-        })
-
-        if (!response.ok)
-            throw new Error(get_error_message(response.status, `POST ${ENDPOINT}`), {
-                cause: response.status
-            })
-
-        return await response.json() as TribeActivity
-    } catch (error) {
-        throw new Error(`Error logging tribe activity: ${error.message}`, { cause: error.cause })
-    }
-}
-
 export async function get_output(period_start?: Date, period_end?: Date) {
     const query_params = {
         ...(period_start && { period_start }),
@@ -536,57 +463,6 @@ export async function get_group_leaderboard(
     }
 }
 
-export async function get_tribe_activity_metrics(
-    tribe_id: number,
-    activity_id: number,
-    params?: { since?: string; until?: string }
-): Promise<TribeActivityMetrics> {
-    const query = query_string(params ?? {})
-    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/activity/${activity_id}/metrics${query ? `?${query}` : ''}`
-    const response = await fetch(ENDPOINT, { headers: { 'Content-Type': 'application/json' } })
-    if (!response.ok)
-        throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
-                cause: response.status
-            })
-    return await response.json() as TribeActivityMetrics
-}
-
-export async function get_tribe_member_activity(
-    tribe_id: number,
-    member_id: number,
-    params?: { since?: string; until?: string }
-): Promise<TribeMemberActivity> {
-    const query = query_string(params ?? {})
-    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/members/${member_id}/activity${query ? `?${query}` : ''}`
-    const response = await fetch(ENDPOINT, { headers: { 'Content-Type': 'application/json' } })
-    if (!response.ok)
-        throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
-                cause: response.status
-            })
-    return await response.json() as TribeMemberActivity
-}
-
-export async function get_tribe_activity_leaderboard(
-    tribe_id: number,
-    params?: {
-        group_id?: number;
-        activity_type?: string;
-        since?: string;
-        until?: string;
-        limit?: number;
-        offset?: number;
-        order?: string;
-    }
-): Promise<TribeActivityLeaderboardList> {
-    const query = query_string(params ?? {})
-    const ENDPOINT = `${API_ENDPOINT}/${tribe_id}/activity/leaderboard${query ? `?${query}` : ''}`
-    const response = await fetch(ENDPOINT, { headers: { 'Content-Type': 'application/json' } })
-    if (!response.ok)
-        throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
-                cause: response.status
-            })
-    return await response.json() as TribeActivityLeaderboardList
-}
 export async function add_character_to_membership(
     access_token: string,
     tribe_id: number,

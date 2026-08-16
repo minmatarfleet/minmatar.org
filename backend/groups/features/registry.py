@@ -170,22 +170,6 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         legacy_permission="posts.delete_evepost",
         default_affiliation_names=_aff("Alliance"),
     ),
-    "industry.mining.view": FeatureDefinition(
-        code="industry.mining.view",
-        label="View mining completions",
-        scope=FeatureScope.AFFILIATION,
-        description="View mining upgrade completion data.",
-        legacy_permission="industry.view_miningupgradecompletion",
-        default_affiliation_names=_aff("Alliance"),
-    ),
-    "industry.mining.submit": FeatureDefinition(
-        code="industry.mining.submit",
-        label="Submit mining completions",
-        scope=FeatureScope.AFFILIATION,
-        description="Submit mining upgrade completions.",
-        legacy_permission="industry.add_miningupgradecompletion",
-        default_affiliation_names=_aff("Alliance"),
-    ),
     "industry.order.submit": FeatureDefinition(
         code="industry.order.submit",
         label="Submit industry orders",

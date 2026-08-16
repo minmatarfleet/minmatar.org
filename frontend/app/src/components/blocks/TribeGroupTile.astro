@@ -140,15 +140,6 @@ import NotificationBadge from './NotificationBadge.astro'
             gap='var(--space-l)'
         >
             <Flexblock gap='var(--space-l)'>
-                <FlexInline>
-                    <Button
-                        href={translatePath(`/alliance/tribes/${tribe_group.tribe_id}/${tribe_group.id}/activities`)}
-                        size='sm'
-                    >
-                        {t('activities')}
-                    </Button>
-                </FlexInline>
-
                 {tribe_group.requirements.length > 0 ?
                     <Flexblock gap='var(--space-m)'>
                         <Flexblock gap='var(--space-3xs)'>

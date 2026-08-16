@@ -16,7 +16,6 @@ from tribes.helpers.admin_views import (
 from tribes.models import (
     Tribe,
     TribeGroup,
-    TribeGroupActivityRecord,
     TribeGroupMembershipCharacter,
     TribeGroupMembershipCharacterHistory,
     TribeGroupMembershipHistory,
@@ -26,9 +25,6 @@ from tribes.models import (
 def _build_hub_sections(tribe_group: TribeGroup) -> dict:
     group_id = tribe_group.pk
     membership_filter = {"membership__tribe_group__id__exact": group_id}
-    activity_record_filter = {
-        "tribe_group_activity__tribe_group__id__exact": group_id
-    }
     group_filter = {"tribe_group__id__exact": group_id}
 
     return {
@@ -79,20 +75,6 @@ def _build_hub_sections(tribe_group: TribeGroup) -> dict:
                 "tribegroupmembershipcharacterhistory",
                 **membership_filter,
             ),
-        },
-        "activities": {
-            "count": tribe_group.activities.count(),
-            "list_url": changelist_url("tribegroupactivity", **group_filter),
-            "add_url": add_url("tribegroupactivity", tribe_group=group_id),
-        },
-        "activity_records": {
-            "count": TribeGroupActivityRecord.objects.filter(
-                tribe_group_activity__tribe_group_id=group_id
-            ).count(),
-            "list_url": changelist_url(
-                "tribegroupactivityrecord", **activity_record_filter
-            ),
-            "add_url": add_url("tribegroupactivityrecord"),
         },
     }
 
