@@ -18,6 +18,9 @@ import type {
     OrderBlueprintCoordinatorEveType,
     RootSingleItem,
     IndustryOrderCharacterStatistics,
+    OrderCapabilities,
+    CreateOrderRequest,
+    CreateOrderResponse,
 } from '@dtypes/api.minmatar.org'
 import {
     get_error_message,
@@ -27,6 +30,74 @@ import {
 } from '@helpers/string'
 
 const API_ENDPOINT =  `${import.meta.env.API_URL}/api/industry`
+
+export async function get_order_capabilities(access_token: string) {
+    const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${access_token}`,
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/orders/capabilities`
+
+    console.log(`Requesting: ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: headers,
+        })
+
+        if (!response.ok) {
+            throw new Error(get_error_message(
+                response.status,
+                `GET ${ENDPOINT}`
+            ), {
+                cause: response.status
+            })
+        }
+
+        return await response.json() as OrderCapabilities
+    } catch (error) {
+        throw new Error(`Error fetching order capabilities: ${error.message}`, {
+            cause: error.cause,
+        })
+    }
+}
+
+export async function create_order(
+    access_token: string,
+    body: CreateOrderRequest,
+) {
+    const headers = {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${access_token}`,
+    }
+
+    const ENDPOINT = `${API_ENDPOINT}/orders`
+
+    console.log(`Requesting: POST ${ENDPOINT}`)
+
+    try {
+        const response = await fetch(ENDPOINT, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(body),
+        })
+
+        if (!response.ok) {
+            throw new Error(
+                await parse_response_error(response, `POST ${ENDPOINT}`), {
+                    cause: response.status,
+                }
+            )
+        }
+
+        return await response.json() as CreateOrderResponse
+    } catch (error) {
+        throw new Error(`Error creating order: ${error.message}`, {
+            cause: error.cause,
+        })
+    }
+}
 
 export async function get_orders_with_location() {
     const headers = {

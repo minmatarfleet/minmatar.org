@@ -1168,6 +1168,30 @@ export interface IndustryOrder {
     assigned_to:        Character[];
 }
 
+export interface OrderCapabilities {
+    can_submit:     boolean;
+    produced_only:  boolean;
+}
+
+export interface CreateOrderItemInput {
+    eve_type_id:            number;
+    quantity:               number;
+    self_assign_maximum?:   number | null;
+}
+
+export interface CreateOrderRequest {
+    needed_by:      string;
+    character_id?:   number | null;
+    location_id?:    number | null;
+    contract_to?:    string;
+    items:          CreateOrderItemInput[];
+}
+
+export interface CreateOrderResponse {
+    order_id:           number;
+    public_short_code:  string;
+}
+
 export interface OrdersProfitSummaryOrder {
     id:                 number;
     public_short_code:  string;

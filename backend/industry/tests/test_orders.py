@@ -7,11 +7,12 @@ from decimal import Decimal
 
 import jwt
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.test import Client
 from django.utils import timezone
 
 from eveonline.helpers.characters import set_primary_character
-from eveonline.models import EveCharacter, EveLocation
+from eveonline.models import EveCharacter, EveCorporation, EveLocation
 from eveuniverse.models import EveCategory, EveGroup, EveType
 
 from app.test import TestCase as AppTestCase
@@ -24,6 +25,8 @@ from industry.models import (
     IndustryOrder,
     IndustryOrderItem,
     IndustryOrderItemAssignment,
+    IndustryProduct,
+    Strategy,
 )
 from industry.test_utils import create_industry_order
 from onboarding.models import (
@@ -31,7 +34,7 @@ from onboarding.models import (
     OnboardingProgramType,
     UserOnboardingAcknowledgment,
 )
-from tribes.models import Tribe, TribeGroup
+from tribes.models import Tribe, TribeGroup, TribeGroupMembership
 
 
 def _acknowledge_orders_onboarding(user):
@@ -84,6 +87,7 @@ class OrdersEndpointTestCase(AppTestCase):
             solar_system_id=300001,
             solar_system_name="Test System",
             short_name="TST",
+            staging_active=True,
         )
         _acknowledge_orders_onboarding(self.user)
 
@@ -759,7 +763,8 @@ class OrderMutationApiTests(OrdersEndpointTestCase):
         body = {
             "needed_by": needed,
             "character_id": self.character.character_id,
-            "contract_to": "ACME Corp",
+            "location_id": self.location.location_id,
+            "contract_to": self.character.character_name,
             "items": [
                 {
                     "eve_type_id": self.eve_type.id,
@@ -781,7 +786,7 @@ class OrderMutationApiTests(OrdersEndpointTestCase):
         oid = data["order_id"]
         order = IndustryOrder.objects.get(pk=oid)
         self.assertEqual(data["public_short_code"], order.public_short_code)
-        self.assertEqual(order.contract_to, "ACME Corp")
+        self.assertEqual(order.contract_to, self.character.character_name)
         self.assertEqual(order.items.get().self_assign_maximum, 2)
 
         r_del = self.client.delete(
@@ -796,6 +801,8 @@ class OrderMutationApiTests(OrdersEndpointTestCase):
         base = {
             "needed_by": needed,
             "character_id": self.character.character_id,
+            "location_id": self.location.location_id,
+            "contract_to": self.character.character_name,
             "items": [{"eve_type_id": self.eve_type.id, "quantity": 1}],
         }
         r1 = self.client.post(
@@ -815,3 +822,253 @@ class OrderMutationApiTests(OrdersEndpointTestCase):
         c1 = r1.json()["public_short_code"]
         c2 = r2.json()["public_short_code"]
         self.assertNotEqual(c1, c2)
+
+
+class MarketOrderSubmitApiTests(OrdersEndpointTestCase):
+    """Active supply.market members may create produced-only orders."""
+
+    def setUp(self):
+        super().setUp()
+        SyncPilotFeaturesCommand().handle()
+        clear_feature_cache()
+        tribe = Tribe.objects.create(name="Supply", slug="supply-market-test")
+        self.market_group = TribeGroup.objects.create(
+            tribe=tribe, name="Market", code="supply.market"
+        )
+        feature = PilotFeature.objects.get(
+            code="industry.order.submit.produced"
+        )
+        feature.tribe_groups.set([self.market_group])
+        clear_feature_cache()
+
+        self.produced_type = EveType.objects.create(
+            id=999501,
+            name="Produced Hull",
+            published=True,
+            eve_group=self.eve_group,
+        )
+        product = IndustryProduct.objects.create(
+            eve_type=self.produced_type,
+            strategy=Strategy.IMPORTED,
+        )
+        IndustryProduct.objects.filter(pk=product.pk).update(
+            strategy=Strategy.PRODUCED
+        )
+
+        self.imported_type = EveType.objects.create(
+            id=999502,
+            name="Imported Mineral",
+            published=True,
+            eve_group=self.eve_group,
+        )
+        IndustryProduct.objects.create(
+            eve_type=self.imported_type,
+            strategy=Strategy.IMPORTED,
+        )
+
+        TribeGroupMembership.objects.create(
+            user=self.user,
+            tribe_group=self.market_group,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+        clear_feature_cache()
+
+    def _create_body(self, eve_type_id: int, **overrides):
+        needed = (timezone.now() + timedelta(days=14)).date().isoformat()
+        body = {
+            "needed_by": needed,
+            "character_id": self.character.character_id,
+            "location_id": self.location.location_id,
+            "contract_to": self.character.character_name,
+            "items": [{"eve_type_id": eve_type_id, "quantity": 1}],
+        }
+        body.update(overrides)
+        return body
+
+    def test_capabilities_for_market_member(self):
+        response = self.client.get(
+            "/api/industry/orders/capabilities",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["can_submit"])
+        self.assertTrue(data["produced_only"])
+
+    def test_capabilities_for_non_member(self):
+        outsider = User.objects.create_user(username="outsider")
+        token = jwt.encode(
+            {"user_id": outsider.id},
+            settings.SECRET_KEY,
+            algorithm="HS256",
+        )
+        response = self.client.get(
+            "/api/industry/orders/capabilities",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertFalse(data["can_submit"])
+        self.assertFalse(data["produced_only"])
+
+    def test_market_member_can_create_produced_order(self):
+        response = self.client.post(
+            "/api/industry/orders",
+            data=json.dumps(self._create_body(self.produced_type.id)),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 201, response.content)
+        self.assertTrue(
+            IndustryOrder.objects.filter(
+                pk=response.json()["order_id"]
+            ).exists()
+        )
+
+    def test_market_member_rejected_for_imported_item(self):
+        response = self.client.post(
+            "/api/industry/orders",
+            data=json.dumps(self._create_body(self.imported_type.id)),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 400, response.content)
+        self.assertIn("produced", response.json()["detail"].lower())
+
+    def test_non_member_forbidden(self):
+        outsider = User.objects.create_user(username="no-market")
+        EveCharacter.objects.create(
+            character_id=999888,
+            character_name="Outsider Char",
+            user=outsider,
+        )
+        set_primary_character(
+            outsider, EveCharacter.objects.get(character_id=999888)
+        )
+        token = jwt.encode(
+            {"user_id": outsider.id},
+            settings.SECRET_KEY,
+            algorithm="HS256",
+        )
+        body = {
+            "needed_by": (timezone.now() + timedelta(days=14))
+            .date()
+            .isoformat(),
+            "character_id": 999888,
+            "items": [{"eve_type_id": self.produced_type.id, "quantity": 1}],
+        }
+        response = self.client.post(
+            "/api/industry/orders",
+            data=json.dumps(body),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {token}",
+        )
+        self.assertEqual(response.status_code, 403, response.content)
+
+    def test_chief_capabilities_not_produced_only(self):
+        tribe = Tribe.objects.create(
+            name="Supply Chiefs", slug="supply-chief-test", chief=self.user
+        )
+        chief_group = TribeGroup.objects.create(
+            tribe=tribe,
+            name="Subcap",
+            code="supply.subcapital-production-test",
+            chief=self.user,
+        )
+        feature = PilotFeature.objects.get(code="industry.order.submit")
+        feature.tribe_groups.add(chief_group)
+        clear_feature_cache()
+        response = self.client.get(
+            "/api/industry/orders/capabilities",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["can_submit"])
+        self.assertFalse(data["produced_only"])
+
+    def test_chief_can_create_non_produced_item(self):
+        tribe = Tribe.objects.create(
+            name="Supply Chiefs 2", slug="supply-chief-test-2", chief=self.user
+        )
+        chief_group = TribeGroup.objects.create(
+            tribe=tribe,
+            name="Subcap 2",
+            code="supply.subcapital-production-test-2",
+            chief=self.user,
+        )
+        feature = PilotFeature.objects.get(code="industry.order.submit")
+        feature.tribe_groups.add(chief_group)
+        clear_feature_cache()
+        response = self.client.post(
+            "/api/industry/orders",
+            data=json.dumps(self._create_body(self.imported_type.id)),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 201, response.content)
+
+    def test_create_requires_staging_location(self):
+        self.location.staging_active = False
+        self.location.save(update_fields=["staging_active"])
+        response = self.client.post(
+            "/api/industry/orders",
+            data=json.dumps(self._create_body(self.produced_type.id)),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 400, response.content)
+        self.assertIn("staging", response.json()["detail"].lower())
+
+    def test_create_requires_owned_delivery_entity(self):
+        response = self.client.post(
+            "/api/industry/orders",
+            data=json.dumps(
+                self._create_body(
+                    self.produced_type.id,
+                    contract_to="Not My Corp",
+                )
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 400, response.content)
+        self.assertIn("delivery entity", response.json()["detail"].lower())
+
+    def test_create_allows_owned_corporation_delivery(self):
+        EveCorporation.objects.create(
+            corporation_id=98000001,
+            name="Owned Delivery Corp",
+        )
+        self.character.corporation_id = 98000001
+        self.character.save(update_fields=["corporation_id"])
+        response = self.client.post(
+            "/api/industry/orders",
+            data=json.dumps(
+                self._create_body(
+                    self.produced_type.id,
+                    contract_to="Owned Delivery Corp",
+                )
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 201, response.content)
+        order = IndustryOrder.objects.get(pk=response.json()["order_id"])
+        self.assertEqual(order.contract_to, "Owned Delivery Corp")
+
+    def test_create_requires_minimum_lead_time(self):
+        too_soon = (timezone.now() + timedelta(days=7)).date().isoformat()
+        response = self.client.post(
+            "/api/industry/orders",
+            data=json.dumps(
+                self._create_body(
+                    self.produced_type.id,
+                    needed_by=too_soon,
+                )
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 400, response.content)
+        self.assertIn("14 days", response.json()["detail"])
