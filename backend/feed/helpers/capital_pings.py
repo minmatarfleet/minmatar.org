@@ -839,8 +839,8 @@ def _upsert_capital_alert_for_notify(
     system_name: str,
     distance_ly: float,
     capitals: list[dict[str, Any]],
-    kill: dict[str, Any] | None,
-    composition: list[tuple[str, int]],
+    kill: dict[str, Any],
+    composition: dict[str, Any],
     discord_client: DiscordClient,
 ) -> FeedCapitalAlert | None:
     """Create or update a capital alert; soft-fail expected Discord HTTP errors."""
