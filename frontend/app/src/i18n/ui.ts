@@ -1446,7 +1446,7 @@ export const ui = {
         'corporations.cover_alt': 'Outspace starry sky',
         
         'dna.leading_text': 'Minmatar Fleet breaks from the traditional alliance mold-embracing a bit of chaos, acting first, and sorting out the questions later. Learn what makes us tick.',
-        'community.leading_text': 'Get to know our community: corporations, specialized interest groups, teams, tribes, and the guides that help new pilots find their footing.',
+        'community.leading_text': 'Get to know our community: corporations, specialized interest groups, teams, and tribes.',
 
         'corporations.list.page_title': 'Corporations',
         'corporations.list.leading_text': 'Strong corporations build strong alliances. Learn more about the corporations, CEOs, and membership that make up the Minmatar Fleet Alliance. Perhaps you can submit an application of your own!',
