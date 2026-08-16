@@ -28,10 +28,10 @@ def _tribe_codes(*codes: str) -> tuple[str, ...]:
 
 
 _INDUSTRY_TRIBE_CODES = (
-    "industry.subcapital-production",
-    "industry.capital-production",
-    "industry.mining",
-    "industry.planetary-interaction",
+    "supply.subcapital-production",
+    "supply.capital-production",
+    "supply.mining",
+    "supply.planetary-interaction",
 )
 
 
@@ -176,6 +176,16 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         scope=FeatureScope.TRIBE_CHIEF,
         description="Submit industry orders as an industry tribe chief.",
         default_tribe_group_codes=_tribe_codes(*_INDUSTRY_TRIBE_CODES),
+    ),
+    "industry.order.submit.produced": FeatureDefinition(
+        code="industry.order.submit.produced",
+        label="Submit produced industry orders",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description=(
+            "Submit manufacturing orders limited to produced catalog items "
+            "(Supply Market members)."
+        ),
+        default_tribe_group_codes=_tribe_codes("supply.market"),
     ),
     "industry.loyalty.trade": FeatureDefinition(
         code="industry.loyalty.trade",

@@ -169,6 +169,13 @@ class CreateOrderResponse(BaseModel):
     public_short_code: str
 
 
+class OrderCapabilitiesResponse(BaseModel):
+    """Whether the current user may submit manufacturing orders."""
+
+    can_submit: bool
+    produced_only: bool
+
+
 class PostOrderItemAssignmentRequest(BaseModel):
     """Assign quantity of a line to one of the user's characters."""
 

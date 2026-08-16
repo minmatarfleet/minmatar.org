@@ -3,15 +3,23 @@
 import logging
 
 from eveonline.helpers.characters import user_primary_character
-from eveonline.models import EveCharacter, EveLocation
+from eveonline.models import EveCharacter
 from eveuniverse.models import EveType
 
 from app.errors import ErrorResponse
 from authentication import AuthBearer
-from groups.helpers.feature_access import require_feature
 from industry.endpoints.orders.schemas import (
     CreateOrderRequest,
     CreateOrderResponse,
+)
+from industry.helpers.order_submit import (
+    ORDER_SUBMIT_FEATURE,
+    resolve_staging_location,
+    user_can_submit_orders,
+    user_must_submit_produced_only,
+    validate_needed_by,
+    validate_owned_delivery_entity,
+    validate_produced_catalog_items,
 )
 from industry.helpers.public_short_code import (
     pick_unique_public_short_code_among_actives,
@@ -64,15 +72,11 @@ def _resolve_order_character(request, payload: CreateOrderRequest):
 
 
 def _resolve_order_location(payload: CreateOrderRequest):
-    if payload.location_id is None:
-        return None, None
-    try:
-        return EveLocation.objects.get(pk=payload.location_id), None
-    except EveLocation.DoesNotExist:
-        return None, (
-            404,
-            ErrorResponse(detail=f"Location {payload.location_id} not found."),
-        )
+    location, detail = resolve_staging_location(payload.location_id)
+    if detail:
+        status = 404 if "not found" in detail.lower() else 400
+        return None, (status, ErrorResponse(detail=detail))
+    return location, None
 
 
 def _validate_items_and_eve_types(payload: CreateOrderRequest):
@@ -136,24 +140,84 @@ def _create_order(
     return order, None
 
 
-def post_order(request, payload: CreateOrderRequest):
-    denied = require_feature(request.user, "industry.order.submit")
-    if denied:
-        return denied
+def _validate_produced_only_items(user, eve_types: dict):
+    if not user_must_submit_produced_only(user):
+        return None
+    invalid = validate_produced_catalog_items(list(eve_types.keys()))
+    if not invalid:
+        return None
+    return 400, ErrorResponse(
+        detail=(
+            "Only produced supply-chain catalog items may be ordered. "
+            f"Invalid type_id(s): {', '.join(map(str, invalid))}."
+        ),
+    )
 
+
+def _resolve_create_context(request, payload: CreateOrderRequest):
+    if not user_can_submit_orders(request.user):
+        return None, (
+            403,
+            {
+                "detail": "feature_denied",
+                "feature": ORDER_SUBMIT_FEATURE,
+            },
+        )
     character, err = _resolve_order_character(request, payload)
     if err:
-        return err
+        return None, err
+    needed_by_err = validate_needed_by(payload.needed_by)
+    if needed_by_err:
+        return None, (400, ErrorResponse(detail=needed_by_err))
     location, err = _resolve_order_location(payload)
     if err:
-        return err
+        return None, err
     eve_types, err = _validate_items_and_eve_types(payload)
     if err:
-        return err
+        return None, err
+    produced_err = _validate_produced_only_items(request.user, eve_types)
+    if produced_err:
+        return None, produced_err
     contract_to = (payload.contract_to or "").strip()
-    order, err = _create_order(payload, character, location, contract_to)
+    delivery_err = validate_owned_delivery_entity(request.user, contract_to)
+    if delivery_err:
+        return None, (400, ErrorResponse(detail=delivery_err))
+    return {
+        "character": character,
+        "location": location,
+        "eve_types": eve_types,
+        "contract_to": contract_to,
+    }, None
+
+
+def _enqueue_post_create_tasks(order_id: int, user_id: int) -> None:
+    try:
+        compute_order_profit_breakdown_task.delay(order_id)
+    except Exception:  # noqa: BLE001 — never fail order create on planner
+        logger.exception(
+            "Failed to enqueue profit breakdown for order %s", order_id
+        )
+    try:
+        emit_order_created_notification.delay(order_id, user_id)
+    except Exception:  # noqa: BLE001 — never fail order create on notify
+        logger.exception(
+            "Failed to enqueue new-order notification for order %s", order_id
+        )
+
+
+def post_order(request, payload: CreateOrderRequest):
+    context, err = _resolve_create_context(request, payload)
     if err:
         return err
+    order, err = _create_order(
+        payload,
+        context["character"],
+        context["location"],
+        context["contract_to"],
+    )
+    if err:
+        return err
+    eve_types = context["eve_types"]
     for item in payload.items:
         IndustryOrderItem.objects.create(
             order=order,
@@ -161,18 +225,7 @@ def post_order(request, payload: CreateOrderRequest):
             quantity=item.quantity,
             self_assign_maximum=item.self_assign_maximum,
         )
-    try:
-        compute_order_profit_breakdown_task.delay(order.pk)
-    except Exception:  # noqa: BLE001 — never fail order create on planner
-        logger.exception(
-            "Failed to enqueue profit breakdown for order %s", order.pk
-        )
-    try:
-        emit_order_created_notification.delay(order.pk, request.user.id)
-    except Exception:  # noqa: BLE001 — never fail order create on notify
-        logger.exception(
-            "Failed to enqueue new-order notification for order %s", order.pk
-        )
+    _enqueue_post_create_tasks(order.pk, request.user.id)
     return 201, CreateOrderResponse(
         order_id=order.pk,
         public_short_code=order.public_short_code,
