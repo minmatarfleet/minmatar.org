@@ -6,7 +6,7 @@ author: 'BearThatCares'
 ---
 Faction warfare complexes (**plexes**) are where most fights and most LP happen. Capture them to earn loyalty points and push systems toward flipping for the Minmatar Republic.
 
-For map colors, system types (frontline / command ops / rearguard), contested vs advantage, and how site names are read, start with [Faction Warfare Basics](/guides/faction-warfare-basics/). This guide covers plexing itself: the deadspace pocket, and the LP / victory point tables.
+For map colors, system types (frontline / command ops / rearguard), contested vs advantage, and how site names are read, start with [Faction Warfare Basics](/learning/guides/faction-warfare-basics/). This guide covers plexing itself: the deadspace pocket, and the LP / victory point tables.
 
 ## Basics
 
@@ -84,7 +84,7 @@ Other rules:
 - Smaller ships can enter larger plexes (e.g. destroyers in a Large).
 - T3 destroyers count as one size larger (Medium ADV+). T3 cruisers only fit Large ADV and Open.
 
-**Where to plex:** Frontlines pay the most LP and VP. Command Ops and rearguards pay less, but are quieter and sometimes useful for surprise contest / advantage work. See [Faction Warfare Basics → Systems](/guides/faction-warfare-basics/#systems).
+**Where to plex:** Frontlines pay the most LP and VP. Command Ops and rearguards pay less, but are quieter and sometimes useful for surprise contest / advantage work. See [Faction Warfare Basics → Systems](/learning/guides/faction-warfare-basics/#systems).
 
 ## Site rewards
 
@@ -130,7 +130,7 @@ CCP is always tweaking these values—numbers above may have changed recently.
 
 ## Site impact
 
-Capturing a plex adds victory points toward contested %. A system needs **75,000 VP** to hit 100% and become vulnerable. Advantage increases VP per capture—see [Faction Warfare Advantage](/guides/faction-warfare-advantage/).
+Capturing a plex adds victory points toward contested %. A system needs **75,000 VP** to hit 100% and become vulnerable. Advantage increases VP per capture—see [Faction Warfare Advantage](/learning/guides/faction-warfare-advantage/).
 
 | Site | Victory points | ≈ Contested % (no advantage) | Capture time |
 | --- | --- | --- | --- |
@@ -158,10 +158,10 @@ Destroying the i-hub flips the system and resets victory points to 0.
 
 ## Additional Resources
 
-- [Faction Warfare Basics](/guides/faction-warfare-basics/)
-- [Faction Warfare Advantage](/guides/faction-warfare-advantage/)
-- [Faction Warfare Battlefields](/guides/faction-warfare-battlefields/)
-- [New Player Fleet Guide](/guides/new-player-fleet-guide/)
+- [Faction Warfare Basics](/learning/guides/faction-warfare-basics/)
+- [Faction Warfare Advantage](/learning/guides/faction-warfare-advantage/)
+- [Faction Warfare Battlefields](/learning/guides/faction-warfare-battlefields/)
+- [New Player Fleet Guide](/learning/guides/new-player-fleet-guide/)
 - [Guides index](/guides/)
 - [Amarr vs Minmatar Dotlan](https://evemaps.dotlan.net/map/Amarr_VS_Minmatar#sov)
 - [Patch Notes — Version 21.05](https://www.eveonline.com/news/view/patch-notes-version-21-05) (victory point rebalance)

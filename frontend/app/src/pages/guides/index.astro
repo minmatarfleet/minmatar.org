@@ -2,14 +2,13 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { getGuidesByCategory, getGuideSectionsForCategory, guideCategories, getIndexedGuides, getPublishedGuides } from '@/data/guides'
+import { getPublishedGuides } from '@/data/guides'
 import { GUIDES_INDEX_COVER } from '@/data/guides/covers'
 import { buildGuidesIndexJsonLd, getGuidesIndexSeo } from '@/data/guides/seo'
 import { get_site_origin } from '@helpers/seo'
 
 const site_origin = get_site_origin(Astro.url.origin)
-const indexedGuides = getIndexedGuides()
-const publishedGuides = getPublishedGuides()
+const published_guides = getPublishedGuides()
 const seo = getGuidesIndexSeo({
     siteName: t('index.page_title'),
     siteOrigin: site_origin,
@@ -24,27 +23,20 @@ const structured_data = buildGuidesIndexJsonLd({
     metaDescription: seo.metaDescription,
     canonicalUrl: seo.canonicalUrl,
     metaImage: seo.metaImage,
-    guides: publishedGuides,
+    guides: published_guides,
     translatePath,
 })
 
-const count_text = t(indexedGuides.length !== 1 ? 'guides_plural' : 'guides_singular')
-    .replace('{count}', String(indexedGuides.length))
-
 import Viewport from '@layouts/Viewport.astro'
-
 import PageWide from '@components/page/PageWide.astro'
-import PageActions from '@components/page/PageActions.astro'
 import PageTitle from '@components/page/PageTitle.astro'
-
 import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
-import Grid from '@components/compositions/Grid.astro'
+import GuidesCatalog from '@components/blocks/GuidesCatalog.astro'
+import { getIndexedGuides } from '@/data/guides'
 
-import GuideCard from '@components/blocks/GuideCard.astro'
-import ButtonSubmitGuide from '@components/blocks/ButtonSubmitGuide.astro'
-
-const guidesByCategory = getGuidesByCategory()
+const indexed_guides = getIndexedGuides()
+const count_text = t(indexed_guides.length !== 1 ? 'guides_plural' : 'guides_singular')
+    .replace('{count}', String(indexed_guides.length))
 
 const page_title = t('guides.page_title')
 ---
@@ -68,55 +60,13 @@ const page_title = t('guides.page_title')
             overlay: true
         }}
     >
-        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
-            <Flexblock gap="var(--space-3xs)">
-                <PageTitle>
-                    {page_title}
-                </PageTitle>
-                <small>{count_text}</small>
-            </Flexblock>
-            <PageActions>
-                <ButtonSubmitGuide />
-            </PageActions>
-        </FlexInline>
-
-        <Flexblock gap='var(--space-2xl)'>
-            {guideCategories.map((category) => {
-                const categoryGuides = guidesByCategory[category] ?? []
-                if (!categoryGuides.length) return null
-
-                const sections = getGuideSectionsForCategory(category, categoryGuides)
-
-                return (
-                    <Flexblock gap='var(--space-m)'>
-                        <Flexblock gap='var(--space-3xs)'>
-                            <h2 class="[ font-bold ]">{category}</h2>
-                            <small class="[ text-muted ]">
-                                {categoryGuides.length} {categoryGuides.length === 1 ? 'guide' : 'guides'}
-                            </small>
-                        </Flexblock>
-                        <Flexblock gap='var(--space-l)'>
-                            {sections.map((section) => (
-                                <Flexblock gap='var(--space-s)'>
-                                    {section.label && (
-                                        <h3 class="[ font-bold text-[var(--step-0)] ]">{section.label}</h3>
-                                    )}
-                                    <Grid
-                                        class="[ w-full grid-fill ]"
-                                        row_gap="var(--space-3xs)"
-                                        column_gap="var(--space-3xs)"
-                                        min_item_width="400px"
-                                    >
-                                        {section.guides.map((guide) => (
-                                            <GuideCard guide={guide} />
-                                        ))}
-                                    </Grid>
-                                </Flexblock>
-                            ))}
-                        </Flexblock>
-                    </Flexblock>
-                )
-            })}
+        <Flexblock slot="header" gap="var(--space-3xs)">
+            <PageTitle>
+                {page_title}
+            </PageTitle>
+            <small>{count_text}</small>
         </Flexblock>
+
+        <GuidesCatalog show_heading={false} show_count={false} />
     </PageWide>
 </Viewport>

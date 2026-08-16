@@ -30,7 +30,6 @@ const GUIDE_COVERS: Record<string, string> = {
     'abyss-nergal-trio-t6-firestorm': '/images/etherium-cover.jpg',
     'abyss-trio-hawk-t5-dark': '/images/combatlog-cover.jpg',
     'level5-missions': '/images/guides/guides/level5s/cleansing_fire.jpg',
-    'pochven-standings': '/images/guides/pochven-map.png',
     'zohar-hunting': '/images/guides/guides/level5s/wrath_of_angels.png',
     'bookmarks': '/images/assets-cover.jpg',
     'selling-loyalty-points': '/images/loyalty-points-cover.webp',

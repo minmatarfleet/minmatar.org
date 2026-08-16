@@ -1,24 +1,90 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
-import type { SkillsetMissingSkillUI } from '@dtypes/layout_components'
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
 
-let skillset_missing_skills:SkillsetMissingSkillUI | null = null
-let skillset_missing_skills_modal_error: Error | false = false
-try {
-    const partial_params = await Astro.request.formData()
-    skillset_missing_skills = JSON.parse( partial_params.get("data")?.valueOf() as string ) as SkillsetMissingSkillUI
-} catch (error) {
-    skillset_missing_skills_modal_error = error
-}
+import type { SkillsetMissingSkillUI, Skillset, CharacterBasic } from '@dtypes/layout_components'
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import { get_skillsets, get_characters_summary_sorted } from '@helpers/fetching/characters'
 
 import SkillsetMissingSkills from '@components/blocks/SkillsetMissingSkills.astro'
 import Tag from '@components/blocks/Tag.astro'
+
+const auth_token = Astro.cookies.has('auth_token')
+    ? (Astro.cookies.get('auth_token')?.value as string)
+    : false
+const user: User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+let skillset_missing_skills: SkillsetMissingSkillUI | null = null
+let characters: SummaryCharacter[] = []
+let skillset_name = ''
+let skillset_missing_skills_modal_error: Error | false = false
+
+try {
+    let character_id = NaN
+
+    if (Astro.request.method === 'POST') {
+        const partial_params = await Astro.request.formData()
+        const raw = partial_params.get('data')?.valueOf() as string
+        const parsed = JSON.parse(raw)
+
+        if (parsed?.skillsets && parsed?.character) {
+            skillset_missing_skills = parsed as SkillsetMissingSkillUI
+            skillset_name = skillset_missing_skills.skillsets.name
+            character_id = skillset_missing_skills.character.character_id
+        } else {
+            character_id = parseInt(String(parsed?.character_id ?? ''), 10)
+            skillset_name = String(parsed?.skillset_name ?? '')
+        }
+    } else {
+        character_id = parseInt(Astro.url.searchParams.get('character_id') ?? '', 10)
+        skillset_name = Astro.url.searchParams.get('skillset_name') ?? ''
+    }
+
+    if (!auth_token || !user) {
+        throw new Error(t('get_character_skillsets_error'))
+    }
+
+    const summary = await get_characters_summary_sorted(auth_token)
+    characters = summary.characters ?? []
+
+    // Always resolve from the requested character so switches are authoritative.
+    if (isNaN(character_id) || !skillset_name) {
+        throw new Error(t('get_character_skillsets_error'))
+    }
+
+    const character_skillsets = await get_skillsets(auth_token, character_id)
+    const skillset = character_skillsets.skillsets.find(
+        (entry: Skillset) => entry.name === skillset_name,
+    )
+
+    if (!skillset) {
+        throw new Error(t('get_character_skillsets_error'))
+    }
+
+    skillset_missing_skills = {
+        skillsets: skillset,
+        character: {
+            character_id: character_skillsets.character_id,
+            character_name: character_skillsets.character_name,
+        } as CharacterBasic,
+    }
+} catch (error) {
+    skillset_missing_skills_modal_error = error instanceof Error ? error : new Error(String(error))
+}
+
+const partial_base = translatePath('/partials/missing_skills_modal_component/')
 ---
 
 {skillset_missing_skills_modal_error ?
     <Tag text={skillset_missing_skills_modal_error.message} />
     :
-    <SkillsetMissingSkills skillset_missing_skills={skillset_missing_skills as SkillsetMissingSkillUI} />
+    <SkillsetMissingSkills
+        skillset_missing_skills={skillset_missing_skills as SkillsetMissingSkillUI}
+        characters={characters}
+        skillset_name={skillset_name}
+        partial_url={partial_base}
+    />
 }

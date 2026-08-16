@@ -1,0 +1,8 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import { LEARNING_HUB_PATH } from '@/data/guides/urls'
+
+return Astro.redirect(translatePath(LEARNING_HUB_PATH), 301)
+---

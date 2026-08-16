@@ -1,6 +1,5 @@
 ---
 import { is_disabled_ccpwgl } from '@helpers/env';
-import LearningAlpine from '@components/partials/LearningAlpine.astro';
 import OpsContractsAlpine from '@components/partials/OpsContractsAlpine.astro';
 import SellOrderGapsAlpine from '@components/partials/SellOrderGapsAlpine.astro';
 import NotificationPreferencesAlpine from '@components/partials/NotificationPreferencesAlpine.astro';
@@ -8,7 +7,6 @@ import NotificationPreferencesAlpine from '@components/partials/NotificationPref
 const DISABLED_CCPWGL = is_disabled_ccpwgl()
 ---
 
-<LearningAlpine />
 <OpsContractsAlpine />
 <SellOrderGapsAlpine />
 <NotificationPreferencesAlpine />
@@ -102,8 +100,15 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
             // Init from body so page bindings see Viewport x-data
             // (color_blind_mode, ui_scaling, show_modal, get_*_icon, …).
             // initTree(content) alone orphans those expressions after soft nav.
-            if (typeof Alpine !== 'undefined')
+            // Learning hubs: Alpine MO may init x-data before FooterScripts
+            // redefines learningCenterHub → empty scope (changePersona missing).
+            // Destroy then initTree so factories bind after scripts run.
+            if (typeof Alpine !== 'undefined') {
+                document.querySelectorAll(
+                    '[x-data*="learningCenterHub"], [x-data*="learningCertificateDetail"]'
+                ).forEach((el) => Alpine.destroyTree(el))
                 Alpine.initTree(document.body)
+            }
 
             if (window.ccpwgl_context)
                 window.ccpwgl_context = null

@@ -25,7 +25,7 @@ class Learning(models.Model):
     summary = models.TextField(blank=True, default="")
     url = models.CharField(
         max_length=500,
-        help_text="Site-relative path (e.g. /guides/…) or absolute URL.",
+        help_text="Site-relative path (e.g. /learning/guides/…) or absolute URL.",
     )
     content_kind = models.CharField(
         max_length=20,

@@ -60,13 +60,13 @@ The penalty strength in a given site is rolled between 30% or 50% through tier 3
 
 ## Solo Guides
 
-- [Stormbringer - T6 Electrical](/guides/abyss-stormbringer-t6-electrical/)
+- [Stormbringer - T6 Electrical](/learning/guides/abyss-stormbringer-t6-electrical/)
 
 ## Duo Guides
 
-- [Duo Jackdaws - T6 Dark](/guides/abyss-duo-jackdaws-t6-dark/)
+- [Duo Jackdaws - T6 Dark](/learning/guides/abyss-duo-jackdaws-t6-dark/)
 
 ## Trio Guides
 
-- [Nergal/Retribution/Deacon - T6 Firestorm](/guides/abyss-nergal-trio-t6-firestorm/)
-- [x3 Hawk - T5 Dark](/guides/abyss-trio-hawk-t5-dark/)
+- [Nergal/Retribution/Deacon - T6 Firestorm](/learning/guides/abyss-nergal-trio-t6-firestorm/)
+- [x3 Hawk - T5 Dark](/learning/guides/abyss-trio-hawk-t5-dark/)

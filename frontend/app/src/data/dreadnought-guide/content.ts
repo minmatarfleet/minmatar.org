@@ -18,7 +18,7 @@ export const credits = {
 export const overview = [
     'Dreadnoughts are our damage dealers. In Minmatar Fleet, they usually enter fights as part of an <strong>escalation chain</strong>, which means we usually have to start a fight before they can come in.',
     'For that reason, dreads are primarily flown on <strong>alts</strong>. Without a subcapital fleet, there is no fight. If there is no fight, there are no dreads.',
-    'Before you start here, make sure you read the <a href="/guides/capital-ship-basics/">Capital Ship Basics</a> guide.',
+    'Before you start here, make sure you read the <a href="/learning/guides/capital-ship-basics/">Capital Ship Basics</a> guide.',
 ]
 
 export const metaBlocks: MetaBlock[] = [

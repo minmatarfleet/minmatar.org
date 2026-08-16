@@ -39,7 +39,7 @@ import AssetsEvEIcon from '@components/icons/AssetsEvEIcon.astro';
 import MarketEvEIcon from '@components/icons/MarketEvEIcon.astro';
 import ZkillboardEvEIcon from '@components/icons/ZkillboardEvEIcon.astro';
 import AllianceEvEIcon from '@components/icons/AllianceEvEIcon.astro';
-import LearningCenterEvEIcon from '@components/icons/LearningCenterEvEIcon.astro'
+import SkillsEvEIcon from '@components/icons/SkillsEvEIcon.astro';
 import FleetLogo from '@components/icons/FleetLogo.astro';
 import TutorialIcon from '@components/icons/TutorialIcon.astro';
 import StylessButton from './StylessButton.astro';
@@ -96,6 +96,14 @@ const page = Astro.url.pathname
                         <AllianceEvEIcon />
                     </NeocomButton>
                     <NeocomButton
+                        active={page.startsWith(translatePath('/learning'))}
+                        title='neocom.learning'
+                        description='learning.description'
+                        href={translatePath('/learning/')}
+                    >
+                        <SkillsEvEIcon />
+                    </NeocomButton>
+                    <NeocomButton
                         active={page.startsWith(translatePath('/ships'))}
                         title='neocom.ships'
                         description='ships.description'
@@ -120,14 +128,6 @@ const page = Astro.url.pathname
                         href={translatePath('/market/')}
                     >
                         <MarketEvEIcon />
-                    </NeocomButton>
-                    <NeocomButton
-                        active={page.startsWith(translatePath('/learning-center'))}
-                        title='neocom.learning_center'
-                        description='learning_center.description'
-                        href={translatePath('/learning-center/')}
-                    >
-                        <LearningCenterEvEIcon />
                     </NeocomButton>
                     <NeocomButton
                         active={page.startsWith(translatePath('/intel'))}

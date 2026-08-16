@@ -41,11 +41,36 @@ interface Props {
             x-bind:hx-get="modal_partial && !modal_partial_params ? modal_partial : false"
             x-bind:hx-post="modal_partial && modal_partial_params ? modal_partial : false"
             x-bind:hx-vals="JSON.stringify({ data: JSON.stringify(modal_partial_params) })"
-            x-bind:hx-trigger="modal_partial ? 'intersect' : false"
+            x-bind:hx-trigger="modal_partial ? 'intersect once' : false"
             x-bind:hx-swap="modal_partial ? 'innerHTML transition:true' : false"
             hx-target="#modal-description"
             hx-indicator=".loader"
-            hx-on="htmx:afterSwap: htmx.process(this); if (typeof Alpine !== 'undefined') Alpine.initTree(this)"
+            hx-on="htmx:afterSwap: (() => {
+                const swapped = event.target;
+                // Child swaps (e.g. skillset character portraits) must not re-process
+                // this node — that re-arms hx-get/intersect and reloads the original partial.
+                if (swapped !== this && this.contains(swapped)) {
+                    htmx.process(swapped);
+                    if (typeof Alpine !== 'undefined') Alpine.initTree(swapped);
+                    return;
+                }
+                if (swapped === this) {
+                    htmx.process(this);
+                    if (typeof Alpine !== 'undefined') Alpine.initTree(this);
+                    // Disarm after first fill so nested hx-get swaps stay put.
+                    this.removeAttribute('hx-get');
+                    this.removeAttribute('hx-post');
+                    this.removeAttribute('hx-trigger');
+                    this.removeAttribute('hx-vals');
+                    try {
+                        const scope = Alpine.$data(document.body);
+                        if (scope && 'modal_partial' in scope) {
+                            scope.modal_partial = '';
+                            scope.modal_partial_params = '';
+                        }
+                    } catch (e) {}
+                }
+            })()"
         />
         <button modal-action="cancel"><TrashIcon /></button>
     </Dialog>

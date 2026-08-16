@@ -4,7 +4,6 @@ export const GUIDE_SLUG_BY_WIKI_PATH: Record<string, string> = {
     'alliance/Academy/new-player-fleet-guide': 'new-player-fleet-guide',
     'guides/Abyss': 'abyssals',
     'alliance/Academy/faction-warfare-advantage': 'faction-warfare-advantage',
-    'guides/pochven-standings': 'pochven-standings',
     'guides/zohar-hunting': 'zohar-hunting',
     'guides/rendezvous-wolf': 'faction-warfare-advantage',
     'guides/battlefields': 'faction-warfare-battlefields',
@@ -16,12 +15,23 @@ export const GUIDE_SLUG_BY_WIKI_PATH: Record<string, string> = {
     'capitals': 'capital-ship-basics',
 }
 
+/** Main in-app hub (Neocom, certificates + catalog). */
+export const LEARNING_HUB_PATH = '/learning/'
+
+/** SEO landing for "Learning Center" queries (same hub UI). */
+export const LEARNING_CENTER_PATH = '/learning-center/'
+
+/** SEO landing for "guides" queries (catalog only). */
 export const GUIDES_INDEX_PATH = '/guides/'
 
 export function guidePath(slug: string): string {
-    return `/guides/${slug}/`
+    return `/learning/guides/${slug}/`
 }
 
 export function guideUrl(slug: string): string {
-    return `https://my.minmatar.org/guides/${slug}/`
+    return `https://my.minmatar.org/learning/guides/${slug}/`
+}
+
+export function certificatePath(slug: string): string {
+    return `/learning/certificates/${slug}/`
 }
