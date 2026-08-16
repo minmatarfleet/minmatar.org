@@ -768,7 +768,6 @@ _SYSTEM_APPS = {
     "auth",
     "discord",
     "django_celery_beat",
-    "mumble",
     "onboarding",
     "subscriptions",
 }

@@ -15,7 +15,9 @@ Uses your own Discord app and ESI credentials. See [developer data seeding](deve
 
 ## Production
 
-Everything runs in Docker via `docker-compose-prod.yml`: Django (gunicorn), frontend, Celery workers, Beat, bot, Redis, Mumble, Metabase, etc.
+Everything runs in Docker via `docker-compose-prod.yml`: Django (gunicorn), frontend, Celery workers, Beat, bot, Redis, Metabase, etc.
+
+(Former Mumble/Murmur stack: see [mumble-architecture.md](mumble-architecture.md).)
 
 ## Frontend-only (Astro dev)
 

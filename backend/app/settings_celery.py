@@ -257,7 +257,7 @@ CELERYBEAT_TRIBES = [
     ),
 ]
 
-# Misc (Celery, Fleets, ESI, Reminders, Reddit, Discord, Mumble)
+# Misc (Celery, Fleets, ESI, Reminders, Reddit, Discord)
 CELERYBEAT_OTHER = [
     (
         "[Misc] Sync executor access lists",
@@ -342,13 +342,6 @@ CELERYBEAT_OTHER = [
         {
             "task": "discord.tasks.remove_roles_from_unregistered_guild_members",
             "schedule": crontab(minute=0, hour=14, day_of_week=1),
-        },
-    ),
-    (
-        "[Misc] Set Mumble usernames",
-        {
-            "task": "mumble.tasks.set_mumble_usernames",
-            "schedule": crontab(minute=0, hour=13),
         },
     ),
     (

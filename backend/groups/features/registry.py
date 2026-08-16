@@ -130,14 +130,6 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         legacy_permission="structures.add_evestructuretimer",
         default_affiliation_names=_aff("Alliance"),
     ),
-    "mumble.access": FeatureDefinition(
-        code="mumble.access",
-        label="Mumble access",
-        scope=FeatureScope.AFFILIATION,
-        description="Access Mumble voice server credentials.",
-        legacy_permission="mumble.view_mumbleaccess",
-        default_affiliation_names=_aff("Alliance", "Associate"),
-    ),
     "moons.view": FeatureDefinition(
         code="moons.view",
         label="View moons",
