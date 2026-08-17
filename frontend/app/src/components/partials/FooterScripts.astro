@@ -105,7 +105,7 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
             // Destroy then initTree so factories bind after scripts run.
             if (typeof Alpine !== 'undefined') {
                 document.querySelectorAll(
-                    '[x-data*="learningCenterHub"], [x-data*="learningCertificateDetail"]'
+                    '[x-data*="learningCenterHub"], [x-data*="learningCertificateDetail"], [x-data*="allianceHealthList"]'
                 ).forEach((el) => Alpine.destroyTree(el))
                 Alpine.initTree(document.body)
             }
@@ -165,7 +165,7 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
 
 <script is:inline src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-<script is:inline src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script is:inline src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/@justinribeiro/lite-youtube@1/lite-youtube.min.js"></script>
 

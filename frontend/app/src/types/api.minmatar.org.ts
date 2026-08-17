@@ -1972,6 +1972,18 @@ export interface AllianceHealthStatusCounts {
     on_leave:   number;
 }
 
+export interface AllianceHealthStatusWindowCounts {
+    d30:    number;
+    d90:    number;
+    d180:   number;
+}
+
+export interface AllianceHealthStatusWindows {
+    active:     AllianceHealthStatusWindowCounts;
+    trial:      AllianceHealthStatusWindowCounts;
+    on_leave:   AllianceHealthStatusWindowCounts;
+}
+
 export interface AllianceHealthSignals30 {
     fleets:         number;
     small_gang:     number;
@@ -1990,8 +2002,9 @@ export interface AllianceHealthMonthlyPoint {
     label:      string;
     active:     number;
     fleet:      number;
+    small_gang: number;
     solo:       number;
-    supply:     number;
+    supply?:    number;
 }
 
 export interface AllianceHealthOverview {
@@ -2002,10 +2015,15 @@ export interface AllianceHealthOverview {
     map_30d:        number;
     roster_people:  number;
     status:         AllianceHealthStatusCounts;
+    status_windows: AllianceHealthStatusWindows;
     signals_30d:    AllianceHealthSignals30;
     quiet:          AllianceHealthQuietCounts;
     monthly:        AllianceHealthMonthlyPoint[];
+    tribes_monthly: AllianceHealthTribesMonthly;
+    unknown_characters: AllianceHealthUnknownCharacter[];
     hygiene:        AllianceHealthHygieneCounts;
+    viewer:         AllianceHealthViewer;
+    delta_30d:      AllianceHealthStatusCounts;
 }
 
 export interface AllianceHealthTrialCounts {
@@ -2014,12 +2032,25 @@ export interface AllianceHealthTrialCounts {
     fail:       number;
     nudge:      number;
     hold:       number;
+    current:    number;
+    add:        number;
+    remove:     number;
+    flagged:    number;
+    passing:    number;
+    failing:    number;
+    evaluating: number;
 }
 
 export interface AllianceHealthLeaveCounts {
     recommended:    number;
     kept:           number;
     exempt:         number;
+    current:        number;
+    add:            number;
+    remove:         number;
+    flagged:        number;
+    inactive:       number;
+    returning:      number;
 }
 
 export interface AllianceHealthHygieneCounts {
@@ -2030,10 +2061,57 @@ export interface AllianceHealthHygieneCounts {
 export type AllianceHealthAttentionBucket = 'fading' | 'dark' | 'seasonal'
 
 export type AllianceHealthTrialBucket =
+    | 'current'
+    | 'passing'
+    | 'failing'
+    | 'evaluating'
+    | 'add'
+    | 'remove'
+    | 'flagged'
     | 'approve'
     | 'too_early'
     | 'fail'
     | 'nudge'
+
+export type AllianceHealthLeaveBucket =
+    | 'current'
+    | 'inactive'
+    | 'returning'
+    | 'add'
+    | 'remove'
+    | 'flagged'
+
+export interface AllianceHealthViewer {
+    alliance_wide:      boolean;
+    home_corp_id:       number | null;
+    can_mutate:         boolean;
+    can_leave_any:      boolean;
+    officer_corp_ids:   number[];
+    ceo_corp_ids:       number[];
+}
+
+export interface AllianceHealthUnknownCharacter {
+    character_id:       number;
+    character_name:     string;
+    corporation_id:     number;
+    corp:               string;
+}
+
+export interface AllianceHealthTribeMonthLabel {
+    month:  string;
+    label:  string;
+}
+
+export interface AllianceHealthTribeSeries {
+    tribe_id:   number;
+    name:       string;
+    counts:     number[];
+}
+
+export interface AllianceHealthTribesMonthly {
+    months:     AllianceHealthTribeMonthLabel[];
+    series:     AllianceHealthTribeSeries[];
+}
 
 export interface AllianceHealthAttentionPilot {
     user_id:            number;
@@ -2044,6 +2122,7 @@ export interface AllianceHealthAttentionPilot {
     active_months:      number;
     character_id?:      number | null;
     corporation_id?:    number | null;
+    timezone?:          string | null;
 }
 
 export interface AllianceHealthAttention {
@@ -2069,12 +2148,28 @@ export interface AllianceHealthTrialPilot {
     path:                   string;
     conf:                   string;
     reason:                 string;
+    decision?:              string | null;
+    timezone?:              string | null;
 }
 
 export interface AllianceHealthTrials {
     computed_at:    string;
     bucket:         AllianceHealthTrialBucket;
     counts:         AllianceHealthTrialCounts;
+    pilots:         AllianceHealthTrialPilot[];
+}
+
+export type AllianceHealthOnboardingBucket = 'first_week' | 'more_fleets'
+
+export interface AllianceHealthOnboardingCounts {
+    first_week:     number;
+    more_fleets:    number;
+}
+
+export interface AllianceHealthOnboarding {
+    computed_at:    string;
+    bucket:         AllianceHealthOnboardingBucket;
+    counts:         AllianceHealthOnboardingCounts;
     pilots:         AllianceHealthTrialPilot[];
 }
 
@@ -2091,10 +2186,12 @@ export interface AllianceHealthLeavePilot {
     story:              string;
     conf:               string;
     reason:             string;
+    timezone?:          string | null;
 }
 
 export interface AllianceHealthLeave {
     computed_at:    string;
+    bucket:         AllianceHealthLeaveBucket;
     counts:         AllianceHealthLeaveCounts;
     pilots:         AllianceHealthLeavePilot[];
 }

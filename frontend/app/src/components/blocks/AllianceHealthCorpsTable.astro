@@ -6,14 +6,15 @@ import type { AllianceHealthCorporationRow } from '@dtypes/api.minmatar.org'
 import type { CampaignTableRow } from '@/data/campaigns/etherium-reach'
 
 import { get_corporation_logo } from '@helpers/eve_image_server'
-import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
+import AllianceHealthPagedTable from '@components/blocks/AllianceHealthPagedTable.astro'
 
 interface Props {
     corporations: AllianceHealthCorporationRow[]
+    initial_corp?: string
     [propName: string]: any
 }
 
-const { corporations, ...attributes } = Astro.props
+const { corporations, initial_corp = 'all', ...attributes } = Astro.props
 delete attributes.class
 
 const fmt_pct = (n: number) => `${n > 0 ? '+' : ''}${n}%`
@@ -36,11 +37,21 @@ const rows: CampaignTableRow[] = corporations.map((corp) => ({
         `${corp.active_90d_pct}%`,
         fmt_pct(corp.growth_90d_pct),
     ],
+    corp: corp.name,
+    search_text: corp.name.toLowerCase(),
     icon_url: get_corporation_logo(corp.corporation_id, 64),
     tone: corp.growth_90d_pct > 0 ? 'success' : corp.growth_90d_pct < 0 ? 'warning' : undefined,
 }))
 ---
 
-<div class:list={['[ alliance-health-corps ]', Astro.props.class]} {...attributes}>
-    <CampaignDataTable headers={headers} rows={rows} success_marker={false} />
+<div class:list={['[ alliance-health-corps ]', Astro.props.class]} id="health-corps" {...attributes}>
+    <AllianceHealthPagedTable
+        headers={headers}
+        rows={rows}
+        empty_label={t('alliance.health.corps.empty')}
+        initial_corp={initial_corp}
+        page_size={5}
+        csv_filename="health-corporations.csv"
+        url_section="corps"
+    />
 </div>

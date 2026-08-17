@@ -14,6 +14,12 @@ from groups.management.commands.sync_pilot_features import (
 )
 from groups.models import UserCommunityStatus
 
+from alliance.endpoints.health.schemas import (
+    leave_from_payload,
+    onboarding_from_payload,
+    overview_from_payload,
+    trials_from_payload,
+)
 from alliance.helpers.health import compute_alliance_health, save_snapshot
 from alliance.models import AllianceHealthSnapshot
 from eveonline.models import (
@@ -83,6 +89,12 @@ class AllianceHealthComputeTestCase(TestCase):
             user=self.user2,
             primary_character=self.char2,
         )
+        EveCharacter.objects.create(
+            character_id=900003,
+            character_name="Ghost Pilot",
+            corporation_id=1000001,
+            user=None,
+        )
         UserCommunityStatus.objects.create(
             user=self.user, status=UserCommunityStatus.STATUS_ACTIVE
         )
@@ -134,6 +146,16 @@ class AllianceHealthComputeTestCase(TestCase):
         # Trial user with no activity and short tenure → nudge (new trial)
         # or fail if tenure ≥60d; test corp has no history so fallback.
         self.assertGreaterEqual(hygiene["trial"]["counts"]["nudge"], 0)
+        self.assertIn("status_windows", payload)
+        self.assertIn("d30", payload["status_windows"]["active"])
+        self.assertIn("unknown_characters", payload)
+        names = {
+            row["character_name"] for row in payload["unknown_characters"]
+        }
+        self.assertIn("Ghost Pilot", names)
+        if payload["monthly"]:
+            self.assertIn("small_gang", payload["monthly"][0])
+            self.assertNotIn("supply", payload["monthly"][0])
 
     def test_quiet_dark_when_no_activity(self):
         payload = compute_alliance_health(now=self.now)
@@ -186,6 +208,11 @@ class AllianceHealthEndpointTestCase(TestCase):
                 "map_30d": 30,
                 "roster_people": 40,
                 "status": {"active": 1, "trial": 2, "on_leave": 3},
+                "status_windows": {
+                    "active": {"d30": 10, "d90": 20, "d180": 30},
+                    "trial": {"d30": 1, "d90": 2, "d180": 3},
+                    "on_leave": {"d30": 0, "d90": 1, "d180": 2},
+                },
                 "signals_30d": {
                     "fleets": 1,
                     "small_gang": 2,
@@ -193,7 +220,25 @@ class AllianceHealthEndpointTestCase(TestCase):
                     "supply": 4,
                 },
                 "quiet": {"fading": 5, "dark": 6, "seasonal": 7},
-                "monthly": [],
+                "monthly": [
+                    {
+                        "month": "2026-07",
+                        "label": "Jul",
+                        "active": 10,
+                        "fleet": 8,
+                        "small_gang": 3,
+                        "solo": 2,
+                    }
+                ],
+                "tribes_monthly": {"months": [], "series": []},
+                "unknown_characters": [
+                    {
+                        "character_id": 900099,
+                        "character_name": "Ghost Pilot",
+                        "corporation_id": 1,
+                        "corp": "Test Corp",
+                    }
+                ],
                 "attention": {
                     "fading": [],
                     "dark": [
@@ -239,6 +284,10 @@ class AllianceHealthEndpointTestCase(TestCase):
                             "fail": 3,
                             "nudge": 4,
                             "hold": 5,
+                            "current": 1,
+                            "add": 0,
+                            "remove": 1,
+                            "flagged": 7,
                         },
                         "buckets": {
                             "approve": [
@@ -264,6 +313,48 @@ class AllianceHealthEndpointTestCase(TestCase):
                             "too_early": [],
                             "fail": [],
                             "nudge": [],
+                            "current": [
+                                {
+                                    "user_id": 10,
+                                    "username": "ready_pilot",
+                                    "pilot": "Ready Pilot",
+                                    "corp": "Test Corp",
+                                    "corporation_id": 1,
+                                    "character_id": 100,
+                                    "alliance_days": 70,
+                                    "fleets": 5,
+                                    "kills": 12,
+                                    "kills_small": 9,
+                                    "voice_hours": 6.0,
+                                    "slice_30d": "2F/4K/2h",
+                                    "days_since_activity": 8,
+                                    "path": "Mixed",
+                                    "conf": "high",
+                                    "reason": "Mixed — 5 fleets, 9 small-gang",
+                                }
+                            ],
+                            "add": [],
+                            "remove": [
+                                {
+                                    "user_id": 10,
+                                    "username": "ready_pilot",
+                                    "pilot": "Ready Pilot",
+                                    "corp": "Test Corp",
+                                    "corporation_id": 1,
+                                    "character_id": 100,
+                                    "alliance_days": 70,
+                                    "fleets": 5,
+                                    "kills": 12,
+                                    "kills_small": 9,
+                                    "voice_hours": 6.0,
+                                    "slice_30d": "2F/4K/2h",
+                                    "days_since_activity": 8,
+                                    "path": "Mixed",
+                                    "conf": "high",
+                                    "reason": "Mixed — 5 fleets, 9 small-gang",
+                                }
+                            ],
+                            "flagged": [],
                         },
                     },
                     "leave": {
@@ -271,6 +362,10 @@ class AllianceHealthEndpointTestCase(TestCase):
                             "recommended": 1,
                             "kept": 2,
                             "exempt": 3,
+                            "current": 0,
+                            "add": 1,
+                            "remove": 0,
+                            "flagged": 0,
                         },
                         "recommended": [
                             {
@@ -288,6 +383,9 @@ class AllianceHealthEndpointTestCase(TestCase):
                                 "reason": "Away — 0 fleets, 0 kills, 0h voice (90d)",
                             }
                         ],
+                        "current": [],
+                        "restore": [],
+                        "flagged": [],
                     },
                 },
             },
@@ -321,6 +419,100 @@ class AllianceHealthEndpointTestCase(TestCase):
         body = response.json()
         self.assertEqual(body["map_30d"], 30)
         self.assertEqual(body["goal_map"], 500)
+        self.assertEqual(body["status_windows"]["active"]["d30"], 10)
+        self.assertEqual(body["monthly"][0]["small_gang"], 3)
+        self.assertEqual(body["viewer"]["alliance_wide"], True)
+        self.assertEqual(body["viewer"]["can_mutate"], False)
+        self.assertEqual(body["delta_30d"]["active"], 0)
+        self.assertEqual(body["delta_30d"]["trial"], 0)
+        self.assertEqual(body["delta_30d"]["on_leave"], 0)
+
+    def test_overview_delta_30d(self):
+        AllianceHealthSnapshot.objects.create(
+            computed_at=timezone.now() - timedelta(days=31),
+            payload={
+                "status": {"active": 5, "trial": 10, "on_leave": 1},
+            },
+        )
+        response = self.client.get(
+            "/api/alliance/health/overview",
+            **self._auth(self.staff_token),
+        )
+        self.assertEqual(response.status_code, 200)
+        delta = response.json()["delta_30d"]
+        self.assertEqual(delta["active"], -4)
+        self.assertEqual(delta["trial"], -8)
+        self.assertEqual(delta["on_leave"], 2)
+
+    def test_legacy_snapshot_payload_fills_new_fields(self):
+        """Imported prod snapshots predate status_windows / selector buckets."""
+        legacy = {
+            "computed_at": "2026-08-16T19:25:00+00:00",
+            "goal_map": 500,
+            "map_7d": 10,
+            "map_14d": 20,
+            "map_30d": 30,
+            "roster_people": 405,
+            "status": {"active": 187, "trial": 124, "on_leave": 94},
+            "signals_30d": {
+                "fleets": 1,
+                "small_gang": 2,
+                "solo": 3,
+                "supply": 4,
+            },
+            "quiet": {"fading": 5, "dark": 6, "seasonal": 7},
+            "monthly": [
+                {
+                    "month": "2026-07",
+                    "label": "Jul",
+                    "active": 10,
+                    "fleet": 8,
+                    "solo": 2,
+                    "supply": 0,
+                }
+            ],
+            "hygiene": {
+                "trial": {
+                    "counts": {
+                        "approve": 1,
+                        "too_early": 2,
+                        "fail": 3,
+                        "nudge": 4,
+                        "hold": 5,
+                    },
+                    "buckets": {
+                        "approve": [],
+                        "too_early": [],
+                        "fail": [],
+                        "nudge": [],
+                    },
+                },
+                "leave": {
+                    "counts": {"recommended": 1, "kept": 2, "exempt": 3},
+                    "recommended": [],
+                },
+            },
+        }
+        overview = overview_from_payload(legacy)
+        self.assertEqual(overview.status_windows.active.d30, 0)
+        self.assertEqual(overview.unknown_characters, [])
+        self.assertEqual(overview.hygiene.trial.remove, 1)
+        self.assertEqual(overview.hygiene.trial.flagged, 7)
+        self.assertEqual(overview.hygiene.trial.passing, 3)
+        self.assertEqual(overview.hygiene.trial.failing, 3)
+        self.assertEqual(overview.hygiene.trial.evaluating, 9)
+        self.assertEqual(overview.hygiene.leave.add, 1)
+        self.assertEqual(overview.monthly[0].small_gang, 0)
+        trials = trials_from_payload(legacy, "current")
+        self.assertEqual(trials.bucket, "current")
+        passing = trials_from_payload(legacy, "passing")
+        self.assertEqual(passing.bucket, "passing")
+        self.assertEqual(len(passing.pilots), 0)
+        leave = leave_from_payload(legacy, "current")
+        self.assertEqual(leave.bucket, "current")
+        self.assertEqual(leave.counts.recommended, 1)
+        self.assertEqual(leave.counts.returning, 0)
+        self.assertEqual(leave.counts.inactive, 0)
 
     def test_attention_dark(self):
         response = self.client.get(
@@ -380,7 +572,7 @@ class AllianceHealthEndpointTestCase(TestCase):
 
     def test_leave_recommended(self):
         response = self.client.get(
-            "/api/alliance/health/leave",
+            "/api/alliance/health/leave?bucket=add",
             **self._auth(self.staff_token),
         )
         self.assertEqual(response.status_code, 200)
@@ -388,13 +580,25 @@ class AllianceHealthEndpointTestCase(TestCase):
         self.assertEqual(len(body["pilots"]), 1)
         self.assertEqual(body["pilots"][0]["story"], "Away")
         self.assertEqual(body["counts"]["recommended"], 1)
+        self.assertEqual(body["counts"]["add"], 1)
 
-    def test_leave_csv(self):
+    def test_leave_returning_bucket(self):
         response = self.client.get(
-            "/api/alliance/health/leave?format=csv",
+            "/api/alliance/health/leave?bucket=returning",
             **self._auth(self.staff_token),
         )
         self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["bucket"], "returning")
+        self.assertEqual(body["counts"]["returning"], 0)
+
+    def test_leave_csv(self):
+        response = self.client.get(
+            "/api/alliance/health/leave?bucket=add&format=csv",
+            **self._auth(self.staff_token),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/csv", response["Content-Type"])
         self.assertIn("quiet_active,on_leave,", response.content.decode())
 
     def test_503_without_snapshot(self):
@@ -404,3 +608,437 @@ class AllianceHealthEndpointTestCase(TestCase):
             **self._auth(self.staff_token),
         )
         self.assertEqual(response.status_code, 503)
+
+    def test_trials_default_current(self):
+        response = self.client.get(
+            "/api/alliance/health/trials",
+            **self._auth(self.staff_token),
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["bucket"], "current")
+        self.assertEqual(len(body["pilots"]), 1)
+
+    def test_onboarding_splits_trial_pilots(self):
+        def row(**overrides):
+            data = {
+                "user_id": 1,
+                "username": "pilot",
+                "pilot": "Pilot",
+                "corp": "Test Corp",
+                "corporation_id": 1,
+                "character_id": 100,
+                "alliance_days": 70,
+                "fleets": 5,
+                "kills": 0,
+                "kills_small": 0,
+                "voice_hours": 0.0,
+                "slice_30d": "quiet",
+                "days_since_activity": 1,
+                "path": "—",
+                "conf": "—",
+                "reason": "x",
+            }
+            data.update(overrides)
+            return data
+
+        payload = {
+            "computed_at": "now",
+            "hygiene": {
+                "trial": {
+                    "counts": {},
+                    "buckets": {
+                        "current": [
+                            row(
+                                user_id=1,
+                                username="new",
+                                pilot="New",
+                                alliance_days=2,
+                                fleets=0,
+                            ),
+                            row(
+                                user_id=2,
+                                username="warm",
+                                pilot="Warm",
+                                alliance_days=20,
+                                fleets=1,
+                            ),
+                            row(
+                                user_id=3,
+                                username="set",
+                                pilot="Set",
+                                alliance_days=70,
+                                fleets=5,
+                            ),
+                        ]
+                    },
+                }
+            },
+        }
+        first = onboarding_from_payload(payload, "first_week")
+        self.assertEqual(first.counts.first_week, 1)
+        self.assertEqual(first.counts.more_fleets, 1)
+        self.assertEqual(first.pilots[0].pilot, "New")
+        more = onboarding_from_payload(payload, "more_fleets")
+        self.assertEqual(more.pilots[0].pilot, "Warm")
+
+    def test_onboarding_endpoint(self):
+        response = self.client.get(
+            "/api/alliance/health/onboarding",
+            **self._auth(self.staff_token),
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["bucket"], "first_week")
+        self.assertIn("first_week", body["counts"])
+        self.assertIn("more_fleets", body["counts"])
+
+    def test_unknowns(self):
+        response = self.client.get(
+            "/api/alliance/health/unknowns",
+            **self._auth(self.staff_token),
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(len(body["characters"]), 1)
+        self.assertEqual(
+            body["characters"][0]["character_name"], "Ghost Pilot"
+        )
+
+    def _people_user(self):
+        Group.objects.get_or_create(name="People Team")
+        Group.objects.get_or_create(name="Trial")
+        Group.objects.get_or_create(name="On Leave")
+        people = User.objects.create_user(username="people_exec")
+        people.groups.add(Group.objects.get(name="People Team"))
+        token = jwt.encode(
+            {"user_id": people.id},
+            settings.SECRET_KEY,
+            algorithm="HS256",
+        )
+        return people, token
+
+    def test_people_can_view_without_django_perm(self):
+        token = self._people_user()[1]
+        response = self.client.get(
+            "/api/alliance/health/overview",
+            **self._auth(token),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["viewer"]["can_mutate"], True)
+        self.assertEqual(response.json()["viewer"]["alliance_wide"], True)
+        self.assertEqual(response.json()["viewer"]["can_leave_any"], False)
+        self.assertEqual(response.json()["viewer"]["ceo_corp_ids"], [])
+
+    def test_status_promote_as_people(self):
+        token = self._people_user()[1]
+        trial = User.objects.create_user(username="trial_ready")
+        UserCommunityStatus.objects.create(
+            user=trial, status=UserCommunityStatus.STATUS_TRIAL
+        )
+        response = self.client.post(
+            "/api/alliance/health/status",
+            data={"user_id": trial.id, "action": "promote"},
+            content_type="application/json",
+            **self._auth(token),
+        )
+        self.assertEqual(response.status_code, 200)
+        trial.community_status.refresh_from_db()
+        self.assertEqual(
+            trial.community_status.status, UserCommunityStatus.STATUS_ACTIVE
+        )
+
+    def test_status_leave_denied_for_people(self):
+        token = self._people_user()[1]
+        active = User.objects.create_user(username="active_quiet")
+        UserCommunityStatus.objects.create(
+            user=active, status=UserCommunityStatus.STATUS_ACTIVE
+        )
+        response = self.client.post(
+            "/api/alliance/health/status",
+            data={"user_id": active.id, "action": "leave"},
+            content_type="application/json",
+            **self._auth(token),
+        )
+        self.assertEqual(response.status_code, 403)
+        active.community_status.refresh_from_db()
+        self.assertEqual(
+            active.community_status.status,
+            UserCommunityStatus.STATUS_ACTIVE,
+        )
+
+    def test_status_leave_as_superuser(self):
+        Group.objects.get_or_create(name="On Leave")
+        admin = User.objects.create_user(
+            username="health_super", is_superuser=True
+        )
+        token = jwt.encode(
+            {"user_id": admin.id},
+            settings.SECRET_KEY,
+            algorithm="HS256",
+        )
+        active = User.objects.create_user(username="active_for_super")
+        UserCommunityStatus.objects.create(
+            user=active, status=UserCommunityStatus.STATUS_ACTIVE
+        )
+        response = self.client.post(
+            "/api/alliance/health/status",
+            data={"user_id": active.id, "action": "leave"},
+            content_type="application/json",
+            **self._auth(token),
+        )
+        self.assertEqual(response.status_code, 200)
+        active.community_status.refresh_from_db()
+        self.assertEqual(
+            active.community_status.status,
+            UserCommunityStatus.STATUS_ON_LEAVE,
+        )
+
+    def test_status_forbidden_for_staff_without_corp(self):
+        Group.objects.get_or_create(name="Trial")
+        Group.objects.get_or_create(name="On Leave")
+        trial = User.objects.create_user(username="trial_locked")
+        UserCommunityStatus.objects.create(
+            user=trial, status=UserCommunityStatus.STATUS_TRIAL
+        )
+        response = self.client.post(
+            "/api/alliance/health/status",
+            data={"user_id": trial.id, "action": "promote"},
+            content_type="application/json",
+            **self._auth(self.staff_token),
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_ceo_can_view_and_mutate_own_corp(self):
+        Group.objects.get_or_create(name="Trial")
+        Group.objects.get_or_create(name="On Leave")
+        alliance = EveAlliance.objects.create(
+            alliance_id=99011978,
+            name="Minmatar Fleet Alliance",
+            ticker="MFA",
+        )
+        corp = EveCorporation.objects.create(
+            corporation_id=1000001,
+            name="Test Corp",
+            ticker="TEST",
+            alliance=alliance,
+        )
+        other = EveCorporation.objects.create(
+            corporation_id=1000002,
+            name="Other Corp",
+            ticker="OTHR",
+            alliance=alliance,
+        )
+        ceo = User.objects.create_user(username="ceo_user")
+        ceo_char = EveCharacter.objects.create(
+            character_id=910001,
+            character_name="CEO Pilot",
+            corporation_id=1000001,
+            user=ceo,
+        )
+        EvePlayer.objects.create(
+            nickname="ceo_user",
+            user=ceo,
+            primary_character=ceo_char,
+        )
+        corp.ceo = ceo_char
+        corp.save()
+
+        member = User.objects.create_user(username="corp_trial")
+        member_char = EveCharacter.objects.create(
+            character_id=910002,
+            character_name="Corp Trial",
+            corporation_id=1000001,
+            user=member,
+        )
+        EvePlayer.objects.create(
+            nickname="corp_trial",
+            user=member,
+            primary_character=member_char,
+        )
+        UserCommunityStatus.objects.create(
+            user=member, status=UserCommunityStatus.STATUS_TRIAL
+        )
+
+        outsider = User.objects.create_user(username="other_trial")
+        outsider_char = EveCharacter.objects.create(
+            character_id=910003,
+            character_name="Other Trial",
+            corporation_id=1000002,
+            user=outsider,
+        )
+        EvePlayer.objects.create(
+            nickname="other_trial",
+            user=outsider,
+            primary_character=outsider_char,
+        )
+        UserCommunityStatus.objects.create(
+            user=outsider, status=UserCommunityStatus.STATUS_TRIAL
+        )
+        other.save()
+
+        token = jwt.encode(
+            {"user_id": ceo.id},
+            settings.SECRET_KEY,
+            algorithm="HS256",
+        )
+        overview = self.client.get(
+            "/api/alliance/health/overview",
+            **self._auth(token),
+        )
+        self.assertEqual(overview.status_code, 200)
+        viewer = overview.json()["viewer"]
+        self.assertEqual(viewer["alliance_wide"], False)
+        self.assertEqual(viewer["can_mutate"], True)
+        self.assertEqual(viewer["home_corp_id"], 1000001)
+        self.assertEqual(viewer["can_leave_any"], False)
+        self.assertEqual(viewer["ceo_corp_ids"], [1000001])
+
+        own = self.client.post(
+            "/api/alliance/health/status",
+            data={"user_id": member.id, "action": "promote"},
+            content_type="application/json",
+            **self._auth(token),
+        )
+        self.assertEqual(own.status_code, 200)
+
+        leave_own = self.client.post(
+            "/api/alliance/health/status",
+            data={"user_id": member.id, "action": "leave"},
+            content_type="application/json",
+            **self._auth(token),
+        )
+        self.assertEqual(leave_own.status_code, 200)
+
+        denied = self.client.post(
+            "/api/alliance/health/status",
+            data={"user_id": outsider.id, "action": "promote"},
+            content_type="application/json",
+            **self._auth(token),
+        )
+        self.assertEqual(denied.status_code, 403)
+
+        leave_other = self.client.post(
+            "/api/alliance/health/status",
+            data={"user_id": outsider.id, "action": "leave"},
+            content_type="application/json",
+            **self._auth(token),
+        )
+        self.assertEqual(leave_other.status_code, 403)
+
+    def test_director_cannot_put_on_leave(self):
+        Group.objects.get_or_create(name="On Leave")
+        alliance = EveAlliance.objects.create(
+            alliance_id=99011978,
+            name="Minmatar Fleet Alliance",
+            ticker="MFA",
+        )
+        corp = EveCorporation.objects.create(
+            corporation_id=1000101,
+            name="Director Corp",
+            ticker="DIRC",
+            alliance=alliance,
+        )
+        director = User.objects.create_user(username="dir_user")
+        director_char = EveCharacter.objects.create(
+            character_id=910101,
+            character_name="Director Pilot",
+            corporation_id=1000101,
+            user=director,
+        )
+        EvePlayer.objects.create(
+            nickname="dir_user",
+            user=director,
+            primary_character=director_char,
+        )
+        corp.directors.add(director_char)
+
+        member = User.objects.create_user(username="dir_member")
+        member_char = EveCharacter.objects.create(
+            character_id=910102,
+            character_name="Dir Member",
+            corporation_id=1000101,
+            user=member,
+        )
+        EvePlayer.objects.create(
+            nickname="dir_member",
+            user=member,
+            primary_character=member_char,
+        )
+        UserCommunityStatus.objects.create(
+            user=member, status=UserCommunityStatus.STATUS_ACTIVE
+        )
+        token = jwt.encode(
+            {"user_id": director.id},
+            settings.SECRET_KEY,
+            algorithm="HS256",
+        )
+        overview = self.client.get(
+            "/api/alliance/health/overview",
+            **self._auth(token),
+        )
+        self.assertEqual(overview.status_code, 200)
+        viewer = overview.json()["viewer"]
+        self.assertEqual(viewer["can_mutate"], True)
+        self.assertEqual(viewer["can_leave_any"], False)
+        self.assertEqual(viewer["ceo_corp_ids"], [])
+
+        denied = self.client.post(
+            "/api/alliance/health/status",
+            data={"user_id": member.id, "action": "leave"},
+            content_type="application/json",
+            **self._auth(token),
+        )
+        self.assertEqual(denied.status_code, 403)
+
+    def test_promote_rejects_non_trial(self):
+        token = self._people_user()[1]
+        active = User.objects.create_user(username="already_active")
+        UserCommunityStatus.objects.create(
+            user=active, status=UserCommunityStatus.STATUS_ACTIVE
+        )
+        response = self.client.post(
+            "/api/alliance/health/status",
+            data={"user_id": active.id, "action": "promote"},
+            content_type="application/json",
+            **self._auth(token),
+        )
+        self.assertEqual(response.status_code, 400)
+
+
+class AllianceHealthTimezoneTestCase(TestCase):
+    def test_trials_attach_prime_time_label(self):
+        user = User.objects.create_user(username="tz_pilot")
+        EvePlayer.objects.create(
+            user=user,
+            nickname="tz_pilot",
+            prime_time="EU_US",
+        )
+        payload = {
+            "computed_at": "now",
+            "hygiene": {
+                "trial": {
+                    "counts": {"current": 1},
+                    "buckets": {
+                        "current": [
+                            {
+                                "user_id": user.id,
+                                "username": "tz_pilot",
+                                "pilot": "Tz Pilot",
+                                "corp": "Test",
+                                "fleets": 1,
+                                "kills": 0,
+                                "kills_small": 0,
+                                "voice_hours": 0.0,
+                                "slice_30d": "quiet",
+                                "path": "—",
+                                "conf": "—",
+                                "reason": "x",
+                            }
+                        ]
+                    },
+                }
+            },
+        }
+        body = trials_from_payload(payload, "current")
+        self.assertEqual(body.pilots[0].timezone, "EU / US")

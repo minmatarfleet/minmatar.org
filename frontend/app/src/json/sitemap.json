@@ -253,9 +253,7 @@
             "retention"
         ],
         "permissions": {
-            "user": [
-                "alliance.view_alliancehealth"
-            ]
+            "auth": true
         }
     },
     {

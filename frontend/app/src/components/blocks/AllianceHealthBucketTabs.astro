@@ -1,0 +1,83 @@
+---
+import type { AllianceHealthUrlSection } from '@helpers/alliance_health_url'
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Button from '@components/blocks/Button.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+
+interface AllianceHealthBucketTab {
+    id: string
+    count: number
+    label: string
+    href: string
+}
+
+interface Props {
+    section_id: string
+    aria_label: string
+    bucket: string
+    url_section: AllianceHealthUrlSection
+    default_bucket: string
+    table_id: string
+    tabs: AllianceHealthBucketTab[]
+    [propName: string]: any
+}
+
+const {
+    section_id,
+    aria_label,
+    bucket,
+    url_section,
+    default_bucket,
+    table_id,
+    tabs,
+    ...attributes
+} = Astro.props
+delete attributes.class
+---
+
+<section
+    class:list={['[ alliance-health-bucket-tabs ]', Astro.props.class]}
+    id={section_id}
+    aria-label={aria_label}
+    x-data={`{ bucket: '${bucket}' }`}
+>
+    <Flexblock gap="var(--space-m)">
+        <FlexInline gap="var(--space-2xs)">
+            {tabs.map((tab) => (
+                <Button
+                    size="sm"
+                    class={tab.id === bucket ? 'is-active' : undefined}
+                    x-bind:class={`{ 'is-active': bucket === '${tab.id}' }`}
+                    x-bind:aria-pressed={`bucket === '${tab.id}'`}
+                    color="transparent"
+                    x-on:click={`bucket = '${tab.id}'; window.__allianceHealthUrl?.writeBucket('${url_section}', '${tab.id}', '${default_bucket}')`}
+                    hx-get={tab.href}
+                    hx-target={`#${table_id}`}
+                    hx-swap="innerHTML"
+                    hx-indicator=".loader"
+                >
+                    {tab.label} ({tab.count})
+                </Button>
+            ))}
+        </FlexInline>
+
+        <ComponentBlock padding_inline="var(--space-m)">
+            <div
+                id={table_id}
+                hx-on="htmx:afterSwap: htmx.process(this); if (typeof Alpine !== 'undefined') Alpine.initTree(this)"
+            >
+                <slot />
+            </div>
+        </ComponentBlock>
+    </Flexblock>
+</section>
+
+<style lang="scss">
+    .alliance-health-bucket-tabs :global(button.button.is-active) {
+        background-color: var(--fleet-yellow);
+        border-color: var(--fleet-yellow);
+        color: var(--background);
+    }
+</style>

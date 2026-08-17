@@ -1,0 +1,92 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { AllianceHealthTribesMonthly } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    tribes_monthly: AllianceHealthTribesMonthly
+    [propName: string]: any
+}
+
+const { tribes_monthly, ...attributes } = Astro.props
+delete attributes.class
+
+const chart_id = 'alliance-health-tribes-chart'
+const labels = (tribes_monthly?.months ?? []).map((m) => m.label)
+const token_names = [
+    '--alliance-blue',
+    '--fleet-yellow',
+    '--fleet-red',
+    '--green',
+    '--militia-purple',
+]
+const series = tribes_monthly?.series ?? []
+const datasets_js = series.map((entry, index) => {
+    const token = token_names[index % token_names.length]
+    return `{
+        label: ${JSON.stringify(entry.name)},
+        data: ${JSON.stringify(entry.counts)},
+        borderColor: root.getPropertyValue('${token}').trim(),
+        backgroundColor: root.getPropertyValue('${token}').trim(),
+        tension: 0,
+        pointRadius: 2,
+    }`
+}).join(',')
+---
+
+<section
+    class:list={['[ alliance-health-tribes ]', Astro.props.class]}
+    aria-label={t('alliance.health.tribes.aria')}
+    x-data={`{
+        chart: null,
+        build_chart() {
+            const canvas = document.getElementById('${chart_id}')
+            const ChartLib = window.Chart
+            if (!canvas || typeof ChartLib === 'undefined') return false
+            if (this.chart) {
+                this.chart.destroy()
+                this.chart = null
+            }
+            const root = getComputedStyle(document.documentElement)
+            const fg = root.getPropertyValue('--foreground').trim() || '#ccc'
+            ChartLib.defaults.color = fg
+            ChartLib.defaults.borderColor = 'rgb(255, 255, 255, 0.08)'
+            ChartLib.defaults.font.family = 'Montserrat Variable'
+            this.chart = new ChartLib(canvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: ${JSON.stringify(labels)},
+                    datasets: [${datasets_js}],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { legend: { position: 'bottom' } },
+                },
+            })
+            return true
+        },
+        init() {
+            if (this.build_chart()) return
+            let tries = 0
+            const timer = setInterval(() => {
+                tries += 1
+                if (this.build_chart() || tries > 40) clearInterval(timer)
+            }, 100)
+        }
+    }`}
+>
+    <div class="[ alliance-health-tribes__frame ]">
+        <canvas id={chart_id}></canvas>
+    </div>
+</section>
+
+<style lang="scss">
+    .alliance-health-tribes__frame {
+        position: relative;
+        height: min(28rem, 70vh);
+        width: 100%;
+    }
+</style>
