@@ -411,3 +411,10 @@ table {
         }
     }
 }
+
+.vertical-center {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
