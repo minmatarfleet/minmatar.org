@@ -351,3 +351,10 @@ label {
     top: var(--space-2xs);
     right: var(--space-2xs);
 }
+
+.vertical-center {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
