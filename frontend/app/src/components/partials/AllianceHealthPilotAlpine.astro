@@ -1,0 +1,251 @@
+---
+/**
+ * Alliance health Alpine factory must load in HeadScripts before AlpineCdn.
+ * A deferred module assign is too late: Alpine.start() inits x-data first,
+ * orderLabel is missing, and x-text wipes the sort-chip labels.
+ */
+---
+
+<script>
+    import {
+        compare_health_sort_values,
+        csv_from_matrix,
+        next_health_order_state,
+    } from '@helpers/alliance_health_pilot_list'
+    import {
+        alliance_health_href,
+        alliance_health_section_hash,
+        patch_from_alliance_health_params,
+        write_alliance_health_list_params,
+        type AllianceHealthUrlListDefaults,
+        type AllianceHealthUrlListPatch,
+        type AllianceHealthUrlSection,
+    } from '@helpers/alliance_health_url'
+
+    type AllianceHealthUrlApi = {
+        peek: (
+            section: AllianceHealthUrlSection,
+        ) => AllianceHealthUrlListPatch
+        write: (
+            section: AllianceHealthUrlSection,
+            patch: AllianceHealthUrlListPatch,
+            defaults?: AllianceHealthUrlListDefaults,
+            hash?: boolean,
+        ) => void
+        writeBucket: (
+            section: AllianceHealthUrlSection,
+            bucket: string,
+            default_bucket: string,
+        ) => void
+    }
+
+    declare global {
+        interface Window {
+            __allianceHealthCompare?: typeof compare_health_sort_values
+            __allianceHealthCsv?: typeof csv_from_matrix
+            __allianceHealthNextOrder?: typeof next_health_order_state
+            __allianceHealthUrl?: AllianceHealthUrlApi
+            allianceHealthList?: (config: Record<string, unknown>) => Record<string, unknown>
+        }
+    }
+
+    const replace_health_url = (
+        section: AllianceHealthUrlSection,
+        patch: AllianceHealthUrlListPatch,
+        defaults: AllianceHealthUrlListDefaults = {},
+        hash = false,
+    ) => {
+        const url = new URL(window.location.href)
+        write_alliance_health_list_params(url.searchParams, section, patch, defaults)
+        if (hash) url.hash = alliance_health_section_hash(section)
+        const next = alliance_health_href(url.pathname, url.searchParams, url.hash)
+        const prev = `${window.location.pathname}${window.location.search}${window.location.hash}`
+        if (next !== prev) history.replaceState(null, '', next)
+    }
+
+    window.__allianceHealthCompare = compare_health_sort_values
+    window.__allianceHealthCsv = csv_from_matrix
+    window.__allianceHealthNextOrder = next_health_order_state
+    window.__allianceHealthUrl = {
+        peek(section) {
+            return patch_from_alliance_health_params(
+                new URLSearchParams(window.location.search),
+                section,
+            )
+        },
+        write(section, patch, defaults = {}, hash = false) {
+            replace_health_url(section, patch, defaults, hash)
+        },
+        writeBucket(section, bucket, default_bucket) {
+            replace_health_url(section, { bucket }, { bucket: default_bucket }, true)
+        },
+    }
+</script>
+
+<script is:inline>
+    window.allianceHealthList = function allianceHealthList(config) {
+        const row_matches = function (el, q, corp) {
+            const hay = (el.getAttribute('data-search') || '').toLowerCase()
+            const row_corp = el.getAttribute('data-corp') || ''
+            return (corp === 'all' || row_corp === corp) && (!q || hay.includes(q))
+        }
+        const parse_sorts = function (el) {
+            try {
+                return JSON.parse(el.getAttribute('data-sorts') || '{}')
+            } catch (e) {
+                return {}
+            }
+        }
+        const parse_csv = function (el) {
+            try {
+                return JSON.parse(el.getAttribute('data-csv') || '[]')
+            } catch (e) {
+                return []
+            }
+        }
+        return {
+            ...config,
+            init() {
+                this.apply_url()
+                this.$nextTick(() => this.refresh())
+                this.$watch('search', () => { this.page = 1; this.refresh(); this.sync_url() })
+                this.$watch('corp', () => { this.page = 1; this.refresh(); this.sync_url() })
+                this.$watch('page', () => { this.refresh(); this.sync_url() })
+                if (this.sort) {
+                    this.$watch('order_by', () => { this.page = 1; this.refresh(); this.sync_url() })
+                    this.$watch('order_dir', () => { this.page = 1; this.refresh(); this.sync_url() })
+                }
+            },
+            apply_url() {
+                if (!this.url_section) return
+                const from_url = window.__allianceHealthUrl?.peek(this.url_section)
+                if (!from_url) return
+                if (from_url.corp) this.corp = from_url.corp
+                if (from_url.q !== undefined) this.search = from_url.q
+                if (from_url.page) this.page = from_url.page
+                if (this.sort && from_url.by && this.order_kinds?.[from_url.by]) {
+                    this.order_by = from_url.by
+                }
+                if (this.sort && from_url.dir) this.order_dir = from_url.dir
+            },
+            sync_url() {
+                if (!this.url_section) return
+                const patch = {
+                    corp: this.corp,
+                    q: this.search,
+                    page: this.page,
+                }
+                if (this.sort) {
+                    patch.by = this.order_by
+                    patch.dir = this.order_dir
+                }
+                window.__allianceHealthUrl?.write(this.url_section, patch, this.url_defaults)
+            },
+            setOrderBy(id) {
+                const next = window.__allianceHealthNextOrder?.(
+                    this.order_by,
+                    this.order_dir,
+                    id,
+                    this.order_kinds || {},
+                )
+                if (next) {
+                    this.order_by = next.order_by
+                    this.order_dir = next.order_dir
+                    return
+                }
+                if (this.order_by === id) {
+                    this.order_dir = this.order_dir === 'asc' ? 'desc' : 'asc'
+                } else {
+                    this.order_by = id
+                    this.order_dir = this.order_kinds?.[id] === 'text' ? 'asc' : 'desc'
+                }
+            },
+            orderLabel(id, label) {
+                if (this.order_by !== id) return label
+                return label + (this.order_dir === 'asc' ? ' ↑' : ' ↓')
+            },
+            matched_rows() {
+                const body = this.$refs.body
+                if (!body) return []
+                const q = this.search.trim().toLowerCase()
+                return [...body.querySelectorAll(this.row_selector)].filter((el) =>
+                    row_matches(el, q, this.corp),
+                )
+            },
+            refresh() {
+                const body = this.$refs.body
+                if (!body) return
+                const cards = [...body.querySelectorAll(this.row_selector)]
+                let matched = this.matched_rows()
+                if (this.sort) {
+                    const compare = window.__allianceHealthCompare
+                    const kind = this.order_kinds?.[this.order_by] || 'text'
+                    matched = [...matched].sort((a, b) => {
+                        const av = String(parse_sorts(a)[this.order_by] ?? '')
+                        const bv = String(parse_sorts(b)[this.order_by] ?? '')
+                        if (compare) return compare(av, bv, kind, this.order_dir)
+                        const dir = this.order_dir === 'asc' ? 1 : -1
+                        return av.localeCompare(bv, undefined, { sensitivity: 'base' }) * dir
+                    })
+                }
+                const start = (this.page - 1) * this.page_size
+                const end = start + this.page_size
+                if (this.sort) {
+                    const visible = new Set(matched.slice(start, end))
+                    cards.forEach((el, index) => {
+                        const rank = matched.indexOf(el)
+                        el.style.order = rank >= 0 ? String(rank) : String(index + matched.length)
+                        el.hidden = !visible.has(el)
+                        el.classList.toggle('is-hidden', !visible.has(el))
+                    })
+                } else {
+                    let seen = 0
+                    cards.forEach((el) => {
+                        const match = matched.includes(el)
+                        let show = false
+                        if (match) {
+                            if (seen >= start && seen < end) show = true
+                            seen += 1
+                        }
+                        el.hidden = !show
+                    })
+                }
+                this.match_count = matched.length
+                this.total_pages = Math.max(1, Math.ceil(matched.length / this.page_size))
+                if (this.page > this.total_pages) this.page = this.total_pages
+            },
+            prev() { if (this.page > 1) this.page -= 1 },
+            next() { if (this.page < this.total_pages) this.page += 1 },
+            download_csv() {
+                const rows = this.matched_rows().map((el) =>
+                    parse_csv(el).map((cell) => String(cell ?? '')),
+                )
+                const csv = (window.__allianceHealthCsv || ((matrix) =>
+                    matrix.map((r) => r.join(',')).join('\n') + '\n'
+                ))([this.csv_headers, ...rows])
+                const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' })
+                const url = URL.createObjectURL(blob)
+                const link = document.createElement('a')
+                const corp_part = this.corp === 'all'
+                    ? ''
+                    : '-' + this.corp.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+                link.href = url
+                link.download = this.csv_filename.replace('.csv', '') + corp_part + '.csv'
+                link.click()
+                URL.revokeObjectURL(url)
+            },
+            confirm_row_action(el) {
+                show_confirm_dialog({
+                    title: el.dataset.confirmTitle,
+                    content: el.dataset.confirmContent,
+                    hx: {
+                        method: 'post',
+                        url: el.dataset.postUrl,
+                        target: el.dataset.target,
+                        swap: 'innerHTML transition:true',
+                    }
+                })
+            },
+        }
+    }
+</script>

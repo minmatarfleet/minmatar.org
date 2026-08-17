@@ -1,57 +1,108 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { AllianceHealthAttentionPilot } from '@dtypes/api.minmatar.org'
-import type { CampaignTableRow } from '@/data/campaigns/etherium-reach'
+import type {
+    AllianceHealthOrderOption,
+    AllianceHealthPilotListRow,
+} from '@helpers/alliance_health_pilot_list'
 
-import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
-import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
+import { alliance_health_table_params, can_leave_alliance_health_pilot } from '@helpers/api.minmatar.org/alliance_health'
+import { query_string } from '@helpers/string'
+import AllianceHealthPilotList from '@components/blocks/AllianceHealthPilotList.astro'
 
 interface Props {
     pilots: AllianceHealthAttentionPilot[]
+    initial_corp?: string
+    can_leave_any?: boolean
+    ceo_corp_ids?: number[]
+    bucket?: string
+    partial_url?: string
     [propName: string]: any
 }
 
-const { pilots, ...attributes } = Astro.props
+const {
+    pilots,
+    initial_corp = 'all',
+    can_leave_any = false,
+    ceo_corp_ids = [],
+    bucket = 'fading',
+    partial_url = translatePath('/partials/alliance_health_attention_component'),
+    ...attributes
+} = Astro.props
 delete attributes.class
 
-const headers = [
-    t('alliance.health.col.pilot'),
-    t('alliance.health.col.corp'),
-    t('alliance.health.col.status'),
-    t('alliance.health.col.days_quiet'),
-    t('alliance.health.col.active_months'),
+const extra_query = alliance_health_table_params({
+    bucket,
+    corp: initial_corp,
+    can_leave_any,
+    ceo_corp_ids,
+})
+
+const can_act = (pilot: AllianceHealthAttentionPilot) =>
+    can_leave_alliance_health_pilot(
+        pilot.corporation_id,
+        can_leave_any,
+        ceo_corp_ids,
+    ) && pilot.status !== 'on_leave'
+
+const quiet_sort = (value: number | string) => {
+    const n = Number(value)
+    return Number.isNaN(n) ? '' : n
+}
+
+const order_by_options: AllianceHealthOrderOption[] = [
+    { id: 'quiet', label: t('alliance.health.col.days_quiet'), kind: 'number' },
+    { id: 'months', label: t('alliance.health.col.active_months'), kind: 'number' },
+    { id: 'tz', label: t('alliance.health.col.tz'), kind: 'text' },
 ]
 
-const rows: CampaignTableRow[] = pilots.map((pilot) => ({
-    cells: [
-        pilot.pilot,
-        pilot.corp,
-        pilot.status,
-        String(pilot.days_quiet),
-        String(pilot.active_months),
+const rows: AllianceHealthPilotListRow[] = pilots.map((pilot) => ({
+    name: pilot.pilot,
+    corp: pilot.corp,
+    character_id: pilot.character_id,
+    corporation_id: pilot.corporation_id,
+    search_text: `${pilot.pilot} ${pilot.corp} ${pilot.status} ${pilot.timezone ?? ''}`.toLowerCase(),
+    timezone: pilot.timezone,
+    metrics: [
+        {
+            id: 'quiet',
+            label: t('alliance.health.col.days_quiet'),
+            value: String(pilot.days_quiet),
+            sort: quiet_sort(pilot.days_quiet),
+            scale: 'lower',
+        },
+        {
+            id: 'months',
+            label: t('alliance.health.col.active_months'),
+            value: String(pilot.active_months),
+            sort: pilot.active_months,
+        },
     ],
-    cell_icons: [
-        pilot.character_id ? get_player_icon(pilot.character_id, 64) : undefined,
-        pilot.corporation_id
-            ? get_corporation_logo(pilot.corporation_id, 64)
-            : undefined,
-    ],
+    action: can_act(pilot)
+        ? {
+              label: t('alliance.health.put_on_leave'),
+              confirm_title: t('alliance.health.leave_confirm_title'),
+              confirm_content: `${t('alliance.health.leave_confirm')} ${pilot.pilot}`,
+              post_url: `${partial_url}?${query_string({
+                  user_id: String(pilot.user_id),
+                  action: 'leave',
+              })}&${extra_query}`,
+              target: '#alliance-health-attention-table',
+          }
+        : undefined,
 }))
 ---
 
 <div class:list={['[ alliance-health-pilots ]', Astro.props.class]} {...attributes}>
-    <CampaignDataTable headers={headers} rows={rows} success_marker={false} />
-    {pilots.length === 0 && (
-        <p class="[ alliance-health-pilots__empty ]">{t('alliance.health.attention.empty')}</p>
-    )}
+    <AllianceHealthPilotList
+        rows={rows}
+        empty_label={t('alliance.health.attention.empty')}
+        order_by_options={order_by_options}
+        default_order_by="quiet"
+        initial_corp={initial_corp}
+        csv_filename={`health-at-risk-${bucket}.csv`}
+        url_section="attention"
+    />
 </div>
-
-<style lang="scss">
-    .alliance-health-pilots__empty {
-        margin: var(--space-s) 0 0;
-        color: var(--foreground);
-        font-size: var(--step--1);
-    }
-</style>

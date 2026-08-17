@@ -1,0 +1,162 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { CampaignTableRow } from '@/data/campaigns/etherium-reach'
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+import Button from '@components/blocks/Button.astro'
+import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
+import {
+    read_alliance_health_list_state,
+    type AllianceHealthUrlSection,
+} from '@helpers/alliance_health_url'
+
+interface Props {
+    headers: string[]
+    rows: CampaignTableRow[]
+    empty_label: string
+    enable_corp_filter?: boolean
+    initial_corp?: string
+    page_size?: number
+    csv_filename?: string
+    url_section?: AllianceHealthUrlSection
+    [propName: string]: any
+}
+
+const {
+    headers,
+    rows,
+    empty_label,
+    enable_corp_filter = true,
+    initial_corp = 'all',
+    page_size = 5,
+    csv_filename = 'alliance-health.csv',
+    url_section,
+    ...attributes
+} = Astro.props
+delete attributes.class
+
+const corps = Array.from(
+    new Set(rows.map((row) => row.corp).filter((name): name is string => !!name && name !== '—')),
+).sort((a, b) => a.localeCompare(b))
+
+const initial = corps.includes(initial_corp) ? initial_corp : 'all'
+const page_query =
+    url_section && !Astro.url.pathname.includes('/partials/')
+        ? read_alliance_health_list_state(Astro.url.searchParams, url_section, {
+            corp: initial,
+            page: 1,
+        })
+        : null
+const list_corp =
+    page_query?.corp && (page_query.corp === 'all' || corps.includes(page_query.corp))
+        ? page_query.corp
+        : initial
+const initial_search = page_query?.q ?? ''
+const initial_page = page_query?.page ?? 1
+---
+
+<div
+    class:list={['[ alliance-health-paged-table ]', Astro.props.class]}
+    x-data={`allianceHealthList(${JSON.stringify({
+        search: initial_search,
+        corp: list_corp,
+        page: initial_page,
+        page_size,
+        csv_headers: headers,
+        csv_filename,
+        match_count: rows.length,
+        total_pages: 1,
+        url_section: url_section ?? '',
+        url_defaults: { corp: 'all', page: 1 },
+        row_selector: 'tr[data-search]',
+        sort: false,
+    })})`}
+>
+    <Flexblock gap="var(--space-s)">
+        <FlexInline
+            gap="var(--space-xs)"
+            justification="space-between"
+            class="[ alliance-health-paged-table__tools ]"
+        >
+            {enable_corp_filter && (
+                <Select size="sm" width="18rem" x-model="corp">
+                    <option value="all" selected={list_corp === 'all'}>
+                        {t('alliance.health.filter.all_corps')}
+                    </option>
+                    {corps.map((name) => (
+                        <option value={name} selected={name === list_corp}>{name}</option>
+                    ))}
+                </Select>
+            )}
+            <Input
+                type="search"
+                size="sm"
+                width="22rem"
+                placeholder={t('alliance.health.search_placeholder')}
+                x-model="search"
+                value={initial_search}
+                autocomplete="off"
+            />
+            <Button
+                size="sm"
+                color="transparent"
+                type="button"
+                x-on:click="download_csv()"
+                x-bind:disabled="match_count === 0"
+                data-tippy-content={t('alliance.health.download_csv_tip')}
+            >
+                {t('alliance.health.download_csv')}
+            </Button>
+        </FlexInline>
+
+        <div x-ref="body">
+            <CampaignDataTable headers={headers} rows={rows} success_marker={false} />
+        </div>
+
+        {rows.length === 0 ? (
+            <p class="[ alliance-health-paged-table__empty ]">{empty_label}</p>
+        ) : (
+            <FlexInline gap="var(--space-xs)" class="[ alliance-health-paged-table__pager ]">
+                <small>
+                    {t('alliance.health.showing')}
+                    <span x-text="match_count"></span>
+                </small>
+                <Button size="sm" color="transparent" x-on:click="prev()" x-bind:disabled="page <= 1">
+                    {t('alliance.health.prev')}
+                </Button>
+                <small>
+                    {t('alliance.health.page')}
+                    <span x-text="page"></span>
+                    /
+                    <span x-text="total_pages"></span>
+                </small>
+                <Button size="sm" color="transparent" x-on:click="next()" x-bind:disabled="page >= total_pages">
+                    {t('alliance.health.next')}
+                </Button>
+            </FlexInline>
+        )}
+    </Flexblock>
+</div>
+
+<style lang="scss">
+    .alliance-health-paged-table__tools {
+        align-items: center;
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .alliance-health-paged-table__empty,
+    .alliance-health-paged-table__pager {
+        color: var(--faded);
+        font-size: var(--step--1);
+    }
+
+    .alliance-health-paged-table__pager {
+        justify-content: flex-end;
+    }
+</style>

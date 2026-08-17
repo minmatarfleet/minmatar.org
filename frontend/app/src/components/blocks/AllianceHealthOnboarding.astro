@@ -1,0 +1,64 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type {
+    AllianceHealthOnboardingBucket,
+    AllianceHealthOnboardingCounts,
+} from '@dtypes/api.minmatar.org'
+import { alliance_health_table_params } from '@helpers/api.minmatar.org/alliance_health'
+import { ALLIANCE_HEALTH_DEFAULT_BUCKETS } from '@helpers/alliance_health_url'
+
+import AllianceHealthBucketTabs from '@components/blocks/AllianceHealthBucketTabs.astro'
+
+interface Props {
+    counts: AllianceHealthOnboardingCounts
+    bucket: AllianceHealthOnboardingBucket
+    partial_url: string
+    initial_corp?: string
+    [propName: string]: any
+}
+
+const {
+    counts,
+    bucket,
+    partial_url,
+    initial_corp = 'all',
+    ...attributes
+} = Astro.props
+delete attributes.class
+
+const default_bucket = ALLIANCE_HEALTH_DEFAULT_BUCKETS.onboarding
+const tabs = [
+    {
+        id: 'first_week',
+        count: counts.first_week,
+        label: t('alliance.health.onboarding.first_week'),
+    },
+    {
+        id: 'more_fleets',
+        count: counts.more_fleets,
+        label: t('alliance.health.onboarding.more_fleets'),
+    },
+].map((tab) => ({
+    ...tab,
+    href: `${partial_url}?${alliance_health_table_params({
+        bucket: tab.id,
+        corp: initial_corp,
+    })}`,
+}))
+---
+
+<AllianceHealthBucketTabs
+    class={Astro.props.class}
+    {...attributes}
+    section_id="health-onboarding"
+    aria_label={t('alliance.health.onboarding.aria')}
+    bucket={bucket}
+    url_section="onboarding"
+    default_bucket={default_bucket}
+    table_id="alliance-health-onboarding-table"
+    tabs={tabs}
+>
+    <slot />
+</AllianceHealthBucketTabs>

@@ -2,6 +2,7 @@
 import TippyBootstrap from '@components/partials/TippyBootstrap.astro'
 import AlpineCdn from '@components/partials/AlpineCdn.astro'
 import LearningAlpine from '@components/partials/LearningAlpine.astro'
+import AllianceHealthPilotAlpine from '@components/partials/AllianceHealthPilotAlpine.astro'
 ---
 
 <script is:inline src="/js/countdown.js"></script>
@@ -37,8 +38,9 @@ import LearningAlpine from '@components/partials/LearningAlpine.astro'
 <script defer src="https://cdn.jsdelivr.net/npm/tippy.js@6.3.7/dist/tippy.umd.min.js"></script>
 <TippyBootstrap />
 
-<!-- Learning factories before Alpine CDN so first Alpine.start() can resolve them -->
+<!-- Learning / alliance-health factories before Alpine CDN so first Alpine.start() can resolve them -->
 <LearningAlpine />
+<AllianceHealthPilotAlpine />
 
 <AlpineCdn />
 

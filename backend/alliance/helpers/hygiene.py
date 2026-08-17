@@ -10,6 +10,8 @@ from typing import Any, Literal, Optional
 
 MIN_APPROVE_DAYS = 60
 RECENT_DAYS = 30
+FIRST_WEEK_DAYS = 7
+FLEET_INVITE_GOAL = 3
 
 TrialDecision = Literal[
     "approve",
@@ -20,6 +22,7 @@ TrialDecision = Literal[
     "wrong_affiliation",
 ]
 LeaveDecision = Literal["recommend", "keep", "exempt"]
+OnboardingNeed = Literal["first_week", "more_fleets"]
 Conf = Literal["high", "medium", "low", "—"]
 
 
@@ -31,6 +34,24 @@ def gang_bucket(size: int) -> str:
     if size <= 39:
         return "large"
     return "blob"
+
+
+def classify_onboarding_need(
+    *,
+    fleets: int,
+    alliance_days: Optional[int],
+) -> Optional[OnboardingNeed]:
+    """Who still needs a fleet invite.
+
+    First week: in alliance ≤7d with zero fleets.
+    More fleets: under 3 fleets and not in that first-week bucket.
+    """
+    if fleets >= FLEET_INVITE_GOAL:
+        return None
+    days = 999 if alliance_days is None else alliance_days
+    if days <= FIRST_WEEK_DAYS and fleets < 1:
+        return "first_week"
+    return "more_fleets"
 
 
 def slice_30d(fleets_30d: int, kills_30d: int, voice_hours_30d: float) -> str:
@@ -472,6 +493,7 @@ def build_hygiene_payload(
                 "too_early": trial_buckets["too_early"],
                 "fail": trial_buckets["fail"],
                 "nudge": trial_buckets["nudge"],
+                "hold": trial_buckets["hold"],
             },
         },
         "leave": {
@@ -503,6 +525,7 @@ def _public_trial_row(row: dict[str, Any]) -> dict[str, Any]:
         "path": row["path"],
         "conf": row["conf"],
         "reason": row["reason"],
+        "decision": row.get("decision"),
     }
 
 
@@ -523,10 +546,45 @@ def _public_leave_row(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _leave_member_row(
+    *,
+    uid: int,
+    usernames: dict[int, str],
+    display_name: dict[int, str],
+    primary_corp: dict[int, int],
+    primary_character: dict[int, int],
+    corp_by_id: dict[int, dict[str, Any]],
+    fleets: int,
+    kills: int,
+    voice_hours: float,
+    story: str,
+    conf: str,
+    reason: str,
+    corp_display_name,
+) -> dict[str, Any]:
+    corp_id = primary_corp.get(uid)
+    corp_meta = corp_by_id.get(corp_id) if corp_id else None
+    return {
+        "user_id": uid,
+        "username": usernames.get(uid, str(uid)),
+        "pilot": display_name.get(uid, usernames.get(uid, str(uid))),
+        "corp": corp_display_name(corp_meta) if corp_meta else "—",
+        "corporation_id": corp_id,
+        "character_id": primary_character.get(uid),
+        "fleets": fleets,
+        "kills": kills,
+        "voice_hours": voice_hours,
+        "story": story,
+        "conf": conf,
+        "reason": reason,
+    }
+
+
 def assemble_hygiene(
     *,
     trial_user_ids: set[int],
     active_user_ids: set[int],
+    on_leave_user_ids: set[int],
     usernames: dict[int, str],
     display_name: dict[int, str],
     primary_corp: dict[int, int],
@@ -633,18 +691,178 @@ def assemble_hygiene(
         )
 
     raw = build_hygiene_payload(trial_rows, leave_rows)
+
+    trial_add_rows: list[dict[str, Any]] = []
+    for uid in active_user_ids:
+        meta = affiliation_meta.get(
+            uid, {"affiliation": "Alliance", "requires_trial": True}
+        )
+        if not bool(meta.get("requires_trial", True)):
+            continue
+        tenure = alliance_days.get(uid)
+        if tenure is None or tenure >= MIN_APPROVE_DAYS:
+            continue
+        fleets = fleets_90d.get(uid, 0)
+        kills = kills_90d.get(uid, 0)
+        kills_small = kills_small_90d.get(uid, 0)
+        voice = voice_hours_90d.get(uid, 0.0)
+        f30 = fleets_30d.get(uid, 0)
+        k30 = kills_30d.get(uid, 0)
+        v30 = voice_hours_30d.get(uid, 0.0)
+        corp_id = primary_corp.get(uid)
+        corp_meta = corp_by_id.get(corp_id) if corp_id else None
+        trial_add_rows.append(
+            {
+                "user_id": uid,
+                "username": usernames.get(uid, str(uid)),
+                "pilot": display_name.get(uid, usernames.get(uid, str(uid))),
+                "corp": corp_display_name(corp_meta) if corp_meta else "—",
+                "corporation_id": corp_id,
+                "character_id": primary_character.get(uid),
+                "alliance_days": tenure,
+                "fleets": fleets,
+                "kills": kills,
+                "kills_small": kills_small,
+                "voice_hours": voice,
+                "slice_30d": slice_30d(f30, k30, v30),
+                "days_since_activity": days_since_activity.get(uid),
+                "path": "—",
+                "conf": "medium",
+                "reason": (
+                    f"Active with {tenure}d in alliance; affiliation "
+                    "requires trial."
+                )[:255],
+            }
+        )
+
+    leave_current: list[dict[str, Any]] = []
+    leave_restore: list[dict[str, Any]] = []
+    leave_flagged: list[dict[str, Any]] = []
+    for uid in on_leave_user_ids:
+        fleets = fleets_90d.get(uid, 0)
+        kills = kills_90d.get(uid, 0)
+        voice = voice_hours_90d.get(uid, 0.0)
+        f30 = fleets_30d.get(uid, 0)
+        leave_current.append(
+            _leave_member_row(
+                uid=uid,
+                usernames=usernames,
+                display_name=display_name,
+                primary_corp=primary_corp,
+                primary_character=primary_character,
+                corp_by_id=corp_by_id,
+                fleets=fleets,
+                kills=kills,
+                voice_hours=voice,
+                story="Leave",
+                conf="—",
+                reason="Currently on leave.",
+                corp_display_name=corp_display_name,
+            )
+        )
+        if f30 >= 1:
+            leave_flagged.append(
+                _leave_member_row(
+                    uid=uid,
+                    usernames=usernames,
+                    display_name=display_name,
+                    primary_corp=primary_corp,
+                    primary_character=primary_character,
+                    corp_by_id=corp_by_id,
+                    fleets=fleets,
+                    kills=kills,
+                    voice_hours=voice,
+                    story="Flying",
+                    conf="high",
+                    reason=(
+                        f"On leave but in fleets ({f30} in 30d, "
+                        f"{fleets} in 90d)."
+                    )[:255],
+                    corp_display_name=corp_display_name,
+                )
+            )
+        if fleets >= 3 or kills >= 5 or voice >= 5 or f30 >= 1:
+            leave_restore.append(
+                _leave_member_row(
+                    uid=uid,
+                    usernames=usernames,
+                    display_name=display_name,
+                    primary_corp=primary_corp,
+                    primary_character=primary_character,
+                    corp_by_id=corp_by_id,
+                    fleets=fleets,
+                    kills=kills,
+                    voice_hours=voice,
+                    story="Restore",
+                    conf="medium",
+                    reason=(
+                        f"On leave with participation — {fleets} fleets, "
+                        f"{kills} kills, {voice}h voice (90d)."
+                    )[:255],
+                    corp_display_name=corp_display_name,
+                )
+            )
+
+    trial_public = {
+        key: [_public_trial_row(r) for r in rows]
+        for key, rows in raw["trial"]["buckets"].items()
+    }
+    trial_current = [_public_trial_row(r) for r in sort_by_conf(trial_rows)]
+    trial_add = [_public_trial_row(r) for r in sort_by_conf(trial_add_rows)]
+    trial_flagged = trial_public.get("fail", []) + trial_public.get(
+        "nudge", []
+    )
+    trial_remove = trial_public.get("approve", [])
+    trial_passing = trial_public.get("approve", []) + trial_public.get(
+        "too_early", []
+    )
+    trial_failing = trial_public.get("fail", [])
+    trial_evaluating = trial_public.get("nudge", []) + trial_public.get(
+        "hold", []
+    )
+    trial_public["current"] = trial_current
+    trial_public["add"] = trial_add
+    trial_public["remove"] = trial_remove
+    trial_public["flagged"] = trial_flagged
+    trial_public["passing"] = trial_passing
+    trial_public["failing"] = trial_failing
+    trial_public["evaluating"] = trial_evaluating
+
+    trial_counts = dict(raw["trial"]["counts"])
+    trial_counts["current"] = len(trial_current)
+    trial_counts["add"] = len(trial_add)
+    trial_counts["remove"] = len(trial_remove)
+    trial_counts["flagged"] = len(trial_flagged)
+    trial_counts["passing"] = len(trial_passing)
+    trial_counts["failing"] = len(trial_failing)
+    trial_counts["evaluating"] = len(trial_evaluating)
+
+    leave_counts = dict(raw["leave"]["counts"])
+    leave_counts["current"] = len(leave_current)
+    leave_counts["add"] = leave_counts.get("recommended", 0)
+    leave_counts["remove"] = len(leave_restore)
+    leave_counts["flagged"] = len(leave_flagged)
+    restore_ids = {row["user_id"] for row in leave_restore}
+    leave_inactive = [
+        row for row in leave_current if row["user_id"] not in restore_ids
+    ]
+    leave_counts["inactive"] = len(leave_inactive)
+    leave_counts["returning"] = len(leave_restore)
+
     return {
         "trial": {
-            "counts": raw["trial"]["counts"],
-            "buckets": {
-                key: [_public_trial_row(r) for r in rows]
-                for key, rows in raw["trial"]["buckets"].items()
-            },
+            "counts": trial_counts,
+            "buckets": trial_public,
         },
         "leave": {
-            "counts": raw["leave"]["counts"],
+            "counts": leave_counts,
             "recommended": [
                 _public_leave_row(r) for r in raw["leave"]["recommended"]
             ],
+            "current": [_public_leave_row(r) for r in leave_current],
+            "restore": [_public_leave_row(r) for r in leave_restore],
+            "inactive": [_public_leave_row(r) for r in leave_inactive],
+            "returning": [_public_leave_row(r) for r in leave_restore],
+            "flagged": [_public_leave_row(r) for r in leave_flagged],
         },
     }

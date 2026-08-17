@@ -1,73 +1,156 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { AllianceHealthTrialPilot } from '@dtypes/api.minmatar.org'
-import type { CampaignTableRow } from '@/data/campaigns/etherium-reach'
+import type {
+    AllianceHealthOrderOption,
+    AllianceHealthPilotListRow,
+} from '@helpers/alliance_health_pilot_list'
+import { health_confidence_label } from '@helpers/alliance_health_pilot_list'
 
-import { get_corporation_logo, get_player_icon } from '@helpers/eve_image_server'
-import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
+import { alliance_health_table_params } from '@helpers/api.minmatar.org/alliance_health'
+import { query_string } from '@helpers/string'
+import AllianceHealthPilotList from '@components/blocks/AllianceHealthPilotList.astro'
 
 interface Props {
     pilots: AllianceHealthTrialPilot[]
+    can_promote?: boolean
+    officer_corp_ids?: number[]
+    alliance_wide?: boolean
+    initial_corp?: string
+    bucket?: string
+    partial_url?: string
     [propName: string]: any
 }
 
-const { pilots, ...attributes } = Astro.props
+const {
+    pilots,
+    can_promote = false,
+    officer_corp_ids = [],
+    alliance_wide = false,
+    initial_corp = 'all',
+    bucket = 'current',
+    partial_url = translatePath('/partials/alliance_health_trials_component'),
+    ...attributes
+} = Astro.props
 delete attributes.class
 
-const headers = [
-    t('alliance.health.col.pilot'),
-    t('alliance.health.col.corp'),
-    t('alliance.health.col.in_alliance'),
-    t('alliance.health.col.fleets'),
-    t('alliance.health.col.kills'),
-    t('alliance.health.col.small'),
-    t('alliance.health.col.voice'),
-    t('alliance.health.col.slice_30d'),
-    t('alliance.health.col.last'),
-    t('alliance.health.col.path'),
-    t('alliance.health.col.conf'),
-    t('alliance.health.col.reason'),
+const extra_query = alliance_health_table_params({
+    bucket,
+    corp: initial_corp,
+    can_mutate: can_promote,
+    alliance_wide,
+    officer_corp_ids,
+})
+
+const can_act = (pilot: AllianceHealthTrialPilot) => {
+    const ready =
+        pilot.decision === 'approve' ||
+        bucket === 'approve' ||
+        bucket === 'remove' ||
+        (pilot.decision == null &&
+            bucket === 'passing' &&
+            (pilot.alliance_days ?? 0) >= 60)
+    return (
+        can_promote &&
+        ready &&
+        (alliance_wide ||
+            (pilot.corporation_id != null &&
+                officer_corp_ids.includes(pilot.corporation_id)))
+    )
+}
+
+const order_by_options: AllianceHealthOrderOption[] = [
+    { id: 'fleets', label: t('alliance.health.col.fleets'), kind: 'number' },
+    { id: 'kills', label: t('alliance.health.col.kills'), kind: 'number' },
+    { id: 'small', label: t('alliance.health.col.small'), kind: 'number' },
+    { id: 'voice', label: t('alliance.health.col.voice'), kind: 'number' },
+    { id: 'days', label: t('alliance.health.col.in_alliance'), kind: 'number' },
+    { id: 'last', label: t('alliance.health.col.last'), kind: 'number' },
+    { id: 'tz', label: t('alliance.health.col.tz'), kind: 'text' },
 ]
 
-const rows: CampaignTableRow[] = pilots.map((pilot) => ({
-    cells: [
-        pilot.pilot,
-        pilot.corp,
-        pilot.alliance_days == null ? '—' : `${pilot.alliance_days}d`,
-        String(pilot.fleets),
-        String(pilot.kills),
-        String(pilot.kills_small),
-        `${pilot.voice_hours}h`,
-        pilot.slice_30d,
-        pilot.days_since_activity == null
-            ? '—'
-            : `${pilot.days_since_activity}d`,
-        pilot.path,
-        pilot.conf,
-        pilot.reason,
+const rows: AllianceHealthPilotListRow[] = pilots.map((pilot) => {
+    const conf_label = health_confidence_label(pilot.conf, t)
+    return {
+    name: pilot.pilot,
+    corp: pilot.corp,
+    character_id: pilot.character_id,
+    corporation_id: pilot.corporation_id,
+    search_text: `${pilot.pilot} ${pilot.username} ${pilot.corp} ${pilot.reason} ${pilot.timezone ?? ''} ${conf_label ?? ''}`.toLowerCase(),
+    timezone: pilot.timezone,
+    note: pilot.reason,
+    tags: [pilot.path, conf_label, pilot.slice_30d]
+        .filter((text): text is string => !!text && text !== '—')
+        .map((text) => ({ text })),
+    metrics: [
+        {
+            id: 'fleets',
+            label: t('alliance.health.col.fleets'),
+            value: String(pilot.fleets),
+            sort: pilot.fleets,
+        },
+        {
+            id: 'kills',
+            label: t('alliance.health.col.kills'),
+            value: String(pilot.kills),
+            sort: pilot.kills,
+        },
+        {
+            id: 'small',
+            label: t('alliance.health.col.small'),
+            value: String(pilot.kills_small),
+            sort: pilot.kills_small,
+        },
+        {
+            id: 'voice',
+            label: t('alliance.health.col.voice'),
+            value: `${pilot.voice_hours}h`,
+            sort: pilot.voice_hours,
+        },
+        {
+            id: 'days',
+            label: t('alliance.health.col.in_alliance'),
+            value: pilot.alliance_days == null ? '—' : `${pilot.alliance_days}d`,
+            sort: pilot.alliance_days ?? '',
+            scale: 'none',
+        },
+        {
+            id: 'last',
+            label: t('alliance.health.col.last'),
+            value:
+                pilot.days_since_activity == null
+                    ? '—'
+                    : `${pilot.days_since_activity}d`,
+            sort: pilot.days_since_activity ?? '',
+            scale: 'lower',
+        },
     ],
-    cell_icons: [
-        pilot.character_id ? get_player_icon(pilot.character_id, 64) : undefined,
-        pilot.corporation_id
-            ? get_corporation_logo(pilot.corporation_id, 64)
-            : undefined,
-    ],
-}))
+    action: can_act(pilot)
+        ? {
+              label: t('alliance.health.promote'),
+              confirm_title: t('alliance.health.promote_confirm_title'),
+              confirm_content: `${t('alliance.health.promote_confirm')} ${pilot.pilot}`,
+              post_url: `${partial_url}?${query_string({
+                  user_id: String(pilot.user_id),
+                  action: 'promote',
+              })}&${extra_query}`,
+              target: '#alliance-health-trials-table',
+          }
+        : undefined,
+    }
+})
 ---
 
 <div class:list={['[ alliance-health-trials ]', Astro.props.class]} {...attributes}>
-    <CampaignDataTable headers={headers} rows={rows} success_marker={false} />
-    {pilots.length === 0 && (
-        <p class="[ alliance-health-trials__empty ]">{t('alliance.health.trials.empty')}</p>
-    )}
+    <AllianceHealthPilotList
+        rows={rows}
+        empty_label={t('alliance.health.trials.empty')}
+        order_by_options={order_by_options}
+        default_order_by="fleets"
+        initial_corp={initial_corp}
+        csv_filename={`health-trials-${bucket}.csv`}
+        url_section="trials"
+    />
 </div>
-
-<style lang="scss">
-    .alliance-health-trials__empty {
-        margin: var(--space-s) 0 0;
-        color: var(--foreground);
-        font-size: var(--step--1);
-    }
-</style>

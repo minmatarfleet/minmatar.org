@@ -6,6 +6,7 @@ from alliance.helpers.hygiene import (
     MIN_APPROVE_DAYS,
     build_hygiene_payload,
     classify_leave,
+    classify_onboarding_need,
     classify_trial,
     gang_bucket,
     slice_30d,
@@ -245,8 +246,30 @@ class BuildHygienePayloadTestCase(TestCase):
         self.assertEqual(payload["trial"]["counts"]["fail"], 1)
         self.assertEqual(payload["trial"]["counts"]["nudge"], 1)
         self.assertEqual(payload["trial"]["counts"]["hold"], 1)
-        self.assertNotIn("hold", payload["trial"]["buckets"])
+        self.assertIn("hold", payload["trial"]["buckets"])
         self.assertEqual(payload["leave"]["counts"]["recommended"], 1)
         self.assertEqual(payload["leave"]["counts"]["kept"], 1)
         self.assertEqual(payload["leave"]["counts"]["exempt"], 1)
         self.assertEqual(len(payload["leave"]["recommended"]), 1)
+
+
+class ClassifyOnboardingNeedTestCase(TestCase):
+    def test_first_week_zero_fleets(self):
+        self.assertEqual(
+            classify_onboarding_need(fleets=0, alliance_days=3),
+            "first_week",
+        )
+
+    def test_more_fleets_after_week_or_with_some_fleets(self):
+        self.assertEqual(
+            classify_onboarding_need(fleets=0, alliance_days=12),
+            "more_fleets",
+        )
+        self.assertEqual(
+            classify_onboarding_need(fleets=2, alliance_days=4),
+            "more_fleets",
+        )
+
+    def test_enough_fleets_is_clear(self):
+        self.assertIsNone(classify_onboarding_need(fleets=3, alliance_days=2))
+        self.assertIsNone(classify_onboarding_need(fleets=8, alliance_days=40))

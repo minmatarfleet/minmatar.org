@@ -1,5 +1,6 @@
 ---
 import type { CampaignTableRow } from '@/data/campaigns/etherium-reach'
+import Button from '@components/blocks/Button.astro'
 
 interface Props {
     headers: string[]
@@ -10,6 +11,7 @@ interface Props {
 }
 
 const { headers, rows, striped = false, success_marker = true } = Astro.props
+const has_actions = rows.some((row) => !!row.action)
 ---
 
 <div class="er-table-wrap" tabindex="0" role="region">
@@ -21,7 +23,8 @@ const { headers, rows, striped = false, success_marker = true } = Astro.props
                         <th
                             scope="col"
                             class:list={[
-                                index > 0 && 'er-table__numeric',
+                                index > 0 && !has_actions && 'er-table__numeric',
+                                index > 0 && has_actions && index < headers.length - 1 && 'er-table__numeric',
                             ]}
                         >
                             {header}
@@ -33,7 +36,12 @@ const { headers, rows, striped = false, success_marker = true } = Astro.props
         <tbody>
             {
                 rows.map((row) => (
-                    <tr class:list={[row.tone && `er-table__row--${row.tone}`]}>
+                    <tr
+                        class:list={[row.tone && `er-table__row--${row.tone}`]}
+                        data-search={row.search_text ?? row.cells.join(' ').toLowerCase()}
+                        data-corp={row.corp ?? ''}
+                        data-csv={JSON.stringify(row.cells)}
+                    >
                         {
                             row.cells.map((cell, index) => {
                                 const icon =
@@ -60,6 +68,23 @@ const { headers, rows, striped = false, success_marker = true } = Astro.props
                                 )
                             })
                         }
+                        {has_actions && (
+                            <td class="er-table__action">
+                                {row.action ? (
+                                    <Button
+                                        size="sm"
+                                        type="button"
+                                        data-confirm-title={row.action.confirm_title}
+                                        data-confirm-content={row.action.confirm_content}
+                                        data-post-url={row.action.post_url}
+                                        data-target={row.action.target}
+                                        x-on:click.prevent="confirm_row_action($el)"
+                                    >
+                                        {row.action.label}
+                                    </Button>
+                                ) : null}
+                            </td>
+                        )}
                     </tr>
                 ))
             }
@@ -108,6 +133,12 @@ const { headers, rows, striped = false, success_marker = true } = Astro.props
     .er-table__numeric {
         text-align: right;
         font-variant-numeric: tabular-nums;
+    }
+
+    .er-table__action {
+        text-align: right;
+        white-space: nowrap;
+        width: 1%;
     }
 
     .er-table__name {

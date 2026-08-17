@@ -3,8 +3,8 @@ import { i18n } from '@helpers/i18n'
 const { t } = i18n(Astro.url)
 
 import type {
-    AllianceHealthAttentionBucket,
-    AllianceHealthQuietCounts,
+    AllianceHealthLeaveBucket,
+    AllianceHealthLeaveCounts,
 } from '@dtypes/api.minmatar.org'
 import { alliance_health_table_params } from '@helpers/api.minmatar.org/alliance_health'
 import { ALLIANCE_HEALTH_DEFAULT_BUCKETS } from '@helpers/alliance_health_url'
@@ -12,8 +12,8 @@ import { ALLIANCE_HEALTH_DEFAULT_BUCKETS } from '@helpers/alliance_health_url'
 import AllianceHealthBucketTabs from '@components/blocks/AllianceHealthBucketTabs.astro'
 
 interface Props {
-    quiet: AllianceHealthQuietCounts
-    bucket: AllianceHealthAttentionBucket
+    counts: AllianceHealthLeaveCounts
+    bucket: AllianceHealthLeaveBucket
     partial_url: string
     initial_corp?: string
     can_mutate?: boolean
@@ -25,7 +25,7 @@ interface Props {
 }
 
 const {
-    quiet,
+    counts,
     bucket,
     partial_url,
     initial_corp = 'all',
@@ -38,8 +38,8 @@ const {
 } = Astro.props
 delete attributes.class
 
-const default_bucket = ALLIANCE_HEALTH_DEFAULT_BUCKETS.attention
-const tab_query = (id: AllianceHealthAttentionBucket) =>
+const default_bucket = ALLIANCE_HEALTH_DEFAULT_BUCKETS.leave
+const tab_query = (id: AllianceHealthLeaveBucket) =>
     alliance_health_table_params({
         bucket: id,
         corp: initial_corp,
@@ -51,24 +51,24 @@ const tab_query = (id: AllianceHealthAttentionBucket) =>
     })
 
 const tabs = [
-    { id: 'fading', count: quiet.fading, label: t('alliance.health.bucket.fading') },
-    { id: 'dark', count: quiet.dark, label: t('alliance.health.bucket.dark') },
-    { id: 'seasonal', count: quiet.seasonal, label: t('alliance.health.bucket.seasonal') },
+    { id: 'current', count: counts.current, label: t('alliance.health.selector.current_leave') },
+    { id: 'inactive', count: counts.inactive ?? Math.max(0, counts.current - (counts.returning ?? counts.remove)), label: t('alliance.health.selector.inactive_leave') },
+    { id: 'returning', count: counts.returning ?? counts.remove, label: t('alliance.health.selector.returning_leave') },
 ].map((tab) => ({
     ...tab,
-    href: `${partial_url}?${tab_query(tab.id as AllianceHealthAttentionBucket)}`,
+    href: `${partial_url}?${tab_query(tab.id as AllianceHealthLeaveBucket)}`,
 }))
 ---
 
 <AllianceHealthBucketTabs
     class={Astro.props.class}
     {...attributes}
-    section_id="health-attention"
-    aria_label={t('alliance.health.attention.aria')}
+    section_id="health-leave"
+    aria_label={t('alliance.health.leave.aria')}
     bucket={bucket}
-    url_section="attention"
+    url_section="leave"
     default_bucket={default_bucket}
-    table_id="alliance-health-attention-table"
+    table_id="alliance-health-leave-table"
     tabs={tabs}
 >
     <slot />

@@ -11,61 +11,89 @@ const auth_token = Astro.cookies.has('auth_token')
     ? (Astro.cookies.get('auth_token')?.value as string)
     : null
 const user = auth_token ? (jose.decodeJwt(auth_token) as User) : false
-const is_superuser = user ? user?.is_superuser : false
 
 if (!user) return HTTP_403_Forbidden()
 
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = user ? await get_user_permissions(user?.username) : []
-
-const can_view_page =
-    is_superuser || user_permissions.includes('alliance.view_alliancehealth')
-
-if (!can_view_page) return HTTP_403_Forbidden()
-
+import {
+    get_alliance_health_trials,
+    post_alliance_health_status,
+} from '@helpers/api.minmatar.org/alliance_health'
 import type {
     AllianceHealthTrialBucket,
     AllianceHealthTrialPilot,
 } from '@dtypes/api.minmatar.org'
-import { get_alliance_health_trials } from '@helpers/api.minmatar.org/alliance_health'
 import AllianceHealthTrialsTable from '@components/blocks/AllianceHealthTrialsTable.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 
-const raw_bucket = Astro.url.searchParams.get('bucket') ?? 'approve'
+const user_id = parseInt(Astro.url.searchParams.get('user_id') ?? '', 10)
+const action = Astro.url.searchParams.get('action')
+const raw_bucket = Astro.url.searchParams.get('bucket') ?? 'current'
 const bucket: AllianceHealthTrialBucket =
+    raw_bucket === 'passing' ||
+    raw_bucket === 'failing' ||
+    raw_bucket === 'evaluating' ||
+    raw_bucket === 'add' ||
+    raw_bucket === 'remove' ||
+    raw_bucket === 'flagged' ||
+    raw_bucket === 'current' ||
+    raw_bucket === 'approve' ||
     raw_bucket === 'too_early' ||
     raw_bucket === 'fail' ||
-    raw_bucket === 'nudge' ||
-    raw_bucket === 'approve'
+    raw_bucket === 'nudge'
         ? raw_bucket
-        : 'approve'
+        : 'current'
+
+const initial_corp = Astro.url.searchParams.get('corp') || 'all'
+const can_mutate = Astro.url.searchParams.get('can_mutate') === '1'
+const alliance_wide = Astro.url.searchParams.get('alliance_wide') === '1'
+const officer_corp_ids = (Astro.url.searchParams.get('officer_corps') ?? '')
+    .split(',')
+    .map((value) => parseInt(value, 10))
+    .filter((value) => !Number.isNaN(value) && value > 0)
 
 let pilots: AllianceHealthTrialPilot[] = []
 let data_fetching_error: any
+let applied_user_id: number | null = null
+
+if (Astro.request.method === 'POST' && action === 'promote' && user_id) {
+    try {
+        await post_alliance_health_status(auth_token as string, user_id, 'promote')
+        applied_user_id = user_id
+    } catch (error) {
+        data_fetching_error = error
+    }
+}
 
 try {
-    const trials = await get_alliance_health_trials(
-        auth_token as string,
-        bucket,
-    )
-    pilots = trials.pilots
+    const trials = await get_alliance_health_trials(auth_token as string, bucket)
+    pilots = applied_user_id
+        ? trials.pilots.filter((pilot) => pilot.user_id !== applied_user_id)
+        : trials.pilots
 } catch (error) {
     data_fetching_error = error
 }
 
-const PARTIAL_URL = `${translatePath('/partials/alliance_health_trials_component')}?bucket=${bucket}`
+const PARTIAL_URL = translatePath('/partials/alliance_health_trials_component')
 ---
 
 {
     data_fetching_error ? (
         <ErrorRefetch
             args={{
-                partial: PARTIAL_URL,
+                partial: `${PARTIAL_URL}?bucket=${bucket}`,
                 error: data_fetching_error,
                 delay: 0,
             }}
         />
     ) : (
-        <AllianceHealthTrialsTable pilots={pilots} />
+        <AllianceHealthTrialsTable
+            pilots={pilots}
+            can_promote={can_mutate && (bucket === 'passing' || bucket === 'approve' || bucket === 'remove')}
+            officer_corp_ids={officer_corp_ids}
+            alliance_wide={alliance_wide}
+            initial_corp={initial_corp}
+            bucket={bucket}
+            partial_url={PARTIAL_URL}
+        />
     )
 }

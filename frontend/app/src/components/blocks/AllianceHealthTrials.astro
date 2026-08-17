@@ -6,84 +6,65 @@ import type {
     AllianceHealthTrialBucket,
     AllianceHealthTrialCounts,
 } from '@dtypes/api.minmatar.org'
+import { alliance_health_table_params } from '@helpers/api.minmatar.org/alliance_health'
+import { ALLIANCE_HEALTH_DEFAULT_BUCKETS } from '@helpers/alliance_health_url'
 
-import FlexInline from '@components/compositions/FlexInline.astro'
-import Flexblock from '@components/compositions/Flexblock.astro'
-import Button from '@components/blocks/Button.astro'
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import AllianceHealthBucketTabs from '@components/blocks/AllianceHealthBucketTabs.astro'
 
 interface Props {
     counts: AllianceHealthTrialCounts
     bucket: AllianceHealthTrialBucket
     partial_url: string
+    initial_corp?: string
+    can_mutate?: boolean
+    alliance_wide?: boolean
+    officer_corp_ids?: number[]
     [propName: string]: any
 }
 
-const { counts, bucket, partial_url, ...attributes } = Astro.props
+const {
+    counts,
+    bucket,
+    partial_url,
+    initial_corp = 'all',
+    can_mutate = false,
+    alliance_wide = false,
+    officer_corp_ids = [],
+    ...attributes
+} = Astro.props
 delete attributes.class
 
-const tabs: {
-    id: AllianceHealthTrialBucket
-    count: number
-    label: string
-}[] = [
-    {
-        id: 'approve',
-        count: counts.approve,
-        label: t('alliance.health.bucket.approve'),
-    },
-    {
-        id: 'too_early',
-        count: counts.too_early,
-        label: t('alliance.health.bucket.too_early'),
-    },
-    {
-        id: 'fail',
-        count: counts.fail,
-        label: t('alliance.health.bucket.fail'),
-    },
-    {
-        id: 'nudge',
-        count: counts.nudge,
-        label: t('alliance.health.bucket.nudge'),
-    },
-]
+const default_bucket = ALLIANCE_HEALTH_DEFAULT_BUCKETS.trials
+const tab_query = (id: AllianceHealthTrialBucket) =>
+    alliance_health_table_params({
+        bucket: id,
+        corp: initial_corp,
+        can_mutate,
+        alliance_wide,
+        officer_corp_ids,
+    })
+
+const tabs = [
+    { id: 'current', count: counts.current, label: t('alliance.health.selector.current_trial') },
+    { id: 'passing', count: counts.passing ?? ((counts.approve ?? 0) + (counts.too_early ?? 0)), label: t('alliance.health.selector.passing_trial') },
+    { id: 'failing', count: counts.failing ?? counts.fail, label: t('alliance.health.selector.failing_trial') },
+    { id: 'evaluating', count: counts.evaluating ?? ((counts.nudge ?? 0) + (counts.hold ?? 0)), label: t('alliance.health.selector.evaluating_trial') },
+].map((tab) => ({
+    ...tab,
+    href: `${partial_url}?${tab_query(tab.id as AllianceHealthTrialBucket)}`,
+}))
 ---
 
-<section
-    class:list={['[ alliance-health-trials-tabs ]', Astro.props.class]}
-    aria-label={t('alliance.health.trials.aria')}
-    x-data={`{ trial_bucket: '${bucket}' }`}
+<AllianceHealthBucketTabs
+    class={Astro.props.class}
+    {...attributes}
+    section_id="health-trials"
+    aria_label={t('alliance.health.trials.aria')}
+    bucket={bucket}
+    url_section="trials"
+    default_bucket={default_bucket}
+    table_id="alliance-health-trials-table"
+    tabs={tabs}
 >
-    <Flexblock gap="var(--space-m)">
-        <FlexInline gap="var(--space-2xs)">
-            {tabs.map((tab) => (
-                <Button
-                    size="sm"
-                    x-bind:class={`trial_bucket === '${tab.id}' ? 'active' : ''`}
-                    color="transparent"
-                    x-on:click={`trial_bucket = '${tab.id}'`}
-                    hx-get={`${partial_url}?bucket=${tab.id}`}
-                    hx-target="#alliance-health-trials-table"
-                    hx-swap="innerHTML"
-                    hx-indicator=".loader"
-                >
-                    {tab.label} ({tab.count})
-                </Button>
-            ))}
-        </FlexInline>
-
-        <ComponentBlock padding_inline="var(--space-m)">
-            <div id="alliance-health-trials-table">
-                <slot />
-            </div>
-        </ComponentBlock>
-    </Flexblock>
-</section>
-
-<style lang="scss">
-    .alliance-health-trials-tabs :global(.button.active) {
-        border-color: var(--alliance-blue);
-        color: var(--highlight);
-    }
-</style>
+    <slot />
+</AllianceHealthBucketTabs>
