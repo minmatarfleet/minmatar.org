@@ -72,8 +72,8 @@ function term_parts(
     fulfilled: number,
     targets: number,
 ): { before: string; word: string; after: string } {
-    const word = t(word_key)
-    const label = t(template_key)
+    const word = t(word_key as any)
+    const label = t(template_key as any)
         .replace('{fulfilled}', String(fulfilled))
         .replace('{targets}', String(targets))
     const [before, after = ''] = label.split(placeholder)
@@ -101,7 +101,7 @@ function listed_viable_parts(fulfilled: number, listed: number) {
 }
 
 function isk_label(template_key: string, isk: number): string {
-    return t(template_key).replace('{isk}', format_isk(isk))
+    return (t(template_key as any)  ?? template_key).replace('{isk}', format_isk(isk))
 }
 
 function sync_age_label(iso: string | null | undefined): string {
@@ -147,10 +147,10 @@ function get_deltas(history:MarketHealthChartPoint[]) {
         return null
 
     return {
-        contracts_coverage_delta: history[indexes.first_day_index].contracts_health_pct - history[indexes.second_day_index].contracts_health_pct,
-        contracts_viability_delta: history[indexes.first_day_index].contracts_viability_pct - history[indexes.second_day_index].contracts_viability_pct,
-        sell_orders_coverage_delta: history[indexes.first_day_index].sell_orders_health_pct - history[indexes.second_day_index].sell_orders_health_pct,
-        sell_orders_viability_delta: history[indexes.first_day_index].sell_orders_viability_pct - history[indexes.second_day_index].sell_orders_viability_pct,
+        contracts_coverage_delta: (history[indexes.first_day_index].contracts_health_pct ?? 0) - (history[indexes.second_day_index].contracts_health_pct ?? 0),
+        contracts_viability_delta: (history[indexes.first_day_index].contracts_viability_pct ?? 0) - (history[indexes.second_day_index].contracts_viability_pct ?? 0),
+        sell_orders_coverage_delta: (history[indexes.first_day_index].sell_orders_health_pct ?? 0) - (history[indexes.second_day_index].sell_orders_health_pct ?? 0),
+        sell_orders_viability_delta: (history[indexes.first_day_index].sell_orders_viability_pct ?? 0) - (history[indexes.second_day_index].sell_orders_viability_pct ?? 0),
     } as {
         contracts_coverage_delta:           number;
         contracts_viability_delta:          number;
@@ -182,8 +182,7 @@ import Grid from '@components/compositions/Grid.astro'
 import Button from '@components/blocks/Button.astro'
 import ButtonViewHealthChartData from '@components/blocks/ButtonViewHealthChartData.astro'
 import Progress from '@components/blocks/Progress.astro'
-import MarketHealthContractsChart from '@components/blocks/MarketHealthContractsChart.astro'
-import MarketHealthSellOrdersChart from '@components/blocks/MarketHealthSellOrdersChart.astro'
+import MarketHealthChart from '@components/blocks/MarketHealthChart.astro'
 import Tile from '@components/blocks/Tile.astro';
 import MarketHealthPercentage from './MarketHealthPercentage.astro'
 
@@ -254,7 +253,7 @@ const sell_viable = sell_listed > 0
                         viability_tone={contracts_viability_tone}
                     />
                 </FlexInline>
-                <MarketHealthContractsChart history={history} />
+                <MarketHealthChart type='contracts' history={history} />
             </div>
 
             <small>
@@ -386,7 +385,7 @@ const sell_viable = sell_listed > 0
                         viability_tone={sell_viability_tone}
                     />
                 </FlexInline>
-                <MarketHealthSellOrdersChart history={history} />
+                <MarketHealthChart type='sell orders' history={history} />
             </div>
             
             <small>

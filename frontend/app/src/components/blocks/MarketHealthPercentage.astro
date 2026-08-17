@@ -19,14 +19,20 @@ console.log(delta)
 import FlexInline from '@components/compositions/FlexInline.astro'
 
 import Square from '@components/blocks/Square.astro';
-import Tag from '@components/blocks/Tag.astro';
+import CountUpAnimationFloat from './CountUpAnimationFloat.astro';
 ---
 
 <FlexInline gap='var(--space-xs)'>
     <Square color={tone} />
 
     <FlexInline class="[ items-baseline! ]" gap='var(--space-2xs)'>
-        <span class="[ market-total text-step-4 ]">{percentage}%</span>
+        <div class="[ market-total text-step-4 ]">
+            <CountUpAnimationFloat
+                target={percentage ?? 0}
+                duration={2000}
+                fixed={1}
+            />%
+        </div>
         {delta !== null &&
             <FlexInline gap='var(--space-3xs)'>
                 {delta !== 0 &&
@@ -37,7 +43,7 @@ import Tag from '@components/blocks/Tag.astro';
                 <span
                     data-tippy-content={t('last_day_delta')}
                     x-init='tippy($el, tippy_options)'
-                >{Math.abs(delta).toFixed(2)}%</span>
+                >{Math.abs(delta).toFixed(1)}%</span>
             </FlexInline>
         }
     </FlexInline>

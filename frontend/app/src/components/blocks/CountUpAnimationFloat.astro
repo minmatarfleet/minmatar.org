@@ -1,0 +1,62 @@
+---
+interface Props {
+    target:     number;
+    duration?:  number;
+    element?:   string;
+    fixed?:     number;
+    [propName: string]: any;
+}
+
+const {
+    target,
+    duration = 3000,
+    element = 'span',
+    fixed = 0,
+    ...attributes
+} = Astro.props
+
+const Element = element
+---
+
+<Element
+    x-data={`{
+        start_time: null,
+        target: ${target},
+        duration: ${duration},
+        fixed: ${fixed},
+        format(value) {
+            return value.toLocaleString(undefined, {
+                minimumFractionDigits: this.fixed,
+                maximumFractionDigits: this.fixed
+            })
+        },
+        animate_count(timestamp) {
+            if (!this.start_time) this.start_time = timestamp
+            const progress = timestamp - this.start_time
+
+            // Cap 't' at 1 so it doesn't overshoot if the animation frame runs slightly long
+            const t = Math.min(progress / this.duration, 1)
+            const eased = 1 - Math.pow(1 - t, 3)
+            
+            // Remove Math.floor to preserve the float calculation
+            const currentCount = eased * this.target;
+
+            $el.innerText = this.format(currentCount)
+
+            if (progress < this.duration) {
+                requestAnimationFrame((t) => this.animate_count(t));
+            } else {
+                // Ensure the final frame hits the exact target
+                $el.innerText = this.format(this.target)
+            }
+        },
+        init() {
+            // Set the initial 0 value with the correct decimal places
+            $el.innerText = this.format(0)
+            requestAnimationFrame((t) => this.animate_count(t))
+        }
+    }`}
+    {...attributes}
+>
+    0
+</Element>
