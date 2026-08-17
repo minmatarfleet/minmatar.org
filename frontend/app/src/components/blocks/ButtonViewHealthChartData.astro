@@ -1,0 +1,141 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { MarketHealthChartPoint } from '@dtypes/api.minmatar.org'
+import type { ButtonColors } from '@dtypes/layout_components';
+
+interface Props {
+    history:            MarketHealthChartPoint[];
+    type:               'contracts' | 'sell orders';
+    coverage_tone:     'good' | 'warn' | 'bad' | 'none';
+    viability_tone:     'good' | 'warn' | 'bad' | 'none';
+}
+
+const {
+    history,
+    type,
+    coverage_tone,
+    viability_tone,
+} = Astro.props
+
+const TONE_TRANSLATION: Record<string, ButtonColors | "fleet-yellow"> = {
+    good: 'green',
+    warn: 'fleet-yellow',
+    bad: 'fleet-red',
+    none: 'fleet-red'
+}
+
+const points = [...history].reverse()
+
+const labels = points.map((point) =>
+    new Date(point.captured_at).toLocaleString(lang, {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    }),
+)
+
+const coverage = points.map((point) => type === 'contracts' ? point.contracts_health_pct : point.sell_orders_health_pct)
+const viability = points.map((point) => type === 'contracts' ? point.contracts_viability_pct : point.sell_orders_viability_pct)
+
+const coverage_color = `var(--${TONE_TRANSLATION[coverage_tone] ?? 'fleet-yellow'})`
+const viability_color = `var(--${TONE_TRANSLATION[viability_tone] ?? 'fleet-yellow'})`
+
+let copy_data = ''
+labels.map((label, index) => {
+    copy_data = copy_data.concat(`${label}\t${coverage[index] ?? '-'}\t${viability[index] ?? '-'}\r\n`)
+})
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Table from '@components/blocks/Table.astro';
+import Button from '@components/blocks/Button.astro';
+import DialogButton from '@components/blocks/DialogButton.astro';
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+---
+
+<DialogButton
+    color='transparent'
+    size='sm'
+    transparent={true}
+    non_centered={false}
+>
+    {t('view_plot_data')}
+
+    <FlexInline slot="header" justification='space-between'>
+        <h2>
+            {type === 'contracts' && t('contracts_data_history')}
+            {type === 'sell orders' && t('sell_orders_data_history')}
+        </h2>
+        <ClipboardButton id={type ? 'copy-contracts-data' : 'copy-sell-orders-data'} size='sm' text={t('copy_data')}>{copy_data}</ClipboardButton>
+    </FlexInline>
+
+    <Flexblock gap="var(--space-l)" slot="dialog">
+        <Flexblock gap="var(--space-s)">
+            <Table width='635px'>
+                <table style={`--coverage_color: ${coverage_color}; --viability_color: ${viability_color};`}>
+                    <tr>
+                        <th class="[ w-[] ]">{t('timestamp')}</th>
+                        <th>{t('coverage')} (%)</th>
+                        <th>{t('viability')} (%)</th>
+                    </tr>
+                    {labels.map((label, index) => {
+                        const coverage_delta = index > 0 ? (coverage[index] ?? 0) - (coverage[index - 1] ?? 0) : 0
+                        const viability_delta = index > 0 ? (viability[index] ?? 0) - (viability[index - 1] ?? 0) : 0
+
+                        return(<tr>
+                            <td>{label}</td>
+                            <td>
+                                {coverage[index] ? coverage[index].toFixed(2) : '-'} {coverage_delta !== 0 && <span class:list={[ coverage_delta > 0 ? 'text-green' : 'text-red' ]}>
+                                    {coverage_delta > 0 ? '▲' : '▼'} <small>{Math.abs(coverage_delta).toFixed(2)}</small>
+                                </span>}
+                            </td>
+                            <td>
+                                {viability[index] ? viability[index].toFixed(2) : '-'} {viability_delta !== 0 && <span class:list={[ viability_delta > 0 ? 'text-green' : 'text-red' ]}>
+                                    {viability_delta > 0 ? '▲' : '▼'} <small>{Math.abs(viability_delta).toFixed(2)}</small>
+                                </span>}
+                            </td>
+                        </tr>)
+                    })}
+                </table>
+            </Table>
+        </Flexblock>
+    </Flexblock>
+
+    <FlexInline slot="footer" justification='flex-end'>
+        <Button
+            type="button"
+            size='sm'
+            color='transparent'
+            x-on:click="close_dialog()"
+        >
+            {t('close')}
+        </Button>
+    </FlexInline>
+</DialogButton>
+
+<style lang="scss">
+    tr:last-child td {
+        font-weight: 600;
+    }
+
+    tr {
+        td:nth-child(2),
+        td:nth-child(3) {
+            color: var(--faded);
+        }
+    }
+
+    tr:last-child {
+        td:nth-child(2) {
+           color: var(--coverage_color);
+        }
+
+        td:nth-child(3) {
+            color: var(--viability_color);
+        }
+    }
+</style>

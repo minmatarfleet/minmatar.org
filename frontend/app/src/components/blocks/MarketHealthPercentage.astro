@@ -1,0 +1,51 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { ButtonColors } from '@dtypes/layout_components';
+
+interface Props {
+    tone:           ButtonColors | "fleet-yellow";
+    percentage:     number | null;
+    delta:          number | null;
+}
+
+const {
+    tone,
+    percentage,
+    delta,
+} = Astro.props
+console.log(delta)
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import Square from '@components/blocks/Square.astro';
+import Tag from '@components/blocks/Tag.astro';
+---
+
+<FlexInline gap='var(--space-xs)'>
+    <Square color={tone} />
+
+    <FlexInline class="[ items-baseline! ]" gap='var(--space-2xs)'>
+        <span class="[ market-total text-step-4 ]">{percentage}%</span>
+        {delta !== null &&
+            <FlexInline gap='var(--space-3xs)'>
+                {delta !== 0 &&
+                    <span class:list={[ delta > 0 ? 'text-green' : 'text-red' ]}>
+                        {delta > 0 ? '▲' : '▼'}
+                    </span>
+                }
+                <span
+                    data-tippy-content={t('last_day_delta')}
+                    x-init='tippy($el, tippy_options)'
+                >{Math.abs(delta).toFixed(2)}%</span>
+            </FlexInline>
+        }
+    </FlexInline>
+</FlexInline>
+
+<style lang="scss">
+    .market-total {
+        font-family: var(--heading-font);
+        color: var(--highlight);
+    }
+</style>
