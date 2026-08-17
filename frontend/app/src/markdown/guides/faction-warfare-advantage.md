@@ -6,7 +6,7 @@ author: "A'Songala"
 ---
 ## Introduction
 
-Advantage is a faction warfare mechanism that increases the victory points you gain from each [complex capture](/guides/faction-warfare-plexing/). Without it, hundreds of extra complexes are needed to capture a system, so advantage is critical—especially when both sides are actively contesting the same system.
+Advantage is a faction warfare mechanism that increases the victory points you gain from each [complex capture](/learning/guides/faction-warfare-plexing/). Without it, hundreds of extra complexes are needed to capture a system, so advantage is critical—especially when both sides are actively contesting the same system.
 
 Both sides can build advantage in a system. Net advantage is calculated by subtracting one side's total from the other's. If Minmatar have 58% advantage and Amarr have 36%, the result is 22% net advantage for Minmatar.
 
@@ -22,7 +22,7 @@ Advantage is calculated from actions in the system itself and in neighbouring sy
 
 The typical pattern is that groups run propaganda beacons, rendezvous points, and battlefields to achieve 100% advantage. Then, after both sides stall at 100%, supply depots and listening outposts become a priority.
 
-For contested %, system types, and the Factional Warfare panel, see [Faction Warfare Basics](/guides/faction-warfare-basics/).
+For contested %, system types, and the Factional Warfare panel, see [Faction Warfare Basics](/learning/guides/faction-warfare-basics/).
 
 ## Rendezvous Points
 
@@ -134,11 +134,11 @@ Battlefields are 30-man sites in frontline systems. Winning one gives significan
 
 They have three capture points on one grid. Enemy rats or pilots within 30 km of a point pause progress. The acceleration gate only allows Tech I and Navy hulls.
 
-Because they are lucrative, they are highly contested, and you will often see fleets clashing in battleships and battlecruisers over them. They respawn several times a day for each faction. Full runbook: [Faction Warfare Battlefields](/guides/faction-warfare-battlefields/).
+Because they are lucrative, they are highly contested, and you will often see fleets clashing in battleships and battlecruisers over them. They respawn several times a day for each faction. Full runbook: [Faction Warfare Battlefields](/learning/guides/faction-warfare-battlefields/).
 
 ## Additional Resources
 
-- [Faction Warfare Basics](/guides/faction-warfare-basics/)
-- [Faction Warfare Complexes](/guides/faction-warfare-plexing/)
-- [Faction Warfare Battlefields](/guides/faction-warfare-battlefields/)
+- [Faction Warfare Basics](/learning/guides/faction-warfare-basics/)
+- [Faction Warfare Complexes](/learning/guides/faction-warfare-plexing/)
+- [Faction Warfare Battlefields](/learning/guides/faction-warfare-battlefields/)
 - [Guides index](/guides/)

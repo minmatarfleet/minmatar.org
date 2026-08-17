@@ -1,6 +1,5 @@
 ---
 import { is_disabled_ccpwgl } from '@helpers/env';
-import LearningAlpine from '@components/partials/LearningAlpine.astro';
 import OpsContractsAlpine from '@components/partials/OpsContractsAlpine.astro';
 import SellOrderGapsAlpine from '@components/partials/SellOrderGapsAlpine.astro';
 import NotificationPreferencesAlpine from '@components/partials/NotificationPreferencesAlpine.astro';
@@ -8,7 +7,6 @@ import NotificationPreferencesAlpine from '@components/partials/NotificationPref
 const DISABLED_CCPWGL = is_disabled_ccpwgl()
 ---
 
-<LearningAlpine />
 <OpsContractsAlpine />
 <SellOrderGapsAlpine />
 <NotificationPreferencesAlpine />
@@ -97,15 +95,20 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
             document.querySelectorAll('.loader').forEach(e => e.classList.remove('active'))
             const content = document.getElementById('content')
                 || document.querySelector('.viewport-layout-inner')
-            if (content) {
+            if (content)
                 htmx.process(content)
-                if (typeof Alpine !== 'undefined')
-                    Alpine.initTree(content)
+            // Init from body so page bindings see Viewport x-data
+            // (color_blind_mode, ui_scaling, show_modal, get_*_icon, …).
+            // initTree(content) alone orphans those expressions after soft nav.
+            // Learning hubs: Alpine MO may init x-data before FooterScripts
+            // redefines learningCenterHub → empty scope (changePersona missing).
+            // Destroy then initTree so factories bind after scripts run.
+            if (typeof Alpine !== 'undefined') {
+                document.querySelectorAll(
+                    '[x-data*="learningCenterHub"], [x-data*="learningCertificateDetail"], [x-data*="allianceHealthList"]'
+                ).forEach((el) => Alpine.destroyTree(el))
+                Alpine.initTree(document.body)
             }
-
-            const fittings_finder = document.querySelector('.fittings-finder')
-            if (fittings_finder && typeof Alpine !== 'undefined')
-                Alpine.initTree(fittings_finder)
 
             if (window.ccpwgl_context)
                 window.ccpwgl_context = null
@@ -162,7 +165,7 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
 
 <script is:inline src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
-<script is:inline src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script is:inline src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/@justinribeiro/lite-youtube@1/lite-youtube.min.js"></script>
 

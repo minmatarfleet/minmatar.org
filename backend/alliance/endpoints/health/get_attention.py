@@ -2,14 +2,16 @@
 
 from typing import Literal
 
-from alliance.endpoints.health.helpers import require_snapshot
+from alliance.endpoints.health.helpers import (
+    require_health_view,
+    require_snapshot,
+)
 from alliance.endpoints.health.schemas import (
     HealthAttentionResponse,
     attention_from_payload,
 )
 from app.errors import ErrorResponse
 from authentication import AuthBearer
-from groups.helpers.feature_access import require_feature
 from ninja import Query
 
 PATH = "attention"
@@ -32,7 +34,7 @@ def get_health_attention(
     request,
     bucket: Literal["fading", "dark", "seasonal"] = Query("fading"),
 ):
-    denied = require_feature(request.user, "alliance.health")
+    denied = require_health_view(request.user)
     if denied:
         return denied
     if bucket not in VALID_BUCKETS:

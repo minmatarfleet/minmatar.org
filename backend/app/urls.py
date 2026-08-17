@@ -43,7 +43,6 @@ from moons.router import moons_paste_router, moons_router
 from onboarding.router import router as onboarding_router
 from page_progress.router import router as page_progress_router
 from learning.router import router as learning_router
-from mumble.router import router as mumble_router
 from posts.router import router as posts_router
 from referrals.router import router as referrals_router
 from reminders.router import router as reminders_router
@@ -55,6 +54,7 @@ from subscriptions.router import router as subscription_router
 from notifications.router import router as notifications_router
 from feed.router import router as feed_router
 from help_tickets.router import router as help_tickets_router
+from creators.router import router as creators_router
 
 api = NinjaAPI(title="Minmatar Fleet API", version="1.0.0")
 api.add_router("users/", users_router)
@@ -65,7 +65,6 @@ api.add_router("applications/", applications_router)
 api.add_router("fittings/", fittings_router)
 api.add_router("doctrines/", doctrines_router)
 api.add_router("structures/", structures_router)
-api.add_router("mumble/", mumble_router)
 api.add_router("fleets", fleets_router)
 api.add_router("freight", freight_router)
 api.add_router("buyback", buyback_router)
@@ -87,6 +86,7 @@ api.add_router("subscriptions", subscription_router)
 api.add_router("notifications", notifications_router)
 api.add_router("discord", discord_router)
 api.add_router("help-tickets", help_tickets_router)
+api.add_router("creators", creators_router)
 
 
 @api.exception_handler(UnauthorizedError)

@@ -1,4 +1,10 @@
 import type { GuideMeta } from '@/data/guides/types'
+import {
+    GUIDES_INDEX_PATH,
+    LEARNING_CENTER_PATH,
+    LEARNING_HUB_PATH,
+    guidePath,
+} from '@/data/guides/urls'
 
 const META_DESCRIPTION_MAX = 160
 
@@ -19,6 +25,14 @@ export interface GuideJsonLdInput extends GuidePageSeo {
     siteOrigin: string
 }
 
+export interface LandingSeo {
+    metaTitle: string
+    metaDescription: string
+    canonicalUrl: string
+    metaImage: string
+    keywords: string[]
+}
+
 function truncateMetaDescription(text: string, max = META_DESCRIPTION_MAX): string {
     const normalized = text.replace(/\s+/g, ' ').trim()
     if (normalized.length <= max) return normalized
@@ -31,7 +45,7 @@ function truncateMetaDescription(text: string, max = META_DESCRIPTION_MAX): stri
 }
 
 export function getGuideCanonicalPath(guide: Pick<GuideMeta, 'slug' | 'path'>): string {
-    return guide.path ?? `/guides/${guide.slug}/`
+    return guide.path ?? guidePath(guide.slug)
 }
 
 function seoKey(slug: string, field: 'meta_title' | 'meta_description' | 'keywords'): string {
@@ -49,7 +63,7 @@ export function getGuidePageSeo(options: {
     const { guide, siteName, siteOrigin, translatePath, t, coverImage } = options
     const canonicalPath = getGuideCanonicalPath(guide)
     const canonicalUrl = new URL(translatePath(canonicalPath), siteOrigin).href
-    const guidesIndexUrl = new URL(translatePath('/guides/'), siteOrigin).href
+    const guidesIndexUrl = new URL(translatePath(LEARNING_HUB_PATH), siteOrigin).href
 
     const metaTitle = (t(seoKey(guide.slug, 'meta_title')) || `${guide.title} | ${siteName}`)
         .replace('{site}', siteName)
@@ -71,27 +85,80 @@ export function getGuidePageSeo(options: {
     }
 }
 
+function landingSeoFromKeys(options: {
+    siteName: string
+    siteOrigin: string
+    translatePath: (path: string) => string
+    t: Translate
+    coverImage: string
+    path: string
+    titleKey: string
+    descriptionKey: string
+    keywordsKey: string
+}): LandingSeo {
+    const { siteName, siteOrigin, translatePath, t, coverImage, path, titleKey, descriptionKey, keywordsKey } = options
+    const canonicalUrl = new URL(translatePath(path), siteOrigin).href
+
+    return {
+        metaTitle: t(titleKey).replace('{site}', siteName),
+        metaDescription: truncateMetaDescription(t(descriptionKey)),
+        canonicalUrl,
+        metaImage: new URL(coverImage, siteOrigin).href,
+        keywords: t(keywordsKey)
+            .split(',')
+            .map((keyword) => keyword.trim())
+            .filter(Boolean),
+    }
+}
+
 export function getGuidesIndexSeo(options: {
     siteName: string
     siteOrigin: string
     translatePath: (path: string) => string
     t: Translate
     coverImage: string
-}): Omit<GuidePageSeo, 'guidesIndexUrl'> & { guidesIndexUrl: string } {
-    const { siteName, siteOrigin, translatePath, t, coverImage } = options
-    const guidesIndexUrl = new URL(translatePath('/guides/'), siteOrigin).href
+}): LandingSeo & { guidesIndexUrl: string } {
+    const seo = landingSeoFromKeys({
+        ...options,
+        path: GUIDES_INDEX_PATH,
+        titleKey: 'guides.seo.index.meta_title',
+        descriptionKey: 'guides.seo.index.meta_description',
+        keywordsKey: 'guides.seo.index.keywords',
+    })
 
-    return {
-        metaTitle: t('guides.seo.index.meta_title').replace('{site}', siteName),
-        metaDescription: truncateMetaDescription(t('guides.seo.index.meta_description')),
-        canonicalUrl: guidesIndexUrl,
-        metaImage: new URL(coverImage, siteOrigin).href,
-        keywords: t('guides.seo.index.keywords')
-            .split(',')
-            .map((keyword) => keyword.trim())
-            .filter(Boolean),
-        guidesIndexUrl,
-    }
+    return { ...seo, guidesIndexUrl: seo.canonicalUrl }
+}
+
+export function getLearningHubSeo(options: {
+    siteName: string
+    siteOrigin: string
+    translatePath: (path: string) => string
+    t: Translate
+    coverImage: string
+}): LandingSeo {
+    return landingSeoFromKeys({
+        ...options,
+        path: LEARNING_HUB_PATH,
+        titleKey: 'learning.seo.index.meta_title',
+        descriptionKey: 'learning.seo.index.meta_description',
+        keywordsKey: 'learning.seo.index.keywords',
+    })
+}
+
+export function getLearningCenterSeo(options: {
+    siteName: string
+    siteOrigin: string
+    translatePath: (path: string) => string
+    t: Translate
+    coverImage: string
+}): LandingSeo {
+    return landingSeoFromKeys({
+        ...options,
+        path: LEARNING_CENTER_PATH,
+        titleKey: 'learning_center.seo.index.meta_title',
+        descriptionKey: 'learning_center.seo.index.meta_description',
+        keywordsKey: 'learning_center.seo.index.keywords',
+    })
 }
 
 export function buildGuideJsonLd(input: GuideJsonLdInput) {
@@ -141,7 +208,7 @@ export function buildGuideJsonLd(input: GuideJsonLdInput) {
                     {
                         '@type': 'ListItem',
                         position: 1,
-                        name: 'Guides',
+                        name: 'Learning',
                         item: guidesIndexUrl,
                     },
                     {
@@ -177,7 +244,7 @@ export function buildGuideJsonLd(input: GuideJsonLdInput) {
     }
 }
 
-export function buildGuidesIndexJsonLd(options: {
+export function buildLandingCollectionJsonLd(options: {
     siteName: string
     siteOrigin: string
     metaTitle: string
@@ -228,4 +295,18 @@ export function buildGuidesIndexJsonLd(options: {
             },
         ],
     }
+}
+
+/** @deprecated Prefer buildLandingCollectionJsonLd */
+export function buildGuidesIndexJsonLd(options: {
+    siteName: string
+    siteOrigin: string
+    metaTitle: string
+    metaDescription: string
+    canonicalUrl: string
+    metaImage: string
+    guides: Pick<GuideMeta, 'title' | 'slug' | 'path' | 'excerpt'>[]
+    translatePath: (path: string) => string
+}) {
+    return buildLandingCollectionJsonLd(options)
 }

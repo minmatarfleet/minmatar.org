@@ -5,14 +5,18 @@
         "icon": "/images/fleet-logo-square.svg",
         "publish": true,
         "description": "page_finder.index.description",
-        "keywords": [ "home", "index", "welcome" ]
+        "keywords": [
+            "home",
+            "index",
+            "welcome"
+        ]
     },
     {
         "slug": "account",
         "path": "/account/",
         "publish": true,
         "description": "page_finder.account.description",
-        "permissions" : {
+        "permissions": {
             "auth": true
         }
     },
@@ -21,16 +25,7 @@
         "path": "/account/referrals/",
         "publish": true,
         "description": "page_finder.account.referral.description",
-        "permissions" : {
-            "auth": true
-        }
-    },
-    {
-        "slug": "account.troubleshooting",
-        "path": "/account/troubleshooting/",
-        "publish": true,
-        "description": "page_finder.account.troubleshooting.description",
-        "permissions" : {
+        "permissions": {
             "auth": true
         }
     },
@@ -49,35 +44,109 @@
         "icon": "/images/icons/48px-Skills.png",
         "publish": true,
         "description": "page_finder.learning_center.description",
-        "keywords": ["learning", "guides", "AIR", "certificates", "onboarding", "readiness", "pilot readiness"]
+        "keywords": [
+            "learning",
+            "guides",
+            "AIR",
+            "certificates",
+            "onboarding",
+            "readiness",
+            "pilot readiness"
+        ]
+    },
+    {
+        "slug": "learning",
+        "alt": "icon.skills.alt",
+        "path": "/learning/",
+        "icon": "/images/icons/48px-Skills.png",
+        "publish": true,
+        "description": "page_finder.learning.description",
+        "keywords": [
+            "learning",
+            "guides",
+            "certificates",
+            "onboarding",
+            "readiness",
+            "pilot readiness"
+        ]
     },
     {
         "slug": "alliance.story",
         "path": "/alliance/story/",
         "publish": true,
         "description": "page_finder.story.description",
-        "keywords": [ "story" ]
+        "keywords": [
+            "story"
+        ]
     },
     {
         "slug": "alliance.values",
         "path": "/alliance/values/",
         "publish": true,
         "description": "page_finder.values.description",
-        "keywords": [ "values" ]
+        "keywords": [
+            "values"
+        ]
     },
     {
         "slug": "alliance.playstyle",
-        "path": "/alliance/playstyle/",
-        "publish": true,
+        "path": "/alliance/content/",
+        "publish": false,
         "description": "page_finder.playstyle.description",
-        "keywords": [ "playstyle" ]
+        "keywords": [
+            "playstyle"
+        ]
+    },
+    {
+        "slug": "alliance.content",
+        "path": "/alliance/content/",
+        "publish": true,
+        "description": "page_finder.content.description",
+        "keywords": [
+            "content",
+            "campaigns",
+            "sieges",
+            "propaganda"
+        ]
     },
     {
         "slug": "brand",
         "path": "/brand/",
         "publish": true,
         "description": "page_finder.brand.description",
-        "keywords": [ "brand", "branding", "logo", "icons" ]
+        "keywords": [
+            "brand",
+            "branding",
+            "logo",
+            "icons"
+        ]
+    },
+    {
+        "slug": "legal.privacy",
+        "path": "/legal/privacy/",
+        "publish": true,
+        "description": "page_finder.legal.privacy.description",
+        "keywords": [
+            "privacy",
+            "gdpr",
+            "cookies",
+            "esi",
+            "discord"
+        ]
+    },
+    {
+        "slug": "legal.terms",
+        "path": "/legal/terms/",
+        "publish": true,
+        "description": "page_finder.legal.terms.description",
+        "keywords": [
+            "terms",
+            "tos",
+            "ccp",
+            "disclaimer",
+            "eve online",
+            "developer license"
+        ]
     },
     {
         "slug": "campaigns.etherium_reach",
@@ -168,8 +237,10 @@
         "path": "/alliance/corporations/applications/",
         "description": "page_finder.corporations.applications.description",
         "publish": true,
-        "permissions" : {
-            "user": [ "applications.change_evecorporationapplication" ]
+        "permissions": {
+            "user": [
+                "applications.change_evecorporationapplication"
+            ]
         }
     },
     {
@@ -177,8 +248,10 @@
         "path": "/alliance/corporations/applications/records/",
         "description": "page_finder.corporations.applications.records.description",
         "publish": true,
-        "permissions" : {
-            "user": [ "applications.change_evecorporationapplication" ]
+        "permissions": {
+            "user": [
+                "applications.change_evecorporationapplication"
+            ]
         }
     },
     {
@@ -186,9 +259,13 @@
         "path": "/alliance/corporations/members/",
         "description": "page_finder.corporations.members.description",
         "publish": true,
-        "keywords": [ "corporations" ],
-        "permissions" : {
-            "user": [ "eveonline.view_evecorporation" ]
+        "keywords": [
+            "corporations"
+        ],
+        "permissions": {
+            "user": [
+                "eveonline.view_evecorporation"
+            ]
         }
     },
     {
@@ -196,9 +273,14 @@
         "path": "/alliance/health/",
         "description": "page_finder.alliance.health.description",
         "publish": true,
-        "keywords": [ "alliance", "health", "map", "retention" ],
-        "permissions" : {
-            "user": [ "alliance.view_alliancehealth" ]
+        "keywords": [
+            "alliance",
+            "health",
+            "map",
+            "retention"
+        ],
+        "permissions": {
+            "auth": true
         }
     },
     {
@@ -206,9 +288,13 @@
         "path": "/alliance/corporations/members/unregistered/",
         "description": "page_finder.corporations.members.unregistered.description",
         "publish": true,
-        "keywords": [ "corporations" ],
-        "permissions" : {
-            "user": [ "eveonline.view_evecorporation" ]
+        "keywords": [
+            "corporations"
+        ],
+        "permissions": {
+            "user": [
+                "eveonline.view_evecorporation"
+            ]
         }
     },
     {
@@ -216,9 +302,14 @@
         "path": "/alliance/corporations/members/mains/",
         "description": "page_finder.corporations.members.mains.description",
         "publish": true,
-        "keywords": [ "corporations", "alts" ],
-        "permissions" : {
-            "user": [ "eveonline.view_evecorporation" ]
+        "keywords": [
+            "corporations",
+            "alts"
+        ],
+        "permissions": {
+            "user": [
+                "eveonline.view_evecorporation"
+            ]
         }
     },
     {
@@ -226,93 +317,155 @@
         "path": "/alliance/tribes/",
         "description": "page_finder.tribes.description",
         "publish": true,
-        "keywords": [ "groups" ]
+        "keywords": [
+            "groups"
+        ]
     },
     {
         "slug": "tribes_capitals",
         "path": "/alliance/tribes/1/",
         "description": "page_finder.tribes.capitals.description",
         "publish": true,
-        "keywords": [ "groups", "tribes" ]
+        "keywords": [
+            "groups",
+            "tribes"
+        ]
     },
     {
         "slug": "tribes_industry",
         "path": "/alliance/tribes/2/",
         "description": "page_finder.tribes.industry.description",
         "publish": true,
-        "keywords": [ "groups", "tribes" ]
+        "keywords": [
+            "groups",
+            "tribes"
+        ]
     },
     {
         "slug": "tribes_market",
         "path": "/alliance/tribes/2/",
         "description": "page_finder.tribes.market.description",
         "publish": true,
-        "keywords": [ "groups", "tribes" ]
+        "keywords": [
+            "groups",
+            "tribes"
+        ]
     },
     {
         "slug": "tribes_pulse",
         "path": "/alliance/tribes/4/",
         "description": "page_finder.tribes.pulse.description",
         "publish": true,
-        "keywords": [ "groups", "tribes" ]
+        "keywords": [
+            "groups",
+            "tribes"
+        ]
     },
     {
         "slug": "guides",
         "path": "/guides/",
         "publish": true,
         "description": "page_finder.guides.description",
-        "keywords": [ "EVE Online guides", "faction warfare", "abyssal deadspace", "navy destroyer", "militia fleet", "Minmatar FW" ]
+        "keywords": [
+            "EVE Online guides",
+            "faction warfare",
+            "abyssal deadspace",
+            "navy destroyer",
+            "militia fleet",
+            "Minmatar FW"
+        ]
     },
     {
         "slug": "guides.navy_destroyer_metagame",
-        "path": "/guides/navy-destroyer-metagame/",
+        "path": "/learning/guides/navy-destroyer-metagame/",
         "publish": true,
         "description": "page_finder.guides.description",
-        "keywords": [ "EVE Online destroyer guide", "faction warfare destroyer", "navy destroyer", "Catalyst Navy Issue", "Thrasher Fleet Issue", "Algos", "Coercer", "Dragoon", "1v1 pvp", "FW plex" ]
+        "keywords": [
+            "EVE Online destroyer guide",
+            "faction warfare destroyer",
+            "navy destroyer",
+            "Catalyst Navy Issue",
+            "Thrasher Fleet Issue",
+            "Algos",
+            "Coercer",
+            "Dragoon",
+            "1v1 pvp",
+            "FW plex"
+        ]
     },
     {
         "slug": "guides.navy_frigate_guide",
-        "path": "/guides/navy-frigate-guide/",
+        "path": "/learning/guides/navy-frigate-guide/",
         "publish": true,
         "description": "page_finder.ships.navy_frigate_guide.description",
-        "keywords": [ "EVE Online frigate guide", "faction warfare frigate", "navy frigate", "Hookbill", "Comet", "Slicer", "Firetail", "Vigil Fleet Issue", "Tristan", "Breacher", "Scout complex", "1v1 pvp" ]
+        "keywords": [
+            "EVE Online frigate guide",
+            "faction warfare frigate",
+            "navy frigate",
+            "Hookbill",
+            "Comet",
+            "Slicer",
+            "Firetail",
+            "Vigil Fleet Issue",
+            "Tristan",
+            "Breacher",
+            "Scout complex",
+            "1v1 pvp"
+        ]
     },
     {
         "slug": "guides.faction_warfare_cruiser_guide",
-        "path": "/guides/faction-warfare-cruiser-guide/",
+        "path": "/learning/guides/faction-warfare-cruiser-guide/",
         "publish": true,
         "description": "page_finder.ships.faction_warfare_cruiser_guide.description",
-        "keywords": [ "EVE Online cruiser guide", "faction warfare cruiser", "navy cruiser", "Exequror Navy Issue", "Vexor Navy Issue", "Stabber Fleet Issue", "Scythe Fleet Issue", "1v1 pvp", "FW plex" ]
+        "keywords": [
+            "EVE Online cruiser guide",
+            "faction warfare cruiser",
+            "navy cruiser",
+            "Exequror Navy Issue",
+            "Vexor Navy Issue",
+            "Stabber Fleet Issue",
+            "Scythe Fleet Issue",
+            "1v1 pvp",
+            "FW plex"
+        ]
     },
-
     {
         "slug": "propaganda",
         "alt": "icon.tv.alt",
-        "path": "/alliance/propaganda/",
+        "path": "/alliance/content/",
         "publish": true,
         "icon": "/images/icons/48px-Scopenetwork.png",
-        "description": "page_finder.propaganda.description"
+        "description": "page_finder.content.description"
     },
     {
         "slug": "posts_create",
         "alt": "icon.notepad.alt",
         "path": "/alliance/propaganda/new/editor",
         "publish": true,
-        "keywords": [ "new" ],
+        "keywords": [
+            "new"
+        ],
         "description": "page_finder.posts.create.description",
         "icon": "/images/icons/48px-Notepad.png",
-        "permissions" : {
-            "user": [ "posts.add_evepost" ]
+        "permissions": {
+            "user": [
+                "posts.add_evepost"
+            ]
         }
     },
     {
         "slug": "propaganda.my_posts",
         "path": "/alliance/propaganda/my_posts/",
         "publish": true,
-        "keywords": [ "my" ],
+        "keywords": [
+            "my"
+        ],
         "description": "page_finder.propaganda.my_posts.description",
-        "permissions" : {
-            "user": [ "posts.add_evepost" ]
+        "permissions": {
+            "user": [
+                "posts.add_evepost"
+            ]
         }
     },
     {
@@ -320,8 +473,10 @@
         "path": "/alliance/propaganda/trash/",
         "publish": true,
         "description": "page_finder.propaganda.trash.description",
-        "permissions" : {
-            "user": [ "posts.add_evepost" ]
+        "permissions": {
+            "user": [
+                "posts.add_evepost"
+            ]
         }
     },
     {
@@ -355,9 +510,16 @@
         "publish": true,
         "icon": "/images/icons/48px-Killreport.png",
         "description": "page_finder.ships.srp.description",
-        "keywords": [ "srp", "ship", "replacement", "program" ],
-        "permissions" : {
-             "user": [ "srp.view_evefleetshipreimbursement" ]
+        "keywords": [
+            "srp",
+            "ship",
+            "replacement",
+            "program"
+        ],
+        "permissions": {
+            "user": [
+                "srp.view_evefleetshipreimbursement"
+            ]
         }
     },
     {
@@ -365,9 +527,16 @@
         "path": "/ships/srp/killmails/",
         "publish": true,
         "description": "page_finder.ships.srp.killmails.description",
-        "keywords": [ "srp", "ship", "replacement", "program" ],
-        "permissions" : {
-             "user": [ "srp.view_evefleetshipreimbursement" ]
+        "keywords": [
+            "srp",
+            "ship",
+            "replacement",
+            "program"
+        ],
+        "permissions": {
+            "user": [
+                "srp.view_evefleetshipreimbursement"
+            ]
         }
     },
     {
@@ -377,9 +546,14 @@
         "publish": true,
         "icon": "/images/icons/48px-Fleet.png",
         "description": "page_finder.fleets.upcoming.description",
-        "keywords": [ "upcoming", "schedule" ],
-        "permissions" : {
-            "user": [ "fleets.view_evefleet" ]
+        "keywords": [
+            "upcoming",
+            "schedule"
+        ],
+        "permissions": {
+            "user": [
+                "fleets.view_evefleet"
+            ]
         }
     },
     {
@@ -387,8 +561,10 @@
         "path": "/fleets/history/",
         "publish": true,
         "description": "page_finder.fleets.history.description",
-        "permissions" : {
-            "user": [ "fleets.view_evefleet" ]
+        "permissions": {
+            "user": [
+                "fleets.view_evefleet"
+            ]
         }
     },
     {
@@ -396,9 +572,15 @@
         "path": "/fleets/add/",
         "publish": true,
         "description": "page_finder.fleets.add.description",
-        "keywords": [ "add", "create", "new" ],
-        "permissions" : {
-            "user": [ "fleets.add_evefleet" ]
+        "keywords": [
+            "add",
+            "create",
+            "new"
+        ],
+        "permissions": {
+            "user": [
+                "fleets.add_evefleet"
+            ]
         }
     },
     {
@@ -466,14 +648,26 @@
         "path": "/market/ops/contracts/",
         "publish": true,
         "description": "page_finder.staging_supply.ops.contracts.description",
-        "keywords": [ "market", "ops", "contracts", "understocked", "fittings", "stock" ]
+        "keywords": [
+            "market",
+            "ops",
+            "contracts",
+            "understocked",
+            "fittings",
+            "stock"
+        ]
     },
     {
         "slug": "staging_supply.ops.sell_orders",
         "path": "/market/ops/sell_orders/",
         "publish": true,
         "description": "page_finder.staging_supply.ops.sell_orders.description",
-        "keywords": [ "market", "ops", "sell orders", "stock" ]
+        "keywords": [
+            "market",
+            "ops",
+            "sell orders",
+            "stock"
+        ]
     },
     {
         "slug": "industry",
@@ -482,7 +676,11 @@
         "publish": false,
         "icon": "/images/icons/48px-Industry.png",
         "description": "page_finder.industry.description",
-        "keywords": [ "industry", "supply chain", "manufacturing" ]
+        "keywords": [
+            "industry",
+            "supply chain",
+            "manufacturing"
+        ]
     },
     {
         "slug": "industry.industrialists",
@@ -490,9 +688,16 @@
         "path": "/industry/industrialists/",
         "publish": true,
         "description": "page_finder.industrialists.description",
-        "keywords": [ "token", "ESI", "tracking", "indy" ],
-        "permissions" : {
-            "user": [ "eveonline.add_evecharactertag" ]
+        "keywords": [
+            "token",
+            "ESI",
+            "tracking",
+            "indy"
+        ],
+        "permissions": {
+            "user": [
+                "eveonline.add_evecharactertag"
+            ]
         }
     },
     {
@@ -500,21 +705,36 @@
         "path": "/industry/orders/",
         "publish": true,
         "description": "page_finder.orders.description",
-        "keywords": [ "orders", "manufacturing", "materials", "breakdown" ]
+        "keywords": [
+            "orders",
+            "manufacturing",
+            "materials",
+            "breakdown"
+        ]
     },
     {
         "slug": "industry.orders.history",
         "path": "/industry/orders/history/",
         "publish": true,
         "description": "page_finder.orders.history.description",
-        "keywords": [ "orders", "manufacturing", "materials", "breakdown" ]
+        "keywords": [
+            "orders",
+            "manufacturing",
+            "materials",
+            "breakdown"
+        ]
     },
     {
         "slug": "industry.orders.summary",
         "path": "/industry/orders/summary/",
         "publish": true,
         "description": "page_finder.orders.summary.description",
-        "keywords": [ "orders", "manufacturing", "profit", "summary" ]
+        "keywords": [
+            "orders",
+            "manufacturing",
+            "profit",
+            "summary"
+        ]
     },
     {
         "slug": "industry.blueprints",
@@ -534,21 +754,34 @@
         "path": "/industry/products/",
         "publish": true,
         "description": "page_finder.products.description",
-        "keywords": [ "products", "mining", "harvesting", "production", "imports" ]
+        "keywords": [
+            "products",
+            "mining",
+            "harvesting",
+            "production",
+            "imports"
+        ]
     },
     {
         "slug": "industry.colonies",
         "path": "/industry/colonies/",
         "publish": false,
         "description": "page_finder.colonies.description",
-        "keywords": [ "PI" ]
+        "keywords": [
+            "PI"
+        ]
     },
     {
         "slug": "industry.planetary_production",
         "path": "/industry/planetary_production/",
         "publish": false,
         "description": "page_finder.planetary_production.description",
-        "keywords": [ "PI", "harvest", "extractors", "factories" ]
+        "keywords": [
+            "PI",
+            "harvest",
+            "extractors",
+            "factories"
+        ]
     },
     {
         "slug": "intel",
@@ -557,7 +790,13 @@
         "publish": true,
         "icon": "/images/icons/48px-Satellite.png",
         "description": "page_finder.intel.description",
-        "keywords": [ "tools", "fitting orders", "timers", "moons", "combatlog" ]
+        "keywords": [
+            "tools",
+            "fitting orders",
+            "timers",
+            "moons",
+            "combatlog"
+        ]
     },
     {
         "slug": "intel.timers",
@@ -566,8 +805,10 @@
         "publish": true,
         "icon": "/images/icons/48px-Calendaricon.png",
         "description": "page_finder.intel.timers.active.description",
-        "permissions" : {
-            "user": [ "structures.view_evestructuretimer" ]
+        "permissions": {
+            "user": [
+                "structures.view_evestructuretimer"
+            ]
         }
     },
     {
@@ -575,8 +816,10 @@
         "path": "/intel/timers/history/",
         "publish": true,
         "description": "page_finder.intel.timers.history.description",
-        "permissions" : {
-            "user": [ "structures.view_evestructuretimer" ]
+        "permissions": {
+            "user": [
+                "structures.view_evestructuretimer"
+            ]
         }
     },
     {
@@ -584,8 +827,10 @@
         "path": "/intel/timers/add/",
         "publish": true,
         "description": "page_finder.intel.timers.add.description",
-        "permissions" : {
-            "user": [ "structures.add_evestructuretimer" ]
+        "permissions": {
+            "user": [
+                "structures.add_evestructuretimer"
+            ]
         }
     },
     {
@@ -595,8 +840,10 @@
         "publish": true,
         "icon": "/images/icons/48px-Planets.png",
         "description": "page_finder.intel.moon_tracking.description",
-        "permissions" : {
-            "user": [ "moons.view_evemoon" ]
+        "permissions": {
+            "user": [
+                "moons.view_evemoon"
+            ]
         }
     },
     {

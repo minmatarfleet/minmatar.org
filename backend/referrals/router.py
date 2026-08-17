@@ -45,11 +45,11 @@ links = [
     ),
     LinkInfo(
         name="Plexing",
-        target="https://my.minmatar.org/guides/faction-warfare-plexing/",
+        target="https://my.minmatar.org/learning/guides/faction-warfare-plexing/",
     ),
     LinkInfo(
         name="Advantage",
-        target="https://my.minmatar.org/guides/faction-warfare-advantage/",
+        target="https://my.minmatar.org/learning/guides/faction-warfare-advantage/",
     ),
 ]
 

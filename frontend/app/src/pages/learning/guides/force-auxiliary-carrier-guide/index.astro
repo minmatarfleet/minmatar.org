@@ -1,0 +1,108 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import {
+    guideMeta,
+    credits,
+    guideSections,
+    buildFaxGuideJsonLd,
+    FAXES_GROUP_ID,
+    CAPITALS_TRIBE_NAME,
+    FAXES_GROUP_NAME,
+    load_capital_guide_runtime,
+    overview,
+    metaBlocks,
+    guidanceLead,
+    apostleSkillPlan,
+    ninazuSkillPlan,
+} from '@/data/fax-guide'
+import { pageProgressFromSections } from '@helpers/pageProgress'
+import { get_site_origin } from '@helpers/seo'
+import { LEARNING_HUB_PATH, guidePath } from '@/data/guides/urls'
+import CapitalGuidePage from '@components/blocks/capital-guide/CapitalGuidePage.astro'
+import CapitalClassGuide from '@components/blocks/capital-guide/CapitalClassGuide.astro'
+
+const page_title = t('ships.force_auxiliary_carrier_guide.page_title')
+const meta_title = t('ships.force_auxiliary_carrier_guide.meta_title').replace('{site}', t('index.page_title'))
+const meta_description = t('ships.force_auxiliary_carrier_guide.meta_description')
+const site_origin = get_site_origin(Astro.url.origin)
+const canonical_url = new URL(translatePath(guidePath('force-auxiliary-carrier-guide')), site_origin).href
+const meta_image = new URL(guideMeta.seoImage, site_origin).href
+const guides_url = new URL(translatePath(LEARNING_HUB_PATH), site_origin).href
+
+const structured_data = buildFaxGuideJsonLd({
+    canonicalUrl: canonical_url,
+    siteName: t('index.page_title'),
+    siteOrigin: site_origin,
+    metaTitle: meta_title,
+    metaDescription: meta_description,
+    metaImage: meta_image,
+    guidesUrl: guides_url,
+    authorName: credits.author,
+    publisherName: 'Minmatar Fleet Alliance',
+    editionLabel: `${guideMeta.edition} · ${guideMeta.yc}`,
+})
+
+const progress = pageProgressFromSections({
+    page_key: 'guides/force-auxiliary-carrier-guide',
+    page_title,
+    sections: guideSections,
+    version_source: JSON.stringify({
+        edition: guideMeta.edition,
+        yc: guideMeta.yc,
+        sections: guideSections.map((section) => section.id),
+    }),
+})
+
+const { fitting_library, capitals_chief, group_chief, tribe } = await load_capital_guide_runtime({
+    group_id: FAXES_GROUP_ID,
+    tribe_name_fallback: CAPITALS_TRIBE_NAME,
+    group_name_fallback: FAXES_GROUP_NAME,
+    subject_phrase: 'Force auxiliaries are part of',
+    teach_topic: 'triage',
+    translate_path: translatePath,
+})
+---
+
+<CapitalGuidePage
+    page_title={page_title}
+    meta_title={meta_title}
+    meta_description={meta_description}
+    meta_image={meta_image}
+    canonical_url={canonical_url}
+    cover_image={guideMeta.coverImage}
+    cover_alt={guideMeta.coverAlt}
+    structured_data={structured_data}
+    progress={progress}
+>
+    <CapitalClassGuide
+        guide_meta={guideMeta}
+        overview={overview}
+        meta_blocks={metaBlocks}
+        guidance_lead={guidanceLead}
+        skill_plans={[
+            {
+                id: 'apostle',
+                title: t('ships.force_auxiliary_carrier_guide.apostle_skill_plan_title'),
+                skills: apostleSkillPlan,
+                copy_label: t('ships.force_auxiliary_carrier_guide.copy_skill_plan'),
+            },
+            {
+                id: 'ninazu',
+                title: t('ships.force_auxiliary_carrier_guide.ninazu_skill_plan_title'),
+                skills: ninazuSkillPlan,
+                copy_label: t('ships.force_auxiliary_carrier_guide.copy_skill_plan'),
+            },
+        ]}
+        tribe={tribe}
+        guide_sections={guideSections}
+        fitting_library={fitting_library}
+        capitals_chief={capitals_chief}
+        group_chief={group_chief}
+        capitals_chief_label={t('ships.force_auxiliary_carrier_guide.capitals_tribe_chief')}
+        group_chief_label={t('ships.force_auxiliary_carrier_guide.faxes_group_chief')}
+        id_prefix="fax"
+        merge_meta_into_guidance={true}
+    />
+</CapitalGuidePage>

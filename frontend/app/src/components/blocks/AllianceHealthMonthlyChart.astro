@@ -17,35 +17,41 @@ const chart_id = 'alliance-health-monthly-chart'
 const labels = monthly.map((m) => m.label)
 const active = monthly.map((m) => m.active)
 const fleet = monthly.map((m) => m.fleet)
+const small_gang = monthly.map((m) => m.small_gang ?? 0)
 const solo = monthly.map((m) => m.solo)
-const supply = monthly.map((m) => m.supply)
 ---
 
 <section
     class:list={['[ alliance-health-monthly ]', Astro.props.class]}
     aria-label={t('alliance.health.monthly.aria')}
     x-data={`{
-        init() {
+        chart: null,
+        build_chart() {
+            const canvas = document.getElementById('${chart_id}')
+            const ChartLib = window.Chart
+            if (!canvas || typeof ChartLib === 'undefined') return false
+            if (this.chart) {
+                this.chart.destroy()
+                this.chart = null
+            }
             const root = getComputedStyle(document.documentElement)
             const blue = root.getPropertyValue('--alliance-blue').trim() || '#2051B5'
             const yellow = root.getPropertyValue('--fleet-yellow').trim() || '#f1d9a0'
             const red = root.getPropertyValue('--fleet-red').trim() || '#b53620'
             const green = root.getPropertyValue('--green').trim() || '#3d9a5f'
             const fg = root.getPropertyValue('--foreground').trim() || '#ccc'
-            const canvas = document.getElementById('${chart_id}')
-            if (!canvas || typeof Chart === 'undefined') return
-            Chart.defaults.color = fg
-            Chart.defaults.borderColor = 'rgb(255, 255, 255, 0.08)'
-            Chart.defaults.font.family = 'Montserrat Variable'
-            new Chart(canvas.getContext('2d'), {
+            ChartLib.defaults.color = fg
+            ChartLib.defaults.borderColor = 'rgb(255, 255, 255, 0.08)'
+            ChartLib.defaults.font.family = 'Montserrat Variable'
+            this.chart = new ChartLib(canvas.getContext('2d'), {
                 type: 'line',
                 data: {
                     labels: ${JSON.stringify(labels)},
                     datasets: [
                         { label: ${JSON.stringify(t('alliance.health.series.active'))}, data: ${JSON.stringify(active)}, borderColor: blue, backgroundColor: blue, tension: 0, pointRadius: 2 },
                         { label: ${JSON.stringify(t('alliance.health.series.fleet'))}, data: ${JSON.stringify(fleet)}, borderColor: yellow, backgroundColor: yellow, tension: 0, pointRadius: 2 },
+                        { label: ${JSON.stringify(t('alliance.health.series.small_gang'))}, data: ${JSON.stringify(small_gang)}, borderColor: green, backgroundColor: green, tension: 0, pointRadius: 2 },
                         { label: ${JSON.stringify(t('alliance.health.series.solo'))}, data: ${JSON.stringify(solo)}, borderColor: red, backgroundColor: red, tension: 0, pointRadius: 2 },
-                        { label: ${JSON.stringify(t('alliance.health.series.supply'))}, data: ${JSON.stringify(supply)}, borderColor: green, backgroundColor: green, tension: 0, pointRadius: 2 },
                     ],
                 },
                 options: {
@@ -57,6 +63,15 @@ const supply = monthly.map((m) => m.supply)
                     plugins: { legend: { position: 'bottom' } },
                 },
             })
+            return true
+        },
+        init() {
+            if (this.build_chart()) return
+            let tries = 0
+            const timer = setInterval(() => {
+                tries += 1
+                if (this.build_chart() || tries > 40) clearInterval(timer)
+            }, 100)
         }
     }`}
 >

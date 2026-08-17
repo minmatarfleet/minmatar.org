@@ -1,13 +1,13 @@
 ---
 /**
- * Learning Center Alpine factories — must live in FooterScripts (every Viewport page).
+ * Learning Center Alpine factories — must load in HeadScripts before AlpineCdn.
  *
  * ClientRouter swaps <body> then Alpine's MutationObserver inits new x-data *before*
- * page-local is:inline scripts run (runScripts is after updateCallbackDone). If
- * learningCenterHub / learningCertificateDetail are only defined on their pages,
- * soft-nav onto that page throws ReferenceError; child x-show then evaluates on
- * <body>, removes x-cloak, and leaves panels at display:none (blank hub).
- * Same pattern as neocom_clock() in FooterScripts: define once, reuse on every VT.
+ * footer is:inline scripts run. Defining factories in <head> (before Alpine CDN)
+ * so the first Alpine.start() can resolve learningCenterHub / learningCertificateDetail.
+ *
+ * Factories are assigned on window (same as notification_preferences / edge_fade).
+ * FooterScripts astro:after-swap destroyTree + initTree still repairs soft-nav races.
  */
 ---
 
@@ -24,7 +24,11 @@
 </script>
 
 <script is:inline>
-    function learningCenterHub(needsPersonaInitially) {
+    // Assign on window (not a bare function decl) so ClientRouter soft-navs always
+    // resolve the factory. Alpine's MutationObserver can init hub x-data before
+    // footer scripts re-run; after-swap destroy+initTree repairs that race.
+    // Always reassign so FooterScripts / HMR pick up method changes (do not guard).
+    window.learningCenterHub = function learningCenterHub(needsPersonaInitially) {
         return {
             authToken: '',
             apiBase: '',
@@ -51,14 +55,18 @@
                 const name = (local && local.PERSONA_COOKIE) || 'learning_persona'
                 document.cookie = name + '=' + persona + '; path=/; max-age=' + (60 * 60 * 24 * 180) + '; SameSite=Lax'
             },
-            certPercent(slugs) {
+            certCompletedCount(slugs) {
                 const list = slugs || []
-                if (!list.length) return 0
                 let done = 0
                 for (let i = 0; i < list.length; i++) {
                     if (this.completedSlugs.indexOf(list[i]) !== -1) done++
                 }
-                return Math.round((100 * done) / list.length)
+                return done
+            },
+            certPercent(slugs) {
+                const list = slugs || []
+                if (!list.length) return 0
+                return Math.round((100 * this.certCompletedCount(list)) / list.length)
             },
             syncPanels() {
                 const root = this.hubRoot
@@ -92,7 +100,7 @@
                 const apiUrl = this.$el.getAttribute('data-api-url') || ''
                 this.authToken = cfg.authToken || ''
                 this.apiBase = apiUrl + '/api/learning'
-                this.catalogPath = cfg.catalogPath || '/learning-center/'
+                this.catalogPath = cfg.catalogPath || '/learning/'
                 this.persona = cfg.initialPersona || null
                 this.needsPersona = !!cfg.needsPersona
                 this.personaConfirmedOnServer = !!cfg.personaConfirmedOnServer
@@ -212,7 +220,7 @@
         }
     }
 
-    function learningCertificateDetail() {
+    window.learningCertificateDetail = function learningCertificateDetail() {
         return {
             authToken: '',
             apiBase: '',

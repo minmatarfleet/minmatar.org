@@ -72,7 +72,7 @@ The `scope` on a feature selects the evaluation strategy (`backend/groups/featur
 
 | Scope | Grants access when | Example features |
 |-------|--------------------|------------------|
-| `affiliation` | User's `UserAffiliation` is one of the feature's wired `AffiliationType` rows | `fleets.create`, `srp.view`, `structures.view`, `mumble.access` |
+| `affiliation` | User's `UserAffiliation` is one of the feature's wired `AffiliationType` rows | `fleets.create`, `srp.view`, `structures.view` |
 | `tribe_group_target` | Affiliation matches **and** the target `TribeGroup` (passed as `tribe_group=`) is in the wired set — empty set means all tribe groups | `tribes.apply` |
 | `tribe_chief` | User is a tribe or group chief (of the target `tribe_group=`/`tribe=` if passed, otherwise of any wired tribe group); the feature's staff/legacy permission also grants | `tribes.manage_memberships`, `industry.order.submit` |
 | `tribe_membership` | User has an active `TribeGroupMembership` in a wired tribe group | (available for wiring) |

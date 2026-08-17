@@ -24,7 +24,7 @@
     <p class="tribes-hub-header__desc">
       {% blocktranslate with tribe_name=tribe_group.tribe.name trimmed %}
       This is the joinable unit within {{ tribe_name }} — where
-      membership, qualification rules, and activity tracking are managed.
+      membership and qualification rules are managed.
       {% endblocktranslate %}
     </p>
   </header>
@@ -33,7 +33,7 @@
     <p>
       {% blocktranslate trimmed %}
       Everything for this group lives here: settings, ranks, who can join,
-      qualification rules, and activity tracking. Each card opens a filtered
+      and qualification rules. Each card opens a filtered
       list scoped to this group.
       {% endblocktranslate %}
     </p>
@@ -81,14 +81,6 @@
       {% include "admin/tribes/_hub_card.html" with title=_("Membership characters") count=sections.membership_characters.count description=_("EVE characters linked to memberships in this group.") list_url=sections.membership_characters.list_url list_label=_("View characters") add_url=sections.membership_characters.add_url add_label=_("Add character") %}
       {% include "admin/tribes/_hub_card.html" with title=_("Membership history") count=sections.membership_history.count description=_("Audit log of status changes (applied, approved, removed, etc.) for members of this group.") list_url=sections.membership_history.list_url list_label=_("View history") readonly=True %}
       {% include "admin/tribes/_hub_card.html" with title=_("Character history") count=sections.character_history.count description=_("When characters were added or removed from memberships in this group.") list_url=sections.character_history.list_url list_label=_("View history") readonly=True %}
-    </div>
-  </section>
-
-  <section class="tribes-section">
-    <h2>{% translate "Activities" %}</h2>
-    <div class="tribes-card-grid">
-      {% include "admin/tribes/_hub_card.html" with title=_("Activities") count=sections.activities.count description=_("Activity definitions for this group — what to track and how points are awarded.") list_url=sections.activities.list_url list_label=_("View activities") add_url=sections.activities.add_url add_label=_("Add activity") %}
-      {% include "admin/tribes/_hub_card.html" with title=_("Activity records") count=sections.activity_records.count description=_("Individual activity events logged against this group's activity definitions.") list_url=sections.activity_records.list_url list_label=_("View records") add_url=sections.activity_records.add_url add_label=_("Add record") %}
     </div>
   </section>
 </div>

@@ -18,11 +18,41 @@ from alliance.endpoints.health.get_corporations import (
     ROUTE_SPEC as get_corporations_spec,
     get_health_corporations,
 )
+from alliance.endpoints.health.get_leave import (
+    METHOD as get_leave_method,
+    PATH as get_leave_path,
+    ROUTE_SPEC as get_leave_spec,
+    get_health_leave,
+)
+from alliance.endpoints.health.get_onboarding import (
+    METHOD as get_onboarding_method,
+    PATH as get_onboarding_path,
+    ROUTE_SPEC as get_onboarding_spec,
+    get_health_onboarding,
+)
 from alliance.endpoints.health.get_overview import (
     METHOD as get_overview_method,
     PATH as get_overview_path,
     ROUTE_SPEC as get_overview_spec,
     get_health_overview,
+)
+from alliance.endpoints.health.get_unknowns import (
+    METHOD as get_unknowns_method,
+    PATH as get_unknowns_path,
+    ROUTE_SPEC as get_unknowns_spec,
+    get_health_unknowns,
+)
+from alliance.endpoints.health.post_status import (
+    METHOD as post_status_method,
+    PATH as post_status_path,
+    ROUTE_SPEC as post_status_spec,
+    post_health_status,
+)
+from alliance.endpoints.health.get_trials import (
+    METHOD as get_trials_method,
+    PATH as get_trials_path,
+    ROUTE_SPEC as get_trials_spec,
+    get_health_trials,
 )
 
 router = Router(tags=["Alliance - Health"])
@@ -41,6 +71,24 @@ _ROUTES = (
         get_health_attention,
     ),
     (
+        get_trials_method,
+        get_trials_path,
+        get_trials_spec,
+        get_health_trials,
+    ),
+    (
+        get_leave_method,
+        get_leave_path,
+        get_leave_spec,
+        get_health_leave,
+    ),
+    (
+        get_onboarding_method,
+        get_onboarding_path,
+        get_onboarding_spec,
+        get_health_onboarding,
+    ),
+    (
         get_corporations_method,
         get_corporations_path,
         get_corporations_spec,
@@ -51,6 +99,18 @@ _ROUTES = (
         get_cohorts_path,
         get_cohorts_spec,
         get_health_cohorts,
+    ),
+    (
+        get_unknowns_method,
+        get_unknowns_path,
+        get_unknowns_spec,
+        get_health_unknowns,
+    ),
+    (
+        post_status_method,
+        post_status_path,
+        post_status_spec,
+        post_health_status,
     ),
 )
 for method, path, spec, view in _ROUTES:

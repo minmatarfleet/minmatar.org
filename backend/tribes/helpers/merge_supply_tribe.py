@@ -21,7 +21,6 @@ from industry.models import IndustryOrder
 from tribes.models import (
     Tribe,
     TribeGroup,
-    TribeGroupActivity,
     TribeGroupMembership,
     TribeGroupRank,
     TribeGroupRequirement,
@@ -258,21 +257,12 @@ def _relocate_group_children(
     apply: bool,
     log: MergeLog,
 ) -> None:
-    """Move requirements, activities, ranks, order M2M from source → survivor."""
+    """Move requirements, ranks, order M2M from source → survivor."""
     for req in TribeGroupRequirement.objects.filter(tribe_group=source):
         log.info(f"Requirement pk={req.pk}: {source.code} → {survivor.code}")
         if apply:
             req.tribe_group = survivor
             req.save(update_fields=["tribe_group"])
-
-    for act in TribeGroupActivity.objects.filter(tribe_group=source):
-        log.info(
-            f"Activity pk={act.pk} type={act.activity_type}: "
-            f"{source.code} → {survivor.code}"
-        )
-        if apply:
-            act.tribe_group = survivor
-            act.save(update_fields=["tribe_group"])
 
     for rank in TribeGroupRank.objects.filter(tribe_group=source):
         log.info(f"Rank {rank.name!r}: {source.code} → {survivor.code}")

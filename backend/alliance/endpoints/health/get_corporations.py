@@ -1,13 +1,15 @@
 """GET /api/alliance/health/corporations"""
 
-from alliance.endpoints.health.helpers import require_snapshot
+from alliance.endpoints.health.helpers import (
+    require_health_view,
+    require_snapshot,
+)
 from alliance.endpoints.health.schemas import (
     HealthCorporationsResponse,
     corporations_from_payload,
 )
 from app.errors import ErrorResponse
 from authentication import AuthBearer
-from groups.helpers.feature_access import require_feature
 
 PATH = "corporations"
 METHOD = "get"
@@ -23,7 +25,7 @@ ROUTE_SPEC = {
 
 
 def get_health_corporations(request):
-    denied = require_feature(request.user, "alliance.health")
+    denied = require_health_view(request.user)
     if denied:
         return denied
     snap, err = require_snapshot()

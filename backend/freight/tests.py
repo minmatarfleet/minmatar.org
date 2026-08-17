@@ -15,6 +15,7 @@ from eveonline.models import (
     EveCorporationContract,
     EveLocation,
 )
+from freight.helpers.pricing import STANDARD_MAX_M3
 from freight.models import (
     EveFreightRoute,
     FreightContract,
@@ -125,10 +126,11 @@ class FreightRouterTestCase(TestCase):
             destination_location=loc2,
             route_type=EveFreightRoute.RouteType.FIXED,
             fixed_fee_millions=25,
+            xl_fee_millions=10,
             max_m3=950000,
             max_collateral=5_000_000_000,
             isk_per_m3=999,  # ignored for fixed
-            collateral_modifier=0.99,
+            collateral_modifier=0.01,
         )
 
         response_a = self.client.get(
@@ -143,8 +145,12 @@ class FreightRouterTestCase(TestCase):
 
         self.assertEqual(200, response_a.status_code)
         self.assertEqual(200, response_b.status_code)
-        self.assertEqual(25_000_000, response_a.json()["cost"])
-        self.assertEqual(25_000_000, response_b.json()["cost"])
+        # Under 350k m³: 25M + 1% of 1M collateral.
+        self.assertEqual(25_000_000 + 10_000, response_a.json()["cost"])
+        # Over 350k m³: 25M + 10M XL + 1% of 2B collateral.
+        self.assertEqual(
+            25_000_000 + 10_000_000 + 20_000_000, response_b.json()["cost"]
+        )
 
         routes = self.client.get(
             f"{BASE_URL}/routes",
@@ -154,6 +160,78 @@ class FreightRouterTestCase(TestCase):
         self.assertEqual(routes[0]["route_type"], "fixed")
         self.assertEqual(routes[0]["max_m3"], 950000)
         self.assertEqual(routes[0]["max_collateral"], 5_000_000_000)
+
+    def test_fixed_freight_xl_fee_threshold(self):
+        loc1 = EveLocation.objects.create(
+            location_id=1,
+            location_name="Location 1",
+            short_name="Loc1",
+            solar_system_id=1,
+            solar_system_name="System 1",
+        )
+        loc2 = EveLocation.objects.create(
+            location_id=2,
+            location_name="Location 2",
+            short_name="Loc2",
+            solar_system_id=2,
+            solar_system_name="System 2",
+        )
+        route = EveFreightRoute.objects.create(
+            origin_location=loc1,
+            destination_location=loc2,
+            route_type=EveFreightRoute.RouteType.FIXED,
+            fixed_fee_millions=25,
+            xl_fee_millions=10,
+            max_m3=950000,
+            max_collateral=5_000_000_000,
+        )
+
+        def cost_at(m3):
+            response = self.client.get(
+                f"{BASE_URL}/routes/{route.id}/cost?m3={m3}&collateral=0",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
+            self.assertEqual(200, response.status_code)
+            return response.json()["cost"]
+
+        # The XL fee applies strictly above 350,000 m³.
+        self.assertEqual(25_000_000, cost_at(STANDARD_MAX_M3 - 1))
+        self.assertEqual(25_000_000, cost_at(STANDARD_MAX_M3))
+        self.assertEqual(35_000_000, cost_at(STANDARD_MAX_M3 + 1))
+
+    def test_fixed_freight_cost_without_xl_or_collateral_fees(self):
+        loc1 = EveLocation.objects.create(
+            location_id=1,
+            location_name="Location 1",
+            short_name="Loc1",
+            solar_system_id=1,
+            solar_system_name="System 1",
+        )
+        loc2 = EveLocation.objects.create(
+            location_id=2,
+            location_name="Location 2",
+            short_name="Loc2",
+            solar_system_id=2,
+            solar_system_name="System 2",
+        )
+        route = EveFreightRoute.objects.create(
+            origin_location=loc1,
+            destination_location=loc2,
+            route_type=EveFreightRoute.RouteType.FIXED,
+            fixed_fee_millions=25,
+            max_m3=950000,
+            max_collateral=5_000_000_000,
+        )
+
+        response = self.client.get(
+            f"{BASE_URL}/routes/{route.id}/cost"
+            f"?m3=900000&collateral=4000000000",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        # Defaults of 0 leave the reward at the flat fee alone.
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(25_000_000, response.json()["cost"])
 
     def test_fixed_freight_cost_rejects_over_max_m3(self):
         loc1 = EveLocation.objects.create(

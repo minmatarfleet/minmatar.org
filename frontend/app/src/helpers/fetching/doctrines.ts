@@ -7,7 +7,6 @@ import { doctrine_types } from '@dtypes/layout_components'
 import type { Doctrine, Location } from '@dtypes/api.minmatar.org'
 import { get_doctrines, get_doctrine_by_id } from '@helpers/api.minmatar.org/doctrines'
 import { get_fitting_item } from '@helpers/fetching/ships'
-import { get_groups } from '@helpers/fetching/groups'
 import { get_locations_by_ids } from '@helpers/api.minmatar.org/locations'
 
 function normalize_doctrine_type(type: string): DoctrineTypes {
@@ -24,7 +23,6 @@ export async function fetch_doctrines() {
     let api_doctrines:Doctrine[]
 
     api_doctrines = await get_doctrines()
-    // const sigs = await get_groups('group')
 
     // Collect all unique location_ids from all doctrines
     const all_location_ids: number[] = []

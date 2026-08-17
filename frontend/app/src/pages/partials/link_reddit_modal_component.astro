@@ -1,0 +1,151 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { get_api_url } from '@helpers/env'
+
+const auth_token = Astro.cookies.has('auth_token')
+    ? (Astro.cookies.get('auth_token')?.value as string)
+    : false
+
+const PARTIAL_URL = translatePath('/partials/link_reddit_modal_component')
+
+let form_error: string | false = false
+let saved_username = ''
+let saved = false
+
+if (Astro.request.method === 'POST') {
+    if (!auth_token) {
+        form_error = t('content.connect.reddit_auth_required')
+    } else {
+        const form = await Astro.request.formData()
+        const username = String(form.get('username') ?? '').trim()
+        if (!username) {
+            form_error = t('content.connect.reddit_username_required')
+        } else {
+            try {
+                const response = await fetch(`${get_api_url()}/api/creators/reddit`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${auth_token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username }),
+                })
+                if (!response.ok) {
+                    const body = await response.json().catch(() => ({}))
+                    throw new Error(body.detail || `HTTP ${response.status}`)
+                }
+                saved = true
+            } catch (error) {
+                form_error = (error as Error).message
+                saved_username = username
+            }
+        }
+    }
+}
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+---
+
+{saved ?
+    <div
+        class="[ reddit-link-modal ]"
+        x-data={`{
+            init() {
+                setTimeout(() => { window.location.reload() }, 700)
+            }
+        }`}
+    >
+        <p class="[ reddit-link-modal__success ]" role="status">
+            {t('content.connect.reddit_modal_success')}
+        </p>
+    </div>
+    :
+    <div class="[ reddit-link-modal ]">
+        <form
+            method="post"
+            hx-post={PARTIAL_URL}
+            hx-target="closest .reddit-link-modal"
+            hx-swap="outerHTML transition:true"
+            hx-indicator=".loader"
+        >
+            <Flexblock gap="var(--space-s)">
+                <Flexblock gap="var(--space-3xs)">
+                    <h3 class="[ reddit-link-modal__title ]">
+                        {t('content.connect.reddit_page_title')}
+                    </h3>
+                    <p class="[ reddit-link-modal__leading ]">
+                        {t('content.connect.reddit_leading')}
+                    </p>
+                </Flexblock>
+
+                {form_error &&
+                    <p class="[ reddit-link-modal__error ]" role="alert">
+                        {form_error}
+                    </p>
+                }
+
+                <Flexblock gap="var(--space-3xs)">
+                    <label class="[ reddit-link-modal__label ]" for="reddit-username-modal">
+                        {t('content.connect.reddit_username_label')}
+                    </label>
+                    <Input
+                        id="reddit-username-modal"
+                        name="username"
+                        type="text"
+                        autocomplete="off"
+                        placeholder={t('content.connect.reddit_placeholder')}
+                        value={saved_username}
+                        required
+                    />
+                </Flexblock>
+
+                <Button type="submit" size="sm" color="fleet-red" off_disable={true}>
+                    {t('content.connect.reddit_submit')}
+                </Button>
+            </Flexblock>
+        </form>
+    </div>
+}
+
+<style lang="scss">
+    .reddit-link-modal {
+        padding: var(--space-s);
+        max-width: 28rem;
+    }
+
+    .reddit-link-modal__title {
+        margin: 0;
+        font-size: var(--step-1);
+        color: var(--highlight);
+    }
+
+    .reddit-link-modal__leading,
+    .reddit-link-modal__label {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--foreground);
+    }
+
+    .reddit-link-modal__label {
+        font-family: var(--button-font);
+        color: var(--highlight);
+    }
+
+    .reddit-link-modal__error {
+        margin: 0;
+        color: var(--fleet-red);
+        font-size: var(--step--1);
+    }
+
+    .reddit-link-modal__success {
+        margin: 0;
+        color: var(--green);
+        font-family: var(--button-font);
+        font-size: var(--step-0);
+        font-weight: 600;
+    }
+</style>

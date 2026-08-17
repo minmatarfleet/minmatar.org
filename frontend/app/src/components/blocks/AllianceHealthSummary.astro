@@ -16,7 +16,65 @@ interface Props {
 const { overview, ...attributes } = Astro.props
 delete attributes.class
 
-const at_risk = overview.quiet.fading + overview.quiet.dark
+const windows = overview.status_windows ?? {
+    active: { d30: 0, d90: 0, d180: 0 },
+    trial: { d30: 0, d90: 0, d180: 0 },
+    on_leave: { d30: 0, d90: 0, d180: 0 },
+}
+
+const window_total =
+    windows.active.d30 + windows.trial.d30 + windows.on_leave.d30
+
+const delta = overview.delta_30d ?? { active: 0, trial: 0, on_leave: 0 }
+
+const format_delta = (value: number) =>
+    value > 0 ? `+${value}` : String(value)
+
+const cells: {
+    label: string
+    value: number
+    tone?: 'success' | 'danger' | 'info'
+    delta?: number
+}[] =
+    window_total > 0
+        ? [
+              {
+                  label: `${t('alliance.health.status.active')} · ${t('alliance.health.window.30d')}`,
+                  value: windows.active.d30,
+                  tone: 'success',
+                  delta: delta.active,
+              },
+              {
+                  label: `${t('alliance.health.status.trial')} · ${t('alliance.health.window.30d')}`,
+                  value: windows.trial.d30,
+                  tone: 'info',
+                  delta: delta.trial,
+              },
+              {
+                  label: `${t('alliance.health.status.on_leave')} · ${t('alliance.health.window.30d')}`,
+                  value: windows.on_leave.d30,
+                  delta: delta.on_leave,
+              },
+          ]
+        : [
+              {
+                  label: t('alliance.health.status.active'),
+                  value: overview.status?.active ?? 0,
+                  tone: 'success',
+                  delta: delta.active,
+              },
+              {
+                  label: t('alliance.health.status.trial'),
+                  value: overview.status?.trial ?? 0,
+                  tone: 'info',
+                  delta: delta.trial,
+              },
+              {
+                  label: t('alliance.health.status.on_leave'),
+                  value: overview.status?.on_leave ?? 0,
+                  delta: delta.on_leave,
+              },
+          ]
 ---
 
 <section
@@ -26,22 +84,32 @@ const at_risk = overview.quiet.fading + overview.quiet.dark
     <Flexblock gap="var(--space-m)">
         <Flexblock gap="var(--space-3xs)">
             <h2>{t('alliance.health.summary.title')}</h2>
-            <small>{t('alliance.health.summary.caption')}</small>
+            <small>
+                {t(
+                    window_total > 0
+                        ? 'alliance.health.summary.caption'
+                        : 'alliance.health.summary.caption_status',
+                )}
+            </small>
         </Flexblock>
 
         <div class="[ alliance-health-summary__stats ]">
-            <CampaignStat label={t('alliance.health.total_pilots')}>
-                <CountUpAnimation element="span" target={overview.roster_people} />
-            </CampaignStat>
-            <CampaignStat label={t('alliance.health.active_pilots')} tone="success">
-                <CountUpAnimation element="span" target={overview.map_30d} />
-            </CampaignStat>
-            <CampaignStat
-                label={t('alliance.health.at_risk')}
-                tone={at_risk > 0 ? 'danger' : 'success'}
-            >
-                <CountUpAnimation element="span" target={at_risk} />
-            </CampaignStat>
+            {cells.map((cell) => (
+                <CampaignStat label={cell.label} tone={cell.tone}>
+                    <CountUpAnimation element="span" target={cell.value} />
+                    {cell.delta ? (
+                        <span
+                            class:list={[
+                                'alliance-health-summary__delta',
+                                cell.delta > 0 && 'alliance-health-summary__delta--up',
+                                cell.delta < 0 && 'alliance-health-summary__delta--down',
+                            ]}
+                        >
+                            {format_delta(cell.delta)}
+                        </span>
+                    ) : null}
+                </CampaignStat>
+            ))}
         </div>
     </Flexblock>
 </section>
@@ -69,7 +137,22 @@ const at_risk = overview.quiet.fading + overview.quiet.dark
         }
     }
 
-    @media (max-width: 900px) {
+    .alliance-health-summary__delta {
+        margin-inline-start: var(--space-3xs);
+        font-size: var(--step--1);
+        font-variant-numeric: tabular-nums;
+        color: var(--faded);
+    }
+
+    .alliance-health-summary__stats :global(b) .alliance-health-summary__delta--up {
+        color: var(--green);
+    }
+
+    .alliance-health-summary__stats :global(b) .alliance-health-summary__delta--down {
+        color: var(--fleet-red);
+    }
+
+    @media (max-width: 800px) {
         .alliance-health-summary__stats {
             grid-template-columns: 1fr;
         }

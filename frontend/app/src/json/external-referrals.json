@@ -2,43 +2,37 @@
     {
         "name": "wiki_fw_plexing",
         "title": "Faction Warfare Complexes",
-        "target": "https://my.minmatar.org/guides/faction-warfare-plexing/",
+        "target": "https://my.minmatar.org/learning/guides/faction-warfare-plexing/",
         "description": "Guide"
     },
     {
         "name": "wiki_fw_advantage",
         "title": "Faction Warfare Advantage",
-        "target": "https://my.minmatar.org/guides/faction-warfare-advantage/",
+        "target": "https://my.minmatar.org/learning/guides/faction-warfare-advantage/",
         "description": "Guide"
     },
     {
         "name": "wiki_fleet_guide",
         "title": "New Player Fleet Guide",
-        "target": "https://my.minmatar.org/guides/new-player-fleet-guide/",
+        "target": "https://my.minmatar.org/learning/guides/new-player-fleet-guide/",
         "description": "Guide"
     },
     {
         "name": "wiki_abyssals",
         "title": "Farming the Abyss",
-        "target": "https://my.minmatar.org/guides/abyssals/",
-        "description": "Guide"
-    },
-    {
-        "name": "wiki_pochven",
-        "title": "Pochven Standings",
-        "target": "https://my.minmatar.org/guides/pochven-standings/",
+        "target": "https://my.minmatar.org/learning/guides/abyssals/",
         "description": "Guide"
     },
     {
         "name": "wiki_angel_hunting",
         "title": "Zohar's Chosen Angel Hunting",
-        "target": "https://my.minmatar.org/guides/zohar-hunting/",
+        "target": "https://my.minmatar.org/learning/guides/zohar-hunting/",
         "description": "Guide"
     },
     {
         "name": "wiki_lvl_5_missions",
         "title": "L5 Mission Farming",
-        "target": "https://my.minmatar.org/guides/level5-missions/",
+        "target": "https://my.minmatar.org/learning/guides/level5-missions/",
         "description": "Guide"
     },
     {
@@ -50,25 +44,25 @@
     {
         "name": "hosted_navy_destroyer_metagame",
         "title": "Faction Warfare Destroyer Guide",
-        "target": "/guides/navy-destroyer-metagame/",
+        "target": "/learning/guides/navy-destroyer-metagame/",
         "description": "Hosted guide"
     },
     {
         "name": "hosted_navy_frigate_guide",
         "title": "Faction Warfare Frigate Guide",
-        "target": "/guides/navy-frigate-guide/",
+        "target": "/learning/guides/navy-frigate-guide/",
         "description": "Hosted guide"
     },
     {
         "name": "hosted_faction_warfare_cruiser_guide",
         "title": "Faction Warfare Cruiser Guide",
-        "target": "/guides/faction-warfare-cruiser-guide/",
+        "target": "/learning/guides/faction-warfare-cruiser-guide/",
         "description": "Hosted guide"
     },
     {
         "name": "wiki_bookmarks",
         "title": "Bookmarks",
-        "target": "https://my.minmatar.org/guides/bookmarks/",
+        "target": "https://my.minmatar.org/learning/guides/bookmarks/",
         "description": "Guide"
     }
 ]

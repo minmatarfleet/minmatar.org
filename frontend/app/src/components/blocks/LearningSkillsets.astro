@@ -1,0 +1,82 @@
+---
+import type { Skillset, CharacterBasic } from '@dtypes/layout_components'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Button from '@components/blocks/Button.astro'
+import SkillsetsList from '@components/blocks/SkillsetsList.astro'
+import CogIcon from '@components/icons/buttons/CogIcon.astro'
+
+interface Props {
+    heading: string
+    lead: string
+    empty_text: string
+    skillsets: Skillset[]
+    character: CharacterBasic | null
+    login_href: string | null
+    login_label: string
+    admin_href?: string | null
+    admin_label?: string
+}
+
+const {
+    heading,
+    lead,
+    empty_text,
+    skillsets,
+    character,
+    login_href,
+    login_label,
+    admin_href = null,
+    admin_label = '',
+} = Astro.props
+---
+
+<section id="skillsets" class="[ learning-skillsets ]">
+    <Flexblock gap="var(--space-m)">
+        <FlexInline justification="space-between" class="[ w-full !items-start ]" gap="var(--space-s)">
+            <Flexblock gap="var(--space-3xs)">
+                <h2>{heading}</h2>
+                <p class="[ excerpt ]">{lead}</p>
+            </Flexblock>
+            {admin_href &&
+                <Button
+                    href={admin_href}
+                    size="sm"
+                    color="transparent"
+                    narrow={true}
+                    new_tab={true}
+                    aria-label={admin_label}
+                    title={admin_label}
+                >
+                    <CogIcon slot="icon" />
+                </Button>
+            }
+        </FlexInline>
+
+        {character && skillsets.length > 0 ? (
+            <SkillsetsList
+                skillsets={skillsets}
+                character={character}
+            />
+        ) : login_href && !character ? (
+            <Button size="sm" href={login_href}>{login_label}</Button>
+        ) : (
+            <p>{empty_text}</p>
+        )}
+    </Flexblock>
+</section>
+
+<style lang="scss">
+    .learning-skillsets {
+        h2 {
+            margin: 0;
+        }
+
+        .excerpt {
+            margin: 0;
+            color: var(--fleet-yellow);
+            font-size: var(--step--1);
+        }
+    }
+</style>

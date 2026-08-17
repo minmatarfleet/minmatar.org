@@ -1,0 +1,98 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { GuideMeta } from '@/data/guides/types'
+import { getGuideCoverImage } from '@/data/guides/covers'
+
+interface Props {
+    guide: GuideMeta;
+}
+
+const {
+    guide,
+} = Astro.props
+
+const href = guide.path
+    ? translatePath(guide.path)
+    : translatePath(`/guides/${guide.slug}/`)
+const cover = getGuideCoverImage(guide)
+const view_label = t('view')
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import PictureCard from '@components/blocks/PictureCard.astro'
+import Button from '@components/blocks/Button.astro'
+import Tag from '@components/blocks/Tag.astro'
+---
+
+<PictureCard
+    class="[ guide-post-card ]"
+    src={cover}
+    alt={guide.title}
+    narrow={true}
+    thumbnail={true}
+>
+    <Tag
+        slot="header"
+        text={guide.category}
+        color='alliance-blue'
+    />
+
+    <Flexblock gap='var(--space-2xs)'>
+        <a href={href}>
+            <h3>{guide.title}</h3>
+        </a>
+        <p class="[ guide-excerpt ]">{guide.excerpt}</p>
+        <FlexInline>
+            <Button href={href} size='sm'>
+                {view_label}
+            </Button>
+        </FlexInline>
+    </Flexblock>
+</PictureCard>
+
+<style lang="scss">
+    h3 {
+        font-size: var(--step-1);
+        font-family: var(--heading-font);
+        line-height: 1.15;
+    }
+
+    .guide-excerpt {
+        font-size: var(--step--1);
+        color: var(--text-color);
+        margin: 0;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    :global(.guide-post-card) {
+        position: relative;
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background: linear-gradient(
+                to top,
+                rgb(0 0 0 / 88%) 0%,
+                rgb(0 0 0 / 55%) 42%,
+                rgb(0 0 0 / 25%) 68%,
+                rgb(0 0 0 / 12%) 100%
+            );
+        }
+
+        :global(.card-body),
+        :global(.card-header),
+        :global(.card-actions),
+        :global(.visible-actions) {
+            z-index: 2;
+        }
+    }
+</style>

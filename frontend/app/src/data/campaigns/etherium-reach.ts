@@ -375,6 +375,14 @@ export function formatIsk(isk: number): string {
 
 export type CampaignRowTone = 'info' | 'success' | 'warning' | 'danger' | undefined
 
+export type CampaignTableRowAction = {
+    label: string
+    confirm_title: string
+    confirm_content: string
+    post_url: string
+    target: string
+}
+
 export type CampaignTableRow = {
     cells: readonly string[]
     tone?: CampaignRowTone
@@ -382,4 +390,7 @@ export type CampaignTableRow = {
     icon_url?: string
     /** Optional per-cell icons (same order as cells). Overrides icon_url when set for index 0. */
     cell_icons?: readonly (string | undefined)[]
+    search_text?: string
+    corp?: string
+    action?: CampaignTableRowAction
 }

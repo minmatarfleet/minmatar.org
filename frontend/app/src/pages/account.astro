@@ -17,10 +17,9 @@ if (user.is_superuser) roles.push(t('administrator'))
 if (user.is_staff) roles.push(t('director'))
 const roles_semantic_list:string = (roles.length > 0 ? semantic_list(lang, roles) : t('default'))
 
-import type { SummaryCharacter, Player } from '@dtypes/api.minmatar.org'
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
 import type { NotificationSubscription, CharacterErrorUI } from '@dtypes/layout_components'
 import { get_characters_summary_sorted, get_character_error_ui } from '@helpers/fetching/characters'
-import { get_current_player } from '@helpers/api.minmatar.org/players'
 import { get_user_subscriptions } from '@helpers/api.minmatar.org/notifications'
 import { get_notification_preferences } from '@helpers/api.minmatar.org/notification_preferences'
 import type { NotificationFeaturePreferences } from '@helpers/api.minmatar.org/notification_preferences'
@@ -33,7 +32,6 @@ let notification_subscriptions:NotificationSubscription[] = []
 let notification_features:NotificationFeaturePreferences[] = []
 let readiness_character_id = 0
 let character_errors:CharacterErrorUI[] = []
-let current_player:Player | null = null
 
 import { get_user_permissions } from '@helpers/permissions'
 
@@ -42,7 +40,6 @@ try {
     const character_summary = await get_characters_summary_sorted(auth_token as string)
     pilots = character_summary.characters ?? []
     character_errors = get_character_error_ui(pilots)
-    current_player = await get_current_player(auth_token as string)
 
     if (user_permissions.includes('eveonline.add_evecharactertag'))
         readiness_character_id = pilots[0]?.character_id ?? 0
@@ -105,7 +102,6 @@ import SwitchSquare from '@components/blocks/SwitchSquare.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import CopyToken from '@components/blocks/CopyToken.astro';
 import CharacterErrors from '@components/blocks/CharacterErrors.astro'
-import PrimeTimezone from '@components/blocks/PrimeTimezone.astro'
 
 import LogoutIcon from '@components/icons/buttons/LogoutIcon.astro';
 import RifterIcon from '@components/icons/RifterIcon.astro';
@@ -152,13 +148,6 @@ const page_title = t('account.page_title');
                 size='sm'
             >
                 {t('referral_links')}
-            </Button>
-            <Button
-                href="https://wiki.minmatar.org/en/guides/account-issues"
-                size='sm'
-                external={true}
-            >
-                {t('troubleshooting')}
             </Button>
             <Button
                 href="https://discord.com/invite/3hZfahmkFx"
@@ -240,15 +229,6 @@ const page_title = t('account.page_title');
                     <CharacterErrors character_errors={character_errors} />
                 }
 
-                {readiness_character_id > 0 && current_player &&
-                    <ComponentBlock width='narrow'>
-                        <PrimeTimezone
-                            prime_time={current_player.prime_time}
-                            nickname={current_player.nickname}
-                        />
-                    </ComponentBlock>
-                }
-
                 <ComponentBlock 
                     width='narrow'
                     x-data={`{
@@ -283,19 +263,6 @@ const page_title = t('account.page_title');
                             readonly={readonly}
                         />
                     }
-                </ComponentBlock>
-
-                <ComponentBlock width='narrow'>
-                    <Flexblock gap="var(--space-3xs)">
-                        <a
-                            href="https://developers.eveonline.com/authorized-apps"
-                            target="_blank"
-                            rel="nofollow noopener noreferrer"
-                        >
-                            {t('auth_third_party_link_link')}
-                        </a>
-                        <small>{t('auth_third_party_link_description')}</small>
-                    </Flexblock>
                 </ComponentBlock>
             </Context>
 
@@ -423,7 +390,7 @@ const page_title = t('account.page_title');
                         <DisableBlock x_model="danger_zone_enable">
                             <FlexInline
                                 justification='space-between'
-                                x-data={`{                                                
+                                x-data={`{
                                     async delete_account(proceed) {
                                         if (!proceed) return
                                         
@@ -434,16 +401,27 @@ const page_title = t('account.page_title');
                                         )
 
                                         if (!response.ok) {
-                                            show_alert_dialog({
-                                                title: '${t('delete_account_dialog_title')}',
-                                                content: '${t('delete_account_error')}'
-                                            })
+                                            const root_data = Alpine.$data(document.body)
+                                            if (root_data && root_data.show_alert_dialog) {
+                                                root_data.show_alert_dialog({
+                                                    title: '${t('delete_account_dialog_title')}',
+                                                    content: '${t('delete_account_error')}'
+                                                })
+                                            }
                                             return
                                         }
 
                                         const json = await response.json()
                                         if (json.redirect)
                                             navigate(json.redirect)
+                                    },
+                                    show_unregister_account_dialog() {
+                                        const root_data = Alpine.$data(document.body)
+                                        if (!root_data || !root_data.show_confirm_dialog) return
+                                        root_data.show_confirm_dialog({
+                                            title: '${t('delete_account_dialog_title')}',
+                                            content: '${t('delete_account_dialog_text')}'
+                                        }).then((accepted) => this.delete_account(accepted))
                                     }
                                 }`}
                             >
@@ -453,20 +431,25 @@ const page_title = t('account.page_title');
                                 <Button
                                     type="button"
                                     size='sm'
-                                    x-data={`{
-                                        show_unregister_account_dialog() {
-                                            show_confirm_dialog({
-                                                title: '${t('delete_account_dialog_title')}',
-                                                content: '${t('delete_account_dialog_text')}'
-                                            }).then( (accepted) => delete_account(accepted) )
-                                        }
-                                    }`}
                                     x-on:click="show_unregister_account_dialog()"
                                 >
                                     {t('delete_account')}
                                 </Button>
                             </FlexInline>
                         </DisableBlock>
+
+                        <FlexInline justification='space-between'>
+                            <TextGroup title={t('auth_third_party_link_link')}>
+                                <small>{t('auth_third_party_link_description')}</small>
+                            </TextGroup>
+                            <Button
+                                href="https://developers.eveonline.com/authorized-apps"
+                                size='sm'
+                                external={true}
+                            >
+                                {t('auth_third_party_link_link')}
+                            </Button>
+                        </FlexInline>
                     </Flexblock>
                 </ComponentBlock>
             </Context>

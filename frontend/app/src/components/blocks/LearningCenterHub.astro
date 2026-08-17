@@ -13,6 +13,12 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import Grid from '@components/compositions/Grid.astro'
 import Button from '@components/blocks/Button.astro'
 import PilotReadinessBanner from '@components/blocks/PilotReadinessBanner.astro'
+import GuidesCatalog from '@components/blocks/GuidesCatalog.astro'
+import LearningSkillsets from '@components/blocks/LearningSkillsets.astro'
+import CertificateCard from '@components/blocks/CertificateCard.astro'
+import CogIcon from '@components/icons/buttons/CogIcon.astro'
+import { LEARNING_HUB_PATH } from '@/data/guides/urls'
+import type { CharacterBasic, Skillset } from '@dtypes/layout_components'
 
 const CERTIFICATE_COVERS: Record<string, string> = {
     'faction-warfare': '/images/combatlog-tile-background.webp',
@@ -31,6 +37,12 @@ interface Props {
     needs_persona: boolean
     persona_confirmed_on_server?: boolean
     readiness_character_id?: number
+    catalog_path?: string
+    skillsets?: Skillset[]
+    skillsets_character?: CharacterBasic | null
+    skillsets_login_href?: string | null
+    certificates_admin_href?: string | null
+    skillsets_admin_href?: string | null
 }
 
 const {
@@ -43,6 +55,12 @@ const {
     needs_persona,
     persona_confirmed_on_server = false,
     readiness_character_id = 0,
+    catalog_path = LEARNING_HUB_PATH,
+    skillsets = [],
+    skillsets_character = null,
+    skillsets_login_href = null,
+    certificates_admin_href = null,
+    skillsets_admin_href = null,
 } = Astro.props
 
 const personas: { id: LearningPersona; title: string; description: string }[] = [
@@ -75,7 +93,7 @@ if (recommendation?.reason_key === 'learning.persona.reason.alliance') {
 // Avoid empty string literals / awkward concat in frontmatter (esbuild bug in this repo).
 const config_json = JSON.stringify({
     authToken: auth_token,
-    catalogPath: translatePath('/learning-center/'),
+    catalogPath: translatePath(catalog_path),
     initialPersona: persona,
     needsPersona: needs_persona,
     personaConfirmedOnServer: persona_confirmed_on_server,
@@ -179,12 +197,27 @@ const progress_label = t('learning_center.certificate.progress')
                 <PilotReadinessBanner main_character_id={readiness_character_id} />
             }
 
-            <h2>{t('learning_center.certificates_heading')}</h2>
+            <FlexInline justification="space-between" class="[ w-full !items-center ]" gap="var(--space-s)">
+                <h2>{t('learning_center.certificates_heading')}</h2>
+                {certificates_admin_href &&
+                    <Button
+                        href={certificates_admin_href}
+                        size="sm"
+                        color="transparent"
+                        narrow={true}
+                        new_tab={true}
+                        aria-label={t('learning_center.certificates_edit_admin')}
+                        title={t('learning_center.certificates_edit_admin')}
+                    >
+                        <CogIcon slot="icon" />
+                    </Button>
+                }
+            </FlexInline>
 
             {certificates_error ? (
                 <Flexblock gap="var(--space-2xs)">
                     <p>{t('learning_center.certificates_error')}</p>
-                    <Button size="sm" href={translatePath('/learning-center/')}>
+                    <Button size="sm" href={translatePath(catalog_path)}>
                         {t('learning_center.certificates_retry')}
                     </Button>
                 </Flexblock>
@@ -197,48 +230,32 @@ const progress_label = t('learning_center.certificate.progress')
                     column_gap="var(--space-2xs)"
                     min_item_width="280px"
                 >
-                    {certificates.map((cert) => {
-                        const slugs = cert.learnings.map((l) => l.slug)
-                        const slugs_json = JSON.stringify(slugs)
-                        const href = translatePath(`/learning-center/certificates/${cert.slug}/`)
-                        const cover = CERTIFICATE_COVERS[cert.slug] ?? DEFAULT_CERTIFICATE_COVER
-                        return (
-                            <a
-                                class="[ certificate-card card component border light-transparency soft ]"
-                                href={href}
-                            >
-                                <img
-                                    class="[ certificate-card__cover ]"
-                                    src={cover}
-                                    alt=""
-                                    loading="lazy"
-                                />
-                                <div class="[ certificate-card__content ]">
-                                    <div class="[ certificate-card__body ]">
-                                        <h3>{cert.title}</h3>
-                                        <p>{cert.summary}</p>
-                                    </div>
-                                    <div class="[ certificate-card__footer ]">
-                                        <span
-                                            x-text={`'${progress_label}: ' + certPercent(${slugs_json}) + '%'`}
-                                        >
-                                            {progress_label}: 0%
-                                        </span>
-                                        <div class="[ progress-bar ]" aria-hidden="true">
-                                            <div
-                                                class="[ progress-bar__fill ]"
-                                                x-bind:style={`'width: ' + certPercent(${slugs_json}) + '%'`}
-                                            ></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </a>
-                        )
-                    })}
+                    {certificates.map((cert) => (
+                        <CertificateCard
+                            certificate={cert}
+                            completed_slugs={completed_slugs}
+                            cover={CERTIFICATE_COVERS[cert.slug] ?? DEFAULT_CERTIFICATE_COVER}
+                            progress_label={progress_label}
+                        />
+                    ))}
                 </Grid>
             )}
+
+            <LearningSkillsets
+                heading={t('learning_center.skillsets_heading')}
+                lead={t('learning_center.skillsets_lead')}
+                empty_text={t('learning_center.skillsets_empty')}
+                skillsets={skillsets}
+                character={skillsets_character}
+                login_href={skillsets_login_href}
+                login_label={t('learning_center.skillsets_login')}
+                admin_href={skillsets_admin_href}
+                admin_label={t('learning_center.skillsets_edit_admin')}
+            />
         </Flexblock>
     </div>
+
+        <GuidesCatalog />
     </Flexblock>
 </div>
 
@@ -298,93 +315,4 @@ const progress_label = t('learning_center.certificate.progress')
         font-size: var(--step--1);
     }
 
-    .certificate-card {
-        text-decoration: none;
-        color: inherit;
-        position: relative;
-        overflow: hidden;
-        display: block;
-        height: 100%;
-        min-height: 280px;
-        padding-block: var(--component-padding-block);
-        padding-inline: var(--space-l-xl);
-
-        // Darken covers behind title / summary / progress so text stays readable
-        &::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            z-index: 0;
-            pointer-events: none;
-            background: linear-gradient(
-                to top,
-                rgba(0, 0, 0, 0.75) 0%,
-                rgba(0, 0, 0, 0.4) 45%,
-                rgba(0, 0, 0, 0.15) 100%
-            );
-        }
-
-        &__cover {
-            object-fit: cover;
-            position: absolute;
-            inset: 0;
-            z-index: 0;
-            width: 100%;
-            height: 100%;
-            // Stronger fade than Tile soft — text sits lower on shorter cards
-            mask-image: linear-gradient(
-                to bottom,
-                rgba(0, 0, 0, 0.55) 0%,
-                rgba(0, 0, 0, 0.12) 45%,
-                transparent 75%
-            );
-        }
-
-        &__content {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            gap: var(--space-m);
-            min-height: calc(280px - (2 * var(--component-padding-block)));
-            height: 100%;
-        }
-
-        &__body {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-2xs);
-        }
-
-        &__footer {
-            display: flex;
-            flex-direction: column;
-            gap: var(--space-2xs);
-            padding-top: var(--space-xs);
-            border-top: solid 1px var(--border-color);
-        }
-
-        h3 {
-            margin: 0;
-            font-size: var(--step-1);
-        }
-
-        p {
-            margin: 0;
-            color: var(--fleet-yellow);
-            font-size: var(--step--1);
-        }
-    }
-
-    .progress-bar {
-        width: 100%;
-        height: 4px;
-        background: rgba(255, 255, 255, 0.22);
-
-        &__fill {
-            height: 100%;
-            background: var(--fleet-red);
-        }
-    }
 </style>

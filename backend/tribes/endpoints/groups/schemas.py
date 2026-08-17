@@ -2,72 +2,6 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 
-class TribeGroupActivityRecordSchema(BaseModel):
-    """Single activity record for timeline display."""
-
-    id: int
-    created_at: str
-    activity_type: str
-    activity_type_display: str
-    character_id: Optional[int] = None
-    character_name: str = ""
-    primary_character_id: Optional[int] = None
-    primary_character_name: str = ""
-    user_id: Optional[int] = None
-    username: str = ""
-    source_type_id: Optional[int] = None
-    target_type_id: Optional[int] = None
-    quantity: Optional[float] = None
-    unit: str = ""
-    reference_type: str
-    reference_id: str
-
-
-class TribeGroupActivityListSchema(BaseModel):
-    """Paginated list of tribe group activity records."""
-
-    items: List[TribeGroupActivityRecordSchema]
-    total: int
-    limit: int
-    offset: int
-
-
-class TribeGroupActivityDefinitionSchema(BaseModel):
-    """One configured activity type for a tribe group (what the backend tracks)."""
-
-    id: int
-    activity_type: str
-    activity_type_display: str
-    source_eve_type_id: Optional[int] = None
-    target_eve_type_id: Optional[int] = None
-    description: str = ""
-    is_active: bool
-    points_per_record: Optional[float] = None
-    points_per_unit: Optional[float] = None
-    created_at: str
-    updated_at: str
-
-
-class TribeGroupActivityDefinitionListSchema(BaseModel):
-    items: List[TribeGroupActivityDefinitionSchema]
-
-
-class TribeActivityRecordSchema(TribeGroupActivityRecordSchema):
-    """Activity record with optional group context (for tribe-level activity list)."""
-
-    group_id: Optional[int] = None
-    group_name: str = ""
-
-
-class TribeActivityListSchema(BaseModel):
-    """Paginated list of tribe activity records (all groups)."""
-
-    items: List[TribeActivityRecordSchema]
-    total: int
-    limit: int
-    offset: int
-
-
 class CharacterRefSchema(BaseModel):
     character_id: int
     character_name: str = ""
@@ -112,62 +46,6 @@ class TribeGroupSchema(BaseModel):
     requirements: List[RequirementSchema] = []
     ranks: List[TribeGroupRankSchema] = []
     required_token_type: Optional[str] = None
-
-
-# --- Activity metrics, member activity, leaderboard ---
-
-
-class TribeActivityMetricsSchema(BaseModel):
-    """Per-activity metrics for one TribeGroupActivity."""
-
-    activity_id: int
-    activity_type: str
-    activity_type_display: str
-    group_id: int
-    group_name: str = ""
-    unit: str = ""
-    record_count: int
-    total_quantity: Optional[float] = None
-    total_points: float = 0.0
-
-
-class TribeMemberActivityBreakdownItemSchema(BaseModel):
-    """Per-activity-type breakdown for member activity."""
-
-    activity_type: str
-    unit: str = ""
-    record_count: int = 0
-    total_quantity: Optional[float] = None
-
-
-class TribeMemberActivitySchema(BaseModel):
-    """Activity summary for one tribe member (primary + alts + metrics)."""
-
-    primary_character_id: Optional[int] = None
-    primary_character_name: str = ""
-    alts: List[CharacterRefSchema] = []
-    total_points: float = 0.0
-    record_count: int = 0
-    breakdown: List[TribeMemberActivityBreakdownItemSchema] = []
-
-
-class TribeActivityLeaderboardEntrySchema(BaseModel):
-    """One leaderboard row; points only."""
-
-    user_id: int
-    primary_character_id: Optional[int] = None
-    primary_character_name: str = ""
-    alts: List[CharacterRefSchema] = []
-    total_points: float = 0.0
-
-
-class TribeActivityLeaderboardListSchema(BaseModel):
-    """Paginated leaderboard."""
-
-    items: List[TribeActivityLeaderboardEntrySchema]
-    total: int
-    limit: int
-    offset: int
 
 
 class TribeGroupReportSchema(BaseModel):

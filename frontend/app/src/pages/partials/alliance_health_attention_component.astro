@@ -11,58 +11,80 @@ const auth_token = Astro.cookies.has('auth_token')
     ? (Astro.cookies.get('auth_token')?.value as string)
     : null
 const user = auth_token ? (jose.decodeJwt(auth_token) as User) : false
-const is_superuser = user ? user?.is_superuser : false
 
 if (!user) return HTTP_403_Forbidden()
-
-import { get_user_permissions } from '@helpers/permissions'
-const user_permissions = user ? await get_user_permissions(user?.username) : []
-
-const can_view_page =
-    is_superuser || user_permissions.includes('alliance.view_alliancehealth')
-
-if (!can_view_page) return HTTP_403_Forbidden()
 
 import type {
     AllianceHealthAttentionBucket,
     AllianceHealthAttentionPilot,
 } from '@dtypes/api.minmatar.org'
-import { get_alliance_health_attention } from '@helpers/api.minmatar.org/alliance_health'
+import {
+    get_alliance_health_attention,
+    post_alliance_health_status,
+} from '@helpers/api.minmatar.org/alliance_health'
 import AllianceHealthPilotsTable from '@components/blocks/AllianceHealthPilotsTable.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 
+const user_id = parseInt(Astro.url.searchParams.get('user_id') ?? '', 10)
+const action = Astro.url.searchParams.get('action')
 const raw_bucket = Astro.url.searchParams.get('bucket') ?? 'fading'
 const bucket: AllianceHealthAttentionBucket =
     raw_bucket === 'dark' || raw_bucket === 'seasonal' || raw_bucket === 'fading'
         ? raw_bucket
         : 'fading'
 
+const initial_corp = Astro.url.searchParams.get('corp') || 'all'
+const can_leave_any = Astro.url.searchParams.get('can_leave_any') === '1'
+const ceo_corp_ids = (Astro.url.searchParams.get('ceo_corps') ?? '')
+    .split(',')
+    .map((value) => parseInt(value, 10))
+    .filter((value) => !Number.isNaN(value) && value > 0)
+
 let pilots: AllianceHealthAttentionPilot[] = []
 let data_fetching_error: any
+let applied_user_id: number | null = null
+
+if (Astro.request.method === 'POST' && action === 'leave' && user_id) {
+    try {
+        await post_alliance_health_status(auth_token as string, user_id, 'leave')
+        applied_user_id = user_id
+    } catch (error) {
+        data_fetching_error = error
+    }
+}
 
 try {
     const attention = await get_alliance_health_attention(
         auth_token as string,
         bucket,
     )
-    pilots = attention.pilots
+    pilots = applied_user_id
+        ? attention.pilots.filter((pilot) => pilot.user_id !== applied_user_id)
+        : attention.pilots
 } catch (error) {
     data_fetching_error = error
 }
 
-const PARTIAL_URL = `${translatePath('/partials/alliance_health_attention_component')}?bucket=${bucket}`
+const PARTIAL_URL = translatePath('/partials/alliance_health_attention_component')
 ---
 
 {
     data_fetching_error ? (
         <ErrorRefetch
             args={{
-                partial: PARTIAL_URL,
+                partial: `${PARTIAL_URL}?bucket=${bucket}`,
                 error: data_fetching_error,
                 delay: 0,
             }}
         />
     ) : (
-        <AllianceHealthPilotsTable pilots={pilots} />
+        <AllianceHealthPilotsTable
+            pilots={pilots}
+            initial_corp={initial_corp}
+            can_leave_any={can_leave_any}
+            ceo_corp_ids={ceo_corp_ids}
+            bucket={bucket}
+            partial_url={PARTIAL_URL}
+        />
     )
 }

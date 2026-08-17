@@ -1,0 +1,193 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import {
+    getGuidesByCategory,
+    guideCategories,
+} from '@/data/guides'
+import type { GuideMeta } from '@/data/guides/types'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Grid from '@components/compositions/Grid.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+
+import GuideCard from '@components/blocks/GuideCard.astro'
+
+interface Props {
+    show_heading?: boolean
+    show_count?: boolean
+}
+
+const {
+    show_heading = true,
+    show_count = true,
+} = Astro.props
+
+const guides_by_category = getGuidesByCategory()
+const categories = guideCategories.filter(
+    (category) => (guides_by_category[category] ?? []).length > 0,
+)
+
+const ordered_guides: GuideMeta[] = categories.flatMap(
+    (category) => guides_by_category[category] ?? [],
+)
+
+const filters = [
+    { id: 'all', label: t('all_categories'), count: ordered_guides.length },
+    ...categories.map((category) => ({
+        id: category,
+        label: category,
+        count: (guides_by_category[category] ?? []).length,
+    })),
+]
+
+const count_text = t(ordered_guides.length !== 1 ? 'guides_plural' : 'guides_singular')
+    .replace('{count}', String(ordered_guides.length))
+
+const guides_plural = t('guides_plural')
+const guides_singular = t('guides_singular')
+const filters_json = JSON.stringify(filters)
+---
+
+<section
+    id="guides"
+    class:list={[
+        'guides-catalog',
+        show_heading && 'guides-catalog--nested',
+    ]}
+    x-data={`{
+        category: 'all',
+        filters: ${filters_json},
+        set_category(id) {
+            this.category = id
+        },
+        matches(el) {
+            return this.category === 'all' || el.dataset.category === this.category
+        },
+        visible_count() {
+            const match = this.filters.find((f) => f.id === this.category)
+            return match ? match.count : 0
+        },
+        count_label() {
+            const n = this.visible_count()
+            return n !== 1
+                ? ${JSON.stringify(guides_plural)}.replace('{count}', String(n))
+                : ${JSON.stringify(guides_singular)}
+        },
+    }`}
+>
+    <Flexblock gap="var(--space-m)">
+        {(show_heading || show_count) &&
+            <Flexblock gap="var(--space-3xs)">
+                {show_heading &&
+                    <h2 class="[ guides-catalog__title ]">{t('guides.page_title')}</h2>
+                }
+                {show_count &&
+                    <small x-text="count_label()">{count_text}</small>
+                }
+            </Flexblock>
+        }
+
+        <XFadeScroll>
+            <FlexInline gap="var(--space-3xs)" class="[ guides-catalog__chips ]">
+                {filters.map((filter) => (
+                    <button
+                        type="button"
+                        class="[ guides-catalog__chip ]"
+                        x-bind:class={`category === ${JSON.stringify(filter.id)} && 'is-active'`}
+                        x-on:click={`set_category(${JSON.stringify(filter.id)})`}
+                        x-bind:aria-pressed={`category === ${JSON.stringify(filter.id)} ? 'true' : 'false'`}
+                    >
+                        {filter.label}
+                    </button>
+                ))}
+            </FlexInline>
+        </XFadeScroll>
+
+        <Grid
+            class="[ w-full grid-fill ]"
+            row_gap="var(--space-3xs)"
+            column_gap="var(--space-3xs)"
+            min_item_width="400px"
+        >
+            {ordered_guides.map((guide) => (
+                <div
+                    class="[ guides-catalog__item ]"
+                    data-category={guide.category}
+                    x-show="matches($el)"
+                >
+                    <GuideCard guide={guide} />
+                </div>
+            ))}
+        </Grid>
+    </Flexblock>
+</section>
+
+<style lang="scss">
+    .guides-catalog__title {
+        font-size: var(--step-2);
+    }
+
+    .guides-catalog__chips {
+        flex-wrap: nowrap;
+        padding-block: var(--space-3xs);
+    }
+
+    .guides-catalog__chip {
+        appearance: none;
+        display: inline-flex;
+        align-items: center;
+        flex-shrink: 0;
+        margin: 0;
+        padding: var(--space-3xs) var(--space-xs);
+        border: 1px solid color-mix(in srgb, var(--fleet-yellow) 40%, transparent);
+        background: transparent;
+        color: var(--fleet-yellow);
+        font-family: var(--button-font);
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-decoration: none;
+        text-transform: uppercase;
+        white-space: nowrap;
+        cursor: pointer;
+        transition:
+            border-color var(--fast-transition),
+            background-color var(--fast-transition),
+            color var(--fast-transition);
+
+        @media (hover: hover) {
+            &:hover {
+                border-color: var(--fleet-yellow);
+                background: color-mix(in srgb, var(--fleet-yellow) 12%, transparent);
+                color: var(--fleet-yellow);
+            }
+
+            &.is-active:hover {
+                background: var(--fleet-yellow);
+                color: var(--background);
+            }
+        }
+
+        &:focus-visible {
+            outline: 1px solid var(--highlight);
+            outline-offset: 2px;
+        }
+
+        &.is-active {
+            border-color: var(--fleet-yellow);
+            background: var(--fleet-yellow);
+            color: var(--background);
+        }
+    }
+
+    .guides-catalog__item {
+        height: 100%;
+
+        :global(.guide-card) {
+            height: 100%;
+        }
+    }
+</style>

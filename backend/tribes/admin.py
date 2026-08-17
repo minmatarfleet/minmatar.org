@@ -6,8 +6,6 @@ from tribes.helpers.admin_permissions import tribes_index_link_perms
 from tribes.models import (
     Tribe,
     TribeGroup,
-    TribeGroupActivity,
-    TribeGroupActivityRecord,
     TribeGroupMembership,
     TribeGroupMembershipCharacter,
     TribeGroupMembershipHistory,
@@ -188,75 +186,6 @@ class TribeGroupMembershipHistoryAdmin(admin.ModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         return False
-
-
-class TribeGroupActivityRecordInline(admin.TabularInline):
-    model = TribeGroupActivityRecord
-    extra = 0
-    fields = (
-        "character",
-        "user",
-        "source_type_id",
-        "target_type_id",
-        "quantity",
-        "unit",
-        "reference_type",
-        "reference_id",
-        "created_at",
-    )
-    readonly_fields = ("created_at",)
-    raw_id_fields = ("character", "user")
-    show_change_link = True
-    can_delete = True
-    max_num = 100
-
-
-@admin.register(TribeGroupActivity)
-class TribeGroupActivityAdmin(admin.ModelAdmin):
-    list_display = (
-        "tribe_group",
-        "activity_type",
-        "source_eve_type_id",
-        "target_eve_type_id",
-        "description",
-        "is_active",
-        "points_per_record",
-        "points_per_unit",
-        "created_at",
-    )
-    list_filter = (
-        "activity_type",
-        "is_active",
-        "tribe_group",
-        "tribe_group__tribe",
-    )
-    search_fields = ("tribe_group__name", "description")
-    raw_id_fields = ("tribe_group",)
-    inlines = [TribeGroupActivityRecordInline]
-
-
-@admin.register(TribeGroupActivityRecord)
-class TribeGroupActivityRecordAdmin(admin.ModelAdmin):
-    list_display = (
-        "tribe_group_activity",
-        "character",
-        "user",
-        "source_type_id",
-        "target_type_id",
-        "quantity",
-        "unit",
-        "reference_type",
-        "reference_id",
-        "created_at",
-    )
-    list_filter = (
-        "tribe_group_activity__activity_type",
-        "tribe_group_activity__tribe_group",
-        "reference_type",
-    )
-    search_fields = ("reference_id", "reference_type")
-    raw_id_fields = ("tribe_group_activity", "character", "user")
-    readonly_fields = ("created_at",)
 
 
 @admin.register(TribeGroupMembershipCharacterHistory)

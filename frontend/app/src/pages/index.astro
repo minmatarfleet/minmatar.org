@@ -377,6 +377,14 @@ const page_description = t('index.leading_text');
 						centered={true}
 					>
 						<p class="[ ccp-disclaimer ][ text-center ]">{t('ccp_disclaimer')}</p>
+						<FlexInline
+							class="[ legal-links ]"
+							gap="var(--space-m)"
+							justification="center"
+						>
+							<a href={translatePath('/legal/privacy/')}>{t('legal.privacy')}</a>
+							<a href={translatePath('/legal/terms/')}>{t('legal.terms')}</a>
+						</FlexInline>
 					</Wrapper>
 				</Flexblock>
 			</Wrapper>
@@ -564,6 +572,11 @@ const page_description = t('index.leading_text');
 
 	.ccp-disclaimer {
 		font-size: var(--step--2);
+	}
+
+	.legal-links {
+		margin-block-start: var(--space-s);
+		font-size: var(--step--1);
 	}
 
 	.welcome-heading {

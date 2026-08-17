@@ -2,6 +2,8 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
+import { LEARNING_HUB_PATH } from '@/data/guides/urls'
+
 import type { PageProgressProps } from '@helpers/pageProgress'
 import Viewport from '@layouts/Viewport.astro'
 import PageLanding from '@components/page/PageLanding.astro'
@@ -65,7 +67,7 @@ const {
                     <div class="cap-guide-page__header-top">
                         <nav class="cap-guide-page__breadcrumb" aria-label="Breadcrumb">
                             <ol>
-                                <li><a href={translatePath('/guides/')}>{t('guides.page_title')}</a></li>
+                                <li><a href={translatePath(LEARNING_HUB_PATH)}>{t('learning.page_title')}</a></li>
                                 <li aria-current="page">{page_title}</li>
                             </ol>
                         </nav>

@@ -24,22 +24,22 @@ export type GuideResource = {
 export const additionalResources: GuideResource[] = [
     {
         title: 'Faction Warfare Frigate Guide (this site)',
-        href: '/guides/navy-frigate-guide/',
+        href: '/learning/guides/navy-frigate-guide/',
         note: 'Scout plexes and navy/T1 frigates—start here before stepping up to destroyers and cruisers.',
     },
     {
         title: 'Faction Warfare Destroyer Guide (this site)',
-        href: '/guides/navy-destroyer-metagame/',
+        href: '/learning/guides/navy-destroyer-metagame/',
         note: 'Navy and T1 destroyers, archetypes, and 1v1 charts—the usual rung below cruiser plex work.',
     },
     {
         title: 'Faction Warfare Complexes (this site)',
-        href: '/guides/faction-warfare-plexing/',
+        href: '/learning/guides/faction-warfare-plexing/',
         note: 'Landing, gates, site sizes, and LP/VP tables for the plexes you are fighting in.',
     },
     {
         title: 'Faction Warfare Basics (this site)',
-        href: '/guides/faction-warfare-basics/',
+        href: '/learning/guides/faction-warfare-basics/',
         note: 'Warzone map, system types, contested vs advantage.',
     },
     {
@@ -51,7 +51,7 @@ export const additionalResources: GuideResource[] = [
 
 export const introduction = [
     'With the release of moderate sites in the Cradle of War expansion and various ISK printing sites in Havoc, cruisers have become a staple of the faction warfare warzone. They decide who keeps the large complexes, who controls the advantage when fighting off small gangs, and are one of the better platforms for player versus player combat.',
-    'This guide covers the hulls that you\'ll often see in the warzone, as well as the common archetypes that they fall into. We highly recommend that players start with destroyers before moving onto cruisers and frigates — see the <a href="/guides/navy-frigate-guide/">Frigate Guide</a> and <a href="/guides/navy-destroyer-metagame/">Destroyer Guide</a>.',
+    'This guide covers the hulls that you\'ll often see in the warzone, as well as the common archetypes that they fall into. We highly recommend that players start with destroyers before moving onto cruisers and frigates — see the <a href="/learning/guides/navy-frigate-guide/">Frigate Guide</a> and <a href="/learning/guides/navy-destroyer-metagame/">Destroyer Guide</a>.',
     'The vast majority of the knowledge from this guide comes from Dato Koppla, who was kind enough to open up his Pyfa for us!',
 ]
 

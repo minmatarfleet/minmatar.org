@@ -1,0 +1,205 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { MarketHealthChartPoint } from '@dtypes/api.minmatar.org'
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+interface Props {
+    history: MarketHealthChartPoint[]
+    [propName: string]: any
+}
+
+const { history, ...attributes } = Astro.props
+delete attributes.class
+
+const chart_id = 'market-health-sell-orders-chart'
+
+const points = [...history].reverse()
+
+const labels = points.map((point) =>
+    new Date(point.captured_at).toLocaleString(lang, {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    }),
+)
+
+const coverage = points.map((point) => point.sell_orders_health_pct)
+const viability = points.map((point) => point.sell_orders_viability_pct)
+
+const include_viability = viability.some((value) => value != null)
+const has_plottable = coverage.some((value) => value != null)
+
+const title = t('ops_history_sell_orders_chart_title')
+const empty = t('ops_history_chart_empty')
+const coverage_label = t('coverage')
+const viability_label = t('viability')
+---
+
+<section
+    class:list={[ Astro.props.class]}
+    aria-label={t('ops_history_chart_aria')}
+    x-data={`{
+        labels: ${JSON.stringify(labels)},
+        coverage: ${JSON.stringify(coverage)},
+        viability: ${JSON.stringify(viability)},
+        include_viability: ${include_viability},
+        coverage_label: ${JSON.stringify(coverage_label)},
+        viability_label: ${JSON.stringify(viability_label)},
+        init() {
+            const root = getComputedStyle(document.documentElement)
+            const red = root.getPropertyValue('--fleet-red').trim() || '#b53620'
+            const yellow = root.getPropertyValue('--fleet-yellow').trim() || '#f1d9a0'
+            const green = root.getPropertyValue('--green').trim() || '#198754'
+            const fg = root.getPropertyValue('--highlight').trim() || '#ffffff'
+
+            const canvas = document.getElementById('${chart_id}')
+            if (!canvas || typeof Chart === 'undefined') return
+
+            const reduce_motion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+            const total_sweep_ms = 3000
+            const sweep_ease = Chart.helpers.easingEffects.easeInCubic
+            const point_duration = (ctx) => sweep_ease(ctx.index / this.labels.length) * total_sweep_ms / this.labels.length
+            const point_delay = (ctx) => sweep_ease(ctx.index / this.labels.length) * total_sweep_ms
+
+            const previous_y = (ctx) => {
+                if (ctx.index === 0) return 100
+                const prev = ctx.chart.getDatasetMeta(ctx.datasetIndex).data[ctx.index - 1].getProps(['y'], true).y
+                return prev == null ? 100 : prev
+            }
+
+            const tone_color = (value) => {
+                if (value == null) return yellow
+                if (value >= 80) return green
+                if (value >= 40) return yellow
+                return red
+            }
+
+            const latest = (values) => [...values].reverse().find((value) => value != null)
+
+            const hex_to_rgba = (hex, alpha) => {
+                const value = hex.replace('#', '')
+                return 'rgba('
+                    + parseInt(value.substring(0, 2), 16) + ', '
+                    + parseInt(value.substring(2, 4), 16) + ', '
+                    + parseInt(value.substring(4, 6), 16) + ', ' + alpha + ')'
+            }
+
+            const datasets = [{
+                label: this.coverage_label,
+                data: this.coverage,
+                borderColor: tone_color(latest(this.coverage)),
+                borderWidth: 2.5,
+                fill: true,
+                tension: 0,
+                pointRadius: 0,
+                pointHitRadius: 8,
+            }]
+
+            if (this.include_viability) {
+                datasets.push({
+                    label: this.viability_label,
+                    data: this.viability,
+                    borderColor: tone_color(latest(this.viability)),
+                    borderWidth: 2,
+                    borderDash: [6, 4],
+                    fill: true,
+                    tension: 0,
+                    pointRadius: 0,
+                    pointHitRadius: 8,
+                })
+            }
+
+            Chart.defaults.color = fg
+            Chart.defaults.borderColor = 'rgb(255, 255, 255, 0.08)'
+            Chart.defaults.font.family = 'Montserrat Variable'
+
+            new Chart(canvas.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: this.labels,
+                    datasets,
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        x: { display: false },
+                        y: { display: false, min: 0, max: 100, clip: false },
+                    },
+                    plugins: {
+                        legend: { position: 'top' },
+                    },
+                    animations: reduce_motion
+                        ? false
+                        : {
+                            x: {
+                                type: 'number',
+                                easing: 'linear',
+                                duration: point_duration,
+                                from: NaN,
+                                delay(ctx) {
+                                    if (ctx.type !== 'data' || ctx.xStarted) return 0
+                                    ctx.xStarted = true
+                                    return point_delay(ctx)
+                                },
+                            },
+                            y: {
+                                type: 'number',
+                                easing: 'linear',
+                                duration: point_duration,
+                                from: previous_y,
+                                delay(ctx) {
+                                    if (ctx.type !== 'data' || ctx.yStarted) return 0
+                                    ctx.yStarted = true
+                                    return point_delay(ctx)
+                                },
+                            },
+                        },
+                },
+                plugins: [{
+                    id: 'areaGradients',
+                    afterLayout: function (chart) {
+                        const ctx = chart.ctx
+                        const top = chart.chartArea.top
+                        const bottom = chart.chartArea.bottom
+                        chart.data.datasets.forEach((dataset) => {
+                            const gradient = ctx.createLinearGradient(0, top, 0, bottom)
+                            gradient.addColorStop(0, hex_to_rgba(dataset.borderColor, 0.35))
+                            gradient.addColorStop(1, hex_to_rgba(dataset.borderColor, 0))
+                            dataset.backgroundColor = gradient
+                        })
+                    },
+                }],
+            })
+        }
+    }`}
+>
+    <Flexblock gap="var(--space-s)">
+        {points.length === 0 || !has_plottable ?
+            <p class="[ ops-history-chart__empty ]">{empty}</p>
+            :
+            <div class="[ ops-history-chart__frame ]">
+                <canvas id={chart_id}></canvas>
+            </div>
+        }
+    </Flexblock>
+</section>
+
+<style lang="scss">
+    .ops-history-chart__empty {
+        margin: 0;
+        color: color-mix(in srgb, var(--highlight) 70%, var(--faded));
+        font-size: var(--step--1);
+    }
+
+    .ops-history-chart__frame {
+        position: relative;
+        height: 450px;
+        width: 100%;
+    }
+</style>

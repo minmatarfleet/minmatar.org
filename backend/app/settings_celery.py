@@ -232,15 +232,8 @@ CELERYBEAT_GROUPS = [
     ),
 ]
 
-# Tribes (activity records from killmails, mining, etc.)
+# Tribes
 CELERYBEAT_TRIBES = [
-    (
-        "[Tribes] Process tribe group activities",
-        {
-            "task": "tribes.tasks.process_tribe_group_activities",
-            "schedule": crontab(minute=0, hour=3),
-        },
-    ),
     (
         "[Tribes] Ensure tribe chiefs are group members",
         {
@@ -257,15 +250,8 @@ CELERYBEAT_TRIBES = [
     ),
 ]
 
-# Misc (Celery, Fleets, ESI, Reminders, Reddit, Discord, Mumble)
+# Misc (Celery, Fleets, ESI, Reminders, Reddit, Discord)
 CELERYBEAT_OTHER = [
-    (
-        "[Misc] Sync executor access lists",
-        {
-            "task": "access_lists.tasks.sync_executor_access_lists_task",
-            "schedule": crontab(minute=20, hour="*/6"),
-        },
-    ),
     (
         "[Misc] Backend Cleanup",
         {
@@ -338,17 +324,24 @@ CELERYBEAT_OTHER = [
         },
     ),
     (
+        "[Creators] Poll Twitch live status",
+        {
+            "task": "creators.tasks.poll_creator_twitch_live",
+            "schedule": crontab(minute="*/2"),
+        },
+    ),
+    (
+        "[Creators] Sync YouTube / Twitch media",
+        {
+            "task": "creators.tasks.sync_creator_media",
+            "schedule": crontab(minute=20),
+        },
+    ),
+    (
         "[Misc] Remove orphan discord user roles",
         {
             "task": "discord.tasks.remove_roles_from_unregistered_guild_members",
             "schedule": crontab(minute=0, hour=14, day_of_week=1),
-        },
-    ),
-    (
-        "[Misc] Set Mumble usernames",
-        {
-            "task": "mumble.tasks.set_mumble_usernames",
-            "schedule": crontab(minute=0, hour=13),
         },
     ),
     (

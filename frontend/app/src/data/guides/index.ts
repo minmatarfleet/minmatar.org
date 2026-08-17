@@ -9,7 +9,6 @@ import * as abyssals from '@markdown/guides/abyssals.md'
 import * as abyss_duo_jackdaws_t6_dark from '@markdown/guides/abyss-duo-jackdaws-t6-dark.md'
 import * as level5_missions from '@markdown/guides/level5-missions.md'
 import * as abyss_nergal_trio_t6_firestorm from '@markdown/guides/abyss-nergal-trio-t6-firestorm.md'
-import * as pochven_standings from '@markdown/guides/pochven-standings.md'
 import * as abyss_stormbringer_t6_electrical from '@markdown/guides/abyss-stormbringer-t6-electrical.md'
 import * as abyss_trio_hawk_t5_dark from '@markdown/guides/abyss-trio-hawk-t5-dark.md'
 import * as zohar_hunting from '@markdown/guides/zohar-hunting.md'
@@ -38,7 +37,6 @@ const guideModules: Record<string, GuideModule> = {
     'abyss-duo-jackdaws-t6-dark': abyss_duo_jackdaws_t6_dark,
     'level5-missions': level5_missions,
     'abyss-nergal-trio-t6-firestorm': abyss_nergal_trio_t6_firestorm,
-    'pochven-standings': pochven_standings,
     'abyss-stormbringer-t6-electrical': abyss_stormbringer_t6_electrical,
     'abyss-trio-hawk-t5-dark': abyss_trio_hawk_t5_dark,
     'zohar-hunting': zohar_hunting,
@@ -95,7 +93,6 @@ export const guides: GuideMeta[] = [
         excerpt: "Learn how to run the most lucrative faction warfare site in the warzone, without getting AWOX'd.",
         category: "Faction Warfare Mechanics",
         author: "Furl0w",
-        path: "/guides/faction-warfare-battlefields/",
         authors: [
             {
                 name: "Furl0w",
@@ -137,7 +134,6 @@ export const guides: GuideMeta[] = [
             id: 1761145024,
             entity: 'character',
         }],
-        path: "/guides/faction-warfare-cruiser-guide/",
     },
     {
         slug: "navy-destroyer-metagame",
@@ -150,7 +146,6 @@ export const guides: GuideMeta[] = [
             id: 2120153200,
             entity: 'character',
         }],
-        path: "/guides/navy-destroyer-metagame/",
     },
     {
         slug: "navy-frigate-guide",
@@ -163,7 +158,6 @@ export const guides: GuideMeta[] = [
             id: 634915984,
             entity: 'character',
         }],
-        path: "/guides/navy-frigate-guide/",
     },
     {
         slug: "subcapital-basics",
@@ -252,7 +246,6 @@ export const guides: GuideMeta[] = [
             id: 634915984,
             entity: 'character',
         }],
-        path: "/guides/force-auxiliary-carrier-guide/",
     },
     {
         slug: "dreadnought-guide",
@@ -265,7 +258,6 @@ export const guides: GuideMeta[] = [
             id: 634915984,
             entity: 'character',
         }],
-        path: "/guides/dreadnought-guide/",
     },
     {
         slug: "carrier-guide",
@@ -278,7 +270,6 @@ export const guides: GuideMeta[] = [
             id: 634915984,
             entity: 'character',
         }],
-        path: "/guides/carrier-guide/",
     },
     {
         slug: "abyssals",
@@ -329,18 +320,6 @@ export const guides: GuideMeta[] = [
             entity: 'character',
         }],
         hiddenFromIndex: true,
-    },
-    {
-        slug: "pochven-standings",
-        title: "Pochven Standings",
-        excerpt: "How to fix Triglavian standings for OBS fleets: ship choice, sites to run, and extraction options.",
-        category: "Utility",
-        author: "Minmatar Fleet",
-        authors: [{
-            name: "Minmatar Fleet",
-            id: 99011978,
-            entity: 'alliance',
-        }],
     },
     {
         slug: "abyss-stormbringer-t6-electrical",
@@ -402,7 +381,7 @@ export function getGuideBySlug(slug: string): (GuideMeta & { module: GuideModule
 }
 
 export function getIndexedGuides(): GuideMeta[] {
-    return guides.filter((guide) => !guide.hiddenFromIndex)
+    return guides.filter((guide) => !guide.hiddenFromIndex && !guide.comingSoon)
 }
 
 /** Guides that are published and linkable (excludes coming soon placeholders). */

@@ -5,11 +5,13 @@ const { t } = i18n(Astro.url)
 import type { PostListUI } from '@dtypes/layout_components'
 
 interface Props {
-    posts:     PostListUI[];
+    posts:                  PostListUI[];
+    show_manage_content?:   boolean;
 }
 
 const {
     posts,
+    show_manage_content = false,
 } = Astro.props
 
 import Wrapper from '@components/compositions/Wrapper.astro';
@@ -18,10 +20,12 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 
 import Marquee from '@components/blocks/Marquee.astro';
 import NewsReelBadge from '@components/blocks/NewsReelBadge.astro';
+import ManageContentMenu from '@components/blocks/ManageContentMenu.astro';
 ---
 
 <div
     class="[ bottom-bar ][ card component light-transparency hidden! animate-slide-in-bottom ]"
+    {...((show_manage_content || posts.length < 5) ? { 'x-init': "$el.classList.add('lg:block!')" } : {})}
     x-on:marquee-started="$el.classList.add('lg:block!')"
 >
     <Wrapper
@@ -31,22 +35,30 @@ import NewsReelBadge from '@components/blocks/NewsReelBadge.astro';
         centered={true}
         padding_block='var(--space-2xs)'
     >
-        <FixedFluid width='120px' class="[ items-center! ]">
-            <h4>{t('recent_events')}</h4>
+        <div class="[ news-reel__row ]">
+            <FixedFluid width='9.5rem' class="[ items-center! news-reel__events ]">
+                <h4>{t('recent_events')}</h4>
 
-            {posts.length >= 5 ?
-                <Marquee>
-                    {posts.map(post =>
-                        <NewsReelBadge post={post} />
-                    )}
-                </Marquee> :
-                <FlexInline gap='var(--space-l)'>
-                    {posts.map(post =>
-                        <NewsReelBadge post={post} />
-                    )}
-                </FlexInline>
+                {posts.length >= 5 ?
+                    <Marquee>
+                        {posts.map(post =>
+                            <NewsReelBadge post={post} />
+                        )}
+                    </Marquee> :
+                    <FlexInline gap='var(--space-l)'>
+                        {posts.map(post =>
+                            <NewsReelBadge post={post} />
+                        )}
+                    </FlexInline>
+                }
+            </FixedFluid>
+
+            {show_manage_content &&
+                <div class="[ news-reel__manage ]">
+                    <ManageContentMenu />
+                </div>
             }
-        </FixedFluid>
+        </div>
     </Wrapper>
 </div>
 
@@ -61,5 +73,21 @@ import NewsReelBadge from '@components/blocks/NewsReelBadge.astro';
 
     .news-reel {
         position: relative;
+    }
+
+    .news-reel__row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-s);
+        width: 100%;
+    }
+
+    .news-reel__events {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .news-reel__manage {
+        flex-shrink: 0;
     }
 </style>

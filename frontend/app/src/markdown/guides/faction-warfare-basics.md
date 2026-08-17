@@ -80,7 +80,7 @@ So for a **Minmatar Scout BSC-1**:
 
 You can bring a Breacher but not a Vigil Navy Issue, and if there are two of you, you will split the rewards instead of both receiving a full payout.
 
-For a deeper dive into plex mechanics, see [Faction Warfare Complexes](/guides/faction-warfare-plexing/).
+For a deeper dive into plex mechanics, see [Faction Warfare Complexes](/learning/guides/faction-warfare-plexing/).
 
 ## Advantage
 
@@ -96,24 +96,24 @@ Advantage is an additional layer on contested that allows fleets and small gangs
 
 The typical pattern is that groups run propaganda beacons, rendezvous points, and battlefields to achieve 100% advantage. Then, after both sides stall at 100%, supply depots and listening outposts become a priority.
 
-For full advantage mechanics, see [Faction Warfare Advantage](/guides/faction-warfare-advantage/).
+For full advantage mechanics, see [Faction Warfare Advantage](/learning/guides/faction-warfare-advantage/).
 
 ## Battlefields
 
 Battlefields are 30-man sites that reward significant income and significant advantage. Because they are lucrative, they are highly contested, and you will often see fleets clashing in battleships and battlecruisers over them.
 
-They respawn several times a day for each faction. For grid layout, capture, ships, and fleet conduct, see [Faction Warfare Battlefields](/guides/faction-warfare-battlefields/).
+They respawn several times a day for each faction. For grid layout, capture, ships, and fleet conduct, see [Faction Warfare Battlefields](/learning/guides/faction-warfare-battlefields/).
 
 ## Loyalty Points
 
 Loyalty points are the currency of faction warfare. Complexes, advantage sites, and battlefields reward loyalty points, which can be converted for items to sell on the market.
 
-Loyalty point conversion is an absolute beast, and we have an entire team dedicated to it. Read the [Faction Warfare Loyalty Points](/guides/selling-loyalty-points/) guide to sell through brokers or convert your own LP.
+Loyalty point conversion is an absolute beast, and we have an entire team dedicated to it. Read the [Faction Warfare Loyalty Points](/learning/guides/selling-loyalty-points/) guide to sell through brokers or convert your own LP.
 
 ## Additional Resources
 
-- [Faction Warfare Complexes](/guides/faction-warfare-plexing/)
-- [Faction Warfare Advantage](/guides/faction-warfare-advantage/)
-- [Faction Warfare Battlefields](/guides/faction-warfare-battlefields/)
-- [New Player Fleet Guide](/guides/new-player-fleet-guide/)
+- [Faction Warfare Complexes](/learning/guides/faction-warfare-plexing/)
+- [Faction Warfare Advantage](/learning/guides/faction-warfare-advantage/)
+- [Faction Warfare Battlefields](/learning/guides/faction-warfare-battlefields/)
+- [New Player Fleet Guide](/learning/guides/new-player-fleet-guide/)
 - [Guides index](/guides/)

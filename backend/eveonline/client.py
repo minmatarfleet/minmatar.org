@@ -1061,6 +1061,69 @@ class EsiClient:
 
         return EsiResponse(response_code=SUCCESS, data=all_roles)
 
+    def get_corporation_titles(self, corporation_id: int) -> EsiResponse:
+        """
+        Returns corporation title definitions (roles granted by each title).
+        Requires esi-corporations.read_titles.v1.
+        """
+        return self._paginated_corporation_get(
+            f"/corporations/{corporation_id}/titles/",
+            ["esi-corporations.read_titles.v1"],
+        )
+
+    def get_corporation_member_titles(
+        self, corporation_id: int
+    ) -> EsiResponse:
+        """
+        Returns title ids held by each corporation member.
+        Requires esi-corporations.read_titles.v1.
+        """
+        return self._paginated_corporation_get(
+            f"/corporations/{corporation_id}/members/titles/",
+            ["esi-corporations.read_titles.v1"],
+        )
+
+    def _paginated_corporation_get(
+        self, path: str, required_scopes: List[str]
+    ) -> EsiResponse:
+        token, status = self._valid_token(required_scopes)
+        if status > 0:
+            return EsiResponse(status)
+
+        url = f"{ESI_BASE_URL}{path}"
+        headers = self._bearer_headers(token)
+        try:
+            resp = requests.get(
+                url,
+                params={"page": 1},
+                headers=headers,
+                timeout=30,
+            )
+        except Exception as e:
+            return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+        if resp.status_code >= 400:
+            return EsiResponse(response_code=resp.status_code)
+
+        all_rows = resp.json() if resp.content else []
+        total_pages = int(resp.headers.get("X-Pages", 1))
+
+        for page in range(2, total_pages + 1):
+            try:
+                page_resp = requests.get(
+                    url,
+                    params={"page": page},
+                    headers=headers,
+                    timeout=30,
+                )
+            except Exception as e:
+                return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
+            if page_resp.status_code >= 400:
+                return EsiResponse(response_code=page_resp.status_code)
+            page_data = page_resp.json() if page_resp.content else []
+            all_rows.extend(page_data)
+
+        return EsiResponse(response_code=SUCCESS, data=all_rows)
+
     def send_evemail(self, mail_details) -> EsiResponse:
         required_scopes = ["esi-mail.send_mail.v1"]
         token, status = self._valid_token(required_scopes)
@@ -1272,33 +1335,6 @@ class EsiClient:
         return EsiResponse(
             response_code=SUCCESS,
             data=resp.json() if resp.content else None,
-        )
-
-    def get_character_access_lists(self) -> EsiResponse:
-        """
-        List access list IDs managed by this character.
-        Requires esi-access.read_lists.v1.
-        """
-        url = f"{ESI_BASE_URL}/characters/{self.character_id}/access-lists/"
-        return self._authenticated_esi_get(
-            url,
-            ["esi-access.read_lists.v1"],
-        )
-
-    def get_character_access_list_detail(
-        self, access_list_id: int
-    ) -> EsiResponse:
-        """
-        Return membership for a single access list managed by this character.
-        Requires esi-access.read_lists.v1.
-        """
-        url = (
-            f"{ESI_BASE_URL}/characters/{self.character_id}/access-lists/"
-            f"{access_list_id}/"
-        )
-        return self._authenticated_esi_get(
-            url,
-            ["esi-access.read_lists.v1"],
         )
 
     def get_corp_structures(self, corp_id: int) -> EsiResponse:

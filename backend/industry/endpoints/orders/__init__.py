@@ -26,6 +26,12 @@ from industry.endpoints.orders.delete_order_pi_coordinator import (
     delete_order_pi_coordinator,
     METHOD as delete_order_pi_coordinator_method,
 )
+from industry.endpoints.orders.get_order_capabilities import (
+    PATH as get_order_capabilities_path,
+    ROUTE_SPEC as get_order_capabilities_spec,
+    get_order_capabilities,
+    METHOD as get_order_capabilities_method,
+)
 from industry.endpoints.orders.get_order import (
     PATH as get_order_path,
     ROUTE_SPEC as get_order_spec,
@@ -138,6 +144,12 @@ _ROUTES = (
         get_orders_character_statistics_path,
         get_orders_character_statistics_spec,
         get_orders_character_statistics,
+    ),
+    (
+        get_order_capabilities_method,
+        get_order_capabilities_path,
+        get_order_capabilities_spec,
+        get_order_capabilities,
     ),
     (post_order_method, post_order_path, post_order_spec, post_order),
     (get_order_method, get_order_path, get_order_spec, get_order),

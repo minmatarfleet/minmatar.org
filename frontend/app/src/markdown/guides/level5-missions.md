@@ -89,7 +89,7 @@ All images below are in the "blitzable" category—they are meant to be finished
 
 - Gated mission, warp at 10 -> punch gate -> MJD straight ahead against the drone structure  **Golem**: MJD straight ahead, then turn 90 degrees UP, keep MWD active and MJD again once able, keep firing on rats while you keep MWD until a second MJD is available, then bastion and finish mission **Barghest** use DPS fit  Use your travel ship to trigger spawns to save time, once you punch in with Barghest, do a 180, MJD and start killing the mission rats.
 
-![rogue_spy_(1_of_3).jpg](https://wiki.minmatar.org/guides/level5s/rogue_spy_(1_of_3).jpg)
+![rogue_spy_(1_of_3).jpg](https://wiki.minmatar.org/learning/guides/level5s/rogue_spy_(1_of_3).jpg)
 
 ### Sansha Acquisition
 
@@ -108,8 +108,8 @@ All images below are in the "blitzable" category—they are meant to be finished
 - Fly in with small ship to trigger it, warp out, wait 8 minutes, don't get within 10km of the ghost ship, so warp in at 100!
  alternatively, warp in with golem/barghest, burn off 250km and cloak up, wait for spawn  *TIP: when flying the **Golem** on this mission, make sure you can survive the bastion cycle before you bastion up, the DPS can be quite high depending on how good of an angle you had when warping in on the rats, if you can’t survive the bastion cycle, just keep MWD active and MJD again once you can, when out of neut/sentry range, bastion up and finish the mission* **Barghest** use DPS fit if using cloaking tactic
 
-![the_big_sting_(part_1_of_3)_-_frigate.jpg](https://wiki.minmatar.org/guides/level5s/the_big_sting_(part_1_of_3)_-_frigate.jpg)
- ![the_big_sting_(part_1_of_3)_-_golem.jpg](https://wiki.minmatar.org/guides/level5s/the_big_sting_(part_1_of_3)_-_golem.jpg)
+![the_big_sting_(part_1_of_3)_-_frigate.jpg](https://wiki.minmatar.org/learning/guides/level5s/the_big_sting_(part_1_of_3)_-_frigate.jpg)
+ ![the_big_sting_(part_1_of_3)_-_golem.jpg](https://wiki.minmatar.org/learning/guides/level5s/the_big_sting_(part_1_of_3)_-_golem.jpg)
 
 ### The Fortress
 

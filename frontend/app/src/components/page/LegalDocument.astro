@@ -1,0 +1,104 @@
+---
+import { i18n } from '@helpers/i18n'
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+interface Props {
+    page_title: string
+    page_description: string
+    html: string
+    current: 'privacy' | 'terms'
+}
+
+const {
+    page_title,
+    page_description,
+    html,
+    current,
+} = Astro.props
+
+const { t, translatePath } = i18n(Astro.url)
+
+const privacy_href = translatePath('/legal/privacy/')
+const terms_href = translatePath('/legal/terms/')
+
+function legal_nav_current(page: 'privacy' | 'terms'): 'page' | undefined {
+    switch (page) {
+        case 'privacy':
+            return current === 'privacy' ? 'page' : undefined
+        case 'terms':
+            return current === 'terms' ? 'page' : undefined
+        default: {
+            const _exhaustive: never = page
+            return _exhaustive
+        }
+    }
+}
+---
+
+<Viewport
+    title={page_title}
+    meta_description={page_description}
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <PageLanding
+        wide={true}
+        cover={{
+            image: '/images/alliance-cover.jpg',
+            image_990: '/images/alliance-cover.jpg',
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <Flexblock gap="var(--space-2xl)">
+            <Wrapper
+                max_width="var(--max-text-width)"
+                padding_inline="0"
+                padding_block="0"
+            >
+                <Flexblock gap="var(--space-xl)">
+                    <PageTitle is_landing={true}>{page_title}</PageTitle>
+                    <p class="[ excerpt ]">{page_description}</p>
+                    <FlexInline
+                        class="[ legal-nav ]"
+                        gap="var(--space-m)"
+                    >
+                        <a
+                            href={privacy_href}
+                            aria-current={legal_nav_current('privacy')}
+                        >{t('legal.privacy')}</a>
+                        <a
+                            href={terms_href}
+                            aria-current={legal_nav_current('terms')}
+                        >{t('legal.terms')}</a>
+                    </FlexInline>
+                </Flexblock>
+            </Wrapper>
+
+            <TextBox>
+                <div class="[ prose legal-prose ]" set:html={html} />
+            </TextBox>
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .excerpt {
+        font-size: var(--step-1);
+    }
+
+    .legal-nav a[aria-current='page'] {
+        color: var(--highlight);
+        text-decoration: none;
+        pointer-events: none;
+    }
+</style>

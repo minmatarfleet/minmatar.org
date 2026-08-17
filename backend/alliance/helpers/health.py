@@ -1,9 +1,9 @@
-"""Alliance health rollup — MAP, quiet pilots, corps, cohorts.
+"""Alliance health rollup — MAP, quiet pilots, corps, cohorts, hygiene.
 
 Unit: site User with ≥1 linked character currently in an MFA alliance corp.
 Active signals (no Discord voice): fleet attendance, killmail attack
 (solo / small-gang / other), supply (mining, PI, industry jobs/assignments,
-freight, LP market, buyback, supply-tribe activity).
+freight, LP market, buyback). Trial/leave hygiene also uses Discord voice.
 """
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ from django.contrib.auth.models import User
 from django.db.models import Count, F, Q
 from django.utils import timezone
 
+from alliance.helpers.health_hygiene import compute_hygiene_payload
 from alliance.models import AllianceHealthSnapshot
 from applications.models import EveCorporationApplication
 from buyback.models import BuybackContract
@@ -31,18 +32,29 @@ from eveonline.models import (
 )
 from fleets.models import EveFleetInstanceMember
 from freight.models import FreightContract
+from groups.helpers import PEOPLE_TEAM, TECH_TEAM, TRIBE_CHIEF_GROUP_NAME
 from groups.models import UserCommunityStatus
 from industry.models import (
     IndustryLoyaltyPointMarketOrder,
     IndustryOrderItemAssignment,
 )
-from tribes.models import TribeGroup, TribeGroupActivityRecord
+from tribes.models import (
+    Tribe,
+    TribeGroupMembership,
+    TribeGroupMembershipHistory,
+)
 
 ALLIANCE_ID = 99011978
 ACADEMY_CORP_ID = 98741376
 MH0LD_TICKER = "MH0LD"
 GOAL_MAP = 500
 HIST_MONTHS = 12
+HYGIENE_DAYS = 90
+HYGIENE_RECENT_DAYS = 30
+RESTORE_GRACE_DAYS = 30
+EXEMPT_AUTH_GROUPS = frozenset(
+    {PEOPLE_TEAM, TECH_TEAM, TRIBE_CHIEF_GROUP_NAME}
+)
 
 
 def _aware(d: date) -> datetime:
@@ -51,6 +63,157 @@ def _aware(d: date) -> datetime:
 
 def _month_key(dt: datetime | date) -> str:
     return f"{dt.year:04d}-{dt.month:02d}"
+
+
+def _status_windows(
+    status_of,
+    s30: set[int],
+    s90: set[int],
+    s180: set[int],
+) -> dict[str, dict[str, int]]:
+    """MAP activity counts by current community status for 30/90/180d."""
+    keys = (
+        UserCommunityStatus.STATUS_ACTIVE,
+        UserCommunityStatus.STATUS_TRIAL,
+        UserCommunityStatus.STATUS_ON_LEAVE,
+    )
+
+    def count(active_set: set[int]) -> dict[str, int]:
+        out = {key: 0 for key in keys}
+        for uid in active_set:
+            st = status_of(uid)
+            if st in out:
+                out[st] += 1
+        return out
+
+    c30, c90, c180 = count(s30), count(s90), count(s180)
+    return {
+        key: {"d30": c30[key], "d90": c90[key], "d180": c180[key]}
+        for key in keys
+    }
+
+
+def _unknown_characters(
+    corp_ids: list[int], corp_by_id: dict[int, dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Alliance-corp characters with no linked site user (exclude MH0LD)."""
+    rows: list[dict[str, Any]] = []
+    for character_id, character_name, corporation_id in (
+        EveCharacter.objects.filter(
+            corporation_id__in=corp_ids, user_id__isnull=True
+        )
+        .order_by("corporation_id", "character_name")
+        .values_list("character_id", "character_name", "corporation_id")
+    ):
+        corp_meta = corp_by_id.get(corporation_id) or {}
+        rows.append(
+            {
+                "character_id": character_id,
+                "character_name": character_name or str(character_id),
+                "corporation_id": corporation_id,
+                "corp": _corp_display_name(corp_meta),
+            }
+        )
+    return rows
+
+
+def _tribes_monthly(  # noqa: C901
+    monthly: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Active tribe membership headcount at each completed month end."""
+    months = [{"month": m["month"], "label": m["label"]} for m in monthly]
+    month_ends: list[datetime] = []
+    for point in monthly:
+        year, month = map(int, point["month"].split("-"))
+        month_ends.append(
+            timezone.make_aware(datetime(year, month, 1))
+            + relativedelta(months=1)
+        )
+
+    tribes = list(
+        Tribe.objects.filter(is_active=True)
+        .order_by("name")
+        .values("id", "name")
+    )
+    series = [
+        {"tribe_id": t["id"], "name": t["name"], "counts": [0] * len(months)}
+        for t in tribes
+    ]
+    if not tribes or not month_ends:
+        return {"months": months, "series": series}
+
+    tribe_ids = [t["id"] for t in tribes]
+    memberships = list(
+        TribeGroupMembership.objects.filter(
+            tribe_group__tribe_id__in=tribe_ids
+        ).values(
+            "id",
+            "user_id",
+            "status",
+            "approved_at",
+            "left_at",
+            "created_at",
+            "tribe_group__tribe_id",
+        )
+    )
+    history: dict[int, list[tuple[str, datetime]]] = defaultdict(list)
+    membership_ids = [row["id"] for row in memberships]
+    if membership_ids:
+        for membership_id, to_status, changed_at in (
+            TribeGroupMembershipHistory.objects.filter(
+                membership_id__in=membership_ids
+            )
+            .order_by("changed_at")
+            .values_list("membership_id", "to_status", "changed_at")
+        ):
+            if changed_at is not None:
+                history[membership_id].append((to_status, changed_at))
+
+    intervals: dict[
+        tuple[int, int], list[tuple[datetime, datetime | None]]
+    ] = defaultdict(list)
+    for row in memberships:
+        tribe_id = row["tribe_group__tribe_id"]
+        user_id = row["user_id"]
+        events = history.get(row["id"], [])
+        current_start = None
+        if events:
+            for to_status, changed_at in events:
+                if to_status == TribeGroupMembership.STATUS_ACTIVE:
+                    current_start = changed_at
+                elif (
+                    to_status == TribeGroupMembership.STATUS_INACTIVE
+                    and current_start is not None
+                ):
+                    intervals[(tribe_id, user_id)].append(
+                        (current_start, changed_at)
+                    )
+                    current_start = None
+            if current_start is not None:
+                intervals[(tribe_id, user_id)].append((current_start, None))
+            continue
+        start = row["approved_at"] or row["created_at"]
+        if start is None:
+            continue
+        if row["status"] == TribeGroupMembership.STATUS_ACTIVE:
+            intervals[(tribe_id, user_id)].append((start, row["left_at"]))
+        elif row["left_at"] is not None:
+            intervals[(tribe_id, user_id)].append((start, row["left_at"]))
+
+    index_by_tribe = {t["id"]: i for i, t in enumerate(tribes)}
+    for month_i, month_end in enumerate(month_ends):
+        seen: dict[int, set[int]] = defaultdict(set)
+        for (tribe_id, user_id), spans in intervals.items():
+            for start, end in spans:
+                if start < month_end and (end is None or end >= month_end):
+                    seen[tribe_id].add(user_id)
+                    break
+        for tribe_id, users in seen.items():
+            series_i = index_by_tribe.get(tribe_id)
+            if series_i is not None:
+                series[series_i]["counts"][month_i] = len(users)
+
+    return {"months": months, "series": series}
 
 
 def _corp_display_name(corp: dict) -> str:
@@ -154,16 +317,38 @@ def compute_alliance_health(  # noqa: C901
     # Events: (user_id, datetime, signal) — fleet | solo | small_gang | kill | supply
     events: list[tuple[int, datetime, str]] = []
 
-    for cid, jt in (
+    hygiene_since = now - timedelta(days=HYGIENE_DAYS)
+    hygiene_recent = now - timedelta(days=HYGIENE_RECENT_DAYS)
+    hygiene_180 = now - timedelta(days=180)
+    fleets_90d_sets: dict[int, set[int]] = defaultdict(set)
+    fleets_30d_sets: dict[int, set[int]] = defaultdict(set)
+    fleets_180_times: dict[int, list[datetime]] = defaultdict(list)
+    last_fleet_at: dict[int, datetime] = {}
+    last_kill_at: dict[int, datetime] = {}
+    kills_90d: dict[int, int] = defaultdict(int)
+    kills_30d: dict[int, int] = defaultdict(int)
+    kills_small_90d: dict[int, int] = defaultdict(int)
+
+    for cid, jt, iid in (
         EveFleetInstanceMember.objects.filter(
             character_id__in=all_eves, join_time__gte=hist_start
         )
-        .values_list("character_id", "join_time")
+        .values_list("character_id", "join_time", "eve_fleet_instance_id")
         .iterator(chunk_size=10000)
     ):
         uid = eve_to_user.get(cid)
-        if uid is not None and jt is not None:
-            events.append((uid, jt, "fleet"))
+        if uid is None or jt is None:
+            continue
+        events.append((uid, jt, "fleet"))
+        if jt >= hygiene_180:
+            fleets_180_times[uid].append(jt)
+        if jt >= hygiene_since and iid is not None:
+            fleets_90d_sets[uid].add(iid)
+            prev = last_fleet_at.get(uid)
+            if prev is None or jt > prev:
+                last_fleet_at[uid] = jt
+            if jt >= hygiene_recent:
+                fleets_30d_sets[uid].add(iid)
 
     # Killmail attacker counts for solo / small-gang bucketing
     kill_rows = list(
@@ -197,6 +382,15 @@ def compute_alliance_health(  # noqa: C901
         else:
             sig = "kill"
         events.append((uid, kt, sig))
+        if kt >= hygiene_since:
+            kills_90d[uid] += 1
+            if n <= 10:
+                kills_small_90d[uid] += 1
+            prev = last_kill_at.get(uid)
+            if prev is None or kt > prev:
+                last_kill_at[uid] = kt
+            if kt >= hygiene_recent:
+                kills_30d[uid] += 1
 
     # Supply signals
     for pk, d in (
@@ -312,24 +506,6 @@ def compute_alliance_health(  # noqa: C901
         if uid is not None and last_update is not None:
             events.append((uid, last_update, "supply"))
 
-    supply_group_ids = list(
-        TribeGroup.objects.filter(code__startswith="supply.").values_list(
-            "id", flat=True
-        )
-    )
-    if supply_group_ids:
-        for uid, occurred_at in (
-            TribeGroupActivityRecord.objects.filter(
-                tribe_group_activity__tribe_group_id__in=supply_group_ids,
-                occurred_at__gte=hist_start,
-                user_id__in=roster_user_ids,
-            )
-            .values_list("user_id", "occurred_at")
-            .iterator(chunk_size=5000)
-        ):
-            if uid is not None and occurred_at is not None:
-                events.append((uid, occurred_at, "supply"))
-
     map_signals = frozenset({"fleet", "solo", "small_gang", "kill", "supply"})
 
     def users_active(
@@ -355,6 +531,7 @@ def compute_alliance_health(  # noqa: C901
     s14 = users_active(now - timedelta(days=14), signals=map_signals)
     s30 = users_active(now - timedelta(days=30), signals=map_signals)
     s90 = users_active(now - timedelta(days=90), signals=map_signals)
+    s180 = users_active(now - timedelta(days=180), signals=map_signals)
 
     signals_30 = {
         "fleets": len(users_active(now - timedelta(days=30), signal="fleet")),
@@ -451,10 +628,10 @@ def compute_alliance_health(  # noqa: C901
                     users_active(since_dt, until_dt, signals=map_signals)
                 ),
                 "fleet": len(users_active(since_dt, until_dt, signal="fleet")),
-                "solo": len(users_active(since_dt, until_dt, signal="solo")),
-                "supply": len(
-                    users_active(since_dt, until_dt, signal="supply")
+                "small_gang": len(
+                    users_active(since_dt, until_dt, signal="small_gang")
                 ),
+                "solo": len(users_active(since_dt, until_dt, signal="solo")),
             }
         )
         cur = nxt
@@ -611,17 +788,56 @@ def compute_alliance_health(  # noqa: C901
                 UserCommunityStatus.STATUS_ON_LEAVE, 0
             ),
         },
+        "status_windows": _status_windows(status_of, s30, s90, s180),
         "signals_30d": signals_30,
         "quiet": quiet_counts,
         "monthly": monthly,
+        "tribes_monthly": _tribes_monthly(monthly),
+        "unknown_characters": _unknown_characters(corp_ids, corp_by_id),
         "attention": attention,
         "corporations": corporations,
         "cohorts": cohorts,
+        "hygiene": compute_hygiene_payload(
+            now=now,
+            roster_user_ids=roster_user_ids,
+            usernames=usernames,
+            display_name=display_name,
+            primary_corp=primary_corp,
+            primary_character=primary_character,
+            corp_by_id=corp_by_id,
+            corp_ids=corp_ids,
+            user_eves=user_eves,
+            status_of=status_of,
+            fleets_90d={uid: len(s) for uid, s in fleets_90d_sets.items()},
+            fleets_30d={uid: len(s) for uid, s in fleets_30d_sets.items()},
+            fleets_180_times=fleets_180_times,
+            kills_90d=dict(kills_90d),
+            kills_30d=dict(kills_30d),
+            kills_small_90d=dict(kills_small_90d),
+            last_fleet_at=last_fleet_at,
+            last_kill_at=last_kill_at,
+            hygiene_since=hygiene_since,
+            hygiene_recent=hygiene_recent,
+            hygiene_180=hygiene_180,
+            alliance_id=ALLIANCE_ID,
+            exempt_auth_groups=EXEMPT_AUTH_GROUPS,
+            restore_grace_days=RESTORE_GRACE_DAYS,
+            corp_display_name=_corp_display_name,
+        ),
     }
 
 
 def latest_snapshot():
     return AllianceHealthSnapshot.objects.order_by("-computed_at").first()
+
+
+def snapshot_before(at: datetime):
+    """Latest snapshot at or before *at*."""
+    return (
+        AllianceHealthSnapshot.objects.filter(computed_at__lte=at)
+        .order_by("-computed_at")
+        .first()
+    )
 
 
 def save_snapshot(payload: dict[str, Any] | None = None):

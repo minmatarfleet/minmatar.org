@@ -9,17 +9,15 @@ CACHE_URL = "redis://localhost:6379/2"
 CELERY_IMPORTS = (
     "eveonline.tasks",
     "structures.tasks",
-    "access_lists.tasks",
     "groups.tasks",
     "discord.tasks",
     "fleets.tasks",
     "reminders.tasks",
     "moons.tasks",
-    "freight.tasks",
     "market.tasks",
     "industry.tasks",
-    "mumble.tasks",
     "reddit.tasks",
+    "creators.tasks",
     "tribes.tasks",
     "feed.tasks",
     "notifications.tasks",
@@ -63,8 +61,6 @@ INSTALLED_APPS = [
     "structures.apps.StructuresConfig",
     "access_lists.apps.AccessListsConfig",
     "fleets.apps.FleetsConfig",
-    # Mumble
-    "mumble.apps.MumbleConfig",
     # Reminders
     "reminders.apps.RemindersConfig",
     # Freight
@@ -103,6 +99,8 @@ INSTALLED_APPS = [
     "audit",
     # Reddit integration
     "reddit",
+    # Creator Twitch / YouTube / Reddit OAuth + ingest
+    "creators.apps.CreatorsConfig",
     "feed.apps.FeedConfig",
     "help_tickets.apps.HelpTicketsConfig",
 ]

@@ -54,7 +54,6 @@ import {
 	PageFinderXData,
 	CharacterFinderXData,
 	FittingFinderXData,
-	MemberFinderXData,
 	CorporationFinderXData,
 	AllianceFinderXData,
 	UtilitiesXData,
@@ -167,7 +166,6 @@ import RifterIcon from '@components/icons/RifterIcon.astro';
 			${components?.alliance_finder ? AllianceFinderXData : ''}
 			${components?.modal ? ModalXData : ''}
 			${user ? CharacterFinderXData : ''}
-			${user_is_officer || user_is_director ? MemberFinderXData : ''}
             ${PageFinderXData}
             ${FittingFinderXData}
             ${UtilitiesXData}

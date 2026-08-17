@@ -6,79 +6,70 @@ import type {
     AllianceHealthAttentionBucket,
     AllianceHealthQuietCounts,
 } from '@dtypes/api.minmatar.org'
+import { alliance_health_table_params } from '@helpers/api.minmatar.org/alliance_health'
+import { ALLIANCE_HEALTH_DEFAULT_BUCKETS } from '@helpers/alliance_health_url'
 
-import FlexInline from '@components/compositions/FlexInline.astro'
-import Flexblock from '@components/compositions/Flexblock.astro'
-import Button from '@components/blocks/Button.astro'
-import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import AllianceHealthBucketTabs from '@components/blocks/AllianceHealthBucketTabs.astro'
 
 interface Props {
     quiet: AllianceHealthQuietCounts
     bucket: AllianceHealthAttentionBucket
     partial_url: string
+    initial_corp?: string
+    can_mutate?: boolean
+    alliance_wide?: boolean
+    officer_corp_ids?: number[]
+    can_leave_any?: boolean
+    ceo_corp_ids?: number[]
     [propName: string]: any
 }
 
-const { quiet, bucket, partial_url, ...attributes } = Astro.props
+const {
+    quiet,
+    bucket,
+    partial_url,
+    initial_corp = 'all',
+    can_mutate = false,
+    alliance_wide = false,
+    officer_corp_ids = [],
+    can_leave_any = false,
+    ceo_corp_ids = [],
+    ...attributes
+} = Astro.props
 delete attributes.class
 
-const tabs: {
-    id: AllianceHealthAttentionBucket
-    count: number
-    label: string
-}[] = [
-    {
-        id: 'fading',
-        count: quiet.fading,
-        label: t('alliance.health.bucket.fading'),
-    },
-    {
-        id: 'dark',
-        count: quiet.dark,
-        label: t('alliance.health.bucket.dark'),
-    },
-    {
-        id: 'seasonal',
-        count: quiet.seasonal,
-        label: t('alliance.health.bucket.seasonal'),
-    },
-]
+const default_bucket = ALLIANCE_HEALTH_DEFAULT_BUCKETS.attention
+const tab_query = (id: AllianceHealthAttentionBucket) =>
+    alliance_health_table_params({
+        bucket: id,
+        corp: initial_corp,
+        can_mutate,
+        alliance_wide,
+        officer_corp_ids,
+        can_leave_any,
+        ceo_corp_ids,
+    })
+
+const tabs = [
+    { id: 'fading', count: quiet.fading, label: t('alliance.health.bucket.fading') },
+    { id: 'dark', count: quiet.dark, label: t('alliance.health.bucket.dark') },
+    { id: 'seasonal', count: quiet.seasonal, label: t('alliance.health.bucket.seasonal') },
+].map((tab) => ({
+    ...tab,
+    href: `${partial_url}?${tab_query(tab.id as AllianceHealthAttentionBucket)}`,
+}))
 ---
 
-<section
-    class:list={['[ alliance-health-attention ]', Astro.props.class]}
-    aria-label={t('alliance.health.attention.aria')}
-    x-data={`{ attention_bucket: '${bucket}' }`}
+<AllianceHealthBucketTabs
+    class={Astro.props.class}
+    {...attributes}
+    section_id="health-attention"
+    aria_label={t('alliance.health.attention.aria')}
+    bucket={bucket}
+    url_section="attention"
+    default_bucket={default_bucket}
+    table_id="alliance-health-attention-table"
+    tabs={tabs}
 >
-    <Flexblock gap="var(--space-m)">
-        <FlexInline gap="var(--space-2xs)">
-            {tabs.map((tab) => (
-                <Button
-                    size="sm"
-                    x-bind:class={`attention_bucket === '${tab.id}' ? 'active' : ''`}
-                    color="transparent"
-                    x-on:click={`attention_bucket = '${tab.id}'`}
-                    hx-get={`${partial_url}?bucket=${tab.id}`}
-                    hx-target="#alliance-health-attention-table"
-                    hx-swap="innerHTML"
-                    hx-indicator=".loader"
-                >
-                    {tab.label} ({tab.count})
-                </Button>
-            ))}
-        </FlexInline>
-
-        <ComponentBlock padding_inline="var(--space-m)">
-            <div id="alliance-health-attention-table">
-                <slot />
-            </div>
-        </ComponentBlock>
-    </Flexblock>
-</section>
-
-<style lang="scss">
-    .alliance-health-attention :global(.button.active) {
-        border-color: var(--alliance-blue);
-        color: var(--highlight);
-    }
-</style>
+    <slot />
+</AllianceHealthBucketTabs>

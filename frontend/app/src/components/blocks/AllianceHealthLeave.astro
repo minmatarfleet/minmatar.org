@@ -1,0 +1,75 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type {
+    AllianceHealthLeaveBucket,
+    AllianceHealthLeaveCounts,
+} from '@dtypes/api.minmatar.org'
+import { alliance_health_table_params } from '@helpers/api.minmatar.org/alliance_health'
+import { ALLIANCE_HEALTH_DEFAULT_BUCKETS } from '@helpers/alliance_health_url'
+
+import AllianceHealthBucketTabs from '@components/blocks/AllianceHealthBucketTabs.astro'
+
+interface Props {
+    counts: AllianceHealthLeaveCounts
+    bucket: AllianceHealthLeaveBucket
+    partial_url: string
+    initial_corp?: string
+    can_mutate?: boolean
+    alliance_wide?: boolean
+    officer_corp_ids?: number[]
+    can_leave_any?: boolean
+    ceo_corp_ids?: number[]
+    [propName: string]: any
+}
+
+const {
+    counts,
+    bucket,
+    partial_url,
+    initial_corp = 'all',
+    can_mutate = false,
+    alliance_wide = false,
+    officer_corp_ids = [],
+    can_leave_any = false,
+    ceo_corp_ids = [],
+    ...attributes
+} = Astro.props
+delete attributes.class
+
+const default_bucket = ALLIANCE_HEALTH_DEFAULT_BUCKETS.leave
+const tab_query = (id: AllianceHealthLeaveBucket) =>
+    alliance_health_table_params({
+        bucket: id,
+        corp: initial_corp,
+        can_mutate,
+        alliance_wide,
+        officer_corp_ids,
+        can_leave_any,
+        ceo_corp_ids,
+    })
+
+const tabs = [
+    { id: 'current', count: counts.current, label: t('alliance.health.selector.current_leave') },
+    { id: 'inactive', count: counts.inactive ?? Math.max(0, counts.current - (counts.returning ?? counts.remove)), label: t('alliance.health.selector.inactive_leave') },
+    { id: 'returning', count: counts.returning ?? counts.remove, label: t('alliance.health.selector.returning_leave') },
+].map((tab) => ({
+    ...tab,
+    href: `${partial_url}?${tab_query(tab.id as AllianceHealthLeaveBucket)}`,
+}))
+---
+
+<AllianceHealthBucketTabs
+    class={Astro.props.class}
+    {...attributes}
+    section_id="health-leave"
+    aria_label={t('alliance.health.leave.aria')}
+    bucket={bucket}
+    url_section="leave"
+    default_bucket={default_bucket}
+    table_id="alliance-health-leave-table"
+    tabs={tabs}
+>
+    <slot />
+</AllianceHealthBucketTabs>

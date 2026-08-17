@@ -1,35 +1,17 @@
-import { group_by } from '@helpers/array';
 import type {
-    BaseIndustryOrder,
     IndustryOrder,
     Producer,
-    PlanetWithColoniesItem,
     OrderAssignmentsBreakdownItem,
     RootItem
 } from '@dtypes/api.minmatar.org'
-import type { OrderLocation, ColonySystems, ColonyPlanet, OrderBreakdownUI, IndustryOrderUI } from '@dtypes/layout_components'
+import type { OrderLocation, OrderBreakdownUI, IndustryOrderUI } from '@dtypes/layout_components'
 import {
-    get_orders_summary_flat,
-    get_orders_summary_nested,
     get_orders_with_location,
     get_blueprints,
-    get_planetary_planets,
     get_order_by_id,
     get_order_orderitems,
     get_order_assignments_breakdown,
 } from '@helpers/api.minmatar.org/industry'
-import { get_system_name, get_system_sun_type_id, get_planet_info } from '@helpers/sde/map'
-
-export async function fetch_orders_summary_flat() {
-    const orders = await get_orders_summary_flat()
-
-    return (orders?.items ?? []) as BaseIndustryOrder[]
-}
-
-export async function fetch_orders_summary() {
-    const orders = await get_orders_summary_nested()
-    return orders.roots ?? []
-}
 
 export async function fetch_orders_by_locations(history:boolean = false) {
     const api_orders = await get_orders_with_location()
@@ -86,42 +68,6 @@ export async function fetch_blueprints(query:string, is_copy:boolean = false) {
     })
 
     return blueprints
-}
-
-export async function fetch_colonies() {
-    const planet_list = await get_planetary_planets()
-    const colonies:ColonySystems[] = []
-
-    const colonies_by_solar_system:Record<string, PlanetWithColoniesItem[]> = group_by(planet_list, 'solar_system_id')
-
-    for (let solar_system_id in colonies_by_solar_system) {
-        const system_id = parseInt(solar_system_id)
-        
-        const planets = await Promise.all(colonies_by_solar_system[solar_system_id].map(async (planet) => {
-            const planet_info = await get_planet_info(planet.planet_id)
-
-            return {
-                planet_id: planet.planet_id,
-                planet_name: planet_info?.name ?? `${planet.planet_id}`,
-                planet_type: planet.planet_type,
-                planet_type_id: planet_info?.type_id ?? 0,
-                colonies: planet.colonies,
-            } as ColonyPlanet
-        }))
-
-        planets.sort((a, b) => a.planet_name.localeCompare(b.planet_name))
-
-        colonies.push({
-            solar_system_id: system_id,
-            solar_system_name: await get_system_name(system_id) ?? `''`,
-            system_sun_type_id: await get_system_sun_type_id(system_id) ?? 0,
-            planets: planets,
-        })
-    }
-
-    colonies.sort((a, b) => a.solar_system_name.localeCompare(b.solar_system_name))
-
-    return colonies
 }
 
 function get_children_materials(childrens:OrderAssignmentsBreakdownItem[]) {

@@ -1,0 +1,103 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type {
+    AllianceHealthOnboardingBucket,
+    AllianceHealthTrialPilot,
+} from '@dtypes/api.minmatar.org'
+import type {
+    AllianceHealthOrderOption,
+    AllianceHealthPilotListRow,
+} from '@helpers/alliance_health_pilot_list'
+
+import AllianceHealthPilotList from '@components/blocks/AllianceHealthPilotList.astro'
+
+interface Props {
+    pilots: AllianceHealthTrialPilot[]
+    initial_corp?: string
+    bucket?: AllianceHealthOnboardingBucket
+    [propName: string]: any
+}
+
+const {
+    pilots,
+    initial_corp = 'all',
+    bucket = 'first_week',
+    ...attributes
+} = Astro.props
+delete attributes.class
+
+const default_order_by = ((): string => {
+    switch (bucket) {
+        case 'first_week':
+            return 'days'
+        case 'more_fleets':
+            return 'fleets'
+        default: {
+            const _never: never = bucket
+            return _never
+        }
+    }
+})()
+
+const order_by_options: AllianceHealthOrderOption[] = [
+    { id: 'fleets', label: t('alliance.health.col.fleets'), kind: 'number' },
+    { id: 'days', label: t('alliance.health.col.in_alliance'), kind: 'number' },
+    { id: 'last', label: t('alliance.health.col.last'), kind: 'number' },
+    { id: 'tz', label: t('alliance.health.col.tz'), kind: 'text' },
+]
+
+const rows: AllianceHealthPilotListRow[] = pilots.map((pilot) => ({
+    name: pilot.pilot,
+    corp: pilot.corp,
+    character_id: pilot.character_id,
+    corporation_id: pilot.corporation_id,
+    search_text: `${pilot.pilot} ${pilot.username} ${pilot.corp} ${pilot.timezone ?? ''}`.toLowerCase(),
+    timezone: pilot.timezone,
+    note:
+        bucket === 'first_week'
+            ? t('alliance.health.onboarding.first_week_note')
+            : t('alliance.health.onboarding.more_fleets_note').replace(
+                  '{fleets}',
+                  String(pilot.fleets),
+              ),
+    metrics: [
+        {
+            id: 'fleets',
+            label: t('alliance.health.col.fleets'),
+            value: String(pilot.fleets),
+            sort: pilot.fleets,
+        },
+        {
+            id: 'days',
+            label: t('alliance.health.col.in_alliance'),
+            value: pilot.alliance_days == null ? '—' : `${pilot.alliance_days}d`,
+            sort: pilot.alliance_days ?? '',
+            scale: 'none',
+        },
+        {
+            id: 'last',
+            label: t('alliance.health.col.last'),
+            value:
+                pilot.days_since_activity == null
+                    ? '—'
+                    : `${pilot.days_since_activity}d`,
+            sort: pilot.days_since_activity ?? '',
+            scale: 'lower',
+        },
+    ],
+}))
+---
+
+<div class:list={['[ alliance-health-onboarding-list ]', Astro.props.class]} {...attributes}>
+    <AllianceHealthPilotList
+        rows={rows}
+        empty_label={t('alliance.health.onboarding.empty')}
+        order_by_options={order_by_options}
+        default_order_by={default_order_by}
+        initial_corp={initial_corp}
+        csv_filename={`health-needs-attention-${bucket}.csv`}
+        url_section="onboarding"
+    />
+</div>

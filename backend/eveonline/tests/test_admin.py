@@ -237,17 +237,6 @@ class AdminAppListGroupingTestCase(TestCase):
         self.assertIn("auditentry", system_models)
         self.assertNotIn("auditentry", community_models)
 
-    def test_mumble_access_under_system_not_community(self):
-        request = self.factory.get("/admin/")
-        request.user = self.admin_user
-        app_list = admin.site.get_app_list(request)
-
-        system_models = self._model_names(app_list, "System")
-        community_models = self._model_names(app_list, "Community")
-
-        self.assertIn("mumbleaccess", system_models)
-        self.assertNotIn("mumbleaccess", community_models)
-
     def test_fleets_under_alliance_not_standalone(self):
         request = self.factory.get("/admin/")
         request.user = self.admin_user
@@ -315,13 +304,11 @@ class AdminAppListGroupingTestCase(TestCase):
 
         experimental_models = self._model_names(app_list, "Experimental")
         experimental_names = self._display_names(app_list, "Experimental")
-        self.assertIn("eveaccesslist", experimental_models)
         self.assertIn("industryproduct", experimental_models)
-        self.assertIn("miningupgradecompletion", experimental_models)
-        self.assertIn("systemsovereigntyconfig", experimental_models)
         self.assertIn("products", experimental_names)
-        self.assertIn("mining completions", experimental_names)
-        self.assertNotIn("eveaccesslistmember", experimental_models)
+        self.assertNotIn("eveaccesslist", experimental_models)
+        self.assertNotIn("miningupgradecompletion", experimental_models)
+        self.assertNotIn("systemsovereigntyconfig", experimental_models)
 
     def test_hidden_models_not_in_sidebar(self):
         request = self.factory.get("/admin/")

@@ -96,7 +96,8 @@ linked chars / untracked ops in reasons when they matter.
 ## Decision rules (90d)
 
 Paths are co-equal. Approve when **one strong path** or **two medium paths**,
-**and** the recency gate passes.
+**and** the recency gate passes **and** they have been in the alliance
+**≥ 60 days** (60–90 days is a healthy trial; do not promote earlier).
 
 **Strong path (approve, Conf high):**
 
@@ -112,6 +113,26 @@ Paths are co-equal. Approve when **one strong path** or **two medium paths**,
 | Small-gang | 4–7 |
 | Total kills (any gang) | ≥ 10 with some small-gang (≥ 3) |
 | Voice | ≥ 5h with any fleet or kill touch |
+
+### Tenure gate (required for approve)
+
+Participation is not enough if they just got here. Trial should run **60–90
+days**. Approve only when current alliance tenure is **≥ 60 days**.
+
+Tenure = current alliance stint across linked characters (corp history;
+contiguous MFA corp transfers count as one stint). Fall back to accepted
+application date, then community-status trial start, if history is missing.
+
+**Too early — hold** even if path + recency would approve:
+
+- `alliance_days` < 60 (including unknown tenure)
+- Typical shape: strong first-month PAP, joined 1–4 weeks ago
+
+Reason tag: `Too early — Nd in alliance; 60–90d is healthy. On track: …`
+Conf: do not approve; re-eval at 60d. These are not CEO-nudge / fail cases.
+
+Do **not** fail a trial before 60 days in alliance either — they have not had
+a healthy window.
 
 ### Recency gate (required for approve)
 
@@ -137,6 +158,7 @@ part of the window and the last 30d is quiet, hold.
 
 **Hold trial:**
 
+- Too early: path would clear, but < 60 days in alliance
 - Dark: fleets ≤ 1, kills ≈ 0, voice ≈ 0
 - Front-loaded / stale (above)
 - Voice-only social ghost: high voice, no fleets, no kills
@@ -152,7 +174,7 @@ Reason line: Path + 1–2 metrics; add last-activity age when non-obvious. See
 
 Always both. Sort approves by Conf (`high` then `medium`).
 
-**Summary:** `N approve (H/M); H held (F front-loaded); W wrong-affiliation. Window: 90d / recent 30d.`
+**Summary:** `N approve (H/M); E too-early holds; H held (F front-loaded); W wrong-affiliation. Window: 90d / recent 30d. Tenure ≥60d.`
 
 ### Report
 

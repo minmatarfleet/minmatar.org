@@ -9,6 +9,7 @@ interface Props {
     optimize?:          boolean;
     width?:             number;
     height?:            number;
+    gap?:               string;
     [propName: string]: any;
 }
 
@@ -22,6 +23,7 @@ const {
     optimize,
     width = '512',
     height = '512',
+    gap = 'var(--space-s)',
     ...attributes
 } = Astro.props
 
@@ -44,19 +46,21 @@ import Markdown from '@components/blocks/Markdown.astro';
     padding_block='var(--component-padding-block)'
     max_width='100%'
 >
-    {optimize ?
-        <Image
-            src={cover}
-            alt={alt ?? title}
-            width={width}
-            height={height}
-            quality={90}
-            format='webp'
-        /> :
-        <img class="[ z-0 ]" src={cover} alt={alt ?? title} />
-    }
+    <slot name="cover">
+        {optimize ?
+            <Image
+                src={cover}
+                alt={alt ?? title}
+                width={width}
+                height={height}
+                quality={90}
+                format='webp'
+            /> :
+            <img class="[ z-0 ]" src={cover} alt={alt ?? title} />
+        }
+    </slot>
     
-    <BlockList class="[ relative z-10 !justify-end min-h-[420px] ]">
+    <BlockList class="[ relative z-10 !justify-end min-h-[420px] ]" gap={gap}>
         <Flexblock gap='var(--space-3xs)'>
             <slot name="icon" />
             <h2>{title}</h2>

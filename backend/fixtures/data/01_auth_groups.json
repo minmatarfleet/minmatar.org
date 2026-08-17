@@ -68,14 +68,6 @@
   },
   {
     "model": "auth.group",
-    "pk": 137,
-    "fields": {
-      "name": "Tribe - Market",
-      "permissions": []
-    }
-  },
-  {
-    "model": "auth.group",
     "pk": 143,
     "fields": {
       "name": "Tribe - Pulse",
@@ -159,14 +151,6 @@
     "pk": 155,
     "fields": {
       "name": "Tribe Group - Loyalty Points",
-      "permissions": []
-    }
-  },
-  {
-    "model": "auth.group",
-    "pk": 156,
-    "fields": {
-      "name": "Tribe Group - Market Orders",
       "permissions": []
     }
   },

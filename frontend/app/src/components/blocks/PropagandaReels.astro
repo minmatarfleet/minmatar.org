@@ -8,12 +8,14 @@ interface Props {
     posts:              Record<string, PostListUI[]>;
     editor_id?:         number;
     is_editing:         boolean;
+    show_section_header?: boolean;
 }
 
 const {
     posts,
     editor_id,
     is_editing,
+    show_section_header = false,
 } = Astro.props
 
 const metropolis_posts:PostListUI[] = posts['Metropolis'] ?? []
@@ -33,15 +35,31 @@ for (var i in posts) {
     }
 }
 
+import TextBox from '@components/layout/TextBox.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import Wrapper from '@components/compositions/Wrapper.astro';
 
 import PropagandaSection from '@components/blocks/PropagandaSection.astro';
 import MarkeeDragonBanner from '@components/blocks/MarkeeDragonBanner.astro';
-import StoreBanner from '@components/blocks/StoreBanner.astro';
 ---
 
-<Flexblock class="[ pb-[64px] ]" gap='var(--space-xl)'>
+<Flexblock gap='var(--space-xl)'>
+    {show_section_header &&
+        <TextBox>
+            <h2 id="Our_propaganda">{t('content.propaganda.section_title')}</h2>
+        </TextBox>
+    }
+    {propaganda_posts.length > 0 &&
+        <PropagandaSection
+            title="Propaganda Poster"
+            description={t('odd_bunch_description')}
+            posts={propaganda_posts}
+            editor_id={editor_id ? editor_id : undefined}
+            is_editing={is_editing}
+            hash='Propaganda_Poster'
+            as_subsection={show_section_header}
+        />
+    }
     {metropolis_posts.length > 0 &&
         <PropagandaSection
             title="Metropolis Daily News"
@@ -51,6 +69,7 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             editor_id={editor_id ? editor_id : undefined}
             is_editing={is_editing}
             hash='Metropolis'
+            as_subsection={show_section_header}
         />
     }
     {frontlines_posts.length > 0 &&
@@ -62,16 +81,7 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             editor_id={editor_id ? editor_id : undefined}
             is_editing={is_editing}
             hash='Frontlines'
-        />
-    }
-    {propaganda_posts.length > 0 &&
-        <PropagandaSection
-            title="The odd bunch"
-            description={t('odd_bunch_description')}
-            posts={propaganda_posts}
-            editor_id={editor_id ? editor_id : undefined}
-            is_editing={is_editing}
-            hash='Propaganda'
+            as_subsection={show_section_header}
         />
     }
     {mdn_posts_posts.length > 0 &&
@@ -84,6 +94,7 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             editor_id={editor_id ? editor_id : undefined}
             is_editing={is_editing}
             hash='Metro_Daily_News'
+            as_subsection={show_section_header}
         />
     }
     {the_cope_posts.length > 0 &&
@@ -96,6 +107,7 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             editor_id={editor_id ? editor_id : undefined}
             is_editing={is_editing}
             hash='The_Cope'
+            as_subsection={show_section_header}
         />
     }
     {videos_posts.length > 0 &&
@@ -107,6 +119,7 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             editor_id={editor_id ? editor_id : undefined}
             is_editing={is_editing}
             hash='Videos'
+            as_subsection={show_section_header}
         />
     }
     {!is_editing &&
@@ -123,6 +136,7 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             editor_id={editor_id ? editor_id : undefined}
             is_editing={is_editing}
             hash='Rust_and_Blood'
+            as_subsection={show_section_header}
         />
     }
     {waifu_wars_posts.length > 0 &&
@@ -134,12 +148,14 @@ import StoreBanner from '@components/blocks/StoreBanner.astro';
             editor_id={editor_id ? editor_id : undefined}
             is_editing={is_editing}
             hash='Waifu_Wars'
+            as_subsection={show_section_header}
         />
-    }
-    {!is_editing &&
-        <Wrapper class="[ w-full ]" max_width="700px" padding_inline="0" padding_block="0" centered={true}>
-            <StoreBanner thin={true} />
-        </Wrapper>
     }
     {empty && <p>{t('no_post_to_display')}</p>}
 </Flexblock>
+
+<style lang="scss">
+    h2 {
+        font-size: var(--step-3);
+    }
+</style>

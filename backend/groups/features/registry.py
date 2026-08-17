@@ -28,10 +28,10 @@ def _tribe_codes(*codes: str) -> tuple[str, ...]:
 
 
 _INDUSTRY_TRIBE_CODES = (
-    "industry.subcapital-production",
-    "industry.capital-production",
-    "industry.mining",
-    "industry.planetary-interaction",
+    "supply.subcapital-production",
+    "supply.capital-production",
+    "supply.mining",
+    "supply.planetary-interaction",
 )
 
 
@@ -130,14 +130,6 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         legacy_permission="structures.add_evestructuretimer",
         default_affiliation_names=_aff("Alliance"),
     ),
-    "mumble.access": FeatureDefinition(
-        code="mumble.access",
-        label="Mumble access",
-        scope=FeatureScope.AFFILIATION,
-        description="Access Mumble voice server credentials.",
-        legacy_permission="mumble.view_mumbleaccess",
-        default_affiliation_names=_aff("Alliance", "Associate"),
-    ),
     "moons.view": FeatureDefinition(
         code="moons.view",
         label="View moons",
@@ -178,21 +170,14 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         legacy_permission="posts.delete_evepost",
         default_affiliation_names=_aff("Alliance"),
     ),
-    "industry.mining.view": FeatureDefinition(
-        code="industry.mining.view",
-        label="View mining completions",
-        scope=FeatureScope.AFFILIATION,
-        description="View mining upgrade completion data.",
-        legacy_permission="industry.view_miningupgradecompletion",
-        default_affiliation_names=_aff("Alliance"),
-    ),
-    "industry.mining.submit": FeatureDefinition(
-        code="industry.mining.submit",
-        label="Submit mining completions",
-        scope=FeatureScope.AFFILIATION,
-        description="Submit mining upgrade completions.",
-        legacy_permission="industry.add_miningupgradecompletion",
-        default_affiliation_names=_aff("Alliance"),
+    "creators.connect": FeatureDefinition(
+        code="creators.connect",
+        label="Connect creator accounts",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description=(
+            "Link Twitch, YouTube, and Reddit accounts for Our content."
+        ),
+        default_tribe_group_codes=_tribe_codes("pulse.thinkspeak"),
     ),
     "industry.order.submit": FeatureDefinition(
         code="industry.order.submit",
@@ -200,6 +185,16 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         scope=FeatureScope.TRIBE_CHIEF,
         description="Submit industry orders as an industry tribe chief.",
         default_tribe_group_codes=_tribe_codes(*_INDUSTRY_TRIBE_CODES),
+    ),
+    "industry.order.submit.produced": FeatureDefinition(
+        code="industry.order.submit.produced",
+        label="Submit produced industry orders",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description=(
+            "Submit manufacturing orders limited to produced catalog items "
+            "(Supply Market members)."
+        ),
+        default_tribe_group_codes=_tribe_codes("supply.market"),
     ),
     "industry.loyalty.trade": FeatureDefinition(
         code="industry.loyalty.trade",

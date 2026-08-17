@@ -58,8 +58,9 @@ class TribesAdminCustomizationsTestCase(TestCase):
         request.user = self.staff
         response = tribe_group_hub_view(request, self.tribe_group.pk)
         self.assertEqual(200, response.status_code)
+        self.assertContains(response, "Group settings")
+        self.assertContains(response, "Ranks")
         self.assertContains(response, "Memberships")
-        self.assertContains(response, "Activity records")
 
     def test_get_app_list_shows_single_tribes_link_in_community(self):
         self.staff.is_superuser = True

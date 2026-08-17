@@ -1,0 +1,696 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+import { HTTP_403_Forbidden } from '@helpers/http_responses'
+
+const auth_token = Astro.cookies.has('auth_token')
+    ? (Astro.cookies.get('auth_token')?.value as string)
+    : false
+const user: User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+
+if (!user || !auth_token) {
+    return Astro.redirect(
+        `${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`
+    )
+}
+
+import {
+    create_order,
+    get_order_capabilities,
+    get_products,
+} from '@helpers/api.minmatar.org/industry'
+import { get_characters_summary } from '@helpers/api.minmatar.org/characters'
+import { get_locations } from '@helpers/api.minmatar.org/locations'
+import type {
+    CreateOrderItemInput,
+    Location,
+    Product,
+    SummaryCharacter,
+} from '@dtypes/api.minmatar.org'
+
+let can_submit = false
+let produced_only = true
+try {
+    const capabilities = await get_order_capabilities(auth_token)
+    can_submit = Boolean(capabilities.can_submit)
+    produced_only = Boolean(capabilities.produced_only)
+} catch {
+    can_submit = false
+}
+
+if (!can_submit)
+    return HTTP_403_Forbidden()
+
+let products: Product[] = []
+let locations: Location[] = []
+let characters: SummaryCharacter[] = []
+let delivery_corporations: string[] = []
+let form_error: string | false = false
+
+const type_id_prefill = Number(Astro.url.searchParams.get('type_id') || 0) || 0
+
+try {
+    const [all_products, all_locations, summary] = await Promise.all([
+        get_products(),
+        get_locations(),
+        get_characters_summary(auth_token),
+    ])
+    products = all_products
+        .filter((product) => product.strategy === 'produced')
+        .sort((a, b) => a.name.localeCompare(b.name))
+    locations = all_locations
+        .filter((location) => location.staging_active)
+        .sort((a, b) => a.location_name.localeCompare(b.location_name))
+    characters = [...(summary.characters ?? [])].sort((a, b) => {
+        if (a.is_primary !== b.is_primary)
+            return a.is_primary ? -1 : 1
+        return a.character_name.localeCompare(b.character_name)
+    })
+    delivery_corporations = [...new Set(
+        characters
+            .map((character) => character.corp_name)
+            .filter((name) => Boolean(name))
+    )].sort((a, b) => a.localeCompare(b))
+} catch (error) {
+    form_error = (error as Error).message
+}
+
+const default_character_id = characters.find((c) => c.is_primary)?.character_id
+    ?? characters[0]?.character_id
+    ?? null
+const default_contract_to = characters.find((c) => c.is_primary)?.character_name
+    ?? characters[0]?.character_name
+    ?? delivery_corporations[0]
+    ?? ''
+const default_location_id = locations[0]?.location_id
+    ? String(locations[0].location_id)
+    : ''
+
+let submitted_needed_by = ''
+let submitted_contract_to = default_contract_to
+let submitted_location_id = default_location_id
+let submitted_character_id = default_character_id ? String(default_character_id) : ''
+let submitted_items: CreateOrderItemInput[] = type_id_prefill
+    ? [{ eve_type_id: type_id_prefill, quantity: 1 }]
+    : []
+
+const min_needed_by_date = (() => {
+    const date = new Date()
+    date.setDate(date.getDate() + 14)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+})()
+if (!submitted_needed_by)
+    submitted_needed_by = min_needed_by_date
+
+if (Astro.request.method === 'POST') {
+    try {
+        const form = await Astro.request.formData()
+        submitted_needed_by = String(form.get('needed_by') ?? '')
+        submitted_contract_to = String(form.get('contract_to') ?? '').trim()
+        submitted_location_id = String(form.get('location_id') ?? '')
+        submitted_character_id = String(form.get('character_id') ?? '')
+
+        const raw_items = String(form.get('items_json') ?? '[]')
+        const parsed = JSON.parse(raw_items) as CreateOrderItemInput[]
+        submitted_items = (Array.isArray(parsed) ? parsed : [])
+            .map((row) => ({
+                eve_type_id: Number(row.eve_type_id),
+                quantity: Math.max(1, Number(row.quantity) || 1),
+            }))
+            .filter((row) => row.eve_type_id > 0)
+
+        if (!submitted_needed_by)
+            throw new Error(t('industry.orders.create.needed_by'))
+        if (submitted_needed_by < min_needed_by_date)
+            throw new Error(t('industry.orders.create.needed_by_too_soon'))
+        if (!submitted_location_id)
+            throw new Error(t('industry.orders.create.location_required'))
+        if (!submitted_contract_to)
+            throw new Error(t('industry.orders.create.contract_to_required'))
+        if (submitted_items.length === 0)
+            throw new Error(t('industry.orders.create.empty_items'))
+
+        const location_id = Number(submitted_location_id)
+        const character_id = submitted_character_id
+            ? Number(submitted_character_id)
+            : null
+
+        const created = await create_order(auth_token, {
+            needed_by: submitted_needed_by,
+            character_id: character_id || null,
+            location_id,
+            contract_to: submitted_contract_to,
+            items: submitted_items,
+        })
+
+        return Astro.redirect(
+            translatePath(`/industry/orders/${created.order_id}/`)
+        )
+    } catch (error) {
+        form_error = (error as Error).message || t('industry.orders.create.error')
+    }
+}
+
+const products_json = JSON.stringify(
+    products.map((product) => ({
+        type_id: product.type_id,
+        name: product.name,
+    }))
+)
+const product_by_type_id = Object.fromEntries(
+    products.map((product) => [product.type_id, product.name])
+)
+const items_seed = submitted_items
+    .filter((row) => row.eve_type_id > 0)
+    .map((row) => ({
+        eve_type_id: row.eve_type_id,
+        name: product_by_type_id[row.eve_type_id] || String(row.eve_type_id),
+        quantity: row.quantity,
+    }))
+const items_seed_json = JSON.stringify(items_seed)
+const product_label = t('industry.orders.create.product')
+const quantity_label = t('industry.orders.create.quantity')
+const remove_label = t('industry.orders.create.remove_item')
+const search_placeholder = t('industry.orders.create.search_product')
+const no_match_label = t('industry.orders.create.no_matching_products')
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import PageActions from '@components/page/PageActions.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Button from '@components/blocks/Button.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+import Breadcrumb from '@components/blocks/Breadcrumb.astro'
+import ShowAlert from '@components/blocks/ShowAlert.astro'
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
+
+const page_title = t('industry.orders.create.page_title')
+const breadcrumb_items = [
+    { label: t('market.page_title'), href: translatePath('/market/') },
+    { label: t('industry.orders.page_title'), href: translatePath('/industry/orders/') },
+    { label: page_title },
+]
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('industry.orders.create.meta_description')}
+    components={{
+        alert_dialog: true,
+    }}
+>
+    <PageWide
+        cover={{
+            image: '/images/industry-cover.jpg',
+            image_990: '/images/industry-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+        sticky={true}
+    >
+        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+            <Flexblock gap="var(--space-s)">
+                <Breadcrumb items={breadcrumb_items} />
+                <PageTitle>{page_title}</PageTitle>
+            </Flexblock>
+            <PageActions>
+                <Button href={translatePath('/industry/orders/')} size="sm">
+                    {t('industry.orders.page_title')}
+                </Button>
+            </PageActions>
+        </FlexInline>
+
+        <Flexblock gap="var(--space-l)" class="[ compensate-bottom-bar ]">
+            <TextBox>
+                <p class="[ excerpt ]">{t('industry.orders.create.leading_text')}</p>
+                {produced_only &&
+                    <p>{t('industry.orders.create.produced_only_note')}</p>
+                }
+            </TextBox>
+
+            {form_error &&
+                <ShowAlert alert={{
+                    title: page_title,
+                    content: form_error,
+                }} />
+            }
+
+            {products.length === 0 ?
+                <p>{t('industry.orders.create.empty_items')}</p>
+                : locations.length === 0 ?
+                <p>{t('industry.orders.create.location_empty')}</p>
+                :
+                <ComponentBlock>
+                    <form
+                        method="POST"
+                        class="[ create-order-form ]"
+                        x-data={`{
+                            products: ${products_json},
+                            lines: ${items_seed_json},
+                            search: '',
+                            product_label: ${JSON.stringify(product_label)},
+                            quantity_label: ${JSON.stringify(quantity_label)},
+                            remove_label: ${JSON.stringify(remove_label)},
+                            search_placeholder: ${JSON.stringify(search_placeholder)},
+                            no_match_label: ${JSON.stringify(no_match_label)},
+                            get filtered() {
+                                const q = this.search.trim().toLowerCase()
+                                if (!q) return []
+                                const selected = new Set(this.lines.map(line => line.eve_type_id))
+                                return this.products
+                                    .filter(product =>
+                                        !selected.has(product.type_id)
+                                        && product.name.toLowerCase().includes(q)
+                                    )
+                                    .slice(0, 24)
+                            },
+                            pick_product(product) {
+                                const existing = this.lines.find(line => line.eve_type_id === product.type_id)
+                                if (existing) {
+                                    existing.quantity += 1
+                                } else {
+                                    this.lines.push({
+                                        eve_type_id: product.type_id,
+                                        name: product.name,
+                                        quantity: 1,
+                                    })
+                                }
+                                this.search = ''
+                            },
+                            remove_line(index) {
+                                this.lines.splice(index, 1)
+                            },
+                            set_qty(index, value) {
+                                const line = this.lines[index]
+                                if (!line) return
+                                line.quantity = Math.max(1, parseInt(value, 10) || 1)
+                            },
+                            items_json() {
+                                return JSON.stringify(this.lines.map(line => ({
+                                    eve_type_id: line.eve_type_id,
+                                    quantity: line.quantity,
+                                })))
+                            },
+                        }`}
+                    >
+                        <Flexblock gap="var(--space-m)">
+                            <Flexblock gap="var(--space-2xs)">
+                                <label for="needed_by">{t('industry.orders.create.needed_by')}</label>
+                                <small>{t('industry.orders.create.needed_by_help')}</small>
+                                <Input
+                                    id="needed_by"
+                                    name="needed_by"
+                                    type="date"
+                                    required
+                                    min={min_needed_by_date}
+                                    value={submitted_needed_by}
+                                    size="sm"
+                                />
+                            </Flexblock>
+
+                            {characters.length > 0 &&
+                                <Flexblock gap="var(--space-2xs)">
+                                    <label for="character_id">{t('industry.orders.create.character')}</label>
+                                    <Select
+                                        id="character_id"
+                                        name="character_id"
+                                        size="sm"
+                                    >
+                                        {characters.map((character) =>
+                                            <option
+                                                value={character.character_id}
+                                                selected={String(character.character_id) === submitted_character_id}
+                                            >
+                                                {character.character_name}
+                                                {character.is_primary ? ' (main)' : ''}
+                                            </option>
+                                        )}
+                                    </Select>
+                                </Flexblock>
+                            }
+
+                            <Flexblock gap="var(--space-2xs)">
+                                <label for="location_id">{t('industry.orders.create.location')}</label>
+                                <Select
+                                    id="location_id"
+                                    name="location_id"
+                                    size="sm"
+                                    required
+                                >
+                                    {locations.length !== 1 &&
+                                        <option value="">{t('industry.orders.create.location_none')}</option>
+                                    }
+                                    {locations.map((location) =>
+                                        <option
+                                            value={location.location_id}
+                                            selected={String(location.location_id) === submitted_location_id}
+                                        >
+                                            {location.location_name}
+                                        </option>
+                                    )}
+                                </Select>
+                            </Flexblock>
+
+                            <Flexblock gap="var(--space-2xs)">
+                                <label for="contract_to">{t('industry.orders.create.contract_to')}</label>
+                                <small>{t('industry.orders.create.contract_to_hint')}</small>
+                                <Select
+                                    id="contract_to"
+                                    name="contract_to"
+                                    size="sm"
+                                    required
+                                >
+                                    <option value="">{t('industry.orders.create.contract_to_required')}</option>
+                                    {characters.length > 0 &&
+                                        <optgroup label={t('industry.orders.create.contract_characters')}>
+                                            {characters.map((character) =>
+                                                <option
+                                                    value={character.character_name}
+                                                    selected={character.character_name === submitted_contract_to}
+                                                >
+                                                    {character.character_name}
+                                                </option>
+                                            )}
+                                        </optgroup>
+                                    }
+                                    {delivery_corporations.length > 0 &&
+                                        <optgroup label={t('industry.orders.create.contract_corporations')}>
+                                            {delivery_corporations.map((corporation) =>
+                                                <option
+                                                    value={corporation}
+                                                    selected={corporation === submitted_contract_to}
+                                                >
+                                                    {corporation}
+                                                </option>
+                                            )}
+                                        </optgroup>
+                                    }
+                                </Select>
+                            </Flexblock>
+
+                            <Flexblock gap="var(--space-2xs)" class="[ create-order-form__typeahead ]">
+                                <label for="product_search" class="[ visually-hidden ]" x-text="search_placeholder"></label>
+                                <Input
+                                    id="product_search"
+                                    type="search"
+                                    size="sm"
+                                    autocomplete="off"
+                                    x-model="search"
+                                    x-bind:placeholder="search_placeholder"
+                                >
+                                    <MagnifierIcon slot="icon" />
+                                </Input>
+                                <ul
+                                    class="[ create-order-form__results ]"
+                                    x-show="search.trim()"
+                                    x-cloak
+                                >
+                                    <template x-for="product in filtered" x-bind:key="product.type_id">
+                                        <li>
+                                            <button
+                                                type="button"
+                                                class="[ create-order-form__result ]"
+                                                x-on:click="pick_product(product)"
+                                            >
+                                                <img
+                                                    class="[ create-order-form__icon ]"
+                                                    width="32"
+                                                    height="32"
+                                                    loading="lazy"
+                                                    x-bind:src="`https://images.evetech.net/types/${product.type_id}/icon?size=32`"
+                                                    x-bind:alt="product.name"
+                                                />
+                                                <span class="[ truncate ]" x-text="product.name"></span>
+                                            </button>
+                                        </li>
+                                    </template>
+                                </ul>
+                                <p
+                                    class="[ text-[var(--step--1)] ]"
+                                    x-show="search.trim() && filtered.length === 0"
+                                    x-cloak
+                                    x-text="no_match_label"
+                                ></p>
+                            </Flexblock>
+
+                            <Flexblock gap="var(--space-s)">
+                                <Flexblock gap="var(--space-2xs)">
+                                    <strong>{t('industry.orders.create.items')}</strong>
+                                    <p class="[ create-order-form__items-help text-[var(--step--1)] text-[var(--highlight)] ]">
+                                        {t('industry.orders.create.items_help')}
+                                        {' '}
+                                        <a href={translatePath('/industry/products/')}>
+                                            {t('industry.orders.create.items_help_link')}
+                                        </a>.
+                                    </p>
+                                </Flexblock>
+
+                                <ul
+                                    class="[ create-order-form__lines ]"
+                                    x-show="lines.length > 0"
+                                    x-cloak
+                                >
+                                    <template x-for="(line, index) in lines" x-bind:key="line.eve_type_id">
+                                        <li class="[ create-order-form__line ]">
+                                            <img
+                                                class="[ create-order-form__icon ]"
+                                                width="32"
+                                                height="32"
+                                                loading="lazy"
+                                                x-bind:src="`https://images.evetech.net/types/${line.eve_type_id}/icon?size=32`"
+                                                x-bind:alt="line.name"
+                                            />
+                                            <span
+                                                class="[ create-order-form__product-name truncate ]"
+                                                x-text="line.name"
+                                            ></span>
+                                            <label class="[ create-order-form__qty ]">
+                                                <span
+                                                    class="[ create-order-form__qty-label ]"
+                                                    x-text="quantity_label"
+                                                ></span>
+                                                <input
+                                                    class="[ create-order-form__qty-input ]"
+                                                    type="number"
+                                                    min="1"
+                                                    x-bind:value="line.quantity"
+                                                    x-on:change="set_qty(index, $event.target.value)"
+                                                    x-bind:aria-label="quantity_label"
+                                                />
+                                            </label>
+                                            <button
+                                                type="button"
+                                                class="[ create-order-form__remove ]"
+                                                x-on:click="remove_line(index)"
+                                                x-text="remove_label"
+                                            ></button>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </Flexblock>
+
+                            <input type="hidden" name="items_json" x-bind:value="items_json()" />
+
+                            <Button
+                                type="submit"
+                                size="sm"
+                                color="green"
+                                off_disable={true}
+                                x-bind:disabled="lines.length === 0"
+                            >
+                                {t('industry.orders.create.submit')}
+                            </Button>
+                        </Flexblock>
+                    </form>
+                </ComponentBlock>
+            }
+        </Flexblock>
+    </PageWide>
+</Viewport>
+
+<style lang="scss">
+    .create-order-form__items-help a {
+        color: var(--fleet-red);
+        text-decoration: underline;
+        text-underline-offset: 0.15em;
+
+        &:focus-visible {
+            outline: 2px solid var(--highlight);
+            outline-offset: 2px;
+        }
+    }
+
+    .create-order-form__lines,
+    .create-order-form__results {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .create-order-form__lines {
+        border-block: 1px solid var(--border-color);
+    }
+
+    .create-order-form__results {
+        max-height: 16rem;
+        overflow-y: auto;
+        border: 1px solid var(--border-color);
+        background: var(--component-background);
+    }
+
+    .create-order-form__icon {
+        flex-shrink: 0;
+        width: 2rem;
+        height: 2rem;
+        object-fit: contain;
+    }
+
+    .create-order-form__line {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: var(--space-xs);
+        align-items: center;
+        width: 100%;
+        padding-block: var(--space-2xs);
+        border-bottom: 1px solid var(--border-color);
+
+        &:last-child {
+            border-bottom: 0;
+        }
+    }
+
+    .create-order-form__product-name {
+        flex: 1 1 auto;
+        min-width: 0;
+        color: var(--foreground);
+        font-size: var(--step--1);
+    }
+
+    .create-order-form__qty {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: var(--space-2xs);
+        flex: 0 0 auto;
+    }
+
+    .create-order-form__qty-label {
+        font-size: var(--step--2);
+        color: var(--highlight);
+        white-space: nowrap;
+    }
+
+    .create-order-form__qty-input {
+        width: 3.5rem;
+        background-color: rgba(85, 85, 85, 0.15);
+        color: var(--foreground);
+        border: 1px solid var(--border-color-hover);
+        padding: var(--space-3xs) var(--space-2xs);
+        font-family: var(--default-font);
+        font-size: var(--step--1);
+        text-align: center;
+        appearance: textfield;
+        -moz-appearance: textfield;
+        transition: var(--fast-transition);
+
+        &::-webkit-outer-spin-button,
+        &::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        &:hover {
+            border-color: var(--highlight);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--highlight);
+            outline-offset: 2px;
+            background-color: rgba(85, 85, 85, 0.25);
+        }
+    }
+
+    .create-order-form__remove {
+        background: transparent;
+        color: var(--fleet-red);
+        border: 1px solid var(--fleet-red);
+        padding: var(--space-3xs) var(--space-2xs);
+        font-family: var(--button-font);
+        font-size: var(--step--2);
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: var(--fast-transition);
+
+        &:focus-visible {
+            outline: 2px solid var(--highlight);
+            outline-offset: 2px;
+        }
+
+        @media (hover: hover) {
+            &:hover {
+                background: var(--fleet-red);
+                color: var(--button-color);
+            }
+        }
+
+        @media (hover: none) {
+            &:active {
+                background: var(--fleet-red);
+                color: var(--button-color);
+            }
+        }
+    }
+
+    .create-order-form__result {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+        width: 100%;
+        text-align: left;
+        background: transparent;
+        color: var(--foreground);
+        border: 0;
+        border-bottom: 1px solid var(--border-color);
+        padding: var(--space-2xs) var(--space-xs);
+        font-family: var(--default-font);
+        font-size: var(--step--1);
+        cursor: pointer;
+        transition: var(--fast-transition);
+
+        &:last-child {
+            border-bottom: 0;
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--highlight);
+            outline-offset: -2px;
+        }
+
+        @media (hover: hover) {
+            &:hover {
+                background: var(--fleet-red);
+                color: var(--button-color);
+            }
+        }
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+</style>

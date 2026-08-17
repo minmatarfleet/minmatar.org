@@ -49,17 +49,17 @@ export const additionalResources: GuideResource[] = [
     },
     {
         title: 'Faction Warfare Complexes (this site)',
-        href: '/guides/faction-warfare-plexing/',
+        href: '/learning/guides/faction-warfare-plexing/',
         note: 'Landing, gates, site sizes, and LP/VP tables for the plexes you are fighting in.',
     },
     {
         title: 'Faction Warfare Basics (this site)',
-        href: '/guides/faction-warfare-basics/',
+        href: '/learning/guides/faction-warfare-basics/',
         note: 'Warzone map, system types, contested vs advantage.',
     },
     {
         title: 'Faction Warfare Frigate Guide (this site)',
-        href: '/guides/navy-frigate-guide/',
+        href: '/learning/guides/navy-frigate-guide/',
         note: 'When Scout plexes still matter—navy and T1 frigates, archetypes, and 1v1 charts.',
     },
 ]

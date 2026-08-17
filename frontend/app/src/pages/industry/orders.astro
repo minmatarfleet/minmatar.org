@@ -18,6 +18,7 @@ if (auth_token && user) {
 }
 
 import { load_industry_orders_page } from '@helpers/fetching/industry_orders_page'
+import { get_order_capabilities } from '@helpers/api.minmatar.org/industry'
 
 const {
     orders_locations,
@@ -25,6 +26,15 @@ const {
     manufacturers,
 } = await load_industry_orders_page()
 
+let can_submit_order = false
+if (auth_token && user) {
+    try {
+        const capabilities = await get_order_capabilities(auth_token as string)
+        can_submit_order = Boolean(capabilities.can_submit)
+    } catch {
+        can_submit_order = false
+    }
+}
 let active_location_name = Astro.url.searchParams.get('location_name') ?? (orders_locations[0]?.location_name ?? '')
 
 if (orders_locations.length > 0) {
@@ -148,6 +158,16 @@ const breadcrumb_items = [
 
         <PageSubheader slot="subheader">
             <ButtonOrdersLearnMore />
+
+            {can_submit_order &&
+                <Button
+                    href={translatePath('/industry/orders/create/')}
+                    size='sm'
+                    color='green'
+                >
+                    {t('industry.orders.create.button')}
+                </Button>
+            }
 
             <Button
                 href={translatePath('/industry/orders/summary/')}

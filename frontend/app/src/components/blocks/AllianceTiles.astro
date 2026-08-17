@@ -2,7 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import Wrapper from '@components/compositions/Wrapper.astro';
 import Grid from '@components/compositions/Grid.astro';
 
 import Button from '@components/blocks/Button.astro';
@@ -20,14 +19,14 @@ import Tile from '@components/blocks/Tile.astro';
         description={t('dna.leading_text')}
         cover='/images/corporations-tile-background.webp'
     >               
-        <Button size='sm' href={translatePath('/alliance/story/')}>
-            {t('our_story')}
+        <Button size='sm' href={translatePath('/alliance/content/')}>
+            {t('content.page_title')}
         </Button>
         <Button size='sm' href={translatePath('/alliance/values/')}>
             {t('our_values')}
         </Button>
-        <Button size='sm' href={translatePath('/alliance/playstyle/')}>
-            {t('our_playstyle')}
+        <Button size='sm' href={translatePath('/alliance/story/')}>
+            {t('our_story')}
         </Button>
     </Tile>
 
@@ -42,14 +41,6 @@ import Tile from '@components/blocks/Tile.astro';
 
         <Button size='sm' href={translatePath('/alliance/tribes/')}>
             {t('tribes.page_title')}
-        </Button>
-
-        <Button size='sm' href={translatePath('/alliance/propaganda/')}>
-            {t('propaganda.page_title')}
-        </Button>
-
-        <Button size='sm' href={translatePath('/guides/')}>
-            {t('guides.page_title')}
         </Button>
     </Tile>
 </Grid>

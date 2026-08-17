@@ -53,6 +53,7 @@ export interface TribeGroup {
     id:                     number;
     tribe_id:               number;
     tribe_name:             string;
+    code?:                  string;
     name:                   string;
     description:            string;
     discord_channel_id:     number | null;
@@ -155,118 +156,6 @@ export interface TribeAvailableCharacter {
     missing_assets: boolean;
     /** True when the group requires an ESI token type the character lacks. */
     missing_token: boolean;
-}
-
-export interface TribeActivity {
-    id:             number;
-    tribe_group_id: number;
-    tribe_group_name: string;
-    user_id:        number;
-    character_id:   number | null;
-    activity_type:  ActivityType;
-    quantity:       number;
-    unit:           string;
-    description:    string;
-    created_at:     string;
-}
-
-/** Single activity record for group timeline (GET group activity). */
-export interface TribeGroupActivityRecord {
-    id:                         number;
-    created_at:                 string;
-    activity_type:              string;
-    activity_type_display:      string;
-    character_id:               number | null;
-    character_name:             string;
-    primary_character_id:       number | null;
-    primary_character_name:     string;
-    user_id:                    number | null;
-    username:                   string;
-    source_type_id:             number | null;
-    target_type_id:             number | null;
-    quantity:                   number | null;
-    unit:                       string;
-    reference_type:             string;
-    reference_id:               string;
-}
-
-/** Paginated list of tribe group activity records. */
-export interface TribeGroupActivityList {
-    items:   TribeGroupActivityRecord[];
-    total:   number;
-    limit:   number;
-    offset:  number;
-}
-
-/** Per-activity metrics for one TribeGroupActivity (GET tribe activity metrics). */
-export interface TribeActivityMetrics {
-    activity_id:            number;
-    activity_type:          string;
-    activity_type_display:  string;
-    group_id:               number;
-    group_name:             string;
-    unit:                   string;
-    record_count:           number;
-    total_quantity:         number | null;
-    total_points:           number;
-}
-
-/** Per-activity-type breakdown item for member activity. */
-export interface TribeMemberActivityBreakdownItem {
-    activity_type:  string;
-    unit:           string;
-    record_count:   number;
-    total_quantity: number | null;
-}
-
-/** Activity summary for one tribe member (GET member activity). */
-export interface TribeMemberActivity {
-    primary_character_id:   number | null;
-    primary_character_name:  string;
-    alts:                   TribeCharacterRef[];
-    total_points:           number;
-    record_count:           number;
-    breakdown:              TribeMemberActivityBreakdownItem[];
-}
-
-/** One leaderboard entry (points only). */
-export interface TribeActivityLeaderboardEntry {
-    user_id:                number;
-    primary_character_id:   number | null;
-    primary_character_name: string;
-    alts:                   TribeCharacterRef[];
-    total_points:           number;
-}
-
-/** Paginated tribe activity leaderboard. */
-export interface TribeActivityLeaderboardList {
-    items:   TribeActivityLeaderboardEntry[];
-    total:   number;
-    limit:   number;
-    offset:  number;
-}
-
-export const activity_types = [
-    'fleet_participation',
-    'kills',
-    'losses',
-    'mining_contribution',
-    'freight_contribution',
-    'industry_job_completed',
-    'content_contribution',
-    'doctrine_update',
-    'fitting_update',
-    'custom',
-] as const
-export type ActivityType = typeof activity_types[number]
-
-export interface LogActivityPayload {
-    user_id: number;
-    character_id?: number | null;
-    activity_type: ActivityType;
-    quantity: number;
-    unit: string;
-    description?: string;
 }
 
 export interface SigRequest {
@@ -565,12 +454,6 @@ export interface FleetPatchRequest {
 
 export const tracking_status = ['pending', 'active', 'complete', 'cancelled', 'unknown'] as const
 export type TrackingStatus = typeof tracking_status[number]
-
-export interface MumbleInformation {
-    username:   string;
-    password:   string;
-    url:        string;
-}
 
 export interface Audience {
     id:                     number;
@@ -1172,6 +1055,30 @@ export interface IndustryOrder {
     location:           BaseLocation;
     items:              RootItem[];
     assigned_to:        Character[];
+}
+
+export interface OrderCapabilities {
+    can_submit:     boolean;
+    produced_only:  boolean;
+}
+
+export interface CreateOrderItemInput {
+    eve_type_id:            number;
+    quantity:               number;
+    self_assign_maximum?:   number | null;
+}
+
+export interface CreateOrderRequest {
+    needed_by:      string;
+    character_id?:   number | null;
+    location_id?:    number | null;
+    contract_to?:    string;
+    items:          CreateOrderItemInput[];
+}
+
+export interface CreateOrderResponse {
+    order_id:           number;
+    public_short_code:  string;
 }
 
 export interface OrdersProfitSummaryOrder {
@@ -2065,6 +1972,18 @@ export interface AllianceHealthStatusCounts {
     on_leave:   number;
 }
 
+export interface AllianceHealthStatusWindowCounts {
+    d30:    number;
+    d90:    number;
+    d180:   number;
+}
+
+export interface AllianceHealthStatusWindows {
+    active:     AllianceHealthStatusWindowCounts;
+    trial:      AllianceHealthStatusWindowCounts;
+    on_leave:   AllianceHealthStatusWindowCounts;
+}
+
 export interface AllianceHealthSignals30 {
     fleets:         number;
     small_gang:     number;
@@ -2083,8 +2002,9 @@ export interface AllianceHealthMonthlyPoint {
     label:      string;
     active:     number;
     fleet:      number;
+    small_gang: number;
     solo:       number;
-    supply:     number;
+    supply?:    number;
 }
 
 export interface AllianceHealthOverview {
@@ -2095,12 +2015,103 @@ export interface AllianceHealthOverview {
     map_30d:        number;
     roster_people:  number;
     status:         AllianceHealthStatusCounts;
+    status_windows: AllianceHealthStatusWindows;
     signals_30d:    AllianceHealthSignals30;
     quiet:          AllianceHealthQuietCounts;
     monthly:        AllianceHealthMonthlyPoint[];
+    tribes_monthly: AllianceHealthTribesMonthly;
+    unknown_characters: AllianceHealthUnknownCharacter[];
+    hygiene:        AllianceHealthHygieneCounts;
+    viewer:         AllianceHealthViewer;
+    delta_30d:      AllianceHealthStatusCounts;
+}
+
+export interface AllianceHealthTrialCounts {
+    approve:    number;
+    too_early:  number;
+    fail:       number;
+    nudge:      number;
+    hold:       number;
+    current:    number;
+    add:        number;
+    remove:     number;
+    flagged:    number;
+    passing:    number;
+    failing:    number;
+    evaluating: number;
+}
+
+export interface AllianceHealthLeaveCounts {
+    recommended:    number;
+    kept:           number;
+    exempt:         number;
+    current:        number;
+    add:            number;
+    remove:         number;
+    flagged:        number;
+    inactive:       number;
+    returning:      number;
+}
+
+export interface AllianceHealthHygieneCounts {
+    trial:  AllianceHealthTrialCounts;
+    leave:  AllianceHealthLeaveCounts;
 }
 
 export type AllianceHealthAttentionBucket = 'fading' | 'dark' | 'seasonal'
+
+export type AllianceHealthTrialBucket =
+    | 'current'
+    | 'passing'
+    | 'failing'
+    | 'evaluating'
+    | 'add'
+    | 'remove'
+    | 'flagged'
+    | 'approve'
+    | 'too_early'
+    | 'fail'
+    | 'nudge'
+
+export type AllianceHealthLeaveBucket =
+    | 'current'
+    | 'inactive'
+    | 'returning'
+    | 'add'
+    | 'remove'
+    | 'flagged'
+
+export interface AllianceHealthViewer {
+    alliance_wide:      boolean;
+    home_corp_id:       number | null;
+    can_mutate:         boolean;
+    can_leave_any:      boolean;
+    officer_corp_ids:   number[];
+    ceo_corp_ids:       number[];
+}
+
+export interface AllianceHealthUnknownCharacter {
+    character_id:       number;
+    character_name:     string;
+    corporation_id:     number;
+    corp:               string;
+}
+
+export interface AllianceHealthTribeMonthLabel {
+    month:  string;
+    label:  string;
+}
+
+export interface AllianceHealthTribeSeries {
+    tribe_id:   number;
+    name:       string;
+    counts:     number[];
+}
+
+export interface AllianceHealthTribesMonthly {
+    months:     AllianceHealthTribeMonthLabel[];
+    series:     AllianceHealthTribeSeries[];
+}
 
 export interface AllianceHealthAttentionPilot {
     user_id:            number;
@@ -2111,12 +2122,78 @@ export interface AllianceHealthAttentionPilot {
     active_months:      number;
     character_id?:      number | null;
     corporation_id?:    number | null;
+    timezone?:          string | null;
 }
 
 export interface AllianceHealthAttention {
     computed_at:    string;
     bucket:         AllianceHealthAttentionBucket;
     pilots:         AllianceHealthAttentionPilot[];
+}
+
+export interface AllianceHealthTrialPilot {
+    user_id:                number;
+    username:               string;
+    pilot:                  string;
+    corp:                   string;
+    corporation_id?:        number | null;
+    character_id?:          number | null;
+    alliance_days?:         number | null;
+    fleets:                 number;
+    kills:                  number;
+    kills_small:            number;
+    voice_hours:            number;
+    slice_30d:              string;
+    days_since_activity?:   number | null;
+    path:                   string;
+    conf:                   string;
+    reason:                 string;
+    decision?:              string | null;
+    timezone?:              string | null;
+}
+
+export interface AllianceHealthTrials {
+    computed_at:    string;
+    bucket:         AllianceHealthTrialBucket;
+    counts:         AllianceHealthTrialCounts;
+    pilots:         AllianceHealthTrialPilot[];
+}
+
+export type AllianceHealthOnboardingBucket = 'first_week' | 'more_fleets'
+
+export interface AllianceHealthOnboardingCounts {
+    first_week:     number;
+    more_fleets:    number;
+}
+
+export interface AllianceHealthOnboarding {
+    computed_at:    string;
+    bucket:         AllianceHealthOnboardingBucket;
+    counts:         AllianceHealthOnboardingCounts;
+    pilots:         AllianceHealthTrialPilot[];
+}
+
+export interface AllianceHealthLeavePilot {
+    user_id:            number;
+    username:           string;
+    pilot:              string;
+    corp:               string;
+    corporation_id?:    number | null;
+    character_id?:      number | null;
+    fleets:             number;
+    kills:              number;
+    voice_hours:        number;
+    story:              string;
+    conf:               string;
+    reason:             string;
+    timezone?:          string | null;
+}
+
+export interface AllianceHealthLeave {
+    computed_at:    string;
+    bucket:         AllianceHealthLeaveBucket;
+    counts:         AllianceHealthLeaveCounts;
+    pilots:         AllianceHealthLeavePilot[];
 }
 
 export interface AllianceHealthCorporationRow {
@@ -2148,4 +2225,15 @@ export interface AllianceHealthCohortRow {
 export interface AllianceHealthCohorts {
     computed_at:    string;
     cohorts:        AllianceHealthCohortRow[];
+}
+
+export interface CreatorAccount {
+    provider:           string;
+    platform_user_id:   string;
+    platform_username:  string;
+    is_live:            boolean;
+    live_title:         string;
+    live_started_at:    string | null;
+    token_invalid:      boolean;
+    last_synced_at:     string | null;
 }
