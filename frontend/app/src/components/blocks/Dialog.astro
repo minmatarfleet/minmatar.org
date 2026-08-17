@@ -40,7 +40,7 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
             { 'non-centered': non_centered },
             { fixed: fixed },
             { transparent: transparent },
-            { 'h-full': full_screen },
+            { 'min-h-full': full_screen },
             Astro.props.class
         ]}
         {...attributes}
@@ -52,7 +52,7 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
                 padding_inline='var(--space-3xs)'
                 max_width='100%'
                 class:list={[
-                    { 'h-full': full_screen },
+                    { 'min-h-full': full_screen },
                 ]}
             >
                 <slot />
@@ -63,20 +63,20 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
                 padding_inline='var(--space-m)'
                 max_width='100%'
                 class:list={[
-                    { 'h-full': full_screen },
+                    { 'min-h-full': full_screen },
                 ]}
             >
                 <Flexblock
                     gap='var(--space-l)'
                     class:list={[
-                        { 'h-full': full_screen },
+                        { 'min-h-full': full_screen },
                         { 'justify-between!': full_screen },
                     ]}
                 >
                     <slot name="header" />
                     <div class:list={[
                             'cover-body',
-                            { 'h-full': body_full_h }
+                            { 'min-h-full': body_full_h }
                         ]}
                     >
                         <slot />
@@ -128,6 +128,10 @@ import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
         max-width: var(--dialog-max-width);
         opacity: 0;
         transition: all cubic-bezier(0.680, -0.550, 0.265, 1.550) 0.25s;
+
+        &:focus-visible {
+            outline: none;
+        }
 
         &.transparent {
             box-shadow: none;

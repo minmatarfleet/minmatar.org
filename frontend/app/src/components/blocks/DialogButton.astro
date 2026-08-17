@@ -103,7 +103,7 @@ import StylessButton from '@components/blocks/StylessButton.astro';
             full_screen={full_screen}
             body_full_h={body_full_h}
             class:list={[
-                'button-dialog w-full component overflow-y-auto',
+                'flex button-dialog w-full component overflow-y-auto',
                 { 'button-dialog-h-max': full_screen === false },
             ]}
             x-bind:class="(button_dialog_open ? 'open' : '')"
