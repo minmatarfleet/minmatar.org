@@ -2,8 +2,6 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { get_market_locations } from '@helpers/api.minmatar.org/locations'
-import { query_string } from '@helpers/string'
 import {
     ops_params_need_canonicalization,
     ops_redirect_path,
@@ -11,17 +9,6 @@ import {
 
 if (ops_params_need_canonicalization(Astro.url.searchParams)) {
     return Astro.redirect(ops_redirect_path(translatePath, 'monitor'), 301)
-}
-
-let fetch_error: Error | false = false
-let locations: Awaited<ReturnType<typeof get_market_locations>> = []
-let location_id: number | undefined
-
-try {
-    locations = await get_market_locations()
-    location_id = locations[0]?.location_id
-} catch (error) {
-    fetch_error = error as Error
 }
 
 import Viewport from '@layouts/Viewport.astro';
@@ -32,29 +19,25 @@ import TextBox from '@components/layout/TextBox.astro';
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 import Button from '@components/blocks/Button.astro';
-import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import Markdown from '@components/blocks/Markdown.astro';
 import MarketHealthSkeleton from '@components/blocks/MarketHealthSkeleton.astro';
 import CogIcon from '@components/icons/buttons/CogIcon.astro';
 
 const page_title = t('staging_supply.ops.page_title')
-const api_base = import.meta.env.API_URL || ''
-const admin_hub = location_id != null
-    ? `${api_base}/admin/market/location/${location_id}/`
-    : `${api_base}/admin/market/locations/`
 
-const MONITOR_PARTIAL = translatePath(
-    `/partials/market_health_component${
-        location_id != null
-            ? `?${query_string({ location_id })}`
-            : ''
-    }`,
-)
+const active_location_id = parseInt(Astro.url.searchParams.get('location_id') ?? '0')
+const MONITOR_PARTIAL = translatePath(`/partials/market_health_component${active_location_id > 0 ? `?location_id=${active_location_id}` : ''}`)
+
+const api_base = import.meta.env.API_URL || ''
+const admin_hub = `${api_base}/admin/market/locations/`
 ---
 
 <Viewport
     title={page_title}
     meta_description={t('staging_supply.ops.meta_description')}
+    components={{
+        alert_dialog: true,
+    }}
 >
     <PageWide
         cover={{
@@ -64,18 +47,15 @@ const MONITOR_PARTIAL = translatePath(
             scrollable: true,
         }}
     >
-        <FlexInline slot="header" justification="space-between" class="[ w-full ]">
+        <FlexInline id="header-oob" slot="header" justification="space-between" class="[ w-full ]">
             <PageTitle>{page_title}</PageTitle>
             <PageActions>
                 <Button
                     href={admin_hub}
-                    color="transparent"
-                    narrow={true}
-                    new_tab={true}
-                    aria-label={t('edit_targets_admin')}
-                    title={t('edit_targets_admin')}
+                    external={true}
                 >
                     <CogIcon slot="icon" />
+                    {t('edit_targets')}
                 </Button>
             </PageActions>
         </FlexInline>
@@ -85,76 +65,17 @@ const MONITOR_PARTIAL = translatePath(
                 <Markdown class="[ excerpt ]" markdown={t('staging_supply.ops.leading_text')} />
             </TextBox>
 
-            {fetch_error ?
-                <ErrorRefetch args={{
-                    partial: ops_redirect_path(translatePath, 'monitor'),
-                    error: fetch_error,
-                    delay: 0,
-                }} />
-                :
-                <div
-                    id="market-health-slot"
-                    data-market-health-deferred="1"
-                    hx-get={MONITOR_PARTIAL}
-                    hx-trigger="load"
-                    hx-swap="innerHTML"
-                    hx-indicator=".loader"
-                    aria-busy="true"
-                    aria-live="polite"
-                >
-                    <MarketHealthSkeleton />
-                </div>
-            }
-        </Flexblock>
+            <div
+                id="market-health-slot"
+                data-market-health-deferred="1"
+                hx-get={MONITOR_PARTIAL}
+                hx-trigger="load"
+                hx-swap="outerHTML"
+                hx-indicator=".loader"
+                aria-busy="true"
+                aria-live="polite"
+            >
+                <MarketHealthSkeleton />
+            </div>
     </PageWide>
 </Viewport>
-
-<script>
-    function refreshMarketHealthSlot() {
-        const slot = document.getElementById('market-health-slot')
-        if (!slot)
-            return
-
-        slot.setAttribute('aria-busy', 'false')
-        if (typeof htmx !== 'undefined')
-            htmx.process(slot)
-        if (typeof Alpine !== 'undefined')
-            Alpine.initTree(slot)
-        tippy('#market-health-slot [data-tippy-content]', tippy_options)
-    }
-
-    function isMarketHealthRequest(event: any): boolean {
-        const path = String(
-            event.detail?.pathInfo?.requestPath
-                || event.detail?.xhr?.responseURL
-                || event.detail?.elt?.getAttribute?.('hx-get')
-                || '',
-        )
-        return path.includes('market_health_component')
-    }
-
-    function bindMarketHealthDeferred() {
-        const slot = document.getElementById('market-health-slot')
-        if (!slot || slot.dataset.bound === '1')
-            return
-        slot.dataset.bound = '1'
-
-        document.body.addEventListener('htmx:afterSwap', (event: any) => {
-            if (!isMarketHealthRequest(event))
-                return
-            refreshMarketHealthSlot()
-        })
-
-        document.body.addEventListener('htmx:afterRequest', (event: any) => {
-            if (!isMarketHealthRequest(event))
-                return
-            if (!event.detail?.successful) {
-                const root = document.getElementById('market-health-slot')
-                root?.setAttribute('aria-busy', 'false')
-            }
-        })
-    }
-
-    bindMarketHealthDeferred()
-    document.addEventListener('astro:page-load', bindMarketHealthDeferred)
-</script>

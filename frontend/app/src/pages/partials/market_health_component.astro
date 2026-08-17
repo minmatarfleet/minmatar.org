@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { translatePath } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import {
     get_market_health,
@@ -11,48 +11,75 @@ import type {
     MarketOperatorStatistics,
 } from '@dtypes/api.minmatar.org'
 import { query_string } from '@helpers/string'
+import { get_market_locations } from '@helpers/api.minmatar.org/locations'
 
 const HISTORY_DAYS = 30
 
-const location_id_param = Astro.url.searchParams.get('location_id')
-const parsed_location_id = location_id_param != null && location_id_param !== ''
-    ? parseInt(location_id_param, 10)
-    : NaN
-const location_id = Number.isNaN(parsed_location_id) ? undefined : parsed_location_id
-
+let locations: Awaited<ReturnType<typeof get_market_locations>> = []
+let active_location_id: number | undefined
+let active_location: Location | undefined
 let health: MarketHealth | null = null
 let market_operators: MarketOperatorStatistics[] = []
 let fetching_error: Error | false = false
 
-if (location_id == null) {
-    fetching_error = new Error('location_id is required')
-} else {
-    try {
-        const [health_result, operators_result] = await Promise.all([
-            get_market_health(location_id, { days: HISTORY_DAYS }),
-            get_market_character_statistics().catch((error) => {
-                console.log(error)
-                return [] as MarketOperatorStatistics[]
-            }),
-        ])
-        health = health_result
-        market_operators = operators_result
-    } catch (error) {
-        fetching_error = error as Error
+
+try {
+    active_location_id = parseInt(Astro.url.searchParams.get('location_id') ?? '0')
+    
+    if (!active_location_id) {
+        locations = await get_market_locations()
+        active_location_id = locations[0]?.location_id
     }
+
+    const [health_result, operators_result] = await Promise.all([
+        get_market_health(active_location_id, { days: HISTORY_DAYS }),
+        get_market_character_statistics().catch((error) => {
+            console.log(error)
+            return [] as MarketOperatorStatistics[]
+        }),
+    ])
+
+    health = health_result
+    market_operators = operators_result
+} catch (error) {
+    fetching_error = error as Error
 }
 
 const partial_url = translatePath(
     `/partials/market_health_component${
-        location_id != null
-            ? `?${query_string({ location_id })}`
+        active_location_id != null
+            ? `?${query_string({ location_id: active_location_id })}`
             : ''
     }`,
 )
 
+import PageActions from '@components/page/PageActions.astro';
+import PageTitle from '@components/page/PageTitle.astro';
+import PageCover from "@components/page/partials/PageCover.astro";
+
+import FlexInline from '@components/compositions/FlexInline.astro';
+
 import MarketHealthContent from '@components/blocks/MarketHealthContent.astro'
 import MarketOperatorsReel from '@components/blocks/MarketOperatorsReel.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import DebugTag from '@components/blocks/DebugTag.astro'
+import Button from '@components/blocks/Button.astro'
+
+import CogIcon from '@components/icons/buttons/CogIcon.astro';
+
+import {
+    get_location_video_cover,
+    get_location_video_cover_thumb,
+    get_location_cover,
+    get_location_cover_990,
+} from '@helpers/covers'
+
+const page_title = t('staging_supply.ops.page_title')
+
+const api_base = import.meta.env.API_URL || ''
+const admin_hub = active_location_id != null
+    ? `${api_base}/admin/market/location/${active_location_id}/`
+    : `${api_base}/admin/market/locations/`
 ---
 
 {fetching_error !== false ?
@@ -62,15 +89,50 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
             error: fetching_error,
             delay: 0,
         }}
-    />
-    : health ?
-        <div class="[ compensate-bottom-bar ]">
-            <MarketHealthContent
-                health={health}
-                history={health.chart}
-                location_id={location_id}
-            />
-            <MarketOperatorsReel market_operators={market_operators} />
-        </div>
-    : null
+    /> :
+    <> 
+        <FlexInline
+            id="header-oob"
+            gap="var(--space-3xs)"
+            hx-swap-oob="true"
+            justification="space-between"
+            class="[ w-full ]"
+        >
+            <PageTitle path={`/market/ops?location_id=${active_location_id}/`}>{page_title}</PageTitle>
+            <PageActions>
+                <Button
+                    href={admin_hub}
+                    external={true}
+                >
+                    <CogIcon slot="icon" />
+                    {locations[0]?.short_name ? t('edit_targets_template').replace('{market}', locations[0].short_name) : t('edit_targets')}
+                </Button>
+            </PageActions>
+        </FlexInline>
+
+        <PageCover
+            video={get_location_video_cover(active_location_id ?? 0) ?? undefined}
+            video_thumb={get_location_video_cover_thumb(active_location_id ?? 0) ?? undefined}
+            image={'/images/market-cover.jpg'}
+            image_990={'/images/market-cover.jpg'}
+            animated={false}
+            scrollable={true}
+            overlay={true}
+            oob_swap={true}
+        />
+
+        {health ?
+            <div class={market_operators.length > 0 ? 'compensate-bottom-bar': undefined}>
+                <MarketHealthContent
+                    health={health}
+                    history={health.chart}
+                    location_id={active_location_id}
+                />
+                {market_operators.length > 0 &&
+                    <MarketOperatorsReel market_operators={market_operators} />
+                }
+            </div> :
+            <DebugTag>{t('no_market_health_unexpected_error')}</DebugTag>
+        }
+    </>
 }

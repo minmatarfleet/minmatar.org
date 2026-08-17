@@ -2,7 +2,7 @@
 import type { ButtonColors } from '@dtypes/layout_components';
 
 interface Props {
-    color?:     ButtonColors;
+    color?:     ButtonColors | 'fleet-yellow';
     [propName: string]: any;
 }
 
@@ -35,6 +35,10 @@ delete attributes.class
         
         &.green {
             background-color: var(--green);
+        }
+        
+        &.fleet-yellow {
+            background-color: var(--fleet-yellow);
         }
     }
 </style>
