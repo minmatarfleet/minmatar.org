@@ -39,6 +39,8 @@ describe('sitemap_xml', () => {
 
         expect(paths).toContain('/guides/')
         expect(paths).toContain('/learning/')
+        expect(paths).toContain('/legal/privacy/')
+        expect(paths).toContain('/legal/terms/')
         expect(paths).toContain('/learning-center/')
         expect(paths).toContain('/learning/guides/faction-warfare-basics/')
         expect(paths).toContain('/learning/guides/faction-warfare-advantage/')

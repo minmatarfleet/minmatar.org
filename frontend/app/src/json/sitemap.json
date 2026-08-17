@@ -122,6 +122,33 @@
         ]
     },
     {
+        "slug": "legal.privacy",
+        "path": "/legal/privacy/",
+        "publish": true,
+        "description": "page_finder.legal.privacy.description",
+        "keywords": [
+            "privacy",
+            "gdpr",
+            "cookies",
+            "esi",
+            "discord"
+        ]
+    },
+    {
+        "slug": "legal.terms",
+        "path": "/legal/terms/",
+        "publish": true,
+        "description": "page_finder.legal.terms.description",
+        "keywords": [
+            "terms",
+            "tos",
+            "ccp",
+            "disclaimer",
+            "eve online",
+            "developer license"
+        ]
+    },
+    {
         "slug": "campaigns.etherium_reach",
         "path": "/campaigns/etherium-reach/",
         "publish": true,
