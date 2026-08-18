@@ -113,7 +113,7 @@ const home_corp_name =
               (row) => row.corporation_id === viewer.home_corp_id,
           )?.name ?? 'all'
         : 'all'
-const initial_corp = alliance_wide ? 'all' : home_corp_name
+const initial_corp = home_corp_name
 
 import Viewport from '@layouts/Viewport.astro'
 import PageWide from '@components/page/PageWide.astro'
@@ -278,7 +278,8 @@ const last_updated_text = overview?.computed_at
                                 pilots={trials.pilots}
                                 can_promote={
                                     can_mutate &&
-                                    (trials.bucket === 'passing' ||
+                                    (trials.bucket === 'current' ||
+                                        trials.bucket === 'passing' ||
                                         trials.bucket === 'remove' ||
                                         trials.bucket === 'approve')
                                 }

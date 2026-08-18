@@ -72,7 +72,7 @@ const initial_page = page_query?.page ?? 1
         match_count: rows.length,
         total_pages: 1,
         url_section: url_section ?? '',
-        url_defaults: { corp: 'all', page: 1 },
+        url_defaults: { corp: initial, page: 1 },
         row_selector: 'tr[data-search]',
         sort: false,
     })})`}

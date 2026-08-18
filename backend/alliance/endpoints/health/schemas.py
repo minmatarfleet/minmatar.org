@@ -4,6 +4,7 @@ from typing import Any, Literal, Protocol, TypeVar, Union
 
 from pydantic import BaseModel
 
+from alliance.helpers.health import is_gone_for_months_pilot
 from alliance.helpers.hygiene import classify_onboarding_need
 from alliance.helpers.player_prime_time import prime_time_labels_for_users
 
@@ -422,7 +423,7 @@ def overview_from_payload(
         status=StatusCounts(**(payload.get("status") or {})),
         status_windows=status_windows_from_payload(payload),
         signals_30d=Signals30(**(payload.get("signals_30d") or {})),
-        quiet=QuietCounts(**(payload.get("quiet") or {})),
+        quiet=quiet_counts_from_payload(payload),
         monthly=[MonthlyPoint(**m) for m in payload.get("monthly") or []],
         tribes_monthly=tribes_monthly_from_payload(payload),
         unknown_characters=unknown_characters_from_payload(payload),
@@ -432,10 +433,32 @@ def overview_from_payload(
     )
 
 
+def quiet_counts_from_payload(payload: dict[str, Any]) -> QuietCounts:
+    quiet = QuietCounts(**(payload.get("quiet") or {}))
+    dark_rows = (payload.get("attention") or {}).get("dark")
+    if dark_rows is not None:
+        quiet.dark = sum(
+            1
+            for row in dark_rows
+            if is_gone_for_months_pilot(
+                row.get("days_quiet"), row.get("active_months")
+            )
+        )
+    return quiet
+
+
 def attention_from_payload(
     payload: dict[str, Any], bucket: AttentionBucket
 ) -> HealthAttentionResponse:
     pilots = payload.get("attention", {}).get(bucket, [])
+    if bucket == "dark":
+        pilots = [
+            row
+            for row in pilots
+            if is_gone_for_months_pilot(
+                row.get("days_quiet"), row.get("active_months")
+            )
+        ]
     return HealthAttentionResponse(
         computed_at=str(payload.get("computed_at") or ""),
         bucket=bucket,

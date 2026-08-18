@@ -8,6 +8,9 @@ from alliance.endpoints.health.schemas import (
     HealthStatusChangeResponse,
 )
 from alliance.helpers.access import can_mutate_status, can_put_on_leave
+from alliance.helpers.health_snapshot_patch import (
+    apply_status_change_to_latest_snapshot,
+)
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from groups.helpers import process_bulk_community_status_row
@@ -97,6 +100,7 @@ def post_health_status(request, payload: HealthStatusChangeRequest):
         return 400, ErrorResponse(detail=error)
     if not applied:
         return 400, ErrorResponse(detail="Status was not applied")
+    apply_status_change_to_latest_snapshot(target.id, payload.action, current)
     return HealthStatusChangeResponse(
         user_id=target.id,
         status=new_status,
