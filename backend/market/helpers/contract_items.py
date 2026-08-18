@@ -13,10 +13,12 @@ from eveonline.models import (
 )
 
 from market.helpers.contract_match import (
+    fittings_for_contract_items,
     is_match_accepted,
+    match_contract_to_fitting,
     normalize_contract_items,
-    score_contract_against_fitting,
 )
+from market.helpers.contracts import record_unmatched_market_contract
 from market.models import EveMarketContract, EveMarketContractItem
 
 logger = logging.getLogger(__name__)
@@ -49,13 +51,18 @@ def apply_content_match(
     contract: EveMarketContract, contract_items: dict[int, int]
 ):
     """
-    Require name AND content: score only against the title-resolved fitting.
+    Assign the best hull/module match from contract items.
 
-    Keep fitting when module-weighted coverage >= MATCH_THRESHOLD; otherwise
-    clear fitting (keep match_score for admin). Freeze via items_fetched.
+    Title is only a tie-break (preferred_fitting). Wrong or truncated names
+    still match when contents cover a catalog fit at MATCH_THRESHOLD.
+    Freeze via items_fetched.
     """
     named = contract.fitting
-    if not named:
+    candidates = fittings_for_contract_items(
+        contract_items, preferred_fitting=named
+    )
+    if not candidates:
+        contract.fitting = None
         contract.match_score = 0.0
         contract.match_is_flagged = True
         contract.save(
@@ -63,17 +70,19 @@ def apply_content_match(
         )
         return None, 0.0, [], []
 
-    score, missing, extra = score_contract_against_fitting(
-        contract_items, named
+    best, score, missing, extra = match_contract_to_fitting(
+        contract_items, candidates, preferred_fitting=named
     )
+    accepted = is_match_accepted(score)
     contract.match_score = score
-    contract.match_is_flagged = bool(score < 1.0) if score else True
-    if is_match_accepted(score):
-        contract.fitting = named
+    if accepted:
+        contract.fitting = best
+        contract.match_is_flagged = bool(score < 1.0)
     else:
         contract.fitting = None
+        contract.match_is_flagged = True
     contract.save(update_fields=["fitting", "match_score", "match_is_flagged"])
-    return named if is_match_accepted(score) else None, score, missing, extra
+    return contract.fitting, score, missing, extra
 
 
 def fetch_public_contract_items(contract_id: int) -> tuple[bool, list[dict]]:
@@ -144,4 +153,7 @@ def fetch_and_match_contract_items(contract_id: int) -> bool:
 
     aggregated = store_contract_items(contract, raw_items)
     apply_content_match(contract, aggregated)
+    contract.refresh_from_db()
+    if contract.is_public and contract.fitting_id is None:
+        record_unmatched_market_contract(contract)
     return True

@@ -359,7 +359,7 @@ Hail S x2000
         self.assertTrue(missing)
 
     def test_highest_percent_wins_close_fits(self):
-        """Named Buffer only keeps when items match Buffer (not Active)."""
+        """Items pick Active vs Buffer; title is only a tie-break."""
         _make_typed_eve_type(37604, "Apostle", 6, "Ship")
         _make_typed_eve_type(2048, "Damage Control II", 7, "Module")
         _make_typed_eve_type(
@@ -402,14 +402,14 @@ Armor Energizing Charge x1000
             fitting=buffer,
             is_public=False,
         )
-        # Active hull modules under a Buffer title → name matches, fit does not
+        # Active hull modules under a Buffer title → items assign Active.
         apply_content_match(
             buffer_contract,
             {37604: 1, 2048: 1, 41459: 1, 41490: 1000},
         )
         buffer_contract.refresh_from_db()
-        self.assertIsNone(buffer_contract.fitting_id)
-        self.assertLess(buffer_contract.match_score, MATCH_THRESHOLD)
+        self.assertEqual(active.id, buffer_contract.fitting_id)
+        self.assertGreaterEqual(buffer_contract.match_score, MATCH_THRESHOLD)
 
         active_contract = EveMarketContract.objects.create(
             id=50008,
@@ -532,8 +532,8 @@ Armor Energizing Charge x1000
         self.assertIn(verified.id, stock_ids)
         self.assertNotIn(failed.id, stock_ids)
 
-    def test_nonsense_title_is_not_content_matched(self):
-        """Wrong/missing title never assigns from contents alone."""
+    def test_wrong_title_is_content_matched(self):
+        """Truncated or wrong title still assigns from hull/module contents."""
         location = _make_location(location_id=9104)
         _make_typed_eve_type(37604, "Apostle", 6, "Ship")
         _make_typed_eve_type(2048, "Damage Control II", 7, "Module")
@@ -566,8 +566,8 @@ Damage Control II
             {37604: 1, 2048: 1, 20245: 1},
         )
         contract.refresh_from_db()
-        self.assertIsNone(contract.fitting_id)
-        self.assertEqual(0.0, contract.match_score)
+        self.assertEqual(buffer.id, contract.fitting_id)
+        self.assertGreaterEqual(contract.match_score, MATCH_THRESHOLD)
 
         named = EveMarketContract.objects.create(
             id=50009,
@@ -583,6 +583,42 @@ Damage Control II
         named.refresh_from_db()
         self.assertEqual(buffer.id, named.fitting_id)
         self.assertGreaterEqual(named.match_score, MATCH_THRESHOLD)
+
+    def test_truncated_title_picks_matching_hull_variant(self):
+        """[FL33T] Torpedo contents match Torpedo Typhoon, not Cruise."""
+        location = _make_location(location_id=9106)
+        _make_typed_eve_type(644, "Typhoon", 6, "Ship")
+        _make_typed_eve_type(2410, "Heavy Missile Launcher II", 7, "Module")
+        _make_typed_eve_type(2420, "Torpedo Launcher II", 7, "Module")
+        cruise = EveFitting.objects.create(
+            name="[FL33T] Cruise Typhoon",
+            ship_id=644,
+            eft_format="""[Typhoon, [FL33T] Cruise Typhoon]
+Heavy Missile Launcher II
+""",
+        )
+        torpedo = EveFitting.objects.create(
+            name="[FL33T] Torpedo Typhoon",
+            ship_id=644,
+            eft_format="""[Typhoon, [FL33T] Torpedo Typhoon]
+Torpedo Launcher II
+""",
+        )
+        contract = EveMarketContract.objects.create(
+            id=50010,
+            title="[FL33T] Torpedo",
+            price=1,
+            issuer_external_id=1,
+            status="outstanding",
+            location=location,
+            fitting=None,
+            is_public=True,
+        )
+        apply_content_match(contract, {644: 1, 2420: 1})
+        contract.refresh_from_db()
+        self.assertEqual(torpedo.id, contract.fitting_id)
+        self.assertNotEqual(cruise.id, contract.fitting_id)
+        self.assertGreaterEqual(contract.match_score, MATCH_THRESHOLD)
 
 
 class SellOrderRowsTestCase(TestCase):

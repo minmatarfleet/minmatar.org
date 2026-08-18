@@ -1,7 +1,7 @@
 import logging
 
 from django.core.cache import cache
-from django.db.models import Q
+from django.db.models import F, Q
 from django.utils import timezone
 from celery import chord, group
 
@@ -510,7 +510,7 @@ def fetch_eve_market_contracts():
             items_fetched=False,
             status="outstanding",
         )
-        .order_by("issued_at", "id")
+        .order_by(F("fitting_id").asc(nulls_last=True), "issued_at", "id")
         .values_list("id", flat=True)[:CONTRACT_ITEMS_FETCH_CAP]
     )
     scheduled = 0

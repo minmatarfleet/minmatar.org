@@ -276,9 +276,9 @@ def create_or_update_contract_from_db_contract(
 ) -> bool:
     """
     Create or update EveMarketContract from an EveCharacterContract or
-    EveCorporationContract. Only stores if type is item_exchange, location
-    matches, and title matches a known fitting (exact / alias / unique
-    tag-strip). Content matching then verifies modules against that fit.
+    EveCorporationContract. Stores item_exchange contracts at the location.
+    Title is a hint when it matches a known fitting (exact / alias / unique
+    tag-strip); items later assign or correct the fit.
 
     Once items have been fetched and a content match frozen, fitting/match_score
     are not overwritten from the contract title.
@@ -300,13 +300,6 @@ def create_or_update_contract_from_db_contract(
         )
         return False
     fitting = get_fitting_for_contract(db_contract.title or "")
-    if not fitting:
-        logger.info(
-            "Skipping contract %s: no fitting found for title %r",
-            db_contract.contract_id,
-            db_contract.title or "",
-        )
-        return False
     status = _map_contract_status(db_contract.status or "")
     issuer_corporation_id = None
     if getattr(db_contract, "for_corporation", False):
@@ -347,9 +340,6 @@ def create_or_update_contract(esi_contract, location: EveLocation):
         return
 
     fitting = get_fitting_for_contract(esi_contract["title"])
-    if not fitting:
-        record_unmatched_contract(esi_contract, location)
-        return
 
     contract, _ = EveMarketContract.objects.get_or_create(
         id=esi_contract["contract_id"],
@@ -382,9 +372,23 @@ def create_or_update_contract(esi_contract, location: EveLocation):
     contract.save()
 
 
+def record_unmatched_market_contract(contract: EveMarketContract):
+    """Record a public contract that items could not assign to a catalog fit."""
+    if not contract.is_public or not contract.location_id:
+        return
+    record_unmatched_contract(
+        {
+            "contract_id": contract.id,
+            "issuer_id": contract.issuer_external_id,
+            "title": contract.title,
+        },
+        contract.location,
+    )
+
+
 def record_unmatched_contract(esi_contract, location: EveLocation):
     logger.info(
-        "Ignoring public contract %d, unknown fitting: %s",
+        "Public contract %s did not match a catalog fit: %s",
         esi_contract["contract_id"],
         esi_contract["title"],
     )

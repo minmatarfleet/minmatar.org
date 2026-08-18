@@ -169,23 +169,17 @@ class MarketTaskTestCase(TestCase):
 
         fetch_eve_market_contracts()
 
-        contracts = EveMarketContract.objects.all()
-
-        self.assertEqual(1, contracts.count())
-        self.assertEqual(10000001, contracts[0].id)
-        self.assertEqual(fitting.id, contracts[0].fitting.id)
+        contracts = {c.id: c for c in EveMarketContract.objects.all()}
+        self.assertEqual({10000001, 10000002}, set(contracts))
+        self.assertEqual(fitting.id, contracts[10000001].fitting_id)
+        self.assertIsNone(contracts[10000002].fitting_id)
         self.assertEqual(
-            location.location_id, contracts[0].location.location_id
+            location.location_id, contracts[10000001].location.location_id
         )
 
-        contract_errors = EveMarketContractError.objects.all()
-        self.assertEqual(1, contract_errors.count())
-        self.assertEqual("Random contract", contract_errors.first().title)
-        self.assertEqual(
-            "Seller", contract_errors.first().issuer.character_name
-        )
-        items_task_mock.apply_async.assert_called_once()
-        _, kwargs = items_task_mock.apply_async.call_args
+        self.assertEqual(0, EveMarketContractError.objects.count())
+        self.assertEqual(2, items_task_mock.apply_async.call_count)
+        _, kwargs = items_task_mock.apply_async.call_args_list[0]
         self.assertEqual("market", kwargs["queue"])
         self.assertEqual(0, kwargs["countdown"])
 
