@@ -132,6 +132,49 @@ export function compare_health_sort_values(
     }
 }
 
+export function row_health_sort_value(
+    row: AllianceHealthPilotListRow,
+    order_by: string,
+): string {
+    if (order_by === 'name') return row.name.toLowerCase()
+    if (order_by === 'corp') return row.corp.toLowerCase()
+    if (order_by === 'tz') return (row.timezone ?? '').toLowerCase()
+    const metric = row.metrics.find((item) => item.id === order_by)
+    return sort_value_attr(metric?.sort)
+}
+
+export function paged_health_list_rows(
+    rows: AllianceHealthPilotListRow[],
+    opts: {
+        corp: string
+        search?: string
+        order_by: string
+        order_dir: AllianceHealthOrderDir
+        order_kinds: Record<string, AllianceHealthOrderKind>
+        page: number
+        page_size: number
+    },
+): AllianceHealthPilotListRow[] {
+    const q = (opts.search ?? '').trim().toLowerCase()
+    const matched = rows.filter((row) => {
+        if (opts.corp !== 'all' && row.corp !== opts.corp) return false
+        if (q && !row.search_text.includes(q)) return false
+        return true
+    })
+    const kind = opts.order_kinds[opts.order_by] ?? 'text'
+    const sorted = [...matched].sort((a, b) =>
+        compare_health_sort_values(
+            row_health_sort_value(a, opts.order_by),
+            row_health_sort_value(b, opts.order_by),
+            kind,
+            opts.order_dir,
+        ),
+    )
+    const page = Math.max(1, opts.page)
+    const start = (page - 1) * opts.page_size
+    return sorted.slice(start, start + opts.page_size)
+}
+
 export function sort_value_attr(value: number | string | null | undefined): string {
     if (value == null || value === '') return ''
     if (typeof value === 'number' && Number.isNaN(value)) return ''
