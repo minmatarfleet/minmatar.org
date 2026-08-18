@@ -148,3 +148,58 @@ export function can_leave_alliance_health_pilot(
         corporation_id != null && ceo_corp_ids.includes(corporation_id)
     )
 }
+
+export function can_act_on_alliance_health_corp(
+    alliance_wide: boolean,
+    corporation_id: number | null | undefined,
+    officer_corp_ids: number[],
+): boolean {
+    if (alliance_wide) return true
+    return (
+        corporation_id != null && officer_corp_ids.includes(corporation_id)
+    )
+}
+
+export function can_promote_alliance_health_trial(opts: {
+    can_mutate: boolean
+    bucket: AllianceHealthTrialBucket | string
+    alliance_wide: boolean
+    officer_corp_ids: number[]
+    corporation_id?: number | null
+    decision?: string | null
+    alliance_days?: number | null
+}): boolean {
+    if (!opts.can_mutate) return false
+    if (
+        !can_act_on_alliance_health_corp(
+            opts.alliance_wide,
+            opts.corporation_id,
+            opts.officer_corp_ids,
+        )
+    ) {
+        return false
+    }
+    if (opts.decision === 'too_early') return false
+    if (opts.decision === 'approve') return true
+    const bucket = opts.bucket as AllianceHealthTrialBucket
+    switch (bucket) {
+        case 'approve':
+        case 'remove':
+            return true
+        case 'passing':
+            return opts.alliance_days == null || opts.alliance_days >= 60
+        case 'current':
+        case 'failing':
+        case 'evaluating':
+        case 'add':
+        case 'flagged':
+        case 'too_early':
+        case 'fail':
+        case 'nudge':
+            return false
+        default: {
+            const _never: never = bucket
+            return _never
+        }
+    }
+}

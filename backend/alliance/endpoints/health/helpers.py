@@ -31,7 +31,7 @@ def viewer_context(user) -> ViewerContext:
     alliance_wide = executor or staff_only
     return ViewerContext(
         alliance_wide=alliance_wide,
-        home_corp_id=None if alliance_wide else viewer_home_corp_id(user),
+        home_corp_id=viewer_home_corp_id(user),
         can_mutate=executor or bool(corps),
         can_leave_any=bool(user and user.is_superuser),
         officer_corp_ids=corps,

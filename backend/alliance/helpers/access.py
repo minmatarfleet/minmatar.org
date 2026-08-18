@@ -56,13 +56,18 @@ def can_view_health(user: User) -> bool:
 
 
 def viewer_home_corp_id(user: User) -> int | None:
-    """Default corp filter for CEOs/directors. Executors have none (alliance-wide)."""
-    if is_alliance_executor(user):
+    """Default corp filter: primary MFA corp, else a corp they officer."""
+    if not user or not user.is_authenticated:
         return None
+    mfa_ids = set(
+        mfa_corporation_qs().values_list("corporation_id", flat=True)
+    )
+    primary = user_primary_character(user)
+    if primary and primary.corporation_id in mfa_ids:
+        return primary.corporation_id
     ids = officer_corp_ids(user)
     if len(ids) == 1:
         return next(iter(ids))
-    primary = user_primary_character(user)
     if primary and primary.corporation_id in ids:
         return primary.corporation_id
     if ids:

@@ -823,6 +823,41 @@ class AllianceHealthEndpointTestCase(TestCase):
         self.assertEqual(response.json()["viewer"]["alliance_wide"], True)
         self.assertEqual(response.json()["viewer"]["can_leave_any"], False)
         self.assertEqual(response.json()["viewer"]["ceo_corp_ids"], [])
+        self.assertIsNone(response.json()["viewer"]["home_corp_id"])
+
+    def test_people_home_corp_defaults_to_primary(self):
+        people, token = self._people_user()
+        alliance = EveAlliance.objects.create(
+            alliance_id=99011978,
+            name="Minmatar Fleet Alliance",
+            ticker="MFA",
+        )
+        corp = EveCorporation.objects.create(
+            corporation_id=1000301,
+            name="People Home Corp",
+            ticker="PHOM",
+            alliance=alliance,
+        )
+        people_char = EveCharacter.objects.create(
+            character_id=910301,
+            character_name="People Pilot",
+            corporation_id=1000301,
+            user=people,
+        )
+        EvePlayer.objects.create(
+            nickname="people_exec",
+            user=people,
+            primary_character=people_char,
+        )
+        corp.save()
+        response = self.client.get(
+            "/api/alliance/health/overview",
+            **self._auth(token),
+        )
+        self.assertEqual(response.status_code, 200)
+        viewer = response.json()["viewer"]
+        self.assertEqual(viewer["alliance_wide"], True)
+        self.assertEqual(viewer["home_corp_id"], 1000301)
 
     def test_status_promote_as_people(self):
         token = self._people_user()[1]
