@@ -17,6 +17,7 @@ from applications.prime_time import (
     apply_application_prime_time,
     parse_application_prime_time,
 )
+from applications.signals import eve_corporation_application_post_save
 from discord.models import DiscordUser
 from eveonline.models import EveCharacter, EveCorporation, EvePlayer
 from eveonline.helpers.characters import set_primary_character, user_player
@@ -348,6 +349,11 @@ class EveCorporationApplicationSignalTest(TestCase):
     """Test case for the application signal handlers."""
 
     def test_application_post_save_signal(self):
+        signals.post_save.connect(
+            eve_corporation_application_post_save,
+            sender=EveCorporationApplication,
+            dispatch_uid="eve_corporation_application_post_save",
+        )
         signals.post_save.disconnect(
             sender=EveCharacter,
             dispatch_uid="populate_eve_character_public_data",
@@ -460,6 +466,14 @@ class ApplicationPrimeTimeTest(TestCase):
         )
         self.client = Client()
         super().setUp()
+
+    def tearDown(self):
+        signals.post_save.connect(
+            eve_corporation_application_post_save,
+            sender=EveCorporationApplication,
+            dispatch_uid="eve_corporation_application_post_save",
+        )
+        super().tearDown()
 
     def test_parse_application_prime_time_from_ustz_label(self):
         description = (
