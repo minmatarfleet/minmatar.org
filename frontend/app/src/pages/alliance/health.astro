@@ -307,8 +307,16 @@ const last_updated_text = overview?.computed_at
                         >
                             <AllianceHealthLeaveTable
                                 pilots={leave.pilots}
+                                can_restore={
+                                    can_mutate &&
+                                    (leave.bucket === 'returning' ||
+                                        leave.bucket === 'remove')
+                                }
+                                officer_corp_ids={officer_corp_ids}
+                                alliance_wide={alliance_wide}
                                 initial_corp={initial_corp}
                                 bucket={leave.bucket}
+                                partial_url={LEAVE_PARTIAL_URL}
                             />
                         </AllianceHealthLeave>
                     </Flexblock>

@@ -22,7 +22,6 @@ import CollapsableButton from "@components/blocks/CollapsableButton.astro";
     {...attributes}
     class:list={[ attributes.class, { 'button-dropdown': variant === 'button' } ]}
     x-bind:class="{ 'is-open': expanded }"
-    x-bind:style="expanded ? { '--button-dropdown-min-width': `${$refs.trigger?.offsetWidth || 0}px` } : {}"
     x-data={`{
         id: $id('dropdown'),
         expanded: false,
@@ -31,10 +30,13 @@ import CollapsableButton from "@components/blocks/CollapsableButton.astro";
         },
         toggle() {
             this.expanded = !this.expanded
-        }
+        },
+        close_if_outside(event) {
+            if (this.$refs.trigger?.contains(event.target)) return
+            this.close()
+        },
     }`}
     @keydown.escape.prevent.stop="close()"
-    @click.outside="close()"
 >
     <CollapsableButton
         appearance={variant === 'button' ? 'button' : 'plain'}
@@ -49,31 +51,43 @@ import CollapsableButton from "@components/blocks/CollapsableButton.astro";
         <slot name="button" />
     </CollapsableButton>
  
-    <div
-        class:list={[
-            '[ light-transparency ][ px-[var(--space-3xs)] py-[var(--space-3xs)] z-[var(--tooltips-z-index)] ]',
-            { 'button-dropdown-panel': variant === 'button' },
-        ]}
-        x-show="expanded"
-        x-anchor.fixed.bottom-end="document.getElementById(id)"
-        style="display: none"
-    >
-        <slot />
-    </div>
+    <template x-teleport="body">
+        <div
+            class:list={[
+                attributes.class,
+                '[ dropdown-panel light-transparency ][ px-[var(--space-3xs)] py-[var(--space-3xs)] ]',
+                { 'button-dropdown-panel': variant === 'button' },
+            ]}
+            x-ref="panel"
+            x-show="expanded"
+            x-cloak
+            x-anchor.fixed.bottom-end="$refs.trigger"
+            x-bind:style="expanded ? { '--button-dropdown-min-width': `${$refs.trigger?.offsetWidth || 0}px` } : {}"
+            @mousedown.outside="expanded && close_if_outside($event)"
+            @keydown.escape.prevent.stop="close()"
+            style="display: none"
+        >
+            <slot />
+        </div>
+    </template>
 </div>
 
 <style lang="scss">
     .button-dropdown {
         position: relative;
+    }
 
-        &.is-open {
-            z-index: var(--tooltips-z-index);
-        }
+    .dropdown-panel {
+        z-index: var(--tooltips-z-index);
     }
 
     .button-dropdown-panel {
         min-width: var(--button-dropdown-min-width, 0px);
         width: var(--button-dropdown-min-width, max-content);
         box-sizing: border-box;
+    }
+
+    [x-cloak] {
+        display: none !important;
     }
 </style>

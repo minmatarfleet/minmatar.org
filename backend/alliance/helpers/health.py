@@ -65,6 +65,34 @@ def _month_key(dt: datetime | date) -> str:
     return f"{dt.year:04d}-{dt.month:02d}"
 
 
+def classify_quiet_attention(
+    eligible: set[int],
+    active_30d: set[int],
+    active_90d: set[int],
+    last_activity: dict[int, datetime],
+    months_active: dict[int, set[str]],
+    now: datetime,
+) -> tuple[set[int], set[int], set[int]]:
+    """Split quiet members into fading, dark, and seasonal.
+
+    Dark is "gone for months": quiet for 90d and last seen before that.
+    Never-active newcomers stay out — they have not been in the group
+    long enough to be gone for months.
+    """
+    quiet_30 = eligible - active_30d
+    fading = {uid for uid in quiet_30 if uid in active_90d}
+    gone_before = now - timedelta(days=90)
+    dark = {
+        uid
+        for uid in quiet_30 - active_90d
+        if (last := last_activity.get(uid)) is not None and last < gone_before
+    }
+    seasonal = {
+        uid for uid in quiet_30 if len(months_active.get(uid, ())) >= 3
+    }
+    return fading, dark, seasonal
+
+
 def _status_windows(
     status_of,
     s30: set[int],
@@ -556,14 +584,14 @@ def compute_alliance_health(  # noqa: C901
             months_active[uid].add(_month_key(dt))
 
     eligible = {uid for uid in roster_user_ids if status_of(uid) != "on_leave"}
-    quiet_30 = eligible - s30
-    fading = {
-        uid for uid in quiet_30 if uid in s90
-    }  # active in 90d, quiet 30d
-    dark = quiet_30 - s90  # nothing in 90d
-    seasonal = {
-        uid for uid in quiet_30 if len(months_active.get(uid, ())) >= 3
-    }
+    fading, dark, seasonal = classify_quiet_attention(
+        eligible,
+        s30,
+        s90,
+        last_activity,
+        months_active,
+        now,
+    )
 
     def pilot_row(uid: int) -> dict[str, Any]:
         last = last_activity.get(uid)

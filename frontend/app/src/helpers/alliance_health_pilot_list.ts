@@ -47,9 +47,15 @@ export interface AllianceHealthPilotAction {
     confirm_content: string
     post_url: string
     target: string
+    swap?: string
+}
+
+export function health_pilot_card_id(section: string, user_id: number): string {
+    return `alliance-health-${section}-${user_id}`
 }
 
 export interface AllianceHealthPilotListRow {
+    row_id?: string
     name: string
     corp: string
     character_id?: number | null

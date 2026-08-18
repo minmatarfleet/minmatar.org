@@ -1,4 +1,4 @@
-"""POST /api/alliance/health/status — promote off trial or put on leave."""
+"""POST /api/alliance/health/status — promote, put on leave, or restore."""
 
 from django.contrib.auth.models import User
 
@@ -29,7 +29,28 @@ ROUTE_SPEC = {
 _ACTIONS = {
     "promote": UserCommunityStatus.STATUS_ACTIVE,
     "leave": UserCommunityStatus.STATUS_ON_LEAVE,
+    "restore": UserCommunityStatus.STATUS_ACTIVE,
 }
+
+_DEFAULT_REASONS = {
+    "promote": "Promoted from trial via alliance health",
+    "leave": "Put on leave via alliance health",
+    "restore": "Taken off leave via alliance health",
+}
+
+
+def _transition_error(
+    action: str, current: str | None
+) -> ErrorResponse | None:
+    if action == "promote" and current != UserCommunityStatus.STATUS_TRIAL:
+        return ErrorResponse(
+            detail="Promote is only valid for members currently on trial"
+        )
+    if action == "restore" and current != UserCommunityStatus.STATUS_ON_LEAVE:
+        return ErrorResponse(
+            detail="Restore is only valid for members currently on leave"
+        )
+    return None
 
 
 def post_health_status(request, payload: HealthStatusChangeRequest):
@@ -37,7 +58,9 @@ def post_health_status(request, payload: HealthStatusChangeRequest):
     if denied:
         return denied
     if payload.action not in _ACTIONS:
-        return 400, ErrorResponse(detail="action must be promote or leave")
+        return 400, ErrorResponse(
+            detail="action must be promote, leave, or restore"
+        )
     target = User.objects.filter(pk=payload.user_id).first()
     if target is None:
         return 404, ErrorResponse(detail="User not found")
@@ -54,16 +77,10 @@ def post_health_status(request, payload: HealthStatusChangeRequest):
         current = target.community_status.status
     except UserCommunityStatus.DoesNotExist:
         current = None
-    if payload.action == "promote":
-        if current != UserCommunityStatus.STATUS_TRIAL:
-            return 400, ErrorResponse(
-                detail="Promote is only valid for members currently on trial"
-            )
-    reason = (payload.reason or "").strip() or (
-        "Promoted from trial via alliance health"
-        if payload.action == "promote"
-        else "Put on leave via alliance health"
-    )
+    invalid = _transition_error(payload.action, current)
+    if invalid:
+        return 400, invalid
+    reason = (payload.reason or "").strip() or _DEFAULT_REASONS[payload.action]
     result = process_bulk_community_status_row(
         {
             "username": target.username,

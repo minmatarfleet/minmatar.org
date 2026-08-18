@@ -9,6 +9,7 @@ import type {
 } from '@helpers/alliance_health_pilot_list'
 
 import { alliance_health_table_params, can_leave_alliance_health_pilot } from '@helpers/api.minmatar.org/alliance_health'
+import { health_pilot_card_id } from '@helpers/alliance_health_pilot_list'
 import { query_string } from '@helpers/string'
 import AllianceHealthPilotList from '@components/blocks/AllianceHealthPilotList.astro'
 
@@ -59,6 +60,7 @@ const order_by_options: AllianceHealthOrderOption[] = [
 ]
 
 const rows: AllianceHealthPilotListRow[] = pilots.map((pilot) => ({
+    row_id: health_pilot_card_id('attention', pilot.user_id),
     name: pilot.pilot,
     corp: pilot.corp,
     character_id: pilot.character_id,
@@ -89,7 +91,8 @@ const rows: AllianceHealthPilotListRow[] = pilots.map((pilot) => ({
                   user_id: String(pilot.user_id),
                   action: 'leave',
               })}&${extra_query}`,
-              target: '#alliance-health-attention-table',
+              target: `#${health_pilot_card_id('attention', pilot.user_id)}`,
+              swap: 'delete',
           }
         : undefined,
 }))

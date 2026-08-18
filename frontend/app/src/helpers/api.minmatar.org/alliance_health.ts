@@ -96,7 +96,7 @@ export async function get_alliance_health_corporations(access_token: string) {
 export async function post_alliance_health_status(
     access_token: string,
     user_id: number,
-    action: 'promote' | 'leave',
+    action: 'promote' | 'leave' | 'restore',
     reason = '',
 ) {
     const headers = {
