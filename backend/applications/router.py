@@ -16,6 +16,7 @@ from .l3arn import (
     validate_l3arn_application_description,
 )
 from .models import EveCorporationApplication
+from .prime_time import apply_application_prime_time
 from groups.helpers.feature_access import can_use_feature
 
 router = Router(tags=["Applications"])
@@ -114,6 +115,7 @@ def create_corporation_application(
         user_id=request.user.id,
         description=payload.description,
     )
+    apply_application_prime_time(request.user, payload.description)
 
     logger.info(
         "Application to %s submitted by %s",
