@@ -76,4 +76,16 @@ describe('alliance_health_url', () => {
         })
         expect(patch_from_alliance_health_params(params, 'leave')).toEqual({})
     })
+
+    it('clears a stale page when switching buckets', () => {
+        const params = new URLSearchParams('trials_p=2')
+        write_alliance_health_list_params(
+            params,
+            'trials',
+            { bucket: 'passing', page: 1 },
+            { bucket: 'current', page: 1 },
+        )
+        expect(params.get('trials')).toBe('passing')
+        expect(params.has('trials_p')).toBe(false)
+    })
 })

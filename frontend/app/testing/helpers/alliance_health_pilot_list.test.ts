@@ -8,6 +8,7 @@ import {
     health_confidence_label,
     health_pilot_card_id,
     next_health_order_state,
+    paged_health_list_rows,
     tone_vs_median,
 } from '@helpers/alliance_health_pilot_list'
 
@@ -106,6 +107,36 @@ describe('alliance_health_pilot_list', () => {
     it('builds unique card ids per section', () => {
         expect(health_pilot_card_id('attention', 42)).toBe('alliance-health-attention-42')
         expect(health_pilot_card_id('trials', 42)).toBe('alliance-health-trials-42')
+    })
+
+    it('pages the same corp-filtered fleet order Alpine uses', () => {
+        const row = (
+            name: string,
+            corp: string,
+            fleets: number,
+        ) => ({
+            name,
+            corp,
+            search_text: name.toLowerCase(),
+            metrics: [{ id: 'fleets', label: 'Fleets', value: String(fleets), sort: fleets }],
+        })
+        const page = paged_health_list_rows(
+            [
+                row('low', 'home', 2),
+                row('high', 'home', 40),
+                row('other', 'away', 99),
+                row('mid', 'home', 10),
+            ],
+            {
+                corp: 'home',
+                order_by: 'fleets',
+                order_dir: 'desc',
+                order_kinds: { fleets: 'number' },
+                page: 1,
+                page_size: 2,
+            },
+        )
+        expect(page.map((item) => item.name)).toEqual(['high', 'mid'])
     })
 
     it('escapes CSV fields and builds a matrix', () => {

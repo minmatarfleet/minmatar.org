@@ -77,7 +77,12 @@
             replace_health_url(section, patch, defaults, hash)
         },
         writeBucket(section, bucket, default_bucket) {
-            replace_health_url(section, { bucket }, { bucket: default_bucket }, true)
+            replace_health_url(
+                section,
+                { bucket, page: 1 },
+                { bucket: default_bucket, page: 1 },
+                true,
+            )
         },
     }
 </script>

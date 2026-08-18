@@ -56,6 +56,7 @@ delete attributes.class
                     hx-get={tab.href}
                     hx-target={`#${table_id}`}
                     hx-swap="innerHTML"
+                    hx-trigger="click"
                     hx-indicator=".loader"
                 >
                     {tab.label} ({tab.count})

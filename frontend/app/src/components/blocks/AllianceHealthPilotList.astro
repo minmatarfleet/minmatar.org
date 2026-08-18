@@ -8,7 +8,7 @@ import type {
     AllianceHealthOrderOption,
     AllianceHealthPilotListRow,
 } from '@helpers/alliance_health_pilot_list'
-import { apply_list_metric_tones, csv_headers_from_pilot, default_health_order_dir } from '@helpers/alliance_health_pilot_list'
+import { apply_list_metric_tones, csv_headers_from_pilot, default_health_order_dir, paged_health_list_rows } from '@helpers/alliance_health_pilot_list'
 import {
     read_alliance_health_list_state,
     type AllianceHealthUrlSection,
@@ -92,6 +92,17 @@ const order_kinds: Record<string, AllianceHealthOrderKind> = Object.fromEntries(
     chips.map((chip) => [chip.id, chip.kind]),
 )
 const colored_rows = apply_list_metric_tones(rows)
+const visible_keys = new Set(
+    paged_health_list_rows(colored_rows, {
+        corp: list_corp,
+        search: initial_search,
+        order_by,
+        order_dir,
+        order_kinds,
+        page: initial_page,
+        page_size,
+    }).map((row) => row.row_id ?? `${row.name}:${row.corp}`),
+)
 const csv_headers = csv_headers_from_pilot(colored_rows[0], {
     pilot: t('alliance.health.col.pilot'),
     corp: t('alliance.health.col.corp'),
@@ -183,9 +194,16 @@ const csv_headers = csv_headers_from_pilot(colored_rows[0], {
             x-ref="body"
             x-init="$nextTick(() => refresh())"
         >
-            {colored_rows.map((row) => (
-                <AllianceHealthPilotCard row={row} />
-            ))}
+            {colored_rows.map((row) => {
+                const visible = visible_keys.has(row.row_id ?? `${row.name}:${row.corp}`)
+                return (
+                    <AllianceHealthPilotCard
+                        row={row}
+                        hidden={visible ? undefined : true}
+                        class:list={[!visible && 'is-hidden']}
+                    />
+                )
+            })}
         </div>
 
         {rows.length === 0 ? (
