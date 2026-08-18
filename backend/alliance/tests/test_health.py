@@ -1,5 +1,6 @@
 """Tests for alliance health compute + endpoints."""
 
+from copy import deepcopy
 from datetime import timedelta
 
 import jwt
@@ -15,6 +16,7 @@ from groups.management.commands.sync_pilot_features import (
 from groups.models import UserCommunityStatus
 
 from alliance.endpoints.health.schemas import (
+    attention_from_payload,
     leave_from_payload,
     onboarding_from_payload,
     overview_from_payload,
@@ -302,8 +304,16 @@ class AllianceHealthEndpointTestCase(TestCase):
                             "corp": "Test Corp",
                             "status": "trial",
                             "days_quiet": 100,
+                            "active_months": 2,
+                        },
+                        {
+                            "user_id": 2,
+                            "pilot": "Never Flew",
+                            "corp": "Test Corp",
+                            "status": "trial",
+                            "days_quiet": "never",
                             "active_months": 0,
-                        }
+                        },
                     ],
                     "seasonal": [],
                 },
@@ -579,6 +589,34 @@ class AllianceHealthEndpointTestCase(TestCase):
         self.assertEqual(len(body["pilots"]), 1)
         self.assertEqual(body["pilots"][0]["pilot"], "Quiet Pilot")
 
+    def test_attention_dark_drops_never_active_snapshot_rows(self):
+        body = attention_from_payload(
+            {
+                "attention": {
+                    "dark": [
+                        {
+                            "user_id": 1,
+                            "pilot": "Gone",
+                            "corp": "Test",
+                            "status": "active",
+                            "days_quiet": 200,
+                            "active_months": 4,
+                        },
+                        {
+                            "user_id": 2,
+                            "pilot": "Never",
+                            "corp": "Test",
+                            "status": "trial",
+                            "days_quiet": "never",
+                            "active_months": 0,
+                        },
+                    ]
+                }
+            },
+            "dark",
+        )
+        self.assertEqual([p.pilot for p in body.pilots], ["Gone"])
+
     def test_corporations_and_cohorts(self):
         corps = self.client.get(
             "/api/alliance/health/corporations",
@@ -599,9 +637,11 @@ class AllianceHealthEndpointTestCase(TestCase):
             **self._auth(self.staff_token),
         )
         self.assertEqual(response.status_code, 200)
-        hygiene = response.json()["hygiene"]
+        body = response.json()
+        hygiene = body["hygiene"]
         self.assertEqual(hygiene["trial"]["approve"], 1)
         self.assertEqual(hygiene["leave"]["recommended"], 1)
+        self.assertEqual(body["quiet"]["dark"], 1)
 
     def test_trials_approve_bucket(self):
         response = self.client.get(
@@ -1078,6 +1118,58 @@ class AllianceHealthEndpointTestCase(TestCase):
             UserCommunityStatus.STATUS_ACTIVE,
         )
 
+    def test_restore_drops_user_from_snapshot_lists(self):
+        token = self._people_user()[1]
+        on_leave = User.objects.create_user(username="leave_listed")
+        UserCommunityStatus.objects.create(
+            user=on_leave, status=UserCommunityStatus.STATUS_ON_LEAVE
+        )
+        snap = AllianceHealthSnapshot.objects.order_by("-computed_at").first()
+        payload = deepcopy(snap.payload)
+        row = {
+            "user_id": on_leave.id,
+            "username": "leave_listed",
+            "pilot": "Leave Listed",
+            "corp": "Test Corp",
+            "fleets": 4,
+            "kills": 2,
+            "voice_hours": 3.0,
+            "story": "Restore",
+            "conf": "medium",
+            "reason": "On leave with participation",
+        }
+        leave = payload["hygiene"]["leave"]
+        leave["returning"] = [row]
+        leave["restore"] = [row]
+        leave["current"] = [row]
+        leave["inactive"] = []
+        payload["status"]["on_leave"] = 4
+        payload["status"]["active"] = 10
+        snap.payload = payload
+        snap.save(update_fields=["payload"])
+
+        response = self.client.post(
+            "/api/alliance/health/status",
+            data={"user_id": on_leave.id, "action": "restore"},
+            content_type="application/json",
+            **self._auth(token),
+        )
+        self.assertEqual(response.status_code, 200)
+        snap.refresh_from_db()
+        leave = snap.payload["hygiene"]["leave"]
+        self.assertEqual(leave["returning"], [])
+        self.assertEqual(leave["restore"], [])
+        self.assertEqual(leave["current"], [])
+        self.assertEqual(leave["counts"]["returning"], 0)
+        self.assertEqual(snap.payload["status"]["on_leave"], 3)
+        self.assertEqual(snap.payload["status"]["active"], 11)
+        listed = self.client.get(
+            "/api/alliance/health/leave?bucket=returning",
+            **self._auth(self.staff_token),
+        )
+        self.assertEqual(listed.status_code, 200)
+        self.assertEqual(listed.json()["pilots"], [])
+
     def test_restore_rejects_non_leave(self):
         token = self._people_user()[1]
         active = User.objects.create_user(username="still_active")
@@ -1204,6 +1296,20 @@ class ClassifyQuietAttentionTestCase(TestCase):
         )
         self.assertEqual(fading, set())
         self.assertEqual(dark, set())
+        self.assertEqual(seasonal, set())
+
+    def test_zero_active_months_is_not_dark(self):
+        now = timezone.now()
+        fading, dark, seasonal = classify_quiet_attention(
+            eligible={1},
+            active_30d=set(),
+            active_90d=set(),
+            last_activity={1: now - timedelta(days=120)},
+            months_active={},
+            now=now,
+        )
+        self.assertEqual(dark, set())
+        self.assertEqual(fading, set())
         self.assertEqual(seasonal, set())
 
     def test_prior_activity_is_dark(self):

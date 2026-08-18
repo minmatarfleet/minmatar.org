@@ -65,6 +65,22 @@ def _month_key(dt: datetime | date) -> str:
     return f"{dt.year:04d}-{dt.month:02d}"
 
 
+GONE_FOR_MONTHS_DAYS = 90
+
+
+def is_gone_for_months_pilot(
+    days_quiet: int | str | None, active_months: int | None
+) -> bool:
+    """True when a stored attention row belongs in Gone for months."""
+    if days_quiet == "never" or days_quiet is None:
+        return False
+    try:
+        quiet_days = int(days_quiet)
+    except (TypeError, ValueError):
+        return False
+    return quiet_days >= GONE_FOR_MONTHS_DAYS and int(active_months or 0) >= 1
+
+
 def classify_quiet_attention(
     eligible: set[int],
     active_30d: set[int],
@@ -75,17 +91,18 @@ def classify_quiet_attention(
 ) -> tuple[set[int], set[int], set[int]]:
     """Split quiet members into fading, dark, and seasonal.
 
-    Dark is "gone for months": quiet for 90d and last seen before that.
-    Never-active newcomers stay out — they have not been in the group
-    long enough to be gone for months.
+    Dark is "gone for months": quiet for 90d, and they had at least one
+    active month in the last year. Never-active people stay out.
     """
     quiet_30 = eligible - active_30d
     fading = {uid for uid in quiet_30 if uid in active_90d}
-    gone_before = now - timedelta(days=90)
+    gone_before = now - timedelta(days=GONE_FOR_MONTHS_DAYS)
     dark = {
         uid
         for uid in quiet_30 - active_90d
-        if (last := last_activity.get(uid)) is not None and last < gone_before
+        if (last := last_activity.get(uid)) is not None
+        and last < gone_before
+        and len(months_active.get(uid, ())) >= 1
     }
     seasonal = {
         uid for uid in quiet_30 if len(months_active.get(uid, ())) >= 3
