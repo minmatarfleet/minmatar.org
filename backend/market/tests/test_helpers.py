@@ -90,6 +90,21 @@ class CreateOrUpdateContractFromDbContractStatusTestCase(TestCase):
         self.assertEqual("expired", contract.status)
         self.assertFalse(contract.is_public)
 
+    def test_unknown_title_is_still_stored(self):
+        db_contract = self._db_contract(
+            contract_id=230437069, status="outstanding"
+        )
+        db_contract.title = "[FL33T] Torpedo"
+        self.assertTrue(
+            create_or_update_contract_from_db_contract(
+                db_contract, self.location
+            )
+        )
+        contract = EveMarketContract.objects.get(id=230437069)
+        self.assertEqual("[FL33T] Torpedo", contract.title)
+        self.assertEqual("outstanding", contract.status)
+        self.assertIsNone(contract.fitting_id)
+
     def test_resync_keeps_deleted_contract_expired(self):
         EveMarketContract.objects.create(
             id=230437068,

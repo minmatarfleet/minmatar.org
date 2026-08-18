@@ -149,6 +149,23 @@ def score_contract_against_fitting(
     return score, missing, extra
 
 
+def fittings_for_contract_items(
+    contract_items: dict[int, int],
+    preferred_fitting: EveFitting | None = None,
+) -> list[EveFitting]:
+    """Active fittings whose hull is in the contract, plus a title hint if any."""
+    hull_ids = [type_id for type_id in contract_items.keys() if type_id]
+    fittings_by_id: dict[int, EveFitting] = {}
+    if hull_ids:
+        for fitting in EveFitting.objects.filter(
+            deleted__isnull=True, ship_id__in=hull_ids
+        ):
+            fittings_by_id[fitting.id] = fitting
+    if preferred_fitting is not None:
+        fittings_by_id[preferred_fitting.id] = preferred_fitting
+    return list(fittings_by_id.values())
+
+
 def match_contract_to_fitting(
     contract_items: dict[int, int],
     candidates,
