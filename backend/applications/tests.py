@@ -13,9 +13,13 @@ from applications.l3arn import (
     validate_l3arn_application_description,
 )
 from applications.models import EveCorporationApplication
+from applications.prime_time import (
+    apply_application_prime_time,
+    parse_application_prime_time,
+)
 from discord.models import DiscordUser
-from eveonline.models import EveCharacter, EveCorporation
-from eveonline.helpers.characters import set_primary_character
+from eveonline.models import EveCharacter, EveCorporation, EvePlayer
+from eveonline.helpers.characters import set_primary_character, user_player
 
 BASE_URL = "/api/applications/"
 
@@ -436,3 +440,114 @@ class EveCorporationApplicationSignalTest(TestCase):
             self.assertIn("Source Corporation", message)
             self.assertIn("Target Corporation", message)
             self.assertIn("Recruiter", message)
+
+
+class ApplicationPrimeTimeTest(TestCase):
+    """Parse application timezone lines onto EvePlayer.prime_time."""
+
+    def setUp(self):
+        signals.post_save.disconnect(
+            sender=EveCharacter,
+            dispatch_uid="populate_eve_character_public_data",
+        )
+        signals.post_save.disconnect(
+            sender=EveCorporationApplication,
+            dispatch_uid="eve_corporation_application_post_save",
+        )
+        signals.post_save.disconnect(
+            sender=EveCorporation,
+            dispatch_uid="eve_corporation_post_save",
+        )
+        self.client = Client()
+        super().setUp()
+
+    def test_parse_application_prime_time_from_ustz_label(self):
+        description = (
+            "Questionnaire:\n"
+            "- Timezone: America/New_York (EDT) — US region, evenings → USTZ\n"
+            "- Roles interested in: Fleet damage"
+        )
+        self.assertEqual(parse_application_prime_time(description), "US")
+
+    def test_parse_application_prime_time_compound_labels(self):
+        cases = (
+            ("USTZ - AUTZ", "US_AP"),
+            ("AUTZ - EUTZ", "AP_EU"),
+            ("EUTZ - USTZ", "EU_US"),
+            ("AUTZ", "AP"),
+            ("EUTZ", "EU"),
+        )
+        for label, code in cases:
+            description = f"Questionnaire:\n- Timezone: Asia/Tokyo — AP region, evenings → {label}\n"
+            self.assertEqual(
+                parse_application_prime_time(description),
+                code,
+                msg=label,
+            )
+
+    def test_parse_application_prime_time_missing_line(self):
+        self.assertIsNone(
+            parse_application_prime_time("Please accept my application.")
+        )
+
+    def test_apply_application_prime_time_sets_player(self):
+        EvePlayer.objects.create(user=self.user, nickname="Player One")
+        apply_application_prime_time(
+            self.user,
+            "Questionnaire:\n- Timezone: Europe/London — EU region, evenings → EUTZ\n",
+        )
+        self.assertEqual(user_player(self.user).prime_time, "EU")
+
+    def test_apply_application_prime_time_skips_missing_player(self):
+        apply_application_prime_time(
+            self.user,
+            "Questionnaire:\n- Timezone: Europe/London — EU region, evenings → EUTZ\n",
+        )
+        self.assertIsNone(user_player(self.user))
+
+    def test_create_corporation_application_sets_prime_time(self):
+        EvePlayer.objects.create(user=self.user, nickname="Player One")
+        corporation = EveCorporation.objects.create(
+            corporation_id=123,
+            name="Test Corporation",
+        )
+        description = (
+            "I want to join.\n\n"
+            "Questionnaire:\n"
+            "- Timezone: America/New_York (EDT) — US region, evenings → USTZ\n"
+            "- Roles interested in: Fleet damage\n"
+        )
+
+        response = self.client.post(
+            f"{BASE_URL}corporations/{corporation.corporation_id}/applications",
+            data={"description": description},
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(user_player(self.user).prime_time, "US")
+
+    def test_create_corporation_application_without_timezone_leaves_prime_time(
+        self,
+    ):
+        player = EvePlayer.objects.create(
+            user=self.user,
+            nickname="Player One",
+            prime_time="AP",
+        )
+        corporation = EveCorporation.objects.create(
+            corporation_id=123,
+            name="Test Corporation",
+        )
+
+        response = self.client.post(
+            f"{BASE_URL}corporations/{corporation.corporation_id}/applications",
+            data={"description": "Please accept me."},
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        player.refresh_from_db()
+        self.assertEqual(player.prime_time, "AP")
