@@ -36,6 +36,7 @@ if (row.timezone) sorts.tz = row.timezone.toLowerCase()
 
 <div
     class:list={['[ alliance-health-pilot-card ]', Astro.props.class]}
+    id={row.row_id}
     data-health-card
     data-search={row.search_text}
     data-corp={row.corp}
@@ -145,6 +146,7 @@ if (row.timezone) sorts.tz = row.timezone.toLowerCase()
                     data-confirm-content={row.action.confirm_content}
                     data-post-url={row.action.post_url}
                     data-target={row.action.target}
+                    data-swap={row.action.swap ?? 'delete'}
                     x-on:click.prevent="confirm_row_action($el)"
                 >
                     {row.action.label}

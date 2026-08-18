@@ -281,7 +281,7 @@ class HealthUnknownsResponse(BaseModel):
 
 class HealthStatusChangeRequest(BaseModel):
     user_id: int
-    action: Literal["promote", "leave"]
+    action: Literal["promote", "leave", "restore"]
     reason: str = ""
 
 

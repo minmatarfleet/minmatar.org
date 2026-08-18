@@ -20,7 +20,11 @@ from alliance.endpoints.health.schemas import (
     overview_from_payload,
     trials_from_payload,
 )
-from alliance.helpers.health import compute_alliance_health, save_snapshot
+from alliance.helpers.health import (
+    classify_quiet_attention,
+    compute_alliance_health,
+    save_snapshot,
+)
 from alliance.models import AllianceHealthSnapshot
 from eveonline.models import (
     EveAlliance,
@@ -157,15 +161,65 @@ class AllianceHealthComputeTestCase(TestCase):
             self.assertIn("small_gang", payload["monthly"][0])
             self.assertNotIn("supply", payload["monthly"][0])
 
-    def test_quiet_dark_when_no_activity(self):
+    def _add_fleet_member(
+        self, character_id, character_name, instance_id, days_ago
+    ):
+        audience = EveFleetAudience.objects.get(name="Alliance Health Test")
+        fleet = EveFleet.objects.create(
+            description="test",
+            type="strategic",
+            start_time=self.now - timedelta(days=days_ago),
+            audience=audience,
+        )
+        instance = EveFleetInstance.objects.create(
+            id=instance_id,
+            eve_fleet=fleet,
+        )
+        member = EveFleetInstanceMember.objects.create(
+            eve_fleet_instance=instance,
+            character_id=character_id,
+            character_name=character_name,
+            role="squad_member",
+            role_name="Squad Member",
+            ship_type_id=1,
+            ship_name="Ship",
+            solar_system_id=1,
+            solar_system_name="System",
+            squad_id=1,
+            wing_id=1,
+        )
+        EveFleetInstanceMember.objects.filter(pk=member.pk).update(
+            join_time=self.now - timedelta(days=days_ago)
+        )
+
+    def test_quiet_dark_requires_prior_activity(self):
+        gone = User.objects.create_user(username="pilot_gone")
+        gone_char = EveCharacter.objects.create(
+            character_id=900004,
+            character_name="Pilot Gone",
+            corporation_id=1000001,
+            user=gone,
+        )
+        EvePlayer.objects.create(
+            nickname="pilot_gone",
+            user=gone,
+            primary_character=gone_char,
+        )
+        UserCommunityStatus.objects.create(
+            user=gone, status=UserCommunityStatus.STATUS_ACTIVE
+        )
+        self._add_fleet_member(900004, "Pilot Gone", 91002, days_ago=120)
+
         payload = compute_alliance_health(now=self.now)
         dark = payload["attention"]["dark"]
         dark_ids = {p["user_id"] for p in dark}
-        self.assertIn(self.user2.id, dark_ids)
+        self.assertIn(gone.id, dark_ids)
+        self.assertNotIn(self.user2.id, dark_ids)
         self.assertNotIn(self.user.id, dark_ids)
-        quiet = next(p for p in dark if p["user_id"] == self.user2.id)
-        self.assertEqual(quiet["character_id"], 900002)
+        quiet = next(p for p in dark if p["user_id"] == gone.id)
+        self.assertEqual(quiet["character_id"], 900004)
         self.assertEqual(quiet["corporation_id"], 1000001)
+        self.assertGreaterEqual(quiet["active_months"], 1)
 
     def test_save_snapshot(self):
         snap = save_snapshot(compute_alliance_health(now=self.now))
@@ -1005,6 +1059,99 @@ class AllianceHealthEndpointTestCase(TestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+    def test_status_restore_as_people(self):
+        token = self._people_user()[1]
+        on_leave = User.objects.create_user(username="leave_ready")
+        UserCommunityStatus.objects.create(
+            user=on_leave, status=UserCommunityStatus.STATUS_ON_LEAVE
+        )
+        response = self.client.post(
+            "/api/alliance/health/status",
+            data={"user_id": on_leave.id, "action": "restore"},
+            content_type="application/json",
+            **self._auth(token),
+        )
+        self.assertEqual(response.status_code, 200)
+        on_leave.community_status.refresh_from_db()
+        self.assertEqual(
+            on_leave.community_status.status,
+            UserCommunityStatus.STATUS_ACTIVE,
+        )
+
+    def test_restore_rejects_non_leave(self):
+        token = self._people_user()[1]
+        active = User.objects.create_user(username="still_active")
+        UserCommunityStatus.objects.create(
+            user=active, status=UserCommunityStatus.STATUS_ACTIVE
+        )
+        response = self.client.post(
+            "/api/alliance/health/status",
+            data={"user_id": active.id, "action": "restore"},
+            content_type="application/json",
+            **self._auth(token),
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_director_can_restore_from_leave(self):
+        Group.objects.get_or_create(name="On Leave")
+        alliance = EveAlliance.objects.create(
+            alliance_id=99011978,
+            name="Minmatar Fleet Alliance",
+            ticker="MFA",
+        )
+        corp = EveCorporation.objects.create(
+            corporation_id=1000201,
+            name="Restore Corp",
+            ticker="RSTR",
+            alliance=alliance,
+        )
+        director = User.objects.create_user(username="restore_dir")
+        director_char = EveCharacter.objects.create(
+            character_id=910201,
+            character_name="Restore Director",
+            corporation_id=1000201,
+            user=director,
+        )
+        EvePlayer.objects.create(
+            nickname="restore_dir",
+            user=director,
+            primary_character=director_char,
+        )
+        corp.directors.add(director_char)
+
+        member = User.objects.create_user(username="restore_member")
+        member_char = EveCharacter.objects.create(
+            character_id=910202,
+            character_name="Restore Member",
+            corporation_id=1000201,
+            user=member,
+        )
+        EvePlayer.objects.create(
+            nickname="restore_member",
+            user=member,
+            primary_character=member_char,
+        )
+        UserCommunityStatus.objects.create(
+            user=member, status=UserCommunityStatus.STATUS_ON_LEAVE
+        )
+        token = jwt.encode(
+            {"user_id": director.id},
+            settings.SECRET_KEY,
+            algorithm="HS256",
+        )
+        response = self.client.post(
+            "/api/alliance/health/status",
+            data={"user_id": member.id, "action": "restore"},
+            content_type="application/json",
+            **self._auth(token),
+        )
+        self.assertEqual(response.status_code, 200)
+        member.community_status.refresh_from_db()
+        self.assertEqual(
+            member.community_status.status,
+            UserCommunityStatus.STATUS_ACTIVE,
+        )
+
 
 class AllianceHealthTimezoneTestCase(TestCase):
     def test_trials_attach_prime_time_label(self):
@@ -1042,3 +1189,62 @@ class AllianceHealthTimezoneTestCase(TestCase):
         }
         body = trials_from_payload(payload, "current")
         self.assertEqual(body.pilots[0].timezone, "EU / US")
+
+
+class ClassifyQuietAttentionTestCase(TestCase):
+    def test_never_active_is_not_dark(self):
+        now = timezone.now()
+        fading, dark, seasonal = classify_quiet_attention(
+            eligible={1, 2},
+            active_30d=set(),
+            active_90d=set(),
+            last_activity={},
+            months_active={},
+            now=now,
+        )
+        self.assertEqual(fading, set())
+        self.assertEqual(dark, set())
+        self.assertEqual(seasonal, set())
+
+    def test_prior_activity_is_dark(self):
+        now = timezone.now()
+        last = now - timedelta(days=120)
+        fading, dark, seasonal = classify_quiet_attention(
+            eligible={1},
+            active_30d=set(),
+            active_90d=set(),
+            last_activity={1: last},
+            months_active={1: {"2026-04"}},
+            now=now,
+        )
+        self.assertEqual(dark, {1})
+        self.assertEqual(fading, set())
+        self.assertEqual(seasonal, set())
+
+    def test_recent_90d_activity_is_fading(self):
+        now = timezone.now()
+        fading, dark, seasonal = classify_quiet_attention(
+            eligible={1},
+            active_30d=set(),
+            active_90d={1},
+            last_activity={1: now - timedelta(days=45)},
+            months_active={1: {"2026-07"}},
+            now=now,
+        )
+        self.assertEqual(fading, {1})
+        self.assertEqual(dark, set())
+        self.assertEqual(seasonal, set())
+
+    def test_three_active_months_is_seasonal(self):
+        now = timezone.now()
+        fading, dark, seasonal = classify_quiet_attention(
+            eligible={1},
+            active_30d=set(),
+            active_90d=set(),
+            last_activity={1: now - timedelta(days=120)},
+            months_active={1: {"2026-01", "2026-03", "2026-06"}},
+            now=now,
+        )
+        self.assertEqual(seasonal, {1})
+        self.assertEqual(dark, {1})
+        self.assertEqual(fading, set())

@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
-import { HTTP_403_Forbidden } from '@helpers/http_responses'
+import { HTTP_200_Success, HTTP_400_Bad_Request, HTTP_403_Forbidden } from '@helpers/http_responses'
 
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
@@ -53,22 +53,20 @@ const officer_corp_ids = (Astro.url.searchParams.get('officer_corps') ?? '')
 
 let pilots: AllianceHealthTrialPilot[] = []
 let data_fetching_error: any
-let applied_user_id: number | null = null
 
 if (Astro.request.method === 'POST' && action === 'promote' && user_id) {
     try {
         await post_alliance_health_status(auth_token as string, user_id, 'promote')
-        applied_user_id = user_id
+        return HTTP_200_Success()
     } catch (error) {
-        data_fetching_error = error
+        if (error?.cause === 403) return HTTP_403_Forbidden()
+        return HTTP_400_Bad_Request()
     }
 }
 
 try {
     const trials = await get_alliance_health_trials(auth_token as string, bucket)
-    pilots = applied_user_id
-        ? trials.pilots.filter((pilot) => pilot.user_id !== applied_user_id)
-        : trials.pilots
+    pilots = trials.pilots
 } catch (error) {
     data_fetching_error = error
 }

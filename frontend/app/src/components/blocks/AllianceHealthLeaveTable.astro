@@ -1,25 +1,55 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t } = i18n(Astro.url)
+const { t, translatePath } = i18n(Astro.url)
 
 import type { AllianceHealthLeavePilot } from '@dtypes/api.minmatar.org'
 import type {
     AllianceHealthOrderOption,
     AllianceHealthPilotListRow,
 } from '@helpers/alliance_health_pilot_list'
-import { health_confidence_label } from '@helpers/alliance_health_pilot_list'
+import { health_confidence_label, health_pilot_card_id } from '@helpers/alliance_health_pilot_list'
 
+import { alliance_health_table_params } from '@helpers/api.minmatar.org/alliance_health'
+import { query_string } from '@helpers/string'
 import AllianceHealthPilotList from '@components/blocks/AllianceHealthPilotList.astro'
 
 interface Props {
     pilots: AllianceHealthLeavePilot[]
+    can_restore?: boolean
+    officer_corp_ids?: number[]
+    alliance_wide?: boolean
     initial_corp?: string
     bucket?: string
+    partial_url?: string
     [propName: string]: any
 }
 
-const { pilots, initial_corp = 'all', bucket = 'current', ...attributes } = Astro.props
+const {
+    pilots,
+    can_restore = false,
+    officer_corp_ids = [],
+    alliance_wide = false,
+    initial_corp = 'all',
+    bucket = 'current',
+    partial_url = translatePath('/partials/alliance_health_leave_component'),
+    ...attributes
+} = Astro.props
 delete attributes.class
+
+const extra_query = alliance_health_table_params({
+    bucket,
+    corp: initial_corp,
+    can_mutate: can_restore,
+    alliance_wide,
+    officer_corp_ids,
+})
+
+const can_act = (pilot: AllianceHealthLeavePilot) =>
+    can_restore &&
+    (bucket === 'returning' || bucket === 'remove') &&
+    (alliance_wide ||
+        (pilot.corporation_id != null &&
+            officer_corp_ids.includes(pilot.corporation_id)))
 
 const order_by_options: AllianceHealthOrderOption[] = [
     { id: 'fleets', label: t('alliance.health.col.fleets'), kind: 'number' },
@@ -31,6 +61,7 @@ const order_by_options: AllianceHealthOrderOption[] = [
 const rows: AllianceHealthPilotListRow[] = pilots.map((pilot) => {
     const conf_label = health_confidence_label(pilot.conf, t)
     return {
+    row_id: health_pilot_card_id('leave', pilot.user_id),
     name: pilot.pilot,
     corp: pilot.corp,
     character_id: pilot.character_id,
@@ -61,6 +92,19 @@ const rows: AllianceHealthPilotListRow[] = pilots.map((pilot) => {
             sort: pilot.voice_hours,
         },
     ],
+    action: can_act(pilot)
+        ? {
+              label: t('alliance.health.take_off_leave'),
+              confirm_title: t('alliance.health.restore_confirm_title'),
+              confirm_content: `${t('alliance.health.restore_confirm')} ${pilot.pilot}`,
+              post_url: `${partial_url}?${query_string({
+                  user_id: String(pilot.user_id),
+                  action: 'restore',
+              })}&${extra_query}`,
+              target: `#${health_pilot_card_id('leave', pilot.user_id)}`,
+              swap: 'delete',
+          }
+        : undefined,
     }
 })
 ---

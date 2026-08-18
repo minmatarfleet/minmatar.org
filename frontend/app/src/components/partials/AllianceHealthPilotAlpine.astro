@@ -108,6 +108,10 @@
             init() {
                 this.apply_url()
                 this.$nextTick(() => this.refresh())
+                if (this.$refs.body && typeof MutationObserver !== 'undefined') {
+                    this._row_observer = new MutationObserver(() => this.refresh())
+                    this._row_observer.observe(this.$refs.body, { childList: true })
+                }
                 this.$watch('search', () => { this.page = 1; this.refresh(); this.sync_url() })
                 this.$watch('corp', () => { this.page = 1; this.refresh(); this.sync_url() })
                 this.$watch('page', () => { this.refresh(); this.sync_url() })
@@ -235,14 +239,16 @@
                 URL.revokeObjectURL(url)
             },
             confirm_row_action(el) {
-                show_confirm_dialog({
+                const root_data = Alpine.$data(document.body)
+                if (!root_data || !root_data.show_confirm_dialog) return
+                root_data.show_confirm_dialog({
                     title: el.dataset.confirmTitle,
                     content: el.dataset.confirmContent,
                     hx: {
                         method: 'post',
                         url: el.dataset.postUrl,
                         target: el.dataset.target,
-                        swap: 'innerHTML transition:true',
+                        swap: el.dataset.swap || 'delete',
                     }
                 })
             },

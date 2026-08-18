@@ -7,7 +7,7 @@ import type {
     AllianceHealthOrderOption,
     AllianceHealthPilotListRow,
 } from '@helpers/alliance_health_pilot_list'
-import { health_confidence_label } from '@helpers/alliance_health_pilot_list'
+import { health_confidence_label, health_pilot_card_id } from '@helpers/alliance_health_pilot_list'
 
 import { alliance_health_table_params } from '@helpers/api.minmatar.org/alliance_health'
 import { query_string } from '@helpers/string'
@@ -74,6 +74,7 @@ const order_by_options: AllianceHealthOrderOption[] = [
 const rows: AllianceHealthPilotListRow[] = pilots.map((pilot) => {
     const conf_label = health_confidence_label(pilot.conf, t)
     return {
+    row_id: health_pilot_card_id('trials', pilot.user_id),
     name: pilot.pilot,
     corp: pilot.corp,
     character_id: pilot.character_id,
@@ -136,7 +137,8 @@ const rows: AllianceHealthPilotListRow[] = pilots.map((pilot) => {
                   user_id: String(pilot.user_id),
                   action: 'promote',
               })}&${extra_query}`,
-              target: '#alliance-health-trials-table',
+              target: `#${health_pilot_card_id('trials', pilot.user_id)}`,
+              swap: 'delete',
           }
         : undefined,
     }

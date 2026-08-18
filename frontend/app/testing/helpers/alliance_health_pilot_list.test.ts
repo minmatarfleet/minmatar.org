@@ -6,6 +6,7 @@ import {
     default_health_order_dir,
     format_metric_typical,
     health_confidence_label,
+    health_pilot_card_id,
     next_health_order_state,
     tone_vs_median,
 } from '@helpers/alliance_health_pilot_list'
@@ -100,6 +101,11 @@ describe('alliance_health_pilot_list', () => {
         expect(health_confidence_label('low', t)).toBe('low confidence')
         expect(health_confidence_label('—', t)).toBeNull()
         expect(health_confidence_label(undefined, t)).toBeNull()
+    })
+
+    it('builds unique card ids per section', () => {
+        expect(health_pilot_card_id('attention', 42)).toBe('alliance-health-attention-42')
+        expect(health_pilot_card_id('trials', 42)).toBe('alliance-health-trials-42')
     })
 
     it('escapes CSV fields and builds a matrix', () => {
