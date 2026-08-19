@@ -830,3 +830,88 @@ class EveFleetAudience(models.Model):
 
     def __str__(self):
         return str(self.name)
+
+
+class NpsiEventSource(models.Model):
+    """External NPSI calendar feed (e.g. Unaligned iCal JSON)."""
+
+    name = models.CharField(max_length=100, unique=True)
+    feed_url = models.URLField(max_length=500)
+    fc_character_name = models.CharField(
+        max_length=255,
+        help_text="Fallback FC if the feed item has no character_name.",
+    )
+    default_audience = models.ForeignKey(
+        EveFleetAudience,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text="Required before events can be posted to the schedule.",
+    )
+    default_type = models.CharField(
+        max_length=32,
+        choices=EveFleet.fleet_types,
+        default="non_strategic",
+    )
+    default_location = models.ForeignKey(
+        EveLocation,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    enabled = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "NPSI event source"
+
+    def __str__(self):
+        return self.name
+
+
+class NpsiExternalEvent(models.Model):
+    """One calendar occurrence from an NPSI feed."""
+
+    class Status(models.TextChoices):
+        SEEN = "seen", "Seen"
+        NOTIFIED = "notified", "Notified"
+        CREATED = "created", "Posted"
+        SKIPPED = "skipped", "Skipped"
+
+    source = models.ForeignKey(
+        NpsiEventSource,
+        on_delete=models.CASCADE,
+        related_name="events",
+    )
+    fingerprint = models.CharField(max_length=64, unique=True, db_index=True)
+    summary = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    location_text = models.CharField(max_length=255, blank=True)
+    character_name = models.CharField(max_length=255, blank=True)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField(null=True, blank=True)
+    all_day = models.BooleanField(default=False)
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.SEEN,
+    )
+    skip_reason = models.CharField(max_length=255, blank=True)
+    eve_fleet = models.ForeignKey(
+        EveFleet,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    discord_channel_id = models.BigIntegerField(null=True, blank=True)
+    discord_message_id = models.BigIntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "NPSI external event"
+        ordering = ["start_time"]
+
+    def __str__(self):
+        return f"{self.summary} @ {self.start_time}"

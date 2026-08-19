@@ -3,6 +3,8 @@ import logging
 from django.utils import timezone
 from django.conf import settings
 
+from celery_once import QueueOnce
+
 from app.celery import app
 from discord.client import DiscordClient
 from fleets.helpers.active_clones import (
@@ -10,6 +12,7 @@ from fleets.helpers.active_clones import (
     members_to_poll,
     poll_fleet_member_implants as poll_member_implants_impl,
 )
+from fleets.helpers.npsi_ingest import poll_npsi_sources
 from fleets.models import EveFleet, EveFleetInstance
 
 discord_client = DiscordClient()
@@ -144,3 +147,15 @@ def poll_active_fleet_implants():
 def poll_fleet_member_implants(member_id: int):
     """Poll implants for one fleet member."""
     return poll_member_implants_impl(member_id)
+
+
+@app.task(
+    base=QueueOnce,
+    once={"graceful": True, "timeout": 120},
+    queue="celery",
+)
+def poll_npsi_events():
+    """Fetch NPSI calendar feeds and DM FCs to confirm schedule posts."""
+    stats = poll_npsi_sources()
+    logger.info("NPSI poll %s", stats)
+    return stats

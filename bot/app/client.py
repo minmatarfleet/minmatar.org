@@ -12,6 +12,7 @@ from .tickets.sync import deploy_or_update_panel
 from .tickets.views import register_close_ticket_buttons
 from .notifications.views import register_notification_buttons
 from .lp_buyback.views import register_lp_buyback_buttons
+from .npsi.views import register_npsi_buttons
 from .voicetracking_api import (
     ACTIVITY_RECORDS_URL,
     GUILDS_SYNC_URL,
@@ -49,6 +50,7 @@ class MyClient(discord.Client):
         register_close_ticket_buttons(self)
         register_notification_buttons(self)
         register_lp_buyback_buttons(self)
+        register_npsi_buttons(self)
         for guild in GUILDS:
             print(f"Syncing commands for {guild.id}")
             await self.tree.sync(guild=guild)

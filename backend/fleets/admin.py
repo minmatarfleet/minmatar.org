@@ -9,6 +9,8 @@ from .models import (
     EveFleetInstanceMember,
     EveFleetInstanceMemberImplantSnapshot,
     EveFleetInstanceMemberShipSnapshot,
+    NpsiEventSource,
+    NpsiExternalEvent,
 )
 
 _HIDDEN_FLEETS_INDEX_MODELS = {
@@ -194,6 +196,41 @@ class FleetAdmin(admin.ModelAdmin):
 
 
 admin.site.register(EveFleetAudience)
+
+
+@admin.register(NpsiEventSource)
+class NpsiEventSourceAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "fc_character_name",
+        "default_audience",
+        "enabled",
+        "updated_at",
+    )
+    list_filter = ("enabled",)
+    search_fields = ("name", "fc_character_name", "feed_url")
+
+
+@admin.register(NpsiExternalEvent)
+class NpsiExternalEventAdmin(admin.ModelAdmin):
+    list_display = (
+        "summary",
+        "source",
+        "start_time",
+        "character_name",
+        "status",
+        "eve_fleet",
+    )
+    list_filter = ("status", "source")
+    search_fields = ("summary", "character_name", "fingerprint")
+    readonly_fields = (
+        "fingerprint",
+        "created_at",
+        "updated_at",
+        "discord_channel_id",
+        "discord_message_id",
+    )
+    date_hierarchy = "start_time"
 
 
 @admin.register(EveFleetInstanceMember)

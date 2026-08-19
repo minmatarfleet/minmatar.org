@@ -282,6 +282,13 @@ CELERYBEAT_OTHER = [
         },
     ),
     (
+        "[Misc] Poll NPSI calendar feeds",
+        {
+            "task": "fleets.tasks.poll_npsi_events",
+            "schedule": schedule(timedelta(minutes=15)),
+        },
+    ),
+    (
         "[Misc] ESI Cleanup Callback Redirect",
         {
             "task": "esi.tasks.cleanup_callbackredirect",
