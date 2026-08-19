@@ -10,6 +10,7 @@ from alliance.helpers.hygiene import (
     classify_trial,
     gang_bucket,
     slice_30d,
+    trial_under_min_tenure,
 )
 
 
@@ -133,6 +134,9 @@ class ClassifyTrialTestCase(TestCase):
 
     def test_min_approve_days_constant(self):
         self.assertEqual(MIN_APPROVE_DAYS, 60)
+        self.assertTrue(trial_under_min_tenure(None))
+        self.assertTrue(trial_under_min_tenure(59))
+        self.assertFalse(trial_under_min_tenure(60))
 
 
 class ClassifyLeaveTestCase(TestCase):

@@ -47,6 +47,7 @@ const officer_corp_ids = (Astro.url.searchParams.get('officer_corps') ?? '')
     .filter((value) => !Number.isNaN(value) && value > 0)
 
 let pilots: AllianceHealthLeavePilot[] = []
+let corp_options: string[] = []
 let data_fetching_error: any
 
 if (Astro.request.method === 'POST' && action === 'restore' && user_id) {
@@ -62,6 +63,9 @@ if (Astro.request.method === 'POST' && action === 'restore' && user_id) {
 try {
     const leave = await get_alliance_health_leave(auth_token as string, bucket)
     pilots = leave.pilots
+    corp_options = Object.keys(leave.counts_by_corp ?? {}).filter(
+        (name) => name && name !== 'all' && name !== '—',
+    )
 } catch (error) {
     data_fetching_error = error
 }
@@ -85,6 +89,7 @@ const PARTIAL_URL = translatePath('/partials/alliance_health_leave_component')
             officer_corp_ids={officer_corp_ids}
             alliance_wide={alliance_wide}
             initial_corp={initial_corp}
+            corp_options={corp_options}
             bucket={bucket}
             partial_url={PARTIAL_URL}
         />

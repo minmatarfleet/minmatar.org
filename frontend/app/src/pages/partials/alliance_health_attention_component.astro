@@ -41,6 +41,7 @@ const ceo_corp_ids = (Astro.url.searchParams.get('ceo_corps') ?? '')
     .filter((value) => !Number.isNaN(value) && value > 0)
 
 let pilots: AllianceHealthAttentionPilot[] = []
+let corp_options: string[] = []
 let data_fetching_error: any
 
 if (Astro.request.method === 'POST' && action === 'leave' && user_id) {
@@ -59,6 +60,9 @@ try {
         bucket,
     )
     pilots = attention.pilots
+    corp_options = Object.keys(attention.counts_by_corp ?? {}).filter(
+        (name) => name && name !== 'all' && name !== '—',
+    )
 } catch (error) {
     data_fetching_error = error
 }
@@ -79,6 +83,7 @@ const PARTIAL_URL = translatePath('/partials/alliance_health_attention_component
         <AllianceHealthPilotsTable
             pilots={pilots}
             initial_corp={initial_corp}
+            corp_options={corp_options}
             can_leave_any={can_leave_any}
             ceo_corp_ids={ceo_corp_ids}
             bucket={bucket}

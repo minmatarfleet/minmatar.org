@@ -16,6 +16,7 @@ interface Props {
     bucket: AllianceHealthOnboardingBucket
     partial_url: string
     initial_corp?: string
+    counts_by_corp?: Record<string, AllianceHealthOnboardingCounts>
     [propName: string]: any
 }
 
@@ -24,6 +25,7 @@ const {
     bucket,
     partial_url,
     initial_corp = 'all',
+    counts_by_corp = {},
     ...attributes
 } = Astro.props
 delete attributes.class
@@ -44,7 +46,7 @@ const tabs = [
     ...tab,
     href: `${partial_url}?${alliance_health_table_params({
         bucket: tab.id,
-        corp: initial_corp,
+        include_corp: false,
     })}`,
 }))
 ---
@@ -59,6 +61,9 @@ const tabs = [
     default_bucket={default_bucket}
     table_id="alliance-health-onboarding-table"
     tabs={tabs}
+    initial_corp={initial_corp}
+    counts={counts}
+    counts_by_corp={counts_by_corp}
 >
     <slot />
 </AllianceHealthBucketTabs>

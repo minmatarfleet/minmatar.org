@@ -118,9 +118,38 @@ export async function post_alliance_health_status(
     return await response.json()
 }
 
+export function alliance_health_counts_for_corp<T extends Record<string, number>>(
+    counts: T,
+    counts_by_corp: Record<string, T> | undefined,
+    corp: string,
+): T {
+    if (!corp || corp === 'all') {
+        return counts_by_corp?.all ?? counts
+    }
+    if (counts_by_corp?.[corp]) return counts_by_corp[corp]
+    const zero = { ...counts }
+    for (const key of Object.keys(zero) as (keyof T)[]) {
+        zero[key] = 0 as T[keyof T]
+    }
+    return zero
+}
+
+export function alliance_health_corp_options(
+    counts_by_corp: Record<string, unknown> | undefined,
+    extra: string[] = [],
+): string[] {
+    const names = new Set(
+        [...Object.keys(counts_by_corp ?? {}), ...extra].filter(
+            (name) => name && name !== 'all' && name !== '—',
+        ),
+    )
+    return [...names].sort((a, b) => a.localeCompare(b))
+}
+
 export function alliance_health_table_params(opts: {
     bucket: string
     corp?: string
+    include_corp?: boolean
     can_mutate?: boolean
     alliance_wide?: boolean
     officer_corp_ids?: number[]
@@ -129,7 +158,7 @@ export function alliance_health_table_params(opts: {
 }): string {
     return query_string({
         bucket: opts.bucket,
-        corp: opts.corp ?? 'all',
+        ...(opts.include_corp === false ? {} : { corp: opts.corp ?? 'all' }),
         can_mutate: opts.can_mutate ? '1' : '0',
         alliance_wide: opts.alliance_wide ? '1' : '0',
         officer_corps: (opts.officer_corp_ids ?? []).join(','),
@@ -187,7 +216,7 @@ export function can_promote_alliance_health_trial(opts: {
         case 'remove':
             return true
         case 'passing':
-            return opts.alliance_days == null || opts.alliance_days >= 60
+            return (opts.alliance_days ?? 0) >= 60
         case 'current':
         case 'failing':
         case 'evaluating':

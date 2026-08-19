@@ -19,6 +19,7 @@ interface Props {
     officer_corp_ids?: number[]
     alliance_wide?: boolean
     initial_corp?: string
+    corp_options?: string[]
     bucket?: string
     partial_url?: string
     [propName: string]: any
@@ -30,6 +31,7 @@ const {
     officer_corp_ids = [],
     alliance_wide = false,
     initial_corp = 'all',
+    corp_options = [],
     bucket = 'current',
     partial_url = translatePath('/partials/alliance_health_leave_component'),
     ...attributes
@@ -116,6 +118,7 @@ const rows: AllianceHealthPilotListRow[] = pilots.map((pilot) => {
         order_by_options={order_by_options}
         default_order_by="fleets"
         initial_corp={initial_corp}
+        corp_options={corp_options}
         csv_filename={`health-leave-${bucket}.csv`}
         url_section="leave"
     />

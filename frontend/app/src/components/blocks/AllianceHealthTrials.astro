@@ -16,6 +16,7 @@ interface Props {
     bucket: AllianceHealthTrialBucket
     partial_url: string
     initial_corp?: string
+    counts_by_corp?: Record<string, AllianceHealthTrialCounts>
     can_mutate?: boolean
     alliance_wide?: boolean
     officer_corp_ids?: number[]
@@ -27,6 +28,7 @@ const {
     bucket,
     partial_url,
     initial_corp = 'all',
+    counts_by_corp = {},
     can_mutate = false,
     alliance_wide = false,
     officer_corp_ids = [],
@@ -38,7 +40,7 @@ const default_bucket = ALLIANCE_HEALTH_DEFAULT_BUCKETS.trials
 const tab_query = (id: AllianceHealthTrialBucket) =>
     alliance_health_table_params({
         bucket: id,
-        corp: initial_corp,
+        include_corp: false,
         can_mutate,
         alliance_wide,
         officer_corp_ids,
@@ -46,9 +48,9 @@ const tab_query = (id: AllianceHealthTrialBucket) =>
 
 const tabs = [
     { id: 'current', count: counts.current, label: t('alliance.health.selector.current_trial') },
-    { id: 'passing', count: counts.passing ?? ((counts.approve ?? 0) + (counts.too_early ?? 0)), label: t('alliance.health.selector.passing_trial') },
+    { id: 'passing', count: counts.passing ?? counts.approve, label: t('alliance.health.selector.passing_trial') },
     { id: 'failing', count: counts.failing ?? counts.fail, label: t('alliance.health.selector.failing_trial') },
-    { id: 'evaluating', count: counts.evaluating ?? ((counts.nudge ?? 0) + (counts.hold ?? 0)), label: t('alliance.health.selector.evaluating_trial') },
+    { id: 'evaluating', count: counts.evaluating ?? ((counts.nudge ?? 0) + (counts.hold ?? 0) + (counts.too_early ?? 0)), label: t('alliance.health.selector.evaluating_trial') },
 ].map((tab) => ({
     ...tab,
     href: `${partial_url}?${tab_query(tab.id as AllianceHealthTrialBucket)}`,
@@ -65,6 +67,9 @@ const tabs = [
     default_bucket={default_bucket}
     table_id="alliance-health-trials-table"
     tabs={tabs}
+    initial_corp={initial_corp}
+    counts={counts}
+    counts_by_corp={counts_by_corp}
 >
     <slot />
 </AllianceHealthBucketTabs>

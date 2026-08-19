@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { can_promote_alliance_health_trial } from '@helpers/api.minmatar.org/alliance_health'
+import {
+    alliance_health_corp_options,
+    alliance_health_counts_for_corp,
+    can_promote_alliance_health_trial,
+} from '@helpers/api.minmatar.org/alliance_health'
 
 const base = {
     can_mutate: true,
@@ -31,7 +35,15 @@ describe('can_promote_alliance_health_trial', () => {
         ).toBe(false)
     })
 
-    it('shows promote on passing when tenure is unknown', () => {
+    it('hides promote on passing when tenure is under 60 days', () => {
+        expect(
+            can_promote_alliance_health_trial({
+                ...base,
+                bucket: 'passing',
+                decision: null,
+                alliance_days: 40,
+            }),
+        ).toBe(false)
         expect(
             can_promote_alliance_health_trial({
                 ...base,
@@ -39,7 +51,7 @@ describe('can_promote_alliance_health_trial', () => {
                 decision: null,
                 alliance_days: null,
             }),
-        ).toBe(true)
+        ).toBe(false)
     })
 
     it('hides promote for too-early pilots on passing', () => {
@@ -63,5 +75,37 @@ describe('can_promote_alliance_health_trial', () => {
                 alliance_days: 70,
             }),
         ).toBe(false)
+    })
+})
+
+describe('alliance_health_counts_for_corp', () => {
+    const all = { fading: 4, dark: 2, seasonal: 1 }
+    const by_corp = {
+        all,
+        FOSFO: { fading: 1, dark: 0, seasonal: 1 },
+    }
+
+    it('uses the selected corp tab totals', () => {
+        expect(alliance_health_counts_for_corp(all, by_corp, 'FOSFO')).toEqual({
+            fading: 1,
+            dark: 0,
+            seasonal: 1,
+        })
+    })
+
+    it('keeps alliance totals for all corporations', () => {
+        expect(alliance_health_counts_for_corp(all, by_corp, 'all')).toEqual(all)
+    })
+
+    it('zeros a corp that is not in the map', () => {
+        expect(alliance_health_counts_for_corp(all, by_corp, 'TDT')).toEqual({
+            fading: 0,
+            dark: 0,
+            seasonal: 0,
+        })
+    })
+
+    it('lists corps from the count map', () => {
+        expect(alliance_health_corp_options(by_corp, ['TDT'])).toEqual(['FOSFO', 'TDT'])
     })
 })
