@@ -47,6 +47,22 @@ def sanitize_npsi_description(raw: str | None) -> str:
     return cleaned[:_DESCRIPTION_MAX_LENGTH]
 
 
+def escape_npsi_description_for_web(text: str | None) -> str:
+    """Neutralize HTML for the web schedule sink.
+
+    ``sanitize_npsi_description`` unescapes entities so the Discord embed
+    (plain text) reads naturally. The fleet schedule renders the same text
+    through ``marked`` + ``set:html`` with no client-side sanitizer, so raw
+    ``<``/``>``/``&`` from an untrusted feed would inject live HTML. Escape
+    them here, at the boundary into the web-bound copy, so the schedule shows
+    the markup as text instead of executing it. Discord keeps the unescaped
+    form.
+    """
+    if not text:
+        return ""
+    return html.escape(text, quote=False)
+
+
 def _replace_anchor(match: re.Match[str]) -> str:
     href = html.unescape(match.group(1) or "").strip()
     inner = _TAG_RE.sub("", match.group(2) or "")

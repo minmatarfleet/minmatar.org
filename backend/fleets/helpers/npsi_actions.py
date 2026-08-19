@@ -11,6 +11,7 @@ from discord.models import DiscordUser
 from groups.helpers.feature_access import can_use_feature
 from fleets.endpoints.helpers import send_discord_pre_ping
 from fleets.endpoints.schemas import CreateEveFleetRequest
+from fleets.helpers.npsi_description import escape_npsi_description_for_web
 from fleets.helpers.npsi_discord import posted_dm_payload
 from fleets.helpers.npsi_ingest import resolve_fc_user
 from fleets.helpers.schedule_fleet import create_scheduled_fleet
@@ -80,7 +81,9 @@ def post_event_to_schedule(event: NpsiExternalEvent) -> NpsiExternalEvent:
     objective = (event.summary or "")[:200]
     payload = CreateEveFleetRequest(
         type=source.default_type,
-        description=event.description or event.summary,
+        description=escape_npsi_description_for_web(
+            event.description or event.summary
+        ),
         objective=objective,
         start_time=event.start_time,
         audience_id=source.default_audience_id,

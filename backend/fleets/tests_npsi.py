@@ -13,7 +13,10 @@ from app.test import TestCase
 from discord.models import DiscordUser
 from eveonline.models import EveCharacter, EveCorporation
 from eveonline.helpers.characters import set_primary_character
-from fleets.helpers.npsi_description import sanitize_npsi_description
+from fleets.helpers.npsi_description import (
+    escape_npsi_description_for_web,
+    sanitize_npsi_description,
+)
 from fleets.helpers.npsi_ingest import (
     event_fingerprint,
     poll_npsi_sources,
@@ -57,6 +60,19 @@ class NpsiDescriptionTestCase(TestCase):
         self.assertIn("FC: Vex Drake", text)
         self.assertNotIn("<", text)
         self.assertNotIn("**", text)
+
+    def test_web_escape_neutralizes_markup(self):
+        # sanitize_npsi_description unescapes entities so the Discord embed
+        # reads naturally; a feed that entity-encodes a tag therefore yields
+        # literal "<...>" markup. The web copy must be escaped before it
+        # reaches the marked + set:html schedule sink.
+        raw = "Roaming &lt;img src=x onerror=alert(1)&gt; & friends"
+        sanitized = sanitize_npsi_description(raw)
+        self.assertIn("<img", sanitized)
+        web = escape_npsi_description_for_web(sanitized)
+        self.assertNotIn("<img", web)
+        self.assertIn("&lt;img", web)
+        self.assertIn("&amp; friends", web)
 
 
 class NpsiIngestTestCase(TestCase):
@@ -256,6 +272,23 @@ class NpsiDiscordApiTestCase(TestCase):
         self.assertEqual(fleet.created_by_id, self.user.id)
         self.assertEqual(fleet.audience_id, self.audience.id)
         self.assertIn("Roaming through nullsec", fleet.description)
+
+    @patch("fleets.helpers.npsi_actions.DiscordClient")
+    def test_posted_fleet_description_is_web_escaped(self, mock_discord):
+        # A feed that smuggles markup through must not land as live HTML on
+        # the schedule (marked + set:html has no sanitizer).
+        self.event.description = "Roaming <img src=x onerror=alert(1)> now"
+        self.event.save(update_fields=["description"])
+        response = self._post(
+            f"/npsi-events/{self.event.id}/discord-create", 4242
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.event.refresh_from_db()
+        fleet = EveFleet.objects.get(id=self.event.eve_fleet_id)
+        self.assertNotIn("<img", fleet.description)
+        self.assertIn("&lt;img", fleet.description)
+        # The Discord-bound event copy stays untouched (plain text).
+        self.assertIn("<img", self.event.description)
 
     def test_wrong_discord_user_rejected(self):
         response = self._post(
