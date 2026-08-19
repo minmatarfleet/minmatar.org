@@ -5,12 +5,12 @@ import logging
 from app.errors import ErrorResponse
 from authentication import AuthBearer
 from groups.helpers.feature_access import require_feature
-from eveonline.models import EveLocation
-from fittings.models import EveDoctrine
 
-from fleets.endpoints.helpers import send_discord_pre_ping
+from fleets.helpers.schedule_fleet import (
+    create_scheduled_fleet,
+    fleet_create_response,
+)
 from fleets.endpoints.schemas import CreateEveFleetRequest, EveFleetResponse
-from fleets.models import EveFleet, EveFleetAudience
 
 logger = logging.getLogger(__name__)
 
@@ -32,64 +32,9 @@ def create_fleet(request, payload: CreateEveFleetRequest):
     if denied:
         return denied
 
-    if not EveFleetAudience.objects.filter(id=payload.audience_id).exists():
-        return 400, {"detail": "Audience does not exist"}
+    result = create_scheduled_fleet(user=request.user, payload=payload)
+    if isinstance(result, tuple):
+        return result
 
-    audience = EveFleetAudience.objects.get(id=payload.audience_id)
-
-    location = None
-    if payload.location_id:
-        if not EveLocation.objects.filter(
-            location_id=payload.location_id
-        ).exists():
-            return 400, {"detail": "Location does not exist"}
-        location = EveLocation.objects.get(location_id=payload.location_id)
-    elif audience.staging_location:
-        location = audience.staging_location
-
-    fleet = EveFleet.objects.create(
-        type=payload.type,
-        description=payload.description,
-        objective=(payload.objective or "").strip(),
-        start_time=payload.start_time,
-        created_by=request.user,
-        location=location,
-        audience=audience,
-        disable_motd=payload.disable_motd,
-        status="pending",
-    )
-
-    if payload.doctrine_id:
-        doctrine = EveDoctrine.objects.get(id=payload.doctrine_id)
-        fleet.doctrine = doctrine
-        fleet.save()
-
-    if not fleet.audience.add_to_schedule:
-        payload.immediate_ping = True
-
-    if payload.immediate_ping:
-        send_discord_pre_ping(fleet)
-
-    out = {
-        "id": fleet.id,
-        "type": fleet.type,
-        "description": fleet.description,
-        "objective": fleet.objective or None,
-        "start_time": fleet.start_time,
-        "fleet_commander": fleet.created_by.id,
-        "location": (
-            fleet.formup_location.location_name
-            if fleet.formup_location
-            else "Ask FC"
-        ),
-        "audience": fleet.audience.name,
-        "disable_motd": fleet.disable_motd,
-        "status": fleet.status,
-    }
-
-    if fleet.doctrine:
-        out["doctrine_id"] = fleet.doctrine.id
-
-    logger.info("Fleet %d created by %s", fleet.id, request.user.username)
-
-    return EveFleetResponse(**out)
+    logger.info("Fleet %d created by %s", result.id, request.user.username)
+    return fleet_create_response(result)
