@@ -83,9 +83,9 @@ const alpine = {
                     hx-swap="innerHTML"
                     hx-trigger="click"
                     hx-indicator=".loader"
-                    hx-vals="js:{corp: (Alpine.$data(this.closest('.alliance-health-bucket-tabs')) || {corp: 'all'}).corp}"
+                    x-bind:hx-vals={`JSON.stringify({ corp })`}
                 >
-                    {tab.label} (<span x-text={`((corp === 'all' ? counts : (counts_by_corp[corp] || {}))['${tab.id}'] || 0)`}>{tab.count}</span>)
+                    <span>{tab.label} (<span x-text={`((corp === 'all' ? counts : (counts_by_corp[corp] || {}))['${tab.id}'] || 0)`}>{tab.count}</span>)</span>
                 </Button>
             ))}
         </FlexInline>
@@ -103,8 +103,7 @@ const alpine = {
 
 <style lang="scss">
     .alliance-health-bucket-tabs :global(button.button.is-active) {
-        background-color: var(--fleet-yellow);
-        border-color: var(--fleet-yellow);
-        color: var(--background);
+        border-color: var(--alliance-blue);
+        color: var(--highlight);
     }
 </style>
