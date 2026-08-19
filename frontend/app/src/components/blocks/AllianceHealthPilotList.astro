@@ -28,6 +28,7 @@ interface Props {
     default_order_by?: string
     enable_corp_filter?: boolean
     initial_corp?: string
+    corp_options?: string[]
     page_size?: number
     csv_filename?: string
     url_section?: AllianceHealthUrlSection
@@ -41,6 +42,7 @@ const {
     default_order_by,
     enable_corp_filter = true,
     initial_corp = 'all',
+    corp_options = [],
     page_size = 5,
     csv_filename = 'alliance-health.csv',
     url_section,
@@ -48,12 +50,11 @@ const {
 } = Astro.props
 delete attributes.class
 
-const corps = Array.from(
+const row_corps = Array.from(
     new Set(rows.map((row) => row.corp).filter((name): name is string => !!name && name !== '—')),
-).sort((a, b) => a.localeCompare(b))
+)
 
-const initial = corps.includes(initial_corp) ? initial_corp : 'all'
-
+const default_corp = initial_corp || 'all'
 const chips: AllianceHealthOrderOption[] = [
     { id: 'name', label: t('alliance.health.order.name'), kind: 'text' },
     ...order_by_options.filter((opt) => opt.id !== 'name'),
@@ -69,7 +70,7 @@ const default_dir: AllianceHealthOrderDir = default_health_order_dir(
 const page_query =
     url_section && !Astro.url.pathname.includes('/partials/')
         ? read_alliance_health_list_state(Astro.url.searchParams, url_section, {
-            corp: initial,
+            corp: default_corp,
             by: default_by,
             dir: default_dir,
             page: 1,
@@ -83,10 +84,16 @@ const order_by =
 const order_dir: AllianceHealthOrderDir = page_query?.dir ?? default_dir
 const initial_search = page_query?.q ?? ''
 const initial_page = page_query?.page ?? 1
-const list_corp =
-    page_query?.corp && (page_query.corp === 'all' || corps.includes(page_query.corp))
-        ? page_query.corp
-        : initial
+const list_corp = page_query?.corp ?? default_corp
+const corps = Array.from(
+    new Set(
+        [
+            ...corp_options,
+            ...row_corps,
+            ...(list_corp && list_corp !== 'all' ? [list_corp] : []),
+        ].filter((name): name is string => !!name && name !== '—'),
+    ),
+).sort((a, b) => a.localeCompare(b))
 
 const order_kinds: Record<string, AllianceHealthOrderKind> = Object.fromEntries(
     chips.map((chip) => [chip.id, chip.kind]),
@@ -128,7 +135,7 @@ const csv_headers = csv_headers_from_pilot(colored_rows[0], {
         csv_filename,
         url_section: url_section ?? '',
         url_defaults: {
-            corp: initial,
+            corp: default_corp,
             by: default_by,
             dir: default_dir,
             page: 1,

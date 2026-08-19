@@ -1,5 +1,6 @@
 ---
 import type { AllianceHealthUrlSection } from '@helpers/alliance_health_url'
+import { alliance_health_counts_for_corp } from '@helpers/api.minmatar.org/alliance_health'
 
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
@@ -21,6 +22,9 @@ interface Props {
     default_bucket: string
     table_id: string
     tabs: AllianceHealthBucketTab[]
+    initial_corp?: string
+    counts?: Record<string, number>
+    counts_by_corp?: Record<string, Record<string, number>>
     [propName: string]: any
 }
 
@@ -32,20 +36,41 @@ const {
     default_bucket,
     table_id,
     tabs,
+    initial_corp = 'all',
+    counts = {},
+    counts_by_corp = {},
     ...attributes
 } = Astro.props
 delete attributes.class
+
+const filtered = alliance_health_counts_for_corp(counts, counts_by_corp, initial_corp)
+const tabs_for_corp = tabs.map((tab) => ({
+    ...tab,
+    count: Number(filtered[tab.id] ?? tab.count ?? 0),
+}))
+const alpine = {
+    bucket,
+    corp: initial_corp,
+    counts,
+    counts_by_corp,
+}
 ---
 
 <section
     class:list={['[ alliance-health-bucket-tabs ]', Astro.props.class]}
     id={section_id}
     aria-label={aria_label}
-    x-data={`{ bucket: '${bucket}' }`}
+    x-data={`{
+        bucket: ${JSON.stringify(alpine.bucket)},
+        corp: ${JSON.stringify(alpine.corp)},
+        counts: ${JSON.stringify(alpine.counts)},
+        counts_by_corp: ${JSON.stringify(alpine.counts_by_corp)},
+    }`}
+    x-on:alliance-health-corp={`corp = $event.detail`}
 >
     <Flexblock gap="var(--space-m)">
         <FlexInline gap="var(--space-2xs)">
-            {tabs.map((tab) => (
+            {tabs_for_corp.map((tab) => (
                 <Button
                     size="sm"
                     class={tab.id === bucket ? 'is-active' : undefined}
@@ -58,8 +83,9 @@ delete attributes.class
                     hx-swap="innerHTML"
                     hx-trigger="click"
                     hx-indicator=".loader"
+                    hx-vals="js:{corp: (Alpine.$data(this.closest('.alliance-health-bucket-tabs')) || {corp: 'all'}).corp}"
                 >
-                    {tab.label} ({tab.count})
+                    {tab.label} (<span x-text={`((corp === 'all' ? counts : (counts_by_corp[corp] || {}))['${tab.id}'] || 0)`}>{tab.count}</span>)
                 </Button>
             ))}
         </FlexInline>

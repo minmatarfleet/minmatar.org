@@ -2129,6 +2129,8 @@ export interface AllianceHealthAttention {
     computed_at:    string;
     bucket:         AllianceHealthAttentionBucket;
     pilots:         AllianceHealthAttentionPilot[];
+    counts:         AllianceHealthQuietCounts;
+    counts_by_corp: Record<string, AllianceHealthQuietCounts>;
 }
 
 export interface AllianceHealthTrialPilot {
@@ -2156,6 +2158,7 @@ export interface AllianceHealthTrials {
     computed_at:    string;
     bucket:         AllianceHealthTrialBucket;
     counts:         AllianceHealthTrialCounts;
+    counts_by_corp: Record<string, AllianceHealthTrialCounts>;
     pilots:         AllianceHealthTrialPilot[];
 }
 
@@ -2170,6 +2173,7 @@ export interface AllianceHealthOnboarding {
     computed_at:    string;
     bucket:         AllianceHealthOnboardingBucket;
     counts:         AllianceHealthOnboardingCounts;
+    counts_by_corp: Record<string, AllianceHealthOnboardingCounts>;
     pilots:         AllianceHealthTrialPilot[];
 }
 
@@ -2193,6 +2197,7 @@ export interface AllianceHealthLeave {
     computed_at:    string;
     bucket:         AllianceHealthLeaveBucket;
     counts:         AllianceHealthLeaveCounts;
+    counts_by_corp: Record<string, AllianceHealthLeaveCounts>;
     pilots:         AllianceHealthLeavePilot[];
 }
 

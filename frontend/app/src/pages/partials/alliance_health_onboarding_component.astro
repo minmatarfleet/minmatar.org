@@ -27,6 +27,7 @@ const initial_corp = Astro.url.searchParams.get('corp') || 'all'
 let pilots: Awaited<
     ReturnType<typeof get_alliance_health_onboarding>
 >['pilots'] = []
+let corp_options: string[] = []
 let data_fetching_error: any
 
 try {
@@ -35,6 +36,9 @@ try {
         bucket,
     )
     pilots = onboarding.pilots
+    corp_options = Object.keys(onboarding.counts_by_corp ?? {}).filter(
+        (name) => name && name !== 'all' && name !== '—',
+    )
 } catch (error) {
     data_fetching_error = error
 }
@@ -55,6 +59,7 @@ const PARTIAL_URL = translatePath('/partials/alliance_health_onboarding_componen
         <AllianceHealthOnboardingTable
             pilots={pilots}
             initial_corp={initial_corp}
+            corp_options={corp_options}
             bucket={bucket}
         />
     )

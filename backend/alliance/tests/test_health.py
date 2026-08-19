@@ -562,9 +562,9 @@ class AllianceHealthEndpointTestCase(TestCase):
         self.assertEqual(overview.unknown_characters, [])
         self.assertEqual(overview.hygiene.trial.remove, 1)
         self.assertEqual(overview.hygiene.trial.flagged, 7)
-        self.assertEqual(overview.hygiene.trial.passing, 3)
+        self.assertEqual(overview.hygiene.trial.passing, 1)
         self.assertEqual(overview.hygiene.trial.failing, 3)
-        self.assertEqual(overview.hygiene.trial.evaluating, 9)
+        self.assertEqual(overview.hygiene.trial.evaluating, 11)
         self.assertEqual(overview.hygiene.leave.add, 1)
         self.assertEqual(overview.monthly[0].small_gang, 0)
         trials = trials_from_payload(legacy, "current")
@@ -577,6 +577,53 @@ class AllianceHealthEndpointTestCase(TestCase):
         self.assertEqual(leave.counts.recommended, 1)
         self.assertEqual(leave.counts.returning, 0)
         self.assertEqual(leave.counts.inactive, 0)
+
+    def test_trials_under_60_days_are_evaluating_not_passing(self):
+        def row(user_id, days, decision="approve"):
+            return {
+                "user_id": user_id,
+                "username": f"u{user_id}",
+                "pilot": f"Pilot {user_id}",
+                "corp": "Test Corp",
+                "corporation_id": 1,
+                "character_id": user_id,
+                "alliance_days": days,
+                "fleets": 5,
+                "kills": 12,
+                "kills_small": 9,
+                "voice_hours": 6.0,
+                "slice_30d": "2F/4K/2h",
+                "days_since_activity": 8,
+                "path": "Mixed",
+                "conf": "high",
+                "reason": "on track",
+                "decision": decision,
+            }
+
+        payload = {
+            "hygiene": {
+                "trial": {
+                    "counts": {"approve": 1, "too_early": 1, "nudge": 1},
+                    "buckets": {
+                        "passing": [
+                            row(1, 70, "approve"),
+                            row(2, 18, "too_early"),
+                        ],
+                        "too_early": [row(2, 18, "too_early")],
+                        "evaluating": [row(3, 40, "nudge")],
+                        "failing": [row(4, 20, "fail")],
+                    },
+                }
+            }
+        }
+        passing = trials_from_payload(payload, "passing")
+        evaluating = trials_from_payload(payload, "evaluating")
+        failing = trials_from_payload(payload, "failing")
+        self.assertEqual([p.user_id for p in passing.pilots], [1])
+        self.assertEqual({p.user_id for p in evaluating.pilots}, {2, 3, 4})
+        self.assertEqual(failing.pilots, [])
+        self.assertEqual(passing.counts.passing, 1)
+        self.assertEqual(passing.counts.evaluating, 3)
 
     def test_attention_dark(self):
         response = self.client.get(
@@ -616,6 +663,51 @@ class AllianceHealthEndpointTestCase(TestCase):
             "dark",
         )
         self.assertEqual([p.pilot for p in body.pilots], ["Gone"])
+
+    def test_attention_counts_split_by_corp(self):
+        body = attention_from_payload(
+            {
+                "attention": {
+                    "fading": [
+                        {
+                            "user_id": 1,
+                            "pilot": "A",
+                            "corp": "FOSFO",
+                            "status": "active",
+                            "days_quiet": 10,
+                            "active_months": 4,
+                        },
+                        {
+                            "user_id": 2,
+                            "pilot": "B",
+                            "corp": "TDT",
+                            "status": "active",
+                            "days_quiet": 12,
+                            "active_months": 3,
+                        },
+                    ],
+                    "dark": [],
+                    "seasonal": [
+                        {
+                            "user_id": 3,
+                            "pilot": "C",
+                            "corp": "FOSFO",
+                            "status": "active",
+                            "days_quiet": 40,
+                            "active_months": 6,
+                        },
+                    ],
+                }
+            },
+            "fading",
+        )
+        self.assertEqual(body.counts.fading, 2)
+        self.assertEqual(body.counts.seasonal, 1)
+        self.assertEqual(body.counts_by_corp["FOSFO"].fading, 1)
+        self.assertEqual(body.counts_by_corp["FOSFO"].seasonal, 1)
+        self.assertEqual(body.counts_by_corp["TDT"].fading, 1)
+        self.assertEqual(body.counts_by_corp["TDT"].seasonal, 0)
+        self.assertEqual(len(body.pilots), 2)
 
     def test_corporations_and_cohorts(self):
         corps = self.client.get(

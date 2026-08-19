@@ -36,6 +36,11 @@ def gang_bucket(size: int) -> str:
     return "blob"
 
 
+def trial_under_min_tenure(alliance_days: Optional[int]) -> bool:
+    """True until alliance tenure is known and at least MIN_APPROVE_DAYS."""
+    return alliance_days is None or alliance_days < MIN_APPROVE_DAYS
+
+
 def classify_onboarding_need(
     *,
     fleets: int,
@@ -167,7 +172,7 @@ def classify_trial(
     )
     path = path_label(strong, medium)
     would_approve = bool(strong) or len(medium) >= 2
-    too_early = alliance_days is None or alliance_days < MIN_APPROVE_DAYS
+    too_early = trial_under_min_tenure(alliance_days)
 
     if would_approve and recent and too_early:
         days_txt = (
@@ -813,12 +818,12 @@ def assemble_hygiene(
         "nudge", []
     )
     trial_remove = trial_public.get("approve", [])
-    trial_passing = trial_public.get("approve", []) + trial_public.get(
-        "too_early", []
-    )
+    trial_passing = trial_public.get("approve", [])
     trial_failing = trial_public.get("fail", [])
-    trial_evaluating = trial_public.get("nudge", []) + trial_public.get(
-        "hold", []
+    trial_evaluating = (
+        trial_public.get("nudge", [])
+        + trial_public.get("hold", [])
+        + trial_public.get("too_early", [])
     )
     trial_public["current"] = trial_current
     trial_public["add"] = trial_add

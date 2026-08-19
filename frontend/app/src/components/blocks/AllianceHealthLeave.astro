@@ -16,6 +16,7 @@ interface Props {
     bucket: AllianceHealthLeaveBucket
     partial_url: string
     initial_corp?: string
+    counts_by_corp?: Record<string, AllianceHealthLeaveCounts>
     can_mutate?: boolean
     alliance_wide?: boolean
     officer_corp_ids?: number[]
@@ -29,6 +30,7 @@ const {
     bucket,
     partial_url,
     initial_corp = 'all',
+    counts_by_corp = {},
     can_mutate = false,
     alliance_wide = false,
     officer_corp_ids = [],
@@ -42,7 +44,7 @@ const default_bucket = ALLIANCE_HEALTH_DEFAULT_BUCKETS.leave
 const tab_query = (id: AllianceHealthLeaveBucket) =>
     alliance_health_table_params({
         bucket: id,
-        corp: initial_corp,
+        include_corp: false,
         can_mutate,
         alliance_wide,
         officer_corp_ids,
@@ -70,6 +72,9 @@ const tabs = [
     default_bucket={default_bucket}
     table_id="alliance-health-leave-table"
     tabs={tabs}
+    initial_corp={initial_corp}
+    counts={counts}
+    counts_by_corp={counts_by_corp}
 >
     <slot />
 </AllianceHealthBucketTabs>

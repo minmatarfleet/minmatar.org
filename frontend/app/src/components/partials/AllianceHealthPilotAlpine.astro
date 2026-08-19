@@ -112,13 +112,18 @@
             ...config,
             init() {
                 this.apply_url()
+                this.$dispatch('alliance-health-corp', this.corp)
                 this.$nextTick(() => this.refresh())
                 if (this.$refs.body && typeof MutationObserver !== 'undefined') {
                     this._row_observer = new MutationObserver(() => this.refresh())
                     this._row_observer.observe(this.$refs.body, { childList: true })
                 }
-                this.$watch('search', () => { this.page = 1; this.refresh(); this.sync_url() })
-                this.$watch('corp', () => { this.page = 1; this.refresh(); this.sync_url() })
+                this.$watch('corp', () => {
+                    this.page = 1
+                    this.refresh()
+                    this.sync_url()
+                    this.$dispatch('alliance-health-corp', this.corp)
+                })
                 this.$watch('page', () => { this.refresh(); this.sync_url() })
                 if (this.sort) {
                     this.$watch('order_by', () => { this.page = 1; this.refresh(); this.sync_url() })
