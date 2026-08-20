@@ -244,7 +244,10 @@ const page_title = 'Community Survey'
                         {can_manage && progress[c.id] && progress[c.id].corps.length > 0 && (
                             <div class="[ corp-progress ]">
                                 <span class="[ cp-title ]">Fill-out progress</span>
-                                {progress[c.id].corps.map((cp: any) => (
+                                {progress[c.id].corps
+                                    .slice()
+                                    .sort((a: any, b: any) => a.total - b.total)
+                                    .map((cp: any) => (
                                     <div class="[ cp-row ]">
                                         <img class="[ cp-logo ]" src={get_corporation_logo(cp.corporation_id, 32)} alt={cp.corporation_name} width="22" height="22" loading="lazy" />
                                         <span class="[ cp-name ]">{cp.corporation_name}</span>
