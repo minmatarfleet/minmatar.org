@@ -1,0 +1,511 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token')
+    ? (Astro.cookies.get('auth_token')?.value as string)
+    : null
+const user = auth_token ? (jose.decodeJwt(auth_token) as User) : false
+
+if (!user)
+    return Astro.redirect(
+        `${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`,
+    )
+
+const campaign_id = parseInt(Astro.params.id as string)
+
+import type {
+    GivebackCard,
+    MemberContext,
+    MyResponse,
+    SurveyAnswerInput,
+    SurveyQuestion,
+    SurveyQuestions,
+} from '@dtypes/survey'
+import {
+    get_giveback,
+    get_my_response,
+    get_survey_context,
+    get_survey_questions,
+    submit_survey_response,
+} from '@helpers/api.minmatar.org/surveys'
+
+let questions: SurveyQuestions | null = null
+let context: MemberContext | null = null
+let prior: MyResponse | null = null
+let giveback: GivebackCard | null = null
+let submitted = false
+let submit_error: string | null = null
+let data_fetching_error: any
+
+try {
+    ;[questions, context, prior] = await Promise.all([
+        get_survey_questions(auth_token as string, campaign_id),
+        get_survey_context(auth_token as string, campaign_id),
+        get_my_response(auth_token as string, campaign_id),
+    ])
+} catch (error) {
+    data_fetching_error = error
+}
+
+// Prior answers keyed by question_key, seeded into the form for review/edit.
+const prefill: Record<string, any> = prior?.answers ?? {}
+const is_editing = !!prior?.has_responded
+
+// Emit one entry per rendered question — with its value, or null when left
+// blank. A null tells the backend the field was cleared (so edits that remove
+// an answer actually remove it), while questions never shown are simply absent.
+function coerce_answers(data: FormData, q: SurveyQuestions): SurveyAnswerInput[] {
+    const answers: SurveyAnswerInput[] = []
+    for (const block of q.member_blocks) {
+        for (const question of block.questions) {
+            const name = `q__${question.key}`
+            let value: any = null
+            if (question.type === 'matrix') {
+                const cells: Record<string, string> = {}
+                for (const row of question.rows) {
+                    const v = data.get(`m__${question.key}__${row.key}`)
+                    if (v) cells[row.key] = v as string
+                }
+                value = Object.keys(cells).length ? cells : null
+            } else if (question.type === 'multi') {
+                const values = data.getAll(name).map(String).filter(Boolean)
+                value = values.length ? values : null
+            } else if (
+                question.type === 'scale5' ||
+                question.type === 'enps' ||
+                question.type === 'agree'
+            ) {
+                const v = data.get(name)
+                value = v !== null && v !== '' ? Number(v) : null
+            } else {
+                const v = data.get(name)
+                value = v ? v : null
+            }
+            answers.push({ question_key: question.key, value })
+        }
+    }
+    return answers
+}
+
+if (Astro.request.method === 'POST' && questions) {
+    try {
+        const data = await Astro.request.formData()
+        const answers = coerce_answers(data, questions)
+        const result = await submit_survey_response(
+            auth_token as string,
+            campaign_id,
+            answers,
+            {},
+        )
+        if (result.ok) {
+            submitted = true
+            giveback = await get_giveback(auth_token as string, campaign_id)
+        } else {
+            submit_error = result.detail || 'Could not save your response.'
+        }
+    } catch (error: any) {
+        submit_error = error?.message || 'Could not save your response.'
+    }
+}
+
+// Group consecutive same-group questions into one titled sub-card.
+function group_segments(qs: SurveyQuestion[]) {
+    const segs: { group: string; questions: SurveyQuestion[] }[] = []
+    let cur: { group: string; questions: SurveyQuestion[] } | null = null
+    for (const q of qs) {
+        const g = q.group || ''
+        if (g && cur && cur.group === g) {
+            cur.questions.push(q)
+        } else {
+            cur = { group: g, questions: [q] }
+            segs.push(cur)
+        }
+    }
+    return segs
+}
+
+import Viewport from '@layouts/Viewport.astro'
+import PageDefault from '@components/page/PageDefault.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Button from '@components/blocks/Button.astro'
+import SurveyContextConfirm from '@components/blocks/survey/SurveyContextConfirm.astro'
+import SurveyContextPanel from '@components/blocks/survey/SurveyContextPanel.astro'
+import SurveyField from '@components/blocks/survey/SurveyField.astro'
+import SurveyGivebackCard from '@components/blocks/survey/SurveyGivebackCard.astro'
+import { get_player_icon, get_corporation_logo } from '@helpers/eve_image_server'
+
+const page_title = questions?.title ?? 'Community Survey'
+const member_blocks = questions?.member_blocks ?? []
+const total_steps = member_blocks.length + 1 // step 0 = About you
+const total_questions = member_blocks.reduce((n, b) => n + b.questions.length, 0)
+const est_minutes = Math.max(3, Math.round((total_questions * 15) / 60))
+---
+
+<Viewport title={page_title} components={{ alert_dialog: true }}>
+    <PageDefault>
+        <Flexblock slot="header" gap="var(--space-3xs)">
+            <PageTitle>{page_title}</PageTitle>
+        </Flexblock>
+
+        {data_fetching_error && (
+            <ComponentBlock>
+                <Flexblock>
+                    <p>Could not load this survey. It may not be open.</p>
+                    <FlexInline><Button href={translatePath('/surveys')}>Back to surveys</Button></FlexInline>
+                </Flexblock>
+            </ComponentBlock>
+        )}
+
+        {submitted && giveback && (
+            <Flexblock gap="var(--space-xl)">
+                <ComponentBlock>
+                    <Flexblock gap="var(--space-s)">
+                        <h2>Thank you — your response is in. o7</h2>
+                        <p>Here's your quarter, and the alliance's.</p>
+                    </Flexblock>
+                </ComponentBlock>
+                <SurveyGivebackCard giveback={giveback} />
+                <FlexInline>
+                    <Button color="green" href={translatePath('/surveys')}>Done</Button>
+                </FlexInline>
+            </Flexblock>
+        )}
+
+        {!submitted && context && context.community_status === 'on_leave' && (
+            <ComponentBlock>
+                <Flexblock gap="var(--space-s)">
+                    <h2>You're on leave</h2>
+                    <p>Members on leave don't fill out the community survey. Welcome back when you return — o7</p>
+                    <FlexInline><Button href={translatePath('/surveys')}>Back to surveys</Button></FlexInline>
+                </Flexblock>
+            </ComponentBlock>
+        )}
+
+        {!submitted && questions && context && context.community_status !== 'on_leave' && (
+            <form
+                method="POST"
+                x-on:change="revalidate(); recordChange($event)"
+                x-data={`{
+                    step: 0,
+                    total: ${total_steps},
+                    est: ${est_minutes},
+                    stepValid: true,
+                    nudged: false,
+                    showNudge: false,
+                    answerTimes: [],
+                    init() { this.$nextTick(() => this.revalidate()) },
+                    recordChange(e) {
+                        const t = e && e.target
+                        if (t && t.type === 'radio' && /^[0-5]$/.test(t.value)) {
+                            this.answerTimes.push(performance.now())
+                            if (this.answerTimes.length > 40) this.answerTimes.shift()
+                        }
+                    },
+                    validateStep() {
+                        const c = this.$root.querySelector('[data-step="' + this.step + '"]')
+                        if (!c) return true
+                        const names = new Set()
+                        c.querySelectorAll('input[required]').forEach((i) => names.add(i.name))
+                        for (const n of names) {
+                            if (!c.querySelector('input[name="' + n + '"]:checked')) return false
+                        }
+                        return true
+                    },
+                    revalidate() { this.stepValid = this.validateStep() },
+                    checkThoughtful() {
+                        if (this.nudged) return
+                        const vals = []
+                        this.$root.querySelectorAll('input[type="radio"]:checked').forEach((i) => {
+                            if (/^[0-5]$/.test(i.value)) vals.push(i.value)
+                        })
+                        // Only nudge if everything so far is identical AND they were
+                        // slammed through quickly (avg under ~1.2s per answer).
+                        if (vals.length < 6 || new Set(vals).size !== 1) return
+                        const times = this.answerTimes.slice(-vals.length)
+                        if (times.length < 2) return
+                        const avg = (times[times.length - 1] - times[0]) / (times.length - 1)
+                        if (avg <= 1200) {
+                            this.showNudge = true
+                            this.nudged = true
+                        }
+                    },
+                    next() {
+                        if (!this.stepValid) return
+                        if (this.step < this.total - 1) this.step++
+                        this.revalidate()
+                        this.checkThoughtful()
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                    },
+                    back() {
+                        if (this.step > 0) this.step--
+                        this.revalidate()
+                        window.scrollTo({ top: 0, behavior: 'smooth' })
+                    },
+                    timeLeft() {
+                        if (this.total <= 1) return this.est
+                        return Math.max(1, Math.round(this.est * (this.total - 1 - this.step) / (this.total - 1)))
+                    }
+                }`}
+            >
+                <Flexblock gap="var(--space-l)">
+                    <div class="[ wizard-head ]">
+                        <div class="[ wizard-progress ]">
+                            <div class="[ wizard-progress__bar ]" x-bind:style="'width:' + (step / (total - 1) * 100) + '%'"></div>
+                        </div>
+                        <div class="[ wizard-meta ]">
+                            <span x-text="'Step ' + (step + 1) + ' of ' + total"></span>
+                            <span class="[ wizard-time ]" x-text="'~' + timeLeft() + ' min left'"></span>
+                        </div>
+                    </div>
+
+                    {is_editing && (
+                        <p class="[ editing-note ]">
+                            You've already submitted — your answers are loaded below. Change anything and re-submit to update.
+                        </p>
+                    )}
+
+                    <div class="[ nudge-overlay ]" x-show="showNudge" x-cloak x-transition.opacity x-on:click.self="showNudge = false">
+                        <div class="[ nudge-card ]">
+                            <h3>One quick ask</h3>
+                            <p>
+                                You're going a bit fast — every response goes straight to
+                                leadership and genuinely shapes what we do next. There are
+                                no wrong answers, but honest, considered ones help the most!
+                            </p>
+                            <FlexInline justification="flex-end">
+                                <button type="button" class="[ wizard-btn wizard-btn--submit ]" x-on:click="showNudge = false">Leave me alone bear</button>
+                            </FlexInline>
+                        </div>
+                    </div>
+
+                    {submit_error && (
+                        <ComponentBlock><p class="[ error ]">{submit_error}</p></ComponentBlock>
+                    )}
+
+                    {/* Step 0 — About you */}
+                    <div
+                        data-step="0"
+                        x-show="step === 0"
+                        x-cloak
+                        x-transition:enter.opacity.duration.350ms
+                        x-transition:leave.opacity.duration.0ms
+                    >
+                        <Flexblock gap="var(--space-l)">
+                            <ComponentBlock>
+                                <Flexblock gap="var(--space-m)">
+                                    <h2 class="[ section-title ]">About you</h2>
+                                    <SurveyContextConfirm context={context} />
+                                </Flexblock>
+                            </ComponentBlock>
+                            <FlexInline justification="flex-end">
+                                <button type="button" class="[ wizard-btn wizard-btn--submit ]" x-bind:disabled="!stepValid" x-on:click="next()">Get started →</button>
+                            </FlexInline>
+                        </Flexblock>
+                    </div>
+
+                    {/* Steps 1..N — one per section */}
+                    {member_blocks.map((block, bi) => (
+                        <div
+                            data-step={bi + 1}
+                            x-show={`step === ${bi + 1}`}
+                            x-cloak
+                            x-transition:enter.opacity.duration.350ms
+                            x-transition:leave.opacity.duration.0ms
+                        >
+                            <Flexblock gap="var(--space-l)">
+                                <ComponentBlock>
+                                    <Flexblock gap="var(--space-xl)">
+                                        <Flexblock gap="var(--space-3xs)" class="[ section-header ]">
+                                            <h2 class="[ section-title ]">{block.title}</h2>
+                                            {block.key === 'corp' ? (
+                                                <p class="[ block-desc ]">
+                                                    Reported only as per-corporation aggregates{context.ceo_name ? ` by ${context.ceo_name}` : ''} — never attributed to you.
+                                                </p>
+                                            ) : (
+                                                block.description && <p class="[ block-desc ]">{block.description}</p>
+                                            )}
+                                        </Flexblock>
+
+                                        {block.key === 'corp' && context.corporation_id && (
+                                            <div class="[ corp-banner ]">
+                                                <div class="[ corp-banner__side ]">
+                                                    <img class="[ corp-banner__logo ]" src={get_corporation_logo(context.corporation_id, 64)} alt={context.corporation_name} width="44" height="44" loading="lazy" />
+                                                    <span class="[ corp-banner__name ]">{context.corporation_name}</span>
+                                                </div>
+                                                {context.ceo_id && (
+                                                    <div class="[ corp-banner__side corp-banner__side--right ]">
+                                                        <div class="[ corp-banner__ceo ]">
+                                                            <span class="[ corp-banner__ceo-role ]">CEO</span>
+                                                            <span class="[ corp-banner__ceo-name ]">{context.ceo_name}</span>
+                                                        </div>
+                                                        <img class="[ corp-banner__ceo-portrait ]" src={get_player_icon(context.ceo_id, 64)} alt={context.ceo_name} title={context.ceo_name} width="44" height="44" loading="lazy" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        <Flexblock gap="var(--space-xl)">
+                                            {group_segments(block.questions).map((seg) => {
+                                                if (!seg.group)
+                                                    return seg.questions.map((q) => <SurveyField question={q} value={prefill[q.key]} />)
+                                                const group_context = seg.questions.find((q) => q.context)?.context
+                                                return (
+                                                    <div class="[ q-group ]">
+                                                        <h3 class="[ q-group__title ]">{seg.group}</h3>
+                                                        {group_context && <SurveyContextPanel context={group_context} />}
+                                                        <Flexblock gap="var(--space-l)">
+                                                            {seg.questions.map((q) => <SurveyField question={q} value={prefill[q.key]} hide_context />)}
+                                                        </Flexblock>
+                                                    </div>
+                                                )
+                                            })}
+                                        </Flexblock>
+                                    </Flexblock>
+                                </ComponentBlock>
+
+                                <FlexInline justification="space-between">
+                                    <button type="button" class="[ wizard-btn wizard-btn--ghost ]" x-on:click="back()">← Back</button>
+                                    {bi + 1 < total_steps - 1 ? (
+                                        <button type="button" class="[ wizard-btn ]" x-bind:disabled="!stepValid" x-on:click="next()">Next →</button>
+                                    ) : (
+                                        <button type="submit" class="[ wizard-btn wizard-btn--submit ]" x-bind:disabled="!stepValid">Submit response</button>
+                                    )}
+                                </FlexInline>
+                            </Flexblock>
+                        </div>
+                    ))}
+                </Flexblock>
+            </form>
+        )}
+    </PageDefault>
+</Viewport>
+
+<style lang="scss">
+    [x-cloak] { display: none !important; }
+    .section-title { text-transform: uppercase; }
+    .section-header {
+        padding-bottom: var(--space-m);
+        border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+    }
+    .block-desc { color: var(--foreground); opacity: 0.7; margin: 0; }
+    .error { color: var(--fleet-red); }
+    .editing-note {
+        margin: 0;
+        padding: var(--space-2xs) var(--space-s);
+        border-left: 3px solid var(--fleet-yellow, #d3a840);
+        background: var(--fill-and-stroke, rgba(255, 255, 255, 0.03));
+        color: var(--foreground);
+        font-size: 0.85em;
+    }
+
+    /* Wizard */
+    .wizard-head { display: flex; flex-direction: column; gap: var(--space-2xs); }
+    .wizard-progress {
+        height: 6px;
+        border-radius: 999px;
+        background: var(--fill-and-stroke, rgba(255, 255, 255, 0.08));
+        overflow: hidden;
+    }
+    .wizard-progress__bar {
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, var(--fleet-red, #b04723), var(--green, #3d9a5f));
+        transition: width 0.3s ease;
+    }
+    .wizard-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8em;
+        color: var(--foreground);
+        opacity: 0.7;
+    }
+    .wizard-time { color: var(--fleet-yellow); }
+    .wizard-btn {
+        background: var(--fleet-red, #b04723);
+        color: #fff;
+        border: 0;
+        border-radius: 4px;
+        padding: var(--space-s) var(--space-l);
+        font-family: var(--button-font, inherit);
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.15s ease;
+    }
+    .wizard-btn:hover { transform: scale(1.03); }
+    .wizard-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .wizard-btn:disabled:hover { transform: none; }
+    .wizard-btn--ghost { background: transparent; border: 1px solid var(--border-color, rgba(255, 255, 255, 0.25)); color: var(--foreground); }
+    .wizard-btn--submit { background: var(--green, #3d9a5f); }
+
+    /* Straight-lining nudge modal */
+    .nudge-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: grid;
+        place-items: center;
+        padding: var(--space-m);
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(2px);
+    }
+    .nudge-card {
+        max-width: 30rem;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        padding: var(--space-l);
+        border: 1px solid var(--fleet-yellow, #d3a840);
+        border-radius: 8px;
+        background: var(--background, #12100e);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+    .nudge-card h3 { margin: 0; text-transform: uppercase; }
+    .nudge-card p { margin: 0; color: var(--foreground); opacity: 0.85; }
+
+    /* Content bracket sub-card */
+    .q-group {
+        border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+        border-left: 3px solid var(--fleet-yellow, #d3a840);
+        border-radius: 6px;
+        padding: var(--space-m);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        background: var(--fill-and-stroke, rgba(255, 255, 255, 0.02));
+    }
+    .q-group__title { margin: 0; text-transform: uppercase; font-size: var(--step-0); }
+
+    /* Corp banner on the "Your corporation" section */
+    .corp-banner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-m);
+        padding: var(--space-s) var(--space-m);
+        border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+        border-radius: 6px;
+        background: var(--fill-and-stroke, rgba(255, 255, 255, 0.03));
+    }
+    .corp-banner__side { display: flex; align-items: center; gap: var(--space-s); }
+    .corp-banner__logo { border-radius: 4px; flex-shrink: 0; }
+    .corp-banner__name { font-weight: 700; color: var(--highlight); font-size: var(--step-0); }
+    .corp-banner__ceo { display: flex; flex-direction: column; gap: 1px; align-items: flex-end; }
+    .corp-banner__ceo-role { font-size: 0.6em; text-transform: uppercase; letter-spacing: 0.1em; color: var(--foreground); opacity: 0.5; }
+    .corp-banner__ceo-name { font-size: 0.85em; color: var(--fleet-yellow); }
+    .corp-banner__ceo-portrait { border-radius: 50%; flex-shrink: 0; }
+
+    /* Mobile pass */
+    @media (max-width: 34rem) {
+        .corp-banner { flex-wrap: wrap; gap: var(--space-s); }
+        .corp-banner__side--right { margin-left: auto; }
+        .q-group { padding: var(--space-s); }
+        .wizard-btn { flex: 1; text-align: center; }
+    }
+</style>
