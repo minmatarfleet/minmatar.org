@@ -434,6 +434,16 @@ CELERYBEAT_FEED = [
     ),
 ]
 
+CELERYBEAT_SURVEYS = [
+    (
+        "[Surveys] Snapshot aggregates for open campaigns",
+        {
+            "task": "surveys.tasks.snapshot_survey_aggregates",
+            "schedule": crontab(minute=15, hour="*"),
+        },
+    ),
+]
+
 CELERYBEAT_SCHEDULE = dict(
     CELERYBEAT_MARKET
     + CELERYBEAT_CHARACTERS
@@ -443,5 +453,6 @@ CELERYBEAT_SCHEDULE = dict(
     + CELERYBEAT_GROUPS
     + CELERYBEAT_TRIBES
     + CELERYBEAT_FEED
+    + CELERYBEAT_SURVEYS
     + CELERYBEAT_OTHER
 )

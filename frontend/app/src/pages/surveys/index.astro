@@ -1,0 +1,438 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+import Viewport from '@layouts/Viewport.astro'
+import PageDefault from '@components/page/PageDefault.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import { get_corporation_logo } from '@helpers/eve_image_server'
+
+const auth_token = Astro.cookies.has('auth_token')
+    ? (Astro.cookies.get('auth_token')?.value as string)
+    : null
+const user = auth_token ? (jose.decodeJwt(auth_token) as User) : false
+
+if (!user)
+    return Astro.redirect(
+        `${translatePath('/redirects/auth_init')}?redirect_url=${Astro.url}`,
+    )
+
+const is_superuser = user ? user.is_superuser : false
+import { get_user_permissions } from '@helpers/permissions'
+const user_permissions = user ? await get_user_permissions(user.username) : []
+const can_manage =
+    is_superuser || user_permissions.includes('surveys.change_surveycampaign')
+
+import type { ActiveSurvey, ChangelogEntry, SurveyCampaign } from '@dtypes/survey'
+import {
+    create_campaign,
+    get_active_survey,
+    get_changelog,
+    list_campaigns,
+    update_campaign,
+} from '@helpers/api.minmatar.org/surveys'
+
+const admin_base = import.meta.env.API_URL
+
+let action_error: string | null = null
+
+// Leadership actions (create / open / close) handled inline — no separate page.
+if (Astro.request.method === 'POST' && can_manage) {
+    try {
+        const data = await Astro.request.formData()
+        const action = data.get('action')
+        if (action === 'create') {
+            await create_campaign(auth_token as string, {
+                year: parseInt(data.get('year') as string),
+                quarter: parseInt(data.get('quarter') as string),
+                open_now: data.get('open_now') === 'on',
+            })
+        } else if (action === 'set_status') {
+            await update_campaign(
+                auth_token as string,
+                parseInt(data.get('campaign_id') as string),
+                { status: data.get('status') as string },
+            )
+        }
+    } catch (error: any) {
+        action_error = error?.message || 'Action failed.'
+    }
+}
+
+let active: ActiveSurvey | null = null
+let changelog: ChangelogEntry[] = []
+let campaigns: SurveyCampaign[] = []
+let data_fetching_error: any
+
+try {
+    active = await get_active_survey(auth_token as string)
+} catch (error) {
+    data_fetching_error = error
+}
+if (active?.campaign) {
+    try {
+        changelog = await get_changelog(auth_token as string, active.campaign.id)
+    } catch (error) {
+        console.error('survey changelog fetch failed', error)
+    }
+}
+if (can_manage) {
+    try {
+        campaigns = await list_campaigns(auth_token as string)
+    } catch (error) {
+        console.error('campaign list fetch failed', error)
+    }
+}
+
+// Cards to render: leadership sees every campaign; members see the active one.
+const cards: SurveyCampaign[] = can_manage
+    ? campaigns
+    : active?.campaign
+      ? [active.campaign]
+      : []
+
+// Current quarter, for the "create this quarter's survey" prompt.
+const now = new Date()
+const current_year = now.getFullYear()
+const current_quarter = Math.floor(now.getMonth() / 3) + 1
+const has_current_quarter = campaigns.some(
+    (c) => c.year === current_year && c.quarter === current_quarter,
+)
+
+// Per-corp fill-out progress for open campaigns (leadership only).
+const progress: Record<number, any> = {}
+if (can_manage) {
+    for (const c of cards) {
+        if (c.status !== 'open') continue
+        try {
+            const { get_corp_progress } = await import('@helpers/api.minmatar.org/surveys')
+            progress[c.id] = await get_corp_progress(auth_token as string, c.id)
+        } catch (error) {
+            console.error('corp progress fetch failed', error)
+        }
+    }
+}
+
+const status_label: Record<string, string> = {
+    open: 'Open', draft: 'Draft', closed: 'Closed',
+}
+
+const page_title = 'Community Survey'
+---
+
+<Viewport title={page_title} components={{ alert_dialog: true }}>
+    <PageDefault
+        cover={{
+            image: '/images/alliance-cover.jpg',
+            image_990: '/images/alliance-cover-990.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <Flexblock slot="header" gap="var(--space-3xs)">
+            <PageTitle>{page_title}</PageTitle>
+            <small class="[ sub ]">
+                A quarterly check-in for our community. This survey drives our decisions more than anything else.
+            </small>
+        </Flexblock>
+
+        <Flexblock gap="var(--space-xl)">
+            {action_error && <ComponentBlock><p class="[ err ]">{action_error}</p></ComponentBlock>}
+            {data_fetching_error && (
+                <ComponentBlock><p>Could not load the survey right now.</p></ComponentBlock>
+            )}
+
+            {cards.length === 0 && !can_manage && !data_fetching_error && (
+                <ComponentBlock>
+                    <Flexblock>
+                        <h2>No survey is open right now</h2>
+                        <p>We run a community survey each quarter — it shows up here when one opens.</p>
+                    </Flexblock>
+                </ComponentBlock>
+            )}
+
+            {can_manage && !has_current_quarter && (
+                <ComponentBlock>
+                    <Flexblock gap="var(--space-s)">
+                        <h2 class="[ create-title ]">No survey for {current_year} Q{current_quarter} yet</h2>
+                        <p>Create this quarter's community survey from the standard template.</p>
+                        <form method="POST">
+                            <input type="hidden" name="action" value="create" />
+                            <input type="hidden" name="year" value={current_year} />
+                            <input type="hidden" name="quarter" value={current_quarter} />
+                            <FlexInline gap="var(--space-m)">
+                                <label class="[ check ]"><input type="checkbox" name="open_now" checked /> <span>Open immediately</span></label>
+                                <button type="submit" class="[ mbtn mbtn--go ]">Create {current_year} Q{current_quarter} survey</button>
+                            </FlexInline>
+                        </form>
+                    </Flexblock>
+                </ComponentBlock>
+            )}
+
+            {cards.map((c) => (
+                <div class:list={['[ survey-card ]', 'is-' + c.status]}>
+                    <div class="[ survey-card__body ]">
+                        <div class="[ survey-card__head ]">
+                            <Flexblock gap="var(--space-3xs)">
+                                <FlexInline gap="var(--space-2xs)">
+                                    <h2 class="[ survey-card__title ]">{c.title}</h2>
+                                    <span class:list={['[ status ]', 'status--' + c.status]}>{status_label[c.status]}</span>
+                                </FlexInline>
+                                {can_manage && <small class="[ count ]">{c.response_count} responses</small>}
+                            </Flexblock>
+                            {can_manage && (
+                                <div class="[ card-actions ]" x-data="{ open: false }">
+                                    <button
+                                        type="button"
+                                        class="[ icon-btn ]"
+                                        x-on:click="open = !open"
+                                        aria-haspopup="true"
+                                        aria-label="Survey actions"
+                                    >⋯</button>
+                                    <a
+                                        class="[ icon-btn ]"
+                                        href={admin_base + '/admin/surveys/surveycampaign/' + c.id + '/change/'}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        title="Edit survey settings (admin)"
+                                        aria-label="Edit survey settings"
+                                    >⚙</a>
+                                    <div class="[ menu ]" x-show="open" x-cloak x-transition.opacity x-on:click.outside="open = false">
+                                        {is_superuser && (
+                                            <a class="[ menu-item ]" href={translatePath(`/surveys/${c.id}/results`)}>View results</a>
+                                        )}
+                                        <button type="button" class="[ menu-item copy-link ]" data-fill={translatePath(`/surveys/${c.id}/fill`)}>Copy share link</button>
+                                        {c.status !== 'open' ? (
+                                            <form method="POST">
+                                                <input type="hidden" name="action" value="set_status" />
+                                                <input type="hidden" name="campaign_id" value={c.id} />
+                                                <input type="hidden" name="status" value="open" />
+                                                <button type="submit" class="[ menu-item menu-item--go ]">Open survey</button>
+                                            </form>
+                                        ) : (
+                                            <form method="POST">
+                                                <input type="hidden" name="action" value="set_status" />
+                                                <input type="hidden" name="campaign_id" value={c.id} />
+                                                <input type="hidden" name="status" value="closed" />
+                                                <button type="submit" class="[ menu-item ]">Close survey</button>
+                                            </form>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {c.status === 'open' && (
+                            <div class="[ action-bar ]">
+                                <div class="[ action-bar__btns ]">
+                                    <a class="[ mbtn mbtn--go ]" href={translatePath(`/surveys/${c.id}/fill`)}>
+                                        {active?.campaign?.id === c.id && active?.has_responded
+                                            ? 'Review / update your response'
+                                            : 'Start the survey'}
+                                    </a>
+                                </div>
+                            </div>
+                        )}
+
+                        {can_manage && progress[c.id] && progress[c.id].corps.length > 0 && (
+                            <div class="[ corp-progress ]">
+                                <span class="[ cp-title ]">Fill-out progress</span>
+                                {progress[c.id].corps.map((cp: any) => (
+                                    <div class="[ cp-row ]">
+                                        <img class="[ cp-logo ]" src={get_corporation_logo(cp.corporation_id, 32)} alt={cp.corporation_name} width="22" height="22" loading="lazy" />
+                                        <span class="[ cp-name ]">{cp.corporation_name}</span>
+                                        <div class="[ cp-meter ]">
+                                            <div class="[ cp-fill ]" style={`width:${cp.total ? Math.min(100, (cp.submitted / cp.total) * 100) : 0}%`}></div>
+                                        </div>
+                                        <span class="[ cp-count ]">{cp.submitted}/{cp.total}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                    </div>
+                </div>
+            ))}
+
+            {changelog.length > 0 && (
+                <ComponentBlock>
+                    <Flexblock gap="var(--space-m)">
+                        <h2>You said → we did</h2>
+                        {changelog.map((entry) => (
+                            <Flexblock gap="var(--space-3xs)">
+                                <h3>{entry.heading}</h3>
+                                <p>{entry.body_markdown}</p>
+                            </Flexblock>
+                        ))}
+                    </Flexblock>
+                </ComponentBlock>
+            )}
+        </Flexblock>
+    </PageDefault>
+</Viewport>
+
+<script>
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.copy-link')
+        if (!btn) return
+        const url = window.location.origin + (btn.getAttribute('data-fill') || '')
+        navigator.clipboard.writeText(url).then(function () {
+            const prev = btn.textContent
+            btn.textContent = 'Link copied!'
+            setTimeout(function () { btn.textContent = prev }, 1600)
+        })
+    })
+</script>
+
+<style lang="scss">
+    [x-cloak] { display: none !important; }
+    .sub { color: var(--fleet-yellow); opacity: 0.85; }
+    .err { color: var(--fleet-red); }
+
+    .survey-card {
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+    }
+    .survey-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: url('/images/comunity-tribe-cover.webp');
+        background-size: cover;
+        background-position: center;
+        opacity: 0.22;
+        z-index: 0;
+    }
+    .survey-card::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(120deg, rgba(10, 8, 6, 0.92), rgba(10, 8, 6, 0.7));
+        z-index: 0;
+    }
+    .survey-card.is-closed::before { opacity: 0.1; filter: grayscale(1); }
+    .survey-card__body {
+        position: relative;
+        z-index: 1;
+        padding: var(--space-l);
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+    }
+    .survey-card__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-s); }
+    .survey-card__title { margin: 0; }
+    .count { color: var(--foreground); opacity: 0.6; }
+
+    .status {
+        text-transform: uppercase;
+        font-size: 0.62em;
+        letter-spacing: 0.06em;
+        padding: 2px 10px;
+        border-radius: 999px;
+        border: 1px solid currentColor;
+    }
+    .status--open { color: var(--green); }
+    .status--draft { color: var(--fleet-yellow); }
+    .status--closed { color: var(--foreground); opacity: 0.6; }
+
+    .card-actions { position: relative; display: flex; align-items: center; gap: var(--space-3xs); }
+    .icon-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.9rem;
+        height: 1.9rem;
+        font-size: 1.15rem;
+        line-height: 1;
+        text-decoration: none;
+        color: var(--foreground);
+        background: transparent;
+        border: 1px solid var(--border-color, rgba(255, 255, 255, 0.18));
+        border-radius: 4px;
+        opacity: 0.75;
+        cursor: pointer;
+        transition: var(--fast-transition);
+    }
+    .icon-btn:hover { opacity: 1; border-color: var(--highlight); color: var(--highlight); }
+    .menu {
+        position: absolute;
+        right: 0;
+        top: calc(100% + var(--space-3xs));
+        z-index: 20;
+        min-width: 12rem;
+        display: flex;
+        flex-direction: column;
+        padding: var(--space-3xs);
+        background: var(--background, #12100e);
+        border: 1px solid var(--border-color, rgba(255, 255, 255, 0.18));
+        border-radius: 6px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+    .menu form { margin: 0; }
+    .menu-item {
+        display: block;
+        width: 100%;
+        text-align: left;
+        padding: var(--space-2xs) var(--space-s);
+        background: transparent;
+        border: 0;
+        border-radius: 4px;
+        color: var(--foreground);
+        font-family: inherit;
+        font-size: 0.9em;
+        text-decoration: none;
+        cursor: pointer;
+    }
+    .menu-item:hover { background: var(--fill-and-stroke, rgba(255, 255, 255, 0.07)); color: var(--highlight); }
+    .menu-item--go { color: var(--green); }
+
+    .action-bar { display: flex; flex-direction: column; gap: var(--space-3xs); }
+    .action-bar + .action-bar { border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: var(--space-m); }
+    .action-bar__btns { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2xs); }
+    .action-bar__btns form { margin: 0; }
+    .mbtn {
+        background: var(--fleet-red, #b04723);
+        color: #fff;
+        border: 0;
+        border-radius: 4px;
+        padding: var(--space-2xs) var(--space-m);
+        font-family: var(--button-font, inherit);
+        font-weight: 600;
+        font-size: 0.85em;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+    }
+    .mbtn--go { background: var(--green, #3d9a5f); }
+    .mbtn--ghost { background: transparent; border: 1px solid var(--border-color, rgba(255, 255, 255, 0.25)); color: var(--foreground); }
+    .mbtn--ghost:hover { border-color: var(--highlight); color: var(--highlight); }
+
+    .create-title { text-transform: uppercase; }
+
+    .corp-progress {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        padding-top: var(--space-m);
+    }
+    .cp-title { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.62em; opacity: 0.5; }
+    .cp-row { display: flex; align-items: center; gap: var(--space-2xs); }
+    .cp-logo { border-radius: 3px; flex-shrink: 0; }
+    .cp-name { flex: 0 0 10rem; font-size: 0.85em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cp-meter { flex: 1; height: 8px; border-radius: 999px; background: var(--fill-and-stroke, rgba(255, 255, 255, 0.08)); overflow: hidden; }
+    .cp-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--fleet-red, #b04723), var(--green, #3d9a5f)); }
+    .cp-count { font-size: 0.78em; font-variant-numeric: tabular-nums; opacity: 0.7; min-width: 3.5rem; text-align: right; }
+    @media (max-width: 34rem) { .cp-name { flex-basis: 6rem; } }
+    .check { display: flex; align-items: center; gap: var(--space-3xs); }
+</style>

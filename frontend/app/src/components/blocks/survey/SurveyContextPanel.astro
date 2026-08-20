@@ -1,0 +1,115 @@
+---
+import { get_player_icon } from '@helpers/eve_image_server'
+
+interface Props {
+    context: {
+        fcs: { character_id: number; character_name: string }[]
+        recent_fleets: {
+            title: string
+            date: string
+            fc_id?: number | null
+            fc_name?: string
+            objective?: string
+        }[]
+        resources: { title: string; url: string }[]
+    }
+    [propName: string]: any
+}
+
+const { context } = Astro.props
+const has_any =
+    context.fcs.length > 0 ||
+    context.recent_fleets.length > 0 ||
+    context.resources.length > 0
+---
+
+{has_any && (
+    <div class="[ q-context ]">
+        {context.fcs.length > 0 && (
+            <div class="[ qc-row ]">
+                <span class="[ qc-label ]">FCs</span>
+                <div class="[ qc-portraits ]">
+                    {context.fcs.map((fc) => (
+                        <img
+                            class="[ qc-portrait ]"
+                            src={get_player_icon(fc.character_id, 32)}
+                            alt={fc.character_name}
+                            title={fc.character_name}
+                            width="28"
+                            height="28"
+                            loading="lazy"
+                        />
+                    ))}
+                </div>
+            </div>
+        )}
+        {context.recent_fleets.length > 0 && (
+            <div class="[ qc-row ]">
+                <span class="[ qc-label ]">Recent</span>
+                <ul class="[ qc-list ]">
+                    {context.recent_fleets.map((f) => (
+                        <li title={f.objective || ''}>
+                            <img
+                                class="[ qc-fc ]"
+                                src={get_player_icon(f.fc_id || 1, 32)}
+                                alt={f.fc_name}
+                                title={f.fc_name || 'No FC recorded'}
+                                width="20"
+                                height="20"
+                                loading="lazy"
+                            />
+                            <span>{f.title}</span>
+                            {f.date && <small class="[ qc-date ]">{f.date}</small>}
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        )}
+        {context.resources.length > 0 && (
+            <div class="[ qc-row ]">
+                <span class="[ qc-label ]">Guides</span>
+                <ul class="[ qc-list ]">
+                    {context.resources.map((r) => (
+                        <li><span>{r.title}</span></li>
+                    ))}
+                </ul>
+            </div>
+        )}
+    </div>
+)}
+
+<style lang="scss">
+    .q-context {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        padding: var(--space-s);
+        border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+        border-radius: 5px;
+        background: var(--fill-and-stroke, rgba(255, 255, 255, 0.02));
+    }
+    .qc-row { display: flex; align-items: flex-start; gap: var(--space-s); }
+    .qc-label {
+        flex-shrink: 0;
+        width: 3.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.68em;
+        color: var(--foreground);
+        opacity: 0.5;
+        padding-top: 4px;
+    }
+    .qc-portraits { display: flex; flex-wrap: wrap; gap: var(--space-3xs); }
+    .qc-portrait { border-radius: 50%; border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15)); }
+    .qc-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs) var(--space-m);
+    }
+    .qc-list li { display: flex; align-items: center; gap: var(--space-2xs); font-size: 0.85em; }
+    .qc-date { color: var(--fleet-yellow); opacity: 0.6; font-variant-numeric: tabular-nums; }
+    .qc-fc { border-radius: 50%; flex-shrink: 0; }
+</style>
