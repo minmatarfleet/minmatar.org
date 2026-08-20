@@ -141,6 +141,13 @@ const member_blocks = questions?.member_blocks ?? []
 const total_steps = member_blocks.length + 1 // step 0 = About you
 const total_questions = member_blocks.reduce((n, b) => n + b.questions.length, 0)
 const est_minutes = Math.max(3, Math.round((total_questions * 15) / 60))
+
+// Long-tenure members leaving the open floor blank are the ones whose take we
+// most want — gently nudge them once before they move past it.
+const open_index = member_blocks.findIndex((b) => b.key === 'open')
+const open_step = open_index >= 0 ? open_index + 1 : -1
+const open_is_last = open_index >= 0 && open_index === member_blocks.length - 1
+const is_veteran = (context?.tenure_days ?? 0) >= 365
 ---
 
 <Viewport title={page_title} components={{ alert_dialog: true }}>
@@ -186,6 +193,7 @@ const est_minutes = Math.max(3, Math.round((total_questions * 15) / 60))
             <form
                 method="POST"
                 x-on:change="revalidate(); recordChange($event)"
+                x-on:submit="if (!guardOpen()) $event.preventDefault()"
                 x-data={`{
                     step: 0,
                     total: ${total_steps},
@@ -193,6 +201,8 @@ const est_minutes = Math.max(3, Math.round((total_questions * 15) / 60))
                     stepValid: true,
                     nudged: false,
                     showNudge: false,
+                    openNudged: false,
+                    showOpenNudge: false,
                     answerTimes: [],
                     init() { this.$nextTick(() => this.revalidate()) },
                     recordChange(e) {
@@ -230,8 +240,33 @@ const est_minutes = Math.max(3, Math.round((total_questions * 15) / 60))
                             this.nudged = true
                         }
                     },
+                    isOpenStep() { return ${open_step} >= 0 && this.step === ${open_step} },
+                    openIsEmpty() {
+                        const c = this.$root.querySelector('[data-step="' + this.step + '"]')
+                        if (!c) return false
+                        const areas = c.querySelectorAll('textarea')
+                        if (!areas.length) return false
+                        for (const a of areas) { if (a.value && a.value.trim()) return false }
+                        return true
+                    },
+                    // Returns true if the caller may advance; false when we've
+                    // intercepted with the veteran open-floor nudge instead.
+                    guardOpen() {
+                        if (!${is_veteran ? 'true' : 'false'}) return true
+                        if (this.openNudged) return true
+                        if (!this.isOpenStep() || !this.openIsEmpty()) return true
+                        this.showOpenNudge = true
+                        this.openNudged = true
+                        return false
+                    },
+                    proceedOpen() {
+                        this.showOpenNudge = false
+                        if (${open_is_last ? 'true' : 'false'}) this.$root.requestSubmit()
+                        else this.next()
+                    },
                     next() {
                         if (!this.stepValid) return
+                        if (!this.guardOpen()) return
                         if (this.step < this.total - 1) this.step++
                         this.revalidate()
                         this.checkThoughtful()
@@ -275,6 +310,22 @@ const est_minutes = Math.max(3, Math.round((total_questions * 15) / 60))
                             </p>
                             <FlexInline justification="flex-end">
                                 <button type="button" class="[ wizard-btn wizard-btn--submit ]" x-on:click="showNudge = false">Leave me alone bear</button>
+                            </FlexInline>
+                        </div>
+                    </div>
+
+                    <div class="[ nudge-overlay ]" x-show="showOpenNudge" x-cloak x-transition.opacity x-on:click.self="showOpenNudge = false">
+                        <div class="[ nudge-card ]">
+                            <h3>Your take carries weight</h3>
+                            <p>
+                                You've been flying with us for over a year — that kind of
+                                perspective is exactly what leadership leans on most, and the
+                                open floor is blank right now. Even a line or two on what we
+                                should focus on would genuinely shape what happens next.
+                            </p>
+                            <FlexInline justification="flex-end">
+                                <button type="button" class="[ wizard-btn wizard-btn--ghost ]" x-on:click="proceedOpen()">Skip anyway</button>
+                                <button type="button" class="[ wizard-btn wizard-btn--submit ]" x-on:click="showOpenNudge = false">Add a note</button>
                             </FlexInline>
                         </div>
                     </div>
