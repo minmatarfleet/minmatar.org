@@ -9,12 +9,16 @@ from industry.helpers.facility_profiles import (
     AMAMAKE_SYSTEM_NAME,
     AUNER_SYSTEM_NAME,
     BASGERIN_SYSTEM_NAME,
+    GUKARLA_SYSTEM_NAME,
+    RESBROKO_SYSTEM_NAME,
     FACILITY_PROFILES,
     FACILITY_SYSTEM_IDS,
     FacilityBonuses,
     JobClass,
+    RigFit,
     get_facility_profile,
     get_facility_reprocessing,
+    get_facility_structures,
     get_facility_system_id,
 )
 
@@ -22,51 +26,8 @@ FACILITY_SYSTEM_NAMES: Dict[str, str] = {
     "amamake": AMAMAKE_SYSTEM_NAME,
     "auner": AUNER_SYSTEM_NAME,
     "basgerin": BASGERIN_SYSTEM_NAME,
-}
-
-_JOB_CLASS_ROLE = {
-    JobClass.SHIP_MANUFACTURING: "ship",
-    JobClass.COMPONENT_MANUFACTURING: "component",
-    JobClass.REACTION: "reaction",
-}
-
-# EVE type IDs for freeport structures / fitted industry rigs.
-SOTIYO_TYPE_ID = 35827
-TATARA_TYPE_ID = 35836
-
-_RIG_SHIP_MFG = {
-    "name": "Standup XL-Set Ship Manufacturing Efficiency I",
-    "type_id": 37180,
-    "job_class": JobClass.SHIP_MANUFACTURING.value,
-}
-_RIG_THUKKER = {
-    "name": (
-        "Standup XL-Set Thukker Structure and Component "
-        "Manufacturing Efficiency"
-    ),
-    "type_id": 45548,
-    "job_class": JobClass.COMPONENT_MANUFACTURING.value,
-}
-_RIG_LAB = {
-    "name": "Standup XL-Set Laboratory Optimization I",
-    "type_id": 37183,
-    "job_class": None,
-}
-_RIG_REACTOR = {
-    "name": "Standup L-Set Reactor Efficiency II",
-    "type_id": 46497,
-    "job_class": JobClass.REACTION.value,
-}
-_RIG_REPROCESS = {
-    "name": "Standup L-Set Reprocessing Monitor II",
-    "type_id": 46640,
-    "job_class": None,
-}
-
-_JOB_CLASS_RIG = {
-    JobClass.SHIP_MANUFACTURING: _RIG_SHIP_MFG,
-    JobClass.COMPONENT_MANUFACTURING: _RIG_THUKKER,
-    JobClass.REACTION: _RIG_REACTOR,
+    "gukarla": GUKARLA_SYSTEM_NAME,
+    "resbroko": RESBROKO_SYSTEM_NAME,
 }
 
 _JOB_CLASS_LABEL = {
@@ -91,19 +52,6 @@ def facility_key_for_system(system_id: int) -> Optional[str]:
         if int(sid) == int(system_id):
             return key
     return None
-
-
-def _structure_kind(structure_name: str) -> str:
-    lower = structure_name.lower()
-    if "tatara" in lower or "reaction" in lower:
-        return "tatara"
-    return "sotiyo"
-
-
-def _structure_type_id(kind: str) -> int:
-    if kind == "tatara":
-        return TATARA_TYPE_ID
-    return SOTIYO_TYPE_ID
 
 
 def _pct_label(fraction: float) -> str:
@@ -146,70 +94,69 @@ def _job_class_effects(bonuses: FacilityBonuses) -> List[str]:
     return effects
 
 
-def _lab_rig_payload() -> Dict[str, Any]:
-    return {
-        **_RIG_LAB,
-        "effects": [
-            "Reduces laboratory research, copy, and invention job times",
-        ],
-    }
-
-
-def _reprocess_rig_payload(key: str) -> Dict[str, Any]:
+def _reprocess_effects(key: str) -> List[str]:
     rp = get_facility_reprocessing(key)
+    return [
+        f"Facility base yield {_pct_label(rp.facility_base_yield())}",
+        f"Max-skills refine ≈ {_pct_label(rp.refine_rate())}",
+        f"Reprocessing tax {_pct_label(rp.facility_tax)}",
+    ]
+
+
+def _rig_payload(
+    rig: RigFit,
+    key: str,
+    profile: Dict[JobClass, FacilityBonuses],
+) -> Dict[str, Any]:
+    if rig.job_class is not None:
+        bonuses = profile[rig.job_class]
+        effects = _me_te_effects(
+            _JOB_CLASS_LABEL[rig.job_class], bonuses.rig_me, bonuses.rig_te
+        )
+    elif rig.aux == "lab":
+        effects = [
+            "Reduces laboratory research, copy, and invention job times",
+        ]
+    elif rig.aux == "reprocess":
+        effects = _reprocess_effects(key)
+    else:
+        effects = []
     return {
-        **_RIG_REPROCESS,
-        "effects": [
-            f"Facility base yield {_pct_label(rp.facility_base_yield())}",
-            f"Max-skills refine ≈ {_pct_label(rp.refine_rate())}",
-            f"Reprocessing tax {_pct_label(rp.facility_tax)}",
-        ],
+        "name": rig.name,
+        "type_id": rig.type_id,
+        "job_class": rig.job_class.value if rig.job_class else None,
+        "effects": effects,
     }
+
+
+def _structure_role_effects_for(
+    structure_name: str, profile: Dict[JobClass, FacilityBonuses]
+) -> List[str]:
+    """Role ME/TE/ISK lines from the first job class using this structure."""
+    for job_class in JobClass:
+        bonuses = profile[job_class]
+        if bonuses.structure_name == structure_name:
+            return _structure_role_effects(bonuses)
+    return []
 
 
 def _structures_for_profile(
     key: str, profile: Dict[JobClass, FacilityBonuses]
 ) -> List[Dict[str, Any]]:
-    """Unique structures with type icons and fitted rigs for the UI."""
-    by_name: Dict[str, Dict[str, Any]] = {}
-    order: List[str] = []
-
-    for job_class in JobClass:
-        bonuses = profile[job_class]
-        name = bonuses.structure_name
-        if name not in by_name:
-            kind = _structure_kind(name)
-            by_name[name] = {
-                "role": _JOB_CLASS_ROLE[job_class],
-                "name": name,
-                "kind": kind,
-                "type_id": _structure_type_id(kind),
-                "effects": _structure_role_effects(bonuses),
-                "rigs": [],
-            }
-            order.append(name)
-
-        rig_meta = _JOB_CLASS_RIG[job_class]
-        label = _JOB_CLASS_LABEL[job_class]
-        by_name[name]["rigs"].append(
-            {
-                "name": rig_meta["name"],
-                "type_id": rig_meta["type_id"],
-                "job_class": rig_meta["job_class"],
-                "effects": _me_te_effects(
-                    label, bonuses.rig_me, bonuses.rig_te
-                ),
-            }
-        )
-
-    for name in order:
-        entry = by_name[name]
-        if entry["kind"] == "sotiyo":
-            entry["rigs"].append(_lab_rig_payload())
-        elif entry["kind"] == "tatara":
-            entry["rigs"].append(_reprocess_rig_payload(key))
-
-    return [by_name[name] for name in order]
+    """Fitted structures with type icons and rigs for the UI."""
+    return [
+        {
+            "role": structure.role,
+            "name": structure.name,
+            "kind": structure.kind,
+            "type_id": structure.type_id,
+            "effects": _structure_role_effects_for(structure.name, profile),
+            "rigs": [
+                _rig_payload(rig, key, profile) for rig in structure.rigs
+            ],
+        }
+        for structure in get_facility_structures(key)
+    ]
 
 
 def list_facility_summaries() -> List[Dict[str, Any]]:
@@ -224,9 +171,9 @@ def _reprocessing_payload(key: str) -> Dict[str, Any]:
     rp = get_facility_reprocessing(key)
     return {
         "structure_name": rp.structure_name,
-        "structure_type_id": TATARA_TYPE_ID,
+        "structure_type_id": rp.structure_type_id,
         "rig_name": rp.rig_name,
-        "rig_type_id": _RIG_REPROCESS["type_id"],
+        "rig_type_id": rp.rig_type_id,
         "facility_base_yield": rp.facility_base_yield(),
         "refine_rate": rp.refine_rate(),
         "facility_tax": rp.facility_tax,
@@ -260,15 +207,13 @@ def facility_detail(key: str) -> Dict[str, Any]:
     job_classes = []
     for job_class in JobClass:
         b = profile[job_class]
-        kind = _structure_kind(b.structure_name)
-        rig_meta = _JOB_CLASS_RIG[job_class]
         job_classes.append(
             {
                 "job_class": job_class.value,
                 "structure_name": b.structure_name,
-                "structure_type_id": _structure_type_id(kind),
-                "rig_name": rig_meta["name"],
-                "rig_type_id": rig_meta["type_id"],
+                "structure_type_id": b.structure_type_id,
+                "rig_name": b.rig_name,
+                "rig_type_id": b.rig_type_id,
                 "role_me": b.role_me,
                 "role_te": b.role_te,
                 "rig_me": b.rig_me,
