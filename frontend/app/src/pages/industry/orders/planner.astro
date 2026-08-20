@@ -349,10 +349,12 @@ const bucket_labels = JSON.stringify({
                                     refine_key !== this._loaded_refine_key
 
                                 if (facility_changed) {
-                                    this.withSuspendedWatch(() => {
-                                        this.subitem_catalog = []
-                                        this.build_toggles = {}
-                                    })
+                                    // Persist build-vs-buy choices across a
+                                    // location change: build_toggles and
+                                    // subitem_catalog are keyed by product_type_id
+                                    // and the build tree is facility-independent,
+                                    // so runPlan/syncSubitemsFromJobs reconcile them
+                                    // (refreshed runs, defaults only for new items).
                                     this._loaded_facility_key = this.facility_key
                                     await this.loadFacility()
                                     if (gen !== this._plan_generation)
