@@ -11,8 +11,8 @@ from eveonline.models import (
     EveCorporation,
     EveCharacter,
     EveTag,
-    EsiClient,
 )
+from eveonline.client import EsiClient
 from posts.models import EveTag as PostsEveTag
 from market.models import EveMarketContractExpectation
 from groups.models import AffiliationType, EveCorporationGroup
