@@ -12,13 +12,29 @@ from surveys.constants import (
     COHORT_NEW,
     COHORT_VETERAN,
 )
+from surveys.helpers.corp_history import alliance_join_date
 
 logger = logging.getLogger(__name__)
 
 
 def member_join_date(user):
-    """Earliest community-status history → EvePlayer.created_at → date_joined."""
-    # 1. Community status history (most semantically "joined the community").
+    """Alliance corp-history join → community-status history →
+    EvePlayer.created_at → date_joined."""
+    # 1. Earliest ESI corporation-history start in an alliance corp — the true
+    # "joined the community" date. Everything below is a fallback for members
+    # whose corp history hasn't synced.
+    try:
+        joined = alliance_join_date(user)
+        if joined:
+            return joined
+    except Exception:  # pragma: no cover - defensive
+        logger.debug(
+            "alliance_join_date lookup failed for %s", user, exc_info=True
+        )
+
+    # 2. Community status history. NOTE: this only goes back to when community
+    # status tracking launched (2026-03-01), so it understates tenure for
+    # members who joined earlier — hence it sits below corp history.
     try:
         first = (
             user.community_status_history.order_by("changed_at")
@@ -30,7 +46,7 @@ def member_join_date(user):
     except Exception:  # pragma: no cover - defensive
         logger.debug("no community_status_history for %s", user, exc_info=True)
 
-    # 2. EvePlayer.created_at.
+    # 3. EvePlayer.created_at.
     try:
         player = getattr(user, "eveplayer", None)
         if player and player.created_at:
@@ -38,7 +54,7 @@ def member_join_date(user):
     except Exception:  # pragma: no cover - defensive
         pass
 
-    # 3. Django account creation.
+    # 4. Django account creation.
     return user.date_joined
 
 

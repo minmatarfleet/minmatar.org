@@ -51,6 +51,37 @@ def _has_graduated(corps) -> bool:
     return False
 
 
+def alliance_join_date(user):
+    """Earliest start_date among the member's alliance corporations, i.e. when
+    they first joined the community. Read-only ESI-history data; None if unknown.
+    """
+    try:
+        pc = user_primary_character(user)
+        if not pc:
+            return None
+        alliance_id = getattr(pc, "alliance_id", None) or FL33T_ALLIANCE_ID
+
+        history = list(
+            pc.corporation_history.order_by("start_date", "record_id")
+        )
+        if not history:
+            return None
+
+        alliance_corp_ids = set(
+            EveCorporation.objects.filter(
+                corporation_id__in={row.corporation_id for row in history},
+                alliance__alliance_id=alliance_id,
+            ).values_list("corporation_id", flat=True)
+        )
+        for row in history:  # ordered earliest first
+            if row.corporation_id in alliance_corp_ids:
+                return row.start_date
+        return None
+    except Exception:  # pragma: no cover - defensive
+        logger.debug("alliance_join_date failed", exc_info=True)
+        return None
+
+
 def alliance_corp_history(user) -> dict:
     """Return {"corps": [...], "graduated": bool} for the member's time in the
     alliance's corporations, most-tenured first."""
