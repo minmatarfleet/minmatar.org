@@ -3,6 +3,7 @@ from typing import List, Optional
 
 import requests
 from django.contrib.auth.models import Group, User, Permission
+from django.db import connection
 
 from discord.client import DiscordClient
 from discord.models import DiscordRole, DiscordUser
@@ -15,6 +16,25 @@ from .schemas import EveCharacterSchema, UserProfileSchema
 
 logger = logging.getLogger(__name__)
 
+# Left behind when the mumble Django app was hard-deleted. Production still has
+# the table with a non-cascading FK to auth_user, which blocks User.delete().
+LEGACY_MUMBLE_ACCESS_TABLE = "mumble_mumbleaccess"
+
+
+def _delete_legacy_mumble_access(user_id: int) -> None:
+    """Delete leftover MumbleAccess rows for this user, if the table exists."""
+    if (
+        LEGACY_MUMBLE_ACCESS_TABLE
+        not in connection.introspection.table_names()
+    ):
+        return
+    quoted = connection.ops.quote_name(LEGACY_MUMBLE_ACCESS_TABLE)
+    with connection.cursor() as cursor:
+        cursor.execute(
+            f"DELETE FROM {quoted} WHERE user_id = %s",
+            [user_id],
+        )
+
 
 def offboard_user(user_id: int):
     """
@@ -25,6 +45,7 @@ def offboard_user(user_id: int):
     """
     with disable_discord_group_sync():
         user = User.objects.get(id=user_id)
+        _delete_legacy_mumble_access(user_id)
         user.delete()
 
 

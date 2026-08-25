@@ -1,15 +1,13 @@
 import { experimental_AstroContainer as AstroContainer } from "astro/container";
 import { expect, test } from "vitest";
-import ButtonAddPrimary from "@components/blocks/ButtonAddPrimary.astro";
+import PilotsList from "@components/blocks/PilotsList.astro";
 
-test("ButtonAddPrimary looks up show_alert_dialog on body", async () => {
+test("PilotsList add-pilot looks up show_alert_dialog on body", async () => {
   const container = await AstroContainer.create();
-  const result = await container.renderToString(ButtonAddPrimary, {
+  const result = await container.renderToString(PilotsList, {
     props: {
-      dialog_title: "Add a main character",
-    },
-    slots: {
-      default: "Add main",
+      readonly: false,
+      pilots: [],
     },
   });
 
