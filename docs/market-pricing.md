@@ -26,7 +26,7 @@ Regional daily averages from ESI `GET markets/{region_id}/history/`, stored as `
 **Helpers (use these):**
 
 - `market.helpers.pricing.get_prices_by_type_id` — shared ISK int map by type ID
-- `buyback.helpers.pricing.get_baseline_buy_prices` / `get_baseline_buy_prices_by_name` — Decimal guide for buyback
+- `buyback.helpers.pricing.get_baseline_buy_prices` / `get_baseline_buy_prices_by_name` — live Jita buy (then split), Forge history fallback
 
 **Used by:** buyback appraisals, LP store offer economics, ops/markup baselines, sell-order admin “jita_price”, inferred-sale baselines.
 
@@ -42,9 +42,7 @@ Per-(location, type) aggregates from current ESI orders:
 
 Stored as `EveMarketItemLocationPrice`.
 
-**Use for:** structure/hub market UIs, comparing local book vs guide, industry sell when a synced baseline sell exists.
-
-**Do not** treat LocationPrice alone as the canonical Jita guide. At the Jita NPC station, buy rows are often empty; using them as “Jita buy” rejected all ore appraisals until buyback switched to history (PR #2548).
+**Use for:** structure/hub market UIs, comparing local book vs guide, industry sell when a synced baseline sell exists, and buyback Jita buy (via `get_baseline_buy_prices`, which falls back to history when buy/split are empty — PR #2548).
 
 **Sync:** `fetch_market_location_prices` for locations with `prices_active=True` (not `market_active`). Jita can sync LocationPrice without enabling alliance market flows.
 
@@ -59,10 +57,14 @@ Stored as `EveMarketItemLocationPrice`.
 ## Decision guide
 
 ```
-Need a Jita/Forge “guide” or appraisal baseline?
-  → get_prices_by_type_id / get_baseline_buy_prices
+Need a Jita/Forge “guide” or appraisal baseline (not buyback)?
+  → get_prices_by_type_id
   → EveMarketItemHistory (+ EveMarketPrice fallback)
   → NOT EveMarketItemLocationPrice alone
+
+Need buyback “Jita buy”?
+  → buyback.helpers.pricing.get_baseline_buy_prices
+  → LocationPrice buy, then split, then history
 
 Need live sell/buy at Amamake (or another hub)?
   → EveMarketItemLocationPrice for that EveLocation
@@ -78,20 +80,22 @@ Only need a coarse average / “has any price”?
 ## Correct examples in-repo
 
 - **LP store conversion:** `industry.helpers.plan_costing.plan_lp_offer_conversion` (via `lp_store_economics`) — baseline `EveMarketItemLocationPrice` sell/buy when present, else Forge history via `get_prices_by_type_id`. **Net ISK/LP** = `(revenue − 3.37% sales tax − input − Red Frog input freight − Red Frog output freight) / LP`, where input = store ISK + required items + Amamake manufacturing (materials, jobs, facility/SCC/reprocessing taxes; **no** alliance route freight; navy BPC LP/ISK stay via `lp_cost` / `isk_cost`). Red Frog freight defaults to **45M ISK per 1.5B** cargo on **Jita ↔ Amo** (3% of required+materials inbound, 3% of revenue outbound). Alliance buyback ISK/LP acquisition remains LP-desk only (required items, not build). Interactive planner / profit / guide use the same `plan_item_cost` API with **alliance hub→facility** freight instead.
-- **Buyback:** `buyback.helpers.pricing.get_baseline_buy_prices` — history only; docstring states not live order-book rows.
+- **Buyback:** `buyback.helpers.pricing.get_baseline_buy_prices` — live Jita `buy_price` then `split_price` at the price-baseline location; Forge history if both are missing. Ore pays `min(base compressed buy × variant factor, mineral buy at ore_refine)` then demand/surplus share.
 - **Market admin contrast:** local book from LocationPrice, separate `jita_price` from history/`get_prices_by_type_id`.
 - **Plan costing:** Prefer `industry.helpers.plan_costing.plan_item_cost` / `cost_build_plan` for all build ISK totals. Freight modes: `off`, `alliance_route`, `value_percent` (Red Frog). Do not call `build_plan_cost_breakdown` from new callers (legacy adapter only).
 
 ## Incorrect pattern (do not repeat)
 
 ```python
-# Wrong: live station ItemPrice as Jita guide
+# Wrong: raw LocationPrice as a generic “Jita guide” (use history for that)
 baseline = EveLocation.objects.get(price_baseline=True)
 EveMarketItemLocationPrice.objects.filter(location=baseline).values("buy_price")
-```
 
-```python
-# Right
+# Right for Forge guide
 from market.helpers.pricing import get_prices_by_type_id
 prices = get_prices_by_type_id(type_ids)
+
+# Right for buyback Jita buy (live buy/split, history fallback)
+from buyback.helpers.pricing import get_baseline_buy_prices
+buys = get_baseline_buy_prices(type_ids)
 ```

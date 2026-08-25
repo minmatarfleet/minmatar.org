@@ -6,6 +6,10 @@ from typing import Sequence
 
 from eveuniverse.models import EveType
 
+from buyback.helpers.accepted_items import (
+    compressed_ore_buy_market_name,
+    ore_jita_buy_unit,
+)
 from buyback.helpers.classify import BuybackCategory, classify_eve_type
 from buyback.helpers.demand import mineral_name_to_id_for_ores
 from buyback.helpers.pricing import (
@@ -22,8 +26,9 @@ def batch_estimate_guide_isk(
 ) -> list[float | None]:
     """Market-guide line totals (Jita baseline) parallel to rows.
 
-    Each row is (type_id, name, quantity). Ore uses configured refine
-    rate at full Jita mineral share; other types use full Jita buy × qty.
+    Each row is (type_id, name, quantity). Ore uses min(base Jita buy,
+    refined minerals) at the configured refine rate; other types use
+    Jita buy × qty.
     """
     if not rows:
         return []
@@ -58,8 +63,13 @@ def batch_estimate_guide_isk(
             flat_type_ids.append(eve_type.id)
 
     mineral_name_to_id = mineral_name_to_id_for_ores(ore_names)
-    mineral_buy_by_name = get_baseline_buy_prices_by_name(
-        list(mineral_name_to_id.keys())
+    ore_market_names = [
+        name
+        for name in (compressed_ore_buy_market_name(n) for n in ore_names)
+        if name
+    ]
+    buy_by_name = get_baseline_buy_prices_by_name(
+        list(mineral_name_to_id.keys()) + ore_market_names
     )
     buy_by_id = get_baseline_buy_prices(list(set(flat_type_ids)))
 
@@ -79,7 +89,8 @@ def batch_estimate_guide_isk(
                 type_id=resolved_id,
                 refine_rate=refine_rate,
                 jita_share=1.0,
-                mineral_buy_by_name=mineral_buy_by_name,
+                mineral_buy_by_name=buy_by_name,
+                ore_unit_buy=ore_jita_buy_unit(display_name, buy_by_name),
             )
         elif category in (BuybackCategory.EXCLUDED, BuybackCategory.UNKNOWN):
             totals.append(None)

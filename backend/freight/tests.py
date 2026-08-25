@@ -330,11 +330,15 @@ class FreightContractProxyTestCase(TestCase):
         defaults.update(overrides)
         return EveCorporationContract.objects.create(**defaults)
 
-    def test_proxy_filters_to_freight_corporation(self):
+    def test_proxy_includes_contracts_synced_under_another_corp(self):
+        """Assignee is MFL even if another corp's ESI ingest stored the row."""
         self._make_contract(contract_id=1)
         self._make_contract(contract_id=2, corporation=self.other_corp)
-        self.assertEqual(FreightContract.objects.count(), 1)
-        self.assertEqual(FreightContract.objects.first().contract_id, 1)
+        self.assertEqual(FreightContract.objects.count(), 2)
+        self.assertEqual(
+            set(FreightContract.objects.values_list("contract_id", flat=True)),
+            {1, 2},
+        )
 
     def test_proxy_filters_to_courier_type(self):
         self._make_contract(contract_id=1)
@@ -401,6 +405,39 @@ class FreightContractsEndpointTestCase(TestCase):
         self.assertEqual(data[0]["contract_id"], 12345)
         self.assertEqual(data[0]["status"], "outstanding")
         self.assertEqual(data[0]["volume"], 10000)
+
+    def test_get_contracts_history_includes_issuer_corp_ingest(self):
+        issuer_corp = EveCorporation.objects.create(
+            corporation_id=98733885,
+            name="Ballah Inc.",
+            ticker="BLH",
+        )
+        EveCorporationContract.objects.create(
+            contract_id=235149960,
+            corporation=issuer_corp,
+            type=FREIGHT_CONTRACT_TYPE,
+            status="finished",
+            issuer_id=274643078,
+            for_corporation=True,
+            assignee_id=FREIGHT_CORPORATION_ID,
+            acceptor_id=149027055,
+            start_location_id=100001,
+            end_location_id=100002,
+            volume=2932,
+            collateral=67000000000,
+            reward=1100000000,
+            date_issued=timezone.now() - timedelta(hours=1),
+            date_completed=timezone.now(),
+        )
+        response = self.client.get(
+            f"{BASE_URL}/contracts/history",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        self.assertIn(
+            235149960,
+            [row["contract_id"] for row in response.json()],
+        )
 
     def test_get_active_contracts_with_issuer(self):
         issuer = EveCharacter.objects.create(

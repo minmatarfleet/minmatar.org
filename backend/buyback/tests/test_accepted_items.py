@@ -1,5 +1,6 @@
 """Tests for buyback accepted-item seeding."""
 
+from decimal import Decimal
 from unittest.mock import patch
 
 from django.test import TestCase
@@ -11,6 +12,9 @@ from eveuniverse.models import (
 
 from buyback.helpers.accepted_items import (
     compressed_buyback_ore_base,
+    compressed_ore_buy_factor,
+    compressed_ore_buy_market_name,
+    ore_jita_buy_unit,
     seed_accepted_items,
 )
 from buyback.models import BuybackAcceptedItem
@@ -63,6 +67,34 @@ class AcceptedItemsSeedTestCase(TestCase):
         self.assertIsNone(compressed_buyback_ore_base("Veldspar"))
         self.assertIsNone(compressed_buyback_ore_base("Compressed Blue Ice"))
         self.assertIsNone(compressed_buyback_ore_base("Compressed Arkonor"))
+
+    def test_compressed_ore_buy_factor_and_market_name(self):
+        self.assertEqual(
+            compressed_ore_buy_market_name("Compressed Veldspar II-Grade"),
+            "Compressed Veldspar",
+        )
+        self.assertEqual(compressed_ore_buy_factor("Compressed Veldspar"), 1.0)
+        self.assertEqual(
+            compressed_ore_buy_factor("Compressed Veldspar II-Grade"), 1.05
+        )
+        self.assertEqual(
+            compressed_ore_buy_factor("Compressed Hedbergite III-Grade"), 1.10
+        )
+        self.assertEqual(
+            compressed_ore_buy_factor("Compressed Crokite IV-Grade"), 1.15
+        )
+        self.assertEqual(
+            compressed_ore_buy_factor("Compressed Brimful Zeolites"), 1.15
+        )
+        self.assertEqual(
+            compressed_ore_buy_factor("Compressed Glistening Coesite"), 2.0
+        )
+        unit = ore_jita_buy_unit(
+            "Compressed Veldspar II-Grade",
+            {"Compressed Veldspar": Decimal("10")},
+        )
+        self.assertEqual(unit, Decimal("10.50"))
+        self.assertIsNone(ore_jita_buy_unit("Compressed Veldspar", {}))
 
     @patch("eveonline.signals.update_character_public_data")
     def test_seed_upserts_allowlist(self, unused_mock_public):

@@ -19,7 +19,7 @@ from buyback.models import BuybackAcceptedItem, EveBuybackSettings
 from buyback.tests.helpers import BASE_URL, ensure_type
 from eveonline.models import EveLocation
 from industry.models import IndustryProduct
-from market.models import EveMarketItemHistory
+from market.models import EveMarketItemHistory, EveMarketItemLocationPrice
 
 
 def _ensure_type(**kwargs):
@@ -199,6 +199,7 @@ class PriceBuybackTestCase(TestCase):
         self.assertTrue(line.accepted)
         # 1000*4 + 100*20 = 6000
         self.assertEqual(line.line_total, 6000.0)
+        self.assertEqual(line.jita_buy, 60.0)
         mock_per_portion.assert_called_once_with("Compressed Veldspar")
 
     @patch("buyback.helpers.pricing.ore_materials_per_portion")
@@ -215,6 +216,43 @@ class PriceBuybackTestCase(TestCase):
         self.assertTrue(line.accepted)
         # 43/100 * 400 Trit * 5 ISK = 860
         self.assertEqual(line.line_total, 860.0)
+
+    @patch("buyback.helpers.pricing.ore_materials_per_portion")
+    def test_price_ore_clamps_to_cheaper_ore_buy(self, mock_per_portion):
+        mock_per_portion.return_value = {"Tritanium": 1000}
+        line = price_ore_line(
+            name="Compressed Veldspar",
+            quantity=100,
+            type_id=62516,
+            refine_rate=1.0,
+            jita_share=1.0,
+            mineral_buy_by_name={"Tritanium": Decimal("4")},
+            ore_unit_buy=Decimal("30"),
+        )
+        self.assertTrue(line.accepted)
+        self.assertEqual(line.line_total, 3000.0)
+        self.assertEqual(line.jita_buy, 30.0)
+        self.assertEqual(line.unit_price, 30.0)
+
+    @patch("buyback.helpers.pricing.ore_materials_per_portion")
+    def test_price_ore_keeps_minerals_when_ore_buy_is_higher(
+        self, mock_per_portion
+    ):
+        mock_per_portion.return_value = {"Tritanium": 1000}
+        line = price_ore_line(
+            name="Compressed Veldspar",
+            quantity=100,
+            type_id=62516,
+            refine_rate=1.0,
+            jita_share=0.9,
+            mineral_buy_by_name={"Tritanium": Decimal("4")},
+            ore_unit_buy=Decimal("80"),
+        )
+        self.assertTrue(line.accepted)
+        # minerals 4000 < ore 8000; surplus 0.9 → 3600
+        self.assertEqual(line.line_total, 3600.0)
+        self.assertEqual(line.jita_buy, 40.0)
+        self.assertEqual(line.unit_price, 36.0)
 
 
 class BaselineBuyPriceHistoryTestCase(TestCase):
@@ -265,7 +303,7 @@ class BaselineBuyPriceHistoryTestCase(TestCase):
             volume=50_000,
         )
 
-    def test_uses_region_history_average(self):
+    def test_uses_region_history_average_when_no_live_buy(self):
         prices = get_baseline_buy_prices([self.trit.id, self.water.id])
         self.assertEqual(prices[self.trit.id], Decimal("3.93"))
         self.assertEqual(prices[self.water.id], Decimal("100.00"))
@@ -273,6 +311,31 @@ class BaselineBuyPriceHistoryTestCase(TestCase):
         by_name = get_baseline_buy_prices_by_name(["Tritanium", "Water"])
         self.assertEqual(by_name["Tritanium"], Decimal("3.93"))
         self.assertEqual(by_name["Water"], Decimal("100.00"))
+
+    def test_prefers_live_jita_buy_over_history(self):
+        baseline = EveLocation.objects.get(price_baseline=True)
+        EveMarketItemLocationPrice.objects.create(
+            location=baseline,
+            item=self.trit,
+            sell_price=Decimal("4.00"),
+            buy_price=Decimal("3.50"),
+            split_price=Decimal("3.75"),
+        )
+        prices = get_baseline_buy_prices([self.trit.id, self.water.id])
+        self.assertEqual(prices[self.trit.id], Decimal("3.50"))
+        self.assertEqual(prices[self.water.id], Decimal("100.00"))
+
+    def test_live_split_when_buy_missing(self):
+        baseline = EveLocation.objects.get(price_baseline=True)
+        EveMarketItemLocationPrice.objects.create(
+            location=baseline,
+            item=self.water,
+            sell_price=Decimal("110.00"),
+            buy_price=None,
+            split_price=Decimal("105.00"),
+        )
+        prices = get_baseline_buy_prices([self.water.id])
+        self.assertEqual(prices[self.water.id], Decimal("105.00"))
 
 
 class AppraiseEndpointTestCase(TestCase):
@@ -453,7 +516,7 @@ class AppraiseEndpointTestCase(TestCase):
         by_name = {line["name"]: line for line in data["lines"]}
         self.assertTrue(by_name["Compressed Veldspar"]["accepted"])
         self.assertTrue(by_name["Water"]["accepted"])
-        self.assertIsNone(by_name["Compressed Veldspar"]["jita_buy"])
+        self.assertEqual(by_name["Compressed Veldspar"]["jita_buy"], 40.0)
         self.assertFalse(by_name["Veldspar"]["accepted"])
         self.assertFalse(by_name["Scorched Telemetry Processor"]["accepted"])
         self.assertEqual(
