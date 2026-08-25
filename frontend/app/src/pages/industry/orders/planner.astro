@@ -175,6 +175,25 @@ const bucket_labels = JSON.stringify({
     second_stage_reactions: t('industry.orders.planner.bucket.second_stage_reactions'),
     other: t('industry.orders.planner.bucket.other'),
 })
+const planner_copy = JSON.stringify({
+    implant_off: t('industry.orders.planner.implant_off'),
+    stock_applied: t('industry.orders.planner.stock_applied'),
+    stock_unresolved: t('industry.orders.planner.stock_unresolved'),
+    per_unit_cost_tip: t('industry.orders.planner.per_unit_cost_tip'),
+    total_cost_tip: t('industry.orders.planner.total_cost_tip'),
+    freight_volume: t('industry.orders.planner.freight_volume'),
+    freight_none: t('industry.orders.planner.freight_none'),
+    per_unit_cost: t('industry.orders.planner.per_unit_cost'),
+    per_unit_equals_total: t('industry.orders.planner.per_unit_equals_total'),
+    total_cost: t('industry.orders.planner.total_cost'),
+    implant_assumed_max: t('industry.orders.planner.implant_assumed_max'),
+    implant_fitted: t('industry.orders.planner.implant_fitted'),
+    effective_refine_tip: t('industry.orders.planner.effective_refine_tip'),
+    refine_core: t('industry.orders.planner.refine_core'),
+    refine_per_ore: t('industry.orders.planner.refine_per_ore'),
+    error: t('industry.orders.planner.error'),
+    subitem_import: t('industry.orders.planner.subitem_import').trim(),
+})
 ---
 
 <Viewport
@@ -253,7 +272,7 @@ const bucket_labels = JSON.stringify({
                             effective_refine: ${default_refine},
                             refine_source: 'facility_default',
                             skill_summary: '',
-                            implant_status: '${t('industry.orders.planner.implant_off')}',
+                            implant_status: '',
                             ore_yields: [],
                             character_skills: null,
                             facility_detail: null,
@@ -268,6 +287,7 @@ const bucket_labels = JSON.stringify({
                             _loaded_facility_key: '',
                             _loaded_refine_key: '',
                             bucket_labels: ${bucket_labels},
+                            copy: ${planner_copy},
                             // Auto-replan watches plannerInputSnapshot() only (user inputs).
                             // To add a new control: x-model it onto this component and include
                             // that field in plannerInputSnapshot() — no per-control @change.
@@ -295,7 +315,7 @@ const bucket_labels = JSON.stringify({
                                 const parts = []
                                 if (this.stock_applied_count > 0) {
                                     parts.push(
-                                        '${t('industry.orders.planner.stock_applied')}'.replace(
+                                        this.copy.stock_applied.replace(
                                             '{n}',
                                             String(this.stock_applied_count)
                                         )
@@ -303,7 +323,7 @@ const bucket_labels = JSON.stringify({
                                 }
                                 if (this.stock_unresolved_count > 0) {
                                     parts.push(
-                                        '${t('industry.orders.planner.stock_unresolved')}'.replace(
+                                        this.copy.stock_unresolved.replace(
                                             '{n}',
                                             String(this.stock_unresolved_count)
                                         )
@@ -312,6 +332,7 @@ const bucket_labels = JSON.stringify({
                                 return parts.join(' · ')
                             },
                             initPlannerAutoReplan() {
+                                this.implant_status = this.copy.implant_off
                                 this.$watch(
                                     () => this.plannerInputSnapshot(),
                                     () => this.scheduleReplan()
@@ -408,8 +429,8 @@ const bucket_labels = JSON.stringify({
                                 const perUnit = mode === 'per_unit'
                                 const lines = [
                                     perUnit
-                                        ? '${t('industry.orders.planner.per_unit_cost_tip')}'
-                                        : '${t('industry.orders.planner.total_cost_tip')}',
+                                        ? this.copy.per_unit_cost_tip
+                                        : this.copy.total_cost_tip,
                                     '',
                                 ]
                                 // Show every backend line (incl. reprocessing tax
@@ -428,7 +449,7 @@ const bucket_labels = JSON.stringify({
                                 }
                                 if (Number(breakdown.freight_volume_m3) > 0) {
                                     lines.push(
-                                        '${t('industry.orders.planner.freight_volume')}: '
+                                        this.copy.freight_volume + ': '
                                         + Number(breakdown.freight_volume_m3).toLocaleString(
                                             undefined,
                                             { maximumFractionDigits: 2 }
@@ -441,24 +462,24 @@ const bucket_labels = JSON.stringify({
                                     && Number(breakdown.freight_volume_m3) > 0
                                 ) {
                                     lines.push(
-                                        '${t('industry.orders.planner.freight_none')}'
+                                        this.copy.freight_none
                                     )
                                 }
                                 if (perUnit) {
                                     lines.push(
-                                        '<strong>${t('industry.orders.planner.per_unit_cost')}: '
+                                        '<strong>' + this.copy.per_unit_cost + ': '
                                         + this.formatIsk(
                                             Math.round(breakdown.per_unit_isk)
                                         )
                                         + ' ISK</strong>'
                                     )
                                     lines.push(
-                                        '${t('industry.orders.planner.per_unit_equals_total')}'
+                                        this.copy.per_unit_equals_total
                                             .replace('{n}', String(qty))
                                     )
                                 } else {
                                     lines.push(
-                                        '<strong>${t('industry.orders.planner.total_cost')}: '
+                                        '<strong>' + this.copy.total_cost + ': '
                                         + this.formatIsk(
                                             breakdown.grand_total_isk
                                         )
@@ -634,14 +655,14 @@ const bucket_labels = JSON.stringify({
                                             '/RE' + s.reprocessing_efficiency_level +
                                             '/Ore' + s.ore_processing_level)
                                         : ''
-                                    this.implant_status = '${t('industry.orders.planner.implant_off')}'
+                                    this.implant_status = this.copy.implant_off
                                     this.bindRefineTooltip()
                                     return
                                 }
                                 if (!s) {
                                     this.skill_summary = ''
                                     this.implant_status = (!this.character_id)
-                                        ? '${t('industry.orders.planner.implant_assumed_max')}'
+                                        ? this.copy.implant_assumed_max
                                         : ''
                                     this.bindRefineTooltip()
                                     return
@@ -654,20 +675,20 @@ const bucket_labels = JSON.stringify({
                                     const name = s.implant_name || ('type ' + s.implant_type_id)
                                     const pct = (s.implant_bonus * 100).toFixed(0) + '%'
                                     this.implant_status =
-                                        '${t('industry.orders.planner.implant_fitted')}: ' +
+                                        this.copy.implant_fitted + ': ' +
                                         name + ' (+' + pct + ')'
                                 } else {
                                     // Toggle ON with no RX found → backend assumes RX-804.
                                     this.implant_status =
-                                        '${t('industry.orders.planner.implant_assumed_max')}'
+                                        this.copy.implant_assumed_max
                                 }
                                 this.bindRefineTooltip()
                             },
                             refineYieldTipHtml() {
                                 const lines = [
-                                    '${t('industry.orders.planner.effective_refine_tip')}',
+                                    this.copy.effective_refine_tip,
                                     '',
-                                    '<strong>${t('industry.orders.planner.refine_core')}</strong>',
+                                    '<strong>' + this.copy.refine_core + '</strong>',
                                 ]
                                 const s = this.character_skills
                                 const rep = s ? s.reprocessing_level : 5
@@ -684,7 +705,7 @@ const bucket_labels = JSON.stringify({
                                 if (yields.length) {
                                     lines.push('')
                                     lines.push(
-                                        '<strong>${t('industry.orders.planner.refine_per_ore')}</strong>'
+                                        '<strong>' + this.copy.refine_per_ore + '</strong>'
                                     )
                                     for (const row of yields) {
                                         const pct = (
@@ -767,7 +788,7 @@ const bucket_labels = JSON.stringify({
                                     if (gen !== this._plan_generation)
                                         return
                                     if (!response.ok) {
-                                        let detail = '${t('industry.orders.planner.error')}'
+                                        let detail = this.copy.error
                                         try {
                                             const err = await response.json()
                                             if (err.detail) detail = err.detail
@@ -799,7 +820,7 @@ const bucket_labels = JSON.stringify({
                                 } catch (e) {
                                     if (gen !== this._plan_generation)
                                         return
-                                    this.error = e.message || '${t('industry.orders.planner.error')}'
+                                    this.error = e.message || this.copy.error
                                     this.materials_tsv = ''
                                     this.cost_breakdown = null
                                     this.stock_applied_count = 0
@@ -1214,7 +1235,7 @@ const bucket_labels = JSON.stringify({
                                                         class="[ text-gray ]"
                                                         x-text="build_toggles[String(job.product_type_id)]
                                                             ? ((job.runs || '?') + ' runs')
-                                                            : '${t('industry.orders.planner.subitem_import').trim()}'"
+                                                            : copy.subitem_import"
                                                     ></small>
                                                 </label>
                                             </template>

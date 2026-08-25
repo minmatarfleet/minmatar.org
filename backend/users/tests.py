@@ -1,6 +1,7 @@
 from unittest.mock import patch, MagicMock
 
 from django.conf import settings
+from django.db import connection
 from django.db.models import signals
 from django.test import Client
 from django.contrib.auth.models import User
@@ -14,6 +15,7 @@ from eveonline.helpers.characters import (
     set_primary_character,
     user_primary_character,
 )
+from users.helpers import LEGACY_MUMBLE_ACCESS_TABLE, offboard_user
 from users.router import callback
 
 # Create your tests here.
@@ -316,3 +318,46 @@ class UserRouterTestCase(TestCase):
             "mobile://auth/callback",
             self.client.session["authentication_redirect_url"],
         )
+
+
+class OffboardUserTestCase(TestCase):
+    """Offboard must succeed even with leftover mumble_mumbleaccess rows."""
+
+    def _create_legacy_mumble_table(self):
+        quoted = connection.ops.quote_name(LEGACY_MUMBLE_ACCESS_TABLE)
+        with connection.cursor() as cursor:
+            cursor.execute(f"""
+                CREATE TABLE {quoted} (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    username VARCHAR(255) NOT NULL,
+                    password VARCHAR(255) NOT NULL,
+                    suspended BOOLEAN NOT NULL DEFAULT 0,
+                    FOREIGN KEY (user_id) REFERENCES auth_user (id)
+                )
+                """)
+
+    def _drop_legacy_mumble_table(self):
+        quoted = connection.ops.quote_name(LEGACY_MUMBLE_ACCESS_TABLE)
+        with connection.cursor() as cursor:
+            cursor.execute(f"DROP TABLE IF EXISTS {quoted}")
+
+    def tearDown(self):
+        self._drop_legacy_mumble_table()
+        super().tearDown()
+
+    def test_offboard_deletes_user_with_legacy_mumble_access_row(self):
+        self._create_legacy_mumble_table()
+        quoted = connection.ops.quote_name(LEGACY_MUMBLE_ACCESS_TABLE)
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"""
+                INSERT INTO {quoted} (user_id, username, password, suspended)
+                VALUES (%s, %s, %s, %s)
+                """,
+                [self.user.id, "Test Char", "secret", False],
+            )
+
+        offboard_user(self.user.id)
+
+        self.assertFalse(User.objects.filter(id=self.user.id).exists())
