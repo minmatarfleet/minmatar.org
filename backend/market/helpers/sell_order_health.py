@@ -79,6 +79,7 @@ def build_sell_order_health(  # noqa: C901
     baseline_by_type = forge_baseline_by_type(target_type_ids)
     stock_by_loc_item: dict[tuple[int, int], int] = {}
     viable_by_loc_item: dict[tuple[int, int], int] = {}
+    min_price_by_loc_item: dict[tuple[int, int], int] = {}
     listed_value_by_loc_item: dict[tuple[int, int], float] = {}
     for order in EveMarketItemOrder.objects.filter(
         location_id__in=location_pks,
@@ -87,14 +88,15 @@ def build_sell_order_health(  # noqa: C901
     ).values("location_id", "item_id", "price", "quantity"):
         key = (order["location_id"], order["item_id"])
         quantity = order["quantity"] or 0
+        price = int(order["price"])
         stock_by_loc_item[key] = stock_by_loc_item.get(key, 0) + quantity
         listed_value_by_loc_item[key] = (
-            listed_value_by_loc_item.get(key, 0.0)
-            + float(order["price"]) * quantity
+            listed_value_by_loc_item.get(key, 0.0) + float(price) * quantity
         )
-        if is_price_viable(
-            order["price"], baseline_by_type.get(order["item_id"])
-        ):
+        prev_min = min_price_by_loc_item.get(key)
+        if prev_min is None or price < prev_min:
+            min_price_by_loc_item[key] = price
+        if is_price_viable(price, baseline_by_type.get(order["item_id"])):
             viable_by_loc_item[key] = viable_by_loc_item.get(key, 0) + quantity
 
     classified_by_id = classify_items(target_type_ids)
@@ -158,24 +160,28 @@ def build_sell_order_health(  # noqa: C901
                 continue
             current = stock_by_loc_item.get((loc_pk, eve_type.id), 0)
             viable = viable_by_loc_item.get((loc_pk, eve_type.id), 0)
+            min_price = min_price_by_loc_item.get((loc_pk, eve_type.id))
+            cheapest_viable = min_price is not None and is_price_viable(
+                min_price, baseline_by_type.get(eve_type.id)
+            )
             sell_targets_by_loc[loc_pk] += 1
             sell_ratio = min(1.0, current / desired)
             sell_fill_ratios_by_loc[loc_pk].append(sell_ratio)
             if current >= desired:
                 sell_fulfilled_by_loc[loc_pk] += 1
-            # Viability = price quality of what is listed, not empty shelves.
+            # Viability = cheapest ask vs baseline, not leftover overpriced
+            # depth. Empty shelves drag coverage, not viability.
             if current > 0:
-                sell_viable_ratio = min(1.0, viable / current)
                 sell_viable_fill_ratios_by_loc[loc_pk].append(
-                    sell_viable_ratio
+                    1.0 if cheapest_viable else 0.0
                 )
                 sell_listed_by_loc[loc_pk] += 1
-                if viable >= current:
+                if cheapest_viable:
                     sell_viable_fulfilled_by_loc[loc_pk] += 1
             # Presence: coverage gap = empty shelf; viability = listed but
-            # nothing within-reason priced.
+            # the cheapest ask is above the within-reason cap.
             coverage_gap = current == 0
-            viability_gap = current > 0 and viable == 0
+            viability_gap = current > 0 and not cheapest_viable
             avg_markup_pct = None
             if current > 0:
                 baseline = baseline_by_type.get(eve_type.id)

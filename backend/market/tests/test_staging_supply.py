@@ -1109,14 +1109,15 @@ class MarketHealthApiTestCase(TestCase):
         # Presence desired=1; shortfall uses viable vs desired.
         self.assertEqual(gap["shortfall"], 0)
         self.assertFalse(gap["coverage_gap"])
-        # Some viable stock remains → not a viability gap.
+        # Cheapest ask is within 20% of baseline → type is viable even
+        # when most listed quantity sits above that.
         self.assertFalse(gap["viability_gap"])
         self.assertEqual(gap["item_type"], "consumable")
         self.assertEqual(sells["summary"]["targets"], 1)
         self.assertEqual(sells["summary"]["fulfilled"], 1)
-        self.assertEqual(sells["summary"]["viable_fulfilled"], 0)
+        self.assertEqual(sells["summary"]["viable_fulfilled"], 1)
         self.assertEqual(sells["summary"]["health_pct"], 100.0)
-        self.assertEqual(sells["summary"]["viability_pct"], 11.0)
+        self.assertEqual(sells["summary"]["viability_pct"], 100.0)
         self.assertEqual(
             sum(
                 1
@@ -1127,6 +1128,63 @@ class MarketHealthApiTestCase(TestCase):
         )
         self.assertEqual(gap["flags"], ["in_stock", "overpriced"])
         self.assertIsNone(gap["days_of_stock"])
+
+    def test_viability_uses_cheapest_ask_not_listed_mix(self):
+        charge_cat, _ = EveCategory.objects.get_or_create(
+            id=8, defaults={"name": "Charge", "published": True}
+        )
+        charge_grp, _ = EveGroup.objects.get_or_create(
+            id=801,
+            defaults={
+                "name": "Hybrid Charge",
+                "published": True,
+                "eve_category": charge_cat,
+            },
+        )
+        item, _ = EveType.objects.update_or_create(
+            id=91024,
+            defaults={
+                "name": "Cheapest Ask Ammo",
+                "published": True,
+                "eve_group": charge_grp,
+            },
+        )
+        EveMarketItemExpectation.objects.create(
+            item=item,
+            location=self.loc,
+            quantity=100,
+        )
+        # Expensive majority first so aggregation cannot rely on insert order.
+        EveMarketItemOrder.objects.create(
+            location=self.loc,
+            item=item,
+            quantity=90,
+            price=4_000_000,
+            is_buy_order=False,
+        )
+        EveMarketItemOrder.objects.create(
+            location=self.loc,
+            item=item,
+            quantity=1,
+            price=2_000_000,
+            is_buy_order=False,
+        )
+
+        with patch(
+            "market.helpers.health_common.get_prices_by_type_id",
+            return_value={item.pk: 2_000_000},
+        ):
+            sells = _sell_at(self.loc.location_id)
+
+        gap = next(
+            row
+            for row in sells["rows"]
+            if row["item_name"] == "Cheapest Ask Ammo"
+        )
+        self.assertEqual(gap["viable_quantity"], 1)
+        self.assertFalse(gap["viability_gap"])
+        self.assertEqual(sells["summary"]["viability_pct"], 100.0)
+        self.assertEqual(sells["summary"]["viable_fulfilled"], 1)
 
     def test_boundary_price_counts_as_viable(self):
         charge_cat, _ = EveCategory.objects.get_or_create(
