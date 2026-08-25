@@ -181,6 +181,9 @@ const grouped_items = CATEGORY_ORDER
                                             allowHTML: true,
                                             delay: [100, 200],
                                             arrow: true,
+                                            onShow(instance) {
+                                                tippy.hideAll({ exclude: instance })
+                                            },
                                         })`
                                         : undefined
                                     return (
@@ -189,12 +192,10 @@ const grouped_items = CATEGORY_ORDER
                                                 gap='var(--space-3xs)'
                                                 class:list={[
                                                     '[ buyback-info__item ]',
-                                                    used_in_tip ? '[ buyback-info__item--has-used-in ]' : '',
                                                     item.in_demand
                                                         ? ''
                                                         : '[ buyback-info__item--surplus ]',
                                                 ]}
-                                                x-init={item_tippy}
                                             >
                                                 <ItemPicture
                                                     item_id={item.type_id}
@@ -202,7 +203,16 @@ const grouped_items = CATEGORY_ORDER
                                                     size={24}
                                                     icon_quality={32}
                                                 />
-                                                <span>{item.name}</span>
+                                                <span
+                                                    class:list={[
+                                                        '[ buyback-info__name ]',
+                                                        used_in_tip
+                                                            ? '[ buyback-info__name--has-used-in ]'
+                                                            : '',
+                                                    ]}
+                                                    tabindex={used_in_tip ? 0 : undefined}
+                                                    x-init={item_tippy}
+                                                >{item.name}</span>
                                                 <BuybackRateBadge
                                                     in_demand={Boolean(item.in_demand)}
                                                 />
@@ -216,6 +226,9 @@ const grouped_items = CATEGORY_ORDER
                                                             allowHTML: true,
                                                             delay: [100, 200],
                                                             arrow: true,
+                                                            onShow(instance) {
+                                                                tippy.hideAll({ exclude: instance })
+                                                            },
                                                         })`}
                                                     >
                                                         <span aria-hidden="true">i</span>
@@ -313,18 +326,18 @@ const grouped_items = CATEGORY_ORDER
             min-width: 0;
         }
 
-        .buyback-info__item--has-used-in {
-            cursor: help;
-        }
-
         .buyback-info__item--surplus {
             opacity: 0.85;
         }
 
-        .buyback-info__item > span:first-of-type {
+        .buyback-info__name {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+
+        .buyback-info__name--has-used-in {
+            cursor: help;
         }
 
         .buyback-info__variants {

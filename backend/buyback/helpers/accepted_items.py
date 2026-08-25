@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from datetime import timedelta
+from decimal import Decimal
 from typing import Iterable
 
 from django.db import transaction
@@ -60,6 +61,10 @@ HIGHSEC_ORE_BASES = BUYBACK_ORE_BASES
 _GRADE_SUFFIX_RE = re.compile(r"\s+(II|III|IV)-Grade$")
 _MOON_PREFIX_RE = re.compile(r"^(Brimful|Glistening)\s+")
 
+# Jita ore-buy clamp uses the liquid base type, then these CCP variant factors.
+_ORE_GRADE_BUY_FACTORS = {"II": 1.05, "III": 1.10, "IV": 1.15}
+_ORE_MOON_BUY_FACTORS = {"Brimful": 1.15, "Glistening": 2.0}
+
 P1_P2_GROUPS = frozenset({GROUP_P1, GROUP_P2})
 P3_P4_GROUPS = frozenset({GROUP_P3, GROUP_P4})
 DEFAULT_PI_LOOKBACK_DAYS = 90
@@ -81,6 +86,41 @@ def compressed_buyback_ore_base(name: str) -> str | None:
     if rest in BUYBACK_ORE_BASES:
         return rest
     return None
+
+
+def compressed_ore_buy_market_name(name: str) -> str | None:
+    """Compressed base type whose Jita buy is used for the ore-side clamp."""
+    base = compressed_buyback_ore_base(name)
+    if not base:
+        return None
+    return f"Compressed {base}"
+
+
+def compressed_ore_buy_factor(name: str) -> float:
+    """Scale base-ore Jita buy for II/III/IV-Grade and moon prefixes."""
+    rest = (
+        name[len("Compressed ") :] if name.startswith("Compressed ") else name
+    )
+    grade = _GRADE_SUFFIX_RE.search(rest)
+    if grade:
+        return _ORE_GRADE_BUY_FACTORS[grade.group(1)]
+    moon = _MOON_PREFIX_RE.match(rest)
+    if moon:
+        return _ORE_MOON_BUY_FACTORS[moon.group(1)]
+    return 1.0
+
+
+def ore_jita_buy_unit(
+    name: str, buy_by_name: dict[str, Decimal]
+) -> Decimal | None:
+    """Per-unit Jita buy for an ore stack (base type × variant factor)."""
+    market_name = compressed_ore_buy_market_name(name)
+    if not market_name:
+        return None
+    base_buy = buy_by_name.get(market_name)
+    if base_buy is None:
+        return None
+    return base_buy * Decimal(str(compressed_ore_buy_factor(name)))
 
 
 # Back-compat alias.

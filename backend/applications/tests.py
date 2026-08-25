@@ -390,6 +390,10 @@ class EveCorporationApplicationSignalTest(TestCase):
             )
 
             discord_mock.create_message.assert_called()
+            message = discord_mock.create_message.call_args.kwargs["message"]
+            self.assertIn("https://my.minmatar.org/learning/", message)
+            self.assertIn("Learning Center", message)
+            self.assertNotIn("wiki.minmatar.org", message)
 
     def test_notify_application_transferred_updates_thread(self):
         signals.post_save.disconnect(
