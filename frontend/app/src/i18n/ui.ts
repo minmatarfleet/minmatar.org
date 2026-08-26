@@ -573,7 +573,7 @@ export const ui = {
         'ops_health_coverage_hint': 'Of configured targets, share of target quantity currently listed, regardless of price.',
         'ops_health_contracts_target_hint': 'Of configured targets, share of target contract quantity currently outstanding, regardless of price.',
         'ops_health_contracts_viability_hint': 'Of listed doctrine fits only, share priced within 20% of the Forge baseline for their actual contents (empty targets ignored; fits under 250k ISK always count).',
-        'ops_health_viability_hint': 'Of listed items only, share priced within 20% of baseline (empty targets ignored; items under 1M ISK always count).',
+        'ops_health_viability_hint': 'Of listed items only, share whose cheapest ask is within 20% of the 7-day Forge baseline (empty targets ignored; items under 250k ISK always count).',
         'ops_history_chart_title': 'Market Health',
         'ops_history_contracts_chart_title': 'Contracts Health',
         'ops_history_sell_orders_chart_title': 'Sell Orders Health',
