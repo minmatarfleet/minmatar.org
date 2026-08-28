@@ -19,14 +19,15 @@ const skillset_missing_skills: SkillsetMissingSkillUI = {
     },
 }
 
-test('Copy clipboard uses skill name plus numeric level so EVE can import the plan', async () => {
+test('Copy clipboard uses skill name plus Roman level so EVE can import the plan', async () => {
     const container = await AstroContainer.create()
     const result = await container.renderToString(SkillsetMissingSkills, {
         props: { skillset_missing_skills },
     })
 
-    expect(result).toContain('Remote Armor Repair Systems 4')
-    expect(result).toContain('Remote Armor Repair Systems 5')
-    expect(result).toContain('Logistics Cruisers 5')
+    expect(result).toContain('Remote Armor Repair Systems IV')
+    expect(result).toContain('Remote Armor Repair Systems V')
+    expect(result).toContain('Logistics Cruisers V')
+    expect(result).not.toContain('Remote Armor Repair Systems 4')
     expect(result).not.toContain('Remote Armor Repair Systems Remote Armor Repair Systems')
 })
