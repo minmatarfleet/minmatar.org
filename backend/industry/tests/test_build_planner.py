@@ -581,7 +581,7 @@ class BuildPlannerFixtureTestCase(TestCase):
             facility="amamake",
             manufacturing_index=0.05,
             reaction_index=0.04,
-            exclude_type_ids=[self.adv.id],
+            exclude_type_ids=[self.adv.id, self.composite.id],
         )
         self.assertFalse(
             any(j.product_type_id == self.adv.id for j in trimmed.jobs)
@@ -592,6 +592,25 @@ class BuildPlannerFixtureTestCase(TestCase):
         self.assertIn(self.adv.id, trimmed.leaf_materials)
         self.assertNotIn(self.composite.id, trimmed.leaf_materials)
         self.assertLess(trimmed.total_job_cost_isk, full.total_job_cost_isk)
+
+    def test_exclude_parent_still_builds_requested_descendant(self):
+        """Buy the component but build its reaction: expand the parent too."""
+        plan = plan_build(
+            self.hull,
+            quantity=1,
+            blueprint_me=0.0,
+            blueprint_te=0.0,
+            facility="amamake",
+            manufacturing_index=0.05,
+            reaction_index=0.04,
+            exclude_type_ids=[self.adv.id],
+        )
+        job_ids = {j.product_type_id for j in plan.jobs}
+        self.assertIn(self.adv.id, job_ids)
+        self.assertIn(self.composite.id, job_ids)
+        self.assertNotIn(self.adv.id, plan.leaf_materials)
+        self.assertNotIn(self.composite.id, plan.leaf_materials)
+        self.assertIn(self.trit.id, plan.leaf_materials)
 
     def test_me_reduces_component_materials(self):
         plan0 = plan_build(

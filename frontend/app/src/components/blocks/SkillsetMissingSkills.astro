@@ -38,10 +38,9 @@ missing_skills.forEach((skill) => {
     )
 })
 
-const skills_names: string[] = missing_skills.map(
-    (skill) => `${skill.skill_name} ${skill.skill_name}\n`,
-)
-const clipboard_text: string = skills_names.join('')
+const clipboard_text: string = missing_skills
+    .map((skill) => `${skill.skill_name} ${skill.skill_level}`)
+    .join('\n')
 
 const show_character_select = characters.length > 1 && Boolean(partial_url)
 const selected_character_id = skillset_missing_skills.character.character_id

@@ -286,11 +286,23 @@ const planner_copy = JSON.stringify({
                             _plan_generation: 0,
                             _loaded_facility_key: '',
                             _loaded_refine_key: '',
+                            _job_materials: {},
+                            _job_consumers: {},
+                            _downstream_buckets: {
+                                advanced_components: [
+                                    'second_stage_reactions',
+                                    'first_stage_reactions',
+                                ],
+                                second_stage_reactions: [
+                                    'first_stage_reactions',
+                                ],
+                            },
                             bucket_labels: ${bucket_labels},
                             copy: ${planner_copy},
                             // Auto-replan watches plannerInputSnapshot() only (user inputs).
                             // To add a new control: x-model it onto this component and include
-                            // that field in plannerInputSnapshot() — no per-control @change.
+                            // that field in plannerInputSnapshot() — no per-control @change
+                            // except onSubitemToggle, which cascades ancestor build flags.
                             // Do not put plan response fields (jobs, materials_tsv, etc.) here.
                             plannerInputSnapshot() {
                                 const toggles = this.build_toggles
@@ -533,7 +545,46 @@ const planner_copy = JSON.stringify({
                                     .filter(([, on]) => !on)
                                     .map(([id]) => parseInt(id))
                             },
+                            rememberJobGraph(jobs) {
+                                // Union into a persistent graph from the first
+                                // full expansion so later buy-all plans that
+                                // drop nested jobs still know parent/child.
+                                for (const job of jobs || []) {
+                                    const pid = job.product_type_id
+                                    if (!this._job_materials[pid])
+                                        this._job_materials[pid] = []
+                                    const known = {}
+                                    for (const mid of this._job_materials[pid])
+                                        known[mid] = true
+                                    for (const mat of job.materials || []) {
+                                        const mid = mat.type_id
+                                        if (!known[mid]) {
+                                            this._job_materials[pid].push(mid)
+                                            known[mid] = true
+                                        }
+                                        if (!this._job_consumers[mid])
+                                            this._job_consumers[mid] = []
+                                        if (!this._job_consumers[mid].includes(pid))
+                                            this._job_consumers[mid].push(pid)
+                                    }
+                                }
+                            },
+                            enableAncestorBuilds(type_id) {
+                                const seen = {}
+                                const walk = (id) => {
+                                    for (const cid of (this._job_consumers[id] || [])) {
+                                        if (seen[cid]) continue
+                                        seen[cid] = true
+                                        if (cid === this.product_type_id)
+                                            continue
+                                        this.build_toggles[String(cid)] = true
+                                        walk(cid)
+                                    }
+                                }
+                                walk(type_id)
+                            },
                             syncSubitemsFromJobs(jobs) {
+                                this.rememberJobGraph(jobs)
                                 let needs_replan = false
                                 // Suspend watch so buy-all default toggles do not
                                 // schedule a second debounced replan; runPlan re-runs
@@ -840,9 +891,19 @@ const planner_copy = JSON.stringify({
                             },
                             selectBucketSubitems(bucket) {
                                 this.setBucketSubitemToggles(bucket, true)
+                                for (const row of this.subitem_catalog) {
+                                    if ((row.bucket || 'other') === bucket)
+                                        this.enableAncestorBuilds(row.product_type_id)
+                                }
                             },
                             deselectBucketSubitems(bucket) {
                                 this.setBucketSubitemToggles(bucket, false)
+                                for (const child of (this._downstream_buckets[bucket] || []))
+                                    this.setBucketSubitemToggles(child, false)
+                            },
+                            onSubitemToggle(type_id, on) {
+                                if (on)
+                                    this.enableAncestorBuilds(type_id)
                             },
                         }`}
                         x-init="initPlannerAutoReplan()"
@@ -1221,6 +1282,7 @@ const planner_copy = JSON.stringify({
                                                     <input
                                                         type="checkbox"
                                                         x-model="build_toggles[String(job.product_type_id)]"
+                                                        x-on:change="onSubitemToggle(job.product_type_id, $event.target.checked)"
                                                     />
                                                     <img
                                                         class="[ planner-subitem-icon ]"

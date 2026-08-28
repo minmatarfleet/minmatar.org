@@ -1291,7 +1291,7 @@ export const ui = {
         'industry.orders.planner.reprocessing_tax': 'Reprocessing tax',
         'industry.orders.planner.reprocessing_tax_tip': 'Tax taken when you reprocess (refine) ore at this location.',
         'industry.orders.planner.subitems': 'Build vs buy',
-        'industry.orders.planner.subitems_hint': 'Checked items are manufactured or reacted here. Uncheck anything you will buy or import instead.',
+        'industry.orders.planner.subitems_hint': 'Checked items are manufactured or reacted here. Building a reaction also builds the components that use it. Uncheck anything you will buy or import instead.',
         'industry.orders.planner.select_all': 'Build all',
         'industry.orders.planner.deselect_all': 'Buy all',
         'industry.orders.planner.other_hint': 'Fuel blocks and similar items default to buy. Check them only if you will manufacture them yourself.',
