@@ -1,0 +1,399 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+import { get_auth_url } from '@helpers/env'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user: User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_logged_in = !!(user && auth_token)
+
+import {
+    post_buyback_purchase_order,
+    post_buyback_stock_fill,
+} from '@helpers/api.minmatar.org/buybacks'
+import type {
+    BuybackPurchaseFill,
+    BuybackPurchaseOrder,
+} from '@dtypes/api.minmatar.org'
+import { number_thousand_separator } from '@helpers/numbers.ts'
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import Breadcrumb from '@components/blocks/Breadcrumb.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Button from '@components/blocks/Button.astro'
+import ClipboardButton from '@components/blocks/ClipboardButton.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+
+let fill: BuybackPurchaseFill | null = null
+let placed: BuybackPurchaseOrder | null = null
+let paste = ''
+let source = 'stockpile'
+let character_id: number | null = null
+let facility_key = ''
+let use_reprocessing_implants = false
+let data_fetching_error: Error | false = false
+
+if (Astro.request.method !== 'POST')
+    return Astro.redirect(translatePath('/market/buyback/stocks/'))
+
+try {
+    const data = await Astro.request.formData()
+    paste = (
+        (data.get('paste') as string) ||
+        (data.get('materials_tsv') as string) ||
+        ''
+    ).trim()
+    source = ((data.get('source') as string) || 'stockpile').trim() || 'stockpile'
+    const action = ((data.get('action') as string) || '').trim()
+    const character_raw = ((data.get('character_id') as string) || '').trim()
+    const parsed_character = parseInt(character_raw, 10)
+    character_id = parsed_character > 0 ? parsed_character : null
+    facility_key = ((data.get('facility_key') as string) || '').trim()
+    const implants_raw = (
+        (data.get('use_reprocessing_implants') as string) || ''
+    ).trim().toLowerCase()
+    use_reprocessing_implants = ['1', 'true', 'on', 'yes'].includes(implants_raw)
+
+    const refine_options = {
+        character_id,
+        facility_key: facility_key || null,
+        use_reprocessing_implants,
+    }
+
+    if (!paste)
+        throw new Error(t('buyback.purchase.invalid_paste'), { cause: 400 })
+
+    if (action === 'place') {
+        if (!auth_token)
+            throw new Error(t('buyback.purchase.login_to_place'), { cause: 401 })
+        placed = await post_buyback_purchase_order(
+            auth_token,
+            paste,
+            source,
+            refine_options,
+        )
+    } else {
+        fill = await post_buyback_stock_fill(paste, source, {
+            ...refine_options,
+            access_token: auth_token || undefined,
+        })
+    }
+} catch (error) {
+    data_fetching_error = error as Error
+}
+
+if (data_fetching_error) {
+    Astro.cookies.set(
+        'buyback_contract_error',
+        data_fetching_error.message,
+        { path: '/' },
+    )
+    return Astro.redirect(translatePath('/market/buyback/stocks/'))
+}
+
+const page_title = t('buyback.purchase.page_title')
+const can_place = !!(fill && fill.picks.length > 0 && fill.contract_total > 0)
+const contract_total = placed?.contract_total ?? fill?.contract_total ?? 0
+const refine_pct = fill
+    ? (fill.refine_rate * 100).toFixed(1)
+    : ''
+const refine_yield_text = fill
+    ? t('buyback.purchase.refine_yield')
+        .replace('{pct}', refine_pct)
+        .replace(
+            '{where}',
+            fill.facility_name
+                ? t('buyback.purchase.refine_yield_at').replace(
+                    '{location}',
+                    fill.facility_name,
+                )
+                : '',
+        )
+    : ''
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('buyback.purchase.meta_description')}
+    components={{
+        tippy: true,
+    }}
+>
+    <PageWide
+        cover={{
+            image: '/images/mining-cover.webp',
+            image_990: '/images/mining-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <Flexblock slot="header" gap="var(--space-s)">
+            <Breadcrumb items={[
+                { label: t('buyback.page_title'), href: translatePath('/market/buyback/') },
+                { label: t('buyback_stocks.page_title'), href: translatePath('/market/buyback/stocks/') },
+                { label: page_title },
+            ]} />
+            <PageTitle>
+                {page_title}
+            </PageTitle>
+        </Flexblock>
+
+        <Flexblock gap="var(--space-xl)">
+            {placed &&
+                <ComponentBlock>
+                    <Flexblock gap="var(--space-m)">
+                        <h2>{t('buyback.purchase.placed_title')}</h2>
+                        <p>{t('buyback.purchase.placed_lead').replace('{name}', placed.character_name || t('buyback.purchase.orders.unknown_pilot'))}</p>
+                        <FlexInline
+                            justification="space-between"
+                            gap="var(--space-s)"
+                            class="[ w-full flex-wrap items-center ]"
+                        >
+                            <Flexblock gap="var(--space-3xs)">
+                                <p class="[ buyback-purchase__label ]">{t('buyback.purchase.contract_total')}</p>
+                                <p class="[ buyback-purchase__total ]">
+                                    {number_thousand_separator(placed.contract_total)} ISK
+                                </p>
+                            </Flexblock>
+                            <FlexInline gap="var(--space-2xs)" class="[ flex-wrap ]">
+                                <ClipboardButton id="buyback-purchase-placed-isk">
+                                    {String(placed.contract_total)}
+                                </ClipboardButton>
+                                {placed.janice_tsv &&
+                                    <ClipboardButton
+                                        id="buyback-purchase-placed-janice"
+                                        text={t('buyback.purchase.copy_janice')}
+                                    >{placed.janice_tsv}</ClipboardButton>
+                                }
+                            </FlexInline>
+                        </FlexInline>
+                        <FlexInline gap="var(--space-2xs)" class="[ flex-wrap ]">
+                            {placed.discord_thread_url &&
+                                <Button
+                                    href={placed.discord_thread_url}
+                                    size="sm"
+                                    new_tab={true}
+                                >
+                                    {t('buyback.purchase.discord_thread')}
+                                </Button>
+                            }
+                            <Button
+                                href={translatePath(`/market/buyback/orders/?order=${placed.id}`)}
+                                size="sm"
+                            >
+                                {t('buyback.purchase.view_order')}
+                            </Button>
+                            <Button
+                                href={translatePath('/market/buyback/stocks/')}
+                                size="sm"
+                            >
+                                {t('buyback_stocks.page_title')}
+                            </Button>
+                        </FlexInline>
+                    </Flexblock>
+                </ComponentBlock>
+            }
+
+            {fill &&
+                <ComponentBlock>
+                    <Flexblock gap="var(--space-m)">
+                        <FlexInline
+                            justification="space-between"
+                            gap="var(--space-s)"
+                            class="[ w-full flex-wrap items-center ]"
+                        >
+                            <h2>{t('buyback.purchase.hangar_lines')}</h2>
+                            {fill.janice_tsv &&
+                                <ClipboardButton
+                                    id="buyback-purchase-janice"
+                                    text={t('buyback.purchase.copy_janice')}
+                                >{fill.janice_tsv}</ClipboardButton>
+                            }
+                        </FlexInline>
+
+                        {refine_yield_text &&
+                            <p class="[ buyback-purchase__hint ]">{refine_yield_text}</p>
+                        }
+
+                        {fill.picks.length === 0 ?
+                            <p>{t('buyback.purchase.empty')}</p>
+                            :
+                            <ul class="[ buyback-purchase__list ]">
+                                {fill.picks.map((pick) =>
+                                    <li>
+                                        <FlexInline
+                                            gap="var(--space-3xs)"
+                                            class="[ buyback-purchase__row ]"
+                                        >
+                                            <ItemPicture
+                                                item_id={pick.type_id}
+                                                item_name={pick.name}
+                                                size={24}
+                                                icon_quality={32}
+                                            />
+                                            <span class="[ buyback-purchase__name ]">{pick.name}</span>
+                                            <span class="[ buyback-purchase__qty ]">
+                                                {pick.quantity.toLocaleString()}
+                                            </span>
+                                            <span class="[ buyback-purchase__isk ]">
+                                                {pick.line_total != null
+                                                    ? `${number_thousand_separator(pick.line_total)} ISK`
+                                                    : '—'}
+                                            </span>
+                                        </FlexInline>
+                                    </li>
+                                )}
+                            </ul>
+                        }
+
+                        <FlexInline
+                            justification="space-between"
+                            gap="var(--space-s)"
+                            class="[ w-full flex-wrap items-center ]"
+                        >
+                            <Flexblock gap="var(--space-3xs)">
+                                <p class="[ buyback-purchase__label ]">{t('buyback.purchase.contract_total')}</p>
+                                <p class="[ buyback-purchase__total ]">
+                                    {number_thousand_separator(contract_total)} ISK
+                                </p>
+                            </Flexblock>
+                            {can_place &&
+                                <ClipboardButton id="buyback-purchase-isk">
+                                    {String(fill.contract_total)}
+                                </ClipboardButton>
+                            }
+                        </FlexInline>
+
+                        {can_place && is_logged_in &&
+                            <form method="POST" action={translatePath('/market/buyback/order/')}>
+                                <input type="hidden" name="action" value="place" />
+                                <input type="hidden" name="source" value={source} />
+                                <input type="hidden" name="paste" value={paste} />
+                                <input type="hidden" name="facility_key" value={facility_key} />
+                                {character_id != null &&
+                                    <input type="hidden" name="character_id" value={character_id} />
+                                }
+                                {use_reprocessing_implants &&
+                                    <input type="hidden" name="use_reprocessing_implants" value="1" />
+                                }
+                                <Button type="submit" class="[ w-full ]">
+                                    {t('buyback.purchase.place')}
+                                </Button>
+                            </form>
+                        }
+                        {can_place && !is_logged_in &&
+                            <Flexblock gap="var(--space-2xs)">
+                                <p>{t('buyback.purchase.login_to_place')}</p>
+                                <Button href={get_auth_url(Astro.url.toString())}>
+                                    {t('authentication')}
+                                </Button>
+                            </Flexblock>
+                        }
+                    </Flexblock>
+                </ComponentBlock>
+            }
+
+            {fill && fill.shortfalls.length > 0 &&
+                <ComponentBlock>
+                    <Flexblock gap="var(--space-m)">
+                        <FlexInline
+                            justification="space-between"
+                            gap="var(--space-s)"
+                            class="[ w-full flex-wrap items-center ]"
+                        >
+                            <Flexblock gap="var(--space-3xs)">
+                                <h2>{t('buyback.purchase.shortfall_title')}</h2>
+                                <p class="[ buyback-purchase__hint ]">{t('buyback.purchase.shortfall_lead')}</p>
+                            </Flexblock>
+                            {fill.shortfall_tsv &&
+                                <ClipboardButton
+                                    id="buyback-purchase-shortfall"
+                                    text={t('buyback.purchase.copy_multibuy')}
+                                >{fill.shortfall_tsv}</ClipboardButton>
+                            }
+                        </FlexInline>
+                        <ul class="[ buyback-purchase__list ]">
+                            {fill.shortfalls.map((row) =>
+                                <li>
+                                    <FlexInline
+                                        gap="var(--space-3xs)"
+                                        class="[ buyback-purchase__row ]"
+                                    >
+                                        {row.type_id != null &&
+                                            <ItemPicture
+                                                item_id={row.type_id}
+                                                item_name={row.name}
+                                                size={24}
+                                                icon_quality={32}
+                                            />
+                                        }
+                                        <span class="[ buyback-purchase__name ]">{row.name}</span>
+                                        <span class="[ buyback-purchase__qty ]">
+                                            {row.quantity.toLocaleString()}
+                                        </span>
+                                    </FlexInline>
+                                </li>
+                            )}
+                        </ul>
+                    </Flexblock>
+                </ComponentBlock>
+            }
+        </Flexblock>
+    </PageWide>
+</Viewport>
+
+<style lang="scss">
+    .buyback-purchase__hint,
+    .buyback-purchase__label,
+    .buyback-purchase__isk {
+        color: var(--faded);
+        font-size: var(--step--1);
+    }
+
+    .buyback-purchase__label {
+        margin: 0;
+    }
+
+    .buyback-purchase__total {
+        margin: 0;
+        font-variant-numeric: tabular-nums;
+        color: var(--highlight);
+    }
+
+    .buyback-purchase__list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .buyback-purchase__name {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .buyback-purchase__qty,
+    .buyback-purchase__isk {
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .buyback-purchase__qty {
+        color: var(--highlight);
+    }
+</style>

@@ -136,3 +136,82 @@ class BuybackContractsStatsResponse(BaseModel):
     finished_isk: int
     average_processing_seconds: Optional[int] = None
     window_days: int = 30
+
+
+class BuybackPurchaseFillRequest(BaseModel):
+    paste: str = Field(..., min_length=1)
+    source: Optional[str] = None
+    character_id: Optional[int] = None
+    facility_key: Optional[str] = None
+    use_reprocessing_implants: bool = False
+
+
+class BuybackPurchasePick(BaseModel):
+    type_id: int
+    name: str
+    quantity: int
+    fill_source: str
+    unit_price: Optional[float] = None
+    line_total: Optional[float] = None
+
+
+class BuybackPurchaseShortfall(BaseModel):
+    type_id: Optional[int] = None
+    name: str
+    quantity: int
+
+
+class BuybackPurchaseFillResponse(BaseModel):
+    picks: List[BuybackPurchasePick]
+    shortfalls: List[BuybackPurchaseShortfall]
+    unresolved_names: List[str]
+    janice_tsv: str
+    shortfall_tsv: str
+    contract_total: int
+    refine_rate: float
+    refine_rate_source: str = ""
+    facility_key: str = ""
+    facility_name: str = ""
+    sell_price_basis: str
+    sell_markup: float
+
+
+class BuybackPurchaseOrderLineResponse(BaseModel):
+    type_id: int
+    name: str
+    quantity: int
+    unit_price: float
+    line_total: float
+    fill_source: str
+
+
+class BuybackPurchaseOrderResponse(BaseModel):
+    id: int
+    status: str
+    source: str
+    created_by_user_id: int
+    character_id: Optional[int] = None
+    character_name: str
+    contract_total: int
+    sell_price_basis: str
+    sell_markup: float
+    janice_tsv: str
+    created_at: str
+    completed_at: Optional[str] = None
+    discord_thread_id: Optional[int] = None
+    discord_thread_url: Optional[str] = None
+    lines: List[BuybackPurchaseOrderLineResponse]
+
+
+class BuybackPurchaseDiscordAckRequest(BaseModel):
+    discord_user_id: int
+    action: str
+
+
+class BuybackPurchaseOrderListResponse(BaseModel):
+    orders: List[BuybackPurchaseOrderResponse]
+    count: int
+
+
+class BuybackPurchaseCapabilitiesResponse(BaseModel):
+    can_manage: bool

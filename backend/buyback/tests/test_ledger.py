@@ -4,6 +4,7 @@ from datetime import timedelta
 from decimal import Decimal
 from unittest.mock import patch
 
+from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.utils import timezone
 
@@ -21,7 +22,9 @@ from buyback.models import (
     BuybackAcceptedItem,
     BuybackHangarSnapshot,
     BuybackLedgerEntry,
+    BuybackPurchaseOrder,
     EveBuybackSettings,
+    SellPriceBasis,
 )
 from buyback.tests.helpers import BASE_URL, ensure_type
 from eveonline.models import (
@@ -299,6 +302,26 @@ class StockAndLedgerEndpointTestCase(TestCase):
         self.assertEqual(len(data["items"]), 1)
         self.assertEqual(data["items"][0]["quantity"], 123)
         self.assertIn("isk_value", data["items"][0])
+
+    def test_stock_endpoint_subtracts_pending_purchases(self):
+        user = User.objects.create(username="buyer")
+        order = BuybackPurchaseOrder.objects.create(
+            created_by=user,
+            paste="Compressed Veldspar\t23",
+            contract_total=1,
+            sell_price_basis=SellPriceBasis.JITA_SPLIT,
+            sell_markup=0,
+        )
+        order.lines.create(
+            eve_type=self.eve_type,
+            name=self.eve_type.name,
+            quantity=23,
+            unit_price=Decimal("1.00"),
+            line_total=Decimal("23.00"),
+        )
+        response = self.client.get(f"{BASE_URL}/stock")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["items"][0]["quantity"], 100)
 
     def test_ledger_endpoint(self):
         response = self.client.get(f"{BASE_URL}/ledger")

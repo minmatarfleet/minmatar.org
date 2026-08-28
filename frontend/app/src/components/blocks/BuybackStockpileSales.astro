@@ -1,0 +1,102 @@
+---
+import { i18n } from '@helpers/i18n'
+import type { BuybackLedgerEntry } from '@dtypes/api.minmatar.org'
+import { aggregate_stockpile_sales } from '@helpers/buyback_stockpile_sales'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import BuybackStockpileSaleItem from '@components/blocks/BuybackStockpileSaleItem.astro'
+
+interface Props {
+    ledger_entries: BuybackLedgerEntry[]
+    fetch_failed?: boolean
+}
+
+const { t } = i18n(Astro.url)
+const { ledger_entries, fetch_failed = false } = Astro.props
+
+const sale_rows = aggregate_stockpile_sales(ledger_entries)
+
+function reason_label(reason: string): string {
+    if (reason === 'sold_order') return t('buyback.ledger.reason.sold_order')
+    if (reason === 'sold_contract') return t('buyback.ledger.reason.sold_contract')
+    return reason
+}
+---
+
+<section class="[ buyback-stockpile-sales ]">
+    <Flexblock gap="var(--space-s)">
+        <Flexblock gap="var(--space-3xs)">
+            <h2>{t('buyback.ledger.title')}</h2>
+            <p class="[ buyback-stockpile-sales__lead ]">{t('buyback.ledger.lead')}</p>
+        </Flexblock>
+
+        {fetch_failed ? (
+            <p class="[ buyback-stockpile-sales__empty ]">{t('buyback.ledger.fetch_error')}</p>
+        ) : sale_rows.length === 0 ? (
+            <p class="[ buyback-stockpile-sales__empty ]">{t('buyback.ledger.empty')}</p>
+        ) : (
+            <div class="[ buyback-stockpile-sales__scroll ]">
+                <div class="[ buyback-stockpile-sales__grid ]" role="table" aria-label={t('buyback.ledger.title')}>
+                    <div class="[ buyback-stockpile-sales__header ]" role="row">
+                        <div role="columnheader">{t('buyback.ledger.col.date')}</div>
+                        <div role="columnheader">{t('buyback.ledger.col.item')}</div>
+                        <div role="columnheader">{t('buyback.ledger.col.quantity')}</div>
+                        <div role="columnheader">{t('buyback.ledger.col.total')}</div>
+                        <div role="columnheader">{t('buyback.ledger.col.via')}</div>
+                        <div role="columnheader">{t('buyback.ledger.col.buyers')}</div>
+                    </div>
+
+                    {sale_rows.map((row) =>
+                        <BuybackStockpileSaleItem
+                            row={row}
+                            reason_label={reason_label(row.reason)}
+                        />
+                    )}
+                </div>
+            </div>
+        )}
+    </Flexblock>
+</section>
+
+<style lang="scss">
+    h2 {
+        font-size: var(--step-1);
+        margin: 0;
+    }
+
+    .buyback-stockpile-sales__lead {
+        margin: 0;
+        color: var(--faded);
+        font-size: var(--step--1);
+    }
+
+    .buyback-stockpile-sales__empty {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--highlight);
+    }
+
+    .buyback-stockpile-sales__scroll {
+        overflow-x: auto;
+        mask-image: linear-gradient(to right, black 90%, transparent);
+    }
+
+    .buyback-stockpile-sales__grid {
+        min-width: 70rem;
+    }
+
+    .buyback-stockpile-sales__header {
+        display: grid;
+        grid-template-columns: minmax(6.5rem, 0.8fr) minmax(12rem, 1.5fr) minmax(6rem, 0.8fr) minmax(7rem, 1fr) minmax(6rem, 0.8fr) minmax(7rem, 1fr);
+        gap: var(--space-s);
+        align-items: end;
+        padding-block: var(--space-2xs);
+        padding-inline: var(--space-2xs);
+        border-bottom: solid 1px var(--border-color);
+        color: var(--highlight);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+    }
+</style>

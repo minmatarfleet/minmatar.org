@@ -1,0 +1,96 @@
+---
+import { i18n } from '@helpers/i18n'
+import type { BuybackPurchaseOrder } from '@dtypes/api.minmatar.org'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import BuybackPurchaseOrderItem from '@components/blocks/BuybackPurchaseOrderItem.astro'
+
+interface Props {
+    orders: BuybackPurchaseOrder[]
+    can_manage?: boolean
+    highlight_order_id?: string | null
+    section_title?: string
+}
+
+const { t } = i18n(Astro.url)
+const {
+    orders,
+    can_manage = false,
+    highlight_order_id = null,
+    section_title = t('buyback.purchase.orders.section_title'),
+} = Astro.props
+---
+
+<section class="[ buyback-purchase-orders ]">
+    <Flexblock gap="var(--space-s)">
+        <h2>{section_title}</h2>
+
+        {orders.length === 0 ? (
+            <p class="[ buyback-purchase-orders__empty ]">{t('buyback.purchase.orders.empty')}</p>
+        ) : (
+            <div class="[ buyback-purchase-orders__scroll ]">
+                <div class="[ buyback-purchase-orders__grid ]" role="table" aria-label={section_title}>
+                    <div class="[ buyback-purchase-orders__header ]" role="row">
+                        <div role="columnheader">{t('buyback.purchase.orders.col.id')}</div>
+                        <div role="columnheader">{t('creator')}</div>
+                        <div role="columnheader">{t('buyback.purchase.orders.col.items')}</div>
+                        <div role="columnheader">{t('buyback.purchase.orders.col.total')}</div>
+                        <div role="columnheader">{t('status')}</div>
+                        <div role="columnheader">{t('date_created')}</div>
+                        <div role="columnheader">{t('buyback.purchase.orders.col.actions')}</div>
+                    </div>
+
+                    {orders.map((order) =>
+                        <BuybackPurchaseOrderItem
+                            order={order}
+                            can_manage={can_manage}
+                            highlighted={highlight_order_id === String(order.id)}
+                        />
+                    )}
+                </div>
+            </div>
+        )}
+    </Flexblock>
+</section>
+
+<style lang="scss">
+    h2 {
+        font-size: var(--step-1);
+        margin: 0;
+    }
+
+    .buyback-purchase-orders__scroll {
+        overflow-x: auto;
+        mask-image: linear-gradient(to right, black 90%, transparent);
+
+        &:has(.button-dropdown.is-open) {
+            overflow: visible;
+            mask-image: none;
+        }
+    }
+
+    .buyback-purchase-orders__grid {
+        min-width: 70rem;
+    }
+
+    .buyback-purchase-orders__header {
+        display: grid;
+        grid-template-columns: minmax(4rem, 0.5fr) minmax(10rem, 1.4fr) minmax(6rem, 0.8fr) minmax(7rem, 1fr) minmax(7rem, 0.9fr) minmax(6.5rem, 0.8fr) minmax(7rem, 1fr);
+        gap: var(--space-s);
+        align-items: end;
+        padding-block: var(--space-2xs);
+        padding-inline: var(--space-2xs);
+        border-bottom: solid 1px var(--border-color);
+        color: var(--highlight);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+    }
+
+    .buyback-purchase-orders__empty {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--highlight);
+    }
+</style>

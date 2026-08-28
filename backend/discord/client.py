@@ -277,12 +277,18 @@ class DiscordClient(DiscordBaseClient):
         return self.get(f"{BASE_URL}/channels/{channel_id}")
 
     def create_forum_thread(
-        self, channel_id, title, message, applied_tags=None
+        self,
+        channel_id,
+        title,
+        message,
+        applied_tags=None,
+        components=None,
     ):
         """Create a forum thread in a discord channel.
 
         applied_tags: optional list of forum tag snowflake ids. Required by
         Discord when the forum channel has the REQUIRE_TAG flag enabled.
+        components: optional Discord message component rows (buttons).
         """
         payload = {
             "name": title,
@@ -290,6 +296,8 @@ class DiscordClient(DiscordBaseClient):
                 "content": message,
             },
         }
+        if components:
+            payload["message"]["components"] = components
         if applied_tags:
             payload["applied_tags"] = [str(tag_id) for tag_id in applied_tags]
         return self.post(

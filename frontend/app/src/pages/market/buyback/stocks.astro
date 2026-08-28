@@ -2,41 +2,88 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user: User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_logged_in = !!(user && auth_token)
+
 import {
     get_buyback_stock,
     get_buyback_stock_stats,
-    get_buyback_ledger,
 } from '@helpers/api.minmatar.org/buybacks'
+import { get_planner_facilities } from '@helpers/api.minmatar.org/industry'
+import { get_characters } from '@helpers/api.minmatar.org/characters'
 import type {
     BuybackOnHand,
-    BuybackLedger,
     BuybackStockStats,
+    Character,
 } from '@dtypes/api.minmatar.org'
+import type { PlannerFacility } from '@helpers/api.minmatar.org/industry'
+import type { Alert } from '@dtypes/layout_components'
 
-const [stock, ledger, stats]: [
+const [stock, stats, facilities]: [
     BuybackOnHand | null,
-    BuybackLedger | null,
     BuybackStockStats | null,
+    PlannerFacility[],
 ] = await Promise.all([
     get_buyback_stock().catch(() => null),
-    get_buyback_ledger({
-        reason: 'sold_order,sold_contract',
-        limit: 40,
-    }).catch(() => null),
     get_buyback_stock_stats().catch(() => null),
+    get_planner_facilities(auth_token || undefined).catch(() => [] as PlannerFacility[]),
 ])
+
+let characters: Character[] = []
+if (is_logged_in && auth_token) {
+    characters = await get_characters(auth_token as string).catch(() => [])
+}
+
+const default_facility = facilities[0]?.key ?? 'amamake'
+
+let alert: Alert | null = null
+if (Astro.cookies.has('buyback_contract_error')) {
+    alert = {
+        title: t('buyback_stocks.page_title'),
+        content: (Astro.cookies.get('buyback_contract_error')?.value as string),
+    }
+    Astro.cookies.delete('buyback_contract_error', { path: '/' })
+}
 
 import Viewport from '@layouts/Viewport.astro'
 import PageWide from '@components/page/PageWide.astro'
 import PageTitle from '@components/page/PageTitle.astro'
+import PageActions from '@components/page/PageActions.astro'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Grid from '@components/compositions/Grid.astro'
 
 import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import BuybackStockLedger from '@components/blocks/BuybackStockLedger.astro'
 import BuybackStockMetrics from '@components/blocks/BuybackStockMetrics.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Button from '@components/blocks/Button.astro'
+import ButtonAuth from '@components/blocks/ButtonAuth.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import Input from '@components/blocks/Input.astro'
+import Select from '@components/blocks/Select.astro'
+import Switch from '@components/blocks/Switch.astro'
+import Textarea from '@components/blocks/Textarea.astro'
 
 const page_title = t('buyback_stocks.page_title')
+const default_refine = facilities.find((facility) => facility.key === default_facility)
+    ?.reprocessing?.refine_rate
+const default_refine_pct = default_refine != null
+    ? `${(default_refine * 100).toFixed(2)}%`
+    : '—'
+const refine_partial = translatePath('/partials/buyback_purchase_refine_component/')
+const refine_hx = {
+    'hx-get': refine_partial,
+    'hx-trigger': 'change',
+    'hx-include': '#buyback-purchase-facility, #buyback-purchase-character, #buyback-purchase-implants',
+    'hx-target': '#buyback-purchase-refine',
+    'hx-swap': 'innerHTML',
+}
 ---
 
 <Viewport
@@ -44,6 +91,7 @@ const page_title = t('buyback_stocks.page_title')
     meta_description={t('buyback_stocks.meta_description')}
     components={{
         tippy: true,
+        alert_dialog: true,
     }}
 >
     <PageWide
@@ -54,25 +102,249 @@ const page_title = t('buyback_stocks.page_title')
             scrollable: true,
             overlay: true,
         }}
+        x-data={`{
+            init() {
+                ${alert ? `show_alert_dialog(${JSON.stringify(alert)})` : ''}
+            }
+        }`}
     >
-        <Flexblock slot="header" gap="var(--space-s)">
-            <Breadcrumb items={[
-                { label: t('buyback.page_title'), href: translatePath('/market/buyback/') },
-                { label: page_title },
-            ]} />
-            <PageTitle>
-                {page_title}
-            </PageTitle>
-        </Flexblock>
+        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
+            <Flexblock gap="var(--space-s)">
+                <Breadcrumb items={[
+                    { label: t('buyback.page_title'), href: translatePath('/market/buyback/') },
+                    { label: page_title },
+                ]} />
+                <PageTitle>
+                    {page_title}
+                </PageTitle>
+            </Flexblock>
+            <PageActions>
+                {is_logged_in &&
+                    <Button href={translatePath('/market/buyback/orders')} color="transparent">
+                        {t('view_buyback_buy_orders')}
+                    </Button>
+                }
+                <Button href={translatePath('/market/buyback/contracts/')} color="transparent">
+                    {t('view_buyback_sell_orders')}
+                </Button>
+            </PageActions>
+        </FlexInline>
 
         <Flexblock gap='var(--space-xl)'>
             {stats &&
                 <BuybackStockMetrics stats={stats} />
             }
+            <ComponentBlock>
+                <form
+                    method="POST"
+                    action={translatePath('/market/buyback/order/')}
+                    x-data={`{
+                        paste: '',
+                        submitted: false,
+                        character_id: '',
+                    }`}
+                    x-on:submit="submitted = true"
+                >
+                    <Flexblock class="[ w-full ]" gap="var(--space-m)">
+                        <input type="hidden" name="source" value="stockpile" />
+                        <Flexblock gap="var(--space-3xs)">
+                            <h2>{t('buyback.purchase.paste_title')}</h2>
+                            <p class="[ buyback-purchase-form__hint ]">{t('buyback.purchase.paste_tip')}</p>
+                        </Flexblock>
+                        <Grid min_item_width="12rem" class="[ w-full ]">
+                            <Flexblock gap="var(--space-2xs)">
+                                <label for="buyback-purchase-facility">{t('industry.orders.planner.facility')}</label>
+                                <Select
+                                    id="buyback-purchase-facility"
+                                    name="facility_key"
+                                    size="sm"
+                                    width="100%"
+                                    {...refine_hx}
+                                >
+                                    {facilities.map((facility) =>
+                                        <option
+                                            value={facility.key}
+                                            selected={facility.key === default_facility}
+                                        >
+                                            {facility.system_name}
+                                        </option>
+                                    )}
+                                    {facilities.length === 0 &&
+                                        <option value="amamake" selected>Amamake</option>
+                                    }
+                                </Select>
+                            </Flexblock>
+                            <Flexblock gap="var(--space-2xs)">
+                                <label for="buyback-purchase-character">{t('industry.orders.planner.character')}</label>
+                                {is_logged_in ?
+                                    <div class="[ buyback-purchase-character-row ]">
+                                        <div
+                                            class="[ buyback-purchase-character-portrait ]"
+                                            x-show="character_id"
+                                            x-cloak
+                                        >
+                                            <CharacterPicture
+                                                character_id={characters[0]?.character_id ?? 1}
+                                                character_name={characters[0]?.character_name}
+                                                x_character_id="character_id"
+                                                size={24}
+                                                icon_quality={64}
+                                            />
+                                        </div>
+                                        <div class="[ buyback-purchase-character-select ]">
+                                            <Select
+                                                id="buyback-purchase-character"
+                                                name="character_id"
+                                                size="sm"
+                                                width="100%"
+                                                x-model="character_id"
+                                                {...refine_hx}
+                                            >
+                                                <option value="">{t('industry.orders.planner.character_none')}</option>
+                                                {characters.map((character) =>
+                                                    <option value={character.character_id}>
+                                                        {character.character_name}
+                                                    </option>
+                                                )}
+                                            </Select>
+                                        </div>
+                                    </div>
+                                    :
+                                    <Flexblock gap="var(--space-2xs)">
+                                        <Select
+                                            id="buyback-purchase-character"
+                                            name="character_id"
+                                            size="sm"
+                                            width="100%"
+                                            disabled
+                                        >
+                                            <option value="" selected>{t('industry.orders.planner.character_none')}</option>
+                                        </Select>
+                                        <FlexInline gap="var(--space-2xs)" class="[ items-center flex-wrap ]">
+                                            <p class="[ buyback-purchase-form__hint ]">
+                                                {t('industry.orders.planner.character_login_prompt')}
+                                            </p>
+                                            <ButtonAuth
+                                                color="fleet-red"
+                                                size="sm"
+                                                dialog_title={t('industry.orders.planner.character')}
+                                            >
+                                                {t('industry.orders.planner.character_log_in')}
+                                            </ButtonAuth>
+                                        </FlexInline>
+                                    </Flexblock>
+                                }
+                            </Flexblock>
+                            <Flexblock gap="var(--space-2xs)">
+                                <label for="buyback-purchase-refine-value">{t('industry.orders.planner.effective_refine')}</label>
+                                <div id="buyback-purchase-refine">
+                                    <Input
+                                        id="buyback-purchase-refine-value"
+                                        size="sm"
+                                        width="100%"
+                                        disabled
+                                        readonly
+                                        value={default_refine_pct}
+                                        aria-label={t('industry.orders.planner.effective_refine')}
+                                    />
+                                </div>
+                            </Flexblock>
+                        </Grid>
+                        <span
+                            class="[ buyback-purchase-implant-tip ]"
+                            data-tippy-content={t('industry.orders.planner.use_implants_tip')}
+                        >
+                            <Switch
+                                id="buyback-purchase-implants"
+                                name="use_reprocessing_implants"
+                                value="1"
+                                {...refine_hx}
+                            >
+                                {t('industry.orders.planner.use_implants')}
+                            </Switch>
+                        </span>
+                        <Flexblock gap="var(--space-2xs)" class="[ w-full ]">
+                            <label for="buyback-purchase-paste">{t('buyback.form.paste')}</label>
+                            <Textarea
+                                id="buyback-purchase-paste"
+                                name="paste"
+                                rows="6"
+                                required
+                                x-model="paste"
+                                placeholder={t('buyback.purchase.paste_placeholder')}
+                            />
+                        </Flexblock>
+                        <Button
+                            x-bind:disabled="submitted || !paste"
+                            type="submit"
+                            class="[ w-full ]"
+                        >
+                            {t('buyback.purchase.submit')}
+                        </Button>
+                    </Flexblock>
+                </form>
+            </ComponentBlock>
             <BuybackStockLedger
                 stock_items={stock?.items ?? []}
-                ledger_entries={ledger?.entries ?? []}
             />
         </Flexblock>
     </PageWide>
 </Viewport>
+
+<style lang="scss">
+    .buyback-purchase-form__hint {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--foreground);
+        opacity: 0.8;
+    }
+
+    .buyback-purchase-character-row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        width: 100%;
+        min-width: 0;
+    }
+
+    .buyback-purchase-character-select {
+        flex: 1 1 auto;
+        min-width: 0;
+
+        :global(select) {
+            width: 100%;
+            max-width: none;
+        }
+    }
+
+    .buyback-purchase-character-portrait {
+        flex: 0 0 auto;
+        width: 24px;
+        height: 24px;
+        overflow: hidden;
+
+        :global(picture),
+        :global(img) {
+            display: block;
+            width: 24px;
+            height: 24px;
+        }
+    }
+
+    #buyback-purchase-refine {
+        :global(input:disabled) {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+    }
+
+    .buyback-purchase-implant-tip {
+        display: inline-flex;
+        width: fit-content;
+        cursor: help;
+    }
+
+    label {
+        font-weight: 600;
+    }
+</style>

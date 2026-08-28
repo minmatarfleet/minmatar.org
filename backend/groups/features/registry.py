@@ -212,6 +212,15 @@ FEATURE_DEFINITIONS: dict[str, FeatureDefinition] = {
         ),
         default_tribe_group_codes=_tribe_codes("supply.loyalty-points"),
     ),
+    "buyback.stock.manage": FeatureDefinition(
+        code="buyback.stock.manage",
+        label="Manage buyback sales",
+        scope=FeatureScope.TRIBE_MEMBERSHIP,
+        description=(
+            "See pending buyback purchase orders and mark them complete."
+        ),
+        default_tribe_group_codes=_tribe_codes("supply.mining"),
+    ),
     "applications.manage": FeatureDefinition(
         code="applications.manage",
         label="Manage corp applications",

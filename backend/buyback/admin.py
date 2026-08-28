@@ -4,6 +4,8 @@ from .models import (
     BuybackAcceptedItem,
     BuybackHangarSnapshot,
     BuybackLedgerEntry,
+    BuybackPurchaseOrder,
+    BuybackPurchaseOrderLine,
     EveBuybackSettings,
 )
 
@@ -53,6 +55,19 @@ class EveBuybackSettingsAdmin(admin.ModelAdmin):
                 "description": (
                     "Category bullets are summary copy. Appraisal acceptance "
                     "is controlled by Buyback accepted items."
+                ),
+            },
+        ),
+        (
+            "Hangar sales",
+            {
+                "fields": (
+                    "sell_price_basis",
+                    "sell_markup",
+                ),
+                "description": (
+                    "Jita split is the midpoint of live Jita buy and sell. "
+                    "Markup is an extra share (0 = none, 0.05 = 5%)."
                 ),
             },
         ),
@@ -115,3 +130,46 @@ class BuybackLedgerEntryAdmin(admin.ModelAdmin):
 class BuybackHangarSnapshotAdmin(admin.ModelAdmin):
     list_display = ("taken_at", "created_at")
     readonly_fields = ("taken_at", "quantities", "created_at")
+
+
+class BuybackPurchaseOrderLineInline(admin.TabularInline):
+    model = BuybackPurchaseOrderLine
+    extra = 0
+    autocomplete_fields = ("eve_type",)
+    readonly_fields = (
+        "eve_type",
+        "name",
+        "quantity",
+        "unit_price",
+        "line_total",
+        "fill_source",
+    )
+
+
+@admin.register(BuybackPurchaseOrder)
+class BuybackPurchaseOrderAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "status",
+        "character_name",
+        "contract_total",
+        "source",
+        "created_at",
+    )
+    list_filter = ("status", "source")
+    search_fields = ("character_name", "created_by__username")
+    readonly_fields = (
+        "created_by",
+        "character_id",
+        "character_name",
+        "paste",
+        "contract_total",
+        "sell_price_basis",
+        "sell_markup",
+        "created_at",
+        "updated_at",
+        "completed_at",
+        "completed_by",
+        "discord_thread_id",
+    )
+    inlines = (BuybackPurchaseOrderLineInline,)

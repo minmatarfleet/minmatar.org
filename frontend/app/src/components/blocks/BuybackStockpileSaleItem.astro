@@ -1,0 +1,147 @@
+---
+import { i18n } from '@helpers/i18n'
+import type { BuybackStockpileSaleBuyer, BuybackStockpileSaleRow } from '@helpers/buyback_stockpile_sales'
+import { format_isk, number_thousand_separator } from '@helpers/numbers'
+import { format_date } from '@helpers/date'
+import {
+    get_corporation_logo,
+    get_player_icon,
+} from '@helpers/eve_image_server'
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+import Tag from '@components/blocks/Tag.astro'
+
+interface Props {
+    row: BuybackStockpileSaleRow
+    reason_label: string
+}
+
+const { t, lang } = i18n(Astro.url)
+const { row, reason_label } = Astro.props
+
+function format_value(isk: number | null | undefined): string {
+    if (isk == null) return '—'
+    return format_isk(isk)
+}
+
+function buyer_icon_src(buyer: BuybackStockpileSaleBuyer): string | null {
+    if (!buyer.counterparty_id) return null
+    if (buyer.counterparty_kind === 'corporation') {
+        return get_corporation_logo(buyer.counterparty_id, 32)
+    }
+    if (buyer.counterparty_kind === 'character') {
+        return get_player_icon(buyer.counterparty_id, 32)
+    }
+    return null
+}
+---
+
+<div class="[ buyback-stockpile-sale-item ]" role="row">
+    <div class="[ buyback-stockpile-sale-item__date ]" role="cell">
+        <span class="[ whitespace-nowrap ]">{format_date(lang, row.day)}</span>
+        {row.sale_count > 1 &&
+            <div class="[ buyback-stockpile-sale-item__fills ]">
+                {t('buyback.ledger.fills').replace('{count}', String(row.sale_count))}
+            </div>
+        }
+    </div>
+
+    <div class="[ buyback-stockpile-sale-item__item ]" role="cell">
+        <FlexInline gap="var(--space-3xs)" class="[ items-center ]">
+            <ItemPicture
+                item_id={row.type_id}
+                item_name={row.name}
+                size={24}
+                icon_quality={32}
+            />
+            <span class="[ text-highlight ]">{row.name}</span>
+        </FlexInline>
+    </div>
+
+    <div class="[ buyback-stockpile-sale-item__quantity ]" role="cell">
+        <span>{number_thousand_separator(row.quantity)}</span>
+    </div>
+
+    <div class="[ buyback-stockpile-sale-item__total ]" role="cell">
+        <span>{format_value(row.isk_total)}</span> <span>ISK</span>
+    </div>
+
+    <div class="[ buyback-stockpile-sale-item__via ]" role="cell">
+        <Tag
+            text={reason_label}
+            color={row.reason === 'sold_contract' ? 'alliance-blue' : 'fleet-yellow'}
+            text_color={row.reason === 'sold_order' ? 'var(--background)' : undefined}
+            narrow={true}
+        />
+    </div>
+
+    <div class="[ buyback-stockpile-sale-item__buyers ]" role="cell">
+        {row.buyers.length > 0 ? (
+            <FlexInline gap="var(--space-3xs)" class="[ items-center ]">
+                {row.buyers.map((buyer) => {
+                    if (buyer.counterparty_kind === 'character' && buyer.counterparty_id) {
+                        return (
+                            <CharacterPicture
+                                character_id={buyer.counterparty_id}
+                                character_name={buyer.counterparty_name}
+                                tooltip={buyer.counterparty_name}
+                                size={24}
+                            />
+                        )
+                    }
+
+                    const icon = buyer_icon_src(buyer)
+                    return (
+                        <span
+                            class="[ buyback-stockpile-sale-item__buyer ]"
+                            title={buyer.counterparty_name}
+                        >
+                            {icon &&
+                                <img
+                                    loading="lazy"
+                                    width="24"
+                                    height="24"
+                                    src={icon}
+                                    alt={buyer.counterparty_name}
+                                />
+                            }
+                            {!icon &&
+                                <span>{buyer.counterparty_name}</span>
+                            }
+                        </span>
+                    )
+                })}
+            </FlexInline>
+        ) : (
+            <Tag text={t('buyback.ledger.no_buyers')} narrow={true} />
+        )}
+    </div>
+</div>
+
+<style lang="scss">
+    .buyback-stockpile-sale-item {
+        display: grid;
+        grid-template-columns: minmax(6.5rem, 0.8fr) minmax(12rem, 1.5fr) minmax(6rem, 0.8fr) minmax(7rem, 1fr) minmax(6rem, 0.8fr) minmax(7rem, 1fr);
+        gap: var(--space-s);
+        align-items: center;
+        padding-block: var(--space-2xs);
+        padding-inline: var(--space-2xs);
+        border-bottom: solid 1px var(--border-color);
+        font-size: var(--step--1);
+        min-width: 70rem;
+    }
+
+    .buyback-stockpile-sale-item__fills {
+        margin-top: 0.15rem;
+        font-size: var(--step--2);
+        opacity: 0.8;
+    }
+
+    .buyback-stockpile-sale-item__buyer {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+    }
+</style>
