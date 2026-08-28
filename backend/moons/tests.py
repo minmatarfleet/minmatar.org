@@ -1,6 +1,6 @@
 # flake8: noqa
 from decimal import Decimal
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from django.contrib.auth.models import User
 from django.test import Client
@@ -42,7 +42,43 @@ Rahadalon VIII - Moon 1
 class EveMoonPasteTestCase(TestCase):
     """Test case for the moon paste parser."""
 
-    def test_process_moon_paste(self):
+    @patch("moons.parser.EsiClient")
+    def test_process_moon_paste(self, mock_esi_cls):
+        mock_esi = mock_esi_cls.return_value
+        systems = {30002982: "Rahadalon"}
+        planets = {
+            40189228: "Rahadalon V",
+            40189232: "Rahadalon VI",
+            40189237: "Rahadalon VII",
+            40189245: "Rahadalon VIII",
+        }
+        moons = {
+            40189231: "Rahadalon V - Moon 2",
+            40189233: "Rahadalon VI - Moon 1",
+            40189236: "Rahadalon VI - Moon 4",
+            40189244: "Rahadalon VII - Moon 7",
+            40189246: "Rahadalon VIII - Moon 1",
+        }
+
+        def get_solar_system(system_id):
+            system = MagicMock()
+            system.name = systems[system_id]
+            return system
+
+        def get_planet(planet_id):
+            planet = MagicMock()
+            planet.name = planets[planet_id]
+            return planet
+
+        def get_moon(moon_id):
+            moon = MagicMock()
+            moon.name = moons[moon_id]
+            return moon
+
+        mock_esi.get_solar_system.side_effect = get_solar_system
+        mock_esi.get_planet.side_effect = get_planet
+        mock_esi.get_moon.side_effect = get_moon
+
         user = User.objects.create_user(
             "tester", "tester@testing.org", "notsosecret"
         )
