@@ -1,0 +1,212 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import type { Alert } from '@dtypes/layout_components'
+import * as jose from 'jose'
+import { get_auth_url } from '@helpers/env'
+
+const auth_token = Astro.cookies.has('auth_token') ? (Astro.cookies.get('auth_token')?.value as string) : false
+const user: User | false = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_logged_in = !!(user && auth_token)
+
+if (!is_logged_in || !auth_token)
+    return Astro.redirect(get_auth_url(Astro.url.toString()))
+
+Astro.response.headers.set('Cache-Control', 'no-store')
+
+import {
+    get_buyback_ledger,
+    get_buyback_purchase_capabilities,
+    get_buyback_purchase_orders,
+    post_buyback_purchase_order_cancel,
+    post_buyback_purchase_order_complete,
+} from '@helpers/api.minmatar.org/buybacks'
+import type { BuybackLedgerEntry, BuybackPurchaseOrder } from '@dtypes/api.minmatar.org'
+
+const highlight_order_raw = Astro.url.searchParams.get('order')
+const highlight_order_id = highlight_order_raw && /^\d+$/.test(highlight_order_raw)
+    ? highlight_order_raw
+    : null
+
+const page_title = t('buyback.purchase.orders.page_title')
+const orders_path = translatePath('/market/buyback/orders')
+
+let orders: BuybackPurchaseOrder[] = []
+let can_manage = false
+let list_error: Error | false = false
+let highlight_order_missing = false
+let ledger_entries: BuybackLedgerEntry[] = []
+let ledger_fetch_failed = false
+
+let alert: Alert | null = null
+if (Astro.cookies.has('buyback_order_error')) {
+    alert = {
+        title: page_title,
+        content: Astro.cookies.get('buyback_order_error')?.value as string,
+    }
+    Astro.cookies.delete('buyback_order_error', { path: '/' })
+}
+
+const done_action = Astro.url.searchParams.get('done')
+if (done_action === 'complete') {
+    alert = {
+        title: page_title,
+        content: t('buyback.purchase.orders.done_complete'),
+    }
+}
+if (done_action === 'cancel') {
+    alert = {
+        title: page_title,
+        content: t('buyback.purchase.orders.done_cancel'),
+    }
+}
+
+function redirect_after_mutation(order_id: number, action: string) {
+    const params = new URLSearchParams()
+    params.set('done', action)
+    if (order_id > 0)
+        params.set('order', String(order_id))
+    return Astro.redirect(`${orders_path}?${params.toString()}`)
+}
+
+if (Astro.request.method === 'POST') {
+    const data = await Astro.request.formData()
+    const action = ((data.get('action') as string) || '').trim()
+    const order_id = parseInt((data.get('order_id') as string) || '0', 10)
+    try {
+        if (order_id > 0 && action === 'complete')
+            await post_buyback_purchase_order_complete(auth_token, order_id)
+        else if (order_id > 0 && action === 'cancel')
+            await post_buyback_purchase_order_cancel(auth_token, order_id)
+        return redirect_after_mutation(order_id, action)
+    } catch {
+        Astro.cookies.set(
+            'buyback_order_error',
+            t('buyback.purchase.orders.mutation_error'),
+            { path: '/' },
+        )
+        return redirect_after_mutation(order_id, action)
+    }
+}
+
+try {
+    const list_status = highlight_order_id ? 'all' : 'pending'
+    const [listed, capabilities] = await Promise.all([
+        get_buyback_purchase_orders(auth_token, list_status),
+        get_buyback_purchase_capabilities(auth_token),
+    ])
+    orders = listed.orders
+    can_manage = capabilities.can_manage
+    if (highlight_order_id) {
+        const focused = orders.find((order) => String(order.id) === highlight_order_id)
+        if (focused)
+            orders = [focused, ...orders.filter((order) => order.id !== focused.id)]
+        else
+            highlight_order_missing = true
+    }
+} catch (error) {
+    list_error = error as Error
+}
+
+try {
+    const ledger = await get_buyback_ledger({
+        reason: 'sold_order,sold_contract',
+        limit: 40,
+    })
+    ledger_entries = ledger.entries
+} catch {
+    ledger_fetch_failed = true
+}
+
+const show_all_orders = Boolean(highlight_order_id) || !can_manage
+const section_title = show_all_orders
+    ? t('buyback.purchase.orders.section_all_title')
+    : t('buyback.purchase.orders.section_title')
+
+import Viewport from '@layouts/Viewport.astro'
+import PageWide from '@components/page/PageWide.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+
+import Breadcrumb from '@components/blocks/Breadcrumb.astro'
+import BuybackPurchaseOrderBook from '@components/blocks/BuybackPurchaseOrderBook.astro'
+import BuybackStockpileSales from '@components/blocks/BuybackStockpileSales.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+---
+
+<Viewport
+    title={page_title}
+    meta_description={t('buyback.purchase.orders.meta_description')}
+    components={{
+        tippy: true,
+        alert_dialog: true,
+    }}
+>
+    <PageWide
+        cover={{
+            image: '/images/mining-cover.webp',
+            image_990: '/images/mining-cover.jpg',
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <Flexblock slot="header" gap="var(--space-3xs)">
+            <Breadcrumb items={[
+                { label: t('buyback.page_title'), href: translatePath('/market/buyback/') },
+                { label: t('buyback_stocks.page_title'), href: translatePath('/market/buyback/stocks/') },
+                { label: page_title },
+            ]} />
+            <PageTitle>
+                {page_title}
+            </PageTitle>
+        </Flexblock>
+
+        <Flexblock gap="var(--space-xl)">
+            {list_error &&
+                <ComponentBlock>
+                    <p>{t('buyback.purchase.fetch_error')}</p>
+                </ComponentBlock>
+            }
+            {!list_error &&
+                <Flexblock gap="var(--space-s)">
+                    {highlight_order_missing &&
+                        <p class="[ buyback-orders__notice ]">
+                            {t('buyback.purchase.orders.order_not_found').replace('{id}', highlight_order_id ?? '')}
+                        </p>
+                    }
+                    <BuybackPurchaseOrderBook
+                        orders={orders}
+                        can_manage={can_manage}
+                        highlight_order_id={highlight_order_id}
+                        section_title={section_title}
+                    />
+                </Flexblock>
+            }
+            <BuybackStockpileSales
+                ledger_entries={ledger_entries}
+                fetch_failed={ledger_fetch_failed}
+            />
+        </Flexblock>
+    </PageWide>
+</Viewport>
+
+<script define:vars={{ alert, highlight_order_id }}>
+    if (alert && typeof show_alert_dialog === 'function')
+        show_alert_dialog(alert)
+    if (highlight_order_id) {
+        const el = document.getElementById(`order-${highlight_order_id}`)
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+</script>
+
+<style lang="scss">
+    .buyback-orders__notice {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--fleet-yellow);
+    }
+</style>

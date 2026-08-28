@@ -35,6 +35,10 @@ DEFAULT_DISCORD_THREAD_URL = (
     "https://discord.com/channels/1041384161505722368/1528803812599402577"
 )
 
+SELL_PRICE_BASIS_JITA_SPLIT = "jita_split"
+SELL_PRICE_BASIS_JITA_BUY = "jita_buy"
+SELL_PRICE_BASIS_JITA_SELL = "jita_sell"
+
 
 class BuybackContractQuerySet(models.QuerySet):
     def active(self):
@@ -66,6 +70,12 @@ class BuybackContract(EveCorporationContract):
 
     class Meta:
         proxy = True
+
+
+class SellPriceBasis(models.TextChoices):
+    JITA_SPLIT = SELL_PRICE_BASIS_JITA_SPLIT, "Jita split"
+    JITA_BUY = SELL_PRICE_BASIS_JITA_BUY, "Jita buy"
+    JITA_SELL = SELL_PRICE_BASIS_JITA_SELL, "Jita sell"
 
 
 def _default_accepted_categories():
@@ -146,6 +156,17 @@ class EveBuybackSettings(models.Model):
     stockpile_include_deliveries = models.BooleanField(
         default=True,
         help_text="Include CorpDeliveries at the structure in on-hand stock.",
+    )
+    sell_price_basis = models.CharField(
+        max_length=16,
+        choices=SellPriceBasis.choices,
+        default=SellPriceBasis.JITA_SPLIT,
+        help_text="Jita number used to price hangar sales to buyers.",
+    )
+    sell_markup = models.FloatField(
+        default=0.0,
+        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
+        help_text="Extra share on the sell basis (0 = none, 0.05 = 5%).",
     )
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -303,3 +324,101 @@ class BuybackHangarSnapshot(models.Model):
 
     def __str__(self):
         return f"Hangar snapshot @ {self.taken_at}"
+
+
+class BuybackPurchaseOrder(models.Model):
+    """Pending or finished sale of buyback stock to a member."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        COMPLETED = "completed", "Completed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    class Source(models.TextChoices):
+        PLANNER = "planner", "Planner"
+        STOCKPILE = "stockpile", "Stockpile"
+
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.PENDING,
+        db_index=True,
+    )
+    source = models.CharField(
+        max_length=16,
+        choices=Source.choices,
+        default=Source.STOCKPILE,
+    )
+    created_by = models.ForeignKey(
+        "auth.User",
+        on_delete=models.CASCADE,
+        related_name="buyback_purchase_orders",
+    )
+    character_id = models.BigIntegerField(null=True, blank=True)
+    character_name = models.CharField(max_length=64, blank=True, default="")
+    paste = models.TextField()
+    contract_total = models.BigIntegerField()
+    sell_price_basis = models.CharField(max_length=16)
+    sell_markup = models.FloatField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    completed_by = models.ForeignKey(
+        "auth.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="buyback_purchase_orders_completed",
+    )
+    discord_thread_id = models.BigIntegerField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Buyback purchase order"
+        verbose_name_plural = "Buyback purchase orders"
+        ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(
+                fields=["status", "-created_at"],
+                name="buyback_po_status_created",
+            ),
+        ]
+
+    def __str__(self):
+        who = self.character_name or self.created_by_id
+        return f"Purchase #{self.pk} {self.status} for {who}"
+
+
+class BuybackPurchaseOrderLine(models.Model):
+    """One hangar type on a buyback purchase order."""
+
+    class FillSource(models.TextChoices):
+        EXACT = "exact", "Exact"
+        REFINE = "refine", "Refine"
+
+    order = models.ForeignKey(
+        BuybackPurchaseOrder,
+        on_delete=models.CASCADE,
+        related_name="lines",
+    )
+    eve_type = models.ForeignKey(
+        "eveuniverse.EveType",
+        on_delete=models.CASCADE,
+        related_name="buyback_purchase_order_lines",
+    )
+    name = models.CharField(max_length=255)
+    quantity = models.BigIntegerField()
+    unit_price = models.DecimalField(max_digits=20, decimal_places=2)
+    line_total = models.DecimalField(max_digits=20, decimal_places=2)
+    fill_source = models.CharField(
+        max_length=16,
+        choices=FillSource.choices,
+        default=FillSource.EXACT,
+    )
+
+    class Meta:
+        verbose_name = "Buyback purchase order line"
+        verbose_name_plural = "Buyback purchase order lines"
+        ordering = ["name", "id"]
+
+    def __str__(self):
+        return f"{self.quantity}×{self.name}"

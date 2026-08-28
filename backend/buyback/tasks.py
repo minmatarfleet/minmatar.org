@@ -6,6 +6,10 @@ import logging
 
 from celery import shared_task
 
+from buyback.discord_tasks import (  # noqa: F401  # pylint: disable=unused-import
+    notify_buyback_purchase_created_task,
+    notify_buyback_purchase_status_changed_task,
+)
 from buyback.helpers.refresh import refresh_buyback_ledger
 
 logger = logging.getLogger(__name__)

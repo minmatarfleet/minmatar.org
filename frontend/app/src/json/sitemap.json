@@ -632,6 +632,12 @@
         "description": "page_finder.buyback_stocks.description"
     },
     {
+        "slug": "buyback_orders",
+        "path": "/market/buyback/orders/",
+        "publish": true,
+        "description": "page_finder.buyback_orders.description"
+    },
+    {
         "slug": "buyback_contracts.history",
         "path": "/market/buyback/contracts/history/",
         "publish": true,

@@ -4,6 +4,7 @@ from ninja import Router
 from eveuniverse.models import EveType
 
 from buyback.endpoints.schemas import BuybackOnHandItem, BuybackOnHandResponse
+from buyback.helpers.remaining import available_stock_quantities
 from buyback.helpers.valuation import batch_estimate_guide_isk
 from buyback.models import BuybackAcceptedItem, BuybackHangarSnapshot
 
@@ -12,7 +13,7 @@ router = Router(tags=["Buyback"])
 
 @router.get(
     "/stock",
-    description="On-hand quantities in tracked buyback hangars.",
+    description="Available hangar quantities, minus pending purchase reservations.",
     response=BuybackOnHandResponse,
 )
 def get_stock(request):
@@ -24,22 +25,16 @@ def get_stock(request):
     }
     snapshot = BuybackHangarSnapshot.objects.order_by("-taken_at").first()
     updated_at = None
-    quantities: dict[int, int] = {}
     if snapshot is not None:
         updated_at = snapshot.taken_at.isoformat()
-        for key, qty in (snapshot.quantities or {}).items():
-            try:
-                quantities[int(key)] = int(qty)
-            except (TypeError, ValueError):
-                continue
     else:
-        for type_id, item in accepted.items():
-            quantities[type_id] = int(item.stockpile_quantity or 0)
+        for item in accepted.values():
             if item.metrics_updated_at and (
                 updated_at is None
                 or item.metrics_updated_at.isoformat() > updated_at
             ):
                 updated_at = item.metrics_updated_at.isoformat()
+    quantities = available_stock_quantities()
 
     rows: list[tuple[int, str, int, str | None, str | None]] = []
     for type_id, qty in sorted(

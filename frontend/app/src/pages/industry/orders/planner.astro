@@ -1283,13 +1283,39 @@ const planner_copy = JSON.stringify({
                                                 x-cloak
                                             >…</span>
                                         </h2>
-                                        <ClipboardButton
-                                            id="planner-materials-clipboard"
-                                            text={t('industry.orders.planner.copy_materials')}
-                                            x_value="materials_tsv"
-                                            data-tippy-content={t('industry.orders.planner.copy_materials_tip')}
-                                            data-tippy-delay="[1000, 200]"
-                                        />
+                                        <FlexInline gap='var(--space-2xs)' class="[ flex-wrap ]">
+                                            <form
+                                                method="POST"
+                                                action={translatePath('/market/buyback/order/')}
+                                                x-show="materials_tsv"
+                                                x-cloak
+                                            >
+                                                <input type="hidden" name="source" value="planner" />
+                                                <input type="hidden" name="materials_tsv" x-bind:value="materials_tsv" />
+                                                <input type="hidden" name="facility_key" x-bind:value="facility_key" />
+                                                <input type="hidden" name="character_id" x-bind:value="character_id" />
+                                                <input
+                                                    type="hidden"
+                                                    name="use_reprocessing_implants"
+                                                    x-bind:value="use_reprocessing_implants ? '1' : '0'"
+                                                />
+                                                <Button
+                                                    type="submit"
+                                                    size="sm"
+                                                    data-tippy-content={t('industry.orders.planner.purchase_buyback_tip')}
+                                                    data-tippy-delay="[1000, 200]"
+                                                >
+                                                    {t('industry.orders.planner.purchase_buyback')}
+                                                </Button>
+                                            </form>
+                                            <ClipboardButton
+                                                id="planner-materials-clipboard"
+                                                text={t('industry.orders.planner.copy_materials')}
+                                                x_value="materials_tsv"
+                                                data-tippy-content={t('industry.orders.planner.copy_materials_tip')}
+                                                data-tippy-delay="[1000, 200]"
+                                            />
+                                        </FlexInline>
                                     </FlexInline>
 
                                     <p

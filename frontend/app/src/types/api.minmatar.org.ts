@@ -1310,6 +1310,79 @@ export interface BuybackContractsStats {
     window_days:                    number;
 }
 
+export interface BuybackPurchasePick {
+    type_id: number;
+    name: string;
+    quantity: number;
+    fill_source: string;
+    unit_price: number | null;
+    line_total: number | null;
+}
+
+export interface BuybackPurchaseShortfall {
+    type_id: number | null;
+    name: string;
+    quantity: number;
+}
+
+export interface BuybackPurchaseFill {
+    picks: BuybackPurchasePick[];
+    shortfalls: BuybackPurchaseShortfall[];
+    unresolved_names: string[];
+    janice_tsv: string;
+    shortfall_tsv: string;
+    contract_total: number;
+    refine_rate: number;
+    refine_rate_source: string;
+    facility_key: string;
+    facility_name: string;
+    sell_price_basis: string;
+    sell_markup: number;
+}
+
+export const buyback_purchase_order_status = [
+    'pending',
+    'completed',
+    'cancelled',
+] as const
+export type BuybackPurchaseOrderStatus = typeof buyback_purchase_order_status[number]
+
+export interface BuybackPurchaseOrderLine {
+    type_id: number;
+    name: string;
+    quantity: number;
+    unit_price: number;
+    line_total: number;
+    fill_source: string;
+}
+
+export interface BuybackPurchaseOrder {
+    id: number;
+    status: BuybackPurchaseOrderStatus;
+    source: string;
+    created_by_user_id: number;
+    character_id: number | null;
+    character_name: string;
+    contract_total: number;
+    sell_price_basis: string;
+    sell_markup: number;
+    janice_tsv: string;
+    created_at: string;
+    completed_at: string | null;
+    discord_thread_id: number | null;
+    discord_thread_url: string | null;
+    lines: BuybackPurchaseOrderLine[];
+}
+
+export interface BuybackPurchaseOrderList {
+    orders: BuybackPurchaseOrder[];
+    count: number;
+}
+
+export interface BuybackPurchaseCapabilities {
+    can_manage: boolean;
+}
+
 export const blueprint_owner_entity = [ 'character', 'corporation'  ] as const
 export type BlueprintOwnerEntity = typeof blueprint_owner_entity[number]
 
