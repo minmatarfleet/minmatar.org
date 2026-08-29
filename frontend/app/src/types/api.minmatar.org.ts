@@ -724,10 +724,11 @@ export interface ContractSeller {
 
 export interface ContractMetrics {
     fitting_id:             number;
-    volume_28d:             number;
-    typical_fleet_size:     number | null;
-    fleets_remaining:       number | null;
-    fleets_per_month:       number | null;
+    volume_7d:              number;
+    volume_30d:             number;
+    volume_90d:             number;
+    volume_365d:            number;
+    unstocked_pct_30d:      number;
 }
 
 export interface Contract {

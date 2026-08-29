@@ -41,9 +41,11 @@ const filter_rows: OpsContractsFilterRow[] = contracts.map(contract => ({
     ),
     doctrine_ids: (contract.doctrines ?? []).map(d => d.id),
     fill_pct: fill_pct(contract.current_quantity, contract.desired_quantity),
-    volume_28d: 0,
-    fleets_remaining: null,
-    fleets_per_month: null,
+    volume_7d: 0,
+    volume_30d: 0,
+    volume_90d: 0,
+    volume_365d: 0,
+    unstocked_pct_30d: null,
 }))
 
 const rows = contracts.map((contract, index) => ({
@@ -72,8 +74,8 @@ const criteria_options = [
 
 const order_by_options = [
     { id: 'stock_fill', label: t('ops_contracts_order_stock') },
-    { id: 'volume_28d', label: t('ops_contracts_order_volume_28d') },
-    { id: 'fleets_remaining', label: t('ops_contracts_order_fleets_remaining') },
+    { id: 'volume_30d', label: t('ops_contracts_order_volume_30d') },
+    { id: 'unstocked_pct_30d', label: t('ops_contracts_order_unstocked') },
 ] as const
 
 const rows_json = JSON.stringify(filter_rows)
@@ -214,9 +216,11 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
                     return row
                 return {
                     ...row,
-                    volume_28d: metric.volume_28d ?? 0,
-                    fleets_remaining: metric.fleets_remaining ?? null,
-                    fleets_per_month: metric.fleets_per_month ?? null,
+                    volume_7d: metric.volume_7d ?? 0,
+                    volume_30d: metric.volume_30d ?? 0,
+                    volume_90d: metric.volume_90d ?? 0,
+                    volume_365d: metric.volume_365d ?? 0,
+                    unstocked_pct_30d: metric.unstocked_pct_30d ?? null,
                 }
             })
             this.metrics_ready = true
@@ -532,11 +536,11 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
                                 <span class="[ market-contracts-card__metric ]">
                                     <span
                                         class="[ market-contracts-card__metric-label ]"
-                                        data-tippy-content={t('ops_contract_metric_28d_tip')}
+                                        data-tippy-content={t('ops_contract_metric_7d_tip')}
                                         x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                                    >{t('ops_contract_metric_28d')}</span>
+                                    >{t('ops_contract_metric_7d')}</span>
                                     <span
-                                        id={`contract-metric-volume-${row.fitting_id}`}
+                                        id={`contract-metric-volume-7d-${row.fitting_id}`}
                                         class="[ market-contracts-card__metric-skeleton ]"
                                         aria-busy="true"
                                     ></span>
@@ -544,11 +548,11 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
                                 <span class="[ market-contracts-card__metric ]">
                                     <span
                                         class="[ market-contracts-card__metric-label ]"
-                                        data-tippy-content={t('ops_contract_fleets_remaining_tip')}
+                                        data-tippy-content={t('ops_contract_metric_30d_tip')}
                                         x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                                    >{t('ops_contract_fleets_remaining')}</span>
+                                    >{t('ops_contract_metric_30d')}</span>
                                     <span
-                                        id={`contract-metric-fleets-available-${row.fitting_id}`}
+                                        id={`contract-metric-volume-30d-${row.fitting_id}`}
                                         class="[ market-contracts-card__metric-skeleton ]"
                                         aria-busy="true"
                                     ></span>
@@ -556,11 +560,35 @@ import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
                                 <span class="[ market-contracts-card__metric ]">
                                     <span
                                         class="[ market-contracts-card__metric-label ]"
-                                        data-tippy-content={t('ops_contract_metric_fleets_mo_tip')}
+                                        data-tippy-content={t('ops_contract_metric_90d_tip')}
                                         x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                                    >{t('ops_contract_metric_fleets_mo')}</span>
+                                    >{t('ops_contract_metric_90d')}</span>
                                     <span
-                                        id={`contract-metric-fleets-mo-${row.fitting_id}`}
+                                        id={`contract-metric-volume-90d-${row.fitting_id}`}
+                                        class="[ market-contracts-card__metric-skeleton ]"
+                                        aria-busy="true"
+                                    ></span>
+                                </span>
+                                <span class="[ market-contracts-card__metric ]">
+                                    <span
+                                        class="[ market-contracts-card__metric-label ]"
+                                        data-tippy-content={t('ops_contract_metric_365d_tip')}
+                                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                                    >{t('ops_contract_metric_365d')}</span>
+                                    <span
+                                        id={`contract-metric-volume-365d-${row.fitting_id}`}
+                                        class="[ market-contracts-card__metric-skeleton ]"
+                                        aria-busy="true"
+                                    ></span>
+                                </span>
+                                <span class="[ market-contracts-card__metric ]">
+                                    <span
+                                        class="[ market-contracts-card__metric-label ]"
+                                        data-tippy-content={t('ops_contract_metric_unstocked_tip')}
+                                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                                    >{t('ops_contract_metric_unstocked')}</span>
+                                    <span
+                                        id={`contract-metric-unstocked-${row.fitting_id}`}
                                         class="[ market-contracts-card__metric-skeleton ]"
                                         aria-busy="true"
                                     ></span>

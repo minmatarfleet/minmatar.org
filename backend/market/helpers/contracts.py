@@ -5,7 +5,7 @@ from statistics import median
 from typing import Iterable, List
 
 import pytz
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.utils import timezone
 
 from eveonline.models import EveCharacter, EveCorporation, EveLocation
@@ -13,6 +13,7 @@ from fittings.forms import normalize_fitting_aliases
 from fittings.models import EveFitting
 
 from market.helpers.contract_match import strip_fitting_tag
+from market.helpers.health_common import windowed_count
 from market.models import (
     EveMarketContract,
     EveMarketContractError,
@@ -24,6 +25,9 @@ logger = logging.getLogger(__name__)
 # Finished contracts within this gap count as one fleet "burst".
 CONTRACT_BURST_GAP = timedelta(minutes=45)
 CONTRACT_BURST_LOOKBACK_DAYS = 30
+
+CONTRACT_VOLUME_WINDOWS = (7, 30, 90, 365)
+UNSTOCKED_PCT_DAYS = 30
 
 # pylint: disable=W1405
 
@@ -77,6 +81,52 @@ def get_historical_quantity_for_fitting(
     return historical_quantity
 
 
+def finished_contract_volume_windows_by_fitting(
+    *,
+    location: EveLocation,
+    fitting_ids: Iterable[int],
+    windows: tuple[int, ...] = CONTRACT_VOLUME_WINDOWS,
+) -> dict[int, dict[int, int]]:
+    """Finished-contract counts per fitting for each rolling window.
+
+    Returns ``{fitting_id: {days: volume}}``. Requested fittings always
+    appear; missing volume is 0.
+    """
+    fitting_id_list = [fid for fid in fitting_ids if fid is not None]
+    empty = {days: 0 for days in windows}
+    if not fitting_id_list:
+        return {}
+
+    now = timezone.now()
+    max_days = max(windows)
+    since = now - timedelta(days=max_days)
+    volumes: dict[int, dict[int, int]] = {
+        fid: dict(empty) for fid in fitting_id_list
+    }
+    annotations = {
+        f"volume_{days}d": (
+            Count("id")
+            if days == max_days
+            else windowed_count(now - timedelta(days=days))
+        )
+        for days in windows
+    }
+    for row in (
+        EveMarketContract.objects.filter(
+            location=location,
+            status="finished",
+            fitting_id__in=fitting_id_list,
+            completed_at__gte=since,
+        )
+        .values("fitting_id")
+        .annotate(**annotations)
+    ):
+        volumes[row["fitting_id"]] = {
+            days: int(row[f"volume_{days}d"]) for days in windows
+        }
+    return volumes
+
+
 def finished_contract_volume_by_fitting(
     *,
     location: EveLocation,
@@ -88,24 +138,108 @@ def finished_contract_volume_by_fitting(
     Returns ``{fitting_id: volume}``. Missing fittings are omitted (callers
     should default to 0).
     """
+    windows = finished_contract_volume_windows_by_fitting(
+        location=location,
+        fitting_ids=fitting_ids,
+        windows=(days,),
+    )
+    return {
+        fitting_id: counts.get(days, 0)
+        for fitting_id, counts in windows.items()
+        if counts.get(days, 0)
+    }
+
+
+def merge_stock_intervals(
+    intervals: list[tuple[datetime, datetime]],
+) -> list[tuple[datetime, datetime]]:
+    """Merge overlapping listing intervals into a covering union."""
+    if not intervals:
+        return []
+    ordered = sorted((start, end) for start, end in intervals if end > start)
+    if not ordered:
+        return []
+    merged = [ordered[0]]
+    for start, end in ordered[1:]:
+        last_start, last_end = merged[-1]
+        if start <= last_end:
+            merged[-1] = (last_start, max(last_end, end))
+        else:
+            merged.append((start, end))
+    return merged
+
+
+def unstocked_pct_by_fitting(
+    *,
+    location: EveLocation,
+    fitting_ids: Iterable[int],
+    days: int = UNSTOCKED_PCT_DAYS,
+) -> dict[int, int]:
+    """Share of the window with no outstanding contracts, per fitting.
+
+    Presence target: in stock whenever at least one contract is listed.
+    Reconstructed from issued/completed/expiry timestamps. Returns 0–100.
+    """
     fitting_id_list = [fid for fid in fitting_ids if fid is not None]
     if not fitting_id_list:
         return {}
 
-    since = timezone.now() - timedelta(days=days)
-    volumes: dict[int, int] = {}
-    for row in (
-        EveMarketContract.objects.filter(
-            location=location,
-            status="finished",
-            fitting_id__in=fitting_id_list,
-            completed_at__gte=since,
-        )
-        .values("fitting_id")
-        .annotate(volume=Count("id"))
+    now = timezone.now()
+    window_start = now - timedelta(days=days)
+    window_seconds = (now - window_start).total_seconds()
+    if window_seconds <= 0:
+        return {fid: 0 for fid in fitting_id_list}
+
+    overlapping = Q(status="outstanding") | Q(completed_at__gte=window_start)
+    overlapping |= Q(expires_at__gte=window_start)
+    overlapping |= Q(last_updated__gte=window_start)
+    overlapping |= Q(issued_at__gte=window_start)
+
+    intervals_by_fit: dict[int, list[tuple[datetime, datetime]]] = {
+        fid: [] for fid in fitting_id_list
+    }
+    for row in EveMarketContract.objects.filter(
+        overlapping,
+        location=location,
+        fitting_id__in=fitting_id_list,
+    ).values(
+        "fitting_id",
+        "status",
+        "issued_at",
+        "created_at",
+        "completed_at",
+        "expires_at",
+        "last_updated",
     ):
-        volumes[row["fitting_id"]] = int(row["volume"])
-    return volumes
+        fitting_id = row["fitting_id"]
+        if fitting_id not in intervals_by_fit:
+            continue
+        start = row["issued_at"] or row["created_at"]
+        if start is None:
+            continue
+        if row["status"] == "outstanding":
+            end = now
+        else:
+            end = (
+                row["completed_at"]
+                or row["expires_at"]
+                or row["last_updated"]
+                or now
+            )
+        start = max(start, window_start)
+        end = min(end, now)
+        if end > start:
+            intervals_by_fit[fitting_id].append((start, end))
+
+    result: dict[int, int] = {}
+    for fitting_id, intervals in intervals_by_fit.items():
+        in_stock = sum(
+            (end - start).total_seconds()
+            for start, end in merge_stock_intervals(intervals)
+        )
+        unstocked = max(0.0, 1.0 - (in_stock / window_seconds))
+        result[fitting_id] = int(round(unstocked * 100))
+    return result
 
 
 def cluster_completion_bursts(
