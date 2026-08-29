@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { translatePath } = i18n(Astro.url)
 
 import { get_market_contracts_metrics } from '@helpers/api.minmatar.org/market'
 import { number_thousand_separator } from '@helpers/numbers'
@@ -34,10 +34,8 @@ const partial_url = translatePath(
     }`,
 )
 
-function format_fleets_per_month(value: number): string {
-    if (Number.isInteger(value))
-        return number_thousand_separator(value)
-    return value.toFixed(1)
+function format_unstocked_pct(value: number): string {
+    return `${Math.round(value)}%`
 }
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
@@ -63,24 +61,30 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
         {metrics.map(row =>
             <>
                 <span
-                    id={`contract-metric-volume-${row.fitting_id}`}
+                    id={`contract-metric-volume-7d-${row.fitting_id}`}
                     class="[ market-contracts-card__metric-value ]"
                     hx-swap-oob="true"
-                >{number_thousand_separator(row.volume_28d)}</span>
+                >{number_thousand_separator(row.volume_7d)}</span>
                 <span
-                    id={`contract-metric-fleets-available-${row.fitting_id}`}
+                    id={`contract-metric-volume-30d-${row.fitting_id}`}
                     class="[ market-contracts-card__metric-value ]"
                     hx-swap-oob="true"
-                >{row.fleets_remaining != null
-                    ? number_thousand_separator(row.fleets_remaining)
-                    : t('ops_contract_fleets_remaining_unknown')}</span>
+                >{number_thousand_separator(row.volume_30d)}</span>
                 <span
-                    id={`contract-metric-fleets-mo-${row.fitting_id}`}
+                    id={`contract-metric-volume-90d-${row.fitting_id}`}
                     class="[ market-contracts-card__metric-value ]"
                     hx-swap-oob="true"
-                >{row.fleets_per_month != null
-                    ? format_fleets_per_month(row.fleets_per_month)
-                    : t('ops_contract_fleets_remaining_unknown')}</span>
+                >{number_thousand_separator(row.volume_90d)}</span>
+                <span
+                    id={`contract-metric-volume-365d-${row.fitting_id}`}
+                    class="[ market-contracts-card__metric-value ]"
+                    hx-swap-oob="true"
+                >{number_thousand_separator(row.volume_365d)}</span>
+                <span
+                    id={`contract-metric-unstocked-${row.fitting_id}`}
+                    class="[ market-contracts-card__metric-value ]"
+                    hx-swap-oob="true"
+                >{format_unstocked_pct(row.unstocked_pct_30d)}</span>
             </>
         )}
     </>

@@ -6,8 +6,8 @@ export type OpsContractsCriteriaId =
 
 export type OpsContractsOrderById =
     | 'stock_fill'
-    | 'volume_28d'
-    | 'fleets_remaining'
+    | 'volume_30d'
+    | 'unstocked_pct_30d'
 
 export type OpsContractsSortDirection = 'asc' | 'desc'
 
@@ -27,8 +27,8 @@ export const OPS_CONTRACTS_DEFAULT_DIRECTIONS: Record<
     OpsContractsSortDirection
 > = {
     stock_fill: 'desc',
-    volume_28d: 'desc',
-    fleets_remaining: 'asc',
+    volume_30d: 'desc',
+    unstocked_pct_30d: 'desc',
 }
 
 export const OPS_CONTRACTS_DEFAULT_ORDER_DIR: OpsContractsSortDirection =
@@ -41,9 +41,11 @@ export interface OpsContractsFilterRow {
     stock_status: OpsContractsStockStatus | null
     doctrine_ids: number[]
     fill_pct?: number | null
-    volume_28d?: number
-    fleets_remaining?: number | null
-    fleets_per_month?: number | null
+    volume_7d?: number
+    volume_30d?: number
+    volume_90d?: number
+    volume_365d?: number
+    unstocked_pct_30d?: number | null
 }
 
 const CRITERIA_IDS = new Set<string>([
@@ -55,8 +57,8 @@ const CRITERIA_IDS = new Set<string>([
 
 const ORDER_BY_IDS = new Set<string>([
     'stock_fill',
-    'volume_28d',
-    'fleets_remaining',
+    'volume_30d',
+    'unstocked_pct_30d',
 ])
 
 function is_order_by_id(value: string): value is OpsContractsOrderById {
@@ -168,16 +170,16 @@ function compare_by_order(
                 fill_pct_value(b),
                 direction,
             )
-        case 'volume_28d':
+        case 'volume_30d':
             return compare_numeric(
-                a.volume_28d ?? 0,
-                b.volume_28d ?? 0,
+                a.volume_30d ?? 0,
+                b.volume_30d ?? 0,
                 direction,
             )
-        case 'fleets_remaining':
+        case 'unstocked_pct_30d':
             return compare_numeric(
-                a.fleets_remaining ?? null,
-                b.fleets_remaining ?? null,
+                a.unstocked_pct_30d ?? null,
+                b.unstocked_pct_30d ?? null,
                 direction,
             )
         default: {
@@ -189,8 +191,8 @@ function compare_by_order(
 
 /**
  * Compare rows for All Contracts order-by pills (single-select + direction).
- * Defaults: stock fill desc (most stocked first); volume 28d desc; fleets remaining asc.
- * Missing fill / fleets remaining always sort last.
+ * Defaults: stock fill desc (most stocked first); volume 30d desc; unstocked % desc.
+ * Missing fill / unstocked % always sort last.
  * Ties break alphabetically by title.
  */
 export function ops_contracts_compare_rows(

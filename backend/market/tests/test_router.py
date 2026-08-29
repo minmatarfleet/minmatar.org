@@ -1,7 +1,5 @@
 from datetime import timedelta
-from unittest.mock import patch
 
-from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.test import Client
 from django.utils import timezone
@@ -9,8 +7,7 @@ from django.utils import timezone
 from app.test import TestCase
 
 from eveonline.models import EveCorporation, EveLocation
-from fittings.models import EveDoctrine, EveDoctrineFitting, EveFitting
-from fleets.models import EveFleet, EveFleetInstance, EveFleetInstanceMember
+from fittings.models import EveFitting
 from market.models import (
     EveMarketContract,
     EveMarketContractExpectation,
@@ -95,9 +92,9 @@ class MarketRouterTestCase(TestCase):
         self.assertIn("doctrines", data[0])
         self.assertIsInstance(data[0]["doctrines"], list)
         self.assertNotIn("historical_quantity", data[0])
-        self.assertNotIn("volume_28d", data[0])
-        self.assertNotIn("fleets_remaining", data[0])
-        self.assertNotIn("fleets_per_month", data[0])
+        self.assertNotIn("volume_7d", data[0])
+        self.assertNotIn("volume_30d", data[0])
+        self.assertNotIn("unstocked_pct_30d", data[0])
 
     def test_get_contracts_metrics_includes_finished_volume_windows(self):
         expectation = self._setup_expecation()
@@ -140,6 +137,16 @@ class MarketRouterTestCase(TestCase):
             completed_at=now - timedelta(days=60),
         )
 
+        EveMarketContract.objects.create(
+            id=2005,
+            location=expectation.location,
+            fitting=expectation.fitting,
+            status="finished",
+            price=1.0,
+            issuer_external_id=1,
+            completed_at=now - timedelta(days=200),
+        )
+
         response = self.client.get(
             f"{BASE_URL}/contracts/metrics?location_id={expectation.location.location_id}",
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
@@ -148,7 +155,34 @@ class MarketRouterTestCase(TestCase):
         data = response.json()
         self.assertEqual(1, len(data))
         self.assertEqual(expectation.fitting.id, data[0]["fitting_id"])
-        self.assertEqual(3, data[0]["volume_28d"])
+        self.assertEqual(2, data[0]["volume_7d"])
+        self.assertEqual(3, data[0]["volume_30d"])
+        self.assertEqual(4, data[0]["volume_90d"])
+        self.assertEqual(5, data[0]["volume_365d"])
+        self.assertEqual(100, data[0]["unstocked_pct_30d"])
+
+    def test_get_contracts_metrics_unstocked_pct_from_listing_intervals(self):
+        expectation = self._setup_expecation()
+        now = timezone.now()
+        EveMarketContract.objects.create(
+            id=3001,
+            location=expectation.location,
+            fitting=expectation.fitting,
+            status="outstanding",
+            price=1.0,
+            issuer_external_id=1,
+            issued_at=now - timedelta(days=15),
+            expires_at=now + timedelta(days=7),
+        )
+
+        response = self.client.get(
+            f"{BASE_URL}/contracts/metrics?location_id={expectation.location.location_id}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        data = response.json()
+        self.assertEqual(1, len(data))
+        self.assertEqual(50, data[0]["unstocked_pct_30d"])
 
     def test_get_contracts_collapses_corp_listings_to_corporation(self):
         """Character listings for the same corp show as one corporation seller."""
@@ -198,76 +232,6 @@ class MarketRouterTestCase(TestCase):
         self.assertIsNone(corp_seller["character_id"])
         self.assertEqual(1, char_seller["quantity"])
         self.assertIsNone(char_seller["corporation_id"])
-
-    @patch("fleets.signals.update_fleet_schedule")
-    def test_get_contracts_metrics_includes_fleets_remaining_from_fleet_comps(
-        self, schedule_mock
-    ):
-        del schedule_mock
-        expectation = self._setup_expecation()
-        now = timezone.now()
-        user = User.objects.create(username="ops-fc")
-        doctrine = EveDoctrine.objects.create(
-            name="Ops Doctrine",
-            type="strategic",
-            description="Ops",
-        )
-        EveDoctrineFitting.objects.create(
-            doctrine=doctrine,
-            fitting=expectation.fitting,
-            role="primary",
-        )
-        # Two fleets with 3 of this hull → typical size 3.
-        for instance_id, hulls in ((9101, 3), (9102, 3)):
-            fleet = EveFleet.objects.create(
-                type="strategic",
-                start_time=now - timedelta(days=3),
-                created_by=user,
-                doctrine=doctrine,
-                status="complete",
-            )
-            instance = EveFleetInstance.objects.create(
-                id=instance_id,
-                eve_fleet=fleet,
-            )
-            for i in range(hulls):
-                EveFleetInstanceMember.objects.create(
-                    eve_fleet_instance=instance,
-                    character_id=2000 + instance_id + i,
-                    character_name=f"Pilot {i}",
-                    role="squad_member",
-                    role_name="Squad Member",
-                    ship_type_id=expectation.fitting.ship_id,
-                    ship_name="Ship",
-                    solar_system_id=1,
-                    solar_system_name="Somewhere",
-                    squad_id=1,
-                    wing_id=1,
-                )
-        # Outstanding stock: 5 → ceil(5/3) = 2 fleets remaining.
-        for i in range(5):
-            EveMarketContract.objects.create(
-                id=4000 + i,
-                location=expectation.location,
-                fitting=expectation.fitting,
-                status="outstanding",
-                price=1.0,
-                issuer_external_id=1,
-                created_at=now,
-            )
-
-        response = self.client.get(
-            f"{BASE_URL}/contracts/metrics?location_id={expectation.location.location_id}",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
-        )
-        self.assertEqual(200, response.status_code)
-        data = response.json()
-        self.assertEqual(1, len(data))
-        self.assertEqual(expectation.fitting.id, data[0]["fitting_id"])
-        self.assertEqual(3, data[0]["typical_fleet_size"])
-        self.assertEqual(2, data[0]["fleets_remaining"])
-        # 2 fleets with this hull in 90d lookback → 2 * 30/90 = 0.7 /mo
-        self.assertEqual(0.7, data[0]["fleets_per_month"])
 
     def test_get_contracts_includes_ready_and_understocked(self):
         """All fittings are returned, including at-target (ready) stock."""
