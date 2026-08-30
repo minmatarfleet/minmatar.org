@@ -37,9 +37,10 @@ class ShoppingPlan:
     type_names: dict[int, str]
 
 
-def _apply_swaps(
+def apply_type_swaps(
     type_qty: dict[int, int], swaps: list | None
 ) -> dict[int, int]:
+    """Replace preferred type quantities with substitutes from swap records."""
     if not swaps:
         return dict(type_qty)
     result = dict(type_qty)
@@ -52,6 +53,10 @@ def _apply_swaps(
         if qty:
             result[substitute] = result.get(substitute, 0) + qty
     return result
+
+
+# Backwards-compatible alias for internal callers.
+_apply_swaps = apply_type_swaps
 
 
 def line_type_quantities(

@@ -29,6 +29,11 @@ interface Props {
     purchase_list_error?: string
     allow_multibuy?: boolean
     multibuy_id: string
+    multibuy_blocked?: boolean
+    multibuy_block_reason?: string
+    collapse_purchase_list?: boolean
+    show_back_to_progress?: boolean
+    back_to_progress_url?: string
 }
 
 const {
@@ -44,9 +49,34 @@ const {
     purchase_list_error = '',
     allow_multibuy = true,
     multibuy_id,
+    multibuy_blocked = false,
+    multibuy_block_reason = '',
+    collapse_purchase_list = false,
+    show_back_to_progress = false,
+    back_to_progress_url = '',
 } = Astro.props
 
-const can_copy_multibuy = !!(order.multibuy && allow_multibuy)
+const can_copy_multibuy = !!(
+    order.multibuy
+    && allow_multibuy
+    && !multibuy_blocked
+)
+
+const first_multibuy_copy = order.status === 'draft'
+
+const multibuy_block_message = (() => {
+    if (!multibuy_blocked)
+        return ''
+    if (multibuy_block_reason === 'shorts')
+        return t('fitting_buy.multibuy_blocked_shorts')
+    if (multibuy_block_reason === 'too_large')
+        return purchase_list_error || t('fitting_buy.purchase_list_too_large').replace('{count}', String(order.items.filter((i) => i.buy_qty > 0).length))
+    if (multibuy_block_reason === 'jita_pending')
+        return t('fitting_buy.multibuy_blocked_jita')
+    return t('fitting_buy.multibuy_blocked')
+})()
+
+const purchase_copied = order.status !== 'draft'
 
 const type_name_by_id = Object.fromEntries(
     order.items.map((item) => [item.type_id, item.type_name])
@@ -98,6 +128,10 @@ const cpu_pg_label = (
 ---
 
 <ComponentBlock class="[ fitting-buy-section fitting-buy-shopping w-full ]" heavier={true}>
+    <div
+        class="[ fitting-buy-shopping-shell ]"
+        x-data={`{ open: ${collapse_purchase_list || purchase_copied ? 'false' : 'true'} }`}
+    >
     <Flexblock gap="var(--space-s)">
         <FlexInline
             justification="space-between"
@@ -105,20 +139,51 @@ const cpu_pg_label = (
             gap="var(--space-s)"
         >
             <Flexblock gap="var(--space-3xs)">
-                <h2>{t('fitting_buy.shopping_list')}</h2>
+                <FlexInline gap="var(--space-xs)" class="[ items-center flex-wrap ]">
+                    <h2>{t('fitting_buy.shopping_list')}</h2>
+                    {(collapse_purchase_list || purchase_copied) && (
+                        <button
+                            type="button"
+                            class="[ fitting-buy-accordion-toggle ]"
+                            x-on:click="open = !open"
+                            x-bind:aria-expanded="open"
+                        >
+                            <span x-text={`open ? '${t('fitting_buy.hide_purchase_list')}' : '${t('fitting_buy.show_purchase_list')}'`}>
+                                {t('fitting_buy.show_purchase_list')}
+                            </span>
+                        </button>
+                    )}
+                </FlexInline>
                 {shopping_summary && (
                     <p class="[ fitting-buy-hint ]">{shopping_summary}</p>
                 )}
+                {purchase_copied && (
+                    <p class="[ fitting-buy-hint ]">{t('fitting_buy.purchase_list_copied_tip')}</p>
+                )}
                 {purchase_list_error && (
                     <p class="[ text-[var(--fleet-red)] ]">{purchase_list_error}</p>
+                )}
+                {multibuy_block_message && !jita_running && (
+                    <p class="[ text-[var(--fleet-yellow)] ]">{multibuy_block_message}</p>
                 )}
                 {order.active_jita_check?.error && (
                     <p class="[ text-[var(--fleet-red)] ]">{order.active_jita_check.error}</p>
                 )}
             </Flexblock>
-            {!jita_running && (
-                <FlexInline gap="var(--space-xs)" class="[ flex-wrap items-center ]">
-                    {can_copy_multibuy && is_owner && (
+            <FlexInline gap="var(--space-xs)" class="[ flex-wrap items-center ]">
+                {show_back_to_progress && back_to_progress_url && (
+                    <Button
+                        type="button"
+                        size="sm"
+                        color="transparent"
+                        hx-get={back_to_progress_url}
+                        hx-target="#fitting-buy-order"
+                        hx-swap="outerHTML"
+                    >
+                        {t('fitting_buy.back_to_progress')}
+                    </Button>
+                )}
+                {!jita_running && can_copy_multibuy && is_owner && first_multibuy_copy && (
                         <form
                             hx-post={partial_base}
                             hx-target="#fitting-buy-order"
@@ -135,8 +200,8 @@ const cpu_pg_label = (
                                 {t('fitting_buy.copy_multibuy')}
                             </Button>
                         </form>
-                    )}
-                    {can_copy_multibuy && !is_owner && (
+                )}
+                {!jita_running && can_copy_multibuy && (!is_owner || !first_multibuy_copy) && (
                         <ClipboardButton
                             id={multibuy_id}
                             size="sm"
@@ -145,7 +210,7 @@ const cpu_pg_label = (
                             {order.multibuy}
                         </ClipboardButton>
                     )}
-                    {is_owner && (
+                {!jita_running && is_owner && (
                         <form
                             hx-post={partial_base}
                             hx-target="#fitting-buy-order"
@@ -163,9 +228,9 @@ const cpu_pg_label = (
                         </form>
                     )}
                 </FlexInline>
-            )}
         </FlexInline>
 
+        <div x-show="open" x-cloak class="[ fitting-buy-shopping-body ]">
         {jita_running ? (
             <Flexblock gap="var(--space-s)" id="jita-check-indicator">
                 <Flexblock gap="var(--space-xs)">
@@ -487,7 +552,9 @@ const cpu_pg_label = (
                 </table>
             </div>
         )}
+        </div>
     </Flexblock>
+    </div>
 </ComponentBlock>
 
 <style lang="scss">
@@ -499,6 +566,33 @@ const cpu_pg_label = (
             margin: 0;
             font-size: var(--step-1);
         }
+    }
+
+    .fitting-buy-accordion-toggle {
+        appearance: none;
+        background: transparent;
+        border: 1px solid var(--border-color);
+        color: var(--highlight);
+        cursor: pointer;
+        font: inherit;
+        font-size: var(--step--1);
+        padding: var(--space-3xs) var(--space-2xs);
+        transition: var(--fast-transition);
+
+        &:focus-visible {
+            outline: 1px solid var(--foreground);
+            outline-offset: 2px;
+        }
+
+        @media (hover: hover) {
+            &:hover {
+                color: var(--foreground);
+            }
+        }
+    }
+
+    .fitting-buy-shopping-shell [x-cloak] {
+        display: none !important;
     }
 
     .fitting-buy-hint {

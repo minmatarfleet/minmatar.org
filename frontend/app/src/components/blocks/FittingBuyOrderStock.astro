@@ -1,0 +1,126 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { FittingBuyOrderDetail } from '@helpers/api.minmatar.org/fitting_buy_orders'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Button from '@components/blocks/Button.astro'
+
+interface Props {
+    order: FittingBuyOrderDetail
+    is_owner: boolean
+    on_stock_progress: boolean
+    partial_base: string
+    progress_step: string
+    [propName: string]: any
+}
+
+const {
+    order,
+    is_owner,
+    on_stock_progress,
+    partial_base,
+    progress_step,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const tip = !on_stock_progress && !(order.stock_paste?.trim())
+    ? t('fitting_buy.stock_skipped_tip')
+    : t('fitting_buy.stock_paste_tip')
+---
+
+<ComponentBlock
+    class:list={['[ fitting-buy-section ]', Astro.props.class]}
+    heavier={true}
+    {...attributes}
+>
+    <Flexblock gap="var(--space-s)">
+        <FlexInline
+            justification="space-between"
+            class="[ w-full flex-wrap items-start ]"
+            gap="var(--space-xs)"
+        >
+            <Flexblock gap="var(--space-3xs)">
+                <h2>{t('fitting_buy.stock_paste')}</h2>
+                <p class="[ fitting-buy-hint ]">{tip}</p>
+            </Flexblock>
+            {!on_stock_progress && is_owner && (
+                <Button
+                    type="button"
+                    size="sm"
+                    color="transparent"
+                    hx-get={`${partial_base}&view_step=${progress_step}`}
+                    hx-target="#fitting-buy-order"
+                    hx-swap="outerHTML"
+                >
+                    {t('fitting_buy.back_to_progress')}
+                </Button>
+            )}
+        </FlexInline>
+        {is_owner ? (
+            <form
+                hx-post={partial_base}
+                hx-target="#fitting-buy-order"
+                hx-swap="outerHTML"
+            >
+                <input type="hidden" name="action" value="stock" />
+                <Flexblock gap="var(--space-xs)">
+                    <textarea
+                        name="stock_paste"
+                        rows="5"
+                        class="[ fitting-buy-textarea ]"
+                        placeholder={t('fitting_buy.stock_placeholder')}
+                        aria-label={t('fitting_buy.stock_paste')}
+                    >{order.stock_paste}</textarea>
+                    <FlexInline gap="var(--space-xs)" class="[ flex-wrap items-center ]">
+                        <Button type="submit" size="sm">
+                            {on_stock_progress
+                                ? t('fitting_buy.stock_continue')
+                                : t('fitting_buy.stock_update')}
+                        </Button>
+                    </FlexInline>
+                </Flexblock>
+            </form>
+        ) : (
+            <p class="[ fitting-buy-hint ]">
+                {order.stock_paste?.trim()
+                    ? t('fitting_buy.stock_readonly_set')
+                    : t('fitting_buy.stock_readonly_empty')}
+            </p>
+        )}
+        {order.unresolved_stock_names.length > 0 && (
+            <p class="[ text-[var(--fleet-red)] text-[var(--step--1)] ]">
+                {t('fitting_buy.unresolved_stock')}: {order.unresolved_stock_names.join(', ')}
+            </p>
+        )}
+    </Flexblock>
+</ComponentBlock>
+
+<style lang="scss">
+    h2 {
+        margin: 0;
+        font-size: var(--step-1);
+    }
+
+    .fitting-buy-hint {
+        margin: 0;
+        color: var(--highlight);
+        font-size: var(--step--1);
+    }
+
+    .fitting-buy-textarea {
+        width: 100%;
+        background: transparent;
+        color: var(--foreground);
+        border: 1px solid var(--border-color);
+        padding: var(--space-2xs);
+        font-family: var(--default-font);
+        font-size: var(--step--1);
+        resize: vertical;
+    }
+</style>

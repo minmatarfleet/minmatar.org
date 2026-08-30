@@ -89,6 +89,39 @@ export interface FittingBuyJitaCheck {
     finished_at: string | null
 }
 
+export interface FittingBuyIndustrySource {
+    type_id: number
+    type_name: string
+    unit_price: string
+    order_id: number
+    public_short_code: string
+}
+
+export interface FittingBuyContractPrice {
+    line_id: number
+    fitting_id: number
+    fitting_name: string
+    ship_id: number
+    ship_name: string
+    eft: string
+    quantity: number
+    is_swapped: boolean
+    variant_name: string
+    hull_cost: string | null
+    hull_cost_from_jita: boolean
+    hull_cost_source: '' | 'landed' | 'industry' | 'jita'
+    hull_cost_industry_order_id: number | null
+    hull_cost_industry_short_code: string
+    fitting_cost: string | null
+    landed_per_ship: string | null
+    landed_complete: boolean
+    missing_type_names: string[]
+    landed_plus_20: string | null
+    jita_sell_per_ship: string | null
+    jita_plus_20: string | null
+    industry_sources: FittingBuyIndustrySource[]
+}
+
 export interface FittingBuyOrderListShip {
     fitting_id: number
     fitting_name: string
@@ -101,6 +134,8 @@ export interface FittingBuyOrderListItem {
     status: string
     owner_id: number
     owner_username: string
+    owner_character_id: number
+    owner_character_name: string
     line_count: number
     ships: FittingBuyOrderListShip[]
     include_hull: boolean
@@ -113,9 +148,12 @@ export interface FittingBuyOrderListItem {
 export interface FittingBuyOrderDetail {
     id: number
     status: string
+    guide_step: 'stock' | 'purchase' | 'contract'
     notes: string
     owner_id: number
     owner_username: string
+    owner_character_id: number
+    owner_character_name: string
     stock_paste: string
     include_hull: boolean
     jita_checked_at: string | null
@@ -129,6 +167,10 @@ export interface FittingBuyOrderDetail {
     unresolved_stock_names: string[]
     substitutions: FittingBuySubstitution[]
     active_jita_check: FittingBuyJitaCheck | null
+    contract_prices: FittingBuyContractPrice[]
+    multibuy_blocked: boolean
+    multibuy_block_reason: string
+    shopping_landed_complete: boolean
 }
 
 function auth_headers(access_token: string) {

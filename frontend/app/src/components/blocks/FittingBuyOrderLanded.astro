@@ -1,0 +1,97 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { FittingBuyOrderDetail } from '@helpers/api.minmatar.org/fitting_buy_orders'
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Button from '@components/blocks/Button.astro'
+
+interface Props {
+    order: FittingBuyOrderDetail
+    partial_base: string
+    shopping_landed_complete: boolean
+    [propName: string]: any
+}
+
+const {
+    order,
+    partial_base,
+    shopping_landed_complete,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<ComponentBlock
+    class:list={['[ fitting-buy-section ]', Astro.props.class]}
+    heavier={true}
+    {...attributes}
+>
+    <Flexblock gap="var(--space-s)">
+        <Flexblock gap="var(--space-3xs)">
+            <h2>{t('fitting_buy.landed_prices')}</h2>
+            <p class="[ fitting-buy-hint ]">{t('fitting_buy.landed_prices_tip')}</p>
+        </Flexblock>
+        <Flexblock gap="var(--space-xs)">
+            <form
+                id={`fitting-buy-landed-${order.id}`}
+                hx-post={partial_base}
+                hx-target="#fitting-buy-order"
+                hx-swap="outerHTML"
+            >
+                <input type="hidden" name="action" value="landed_prices" />
+                <textarea
+                    name="paste"
+                    rows="4"
+                    class="[ fitting-buy-textarea ]"
+                    placeholder={t('fitting_buy.landed_placeholder')}
+                    aria-label={t('fitting_buy.landed_prices')}
+                ></textarea>
+            </form>
+            <FlexInline gap="var(--space-xs)" class="[ flex-wrap items-center ]">
+                <Button
+                    type="submit"
+                    size="sm"
+                    form={`fitting-buy-landed-${order.id}`}
+                >
+                    {shopping_landed_complete
+                        ? t('fitting_buy.apply_prices')
+                        : t('fitting_buy.landed_continue')}
+                </Button>
+            </FlexInline>
+        </Flexblock>
+        {shopping_landed_complete ? (
+            <p class="[ fitting-buy-hint ]">{t('fitting_buy.landed_ready')}</p>
+        ) : (
+            <p class="[ fitting-buy-hint ]">{t('fitting_buy.landed_needed')}</p>
+        )}
+    </Flexblock>
+</ComponentBlock>
+
+<style lang="scss">
+    h2 {
+        margin: 0;
+        font-size: var(--step-1);
+    }
+
+    .fitting-buy-hint {
+        margin: 0;
+        color: var(--highlight);
+        font-size: var(--step--1);
+    }
+
+    .fitting-buy-textarea {
+        width: 100%;
+        background: transparent;
+        color: var(--foreground);
+        border: 1px solid var(--border-color);
+        padding: var(--space-2xs);
+        font-family: var(--default-font);
+        font-size: var(--step--1);
+        resize: vertical;
+    }
+</style>

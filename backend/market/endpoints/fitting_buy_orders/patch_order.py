@@ -9,6 +9,7 @@ from market.endpoints.fitting_buy_orders.common import (
     require_owner,
 )
 from market.helpers.fitting_buy_check import ensure_jita_check
+from market.helpers.fitting_buy_guide import multibuy_blocked
 from market.helpers.fitting_buy_plan import sync_order_items
 from market.helpers.fitting_buy_serialize import (
     FittingBuyOrderDetailSchema,
@@ -55,6 +56,18 @@ def patch_fitting_buy_order(
         valid = {c.value for c in FittingBuyOrderStatus}
         if payload.status not in valid:
             return 400, ErrorResponse(detail="Invalid status.")
+        if (
+            payload.status == FittingBuyOrderStatus.PENDING_FITTING
+            and order.status == FittingBuyOrderStatus.DRAFT
+        ):
+            blocked, reason = multibuy_blocked(order)
+            if blocked:
+                detail = {
+                    "shorts": "Resolve Jita shortfalls (swap or allocate) before copying Multibuy.",
+                    "too_large": "Purchase list exceeds Multibuy's 100-type limit.",
+                    "jita_pending": "Wait for the Jita depth check to finish.",
+                }.get(reason, "Cannot copy Multibuy yet.")
+                return 400, ErrorResponse(detail=detail)
         order.status = payload.status
         fields.append("status")
     if payload.stock_paste is not None:

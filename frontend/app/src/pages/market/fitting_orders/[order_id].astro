@@ -22,9 +22,9 @@ if (!is_logged_in)
 import Viewport from '@layouts/Viewport.astro'
 import PageWide from '@components/page/PageWide.astro'
 import PageTitle from '@components/page/PageTitle.astro'
+import PageActions from '@components/page/PageActions.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
-import TextBox from '@components/layout/TextBox.astro'
 import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import FittingBuyOrderSkeleton from '@components/blocks/FittingBuyOrderSkeleton.astro'
 
@@ -49,21 +49,21 @@ const breadcrumb_items = [
         sticky={true}
     >
         <FlexInline slot="header" justification="space-between" class="[ w-full ]">
-            <Flexblock gap="var(--space-s)">
+            <Flexblock gap="var(--space-2xs)">
                 <Breadcrumb items={breadcrumb_items} />
                 <PageTitle>{page_title}</PageTitle>
+                <div id="fitting-buy-order-meta" class="[ fitting-buy-order-meta-slot ]"></div>
             </Flexblock>
+            <PageActions>
+                <div id="fitting-buy-order-actions" class="[ fitting-buy-order-actions-slot ]"></div>
+            </PageActions>
         </FlexInline>
 
         <Flexblock gap="var(--space-xl)" class="[ compensate-bottom-bar ]">
-            <TextBox>
-                <p class="[ excerpt ]">{t('fitting_buy.detail_leading')}</p>
-            </TextBox>
-
             <div
                 id="fitting-buy-order-slot"
                 hx-get={PARTIAL}
-                hx-trigger="load"
+                hx-trigger="load once"
                 hx-swap="innerHTML"
             >
                 <FittingBuyOrderSkeleton />
@@ -74,13 +74,30 @@ const breadcrumb_items = [
 
 <script>
     function refreshFittingBuyOrderSlot() {
+        const order = document.getElementById('fitting-buy-order')
         const slot = document.getElementById('fitting-buy-order-slot')
-        if (!slot)
+        const el = order || slot
+        if (!el)
             return
         if (typeof htmx !== 'undefined')
-            htmx.process(slot)
+            htmx.process(el)
         if (typeof Alpine !== 'undefined')
-            Alpine.initTree(slot)
+            Alpine.initTree(el)
+
+        const meta = document.getElementById('fitting-buy-order-meta')
+        if (meta) {
+            if (typeof htmx !== 'undefined')
+                htmx.process(meta)
+            if (typeof Alpine !== 'undefined')
+                Alpine.initTree(meta)
+        }
+        const actions = document.getElementById('fitting-buy-order-actions')
+        if (actions) {
+            if (typeof htmx !== 'undefined')
+                htmx.process(actions)
+            if (typeof Alpine !== 'undefined')
+                Alpine.initTree(actions)
+        }
     }
 
     function restoreFittingBuyAllocFocus() {

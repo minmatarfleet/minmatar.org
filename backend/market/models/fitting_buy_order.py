@@ -17,6 +17,14 @@ class FittingBuyOrderStatus(models.TextChoices):
     ARCHIVED = "archived", "Archived"
 
 
+class FittingBuyGuideStep(models.TextChoices):
+    """Derived workflow steps (not stored — computed from order state)."""
+
+    STOCK = "stock", "On-hand stock"
+    PURCHASE = "purchase", "Purchase & landed"
+    CONTRACT = "contract", "Contract prices"
+
+
 class FittingBuyJitaCheckStatus(models.TextChoices):
     PENDING = "pending", "Pending"
     RUNNING = "running", "Running"
@@ -38,9 +46,14 @@ class FittingBuyOrder(models.Model):
     )
     notes = models.TextField(blank=True, default="")
     stock_paste = models.TextField(
+        null=True,
         blank=True,
-        default="",
-        help_text="Raw inventory / Multibuy paste applied against the BOM.",
+        default=None,
+        help_text=(
+            "Raw inventory / Multibuy paste applied against the BOM. "
+            "Null means the on-hand stock step is not done yet; empty string "
+            "means the owner skipped or cleared stock."
+        ),
     )
     include_hull = models.BooleanField(
         default=False,
