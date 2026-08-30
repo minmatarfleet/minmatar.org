@@ -469,6 +469,20 @@ class FittingBuyApiTestCase(TestCase):
             json={"status": FittingBuyOrderStatus.PENDING_FITTING},
             headers=_auth_headers(self.owner),
         )
+        self.assertEqual(patched.status_code, 400)
+
+        order = FittingBuyOrder.objects.get(id=body["id"])
+        order.jita_checked_at = timezone.now()
+        order.save(update_fields=["jita_checked_at"])
+        for item in order.items.all():
+            item.jita_sell_volume = max(item.buy_qty, 1)
+            item.save(update_fields=["jita_sell_volume"])
+
+        patched = self.client.patch(
+            f"/fitting-buy-orders/{body['id']}",
+            json={"status": FittingBuyOrderStatus.PENDING_FITTING},
+            headers=_auth_headers(self.owner),
+        )
         self.assertEqual(patched.status_code, 200)
         self.assertEqual(patched.json()["status"], "pending_fitting")
 
