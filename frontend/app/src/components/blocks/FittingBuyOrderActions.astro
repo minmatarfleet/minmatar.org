@@ -1,0 +1,130 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import Dropdown from '@components/blocks/Dropdown.astro'
+
+interface Props {
+    is_owner: boolean
+    show: boolean
+    partial_base: string
+    [propName: string]: any
+}
+
+const {
+    is_owner,
+    show,
+    partial_base,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<div
+    id="fitting-buy-order-actions"
+    class:list={['[ fitting-buy-order-actions ]', Astro.props.class]}
+    hx-swap-oob="true"
+    {...attributes}
+>
+    {show && is_owner && (
+        <Dropdown class="[ fitting-buy-actions-menu ]">
+            <span slot="button">{t('actions')}</span>
+            <nav
+                class="[ fitting-buy-actions-menu__list ]"
+                aria-label={t('actions')}
+            >
+                <div
+                    class="[ fitting-buy-actions-menu__confirm ]"
+                    x-data={`{ confirming: false }`}
+                >
+                    <button
+                        type="button"
+                        class="[ fitting-buy-actions-menu__item fitting-buy-actions-menu__item--danger ]"
+                        x-show="!confirming"
+                        x-on:click.stop="confirming = true"
+                    >
+                        {t('fitting_buy.delete_order')}
+                    </button>
+                    <form
+                        x-show="confirming"
+                        x-cloak
+                        hx-post={partial_base}
+                        hx-target="#fitting-buy-order"
+                        hx-swap="outerHTML"
+                    >
+                        <input type="hidden" name="action" value="delete_order" />
+                        <button
+                            type="submit"
+                            class="[ fitting-buy-actions-menu__item fitting-buy-actions-menu__item--danger is-confirm ]"
+                        >
+                            {t('fitting_buy.confirm_delete_order')}
+                        </button>
+                    </form>
+                </div>
+            </nav>
+        </Dropdown>
+    )}
+</div>
+
+<style lang="scss">
+    .fitting-buy-actions-menu__list {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        width: 100%;
+    }
+
+    .fitting-buy-actions-menu__list form {
+        margin: 0;
+    }
+
+    .fitting-buy-actions-menu__confirm {
+        width: 100%;
+    }
+
+    .fitting-buy-actions-menu__item {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        appearance: none;
+        background: transparent;
+        border: 0;
+        margin: 0;
+        padding: var(--space-2xs) var(--space-s);
+        color: var(--highlight);
+        font-family: var(--button-font);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-align: left;
+        text-decoration: none;
+        cursor: pointer;
+
+        &:hover,
+        &:focus-visible {
+            color: var(--foreground);
+            background: color-mix(in srgb, var(--foreground) 8%, transparent);
+        }
+
+        &--danger {
+            color: var(--highlight);
+        }
+
+        &--danger:hover,
+        &--danger:focus-visible,
+        &.is-confirm {
+            color: var(--fleet-red);
+        }
+    }
+
+    :global(.fitting-buy-actions-menu.dropdown-panel),
+    :global(.fitting-buy-actions-menu .dropdown-panel) {
+        min-width: 12rem;
+        padding: var(--space-3xs);
+        background: var(--background);
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+</style>

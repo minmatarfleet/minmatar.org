@@ -1,0 +1,184 @@
+---
+interface Step {
+    id: string
+    label: string
+}
+
+interface Props {
+    steps: readonly Step[]
+    progress_index: number
+    view_step: string
+    partial_base: string
+    steps_label: string
+    [propName: string]: any
+}
+
+const {
+    steps,
+    progress_index,
+    view_step,
+    partial_base,
+    steps_label,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<nav
+    class:list={['[ fitting-buy-steps ]', Astro.props.class]}
+    aria-label={steps_label}
+    {...attributes}
+>
+    <ol class="[ fitting-buy-steps__list ]">
+        {steps.map((step, index) => {
+            const done = progress_index > index
+            const current = index === progress_index
+            const viewing = step.id === view_step
+            const reachable = progress_index >= index
+            return (
+                <li
+                    class:list={[
+                        'fitting-buy-steps__item',
+                        {
+                            'is-done': done,
+                            'is-current': current,
+                            'is-viewing': viewing,
+                            'is-locked': !reachable,
+                        },
+                    ]}
+                >
+                    {reachable ? (
+                        <button
+                            type="button"
+                            class="[ fitting-buy-steps__button ]"
+                            hx-get={`${partial_base}&view_step=${step.id}`}
+                            hx-target="#fitting-buy-order"
+                            hx-swap="outerHTML"
+                            aria-current={viewing ? 'step' : undefined}
+                        >
+                            <span class="[ fitting-buy-steps__index ]" aria-hidden="true">
+                                {done ? '✓' : index + 1}
+                            </span>
+                            <span class="[ fitting-buy-steps__label ]">{step.label}</span>
+                        </button>
+                    ) : (
+                        <span class="[ fitting-buy-steps__button is-static ]">
+                            <span class="[ fitting-buy-steps__index ]" aria-hidden="true">
+                                {index + 1}
+                            </span>
+                            <span class="[ fitting-buy-steps__label ]">{step.label}</span>
+                        </span>
+                    )}
+                </li>
+            )
+        })}
+    </ol>
+</nav>
+
+<style lang="scss">
+    .fitting-buy-steps {
+        width: 100%;
+    }
+
+    .fitting-buy-steps__list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+    }
+
+    .fitting-buy-steps__item {
+        display: inline-flex;
+        align-items: stretch;
+        border: 1px solid var(--border-color);
+        color: var(--highlight);
+        font-size: var(--step--1);
+        background: color-mix(in srgb, var(--background) 55%, transparent);
+        transition:
+            border-color var(--fast-transition),
+            color var(--fast-transition),
+            background-color var(--fast-transition);
+
+        &.is-done {
+            color: var(--foreground);
+            border-color: color-mix(in srgb, var(--green) 50%, var(--border-color));
+        }
+
+        &.is-current:not(.is-viewing) {
+            color: var(--foreground);
+            border-color: color-mix(in srgb, var(--fleet-yellow) 55%, var(--border-color));
+            border-style: dashed;
+        }
+
+        &.is-viewing {
+            color: var(--foreground);
+            border-color: var(--fleet-yellow);
+            border-style: solid;
+            background: color-mix(in srgb, var(--fleet-yellow) 14%, transparent);
+        }
+
+        &.is-locked {
+            opacity: 0.45;
+        }
+    }
+
+    .fitting-buy-steps__button {
+        appearance: none;
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        margin: 0;
+        padding: var(--space-2xs) var(--space-xs);
+        border: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+
+        &.is-static {
+            cursor: default;
+        }
+
+        &:focus-visible {
+            outline: 1px solid var(--foreground);
+            outline-offset: 2px;
+        }
+
+        @media (hover: hover) {
+            &:not(.is-static):hover .fitting-buy-steps__label {
+                color: var(--fleet-yellow);
+            }
+        }
+    }
+
+    .fitting-buy-steps__index {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: var(--space-m);
+        height: var(--space-m);
+        border-radius: 50%;
+        border: 1px solid currentColor;
+        font-variant-numeric: tabular-nums;
+        font-size: var(--step--2);
+        line-height: 1;
+        flex-shrink: 0;
+    }
+
+    .fitting-buy-steps__item.is-done .fitting-buy-steps__index {
+        border-color: color-mix(in srgb, var(--green) 70%, currentColor);
+        color: var(--green);
+    }
+
+    .fitting-buy-steps__item.is-viewing .fitting-buy-steps__index {
+        border-color: var(--fleet-yellow);
+        color: var(--fleet-yellow);
+    }
+
+    .fitting-buy-steps__label {
+        color: inherit;
+    }
+</style>

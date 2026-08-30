@@ -1,0 +1,89 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { FittingBuyOrderDetail } from '@helpers/api.minmatar.org/fitting_buy_orders'
+import {
+    fitting_buy_status_color,
+    fitting_buy_status_label,
+} from '@helpers/fitting_buy_status'
+import { format_date_time } from '@helpers/date'
+
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Tag from '@components/blocks/Tag.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+
+interface Props {
+    order: FittingBuyOrderDetail
+    is_owner: boolean
+    [propName: string]: any
+}
+
+const {
+    order,
+    is_owner,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const owner_character_id = order.owner_character_id ?? 0
+const owner_character_name = order.owner_character_name || order.owner_username || ''
+---
+
+<div
+    id="fitting-buy-order-meta"
+    class:list={['[ fitting-buy-order-meta ]', Astro.props.class]}
+    hx-swap-oob="true"
+    {...attributes}
+>
+    <FlexInline gap="var(--space-xs)" class="[ items-center flex-wrap ]">
+        {owner_character_id > 0 ? (
+            <CharacterPicture
+                character_id={owner_character_id}
+                character_name={owner_character_name}
+                size={32}
+                icon_quality={64}
+                tooltip={owner_character_name}
+            />
+        ) : (
+            <span
+                class="[ fitting-buy-owner-fallback ]"
+                title={owner_character_name}
+            >
+                {owner_character_name.slice(0, 1).toUpperCase()}
+            </span>
+        )}
+        <Tag
+            text={fitting_buy_status_label(order.status, t)}
+            color={fitting_buy_status_color(order.status)}
+        />
+        {order.jita_checked_at && (
+            <small class="[ fitting-buy-meta__text ]">
+                {format_date_time(lang, order.jita_checked_at)}
+            </small>
+        )}
+        {!is_owner && (
+            <small class="[ text-[var(--highlight)] ]">{t('fitting_buy.read_only')}</small>
+        )}
+    </FlexInline>
+</div>
+
+<style lang="scss">
+    .fitting-buy-meta__text {
+        color: var(--highlight);
+        font-size: var(--step--1);
+    }
+
+    .fitting-buy-owner-fallback {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: var(--space-m);
+        height: var(--space-m);
+        border: 1px solid var(--border-color);
+        color: var(--foreground);
+        font-size: var(--step--1);
+        font-weight: 600;
+    }
+</style>

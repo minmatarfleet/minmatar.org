@@ -37,9 +37,10 @@ class ShoppingPlan:
     type_names: dict[int, str]
 
 
-def _apply_swaps(
+def apply_type_swaps(
     type_qty: dict[int, int], swaps: list | None
 ) -> dict[int, int]:
+    """Replace preferred type quantities with substitutes from swap records."""
     if not swaps:
         return dict(type_qty)
     result = dict(type_qty)
@@ -88,7 +89,7 @@ def line_type_quantities(
             and 0 < swap_hull_qty < quantity
         ):
             original_qty = quantity - swap_hull_qty
-            swapped_per = _apply_swaps(per_ship, swaps)
+            swapped_per = apply_type_swaps(per_ship, swaps)
             total: dict[int, int] = {}
             for tid, qty in per_ship.items():
                 total[tid] = total.get(tid, 0) + qty * original_qty
@@ -106,7 +107,7 @@ def line_type_quantities(
             continue
 
         if apply_line_swaps:
-            per_ship = _apply_swaps(per_ship, swaps)
+            per_ship = apply_type_swaps(per_ship, swaps)
         total = {tid: qty * quantity for tid, qty in per_ship.items()}
         result.append(
             LineBom(
