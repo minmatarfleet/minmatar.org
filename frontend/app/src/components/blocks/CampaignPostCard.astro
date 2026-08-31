@@ -3,6 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
 import type { CampaignMeta } from '@/data/campaigns'
+import type { TagColors } from '@dtypes/layout_components'
 
 interface Props {
     campaign: CampaignMeta;
@@ -15,10 +16,28 @@ const {
 const href = translatePath(campaign.path)
 const name = t(campaign.nameKey as any)
 const period = t(campaign.periodKey as any)
-const kind_label = campaign.kind === 'siege'
-    ? t('content.kind.siege')
-    : t('content.kind.campaign')
 const view_label = t('campaigns.view_report')
+
+let kind_label: string
+let kind_color: TagColors
+switch (campaign.kind) {
+    case 'siege':
+        kind_label = t('content.kind.siege')
+        kind_color = 'fleet-red'
+        break
+    case 'campaign':
+        kind_label = t('content.kind.campaign')
+        kind_color = 'fleet-yellow'
+        break
+    case 'warzone':
+        kind_label = t('content.kind.warzone')
+        kind_color = 'alliance-blue'
+        break
+    default: {
+        const _exhaustive: never = campaign.kind
+        throw new Error(`Unhandled campaign kind: ${_exhaustive}`)
+    }
+}
 
 import { number_thousand_separator, number_name } from '@helpers/numbers'
 
@@ -40,7 +59,7 @@ import Tag from '@components/blocks/Tag.astro'
     <Tag
         slot="header"
         text={kind_label}
-        color={campaign.kind === 'siege' ? 'fleet-red' : 'fleet-yellow'}
+        color={kind_color}
     />
 
     <Flexblock gap='var(--space-2xs)'>

@@ -4,8 +4,9 @@ import { COVER_IMAGE as SCALDING_COVER, PERIOD_SCALDING_ISK_KILLS as SCALDING_IS
 import { COVER_IMAGE as HEK_COVER, ISK_DESTROYED as HEK_ISK } from '@/data/campaigns/hek'
 import { COVER_IMAGE as AUGA_COVER, CAMPAIGN_ISK_DESTROYED as AUGA_ISK, ALLIANCE_PATH as AUGA_PATH, SLUG as AUGA_SLUG } from '@/data/campaigns/auga'
 import { formatIsk } from '@/data/campaigns/hek'
+import { COVER_IMAGE as WARZONE_COVER, PERMALINK_PATH as WARZONE_PATH, YC128_07 } from '@/data/warzone/yc128-07'
 
-export type CampaignKind = 'campaign' | 'siege'
+export type CampaignKind = 'campaign' | 'siege' | 'warzone'
 
 export type CampaignMeta = {
     slug: string
@@ -81,6 +82,18 @@ export const campaigns: CampaignMeta[] = [
         sortOrder: 1,
         kind: 'siege',
         published_at: new Date('2026-07-18T00:00:00Z'),
+    },
+    {
+        slug: 'yc128-07',
+        path: WARZONE_PATH,
+        nameKey: 'warzone.yc128_07.name',
+        periodKey: 'warzone.yc128_07.period',
+        excerptKey: 'warzone.yc128_07.leading_text',
+        coverImage: WARZONE_COVER,
+        iskDestroyed: YC128_07.sampled_isk,
+        sortOrder: 0,
+        kind: 'warzone',
+        published_at: new Date('2026-07-31T00:00:00Z'),
     },
 ]
 

@@ -75,6 +75,7 @@ export const ui = {
         'content.filter.posts': 'Posts',
         'content.kind.campaign': 'Campaign',
         'content.kind.siege': 'System Siege',
+        'content.kind.warzone': 'Warzone Report',
         'content.kind.post': 'Post',
         'content.manage_my_content': 'Manage my content',
         'content.connect.twitch': 'Connect Twitch',
@@ -189,6 +190,15 @@ export const ui = {
         'campaigns.sieges.section_title': 'System sieges',
         'campaigns.sieges.section_leading_text':
             'Faction warfare system pushes — contested hubs, plex wars, and the fleets that flipped them.',
+
+        'warzone.yc128_07.name': 'Warzone Report · July YC128',
+        'warzone.yc128_07.page_title': 'Warzone Report · July YC128',
+        'warzone.yc128_07.period': '1–31 Jul YC128',
+        'warzone.yc128_07.leading_text': 'Amarr took three. Hed did the dying.',
+        'warzone.yc128_07.meta_title': 'Warzone Report · July YC128 | {site}',
+        'warzone.yc128_07.meta_description': 'Amarr–Minmatar Warzone Report for July YC128 — occupancy, fights, and the Auga siege. Published by Minmatar Fleet.',
+        'warzone.latest.page_title': 'Warzone Report',
+        'warzone.page_title': 'Warzone Report',
 
         'campaigns.auga.name': 'Auga · YC128',
         'campaigns.auga.page_title': 'Auga Siege Report · YC128',
@@ -2261,6 +2271,8 @@ export const ui = {
             'Etherium Reach Dronelands campaign report — alliance participation, combat, pilot income, and campaign results.',
         'page_finder.campaigns.auga.description':
             'Auga system siege report (YC128) — capturing complexes, propaganda beacons, and fleet fights in the Hed constellation from July YC128.',
+        'page_finder.warzone.description': 'Monthly Amarr–Minmatar warzone report — who won the month and where people fought.',
+        'page_finder.warzone.yc128_07.description': 'July YC128 Amarr–Minmatar Warzone Report — Amarr +3 systems, Hed killmails, Auga siege.',
         'page_finder.campaigns.providence.description':
             'FL33T\'s war on its ancestral enemy, CVA, in Providence — structure grinds, capital fleet building, and the Watermelon.',
         'page_finder.campaigns.scalding_pass.description':

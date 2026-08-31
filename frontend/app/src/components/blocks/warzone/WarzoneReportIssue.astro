@@ -1,0 +1,382 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import type { WarzoneIssue, WarzoneMilitiaId } from '@/data/warzone/types'
+import type { CampaignTableRow } from '@/data/campaigns/etherium-reach'
+
+import CampaignStat from '@components/blocks/campaigns/etherium-reach/CampaignStat.astro'
+import CampaignDataTable from '@components/blocks/campaigns/etherium-reach/CampaignDataTable.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Button from '@components/blocks/Button.astro'
+import Tag from '@components/blocks/Tag.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Grid from '@components/compositions/Grid.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import { number_thousand_separator } from '@helpers/numbers'
+
+interface Props {
+    issue: WarzoneIssue
+}
+
+const { issue } = Astro.props
+
+function militia_label(id: WarzoneMilitiaId): string {
+    return id === 'minmatar' ? 'Minmatar' : 'Amarr'
+}
+
+function format_delta(value: number): string {
+    if (value > 0) return `+${number_thousand_separator(value)}`
+    if (value < 0) return `−${number_thousand_separator(Math.abs(value))}`
+    return '0'
+}
+
+function format_net(value: number): string {
+    return `${format_delta(value)} net`
+}
+
+function is_external(href: string): boolean {
+    return href.startsWith('http://') || href.startsWith('https://')
+}
+
+const traffic_rows: CampaignTableRow[] = issue.traffic.map((row) => ({
+    cells: [
+        row.system,
+        row.front,
+        number_thousand_separator(row.ships),
+        format_delta(row.vs_last_month),
+        row.isk_label,
+        militia_label(row.holds_today),
+    ],
+}))
+---
+
+<Flexblock gap="var(--space-2xl)" class="[ warzone-report ]">
+    <Grid min_item_width="12rem">
+        <CampaignStat label="Net occupancy" tone="amarr">
+            Amarr {format_delta(issue.occupancy_net_amarr)}
+        </CampaignStat>
+        <CampaignStat label="Ships destroyed">
+            {number_thousand_separator(issue.sampled_ships)}
+        </CampaignStat>
+        <CampaignStat label="Focus of the month">
+            {issue.focus_name}
+        </CampaignStat>
+    </Grid>
+
+    <TextBox>
+        <p class="[ opening ]">{issue.opening}</p>
+    </TextBox>
+
+    <Flexblock gap="var(--space-s)">
+        <h2>Scoreboard</h2>
+        <p class="[ section-dek ]">
+            Same two cards every month. Occupancy net is the month. Systems
+            held and enlisted are live standing.
+        </p>
+        <Grid min_item_width="18rem">
+            {issue.scoreboard.map((side) => (
+                <ComponentBlock>
+                    <Flexblock gap="var(--space-s)">
+                        <FlexInline justification="space-between" class="[ w-full ]">
+                            <h3>{militia_label(side.militia)}</h3>
+                            <Tag
+                                text={format_net(side.occupancy_net)}
+                                color={side.militia === 'amarr' ? 'fleet-yellow' : 'fleet-red'}
+                            />
+                        </FlexInline>
+                        <Grid min_item_width="8rem">
+                            <CampaignStat label="Systems held" tone={side.militia}>
+                                {side.systems_held}
+                            </CampaignStat>
+                            <CampaignStat label="Enlisted pilots">
+                                {side.enlisted_pilots_label}
+                            </CampaignStat>
+                            <CampaignStat label="Kills last week">
+                                {number_thousand_separator(side.kills_last_week)}
+                            </CampaignStat>
+                            <CampaignStat label="Victory points last week">
+                                {side.victory_points_last_week_label}
+                            </CampaignStat>
+                        </Grid>
+                    </Flexblock>
+                </ComponentBlock>
+            ))}
+        </Grid>
+        <p class="[ footnote ]">{issue.methodology}</p>
+    </Flexblock>
+
+    <Flexblock gap="var(--space-s)">
+        <h2>Biggest fights</h2>
+        <p class="[ section-dek ]">
+            Up to three pins. Same card every month: one system, ships / ISK /
+            versus last month, a link.
+        </p>
+        {issue.fights.map((fight) => (
+            <ComponentBlock>
+                <Flexblock gap="var(--space-s)">
+                    <FlexInline justification="space-between" class="[ w-full ]">
+                        <h3>{fight.system}</h3>
+                        <Tag text={fight.date_label} color="fleet-yellow" />
+                    </FlexInline>
+                    <p>{fight.dek}</p>
+                    <Grid min_item_width="8rem">
+                        <CampaignStat label="Ships this month">
+                            {number_thousand_separator(fight.ships)}
+                        </CampaignStat>
+                        <CampaignStat label="ISK destroyed">
+                            {fight.isk_label}
+                        </CampaignStat>
+                        <CampaignStat label="vs last month">
+                            {format_delta(fight.vs_last_month)}
+                        </CampaignStat>
+                    </Grid>
+                    <FlexInline>
+                        {fight.links.map((link) => (
+                            <Button
+                                href={is_external(link.href) ? link.href : translatePath(link.href)}
+                                size="sm"
+                                new_tab={is_external(link.href)}
+                                external={is_external(link.href)}
+                            >
+                                {link.label}
+                            </Button>
+                        ))}
+                    </FlexInline>
+                </Flexblock>
+            </ComponentBlock>
+        ))}
+    </Flexblock>
+
+    <Flexblock gap="var(--space-s)">
+        <h2>Systems</h2>
+        <p class="[ section-dek ]">
+            Occupancy changes first, then the loudest systems. Flip cards appear
+            only for systems that changed hands.
+        </p>
+        <Grid min_item_width="10rem">
+            <CampaignStat label="Occupancy changes">
+                {issue.occupancy_changes}
+            </CampaignStat>
+            <CampaignStat label="Net at month-end" tone="amarr">
+                Amarr {format_delta(issue.occupancy_net_amarr)}
+            </CampaignStat>
+            <CampaignStat label="Systems that moved">
+                {issue.systems_that_moved}
+            </CampaignStat>
+        </Grid>
+        <p>{issue.occupancy_dek}</p>
+        <Grid min_item_width="18rem">
+            {issue.occupancy.map((change) => (
+                <ComponentBlock>
+                    <Flexblock gap="var(--space-s)">
+                        <FlexInline justification="space-between" class="[ w-full ]">
+                            <h3>{change.system}</h3>
+                            <Tag
+                                text={`${militia_label(change.taken_by)} · ${change.date_label}`}
+                                color={change.taken_by === 'amarr' ? 'fleet-yellow' : 'fleet-red'}
+                            />
+                        </FlexInline>
+                        <p>{change.note}</p>
+                        <Grid min_item_width="7rem">
+                            <CampaignStat label="Ships this month">
+                                {number_thousand_separator(change.ships)}
+                            </CampaignStat>
+                            <CampaignStat label="vs last month">
+                                {format_delta(change.vs_last_month)}
+                            </CampaignStat>
+                            <CampaignStat label="ISK">
+                                {change.isk_label}
+                            </CampaignStat>
+                        </Grid>
+                        <FlexInline>
+                            <Button href={change.dotlan_href} size="sm" new_tab={true} external={true}>
+                                Dotlan
+                            </Button>
+                            <Button href={change.zkill_href} size="sm" new_tab={true} external={true}>
+                                zKill
+                            </Button>
+                        </FlexInline>
+                    </Flexblock>
+                </ComponentBlock>
+            ))}
+        </Grid>
+        <CampaignDataTable
+            headers={['System', 'Front', 'Ships', 'vs last month', 'ISK', 'Holds today']}
+            rows={traffic_rows}
+            striped={true}
+            success_marker={false}
+        />
+        <p class="[ footnote ]">{issue.traffic_footnote}</p>
+    </Flexblock>
+
+    <Flexblock gap="var(--space-s)">
+        <h2>Two fronts</h2>
+        <p class="[ section-dek ]">
+            Minmatar front is Heimatar and Metropolis. Amarr front is Devoid and
+            The Bleak Lands. Hottest system and occupancy, every issue.
+        </p>
+        <Grid min_item_width="18rem">
+            {issue.fronts.map((front) => (
+                <ComponentBlock>
+                    <Flexblock gap="var(--space-s)">
+                        <FlexInline justification="space-between" class="[ w-full ]">
+                            <h3>{front.name}</h3>
+                            <Tag text={front.occupancy_label} color="fleet-yellow" />
+                        </FlexInline>
+                        <Grid min_item_width="8rem">
+                            <CampaignStat label="Ships in the sample">
+                                {front.ships_label}
+                            </CampaignStat>
+                            <CampaignStat label="Hottest system">
+                                {front.hottest_system}
+                            </CampaignStat>
+                        </Grid>
+                        <p>{front.dek}</p>
+                    </Flexblock>
+                </ComponentBlock>
+            ))}
+        </Grid>
+    </Flexblock>
+
+    <Flexblock gap="var(--space-s)">
+        <h2>Focus of the month</h2>
+        <p class="[ section-dek ]">
+            The one beat that would not appear in a normal issue.
+        </p>
+        <ComponentBlock>
+            <Flexblock gap="var(--space-s)">
+                <FlexInline justification="space-between" class="[ w-full ]">
+                    <h3>{issue.focus.title}</h3>
+                    <Tag text={issue.focus.window_label} color="fleet-yellow" />
+                </FlexInline>
+                <Grid min_item_width="8rem">
+                    <CampaignStat label="Ships (pods out)">
+                        {number_thousand_separator(issue.focus.ships)}
+                    </CampaignStat>
+                    <CampaignStat label="ISK destroyed">
+                        {(issue.focus.isk / 1_000_000_000).toFixed(2)}B
+                    </CampaignStat>
+                    <CampaignStat label="Unique pilots">
+                        {number_thousand_separator(issue.focus.unique_pilots)}
+                    </CampaignStat>
+                    <CampaignStat label="Minmatar flip">
+                        {issue.focus.flip_label}
+                    </CampaignStat>
+                    <CampaignStat label="Minmatar pilots / ships" tone="minmatar">
+                        {issue.focus.minmatar_pilots} / {issue.focus.minmatar_ships}
+                    </CampaignStat>
+                    <CampaignStat label="Amarr pilots / ships" tone="amarr">
+                        {issue.focus.amarr_pilots} / {issue.focus.amarr_ships}
+                    </CampaignStat>
+                    <CampaignStat label="Small-gang kills">
+                        {number_thousand_separator(issue.focus.small_gang_kills)}
+                    </CampaignStat>
+                </Grid>
+                <FlexInline>
+                    {issue.focus.links.map((link) => (
+                        <Button
+                            href={link.href}
+                            size="sm"
+                            new_tab={true}
+                            external={true}
+                        >
+                            {link.label}
+                        </Button>
+                    ))}
+                    <Button href={translatePath(issue.focus.campaign_path)} size="sm">
+                        Full siege page
+                    </Button>
+                </FlexInline>
+            </Flexblock>
+        </ComponentBlock>
+        {issue.focus.dek.map((paragraph) => (
+            <p>{paragraph}</p>
+        ))}
+        <p>{issue.focus.closing}</p>
+    </Flexblock>
+
+    <Flexblock gap="var(--space-s)">
+        <h2>Minmatar Fleet this month</h2>
+        <p class="[ section-dek ]">
+            The publisher as a participant. Fleet count and two public windows,
+            every issue.
+        </p>
+        <ComponentBlock>
+            <Flexblock gap="var(--space-s)">
+                <Grid min_item_width="8rem">
+                    <CampaignStat label="Tracked fleets">
+                        {issue.fleet.tracked_fleets}
+                    </CampaignStat>
+                    <CampaignStat label="Untracked warzone forms, lower bound">
+                        {issue.fleet.untracked_forms_lower_bound}
+                    </CampaignStat>
+                    <CampaignStat label="Largest public pickup">
+                        {issue.fleet.largest_public_pickup}
+                    </CampaignStat>
+                </Grid>
+                <p>{issue.fleet.dek}</p>
+            </Flexblock>
+        </ComponentBlock>
+    </Flexblock>
+
+    <Flexblock gap="var(--space-s)">
+        <h2>How to fly it</h2>
+        <p>{issue.how_to_fly}</p>
+        <FlexInline>
+            {issue.how_to_fly_links.map((link) => (
+                <Button
+                    href={is_external(link.href) ? link.href : translatePath(link.href)}
+                    size="sm"
+                    new_tab={is_external(link.href)}
+                    external={is_external(link.href)}
+                >
+                    {link.label}
+                </Button>
+            ))}
+        </FlexInline>
+        <p class="[ footnote ]">
+            Loyalty-point prices belong in the Amamake Market Report.
+        </p>
+    </Flexblock>
+
+    <ComponentBlock>
+        <Flexblock gap="var(--space-2xs)">
+            <h3>What this issue cannot see</h3>
+            <p>{issue.cannot_see}</p>
+        </Flexblock>
+    </ComponentBlock>
+</Flexblock>
+
+<style lang="scss">
+    .warzone-report {
+        h2 {
+            font-size: var(--step-3);
+            font-family: var(--heading-font);
+            margin: 0;
+        }
+
+        h3 {
+            font-size: var(--step-1);
+            font-family: var(--heading-font);
+            margin: 0;
+        }
+
+        p {
+            margin: 0;
+            max-width: var(--max-text-width);
+            line-height: 1.6;
+        }
+    }
+
+    .opening {
+        font-size: var(--step-1);
+    }
+
+    .section-dek,
+    .footnote {
+        color: var(--faded);
+        font-size: var(--step--1);
+    }
+</style>
