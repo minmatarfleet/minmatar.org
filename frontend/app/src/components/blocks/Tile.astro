@@ -10,6 +10,7 @@ interface Props {
     width?:             number;
     height?:            number;
     gap?:               string;
+    min_height?:        string;
     [propName: string]: any;
 }
 
@@ -24,6 +25,7 @@ const {
     width = '512',
     height = '512',
     gap = 'var(--space-s)',
+    min_height = '420px',
     ...attributes
 } = Astro.props
 
@@ -60,7 +62,11 @@ import Markdown from '@components/blocks/Markdown.astro';
         }
     </slot>
     
-    <BlockList class="[ relative z-10 !justify-end min-h-[420px] ]" gap={gap}>
+    <BlockList
+        class="[ relative z-10 !justify-end ][ tile__body ]"
+        gap={gap}
+        style={`min-height: ${min_height}`}
+    >
         <Flexblock gap='var(--space-3xs)'>
             <slot name="icon" />
             <h2>{title}</h2>

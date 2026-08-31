@@ -1,0 +1,61 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { elevated_scopes_for_token_type } from '@helpers/esi_token_scopes'
+
+interface Props {
+    required_token_type?: string | null
+    [propName: string]: any
+}
+
+const {
+    required_token_type = null,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const token_type = (required_token_type ?? '').trim()
+const elevated_scopes = elevated_scopes_for_token_type(token_type)
+const show = elevated_scopes.length > 0
+
+const label = t('tribes.detail.elevated_token_required').replace(
+    '{token}',
+    token_type,
+)
+const tooltip_intro = t('tribes.detail.elevated_token_scopes_intro').replace(
+    '{token}',
+    token_type,
+)
+const tooltip_html = [
+    tooltip_intro,
+    ...elevated_scopes.map((scope) => `• ${scope}`),
+].join('<br>')
+---
+
+{show &&
+    <p
+        class:list={['[ tribe-group-token-requirement ]', Astro.props.class]}
+        data-tippy-content={tooltip_html}
+        data-tippy-allowHTML="true"
+        x-init="tippy($el, { ...tippy_options, allowHTML: true, maxWidth: 360 })"
+        {...attributes}
+    >
+        {label}
+    </p>
+}
+
+<style lang="scss">
+    .tribe-group-token-requirement {
+        margin: 0;
+        width: fit-content;
+        max-width: 100%;
+        color: var(--highlight);
+        font-size: var(--step--1);
+        text-decoration: underline;
+        text-decoration-style: dotted;
+        text-underline-offset: 0.2em;
+        cursor: help;
+    }
+</style>

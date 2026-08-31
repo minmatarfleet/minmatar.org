@@ -318,47 +318,55 @@
         "description": "page_finder.tribes.description",
         "publish": true,
         "keywords": [
-            "groups"
+            "groups",
+            "clubs"
         ]
     },
     {
         "slug": "tribes_capitals",
-        "path": "/alliance/tribes/1/",
+        "path": "/alliance/tribes/?tribe=capitals",
         "description": "page_finder.tribes.capitals.description",
         "publish": true,
         "keywords": [
             "groups",
-            "tribes"
+            "tribes",
+            "clubs"
         ]
     },
     {
         "slug": "tribes_industry",
-        "path": "/alliance/tribes/2/",
+        "path": "/alliance/tribes/?tribe=supply",
         "description": "page_finder.tribes.industry.description",
         "publish": true,
         "keywords": [
             "groups",
-            "tribes"
+            "tribes",
+            "clubs",
+            "supply"
         ]
     },
     {
         "slug": "tribes_market",
-        "path": "/alliance/tribes/2/",
+        "path": "/alliance/tribes/?tribe=supply",
         "description": "page_finder.tribes.market.description",
         "publish": true,
         "keywords": [
             "groups",
-            "tribes"
+            "tribes",
+            "clubs",
+            "market",
+            "supply"
         ]
     },
     {
         "slug": "tribes_pulse",
-        "path": "/alliance/tribes/4/",
+        "path": "/alliance/tribes/?tribe=pulse",
         "description": "page_finder.tribes.pulse.description",
         "publish": true,
         "keywords": [
             "groups",
-            "tribes"
+            "tribes",
+            "clubs"
         ]
     },
     {

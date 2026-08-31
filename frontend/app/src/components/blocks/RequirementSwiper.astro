@@ -7,6 +7,7 @@ interface Props {
     align?:             'start' | 'center' | 'end';
     delay?:             number;
     index?:             number;
+    slides_per_view?:   number | 'auto';
 }
 
 const {
@@ -17,9 +18,26 @@ const {
     align = 'start',
     delay = 0,
     index,
+    slides_per_view,
 } = Astro.props
 
 import FlexInline from '@components/compositions/FlexInline.astro';
+
+const use_responsive_breakpoints = slides_per_view === undefined
+const slides_config = use_responsive_breakpoints
+    ? `slidesPerView: 1,
+                    breakpointsBase: 'container',
+                    breakpoints: {
+                        650: {
+                            slidesPerView: 2,
+                            spaceBetween: ${gap}
+                        },
+                        1000: {
+                            slidesPerView: 3,
+                            spaceBetween: ${gap}
+                        }
+                    },`
+    : `slidesPerView: ${typeof slides_per_view === 'number' ? slides_per_view : `'${slides_per_view}'`},`
 ---
 
 <FlexInline
@@ -39,18 +57,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
             setTimeout(() => {
                 this.swiper = new Swiper('${swiper_selector}', {
                     initialSlide: ${initial_slide},
-                    slidesPerView: 1,
-                    breakpointsBase: 'container',
-                    breakpoints: {
-                        650: {
-                            slidesPerView: 2,
-                            spaceBetween: ${gap}
-                        },
-                        1000: {
-                            slidesPerView: 3,
-                            spaceBetween: ${gap}
-                        }
-                    },
+                    ${slides_config}
                     spaceBetween: ${gap},
                     pagination: ${pagination ? JSON.stringify({
                         clickable: true,

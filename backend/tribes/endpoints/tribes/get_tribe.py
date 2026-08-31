@@ -2,23 +2,9 @@
 
 from ninja import Router
 
-from tribes.endpoints.groups.schemas import CharacterRefSchema
+from tribes.endpoints.serialization import user_to_character_ref
 from tribes.endpoints.tribes.schemas import TribeSchema
 from tribes.models import Tribe, TribeGroupMembership
-
-
-def _user_to_character_ref(user) -> "CharacterRefSchema | None":
-    try:
-        char = user.eveplayer.primary_character
-        if char:
-            return CharacterRefSchema(
-                character_id=char.character_id,
-                character_name=char.character_name,
-            )
-    except Exception:
-        pass
-    return None
-
 
 PATH = "/{tribe_id}"
 METHOD = "get"
@@ -57,7 +43,7 @@ def get_tribe(request, tribe_id: int):
         image_url=tribe.image_url,
         banner_url=tribe.banner_url,
         discord_channel_id=tribe.discord_channel_id,
-        chief=_user_to_character_ref(tribe.chief) if tribe.chief else None,
+        chief=user_to_character_ref(tribe.chief) if tribe.chief else None,
         is_active=tribe.is_active,
         group_count=active_groups.count(),
         total_member_count=total_members,

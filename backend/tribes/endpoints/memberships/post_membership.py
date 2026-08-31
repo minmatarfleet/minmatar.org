@@ -15,6 +15,8 @@ from tribes.helpers import (
     build_membership_snapshot,
     characters_missing_required_token,
     token_requirement_error_detail,
+    application_blocked_by_trial,
+    OFF_TRIAL_REQUIRED_DETAIL,
     user_can_manage_group,
 )
 from tribes.models import (
@@ -57,7 +59,7 @@ PATH = "/{tribe_id}/groups/{group_id}/memberships"
 METHOD = "post"
 ROUTE_SPEC = {
     "summary": "Apply to join a tribe group.",
-    "response": {200: MembershipSchema, 400: dict, 404: dict},
+    "response": {200: MembershipSchema, 400: dict, 403: dict, 404: dict},
     "auth": AuthBearer(),
 }
 
@@ -74,6 +76,9 @@ def post_membership(
     denied = require_feature(request.user, "tribes.apply", tribe_group=tg)
     if denied:
         return denied
+
+    if application_blocked_by_trial(request.user, tg):
+        return 400, {"detail": OFF_TRIAL_REQUIRED_DETAIL}
 
     owned_characters = list(
         EveCharacter.objects.filter(

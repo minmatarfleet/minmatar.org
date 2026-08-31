@@ -1,0 +1,118 @@
+---
+/**
+ * Host-page CSS anchor for the fitting-order htmx partial.
+ *
+ * Production Astro only emits scoped styles for components in the page
+ * module graph. The detail UI is fetched into [order_id].astro via htmx,
+ * so this file renders those blocks (inert, inside <template>) to keep
+ * their CSS in the page <head>. Do not place this inside
+ * #fitting-buy-order-slot — htmx innerHTML would drop it.
+ */
+import type { FittingBuyOrderDetail } from '@helpers/api.minmatar.org/fitting_buy_orders'
+
+import FittingBuyOrderActions from '@components/blocks/FittingBuyOrderActions.astro'
+import FittingBuyOrderContractPrices from '@components/blocks/FittingBuyOrderContractPrices.astro'
+import FittingBuyOrderLanded from '@components/blocks/FittingBuyOrderLanded.astro'
+import FittingBuyOrderMeta from '@components/blocks/FittingBuyOrderMeta.astro'
+import FittingBuyOrderShopping from '@components/blocks/FittingBuyOrderShopping.astro'
+import FittingBuyOrderSteps from '@components/blocks/FittingBuyOrderSteps.astro'
+import FittingBuyOrderStock from '@components/blocks/FittingBuyOrderStock.astro'
+import FittingBuyOrderSubstitutions from '@components/blocks/FittingBuyOrderSubstitutions.astro'
+
+const css_anchor_order: FittingBuyOrderDetail = {
+    id: 0,
+    status: 'draft',
+    guide_step: 'stock',
+    notes: '',
+    owner_id: 0,
+    owner_username: '',
+    owner_character_id: 0,
+    owner_character_name: '',
+    stock_paste: '',
+    include_hull: false,
+    jita_checked_at: null,
+    created_at: '',
+    updated_at: '',
+    is_owner: false,
+    lines: [],
+    items: [],
+    multibuy: '',
+    fits_eft: '',
+    unresolved_stock_names: [],
+    substitutions: [],
+    active_jita_check: null,
+    contract_prices: [],
+    multibuy_blocked: false,
+    multibuy_block_reason: '',
+    shopping_landed_complete: false,
+}
+---
+
+<template>
+    <FittingBuyOrderSteps
+        steps={[]}
+        progress_index={0}
+        view_step="stock"
+        partial_base=""
+        steps_label=""
+    />
+    <FittingBuyOrderContractPrices
+        rows={[]}
+        is_owner={false}
+        can_complete={false}
+        is_complete={false}
+        partial_base=""
+    />
+    <FittingBuyOrderShopping
+        order={css_anchor_order}
+        is_owner={false}
+        partial_base=""
+        jita_running={false}
+        jita_done={0}
+        jita_total={0}
+        jita_progress_pct={0}
+        jita_skeleton_rows={4}
+        shopping_summary=""
+        multibuy_id=""
+    />
+    <FittingBuyOrderStock
+        order={css_anchor_order}
+        is_owner={false}
+        on_stock_progress={false}
+        partial_base=""
+        progress_step="stock"
+    />
+    <FittingBuyOrderLanded
+        order={css_anchor_order}
+        partial_base=""
+        shopping_landed_complete={false}
+    />
+    <FittingBuyOrderSubstitutions
+        order={css_anchor_order}
+        is_owner={false}
+        partial_base=""
+    />
+    <FittingBuyOrderMeta
+        order={css_anchor_order}
+        is_owner={false}
+    />
+    <FittingBuyOrderActions
+        is_owner={false}
+        show={false}
+        partial_base=""
+    />
+</template>
+
+<style lang="scss" is:global>
+    .fitting-buy-order {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .fitting-buy-notes-ro {
+        margin: 0;
+        font-size: var(--step--1);
+        color: var(--foreground);
+        max-width: var(--max-text-width);
+    }
+</style>

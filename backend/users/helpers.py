@@ -105,6 +105,12 @@ def _user_profile_from_prefetched(
     corporation_name: Optional[str] = None,
 ) -> UserProfileSchema:
     """Build UserProfileSchema from prefetched user/character/corp (no extra queries)."""
+    # Local import avoids users ↔ groups circular import at module load.
+    # pylint: disable-next=import-outside-toplevel
+    from groups.helpers.feature_access import (  # noqa: PLC0415
+        user_community_status,
+    )
+
     if primary_character is None:
         eve_character_profile = None
     else:
@@ -120,6 +126,7 @@ def _user_profile_from_prefetched(
         user_id=user.id,
         username=user.username,
         is_superuser=user.is_superuser,
+        community_status=user_community_status(user),
         eve_character_profile=eve_character_profile,
         permissions=[],
         discord_user_profile=None,
@@ -129,6 +136,12 @@ def _user_profile_from_prefetched(
 def expand_user_profile(
     user: User, include_permissions: bool, include_discord: bool
 ) -> UserProfileSchema:
+    # Local import avoids users ↔ groups circular import at module load.
+    # pylint: disable-next=import-outside-toplevel
+    from groups.helpers.feature_access import (  # noqa: PLC0415
+        user_community_status,
+    )
+
     if include_discord:
         discord_user = DiscordUser.objects.filter(user=user).first()
     else:
@@ -165,6 +178,7 @@ def expand_user_profile(
         "user_id": user.id,
         "username": user.username,
         "is_superuser": user.is_superuser,
+        "community_status": user_community_status(user),
         "eve_character_profile": eve_character_profile,
     }
 

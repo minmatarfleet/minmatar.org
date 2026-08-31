@@ -8,11 +8,12 @@ export async function get_posts(post_request:PostRequest) {
         'Content-Type': 'application/json',
     }
 
-    const { user_id, tag_id, page_size, page_num, status } = post_request
+    const { user_id, tag_id, tribe_group_id, page_size, page_num, status } = post_request
 
     const query_params = {
         ...(user_id && { user_id }),
         ...(tag_id && { tag_id }),
+        ...(tribe_group_id && { tribe_group_id }),
         ...(page_size && { page_size }),
         ...(page_num && { page_num }),
         ...(status && { status }),

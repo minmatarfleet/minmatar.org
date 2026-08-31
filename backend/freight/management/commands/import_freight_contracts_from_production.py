@@ -27,6 +27,7 @@ from django.db import transaction
 from django.db.models import Count, Q
 from django.utils import timezone
 
+from eveonline.helpers.production_import import ensure_character_from_prod
 from eveonline.models import EveCharacter, EveCorporation, EveLocation
 from freight.models import (
     FREIGHT_CORPORATION_ID,
@@ -165,7 +166,7 @@ class Command(BaseCommand):
                 self._ensure_location(lid, source, local)
 
             for character_id in sorted(char_ids):
-                self._ensure_character(
+                ensure_character_from_prod(
                     character_id,
                     prod_chars.get(character_id),
                     local,
@@ -267,52 +268,9 @@ class Command(BaseCommand):
         except ValidationError:
             obj.price_baseline = False
             obj.save(using=local)
-        self.stdout.write(
-            f"  Copied EveLocation {location_id} ({loc.short_name})."
-        )
-
-    def _ensure_character(self, character_id, prod_char, local):
-        existing = (
-            EveCharacter.objects.using(local)
-            .filter(character_id=character_id)
-            .first()
-        )
-        if existing:
-            if (
-                prod_char
-                and prod_char.character_name
-                and not existing.character_name
-            ):
-                existing.character_name = prod_char.character_name
-                existing.save(
-                    using=local,
-                    update_fields=["character_name", "updated_at"],
-                )
-            return existing.pk
-
-        name = ""
-        corporation_id = None
-        alliance_id = None
-        faction_id = None
-        if prod_char:
-            name = prod_char.character_name or ""
-            corporation_id = prod_char.corporation_id
-            alliance_id = prod_char.alliance_id
-            faction_id = prod_char.faction_id
-
-        return (
-            EveCharacter.objects.using(local)
-            .create(
-                character_id=character_id,
-                character_name=name,
-                corporation_id=corporation_id,
-                alliance_id=alliance_id,
-                faction_id=faction_id,
-                token_id=None,
-                user_id=None,
+            self.stdout.write(
+                f"  Copied EveLocation {location_id} ({loc.short_name})."
             )
-            .pk
-        )
 
     def _upsert_contract(self, prod_contract, local_corp, local):
         defaults = {

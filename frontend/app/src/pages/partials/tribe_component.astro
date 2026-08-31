@@ -9,11 +9,6 @@ const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_tok
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 const is_superuser = (user ? user?.is_superuser : false)
 
-import { get_user_permissions } from '@helpers/permissions'
-
-const user_permissions = user && user?.username ? await get_user_permissions(user?.username) : []
-const is_alliance_member = user_permissions.includes('eveonline.add_evecharactertag')
-
 import { HTTP_404_Not_Found } from '@helpers/http_responses'
 
 import type {
@@ -43,7 +38,7 @@ let get_tribe_error: Error | false = false
 
 try {
     tribe = await get_tribe(tribe_id)
-    tribe_groups = await get_tribe_groups(tribe_id)
+    tribe_groups = await get_tribe_groups(tribe_id, auth_token)
     tribe_groups = tribe_groups.sort((a, b) =>
         Math.max(...a.requirements.map(req => 
             req.qualifying_skills.length + (req.asset_types.length > 0 ? 2 : 0)
@@ -147,7 +142,6 @@ const page_description = tribe?.description ?? ''
         tribe_groups={tribe_groups}
         user_characters={user_characters}
         available_by_group={available_by_group}
-        is_alliance_member={is_alliance_member}
         init_tooltips={false}
         membership_by_group={membership_by_group}
     />

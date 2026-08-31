@@ -8,7 +8,7 @@ Unless noted, features deny community status `on_leave` on the scope path. The o
 
 | Code | Scope | Legacy permission | Default wiring |
 |------|-------|-------------------|----------------|
-| `tribes.apply` | `tribe_group_target` | `tribes.add_tribegroupmembership` | Alliance, Associate |
+| `tribes.apply` | `tribe_group_target` | `tribes.add_tribegroupmembership` | Alliance, Associate (overridable per `TribeGroup.allowed_affiliations`) |
 | `tribes.manage_memberships` | `tribe_chief` | `tribes.change_tribegroupmembership` | — (chiefs) |
 
 ## Fleets

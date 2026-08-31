@@ -70,6 +70,7 @@ def run_freight_report(
         "fastest_completion_hours": completion["min"],
         "slowest_completion_hours": completion["max"],
         "avg_accept_to_complete_hours": accept_complete["avg"],
+        "avg_volume_per_contract": round(total_volume / len(contracts), 2),
     }
     return [], totals, COLUMNS
 
@@ -84,4 +85,5 @@ def _empty_totals():
         "fastest_completion_hours": 0.0,
         "slowest_completion_hours": 0.0,
         "avg_accept_to_complete_hours": 0.0,
+        "avg_volume_per_contract": 0.0,
     }

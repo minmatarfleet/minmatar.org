@@ -3,9 +3,10 @@
 import logging
 from typing import List
 
+from django.contrib.auth import logout
 from django.contrib.auth.models import User
 from django.shortcuts import redirect
-from esi.models import Token
+from esi.models import CallbackRedirect, Token
 
 from app.errors import create_error_id
 from audit.models import AuditEntry
@@ -31,6 +32,39 @@ from eveonline.scopes import (
 from groups.helpers import PEOPLE_TEAM, TECH_TEAM, user_in_team
 
 logger = logging.getLogger(__name__)
+
+ESI_ADD_READY_SESSION_KEY = "esi_add_ready"
+
+
+def reset_api_session_if_unbound_for_esi_add(request) -> None:
+    """Drop a leftover API Django session before ESI SSO.
+
+    Frontend login is JWT on my.minmatar.org. Add-character uses a Django
+    session on the API host. A leftover session from another Discord login
+    in the same browser attaches ESI tokens to that user while Account
+    (JWT) stays empty.
+
+    Never log out while an ESI CallbackRedirect exists for this session —
+    that would drop the in-flight SSO return.
+    """
+    session_key = request.session.session_key
+    if (
+        session_key
+        and CallbackRedirect.objects.filter(session_key=session_key).exists()
+    ):
+        return
+    if request.session.get(ESI_ADD_READY_SESSION_KEY):
+        return
+    if getattr(request.user, "is_authenticated", False):
+        logout(request)
+    request.session[ESI_ADD_READY_SESSION_KEY] = True
+
+
+def owner_for_added_character(request, token: Token) -> User | None:
+    """Website user who completed add-character, not whoever django-esi stored."""
+    if getattr(request.user, "is_authenticated", False):
+        return request.user
+    return token.user
 
 
 def can_manage_tags(user: User, character: EveCharacter) -> bool:
@@ -170,7 +204,8 @@ def _delete_other_character_tokens(
     ).delete()
 
 
-def apply_token_to_existing_character(character, token, token_type):
+def apply_token_to_existing_character(character, token, token_type, user=None):
+    owner = user if user is not None else token.user
     group_name = token_type_str(token_type)
     character.esi_scope_groups = merge_scope_groups(
         getattr(character, "esi_scope_groups", None),
@@ -188,14 +223,14 @@ def apply_token_to_existing_character(character, token, token_type):
     ):
         logger.info("Replacing token for %s", token.character_id)
         character.token = token
-        character.user = token.user
+        character.user = owner
         character.esi_token_level = level
         character.esi_suspended = False
         character.save()
         _delete_other_character_tokens(character.character_id, token)
     elif not old_token:
         character.token = token
-        character.user = token.user
+        character.user = owner
         character.esi_token_level = level
         character.esi_suspended = False
         character.save()
@@ -230,9 +265,12 @@ def handle_add_character_esi_callback(request, token, token_type):
     wrong_char_redirect = check_add_character_session_match(request, token)
     if wrong_char_redirect is not None:
         return wrong_char_redirect
+    owner = owner_for_added_character(request, token)
     if EveCharacter.objects.filter(character_id=token.character_id).exists():
         character = EveCharacter.objects.get(character_id=token.character_id)
-        apply_token_to_existing_character(character, token, token_type)
+        apply_token_to_existing_character(
+            character, token, token_type, user=owner
+        )
     else:
         character = EveCharacter.objects.create(
             character_id=token.character_id,
@@ -240,7 +278,7 @@ def handle_add_character_esi_callback(request, token, token_type):
             esi_token_level=token_type_str(token_type),
             esi_scope_groups=[token_type_str(token_type)],
             token=token,
-            user=token.user,
+            user=owner,
         )
         AuditEntry.objects.create(
             user=request.user,

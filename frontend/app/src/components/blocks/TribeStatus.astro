@@ -8,6 +8,7 @@ import type {
     TribeMembership,
     TribeAvailableCharacter,
 } from '@dtypes/api.minmatar.org'
+import { tribe_group_apply_ui_state } from '@helpers/tribe_group_apply_ui'
 
 interface Props {
     group:                  TribeGroup;
@@ -17,6 +18,7 @@ interface Props {
     user_characters:        SummaryCharacter[];
     available_characters?:  TribeAvailableCharacter[];
     membership_by_group:    Map<number, TribeMembership | null>;
+    user_on_trial?:         boolean;
 }
 
 const {
@@ -27,16 +29,34 @@ const {
     user_characters,
     available_characters,
     membership_by_group,
+    user_on_trial = false,
 } = Astro.props
 
 import { query_string } from '@helpers/string';
 
 const TRIBE_GROUP_STATUS_PARTIAL_URL = translatePath(`/partials/tribe_group_status_component?tribe_id=${tribe_id}&group_id=${group_id}`)
 
-const membership = membership_by_group.get(group.id) ?? null
-const is_approved = membership?.status === 'active'
-// Note: status === 'active' is the single source of truth for membership.
-const is_pending = membership?.status === 'pending'
+const apply_ui = tribe_group_apply_ui_state({
+    group,
+    membership: membership_by_group.get(group.id) ?? null,
+    is_auth,
+    is_leader: false,
+    user_on_trial,
+})
+const {
+    membership,
+    is_approved,
+    is_pending,
+    can_apply,
+    blocked_by_trial,
+    affiliation_names,
+} = apply_ui
+const ineligible_text = affiliation_names
+    ? t('tribes.detail.apply_affiliation_required').replace(
+        '{affiliations}',
+        affiliation_names,
+    )
+    : t('tribes.detail.apply_affiliation_denied')
 
 const id = `tribe-group-status-${group.tribe_id}-${group.id}`
 
@@ -52,6 +72,7 @@ import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
         !is_auth ?
             <ButtonAuth
                 color='green'
+                size='sm'
                 dialog_title={t('group_join_request').replace('{group}', group.name)}
             >
                 {t('tribes.detail.login_to_apply')}
@@ -59,6 +80,7 @@ import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
         is_auth && is_pending ?
             <ButtonConfirm
                 label={t('tribes.detail.withdraw')}
+                size='sm'
             >
                 <Button
                     hx-delete={`${TRIBE_GROUP_STATUS_PARTIAL_URL}?${query_string({
@@ -74,6 +96,10 @@ import ButtonConfirm from '@components/blocks/ButtonConfirm.astro';
                     {t('confirm')}
                 </Button>
             </ButtonConfirm> :
+        is_auth && !is_pending && !is_approved && !can_apply ?
+            <small>{ineligible_text}</small> :
+        is_auth && !is_pending && !is_approved && blocked_by_trial ?
+            <small>{t('tribes.detail.off_trial_apply_blocked')}</small> :
         is_auth && !is_pending && !is_approved ?
             <ButtonApplyTribe
                 target_id={id}

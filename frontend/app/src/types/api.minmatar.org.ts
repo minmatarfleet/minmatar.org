@@ -49,6 +49,11 @@ export interface TribeGroupRank {
     sort_order: number;
 }
 
+export interface TribeAffiliationRef {
+    id:   number;
+    name: string;
+}
+
 export interface TribeGroup {
     id:                     number;
     tribe_id:               number;
@@ -56,6 +61,7 @@ export interface TribeGroup {
     code?:                  string;
     name:                   string;
     description:            string;
+    content?:               string;
     discord_channel_id:     number | null;
     chief:                  TribeCharacterRef | null;
     ship_type_ids:          number[];
@@ -65,6 +71,9 @@ export interface TribeGroup {
     requirements:           TribeRequirement[];
     ranks?:                 TribeGroupRank[];
     required_token_type?:   string | null;
+    require_off_trial?:     boolean;
+    allowed_affiliations?:  TribeAffiliationRef[];
+    can_apply?:             boolean;
 }
 
 export interface Tribe {
@@ -82,21 +91,43 @@ export interface Tribe {
     total_member_count:     number;
 }
 
-export interface TribeGroupOutputSummary {
-    tribe_group_id:     number;
-    tribe_group_name:   string;
-    tribe_id:           number;
-    period_start:       string | null;
-    period_end:         string | null;
-    totals:             Record<string, number>;  // e.g. { "kills (kills)": 5, "mining_contribution (m3)": 150000 }
+export interface TribeGroupRosterEntry {
+    user_id:                    number;
+    primary_character_id:       number | null;
+    primary_character_name:     string;
+    corporation_id:             number | null;
+    corporation_name:           string | null;
+    rank_id:                    number | null;
+    rank_code:                  string | null;
+    rank_name:                  string | null;
+    rank_sort_order:            number | null;
+    approved_at:                string | null;
 }
 
-export interface TribeLeaderboardEntry {
-    user_id:        number;
-    character_id:   number | null;
-    character_name: string | null;
-    total:          number;
-    unit:           string;
+export interface TribeGroupGrowth {
+    months:     { month: string; label: string }[];
+    counts:     number[];
+}
+
+export interface TribeGroupShowcaseContributor {
+    character_id:       number | null;
+    character_name:     string;
+    metric_key:         string;
+    metric_value:       number | string;
+}
+
+export interface TribeGroupShowcase {
+    group_id:           number;
+    group_code:         string;
+    group_name:         string;
+    period:             string;
+    period_start:       string | null;
+    period_end:         string | null;
+    manual:             boolean;
+    message:            string;
+    totals:             Record<string, number | string>;
+    columns:            string[];
+    contributors:       TribeGroupShowcaseContributor[];
 }
 
 export type TribeMembershipStatus = 'pending' | 'active' | 'inactive'
@@ -250,6 +281,7 @@ export interface UserProfile {
     username:              string;
     permissions:           string[];
     is_superuser:          boolean;
+    community_status?:     string | null;
     eve_character_profile: EveCharacterProfile | null;
     discord_user_profile:  DiscordUserProfile | null;
 }
@@ -556,6 +588,7 @@ export interface Post {
     author_character_id: number;
     author_character_name: string;
     tag_ids:            number[];
+    tribe_group_ids?:   number[];
 }
 
 export interface PostParams {
@@ -564,6 +597,7 @@ export interface PostParams {
     state?:             PostStates;
     content?:           string;
     tag_ids?:           number[];
+    tribe_group_ids?:   number[];
 }
 
 export interface PostTag {
@@ -824,11 +858,12 @@ export interface SRPFilter {
 }
 
 export interface PostRequest {
-    user_id?:       number;
-    tag_id?:        number;
-    page_size?:     number;
-    page_num?:      number;
-    status?:        PostStates;
+    user_id?:           number;
+    tag_id?:            number;
+    tribe_group_id?:    number;
+    page_size?:         number;
+    page_num?:          number;
+    status?:            PostStates;
 }
 
 export interface ReferralLinkStats {

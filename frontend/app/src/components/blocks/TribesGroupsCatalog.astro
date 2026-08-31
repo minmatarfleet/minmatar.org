@@ -1,0 +1,420 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { Tribe, TribeGroup } from '@dtypes/api.minmatar.org'
+import { tribe_group_cover } from '@helpers/tribe_covers'
+
+interface DirectoryGroup {
+    group: TribeGroup
+    tribe: Tribe
+    is_member: boolean
+}
+
+interface Props {
+    directory_groups: DirectoryGroup[]
+    tribes: Tribe[]
+    initial_tribe_slug?: string
+    init_tooltips?: boolean
+}
+
+const {
+    directory_groups,
+    tribes,
+    initial_tribe_slug = 'all',
+    init_tooltips = false,
+} = Astro.props
+
+const filters = [
+    { id: 'all', label: t('content.filter.all'), count: directory_groups.length },
+    ...tribes.map((tribe) => ({
+        id: tribe.slug,
+        label: tribe.name,
+        count: directory_groups.filter((entry) => entry.tribe.slug === tribe.slug).length,
+    })),
+]
+
+const filters_json = JSON.stringify(filters)
+const initial = filters.some((f) => f.id === initial_tribe_slug) ? initial_tribe_slug : 'all'
+
+import Wrapper from '@components/compositions/Wrapper.astro'
+import Grid from '@components/compositions/Grid.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import XFadeScroll from '@components/compositions/XFadeScroll.astro'
+
+import Tile from '@components/blocks/Tile.astro'
+import Button from '@components/blocks/Button.astro'
+import Tag from '@components/blocks/Tag.astro'
+import PilotBadge from '@components/blocks/PilotBadge.astro'
+import Input from '@components/blocks/Input.astro'
+
+import MemberIcon from '@components/icons/MemberIcon.astro'
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
+---
+
+<section
+    class="[ tribes-groups-catalog ]"
+    x-data={`{
+        tribe: ${JSON.stringify(initial)},
+        name_filter: '',
+        filters: ${filters_json},
+        set_tribe(id) {
+            this.tribe = id
+            const url = new URL(window.location.href)
+            if (id === 'all')
+                url.searchParams.delete('tribe')
+            else
+                url.searchParams.set('tribe', id)
+            window.history.replaceState({}, '', url)
+        },
+        matches(el) {
+            const tribe_ok = this.tribe === 'all' || el.dataset.tribe === this.tribe
+            const name = (el.dataset.name || '').toLowerCase()
+            const filter = this.name_filter.trim().toLowerCase()
+            const name_ok = !filter || name.includes(filter)
+            return tribe_ok && name_ok
+        },
+        visible_count() {
+            return this.filters.reduce((sum, f) => {
+                if (this.tribe === 'all') return f.id === 'all' ? f.count : sum
+                return f.id === this.tribe ? f.count : sum
+            }, 0)
+        },
+    }`}
+>
+    <Flexblock gap="var(--space-l)">
+        <div class="[ tribes-groups-catalog__toolbar ]">
+            <XFadeScroll>
+                <FlexInline gap="var(--space-3xs)" class="[ tribes-groups-catalog__chips ]">
+                    {filters.map((filter) => (
+                        <button
+                            type="button"
+                            class="[ tribes-groups-catalog__chip ]"
+                            x-bind:class={`tribe === ${JSON.stringify(filter.id)} && 'is-active'`}
+                            x-on:click={`set_tribe(${JSON.stringify(filter.id)})`}
+                            x-bind:aria-pressed={`tribe === ${JSON.stringify(filter.id)}`}
+                        >
+                            {filter.label}
+                            <span class="[ tribes-groups-catalog__chip-count ]">{filter.count}</span>
+                        </button>
+                    ))}
+                </FlexInline>
+            </XFadeScroll>
+
+            <div class="[ tribes-groups-catalog__search ]">
+                <Input
+                    type="text"
+                    placeholder={t('search')}
+                    x-model="name_filter"
+                    width="100%"
+                    aria-label={t('search')}
+                >
+                    <MagnifierIcon slot="icon" />
+                </Input>
+            </div>
+        </div>
+
+        <Wrapper
+            class="[ intel-reel ]"
+            padding_block="0"
+            padding_inline="0"
+            max_width="100%"
+        >
+            <Grid
+                class="[ w-full grid-fill ]"
+                row_gap="var(--space-s)"
+                column_gap="var(--space-s)"
+                min_item_width="20rem"
+            >
+                {directory_groups.map(({ group, tribe, is_member }) =>
+                    <div
+                        class="[ tribes-groups-catalog__item ]"
+                        data-tribe={tribe.slug}
+                        data-name={`${group.name} ${tribe.name}`}
+                        x-show="matches($el)"
+                        x-cloak
+                    >
+                        <Tile
+                            class:list={[
+                                'tribes-groups-catalog__tile',
+                                { 'is-member': is_member },
+                            ]}
+                            title={group.name}
+                            cover={tribe_group_cover(group.id)}
+                            min_height="26rem"
+                            gap="var(--space-s)"
+                        >
+                            <Flexblock slot="subtitle" class="[ tribes-groups-catalog__meta ]" gap="var(--space-s)">
+                                <div class="[ tribes-groups-catalog__tags ]">
+                                    <Tag text={tribe.name} color="fleet-yellow" text_color="var(--background)" />
+                                </div>
+
+                                <FlexInline
+                                    gap="var(--space-s)"
+                                    class="[ tribes-groups-catalog__people items-center! justify-between! w-full flex-nowrap! ]"
+                                >
+                                    {group.chief ?
+                                        <PilotBadge
+                                            class="[ tribes-groups-catalog__chief ]"
+                                            character_id={group.chief.character_id}
+                                            character_name={group.chief.character_name}
+                                            size={32}
+                                            centered={true}
+                                        >
+                                            <small>{t('group_chief')}</small>
+                                        </PilotBadge>
+                                        :
+                                        <span></span>
+                                    }
+                                    <FlexInline
+                                        gap="var(--space-3xs)"
+                                        class="[ tribes-groups-catalog__count items-center! ]"
+                                        data-tippy-content={t('group_members')}
+                                        x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
+                                    >
+                                        <span class="[ text-highlight h-[16px] ]" aria-hidden="true">
+                                            <MemberIcon size={16} />
+                                        </span>
+                                        <span>{group.member_count}</span>
+                                    </FlexInline>
+                                </FlexInline>
+                            </Flexblock>
+
+                            <Button
+                                class="[ tribes-groups-catalog__browse ]"
+                                size="sm"
+                                href={translatePath(`/alliance/tribes/${tribe.id}/${group.id}/`)}
+                            >
+                                {t('browse')}
+                            </Button>
+                        </Tile>
+
+                        {is_member &&
+                            <span
+                                class="[ tribes-groups-catalog__member-badge ]"
+                                aria-label={t('tribes.catalog.member_badge')}
+                            >
+                                {t('tribes.catalog.member_badge')}
+                            </span>
+                        }
+                    </div>
+                )}
+            </Grid>
+        </Wrapper>
+    </Flexblock>
+</section>
+
+<style lang="scss">
+    .tribes-groups-catalog__toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-s);
+    }
+
+    .tribes-groups-catalog__chips {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .tribes-groups-catalog__chip {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        padding-block: var(--space-2xs);
+        padding-inline: var(--space-s);
+        border: 1px solid var(--fleet-yellow);
+        background: transparent;
+        color: var(--foreground);
+        font-family: var(--button-font);
+        font-size: var(--step--1);
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: background var(--fast-transition), color var(--fast-transition), border-color var(--fast-transition);
+
+        &.is-active {
+            background: var(--fleet-yellow);
+            color: var(--background);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--highlight);
+            outline-offset: 2px;
+        }
+
+        @media (hover: hover) {
+            &:hover:not(.is-active) {
+                background: rgb(241 217 160 / 0.12);
+            }
+        }
+    }
+
+    .tribes-groups-catalog__chip-count {
+        opacity: 0.75;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .tribes-groups-catalog__search {
+        flex: 0 1 auto;
+        width: min(100%, 15.625rem);
+        margin-inline-start: auto;
+
+        @media (max-width: 48rem) {
+            flex: 1 1 100%;
+            width: 100%;
+            margin-inline-start: 0;
+        }
+    }
+
+    .tribes-groups-catalog__item {
+        position: relative;
+        height: 100%;
+    }
+
+    .tribes-groups-catalog__member-badge {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        z-index: 3;
+        transform: translate(-50%, 50%);
+        padding-inline: var(--space-2xs);
+        background: var(--background);
+        color: var(--green);
+        font-family: var(--button-font);
+        font-size: var(--step--2);
+        letter-spacing: 0.06em;
+        line-height: 1;
+        text-transform: uppercase;
+        pointer-events: none;
+        white-space: nowrap;
+    }
+
+    .tribes-groups-catalog__meta {
+        width: 100%;
+    }
+
+    .tribes-groups-catalog__tags {
+        min-height: var(--space-l);
+        display: flex;
+        align-items: center;
+    }
+
+    .tribes-groups-catalog__people {
+        width: 100%;
+        flex-wrap: nowrap;
+        padding-block-start: var(--space-xs);
+        border-block-start: 1px solid rgb(255 255 255 / 0.14);
+    }
+
+    .tribes-groups-catalog__chief {
+        min-width: 0;
+        flex: 1 1 auto;
+
+        :global(.text-highlight) {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    .tribes-groups-catalog__count {
+        flex-shrink: 0;
+        font-variant-numeric: tabular-nums;
+        color: var(--highlight);
+        opacity: 0.9;
+        white-space: nowrap;
+    }
+</style>
+
+<style lang="scss" is:global>
+    .tribes-groups-catalog__tile.wrapper {
+        --tribes-tile-min-height: 26rem;
+
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        height: 100%;
+        min-height: var(--tribes-tile-min-height);
+        aspect-ratio: 3 / 4;
+        overflow: hidden;
+        isolation: isolate;
+        transition:
+            transform var(--fast-transition),
+            box-shadow var(--fast-transition),
+            border-color var(--fast-transition);
+
+        &.is-member {
+            border-color: var(--green);
+            box-shadow: inset 0 0 0 1px var(--green);
+        }
+
+        &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background: linear-gradient(
+                to top,
+                rgb(0 0 0 / 0.9) 0%,
+                rgb(0 0 0 / 0.62) 34%,
+                rgb(0 0 0 / 0.18) 62%,
+                transparent 100%
+            );
+        }
+
+        @media (hover: hover) {
+            &:hover {
+                transform: translateY(-0.2rem);
+                box-shadow: 0 0.85rem 2rem rgb(0 0 0 / 0.4);
+                border-color: rgb(241 217 160 / 0.45);
+            }
+
+            &.is-member:hover {
+                border-color: var(--green);
+                box-shadow:
+                    0 0.85rem 2rem rgb(0 0 0 / 0.4),
+                    inset 0 0 0 1px var(--green);
+            }
+
+            &:hover img {
+                transform: scale(1.05);
+                filter: brightness(1.1) saturate(1.05);
+            }
+        }
+
+        img {
+            mask-image: none !important;
+            transition: transform var(--fast-transition), filter var(--fast-transition);
+        }
+
+        .tile__body {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            min-height: 0 !important;
+            justify-content: flex-end !important;
+            gap: var(--space-s) !important;
+        }
+
+        h2 {
+            max-width: 12ch;
+            min-height: calc(2 * 1.02 * var(--step-3));
+            margin: 0;
+            line-height: 1.02;
+            text-wrap: balance;
+            text-shadow: 0 0.15rem 0.85rem rgb(0 0 0 / 0.6);
+        }
+
+        .tribes-groups-catalog__browse.button {
+            display: flex;
+            width: 100%;
+            justify-content: center;
+            box-sizing: border-box;
+        }
+    }
+</style>

@@ -80,6 +80,7 @@ class UserRouterTestCase(TestCase):
                 "username": user.username,
                 "permissions": [],
                 "is_superuser": user.is_superuser,
+                "community_status": None,
                 "eve_character_profile": {
                     "character_id": primary_character.character_id,
                     "character_name": primary_character.character_name,

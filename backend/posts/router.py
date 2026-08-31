@@ -13,6 +13,21 @@ from authentication import AuthBearer
 from .authors import post_author_fields
 from .models import EvePost, EveTag
 from groups.helpers.feature_access import can_use_feature
+from tribes.models import TribeGroup
+
+
+def _tribe_group_ids(post: EvePost) -> List[int]:
+    return list(post.tribe_groups.values_list("id", flat=True))
+
+
+def _set_tribe_groups(
+    post: EvePost, tribe_group_ids: List[int] | None
+) -> None:
+    if tribe_group_ids is None:
+        return
+    post.tribe_groups.set(
+        TribeGroup.objects.filter(id__in=tribe_group_ids, is_active=True)
+    )
 
 
 def extract_first_image_link(content: str) -> str:
@@ -46,6 +61,7 @@ class EvePostListResponse(BaseModel):
     author_character_id: int
     author_character_name: str
     tag_ids: List[int]
+    tribe_group_ids: List[int] = []
 
 
 class EvePostResponse(BaseModel):
@@ -60,6 +76,7 @@ class EvePostResponse(BaseModel):
     author_character_id: int
     author_character_name: str
     tag_ids: List[int]
+    tribe_group_ids: List[int] = []
 
 
 class EveTagResponse(BaseModel):
@@ -73,6 +90,7 @@ class CreateEvePostRequest(BaseModel):
     seo_description: str
     content: str
     tag_ids: List[int]
+    tribe_group_ids: List[int] = []
 
 
 class UpdateEvePostRequest(BaseModel):
@@ -81,6 +99,7 @@ class UpdateEvePostRequest(BaseModel):
     seo_description: str | None = None
     content: str | None = None
     tag_ids: List[int] | None = None
+    tribe_group_ids: List[int] | None = None
 
 
 @router.get("/posts", response=List[EvePostListResponse])
@@ -89,6 +108,7 @@ def get_posts(
     response: HttpResponse,
     user_id: int = None,
     tag_id: int = None,
+    tribe_group_id: int = None,
     status: str = None,
     page_size: int = 20,
     page_num: int = None,
@@ -101,7 +121,7 @@ def get_posts(
             "user__eveplayer",
             "user__eveplayer__primary_character",
         )
-        .prefetch_related("tags")
+        .prefetch_related("tags", "tribe_groups")
     )
 
     if user_id:
@@ -109,6 +129,9 @@ def get_posts(
 
     if tag_id:
         posts = posts.filter(tags__id=tag_id)
+
+    if tribe_group_id:
+        posts = posts.filter(tribe_groups__id=tribe_group_id).distinct()
 
     if status:
         posts = posts.filter(state=status)
@@ -139,6 +162,7 @@ def get_posts(
                 author_character_id=author_character_id,
                 author_character_name=author_character_name,
                 tag_ids=[tag.id for tag in post.tags.all()],
+                tribe_group_ids=_tribe_group_ids(post),
             )
         )
     return response
@@ -156,7 +180,7 @@ def get_post(request, post_id: int):
             "user__eveplayer",
             "user__eveplayer__primary_character",
         )
-        .prefetch_related("tags")
+        .prefetch_related("tags", "tribe_groups")
         .first()
     )
     if post is None:
@@ -176,6 +200,7 @@ def get_post(request, post_id: int):
         author_character_id=author_character_id,
         author_character_name=author_character_name,
         tag_ids=[tag.id for tag in post.tags.all()],
+        tribe_group_ids=_tribe_group_ids(post),
     )
 
 
@@ -200,6 +225,7 @@ def create_post(request, payload: CreateEvePostRequest):
         user=request.user,
     )
     post.tags.set(EveTag.objects.filter(id__in=payload.tag_ids))
+    _set_tribe_groups(post, payload.tribe_group_ids)
     author_character_id, author_character_name = post_author_fields(post.user)
 
     return EvePostResponse(
@@ -214,6 +240,7 @@ def create_post(request, payload: CreateEvePostRequest):
         author_character_id=author_character_id,
         author_character_name=author_character_name,
         tag_ids=[tag.id for tag in post.tags.all()],
+        tribe_group_ids=_tribe_group_ids(post),
     )
 
 
@@ -253,6 +280,9 @@ def update_post(request, post_id: int, payload: UpdateEvePostRequest):
     if payload.tag_ids:
         post.tags.set(EveTag.objects.filter(id__in=payload.tag_ids))
 
+    if payload.tribe_group_ids is not None:
+        _set_tribe_groups(post, payload.tribe_group_ids)
+
     post.save()
     author_character_id, author_character_name = post_author_fields(post.user)
 
@@ -268,6 +298,7 @@ def update_post(request, post_id: int, payload: UpdateEvePostRequest):
         author_character_id=author_character_id,
         author_character_name=author_character_name,
         tag_ids=[tag.id for tag in post.tags.all()],
+        tribe_group_ids=_tribe_group_ids(post),
     )
 
 

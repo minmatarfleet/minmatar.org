@@ -8,6 +8,7 @@ from eveonline.models import EveCharacter
 from esi.models import Token
 from posts.authors import MINMATAR_FLEET_AUTHOR_NAME
 from posts.models import EvePost, EveTag
+from tribes.models import Tribe, TribeGroup
 
 BASE_URL = "/api/blog"
 
@@ -158,4 +159,74 @@ class PostsRouterTestCase(TestCase):
         self.assertEqual(0, matching[0]["author_character_id"])
         self.assertEqual(
             MINMATAR_FLEET_AUTHOR_NAME, matching[0]["author_character_name"]
+        )
+
+    def test_filter_posts_by_tribe_group(self):
+        tribe = Tribe.objects.create(name="Capitals", slug="capitals-posts")
+        dreads = TribeGroup.objects.create(
+            tribe=tribe, name="Dreads", code="dreads", is_active=True
+        )
+        mining = TribeGroup.objects.create(
+            tribe=tribe, name="Mining", code="mining-posts", is_active=True
+        )
+
+        tagged = EvePost.objects.create(
+            title="Dreads post",
+            state="published",
+            seo_description="Dreads",
+            slug="dreads-post",
+            content="Body",
+            user=self.user,
+        )
+        tagged.tribe_groups.add(dreads)
+
+        other = EvePost.objects.create(
+            title="Mining post",
+            state="published",
+            seo_description="Mining",
+            slug="mining-post-tagged",
+            content="Body",
+            user=self.user,
+        )
+        other.tribe_groups.add(mining)
+
+        response = self.client.get(
+            f"{BASE_URL}/posts",
+            {"tribe_group_id": dreads.id, "status": "published"},
+        )
+        self.assertEqual(200, response.status_code)
+        posts = response.json()
+        self.assertEqual(1, len(posts))
+        self.assertEqual("Dreads post", posts[0]["title"])
+        self.assertEqual([dreads.id], posts[0]["tribe_group_ids"])
+
+    def test_create_post_with_tribe_group_ids(self):
+        tribe = Tribe.objects.create(name="Pulse", slug="pulse-posts")
+        thinkspeak = TribeGroup.objects.create(
+            tribe=tribe, name="Thinkspeak", code="thinkspeak", is_active=True
+        )
+
+        self.user.user_permissions.add(
+            Permission.objects.get(codename="add_evepost")
+        )
+        response = self.client.post(
+            f"{BASE_URL}/posts",
+            {
+                "title": "Thinkspeak post",
+                "state": "draft",
+                "seo_description": "Testing",
+                "content": "Body",
+                "tag_ids": [],
+                "tribe_group_ids": [thinkspeak.id],
+            },
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(200, response.status_code)
+        payload = response.json()
+        self.assertEqual([thinkspeak.id], payload["tribe_group_ids"])
+        post = EvePost.objects.get(id=payload["post_id"])
+        self.assertEqual(
+            [thinkspeak.id],
+            list(post.tribe_groups.values_list("id", flat=True)),
         )

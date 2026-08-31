@@ -17,6 +17,9 @@ interface Props {
     required_token_type?:   string | null;
     hidden?:                boolean;
     id?:                    string;
+    styless?:               boolean;
+    actions_ui?:            boolean;
+    [propName: string]:     any;
 }
 
 const {
@@ -31,11 +34,16 @@ const {
     required_token_type = null,
     hidden = false,
     id,
+    styless = false,
+    actions_ui = false,
+    ...attributes
 } = Astro.props
 
 import { query_string } from '@helpers/string';
 
-const TRIBE_GROUP_STATUS_PARTIAL_URL = translatePath(`/partials/tribe_group_status_component?tribe_id=${tribe_id}&group_id=${group_id}`)
+const TRIBE_GROUP_STATUS_PARTIAL_URL = translatePath(
+    `/partials/tribe_group_status_component?tribe_id=${tribe_id}&group_id=${group_id}${actions_ui ? '&ui=actions' : ''}`
+)
 const redirect_path = translatePath(`/alliance/tribes/${tribe_id}/${group_id}`)
 const FIX_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${redirect_path}`
 
@@ -69,15 +77,18 @@ import Tag from '@components/blocks/Tag.astro';
 
 <DialogButton
     id={id ? id : undefined}
+    size='sm'
     color='fleet-red'
     narrow={false}
     hidden={hidden}
+    styless={styless}
     max_width='1020px'
     disable_when_open={true}
     transparent={true}
     full_screen={true}
     non_centered={false}
     close_button={false}
+    {...attributes}
 >
     {t('membership')}
 

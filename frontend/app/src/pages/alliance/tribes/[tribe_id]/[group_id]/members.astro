@@ -24,10 +24,11 @@ if (isNaN(tribe_id) || isNaN(group_id))
     return HTTP_400_Bad_Request()
 
 import type { TribeGroup, SummaryCharacter, TribeMembership } from '@dtypes/api.minmatar.org'
-import { get_tribe_group, get_memberships } from '@helpers/api.minmatar.org/tribes'
+import { get_tribe, get_tribe_group, get_memberships } from '@helpers/api.minmatar.org/tribes'
 import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 
 let tribe_group:TribeGroup | null = null
+let tribe_slug = ''
 let approved:TribeMembership[] = []
 let pending:TribeMembership[] = []
 let chief_membership:TribeMembership | null = null
@@ -35,7 +36,12 @@ let fetch_membership_error: Error | false = false
 let user_characters: SummaryCharacter[] = []
 
 try {
-    tribe_group = await get_tribe_group(tribe_id, group_id)
+    const [tribe, group] = await Promise.all([
+        get_tribe(tribe_id),
+        get_tribe_group(tribe_id, group_id, auth_token),
+    ])
+    tribe_group = group
+    tribe_slug = tribe.slug
     
     const summary = await get_characters_summary_sorted(auth_token)
     user_characters = summary.characters ?? []
@@ -76,14 +82,13 @@ import Viewport from '@layouts/Viewport.astro';
 import PageWide from '@components/page/PageWide.astro';
 import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
-import PageSubheader from '@components/page/PageSubheader.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-import Button from '@components/blocks/Button.astro';
 import Input from '@components/blocks/Input.astro';
+import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import MembershipRequests from '@components/blocks/MembershipRequests.astro'
 import MembershipTable from '@components/blocks/MembershipTable.astro'
 import GroupLeadership from '@components/blocks/GroupLeadership.astro';
@@ -92,6 +97,21 @@ import DebugTag from '@components/blocks/DebugTag.astro';
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 
 const page_title = t('tribes.groups.membership.page_title').replace('{group}', tribe_group?.name ?? '')
+const group_hub_url = translatePath(`/alliance/tribes/${tribe_id}/${group_id}/`)
+const tribe_filter_url = translatePath(
+    `/alliance/tribes/?tribe=${encodeURIComponent(tribe_slug)}`,
+)
+const breadcrumb_items = [
+    { label: t('alliance.page_title'), href: translatePath('/alliance/') },
+    { label: t('tribes.page_title'), href: translatePath('/alliance/tribes/') },
+    ...(tribe_group
+        ? [
+            { label: tribe_group.tribe_name, href: tribe_filter_url },
+            { label: tribe_group.name, href: group_hub_url },
+        ]
+        : []),
+    { label: t('manage_membership') },
+]
 ---
 
 <Viewport
@@ -122,11 +142,14 @@ const page_title = t('tribes.groups.membership.page_title').replace('{group}', t
         }`}
     >
         <FlexInline id="header-oob" slot="header" justification='space-between' class="[ w-full ]">
-            <Flexblock gap="var(--space-3xs)">
-                <PageTitle>
-                    {page_title}
-                </PageTitle>
-                <small x-text="count_text">{count_text}</small>
+            <Flexblock gap="var(--space-s)">
+                <Breadcrumb items={breadcrumb_items} />
+                <Flexblock gap="var(--space-3xs)">
+                    <PageTitle>
+                        {page_title}
+                    </PageTitle>
+                    <small x-text="count_text">{count_text}</small>
+                </Flexblock>
             </Flexblock>
             <PageActions>
                 <Input type="text"
@@ -139,21 +162,6 @@ const page_title = t('tribes.groups.membership.page_title').replace('{group}', t
                 </Input>
             </PageActions>
         </FlexInline>
-
-        <PageSubheader
-            id="subheader-oob"
-            slot="subheader"
-            is_empty={!tribe_group }
-        >
-            {tribe_group &&
-                <Button
-                    href={translatePath(`/alliance/tribes/${tribe_group?.tribe_id}`)}
-                    size='sm'
-                >
-                    {t('back_to_tribe_template').replace('{name}', tribe_group?.tribe_name ?? '')}
-                </Button>
-            }
-        </PageSubheader>
         
         {fetch_membership_error ?
             <ErrorRefetch
