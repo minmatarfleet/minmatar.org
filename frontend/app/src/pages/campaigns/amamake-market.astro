@@ -1,0 +1,91 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import { COVER_IMAGE, CANONICAL_PATH } from '@/data/campaigns/amamake-market'
+import { build_amamake_market_json_ld } from '@/data/campaigns/amamake-market-seo'
+import { get_site_origin } from '@helpers/seo'
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import AmamakeMarketReport from '@components/blocks/campaigns/amamake-market/AmamakeMarketReport.astro'
+import Tag from '@components/blocks/Tag.astro'
+
+import {
+    get_location_video_cover,
+    get_location_video_cover_thumb,
+    get_location_cover,
+    get_location_cover_990,
+} from '@helpers/covers'
+
+const page_title = t('campaigns.amamake_market.page_title')
+const campaign_period = t('campaigns.amamake_market.campaign_period')
+const page_description = t('campaigns.amamake_market.leading_text')
+const meta_title = t('campaigns.amamake_market.meta_title').replace('{site}', t('index.page_title'))
+const meta_description = t('campaigns.amamake_market.meta_description')
+const site_origin = get_site_origin(Astro.url.origin)
+const canonical_url = new URL(translatePath(CANONICAL_PATH), site_origin).href
+const meta_image = new URL(COVER_IMAGE, site_origin).href
+
+const structured_data = build_amamake_market_json_ld({
+    canonical_url,
+    site_name: t('index.page_title'),
+    site_origin,
+    meta_title: page_title,
+    meta_description,
+    meta_image,
+})
+---
+
+<Viewport
+    title={meta_title}
+    meta_description={meta_description}
+    meta_image={meta_image}
+    canonical_url={canonical_url}
+    og_type="article"
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(structured_data)} />
+
+    <PageLanding
+        wide={true}
+        cover={{
+            video: get_location_video_cover('amamake') ?? undefined,
+            video_thumb: get_location_video_cover_thumb('amamake') ?? undefined,
+            image: get_location_cover('amamake') ?? COVER_IMAGE,
+            image_990: get_location_cover_990('amamake') ?? COVER_IMAGE,
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <Flexblock gap="var(--space-2xl)">
+            <TextBox>
+                <Flexblock gap="var(--space-xl)">
+                    <Flexblock gap="var(--space-3xs)">
+                        <PageTitle is_landing={true}>{page_title}</PageTitle>
+                        <Tag text={campaign_period} color="alliance-blue" />
+                    </Flexblock>
+                    <p class="[ excerpt ]">{page_description}</p>
+                </Flexblock>
+            </TextBox>
+
+            <AmamakeMarketReport />
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .excerpt,
+    :global(.excerpt p) {
+        font-size: var(--step-1);
+        line-height: 1.6;
+        max-width: 100%;
+    }
+</style>
