@@ -184,55 +184,58 @@ import DebugTag from '@components/blocks/DebugTag.astro'
             delay: delay,
         }}
     /> :
-    tribe_group ?
-        <small
-            id={`membership-${tribe_group.tribe_id}-${tribe_group.id}`}
-            class:list={[ 'text-highlight', { hidden: !is_member && !is_pending }, { 'animate-rubber-band': is_pending } ]}
-            hx-swap-oob="true"
-        >
-            {is_member ? t('member_of_tribe_group') : is_pending ? t('tribes.detail.apply_confirm_text') : ''}
-        </small>
+    <>{tribe_group ?
+        <>
+            <small
+                id={`membership-${tribe_group.tribe_id}-${tribe_group.id}`}
+                class:list={[ 'text-highlight', { hidden: !is_member && !is_pending }, { 'animate-rubber-band': is_pending } ]}
+                hx-swap-oob="true"
+            >
+                {is_member ? t('member_of_tribe_group') : is_pending ? t('tribes.detail.apply_confirm_text') : ''}
+            </small>
 
-        {actions_ui &&
-            <TribeGroupApplyHint
-                oob={true}
-                group={tribe_group}
-                tribe_id={tribe_group.tribe_id}
-                group_id={tribe_group.id}
-                is_auth={!!user}
-                is_leader={is_leader}
-                user_on_trial={user_on_trial}
-                user_characters={user_characters}
-                available_characters={available_characters}
-                membership_by_group={membership_by_group}
-            />
-        }
+            {actions_ui &&
+                <TribeGroupApplyHint
+                    oob={true}
+                    group={tribe_group}
+                    tribe_id={tribe_group.tribe_id}
+                    group_id={tribe_group.id}
+                    is_auth={!!user}
+                    is_leader={is_leader}
+                    user_on_trial={user_on_trial}
+                    user_characters={user_characters}
+                    available_characters={available_characters}
+                    membership_by_group={membership_by_group}
+                />
+            }
 
-        {actions_ui ?
-            <TribeGroupActions
-                group={tribe_group}
-                tribe_id={tribe_group.tribe_id}
-                group_id={tribe_group.id}
-                is_auth={!!user}
-                is_leader={is_leader}
-                is_superuser={is_superuser}
-                user_on_trial={user_on_trial}
-                user_characters={user_characters}
-                available_characters={available_characters}
-                membership_by_group={membership_by_group}
-            />
-            :
-            <TribeStatus
-                group={tribe_group}
-                tribe_id={tribe_group.tribe_id}
-                group_id={tribe_group.id}
-                user_characters={user_characters}
-                available_characters={available_characters}
-                is_auth={!!user}
-                user_on_trial={user_on_trial}
-                membership_by_group={membership_by_group}
-            />
-        }
+            {actions_ui ?
+                <TribeGroupActions
+                    group={tribe_group}
+                    tribe_id={tribe_group.tribe_id}
+                    group_id={tribe_group.id}
+                    is_auth={!!user}
+                    is_leader={is_leader}
+                    is_superuser={is_superuser}
+                    user_on_trial={user_on_trial}
+                    user_characters={user_characters}
+                    available_characters={available_characters}
+                    membership_by_group={membership_by_group}
+                />
+                :
+                <TribeStatus
+                    group={tribe_group}
+                    tribe_id={tribe_group.tribe_id}
+                    group_id={tribe_group.id}
+                    user_characters={user_characters}
+                    available_characters={available_characters}
+                    is_auth={!!user}
+                    user_on_trial={user_on_trial}
+                    membership_by_group={membership_by_group}
+                />
+            }
+        </>
         :
         <DebugTag set:html={t('no_tribe_group_unexpected_error')} />
+    }</>
 }
