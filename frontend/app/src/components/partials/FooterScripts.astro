@@ -93,10 +93,13 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
         document.addEventListener('astro:after-swap', () => {
             tippy('[data-tippy-content]', window.tippy_options)
             document.querySelectorAll('.loader').forEach(e => e.classList.remove('active'))
-            const content = document.getElementById('content')
-                || document.querySelector('.viewport-layout-inner')
-            if (content)
-                htmx.process(content)
+            // Process the layout root, not only #content. Pages like account
+            // tags wrap <main id="content"> in a form with hx-post; processing
+            // #content alone never binds that form after ClientRouter nav.
+            const root = document.querySelector('.viewport-layout-inner')
+                || document.getElementById('content')
+            if (root)
+                htmx.process(root)
             // Init from body so page bindings see Viewport x-data
             // (color_blind_mode, ui_scaling, show_modal, get_*_icon, …).
             // initTree(content) alone orphans those expressions after soft nav.
