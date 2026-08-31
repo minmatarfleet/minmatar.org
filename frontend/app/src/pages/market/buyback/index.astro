@@ -29,16 +29,22 @@ import Viewport from '@layouts/Viewport.astro';
 import PageWide from '@components/page/PageWide.astro';
 import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
+import PageSubheader from '@components/page/PageSubheader.astro';
+
+import TextBox from '@components/layout/TextBox.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
-import TextBox from '@components/layout/TextBox.astro';
+import Wrapper from '@components/compositions/Wrapper.astro';
+import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro'
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro';
 import BuybackForm from '@components/blocks/BuybackForm.astro';
 import BuybackInfo from '@components/blocks/BuybackInfo.astro';
 import BuybackFAQs from '@components/blocks/BuybackFAQs.astro';
 import Button from '@components/blocks/Button.astro';
+import Textarea from '@components/blocks/Textarea.astro';
+import TippyBase from '@components/blocks/TippyBase.astro'
 
 const page_title = t('buyback.page_title');
 const leading_text = settings?.leading_text?.trim() || ''
@@ -53,8 +59,8 @@ const leading_text = settings?.leading_text?.trim() || ''
 >
     <PageWide
         cover={{
-            image: "/images/mining-cover.webp",
-            image_990: "/images/mining-cover.jpg",
+            image: "/images/planetary-cover.jpg",
+            image_990: "/images/planetary-cover.jpg",
             animated: false,
             scrollable: true,
             overlay: true
@@ -65,23 +71,66 @@ const leading_text = settings?.leading_text?.trim() || ''
             }
         }`}
     >
-        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
-            <FlexInline>
-                <PageTitle>
-                    {page_title}
-                </PageTitle>
+        <Flexblock slot="header" class="[ w-full ]">
+            <FlexInline justification='space-between' class="[ w-full ]">
+                <FlexInline>
+                    <PageTitle>
+                        {page_title}
+                    </PageTitle>
+                </FlexInline>
+                <PageActions>
+                    <Button href={translatePath('/market/buyback/stocks/')}>
+                        {t('view_buyback_stocks')}
+                    </Button>
+                    <Button href={translatePath('/market/buyback/contracts/')}>
+                        {t('view_buyback_contracts')}
+                    </Button>
+                </PageActions>
             </FlexInline>
-            <PageActions>
-                <Button href={translatePath('/market/buyback/stocks/')}>
-                    {t('view_buyback_stocks')}
-                </Button>
-                <Button href={translatePath('/market/buyback/contracts/')}>
-                    {t('view_buyback_contracts')}
-                </Button>
-            </PageActions>
-        </FlexInline>
+        </Flexblock>
 
         <Flexblock gap='var(--space-xl)'>
+            {settings?.active &&
+                <Wrapper
+                    padding_block='0'
+                    padding_inline='0'
+                    max_width='100%'
+                    class="[ w-full ]"
+                >
+                    <FlexInline class="[ items-start! ]" gap='var(--space-l)'>
+                        <TextBox>
+                            <p>{t('buyback.faq.1_text')}</p>
+                        </TextBox>
+
+                        <Flexblock gap='var(--space-2xs)' class="[ grow max-w-(--max-text-width) min-w-[450px] ]">
+                            <form
+                                method="POST"
+                                action={translatePath('/market/buyback/appraisal')}
+                                x-data={`{
+                                    paste: '',
+                                    submitted: false,
+                                }`}
+                                x-on:submit="submitted = true"
+                            >
+                                <Flexblock>
+                                    <Flexblock gap='var(--space-2xs)'>
+                                        <Textarea
+                                            id="paste"
+                                            name="paste"
+                                            required
+                                            x-model="paste"
+                                            placeholder={t('buyback.form.paste_placeholder')}
+                                        />
+                                    </Flexblock>
+
+                                    <Button x-bind:disabled="submitted" type="submit">{t('buyback.form.submit')}</Button>
+                                </Flexblock>
+                            </form>
+                        </Flexblock>
+                    </FlexInline>
+                </Wrapper>
+            }
+
             {fetch_error ?
                 <ComponentBlock>
                     <p>{t('buyback.fetch_error')}</p>
@@ -94,29 +143,29 @@ const leading_text = settings?.leading_text?.trim() || ''
                         </ComponentBlock>
                     }
 
-                    {leading_text &&
-                        <TextBox>
-                            <p class="[ excerpt ]">{leading_text}</p>
-                        </TextBox>
-                    }
-
                     {settings &&
                         <BuybackInfo settings={settings} />
                     }
-
-                    <Flexblock gap='var(--space-3xs)'>
-                        {settings?.active &&
-                            <ComponentBlock>
-                                <BuybackForm />
-                            </ComponentBlock>
-                        }
-
-                        <ComponentBlock>
-                            <BuybackFAQs />
-                        </ComponentBlock>
-                    </Flexblock>
                 </>
             }
         </Flexblock>
     </PageWide>
 </Viewport>
+
+<style lang="scss">
+    form {
+        &:focus-within {
+            #paste {
+                min-height: 180px;
+                max-height: none;
+            }
+
+        }
+    }
+
+    #paste {
+        max-height: 90px;
+        min-height: 90px;
+        transition: var(--normal-transition);
+    }
+</style>

@@ -152,8 +152,19 @@ code {
 }
 
 .border-bottom {
-    border: none;
-    border-bottom: solid 1px var(--border-color);
+    border-bottom: solid 1px var(--border-color) !important;
+}
+
+.border-top {
+    border-top: solid 1px var(--border-color) !important;
+}
+
+.border-right {
+    border-right: solid 1px var(--border-color) !important;
+}
+
+.border-left {
+    border-left: solid 1px var(--border-color) !important;
 }
 
 .correct-gaps > [style="display: none;"] ~ * {
@@ -417,4 +428,9 @@ table {
     display: flex;
     align-items: center;
     position: relative;
+}
+
+hr {
+    border: none;
+    border-bottom: solid 1px var(--border-color) !important;
 }

@@ -1,0 +1,21 @@
+---
+import type { DisplayItem } from '@dtypes/layout_components'
+
+interface Props {
+    item:       DisplayItem;
+}
+
+const {
+    item,
+} = Astro.props
+
+import BuybackBadge from '@components/blocks/BuybackBadge.astro';
+import BuybackUsedDialog from '@components/blocks/BuybackUsedDialog.astro';
+---
+
+<>{item.in_demand ?
+    <BuybackUsedDialog item={item}>
+        <BuybackBadge item={item }/>
+    </BuybackUsedDialog> :
+    <BuybackBadge item={item }/>
+}</>

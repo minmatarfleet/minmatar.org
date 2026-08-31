@@ -1,0 +1,54 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { DisplayItem } from '@dtypes/layout_components'
+
+interface Props {
+    item:       DisplayItem;
+}
+
+const {
+    item,
+} = Astro.props
+
+import FixedFluid from '@components/compositions/FixedFluid.astro';
+import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astro';
+
+import ItemBadge from '@components/blocks/ItemBadge.astro'
+import NotificationBadge from '@components/blocks/NotificationBadge.astro'
+---
+
+<FixedFluid class="[ buyback-badge ][ items-center! w-full ]" width='10px' gap='var(--space-2xs)'>
+    {item.in_demand ?
+        <span class="[ text-green ]">▲</span> :
+        <span class="[ text-red ]">▼</span>
+    }
+    <FlexInlineSiblings
+        class="[ w-full ]"
+        min-shink-width='200px'
+        shrinkable-sibbling='first'
+    >
+        <ItemBadge
+            item_name={item.name}
+            type_id={item.type_id}
+            size={32}
+        />
+
+        {item.in_demand && item.used_in && item.used_in.length > 0 &&
+            <NotificationBadge
+                class="[ inline-flex! ]"
+                number={item.used_in.length}
+                color='fleet-yellow'
+                text_color='var(--background)'
+            />
+        }
+    </FlexInlineSiblings>
+</FixedFluid>
+
+<style lang="scss">
+    .buyback-badge {
+        padding-inline: var(--space-3xs);
+        min-height: 46px;
+    }
+</style>
