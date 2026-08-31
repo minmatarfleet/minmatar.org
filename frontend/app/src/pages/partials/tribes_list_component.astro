@@ -8,30 +8,69 @@ import * as jose from 'jose'
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
 
-import type { Tribe } from '@dtypes/api.minmatar.org'
-import { get_tribes, get_current_tribes } from '@helpers/api.minmatar.org/tribes'
+import type { Tribe, TribeGroup, TribeMembership } from '@dtypes/api.minmatar.org'
+import { get_tribes, get_tribe_groups, get_memberships } from '@helpers/api.minmatar.org/tribes'
 
 let tribes: Tribe[] = []
-let current_tribe_ids: Set<number> = new Set()
+let directory_groups: {
+    group: TribeGroup
+    tribe: Tribe
+    is_member: boolean
+}[] = []
 let get_tribes_error: Error | false = false
+
+const initial_tribe_slug = Astro.url.searchParams.get('tribe') ?? 'all'
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
 
 try {
     tribes = await get_tribes()
+    const groups_lists = await Promise.all(
+        tribes.map(async (tribe) => {
+            const groups = await get_tribe_groups(tribe.id)
+            return groups.map((group) => ({ group, tribe }))
+        }),
+    )
+    const flat = groups_lists.flat()
 
-    if (auth_token) {
-        const current = await get_current_tribes(auth_token)
-        current_tribe_ids = new Set(current.map(t => t.id))
+    const member_group_ids = new Set<number>()
+    if (auth_token && user) {
+        await Promise.all(
+            flat.map(async ({ group, tribe }) => {
+                try {
+                    const memberships = await get_memberships(
+                        auth_token as string,
+                        tribe.id,
+                        group.id,
+                        { mine: true, status: 'active' },
+                    )
+                    if (memberships.some((m: TribeMembership) => m.status === 'active'))
+                        member_group_ids.add(group.id)
+                } catch {
+                    // ignore
+                }
+            }),
+        )
     }
+
+    directory_groups = flat
+        .map(({ group, tribe }) => ({
+            group,
+            tribe,
+            is_member: member_group_ids.has(group.id),
+        }))
+        .sort((a, b) => {
+            const tribe_cmp = a.tribe.name.localeCompare(b.tribe.name)
+            if (tribe_cmp !== 0) return tribe_cmp
+            return a.group.name.localeCompare(b.group.name)
+        })
 } catch (error) {
-    get_tribes_error = error
+    get_tribes_error = error as Error
 }
 
 const TRIBES_LIST_PARTIAL_URL = translatePath('/partials/tribes_list_component')
 
-const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
-
-import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-import TribesTiles from '@components/blocks/TribesTiles.astro';
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import TribesGroupsCatalog from '@components/blocks/TribesGroupsCatalog.astro'
 ---
 
 {get_tribes_error ?
@@ -43,9 +82,10 @@ import TribesTiles from '@components/blocks/TribesTiles.astro';
         }}
     />
     :
-    <TribesTiles
+    <TribesGroupsCatalog
+        directory_groups={directory_groups}
         tribes={tribes}
-        current_tribe_ids={current_tribe_ids}
-        init_tooltips={false}
+        initial_tribe_slug={initial_tribe_slug}
+        init_tooltips={true}
     />
 }

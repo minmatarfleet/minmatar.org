@@ -1,0 +1,49 @@
+---
+interface Props {
+    label: string
+    value: string
+    [propName: string]: any
+}
+
+const {
+    label,
+    value,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+---
+
+<article class:list={['[ metric-stat ]', Astro.props.class]} {...attributes}>
+    <p class="[ metric-stat__label ]">{label}</p>
+    <p class="[ metric-stat__value ]">{value}</p>
+</article>
+
+<style lang="scss">
+    .metric-stat {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        padding: var(--space-m);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.22);
+    }
+
+    .metric-stat__label {
+        margin: 0;
+        font-size: var(--step--1);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--fleet-yellow);
+    }
+
+    .metric-stat__value {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: clamp(2rem, 4.5vw, 3rem);
+        line-height: 0.95;
+        letter-spacing: -0.02em;
+        text-transform: uppercase;
+        color: var(--highlight);
+    }
+</style>

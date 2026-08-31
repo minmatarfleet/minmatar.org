@@ -16,13 +16,13 @@ import type {
     TribeMembership,
     TribeAvailableCharacter,
 } from '@dtypes/api.minmatar.org'
+import { tribe_group_cover } from '@helpers/tribe_covers'
 
 interface Props {
     tribe_group:            TribeGroup;
     user_characters:        SummaryCharacter[];
     available_characters?:  TribeAvailableCharacter[];
     membership_by_group:    Map<number, TribeMembership | null>;
-    is_alliance_member:     boolean;
     init_tooltips:          boolean;
     index?:                 number;
 }
@@ -31,31 +31,10 @@ const {
     tribe_group,
     user_characters,
     available_characters,
-    is_alliance_member,
     init_tooltips,
     membership_by_group,
     index,
 } = Astro.props
-
-const COVERS = {
-    1: '/images/dreads-cover.webp',
-    2: '/images/carriers-cover.webp',
-    3: '/images/faxes-cover.webp',
-    12: '/images/technology-cover.webp',
-    15: '/images/advocate-cover.webp',
-    13: '/images/thinkspeak-cover.webp',
-    14: '/images/readiness-cover.webp',
-    5: '/images/capital-production-cover.webp',
-    7: '/images/planetary-interaction-cover.webp',
-    6: '/images/mining-cover.webp',
-    4: '/images/subcapital-production-cover.webp',
-    11: '/images/sellorders-tile-background.webp',
-    10: '/images/contracts-tile-background.webp',
-    9: '/images/freight-tile-background.webp',
-    17: '/images/tournament-cover.webp',
-    16: '/images/loyalty-points-cover.webp',
-    18: '/images/fcs-cover.webp',
-}
 
 const id = `tribe-group-${tribe_group.tribe_id}-${tribe_group.id}`
 
@@ -65,8 +44,11 @@ const leaders = tribe_group.chief ? [ tribe_group.chief ] : []
 const is_leader = leaders.find((leader) => leader.character_id === membership?.primary_character_id) || leaders.find(leader => user_character_ids?.includes(leader?.character_id ?? 0))
 const is_member = membership?.status === 'active'
 const is_pending = membership?.status === 'pending'
+const has_open_membership = is_member || is_pending
+const show_status_actions =
+    !is_auth || Boolean(tribe_group.can_apply) || has_open_membership
 
-const TILE_FALLBACK = '/images/tribes-fallback-cover.webp'
+const cover = tribe_group_cover(tribe_group.id)
 
 import Wrapper from '@components/compositions/Wrapper.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -91,7 +73,7 @@ import NotificationBadge from './NotificationBadge.astro'
     <Tile
         title={tribe_group.name}
         description={tribe_group.description}
-        cover={COVERS[tribe_group.id] ? COVERS[tribe_group.id] : TILE_FALLBACK}
+        cover={cover}
         transparent={true}
     >
         <Flexblock slot="subtitle" gap='var(--space-l)'>
@@ -188,7 +170,7 @@ import NotificationBadge from './NotificationBadge.astro'
                 }
             </Flexblock>
 
-            {(is_alliance_member || !is_auth) &&
+            {(show_status_actions) &&
                 <FlexInline>
                     {!is_leader ?
                         <TribeStatus

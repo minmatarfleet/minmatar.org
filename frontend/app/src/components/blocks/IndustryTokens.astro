@@ -23,7 +23,9 @@ const pilots_with_token = pilots.filter(
 )
 
 import { get_api_url, get_app_url } from '@helpers/env'
-const FIX_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/industry/industrialists/')}`
+import { account_user_id_query } from '@helpers/account_user_query'
+const account_user_query = account_user_id_query(Astro.cookies.get('auth_token')?.value)
+const FIX_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/industry/industrialists/')}${account_user_query}`
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';

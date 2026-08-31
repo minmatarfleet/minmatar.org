@@ -1,0 +1,49 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { TribeGroupShowcase } from '@dtypes/api.minmatar.org'
+import type { TribeActivitySpec } from '@helpers/tribe_activity'
+
+interface Props {
+    activity: TribeActivitySpec
+    showcase: TribeGroupShowcase | null
+}
+
+const {
+    activity,
+    showcase,
+} = Astro.props
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Grid from '@components/compositions/Grid.astro'
+import MetricStat from '@components/blocks/tribe_activity/MetricStat.astro'
+
+const metrics = activity.metrics(t, showcase?.totals ?? {})
+---
+
+<section class="[ tribe-group-activity ]" aria-label={t('tribes.detail.activity')}>
+    <Flexblock gap="var(--space-m)">
+        <Flexblock gap="var(--space-3xs)">
+            <h2>{t('tribes.detail.activity')}</h2>
+            <small>{t('tribes.showcase.last_30d')}</small>
+        </Flexblock>
+
+        {!showcase ?
+            <p>{t('tribes.showcase.unavailable')}</p>
+            : showcase.manual ?
+                <p>{showcase.message || t('tribes.showcase.manual')}</p>
+                :
+                <Grid
+                    class="[ metric-stat-grid ]"
+                    min_item_width="220px"
+                    row_gap="var(--space-s)"
+                    column_gap="var(--space-s)"
+                >
+                    {metrics.map((metric) =>
+                        <MetricStat label={metric.label} value={metric.value} />
+                    )}
+                </Grid>
+        }
+    </Flexblock>
+</section>

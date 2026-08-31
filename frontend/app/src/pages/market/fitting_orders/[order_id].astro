@@ -27,6 +27,7 @@ import FlexInline from '@components/compositions/FlexInline.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 import Breadcrumb from '@components/blocks/Breadcrumb.astro'
 import FittingBuyOrderSkeleton from '@components/blocks/FittingBuyOrderSkeleton.astro'
+import FittingBuyOrderAssets from '@components/blocks/FittingBuyOrderAssets.astro'
 
 const page_title = t('fitting_buy.order_id').replace('{id}', String(order_id))
 const PARTIAL = translatePath(`/partials/fitting_buy_order_component?order_id=${order_id}`)
@@ -69,6 +70,7 @@ const breadcrumb_items = [
                 <FittingBuyOrderSkeleton />
             </div>
         </Flexblock>
+        <FittingBuyOrderAssets />
     </PageWide>
 </Viewport>
 

@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, List, Optional
 from pydantic import BaseModel
 
 
@@ -32,6 +32,11 @@ class TribeGroupRankSchema(BaseModel):
     sort_order: int = 0
 
 
+class AffiliationRefSchema(BaseModel):
+    id: int
+    name: str
+
+
 class TribeGroupSchema(BaseModel):
     id: int
     tribe_id: int
@@ -39,6 +44,7 @@ class TribeGroupSchema(BaseModel):
     code: str = ""
     name: str
     description: str
+    content: str = ""
     discord_channel_id: Optional[int] = None
     chief: Optional[CharacterRefSchema] = None
     is_active: bool
@@ -46,6 +52,9 @@ class TribeGroupSchema(BaseModel):
     requirements: List[RequirementSchema] = []
     ranks: List[TribeGroupRankSchema] = []
     required_token_type: Optional[str] = None
+    require_off_trial: bool = False
+    allowed_affiliations: List[AffiliationRefSchema] = []
+    can_apply: bool = False
 
 
 class TribeGroupReportSchema(BaseModel):
@@ -65,3 +74,44 @@ class TribeGroupReportSchema(BaseModel):
     columns: List[str] = []
     rows: List[dict] = []
     totals: dict = {}
+
+
+class TribeGroupRosterEntrySchema(BaseModel):
+    """Public roster row — primary character only (no alts)."""
+
+    user_id: int
+    primary_character_id: Optional[int] = None
+    primary_character_name: str = ""
+    corporation_id: Optional[int] = None
+    corporation_name: Optional[str] = None
+    rank_id: Optional[int] = None
+    rank_code: Optional[str] = None
+    rank_name: Optional[str] = None
+    rank_sort_order: Optional[int] = None
+    approved_at: Optional[str] = None
+
+
+class TribeGroupGrowthSchema(BaseModel):
+    months: List[dict]
+    counts: List[int]
+
+
+class TribeGroupShowcaseContributorSchema(BaseModel):
+    character_id: Optional[int] = None
+    character_name: str = ""
+    metric_key: str = ""
+    metric_value: Any = 0
+
+
+class TribeGroupShowcaseSchema(BaseModel):
+    group_id: int
+    group_code: str = ""
+    group_name: str = ""
+    period: str = ""
+    period_start: Optional[str] = None
+    period_end: Optional[str] = None
+    manual: bool = False
+    message: str = ""
+    totals: dict = {}
+    columns: List[str] = []
+    contributors: List[TribeGroupShowcaseContributorSchema] = []

@@ -2,19 +2,42 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import { HTTP_400_Bad_Request } from '@helpers/http_responses'
-import { get_auth_url } from '@helpers/env'
-
 import type { User } from '@dtypes/jwt'
 import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
+const is_superuser = Boolean(user?.is_superuser)
+const is_auth = Boolean(user)
 
-if (!auth_token || !user) {
-    Astro.cookies.set('redirect_after_auth', Astro.url.href, { path: '/' })
-    return Astro.redirect(get_auth_url())
-}
+import { get_user_profile } from '@helpers/permissions'
+import { HTTP_400_Bad_Request, HTTP_404_Not_Found } from '@helpers/http_responses'
+import { strip_markdown } from '@helpers/string'
+import { tribe_group_cover } from '@helpers/tribe_covers'
+import { getGuidesByTribeGroupCode } from '@/data/guides'
+import { fetch_posts } from '@helpers/fetching/posts'
+
+import type {
+    Tribe,
+    TribeGroup,
+    TribeMembership,
+    SummaryCharacter,
+    TribeAvailableCharacter,
+    TribeGroupRosterEntry,
+    TribeGroupShowcase,
+} from '@dtypes/api.minmatar.org'
+import type { PostListUI } from '@dtypes/layout_components'
+import type { GuideMeta } from '@/data/guides/types'
+import {
+    get_tribe,
+    get_tribe_group,
+    get_memberships,
+    get_membership_characters_available,
+    get_tribe_group_roster,
+    get_tribe_group_showcase,
+} from '@helpers/api.minmatar.org/tribes'
+import { get_characters_summary_sorted } from '@helpers/fetching/characters'
+import { TRIBE_ACTIVITY_BY_CODE } from '@helpers/tribe_activity'
 
 const tribe_id = parseInt(Astro?.params?.tribe_id ?? '')
 const group_id = parseInt(Astro?.params?.group_id ?? '')
@@ -22,75 +45,133 @@ const group_id = parseInt(Astro?.params?.group_id ?? '')
 if (isNaN(tribe_id) || isNaN(group_id))
     return HTTP_400_Bad_Request()
 
-return Astro.redirect(translatePath(`/alliance/tribes/${tribe_id}/`))
-
-// TODO: Finish the landing page for groups. Is not quite ready yet
-
-import { apply_to_group, leave_group } from '@helpers/api.minmatar.org/tribes'
-import type { Alert } from '@dtypes/layout_components'
-
-let apply_to_group_error: Error | false = false
-let leave_group_error: Error | false = false
-let alert:Alert | false = false
-
-import type { Tribe, TribeGroup, SummaryCharacter, TribeMembership } from '@dtypes/api.minmatar.org'
-import { get_tribe, get_tribe_group, get_memberships } from '@helpers/api.minmatar.org/tribes'
-import { get_characters_summary_sorted } from '@helpers/fetching/characters'
+const user_profile = user && user?.username ? await get_user_profile(user.username) : null
+const user_permissions = user_profile?.permissions ?? []
+const is_alliance_member = user_permissions.includes('eveonline.add_evecharactertag') || is_superuser
+const user_on_trial = user_profile?.community_status === 'trial'
 
 let tribe: Tribe | null = null
+let tribe_group: TribeGroup | null = null
 let user_characters: SummaryCharacter[] = []
-let tribe_group:TribeGroup | null = null
+let available_characters: TribeAvailableCharacter[] = []
 const membership_by_group = new Map<number, TribeMembership | null>()
-let members:TribeMembership[] = []
-let is_member = false
-let is_pending = false
+let roster: TribeGroupRosterEntry[] | null = null
+let showcase: TribeGroupShowcase | null = null
+let guides: GuideMeta[] = []
+let posts: PostListUI[] = []
 let fetch_group_error: Error | false = false
 
 try {
     tribe = await get_tribe(tribe_id)
-    tribe_group = await get_tribe_group(tribe_id, group_id)
+    tribe_group = await get_tribe_group(tribe_id, group_id, auth_token)
 
-    // Member roster for the group landing (no live requirement checks — those
-    // are only needed on /members for chiefs reviewing qualify status).
-    const memberships = await get_memberships(auth_token as string, tribe_id, tribe_group.id)
-    const mine = memberships.find(m => m.user_id === user.user_id) ?? null
-    membership_by_group.set(tribe_group.id, mine)
-    members = memberships.filter(membership => membership.status === 'active')
+    showcase = tribe_group?.code && tribe_group.code in TRIBE_ACTIVITY_BY_CODE
+        ? await get_tribe_group_showcase(tribe_id, group_id, auth_token).catch(() => null)
+        : null
 
-    const summary = await get_characters_summary_sorted(auth_token)
-    user_characters = summary.characters ?? []
-    
-    const membership = membership_by_group.get(tribe_group.id) ?? null
-    is_member = membership?.status === 'active'
-    is_pending = membership?.status === 'pending'
+    guides = getGuidesByTribeGroupCode(tribe_group.code)
+    try {
+        const posts_page = await fetch_posts({
+            tribe_group_id: group_id,
+            status: 'published',
+            page_num: 1,
+            page_size: 12,
+        })
+        posts = posts_page.chunk
+    } catch {
+        posts = []
+    }
+
+    if (auth_token && user) {
+        const [summary, memberships, available] = await Promise.all([
+            get_characters_summary_sorted(auth_token),
+            get_memberships(auth_token as string, tribe_id, group_id, { mine: true }).catch(() => []),
+            get_membership_characters_available(auth_token as string, tribe_id, group_id).catch(() => []),
+        ])
+        user_characters = summary.characters ?? []
+        membership_by_group.set(group_id, memberships[0] ?? null)
+        available_characters = available
+
+        if (is_alliance_member) {
+            roster = await get_tribe_group_roster(
+                auth_token as string,
+                tribe_id,
+                group_id,
+            ).catch(() => [])
+        }
+    }
 } catch (error) {
-    fetch_group_error = error
+    fetch_group_error = error as Error
 }
 
-import { strip_markdown } from '@helpers/string'
+if (!fetch_group_error && !tribe_group)
+    return HTTP_404_Not_Found()
 
-const TRIBE_GROUP_PARTIAL_URL = translatePath(`/partials/tribe_group_component?tribe_id=${tribe_id}&group_id=${group_id}`)
+const membership = membership_by_group.get(group_id) ?? null
+const user_character_ids = membership?.characters?.map((c) => c.character_id) ?? []
+const is_leader = Boolean(
+    tribe_group?.chief && (
+        tribe_group.chief.character_id === membership?.primary_character_id
+        || user_character_ids.includes(tribe_group.chief.character_id)
+    )
+)
+const activity = tribe_group?.code
+    ? TRIBE_ACTIVITY_BY_CODE[tribe_group.code]
+    : undefined
 
-import Viewport from '@layouts/Viewport.astro';
-
-import PageWide from '@components/page/PageWide.astro';
-import PageActions from '@components/page/PageActions.astro';
-import PageTitle from '@components/page/PageTitle.astro';
-
-import TextBox from '@components/layout/TextBox.astro';
-
-import Flexblock from '@components/compositions/Flexblock.astro';
-import FlexInline from '@components/compositions/FlexInline.astro';
-
-import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-import Button from '@components/blocks/Button.astro';
-import PilotBadge from '@components/blocks/PilotBadge.astro'
-import TribeGroupLandingPage from '@components/blocks/TribeGroupLandingPage.astro'
-import DebugTag from '@components/blocks/DebugTag.astro';
-
+const TRIBE_GROUP_PARTIAL_URL = translatePath(
+    `/alliance/tribes/${tribe_id}/${group_id}/`,
+)
+const tribes_url = translatePath('/alliance/tribes/')
+const tribe_filter_url = translatePath(
+    `/alliance/tribes/?tribe=${encodeURIComponent(tribe?.slug ?? '')}`,
+)
+const cover = tribe_group_cover(group_id)
 const page_title = tribe_group?.name ?? ''
 const page_description = tribe_group?.description ?? ''
-const meta_description = await strip_markdown(tribe_group?.description ?? '')
+const meta_description = await strip_markdown(page_description)
+const about_markdown = (tribe_group?.content || tribe_group?.description || '').trim()
+const chief = tribe_group?.chief ?? null
+const has_qualification_requirements = (tribe_group?.requirements?.length ?? 0) > 0
+const has_membership_requirements = Boolean(tribe_group?.require_off_trial)
+    || (tribe_group?.allowed_affiliations?.length ?? 0) > 0
+const has_token_requirement = Boolean((tribe_group?.required_token_type ?? '').trim())
+const has_any_requirements = has_qualification_requirements
+    || has_membership_requirements
+    || has_token_requirement
+const breadcrumb_items = [
+    { label: t('alliance.page_title'), href: translatePath('/alliance/') },
+    { label: t('tribes.page_title'), href: tribes_url },
+    ...(tribe
+        ? [{ label: tribe.name, href: tribe_filter_url }]
+        : []),
+    { label: page_title },
+]
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import Markdown from '@components/blocks/Markdown.astro'
+import Breadcrumb from '@components/blocks/Breadcrumb.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import TribalGroupRequirements from '@components/blocks/TribalGroupRequirements.astro'
+import RequirementSwiper from '@components/blocks/RequirementSwiper.astro'
+import NotificationBadge from '@components/blocks/NotificationBadge.astro'
+import TribeGroupActivity from '@components/blocks/TribeGroupActivity.astro'
+import TribeGroupMembersGallery from '@components/blocks/TribeGroupMembersGallery.astro'
+import TribeGroupActions from '@components/blocks/TribeGroupActions.astro'
+import TribeGroupApplyHint from '@components/blocks/TribeGroupApplyHint.astro'
+import TribeGroupTokenRequirement from '@components/blocks/TribeGroupTokenRequirement.astro'
+import TribeGroupMembershipRequirements from '@components/blocks/TribeGroupMembershipRequirements.astro'
+import GuidePostCard from '@components/blocks/GuidePostCard.astro'
+import PropagandaPostCard from '@components/blocks/PropagandaPostCard.astro'
+import LandingSwiper from '@components/blocks/LandingSwiper.astro'
 ---
 
 <Viewport
@@ -102,45 +183,49 @@ const meta_description = await strip_markdown(tribe_group?.description ?? '')
         modal: true,
     }}
 >
-    <PageWide
+    <PageLanding
         cover={{
-            image: "/images/groups-cover.jpg",
-            image_990: "/images/groups-cover.jpg",
+            image: cover,
+            image_990: cover,
             overlay: true,
             scrollable: true,
         }}
         wide={true}
     >
-        <FlexInline slot="header" justification='space-between' class="[ w-full ]">
-            <Flexblock gap="var(--space-3xs)">
-                <PageTitle>
-                    {page_title}
-                </PageTitle>
-                {tribe_group?.chief &&
-                    <PilotBadge
-                        character_id={tribe_group.chief.character_id}
-                        character_name={tribe_group.chief.character_name}
-                        size={32}
-                        centered={true}
-                    >
-                        <small>{t('group_chief')}</small>
-                    </PilotBadge>
+        <Flexblock gap="var(--space-l)">
+            <FlexInline class="[ w-full !items-start ]" justification="space-between">
+                <Flexblock gap="var(--space-s)">
+                    <Breadcrumb items={breadcrumb_items} />
+                    <FlexInline gap="var(--space-xs)" class="[ tribe-group-title-row ]">
+                        {chief &&
+                            <div class="[ tribe-group-chief-portrait ]">
+                                <CharacterPicture
+                                    character_id={chief.character_id}
+                                    character_name={chief.character_name}
+                                    size={128}
+                                    icon_quality={256}
+                                    tooltip={`${chief.character_name} · ${t('group_chief')}`}
+                                />
+                            </div>
+                        }
+                        <PageTitle is_landing={true}>{page_title}</PageTitle>
+                    </FlexInline>
+                </Flexblock>
+                {tribe_group &&
+                    <TribeGroupActions
+                        group={tribe_group}
+                        tribe_id={tribe_id}
+                        group_id={group_id}
+                        is_auth={is_auth}
+                        is_leader={is_leader}
+                        is_superuser={is_superuser}
+                        user_on_trial={user_on_trial}
+                        user_characters={user_characters}
+                        available_characters={available_characters}
+                        membership_by_group={membership_by_group}
+                    />
                 }
-            </Flexblock>
-            <PageActions>
-                <Button href={translatePath(`/alliance/tribes/${tribe_id}/${group_id}/activity`)}>
-                    {t('tribes.detail.activity')}
-                </Button>
-                <Button href={translatePath(`/alliance/tribes/${tribe_group?.tribe_id}`)}>
-                    {t('back_to_tribe_template').replace('{name}', tribe_group?.tribe_name ?? '')}
-                </Button>
-            </PageActions>
-        </FlexInline>
-
-        <Flexblock gap='var(--space-2xl)'>
-            <TextBox>
-                <p class="[ excerpt ]">{page_description}</p>
-            </TextBox>
+            </FlexInline>
 
             {fetch_group_error ?
                 <ErrorRefetch
@@ -151,16 +236,296 @@ const meta_description = await strip_markdown(tribe_group?.description ?? '')
                     }}
                 />
                 :
-                tribe_group ?
-                    <TribeGroupLandingPage
-                        tribe_group={tribe_group}
-                        members={members}
-                        is_member={is_member}
-                        is_pending={is_pending}
-                        init_tooltips={false}
-                    /> :
-                    <DebugTag set:html={t('no_tribe_group_unexpected_error')} />
+                tribe_group &&
+                    <Flexblock gap="var(--space-2xl)" id="tribe-group-hub">
+                        <div class="[ tribe-group-req-guides ]">
+                            {about_markdown &&
+                                <TextBox max_width="100%" class="[ tribe-group-about ]">
+                                    <Markdown markdown={about_markdown} />
+                                </TextBox>
+                            }
+
+                            <Flexblock gap="var(--space-m)" class="[ tribe-group-requirements ]">
+                            <Flexblock gap="var(--space-3xs)">
+                                <h2>{t('tribes.detail.requirements')}</h2>
+                                {tribe_group.requirements.length > 1 &&
+                                    <small>
+                                        {t('tribal_group_requirement_text').replace(
+                                            '{count}',
+                                            String(tribe_group.requirements.length),
+                                        )}
+                                    </small>
+                                }
+                            </Flexblock>
+
+                            {has_qualification_requirements ?
+                                <Wrapper
+                                    class="[ requirements-reel ]"
+                                    padding_block="0"
+                                    padding_inline="0"
+                                    max_width="100%"
+                                >
+                                    <div id="tribe-group-requirements-reel" class="[ swiper ][ w-full ]">
+                                        <RequirementSwiper
+                                            swiper_selector="#tribe-group-requirements-reel"
+                                            pagination={false}
+                                            gap={60}
+                                            slides_per_view={1}
+                                        >
+                                            {tribe_group.requirements.map((req, index) =>
+                                                <div class="[ swiper-slide ]">
+                                                    {tribe_group.requirements.length > 1 &&
+                                                        <NotificationBadge
+                                                            class="[ requirement-number ]"
+                                                            number={index + 1}
+                                                            color="fleet-yellow"
+                                                            text_color="var(--background)"
+                                                        />
+                                                    }
+                                                    <TribalGroupRequirements
+                                                        requirement={req}
+                                                        init_tooltips={false}
+                                                    />
+                                                </div>
+                                            )}
+                                        </RequirementSwiper>
+                                    </div>
+                                    {tribe_group.requirements.length > 1 &&
+                                        <>
+                                            <div id="tribe-group-requirements-reel-button-prev" class="[ swiper-button-prev ]"></div>
+                                            <div id="tribe-group-requirements-reel-button-next" class="[ swiper-button-next ]"></div>
+                                        </>
+                                    }
+                                </Wrapper>
+                                :
+                                !has_any_requirements &&
+                                    <p>{t('tribes.detail.no_requirements')}</p>
+                            }
+
+                            <TribeGroupMembershipRequirements
+                                require_off_trial={Boolean(tribe_group.require_off_trial)}
+                                allowed_affiliations={tribe_group.allowed_affiliations ?? []}
+                                show_top_separator={has_qualification_requirements}
+                            />
+
+                            <TribeGroupTokenRequirement
+                                required_token_type={tribe_group.required_token_type}
+                            />
+
+                            <TribeGroupApplyHint
+                                group={tribe_group}
+                                tribe_id={tribe_id}
+                                group_id={group_id}
+                                is_auth={is_auth}
+                                is_leader={is_leader}
+                                user_on_trial={user_on_trial}
+                                user_characters={user_characters}
+                                available_characters={available_characters}
+                                membership_by_group={membership_by_group}
+                            />
+                        </Flexblock>
+
+                        {guides.length > 0 &&
+                            <Flexblock gap="var(--space-m)" class="[ tribe-group-guides ]">
+                                <h2>{t('content.guides.section_title')}</h2>
+                                <Wrapper padding_block="0" padding_inline="0" max_width="100%">
+                                    <div id="tribe-group-guides-swiper" class="[ swiper ][ w-full ]">
+                                        <LandingSwiper
+                                            swiper_selector="#tribe-group-guides-swiper"
+                                            align="start"
+                                            gap={10}
+                                            pagination={false}
+                                        >
+                                            {guides.map((guide) => (
+                                                <div class="[ swiper-slide ]" style="margin-right: 10px; width: min(100%, 320px)">
+                                                    <GuidePostCard guide={guide} />
+                                                </div>
+                                            ))}
+                                        </LandingSwiper>
+                                    </div>
+                                </Wrapper>
+                            </Flexblock>
+                        }
+                        </div>
+
+                        {activity &&
+                            <TribeGroupActivity
+                                activity={activity}
+                                showcase={showcase}
+                            />
+                        }
+
+                        <TribeGroupMembersGallery
+                            roster={roster}
+                            member_count={tribe_group.member_count}
+                            is_alliance_member={is_alliance_member}
+                            is_auth={is_auth}
+                        />
+
+                        {posts.length > 0 &&
+                            <section>
+                                <Flexblock gap="var(--space-l)">
+                                    <h2>{t('content.propaganda.section_title')}</h2>
+                                    <Wrapper padding_block="0" padding_inline="0" max_width="100%">
+                                        <div id="tribe-group-posts-swiper" class="[ swiper ][ w-full pb-10! ]">
+                                            <LandingSwiper swiper_selector="#tribe-group-posts-swiper" align="end" gap={10}>
+                                                {posts.map((post) => (
+                                                    <div class="[ swiper-slide ]" style="margin-right: 10px; width: min(100%, 320px)">
+                                                        <PropagandaPostCard post={post} is_editing={false} />
+                                                    </div>
+                                                ))}
+                                            </LandingSwiper>
+                                        </div>
+                                    </Wrapper>
+                                </Flexblock>
+                            </section>
+                        }
+                    </Flexblock>
             }
         </Flexblock>
-    </PageWide>
+    </PageLanding>
 </Viewport>
+
+<style lang="scss">
+    #tribe-group-hub {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .tribe-group-title-row {
+        align-items: center;
+        flex-wrap: nowrap;
+
+        :global(.page-title h1.is-landing) {
+            line-height: 1;
+        }
+    }
+
+    .tribe-group-chief-portrait {
+        flex: 0 0 auto;
+        width: var(--step-5);
+        height: var(--step-5);
+
+        :global(picture) {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        :global(img) {
+            display: block;
+            width: 100%;
+            height: 100%;
+            max-width: none;
+            object-fit: cover;
+        }
+    }
+
+    .tribe-group-req-guides {
+        display: grid;
+        width: 100%;
+        min-width: 0;
+        row-gap: var(--space-m);
+        column-gap: var(--space-xl);
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: "req";
+        align-items: start;
+
+        &:has(.tribe-group-about):not(:has(.tribe-group-guides)) {
+            grid-template-areas:
+                "about"
+                "req";
+        }
+
+        &:not(:has(.tribe-group-about)):has(.tribe-group-guides) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-areas: "req guides";
+        }
+
+        &:has(.tribe-group-about):has(.tribe-group-guides) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-areas:
+                "about about"
+                "req guides";
+        }
+
+        @media (max-width: 48rem) {
+            &:has(.tribe-group-guides) {
+                grid-template-columns: minmax(0, 1fr);
+                grid-template-areas:
+                    "req"
+                    "guides";
+            }
+
+            &:has(.tribe-group-about):has(.tribe-group-guides) {
+                grid-template-areas:
+                    "about"
+                    "req"
+                    "guides";
+            }
+
+            &:has(.tribe-group-about):not(:has(.tribe-group-guides)) {
+                grid-template-areas:
+                    "about"
+                    "req";
+            }
+        }
+    }
+
+    .tribe-group-about {
+        grid-area: about;
+        min-width: 0;
+    }
+
+    .tribe-group-requirements {
+        grid-area: req;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .tribe-group-guides {
+        grid-area: guides;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .requirements-reel {
+        position: relative;
+        width: 100%;
+    }
+
+    .tribe-group-requirements :global(.swiper-slide) {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .requirement-number {
+        position: absolute;
+        top: 0;
+        right: 0;
+    }
+
+    .swiper-button-prev,
+    .swiper-button-next {
+        --swiper-navigation-color: var(--highlight);
+        --swiper-navigation-sides-offset: 0;
+        --swiper-navigation-size: 22px;
+        --swiper-navigation-top-offset: -57px;
+        opacity: 0;
+    }
+
+    .swiper-button-prev {
+        right: 30px;
+        left: auto;
+    }
+
+    .swiper-initialized ~ .swiper-button-prev,
+    .swiper-initialized ~ .swiper-button-next {
+        opacity: 1;
+    }
+
+    .swiper-initialized ~ .swiper-button-next.swiper-button-disabled,
+    .swiper-initialized ~ .swiper-button-prev.swiper-button-disabled {
+        opacity: 0;
+    }
+</style>

@@ -22,7 +22,8 @@ if (!can_manage_posts)
     return HTTP_403_Forbidden()
 
 import { get_post, create_post, update_post, get_posts_tags, delete_post } from '@helpers/api.minmatar.org/posts'
-import type { Post, PostParams, PostTag } from '@dtypes/api.minmatar.org'
+import { get_tribes, get_tribe_groups } from '@helpers/api.minmatar.org/tribes'
+import type { Post, PostParams, PostTag, Tribe, TribeGroup } from '@dtypes/api.minmatar.org'
 import type { Alert } from '@dtypes/layout_components'
 
 const param = Astro.params.post_id
@@ -41,6 +42,7 @@ if (Astro.request.method === "POST") {
 
         const submitted_post_id = parseInt(data.get('post_id') as string)
         const tag_ids = data.getAll('tag_ids').map(tag_id => parseInt(tag_id as string))
+        const tribe_group_ids = data.getAll('tribe_group_ids').map(id => parseInt(id as string)).filter(id => !isNaN(id))
 
         submitted_post_data = {
             title: data.get('title') as string,
@@ -48,6 +50,7 @@ if (Astro.request.method === "POST") {
             content: data.get('content') as string,
             state: data.get('state') as string,
             tag_ids: tag_ids,
+            tribe_group_ids: tribe_group_ids,
         } as PostParams
 
         console.log(submitted_post_data)
@@ -76,6 +79,19 @@ try {
     error_fetching_post_tags = error.message
 }
 
+let tribe_groups_by_tribe: { tribe: Tribe; groups: TribeGroup[] }[] = []
+try {
+    const tribes = await get_tribes()
+    tribe_groups_by_tribe = await Promise.all(
+        tribes.map(async (tribe) => ({
+            tribe,
+            groups: await get_tribe_groups(tribe.id),
+        }))
+    )
+} catch {
+    tribe_groups_by_tribe = []
+}
+
 if (!post && post_id) {
     try {
         post = await get_post(post_id)
@@ -97,7 +113,10 @@ const {
     content = post?.content ?? '',
     state = post?.state ?? 'draft',
     tag_ids = post?.tag_ids ?? [],
+    tribe_group_ids = post?.tribe_group_ids ?? [],
 } = submitted_post_data
+
+const selected_tribe_group_ids = new Set(tribe_group_ids)
 
 import Viewport from '@layouts/Viewport.astro';
 
@@ -239,6 +258,27 @@ const page_title = post?.title ?? t('new_post')
                                     />
                                 )}
                             </FlexInline>
+                        }
+
+                        {tribe_groups_by_tribe.length > 0 &&
+                            <Flexblock gap='var(--space-2xs)'>
+                                <label>{t('tribes.groups')}:</label>
+                                {tribe_groups_by_tribe.map(({ tribe, groups }) =>
+                                    groups.length > 0 &&
+                                        <FlexInline>
+                                            <small class="[ text-highlight ]">{tribe.name}</small>
+                                            {groups.map(group =>
+                                                <UnstyledRadioCheckButton
+                                                    type='checkbox'
+                                                    label={group.name}
+                                                    value={group.id}
+                                                    name="tribe_group_ids"
+                                                    checked={selected_tribe_group_ids.has(group.id) ? 'checked' : undefined}
+                                                />
+                                            )}
+                                        </FlexInline>
+                                )}
+                            </Flexblock>
                         }
                     </Flexblock>
                 </TextBox>

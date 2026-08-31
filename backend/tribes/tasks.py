@@ -10,14 +10,15 @@ Tasks:
 import logging
 from collections import defaultdict
 
-from django.utils import timezone
-
 from app.celery import app
+from django.contrib.auth.models import User
 from discord.client import DiscordClient
-from groups.helpers.feature_access import can_use_feature
 
 from tribes.helpers.chief_membership import (
     ensure_tribe_chiefs_have_group_memberships as _ensure_chief_memberships,
+)
+from tribes.helpers.offboarding import (
+    offboard_tribe_memberships_without_feature,
 )
 from tribes.helpers.tribe_auth_groups import (
     remove_tribe_auth_groups_for_inactive_membership,
@@ -116,37 +117,30 @@ def ensure_tribe_chiefs_have_group_memberships():
 @app.task()
 def remove_tribe_members_without_permission():
     """
-    Remove users from all TribeGroups if they no longer qualify for tribes.apply
-    (e.g. they left the alliance).
+    Remove users from TribeGroups they no longer qualify to apply to
+    (e.g. affiliation change or left the alliance).
 
-    Sets status to 'inactive' and records left_at, which triggers the
-    post_save signal to remove the user from the auth.Group.
-
-    Also fixes stale auth.Group links: inactive memberships that still have
-    tribe or tribe-group Discord roles are cleaned up (same rules as the signal).
+    Also fixes stale auth.Group links for inactive memberships.
     """
-    active_memberships = TribeGroupMembership.objects.filter(
-        status=TribeGroupMembership.STATUS_ACTIVE
-    ).select_related("user", "tribe_group__tribe")
+    user_ids = (
+        TribeGroupMembership.objects.filter(
+            status__in=(
+                TribeGroupMembership.STATUS_ACTIVE,
+                TribeGroupMembership.STATUS_PENDING,
+            )
+        )
+        .values_list("user_id", flat=True)
+        .distinct()
+    )
 
-    for membership in active_memberships:
-        user = membership.user
+    for user_id in user_ids:
         try:
-            if not can_use_feature(user, "tribes.apply"):
-                logger.info(
-                    "User %s lacks tribes permission; removing from %s",
-                    user,
-                    membership.tribe_group,
-                )
-                membership.status = TribeGroupMembership.STATUS_INACTIVE
-                membership.left_at = timezone.now()
-                membership.history_inactive_reason = "removed"
-                membership.save(update_fields=["status", "left_at"])
+            user = User.objects.get(pk=user_id)
+            offboard_tribe_memberships_without_feature(user)
         except Exception as exc:  # pylint: disable=broad-except
             logger.error(
-                "Error checking permission for user %s in group %s: %s",
-                user,
-                membership.tribe_group,
+                "Error offboarding tribe memberships for user %s: %s",
+                user_id,
                 exc,
             )
 

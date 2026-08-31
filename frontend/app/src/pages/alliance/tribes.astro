@@ -7,42 +7,77 @@ import * as jose from 'jose'
 
 const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value : false
 const user = auth_token ? jose.decodeJwt(auth_token) as User : false
-const is_superuser = (user ? user?.is_superuser : false)
 
-import type { Tribe } from '@dtypes/api.minmatar.org'
-import { get_tribes, get_current_tribes } from '@helpers/api.minmatar.org/tribes'
+import type { Tribe, TribeGroup, TribeMembership } from '@dtypes/api.minmatar.org'
+import { get_tribes, get_tribe_groups, get_memberships } from '@helpers/api.minmatar.org/tribes'
 
 let tribes: Tribe[] = []
-let current_tribe_ids: Set<number> = new Set()
+let directory_groups: {
+    group: TribeGroup
+    tribe: Tribe
+    is_member: boolean
+}[] = []
 let get_tribes_error: Error | false = false
+
+const initial_tribe_slug = Astro.url.searchParams.get('tribe') ?? 'all'
 
 try {
     tribes = await get_tribes()
+    const groups_lists = await Promise.all(
+        tribes.map(async (tribe) => {
+            const groups = await get_tribe_groups(tribe.id)
+            return groups.map((group) => ({ group, tribe }))
+        }),
+    )
+    const flat = groups_lists.flat()
 
-    if (auth_token) {
-        const current = await get_current_tribes(auth_token)
-        current_tribe_ids = new Set(current.map(t => t.id))
+    const member_group_ids = new Set<number>()
+    if (auth_token && user) {
+        await Promise.all(
+            flat.map(async ({ group, tribe }) => {
+                try {
+                    const memberships = await get_memberships(
+                        auth_token as string,
+                        tribe.id,
+                        group.id,
+                        { mine: true, status: 'active' },
+                    )
+                    if (memberships.some((m: TribeMembership) => m.status === 'active'))
+                        member_group_ids.add(group.id)
+                } catch {
+                    // ignore per-group membership errors on directory
+                }
+            }),
+        )
     }
+
+    directory_groups = flat
+        .map(({ group, tribe }) => ({
+            group,
+            tribe,
+            is_member: member_group_ids.has(group.id),
+        }))
+        .sort((a, b) => {
+            const tribe_cmp = a.tribe.name.localeCompare(b.tribe.name)
+            if (tribe_cmp !== 0) return tribe_cmp
+            return a.group.name.localeCompare(b.group.name)
+        })
 } catch (error) {
-    get_tribes_error = error
+    get_tribes_error = error as Error
 }
 
 const TRIBES_LIST_PARTIAL_URL = translatePath('/partials/tribes_list_component')
 
-import Viewport from '@layouts/Viewport.astro';
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import TribesGroupsCatalog from '@components/blocks/TribesGroupsCatalog.astro'
 
-import PageLanding from '@components/page/PageLanding.astro';
-import PageTitle from '@components/page/PageTitle.astro';
-
-import TextBox from '@components/layout/TextBox.astro';
-
-import Flexblock from '@components/compositions/Flexblock.astro';
-
-import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-import TribesTiles from '@components/blocks/TribesTiles.astro';
-
-const page_title = t('tribes.page_title');
-const leading_text = t('tribes.leading_text');
+const page_title = t('tribes.page_title')
+const leading_text = t('tribes.leading_text')
 ---
 
 <Viewport
@@ -63,11 +98,11 @@ const leading_text = t('tribes.leading_text');
         }}
         wide={true}
     >
-        <Flexblock gap='var(--space-2xl)'>
+        <Flexblock gap="var(--space-2xl)">
             <TextBox>
                 <PageTitle is_landing={true}>{page_title}</PageTitle>
             </TextBox>
-            
+
             <TextBox>
                 <p class="[ excerpt ]">{leading_text}</p>
             </TextBox>
@@ -81,9 +116,10 @@ const leading_text = t('tribes.leading_text');
                     }}
                 />
                 :
-                <TribesTiles
+                <TribesGroupsCatalog
+                    directory_groups={directory_groups}
                     tribes={tribes}
-                    current_tribe_ids={current_tribe_ids}
+                    initial_tribe_slug={initial_tribe_slug}
                     init_tooltips={false}
                 />
             }

@@ -104,9 +104,12 @@ if (Astro.request.method === "DELETE") {
     }
 }
 
+import { get_user_profile } from '@helpers/permissions'
 import type { TribeGroup, SummaryCharacter, TribeMembership, TribeAvailableCharacter } from '@dtypes/api.minmatar.org'
 import { get_tribe_group, get_memberships, get_membership_characters_available } from '@helpers/api.minmatar.org/tribes'
 import { get_characters_summary_sorted } from '@helpers/fetching/characters'
+
+const actions_ui = Astro.url.searchParams.get('ui') === 'actions'
 
 let user_characters: SummaryCharacter[] = []
 let available_characters: TribeAvailableCharacter[] = []
@@ -115,9 +118,12 @@ const membership_by_group = new Map<number, TribeMembership | null>()
 let is_member = false
 let is_pending = false
 let fetch_group_error: Error | false = false
+let is_leader = false
+let is_superuser = Boolean(user?.is_superuser)
+let user_on_trial = false
 
 try {
-    tribe_group = await get_tribe_group(tribe_id, group_id)
+    tribe_group = await get_tribe_group(tribe_id, group_id, auth_token)
 
     const memberships = await get_memberships(auth_token as string, tribe_id, tribe_group.id, {
         mine: true,
@@ -137,18 +143,35 @@ try {
     const membership = membership_by_group.get(tribe_group.id) ?? null
     is_member = membership?.status === 'active'
     is_pending = membership?.status === 'pending'
+
+    const user_character_ids = membership?.characters?.map((c) => c.character_id) ?? []
+    is_leader = Boolean(
+        tribe_group?.chief && (
+            tribe_group.chief.character_id === membership?.primary_character_id
+            || user_character_ids.includes(tribe_group.chief.character_id)
+        )
+    )
+
+    const user_profile = user?.username
+        ? await get_user_profile(user.username)
+        : null
+    user_on_trial = user_profile?.community_status === 'trial'
 } catch (error) {
     fetch_group_error = error
 }
 
-const TRIBE_GROUP_STATUS_PARTIAL_URL = translatePath(`/partials/tribe_group_status_component?tribe_id=${tribe_id}&group_id=${group_id}`)
+const TRIBE_GROUP_STATUS_PARTIAL_URL = translatePath(
+    `/partials/tribe_group_status_component?tribe_id=${tribe_id}&group_id=${group_id}${actions_ui ? '&ui=actions' : ''}`
+)
 
 const delay = parseInt(Astro.url.searchParams.get('delay') ?? '5')
 
-import ShowAlert from '@components/blocks/ShowAlert.astro';
-import TribeStatus from '@components/blocks/TribeStatus.astro';
-import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-import DebugTag from '@components/blocks/DebugTag.astro';
+import ShowAlert from '@components/blocks/ShowAlert.astro'
+import TribeStatus from '@components/blocks/TribeStatus.astro'
+import TribeGroupActions from '@components/blocks/TribeGroupActions.astro'
+import TribeGroupApplyHint from '@components/blocks/TribeGroupApplyHint.astro'
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
+import DebugTag from '@components/blocks/DebugTag.astro'
 ---
 
 {alert && <ShowAlert alert={alert} /> }
@@ -170,15 +193,46 @@ import DebugTag from '@components/blocks/DebugTag.astro';
             {is_member ? t('member_of_tribe_group') : is_pending ? t('tribes.detail.apply_confirm_text') : ''}
         </small>
 
-        <TribeStatus
-            group={tribe_group}
-            tribe_id={tribe_group.tribe_id}
-            group_id={tribe_group.id}
-            user_characters={user_characters}
-            available_characters={available_characters}
-            is_auth={!!user}
-            membership_by_group={membership_by_group}
-        />
+        {actions_ui &&
+            <TribeGroupApplyHint
+                oob={true}
+                group={tribe_group}
+                tribe_id={tribe_group.tribe_id}
+                group_id={tribe_group.id}
+                is_auth={!!user}
+                is_leader={is_leader}
+                user_on_trial={user_on_trial}
+                user_characters={user_characters}
+                available_characters={available_characters}
+                membership_by_group={membership_by_group}
+            />
+        }
+
+        {actions_ui ?
+            <TribeGroupActions
+                group={tribe_group}
+                tribe_id={tribe_group.tribe_id}
+                group_id={tribe_group.id}
+                is_auth={!!user}
+                is_leader={is_leader}
+                is_superuser={is_superuser}
+                user_on_trial={user_on_trial}
+                user_characters={user_characters}
+                available_characters={available_characters}
+                membership_by_group={membership_by_group}
+            />
+            :
+            <TribeStatus
+                group={tribe_group}
+                tribe_id={tribe_group.tribe_id}
+                group_id={tribe_group.id}
+                user_characters={user_characters}
+                available_characters={available_characters}
+                is_auth={!!user}
+                user_on_trial={user_on_trial}
+                membership_by_group={membership_by_group}
+            />
+        }
         :
         <DebugTag set:html={t('no_tribe_group_unexpected_error')} />
 }

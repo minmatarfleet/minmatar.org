@@ -61,7 +61,7 @@ delete attributes.class
         centered={centered}
     />
     <VerticalCenter>
-        <Flexblock gap={heading ? 'var(--space-3xs)' : '0'} class="[ w-full ]">
+        <Flexblock gap={heading || corporation ? 'var(--space-3xs)' : '0'} class="[ w-full ]">
             <TitleElement
                 class="[ text-highlight cursor-pointer ]"
                 set:text={character_id > 0 ? character_name : `[ ${t('unknown_character')} ]`}
@@ -79,22 +79,22 @@ delete attributes.class
                 }`}
                 x-on:click.stop.prevent="show_character_modal()"
             /> <slot name="title"></slot>
-            <slot>
-                {corporation &&
-                    <FixedFluid
-                        width='24px'
-                        class="[ items-center ]"
-                        gap='var(--space-3xs)'
-                    >
-                        <picture>
-                            <img loading="lazy" src={get_corporation_logo(corporation.id, 32)} width="24" height="24" alt={`${t('profile_picture_of')} ${character_name}`} />
-                        </picture>
-                        <span class="[ truncate ]">
-                            <small>{corporation.name}</small>
-                        </span>
-                    </FixedFluid>
-                }
-            </slot>
+            {corporation &&
+                <FixedFluid
+                    width='24px'
+                    class="[ items-center ]"
+                    gap='var(--space-3xs)'
+                    breakpoint='0%'
+                >
+                    <picture>
+                        <img loading="lazy" src={get_corporation_logo(corporation.id, 32)} width="24" height="24" alt={`${t('profile_picture_of')} ${corporation.name}`} />
+                    </picture>
+                    <span class="[ truncate ]">
+                        <small>{corporation.name}</small>
+                    </span>
+                </FixedFluid>
+            }
+            <slot />
         </Flexblock>
     </VerticalCenter>
 </FixedFluid>

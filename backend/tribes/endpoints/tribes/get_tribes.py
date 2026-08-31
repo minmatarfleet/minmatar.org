@@ -4,6 +4,7 @@ from typing import List
 
 from ninja import Router
 
+from tribes.endpoints.serialization import user_to_character_ref
 from tribes.endpoints.tribes.schemas import TribeSchema
 from tribes.models import Tribe, TribeGroupMembership
 
@@ -19,8 +20,10 @@ router = Router(tags=["Tribes"])
 
 def get_tribes(request):
     result = []
-    for tribe in Tribe.objects.filter(is_active=True).prefetch_related(
-        "groups"
+    for tribe in (
+        Tribe.objects.filter(is_active=True)
+        .select_related("chief__eveplayer__primary_character")
+        .prefetch_related("groups")
     ):
         active_groups = tribe.groups.filter(is_active=True)
         total_members = (
@@ -42,7 +45,9 @@ def get_tribes(request):
                 image_url=tribe.image_url,
                 banner_url=tribe.banner_url,
                 discord_channel_id=tribe.discord_channel_id,
-                chief_id=tribe.chief_id,
+                chief=(
+                    user_to_character_ref(tribe.chief) if tribe.chief else None
+                ),
                 is_active=tribe.is_active,
                 group_count=active_groups.count(),
                 total_member_count=total_members,

@@ -25,6 +25,7 @@ class TribeGroupInline(admin.TabularInline):
         "chief",
         "is_active",
         "required_token_type",
+        "require_off_trial",
         "discord_channel_id",
     )
     show_change_link = True
@@ -82,12 +83,28 @@ class TribeGroupAdmin(admin.ModelAdmin):
         "tribe",
         "chief",
         "required_token_type",
+        "require_off_trial",
+        "allowed_affiliation_names",
         "is_active",
     )
-    list_filter = ("is_active", "tribe", "required_token_type")
+    list_filter = (
+        "is_active",
+        "tribe",
+        "required_token_type",
+        "require_off_trial",
+        "allowed_affiliations",
+    )
     search_fields = ("name", "code", "tribe__name")
     raw_id_fields = ("tribe", "chief", "group")
+    filter_horizontal = ("allowed_affiliations",)
     inlines = [TribeGroupRankInline, TribeGroupRequirementInline]
+
+    @admin.display(description="Allowed affiliations")
+    def allowed_affiliation_names(self, obj):
+        names = list(obj.allowed_affiliations.values_list("name", flat=True))
+        if not names:
+            return "— (tribes.apply)"
+        return ", ".join(names)
 
     def get_changeform_initial_data(self, request):
         initial = super().get_changeform_initial_data(request)

@@ -1,0 +1,309 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type {
+    TribeGroup,
+    SummaryCharacter,
+    TribeMembership,
+    TribeAvailableCharacter,
+} from '@dtypes/api.minmatar.org'
+import { tribe_group_apply_ui_state } from '@helpers/tribe_group_apply_ui'
+import { query_string } from '@helpers/string'
+import { query_string } from '@helpers/string'
+
+interface Props {
+    group: TribeGroup
+    tribe_id: number
+    group_id: number
+    is_auth: boolean
+    is_leader: boolean
+    is_superuser: boolean
+    user_characters: SummaryCharacter[]
+    available_characters?: TribeAvailableCharacter[]
+    membership_by_group: Map<number, TribeMembership | null>
+    user_on_trial?: boolean
+    [propName: string]: any
+}
+
+const {
+    group,
+    tribe_id,
+    group_id,
+    is_auth,
+    is_leader,
+    is_superuser,
+    user_characters,
+    available_characters,
+    membership_by_group,
+    user_on_trial = false,
+    ...attributes
+} = Astro.props
+
+delete attributes.class
+
+const apply_ui = tribe_group_apply_ui_state({
+    group,
+    membership: membership_by_group.get(group.id) ?? null,
+    is_auth,
+    is_leader,
+    user_on_trial,
+})
+const {
+    membership,
+    is_approved,
+    is_pending,
+    has_open_membership,
+    can_apply,
+    blocked_by_trial,
+} = apply_ui
+const status_id = `tribe-group-status-${group.tribe_id}-${group.id}`
+const members_href = translatePath(`/alliance/tribes/${tribe_id}/${group_id}/members`)
+const status_partial = translatePath(
+    `/partials/tribe_group_status_component?tribe_id=${tribe_id}&group_id=${group_id}&ui=actions`,
+)
+const auth_redirect = `${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(Astro.url.toString())}`
+
+const show_membership_action =
+    !is_leader && (!is_auth || can_apply || has_open_membership)
+const show_manage_members = is_leader || (is_superuser && !is_leader)
+const show_actions = show_membership_action || show_manage_members
+
+import Dropdown from '@components/blocks/Dropdown.astro'
+import ButtonApplyTribe from '@components/blocks/ButtonApplyTribe.astro'
+import ButtonTribeMembership from '@components/blocks/ButtonTribeMembership.astro'
+---
+
+{show_actions &&
+    <div
+        id={status_id}
+        class:list={['[ tribe-group-actions ]', Astro.props.class]}
+        {...attributes}
+    >
+        <Dropdown
+            class="[ tribe-group-actions-menu ]"
+            variant="button"
+            color="fleet-red"
+            size="sm"
+        >
+            <span slot="button">{t('actions')}</span>
+            <nav
+                class="[ tribe-group-actions-menu__list ]"
+                aria-label={t('actions')}
+            >
+                {show_membership_action &&
+                    <>
+                        {!is_auth ?
+                            <button
+                                type="button"
+                                class="[ tribe-group-actions-menu__item ]"
+                                x-on:click={`window.location.href = ${JSON.stringify(auth_redirect)}`}
+                            >
+                                {t('tribes.detail.login_to_apply')}
+                            </button>
+                            : !can_apply && !has_open_membership ?
+                                null
+                            : is_pending && membership ?
+                                <div
+                                    class="[ tribe-group-actions-menu__confirm ]"
+                                    x-data={`{ confirming: false }`}
+                                >
+                                    <button
+                                        type="button"
+                                        class="[ tribe-group-actions-menu__item tribe-group-actions-menu__item--danger ]"
+                                        x-show="!confirming"
+                                        x-on:click.stop="confirming = true"
+                                    >
+                                        {t('tribes.detail.withdraw')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="[ tribe-group-actions-menu__item tribe-group-actions-menu__item--danger is-confirm ]"
+                                        x-show="confirming"
+                                        x-cloak
+                                        hx-delete={`${status_partial}?${query_string({
+                                            tribe_id: tribe_id,
+                                            group_id: group_id,
+                                            membership_id: membership.id,
+                                        })}`}
+                                        hx-target={`#${status_id}`}
+                                        hx-indicator=".loader"
+                                        hx-swap="outerHTML transition:true"
+                                        x-on:click="$el.setAttribute('disabled','')"
+                                    >
+                                        {t('confirm')}
+                                    </button>
+                                </div>
+                                : !is_pending && !is_approved ?
+                                    (blocked_by_trial ?
+                                        <span class="[ tribe-group-actions-menu__item tribe-group-actions-menu__item--muted ]">
+                                            {t('tribes.detail.off_trial_apply_blocked')}
+                                        </span>
+                                        :
+                                        <div class="[ tribe-group-actions-menu__item ]">
+                                            <ButtonApplyTribe
+                                                styless={true}
+                                                actions_ui={true}
+                                                target_id={status_id}
+                                                title={group.name}
+                                                tribe_id={tribe_id}
+                                                group_id={group_id}
+                                                pilots={user_characters}
+                                                available_characters={available_characters}
+                                                required_token_type={group.required_token_type}
+                                            />
+                                        </div>
+                                    )
+                                    : is_approved && membership ?
+                                        <div class="[ tribe-group-actions-menu__item ]">
+                                            <ButtonTribeMembership
+                                                styless={true}
+                                                actions_ui={true}
+                                                target_id={status_id}
+                                                title={group.name}
+                                                tribe_id={tribe_id}
+                                                group_id={group_id}
+                                                membership_id={membership.id}
+                                                pilots={user_characters}
+                                                membership={membership}
+                                                available_characters={available_characters}
+                                                required_token_type={group.required_token_type}
+                                            />
+                                        </div>
+                                        : null
+                        }
+                    </>
+                }
+
+                {is_leader &&
+                    <a
+                        class="[ tribe-group-actions-menu__item ]"
+                        href={members_href}
+                        x-on:click="close()"
+                    >
+                        {t('manage_membership')}
+                    </a>
+                }
+
+                {is_superuser && !is_leader &&
+                    <a
+                        class="[ tribe-group-actions-menu__item ]"
+                        href={members_href}
+                        x-on:click="close()"
+                    >
+                        {t('manage')}
+                    </a>
+                }
+            </nav>
+        </Dropdown>
+    </div>
+}
+
+<style lang="scss">
+    .tribe-group-actions-menu__list {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        width: 100%;
+    }
+
+    .tribe-group-actions-menu__confirm {
+        width: 100%;
+    }
+
+    .tribe-group-actions-menu__item {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        appearance: none;
+        background: transparent;
+        border: 0;
+        margin: 0;
+        padding: 0;
+        color: var(--highlight);
+        font-family: var(--button-font);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-align: left;
+        text-decoration: none;
+        cursor: pointer;
+
+        &:is(a),
+        &:is(button) {
+            padding: var(--space-2xs) var(--space-s);
+        }
+
+        &:is(a):hover,
+        &:is(a):focus-visible,
+        &:is(button):hover,
+        &:is(button):focus-visible {
+            color: var(--foreground);
+            background: color-mix(in srgb, var(--foreground) 8%, transparent);
+        }
+
+        &--danger {
+            color: var(--highlight);
+        }
+
+        &--danger:hover,
+        &--danger:focus-visible,
+        &.is-confirm {
+            color: var(--fleet-red);
+        }
+
+        &--muted {
+            cursor: default;
+            color: color-mix(in srgb, var(--highlight) 65%, transparent);
+            font-weight: 500;
+            padding: var(--space-2xs) var(--space-s);
+        }
+    }
+
+    :global(.tribe-group-actions-menu.button-dropdown),
+    :global(.tribe-group-actions-menu .button-dropdown) {
+        display: inline-block;
+    }
+
+    :global(.tribe-group-actions-menu.button-dropdown-panel),
+    :global(.tribe-group-actions-menu .button-dropdown-panel) {
+        min-width: 12rem;
+        padding: var(--space-3xs);
+        background: var(--background);
+    }
+
+    :global(.tribe-group-actions-menu__item > .flex) {
+        display: block;
+        width: 100%;
+    }
+
+    :global(.tribe-group-actions-menu__item button),
+    :global(.tribe-group-actions-menu__item a) {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+        appearance: none;
+        background: transparent;
+        border: 0;
+        margin: 0;
+        padding: var(--space-2xs) var(--space-s);
+        color: var(--highlight);
+        font-family: var(--button-font);
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-align: left;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    :global(.tribe-group-actions-menu__item button:hover),
+    :global(.tribe-group-actions-menu__item button:focus-visible),
+    :global(.tribe-group-actions-menu__item a:hover),
+    :global(.tribe-group-actions-menu__item a:focus-visible) {
+        color: var(--foreground);
+        background: color-mix(in srgb, var(--foreground) 8%, transparent);
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+</style>

@@ -82,6 +82,39 @@ def _get_feature(code: str) -> _FeatureSnapshot | None:
     return _load_feature_cache().get(code)
 
 
+def _feature_affiliation_ids(code: str) -> frozenset[int]:
+    feature = _get_feature(code)
+    if feature is None:
+        return frozenset()
+    return feature.affiliation_ids
+
+
+def tribe_group_configured_affiliation_ids(
+    tribe_group,
+) -> frozenset[int] | None:
+    """Return group M2M PKs when non-empty, else None."""
+    cache = getattr(tribe_group, "_prefetched_objects_cache", None)
+    if cache is not None and "allowed_affiliations" in cache:
+        ids = frozenset(a.pk for a in tribe_group.allowed_affiliations.all())
+    else:
+        ids = frozenset(
+            tribe_group.allowed_affiliations.values_list("pk", flat=True)
+        )
+    return ids if ids else None
+
+
+def tribe_group_effective_affiliation_ids(
+    tribe_group,
+    *,
+    feature_code: str,
+) -> frozenset[int]:
+    """Effective affiliation allowlist for a tribe group (group override or feature)."""
+    configured = tribe_group_configured_affiliation_ids(tribe_group)
+    if configured is not None:
+        return configured
+    return _feature_affiliation_ids(feature_code)
+
+
 def user_affiliation(user):
     if user is None or isinstance(user, AnonymousUser):
         return None
@@ -142,11 +175,14 @@ def _evaluate_tribe_group_target(
 ) -> bool:
     if tribe_group is None:
         return False
-    if not _evaluate_affiliation(feature, user):
+    affiliation = user_affiliation(user)
+    if affiliation is None:
         return False
-    if feature.tribe_group_ids:
-        return tribe_group.pk in feature.tribe_group_ids
-    return True
+    allowed_ids = tribe_group_effective_affiliation_ids(
+        tribe_group,
+        feature_code=feature.code,
+    )
+    return affiliation.pk in allowed_ids
 
 
 def _evaluate_tribe_chief(

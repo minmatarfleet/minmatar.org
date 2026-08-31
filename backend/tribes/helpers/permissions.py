@@ -3,6 +3,18 @@
 from groups.helpers.feature_access import can_use_feature
 from tribes.models import TribeGroup, TribeGroupMembership
 
+# Matches the frontend alliance gate (eveonline.add_evecharactertag).
+ALLIANCE_MEMBER_PERM = "eveonline.add_evecharactertag"
+
+
+def user_is_alliance_member(user) -> bool:
+    """Return True if the user is an alliance member (or superuser)."""
+    if not getattr(user, "is_authenticated", False) or not user.pk:
+        return False
+    if user.is_superuser:
+        return True
+    return user.has_perm(ALLIANCE_MEMBER_PERM)
+
 
 def user_is_tribe_chief(user, tribe) -> bool:
     """Return True if user is the tribe chief or has superuser/perm override."""

@@ -1,0 +1,309 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import type { TribeGroupRosterEntry } from '@dtypes/api.minmatar.org'
+import {
+    corporation_filter_id,
+    group_roster_by_rank,
+    roster_corporation_filters,
+} from '@helpers/tribe_roster'
+import { get_corporation_logo } from '@helpers/eve_image_server'
+
+interface Props {
+    roster: TribeGroupRosterEntry[] | null
+    member_count: number
+    is_alliance_member: boolean
+    is_auth: boolean
+}
+
+const {
+    roster,
+    member_count,
+    is_alliance_member,
+    is_auth,
+} = Astro.props
+
+const sections = roster && roster.length > 0
+    ? group_roster_by_rank(roster, t('tribes.roster.unranked'))
+    : []
+
+const corp_filters = roster && roster.length > 0
+    ? roster_corporation_filters(
+        roster,
+        t('content.filter.all'),
+        t('unknown_corporation'),
+    )
+    : []
+
+const corp_filters_json = JSON.stringify(corp_filters)
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Grid from '@components/compositions/Grid.astro'
+
+import PilotBadge from '@components/blocks/PilotBadge.astro'
+---
+
+<section
+    class="[ tribe-group-members ]"
+    aria-label={t('group_members')}
+    x-data={corp_filters.length > 0 ? `{
+        corp: 'all',
+        filters: ${corp_filters_json},
+        set_corp(id) {
+            this.corp = id
+        },
+        matches_corp(el) {
+            return this.corp === 'all' || el.dataset.corporation === this.corp
+        },
+        section_visible(section_el) {
+            if (this.corp === 'all') return true
+            return [...section_el.querySelectorAll('[data-corporation]')].some(
+                (el) => el.dataset.corporation === this.corp
+            )
+        },
+        section_count(section_el) {
+            return [...section_el.querySelectorAll('[data-corporation]')].filter(
+                (el) => this.matches_corp(el)
+            ).length
+        },
+        visible_count() {
+            const active = this.filters.find((f) => f.id === this.corp)
+            return active ? active.count : ${member_count}
+        },
+    }` : undefined}
+>
+    <Flexblock gap="var(--space-m)">
+        <Flexblock gap="var(--space-3xs)">
+            <h2>{t('group_members')}</h2>
+            <small>
+                {corp_filters.length > 0 ?
+                    <>
+                        <span x-text="visible_count()">{member_count}</span>
+                        {' '}{t('tribes.detail.member_count')}
+                    </>
+                    :
+                    <>{member_count} {t('tribes.detail.member_count')}</>
+                }
+            </small>
+        </Flexblock>
+
+        {corp_filters.length > 0 &&
+            <FlexInline
+                gap="var(--space-3xs)"
+                class="[ tribe-group-members__chips ]"
+                role="group"
+                aria-label={t('corporation')}
+            >
+                {corp_filters.map((filter) =>
+                    <button
+                        type="button"
+                        class="[ tribe-group-members__chip ]"
+                        x-bind:class={`corp === ${JSON.stringify(filter.id)} && 'is-active'`}
+                        x-on:click={`set_corp(${JSON.stringify(filter.id)})`}
+                        x-bind:aria-pressed={`corp === ${JSON.stringify(filter.id)}`}
+                    >
+                        {filter.corporation_id != null &&
+                            <img
+                                class="[ tribe-group-members__chip-logo ]"
+                                src={get_corporation_logo(filter.corporation_id, 32)}
+                                width="16"
+                                height="16"
+                                alt=""
+                                loading="lazy"
+                            />
+                        }
+                        <span>{filter.label}</span>
+                        <span class="[ tribe-group-members__chip-count ]">{filter.count}</span>
+                    </button>
+                )}
+            </FlexInline>
+        }
+
+        {is_alliance_member ?
+            sections.length > 0 ?
+                <Flexblock gap="var(--space-l)">
+                    {sections.map((section) =>
+                        <Flexblock
+                            class="[ tribe-group-members__section ]"
+                            gap="var(--space-s)"
+                            x-show={corp_filters.length > 0 ? 'section_visible($el)' : undefined}
+                        >
+                            {section.heading &&
+                                <h3 class="[ tribe-group-members__heading ]">
+                                    {section.heading}
+                                    <small
+                                        x-text={corp_filters.length > 0
+                                            ? 'section_count($el.closest(\'.tribe-group-members__section\'))'
+                                            : undefined
+                                        }
+                                    >
+                                        {section.members.length}
+                                    </small>
+                                </h3>
+                            }
+                            <Grid
+                                class="[ tribe-group-members__grid ]"
+                                min_item_width="14rem"
+                                row_gap="var(--space-s)"
+                                column_gap="var(--space-m)"
+                            >
+                                {section.members.map((entry) =>
+                                    entry.primary_character_id ?
+                                        <div
+                                            data-corporation={corporation_filter_id(entry.corporation_id)}
+                                            x-show={corp_filters.length > 0 ? 'matches_corp($el)' : undefined}
+                                        >
+                                            <PilotBadge
+                                                character_id={entry.primary_character_id}
+                                                character_name={entry.primary_character_name}
+                                                corporation={entry.corporation_id
+                                                    ? {
+                                                        id: entry.corporation_id,
+                                                        name: entry.corporation_name || '',
+                                                    }
+                                                    : false
+                                                }
+                                                size={40}
+                                                centered={true}
+                                            >
+                                                {section.show_rank_on_cards && entry.rank_name &&
+                                                    <small>{entry.rank_name}</small>
+                                                }
+                                            </PilotBadge>
+                                        </div>
+                                        :
+                                        <span>{entry.primary_character_name || t('unknown')}</span>
+                                )}
+                            </Grid>
+                        </Flexblock>
+                    )}
+                </Flexblock>
+                :
+                <p>{t('tribes.roster.empty')}</p>
+            :
+            is_auth ?
+                <p>{t('tribes.roster.alliance_only')}</p>
+                :
+                null
+        }
+    </Flexblock>
+</section>
+
+<style lang="scss">
+    .tribe-group-members {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .tribe-group-members__chips {
+        width: 100%;
+    }
+
+    .tribe-group-members__chip {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        appearance: none;
+        margin: 0;
+        padding: var(--space-3xs) var(--space-2xs);
+        border: 1px solid color-mix(in srgb, var(--foreground) 18%, transparent);
+        background: transparent;
+        color: var(--highlight);
+        font-family: var(--button-font);
+        font-size: var(--step--1);
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+        cursor: pointer;
+        transition:
+            background var(--fast-transition),
+            color var(--fast-transition),
+            border-color var(--fast-transition);
+
+        &.is-active {
+            background: var(--fleet-yellow);
+            border-color: var(--fleet-yellow);
+            color: var(--background);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--highlight);
+            outline-offset: 2px;
+        }
+
+        @media (hover: hover) {
+            &:hover:not(.is-active) {
+                background: color-mix(in srgb, var(--highlight) 12%, transparent);
+            }
+        }
+    }
+
+    .tribe-group-members__chip-logo {
+        flex: 0 0 auto;
+        display: block;
+    }
+
+    .tribe-group-members__chip-count {
+        opacity: 0.75;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .tribe-group-members__heading {
+        display: flex;
+        align-items: baseline;
+        gap: var(--space-2xs);
+        font-size: var(--step-0);
+        color: var(--highlight);
+
+        small {
+            color: color-mix(in srgb, var(--highlight) 65%, transparent);
+            font-size: var(--step--1);
+            font-weight: 400;
+        }
+    }
+
+    .tribe-group-members :global(.tribe-group-members__grid) {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .tribe-group-members :global(.tribe-group-members__grid > *) {
+        min-width: 0;
+    }
+
+    .tribe-group-members :global(.pilot-item) {
+        align-items: flex-start;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .tribe-group-members :global(.pilot-item > :last-child) {
+        min-width: 0;
+        align-items: flex-start !important;
+        overflow-x: hidden;
+    }
+
+    .tribe-group-members :global(.pilot-item .text-highlight) {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .tribe-group-members :global(.pilot-item .fixed-fluid) {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .tribe-group-members :global(.pilot-item .truncate),
+    .tribe-group-members :global(.pilot-item .truncate small),
+    .tribe-group-members :global(.pilot-item > :last-child > .flex-block > small) {
+        display: block;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+</style>
