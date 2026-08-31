@@ -34,6 +34,7 @@ from groups.helpers import PEOPLE_TEAM, TECH_TEAM, user_in_team
 logger = logging.getLogger(__name__)
 
 ESI_ADD_READY_SESSION_KEY = "esi_add_ready"
+ESI_ACCOUNT_USER_ID_SESSION_KEY = "esi_account_user_id"
 
 
 def reset_api_session_if_unbound_for_esi_add(request) -> None:
@@ -58,6 +59,27 @@ def reset_api_session_if_unbound_for_esi_add(request) -> None:
     if getattr(request.user, "is_authenticated", False):
         logout(request)
     request.session[ESI_ADD_READY_SESSION_KEY] = True
+
+
+def discord_account_mismatch_redirect(
+    request, redirect_url: str, account_user_id=None
+):
+    """Stop ESI if the API Discord session is not the frontend JWT user."""
+    if account_user_id is not None:
+        request.session[ESI_ACCOUNT_USER_ID_SESSION_KEY] = int(account_user_id)
+    expected = request.session.get(ESI_ACCOUNT_USER_ID_SESSION_KEY)
+    if expected is None:
+        return None
+    if not getattr(request.user, "is_authenticated", False):
+        return None
+    if request.user.id == int(expected):
+        return None
+    logger.warning(
+        "Add-character Discord session user %s != frontend account user %s",
+        request.user.id,
+        expected,
+    )
+    return redirect(f"{redirect_url}?error=wrong_discord_account")
 
 
 def owner_for_added_character(request, token: Token) -> User | None:

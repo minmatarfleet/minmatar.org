@@ -3024,6 +3024,7 @@ export const ui = {
         'scopes_empty': 'Error listing scopes.',
         'fix_esi_button_tooltip': 'This character’s ESI token has been suspender. You must login again by clicking this button to fix it.',
         'wrong_character': 'The ESI token could not be fixed because the selected character was incorrect.',
+        'wrong_discord_account': 'You authorized Discord as a different Minmatar account than the one you are using on this site. Use a private window, log in with this Discord only, then add your character again.',
         'auth_third_party_link_link': 'Authorized Third-Party applications',
         'auth_third_party_link_description': 'View your characters authorized third-party applications.',
         'amarr_hq_description': 'Minmatar Fleet Alliance HQ',

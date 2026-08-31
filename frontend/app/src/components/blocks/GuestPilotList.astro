@@ -4,6 +4,7 @@ const { t, translatePath } = i18n(Astro.url)
 
 import { query_string } from '@helpers/string';
 import type { Character } from '@dtypes/api.minmatar.org'
+import { account_user_id_query } from '@helpers/account_user_query'
 import { get_api_url, get_app_url } from '@helpers/env'
 import type { Alert } from '@dtypes/layout_components'
 
@@ -27,7 +28,7 @@ const primary_pilot = Astro.cookies.has('primary_pilot') ? JSON.parse(Astro.cook
 const primary_pilot_id = primary_pilot ? parseInt(primary_pilot.character_id) : null
 
 // const ADD_PRIMARY_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/primary/add?redirect_url=${get_app_url()}${translatePath('/redirects/add_primary_character')}&token_type=Basic`
-const ADD_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/friend')}&token_type=Public`
+const ADD_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${translatePath('/friend')}&token_type=Public${account_user_id_query(Astro.cookies.get('auth_token')?.value)}`
 const GUEST_PILOTS_LIST_PARTIAL_URL = `${get_app_url()}${translatePath('/partials/guest_pilots_list_component')}`
 
 import Flexblock from '@components/compositions/Flexblock.astro';

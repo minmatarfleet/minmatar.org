@@ -4,6 +4,7 @@ const { t, translatePath } = i18n(Astro.url)
 
 import type { SummaryCharacter, TribeAvailableCharacter, TribeMembership  } from '@dtypes/api.minmatar.org'
 import { get_api_url, get_app_url } from '@helpers/env'
+import { account_user_id_query } from '@helpers/account_user_query'
 
 interface Props {
     target_id:              string;
@@ -45,7 +46,8 @@ const TRIBE_GROUP_STATUS_PARTIAL_URL = translatePath(
     `/partials/tribe_group_status_component?tribe_id=${tribe_id}&group_id=${group_id}${actions_ui ? '&ui=actions' : ''}`
 )
 const redirect_path = translatePath(`/alliance/tribes/${tribe_id}/${group_id}`)
-const FIX_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${redirect_path}`
+const account_user_query = account_user_id_query(Astro.cookies.get('auth_token')?.value)
+const FIX_CHARACTER_URL = `${get_api_url()}/api/eveonline/characters/add?redirect_url=${get_app_url()}${redirect_path}${account_user_query}`
 
 const qualify_label = (available: TribeAvailableCharacter) => {
     if (available.missing_token && required_token_type) {
