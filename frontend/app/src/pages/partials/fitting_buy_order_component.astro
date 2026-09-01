@@ -32,6 +32,7 @@ import {
     delete_fitting_buy_order,
     type FittingBuyOrderDetail,
 } from '@helpers/api.minmatar.org/fitting_buy_orders'
+import { is_fitting_buy_complete } from '@helpers/fitting_buy_status'
 
 let order: FittingBuyOrderDetail | null = null
 let error_message: string | false = false
@@ -54,9 +55,10 @@ async function handle_post_action(action: string, form: FormData): Promise<Respo
         }
         case 'delete_order': {
             await delete_fitting_buy_order(token, order_id)
-            return new Response(null, {
+            return new Response('', {
                 status: 200,
                 headers: {
+                    'Content-Type': 'text/html',
                     'HX-Redirect': translatePath('/market/fitting_orders/'),
                 },
             })
@@ -107,7 +109,7 @@ async function handle_post_action(action: string, form: FormData): Promise<Respo
             const current = await get_fitting_buy_order(token, order_id)
             if (current.is_owner && current.status === 'pending_fitting') {
                 order = await patch_fitting_buy_order(token, order_id, {
-                    status: 'purchased',
+                    status: 'completed',
                 })
             } else {
                 order = current
@@ -360,7 +362,7 @@ const guide_steps = [
                     rows={order.contract_prices ?? []}
                     is_owner={is_owner}
                     can_complete={can_complete_order}
-                    is_complete={order.status === 'purchased'}
+                    is_complete={is_fitting_buy_complete(order.status)}
                     partial_base={PARTIAL_BASE}
                 />
             )}

@@ -8,6 +8,7 @@ const typeConfig: Record<FleetTypes, { label: string; color: string }> = {
   strategic: { label: 'STRAT', color: colors.fleetRed },
   training: { label: 'TRAIN', color: colors.green },
   non_strategic: { label: 'ROAM', color: colors.allianceBlue },
+  npsi: { label: 'NPSI', color: colors.militiaPurple },
 };
 
 interface FleetTypeIconProps {

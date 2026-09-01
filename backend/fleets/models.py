@@ -28,6 +28,7 @@ class EveFleet(models.Model):
         ("strategic", "Strategic Operation"),
         ("non_strategic", "Non Strategic Operation"),
         ("training", "Training Operation"),
+        ("npsi", "NPSI"),
     )
     description = models.TextField(blank=True)
     objective = models.CharField(
@@ -56,7 +57,6 @@ class EveFleet(models.Model):
         null=True,
         blank=True,
         default=None,
-        help_text="DEPRECATED: Use audience.staging_location instead. Kept for data migration purposes.",
     )
     disable_motd = models.BooleanField(null=True, default=False)
 
@@ -91,12 +91,7 @@ class EveFleet(models.Model):
 
     @property
     def formup_location(self):
-        """
-        Get the formup location for the fleet.
-        Prefers audience.staging_location over the deprecated location field.
-        """
-        if self.audience and self.audience.staging_location:
-            return self.audience.staging_location
+        """Get the formup location for the fleet."""
         return self.location
 
     def __str__(self):
@@ -810,13 +805,6 @@ class EveFleetAudience(models.Model):
     discord_channel_name = models.CharField(
         max_length=255, null=True, blank=True
     )
-    staging_location = models.ForeignKey(
-        EveLocation,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        default=None,
-    )
     image_url = models.URLField(
         max_length=500,
         null=True,
@@ -851,7 +839,7 @@ class NpsiEventSource(models.Model):
     default_type = models.CharField(
         max_length=32,
         choices=EveFleet.fleet_types,
-        default="non_strategic",
+        default="npsi",
     )
     default_location = models.ForeignKey(
         EveLocation,

@@ -11,6 +11,7 @@ from eveonline.helpers.characters import user_characters
 
 from fleets.endpoints.helpers import make_fleet_response
 from fleets.endpoints.schemas import EveFleetResponse, StartFleetNowRequest
+from fleets.helpers.fleet_location import default_staging_location
 from fleets.models import EveFleet, EveFleetAudience
 
 logger = logging.getLogger(__name__)
@@ -41,7 +42,9 @@ def start_fleet_now(request, payload: Optional[StartFleetNowRequest] = None):
     if not audience:
         return 400, {"detail": "No fleet audience configured"}
 
-    location = audience.staging_location
+    location = default_staging_location()
+    if location is None:
+        return 400, {"detail": "No active staging location configured"}
 
     quick_objective = (payload.objective or "").strip() if payload else ""
     fleet = EveFleet.objects.create(

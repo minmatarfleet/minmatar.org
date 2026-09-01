@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { Audience } from '@dtypes/api.minmatar.org'
+import type { Audience, Location } from '@dtypes/api.minmatar.org'
 import type { DoctrineType, SelectOptions, FleetUI, CharacterBasic } from '@dtypes/layout_components'
 import { fleet_types } from '@dtypes/api.minmatar.org'
 import { get_player_icon } from '@helpers/eve_image_server'
@@ -10,6 +10,7 @@ import { get_player_icon } from '@helpers/eve_image_server'
 interface Props {
     fleet?:                         FleetUI | null;
     audiences:                      Audience[];
+    locations:                      Location[];
     doctrines:                      DoctrineType[];
     fleet_commander:                CharacterBasic | null;
     eve_date:                       string;
@@ -21,6 +22,7 @@ interface Props {
 const {
     fleet = null,
     audiences,
+    locations,
     doctrines,
     fleet_commander,
     eve_date,
@@ -44,7 +46,36 @@ const fleet_types_select_options = fleet_types.map( (i):SelectOptions => {
     return {value: i, label: t(i as any) ?? i}
 } )
 
-// Locations are no longer used - staging location comes from audience
+// Form-up location is selected explicitly; default is the active staging location.
+
+const no_location_option = {
+    label: t('select_location'),
+    value: '',
+} as SelectOptions
+
+const locations_select_options = [no_location_option].concat(
+    locations.map((location): SelectOptions => ({
+        label: location.location_name,
+        value: location.location_id,
+    }))
+)
+
+const staging_location = locations.find((location) => location.staging_active)
+let fleet_location_id: number | string | null = null
+if (fleet?.location) {
+    const fleet_location = locations.find(
+        (location) => location.location_name === fleet.location
+    )
+    fleet_location_id = fleet_location?.location_id ?? null
+}
+
+const default_location_id =
+    fleet_location_id ??
+    staging_location?.location_id ??
+    (locations_select_options.length > 1 ? locations_select_options[1].value : '')
+const default_location_value = String(default_location_id ?? '')
+
+const show_audience_picker = audiences.length > 1
 
 const no_audience_option = {
     label: t('select_audience'),
@@ -67,7 +98,11 @@ if (fleet) {
 
 const default_fleet_type = fleet?.type ?? fleet_types_select_options[0].value
 const default_doctrine = fleet?.doctrine?.id ?? doctrines_select_options[0].value
-const default_audience = fleet_audience_id ?? (audiences_select_options.length !== 2 ? audiences_select_options[0].value : audiences_select_options[1].value)
+const default_audience = fleet_audience_id ?? (
+    audiences.length === 1
+        ? audiences[0].id
+        : (audiences_select_options.length !== 2 ? audiences_select_options[0].value : audiences_select_options[1].value)
+)
 
 // Alpine state holds the audience as a string so it matches the `<select>` value
 const default_audience_value = String(default_audience ?? '')
@@ -95,7 +130,7 @@ import MarkdownTextArea from '@components/blocks/MarkdownTextArea.astro'
 import DoctrineBadge from '@components/blocks/DoctrineBadge.astro'
 import PilotBadge from '@components/blocks/PilotBadge.astro'
 
-import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
+import FlagIcon from '@components/icons/FlagIcon.astro';
 ---
 
 <div>
@@ -114,6 +149,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
             eve_date: ${JSON.stringify(eve_date)},
             eve_time: ${JSON.stringify(eve_time)},
             audience: ${JSON.stringify(default_audience_value)},
+            location_id: ${JSON.stringify(default_location_value)},
             doctrine_id: ${JSON.stringify(String(default_doctrine))},
             objective: ${JSON.stringify(fleet?.objective ?? '')},
             local_datetime: '',
@@ -157,47 +193,71 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                         <p>{t('fleets.add.form_info')}</p>
 
                         <Flexblock>
-                            <FixedFluid class="[ w-full items-center ]" gap='0' width="250px" breakpoint="60%">
-                                <label>{t('select_audience')}</label>
-                                <FlexInline class="[ audiences !justify-center ]">
-                                    {audiences.map((option) =>
-                                        <StylessButton
-                                            x-on:click={`audience = ${JSON.stringify(String(option.id))}`}
-                                            hx-get={translatePath(`/partials/fleet_cover?audience_id=${option.id}`)}
-                                            hx-target="#viewport-cover-oob"
-                                            hx-trigger="click"
-                                            hx-swap="outerHTML transition:true"
-                                            hx-indicator=".loader"
-                                            type="button"
-                                            data-tippy-content={option.display_name}
+                            {show_audience_picker ?
+                                <FixedFluid class="[ w-full items-center ]" gap='0' width="250px" breakpoint="60%">
+                                    <label>{t('select_audience')}</label>
+                                    <FlexInline class="[ audiences !justify-center ]">
+                                        {audiences.map((option) =>
+                                            <StylessButton
+                                                x-on:click={`audience = ${JSON.stringify(String(option.id))}`}
+                                                type="button"
+                                                data-tippy-content={option.display_name}
+                                            >
+                                                <img
+                                                    class:list={{ selected: String(option.id) === default_audience_value }}
+                                                    x-bind:class={`{ 'selected': audience === ${JSON.stringify(String(option.id))} }`}
+                                                    src={option.image_url ?? '/images/fleet-logo.svg'}
+                                                    height="256"
+                                                    width="256"
+                                                    alt={option.display_name}
+                                                />
+                                            </StylessButton>
+                                        )}
+                                        <div class="[ visually-hidden ]">
+                                            <Select
+                                                class="[ pointer-events-none ]"
+                                                id="audience"
+                                                name="audience_id"
+                                                x-model="audience"
+                                                tabindex="-1"
+                                                required
+                                            >
+                                                {audiences_select_options.map((option) => 
+                                                    <option value={option.value} selected={String(option.value) === default_audience_value}>
+                                                        {option.label}
+                                                    </option>
+                                                )}
+                                            </Select>
+                                        </div>
+                                    </FlexInline>
+                                </FixedFluid>
+                                :
+                                <input type="hidden" name="audience_id" value={default_audience_value} />
+                            }
+
+                            <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                <label for="location_id">{t('select_location')}</label>
+                                <Select
+                                    id="location_id"
+                                    name="location_id"
+                                    x-model="location_id"
+                                    required
+                                    hx-get={translatePath('/partials/fleet_cover')}
+                                    hx-target="#viewport-cover-oob"
+                                    hx-trigger="change"
+                                    hx-swap="outerHTML transition:true"
+                                    hx-indicator=".loader"
+                                    hx-vals="js:{location_name: document.querySelector('#location_id option:checked')?.textContent?.trim() ?? ''}"
+                                >
+                                    {locations_select_options.map((option) =>
+                                        <option
+                                            value={option.value}
+                                            selected={String(option.value) === default_location_value}
                                         >
-                                            <img
-                                                class:list={{ selected: String(option.id) === default_audience_value }}
-                                                x-bind:class={`{ 'selected': audience === ${JSON.stringify(String(option.id))} }`}
-                                                src={option.image_url ?? '/images/fleet-logo.svg'}
-                                                height="256"
-                                                width="256"
-                                                alt={option.display_name}
-                                            />
-                                        </StylessButton>
+                                            {option.label}
+                                        </option>
                                     )}
-                                    <div class="[ visually-hidden ]">
-                                        <Select
-                                            class="[ pointer-events-none ]"
-                                            id="audience"
-                                            name="audience_id"
-                                            x-model="audience"
-                                            tabindex="-1"
-                                            required
-                                        >
-                                            {audiences_select_options.map((option) => 
-                                                <option value={option.value} selected={String(option.value) === default_audience_value}>
-                                                    {option.label}
-                                                </option>
-                                            )}
-                                        </Select>
-                                    </div>
-                                </FlexInline>
+                                </Select>
                             </FixedFluid>
 
                             <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
@@ -328,6 +388,12 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                             <template x-if="fleet_type === 'training'">
                                 <p>{t('training_fleet')}</p>
                             </template>
+                            <template x-if="fleet_type === 'npsi'">
+                                <FlexInline class="[ items-center! ]" gap="var(--space-3xs)">
+                                    <FlagIcon size={16} />
+                                    <p>{t('npsi_fleet')}</p>
+                                </FlexInline>
+                            </template>
                         </FlexInline>
                         
                         <FlexInline gap='var(--space-l)'>
@@ -354,6 +420,13 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                 x-text={`audience ? audiences[audience] : ${JSON.stringify(t('no_audience_selected'))}`}
                             >
                                 {default_audience_value ? AUDIENCES[default_audience_value] : t('no_audience_selected')}
+                            </TextGroup>
+
+                            <TextGroup
+                                title={t('select_location')}
+                                x-text={`[...document.getElementById('location_id')?.options ?? []].find(o => o.value === location_id)?.textContent?.trim() || ${JSON.stringify(t('select_location'))}`}
+                            >
+                                {locations.find((location) => String(location.location_id) === default_location_value)?.location_name ?? t('select_location')}
                             </TextGroup>
                         </FlexInline>
                     </Flexblock>

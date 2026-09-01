@@ -46,21 +46,20 @@ delete attributes.class
                     >
                         {t('fitting_buy.delete_order')}
                     </button>
-                    <form
+                    <button
+                        type="button"
+                        class="[ fitting-buy-actions-menu__item fitting-buy-actions-menu__item--danger is-confirm ]"
                         x-show="confirming"
                         x-cloak
                         hx-post={partial_base}
+                        hx-vals={JSON.stringify({ action: 'delete_order' })}
                         hx-target="#fitting-buy-order"
                         hx-swap="outerHTML"
+                        hx-indicator=".loader"
+                        x-on:click.stop
                     >
-                        <input type="hidden" name="action" value="delete_order" />
-                        <button
-                            type="submit"
-                            class="[ fitting-buy-actions-menu__item fitting-buy-actions-menu__item--danger is-confirm ]"
-                        >
-                            {t('fitting_buy.confirm_delete_order')}
-                        </button>
-                    </form>
+                        {t('fitting_buy.confirm_delete_order')}
+                    </button>
                 </div>
             </nav>
         </Dropdown>
@@ -73,10 +72,6 @@ delete attributes.class
         flex-direction: column;
         gap: 0;
         width: 100%;
-    }
-
-    .fitting-buy-actions-menu__list form {
-        margin: 0;
     }
 
     .fitting-buy-actions-menu__confirm {

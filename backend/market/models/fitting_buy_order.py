@@ -13,8 +13,12 @@ from fittings.models import EveFitting
 class FittingBuyOrderStatus(models.TextChoices):
     DRAFT = "draft", "Draft"
     PENDING_FITTING = "pending_fitting", "Pending fitting"
-    PURCHASED = "purchased", "Purchased"
+    COMPLETED = "completed", "Completed"
     ARCHIVED = "archived", "Archived"
+
+    @classmethod
+    def hidden_from_default_list(cls) -> tuple[str, ...]:
+        return (cls.COMPLETED, cls.ARCHIVED)
 
 
 class FittingBuyGuideStep(models.TextChoices):

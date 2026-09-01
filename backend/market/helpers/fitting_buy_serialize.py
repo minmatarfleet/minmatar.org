@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from ninja import Schema
 
 from eveuniverse.models import EveType
@@ -38,6 +40,8 @@ from market.models.fitting_buy_order import (
     FittingBuyJitaCheckStatus,
     FittingBuyOrder,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class FittingBuyAlternateSchema(Schema):
@@ -654,11 +658,15 @@ def serialize_order_detail(  # noqa: C901
     blocked, block_reason = multibuy_blocked(order, plan)
     landed_done = shopping_landed_complete(order, plan)
     guide_step = resolve_guide_step(order, plan)
-    contract_prices = (
-        build_contract_prices(order)
-        if guide_step == FittingBuyGuideStep.CONTRACT
-        else []
-    )
+    contract_prices: list[dict] = []
+    if guide_step == FittingBuyGuideStep.CONTRACT:
+        try:
+            contract_prices = build_contract_prices(order)
+        except Exception:
+            logger.exception(
+                "Failed to build contract prices for fitting buy order %s",
+                order.pk,
+            )
 
     return {
         "id": order.id,

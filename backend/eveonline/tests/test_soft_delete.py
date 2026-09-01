@@ -28,6 +28,7 @@ class EveLocationSoftDeleteTestCase(TestCase):
         self.assertIsNotNone(loc_all.deleted)
         self.assertFalse(loc_all.price_baseline)
         self.assertFalse(loc_all.market_active)
+        self.assertFalse(loc_all.fleets_active)
 
     def test_name_reuse_after_soft_delete(self):
         EveFitting.objects.create(

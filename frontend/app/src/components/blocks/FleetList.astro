@@ -30,9 +30,11 @@ const fleet_list = fleets.filter(fleet => !active_fleets_ids.includes(fleet.id))
 const show_fleet_commanders_bar = fc_metrics && fc_metrics.length > 0
 const skip_hero = active_fleets?.length > 0
 
-const AUDIENCE_IDS = {
-    'Etherium Reach': 1,
-    'Warzone': 2,
+const fleet_cover_url = (location_name: string | undefined) => {
+    if (!location_name)
+        return translatePath('/partials/fleet_cover?location_name=' + encodeURIComponent('Amamake - 5 times nearly AT winners'))
+
+    return translatePath('/partials/fleet_cover?location_name=' + encodeURIComponent(location_name))
 }
 
 import {
@@ -87,7 +89,7 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro';
                             >
                                 <Flexblock
                                     gap='var(--space-xl)'
-                                    hx-get={translatePath(`/partials/fleet_cover?audience_id=${AUDIENCE_IDS[fleet.audience] ?? 2}`)}
+                                    hx-get={fleet_cover_url(fleet.location)}
                                     hx-target="#viewport-cover-oob"
                                     hx-trigger="intersect delay:2000ms"
                                     hx-swap="outerHTML transition:true"

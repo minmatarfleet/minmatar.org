@@ -76,7 +76,7 @@ def resolve_guide_step(
 ) -> str:
     """Derive guided step (stock / purchase / contract) from order state."""
     if order.status in (
-        FittingBuyOrderStatus.PURCHASED,
+        FittingBuyOrderStatus.COMPLETED,
         FittingBuyOrderStatus.ARCHIVED,
     ):
         return FittingBuyGuideStep.CONTRACT

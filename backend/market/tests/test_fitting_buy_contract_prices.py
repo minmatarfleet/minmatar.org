@@ -387,7 +387,7 @@ class FittingBuyContractPricesApiTestCase(TestCase):
             body["contract_prices"][0]["fitting_id"], self.fitting.id
         )
 
-    def test_complete_order_pending_fitting_to_purchased(self):
+    def test_complete_order_pending_fitting_to_completed(self):
         order = FittingBuyOrder.objects.create(
             owner=self.owner,
             status=FittingBuyOrderStatus.PENDING_FITTING,
@@ -399,10 +399,40 @@ class FittingBuyContractPricesApiTestCase(TestCase):
 
         response = self.client.patch(
             f"/fitting-buy-orders/{order.id}",
-            json={"status": FittingBuyOrderStatus.PURCHASED},
+            json={"status": FittingBuyOrderStatus.COMPLETED},
             headers=_auth_headers(self.owner),
         )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["status"], "purchased")
+        self.assertEqual(response.json()["status"], "completed")
         order.refresh_from_db()
-        self.assertEqual(order.status, FittingBuyOrderStatus.PURCHASED)
+        self.assertEqual(order.status, FittingBuyOrderStatus.COMPLETED)
+
+        legacy = self.client.patch(
+            f"/fitting-buy-orders/{order.id}",
+            json={"status": "purchased"},
+            headers=_auth_headers(self.owner),
+        )
+        self.assertEqual(legacy.status_code, 200)
+        self.assertEqual(legacy.json()["status"], "completed")
+
+    @patch("market.helpers.fitting_buy_contract_prices.get_prices_by_type_id")
+    def test_detail_survives_contract_price_failure(self, mock_jita):
+        mock_jita.side_effect = RuntimeError("pricing down")
+        order = FittingBuyOrder.objects.create(
+            owner=self.owner,
+            status=FittingBuyOrderStatus.COMPLETED,
+            stock_paste="",
+        )
+        FittingBuyOrderLine.objects.create(
+            order=order, fitting=self.fitting, quantity=1
+        )
+        sync_order_items(order)
+
+        response = self.client.get(
+            f"/fitting-buy-orders/{order.id}",
+            headers=_auth_headers(self.owner),
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["guide_step"], "contract")
+        self.assertEqual(body["contract_prices"], [])

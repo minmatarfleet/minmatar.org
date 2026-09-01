@@ -53,11 +53,14 @@ def patch_fitting_buy_order(
         order.notes = payload.notes
         fields.append("notes")
     if payload.status is not None:
+        new_status = payload.status
+        if new_status == "purchased":
+            new_status = FittingBuyOrderStatus.COMPLETED
         valid = {c.value for c in FittingBuyOrderStatus}
-        if payload.status not in valid:
+        if new_status not in valid:
             return 400, ErrorResponse(detail="Invalid status.")
         if (
-            payload.status == FittingBuyOrderStatus.PENDING_FITTING
+            new_status == FittingBuyOrderStatus.PENDING_FITTING
             and order.status == FittingBuyOrderStatus.DRAFT
         ):
             blocked, reason = multibuy_blocked(order)
@@ -68,7 +71,7 @@ def patch_fitting_buy_order(
                     "jita_pending": "Wait for the Jita depth check to finish.",
                 }.get(reason, "Cannot copy Multibuy yet.")
                 return 400, ErrorResponse(detail=detail)
-        order.status = payload.status
+        order.status = new_status
         fields.append("status")
     if payload.stock_paste is not None:
         order.stock_paste = payload.stock_paste

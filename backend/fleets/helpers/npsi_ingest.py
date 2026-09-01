@@ -117,6 +117,7 @@ def upsert_feed_item(
     force_renotify: bool = False,
     notify_discord_user_id: int | None = None,
     include_past: bool = False,
+    skip_notify: bool = False,
 ) -> dict:
     stats = {"upserted": 0, "notified": 0, "skipped": 0}
     summary = (item.get("summary") or "").strip() or "NPSI fleet"
@@ -162,6 +163,12 @@ def upsert_feed_item(
         event.save()
 
     if event.status == NpsiExternalEvent.Status.CREATED:
+        return stats
+    if skip_notify:
+        if event.status != NpsiExternalEvent.Status.CREATED:
+            event.status = NpsiExternalEvent.Status.NOTIFIED
+            event.skip_reason = ""
+            event.save(update_fields=["status", "skip_reason", "updated_at"])
         return stats
     if (
         event.status == NpsiExternalEvent.Status.NOTIFIED
