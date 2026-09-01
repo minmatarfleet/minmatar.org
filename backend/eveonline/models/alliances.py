@@ -44,6 +44,7 @@ class EveLocation(MinmatarSoftDeleteModel):
     freight_active = models.BooleanField(default=False)
     fleets_active = models.BooleanField(
         default=False,
+        db_default=False,
         help_text="Location may be selected as fleet form-up on the schedule.",
     )
     staging_active = models.BooleanField(

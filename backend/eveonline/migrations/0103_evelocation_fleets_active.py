@@ -39,6 +39,7 @@ class Migration(migrations.Migration):
             model_name="evelocation",
             name="fleets_active",
             field=models.BooleanField(
+                db_default=False,
                 default=False,
                 help_text="Location may be selected as fleet form-up on the schedule.",
             ),
