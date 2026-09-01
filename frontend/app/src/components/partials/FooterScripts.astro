@@ -78,6 +78,16 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
 <script is:inline>
     window.ccpwgl_context = window.ccpwgl_context ?? null
 
+    // After an outerHTML htmx swap the old target is detached, so body
+    // afterSwap listeners never see it. The dying node calls this; look up
+    // the replacement by id and re-bind htmx/Alpine (dropdown teleport, etc.).
+    window.minmatar_after_outer_html_swap = function () {
+        const next = this && this.id ? document.getElementById(this.id) : null
+        if (!next) return
+        if (typeof htmx !== 'undefined') htmx.process(next)
+        if (typeof Alpine !== 'undefined') Alpine.initTree(next)
+    }
+
     if (!window.__footer_scripts_bound) {
         window.__footer_scripts_bound = true
 
