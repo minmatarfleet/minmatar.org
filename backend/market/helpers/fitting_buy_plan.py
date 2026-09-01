@@ -10,7 +10,11 @@ from eveuniverse.models import EveType
 
 from industry.helpers.plan_stock import parse_stock_paste
 from market.helpers.contract_match import fitting_type_quantities_bulk
-from market.helpers.fitting_buy_allocations import prune_invalid_allocations
+from market.helpers.fitting_buy_allocations import (
+    allocated_variant_qtys,
+    cached_jita_item_fields,
+    prune_invalid_allocations,
+)
 from market.models.fitting_buy_order import (
     FittingBuyOrder,
     FittingBuyOrderItem,
@@ -162,13 +166,20 @@ def build_shopping_plan(order: FittingBuyOrder) -> ShoppingPlan:
 
 def sync_order_items(order: FittingBuyOrder) -> ShoppingPlan:
     plan = build_shopping_plan(order)
+    prune_invalid_allocations(order, plan)
+    variant_buy = allocated_variant_qtys(order, plan)
+    bom_ids = set(plan.needed.keys())
+    keep_ids = bom_ids | set(variant_buy)
     existing = {row.eve_type_id: row for row in order.items.all()}
-    keep_ids = set(plan.needed.keys())
-    deleted = order.items.exclude(eve_type_id__in=keep_ids).delete()[0]
+    bom_row_dropped = any(
+        type_id not in keep_ids and row.needed_qty > 0
+        for type_id, row in existing.items()
+    )
+    order.items.exclude(eve_type_id__in=keep_ids).delete()
 
     to_create: list[FittingBuyOrderItem] = []
     to_update: list[FittingBuyOrderItem] = []
-    bom_changed = deleted > 0
+    bom_changed = bom_row_dropped
     for type_id, needed in plan.needed.items():
         stock_qty = plan.stock.get(type_id, 0)
         buy_qty = plan.buy.get(type_id, 0)
@@ -198,6 +209,31 @@ def sync_order_items(order: FittingBuyOrder) -> ShoppingPlan:
             to_update.append(row)
             bom_changed = True
 
+    for type_id, buy_qty in variant_buy.items():
+        jita = cached_jita_item_fields(order, type_id, items_by_id=existing)
+        row = existing.get(type_id)
+        if row is None:
+            to_create.append(
+                FittingBuyOrderItem(
+                    order=order,
+                    eve_type_id=type_id,
+                    needed_qty=0,
+                    stock_qty=0,
+                    buy_qty=buy_qty,
+                    **jita,
+                )
+            )
+            continue
+        if row.needed_qty != 0 or row.stock_qty != 0 or row.buy_qty != buy_qty:
+            row.needed_qty = 0
+            row.stock_qty = 0
+            row.buy_qty = buy_qty
+            if row.jita_sell_volume is None:
+                row.jita_sell_volume = jita["jita_sell_volume"]
+                row.jita_order_count = jita["jita_order_count"]
+                row.jita_sell_min = jita["jita_sell_min"]
+            to_update.append(row)
+
     if to_create:
         FittingBuyOrderItem.objects.bulk_create(to_create)
     if to_update:
@@ -215,7 +251,6 @@ def sync_order_items(order: FittingBuyOrder) -> ShoppingPlan:
     if bom_changed and order.jita_checked_at is not None:
         order.jita_checked_at = None
         order.save(update_fields=["jita_checked_at", "updated_at"])
-    prune_invalid_allocations(order, plan)
     return plan
 
 

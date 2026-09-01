@@ -470,11 +470,12 @@ def serialize_order_detail(  # noqa: C901
                 bool(row.shortfall and row.shortfall > 0)
                 or type_id in preferred_ids_with_alloc
             )
+            from_id = allocated_from.get(type_id)
             item_schemas.append(
                 display_row(
                     type_id=type_id,
                     buy_qty=buy_qty,
-                    needed_qty=row.needed_qty,
+                    needed_qty=buy_qty if from_id else row.needed_qty,
                     stock_qty=row.stock_qty,
                     jita_sell_volume=row.jita_sell_volume,
                     jita_order_count=row.jita_order_count,
@@ -488,6 +489,7 @@ def serialize_order_detail(  # noqa: C901
                         if row.unit_price is not None
                         else None
                     ),
+                    allocated_from_type_id=from_id,
                     can_allocate=can_allocate,
                     allocate_buy_qty=row.buy_qty if can_allocate else None,
                     alternates=alts,
@@ -533,11 +535,12 @@ def serialize_order_detail(  # noqa: C901
         ):
             continue
         display_buy = effective_buy.get(row.eve_type_id, 0)
+        from_id = allocated_from.get(row.eve_type_id)
         item_schemas.append(
             display_row(
                 type_id=row.eve_type_id,
                 buy_qty=display_buy,
-                needed_qty=row.needed_qty,
+                needed_qty=display_buy if from_id else row.needed_qty,
                 stock_qty=row.stock_qty,
                 jita_sell_volume=row.jita_sell_volume,
                 jita_order_count=row.jita_order_count,
@@ -549,6 +552,7 @@ def serialize_order_detail(  # noqa: C901
                 unit_price=(
                     str(row.unit_price) if row.unit_price is not None else None
                 ),
+                allocated_from_type_id=from_id,
                 can_allocate=can_allocate,
                 allocate_buy_qty=row.buy_qty if can_allocate else None,
                 alternates=fitted,
