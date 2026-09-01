@@ -64,17 +64,14 @@ export async function get_locations(access_token:string) {
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
+            throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`), {
                 cause: response.status
             });
         }
 
         return await response.json() as Location[];
     } catch (error) {
-        throw new Error(`Error fetching fleet types: ${error.message}`, { cause: error.cause });
+        throw new Error(`Error fetching fleet locations: ${error.message}`, { cause: error.cause });
     }
 }
 
@@ -96,17 +93,14 @@ export async function get_audiences(access_token:string) {
         // console.log(response)
 
         if (!response.ok) {
-            throw new Error(get_error_message(
-                response.status,
-                `GET ${ENDPOINT}`
-            ), {
+            throw new Error(await parse_response_error(response, `GET ${ENDPOINT}`), {
                 cause: response.status
             });
         }
 
         return await response.json() as Audience[];
     } catch (error) {
-        throw new Error(`Error fetching fleet types: ${error.message}`, { cause: error.cause });
+        throw new Error(`Error fetching fleet audiences: ${error.message}`, { cause: error.cause });
     }
 }
 

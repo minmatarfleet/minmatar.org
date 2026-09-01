@@ -26,7 +26,7 @@ import type { DoctrineType, CharacterBasic } from '@dtypes/layout_components'
 const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') as string)
 
 import type { FleetUI } from '@dtypes/layout_components'
-import { fetch_doctrines } from '@helpers/fetching/doctrines'
+import { fetch_doctrine_options } from '@helpers/fetching/doctrines'
 import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 
 let doctrines:DoctrineType[] = []
@@ -45,7 +45,7 @@ try {
         }
     }
     
-    doctrines = await fetch_doctrines()
+    doctrines = await fetch_doctrine_options()
     audiences = await get_audiences(auth_token as string)
     locations = await get_locations(auth_token as string)
 } catch (error) {

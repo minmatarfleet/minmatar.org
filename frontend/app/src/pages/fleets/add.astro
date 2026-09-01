@@ -94,7 +94,7 @@ if (Astro.request.method === "POST") {
 }
 
 import { get_user_character } from '@helpers/fetching/characters'
-import { fetch_doctrines } from '@helpers/fetching/doctrines'
+import { fetch_doctrine_options } from '@helpers/fetching/doctrines'
 
 let doctrines:DoctrineType[] = []
 let fleet_commander:CharacterBasic | null = null
@@ -113,7 +113,7 @@ try {
         character_name: user_profile.character_name,
     }
 
-    doctrines = await fetch_doctrines()
+    doctrines = await fetch_doctrine_options()
     audiences = await get_audiences(auth_token as string)
     locations = await get_locations(auth_token as string)
 } catch (error) {

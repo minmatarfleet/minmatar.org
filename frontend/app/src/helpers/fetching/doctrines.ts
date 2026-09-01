@@ -19,6 +19,24 @@ function normalize_doctrine_type(type: string): DoctrineTypes {
     return 'non_strategic'
 }
 
+/** Id/name only — fleet schedule form dropdown. Does not hydrate fittings or SDE. */
+export async function fetch_doctrine_options(): Promise<DoctrineType[]> {
+    const api_doctrines: Doctrine[] = await get_doctrines()
+
+    return api_doctrines.map((doctrine) => ({
+        id: doctrine.id,
+        name: doctrine.name,
+        description: doctrine.description,
+        created_at: doctrine.created_at,
+        updated_at: doctrine.updated_at,
+        type: normalize_doctrine_type(doctrine.type),
+        primary_fittings: [],
+        secondary_fittings: [],
+        support_fittings: [],
+        location_ids: doctrine.location_ids ?? [],
+    }))
+}
+
 export async function fetch_doctrines() {
     let api_doctrines:Doctrine[]
 

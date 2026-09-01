@@ -21,15 +21,19 @@ interface Props {
 
 const {
     fleet = null,
-    audiences,
-    locations,
-    doctrines,
+    audiences: audiences_prop,
+    locations: locations_prop,
+    doctrines: doctrines_prop,
     fleet_commander,
     eve_date,
     eve_time,
     disable_motd,
     lang,
 } = Astro.props
+
+const audiences = Array.isArray(audiences_prop) ? audiences_prop : []
+const locations = Array.isArray(locations_prop) ? locations_prop : []
+const doctrines = Array.isArray(doctrines_prop) ? doctrines_prop : []
 
 const no_doctrine_option = {
     label: t('no_doctrine'),
@@ -45,8 +49,6 @@ const fleet_types_select_options = fleet_types.map( (i):SelectOptions => {
     FLEET_TYPES_LABELS[i] = t(i as any) ?? i
     return {value: i, label: t(i as any) ?? i}
 } )
-
-// Form-up location is selected explicitly; default is the active staging location.
 
 const no_location_option = {
     label: t('select_location'),
@@ -131,6 +133,7 @@ import DoctrineBadge from '@components/blocks/DoctrineBadge.astro'
 import PilotBadge from '@components/blocks/PilotBadge.astro'
 
 import FlagIcon from '@components/icons/FlagIcon.astro';
+import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
 ---
 
 <div>
@@ -176,7 +179,7 @@ import FlagIcon from '@components/icons/FlagIcon.astro';
                 const date_time = this.eve_date+' '+this.eve_time
                 const date_string = new Date(date_time+(utc ? ' UTC' : '')).toLocaleDateString(
                     ${JSON.stringify(lang)},
-                    ${import.meta.env.DATETIME_FORMAT}
+                    ${import.meta.env.DATETIME_FORMAT || '{}'}
                 )
 
                 return (date_string != 'Invalid Date' ? date_string : ${JSON.stringify(t('waiting_fleet_time'))})
