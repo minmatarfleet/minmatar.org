@@ -65,6 +65,7 @@ import CollapsableButton from "@components/blocks/CollapsableButton.astro";
             x-bind:style="expanded ? { '--button-dropdown-min-width': `${$refs.trigger?.offsetWidth || 0}px` } : {}"
             @mousedown.outside="expanded && close_if_outside($event)"
             @keydown.escape.prevent.stop="close()"
+            x-init="if (typeof htmx !== 'undefined') htmx.process($el); $watch('expanded', v => { if (v && typeof htmx !== 'undefined') htmx.process($el) })"
             style="display: none"
         >
             <slot />

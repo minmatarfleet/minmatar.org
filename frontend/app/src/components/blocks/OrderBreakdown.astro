@@ -70,6 +70,7 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
 
 <Flexblock
     id={id}
+    hx-on--after-swap="window.minmatar_after_outer_html_swap?.call(this)"
     x-init={alert ? `show_alert_dialog(${JSON.stringify(alert)})` : undefined}
 >
     <hr class="border-bottom">
