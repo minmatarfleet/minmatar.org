@@ -107,7 +107,10 @@ async function handle_post_action(action: string, form: FormData): Promise<Respo
         }
         case 'complete_order': {
             const current = await get_fitting_buy_order(token, order_id)
-            if (current.is_owner && current.status === 'pending_fitting') {
+            if (
+                current.is_owner
+                && (current.status === 'pending_fitting' || current.status === 'draft')
+            ) {
                 order = await patch_fitting_buy_order(token, order_id, {
                     status: 'completed',
                 })
@@ -244,7 +247,7 @@ const view: GuideStep = (
 const can_complete_order = !!(
     is_owner
     && order
-    && order.status === 'pending_fitting'
+    && (order.status === 'pending_fitting' || order.status === 'draft')
     && progress === 'contract'
     && view === 'contract'
 )

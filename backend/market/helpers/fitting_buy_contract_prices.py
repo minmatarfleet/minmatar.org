@@ -104,6 +104,15 @@ def latest_open_industry_asks(
     return result
 
 
+def _stock_covered_type_ids(order: FittingBuyOrder) -> set[int]:
+    """Types fully filled from on-hand stock (nothing left to buy)."""
+    return {
+        int(row.eve_type_id)
+        for row in order.items.all()
+        if int(row.buy_qty or 0) <= 0
+    }
+
+
 def _preferred_for_variant(
     allocations: dict,
     line: FittingBuyOrderLine,
@@ -164,9 +173,10 @@ def build_contract_prices(order: FittingBuyOrder) -> list[dict]:  # noqa: C901
     Recommended contract prices per fit copy (original / swapped / variant).
 
     Landed unit cost: pasted FittingBuyOrderItem.unit_price, else latest open
-    industry ask. Hull is always included even when include_hull is false.
-    If the hull still has no landed/industry price, Jita sell is used for hull
-    cost only. Fitting cost and total cost are per hull.
+    industry ask. Types fully filled from on-hand stock skip industry and use
+    Jita sell. Hull is always included even when include_hull is false; if the
+    hull still has no landed/industry price, Jita sell is used. Fitting cost
+    and total cost are per hull.
     """
     order_lines = list(
         order.lines.select_related("fitting").order_by("sort_order", "id")
@@ -189,6 +199,7 @@ def build_contract_prices(order: FittingBuyOrder) -> list[dict]:  # noqa: C901
         for row in order.items.all()
         if row.unit_price is not None
     }
+    stock_covered = _stock_covered_type_ids(order)
 
     all_type_ids: set[int] = set()
     allocations = order.shopping_allocations or {}
@@ -216,7 +227,9 @@ def build_contract_prices(order: FittingBuyOrder) -> list[dict]:  # noqa: C901
             all_type_ids.update(per_ship)
             per_copy_boms.append((line, copy, per_ship))
 
-    industry_asks = latest_open_industry_asks(all_type_ids - set(pasted))
+    industry_asks = latest_open_industry_asks(
+        all_type_ids - set(pasted) - stock_covered
+    )
     jita_prices = get_prices_by_type_id(list(all_type_ids))
     type_names = dict(
         EveType.objects.filter(id__in=all_type_ids).values_list("id", "name")
@@ -245,6 +258,7 @@ def build_contract_prices(order: FittingBuyOrder) -> list[dict]:  # noqa: C901
         hull_cost_source = ""
         hull_industry_order_id: int | None = None
         hull_industry_short_code = ""
+        hull_from_jita = False
 
         for type_id, qty in sorted(per_ship.items()):
             # qty is items on one hull — never multiply by line/copy quantity.
@@ -253,11 +267,17 @@ def build_contract_prices(order: FittingBuyOrder) -> list[dict]:  # noqa: C901
                 has_fitting_types = True
             unit = pasted.get(type_id)
             source = None
-            if unit is None:
+            from_jita = False
+            if unit is None and type_id not in stock_covered:
                 ask = industry_asks.get(type_id)
                 if ask is not None:
                     unit = ask.unit_price
                     source = ask
+            if unit is None and (is_hull or type_id in stock_covered):
+                guide = jita_prices.get(type_id)
+                if guide is not None:
+                    unit = Decimal(guide)
+                    from_jita = True
             if unit is None:
                 landed_complete = False
                 missing.append(type_names.get(type_id, str(type_id)))
@@ -274,6 +294,9 @@ def build_contract_prices(order: FittingBuyOrder) -> list[dict]:  # noqa: C901
                     hull_cost_source = "industry"
                     hull_industry_order_id = source.order_id
                     hull_industry_short_code = source.public_short_code
+                elif from_jita:
+                    hull_cost_source = "jita"
+                    hull_from_jita = True
                 else:
                     hull_cost_source = "landed"
             else:
@@ -292,19 +315,6 @@ def build_contract_prices(order: FittingBuyOrder) -> list[dict]:  # noqa: C901
 
         if not has_fitting_types:
             fitting_complete = True
-
-        hull_from_jita = False
-        if not hull_complete and ship_id in per_ship:
-            guide = jita_prices.get(ship_id)
-            if guide is not None:
-                hull_qty = int(per_ship.get(ship_id) or 1)
-                hull_cost = Decimal(guide) * Decimal(hull_qty)
-                hull_complete = True
-                hull_from_jita = True
-                hull_cost_source = "jita"
-                hull_name = type_names.get(ship_id, str(ship_id))
-                missing = [name for name in missing if name != hull_name]
-                landed_complete = hull_complete and fitting_complete
 
         landed = hull_cost + fitting_cost
         jita_total = Decimal("0")

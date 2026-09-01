@@ -80,10 +80,8 @@ def resolve_guide_step(
         FittingBuyOrderStatus.ARCHIVED,
     ):
         return FittingBuyGuideStep.CONTRACT
-    if order.status == FittingBuyOrderStatus.PENDING_FITTING:
-        if shopping_landed_complete(order, plan):
-            return FittingBuyGuideStep.CONTRACT
-        return FittingBuyGuideStep.PURCHASE
     if order.stock_paste is None:
         return FittingBuyGuideStep.STOCK
+    if shopping_landed_complete(order, plan):
+        return FittingBuyGuideStep.CONTRACT
     return FittingBuyGuideStep.PURCHASE

@@ -669,7 +669,7 @@ export const ui = {
         'fitting_buy.landed_ready': 'All to-buy types have landed prices.',
         'fitting_buy.landed_needed': 'Paste a unit price for every type still to buy to continue.',
         'fitting_buy.contract_prices': 'Contract prices',
-        'fitting_buy.contract_prices_tip': 'Last step — costs are per hull. Use a recommended price (or your own) for each contract. Hover Fitting / Total / Jita for the full line total. Press complete when done.',
+        'fitting_buy.contract_prices_tip': 'Last step — costs are per hull. On-hand stock uses Jita sell. Use a recommended price (or your own) for each contract. Hover Fitting / Total / Jita for the full line total. Press complete when done.',
         'fitting_buy.contract_prices_complete_tip': 'Order complete. Costs are per hull — click a price to copy it for listing.',
         'fitting_buy.contract_prices_industry': 'Industry sources',
         'fitting_buy.contract_prices_industry_item': '{name} from order {code}',
