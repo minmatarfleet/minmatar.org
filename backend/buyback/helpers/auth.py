@@ -1,16 +1,22 @@
 """Auth helpers for buyback hangar sales."""
 
 from app.errors import ErrorResponse
+from buyback.models import EveBuybackSettings
 from eveonline.helpers.characters import user_characters
 from eveonline.models import EveCharacter
-from groups.helpers.feature_access import can_use_feature
 from industry.endpoints.planner.auth_helpers import auth_required_for_character
+
+
+def is_buyback_coordinator(user) -> bool:
+    if user is None or not getattr(user, "pk", None):
+        return False
+    return EveBuybackSettings.load().coordinators.filter(pk=user.pk).exists()
 
 
 def can_manage_stock_sales(user) -> bool:
     if user is None or not getattr(user, "is_authenticated", False):
         return False
-    return can_use_feature(user, "buyback.stock.manage") or user.is_staff
+    return user.is_staff or is_buyback_coordinator(user)
 
 
 def character_for_refine(request, character_id: int | None):

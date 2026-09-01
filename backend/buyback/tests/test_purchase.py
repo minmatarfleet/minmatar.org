@@ -7,6 +7,7 @@ from django.test import Client
 from django.utils import timezone
 
 from app.test import TestCase
+from buyback.helpers.auth import can_manage_stock_sales
 from buyback.helpers.purchase_fill import fill_purchase
 from buyback.helpers.purchase_orders import (
     try_complete_from_outbound_contracts,
@@ -565,6 +566,31 @@ class PurchaseOrderEndpointTestCase(TestCase):
         self.assertEqual(cancel.json()["status"], "cancelled")
         self.assertEqual(remaining_sale_quantities()[self.water.id], 40)
 
+    def test_coordinator_can_complete(self):
+        placed = self.client.post(
+            f"{BASE_URL}/stock/orders",
+            data={"paste": "Water\t10"},
+            content_type="application/json",
+            **self.auth,
+        )
+        order_id = placed.json()["id"]
+        order = BuybackPurchaseOrder.objects.get(pk=order_id)
+        _ledger(
+            eve_type=self.water,
+            quantity=10,
+            reason=BuybackLedgerEntry.Reason.SOLD_CONTRACT,
+            source_id="out:coordinator-complete",
+            counterparty_id=order.character_id,
+        )
+        EveBuybackSettings.load().coordinators.add(self.user)
+        complete = self.client.post(
+            f"{BASE_URL}/stock/orders/{order_id}/complete",
+            content_type="application/json",
+            **self.auth,
+        )
+        self.assertEqual(complete.status_code, 200)
+        self.assertEqual(complete.json()["status"], "completed")
+
     def test_operator_lists_pending(self):
         self.client.post(
             f"{BASE_URL}/stock/orders",
@@ -574,6 +600,18 @@ class PurchaseOrderEndpointTestCase(TestCase):
         )
         self.user.is_staff = True
         self.user.save()
+        listed = self.client.get(f"{BASE_URL}/stock/orders", **self.auth)
+        self.assertEqual(listed.status_code, 200)
+        self.assertEqual(listed.json()["count"], 1)
+
+    def test_coordinator_lists_pending(self):
+        self.client.post(
+            f"{BASE_URL}/stock/orders",
+            data={"paste": "Water\t10"},
+            content_type="application/json",
+            **self.auth,
+        )
+        EveBuybackSettings.load().coordinators.add(self.user)
         listed = self.client.get(f"{BASE_URL}/stock/orders", **self.auth)
         self.assertEqual(listed.status_code, 200)
         self.assertEqual(listed.json()["count"], 1)
@@ -658,3 +696,30 @@ class PurchaseOrderEndpointTestCase(TestCase):
             **self.auth,
         )
         self.assertTrue(response.json()["can_manage"])
+
+    def test_capabilities_coordinator(self):
+        response = self.client.get(
+            f"{BASE_URL}/stock/purchase-capabilities",
+            **self.auth,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()["can_manage"])
+        EveBuybackSettings.load().coordinators.add(self.user)
+        response = self.client.get(
+            f"{BASE_URL}/stock/purchase-capabilities",
+            **self.auth,
+        )
+        self.assertTrue(response.json()["can_manage"])
+
+
+class BuybackCoordinatorAuthTestCase(TestCase):
+    def test_helper_tracks_settings_assignment(self):
+        self.assertFalse(can_manage_stock_sales(self.user))
+        settings = EveBuybackSettings.load()
+        settings.coordinators.add(self.user)
+        self.assertTrue(can_manage_stock_sales(self.user))
+        settings.coordinators.remove(self.user)
+        self.assertFalse(can_manage_stock_sales(self.user))
+
+    def test_helper_rejects_missing_user(self):
+        self.assertFalse(can_manage_stock_sales(None))
