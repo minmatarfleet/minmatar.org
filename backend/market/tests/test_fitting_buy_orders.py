@@ -39,6 +39,7 @@ from market.helpers.fitting_buy_allocations import (
     effective_buy_map,
     set_allocations,
 )
+from market.helpers.fitting_buy_guide import shopping_landed_complete
 from market.helpers.fitting_buy_plan import (
     build_shopping_plan,
     sync_order_items,
@@ -946,6 +947,81 @@ class FittingBuyAllocationTestCase(TestCase):
             if item["type_id"] == self.faction.id
         )
         self.assertEqual(faction_item["buy_qty"], 5)
+        self.assertTrue(
+            self.order.items.filter(eve_type_id=self.compact.id).exists()
+        )
+        self.assertTrue(
+            self.order.items.filter(eve_type_id=self.faction.id).exists()
+        )
+
+    def test_variant_items_keep_landed_prices_across_sync(self):
+        set_allocations(
+            self.order,
+            preferred_type_id=self.preferred.id,
+            entries=[
+                {"type_id": self.preferred.id, "qty": 7},
+                {"type_id": self.compact.id, "qty": 8},
+                {"type_id": self.faction.id, "qty": 5},
+            ],
+        )
+        preferred = self.order.items.get(eve_type_id=self.preferred.id)
+        preferred.unit_price = Decimal("100")
+        preferred.save(update_fields=["unit_price"])
+        self.assertFalse(shopping_landed_complete(self.order))
+
+        updated, unresolved = apply_landed_prices(
+            self.order,
+            f"{self.compact.name}\t10\n{self.faction.name}\t20",
+        )
+        self.assertEqual(updated, 2)
+        self.assertEqual(unresolved, [])
+        self.assertTrue(shopping_landed_complete(self.order))
+        self.order.refresh_from_db()
+        self.assertIsNotNone(self.order.jita_checked_at)
+
+        sync_order_items(self.order)
+        compact = self.order.items.get(eve_type_id=self.compact.id)
+        self.assertEqual(compact.buy_qty, 8)
+        self.assertEqual(compact.needed_qty, 0)
+        self.assertEqual(compact.unit_price, Decimal("10"))
+        self.assertEqual(compact.jita_sell_volume, 8)
+        self.assertTrue(shopping_landed_complete(self.order))
+        self.assertIsNotNone(self.order.jita_checked_at)
+
+        set_allocations(
+            self.order,
+            preferred_type_id=self.preferred.id,
+            entries=[],
+        )
+        self.assertFalse(
+            self.order.items.filter(eve_type_id=self.compact.id).exists()
+        )
+        self.assertFalse(
+            self.order.items.filter(eve_type_id=self.faction.id).exists()
+        )
+
+    def test_get_order_heals_missing_variant_items(self):
+        self.order.shopping_allocations = {
+            str(self.preferred.id): [
+                {"type_id": self.preferred.id, "qty": 7},
+                {"type_id": self.compact.id, "qty": 8},
+            ]
+        }
+        self.order.save(update_fields=["shopping_allocations", "updated_at"])
+        self.assertFalse(
+            self.order.items.filter(eve_type_id=self.compact.id).exists()
+        )
+        response = self.client.get(
+            f"/fitting-buy-orders/{self.order.id}",
+            headers=_auth_headers(self.owner),
+        )
+        self.assertEqual(response.status_code, 200)
+        compact = self.order.items.get(eve_type_id=self.compact.id)
+        self.assertEqual(compact.buy_qty, 8)
+        self.assertEqual(compact.needed_qty, 0)
+        self.assertEqual(compact.jita_sell_volume, 8)
+        self.order.refresh_from_db()
+        self.assertIsNotNone(self.order.jita_checked_at)
 
     def test_rejects_unknown_variant_and_over_sum(self):
         with self.assertRaises(AllocationError):

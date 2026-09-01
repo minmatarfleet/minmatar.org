@@ -87,6 +87,19 @@ def apply_depth_to_order(
         row.jita_order_count = depth.order_count
         row.jita_sell_min = depth.sell_min
         to_update.append(row)
+    updated_ids = {row.eve_type_id for row in to_update}
+    for row in items.values():
+        if row.eve_type_id in updated_ids:
+            continue
+        if row.needed_qty > 0 or row.buy_qty <= 0:
+            continue
+        depth = depths.get(row.eve_type_id)
+        if depth is None:
+            continue
+        row.jita_sell_volume = depth.volume
+        row.jita_order_count = depth.order_count
+        row.jita_sell_min = depth.sell_min
+        to_update.append(row)
 
     with transaction.atomic():
         if to_update:
