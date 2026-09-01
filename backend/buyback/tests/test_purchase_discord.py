@@ -29,6 +29,7 @@ from buyback.helpers.purchase_discord_buttons import (
 from buyback.models import (
     BuybackLedgerEntry,
     BuybackPurchaseOrder,
+    EveBuybackSettings,
     SellPriceBasis,
 )
 from buyback.tests.helpers import BASE_URL, ensure_type
@@ -265,6 +266,37 @@ class PurchaseDiscordAckApiTestCase(TestCase):
         response = self.client.post(
             f"{BASE_URL}/stock/orders/{data['id']}/discord-ack",
             data=json.dumps({"discord_user_id": 3002, "action": "complete"}),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.staff_token}",
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(response.json()["status"], "completed")
+
+    @patch(
+        "buyback.helpers.purchase_orders.notify_buyback_purchase_status_changed_task.delay"
+    )
+    @patch(
+        "buyback.helpers.purchase_orders.notify_buyback_purchase_created_task.delay"
+    )
+    def test_complete_by_coordinator(self, unused_created, unused_status):
+        coordinator = User.objects.create(username="hangar_coordinator")
+        DiscordUser.objects.create(
+            id=3004, discord_tag="coord#0001", user=coordinator
+        )
+        EveBuybackSettings.load().coordinators.add(coordinator)
+        data = self._place()
+        order = BuybackPurchaseOrder.objects.get(pk=data["id"])
+        BuybackLedgerEntry.objects.create(
+            reason=BuybackLedgerEntry.Reason.SOLD_CONTRACT,
+            eve_type=self.water,
+            quantity=10,
+            occurred_at=timezone.now(),
+            source_id="out:discord-coordinator",
+            counterparty_id=order.character_id,
+        )
+        response = self.client.post(
+            f"{BASE_URL}/stock/orders/{data['id']}/discord-ack",
+            data=json.dumps({"discord_user_id": 3004, "action": "complete"}),
             content_type="application/json",
             HTTP_AUTHORIZATION=f"Bearer {self.staff_token}",
         )

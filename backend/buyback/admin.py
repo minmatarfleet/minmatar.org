@@ -18,6 +18,7 @@ class EveBuybackSettingsAdmin(admin.ModelAdmin):
         "active",
         "updated_at",
     )
+    autocomplete_fields = ("coordinators",)
     fieldsets = (
         (
             None,
@@ -68,6 +69,17 @@ class EveBuybackSettingsAdmin(admin.ModelAdmin):
                 "description": (
                     "Jita split is the midpoint of live Jita buy and sell. "
                     "Markup is an extra share (0 = none, 0.05 = 5%)."
+                ),
+            },
+        ),
+        (
+            "Coordinators",
+            {
+                "fields": ("coordinators",),
+                "description": (
+                    "Assigned users can see pending hangar sales and mark "
+                    "them complete on the site and in Discord. Staff can "
+                    "always do this."
                 ),
             },
         ),

@@ -168,6 +168,15 @@ class EveBuybackSettings(models.Model):
         validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
         help_text="Extra share on the sell basis (0 = none, 0.05 = 5%).",
     )
+    coordinators = models.ManyToManyField(
+        "auth.User",
+        blank=True,
+        related_name="buyback_coordinator_settings",
+        help_text=(
+            "Users who can see pending hangar sales and mark them complete "
+            "on the site and in Discord."
+        ),
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
