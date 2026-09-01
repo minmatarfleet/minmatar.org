@@ -7,11 +7,11 @@ from typing import Optional
 from django.utils import timezone
 
 from discord.client import DiscordClient
-from eveonline.models import EveLocation
 from fittings.models import EveDoctrine
 from groups.helpers.feature_access import can_use_feature
 
 from fleets.models import EveFleet, EveFleetAudience, EveFleetInstance
+from fleets.helpers.fleet_location import resolve_scheduled_fleet_location
 from fleets.endpoints.schemas import EveFleetResponse, EveFleetTrackingResponse
 from fleets.notifications import get_fleet_discord_notification
 
@@ -136,13 +136,11 @@ def _fleet_patch_audience_location_errors(
         fleet.audience = EveFleetAudience.objects.get(id=payload.audience_id)
 
     if payload.location_id:
-        if not EveLocation.objects.filter(
-            location_id=payload.location_id
-        ).exists():
-            return {"detail": "Location does not exist"}
-        fleet.location = EveLocation.objects.get(
-            location_id=payload.location_id
-        )
+        location_result = resolve_scheduled_fleet_location(payload.location_id)
+        if isinstance(location_result, tuple):
+            _, body = location_result
+            return body
+        fleet.location = location_result
     return None
 
 

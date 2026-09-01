@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from django.contrib.auth.models import User
 
-from eveonline.models import EveLocation
 from fittings.models import EveDoctrine
 from fleets.endpoints.helpers import send_discord_pre_ping
 from fleets.endpoints.schemas import CreateEveFleetRequest, EveFleetResponse
+from fleets.helpers.fleet_location import resolve_scheduled_fleet_location
 from fleets.models import EveFleet, EveFleetAudience
 
 
@@ -19,15 +19,10 @@ def create_scheduled_fleet(
 
     audience = EveFleetAudience.objects.get(id=payload.audience_id)
 
-    location = None
-    if payload.location_id:
-        if not EveLocation.objects.filter(
-            location_id=payload.location_id
-        ).exists():
-            return 400, {"detail": "Location does not exist"}
-        location = EveLocation.objects.get(location_id=payload.location_id)
-    elif audience.staging_location:
-        location = audience.staging_location
+    location_result = resolve_scheduled_fleet_location(payload.location_id)
+    if isinstance(location_result, tuple):
+        return location_result
+    location = location_result
 
     fleet = EveFleet.objects.create(
         type=payload.type,

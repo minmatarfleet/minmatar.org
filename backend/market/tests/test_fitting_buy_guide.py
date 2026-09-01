@@ -125,3 +125,12 @@ class FittingBuyGuideTestCase(TestCase):
         self.assertEqual(
             resolve_guide_step(self.order), FittingBuyGuideStep.CONTRACT
         )
+
+    def test_resolve_contract_when_stock_covers_shopping_list(self):
+        self.order.stock_paste = f"{self.mod.name}\t2"
+        self.order.save(update_fields=["stock_paste"])
+        sync_order_items(self.order)
+        self.assertTrue(shopping_landed_complete(self.order))
+        self.assertEqual(
+            resolve_guide_step(self.order), FittingBuyGuideStep.CONTRACT
+        )

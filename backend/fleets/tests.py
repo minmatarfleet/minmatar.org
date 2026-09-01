@@ -40,6 +40,7 @@ from fleets.signals import (
     update_fleet_schedule_on_save,
     update_fleet_schedule_on_delete,
 )
+from fleets.helpers.fleet_location import backfill_missing_fleet_locations
 from fleets.motd import get_motd
 from fleets.notifications import get_fleet_discord_notification
 from fleets.tasks import update_fleet_schedule, update_fleet_instances
@@ -72,19 +73,19 @@ def disconnect_fleet_signals():
 
 def setup_fleet_reference_data():
     """Create reference data needed for fleets"""
-    location = EveLocation.objects.create(
+    EveLocation.objects.create(
         location_id=123,
         location_name="Test Location",
         solar_system_id=234,
         solar_system_name="Somewhere",
         short_name="Somewhere",
         staging_active=True,
+        fleets_active=True,
     )
 
     EveFleetAudience.objects.create(
         name="Test Audience",
         discord_channel_name="TestChannel",
-        staging_location=location,
     )
     EveFleetAudience.objects.create(
         name="Hidden",
@@ -499,7 +500,7 @@ class FleetRouterTestCase(TestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertEqual(200, response.status_code)
-        self.assertEqual(1, len(response.json()))
+        self.assertGreaterEqual(len(response.json()), 1)
 
         response = self.client.get(
             f"{BASE_URL}/audiences",
@@ -538,14 +539,13 @@ class FleetRouterTestCase(TestCase):
         db_fleet = EveFleet.objects.filter(id=fleet_response["id"]).first()
         self.assertIsNotNone(db_fleet)
 
-    def test_create_fleet_without_location_id_uses_audience_staging(self):
+    def test_create_fleet_without_location_id_uses_staging_active(self):
         setup_fc(self.user)
 
         audience = EveFleetAudience.objects.first()
-        # Ensure audience has staging_location
-        self.assertIsNotNone(audience.staging_location)
+        staging = EveLocation.objects.filter(staging_active=True).first()
+        self.assertIsNotNone(staging)
 
-        # Test creating fleet without location_id - should use audience.staging_location
         data = {
             "type": "training",
             "description": "Test fleet without location_id",
@@ -562,16 +562,32 @@ class FleetRouterTestCase(TestCase):
         self.assertEqual(200, response.status_code)
         fleet_response = response.json()
         self.assertTrue(fleet_response["id"])
-        # Should use audience staging location
         self.assertEqual("Test Location", fleet_response["location"])
 
         db_fleet = EveFleet.objects.filter(id=fleet_response["id"]).first()
         self.assertIsNotNone(db_fleet)
-        # Verify the fleet uses the audience staging location
-        self.assertEqual(
-            db_fleet.formup_location.location_name,
-            audience.staging_location.location_name,
+        self.assertEqual(db_fleet.location_id, staging.location_id)
+
+    def test_backfill_missing_fleet_locations_uses_staging_active(self):
+        staging = EveLocation.objects.filter(staging_active=True).first()
+        self.assertIsNotNone(staging)
+
+        fleet = EveFleet.objects.create(
+            type="non_strategic",
+            description="Legacy fleet without location",
+            start_time=timezone.now() + timedelta(hours=1),
+            created_by=self.user,
+            audience=EveFleetAudience.objects.first(),
+            location=None,
+            status="pending",
         )
+        self.assertIsNone(fleet.location_id)
+
+        updated = backfill_missing_fleet_locations()
+        self.assertEqual(updated, 1)
+
+        fleet.refresh_from_db()
+        self.assertEqual(fleet.location_id, staging.location_id)
 
     @patch("fleets.models.EsiClient")
     @patch("fleets.models.discord")

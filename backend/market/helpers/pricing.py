@@ -27,9 +27,13 @@ VOLUME_WINDOWS: tuple[int, ...] = (1, 7, 30)
 
 
 def _baseline_region_id() -> int:
-    baseline = EveLocation.objects.filter(price_baseline=True).first()
-    if baseline and baseline.region_id:
-        return baseline.region_id
+    region_id = (
+        EveLocation.objects.filter(price_baseline=True)
+        .values_list("region_id", flat=True)
+        .first()
+    )
+    if region_id:
+        return int(region_id)
     return JITA_REGION_ID
 
 

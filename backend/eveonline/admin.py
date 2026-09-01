@@ -618,6 +618,7 @@ class EveLocationAdmin(SafeDeleteAdmin):
         "prices_active",
         "price_baseline",
         "freight_active",
+        "fleets_active",
         "staging_active",
         "deleted",
     )
@@ -629,6 +630,7 @@ class EveLocationAdmin(SafeDeleteAdmin):
         "prices_active",
         "price_baseline",
         "freight_active",
+        "fleets_active",
         "staging_active",
     )
     ordering = ("location_name",)
@@ -663,6 +665,7 @@ class EveLocationAdmin(SafeDeleteAdmin):
             {
                 "fields": (
                     "freight_active",
+                    "fleets_active",
                     "staging_active",
                 )
             },

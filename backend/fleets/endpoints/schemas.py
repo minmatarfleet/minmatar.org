@@ -11,6 +11,7 @@ class EveFleetType(str, Enum):
     STRATEGIC = "strategic"
     NON_STRATEGIC = "non_strategic"
     TRAINING = "training"
+    NPSI = "npsi"
 
 
 class EveFleetChannelResponse(BaseModel):
@@ -63,6 +64,8 @@ class EveFleetLocationResponse(BaseModel):
     location_name: str
     solar_system_id: int
     solar_system_name: str
+    short_name: str
+    staging_active: bool
 
 
 class EveFleetUsersResponse(BaseModel):

@@ -24,4 +24,5 @@ def get_fleet_types(request):
         EveFleetType.STRATEGIC,
         EveFleetType.NON_STRATEGIC,
         EveFleetType.TRAINING,
+        EveFleetType.NPSI,
     ]

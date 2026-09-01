@@ -336,6 +336,47 @@ class FittingBuyContractPricesTestCase(TestCase):
         self.assertEqual(row["missing_type_names"], [])
         self.assertEqual(row["industry_sources"], [])
 
+    @patch("market.helpers.fitting_buy_contract_prices.get_prices_by_type_id")
+    def test_stock_covered_modules_use_jita_sell(self, mock_jita):
+        mock_jita.return_value = {
+            self.hull.id: 50_000_000,
+            self.mod_a.id: 1_000_000,
+            self.mod_b.id: 2_000_000,
+        }
+        self.order.stock_paste = f"{self.mod_a.name}\t3\n{self.mod_b.name}\t3"
+        self.order.save(update_fields=["stock_paste"])
+        sync_order_items(self.order)
+        self._industry_ask(self.mod_a, "999999999")
+
+        rows = build_contract_prices(self.order)
+        row = rows[0]
+        self.assertTrue(row["landed_complete"])
+        self.assertEqual(row["missing_type_names"], [])
+        self.assertEqual(row["industry_sources"], [])
+        self.assertTrue(row["hull_cost_from_jita"])
+        self.assertEqual(row["hull_cost"], "50000000")
+        self.assertEqual(row["fitting_cost"], "3000000")
+        self.assertEqual(row["landed_per_ship"], "53000000")
+
+    @patch("market.helpers.fitting_buy_contract_prices.get_prices_by_type_id")
+    def test_mixed_stock_and_pasted_buy(self, mock_jita):
+        mock_jita.return_value = {
+            self.hull.id: 50_000_000,
+            self.mod_a.id: 1_000_000,
+            self.mod_b.id: 2_000_000,
+        }
+        self.order.stock_paste = f"{self.mod_a.name}\t3"
+        self.order.save(update_fields=["stock_paste"])
+        sync_order_items(self.order)
+        apply_landed_prices(self.order, f"{self.mod_b.name}\t2500000")
+
+        rows = build_contract_prices(self.order)
+        row = rows[0]
+        self.assertTrue(row["landed_complete"])
+        self.assertEqual(row["missing_type_names"], [])
+        self.assertEqual(row["fitting_cost"], "3500000")
+        self.assertEqual(row["landed_per_ship"], "53500000")
+
 
 class FittingBuyContractPricesApiTestCase(TestCase):
     def setUp(self):
@@ -387,7 +428,32 @@ class FittingBuyContractPricesApiTestCase(TestCase):
             body["contract_prices"][0]["fitting_id"], self.fitting.id
         )
 
-    def test_complete_order_pending_fitting_to_purchased(self):
+    @patch("market.helpers.fitting_buy_contract_prices.get_prices_by_type_id")
+    def test_detail_advances_to_contract_when_stock_covers_buy(
+        self, mock_jita
+    ):
+        mock_jita.return_value = {self.hull.id: 10, self.mod.id: 5}
+        order = FittingBuyOrder.objects.create(
+            owner=self.owner,
+            stock_paste=f"{self.mod.name}\t1",
+        )
+        FittingBuyOrderLine.objects.create(
+            order=order, fitting=self.fitting, quantity=1
+        )
+        sync_order_items(order)
+
+        response = self.client.get(
+            f"/fitting-buy-orders/{order.id}",
+            headers=_auth_headers(self.owner),
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["guide_step"], "contract")
+        self.assertEqual(len(body["contract_prices"]), 1)
+        self.assertTrue(body["contract_prices"][0]["landed_complete"])
+        self.assertEqual(body["contract_prices"][0]["fitting_cost"], "5")
+
+    def test_complete_order_pending_fitting_to_completed(self):
         order = FittingBuyOrder.objects.create(
             owner=self.owner,
             status=FittingBuyOrderStatus.PENDING_FITTING,
@@ -399,10 +465,40 @@ class FittingBuyContractPricesApiTestCase(TestCase):
 
         response = self.client.patch(
             f"/fitting-buy-orders/{order.id}",
-            json={"status": FittingBuyOrderStatus.PURCHASED},
+            json={"status": FittingBuyOrderStatus.COMPLETED},
             headers=_auth_headers(self.owner),
         )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["status"], "purchased")
+        self.assertEqual(response.json()["status"], "completed")
         order.refresh_from_db()
-        self.assertEqual(order.status, FittingBuyOrderStatus.PURCHASED)
+        self.assertEqual(order.status, FittingBuyOrderStatus.COMPLETED)
+
+        legacy = self.client.patch(
+            f"/fitting-buy-orders/{order.id}",
+            json={"status": "purchased"},
+            headers=_auth_headers(self.owner),
+        )
+        self.assertEqual(legacy.status_code, 200)
+        self.assertEqual(legacy.json()["status"], "completed")
+
+    @patch("market.helpers.fitting_buy_contract_prices.get_prices_by_type_id")
+    def test_detail_survives_contract_price_failure(self, mock_jita):
+        mock_jita.side_effect = RuntimeError("pricing down")
+        order = FittingBuyOrder.objects.create(
+            owner=self.owner,
+            status=FittingBuyOrderStatus.COMPLETED,
+            stock_paste="",
+        )
+        FittingBuyOrderLine.objects.create(
+            order=order, fitting=self.fitting, quantity=1
+        )
+        sync_order_items(order)
+
+        response = self.client.get(
+            f"/fitting-buy-orders/{order.id}",
+            headers=_auth_headers(self.owner),
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["guide_step"], "contract")
+        self.assertEqual(body["contract_prices"], [])

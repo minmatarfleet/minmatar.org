@@ -427,7 +427,7 @@ export interface Doctrine {
 export const fleet_status = ['active', 'upcoming', 'recent'] as const
 export type FleetStatus = typeof fleet_status[number]
 
-export const fleet_types = ['strategic', 'non_strategic', 'training'] as const
+export const fleet_types = ['strategic', 'non_strategic', 'training', 'npsi'] as const
 export type FleetTypes = typeof fleet_types[number]
 
 export interface Fleet {
@@ -516,6 +516,7 @@ export interface Location extends BaseLocation {
     market_active:      boolean;
     prices_active:      boolean;
     freight_active:     boolean;
+    fleets_active:      boolean;
     staging_active:     boolean;
 }
 

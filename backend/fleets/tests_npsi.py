@@ -11,7 +11,7 @@ from django.utils import timezone
 
 from app.test import TestCase
 from discord.models import DiscordUser
-from eveonline.models import EveCharacter, EveCorporation
+from eveonline.models import EveCharacter, EveCorporation, EveLocation
 from eveonline.helpers.characters import set_primary_character
 from fleets.helpers.npsi_description import (
     escape_npsi_description_for_web,
@@ -22,6 +22,7 @@ from fleets.helpers.npsi_ingest import (
     poll_npsi_sources,
     upsert_feed_item,
 )
+from fleets.helpers.npsi_local import bootstrap_local_unaligned_post
 from fleets.models import (
     EveFleet,
     EveFleetAudience,
@@ -42,6 +43,17 @@ UNALIGNED_HTML = (
     "In game channel: 'Unaligned NPSI'<br>Formup: Jita<br><br>"
     "**FC: Vex Drake**"
 )
+
+
+def create_jita_fleets_location() -> EveLocation:
+    return EveLocation.objects.create(
+        location_id=60003760,
+        location_name="Jita IV - Moon 4 - Caldari Navy Assembly Plant",
+        solar_system_id=30000142,
+        solar_system_name="Jita",
+        short_name="Jita",
+        fleets_active=True,
+    )
 
 
 class NpsiDescriptionTestCase(TestCase):
@@ -87,7 +99,7 @@ class NpsiIngestTestCase(TestCase):
                 "feed_url": "https://example.test/events",
                 "fc_character_name": "Vex Drake",
                 "default_audience": self.audience,
-                "default_type": "non_strategic",
+                "default_type": "npsi",
                 "enabled": True,
             },
         )
@@ -208,6 +220,7 @@ class NpsiDiscordApiTestCase(TestCase):
         disconnect_fleet_signals()
         setup_fleet_reference_data()
         self.audience = EveFleetAudience.objects.get(name="Test Audience")
+        self.jita = create_jita_fleets_location()
         self.staff = User.objects.create(username="bot_service", is_staff=True)
         self.staff_token = jwt.encode(
             {"user_id": self.staff.id},
@@ -238,7 +251,8 @@ class NpsiDiscordApiTestCase(TestCase):
                 "feed_url": "https://example.test/events",
                 "fc_character_name": "Vex Drake",
                 "default_audience": self.audience,
-                "default_type": "non_strategic",
+                "default_type": "npsi",
+                "default_location": self.jita,
             },
         )
         self.event = NpsiExternalEvent.objects.create(
@@ -271,7 +285,38 @@ class NpsiDiscordApiTestCase(TestCase):
         fleet = EveFleet.objects.get(id=self.event.eve_fleet_id)
         self.assertEqual(fleet.created_by_id, self.user.id)
         self.assertEqual(fleet.audience_id, self.audience.id)
+        self.assertEqual(fleet.type, "npsi")
+        self.assertEqual(fleet.location_id, self.jita.location_id)
         self.assertIn("Roaming through nullsec", fleet.description)
+
+    @patch("fleets.helpers.npsi_actions.DiscordClient")
+    def test_post_uses_location_text_when_default_location_missing(
+        self, mock_discord
+    ):
+        self.source.default_location = None
+        self.source.save(update_fields=["default_location"])
+        response = self._post(
+            f"/npsi-events/{self.event.id}/discord-create", 4242
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.event.refresh_from_db()
+        fleet = EveFleet.objects.get(id=self.event.eve_fleet_id)
+        self.assertEqual(fleet.location_id, self.jita.location_id)
+        self.assertEqual(fleet.type, "npsi")
+
+    @patch("fleets.helpers.npsi_actions.DiscordClient")
+    def test_post_fails_without_fleets_active_location(self, mock_discord):
+        self.jita.fleets_active = False
+        self.jita.save(update_fields=["fleets_active"])
+        self.source.default_location = None
+        self.source.save(update_fields=["default_location"])
+        self.event.location_text = "Unknown System"
+        self.event.save(update_fields=["location_text"])
+        response = self._post(
+            f"/npsi-events/{self.event.id}/discord-create", 4242
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(EveFleet.objects.exists())
 
     @patch("fleets.helpers.npsi_actions.DiscordClient")
     def test_posted_fleet_description_is_web_escaped(self, mock_discord):
@@ -328,3 +373,73 @@ class NpsiDiscordApiTestCase(TestCase):
         )
         self.assertEqual(response.status_code, 403)
         mock_start.assert_not_called()
+
+
+class NpsiLocalBootstrapTestCase(TestCase):
+    def setUp(self):
+        super().setUp()
+        disconnect_fleet_signals()
+        setup_fleet_reference_data()
+        self.user.user_permissions.add(
+            Permission.objects.get(codename="add_evefleet")
+        )
+
+    @patch("fleets.helpers.npsi_ingest.DiscordClient")
+    def test_bootstrap_posts_sample_event_without_discord(self, mock_client):
+        event, fleet = bootstrap_local_unaligned_post(
+            summary="Local Roam",
+            days_ahead=5,
+        )
+        self.assertEqual(event.status, NpsiExternalEvent.Status.CREATED)
+        self.assertEqual(fleet.type, "npsi")
+        self.assertEqual(fleet.location.short_name, "Jita")
+        self.assertEqual(fleet.created_by_id, self.user.id)
+        mock_client.return_value.send_dm.assert_not_called()
+
+    @patch("fleets.helpers.npsi_ingest.DiscordClient")
+    def test_skip_notify_marks_event_notified(self, mock_client):
+        audience = EveFleetAudience.objects.get(name="Test Audience")
+        source, _ = NpsiEventSource.objects.update_or_create(
+            name="Unaligned",
+            defaults={
+                "feed_url": "https://example.test/events",
+                "fc_character_name": "Vex Drake",
+                "default_audience": audience,
+                "default_type": "npsi",
+                "enabled": True,
+            },
+        )
+        create_jita_fleets_location()
+
+        corp = EveCorporation.objects.create(
+            corporation_id=1, name="Test Corp"
+        )
+        char = EveCharacter.objects.create(
+            character_id=111,
+            character_name="Vex Drake",
+            user=self.user,
+            corporation_id=corp.corporation_id,
+        )
+        set_primary_character(self.user, char)
+
+        upsert_feed_item(
+            source,
+            {
+                "summary": "Skip notify roam",
+                "description": "Test",
+                "location": "Jita",
+                "start": (timezone.now() + timedelta(days=3)).strftime(
+                    "%Y-%m-%dT%H:%M:%S.000Z"
+                ),
+                "end": (timezone.now() + timedelta(days=3, hours=2)).strftime(
+                    "%Y-%m-%dT%H:%M:%S.000Z"
+                ),
+                "allDay": False,
+                "character_name": "Vex Drake",
+            },
+            now=timezone.now(),
+            skip_notify=True,
+        )
+        event = NpsiExternalEvent.objects.get()
+        self.assertEqual(event.status, NpsiExternalEvent.Status.NOTIFIED)
+        mock_client.return_value.send_dm.assert_not_called()

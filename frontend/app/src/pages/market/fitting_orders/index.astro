@@ -17,12 +17,16 @@ import {
 } from '@helpers/api.minmatar.org/fitting_buy_orders'
 
 const mine = Astro.url.searchParams.get('mine') === '1'
+const include_all = Astro.url.searchParams.get('all') === '1'
 let orders: FittingBuyOrderListItem[] = []
 let fetch_error: string | false = false
 
 if (is_logged_in) {
     try {
-        orders = await list_fitting_buy_orders(auth_token as string, { mine })
+        orders = await list_fitting_buy_orders(auth_token as string, {
+            mine,
+            include_completed: include_all,
+        })
     } catch (error) {
         fetch_error = (error as Error).message
     }
@@ -125,9 +129,9 @@ const breadcrumb_items = [
                                 href={translatePath('/market/fitting_orders/')}
                                 class:list={[
                                     '[ fitting-buy-orders__chip ]',
-                                    { 'is-active': !mine },
+                                    { 'is-active': !mine && !include_all },
                                 ]}
-                                aria-pressed={!mine ? 'true' : 'false'}
+                                aria-pressed={!mine && !include_all ? 'true' : 'false'}
                             >
                                 {t('fitting_buy.all_orders')}
                             </a>
@@ -135,11 +139,21 @@ const breadcrumb_items = [
                                 href={translatePath('/market/fitting_orders/?mine=1')}
                                 class:list={[
                                     '[ fitting-buy-orders__chip ]',
-                                    { 'is-active': mine },
+                                    { 'is-active': mine && !include_all },
                                 ]}
-                                aria-pressed={mine ? 'true' : 'false'}
+                                aria-pressed={mine && !include_all ? 'true' : 'false'}
                             >
                                 {t('fitting_buy.mine_only')}
+                            </a>
+                            <a
+                                href={translatePath('/market/fitting_orders/?all=1')}
+                                class:list={[
+                                    '[ fitting-buy-orders__chip ]',
+                                    { 'is-active': include_all },
+                                ]}
+                                aria-pressed={include_all ? 'true' : 'false'}
+                            >
+                                {t('fitting_buy.show_all')}
                             </a>
                         </FlexInline>
                         {orders.length > 0 && (
@@ -160,7 +174,7 @@ const breadcrumb_items = [
 
                     {orders.length === 0 ? (
                         <Flexblock gap="var(--space-s)">
-                            <p>{t('fitting_buy.no_orders')}</p>
+                            <p>{include_all ? t('fitting_buy.no_orders') : t('fitting_buy.no_open_orders')}</p>
                             <Button size="sm" href={translatePath('/market/fitting_orders/new/')}>
                                 {t('fitting_buy.create_order')}
                             </Button>

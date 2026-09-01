@@ -19,8 +19,8 @@ const can_view_page = is_superuser || user_permissions.includes('fleets.add_evef
 if (!can_view_page)
     return HTTP_403_Forbidden()
 
-import { get_audiences } from '@helpers/api.minmatar.org/fleets'
-import type { Audience } from '@dtypes/api.minmatar.org'
+import { get_audiences, get_locations } from '@helpers/api.minmatar.org/fleets'
+import type { Audience, Location } from '@dtypes/api.minmatar.org'
 import type { DoctrineType, CharacterBasic } from '@dtypes/layout_components'
 
 const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') as string)
@@ -34,6 +34,7 @@ let fleet:FleetUI | null = null
 let fleet_commander:CharacterBasic | null = null
 let fetch_doctrines_error: Error | false = false
 let audiences:Audience[] = []
+let locations:Location[] = []
 
 try {
     if (!isNaN(fleet_id)) {
@@ -46,6 +47,7 @@ try {
     
     doctrines = await fetch_doctrines()
     audiences = await get_audiences(auth_token as string)
+    locations = await get_locations(auth_token as string)
 } catch (error) {
     fetch_doctrines_error = error
 }
@@ -77,6 +79,7 @@ const eve_time = eve_datetime.toISOString().slice(11, 16)
     <FleetForm
         fleet={fleet}
         audiences={audiences}
+        locations={locations}
         doctrines={doctrines}
         fleet_commander={fleet_commander}
         eve_date={eve_date}

@@ -562,6 +562,54 @@ class FittingBuyApiTestCase(TestCase):
         self.assertEqual(removed.status_code, 204)
         self.assertFalse(FittingBuyOrder.objects.filter(pk=order.id).exists())
 
+    def test_owner_can_delete_order_with_lines_and_items(self):
+        order = FittingBuyOrder.objects.create(owner=self.owner)
+        FittingBuyOrderLine.objects.create(
+            order=order,
+            fitting=self.fitting,
+            quantity=2,
+        )
+        sync_order_items(order)
+        self.assertTrue(order.lines.exists())
+        self.assertTrue(order.items.exists())
+
+        removed = self.client.delete(
+            f"/fitting-buy-orders/{order.id}",
+            headers={
+                **_auth_headers(self.owner),
+                "Content-Type": "application/json",
+            },
+        )
+        self.assertEqual(removed.status_code, 204)
+        self.assertFalse(FittingBuyOrder.objects.filter(pk=order.id).exists())
+        self.assertFalse(
+            FittingBuyOrderLine.objects.filter(order_id=order.id).exists()
+        )
+
+    def test_list_hides_completed_unless_requested(self):
+        open_order = FittingBuyOrder.objects.create(owner=self.owner)
+        FittingBuyOrder.objects.create(
+            owner=self.owner,
+            status=FittingBuyOrderStatus.COMPLETED,
+        )
+        FittingBuyOrder.objects.create(
+            owner=self.other,
+            status=FittingBuyOrderStatus.ARCHIVED,
+        )
+
+        hidden = self.client.get(
+            "/fitting-buy-orders", headers=_auth_headers(self.other)
+        )
+        self.assertEqual(hidden.status_code, 200)
+        self.assertEqual([row["id"] for row in hidden.json()], [open_order.id])
+
+        shown = self.client.get(
+            "/fitting-buy-orders?include_completed=true",
+            headers=_auth_headers(self.other),
+        )
+        self.assertEqual(shown.status_code, 200)
+        self.assertEqual(len(shown.json()), 3)
+
 
 class FittingBuyAlternateSwapTestCase(TestCase):
     def setUp(self):

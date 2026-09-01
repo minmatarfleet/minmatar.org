@@ -8,14 +8,18 @@ from django.contrib.auth.models import User
 
 from discord.client import DiscordClient
 from discord.models import DiscordUser
-from groups.helpers.feature_access import can_use_feature
+from eveonline.models import EveLocation
 from fleets.endpoints.helpers import send_discord_pre_ping
 from fleets.endpoints.schemas import CreateEveFleetRequest
+from fleets.helpers.fleet_location import (
+    match_fleets_active_location,
+)
 from fleets.helpers.npsi_description import escape_npsi_description_for_web
 from fleets.helpers.npsi_discord import posted_dm_payload
 from fleets.helpers.npsi_ingest import resolve_fc_user
 from fleets.helpers.schedule_fleet import create_scheduled_fleet
 from fleets.models import NpsiExternalEvent
+from groups.helpers.feature_access import can_use_feature
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +66,26 @@ def fc_user_for_event(event: NpsiExternalEvent) -> User:
     return fc_user
 
 
+def resolve_npsi_fleet_location(event: NpsiExternalEvent):
+    source = event.source
+    if source.default_location_id:
+        location = EveLocation.objects.filter(
+            location_id=source.default_location_id,
+            fleets_active=True,
+        ).first()
+        if location is not None:
+            return location
+
+    matched = match_fleets_active_location(event.location_text)
+    if matched is not None:
+        return matched
+
+    raise NpsiActionError(
+        "No fleets_active location configured for this event.",
+        status_code=400,
+    )
+
+
 def post_event_to_schedule(event: NpsiExternalEvent) -> NpsiExternalEvent:
     if event.status == NpsiExternalEvent.Status.CREATED and event.eve_fleet_id:
         return event
@@ -74,9 +98,7 @@ def post_event_to_schedule(event: NpsiExternalEvent) -> NpsiExternalEvent:
     if not can_use_feature(fc_user, "fleets.create"):
         raise NpsiActionError("FC cannot create fleets.", status_code=403)
 
-    location_id = None
-    if source.default_location_id:
-        location_id = source.default_location.location_id
+    location = resolve_npsi_fleet_location(event)
 
     objective = (event.summary or "")[:200]
     payload = CreateEveFleetRequest(
@@ -87,7 +109,7 @@ def post_event_to_schedule(event: NpsiExternalEvent) -> NpsiExternalEvent:
         objective=objective,
         start_time=event.start_time,
         audience_id=source.default_audience_id,
-        location_id=location_id,
+        location_id=location.location_id,
         immediate_ping=False,
     )
     result = create_scheduled_fleet(user=fc_user, payload=payload)

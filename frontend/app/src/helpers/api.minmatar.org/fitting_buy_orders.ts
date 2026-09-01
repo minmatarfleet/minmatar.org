@@ -190,20 +190,25 @@ async function parse_json_or_throw(response: Response, method: string, endpoint:
             { cause: response.status },
         )
     }
-    if (response.status === 204)
+    if (response.status === 204 || response.status === 205)
         return null
-    return response.json()
+    const text = await response.text()
+    if (!text)
+        return null
+    return JSON.parse(text)
 }
 
 export async function list_fitting_buy_orders(
     access_token: string,
-    options: { status?: string; mine?: boolean } = {},
+    options: { status?: string; mine?: boolean; include_completed?: boolean } = {},
 ) {
     const params = new URLSearchParams()
     if (options.status)
         params.set('status', options.status)
     if (options.mine)
         params.set('mine', 'true')
+    if (options.include_completed)
+        params.set('include_completed', 'true')
     const qs = params.toString()
     const endpoint = `${API_ENDPOINT}/fitting-buy-orders${qs ? `?${qs}` : ''}`
     const response = await fetch(endpoint, { headers: auth_headers(access_token) })
