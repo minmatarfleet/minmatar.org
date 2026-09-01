@@ -285,7 +285,7 @@ CELERYBEAT_OTHER = [
         "[Misc] Poll NPSI calendar feeds",
         {
             "task": "fleets.tasks.poll_npsi_events",
-            "schedule": schedule(timedelta(minutes=15)),
+            "schedule": schedule(timedelta(hours=4)),
         },
     ),
     (
