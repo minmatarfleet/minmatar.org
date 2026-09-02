@@ -9,7 +9,7 @@ import type {
     TribeAvailableCharacter,
 } from '@dtypes/api.minmatar.org'
 import { tribe_group_apply_ui_state } from '@helpers/tribe_group_apply_ui'
-import { query_string } from '@helpers/string'
+import { tribe_group_can_manage } from '@helpers/tribe_group_viewer'
 import { query_string } from '@helpers/string'
 
 interface Props {
@@ -63,11 +63,15 @@ const status_partial = translatePath(
     `/partials/tribe_group_status_component?tribe_id=${tribe_id}&group_id=${group_id}&ui=actions`,
 )
 const auth_redirect = `${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(Astro.url.toString())}`
+const can_manage = tribe_group_can_manage({
+    group,
+    is_leader,
+    is_superuser,
+})
 
 const show_membership_action =
     !is_leader && (!is_auth || can_apply || has_open_membership)
-const show_manage_members = is_leader || (is_superuser && !is_leader)
-const show_actions = show_membership_action || show_manage_members
+const show_actions = show_membership_action || can_manage
 
 import Dropdown from '@components/blocks/Dropdown.astro'
 import ButtonApplyTribe from '@components/blocks/ButtonApplyTribe.astro'
@@ -175,23 +179,13 @@ import ButtonTribeMembership from '@components/blocks/ButtonTribeMembership.astr
                     </>
                 }
 
-                {is_leader &&
+                {can_manage &&
                     <a
                         class="[ tribe-group-actions-menu__item ]"
                         href={members_href}
                         x-on:click="close()"
                     >
                         {t('manage_membership')}
-                    </a>
-                }
-
-                {is_superuser && !is_leader &&
-                    <a
-                        class="[ tribe-group-actions-menu__item ]"
-                        href={members_href}
-                        x-on:click="close()"
-                    >
-                        {t('manage')}
                     </a>
                 }
             </nav>

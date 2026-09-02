@@ -124,6 +124,7 @@ if (Astro.request.method === "DELETE") {
 }
 
 import { get_characters_summary_sorted } from '@helpers/fetching/characters'
+import { tribe_group_can_manage, tribe_group_is_leader } from '@helpers/tribe_group_viewer'
 
 let tribe_group:TribeGroup | null = null
 let tribe_slug = ''
@@ -144,9 +145,18 @@ try {
     const summary = await get_characters_summary_sorted(auth_token)
     user_characters = summary.characters ?? []
 
-    const is_chief = Boolean(user_characters.find(character => character.character_id === tribe_group?.chief?.character_id))
+    const is_chief = tribe_group_is_leader({
+        group: tribe_group,
+        membership: null,
+        user_characters,
+    })
+    const can_manage = tribe_group_can_manage({
+        group: tribe_group,
+        is_leader: is_chief,
+        is_superuser,
+    })
     
-    if (!is_superuser && !is_chief)
+    if (!can_manage)
         return HTTP_403_Forbidden()
 
     approved = await get_memberships(auth_token as string, tribe_id, tribe_group.id, {

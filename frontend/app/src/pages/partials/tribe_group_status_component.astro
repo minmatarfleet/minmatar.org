@@ -108,6 +108,7 @@ import { get_user_profile } from '@helpers/permissions'
 import type { TribeGroup, SummaryCharacter, TribeMembership, TribeAvailableCharacter } from '@dtypes/api.minmatar.org'
 import { get_tribe_group, get_memberships, get_membership_characters_available } from '@helpers/api.minmatar.org/tribes'
 import { get_characters_summary_sorted } from '@helpers/fetching/characters'
+import { tribe_group_is_leader } from '@helpers/tribe_group_viewer'
 
 const actions_ui = Astro.url.searchParams.get('ui') === 'actions'
 
@@ -143,14 +144,11 @@ try {
     const membership = membership_by_group.get(tribe_group.id) ?? null
     is_member = membership?.status === 'active'
     is_pending = membership?.status === 'pending'
-
-    const user_character_ids = membership?.characters?.map((c) => c.character_id) ?? []
-    is_leader = Boolean(
-        tribe_group?.chief && (
-            tribe_group.chief.character_id === membership?.primary_character_id
-            || user_character_ids.includes(tribe_group.chief.character_id)
-        )
-    )
+    is_leader = tribe_group_is_leader({
+        group: tribe_group,
+        membership,
+        user_characters,
+    })
 
     const user_profile = user?.username
         ? await get_user_profile(user.username)

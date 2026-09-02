@@ -38,6 +38,7 @@ import {
 } from '@helpers/api.minmatar.org/tribes'
 import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 import { TRIBE_ACTIVITY_BY_CODE } from '@helpers/tribe_activity'
+import { tribe_group_can_manage, tribe_group_is_leader } from '@helpers/tribe_group_viewer'
 
 const tribe_id = parseInt(Astro?.params?.tribe_id ?? '')
 const group_id = parseInt(Astro?.params?.group_id ?? '')
@@ -108,13 +109,16 @@ if (!fetch_group_error && !tribe_group)
     return HTTP_404_Not_Found()
 
 const membership = membership_by_group.get(group_id) ?? null
-const user_character_ids = membership?.characters?.map((c) => c.character_id) ?? []
-const is_leader = Boolean(
-    tribe_group?.chief && (
-        tribe_group.chief.character_id === membership?.primary_character_id
-        || user_character_ids.includes(tribe_group.chief.character_id)
-    )
-)
+const is_leader = tribe_group_is_leader({
+    group: tribe_group,
+    membership,
+    user_characters,
+})
+const can_manage = tribe_group_can_manage({
+    group: tribe_group,
+    is_leader,
+    is_superuser,
+})
 const activity = tribe_group?.code
     ? TRIBE_ACTIVITY_BY_CODE[tribe_group.code]
     : undefined
@@ -172,6 +176,7 @@ import TribeGroupMembershipRequirements from '@components/blocks/TribeGroupMembe
 import GuidePostCard from '@components/blocks/GuidePostCard.astro'
 import PropagandaPostCard from '@components/blocks/PropagandaPostCard.astro'
 import LandingSwiper from '@components/blocks/LandingSwiper.astro'
+import Button from '@components/blocks/Button.astro'
 ---
 
 <Viewport
@@ -212,18 +217,28 @@ import LandingSwiper from '@components/blocks/LandingSwiper.astro'
                     </FlexInline>
                 </Flexblock>
                 {tribe_group &&
-                    <TribeGroupActions
-                        group={tribe_group}
-                        tribe_id={tribe_id}
-                        group_id={group_id}
-                        is_auth={is_auth}
-                        is_leader={is_leader}
-                        is_superuser={is_superuser}
-                        user_on_trial={user_on_trial}
-                        user_characters={user_characters}
-                        available_characters={available_characters}
-                        membership_by_group={membership_by_group}
-                    />
+                    <FlexInline gap="var(--space-xs)" class="[ items-start! ]">
+                        {can_manage &&
+                            <Button
+                                href={translatePath(`/alliance/tribes/${tribe_id}/${group_id}/members`)}
+                                size="sm"
+                            >
+                                {t('manage_membership')}
+                            </Button>
+                        }
+                        <TribeGroupActions
+                            group={tribe_group}
+                            tribe_id={tribe_id}
+                            group_id={group_id}
+                            is_auth={is_auth}
+                            is_leader={is_leader}
+                            is_superuser={is_superuser}
+                            user_on_trial={user_on_trial}
+                            user_characters={user_characters}
+                            available_characters={available_characters}
+                            membership_by_group={membership_by_group}
+                        />
+                    </FlexInline>
                 }
             </FlexInline>
 

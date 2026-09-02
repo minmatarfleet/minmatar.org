@@ -6,7 +6,7 @@ from django.db import transaction
 from django.db.models import Q, Sum
 from django.utils import timezone
 from eveonline.helpers.characters import user_primary_character
-from eveonline.models import EveCharacter
+from eveonline.models import EveCharacter, EveCorporation
 from eveuniverse.models import EveType
 
 from buyback.discord_tasks import (
@@ -16,6 +16,7 @@ from buyback.discord_tasks import (
 from buyback.helpers.purchase_discord import discord_thread_url
 from buyback.helpers.purchase_fill import PurchaseFill, fill_purchase
 from buyback.helpers.remaining import remaining_sale_quantities
+from buyback.helpers.sell_pricing import contract_total_isk, line_total
 from buyback.models import (
     BuybackLedgerEntry,
     BuybackPurchaseOrder,
@@ -112,11 +113,40 @@ def serialize_order(order: BuybackPurchaseOrder) -> dict:
     }
 
 
-def _sold_by_type_since(character_id: int, since) -> dict[int, int]:
+def _match_entity_ids(order: BuybackPurchaseOrder) -> set[int]:
+    """Characters and corps that count as this thread maker for outbound matching."""
+    ids: set[int] = set()
+    if order.character_id:
+        ids.add(int(order.character_id))
+    user_id = order.created_by_id
+    if not user_id:
+        return ids
+    characters = list(
+        EveCharacter.objects.filter(user_id=user_id).values_list(
+            "character_id", "corporation_id"
+        )
+    )
+    for character_id, corporation_id in characters:
+        ids.add(int(character_id))
+        if corporation_id:
+            ids.add(int(corporation_id))
+    ids.update(
+        int(corporation_id)
+        for corporation_id in EveCorporation.objects.filter(
+            ceo__user_id=user_id
+        ).values_list("corporation_id", flat=True)
+        if corporation_id
+    )
+    return ids
+
+
+def _sold_by_type_since(entity_ids: set[int], since) -> dict[int, int]:
+    if not entity_ids:
+        return {}
     rows = (
         BuybackLedgerEntry.objects.filter(
             reason=BuybackLedgerEntry.Reason.SOLD_CONTRACT,
-            counterparty_id=character_id,
+            counterparty_id__in=entity_ids,
             occurred_at__gte=since,
         )
         .values("eve_type_id")
@@ -129,27 +159,42 @@ def _sold_by_type_since(character_id: int, since) -> dict[int, int]:
     }
 
 
+def _claimed_qty(
+    allocated: dict[tuple[int, int], int],
+    entity_ids: set[int],
+    type_id: int,
+) -> int:
+    if not entity_ids:
+        return 0
+    return max(
+        (allocated.get((entity_id, type_id), 0) for entity_id in entity_ids),
+        default=0,
+    )
+
+
 def _allocate_order_lines(
     order: BuybackPurchaseOrder,
     allocated: dict[tuple[int, int], int],
 ) -> None:
-    if not order.character_id:
+    entity_ids = _match_entity_ids(order)
+    if not entity_ids:
         return
     for line in order.lines.all():
-        key = (order.character_id, line.eve_type_id)
-        allocated[key] = allocated.get(key, 0) + int(line.quantity)
+        for entity_id in entity_ids:
+            key = (entity_id, line.eve_type_id)
+            allocated[key] = allocated.get(key, 0) + int(line.quantity)
 
 
 def _allocated_before_order(
     order: BuybackPurchaseOrder,
 ) -> dict[tuple[int, int], int]:
     allocated: dict[tuple[int, int], int] = {}
-    if not order.character_id:
+    entity_ids = _match_entity_ids(order)
+    if not entity_ids:
         return allocated
     earlier = (
         BuybackPurchaseOrder.objects.filter(
             status=BuybackPurchaseOrder.Status.PENDING,
-            character_id=order.character_id,
         )
         .filter(
             Q(created_at__lt=order.created_at)
@@ -159,23 +204,60 @@ def _allocated_before_order(
         .order_by("created_at", "pk")
     )
     for earlier_order in earlier:
-        _allocate_order_lines(earlier_order, allocated)
+        if _match_entity_ids(earlier_order) & entity_ids:
+            _allocate_order_lines(earlier_order, allocated)
     return allocated
+
+
+def _outbound_cover_for_order(
+    order: BuybackPurchaseOrder,
+    allocated: dict[tuple[int, int], int],
+) -> dict[int, int]:
+    entity_ids = _match_entity_ids(order)
+    if not entity_ids:
+        return {}
+    sold = _sold_by_type_since(entity_ids, order.created_at)
+    cover: dict[int, int] = {}
+    for line in order.lines.all():
+        claimed = _claimed_qty(allocated, entity_ids, line.eve_type_id)
+        available = sold.get(line.eve_type_id, 0) - claimed
+        cover[line.eve_type_id] = max(available, 0)
+    return cover
 
 
 def _outbound_available_for_order(
     order: BuybackPurchaseOrder,
     allocated: dict[tuple[int, int], int],
 ) -> bool:
-    if not order.character_id:
+    entity_ids = _match_entity_ids(order)
+    if not entity_ids:
         return False
-    sold = _sold_by_type_since(order.character_id, order.created_at)
+    cover = _outbound_cover_for_order(order, allocated)
     for line in order.lines.all():
-        key = (order.character_id, line.eve_type_id)
-        available = sold.get(line.eve_type_id, 0) - allocated.get(key, 0)
-        if available < line.quantity:
+        if cover.get(line.eve_type_id, 0) < line.quantity:
             return False
     return True
+
+
+def _apply_outbound_fill(
+    order: BuybackPurchaseOrder, cover: dict[int, int]
+) -> None:
+    remaining = dict(cover)
+    totals = []
+    for line in list(order.lines.all()):
+        available = remaining.get(line.eve_type_id, 0)
+        shipped = min(int(line.quantity), available)
+        remaining[line.eve_type_id] = available - shipped
+        if shipped <= 0:
+            line.delete()
+            continue
+        if shipped != line.quantity:
+            line.quantity = shipped
+            line.line_total = line_total(line.unit_price, shipped)
+            line.save(update_fields=["quantity", "line_total"])
+        totals.append(line.line_total)
+    order.contract_total = contract_total_isk(totals)
+    order.save(update_fields=["contract_total", "updated_at"])
 
 
 def _order_character(order_character: EveCharacter | None, user):
@@ -280,10 +362,13 @@ def complete_purchase_order(order: BuybackPurchaseOrder, user) -> None:
     if order.status != BuybackPurchaseOrder.Status.PENDING:
         raise PurchaseOrderError("Only pending orders can be completed.")
     allocated = _allocated_before_order(order)
-    if not _outbound_available_for_order(order, allocated):
+    cover = _outbound_cover_for_order(order, allocated)
+    if not any(qty > 0 for qty in cover.values()):
         raise PurchaseOrderError(
             "No matching outbound contract has synced for this order yet."
         )
+    if not _outbound_available_for_order(order, allocated):
+        _apply_outbound_fill(order, cover)
     order.status = BuybackPurchaseOrder.Status.COMPLETED
     order.completed_at = timezone.now()
     order.completed_by = user

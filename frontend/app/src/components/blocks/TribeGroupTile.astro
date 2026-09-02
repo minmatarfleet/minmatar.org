@@ -17,6 +17,7 @@ import type {
     TribeAvailableCharacter,
 } from '@dtypes/api.minmatar.org'
 import { tribe_group_cover } from '@helpers/tribe_covers'
+import { tribe_group_can_manage, tribe_group_is_leader } from '@helpers/tribe_group_viewer'
 
 interface Props {
     tribe_group:            TribeGroup;
@@ -39,9 +40,17 @@ const {
 const id = `tribe-group-${tribe_group.tribe_id}-${tribe_group.id}`
 
 const membership = membership_by_group.get(tribe_group.id) ?? null
-const user_character_ids = membership?.characters.map(character => character.character_id) ?? []
 const leaders = tribe_group.chief ? [ tribe_group.chief ] : []
-const is_leader = leaders.find((leader) => leader.character_id === membership?.primary_character_id) || leaders.find(leader => user_character_ids?.includes(leader?.character_id ?? 0))
+const is_leader = tribe_group_is_leader({
+    group: tribe_group,
+    membership,
+    user_characters,
+})
+const can_manage = tribe_group_can_manage({
+    group: tribe_group,
+    is_leader,
+    is_superuser: Boolean(is_superuser),
+})
 const is_member = membership?.status === 'active'
 const is_pending = membership?.status === 'pending'
 const has_open_membership = is_member || is_pending
@@ -170,9 +179,9 @@ import NotificationBadge from './NotificationBadge.astro'
                 }
             </Flexblock>
 
-            {(show_status_actions) &&
+            {(show_status_actions || can_manage) &&
                 <FlexInline>
-                    {!is_leader ?
+                    {!is_leader &&
                         <TribeStatus
                             group={tribe_group}
                             tribe_id={tribe_group.tribe_id}
@@ -182,15 +191,8 @@ import NotificationBadge from './NotificationBadge.astro'
                             is_auth={is_auth}
                             membership_by_group={membership_by_group}
                         />
-                        <>{is_superuser &&
-                            <Button
-                                href={translatePath(`/alliance/tribes/${tribe_group.tribe_id}/${tribe_group.id}/members`)}
-                                color='transparent'
-                            >
-                                {t('manage')}
-                            </Button>
-                        }</>
-                        :
+                    }
+                    {can_manage &&
                         <Button
                             href={translatePath(`/alliance/tribes/${tribe_group.tribe_id}/${tribe_group.id}/members`)}
                         >

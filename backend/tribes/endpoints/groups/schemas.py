@@ -55,6 +55,7 @@ class TribeGroupSchema(BaseModel):
     require_off_trial: bool = False
     allowed_affiliations: List[AffiliationRefSchema] = []
     can_apply: bool = False
+    can_manage: bool = False
 
 
 class TribeGroupReportSchema(BaseModel):
