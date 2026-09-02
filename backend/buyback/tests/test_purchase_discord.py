@@ -271,6 +271,7 @@ class PurchaseDiscordAckApiTestCase(TestCase):
         )
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.json()["status"], "completed")
+        unused_status.assert_called_once_with(order.pk)
 
     @patch(
         "buyback.helpers.purchase_orders.notify_buyback_purchase_status_changed_task.delay"
@@ -319,6 +320,7 @@ class PurchaseDiscordAckApiTestCase(TestCase):
         )
         self.assertEqual(response.status_code, 200, response.content)
         self.assertEqual(response.json()["status"], "cancelled")
+        unused_status.assert_called_once_with(data["id"])
 
     @patch(
         "buyback.helpers.purchase_orders.notify_buyback_purchase_created_task.delay"

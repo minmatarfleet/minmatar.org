@@ -269,7 +269,6 @@ def _order_character(order_character: EveCharacter | None, user):
     return primary.character_id, primary.character_name
 
 
-@transaction.atomic
 def create_purchase_order(
     *,
     user,
@@ -280,117 +279,125 @@ def create_purchase_order(
     use_reprocessing_implants: bool = False,
 ) -> BuybackPurchaseOrder:
     """Place a pending purchase from the current fill, or raise."""
-    source = (source or BuybackPurchaseOrder.Source.STOCKPILE).strip().lower()
-    if source not in (
-        BuybackPurchaseOrder.Source.PLANNER,
-        BuybackPurchaseOrder.Source.STOCKPILE,
-    ):
-        raise PurchaseOrderError("source must be planner or stockpile")
-
-    _lock_hangar_sales()
-    settings = EveBuybackSettings.load()
-    fill = fill_purchase(
-        paste,
-        settings=settings,
-        character=character,
-        facility_key=facility_key,
-        use_reprocessing_implants=use_reprocessing_implants,
-    )
-    if not fill.picks:
-        raise PurchaseOrderError("Buyback has nothing that matches that list.")
-    if any(pick.unit_price is None for pick in fill.picks):
-        raise PurchaseOrderError(
-            "Could not price every hangar line. Try again later."
+    with transaction.atomic():
+        source = (
+            (source or BuybackPurchaseOrder.Source.STOCKPILE).strip().lower()
         )
-    if fill.contract_total <= 0:
-        raise PurchaseOrderError("Contract total must be positive.")
+        if source not in (
+            BuybackPurchaseOrder.Source.PLANNER,
+            BuybackPurchaseOrder.Source.STOCKPILE,
+        ):
+            raise PurchaseOrderError("source must be planner or stockpile")
 
-    remaining = remaining_sale_quantities()
-    for pick in fill.picks:
-        if remaining.get(pick.type_id, 0) < pick.quantity:
+        _lock_hangar_sales()
+        settings = EveBuybackSettings.load()
+        fill = fill_purchase(
+            paste,
+            settings=settings,
+            character=character,
+            facility_key=facility_key,
+            use_reprocessing_implants=use_reprocessing_implants,
+        )
+        if not fill.picks:
             raise PurchaseOrderError(
-                "That stock is no longer available. Refresh and try again."
+                "Buyback has nothing that matches that list."
             )
+        if any(pick.unit_price is None for pick in fill.picks):
+            raise PurchaseOrderError(
+                "Could not price every hangar line. Try again later."
+            )
+        if fill.contract_total <= 0:
+            raise PurchaseOrderError("Contract total must be positive.")
 
-    character_id, character_name = _order_character(character, user)
-    order = BuybackPurchaseOrder.objects.create(
-        status=BuybackPurchaseOrder.Status.PENDING,
-        source=source,
-        created_by=user,
-        character_id=character_id,
-        character_name=character_name,
-        paste=paste,
-        contract_total=fill.contract_total,
-        sell_price_basis=fill.sell_price_basis,
-        sell_markup=fill.sell_markup,
-    )
-    type_ids = [pick.type_id for pick in fill.picks]
-    types = {
-        eve_type.id: eve_type
-        for eve_type in EveType.objects.filter(id__in=type_ids)
-    }
-    missing = [type_id for type_id in type_ids if type_id not in types]
-    if missing:
-        raise PurchaseOrderError(
-            "Could not resolve item types. Try again later."
+        remaining = remaining_sale_quantities()
+        for pick in fill.picks:
+            if remaining.get(pick.type_id, 0) < pick.quantity:
+                raise PurchaseOrderError(
+                    "That stock is no longer available. Refresh and try again."
+                )
+
+        character_id, character_name = _order_character(character, user)
+        order = BuybackPurchaseOrder.objects.create(
+            status=BuybackPurchaseOrder.Status.PENDING,
+            source=source,
+            created_by=user,
+            character_id=character_id,
+            character_name=character_name,
+            paste=paste,
+            contract_total=fill.contract_total,
+            sell_price_basis=fill.sell_price_basis,
+            sell_markup=fill.sell_markup,
         )
-    BuybackPurchaseOrderLine.objects.bulk_create(
-        [
-            BuybackPurchaseOrderLine(
-                order=order,
-                eve_type=types[pick.type_id],
-                name=pick.name,
-                quantity=pick.quantity,
-                unit_price=pick.unit_price,
-                line_total=pick.line_total,
-                fill_source=pick.fill_source,
+        type_ids = [pick.type_id for pick in fill.picks]
+        types = {
+            eve_type.id: eve_type
+            for eve_type in EveType.objects.filter(id__in=type_ids)
+        }
+        missing = [type_id for type_id in type_ids if type_id not in types]
+        if missing:
+            raise PurchaseOrderError(
+                "Could not resolve item types. Try again later."
             )
-            for pick in fill.picks
-        ]
-    )
+        BuybackPurchaseOrderLine.objects.bulk_create(
+            [
+                BuybackPurchaseOrderLine(
+                    order=order,
+                    eve_type=types[pick.type_id],
+                    name=pick.name,
+                    quantity=pick.quantity,
+                    unit_price=pick.unit_price,
+                    line_total=pick.line_total,
+                    fill_source=pick.fill_source,
+                )
+                for pick in fill.picks
+            ]
+        )
     notify_buyback_purchase_created_task.delay(order.pk)
     return order
 
 
-@transaction.atomic
 def complete_purchase_order(order: BuybackPurchaseOrder, user) -> None:
-    order = (
-        BuybackPurchaseOrder.objects.select_for_update()
-        .prefetch_related("lines")
-        .get(pk=order.pk)
-    )
-    if order.status != BuybackPurchaseOrder.Status.PENDING:
-        raise PurchaseOrderError("Only pending orders can be completed.")
-    allocated = _allocated_before_order(order)
-    cover = _outbound_cover_for_order(order, allocated)
-    if not any(qty > 0 for qty in cover.values()):
-        raise PurchaseOrderError(
-            "No matching outbound contract has synced for this order yet."
+    with transaction.atomic():
+        order = (
+            BuybackPurchaseOrder.objects.select_for_update()
+            .prefetch_related("lines")
+            .get(pk=order.pk)
         )
-    if not _outbound_available_for_order(order, allocated):
-        _apply_outbound_fill(order, cover)
-    order.status = BuybackPurchaseOrder.Status.COMPLETED
-    order.completed_at = timezone.now()
-    order.completed_by = user
-    order.save(
-        update_fields=[
-            "status",
-            "completed_at",
-            "completed_by",
-            "updated_at",
-        ]
-    )
+        if order.status != BuybackPurchaseOrder.Status.PENDING:
+            raise PurchaseOrderError("Only pending orders can be completed.")
+        allocated = _allocated_before_order(order)
+        cover = _outbound_cover_for_order(order, allocated)
+        if not any(qty > 0 for qty in cover.values()):
+            raise PurchaseOrderError(
+                "No matching outbound contract has synced for this order yet."
+            )
+        if not _outbound_available_for_order(order, allocated):
+            _apply_outbound_fill(order, cover)
+        order.status = BuybackPurchaseOrder.Status.COMPLETED
+        order.completed_at = timezone.now()
+        order.completed_by = user
+        order.save(
+            update_fields=[
+                "status",
+                "completed_at",
+                "completed_by",
+                "updated_at",
+            ]
+        )
+    # After commit so the worker loads COMPLETED, not still-pending.
     notify_buyback_purchase_status_changed_task.delay(order.pk)
 
 
-@transaction.atomic
 def cancel_purchase_order(order: BuybackPurchaseOrder) -> None:
-    order = BuybackPurchaseOrder.objects.select_for_update().get(pk=order.pk)
-    if order.status != BuybackPurchaseOrder.Status.PENDING:
-        raise PurchaseOrderError("Only pending orders can be cancelled.")
-    order.status = BuybackPurchaseOrder.Status.CANCELLED
-    order.completed_at = timezone.now()
-    order.save(update_fields=["status", "completed_at", "updated_at"])
+    with transaction.atomic():
+        order = BuybackPurchaseOrder.objects.select_for_update().get(
+            pk=order.pk
+        )
+        if order.status != BuybackPurchaseOrder.Status.PENDING:
+            raise PurchaseOrderError("Only pending orders can be cancelled.")
+        order.status = BuybackPurchaseOrder.Status.CANCELLED
+        order.completed_at = timezone.now()
+        order.save(update_fields=["status", "completed_at", "updated_at"])
     notify_buyback_purchase_status_changed_task.delay(order.pk)
 
 
@@ -408,26 +415,27 @@ def discord_ack_order(
     return order
 
 
-@transaction.atomic
 def try_complete_from_outbound_contracts() -> int:
     """Complete pending orders covered by synced outbound sale contracts."""
-    completed = 0
+    completed_ids: list[int] = []
     allocated: dict[tuple[int, int], int] = {}
-    pending = (
-        BuybackPurchaseOrder.objects.filter(
-            status=BuybackPurchaseOrder.Status.PENDING,
-            character_id__isnull=False,
+    with transaction.atomic():
+        pending = (
+            BuybackPurchaseOrder.objects.filter(
+                status=BuybackPurchaseOrder.Status.PENDING,
+                character_id__isnull=False,
+            )
+            .prefetch_related("lines")
+            .order_by("created_at", "pk")
         )
-        .prefetch_related("lines")
-        .order_by("created_at", "pk")
-    )
-    for order in pending:
-        if not _outbound_available_for_order(order, allocated):
-            continue
-        order.status = BuybackPurchaseOrder.Status.COMPLETED
-        order.completed_at = timezone.now()
-        order.save(update_fields=["status", "completed_at", "updated_at"])
-        notify_buyback_purchase_status_changed_task.delay(order.pk)
-        _allocate_order_lines(order, allocated)
-        completed += 1
-    return completed
+        for order in pending:
+            if not _outbound_available_for_order(order, allocated):
+                continue
+            order.status = BuybackPurchaseOrder.Status.COMPLETED
+            order.completed_at = timezone.now()
+            order.save(update_fields=["status", "completed_at", "updated_at"])
+            _allocate_order_lines(order, allocated)
+            completed_ids.append(order.pk)
+    for order_id in completed_ids:
+        notify_buyback_purchase_status_changed_task.delay(order_id)
+    return len(completed_ids)

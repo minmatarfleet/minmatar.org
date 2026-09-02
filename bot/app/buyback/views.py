@@ -39,6 +39,15 @@ async def _handle_ack(
 ) -> None:
     await interaction.response.defer(ephemeral=True)
 
+    # Complete/cancel archives the thread. Clear buttons and settle
+    # interaction traffic first, then the API posts a public notice, waits,
+    # and archives (same order as LP buyback ISK-sent / help tickets).
+    # Do not edit or follow up in the thread after the API returns —
+    # Discord unarchives on later edits.
+    await _clear_message_buttons(interaction)
+    await interaction.followup.send(f"{success_label}.", ephemeral=True)
+    await asyncio.sleep(THREAD_ARCHIVE_DELAY_SECONDS)
+
     try:
         await asyncio.to_thread(
             discord_ack_order,
@@ -60,10 +69,6 @@ async def _handle_ack(
             ephemeral=True,
         )
         return
-
-    await _clear_message_buttons(interaction)
-    await interaction.followup.send(f"{success_label}.", ephemeral=True)
-    await asyncio.sleep(THREAD_ARCHIVE_DELAY_SECONDS)
 
 
 class CompleteButton(
