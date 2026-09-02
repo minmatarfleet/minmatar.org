@@ -16,6 +16,7 @@ from tribes.endpoints.groups.schemas import (
     TribeGroupSchema,
 )
 from tribes.endpoints.serialization import user_to_character_ref
+from tribes.helpers import user_can_manage_group
 from tribes.models import TribeGroup, TribeGroupMembership
 
 
@@ -46,12 +47,14 @@ def serialize_tribe_group(
         ).count()
     chief_ref = user_to_character_ref(tg.chief) if tg.chief else None
     can_apply = False
+    can_manage = False
     if request_user is not None and getattr(
         request_user, "is_authenticated", False
     ):
         can_apply = can_use_feature(
             request_user, "tribes.apply", tribe_group=tg
         )
+        can_manage = user_can_manage_group(request_user, tg)
 
     return TribeGroupSchema(
         id=tg.pk,
@@ -96,4 +99,5 @@ def serialize_tribe_group(
         require_off_trial=bool(tg.require_off_trial),
         allowed_affiliations=effective_allowed_affiliations(tg),
         can_apply=can_apply,
+        can_manage=can_manage,
     )

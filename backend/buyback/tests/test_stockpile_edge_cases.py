@@ -29,6 +29,7 @@ from buyback.models import (
 )
 from buyback.tests.helpers import BASE_URL, ensure_type
 from eveonline.models import (
+    EveCharacter,
     EveCorporation,
     EveCorporationContract,
     EveLocation,
@@ -294,6 +295,62 @@ class FifoAutoCompleteEdgeCaseTestCase(StockpileEdgeCaseBase):
         with self.assertRaises(PurchaseOrderError):
             complete_purchase_order(order, self.user)
 
+    def test_contract_to_buyer_corporation_completes(self):
+        EveCharacter.objects.filter(character_id=123456).update(
+            corporation_id=98832280
+        )
+        order = self._place(10)
+        _ledger(
+            eve_type=self.water,
+            quantity=10,
+            reason=BuybackLedgerEntry.Reason.SOLD_CONTRACT,
+            source_id="out:buyer-corp",
+            counterparty_id=98832280,
+            occurred_at=timezone.now(),
+        )
+        self.assertEqual(try_complete_from_outbound_contracts(), 1)
+        order.refresh_from_db()
+        self.assertEqual(order.status, BuybackPurchaseOrder.Status.COMPLETED)
+
+    def test_contract_to_buyer_alt_completes(self):
+        EveCharacter.objects.create(
+            character_id=222222,
+            character_name="Alt Char",
+            user=self.user,
+        )
+        order = self._place(10)
+        _ledger(
+            eve_type=self.water,
+            quantity=10,
+            reason=BuybackLedgerEntry.Reason.SOLD_CONTRACT,
+            source_id="out:buyer-alt",
+            counterparty_id=222222,
+            occurred_at=timezone.now(),
+        )
+        self.assertEqual(try_complete_from_outbound_contracts(), 1)
+        order.refresh_from_db()
+        self.assertEqual(order.status, BuybackPurchaseOrder.Status.COMPLETED)
+
+    def test_contract_to_ceo_corporation_completes(self):
+        char = EveCharacter.objects.get(character_id=123456)
+        EveCorporation.objects.create(
+            corporation_id=5550001,
+            name="Owned Corp",
+            ceo=char,
+        )
+        order = self._place(10)
+        _ledger(
+            eve_type=self.water,
+            quantity=10,
+            reason=BuybackLedgerEntry.Reason.SOLD_CONTRACT,
+            source_id="out:ceo-corp",
+            counterparty_id=5550001,
+            occurred_at=timezone.now(),
+        )
+        self.assertEqual(try_complete_from_outbound_contracts(), 1)
+        order.refresh_from_db()
+        self.assertEqual(order.status, BuybackPurchaseOrder.Status.COMPLETED)
+
 
 class HangarCapEdgeCaseTestCase(TestCase):
     def setUp(self):
@@ -449,6 +506,43 @@ class MultiLineOrderEdgeCaseTestCase(TestCase):
             counterparty_id=123456,
         )
         self.assertEqual(try_complete_from_outbound_contracts(), 1)
+
+    def test_manual_complete_accepts_partial_outbound(self):
+        order = BuybackPurchaseOrder.objects.create(
+            status=BuybackPurchaseOrder.Status.PENDING,
+            created_by=self.user,
+            character_id=123456,
+            character_name="Test Char",
+            paste="Water\t10\nBiocells\t10",
+            contract_total=2000,
+            sell_price_basis=SellPriceBasis.JITA_SPLIT,
+            sell_markup=0,
+        )
+        for eve_type, qty in ((self.water, 10), (self.bio, 10)):
+            order.lines.create(
+                eve_type=eve_type,
+                name=eve_type.name,
+                quantity=qty,
+                unit_price=Decimal("100.00"),
+                line_total=Decimal("1000.00"),
+            )
+        _ledger(
+            eve_type=self.water,
+            quantity=6,
+            reason=BuybackLedgerEntry.Reason.SOLD_CONTRACT,
+            source_id="out:water-partial",
+            counterparty_id=123456,
+        )
+        complete_purchase_order(order, self.user)
+        order.refresh_from_db()
+        self.assertEqual(order.status, BuybackPurchaseOrder.Status.COMPLETED)
+        lines = list(order.lines.all())
+        self.assertEqual(len(lines), 1)
+        self.assertEqual(lines[0].eve_type_id, self.water.id)
+        self.assertEqual(lines[0].quantity, 6)
+        self.assertEqual(order.contract_total, 600)
+        self.assertEqual(remaining_sale_quantities()[self.water.id], 44)
+        self.assertEqual(remaining_sale_quantities()[self.bio.id], 50)
 
 
 class ConcurrentPlaceEdgeCaseTestCase(TestCase):

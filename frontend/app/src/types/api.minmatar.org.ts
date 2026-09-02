@@ -74,6 +74,7 @@ export interface TribeGroup {
     require_off_trial?:     boolean;
     allowed_affiliations?:  TribeAffiliationRef[];
     can_apply?:             boolean;
+    can_manage?:            boolean;
 }
 
 export interface Tribe {

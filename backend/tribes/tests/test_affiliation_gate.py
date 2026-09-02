@@ -129,6 +129,7 @@ class TribeGroupAffiliationGateTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertTrue(data["can_apply"])
+        self.assertFalse(data["can_manage"])
         names = {a["name"] for a in data["allowed_affiliations"]}
         self.assertEqual(names, {"Alliance"})
 
@@ -141,6 +142,17 @@ class TribeGroupAffiliationGateTestCase(TestCase):
             HTTP_AUTHORIZATION=f"Bearer {self.token}",
         )
         self.assertFalse(response.json()["can_apply"])
+        self.assertFalse(response.json()["can_manage"])
+
+    def test_group_schema_can_manage_for_group_chief(self):
+        self.alliance_only.chief = self.user
+        self.alliance_only.save(update_fields=["chief"])
+        response = self.client.get(
+            f"{BASE_URL}/{self.tribe.pk}/groups/{self.alliance_only.pk}",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["can_manage"])
 
     def test_offboard_only_ineligible_memberships(self):
         alliance_membership = TribeGroupMembership.objects.create(
