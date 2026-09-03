@@ -214,12 +214,12 @@ export function can_promote_alliance_health_trial(opts: {
     switch (bucket) {
         case 'approve':
         case 'remove':
+        case 'evaluating':
             return true
         case 'passing':
             return (opts.alliance_days ?? 0) >= 60
         case 'current':
         case 'failing':
-        case 'evaluating':
         case 'add':
         case 'flagged':
         case 'too_early':
