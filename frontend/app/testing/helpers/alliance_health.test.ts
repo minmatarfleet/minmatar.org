@@ -35,6 +35,36 @@ describe('can_promote_alliance_health_trial', () => {
         ).toBe(false)
     })
 
+    it('shows promote on evaluating for people who are not passing yet', () => {
+        expect(
+            can_promote_alliance_health_trial({
+                ...base,
+                bucket: 'evaluating',
+                decision: 'nudge',
+                alliance_days: 80,
+            }),
+        ).toBe(true)
+        expect(
+            can_promote_alliance_health_trial({
+                ...base,
+                bucket: 'evaluating',
+                decision: 'hold',
+                alliance_days: 90,
+            }),
+        ).toBe(true)
+    })
+
+    it('hides promote on evaluating for too-early tenure', () => {
+        expect(
+            can_promote_alliance_health_trial({
+                ...base,
+                bucket: 'evaluating',
+                decision: 'too_early',
+                alliance_days: 20,
+            }),
+        ).toBe(false)
+    })
+
     it('hides promote on passing when tenure is under 60 days', () => {
         expect(
             can_promote_alliance_health_trial({

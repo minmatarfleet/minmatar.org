@@ -90,12 +90,7 @@ const PARTIAL_URL = translatePath('/partials/alliance_health_trials_component')
     ) : (
         <AllianceHealthTrialsTable
             pilots={pilots}
-            can_promote={can_mutate && (
-                bucket === 'current' ||
-                bucket === 'passing' ||
-                bucket === 'approve' ||
-                bucket === 'remove'
-            )}
+            can_promote={can_mutate}
             officer_corp_ids={officer_corp_ids}
             alliance_wide={alliance_wide}
             initial_corp={initial_corp}
