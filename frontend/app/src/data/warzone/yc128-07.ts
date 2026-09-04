@@ -27,6 +27,9 @@ import {
     MINMATAR_SMALL_GANG,
     MINMATAR_SOLO,
     SCOREBOARD_STATS,
+    SHIPS_FLEET,
+    SHIPS_SMALL_GANG,
+    SHIPS_SOLO,
     SYSTEM_STATS,
     TRAFFIC,
 } from './yc128-07-boards'
@@ -238,7 +241,15 @@ export const YC128_07: WarzoneIssue = {
         boards: [
             { title: 'Solo', minmatar: MINMATAR_SOLO, amarr: AMARR_SOLO },
             { title: 'Small gang', minmatar: MINMATAR_SMALL_GANG, amarr: AMARR_SMALL_GANG },
-            { title: 'Fleet', minmatar: MINMATAR_FLEET, amarr: AMARR_FLEET },
+            { title: 'Fleets', minmatar: MINMATAR_FLEET, amarr: AMARR_FLEET },
+        ],
+    },
+    top_ships: {
+        scope: 'Hulls destroyed in the warzone in July, by the size of the gang on the killmail. Capsules excluded.',
+        boards: [
+            { title: 'Solo', ships: SHIPS_SOLO },
+            { title: 'Small gang', ships: SHIPS_SMALL_GANG },
+            { title: 'Fleets', ships: SHIPS_FLEET },
         ],
     },
     groups: {

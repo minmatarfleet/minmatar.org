@@ -144,6 +144,7 @@ let total_isk = 0
 let done = 0
 const militia_kills = { minmatar: 0, amarr: 0 }
 const active_pilots = { minmatar: new Set(), amarr: new Set() }
+const ships_by_bucket = { solo: new Map(), small_gang: new Map(), fleet: new Map() }
 for (const sid of system_ids) {
     const cur = clean(await system_month_kills(sid, YEAR, MONTH), YEAR, MONTH)
     const pv = clean(await system_month_kills(sid, prev.year, prev.month), prev.year, prev.month)
@@ -157,6 +158,8 @@ for (const sid of system_ids) {
         const militias_on = new Set(players.map((a) => MILITIAS[a.faction_id]).filter(Boolean))
         if (militias_on.has('minmatar')) militia_kills.minmatar += 1
         if (militias_on.has('amarr')) militia_kills.amarr += 1
+        const victim_ship = k.victim?.ship_type_id
+        if (victim_ship) ships_by_bucket[bucket].set(victim_ship, (ships_by_bucket[bucket].get(victim_ship) ?? 0) + 1)
         for (const a of players) {
             const m = MILITIAS[a.faction_id]
             if (m) {
@@ -191,6 +194,7 @@ console.error(`\n${YEAR}-${MONTH}: ${total_ships} ships, ${(total_isk / 1e12).to
 // Pilot boards.
 const top = (map) => [...map.entries()].sort((a, b) => b[1] - a[1] || a[0] - b[0]).slice(0, TOP)
 const boards = {}
+const ship_boards = {}
 const name_ids = new Set()
 const top_affiliation = (cid) => {
     const map = affil.get(cid)
@@ -212,6 +216,11 @@ for (const m of Object.keys(counts)) {
 }
 
 // Groups: warzone-share check via zKill group endpoint.
+for (const b of ['solo', 'small_gang', 'fleet']) {
+    ship_boards[b] = top(ships_by_bucket[b])
+    for (const [id] of ship_boards[b]) name_ids.add(id)
+}
+
 const candidates = [...groups.values()].filter((g) => g.killmails >= MIN_GROUP_KILLS).sort((a, b) => b.killmails - a.killmails)
 console.error(`\nChecking warzone share for ${candidates.length} candidate groups`)
 const qualified = []
@@ -313,7 +322,7 @@ let out = `/**
  * Do not edit by hand; re-run the script.
  */
 
-import type { WarzoneGroup, WarzonePilot, WarzoneTrafficRow } from './types'
+import type { WarzoneGroup, WarzonePilot, WarzoneShip, WarzoneTrafficRow } from './types'
 
 export const BOARDS_GENERATED_ON = '${today}'
 export const BOARDS_SAMPLED_KILLS = ${ti(total_ships)}
@@ -326,6 +335,9 @@ export const SCOREBOARD_STATS = {
 `
 for (const m of ['minmatar', 'amarr']) for (const b of ['solo', 'small_gang', 'fleet'])
     out += `\nexport const ${m.toUpperCase()}_${BL[b]}: readonly WarzonePilot[] = [\n${pilots_ts(boards[m][b])}\n]\n`
+const ships_ts = (rows) => rows.map(([id, count]) => `    { typeId: ${ti(id)}, name: ${JSON.stringify(names.get(id) ?? String(id))}, count: ${count} },`).join('\n')
+for (const b of ['solo', 'small_gang', 'fleet'])
+    out += `\nexport const SHIPS_${BL[b]}: readonly WarzoneShip[] = [\n${ships_ts(ship_boards[b])}\n]\n`
 out += `\nexport const GROUPS: readonly WarzoneGroup[] = [\n${groups_ts(qualified)}\n]\n`
 out += `\nexport const TRAFFIC: readonly WarzoneTrafficRow[] = [\n${traffic_ts(traffic)}\n]\n`
 const front_ships_label = (v) => (v >= 1000 ? `~${Math.round(v / 1000)}k` : String(v))

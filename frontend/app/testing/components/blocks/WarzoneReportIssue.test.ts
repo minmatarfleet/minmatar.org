@@ -20,4 +20,5 @@ test('WarzoneReportIssue renders July YC128 sections', async () => {
     expect(result).toContain('Ships lost by side')
     expect(result).toContain('About the numbers')
     expect(result).toContain('Previous owner')
+    expect(result).toContain('Top ships')
 })

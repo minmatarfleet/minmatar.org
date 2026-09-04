@@ -12,6 +12,7 @@ import Grid from '@components/compositions/Grid.astro'
 import MinmatarLogo from '@components/logos/MinmatarLogo.astro'
 import AmarrLogo from '@components/logos/AmarrLogo.astro'
 import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
 import GuidePostCard from '@components/blocks/GuidePostCard.astro'
 import { getPublishedGuides } from '@/data/guides'
 import { get_alliance_logo, get_corporation_logo } from '@helpers/eve_image_server'
@@ -570,6 +571,49 @@ const featured_guides = issue.get_involved.featured_guides
             ))}
         </Grid>
         <p class="[ wz-footnote ]">{issue.pilots.scope}</p>
+    </section>
+
+    <section id="ships" class="[ wz-section ]">
+        <header class="[ wz-section__head ]">
+            <h2>Top ships</h2>
+            <p class="[ wz-dek ]">The hulls that died most, by the size of the gang that killed them.</p>
+        </header>
+        <Grid min_item_width="18rem" class="[ wz-equal ]">
+            {issue.top_ships.boards.map((board) => (
+                <ComponentBlock padding_inline="var(--space-m)" class="[ wz-board ]">
+                    <Flexblock gap="var(--space-m)" class="[ h-full ]">
+                        <h3>{board.title}</h3>
+                        {board.ships.length > 0 ? (
+                            <ol class="[ wz-ships ]">
+                                {board.ships.map((ship, index) => (
+                                    <li>
+                                        <span class="[ wz-board__rank ]">{index + 1}</span>
+                                        <ItemPicture
+                                            item_id={ship.typeId}
+                                            item_name={ship.name}
+                                            size={36}
+                                            icon_quality={64}
+                                        />
+                                        <a
+                                            class="[ wz-board__name ]"
+                                            href={`https://zkillboard.com/ship/${ship.typeId}/`}
+                                            target="_blank"
+                                            rel="nofollow noopener noreferrer"
+                                        >
+                                            {ship.name}
+                                        </a>
+                                        <b class="[ wz-board__kills ]">{number_thousand_separator(ship.count)}</b>
+                                    </li>
+                                ))}
+                            </ol>
+                        ) : (
+                            <p class="[ wz-board__empty ]">Not in this month’s extract.</p>
+                        )}
+                    </Flexblock>
+                </ComponentBlock>
+            ))}
+        </Grid>
+        <p class="[ wz-footnote ]">{issue.top_ships.scope}</p>
     </section>
 
     <section id="groups" class="[ wz-section ]">
@@ -1747,6 +1791,22 @@ const featured_guides = issue.get_involved.featured_guides
         font-size: var(--step--1);
         color: var(--faded);
         text-align: right;
+    }
+
+    .wz-ships {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+
+        li {
+            display: grid;
+            grid-template-columns: 1.25rem 2.25rem minmax(0, 1fr) auto;
+            align-items: center;
+            gap: var(--space-xs);
+        }
     }
 
     .wz-board__id {

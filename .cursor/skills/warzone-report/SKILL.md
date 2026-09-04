@@ -61,8 +61,9 @@ Example: August YC128 → year 2026, month 8, slug `yc128-08`.
    First run fetches the two months (~10–20 min, rate-limited); it prints progress to
    stderr and writes `src/data/warzone/yc128-08-boards.ts`. Re-runs are instant from
    cache. The file exports: `SCOREBOARD_STATS`, `BOARDS_SAMPLED_KILLS`,
-   `BOARDS_TOTAL_ISK`, six pilot boards (`MINMATAR_*` / `AMARR_*`), `GROUPS`,
-   `TRAFFIC`, `FRONTS`, `SYSTEM_STATS`.
+   `BOARDS_TOTAL_ISK`, six pilot boards (`MINMATAR_*` / `AMARR_*`), three ship boards
+   (`SHIPS_SOLO` / `SHIPS_SMALL_GANG` / `SHIPS_FLEET`), `GROUPS`, `TRAFFIC`,
+   `FRONTS`, `SYSTEM_STATS`.
 
 2. **Author the issue file** `src/data/warzone/yc128-08.ts`: copy the previous month's
    `.ts` as a template and change the imports to `./yc128-08-boards`. Wire the
@@ -101,8 +102,9 @@ Example: August YC128 → year 2026, month 8, slug `yc128-08`.
 - **Focus of the month**: the one curated deep-dive (currently the Auga siege, from
   `src/data/campaigns/auga.ts` — a separate hand-collected dataset shared with the
   `/campaigns/…` siege page; leave it unless writing a new focus).
-- **Pilots of the month**: solo / small gang / fleet, both militias, with each pilot's
-  alliance-or-corp affiliation.
+- **Pilots of the month**: solo / small gang / fleets, both militias, with each
+  pilot's alliance-or-corp affiliation.
+- **Top ships**: most-destroyed hulls per engagement size (solo / small gang / fleets).
 - **Groups of the month**: alliances (or player corps w/o alliance), NPC corps
   excluded, only groups with >50% of their monthly kills in-warzone, faction emblem +
   full faction name subtitle.

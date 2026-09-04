@@ -84,6 +84,17 @@ export type WarzonePilotBoard = {
     amarr: readonly WarzonePilot[]
 }
 
+export type WarzoneShip = {
+    typeId: number
+    name: string
+    count: number
+}
+
+export type WarzoneShipBoard = {
+    title: string
+    ships: readonly WarzoneShip[]
+}
+
 export type WarzoneGroup = {
     id: number
     kind: 'alliance' | 'corporation'
@@ -163,6 +174,10 @@ export type WarzoneIssue = {
         /** Where the boards come from and what they cover. */
         scope: string
         boards: readonly WarzonePilotBoard[]
+    }
+    top_ships: {
+        scope: string
+        boards: readonly WarzoneShipBoard[]
     }
     groups: {
         scope: string

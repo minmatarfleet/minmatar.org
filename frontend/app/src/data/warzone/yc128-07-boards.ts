@@ -5,7 +5,7 @@
  * Do not edit by hand; re-run the script.
  */
 
-import type { WarzoneGroup, WarzonePilot, WarzoneTrafficRow } from './types'
+import type { WarzoneGroup, WarzonePilot, WarzoneShip, WarzoneTrafficRow } from './types'
 
 export const BOARDS_GENERATED_ON = '2026-09-04'
 export const BOARDS_SAMPLED_KILLS = 39_129
@@ -62,6 +62,30 @@ export const AMARR_FLEET: readonly WarzonePilot[] = [
     { characterId: 2_112_028_966, name: "Marius Dethahal", killmails: 72, affiliation: "Khimi Harar", affiliation_id: 99_008_816, affiliation_kind: "alliance" },
     { characterId: 667_436_973, name: "Ehrandir", killmails: 71, affiliation: "Slide On Contact", affiliation_id: 99_015_016, affiliation_kind: "alliance" },
     { characterId: 2_121_910_483, name: "Woof1977", killmails: 64, affiliation: "Curatores Veritatis Alliance", affiliation_id: 1_988_009_451, affiliation_kind: "alliance" },
+]
+
+export const SHIPS_SOLO: readonly WarzoneShip[] = [
+    { typeId: 587, name: "Rifter", count: 1216 },
+    { typeId: 16_242, name: "Thrasher", count: 857 },
+    { typeId: 73_794, name: "Thrasher Fleet Issue", count: 750 },
+    { typeId: 593, name: "Tristan", count: 591 },
+    { typeId: 16_236, name: "Coercer", count: 580 },
+]
+
+export const SHIPS_SMALL_GANG: readonly WarzoneShip[] = [
+    { typeId: 73_794, name: "Thrasher Fleet Issue", count: 942 },
+    { typeId: 16_242, name: "Thrasher", count: 801 },
+    { typeId: 597, name: "Punisher", count: 615 },
+    { typeId: 29_344, name: "Exequror Navy Issue", count: 596 },
+    { typeId: 621, name: "Caracal", count: 581 },
+]
+
+export const SHIPS_FLEET: readonly WarzoneShip[] = [
+    { typeId: 644, name: "Typhoon", count: 206 },
+    { typeId: 47_270, name: "Vedmak", count: 81 },
+    { typeId: 638, name: "Raven", count: 60 },
+    { typeId: 24_688, name: "Rokh", count: 48 },
+    { typeId: 16_227, name: "Ferox", count: 43 },
 ]
 
 export const GROUPS: readonly WarzoneGroup[] = [
