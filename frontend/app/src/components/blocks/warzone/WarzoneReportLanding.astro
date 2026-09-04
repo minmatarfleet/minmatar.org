@@ -11,7 +11,6 @@ import PageLanding from '@components/page/PageLanding.astro'
 import PageTitle from '@components/page/PageTitle.astro'
 import TextBox from '@components/layout/TextBox.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
-import Tag from '@components/blocks/Tag.astro'
 import WarzoneReportIssue from '@components/blocks/warzone/WarzoneReportIssue.astro'
 
 interface Props {
@@ -23,8 +22,9 @@ const { issue, canonical_path } = Astro.props
 
 const i18n_prefix = `warzone.${issue.slug.replaceAll('-', '_')}`
 const page_title = t(`${i18n_prefix}.page_title` as any)
-const period = t(`${i18n_prefix}.period` as any)
-const excerpt = t(`${i18n_prefix}.leading_text` as any)
+const [title_kicker, title_period] = page_title.includes(' · ')
+    ? page_title.split(' · ')
+    : [page_title, '']
 const meta_title = t(`${i18n_prefix}.meta_title` as any).replace('{site}', t('index.page_title'))
 const meta_description = t(`${i18n_prefix}.meta_description` as any)
 const site_origin = get_site_origin(Astro.url.origin)
@@ -64,14 +64,13 @@ const structured_data = build_warzone_report_json_ld({
             overlay: true,
         }}
     >
-        <Flexblock gap="var(--space-2xl)">
-            <TextBox>
-                <Flexblock gap="var(--space-xl)">
-                    <Flexblock gap="var(--space-3xs)">
-                        <PageTitle is_landing={true}>{page_title}</PageTitle>
-                        <Tag text={period} color="alliance-blue" />
-                    </Flexblock>
-                    <p class="[ excerpt ]">{excerpt}</p>
+        <Flexblock gap="var(--space-xl)">
+            <TextBox class="[ wz-hero ]">
+                <Flexblock gap="var(--space-m)">
+                    <PageTitle is_landing={true}>
+                        <span class="[ wz-hero__kicker ]">{title_kicker}</span>
+                        {title_period && <span class="[ wz-hero__period ]">{title_period}</span>}
+                    </PageTitle>
                 </Flexblock>
             </TextBox>
 
@@ -81,10 +80,31 @@ const structured_data = build_warzone_report_json_ld({
 </Viewport>
 
 <style lang="scss">
-    .excerpt {
-        font-size: var(--step-1);
-        line-height: 1.6;
-        max-width: 100%;
-        margin: 0;
+    .wz-hero {
+        max-width: 60rem;
     }
+
+    .wz-hero :global(h1 > a),
+    .wz-hero :global(h1) {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .wz-hero__kicker {
+        font-size: var(--step-5);
+        line-height: 1;
+        color: var(--highlight);
+    }
+
+    .wz-hero__period {
+        font-size: var(--step-2);
+        letter-spacing: 0.08em;
+        line-height: 1.1;
+        color: var(--fleet-yellow);
+    }
+
+
 </style>

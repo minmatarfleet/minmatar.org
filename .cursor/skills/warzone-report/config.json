@@ -1,0 +1,40 @@
+{
+  "extractor": "frontend/app/scripts/warzone_extract.mjs",
+  "cache_dir": "frontend/app/.cache/warzone",
+  "generated_output": "frontend/app/src/data/warzone/<slug>-boards.ts",
+  "issue_file": "frontend/app/src/data/warzone/<slug>.ts",
+  "shared_component": "frontend/app/src/components/blocks/warzone/WarzoneReportIssue.astro",
+  "sde_sqlite_glob": "frontend/app/src/data/sde-*.sqlite",
+  "warzone_regions": {
+    "10000030": "Heimatar",
+    "10000042": "Metropolis",
+    "10000038": "The Bleak Lands",
+    "10000036": "Devoid"
+  },
+  "fronts": {
+    "minmatar": ["Heimatar", "Metropolis"],
+    "amarr": ["Devoid", "The Bleak Lands"]
+  },
+  "militia_faction_ids": { "minmatar": 500002, "amarr": 500003 },
+  "faction_names": {
+    "500002": "Minmatar Republic",
+    "500003": "Amarr Empire",
+    "500011": "Angel Cartel",
+    "500010": "Guristas Pirates"
+  },
+  "faction_logo_corp": {
+    "500002": 1000182,
+    "500003": 1000179,
+    "500011": 1000138,
+    "500010": 1000127
+  },
+  "capsule_type_ids": [670, 33328],
+  "engagement_buckets": { "solo": "1", "small_gang": "2-24", "fleet": "25+" },
+  "group_min_kills": 25,
+  "group_fw_share_threshold": 0.5,
+  "militia_discord_invite": "https://discord.com/invite/3hZfahmkFx",
+  "custom_logo_dir": "frontend/app/public/images/warzone/logos",
+  "cutout_helper": "frontend/app/scripts/cutout_logo.py",
+  "rate_limit_seconds": 1.1,
+  "user_agent_env": "ZKILL_USER_AGENT"
+}
