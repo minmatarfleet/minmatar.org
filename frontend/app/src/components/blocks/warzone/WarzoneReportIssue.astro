@@ -763,14 +763,24 @@ const featured_guides = issue.get_involved.featured_guides
             <h2>About the numbers</h2>
             <p class="[ wz-dek ]">Where every figure on this page comes from.</p>
         </header>
-        <div class="[ wz-about ]">
-            <ComponentBlock>
-                <Flexblock gap="var(--space-2xs)">
-                    <h4>Sources and method</h4>
-                    <p class="[ wz-about__text ]">{issue.methodology}</p>
-                </Flexblock>
-            </ComponentBlock>
-        </div>
+        <ComponentBlock class="[ wz-about ]">
+            <div class="[ wz-about__head ]">
+                <h4>Sources and method</h4>
+                <ul class="[ wz-about__sources ]">
+                    <li>zKillboard</li>
+                    <li>Dotlan</li>
+                    <li>EVE ESI</li>
+                </ul>
+            </div>
+            <dl class="[ wz-method ]">
+                {issue.methodology.map((entry) => (
+                    <div class="[ wz-method__row ]">
+                        <dt>{entry.label}</dt>
+                        <dd>{entry.text}</dd>
+                    </div>
+                ))}
+            </dl>
+        </ComponentBlock>
         <p class="[ wz-footnote ]">
             Warzone Report · {issue.period_utc} · Published by Minmatar Fleet · Sources: zKillboard, Dotlan, EVE ESI.
         </p>
@@ -2044,14 +2054,71 @@ const featured_guides = issue.get_involved.featured_guides
 
     /* About --------------------------------------------------------------- */
 
-    .wz-about {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
-        gap: var(--space-s);
+    .wz-about__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-xs);
+        padding-bottom: var(--space-s);
+        margin-bottom: var(--space-s);
+        border-bottom: solid 1px var(--wz-rule);
     }
 
-    .wz-about__text {
-        font-size: var(--step--1);
-        color: var(--faded);
+    .wz-about__sources {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+
+        li {
+            font-size: var(--step--2);
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--faded);
+            padding: 0.2em 0.6em;
+            border: solid 1px var(--wz-rule);
+        }
+    }
+
+    .wz-method {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .wz-method__row {
+        display: grid;
+        grid-template-columns: 11rem minmax(0, 1fr);
+        gap: var(--space-m);
+        padding-block: var(--space-xs);
+        border-top: solid 1px var(--wz-rule);
+
+        &:first-child {
+            border-top: none;
+        }
+
+        dt {
+            font-family: var(--heading-font);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-size: var(--step--1);
+            color: var(--fleet-yellow);
+        }
+
+        dd {
+            margin: 0;
+            font-size: var(--step--1);
+            color: var(--faded);
+            line-height: 1.6;
+        }
+
+        @media screen and (max-width: 640px) {
+            grid-template-columns: 1fr;
+            gap: var(--space-3xs);
+        }
     }
 </style>

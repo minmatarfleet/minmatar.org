@@ -281,6 +281,26 @@ export const YC128_07: WarzoneIssue = {
             'navy-frigate-guide',
         ],
     },
-    methodology:
-        'Destruction figures count every ship kill in the Amarr–Minmatar faction-warfare systems for the month, from zKillboard, with capsules and NPC-only kills removed; month-over-month figures compare the same measure against the prior month. Pilots, ships, and groups are ranked by killmails in those systems. Systems held, enlisted pilots, and kills and victory points are live empire-wide ESI standings. Occupancy is scored from Dotlan system history; the holder shown for each system is its live ESI occupier.',
+    methodology: [
+        {
+            label: 'Destruction',
+            text: 'Every ship kill in the Amarr–Minmatar faction-warfare systems for the month, from zKillboard, with capsules and NPC-only kills removed.',
+        },
+        {
+            label: 'Month over month',
+            text: 'Deltas compare the same measure against the prior month.',
+        },
+        {
+            label: 'Rankings',
+            text: 'Pilots, ships, and groups are ranked by killmails in those systems.',
+        },
+        {
+            label: 'Live standings',
+            text: 'Systems held, enlisted pilots, and kills and victory points are live empire-wide ESI figures.',
+        },
+        {
+            label: 'Occupancy',
+            text: 'Scored from Dotlan system history; the holder shown for each system is its live ESI occupier.',
+        },
+    ],
 }

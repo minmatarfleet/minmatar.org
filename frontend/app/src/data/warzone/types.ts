@@ -117,6 +117,11 @@ export type WarzoneInvolvementStep = {
     label: string
 }
 
+export type WarzoneMethodologyEntry = {
+    label: string
+    text: string
+}
+
 export type WarzoneIssue = {
     slug: string
     permalink_path: string
@@ -187,5 +192,5 @@ export type WarzoneIssue = {
         /** Guide slugs from the learning catalog, in display order. */
         featured_guides: readonly string[]
     }
-    methodology: string
+    methodology: readonly WarzoneMethodologyEntry[]
 }
