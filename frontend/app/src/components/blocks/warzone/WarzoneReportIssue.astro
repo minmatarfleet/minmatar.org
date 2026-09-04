@@ -579,39 +579,51 @@ const featured_guides = issue.get_involved.featured_guides
             <p class="[ wz-dek ]">The hulls flown to the most killmails, by gang size.</p>
         </header>
         <Grid min_item_width="18rem" class="[ wz-equal ]">
-            {issue.top_ships.boards.map((board) => (
-                <ComponentBlock padding_inline="var(--space-m)" class="[ wz-board ]">
-                    <Flexblock gap="var(--space-m)" class="[ h-full ]">
-                        <h3>{board.title}</h3>
-                        {board.ships.length > 0 ? (
-                            <ol class="[ wz-ships ]">
-                                {board.ships.map((ship, index) => (
-                                    <li>
-                                        <span class="[ wz-board__rank ]">{index + 1}</span>
-                                        <ItemPicture
-                                            item_id={ship.typeId}
-                                            item_name={ship.name}
-                                            size={36}
-                                            icon_quality={64}
-                                        />
-                                        <a
-                                            class="[ wz-board__name ]"
-                                            href={`https://zkillboard.com/ship/${ship.typeId}/`}
-                                            target="_blank"
-                                            rel="nofollow noopener noreferrer"
-                                        >
-                                            {ship.name}
-                                        </a>
-                                        <b class="[ wz-board__kills ]">{number_thousand_separator(ship.count)}</b>
-                                    </li>
-                                ))}
-                            </ol>
-                        ) : (
-                            <p class="[ wz-board__empty ]">Not in this month’s extract.</p>
-                        )}
-                    </Flexblock>
-                </ComponentBlock>
-            ))}
+            {issue.top_ships.boards.map((board) => {
+                const top_count = Math.max(...board.ships.map((ship) => ship.count), 1)
+                return (
+                    <ComponentBlock padding_inline="var(--space-m)" class="[ wz-board ]">
+                        <Flexblock gap="var(--space-m)" class="[ h-full ]">
+                            <h3>{board.title}</h3>
+                            {board.ships.length > 0 ? (
+                                <ol class="[ wz-ships ]">
+                                    {board.ships.map((ship, index) => (
+                                        <li class:list={['wz-ship', index === 0 && 'wz-ship--lead']}>
+                                            <span class="[ wz-ship__rank ]">{index + 1}</span>
+                                            <span class="[ wz-ship__icon ]">
+                                                <ItemPicture
+                                                    item_id={ship.typeId}
+                                                    item_name={ship.name}
+                                                    size={40}
+                                                    icon_quality={64}
+                                                />
+                                            </span>
+                                            <div class="[ wz-ship__body ]">
+                                                <div class="[ wz-ship__line ]">
+                                                    <a
+                                                        class="[ wz-ship__name ]"
+                                                        href={`https://zkillboard.com/ship/${ship.typeId}/`}
+                                                        target="_blank"
+                                                        rel="nofollow noopener noreferrer"
+                                                    >
+                                                        {ship.name}
+                                                    </a>
+                                                    <b class="[ wz-ship__count ]">{number_thousand_separator(ship.count)}</b>
+                                                </div>
+                                                <div class="[ wz-bar ]">
+                                                    <span class="[ wz-bar__fill wz-bar__fill--ship ]" style={`width: ${percent(ship.count, top_count)}%`}></span>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ol>
+                            ) : (
+                                <p class="[ wz-board__empty ]">Not in this month’s extract.</p>
+                            )}
+                        </Flexblock>
+                    </ComponentBlock>
+                )
+            })}
         </Grid>
         <p class="[ wz-footnote ]">{issue.top_ships.scope}</p>
     </section>
@@ -1215,6 +1227,11 @@ const featured_guides = issue.get_involved.featured_guides
 
         &--other {
             background: var(--wz-other);
+        }
+
+        &--ship {
+            background: color-mix(in srgb, var(--fleet-yellow) 60%, var(--highlight) 40%);
+            opacity: 0.85;
         }
     }
 
@@ -1858,14 +1875,79 @@ const featured_guides = issue.get_involved.featured_guides
         padding: 0;
         display: flex;
         flex-direction: column;
-        gap: var(--space-2xs);
+    }
 
-        li {
-            display: grid;
-            grid-template-columns: 1.25rem 2.25rem minmax(0, 1fr) auto;
-            align-items: center;
-            gap: var(--space-xs);
+    .wz-ship {
+        display: grid;
+        grid-template-columns: 1.5rem 2.5rem minmax(0, 1fr);
+        align-items: center;
+        gap: var(--space-s);
+        padding-block: var(--space-2xs);
+        border-top: solid 1px var(--wz-rule);
+
+        &:first-child {
+            border-top: none;
         }
+    }
+
+    .wz-ship__rank {
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        color: var(--faded);
+        text-align: center;
+
+        .wz-ship--lead & {
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .wz-ship__icon {
+        display: block;
+        width: 2.5rem;
+        height: 2.5rem;
+        border: solid 1px var(--wz-rule);
+        background: rgba(255, 255, 255, 0.03);
+
+        :global(img),
+        :global(picture) {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+    }
+
+    .wz-ship__body {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35em;
+    }
+
+    .wz-ship__line {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--space-s);
+    }
+
+    .wz-ship__name {
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-decoration: none !important;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+
+        &:hover {
+            color: var(--highlight);
+        }
+    }
+
+    .wz-ship__count {
+        font-size: var(--step-0);
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
     }
 
     .wz-board__id {
