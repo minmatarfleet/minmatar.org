@@ -178,6 +178,8 @@ export const ui = {
         'brand.page_title': 'Branding',
         'brand.leading_text': 'Official FL33T fonts, colours, logos, and icons for alliance branding.',
 
+        'warzone.reports.section_title': 'Warzone Reports',
+        'warzone.reports.section_leading_text': 'Monthly reports on the Amarr–Minmatar warzone — who won the month, where people fought, and the pilots and groups who showed up.',
         'campaigns.section_title': 'Our campaigns',
         'campaigns.section_leading_text': 'After-action reports from our wars and system sieges — combat stats, headlines, and the pilots who flew them.',
         'campaigns.isk_destroyed': 'ISK destroyed',

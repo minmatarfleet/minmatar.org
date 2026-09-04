@@ -176,7 +176,6 @@ export type WarzoneIssue = {
         boards: readonly WarzonePilotBoard[]
     }
     top_ships: {
-        scope: string
         boards: readonly WarzoneShipBoard[]
     }
     groups: {

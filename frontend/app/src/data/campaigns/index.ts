@@ -110,9 +110,15 @@ export function getSieges(): CampaignMeta[] {
 }
 
 export function getAllCampaigns(): CampaignMeta[] {
-    return [...campaigns].sort(
-        (a, b) => b.published_at.getTime() - a.published_at.getTime(),
-    )
+    return campaigns
+        .filter((c) => c.kind !== 'warzone')
+        .sort((a, b) => b.published_at.getTime() - a.published_at.getTime())
+}
+
+export function getWarzoneReports(): CampaignMeta[] {
+    return campaigns
+        .filter((c) => c.kind === 'warzone')
+        .sort((a, b) => b.published_at.getTime() - a.published_at.getTime())
 }
 
 export { formatIsk }

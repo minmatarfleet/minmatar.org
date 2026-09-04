@@ -7,10 +7,12 @@ import type { TagColors } from '@dtypes/layout_components'
 
 interface Props {
     campaign: CampaignMeta;
+    show_isk?: boolean;
 }
 
 const {
     campaign,
+    show_isk = true,
 } = Astro.props
 
 const href = translatePath(campaign.path)
@@ -67,15 +69,17 @@ import Tag from '@components/blocks/Tag.astro'
         <a href={href}>
             <h3>{name}</h3>
         </a>
-        <Flexblock gap='0'>
-            <small>{t('destroyed')}</small>
-            <p
-                class="[ isk-stat ]"
-                data-tippy-content={number_name(campaign.iskDestroyed, lang)}
-            >
-                {number_thousand_separator(campaign.iskDestroyed)}&nbsp;ISK
-            </p>
-        </Flexblock>
+        {show_isk && (
+            <Flexblock gap='0'>
+                <small>{t('destroyed')}</small>
+                <p
+                    class="[ isk-stat ]"
+                    data-tippy-content={number_name(campaign.iskDestroyed, lang)}
+                >
+                    {number_thousand_separator(campaign.iskDestroyed)}&nbsp;ISK
+                </p>
+            </Flexblock>
+        )}
         <FlexInline>
             <Button href={href} size='sm'>
                 {view_label}
