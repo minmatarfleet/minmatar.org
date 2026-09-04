@@ -1,0 +1,110 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { WarzoneIssue } from '@/data/warzone/types'
+import { build_warzone_report_json_ld } from '@/data/warzone/seo'
+import { get_site_origin } from '@helpers/seo'
+
+import Viewport from '@layouts/Viewport.astro'
+import PageLanding from '@components/page/PageLanding.astro'
+import PageTitle from '@components/page/PageTitle.astro'
+import TextBox from '@components/layout/TextBox.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import WarzoneReportIssue from '@components/blocks/warzone/WarzoneReportIssue.astro'
+
+interface Props {
+    issue: WarzoneIssue
+    canonical_path: string
+}
+
+const { issue, canonical_path } = Astro.props
+
+const i18n_prefix = `warzone.${issue.slug.replaceAll('-', '_')}`
+const page_title = t(`${i18n_prefix}.page_title` as any)
+const [title_kicker, title_period] = page_title.includes(' · ')
+    ? page_title.split(' · ')
+    : [page_title, '']
+const meta_title = t(`${i18n_prefix}.meta_title` as any).replace('{site}', t('index.page_title'))
+const meta_description = t(`${i18n_prefix}.meta_description` as any)
+const site_origin = get_site_origin(Astro.url.origin)
+const canonical_url = new URL(translatePath(canonical_path), site_origin).href
+const meta_image = new URL(issue.cover_image, site_origin).href
+
+const structured_data = build_warzone_report_json_ld({
+    canonical_url,
+    site_name: t('index.page_title'),
+    site_origin,
+    meta_title: page_title,
+    meta_description,
+    meta_image,
+})
+---
+
+<Viewport
+    title={meta_title}
+    meta_description={meta_description}
+    meta_image={meta_image}
+    canonical_url={canonical_url}
+    og_type="article"
+    components={{
+        alert_dialog: true,
+        confirm_dialog: true,
+    }}
+>
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(structured_data)} />
+
+    <PageLanding
+        wide={true}
+        cover={{
+            image: issue.cover_image,
+            image_990: issue.cover_image,
+            animated: false,
+            scrollable: true,
+            overlay: true,
+        }}
+    >
+        <Flexblock gap="var(--space-xl)">
+            <TextBox class="[ wz-hero ]">
+                <Flexblock gap="var(--space-m)">
+                    <PageTitle is_landing={true}>
+                        <span class="[ wz-hero__kicker ]">{title_kicker}</span>
+                        {title_period && <span class="[ wz-hero__period ]">{title_period}</span>}
+                    </PageTitle>
+                </Flexblock>
+            </TextBox>
+
+            <WarzoneReportIssue issue={issue} />
+        </Flexblock>
+    </PageLanding>
+</Viewport>
+
+<style lang="scss">
+    .wz-hero {
+        max-width: 60rem;
+    }
+
+    .wz-hero :global(h1 > a),
+    .wz-hero :global(h1) {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .wz-hero__kicker {
+        font-size: var(--step-5);
+        line-height: 1;
+        color: var(--highlight);
+    }
+
+    .wz-hero__period {
+        font-size: var(--step-2);
+        letter-spacing: 0.08em;
+        line-height: 1.1;
+        color: var(--fleet-yellow);
+    }
+
+
+</style>

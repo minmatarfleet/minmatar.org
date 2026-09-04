@@ -1,0 +1,14 @@
+---
+import { get_issue } from '@/data/warzone'
+import { HTTP_404_Not_Found } from '@helpers/http_responses'
+import WarzoneReportLanding from '@components/blocks/warzone/WarzoneReportLanding.astro'
+
+const slug = Astro.params.issue ?? ''
+const issue = get_issue(slug)
+
+if (!issue) {
+    return HTTP_404_Not_Found()
+}
+---
+
+<WarzoneReportLanding issue={issue} canonical_path={issue.permalink_path} />

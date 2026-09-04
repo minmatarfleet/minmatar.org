@@ -179,6 +179,20 @@
         ]
     },
     {
+        "slug": "warzone",
+        "path": "/warzone/",
+        "publish": true,
+        "description": "page_finder.warzone.description",
+        "keywords": ["warzone", "faction warfare", "Minmatar", "Amarr", "YC128"]
+    },
+    {
+        "slug": "warzone.yc128_07",
+        "path": "/warzone/yc128-07/",
+        "publish": true,
+        "description": "page_finder.warzone.yc128_07.description",
+        "keywords": ["warzone", "July YC128", "Auga", "Hed", "faction warfare"]
+    },
+    {
         "slug": "campaigns.providence",
         "path": "/campaigns/providence/",
         "publish": true,

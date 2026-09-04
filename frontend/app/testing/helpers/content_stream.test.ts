@@ -63,4 +63,24 @@ describe('content_stream', () => {
         expect(merged[0].id).toBe('post-1')
         expect(merged[1].id).toBe('campaign-1')
     })
+
+    it('sorts warzone items with campaigns by published_at', () => {
+        const sorted = sort_content_stream([
+            item({
+                id: 'campaign-1',
+                kind: 'campaign',
+                published_at: new Date('2026-06-18T00:00:00Z'),
+            }),
+            item({
+                id: 'warzone-yc128-07',
+                kind: 'warzone',
+                published_at: new Date('2026-07-31T00:00:00Z'),
+            }),
+        ])
+
+        expect(sorted.map((entry) => entry.id)).toEqual([
+            'warzone-yc128-07',
+            'campaign-1',
+        ])
+    })
 })

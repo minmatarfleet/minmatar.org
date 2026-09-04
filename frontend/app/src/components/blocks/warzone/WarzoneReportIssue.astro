@@ -1,0 +1,2124 @@
+---
+import { i18n } from '@helpers/i18n'
+const { translatePath } = i18n(Astro.url)
+
+import type { WarzoneIssue, WarzoneMilitiaId } from '@/data/warzone/types'
+
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import Button from '@components/blocks/Button.astro'
+import Flexblock from '@components/compositions/Flexblock.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import Grid from '@components/compositions/Grid.astro'
+import MinmatarLogo from '@components/logos/MinmatarLogo.astro'
+import AmarrLogo from '@components/logos/AmarrLogo.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import ItemPicture from '@components/blocks/ItemPicture.astro'
+import GuidePostCard from '@components/blocks/GuidePostCard.astro'
+import { getPublishedGuides } from '@/data/guides'
+import { get_alliance_logo, get_corporation_logo } from '@helpers/eve_image_server'
+import { existsSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { LEARNING_HUB_PATH } from '@/data/guides/urls'
+import { number_thousand_separator } from '@helpers/numbers'
+
+interface Props {
+    issue: WarzoneIssue
+}
+
+const { issue } = Astro.props
+
+function militia_label(id: WarzoneMilitiaId): string {
+    return id === 'minmatar' ? 'Minmatar' : 'Amarr'
+}
+
+function format_signed(value: number): string {
+    if (value > 0) return `+${number_thousand_separator(value)}`
+    if (value < 0) return `−${number_thousand_separator(Math.abs(value))}`
+    return '0'
+}
+
+function format_isk(value: number): string {
+    if (value >= 1_000_000_000_000) return `${(value / 1_000_000_000_000).toFixed(2)}T`
+    if (value >= 100_000_000_000) return `${Math.round(value / 1_000_000_000)}B`
+    if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2)}B`
+    return `${(value / 1_000_000).toFixed(0)}M`
+}
+
+function percent(part: number, total: number): number {
+    return total === 0 ? 0 : Math.round((part / total) * 1000) / 10
+}
+
+function is_external(href: string): boolean {
+    return href.startsWith('http://') || href.startsWith('https://')
+}
+
+function resolve_href(href: string): string {
+    return is_external(href) ? href : translatePath(href)
+}
+
+const vs_label = `vs ${issue.previous_period_label}`
+
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+function date_sort_key(label: string): number {
+    const match = label.match(/(\d{1,2})\s+([A-Za-z]{3})/)
+    if (!match) return 0
+    const day = Number(match[1])
+    const month = MONTHS.indexOf(match[2].toLowerCase())
+    return (month < 0 ? 0 : month) * 100 + day
+}
+const occupancy_sorted = [...issue.occupancy].sort((a, b) => date_sort_key(a.date_label) - date_sort_key(b.date_label))
+
+const minmatar = issue.scoreboard.find((side) => side.militia === 'minmatar')!
+const amarr = issue.scoreboard.find((side) => side.militia === 'amarr')!
+const total_systems = minmatar.systems_held + amarr.systems_held
+const minmatar_share = percent(minmatar.systems_held, total_systems)
+const amarr_share = 100 - minmatar_share
+
+const compare_rows = [
+    {
+        label: 'Enlisted pilots',
+        minmatar: minmatar.enlisted_pilots,
+        amarr: amarr.enlisted_pilots,
+        minmatar_label: minmatar.enlisted_pilots_label,
+        amarr_label: amarr.enlisted_pilots_label,
+    },
+    {
+        label: 'Active pilots',
+        minmatar: minmatar.active_pilots,
+        amarr: amarr.active_pilots,
+        minmatar_label: minmatar.active_pilots_label,
+        amarr_label: amarr.active_pilots_label,
+    },
+    {
+        label: 'Kills',
+        minmatar: minmatar.kills_last_week,
+        amarr: amarr.kills_last_week,
+        minmatar_label: number_thousand_separator(minmatar.kills_last_week),
+        amarr_label: number_thousand_separator(amarr.kills_last_week),
+    },
+].map((row) => {
+    const max = Math.max(row.minmatar, row.amarr)
+    return {
+        ...row,
+        minmatar_pct: percent(row.minmatar, max),
+        amarr_pct: percent(row.amarr, max),
+        leader: row.minmatar === row.amarr ? null : row.minmatar > row.amarr ? 'minmatar' : 'amarr',
+    }
+})
+
+const max_traffic = Math.max(...issue.traffic.map((row) => row.ships))
+
+const front_total = issue.fronts.reduce((sum, front) => sum + front.ships, 0)
+
+const focus = issue.focus
+const focus_loss_max = Math.max(focus.minmatar_ships, focus.amarr_ships, focus.other_ships)
+const engagement_total = focus.engagement_mix.reduce((sum, slice) => sum + slice.value, 0)
+const engagement_colors = ['rgba(255, 255, 255, 0.85)', 'rgba(255, 255, 255, 0.45)', 'rgba(255, 255, 255, 0.2)']
+
+/** Custom alliance logos for groups CCP/zKill has no logo for yet. Transparent PNGs. */
+/** Pirate factions have no SVG emblem in-repo; fall back to their NPC corp logo. */
+const PIRATE_LOGO_CORP: Record<number, number> = {
+    500011: 1_000_138, // Angel Cartel
+    500010: 1_000_127, // Guristas
+}
+
+const GROUP_LOGO_OVERRIDES: Record<number, string> = {
+    99_015_016: '/images/warzone/logos/slide-on-contact.png', // Slide On Contact
+    99_014_920: '/images/warzone/logos/spaghetti-n-meatballs.png', // Spaghetti N' Meatballs
+}
+
+// Only use an override once the transparent PNG is actually in /public.
+const group_logo_override = (id: number): string | undefined => {
+    const relative = GROUP_LOGO_OVERRIDES[id]
+    if (!relative) return undefined
+    const on_disk = fileURLToPath(new URL(`../../../../public${relative}`, import.meta.url))
+    return existsSync(on_disk) ? relative : undefined
+}
+
+const published_guides = getPublishedGuides()
+const featured_guides = issue.get_involved.featured_guides
+    .map((slug) => published_guides.find((guide) => guide.slug === slug))
+    .filter((guide): guide is NonNullable<typeof guide> => Boolean(guide))
+
+---
+
+<div class="[ warzone-report ]">
+    <div class="[ wz-lede ]">
+        <div class="[ wz-hero-stats ]">
+            <div class="[ wz-hero-stat ]">
+                <span class="[ wz-hero-stat__icon ]" aria-hidden="true">
+                    <img src="/images/icons/64px-Sovereignty.png" alt="" width="64" height="64" loading="lazy" />
+                </span>
+                <div>
+                    <span class="[ wz-hero-stat__label ]">Systems flipped</span>
+                    <b class="[ wz-hero-stat__value ]">{issue.occupancy_changes}</b></span>
+                </div>
+            </div>
+            <div class="[ wz-hero-stat ]">
+                <span class="[ wz-hero-stat__icon ]" aria-hidden="true">
+                    <img src="/images/icons/64px-Killreport.png" alt="" width="64" height="64" loading="lazy" />
+                </span>
+                <div>
+                    <span class="[ wz-hero-stat__label ]">Ships destroyed</span>
+                    <b class="[ wz-hero-stat__value ]">{number_thousand_separator(issue.sampled_ships)}</b>
+                </div>
+            </div>
+            <div class="[ wz-hero-stat ]">
+                <span class="[ wz-hero-stat__icon ]" aria-hidden="true">
+                    <img src="/images/icons/64px-Wallet.png" alt="" width="64" height="64" loading="lazy" />
+                </span>
+                <div>
+                    <span class="[ wz-hero-stat__label ]">ISK destroyed</span>
+                    <b class="[ wz-hero-stat__value ]">{format_isk(issue.sampled_isk)}</b>
+                </div>
+            </div>
+            <div class="[ wz-hero-stat ]">
+                <span class="[ wz-hero-stat__icon ]" aria-hidden="true">
+                    <img src="/images/icons/64px-Warreport.png" alt="" width="64" height="64" loading="lazy" />
+                </span>
+                <div>
+                    <span class="[ wz-hero-stat__label ]">Focus story</span>
+                    <b class="[ wz-hero-stat__value ]">{issue.focus_name}</b>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <section id="scoreboard" class="[ wz-section ]">
+        <header class="[ wz-section__head ]">
+            <h2>Scoreboard</h2>
+            <p class="[ wz-dek ]">
+                Who holds the map, and how hard each militia fought in the most
+                recent week of public data.
+            </p>
+        </header>
+
+        <ComponentBlock>
+            <div class="[ wz-versus ]">
+                <div class="[ wz-versus__side wz-versus__side--minmatar ]">
+                    <span class="[ wz-versus__logo ]" aria-hidden="true"><MinmatarLogo /></span>
+                    <div>
+                        <h3>Minmatar</h3>
+                    </div>
+                </div>
+                <div class="[ wz-versus__side wz-versus__side--amarr ]">
+                    <span class="[ wz-versus__logo ]" aria-hidden="true"><AmarrLogo /></span>
+                    <div>
+                        <h3>Amarr</h3>
+                        <span class="[ wz-versus__net ]">{format_signed(amarr.occupancy_net)} systems this month</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="[ wz-split ]" role="img" aria-label={`Minmatar hold ${minmatar.systems_held} systems, Amarr hold ${amarr.systems_held}, of ${total_systems}`}>
+                <b class="[ wz-split__value wz-minmatar-text ]">{minmatar.systems_held}</b>
+                <div class="[ wz-split__bar ]">
+                    <span class="[ wz-split__fill wz-split__fill--minmatar ]" style={`width: ${minmatar_share}%`}></span>
+                    <span class="[ wz-split__fill wz-split__fill--amarr ]" style={`width: ${amarr_share}%`}></span>
+                </div>
+                <b class="[ wz-split__value wz-amarr-text ]">{amarr.systems_held}</b>
+            </div>
+
+            <div class="[ wz-compare ]">
+                {compare_rows.map((row) => (
+                    <div class="[ wz-compare__row ]">
+                        <b class:list={['wz-compare__value wz-compare__value--minmatar', row.leader === 'minmatar' && 'is-leader']}>{row.minmatar_label}</b>
+                        <span class="[ wz-compare__label ]">{row.label}</span>
+                        <b class:list={['wz-compare__value wz-compare__value--amarr', row.leader === 'amarr' && 'is-leader']}>{row.amarr_label}</b>
+                    </div>
+                ))}
+            </div>
+        </ComponentBlock>
+    </section>
+
+    <section id="systems" class="[ wz-section ]">
+        <header class="[ wz-section__head ]">
+            <h2>Systems</h2>
+        </header>
+
+        <Flexblock gap="var(--space-m)">
+            <div class="[ wz-subhead ]">
+                <h3>Occupancy changes</h3>
+            </div>
+
+            <div class="[ wz-table-wrap ]" tabindex="0" role="region" aria-label="Systems that changed hands">
+                <table class="[ wz-table wz-table--flips ]">
+                    <thead>
+                        <tr>
+                            <th scope="col">When</th>
+                            <th scope="col">System</th>
+                            <th scope="col">Previous owner</th>
+                            <th scope="col">New owner</th>
+                            <th scope="col" class="[ wz-table__num ]">Ships</th>
+                            <th scope="col" class="[ wz-table__num ]">{vs_label}</th>
+                            <th scope="col" class="[ wz-table__num ]">ISK</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {occupancy_sorted.map((change) => {
+                            const previous_owner = change.taken_by === 'amarr' ? 'minmatar' : 'amarr'
+                            return (
+                                <tr>
+                                    <td class="[ wz-table__when ]">{change.date_label}</td>
+                                    <td class="[ wz-table__flip-system ]">
+                                        <span class="[ wz-table__system ]">{change.system}</span>
+                                    </td>
+                                    <td data-label="Previous owner">
+                                        <span class="[ wz-owner ]">
+                                            <span class:list={['wz-faction-mark', `wz-faction-mark--${previous_owner}`]} aria-hidden="true">
+                                                {previous_owner === 'minmatar' ? <MinmatarLogo /> : <AmarrLogo />}
+                                            </span>
+                                            <span>{militia_label(previous_owner)}</span>
+                                        </span>
+                                    </td>
+                                    <td data-label="New owner">
+                                        <span class="[ wz-owner ]">
+                                            <span class:list={['wz-faction-mark', `wz-faction-mark--${change.taken_by}`]} aria-hidden="true">
+                                                {change.taken_by === 'minmatar' ? <MinmatarLogo /> : <AmarrLogo />}
+                                            </span>
+                                            <span>{militia_label(change.taken_by)}</span>
+                                        </span>
+                                    </td>
+                                    <td class="[ wz-table__num ]" data-label="Ships"><b>{number_thousand_separator(change.ships)}</b></td>
+                                    <td class="[ wz-table__num ]" data-label={vs_label}>
+                                        <span class:list={['wz-delta', change.vs_last_month >= 0 ? 'wz-delta--up' : 'wz-delta--down']}>
+                                            <span class="[ wz-delta__arrow ]">{change.vs_last_month >= 0 ? '▲' : '▼'}</span>
+                                            <span class="[ wz-delta__num ]">{number_thousand_separator(Math.abs(change.vs_last_month))}</span>
+                                        </span>
+                                    </td>
+                                    <td class="[ wz-table__num ]" data-label="ISK">{change.isk_label}</td>
+                                </tr>
+                            )
+                        })}
+                    </tbody>
+                </table>
+            </div>
+        </Flexblock>
+
+        <Flexblock gap="var(--space-m)">
+            <div class="[ wz-subhead ]">
+                <h3>Where the ships died</h3>
+                <p>Ships destroyed per system this month.</p>
+            </div>
+            <div class="[ wz-table-wrap ]" tabindex="0" role="region" aria-label="Ships destroyed by system">
+                <table class="[ wz-table wz-table--traffic ]">
+                    <thead>
+                        <tr>
+                            <th scope="col">System</th>
+                            <th scope="col" class="[ wz-table__bar-head ]">Ships destroyed</th>
+                            <th scope="col" class="[ wz-table__num ]">{vs_label}</th>
+                            <th scope="col" class="[ wz-table__num ]">ISK</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {issue.traffic.map((row) => (
+                            <tr>
+                                <td>
+                                    <span class="[ wz-table__owner ]">
+                                        <span class:list={['wz-faction-mark', `wz-faction-mark--${row.holds_today}`]} title={`Held by ${militia_label(row.holds_today)}`} aria-label={`Held by ${militia_label(row.holds_today)}`} role="img">
+                                            {row.holds_today === 'minmatar' ? <MinmatarLogo /> : <AmarrLogo />}
+                                        </span>
+                                        <span>
+                                            <span class="[ wz-table__system ]">
+                                                {row.href ? (
+                                                    <a href={row.href} target="_blank" rel="nofollow noopener noreferrer">{row.system}</a>
+                                                ) : (
+                                                    row.system
+                                                )}
+                                            </span>
+                                            <span class="[ wz-table__front ]">{row.front}</span>
+                                        </span>
+                                    </span>
+                                </td>
+                                <td class="[ wz-table__bar ]">
+                                    <div class="[ wz-bar ]">
+                                        <span class:list={['wz-bar__fill', `wz-bar__fill--${row.holds_today}`]} style={`width: ${percent(row.ships, max_traffic)}%`}></span>
+                                    </div>
+                                    <b>{number_thousand_separator(row.ships)}</b>
+                                </td>
+                                <td class="[ wz-table__num ]">
+                                    <span class:list={['wz-delta', row.vs_last_month >= 0 ? 'wz-delta--up' : 'wz-delta--down']}>
+                                        <span class="[ wz-delta__arrow ]">{row.vs_last_month >= 0 ? '▲' : '▼'}</span>
+                                        <span class="[ wz-delta__num ]">{number_thousand_separator(Math.abs(row.vs_last_month))}</span>
+                                    </span>
+                                </td>
+                                <td class="[ wz-table__num ]">{row.isk_label}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </Flexblock>
+    </section>
+
+    <section id="fronts" class="[ wz-section ]">
+        <header class="[ wz-section__head ]">
+            <h2>Two fronts</h2>
+            <p class="[ wz-dek ]">
+                The warzone has two halves. This month almost all of the fighting was on one of them.
+            </p>
+        </header>
+        <ComponentBlock>
+            <Flexblock gap="var(--space-m)">
+                <div class="[ wz-share ]" role="img" aria-label={issue.fronts.map((front) => `${front.name}: ${front.ships_label} ships`).join('; ')}>
+                    <div class="[ wz-share__bar ]">
+                        {issue.fronts.map((front, index) => (
+                            <span
+                                class:list={['wz-share__fill', index === 0 ? 'wz-share__fill--minmatar' : 'wz-share__fill--amarr']}
+                                style={`width: ${percent(front.ships, front_total)}%`}
+                            >
+                                <span class="[ wz-share__pct ]">{Math.round(percent(front.ships, front_total))}%</span>
+                            </span>
+                        ))}
+                    </div>
+                    <p class="[ wz-split__caption ]">Share of ships destroyed in the monthly sample, by front</p>
+                </div>
+                <div class="[ wz-fronts ]">
+                    {issue.fronts.map((front, index) => (
+                        <div class:list={['wz-front', index === 0 ? 'wz-front--minmatar' : 'wz-front--amarr']}>
+                            <div class="[ wz-front__head ]">
+                                <div>
+                                    <h3>{front.name}</h3>
+                                    <span class="[ wz-front__regions ]">{front.regions}</span>
+                                </div>
+                            </div>
+                            <dl class="[ wz-statline ]">
+                                <div>
+                                    <dt>Ships destroyed</dt>
+                                    <dd>{front.ships_label}</dd>
+                                </div>
+                                <div>
+                                    <dt>Hottest system</dt>
+                                    <dd>{front.hottest_system}</dd>
+                                </div>
+                            </dl>
+                            <p>{front.dek}</p>
+                        </div>
+                    ))}
+                </div>
+            </Flexblock>
+        </ComponentBlock>
+    </section>
+
+    <section id="focus" class="[ wz-section ]">
+        <header class="[ wz-section__head ]">
+            <h2>Focus of the month</h2>
+            <p class="[ wz-dek ]">One story that would not fit a normal issue: a week-long siege in {issue.focus_name}.</p>
+        </header>
+
+        <ComponentBlock class="[ wz-focus ]">
+            <Flexblock gap="var(--space-l)">
+                <FlexInline justification="space-between" class="[ w-full ]">
+                    <h3 class="[ wz-focus__title ]">{focus.title}</h3>
+                    <span class="[ wz-date ]">{focus.window_label}</span>
+                </FlexInline>
+
+                <div class="[ wz-focus-stats ]">
+                    <div class="[ wz-stat ]">
+                        <span class="[ wz-stat__label ]">Ships destroyed</span>
+                        <b class="[ wz-stat__value ]">{number_thousand_separator(focus.ships)}</b>
+                        <span class="[ wz-stat__note ]">pods not counted</span>
+                    </div>
+                    <div class="[ wz-stat ]">
+                        <span class="[ wz-stat__label ]">ISK destroyed</span>
+                        <b class="[ wz-stat__value ]">{format_isk(focus.isk)}</b>
+                    </div>
+                    <div class="[ wz-stat ]">
+                        <span class="[ wz-stat__label ]">Pilots who fought</span>
+                        <b class="[ wz-stat__value ]">{number_thousand_separator(focus.unique_pilots)}</b>
+                    </div>
+                </div>
+
+                <div class="[ wz-focus-charts ]">
+                    <div class="[ wz-chart ]">
+                        <h4>Ships lost by side</h4>
+                        <ul class="[ wz-losses ]">
+                            <li>
+                                <span class="[ wz-losses__logo ]" aria-hidden="true"><MinmatarLogo /></span>
+                                <div class="[ wz-losses__body ]">
+                                    <div class="[ wz-losses__meta ]">
+                                        <b class="[ wz-minmatar-text ]">Minmatar</b>
+                                        <span>{number_thousand_separator(focus.minmatar_ships)} ships · {format_isk(focus.minmatar_isk)} · {focus.minmatar_pilots} pilots</span>
+                                    </div>
+                                    <div class="[ wz-bar ]"><span class="[ wz-bar__fill wz-bar__fill--minmatar ]" style={`width: ${percent(focus.minmatar_ships, focus_loss_max)}%`}></span></div>
+                                </div>
+                            </li>
+                            <li>
+                                <span class="[ wz-losses__logo ]" aria-hidden="true"><AmarrLogo /></span>
+                                <div class="[ wz-losses__body ]">
+                                    <div class="[ wz-losses__meta ]">
+                                        <b class="[ wz-amarr-text ]">Amarr</b>
+                                        <span>{number_thousand_separator(focus.amarr_ships)} ships · {format_isk(focus.amarr_isk)} · {focus.amarr_pilots} pilots</span>
+                                    </div>
+                                    <div class="[ wz-bar ]"><span class="[ wz-bar__fill wz-bar__fill--amarr ]" style={`width: ${percent(focus.amarr_ships, focus_loss_max)}%`}></span></div>
+                                </div>
+                            </li>
+                            <li>
+                                <span class="[ wz-losses__logo wz-losses__logo--other ]" aria-hidden="true">✦</span>
+                                <div class="[ wz-losses__body ]">
+                                    <div class="[ wz-losses__meta ]">
+                                        <b>Third parties</b>
+                                        <span>{number_thousand_separator(focus.other_ships)} ships · {format_isk(focus.other_isk)}</span>
+                                    </div>
+                                    <div class="[ wz-bar ]"><span class="[ wz-bar__fill wz-bar__fill--other ]" style={`width: ${percent(focus.other_ships, focus_loss_max)}%`}></span></div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="[ wz-chart ]">
+                        <h4>How the week was fought</h4>
+                        <div class="[ wz-share__bar wz-share__bar--thin ]" role="img" aria-label={focus.engagement_mix.map((slice) => `${slice.label}: ${slice.value} kills`).join('; ')}>
+                            {focus.engagement_mix.map((slice, index) => (
+                                <span class="[ wz-share__fill ]" style={`width: ${percent(slice.value, engagement_total)}%; background: ${engagement_colors[index % engagement_colors.length]}`}></span>
+                            ))}
+                        </div>
+                        <ul class="[ wz-legend-list ]">
+                            {focus.engagement_mix.map((slice, index) => (
+                                <li>
+                                    <span class="[ wz-swatch ]" style={`background: ${engagement_colors[index % engagement_colors.length]}`} aria-hidden="true"></span>
+                                    <span>{slice.label}</span>
+                                    <b>{number_thousand_separator(slice.value)}</b>
+                                    <span class="[ wz-legend-list__pct ]">{Math.round(percent(slice.value, engagement_total))}%</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+
+                <FlexInline gap="var(--space-2xs)">
+                    <Button href={translatePath(focus.campaign_path)} size="sm">
+                        Read the full siege report
+                    </Button>
+                </FlexInline>
+            </Flexblock>
+        </ComponentBlock>
+    </section>
+
+    <section id="pilots" class="[ wz-section ]">
+        <header class="[ wz-section__head ]">
+            <h2>Pilots of the month</h2>
+            <p class="[ wz-dek ]">The names that kept showing up on the killmails: solo, small gang, and fleet.</p>
+        </header>
+        <Grid min_item_width="18rem" class="[ wz-equal ]">
+            {issue.pilots.boards.map((board) => (
+                <ComponentBlock padding_inline="var(--space-m)" class="[ wz-board ]">
+                    <Flexblock gap="var(--space-m)" class="[ h-full ]">
+                        <h3>{board.title}</h3>
+                        {[
+                            { id: 'minmatar' as const, label: 'Minmatar', pilots: board.minmatar },
+                            { id: 'amarr' as const, label: 'Amarr', pilots: board.amarr },
+                        ].map((side) => (
+                            <div class="[ wz-board__side ]">
+                                <div class:list={['wz-board__faction', `wz-board__faction--${side.id}`]}>
+                                    <span class="[ wz-board__logo ]" aria-hidden="true">
+                                        {side.id === 'minmatar' ? <MinmatarLogo /> : <AmarrLogo />}
+                                    </span>
+                                    <span>{side.label}</span>
+                                </div>
+                                {side.pilots.length > 0 ? (
+                                    <ol class="[ wz-board__list ]">
+                                        {side.pilots.map((pilot, index) => (
+                                            <li>
+                                                <span class="[ wz-board__rank ]">{index + 1}</span>
+                                                <CharacterPicture
+                                                    character_id={pilot.characterId}
+                                                    character_name={pilot.name}
+                                                    size={36}
+                                                    icon_quality={64}
+                                                />
+                                                <span class="[ wz-board__id ]">
+                                                    <a
+                                                        class="[ wz-board__name ]"
+                                                        href={`https://zkillboard.com/character/${pilot.characterId}/`}
+                                                        target="_blank"
+                                                        rel="nofollow noopener noreferrer"
+                                                    >
+                                                        {pilot.name}
+                                                    </a>
+                                                    {pilot.affiliation && (
+                                                        <span class="[ wz-board__affil ]">
+                                                            {pilot.affiliation_id > 0 && (
+                                                                <img
+                                                                    src={pilot.affiliation_kind === 'alliance' ? get_alliance_logo(pilot.affiliation_id, 32) : get_corporation_logo(pilot.affiliation_id, 32)}
+                                                                    width="16"
+                                                                    height="16"
+                                                                    alt=""
+                                                                    loading="lazy"
+                                                                />
+                                                            )}
+                                                            <span>{pilot.affiliation}</span>
+                                                        </span>
+                                                    )}
+                                                </span>
+                                                <b class="[ wz-board__kills ]">{number_thousand_separator(pilot.killmails)}</b>
+                                            </li>
+                                        ))}
+                                    </ol>
+                                ) : (
+                                    <p class="[ wz-board__empty ]">Not in this month’s extract.</p>
+                                )}
+                            </div>
+                        ))}
+                    </Flexblock>
+                </ComponentBlock>
+            ))}
+        </Grid>
+        <p class="[ wz-footnote ]">{issue.pilots.scope}</p>
+    </section>
+
+    <section id="ships" class="[ wz-section ]">
+        <header class="[ wz-section__head ]">
+            <h2>Top ships</h2>
+            <p class="[ wz-dek ]">The hulls flown to the most killmails, by gang size.</p>
+        </header>
+        <Grid min_item_width="18rem" class="[ wz-equal ]">
+            {issue.top_ships.boards.map((board) => {
+                const top_count = Math.max(...board.ships.map((ship) => ship.count), 1)
+                return (
+                    <ComponentBlock padding_inline="var(--space-m)" class="[ wz-board ]">
+                        <Flexblock gap="var(--space-m)" class="[ h-full ]">
+                            <h3>{board.title}</h3>
+                            {board.ships.length > 0 ? (
+                                <ol class="[ wz-ships ]">
+                                    {board.ships.map((ship, index) => (
+                                        <li class:list={['wz-ship', index === 0 && 'wz-ship--lead']}>
+                                            <span class="[ wz-ship__rank ]">{index + 1}</span>
+                                            <span class="[ wz-ship__icon ]">
+                                                <ItemPicture
+                                                    item_id={ship.typeId}
+                                                    item_name={ship.name}
+                                                    size={40}
+                                                    icon_quality={64}
+                                                />
+                                            </span>
+                                            <div class="[ wz-ship__body ]">
+                                                <div class="[ wz-ship__line ]">
+                                                    <a
+                                                        class="[ wz-ship__name ]"
+                                                        href={`https://zkillboard.com/ship/${ship.typeId}/`}
+                                                        target="_blank"
+                                                        rel="nofollow noopener noreferrer"
+                                                    >
+                                                        {ship.name}
+                                                    </a>
+                                                    <b class="[ wz-ship__count ]">{number_thousand_separator(ship.count)}</b>
+                                                </div>
+                                                <div class="[ wz-bar ]">
+                                                    <span class="[ wz-bar__fill wz-bar__fill--ship ]" style={`width: ${percent(ship.count, top_count)}%`}></span>
+                                                </div>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ol>
+                            ) : (
+                                <p class="[ wz-board__empty ]">Not in this month’s extract.</p>
+                            )}
+                        </Flexblock>
+                    </ComponentBlock>
+                )
+            })}
+        </Grid>
+    </section>
+
+    <section id="groups" class="[ wz-section ]">
+        <header class="[ wz-section__head ]">
+            <h2>Groups of the month</h2>
+            <p class="[ wz-dek ]">The alliances and corporations that actually live in the warzone, ranked by killmails.</p>
+        </header>
+        {issue.groups.rows.length > 0 ? (
+            <div class="[ wz-table-wrap ]" tabindex="0" role="region" aria-label="Groups of the month">
+                <table class="[ wz-table wz-table--groups ]">
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Group</th>
+                            <th scope="col" class="[ wz-table__num ]">Killmails</th>
+                            <th scope="col" class="[ wz-table__num ]">ISK destroyed</th>
+                            <th scope="col" class="[ wz-table__num ]">Ships lost</th>
+                            <th scope="col" class="[ wz-table__num ]">In warzone</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {issue.groups.rows.map((group, index) => (
+                            <tr>
+                                <td class="[ wz-table__rank ]">{index + 1}</td>
+                                <td class="[ wz-table__group ]">
+                                    <span class="[ wz-table__owner ]">
+                                        <img
+                                            class="[ wz-table__logo ]"
+                                            src={group_logo_override(group.id) ?? (group.kind === 'alliance' ? get_alliance_logo(group.id, 64) : get_corporation_logo(group.id, 64))}
+                                            width="32"
+                                            height="32"
+                                            alt=""
+                                            loading="lazy"
+                                        />
+                                        <span>
+                                            <span class="[ wz-table__system ]">
+                                                <a
+                                                    href={`https://zkillboard.com/${group.kind}/${group.id}/`}
+                                                    target="_blank"
+                                                    rel="nofollow noopener noreferrer"
+                                                >
+                                                    {group.name}
+                                                </a>
+                                            </span>
+                                            <span class:list={['wz-group-faction', group.militia && `wz-group-faction--${group.militia}`]}>
+                                                {group.faction_id === 500002 ? (
+                                                    <span class="[ wz-group-faction__logo ]" aria-hidden="true"><MinmatarLogo /></span>
+                                                ) : group.faction_id === 500003 ? (
+                                                    <span class="[ wz-group-faction__logo ]" aria-hidden="true"><AmarrLogo /></span>
+                                                ) : group.faction_id && PIRATE_LOGO_CORP[group.faction_id] ? (
+                                                    <img
+                                                        class="[ wz-group-faction__logo ]"
+                                                        src={get_corporation_logo(PIRATE_LOGO_CORP[group.faction_id], 32)}
+                                                        width="16"
+                                                        height="16"
+                                                        alt=""
+                                                        loading="lazy"
+                                                    />
+                                                ) : null}
+                                                <span>{group.faction}</span>
+                                            </span>
+                                        </span>
+                                    </span>
+                                </td>
+                                <td class="[ wz-table__num ]" data-label="Killmails"><b>{number_thousand_separator(group.killmails)}</b></td>
+                                <td class="[ wz-table__num ]" data-label="ISK destroyed">{format_isk(group.isk_destroyed)}</td>
+                                <td class="[ wz-table__num ]" data-label="Ships lost">{number_thousand_separator(group.ships_lost)}</td>
+                                <td class="[ wz-table__num ]" data-label="In warzone">{Math.round(group.fw_share * 100)}%</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        ) : (
+            <p class="[ wz-board__empty ]">Not in this month’s extract.</p>
+        )}
+        <p class="[ wz-footnote ]">{issue.groups.scope}</p>
+    </section>
+
+    <section id="get-involved" class="[ wz-section ]">
+        <header class="[ wz-section__head ]">
+            <h2>How to get involved</h2>
+            <p class="[ wz-dek ]">New to faction warfare, or new to the Minmatar side of it? Three steps, then the guides.</p>
+        </header>
+
+        <Grid min_item_width="16rem" row_gap="var(--space-m)" column_gap="var(--space-m)" class="[ wz-equal wz-steps ]">
+            {issue.get_involved.steps.map((step, index) => (
+                <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-m)" class="[ wz-step ]">
+                    <Flexblock gap="var(--space-m)" class="[ h-full ]">
+                        <div class="[ wz-step__head ]">
+                            <span class="[ wz-step__number ]" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
+                            <h3>{step.title}</h3>
+                        </div>
+                        <p class="[ wz-step__text push-bottom ]">{step.text}</p>
+                        <a class="[ wz-step__link ]" href={translatePath(step.href)}>{step.label} →</a>
+                    </Flexblock>
+                </ComponentBlock>
+            ))}
+        </Grid>
+
+        <ComponentBlock class="[ wz-cta ]" padding_inline="var(--space-m)" padding_block="var(--space-m)">
+            <div class="[ wz-cta__inner ]">
+                <div>
+                    <h3>Ready to undock?</h3>
+                    <p>Public fleets run daily. Applications are open to any Minmatar-side pilot.</p>
+                </div>
+                <FlexInline gap="var(--space-2xs)">
+                    {issue.get_involved.actions.map((link, index) => (
+                        <Button
+                            href={resolve_href(link.href)}
+                            size="sm"
+                            color={index === 0 ? 'fleet-red' : 'transparent'}
+                            class={index === 0 ? undefined : '[ wz-ghost ]'}
+                            new_tab={is_external(link.href)}
+                            external={is_external(link.href)}
+                        >
+                            {link.label}
+                        </Button>
+                    ))}
+                </FlexInline>
+            </div>
+        </ComponentBlock>
+
+        <div class="[ wz-subhead ]">
+            <h3>Guides for the warzone</h3>
+            <p>Mechanics first, then the hulls you will actually fly.</p>
+        </div>
+        <Grid min_item_width="18rem" class="[ wz-equal wz-guides ]">
+            {featured_guides.map((guide) => (
+                <GuidePostCard guide={guide} />
+            ))}
+        </Grid>
+        <FlexInline>
+            <Button href={translatePath(LEARNING_HUB_PATH)} size="sm" color="transparent" class="[ wz-ghost ]">
+                Browse all guides
+            </Button>
+        </FlexInline>
+    </section>
+
+    <section id="about" class="[ wz-section ]">
+        <header class="[ wz-section__head ]">
+            <h2>About the numbers</h2>
+            <p class="[ wz-dek ]">Where every figure on this page comes from.</p>
+        </header>
+        <ComponentBlock class="[ wz-about ]">
+            <div class="[ wz-about__head ]">
+                <h4>Sources and method</h4>
+                <ul class="[ wz-about__sources ]">
+                    <li>zKillboard</li>
+                    <li>Dotlan</li>
+                    <li>EVE ESI</li>
+                </ul>
+            </div>
+            <dl class="[ wz-method ]">
+                {issue.methodology.map((entry) => (
+                    <div class="[ wz-method__row ]">
+                        <dt>{entry.label}</dt>
+                        <dd>{entry.text}</dd>
+                    </div>
+                ))}
+            </dl>
+        </ComponentBlock>
+        <p class="[ wz-footnote ]">
+            Warzone Report · {issue.period_utc} · Published by Minmatar Fleet · Sources: zKillboard, Dotlan, EVE ESI.
+        </p>
+    </section>
+</div>
+
+<style lang="scss">
+    .warzone-report {
+        --wz-minmatar: color-mix(in srgb, var(--fleet-red) 78%, white 22%);
+        --wz-amarr: var(--fleet-yellow);
+        --wz-other: color-mix(in srgb, var(--alliance-blue) 70%, white 30%);
+        --wz-track: rgba(255, 255, 255, 0.06);
+        --wz-rule: rgba(255, 255, 255, 0.08);
+
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xl);
+        width: 100%;
+        min-width: 0;
+
+        h2 {
+            font-size: var(--step-3);
+            font-family: var(--heading-font);
+            margin: 0;
+        }
+
+        h3 {
+            font-size: var(--step-1);
+            font-family: var(--heading-font);
+            margin: 0;
+        }
+
+        h4 {
+            font-size: var(--step-0);
+            font-family: var(--heading-font);
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            margin: 0;
+        }
+
+        p {
+            margin: 0;
+            max-width: var(--max-text-width);
+            line-height: 1.6;
+        }
+
+        b {
+            font-variant-numeric: tabular-nums;
+        }
+
+        a:not(.button) {
+            color: var(--highlight);
+            text-decoration: underline;
+            text-decoration-color: color-mix(in srgb, var(--highlight) 35%, transparent);
+            text-underline-offset: 0.15em;
+
+            &:hover {
+                text-decoration-color: var(--highlight);
+            }
+        }
+    }
+
+    .wz-minmatar-text {
+        color: var(--wz-minmatar);
+    }
+
+    .wz-date {
+        display: inline-block;
+        padding: 0.2em 0.6em;
+        font-size: var(--step--2);
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--foreground);
+        border: solid 1px rgba(255, 255, 255, 0.18);
+        white-space: nowrap;
+    }
+
+    .wz-ghost {
+        border: solid 1px rgba(255, 255, 255, 0.22) !important;
+
+        &:hover,
+        &:focus-visible {
+            border-color: rgba(255, 255, 255, 0.6) !important;
+        }
+    }
+
+    .wz-amarr-text {
+        color: var(--wz-amarr);
+    }
+
+    /* Lede ---------------------------------------------------------------- */
+
+    .wz-lede {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-l);
+    }
+
+    .wz-hero-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
+        gap: var(--space-3xs);
+    }
+
+    .wz-hero-stat {
+        display: flex;
+        gap: var(--space-s);
+        align-items: center;
+        padding: var(--space-s) var(--space-m);
+        background-color: var(--light-transparency-background-mobile);
+        border: solid 1px var(--border-color);
+
+        @media screen and (min-width: 980px) {
+            background-color: var(--light-transparency-background);
+            backdrop-filter: blur(var(--transparency-backdrop-blur));
+        }
+
+        > div {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15em;
+            min-width: 0;
+        }
+    }
+
+    .wz-hero-stat__icon {
+        display: grid;
+        place-items: center;
+        flex: 0 0 auto;
+        width: 3rem;
+        height: 3rem;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.05);
+        border: solid 1px rgba(255, 255, 255, 0.1);
+
+        img {
+            width: 2.25rem;
+            height: 2.25rem;
+            object-fit: contain;
+            filter: brightness(1.7) contrast(1.05);
+        }
+    }
+
+    .wz-hero-stat__label {
+        font-size: var(--step--2);
+        color: var(--faded);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .wz-hero-stat__value {
+        font-size: var(--step-2);
+        font-weight: 600;
+        line-height: 1.1;
+        color: var(--highlight);
+    }
+
+
+    /* Sections ------------------------------------------------------------ */
+
+    .wz-section {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-m);
+        scroll-margin-top: var(--space-l);
+    }
+
+    .wz-section__head {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .wz-dek {
+        color: var(--faded);
+        font-size: var(--step-0);
+    }
+
+    .wz-footnote {
+        color: var(--faded);
+        font-size: var(--step--1);
+        max-width: var(--max-text-width);
+    }
+
+    .wz-subhead {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+
+        p {
+            color: var(--faded);
+        }
+    }
+
+    /* Scoreboard ---------------------------------------------------------- */
+
+    .wz-versus {
+        display: flex;
+        justify-content: space-between;
+        gap: var(--space-m);
+        flex-wrap: wrap;
+    }
+
+    .wz-versus__side {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+
+        > div {
+            display: flex;
+            flex-direction: column;
+        }
+
+        &--amarr {
+            flex-direction: row-reverse;
+            text-align: right;
+        }
+    }
+
+    .wz-versus__logo {
+        display: block;
+        width: 3rem;
+        height: 3rem;
+        flex: 0 0 auto;
+
+        :global(svg) {
+            width: 100%;
+            height: 100%;
+        }
+
+        .wz-versus__side--minmatar & :global(path) {
+            fill: var(--wz-minmatar);
+        }
+
+        .wz-versus__side--amarr & :global(path) {
+            fill: var(--wz-amarr);
+        }
+    }
+
+    .wz-versus__net {
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    .wz-split {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        align-items: center;
+        gap: var(--space-s);
+        margin-top: var(--space-m);
+    }
+
+    .wz-split__value {
+        font-size: var(--step-3);
+        font-weight: 600;
+        line-height: 1;
+    }
+
+    .wz-split__bar {
+        display: flex;
+        height: 1.25rem;
+        gap: 2px;
+        background: var(--wz-track);
+    }
+
+    .wz-split__fill {
+        display: block;
+        height: 100%;
+
+        &--minmatar {
+            background: var(--wz-minmatar);
+        }
+
+        &--amarr {
+            background: var(--wz-amarr);
+        }
+    }
+
+    .wz-split__caption {
+        margin-top: var(--space-2xs);
+        font-size: var(--step--1);
+        color: var(--faded);
+        text-align: center;
+        max-width: none;
+    }
+
+    .wz-compare {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+        margin-top: var(--space-l);
+        padding-top: var(--space-m);
+        border-top: solid 1px var(--wz-rule);
+    }
+
+    .wz-compare__row {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        align-items: baseline;
+        gap: var(--space-s);
+        padding-block: var(--space-2xs);
+        border-bottom: solid 1px var(--wz-rule);
+
+        &:last-child {
+            border-bottom: none;
+        }
+    }
+
+    .wz-compare__label {
+        text-align: center;
+        font-size: var(--step--1);
+        color: var(--faded);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .wz-compare__value {
+        font-size: var(--step-1);
+        font-weight: 600;
+        color: var(--foreground);
+        font-variant-numeric: tabular-nums;
+
+        &--minmatar {
+            text-align: left;
+        }
+
+        &--amarr {
+            text-align: right;
+        }
+
+        &.is-leader {
+            color: var(--highlight);
+        }
+    }
+
+    /* Fights -------------------------------------------------------------- */
+
+    .wz-equal {
+        align-items: stretch;
+    }
+
+
+
+    .wz-statline {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr));
+        gap: var(--space-xs);
+        margin: 0;
+        padding-block: var(--space-xs);
+        border-block: solid 1px var(--wz-rule);
+
+        > div {
+            display: flex;
+            flex-direction: column;
+            gap: 0.1em;
+        }
+
+        dd {
+            margin-top: auto;
+        }
+
+        dt {
+            font-size: var(--step--2);
+            color: var(--faded);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        dd {
+            margin: 0;
+            font-size: var(--step-1);
+            font-weight: 600;
+            color: var(--highlight);
+            font-variant-numeric: tabular-nums;
+            line-height: 1.1;
+        }
+
+        &--compact {
+            border: none;
+            padding: 0;
+            gap: var(--space-s);
+            grid-template-columns: 5rem 6rem 4rem;
+
+            dd {
+                font-size: var(--step-0);
+            }
+
+            @media screen and (max-width: 900px) {
+                grid-template-columns: repeat(3, auto);
+                justify-content: start;
+            }
+        }
+    }
+
+    .wz-delta {
+        display: inline-grid;
+        grid-template-columns: 1em 5ch;
+        gap: 0.3em;
+        align-items: baseline;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+
+        &--up {
+            color: var(--green);
+        }
+
+        &--down {
+            color: var(--fleet-red);
+        }
+    }
+
+    .wz-delta__arrow {
+        text-align: center;
+    }
+
+    .wz-delta__num {
+        text-align: right;
+    }
+
+    /* Bars and table ------------------------------------------------------ */
+
+    .wz-bar {
+        width: 100%;
+        height: 0.75rem;
+        background: var(--wz-track);
+    }
+
+    .wz-bar__fill {
+        display: block;
+        height: 100%;
+        min-width: 2px;
+
+        &--minmatar {
+            background: var(--wz-minmatar);
+        }
+
+        &--amarr {
+            background: var(--wz-amarr);
+        }
+
+        &--other {
+            background: var(--wz-other);
+        }
+
+        &--ship {
+            background: color-mix(in srgb, var(--fleet-yellow) 60%, var(--highlight) 40%);
+            opacity: 0.85;
+        }
+    }
+
+    .wz-table-wrap {
+        overflow-x: auto;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .wz-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: var(--step--1);
+
+        th,
+        td {
+            padding: var(--space-xs) var(--space-s);
+            text-align: left;
+            vertical-align: middle;
+            border-bottom: solid 1px var(--wz-rule);
+        }
+
+        th {
+            font-weight: 600;
+            color: var(--faded);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: var(--step--2);
+            white-space: nowrap;
+        }
+
+        tbody tr:hover td {
+            background: rgba(255, 255, 255, 0.025);
+        }
+
+        td:first-child {
+            white-space: nowrap;
+        }
+
+        @media screen and (max-width: 720px) {
+            th,
+            td {
+                padding: var(--space-xs) var(--space-2xs);
+            }
+
+        }
+    }
+
+    .wz-table__rank {
+        font-family: var(--heading-font);
+        color: var(--faded);
+        width: 2rem;
+    }
+
+    .wz-group-faction {
+        display: flex;
+        align-items: center;
+        gap: 0.35em;
+        font-size: var(--step--2);
+        color: var(--faded);
+
+        &--minmatar {
+            color: var(--wz-minmatar);
+        }
+
+        &--amarr {
+            color: var(--wz-amarr);
+        }
+    }
+
+    .wz-group-faction__logo {
+        display: block;
+        width: 0.95rem;
+        height: 0.95rem;
+        flex: 0 0 auto;
+
+        :global(svg) {
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    .wz-group-faction--minmatar .wz-group-faction__logo :global(path) {
+        fill: var(--wz-minmatar);
+    }
+
+    .wz-group-faction--amarr .wz-group-faction__logo :global(path) {
+        fill: var(--wz-amarr);
+    }
+
+    .wz-table__logo {
+        display: block;
+        flex: 0 0 auto;
+        width: 2rem;
+        height: 2rem;
+    }
+
+    .wz-table--groups td .wz-table__num b,
+    .wz-table--groups td.wz-table__num b {
+        color: var(--highlight);
+    }
+
+    .wz-table--groups {
+        @media screen and (max-width: 720px) {
+            thead {
+                display: none;
+            }
+
+            tr {
+                display: grid;
+                grid-template-columns: 1.75rem 1fr 1fr;
+                gap: var(--space-2xs) var(--space-s);
+                padding-block: var(--space-s);
+                border-bottom: solid 1px var(--wz-rule);
+                align-items: start;
+            }
+
+            tbody tr:hover td {
+                background: none;
+            }
+
+            td {
+                padding: 0;
+                border: none;
+                white-space: normal !important;
+                text-align: left !important;
+            }
+
+            td.wz-table__rank {
+                grid-column: 1;
+                grid-row: 1;
+                align-self: center;
+            }
+
+            td.wz-table__group {
+                grid-column: 2 / -1;
+                grid-row: 1;
+            }
+
+            td[data-label="Killmails"],
+            td[data-label="Ships lost"] {
+                grid-column: 2;
+            }
+
+            td[data-label="ISK destroyed"],
+            td[data-label="In warzone"] {
+                grid-column: 3;
+            }
+
+            td[data-label]::before {
+                content: attr(data-label);
+                display: block;
+                font-size: var(--step--2);
+                color: var(--faded);
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                margin-bottom: 0.15em;
+            }
+        }
+    }
+
+    .wz-table__owner {
+        display: flex;
+        align-items: center;
+        gap: var(--space-xs);
+    }
+
+    .wz-faction-mark {
+        display: block;
+        flex: 0 0 auto;
+        width: 1.5rem;
+        height: 1.5rem;
+
+        :global(svg) {
+            width: 100%;
+            height: 100%;
+        }
+
+        &--minmatar :global(path) {
+            fill: var(--wz-minmatar);
+        }
+
+        &--amarr :global(path) {
+            fill: var(--wz-amarr);
+        }
+    }
+
+    .wz-table__num {
+        text-align: right !important;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .wz-table__bar-head {
+        min-width: 14rem;
+
+        @media screen and (max-width: 720px) {
+            min-width: 9rem;
+        }
+    }
+
+    .wz-table__bar {
+        width: 45%;
+        min-width: 14rem;
+
+        @media screen and (max-width: 720px) {
+            min-width: 9rem;
+        }
+
+        > b {
+            display: block;
+            margin-top: 0.3em;
+            font-size: var(--step-0);
+            color: var(--highlight);
+        }
+    }
+
+    .wz-table__system {
+        display: block;
+        font-size: var(--step-0);
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    .wz-table__when {
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        color: var(--highlight);
+        white-space: nowrap;
+    }
+
+    .wz-table__flip-system {
+        min-width: 16rem;
+        max-width: 34rem;
+        white-space: normal !important;
+    }
+
+
+
+    .wz-table--flips {
+        td .wz-table__num b,
+        td.wz-table__num b {
+            color: var(--highlight);
+        }
+
+        @media screen and (max-width: 720px) {
+            thead {
+                display: none;
+            }
+
+            tr {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: var(--space-2xs) var(--space-s);
+                padding-block: var(--space-s);
+                border-bottom: solid 1px var(--wz-rule);
+            }
+
+            tbody tr:hover td {
+                background: none;
+            }
+
+            td {
+                display: block;
+                padding: 0;
+                border: none;
+                background: transparent;
+                white-space: normal !important;
+                text-align: left !important;
+            }
+
+            td.wz-table__when,
+            td.wz-table__flip-system {
+                grid-column: 1 / -1;
+            }
+
+            td.wz-table__flip-system {
+                min-width: 0;
+                max-width: none;
+                margin-bottom: var(--space-2xs);
+            }
+
+            td[data-label]::before {
+                content: attr(data-label);
+                display: block;
+                font-size: var(--step--2);
+                color: var(--faded);
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                margin-bottom: 0.15em;
+            }
+
+            td[data-label="Ships"] {
+                grid-column: 1;
+            }
+        }
+    }
+
+    .wz-owner {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        white-space: nowrap;
+    }
+
+    .wz-table__front {
+        display: block;
+        font-size: var(--step--2);
+        color: var(--faded);
+    }
+
+    /* Fronts -------------------------------------------------------------- */
+
+    .wz-share__bar {
+        display: flex;
+        height: 2rem;
+        gap: 2px;
+        background: var(--wz-track);
+
+        &--thin {
+            height: 1rem;
+        }
+    }
+
+    .wz-share__fill {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        min-width: 2px;
+        overflow: hidden;
+
+        &--minmatar {
+            background: var(--wz-minmatar);
+        }
+
+        &--amarr {
+            background: var(--wz-amarr);
+        }
+    }
+
+    .wz-share__pct {
+        font-size: var(--step--1);
+        font-weight: 600;
+        color: var(--background);
+        white-space: nowrap;
+    }
+
+    .wz-fronts {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+        gap: var(--space-m);
+    }
+
+    .wz-front {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        padding-left: var(--space-s);
+        border-left: solid 3px var(--wz-track);
+
+        &--minmatar {
+            border-left-color: var(--wz-minmatar);
+        }
+
+        &--amarr {
+            border-left-color: var(--wz-amarr);
+        }
+
+        p {
+            font-size: var(--step--1);
+        }
+    }
+
+    .wz-front__head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: var(--space-xs);
+        flex-wrap: wrap;
+
+        > div {
+            display: flex;
+            flex-direction: column;
+        }
+    }
+
+    .wz-front__regions {
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    /* Focus --------------------------------------------------------------- */
+
+    .wz-focus__title {
+        font-size: var(--step-2);
+    }
+
+    .wz-focus-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(10rem, 100%), 1fr));
+        gap: var(--space-3xs);
+    }
+
+    .wz-stat {
+        display: flex;
+        flex-direction: column;
+        gap: 0.15em;
+        padding: var(--space-s);
+        border: solid 1px var(--border-color);
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .wz-stat__label {
+        font-size: var(--step--2);
+        color: var(--faded);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .wz-stat__value {
+        font-size: var(--step-2);
+        font-weight: 600;
+        line-height: 1.1;
+        color: var(--highlight);
+    }
+
+    .wz-stat__note {
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    .wz-focus-charts {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
+        gap: var(--space-l);
+    }
+
+    .wz-chart {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .wz-losses {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+
+        li {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+    }
+
+    .wz-losses__logo {
+        display: grid;
+        place-items: center;
+        width: 2rem;
+        height: 2rem;
+        flex: 0 0 auto;
+        color: var(--wz-other);
+
+        :global(svg) {
+            width: 100%;
+            height: 100%;
+        }
+
+        li:nth-child(1) & :global(path) {
+            fill: var(--wz-minmatar);
+        }
+
+        li:nth-child(2) & :global(path) {
+            fill: var(--wz-amarr);
+        }
+    }
+
+    .wz-losses__body {
+        flex: 1 1 auto;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.3em;
+    }
+
+    .wz-losses__meta {
+        display: flex;
+        justify-content: space-between;
+        gap: var(--space-xs);
+        flex-wrap: wrap;
+        font-size: var(--step--1);
+
+        span {
+            color: var(--faded);
+            font-variant-numeric: tabular-nums;
+        }
+    }
+
+    .wz-legend-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        font-size: var(--step--1);
+
+        li {
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+
+        b {
+            color: var(--highlight);
+        }
+    }
+
+    .wz-legend-list__pct {
+        color: var(--faded);
+        min-width: 3ch;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .wz-swatch {
+        display: inline-block;
+        width: 0.75rem;
+        height: 0.75rem;
+
+        &--minmatar {
+            background: var(--wz-minmatar);
+        }
+
+        &--amarr {
+            background: var(--wz-amarr);
+        }
+    }
+
+    .wz-legend-list--inline {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: var(--space-2xs) var(--space-m);
+
+        li {
+            grid-template-columns: auto auto;
+        }
+    }
+
+    /* Pilots -------------------------------------------------------------- */
+
+    .wz-board {
+        > :global(.flex-block) {
+            flex: 1 1 auto;
+        }
+    }
+
+    .wz-board__side {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-xs);
+    }
+
+    .wz-board__faction {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        font-family: var(--heading-font);
+        text-transform: uppercase;
+        font-size: var(--step--1);
+        letter-spacing: 0.04em;
+        padding-bottom: var(--space-2xs);
+        border-bottom: solid 1px var(--wz-rule);
+
+        &--minmatar {
+            color: var(--wz-minmatar);
+
+            :global(path) {
+                fill: var(--wz-minmatar);
+            }
+        }
+
+        &--amarr {
+            color: var(--wz-amarr);
+
+            :global(path) {
+                fill: var(--wz-amarr);
+            }
+        }
+    }
+
+    .wz-board__logo {
+        display: block;
+        width: 1.25rem;
+        height: 1.25rem;
+
+        :global(svg) {
+            width: 100%;
+            height: 100%;
+        }
+    }
+
+    .wz-board__list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+
+        li {
+            display: grid;
+            grid-template-columns: 1.25rem 2.25rem minmax(0, 1fr) auto;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+    }
+
+    .wz-board__rank {
+        font-family: var(--heading-font);
+        font-size: var(--step--1);
+        color: var(--faded);
+        text-align: right;
+    }
+
+    .wz-ships {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .wz-ship {
+        display: grid;
+        grid-template-columns: 1.5rem 2.5rem minmax(0, 1fr);
+        align-items: center;
+        gap: var(--space-s);
+        padding-block: var(--space-2xs);
+        border-top: solid 1px var(--wz-rule);
+
+        &:first-child {
+            border-top: none;
+        }
+    }
+
+    .wz-ship__rank {
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        color: var(--faded);
+        text-align: center;
+
+        .wz-ship--lead & {
+            color: var(--fleet-yellow);
+        }
+    }
+
+    .wz-ship__icon {
+        display: block;
+        width: 2.5rem;
+        height: 2.5rem;
+        border: solid 1px var(--wz-rule);
+        background: rgba(255, 255, 255, 0.03);
+
+        :global(img),
+        :global(picture) {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+    }
+
+    .wz-ship__body {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35em;
+    }
+
+    .wz-ship__line {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--space-s);
+    }
+
+    .wz-ship__name {
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-decoration: none !important;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+
+        &:hover {
+            color: var(--highlight);
+        }
+    }
+
+    .wz-ship__count {
+        font-size: var(--step-0);
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+
+    .wz-board__id {
+        display: flex;
+        flex-direction: column;
+        gap: 0.1em;
+        min-width: 0;
+    }
+
+    .wz-board__name {
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-decoration: none !important;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .wz-board__affil {
+        display: flex;
+        align-items: center;
+        gap: 0.35em;
+        font-size: var(--step--2);
+        color: var(--faded);
+        min-width: 0;
+
+        img {
+            width: 0.95rem;
+            height: 0.95rem;
+            flex: 0 0 auto;
+        }
+
+        span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    .wz-board__kills {
+        font-size: var(--step--1);
+        color: var(--highlight);
+    }
+
+    .wz-board__empty {
+        font-size: var(--step--1);
+        color: var(--faded);
+    }
+
+    /* Get involved -------------------------------------------------------- */
+
+    .wz-step {
+        position: relative;
+        overflow: hidden;
+
+        > :global(.flex-block) {
+            flex: 1 1 auto;
+        }
+    }
+
+    .wz-step__head {
+        display: flex;
+        align-items: baseline;
+        gap: var(--space-s);
+    }
+
+    .wz-step__number {
+        font-family: var(--heading-font);
+        font-size: var(--step-3);
+        line-height: 1;
+        color: var(--fleet-yellow);
+        opacity: 0.85;
+    }
+
+    .warzone-report .wz-step__text {
+        font-size: var(--step--1);
+        line-height: 1.65;
+        margin-block-end: auto;
+    }
+
+    .wz-step__link {
+        font-size: var(--step--1);
+        font-weight: 600;
+        text-decoration: none !important;
+        color: var(--highlight);
+
+        &:hover {
+            text-decoration: underline !important;
+        }
+    }
+
+    .wz-cta {
+        border-left: solid 3px var(--wz-minmatar);
+    }
+
+    .wz-cta__inner {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--space-s) var(--space-l);
+
+        p {
+            font-size: var(--step--1);
+            color: var(--faded);
+        }
+    }
+
+    .wz-guides {
+        :global(h3) {
+            margin: 0;
+        }
+    }
+
+    /* About --------------------------------------------------------------- */
+
+    .wz-about__head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-xs);
+        padding-bottom: var(--space-s);
+        margin-bottom: var(--space-s);
+        border-bottom: solid 1px var(--wz-rule);
+    }
+
+    .wz-about__sources {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+
+        li {
+            font-size: var(--step--2);
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--faded);
+            padding: 0.2em 0.6em;
+            border: solid 1px var(--wz-rule);
+        }
+    }
+
+    .wz-method {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .wz-method__row {
+        display: grid;
+        grid-template-columns: 11rem minmax(0, 1fr);
+        gap: var(--space-m);
+        padding-block: var(--space-xs);
+        border-top: solid 1px var(--wz-rule);
+
+        &:first-child {
+            border-top: none;
+        }
+
+        dt {
+            font-family: var(--heading-font);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-size: var(--step--1);
+            color: var(--fleet-yellow);
+        }
+
+        dd {
+            margin: 0;
+            font-size: var(--step--1);
+            color: var(--faded);
+            line-height: 1.6;
+        }
+
+        @media screen and (max-width: 640px) {
+            grid-template-columns: 1fr;
+            gap: var(--space-3xs);
+        }
+    }
+</style>
