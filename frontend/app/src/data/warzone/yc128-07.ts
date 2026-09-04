@@ -281,8 +281,6 @@ export const YC128_07: WarzoneIssue = {
             'navy-frigate-guide',
         ],
     },
-    cannot_see:
-        'Advantage, battlefield spawns, and occupancy upgrades are not in the public API. There is no contested-percentage series in this extract. Discord capital alerts and member-level stats stay off the page.',
     methodology:
-        `Destruction: every ship kill in all 70 Amarr–Minmatar faction-warfare systems in July, from zKillboard, with capsules and NPC-only kills removed — ${BOARDS_SAMPLED_KILLS.toLocaleString('en-US')} ships and ${(BOARDS_TOTAL_ISK / 1_000_000_000_000).toFixed(2)}T ISK. Month-over-month figures compare the same measure against June. Pilots and groups are ranked by killmails in those systems. Systems held, enlisted pilots, and last-week kills and victory points are live empire-wide ESI standings on 4 Sep 2026. Occupancy net is scored for July from Dotlan system history; the holder shown for each system is its live ESI occupier.`,
+        'Destruction figures count every ship kill in the Amarr–Minmatar faction-warfare systems for the month, from zKillboard, with capsules and NPC-only kills removed; month-over-month figures compare the same measure against the prior month. Pilots, ships, and groups are ranked by killmails in those systems. Systems held, enlisted pilots, and kills and victory points are live empire-wide ESI standings. Occupancy is scored from Dotlan system history; the holder shown for each system is its live ESI occupier.',
 }

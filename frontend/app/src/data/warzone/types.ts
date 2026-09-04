@@ -187,6 +187,5 @@ export type WarzoneIssue = {
         /** Guide slugs from the learning catalog, in display order. */
         featured_guides: readonly string[]
     }
-    cannot_see: string
     methodology: string
 }
