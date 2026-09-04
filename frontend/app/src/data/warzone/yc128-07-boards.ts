@@ -25,11 +25,11 @@ export const MINMATAR_SOLO: readonly WarzonePilot[] = [
 ]
 
 export const MINMATAR_SMALL_GANG: readonly WarzonePilot[] = [
-    { characterId: 1_173_806_786, name: "Annah Kitheran", killmails: 432, affiliation: "Angry Mustellid", affiliation_id: 1_026_712_316, affiliation_kind: "corporation" },
-    { characterId: 1_761_145_024, name: "Dato Koppla", killmails: 428, affiliation: "Spaghetti N' Meatballs", affiliation_id: 99_014_920, affiliation_kind: "alliance" },
-    { characterId: 2_112_149_192, name: "Kong iBUN", killmails: 427, affiliation: "Spaghetti N' Meatballs", affiliation_id: 99_014_920, affiliation_kind: "alliance" },
-    { characterId: 2_114_993_571, name: "Thraxis Grey", killmails: 423, affiliation: "Minmatar Fleet Alliance", affiliation_id: 99_011_978, affiliation_kind: "alliance" },
-    { characterId: 2_049_784_221, name: "Onionz", killmails: 402, affiliation: "Spaghetti N' Meatballs", affiliation_id: 99_014_920, affiliation_kind: "alliance" },
+    { characterId: 1_761_145_024, name: "Dato Koppla", killmails: 288, affiliation: "Spaghetti N' Meatballs", affiliation_id: 99_014_920, affiliation_kind: "alliance" },
+    { characterId: 2_114_993_571, name: "Thraxis Grey", killmails: 275, affiliation: "Minmatar Fleet Alliance", affiliation_id: 99_011_978, affiliation_kind: "alliance" },
+    { characterId: 2_121_887_372, name: "Donald Barr", killmails: 275, affiliation: "Triumvirate.", affiliation_id: 933_731_581, affiliation_kind: "alliance" },
+    { characterId: 1_564_908_281, name: "cursedlion", killmails: 273, affiliation: "The Tuskers Co.", affiliation_id: 99_004_357, affiliation_kind: "alliance" },
+    { characterId: 2_112_149_192, name: "Kong iBUN", killmails: 268, affiliation: "Spaghetti N' Meatballs", affiliation_id: 99_014_920, affiliation_kind: "alliance" },
 ]
 
 export const MINMATAR_FLEET: readonly WarzonePilot[] = [
@@ -49,11 +49,11 @@ export const AMARR_SOLO: readonly WarzonePilot[] = [
 ]
 
 export const AMARR_SMALL_GANG: readonly WarzonePilot[] = [
-    { characterId: 788_408_631, name: "Freany", killmails: 600, affiliation: "Slide On Contact", affiliation_id: 99_015_016, affiliation_kind: "alliance" },
-    { characterId: 1_905_669_646, name: "Fallen Aurora", killmails: 402, affiliation: "Slide On Contact", affiliation_id: 99_015_016, affiliation_kind: "alliance" },
-    { characterId: 92_630_339, name: "Gregory McMorrow", killmails: 387, affiliation: "Empyrean Edict", affiliation_id: 99_010_995, affiliation_kind: "alliance" },
-    { characterId: 96_902_356, name: "Gaebrielle Theodoulos", killmails: 386, affiliation: "Virtus Crusade Highsec Chapter", affiliation_id: 98_646_281, affiliation_kind: "corporation" },
-    { characterId: 1_105_980_003, name: "WvW", killmails: 378, affiliation: "Slide On Contact", affiliation_id: 99_015_016, affiliation_kind: "alliance" },
+    { characterId: 788_408_631, name: "Freany", killmails: 399, affiliation: "Slide On Contact", affiliation_id: 99_015_016, affiliation_kind: "alliance" },
+    { characterId: 92_630_339, name: "Gregory McMorrow", killmails: 308, affiliation: "Empyrean Edict", affiliation_id: 99_010_995, affiliation_kind: "alliance" },
+    { characterId: 1_105_980_003, name: "WvW", killmails: 297, affiliation: "Slide On Contact", affiliation_id: 99_015_016, affiliation_kind: "alliance" },
+    { characterId: 2_115_058_050, name: "Cyrelle Aurilen", killmails: 251, affiliation: "Khimi Harar", affiliation_id: 99_008_816, affiliation_kind: "alliance" },
+    { characterId: 96_902_356, name: "Gaebrielle Theodoulos", killmails: 246, affiliation: "Virtus Crusade Highsec Chapter", affiliation_id: 98_646_281, affiliation_kind: "corporation" },
 ]
 
 export const AMARR_FLEET: readonly WarzonePilot[] = [
@@ -73,11 +73,11 @@ export const SHIPS_SOLO: readonly WarzoneShip[] = [
 ]
 
 export const SHIPS_SMALL_GANG: readonly WarzoneShip[] = [
-    { typeId: 29_344, name: "Exequror Navy Issue", count: 2631 },
-    { typeId: 73_794, name: "Thrasher Fleet Issue", count: 2568 },
-    { typeId: 17_709, name: "Omen Navy Issue", count: 1916 },
-    { typeId: 17_713, name: "Stabber Fleet Issue", count: 1401 },
-    { typeId: 29_340, name: "Osprey Navy Issue", count: 1333 },
+    { typeId: 73_794, name: "Thrasher Fleet Issue", count: 2161 },
+    { typeId: 29_344, name: "Exequror Navy Issue", count: 2073 },
+    { typeId: 17_709, name: "Omen Navy Issue", count: 1348 },
+    { typeId: 17_713, name: "Stabber Fleet Issue", count: 1139 },
+    { typeId: 35_683, name: "Hecate", count: 1010 },
 ]
 
 export const SHIPS_FLEET: readonly WarzoneShip[] = [

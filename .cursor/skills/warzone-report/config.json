@@ -12,10 +12,19 @@
     "10000036": "Devoid"
   },
   "fronts": {
-    "minmatar": ["Heimatar", "Metropolis"],
-    "amarr": ["Devoid", "The Bleak Lands"]
+    "minmatar": [
+      "Heimatar",
+      "Metropolis"
+    ],
+    "amarr": [
+      "Devoid",
+      "The Bleak Lands"
+    ]
   },
-  "militia_faction_ids": { "minmatar": 500002, "amarr": 500003 },
+  "militia_faction_ids": {
+    "minmatar": 500002,
+    "amarr": 500003
+  },
   "faction_names": {
     "500002": "Minmatar Republic",
     "500003": "Amarr Empire",
@@ -28,8 +37,16 @@
     "500011": 1000138,
     "500010": 1000127
   },
-  "capsule_type_ids": [670, 33328],
-  "engagement_buckets": { "solo": "1", "small_gang": "2-24", "fleet": "25+" },
+  "capsule_type_ids": [
+    670,
+    33328
+  ],
+  "engagement_buckets": {
+    "solo": "1",
+    "small_gang": "2-10",
+    "fleet": "25+",
+    "excluded": "11-24"
+  },
   "group_min_kills": 25,
   "group_fw_share_threshold": 0.5,
   "militia_discord_invite": "https://discord.com/invite/3hZfahmkFx",

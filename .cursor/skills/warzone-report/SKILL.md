@@ -114,8 +114,9 @@ Example: August YC128 → year 2026, month 8, slug `yc128-08`.
 
 ## Engagement buckets
 
-Pilot boards split by attackers on the mail: **solo = 1, small gang = 2–24, fleet =
-25+** (in `bucket_for` in the script). The Focus "how the week was fought" mix uses the
+Pilot and ship boards split by attackers on the mail: **solo = 1, small gang = 2–10,
+fleet = 25+** (in `bucket_for` in the script). Kills with 11–24 attackers are
+deliberately excluded from the boards. The Focus "how the week was fought" mix uses the
 curated campaign dataset's own buckets — they can differ; that's expected.
 
 ## Custom alliance logos

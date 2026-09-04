@@ -86,7 +86,7 @@ const clean = (rows, year, month) => {
     const prefix = `${year}-${String(month).padStart(2, '0')}`
     return rows.filter((k) => k.killmail_time?.startsWith(prefix) && !k.zkb?.npc && !CAPSULES.has(k.victim?.ship_type_id))
 }
-const bucket_for = (n) => (n <= 1 ? 'solo' : n <= 24 ? 'small_gang' : 'fleet')
+const bucket_for = (n) => (n <= 1 ? 'solo' : n <= 10 ? 'small_gang' : n >= 25 ? 'fleet' : null)
 
 await mkdir(CACHE, { recursive: true })
 
@@ -159,11 +159,11 @@ for (const sid of system_ids) {
         if (militias_on.has('minmatar')) militia_kills.minmatar += 1
         if (militias_on.has('amarr')) militia_kills.amarr += 1
         const attacker_ships = new Set(players.map((a) => a.ship_type_id).filter((id) => id && !CAPSULES.has(id)))
-        for (const st of attacker_ships) ships_by_bucket[bucket].set(st, (ships_by_bucket[bucket].get(st) ?? 0) + 1)
+        if (bucket) for (const st of attacker_ships) ships_by_bucket[bucket].set(st, (ships_by_bucket[bucket].get(st) ?? 0) + 1)
         for (const a of players) {
             const m = MILITIAS[a.faction_id]
             if (m) {
-                counts[m][bucket].set(a.character_id, (counts[m][bucket].get(a.character_id) ?? 0) + 1)
+                if (bucket) counts[m][bucket].set(a.character_id, (counts[m][bucket].get(a.character_id) ?? 0) + 1)
                 active_pilots[m].add(a.character_id)
             }
             if (!affil.has(a.character_id)) affil.set(a.character_id, new Map())

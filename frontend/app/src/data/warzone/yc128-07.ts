@@ -233,7 +233,7 @@ export const YC128_07: WarzoneIssue = {
         dek: 'Public windows included a 171-pilot pickup on 16 Jul, the Kourmonen form the morning of the Auga flip, and a Dal battlefield on the 22nd. Character-level boards and Discord ping internals stay off this page.',
     },
     pilots: {
-        scope: 'Killmails appeared on as attacker across the warzone systems in July, from zKillboard. Solo is only one character on the killmail. Small gang, 2-24 pilots. Fleets have 25+ characters involved.',
+        scope: 'Killmails appeared on as attacker across the warzone systems in July, from zKillboard. Solo is only one character on the killmail. Small gang, 2-10 pilots. Fleets have 25+ characters involved.',
         boards: [
             { title: 'Solo', minmatar: MINMATAR_SOLO, amarr: AMARR_SOLO },
             { title: 'Small gang', minmatar: MINMATAR_SMALL_GANG, amarr: AMARR_SMALL_GANG },
