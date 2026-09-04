@@ -158,8 +158,8 @@ for (const sid of system_ids) {
         const militias_on = new Set(players.map((a) => MILITIAS[a.faction_id]).filter(Boolean))
         if (militias_on.has('minmatar')) militia_kills.minmatar += 1
         if (militias_on.has('amarr')) militia_kills.amarr += 1
-        const victim_ship = k.victim?.ship_type_id
-        if (victim_ship) ships_by_bucket[bucket].set(victim_ship, (ships_by_bucket[bucket].get(victim_ship) ?? 0) + 1)
+        const attacker_ships = new Set(players.map((a) => a.ship_type_id).filter((id) => id && !CAPSULES.has(id)))
+        for (const st of attacker_ships) ships_by_bucket[bucket].set(st, (ships_by_bucket[bucket].get(st) ?? 0) + 1)
         for (const a of players) {
             const m = MILITIAS[a.faction_id]
             if (m) {

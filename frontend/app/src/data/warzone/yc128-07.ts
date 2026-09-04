@@ -245,7 +245,7 @@ export const YC128_07: WarzoneIssue = {
         ],
     },
     top_ships: {
-        scope: 'Hulls destroyed in the warzone in July, by the size of the gang on the killmail. Capsules excluded.',
+        scope: 'Hulls credited on the most killmails in July, by the size of the gang on the mail. Capsules excluded.',
         boards: [
             { title: 'Solo', ships: SHIPS_SOLO },
             { title: 'Small gang', ships: SHIPS_SMALL_GANG },

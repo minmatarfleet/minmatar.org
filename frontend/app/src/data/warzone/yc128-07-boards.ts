@@ -65,27 +65,27 @@ export const AMARR_FLEET: readonly WarzonePilot[] = [
 ]
 
 export const SHIPS_SOLO: readonly WarzoneShip[] = [
-    { typeId: 587, name: "Rifter", count: 1216 },
-    { typeId: 16_242, name: "Thrasher", count: 857 },
-    { typeId: 73_794, name: "Thrasher Fleet Issue", count: 750 },
-    { typeId: 593, name: "Tristan", count: 591 },
-    { typeId: 16_236, name: "Coercer", count: 580 },
+    { typeId: 73_794, name: "Thrasher Fleet Issue", count: 1105 },
+    { typeId: 587, name: "Rifter", count: 943 },
+    { typeId: 73_796, name: "Catalyst Navy Issue", count: 738 },
+    { typeId: 35_683, name: "Hecate", count: 618 },
+    { typeId: 17_841, name: "Federation Navy Comet", count: 596 },
 ]
 
 export const SHIPS_SMALL_GANG: readonly WarzoneShip[] = [
-    { typeId: 73_794, name: "Thrasher Fleet Issue", count: 942 },
-    { typeId: 16_242, name: "Thrasher", count: 801 },
-    { typeId: 597, name: "Punisher", count: 615 },
-    { typeId: 29_344, name: "Exequror Navy Issue", count: 596 },
-    { typeId: 621, name: "Caracal", count: 581 },
+    { typeId: 29_344, name: "Exequror Navy Issue", count: 2631 },
+    { typeId: 73_794, name: "Thrasher Fleet Issue", count: 2568 },
+    { typeId: 17_709, name: "Omen Navy Issue", count: 1916 },
+    { typeId: 17_713, name: "Stabber Fleet Issue", count: 1401 },
+    { typeId: 29_340, name: "Osprey Navy Issue", count: 1333 },
 ]
 
 export const SHIPS_FLEET: readonly WarzoneShip[] = [
-    { typeId: 644, name: "Typhoon", count: 206 },
-    { typeId: 47_270, name: "Vedmak", count: 81 },
-    { typeId: 638, name: "Raven", count: 60 },
-    { typeId: 24_688, name: "Rokh", count: 48 },
-    { typeId: 16_227, name: "Ferox", count: 43 },
+    { typeId: 644, name: "Typhoon", count: 406 },
+    { typeId: 11_186, name: "Malediction", count: 369 },
+    { typeId: 11_961, name: "Huginn", count: 360 },
+    { typeId: 640, name: "Scorpion", count: 356 },
+    { typeId: 3_766, name: "Vigil", count: 316 },
 ]
 
 export const GROUPS: readonly WarzoneGroup[] = [

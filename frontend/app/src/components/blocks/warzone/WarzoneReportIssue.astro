@@ -576,7 +576,7 @@ const featured_guides = issue.get_involved.featured_guides
     <section id="ships" class="[ wz-section ]">
         <header class="[ wz-section__head ]">
             <h2>Top ships</h2>
-            <p class="[ wz-dek ]">The hulls that died most, by the size of the gang that killed them.</p>
+            <p class="[ wz-dek ]">The hulls flown to the most killmails, by gang size.</p>
         </header>
         <Grid min_item_width="18rem" class="[ wz-equal ]">
             {issue.top_ships.boards.map((board) => (
@@ -638,7 +638,7 @@ const featured_guides = issue.get_involved.featured_guides
                         {issue.groups.rows.map((group, index) => (
                             <tr>
                                 <td class="[ wz-table__rank ]">{index + 1}</td>
-                                <td>
+                                <td class="[ wz-table__group ]">
                                     <span class="[ wz-table__owner ]">
                                         <img
                                             class="[ wz-table__logo ]"
@@ -678,10 +678,10 @@ const featured_guides = issue.get_involved.featured_guides
                                         </span>
                                     </span>
                                 </td>
-                                <td class="[ wz-table__num ]"><b>{number_thousand_separator(group.killmails)}</b></td>
-                                <td class="[ wz-table__num ]">{format_isk(group.isk_destroyed)}</td>
-                                <td class="[ wz-table__num ]">{number_thousand_separator(group.ships_lost)}</td>
-                                <td class="[ wz-table__num ]">{Math.round(group.fw_share * 100)}%</td>
+                                <td class="[ wz-table__num ]" data-label="Killmails"><b>{number_thousand_separator(group.killmails)}</b></td>
+                                <td class="[ wz-table__num ]" data-label="ISK destroyed">{format_isk(group.isk_destroyed)}</td>
+                                <td class="[ wz-table__num ]" data-label="Ships lost">{number_thousand_separator(group.ships_lost)}</td>
+                                <td class="[ wz-table__num ]" data-label="In warzone">{Math.round(group.fw_share * 100)}%</td>
                             </tr>
                         ))}
                     </tbody>
@@ -1315,6 +1315,65 @@ const featured_guides = issue.get_involved.featured_guides
     .wz-table--groups td .wz-table__num b,
     .wz-table--groups td.wz-table__num b {
         color: var(--highlight);
+    }
+
+    .wz-table--groups {
+        @media screen and (max-width: 720px) {
+            thead {
+                display: none;
+            }
+
+            tr {
+                display: grid;
+                grid-template-columns: 1.75rem 1fr 1fr;
+                gap: var(--space-2xs) var(--space-s);
+                padding-block: var(--space-s);
+                border-bottom: solid 1px var(--wz-rule);
+                align-items: start;
+            }
+
+            tbody tr:hover td {
+                background: none;
+            }
+
+            td {
+                padding: 0;
+                border: none;
+                white-space: normal !important;
+                text-align: left !important;
+            }
+
+            td.wz-table__rank {
+                grid-column: 1;
+                grid-row: 1;
+                align-self: center;
+            }
+
+            td.wz-table__group {
+                grid-column: 2 / -1;
+                grid-row: 1;
+            }
+
+            td[data-label="Killmails"],
+            td[data-label="Ships lost"] {
+                grid-column: 2;
+            }
+
+            td[data-label="ISK destroyed"],
+            td[data-label="In warzone"] {
+                grid-column: 3;
+            }
+
+            td[data-label]::before {
+                content: attr(data-label);
+                display: block;
+                font-size: var(--step--2);
+                color: var(--faded);
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                margin-bottom: 0.15em;
+            }
+        }
     }
 
     .wz-table__owner {
