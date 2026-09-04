@@ -263,7 +263,6 @@ const featured_guides = issue.get_involved.featured_guides
                                     <td class="[ wz-table__when ]">{change.date_label}</td>
                                     <td class="[ wz-table__flip-system ]">
                                         <span class="[ wz-table__system ]">{change.system}</span>
-                                        <span class="[ wz-table__note ]">{change.note}</span>
                                     </td>
                                     <td data-label="Previous owner">
                                         <span class="[ wz-owner ]">
@@ -300,7 +299,7 @@ const featured_guides = issue.get_involved.featured_guides
         <Flexblock gap="var(--space-m)">
             <div class="[ wz-subhead ]">
                 <h3>Where the ships died</h3>
-                <p>Ships destroyed per system this month. The logo marks who holds the system today.</p>
+                <p>Ships destroyed per system this month.</p>
             </div>
             <div class="[ wz-table-wrap ]" tabindex="0" role="region" aria-label="Ships destroyed by system">
                 <table class="[ wz-table wz-table--traffic ]">
@@ -1468,13 +1467,6 @@ const featured_guides = issue.get_involved.featured_guides
         white-space: normal !important;
     }
 
-    .wz-table__note {
-        display: block;
-        margin-top: 0.2em;
-        font-size: var(--step--2);
-        line-height: 1.5;
-        color: var(--faded);
-    }
 
 
     .wz-table--flips {

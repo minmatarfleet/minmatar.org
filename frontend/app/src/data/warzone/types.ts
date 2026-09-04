@@ -31,7 +31,6 @@ export type WarzoneOccupancyChange = {
     vs_last_month: number
     isk_label: string
     holds_today: WarzoneMilitiaId
-    note: string
     dotlan_href: string
     zkill_href: string
 }
