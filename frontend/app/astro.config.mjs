@@ -59,6 +59,9 @@ export default defineConfig({
                 hostname: 'preview.redd.it'
             }, {
                 protocol: 'https',
+                hostname: 'external-preview.redd.it'
+            }, {
+                protocol: 'https',
                 hostname: 'i.redd.it'
             }, {
                 protocol: "http",

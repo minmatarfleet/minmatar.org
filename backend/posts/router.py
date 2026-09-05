@@ -1,4 +1,5 @@
 from datetime import datetime
+from html import unescape
 from typing import List
 import re
 
@@ -42,7 +43,15 @@ def extract_first_image_link(content: str) -> str:
     match = re.search(pattern, content)
 
     if match:
-        return match.group(1)
+        return unescape(match.group(1))
+
+    bare = re.search(
+        r"(https://(?:preview\.redd\.it|external-preview\.redd\.it|"
+        r"i\.redd\.it|i\.imgur\.com)/[^\s)]+)",
+        content,
+    )
+    if bare:
+        return unescape(bare.group(1))
     return ""
 
 

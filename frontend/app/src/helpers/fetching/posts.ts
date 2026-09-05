@@ -109,6 +109,7 @@ const VALID_TAGS = [
     'Videos',
     'Rust and Blood',
     'Waifu Wars',
+    'Dispatches',
 ]
 
 export async function fetch_posts_grouped_by_tags(post_request:PostRequest, filter_trash:boolean = false) {
