@@ -2,13 +2,15 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import type { FittingBuyContractPrice } from '@helpers/api.minmatar.org/fitting_buy_orders'
+import type {
+    FittingBuyContractFeeRates,
+    FittingBuyContractPrice,
+} from '@helpers/api.minmatar.org/fitting_buy_orders'
 import { number_thousand_separator } from '@helpers/numbers'
 
 import Flexblock from '@components/compositions/Flexblock.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
-import Button from '@components/blocks/Button.astro'
 import ClipboardButton from '@components/blocks/ClipboardButton.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
 
@@ -18,6 +20,10 @@ interface Props {
     can_complete: boolean
     is_complete: boolean
     partial_base: string
+    markup_pct?: string
+    markup_presets?: number[]
+    contract_type?: string
+    fee_rates?: FittingBuyContractFeeRates | null
     [propName: string]: any
 }
 
@@ -27,80 +33,103 @@ const {
     can_complete,
     is_complete,
     partial_base,
+    markup_pct = '20',
+    markup_presets = [10, 20],
+    contract_type = 'alliance',
+    fee_rates = null,
     ...attributes
 } = Astro.props
 
 delete attributes.class
 
-const fmt_full = (value: string | null) => {
-    if (!value)
-        return '—'
+const to_number = (value: string | null | undefined) => {
+    if (value == null || value === '')
+        return null
     const num = Number(value)
-    if (Number.isNaN(num))
-        return value
+    return Number.isNaN(num) ? null : num
+}
+
+const fmt_full = (value: string | null | undefined) => {
+    const num = to_number(value)
+    if (num == null)
+        return '—'
     return number_thousand_separator(Math.round(num), lang)
 }
 
-const line_total_tip = (per_ship: string | null, quantity: number) => {
-    if (!per_ship || quantity < 1)
-        return ''
-    const per = Number(per_ship)
-    if (Number.isNaN(per))
-        return ''
-    const entire = Math.round(per * quantity)
-    return t('fitting_buy.contract_entire_total_tip')
-        .replace('{each}', fmt_full(per_ship))
-        .replace('{qty}', String(quantity))
-        .replace('{total}', number_thousand_separator(entire, lang))
+const fmt_compact = (value: string | number | null | undefined, signed = false) => {
+    const num = typeof value === 'number' ? value : to_number(value)
+    if (num == null)
+        return '—'
+    const abs = Math.abs(num)
+    const sign = num < 0 ? '−' : (signed && num > 0 ? '+' : '')
+    let body: string
+    if (abs >= 1e9)
+        body = `${(abs / 1e9).toFixed(2)}B`
+    else if (abs >= 1e8)
+        body = `${(abs / 1e6).toFixed(0)}M`
+    else if (abs >= 1e6)
+        body = `${(abs / 1e6).toFixed(1)}M`
+    else if (abs >= 1e3)
+        body = `${(abs / 1e3).toFixed(0)}k`
+    else
+        body = number_thousand_separator(Math.round(abs), lang)
+    return `${sign}${body}`
 }
 
-const hull_cost_tip = (row: FittingBuyContractPrice) => {
+const fmt_pct = (rate: string | null | undefined) => {
+    const num = to_number(rate)
+    if (num == null)
+        return '—'
+    const pct = num * 100
+    return `${Number.isInteger(pct) ? pct : pct.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')}%`
+}
+
+const markup_value = to_number(markup_pct) ?? 0
+const markup_label = Number.isInteger(markup_value)
+    ? String(markup_value)
+    : String(markup_value)
+const presets = markup_presets.length ? markup_presets : [10, 20]
+const is_custom_markup = !presets.includes(markup_value)
+const custom_value = is_custom_markup ? markup_label : ''
+
+// Fee rates come from the server; the fallbacks mirror the in-game window.
+const public_rates = fee_rates && fee_rates.contract_type === 'public' ? fee_rates : null
+const public_tax_label = fmt_pct(public_rates?.sales_tax_rate ?? '0.005')
+const public_broker_label = fmt_pct(public_rates?.broker_rate ?? '0.0153')
+const public_min_label = fmt_full(public_rates?.broker_min ?? '10000')
+const alliance_broker_label = fmt_full(
+    fee_rates && fee_rates.contract_type !== 'public' ? fee_rates.broker_min : '10000',
+)
+const alliance_fee_summary = t('fitting_buy.contract_fee_alliance')
+    .replace('{broker}', alliance_broker_label)
+const public_fee_summary = t('fitting_buy.contract_fee_public')
+    .replace('{broker}', public_broker_label)
+    .replace('{min}', public_min_label)
+    .replace('{tax}', public_tax_label)
+
+const hull_source_label = (row: FittingBuyContractPrice) => {
     const source = row.hull_cost_source || (row.hull_cost_from_jita ? 'jita' : '')
     if (source === 'landed')
-        return t('fitting_buy.contract_hull_landed_tip')
+        return { text: t('fitting_buy.contract_source_landed'), href: '' }
     if (source === 'industry') {
         const code = row.hull_cost_industry_short_code
             || (row.hull_cost_industry_order_id != null
                 ? String(row.hull_cost_industry_order_id)
                 : '')
-        return t('fitting_buy.contract_hull_industry_tip').replace('{code}', code)
-    }
-    if (source === 'jita')
-        return t('fitting_buy.contract_hull_jita_tip')
-    return ''
-}
-
-const industry_sources = (() => {
-    const seen = new Set<string>()
-    const list: { type_name: string; order_id: number; public_short_code: string }[] = []
-    for (const row of rows) {
-        for (const source of row.industry_sources ?? []) {
-            const key = `${source.type_id}:${source.order_id}`
-            if (seen.has(key))
-                continue
-            seen.add(key)
-            list.push({
-                type_name: source.type_name,
-                order_id: source.order_id,
-                public_short_code: source.public_short_code,
-            })
+        return {
+            text: t('fitting_buy.contract_source_industry').replace('{code}', code),
+            href: row.hull_cost_industry_order_id != null
+                ? translatePath(`/industry/orders/${row.hull_cost_industry_order_id}/`)
+                : '',
         }
     }
-    return list
-})()
-
-const incomplete_names = (() => {
-    const names = new Set<string>()
-    for (const row of rows) {
-        if (row.landed_complete)
-            continue
-        for (const name of row.missing_type_names ?? [])
-            names.add(name)
-    }
-    return [...names]
-})()
+    if (source === 'jita')
+        return { text: t('fitting_buy.contract_source_jita'), href: '' }
+    return { text: '', href: '' }
+}
 
 const copy_label = t('fitting_buy.contract_copy_price')
+const settings_disabled = !is_owner
 ---
 
 <ComponentBlock
@@ -108,336 +137,553 @@ const copy_label = t('fitting_buy.contract_copy_price')
     heavier={true}
     {...attributes}
 >
-    <Flexblock gap="var(--space-s)">
-        <FlexInline
-            justification="space-between"
-            class="[ w-full flex-wrap items-start ]"
-            gap="var(--space-s)"
+    <Flexblock gap="var(--space-m)">
+        <h2>{t('fitting_buy.contract_prices')}</h2>
+
+        <form
+            class="[ contract-settings ]"
+            hx-post={partial_base}
+            hx-target="#fitting-buy-order"
+            hx-swap="outerHTML"
+            hx-trigger="change delay:150ms"
+            x-data={`{ custom: ${is_custom_markup ? 'true' : 'false'} }`}
         >
-            <Flexblock gap="var(--space-3xs)">
-                <h2>{t('fitting_buy.fit_cart')}</h2>
-                <p class="[ fitting-buy-hint ]">
-                    {is_complete
-                        ? t('fitting_buy.contract_prices_complete_tip')
-                        : t('fitting_buy.contract_prices_tip')}
-                </p>
-            </Flexblock>
-            {is_owner && can_complete && (
-                <form
-                    hx-post={partial_base}
-                    hx-target="#fitting-buy-order"
-                    hx-swap="outerHTML"
-                >
-                    <input type="hidden" name="action" value="complete_order" />
-                    <Button type="submit" size="sm">
-                        {t('fitting_buy.complete_order')}
-                    </Button>
-                </form>
-            )}
-        </FlexInline>
+            <input type="hidden" name="action" value="contract_settings" />
+            <fieldset class="[ contract-settings__group ]" disabled={settings_disabled}>
+                <legend class="[ contract-settings__legend ]">{t('fitting_buy.contract_markup')}</legend>
+                <div class="[ contract-segments ]" role="radiogroup" aria-label={t('fitting_buy.contract_markup')}>
+                    {presets.map((preset) => (
+                        <label class="[ contract-segment ]">
+                            <input
+                                type="radio"
+                                name="contract_markup_pct"
+                                value={String(preset)}
+                                checked={!is_custom_markup && preset === markup_value}
+                                x-on:change="custom = false"
+                            />
+                            <span class="[ contract-segment__label ]">+{preset}%</span>
+                        </label>
+                    ))}
+                    <label class="[ contract-segment contract-segment--custom ]" x-bind:data-active="custom">
+                        <input
+                            type="radio"
+                            name="contract_markup_pct"
+                            value="custom"
+                            checked={is_custom_markup}
+                            x-on:change="custom = true; $nextTick(() => $refs.custom_markup.focus())"
+                        />
+                        <span class="[ contract-segment__label ]">{t('fitting_buy.contract_markup_custom')}</span>
+                        <span class="[ contract-segment__custom ]">
+                            <input
+                                x-ref="custom_markup"
+                                type="number"
+                                inputmode="decimal"
+                                name="contract_markup_custom"
+                                min="0"
+                                max="500"
+                                step="0.5"
+                                value={custom_value}
+                                placeholder="0"
+                                aria-label={t('fitting_buy.contract_markup_custom_aria')}
+                                x-on:focus="custom = true; $el.closest('form').querySelector('input[value=custom]').checked = true"
+                                x-on:keydown.enter.prevent="$el.blur()"
+                            />
+                            <span aria-hidden="true">%</span>
+                        </span>
+                    </label>
+                </div>
+            </fieldset>
 
-        {industry_sources.length > 0 && (
-            <p class="[ fitting-buy-hint ]">
-                {t('fitting_buy.contract_prices_industry')}:{' '}
-                {industry_sources.map((source, index) => (
-                    <span>
-                        {index > 0 ? ', ' : ''}
-                        <a href={translatePath(`/industry/orders/${source.order_id}/`)}>
-                            {t('fitting_buy.contract_prices_industry_item')
-                                .replace('{name}', source.type_name)
-                                .replace(
-                                    '{code}',
-                                    source.public_short_code || String(source.order_id),
-                                )}
-                        </a>
-                    </span>
-                ))}
-            </p>
-        )}
-
-        {incomplete_names.length > 0 && (
-            <p class="[ contract-prices-warn ]">
-                {t('fitting_buy.contract_prices_incomplete')}: {incomplete_names.join(', ')}
-            </p>
-        )}
+            <fieldset class="[ contract-settings__group ]" disabled={settings_disabled}>
+                <legend class="[ contract-settings__legend ]">{t('fitting_buy.contract_type')}</legend>
+                <div class="[ contract-segments ]" role="radiogroup" aria-label={t('fitting_buy.contract_type')}>
+                    <label class="[ contract-segment contract-segment--stacked ]">
+                        <input
+                            type="radio"
+                            name="contract_type"
+                            value="alliance"
+                            checked={contract_type !== 'public'}
+                        />
+                        <span class="[ contract-segment__label ]">{t('fitting_buy.contract_type_alliance')}</span>
+                        <small class="[ contract-segment__sub ]">{alliance_fee_summary}</small>
+                    </label>
+                    <label class="[ contract-segment contract-segment--stacked ]">
+                        <input
+                            type="radio"
+                            name="contract_type"
+                            value="public"
+                            checked={contract_type === 'public'}
+                        />
+                        <span class="[ contract-segment__label ]">{t('fitting_buy.contract_type_public')}</span>
+                        <small class="[ contract-segment__sub ]">{public_fee_summary}</small>
+                    </label>
+                </div>
+            </fieldset>
+        </form>
 
         {rows.length === 0 ? (
             <p class="[ text-[var(--highlight)] ]">{t('fitting_buy.no_fits')}</p>
         ) : (
-            <div class="[ fitting-buy-table-wrap ]">
-                <table class="[ fitting-buy-table ]">
-                    <thead>
-                        <tr>
-                            <th>{t('fitting_buy.hull')}</th>
-                            <th class="[ is-num is-qty ]">{t('fitting_buy.quantity')}</th>
-                            <th
-                                class="[ is-num is-cost ]"
-                                title={t('fitting_buy.contract_per_hull_tip')}
-                            >
-                                {t('fitting_buy.contract_hull_cost')}
-                            </th>
-                            <th
-                                class="[ is-num is-cost ]"
-                                title={t('fitting_buy.contract_per_hull_tip')}
-                            >
-                                {t('fitting_buy.contract_fitting_cost')}
-                            </th>
-                            <th
-                                class="[ is-num is-cost is-action ]"
-                                title={t('fitting_buy.contract_per_hull_tip')}
-                            >
-                                {t('fitting_buy.contract_total')}
-                            </th>
-                            <th
-                                class="[ is-num is-cost is-action ]"
-                                title={t('fitting_buy.contract_jita_20_tip')}
-                            >
-                                {t('fitting_buy.contract_jita_20')}
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {rows.map((row, row_index) => {
-                            const label = row.is_swapped
-                                ? (row.variant_name || t('fitting_buy.swapped_fit'))
-                                : null
-                            const hull_name = row.ship_name || row.fitting_name
-                            const price_cells = [
-                                {
-                                    key: 'hull',
-                                    value: row.hull_cost,
-                                    copyable: false,
-                                    incomplete: false,
-                                    from_jita: !!row.hull_cost_from_jita
-                                        || row.hull_cost_source === 'jita',
-                                    source_tip: hull_cost_tip(row),
-                                    hover_entire: false,
-                                },
-                                {
-                                    key: 'fitting',
-                                    value: row.fitting_cost,
-                                    copyable: false,
-                                    incomplete: !row.landed_complete && !row.fitting_cost,
-                                    from_jita: false,
-                                    source_tip: '',
-                                    hover_entire: true,
-                                },
-                                {
-                                    key: 'total',
-                                    value: row.landed_per_ship,
-                                    copyable: true,
-                                    incomplete: !row.landed_complete,
-                                    from_jita: false,
-                                    source_tip: '',
-                                    hover_entire: true,
-                                },
-                                {
-                                    key: 'jita',
-                                    value: row.jita_plus_20,
-                                    copyable: true,
-                                    incomplete: false,
-                                    from_jita: false,
-                                    source_tip: '',
-                                    hover_entire: true,
-                                },
-                            ]
-                            return (
-                                <tr>
-                                    <td>
-                                        <FlexInline
-                                            gap="var(--space-2xs)"
-                                            class="[ items-center min-w-0 flex-wrap ]"
-                                            justification="space-between"
-                                        >
-                                            <FlexInline gap="var(--space-2xs)" class="[ items-center min-w-0 ]">
-                                                <ItemPicture
-                                                    item_id={row.ship_id}
-                                                    item_name={hull_name}
-                                                    size={32}
-                                                />
-                                                <div class="[ min-w-0 ]">
-                                                    <strong class="[ break-words ]">{hull_name}</strong>
-                                                    {row.fitting_name && row.fitting_name !== hull_name && (
-                                                        <div class="[ fitting-buy-hint ]">{row.fitting_name}</div>
-                                                    )}
-                                                    {label && (
-                                                        <div class="[ fitting-buy-hint ]">{label}</div>
-                                                    )}
-                                                </div>
-                                            </FlexInline>
-                                            {row.eft && (
-                                                <ClipboardButton
-                                                    id={`fitting-buy-line-eft-${row.line_id}-${row_index}`}
-                                                    size="sm"
-                                                    text={t('fitting_buy.copy_fitting')}
-                                                >
-                                                    {row.eft}
-                                                </ClipboardButton>
-                                            )}
+            <div class="[ contract-fits ]">
+                {rows.map((row, row_index) => {
+                    const hull_name = row.ship_name || row.fitting_name
+                    const variant = row.is_swapped
+                        ? (row.variant_name || t('fitting_buy.swapped_fit'))
+                        : ''
+                    const source = hull_source_label(row)
+                    const copy_id = `fitting-buy-contract-${row.line_id}-${row_index}`
+                    const incomplete = !row.landed_complete
+                    const has_price = !!row.contract_price
+                    const fees_total = row.fees ? -Number(row.fees.total) : null
+                    return (
+                        <article class:list={['[ contract-fit ]', { 'is-incomplete': incomplete }]}>
+                            <div class="[ contract-fit__main ]">
+                                <div class="[ contract-fit__identity ]">
+                                    <ItemPicture
+                                        item_id={row.ship_id}
+                                        item_name={hull_name}
+                                        size={64}
+                                        icon_quality={64}
+                                    />
+                                    <Flexblock gap="var(--space-3xs)" class="[ min-w-0 ]">
+                                        <FlexInline gap="var(--space-2xs)" class="[ items-baseline flex-wrap ]">
+                                            <h3 class="[ contract-fit__hull ]">{hull_name}</h3>
+                                            <span class="[ contract-fit__qty ]">
+                                                {t('fitting_buy.hulls_qty').replace('{count}', String(row.quantity))}
+                                            </span>
                                         </FlexInline>
-                                    </td>
-                                    <td class="[ is-num is-qty ]">{row.quantity}</td>
-                                    {price_cells.map((cell) => {
-                                        const display = fmt_full(cell.value)
-                                        const entire_tip = cell.hover_entire
-                                            ? line_total_tip(cell.value, row.quantity)
-                                            : ''
-                                        const tip = [entire_tip, cell.source_tip]
-                                            .filter(Boolean)
-                                            .join(' · ')
-                                        const copy_id = `fitting-buy-contract-${row.line_id}-${row_index}-${cell.key}`
-                                        return (
-                                            <td class:list={[
-                                                '[ is-num is-cost ]',
-                                                { 'is-action': cell.copyable },
-                                                { 'is-incomplete': cell.incomplete },
-                                                { 'is-jita-fallback': cell.from_jita },
-                                            ]}>
-                                                {cell.value && cell.copyable ? (
-                                                    <div class="[ contract-price-action ]">
-                                                        <button
-                                                            type="button"
-                                                            class="[ contract-price-copy ]"
-                                                            title={tip || `${copy_label}: ${display}`}
-                                                            aria-label={tip || `${copy_label}: ${display}`}
-                                                            x-data={`{ copied: false }`}
-                                                            x-on:click.stop.prevent={`
-                                                                copyFitToClipboard('${copy_id}');
-                                                                copied = true;
-                                                                setTimeout(() => copied = false, 1500)
-                                                            `}
-                                                            x-bind:data-copied="copied"
-                                                        >
-                                                            <span
-                                                                class="[ contract-price-value ]"
-                                                                x-show="!copied"
-                                                            >
-                                                                {display}
-                                                            </span>
-                                                            <span
-                                                                class="[ contract-price-copied ]"
-                                                                x-show="copied"
-                                                                x-cloak
-                                                            >
-                                                                {t('copied')}
-                                                            </span>
-                                                        </button>
-                                                        <textarea
-                                                            class="[ hidden ]"
-                                                            id={copy_id}
-                                                            readonly
-                                                        >{cell.value}</textarea>
-                                                    </div>
-                                                ) : (
-                                                    <span
-                                                        class="[ contract-price-static ]"
-                                                        title={tip || undefined}
-                                                    >
-                                                        {display}
-                                                    </span>
-                                                )}
-                                                {cell.from_jita && (
-                                                    <span
-                                                        class="[ contract-price-partial ]"
-                                                        title={t('fitting_buy.contract_hull_jita_tip')}
-                                                    >
-                                                        †
-                                                    </span>
-                                                )}
-                                                {cell.incomplete && cell.value && (
-                                                    <span
-                                                        class="[ contract-price-partial ]"
-                                                        title={t('fitting_buy.contract_prices_incomplete')}
-                                                    >
-                                                        *
-                                                    </span>
-                                                )}
-                                            </td>
-                                        )
-                                    })}
-                                </tr>
-                            )
-                        })}
-                    </tbody>
-                </table>
+                                        {row.fitting_name && row.fitting_name !== hull_name && (
+                                            <p class="[ contract-fit__fit ]">{row.fitting_name}</p>
+                                        )}
+                                        {variant && (
+                                            <p class="[ contract-fit__variant ]">{variant}</p>
+                                        )}
+                                    </Flexblock>
+                                    {row.eft && (
+                                        <div class="[ contract-fit__copy-fit ]">
+                                            <ClipboardButton
+                                                id={`fitting-buy-line-eft-${row.line_id}-${row_index}`}
+                                                size="sm"
+                                                color="transparent"
+                                                text={t('fitting_buy.copy_fitting')}
+                                            >
+                                                {row.eft}
+                                            </ClipboardButton>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <dl class="[ contract-fit__costs ]">
+                                    <div class="[ contract-cost ]">
+                                        <dt>{t('fitting_buy.contract_hull')}</dt>
+                                        <dd
+                                            class:list={['[ contract-cost__value ]', { 'is-estimate': row.hull_cost_source === 'jita' }]}
+                                            title={fmt_full(row.hull_cost)}
+                                        >
+                                            {fmt_compact(row.hull_cost)}
+                                        </dd>
+                                        <dd class="[ contract-cost__source ]">
+                                            {source.text && (
+                                                source.href
+                                                    ? <a href={source.href}>{source.text}</a>
+                                                    : <span>{source.text}</span>
+                                            )}
+                                        </dd>
+                                    </div>
+                                    <span class="[ contract-cost__op ]" aria-hidden="true">+</span>
+                                    <div class="[ contract-cost ]">
+                                        <dt>{t('fitting_buy.contract_fitting')}</dt>
+                                        <dd
+                                            class:list={['[ contract-cost__value ]', { 'is-estimate': incomplete && !row.fitting_cost }]}
+                                            title={fmt_full(row.fitting_cost)}
+                                        >
+                                            {fmt_compact(row.fitting_cost)}
+                                        </dd>
+                                        <dd class="[ contract-cost__source ]">
+                                            {row.fitting_uses_stock
+                                                ? t('fitting_buy.contract_source_modules_stock')
+                                                : t('fitting_buy.contract_source_modules')}
+                                        </dd>
+                                    </div>
+                                    <span class="[ contract-cost__op ]" aria-hidden="true">=</span>
+                                    <div class="[ contract-cost is-total ]">
+                                        <dt>{t('fitting_buy.contract_landed')}</dt>
+                                        <dd class="[ contract-cost__value ]" title={fmt_full(row.landed_per_ship)}>
+                                            {fmt_compact(row.landed_per_ship)}
+                                        </dd>
+                                        <dd class="[ contract-cost__source ]">{t('fitting_buy.contract_per_hull')}</dd>
+                                    </div>
+                                    {incomplete && (
+                                        <div class="[ contract-fit__warn ]">
+                                            {t('fitting_buy.contract_prices_incomplete')}: {(row.missing_type_names ?? []).join(', ')}
+                                        </div>
+                                    )}
+                                </dl>
+                            </div>
+
+                            <div class="[ contract-fit__price ]">
+                                <span class="[ contract-price__label ]">
+                                    {t('fitting_buy.contract_price')}
+                                    <span class="[ contract-price__basis ]">
+                                        · {t('fitting_buy.contract_price_basis').replace('{pct}', markup_label)}
+                                    </span>
+                                </span>
+                                {has_price ? (
+                                    <div class="[ contract-price__action ]">
+                                        <button
+                                            type="button"
+                                            class="[ contract-price__copy ]"
+                                            title={`${copy_label}: ${fmt_full(row.contract_price)}`}
+                                            aria-label={`${copy_label}: ${fmt_full(row.contract_price)}`}
+                                            x-data="{ copied: false }"
+                                            x-on:click.stop.prevent={`
+                                                copyFitToClipboard('${copy_id}');
+                                                copied = true;
+                                                setTimeout(() => copied = false, 1500)
+                                            `}
+                                            x-bind:data-copied="copied"
+                                        >
+                                            <span class="[ contract-price__value ]" x-show="!copied">
+                                                {fmt_full(row.contract_price)}
+                                            </span>
+                                            <span class="[ contract-price__copied ]" x-show="copied" x-cloak>
+                                                {t('copied')}
+                                            </span>
+                                            <span class="[ contract-price__hint ]" x-show="!copied">
+                                                {t('fitting_buy.contract_click_to_copy')}
+                                            </span>
+                                        </button>
+                                        <textarea class="[ hidden ]" id={copy_id} readonly>{row.contract_price}</textarea>
+                                    </div>
+                                ) : (
+                                    <span class="[ contract-price__value is-missing ]">—</span>
+                                )}
+                                <dl class="[ contract-price__lines ]">
+                                    {row.fees && (
+                                        <>
+                                            <dt>{t('fitting_buy.contract_fees')}</dt>
+                                            <dd title={`${t('fitting_buy.contract_broker_fee')} ${fmt_full(row.fees.broker_fee)} · ${t('fitting_buy.contract_sales_tax')} ${fmt_full(row.fees.sales_tax)}`}>
+                                                {fmt_compact(fees_total)}
+                                            </dd>
+                                            <dt>{t('fitting_buy.contract_profit')}</dt>
+                                            <dd
+                                                class:list={[{ 'is-loss': (to_number(row.profit) ?? 0) < 0 }]}
+                                                title={fmt_full(row.profit)}
+                                            >
+                                                {fmt_compact(row.profit, true)}
+                                            </dd>
+                                        </>
+                                    )}
+                                    {row.jita_sell_per_ship && (
+                                        <>
+                                            <dt>{t('fitting_buy.contract_jita_ref')}</dt>
+                                            <dd title={fmt_full(row.jita_sell_per_ship)}>
+                                                {fmt_compact(row.jita_sell_per_ship)}
+                                            </dd>
+                                        </>
+                                    )}
+                                </dl>
+                            </div>
+                        </article>
+                    )
+                })}
             </div>
         )}
     </Flexblock>
 </ComponentBlock>
 
 <style lang="scss">
+    h2 {
+        margin: 0;
+        font-size: var(--step-1);
+    }
+
     .fitting-buy-hint {
         color: var(--highlight);
         font-size: var(--step--1);
         margin: 0;
+        max-width: var(--max-text-width);
     }
 
-    .contract-prices-warn {
+    /* Settings ---------------------------------------------------------- */
+
+    .contract-settings {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        gap: var(--space-s) var(--space-l);
         margin: 0;
+    }
+
+    .contract-settings__group {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        min-width: 0;
+
+        &[disabled] .contract-segment {
+            cursor: default;
+        }
+    }
+
+    .contract-settings__legend {
+        padding: 0;
+        margin-block-end: var(--space-3xs);
+        color: var(--highlight);
+        font-size: var(--step--2);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .contract-segments {
+        display: inline-flex;
+        flex-wrap: wrap;
+        border: 1px solid var(--border-color-hover);
+        background: color-mix(in srgb, var(--background) 45%, transparent);
+    }
+
+    .contract-segment {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-height: var(--space-xl);
+        padding: var(--space-2xs) var(--space-s);
+        color: var(--highlight);
+        font-size: var(--step--1);
+        cursor: pointer;
+        transition: var(--fast-transition);
+
+        & + & {
+            border-inline-start: 1px solid var(--border-color-hover);
+        }
+
+        input[type='radio'] {
+            position: absolute;
+            inset: 0;
+            margin: 0;
+            opacity: 0;
+            cursor: inherit;
+        }
+
+        &:has(input[type='radio']:checked),
+        &[data-active='true'] {
+            background: color-mix(in srgb, var(--fleet-yellow) 16%, transparent);
+            color: var(--fleet-yellow);
+            box-shadow: inset 0 -2px 0 var(--fleet-yellow);
+        }
+
+        &:has(input[type='radio']:focus-visible) {
+            outline: 1px solid var(--foreground);
+            outline-offset: -3px;
+        }
+
+        @media (hover: hover) {
+            &:hover {
+                color: var(--fleet-yellow);
+            }
+        }
+    }
+
+    .contract-segment--stacked {
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 2px;
+    }
+
+    .contract-segment__label {
+        font-weight: 600;
+        line-height: 1.2;
+    }
+
+    .contract-segment__sub {
+        color: var(--faded);
+        font-size: var(--step--2);
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+
+    .contract-segment:has(input[type='radio']:checked) .contract-segment__sub {
+        color: var(--highlight);
+    }
+
+    .contract-segment__custom {
+        position: relative;
+        z-index: 1;
+        display: inline-flex;
+        align-items: baseline;
+        gap: 1px;
+        color: inherit;
+        font-weight: 600;
+
+        input[type='number'] {
+            width: 3ch;
+            padding: 0;
+            border: 0;
+            border-bottom: 1px solid var(--border-color-hover);
+            background: transparent;
+            color: var(--fleet-yellow);
+            font: inherit;
+            font-variant-numeric: tabular-nums;
+            text-align: right;
+            -moz-appearance: textfield;
+            appearance: textfield;
+
+            &::-webkit-outer-spin-button,
+            &::-webkit-inner-spin-button {
+                -webkit-appearance: none;
+                margin: 0;
+            }
+
+            &::placeholder {
+                color: var(--faded);
+            }
+
+            &:focus-visible {
+                outline: none;
+                border-bottom-color: var(--fleet-yellow);
+            }
+        }
+    }
+
+    /* Fit cards --------------------------------------------------------- */
+
+    .contract-fits {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+    }
+
+    .contract-fit {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: var(--space-s) var(--space-m);
+        padding: var(--space-s) var(--space-s-m);
+        border: 1px solid var(--border-color-hover);
+        background: color-mix(in srgb, var(--background) 35%, transparent);
+
+        @media (min-width: 60rem) {
+            grid-template-columns: minmax(0, 1.7fr) minmax(19rem, 1fr);
+            align-items: stretch;
+        }
+
+        &.is-incomplete {
+            border-color: color-mix(in srgb, var(--fleet-yellow) 45%, var(--border-color-hover));
+        }
+    }
+
+    .contract-fit__main {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: var(--space-s);
+        min-width: 0;
+    }
+
+    .contract-fit__identity {
+        display: flex;
+        gap: var(--space-xs);
+        align-items: flex-start;
+        min-width: 0;
+    }
+
+    .contract-fit__hull {
+        margin: 0;
+        font-family: var(--heading-font);
+        font-size: var(--step-1);
+        line-height: 1;
+        text-transform: uppercase;
+        color: var(--highlight);
+        overflow-wrap: anywhere;
+    }
+
+    .contract-fit__qty {
         color: var(--fleet-yellow);
         font-size: var(--step--1);
+        white-space: nowrap;
     }
 
-    .fitting-buy-table-wrap {
-        overflow-x: auto;
-        width: 100%;
-        max-width: 100%;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .fitting-buy-table {
-        width: 100%;
-        table-layout: fixed;
-        border-collapse: collapse;
+    .contract-fit__fit,
+    .contract-fit__variant {
+        margin: 0;
         font-size: var(--step--1);
+        color: var(--highlight);
+        overflow-wrap: anywhere;
+    }
 
-        th,
-        td {
-            text-align: left;
-            padding: var(--space-xs) var(--space-2xs);
-            border-bottom: 1px solid var(--border-color);
-            vertical-align: middle;
-            white-space: nowrap;
-        }
+    .contract-fit__variant {
+        color: var(--fleet-yellow);
+    }
 
-        th {
+    .contract-fit__copy-fit {
+        margin-inline-start: auto;
+        flex-shrink: 0;
+    }
+
+    /* Cost breakdown: Hull + Modules = Landed as stat tiles */
+
+    .contract-fit__costs {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1.15fr);
+        align-items: stretch;
+        gap: var(--space-2xs);
+        margin: 0;
+    }
+
+    .contract-cost {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+        padding: var(--space-xs) var(--space-s);
+        border: 1px solid var(--border-color);
+        background: color-mix(in srgb, var(--background) 45%, transparent);
+
+        dt {
             color: var(--highlight);
-            font-weight: 500;
+            font-size: var(--step--2);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
         }
 
-        th:first-child,
-        td:first-child {
-            width: 28%;
-            min-width: 12rem;
-            white-space: normal;
-            padding-inline-start: 0;
+        dd {
+            margin: 0;
+            min-width: 0;
         }
 
-        .is-qty {
-            width: 3.5rem;
+        &.is-total {
+            border-color: color-mix(in srgb, var(--fleet-yellow) 35%, var(--border-color-hover));
+            background: color-mix(in srgb, var(--fleet-yellow) 6%, transparent);
         }
+    }
 
-        .is-cost {
-            width: 14%;
-        }
+    .contract-cost__value {
+        color: var(--foreground);
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
 
-        .is-num {
-            text-align: right;
-            font-variant-numeric: tabular-nums;
-        }
-
-        tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        td.is-incomplete .contract-price-value,
-        td.is-incomplete .contract-price-static,
-        td.is-jita-fallback .contract-price-static {
+        &.is-estimate {
             color: var(--fleet-yellow);
+            font-style: italic;
         }
+
+        .is-total & {
+            color: var(--highlight);
+        }
+    }
+
+    .contract-cost__source {
+        color: var(--faded);
+        font-size: var(--step--2);
+        line-height: 1.3;
+        overflow-wrap: anywhere;
 
         a {
-            color: var(--foreground);
+            color: var(--highlight);
             text-decoration: underline;
             text-underline-offset: 0.15em;
 
@@ -448,38 +694,87 @@ const copy_label = t('fitting_buy.contract_copy_price')
         }
     }
 
-    .contract-price-static {
-        color: var(--foreground);
+    .contract-cost__op {
+        align-self: center;
+        color: var(--faded);
+        font-size: var(--step-0);
     }
 
-    .contract-price-partial {
+    .contract-fit__warn {
+        grid-column: 1 / -1;
+        margin: 0;
         color: var(--fleet-yellow);
-        margin-inline-start: var(--space-3xs);
+        font-size: var(--step--2);
     }
 
-    .contract-price-action {
-        display: inline-flex;
-        justify-content: flex-end;
-        width: 100%;
+    @media (max-width: 40rem) {
+        .contract-fit__costs {
+            grid-template-columns: 1fr;
+        }
+
+        .contract-cost__op {
+            display: none;
+        }
     }
 
-    .contract-price-copy {
-        appearance: none;
-        background: transparent;
-        border: 1px solid transparent;
-        border-radius: 0;
-        color: var(--foreground);
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        justify-content: flex-end;
+    /* Price */
+
+    .contract-fit__price {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
         gap: var(--space-3xs);
-        min-height: var(--space-m);
+        min-width: 0;
+
+        @media (min-width: 60rem) {
+            align-items: flex-end;
+            text-align: right;
+            border-inline-start: 1px solid var(--border-color-hover);
+            padding-inline-start: var(--space-m);
+        }
+    }
+
+    .contract-price__label {
+        color: var(--highlight);
+        font-size: var(--step--2);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .contract-price__basis {
+        color: var(--faded);
+        letter-spacing: normal;
+        text-transform: none;
+    }
+
+    .contract-price__action {
+        display: flex;
+
+        @media (min-width: 60rem) {
+            justify-content: flex-end;
+        }
+    }
+
+    .contract-price__copy {
+        appearance: none;
+        display: inline-flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0;
         margin: 0;
         padding: var(--space-3xs) var(--space-2xs);
+        margin-inline: calc(-1 * var(--space-2xs));
+        border: 1px solid transparent;
+        border-radius: 0;
+        background: transparent;
+        color: var(--fleet-yellow);
         font: inherit;
-        font-variant-numeric: tabular-nums;
+        cursor: pointer;
         transition: var(--fast-transition);
+
+        @media (min-width: 60rem) {
+            align-items: flex-end;
+        }
 
         &:focus-visible {
             outline: 1px solid var(--foreground);
@@ -491,28 +786,93 @@ const copy_label = t('fitting_buy.contract_copy_price')
         }
 
         @media (hover: hover) {
-            &:hover,
-            &:focus-visible {
-                border-color: var(--border-color);
+            &:hover {
+                border-color: var(--border-color-hover);
+                background: color-mix(in srgb, var(--fleet-yellow) 8%, transparent);
+            }
+
+            &:hover .contract-price__hint {
                 color: var(--fleet-yellow);
             }
         }
 
         @media (hover: none) {
             &:active {
-                border-color: var(--border-color);
+                border-color: var(--border-color-hover);
             }
         }
     }
 
-    .contract-price-value,
-    .contract-price-copied {
+    .contract-price__value,
+    .contract-price__copied {
+        font-family: var(--heading-font);
+        font-size: var(--step-2);
+        line-height: 1;
+        font-variant-numeric: tabular-nums;
         white-space: nowrap;
     }
 
-    .contract-price-copied {
-        color: var(--green);
+    .contract-price__value.is-missing {
+        color: var(--faded);
+    }
+
+    .is-incomplete .contract-price__value {
+        color: var(--fleet-yellow);
+        font-style: italic;
+    }
+
+    .contract-price__hint {
+        color: var(--faded);
+        font-size: var(--step--2);
+        transition: var(--fast-transition);
+    }
+
+    .contract-price__lines {
+        display: grid;
+        grid-template-columns: max-content minmax(0, 1fr);
+        column-gap: var(--space-s);
+        row-gap: var(--space-3xs);
+        margin: var(--space-2xs) 0 0;
+        padding: 0;
+        width: 100%;
         font-size: var(--step--1);
+        color: var(--highlight);
+
+        dt {
+            color: var(--faded);
+            font-size: var(--step--2);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        dd {
+            margin: 0;
+            min-width: 0;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+
+            &.is-loss {
+                color: var(--fleet-red);
+            }
+        }
+
+        @media (min-width: 60rem) {
+            dd {
+                text-align: right;
+            }
+        }
+
+        @media (max-width: 40rem) {
+            dd {
+                white-space: normal;
+                overflow-wrap: anywhere;
+            }
+        }
+    }
+
+    .contract-line__muted {
+        color: var(--faded);
     }
 
     [x-cloak] {

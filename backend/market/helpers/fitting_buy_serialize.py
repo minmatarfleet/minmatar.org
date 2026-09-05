@@ -21,7 +21,12 @@ from market.helpers.fitting_buy_alternates import (
     listed_substitutes_by_preferred,
     shopping_alternate_types_for,
 )
-from market.helpers.fitting_buy_contract_prices import build_contract_prices
+from market.helpers.fitting_buy_contract_prices import (
+    CONTRACT_MARKUP_PRESETS,
+    build_contract_prices,
+    contract_fee_rates,
+    markup_pct_str,
+)
 from market.helpers.fitting_buy_eft import effective_efts_for_lines
 from market.helpers.fitting_buy_fit_copies import build_fit_copies_by_line
 from market.helpers.fitting_buy_guide import (
@@ -162,6 +167,20 @@ class FittingBuyIndustrySourceSchema(Schema):
     public_short_code: str = ""
 
 
+class FittingBuyContractFeesSchema(Schema):
+    broker_fee: str
+    sales_tax: str
+    total: str
+    net: str
+
+
+class FittingBuyContractFeeRatesSchema(Schema):
+    contract_type: str
+    broker_rate: str
+    broker_min: str
+    sales_tax_rate: str
+
+
 class FittingBuyContractPriceSchema(Schema):
     line_id: int
     fitting_id: int
@@ -178,12 +197,20 @@ class FittingBuyContractPriceSchema(Schema):
     hull_cost_industry_order_id: int | None = None
     hull_cost_industry_short_code: str = ""
     fitting_cost: str | None = None
+    fitting_uses_stock: bool = False
     landed_per_ship: str | None = None
     landed_complete: bool = False
     missing_type_names: list[str] = []
     landed_plus_20: str | None = None
+    landed_line_total: str | None = None
     jita_sell_per_ship: str | None = None
     jita_plus_20: str | None = None
+    jita_marked_up: str | None = None
+    contract_price: str | None = None
+    contract_line_total: str | None = None
+    fees: FittingBuyContractFeesSchema | None = None
+    other_fees: FittingBuyContractFeesSchema | None = None
+    profit: str | None = None
     industry_sources: list[FittingBuyIndustrySourceSchema] = []
 
 
@@ -210,6 +237,10 @@ class FittingBuyOrderDetailSchema(Schema):
     substitutions: list[FittingBuySubstitutionSchema]
     active_jita_check: FittingBuyJitaCheckSchema | None = None
     contract_prices: list[FittingBuyContractPriceSchema] = []
+    contract_markup_pct: str = "20"
+    contract_markup_presets: list[int] = []
+    contract_type: str = "alliance"
+    contract_fee_rates: FittingBuyContractFeeRatesSchema | None = None
     multibuy_blocked: bool = False
     multibuy_block_reason: str = ""
     shopping_landed_complete: bool = False
@@ -697,6 +728,12 @@ def serialize_order_detail(  # noqa: C901
         "substitutions": subs,
         "active_jita_check": serialize_jita_check(active) if active else None,
         "contract_prices": contract_prices,
+        "contract_markup_pct": markup_pct_str(order.contract_markup_pct),
+        "contract_markup_presets": list(CONTRACT_MARKUP_PRESETS),
+        "contract_type": str(order.contract_type or "alliance"),
+        "contract_fee_rates": contract_fee_rates(
+            str(order.contract_type or "alliance")
+        ),
         "multibuy_blocked": blocked,
         "multibuy_block_reason": block_reason,
         "shopping_landed_complete": landed_done,

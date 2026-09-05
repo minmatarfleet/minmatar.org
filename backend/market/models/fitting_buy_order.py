@@ -36,6 +36,16 @@ class FittingBuyJitaCheckStatus(models.TextChoices):
     FAILED = "failed", "Failed"
 
 
+class FittingBuyContractType(models.TextChoices):
+    """Who the finished hulls are contracted to (drives contract fees)."""
+
+    ALLIANCE = "alliance", "Alliance contract"
+    PUBLIC = "public", "Public contract"
+
+
+DEFAULT_CONTRACT_MARKUP_PCT = 20
+
+
 class FittingBuyOrder(models.Model):
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -79,6 +89,18 @@ class FittingBuyOrder(models.Model):
             "Jita depth for short-item variants from the last check: "
             '{ "<type_id>": {"volume", "order_count", "sell_min"} }.'
         ),
+    )
+    contract_markup_pct = models.DecimalField(
+        max_digits=5,
+        decimal_places=1,
+        default=DEFAULT_CONTRACT_MARKUP_PCT,
+        help_text="Markup over landed cost used for recommended contract prices.",
+    )
+    contract_type = models.CharField(
+        max_length=16,
+        choices=FittingBuyContractType.choices,
+        default=FittingBuyContractType.ALLIANCE,
+        help_text="Contract availability; public contracts pay a broker fee.",
     )
     created_at = models.DateTimeField(default=timezone.now, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
