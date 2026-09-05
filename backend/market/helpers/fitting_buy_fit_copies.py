@@ -29,6 +29,25 @@ def _type_names(type_ids: set[int]) -> dict[int, str]:
     )
 
 
+def _fit_copy(
+    *,
+    quantity: int,
+    eft: str,
+    is_swapped: bool,
+    variant_type_id: int | None = None,
+    variant_name: str = "",
+    swaps: list | None = None,
+) -> dict:
+    return {
+        "quantity": quantity,
+        "eft": eft,
+        "is_swapped": is_swapped,
+        "variant_type_id": variant_type_id,
+        "variant_name": variant_name,
+        "swaps": list(swaps or []),
+    }
+
+
 def _copies_from_swap_split(
     line: FittingBuyOrderLine,
     *,
@@ -39,13 +58,7 @@ def _copies_from_swap_split(
     swaps = line.swaps or []
     if not swaps:
         return [
-            {
-                "quantity": quantity,
-                "eft": original_eft,
-                "is_swapped": False,
-                "variant_type_id": None,
-                "variant_name": "",
-            }
+            _fit_copy(quantity=quantity, eft=original_eft, is_swapped=False)
         ]
     raw_swap_qty = line.swap_hull_qty
     if raw_swap_qty is None:
@@ -57,23 +70,20 @@ def _copies_from_swap_split(
     copies: list[dict] = []
     if original_quantity > 0:
         copies.append(
-            {
-                "quantity": original_quantity,
-                "eft": original_eft,
-                "is_swapped": False,
-                "variant_type_id": None,
-                "variant_name": "",
-            }
+            _fit_copy(
+                quantity=original_quantity,
+                eft=original_eft,
+                is_swapped=False,
+            )
         )
     if swapped_quantity > 0:
         copies.append(
-            {
-                "quantity": swapped_quantity,
-                "eft": swapped_eft,
-                "is_swapped": True,
-                "variant_type_id": None,
-                "variant_name": "",
-            }
+            _fit_copy(
+                quantity=swapped_quantity,
+                eft=swapped_eft,
+                is_swapped=True,
+                swaps=swaps,
+            )
         )
     return copies
 
@@ -183,33 +193,18 @@ def _swap_type_ids(order_lines: list[FittingBuyOrderLine]) -> set[int]:
     return type_ids
 
 
-def _pick_allocated_preferred(
-    bom, preferred_modules: dict[int, dict[int, int]]
-) -> tuple[int | None, dict[int, int]]:
-    for preferred_id, qtys in preferred_modules.items():
-        per = int(bom.per_ship.get(preferred_id, 0) or 0)
-        if per <= 0:
-            continue
-        return preferred_id, qtys
-    return None, {}
-
-
-def _copies_from_allocation(
-    line: FittingBuyOrderLine,
+def _hull_types_for_preferred(
     *,
-    bom,
-    preferred_id: int,
+    hull_count: int,
+    per: int,
     module_qtys: dict[int, int],
-    original_eft: str,
-    names: dict[int, str],
-) -> list[dict]:
-    per = int(bom.per_ship.get(preferred_id, 0) or 0)
-    original_ships = 0
-    variant_copies: list[dict] = []
-    preferred_key = preferred_id
+    preferred_id: int,
+) -> list[int]:
+    """Type id on each hull for one preferred slot, substitutes first."""
+    assignment: list[int] = []
     ordered = sorted(
         module_qtys.items(),
-        key=lambda item: (item[0] == preferred_key, item[0]),
+        key=lambda item: (item[0] == preferred_id, item[0]),
     )
     for type_id, module_qty in ordered:
         if per <= 0:
@@ -217,48 +212,87 @@ def _copies_from_allocation(
         ships = int(module_qty) // per
         if ships <= 0:
             continue
-        if type_id == preferred_key:
-            original_ships += ships
-            continue
-        eft = apply_swaps_to_eft(
-            original_eft,
-            [
-                {
-                    "preferred_type_id": preferred_key,
-                    "substitute_type_id": type_id,
-                }
-            ],
-            names,
-        )
-        variant_copies.append(
-            {
-                "quantity": ships,
-                "eft": eft,
-                "is_swapped": True,
-                "variant_type_id": type_id,
-                "variant_name": names.get(type_id, ""),
-            }
-        )
+        assignment.extend([int(type_id)] * ships)
+    if len(assignment) < hull_count:
+        assignment.extend([preferred_id] * (hull_count - len(assignment)))
+    return assignment[:hull_count]
 
-    assigned_ships = original_ships + sum(
-        copy["quantity"] for copy in variant_copies
-    )
-    remaining = int(line.quantity) - assigned_ships
-    if remaining > 0:
-        original_ships += remaining
+
+def _copies_from_allocations(
+    line: FittingBuyOrderLine,
+    *,
+    bom,
+    preferred_modules: dict[int, dict[int, int]],
+    original_eft: str,
+    names: dict[int, str],
+) -> list[dict]:
+    """Compose independent shopping splits into per-hull EFT variants."""
+    hull_count = int(line.quantity)
+    preferred_ids: list[int] = []
+    assignments: list[list[int]] = []
+    for preferred_id, module_qtys in preferred_modules.items():
+        per = int(bom.per_ship.get(preferred_id, 0) or 0)
+        if per <= 0 or not module_qtys:
+            continue
+        preferred_ids.append(int(preferred_id))
+        assignments.append(
+            _hull_types_for_preferred(
+                hull_count=hull_count,
+                per=per,
+                module_qtys=module_qtys,
+                preferred_id=int(preferred_id),
+            )
+        )
+    if not preferred_ids:
+        return []
+
+    combo_order: list[tuple[int, ...]] = []
+    combo_qty: dict[tuple[int, ...], int] = {}
+    for hull_index in range(hull_count):
+        combo = tuple(
+            assignments[column][hull_index]
+            for column in range(len(preferred_ids))
+        )
+        if combo not in combo_qty:
+            combo_order.append(combo)
+            combo_qty[combo] = 0
+        combo_qty[combo] += 1
 
     copies: list[dict] = []
-    if original_ships > 0:
-        copies.append(
-            {
-                "quantity": original_ships,
-                "eft": original_eft,
-                "is_swapped": False,
-                "variant_type_id": None,
-                "variant_name": "",
-            }
+    for combo in combo_order:
+        swaps: list[dict] = []
+        substitute_ids: list[int] = []
+        substitute_names: list[str] = []
+        for preferred_id, type_id in zip(preferred_ids, combo):
+            if type_id == preferred_id:
+                continue
+            swaps.append(
+                {
+                    "preferred_type_id": preferred_id,
+                    "substitute_type_id": type_id,
+                }
+            )
+            substitute_ids.append(type_id)
+            name = names.get(type_id, "")
+            if name:
+                substitute_names.append(name)
+        eft = (
+            apply_swaps_to_eft(original_eft, swaps, names)
+            if swaps
+            else original_eft
         )
-    copies.extend(variant_copies)
+        copies.append(
+            _fit_copy(
+                quantity=combo_qty[combo],
+                eft=eft,
+                is_swapped=bool(swaps),
+                variant_type_id=(
+                    substitute_ids[0] if len(substitute_ids) == 1 else None
+                ),
+                variant_name=" + ".join(substitute_names),
+                swaps=swaps,
+            )
+        )
     return copies
 
 
@@ -300,18 +334,11 @@ def build_fit_copies_by_line(
         swapped_eft = effective_eft_for_line(line, type_names=names)
         bom = unswapped_boms.get(line.id)
         preferred_modules = line_modules.get(line.id) or {}
-        chosen_preferred, chosen_qtys = (
-            _pick_allocated_preferred(bom, preferred_modules)
-            if bom and preferred_modules
-            else (None, {})
-        )
-
-        if chosen_preferred is not None and chosen_qtys and bom is not None:
-            copies = _copies_from_allocation(
+        if bom is not None and preferred_modules:
+            copies = _copies_from_allocations(
                 line,
                 bom=bom,
-                preferred_id=chosen_preferred,
-                module_qtys=chosen_qtys,
+                preferred_modules=preferred_modules,
                 original_eft=original_eft,
                 names=names,
             )

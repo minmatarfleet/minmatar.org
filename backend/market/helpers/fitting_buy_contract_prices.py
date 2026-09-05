@@ -142,6 +142,10 @@ def _per_ship_for_copy(
     if not copy.get("is_swapped"):
         return dict(original_per_ship)
 
+    copy_swaps = copy.get("swaps")
+    if copy_swaps:
+        return apply_type_swaps(original_per_ship, copy_swaps)
+
     variant_type_id = copy.get("variant_type_id")
     if variant_type_id:
         preferred = None
