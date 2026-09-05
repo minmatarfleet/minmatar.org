@@ -193,6 +193,13 @@
         "keywords": ["warzone", "July YC128", "Auga", "Hed", "faction warfare"]
     },
     {
+        "slug": "warzone.yc128_08",
+        "path": "/warzone/yc128-08/",
+        "publish": true,
+        "description": "page_finder.warzone.yc128_08.description",
+        "keywords": ["warzone", "August YC128", "Kamela", "Kourmonen", "faction warfare"]
+    },
+    {
         "slug": "campaigns.providence",
         "path": "/campaigns/providence/",
         "publish": true,

@@ -199,6 +199,12 @@ export const ui = {
         'warzone.yc128_07.leading_text': 'Amarr took three. Hed did the dying.',
         'warzone.yc128_07.meta_title': 'Warzone Report · July YC128 | {site}',
         'warzone.yc128_07.meta_description': 'Amarr–Minmatar Warzone Report for July YC128 — occupancy, fights, and the Auga siege. Published by Minmatar Fleet.',
+        'warzone.yc128_08.name': 'Warzone Report · August YC128',
+        'warzone.yc128_08.page_title': 'Warzone Report · August YC128',
+        'warzone.yc128_08.period': '1–31 Aug YC128',
+        'warzone.yc128_08.leading_text': 'Minmatar pushed south. Kamela cost 350 billion.',
+        'warzone.yc128_08.meta_title': 'Warzone Report · August YC128 | {site}',
+        'warzone.yc128_08.meta_description': 'Amarr–Minmatar Warzone Report for August YC128 — the push south into Kourmonen and Kamela, and the 350B Kamela Fortizar brawl. Published by Minmatar Fleet.',
         'warzone.latest.page_title': 'Warzone Report',
         'warzone.page_title': 'Warzone Report',
 
@@ -2275,6 +2281,7 @@ export const ui = {
             'Auga system siege report (YC128) — capturing complexes, propaganda beacons, and fleet fights in the Hed constellation from July YC128.',
         'page_finder.warzone.description': 'Monthly Amarr–Minmatar warzone report — who won the month and where people fought.',
         'page_finder.warzone.yc128_07.description': 'July YC128 Amarr–Minmatar Warzone Report — Amarr +3 systems, Hed killmails, Auga siege.',
+        'page_finder.warzone.yc128_08.description': 'August YC128 Amarr–Minmatar Warzone Report — Minmatar +3 systems, the push into Kourmonen and Kamela, and the 350B Kamela brawl.',
         'page_finder.campaigns.providence.description':
             'FL33T\'s war on its ancestral enemy, CVA, in Providence — structure grinds, capital fleet building, and the Watermelon.',
         'page_finder.campaigns.scalding_pass.description':

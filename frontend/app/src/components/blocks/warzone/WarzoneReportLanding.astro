@@ -67,6 +67,7 @@ const structured_data = build_warzone_report_json_ld({
         <Flexblock gap="var(--space-xl)">
             <TextBox class="[ wz-hero ]">
                 <Flexblock gap="var(--space-m)">
+                    <a class="[ wz-hero__back ]" href={translatePath('/alliance/content#WarzoneReports')}>‹ Warzone Reports</a>
                     <PageTitle is_landing={true}>
                         <span class="[ wz-hero__kicker ]">{title_kicker}</span>
                         {title_period && <span class="[ wz-hero__period ]">{title_period}</span>}
@@ -82,6 +83,23 @@ const structured_data = build_warzone_report_json_ld({
 <style lang="scss">
     .wz-hero {
         max-width: 60rem;
+    }
+
+    .wz-hero__back {
+        display: inline-block;
+        width: fit-content;
+        font-size: var(--step--1);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--fleet-yellow);
+        text-decoration: none;
+        opacity: 0.85;
+        transition: opacity 0.15s ease;
+    }
+
+    .wz-hero__back:hover {
+        opacity: 1;
+        text-decoration: underline;
     }
 
     .wz-hero :global(h1 > a),

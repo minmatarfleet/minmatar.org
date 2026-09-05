@@ -3,6 +3,7 @@ import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
 import type { WarzoneIssue, WarzoneMilitiaId } from '@/data/warzone/types'
+import { get_adjacent_issues } from '@/data/warzone'
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
 import Button from '@components/blocks/Button.astro'
@@ -27,14 +28,27 @@ interface Props {
 
 const { issue } = Astro.props
 
-function militia_label(id: WarzoneMilitiaId): string {
-    return id === 'minmatar' ? 'Minmatar' : 'Amarr'
+const { newer, older } = get_adjacent_issues(issue.slug)
+const ALL_REPORTS_PATH = '/alliance/content#WarzoneReports'
+
+const SECTION_NAV = [
+    { id: 'scoreboard', label: 'Scoreboard' },
+    { id: 'systems', label: 'Systems' },
+    { id: 'fronts', label: 'Fronts' },
+    { id: 'focus', label: 'Focus' },
+    { id: 'pilots', label: 'Pilots' },
+    { id: 'ships', label: 'Ships' },
+    { id: 'groups', label: 'Groups' },
+] as const
+
+/** Short series label, e.g. "August YC128", from the issue's publish date. */
+function issue_label(iss: WarzoneIssue): string {
+    const month = iss.published_at.toLocaleString('en-US', { month: 'long', timeZone: 'UTC' })
+    return `${month} YC${iss.published_at.getUTCFullYear() - 1898}`
 }
 
-function format_signed(value: number): string {
-    if (value > 0) return `+${number_thousand_separator(value)}`
-    if (value < 0) return `−${number_thousand_separator(Math.abs(value))}`
-    return '0'
+function militia_label(id: WarzoneMilitiaId): string {
+    return id === 'minmatar' ? 'Minmatar' : 'Amarr'
 }
 
 function format_isk(value: number): string {
@@ -74,6 +88,20 @@ const total_systems = minmatar.systems_held + amarr.systems_held
 const minmatar_share = percent(minmatar.systems_held, total_systems)
 const amarr_share = 100 - minmatar_share
 
+// This month's front-line movement, drawn on the split bar. The prior holding is
+// taken from the previous issue's own month-end count when available (grounding
+// the band in real data rather than the hand-authored occupancy_net); it falls
+// back to systems_held - occupancy_net for the first issue. + = Minmatar gained.
+const older_minmatar_held = older?.scoreboard.find((side) => side.militia === 'minmatar')?.systems_held
+const prev_minmatar_held = older_minmatar_held ?? minmatar.systems_held - minmatar.occupancy_net
+const net_change = minmatar.systems_held - prev_minmatar_held
+const gain_side: WarzoneMilitiaId | null =
+    net_change > 0 ? 'minmatar' : net_change < 0 ? 'amarr' : null
+const gain_count = Math.abs(net_change)
+const prev_minmatar_share = percent(prev_minmatar_held, total_systems)
+const gain_band_left = Math.min(prev_minmatar_share, minmatar_share)
+const gain_band_width = Math.abs(prev_minmatar_share - minmatar_share)
+
 const compare_rows = [
     {
         label: 'Enlisted pilots',
@@ -81,6 +109,8 @@ const compare_rows = [
         amarr: amarr.enlisted_pilots,
         minmatar_label: minmatar.enlisted_pilots_label,
         amarr_label: amarr.enlisted_pilots_label,
+        minmatar_vs: undefined as number | undefined,
+        amarr_vs: undefined as number | undefined,
     },
     {
         label: 'Active pilots',
@@ -88,13 +118,17 @@ const compare_rows = [
         amarr: amarr.active_pilots,
         minmatar_label: minmatar.active_pilots_label,
         amarr_label: amarr.active_pilots_label,
+        minmatar_vs: minmatar.active_pilots_vs,
+        amarr_vs: amarr.active_pilots_vs,
     },
     {
         label: 'Kills',
-        minmatar: minmatar.kills_last_week,
-        amarr: amarr.kills_last_week,
-        minmatar_label: number_thousand_separator(minmatar.kills_last_week),
-        amarr_label: number_thousand_separator(amarr.kills_last_week),
+        minmatar: minmatar.kills,
+        amarr: amarr.kills,
+        minmatar_label: number_thousand_separator(minmatar.kills),
+        amarr_label: number_thousand_separator(amarr.kills),
+        minmatar_vs: minmatar.kills_vs,
+        amarr_vs: amarr.kills_vs,
     },
 ].map((row) => {
     const max = Math.max(row.minmatar, row.amarr)
@@ -151,7 +185,7 @@ const featured_guides = issue.get_involved.featured_guides
                 </span>
                 <div>
                     <span class="[ wz-hero-stat__label ]">Systems flipped</span>
-                    <b class="[ wz-hero-stat__value ]">{issue.occupancy_changes}</b></span>
+                    <b class="[ wz-hero-stat__value ]">{issue.systems_that_moved}</b></span>
                 </div>
             </div>
             <div class="[ wz-hero-stat ]">
@@ -161,6 +195,11 @@ const featured_guides = issue.get_involved.featured_guides
                 <div>
                     <span class="[ wz-hero-stat__label ]">Ships destroyed</span>
                     <b class="[ wz-hero-stat__value ]">{number_thousand_separator(issue.sampled_ships)}</b>
+                    {issue.sampled_ships_vs !== undefined && issue.sampled_ships_vs !== 0 && (
+                        <span class:list={['wz-trend', issue.sampled_ships_vs > 0 ? 'wz-delta--up' : 'wz-delta--down']}>
+                            <span aria-hidden="true">{issue.sampled_ships_vs > 0 ? '▲' : '▼'}</span>{number_thousand_separator(Math.abs(issue.sampled_ships_vs))} vs {issue.previous_period_label}
+                        </span>
+                    )}
                 </div>
             </div>
             <div class="[ wz-hero-stat ]">
@@ -170,6 +209,11 @@ const featured_guides = issue.get_involved.featured_guides
                 <div>
                     <span class="[ wz-hero-stat__label ]">ISK destroyed</span>
                     <b class="[ wz-hero-stat__value ]">{format_isk(issue.sampled_isk)}</b>
+                    {issue.sampled_isk_vs !== undefined && issue.sampled_isk_vs !== 0 && (
+                        <span class:list={['wz-trend', issue.sampled_isk_vs > 0 ? 'wz-delta--up' : 'wz-delta--down']}>
+                            <span aria-hidden="true">{issue.sampled_isk_vs > 0 ? '▲' : '▼'}</span>{format_isk(Math.abs(issue.sampled_isk_vs))} vs {issue.previous_period_label}
+                        </span>
+                    )}
                 </div>
             </div>
             <div class="[ wz-hero-stat ]">
@@ -185,12 +229,17 @@ const featured_guides = issue.get_involved.featured_guides
 
     </div>
 
+    <nav class="[ wz-jump ]" aria-label="Jump to section">
+        {SECTION_NAV.map((section) => (
+            <a class="[ wz-jump__link ]" href={`#${section.id}`}>{section.label}</a>
+        ))}
+    </nav>
+
     <section id="scoreboard" class="[ wz-section ]">
         <header class="[ wz-section__head ]">
             <h2>Scoreboard</h2>
             <p class="[ wz-dek ]">
-                Who holds the map, and how hard each militia fought in the most
-                recent week of public data.
+                Who holds the map, and how hard each militia fought this month.
             </p>
         </header>
 
@@ -206,16 +255,29 @@ const featured_guides = issue.get_involved.featured_guides
                     <span class="[ wz-versus__logo ]" aria-hidden="true"><AmarrLogo /></span>
                     <div>
                         <h3>Amarr</h3>
-                        <span class="[ wz-versus__net ]">{format_signed(amarr.occupancy_net)} systems this month</span>
                     </div>
                 </div>
             </div>
 
-            <div class="[ wz-split ]" role="img" aria-label={`Minmatar hold ${minmatar.systems_held} systems, Amarr hold ${amarr.systems_held}, of ${total_systems}`}>
+            <div class="[ wz-split ]" role="img" aria-label={`Minmatar hold ${minmatar.systems_held} systems, Amarr hold ${amarr.systems_held}, of ${total_systems}.${gain_side ? ` This month ${gain_side === 'minmatar' ? 'Minmatar' : 'Amarr'} gained ${gain_count}.` : ''}`}>
                 <b class="[ wz-split__value wz-minmatar-text ]">{minmatar.systems_held}</b>
                 <div class="[ wz-split__bar ]">
                     <span class="[ wz-split__fill wz-split__fill--minmatar ]" style={`width: ${minmatar_share}%`}></span>
                     <span class="[ wz-split__fill wz-split__fill--amarr ]" style={`width: ${amarr_share}%`}></span>
+                    {gain_side && (
+                        <span
+                            class:list={['wz-split__gain', `wz-split__gain--${gain_side}`]}
+                            style={`left: ${gain_band_left}%; width: ${gain_band_width}%`}
+                        ></span>
+                    )}
+                    {gain_side && (
+                        <span
+                            class:list={['wz-split__flag', `wz-split__flag--${gain_side}`]}
+                            style={`left: ${gain_band_left + gain_band_width / 2}%`}
+                        >
+                            <span aria-hidden="true">{gain_side === 'minmatar' ? '▶' : '◀'}</span>+{gain_count}
+                        </span>
+                    )}
                 </div>
                 <b class="[ wz-split__value wz-amarr-text ]">{amarr.systems_held}</b>
             </div>
@@ -223,9 +285,19 @@ const featured_guides = issue.get_involved.featured_guides
             <div class="[ wz-compare ]">
                 {compare_rows.map((row) => (
                     <div class="[ wz-compare__row ]">
-                        <b class:list={['wz-compare__value wz-compare__value--minmatar', row.leader === 'minmatar' && 'is-leader']}>{row.minmatar_label}</b>
+                        <b class:list={['wz-compare__value wz-compare__value--minmatar', row.leader === 'minmatar' && 'is-leader']}>
+                            {row.minmatar_label}
+                            {row.minmatar_vs !== undefined && row.minmatar_vs !== 0 && (
+                                <span class:list={['wz-compare__trend', row.minmatar_vs > 0 ? 'wz-delta--up' : 'wz-delta--down']}>{row.minmatar_vs > 0 ? '▲' : '▼'}{number_thousand_separator(Math.abs(row.minmatar_vs))}</span>
+                            )}
+                        </b>
                         <span class="[ wz-compare__label ]">{row.label}</span>
-                        <b class:list={['wz-compare__value wz-compare__value--amarr', row.leader === 'amarr' && 'is-leader']}>{row.amarr_label}</b>
+                        <b class:list={['wz-compare__value wz-compare__value--amarr', row.leader === 'amarr' && 'is-leader']}>
+                            {row.amarr_vs !== undefined && row.amarr_vs !== 0 && (
+                                <span class:list={['wz-compare__trend', row.amarr_vs > 0 ? 'wz-delta--up' : 'wz-delta--down']}>{row.amarr_vs > 0 ? '▲' : '▼'}{number_thousand_separator(Math.abs(row.amarr_vs))}</span>
+                            )}
+                            {row.amarr_label}
+                        </b>
                     </div>
                 ))}
             </div>
@@ -386,7 +458,12 @@ const featured_guides = issue.get_involved.featured_guides
                             <dl class="[ wz-statline ]">
                                 <div>
                                     <dt>Ships destroyed</dt>
-                                    <dd>{front.ships_label}</dd>
+                                    <dd>
+                                        {front.ships_label}
+                                        {front.ships_vs !== undefined && front.ships_vs !== 0 && (
+                                            <span class:list={['wz-compare__trend', front.ships_vs > 0 ? 'wz-delta--up' : 'wz-delta--down']}>{front.ships_vs > 0 ? '▲' : '▼'}{number_thousand_separator(Math.abs(front.ships_vs))}</span>
+                                        )}
+                                    </dd>
                                 </div>
                                 <div>
                                     <dt>Hottest system</dt>
@@ -404,7 +481,7 @@ const featured_guides = issue.get_involved.featured_guides
     <section id="focus" class="[ wz-section ]">
         <header class="[ wz-section__head ]">
             <h2>Focus of the month</h2>
-            <p class="[ wz-dek ]">One story that would not fit a normal issue: a week-long siege in {issue.focus_name}.</p>
+            <p class="[ wz-dek ]">{focus.section_dek ?? `One story that would not fit a normal issue — this month, ${issue.focus_name}.`}</p>
         </header>
 
         <ComponentBlock class="[ wz-focus ]">
@@ -413,6 +490,12 @@ const featured_guides = issue.get_involved.featured_guides
                     <h3 class="[ wz-focus__title ]">{focus.title}</h3>
                     <span class="[ wz-date ]">{focus.window_label}</span>
                 </FlexInline>
+
+                {focus.dek.length > 0 && (
+                    <div class="[ wz-focus__story ]">
+                        {focus.dek.map((paragraph) => <p>{paragraph}</p>)}
+                    </div>
+                )}
 
                 <div class="[ wz-focus-stats ]">
                     <div class="[ wz-stat ]">
@@ -467,7 +550,7 @@ const featured_guides = issue.get_involved.featured_guides
                         </ul>
                     </div>
                     <div class="[ wz-chart ]">
-                        <h4>How the week was fought</h4>
+                        <h4>How it was fought</h4>
                         <div class="[ wz-share__bar wz-share__bar--thin ]" role="img" aria-label={focus.engagement_mix.map((slice) => `${slice.label}: ${slice.value} kills`).join('; ')}>
                             {focus.engagement_mix.map((slice, index) => (
                                 <span class="[ wz-share__fill ]" style={`width: ${percent(slice.value, engagement_total)}%; background: ${engagement_colors[index % engagement_colors.length]}`}></span>
@@ -487,8 +570,13 @@ const featured_guides = issue.get_involved.featured_guides
                 </div>
 
                 <FlexInline gap="var(--space-2xs)">
-                    <Button href={translatePath(focus.campaign_path)} size="sm">
-                        Read the full siege report
+                    <Button
+                        href={focus.campaign_path.startsWith('http')
+                            ? focus.campaign_path
+                            : translatePath(focus.campaign_path)}
+                        size="sm"
+                    >
+                        {focus.cta_label ?? 'Read the full siege report'}
                     </Button>
                 </FlexInline>
             </Flexblock>
@@ -528,14 +616,17 @@ const featured_guides = issue.get_involved.featured_guides
                                                     icon_quality={64}
                                                 />
                                                 <span class="[ wz-board__id ]">
-                                                    <a
-                                                        class="[ wz-board__name ]"
-                                                        href={`https://zkillboard.com/character/${pilot.characterId}/`}
-                                                        target="_blank"
-                                                        rel="nofollow noopener noreferrer"
-                                                    >
-                                                        {pilot.name}
-                                                    </a>
+                                                    <span class="[ wz-board__nameline ]">
+                                                        <a
+                                                            class="[ wz-board__name ]"
+                                                            href={`https://zkillboard.com/character/${pilot.characterId}/`}
+                                                            target="_blank"
+                                                            rel="nofollow noopener noreferrer"
+                                                        >
+                                                            {pilot.name}
+                                                        </a>
+                                                        {pilot.is_new && <span class="[ wz-badge ]">NEW</span>}
+                                                    </span>
                                                     {pilot.affiliation && (
                                                         <span class="[ wz-board__affil ]">
                                                             {pilot.affiliation_id > 0 && (
@@ -642,7 +733,12 @@ const featured_guides = issue.get_involved.featured_guides
                     <tbody>
                         {issue.groups.rows.map((group, index) => (
                             <tr>
-                                <td class="[ wz-table__rank ]">{index + 1}</td>
+                                <td class="[ wz-table__rank ]">
+                                    {index + 1}
+                                    {group.rank_delta != null && group.rank_delta !== 0 && (
+                                        <span class:list={['wz-rank__move', group.rank_delta > 0 ? 'wz-delta--up' : 'wz-delta--down']} title={`${group.rank_delta > 0 ? 'Up' : 'Down'} ${Math.abs(group.rank_delta)} vs last month`}>{group.rank_delta > 0 ? '▲' : '▼'}{Math.abs(group.rank_delta)}</span>
+                                    )}
+                                </td>
                                 <td class="[ wz-table__group ]">
                                     <span class="[ wz-table__owner ]">
                                         <img
@@ -662,6 +758,7 @@ const featured_guides = issue.get_involved.featured_guides
                                                 >
                                                     {group.name}
                                                 </a>
+                                                {group.new_to_board && <span class="[ wz-badge ]">NEW</span>}
                                             </span>
                                             <span class:list={['wz-group-faction', group.militia && `wz-group-faction--${group.militia}`]}>
                                                 {group.faction_id === 500002 ? (
@@ -683,7 +780,12 @@ const featured_guides = issue.get_involved.featured_guides
                                         </span>
                                     </span>
                                 </td>
-                                <td class="[ wz-table__num ]" data-label="Killmails"><b>{number_thousand_separator(group.killmails)}</b></td>
+                                <td class="[ wz-table__num ]" data-label="Killmails">
+                                    <b>{number_thousand_separator(group.killmails)}</b>
+                                    {group.killmails_pct != null && group.killmails_pct !== 0 && (
+                                        <span class:list={['wz-compare__trend', group.killmails_pct > 0 ? 'wz-delta--up' : 'wz-delta--down']}>{group.killmails_pct > 0 ? '▲' : '▼'}{Math.abs(group.killmails_pct)}%</span>
+                                    )}
+                                </td>
                                 <td class="[ wz-table__num ]" data-label="ISK destroyed">{format_isk(group.isk_destroyed)}</td>
                                 <td class="[ wz-table__num ]" data-label="Ships lost">{number_thousand_separator(group.ships_lost)}</td>
                                 <td class="[ wz-table__num ]" data-label="In warzone">{Math.round(group.fw_share * 100)}%</td>
@@ -781,10 +883,30 @@ const featured_guides = issue.get_involved.featured_guides
                 ))}
             </dl>
         </ComponentBlock>
-        <p class="[ wz-footnote ]">
-            Warzone Report · {issue.period_utc} · Published by Minmatar Fleet · Sources: zKillboard, Dotlan, EVE ESI.
-        </p>
     </section>
+
+    <nav class="[ wz-more ]" aria-label="More warzone reports">
+        {older && (
+            <a class="[ wz-more__link wz-more__link--prev ]" href={translatePath(older.permalink_path)}>
+                <span class="[ wz-more__dir ]">← Previous report</span>
+                <span class="[ wz-more__title ]">{issue_label(older)}</span>
+            </a>
+        )}
+        <a class="[ wz-more__link wz-more__link--all ]" href={translatePath(ALL_REPORTS_PATH)}>
+            <span class="[ wz-more__dir ]">Series</span>
+            <span class="[ wz-more__title ]">Browse all reports</span>
+        </a>
+        {newer && (
+            <a class="[ wz-more__link wz-more__link--next ]" href={translatePath(newer.permalink_path)}>
+                <span class="[ wz-more__dir ]">Next report →</span>
+                <span class="[ wz-more__title ]">{issue_label(newer)}</span>
+            </a>
+        )}
+    </nav>
+
+    <p class="[ wz-footnote wz-colophon ]">
+        Warzone Report · {issue.period_utc} · Published by Minmatar Fleet · Sources: zKillboard, Dotlan, EVE ESI.
+    </p>
 </div>
 
 <style lang="scss">
@@ -942,11 +1064,47 @@ const featured_guides = issue.get_involved.featured_guides
 
     /* Sections ------------------------------------------------------------ */
 
+    .wz-jump {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2xs);
+        margin-bottom: var(--space-xl);
+    }
+    .wz-jump__link {
+        padding: var(--space-3xs) var(--space-s);
+        border: solid 1px var(--border-color);
+        border-radius: 2rem;
+        font-size: var(--step--1);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--foreground);
+        text-decoration: none;
+        white-space: nowrap;
+        transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+    }
+    .wz-jump__link:hover {
+        border-color: var(--highlight);
+        color: var(--highlight);
+        background-color: var(--light-transparency-background-mobile);
+    }
+
+    @media (max-width: 45rem) {
+        .wz-jump {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .wz-jump::-webkit-scrollbar {
+            display: none;
+        }
+    }
+
     .wz-section {
         display: flex;
         flex-direction: column;
         gap: var(--space-m);
-        scroll-margin-top: var(--space-l);
+        /* Clear the fixed site header so jump-nav anchors don't land under it. */
+        scroll-margin-top: 4.5rem;
     }
 
     .wz-section__head {
@@ -964,6 +1122,71 @@ const featured_guides = issue.get_involved.featured_guides
         color: var(--faded);
         font-size: var(--step--1);
         max-width: var(--max-text-width);
+    }
+    .wz-colophon {
+        max-width: none;
+        text-align: center;
+        margin-top: var(--space-l);
+    }
+
+    .wz-more {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-s);
+        margin-top: var(--space-xl);
+        padding-top: var(--space-l);
+        border-top: solid 1px var(--wz-rule);
+    }
+    .wz-more__link {
+        flex: 1 1 12rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: var(--space-3xs);
+        padding: var(--space-s) var(--space-m);
+        border: solid 1px var(--border-color);
+        background-color: var(--light-transparency-background-mobile);
+        text-decoration: none;
+        transition: border-color 0.15s ease, background-color 0.15s ease;
+
+        &:hover {
+            border-color: var(--highlight);
+            background-color: var(--light-transparency-background);
+        }
+    }
+    .wz-more__link--next {
+        text-align: right;
+        align-items: flex-end;
+    }
+    .wz-more__link--all {
+        text-align: center;
+        align-items: center;
+    }
+    .wz-more__dir {
+        font-size: var(--step--2);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--faded);
+    }
+    .wz-more__link--all .wz-more__dir {
+        color: var(--fleet-yellow);
+    }
+    .wz-more__title {
+        font-size: var(--step-1);
+        font-weight: 600;
+        color: var(--highlight);
+    }
+
+    @media (max-width: 45rem) {
+        .wz-more {
+            flex-direction: column;
+        }
+        .wz-more__link,
+        .wz-more__link--next,
+        .wz-more__link--all {
+            text-align: left;
+            align-items: flex-start;
+        }
     }
 
     .wz-subhead {
@@ -1021,9 +1244,49 @@ const featured_guides = issue.get_involved.featured_guides
         }
     }
 
-    .wz-versus__net {
+    .wz-trend {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 0.3em;
+        margin-top: 0.2em;
         font-size: var(--step--1);
-        color: var(--faded);
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+    .wz-compare__trend {
+        margin-inline: 0.4em;
+        font-size: var(--step--2);
+        font-weight: 500;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+    }
+    .wz-badge {
+        display: inline-block;
+        margin-inline-start: 0.5em;
+        padding: 0.05em 0.4em;
+        border-radius: 0.25em;
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--green);
+        border: solid 1px color-mix(in srgb, var(--green) 45%, transparent);
+        background: color-mix(in srgb, var(--green) 14%, transparent);
+        vertical-align: middle;
+        white-space: nowrap;
+        align-self: flex-start;
+    }
+    .wz-board__nameline {
+        display: inline-flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+    }
+    .wz-rank__move {
+        display: block;
+        margin-top: 0.15em;
+        font-size: 0.6rem;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
     }
 
     .wz-split {
@@ -1041,8 +1304,10 @@ const featured_guides = issue.get_involved.featured_guides
     }
 
     .wz-split__bar {
+        position: relative;
+        overflow: visible;
         display: flex;
-        height: 1.25rem;
+        height: 1.35rem;
         gap: 2px;
         background: var(--wz-track);
     }
@@ -1058,6 +1323,42 @@ const featured_guides = issue.get_involved.featured_guides
         &--amarr {
             background: var(--wz-amarr);
         }
+    }
+
+    /* The band the front line moved across this month, hatched over the winner's
+       colour with a bright leading edge. */
+    .wz-split__gain {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        pointer-events: none;
+        background-image: repeating-linear-gradient(
+            -45deg,
+            transparent 0 5px,
+            rgba(0, 0, 0, 0.3) 5px 7px
+        );
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+    }
+
+    /* "+N" flag centred over the gained band, sitting just above the bar. */
+    .wz-split__flag {
+        position: absolute;
+        bottom: calc(100% + 0.3rem);
+        transform: translateX(-50%);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2em;
+        white-space: nowrap;
+        font-size: var(--step--2);
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        line-height: 1;
+    }
+    .wz-split__flag--minmatar {
+        color: var(--wz-minmatar);
+    }
+    .wz-split__flag--amarr {
+        color: var(--wz-amarr);
     }
 
     .wz-split__caption {
@@ -1625,6 +1926,17 @@ const featured_guides = issue.get_involved.featured_guides
 
     .wz-focus__title {
         font-size: var(--step-2);
+    }
+
+    .wz-focus__story {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        max-width: var(--max-text-width);
+        color: var(--foreground);
+    }
+    .wz-focus__story p {
+        margin: 0;
     }
 
     .wz-focus-stats {

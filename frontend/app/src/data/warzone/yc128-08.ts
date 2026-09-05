@@ -1,18 +1,21 @@
 import {
+    AAR_URL,
     AMARR_DESTROYED_ISK,
     AMARR_DESTROYED_SHIPS,
     AMARR_PILOTS,
+    BATTLE_REPORT_URL,
     CAMPAIGN_ISK_DESTROYED,
-    CANONICAL_PATH as AUGA_CANONICAL_PATH,
     ENGAGEMENT_MIX,
     MINMATAR_DESTROYED_ISK,
     MINMATAR_DESTROYED_SHIPS,
     MINMATAR_PILOTS,
     OTHER_DESTROYED_ISK,
     OTHER_DESTROYED_SHIPS,
-    SHIPS_DESTROYED as AUGA_SIEGE_SHIPS,
-    UNIQUE_PILOTS as AUGA_UNIQUE_PILOTS,
-} from '@/data/campaigns/auga'
+    SHIPS_DESTROYED as KAMELA_SHIPS,
+    UNIQUE_PILOTS as KAMELA_UNIQUE_PILOTS,
+    WINDOW_LABEL as KAMELA_WINDOW,
+    ZKILL_SYSTEM_URL as KAMELA_ZKILL,
+} from '@/data/campaigns/kamela'
 
 import type { WarzoneIssue } from './types'
 import {
@@ -34,9 +37,9 @@ import {
     SHIPS_SOLO,
     SYSTEM_STATS,
     TRAFFIC,
-} from './yc128-07-boards'
+} from './yc128-08-boards'
 
-export const SLUG = 'yc128-07' as const
+export const SLUG = 'yc128-08' as const
 export const PERMALINK_PATH = `/warzone/${SLUG}/` as const
 export const LATEST_PATH = '/warzone/' as const
 export const COVER_IMAGE = '/images/warzone-cover.jpg'
@@ -57,31 +60,31 @@ function system_stat(name: string) {
     return row
 }
 
-export const YC128_07: WarzoneIssue = {
+export const YC128_08: WarzoneIssue = {
     slug: SLUG,
     permalink_path: PERMALINK_PATH,
     cover_image: COVER_IMAGE,
-    published_at: new Date('2026-07-31T00:00:00Z'),
-    period_utc: '1–31 Jul 2026 UTC',
-    previous_period_label: 'June',
+    published_at: new Date('2026-08-31T00:00:00Z'),
+    period_utc: '1–31 Aug 2026 UTC',
+    previous_period_label: 'July',
     esi_as_of: '4 Sep 2026',
-    who_won: 'Amarr took three. Hed did the dying.',
+    who_won: 'Minmatar pushed south. Kamela cost 350 billion.',
     opening:
-        'The map moved on the Minmatar front. Amarr kept the systems they took. Hed still printed the killmails. The week that traveled was a siege in Auga — that is the focus below, not the scoreboard.',
+        'Minmatar Fleet is back in faction warfare full time, and in August the map moved the other way. The push went onto the Amarr home front — Kourmonen and Kamela both flipped, the first Minmatar gains in The Bleak Lands in months. Then the Kamela Fortizar timer turned into the biggest brawl of the month: 350 billion ISK on one field. That fight is the focus below.',
     sampled_ships: BOARDS_SAMPLED_KILLS,
     sampled_isk: BOARDS_TOTAL_ISK,
     sampled_ships_vs: BOARDS_SAMPLED_KILLS_VS,
     sampled_isk_vs: BOARDS_TOTAL_ISK_VS,
-    focus_name: 'Auga',
-    occupancy_changes: 5,
-    occupancy_net_amarr: 3,
-    systems_that_moved: 4,
+    focus_name: 'Kamela',
+    occupancy_changes: 4,
+    occupancy_net_amarr: -3,
+    systems_that_moved: 3,
     occupancy_dek:
-        'Amarr took four and gave one back. All five changes were on the Minmatar front — Hed and Metropolis. The Amarr home front did not change hands.',
+        'Minmatar took three and gave none back. Two were on the Amarr home front — Kourmonen and Kamela in The Bleak Lands — the deepest the militia has pushed south all year. Kamela changed hands twice in two days, passing briefly through Angel Cartel before Minmatar took it.',
     scoreboard: [
         {
             militia: 'minmatar',
-            occupancy_net: -3,
+            occupancy_net: 3,
             systems_held: SCOREBOARD_STATS.minmatar.systems,
             enlisted_pilots: SCOREBOARD_STATS.minmatar.pilots,
             enlisted_pilots_label: count_label(SCOREBOARD_STATS.minmatar.pilots),
@@ -95,7 +98,7 @@ export const YC128_07: WarzoneIssue = {
         },
         {
             militia: 'amarr',
-            occupancy_net: 3,
+            occupancy_net: -3,
             systems_held: SCOREBOARD_STATS.amarr.systems,
             enlisted_pilots: SCOREBOARD_STATS.amarr.pilots,
             enlisted_pilots_label: count_label(SCOREBOARD_STATS.amarr.pilots),
@@ -110,60 +113,44 @@ export const YC128_07: WarzoneIssue = {
     ],
     fights: [
         {
-            system: 'Amamake',
-            date_label: '12 Jul',
-            dek: 'Hed’s freeport is a market and a killboard. On the twelfth it was both: a public DNG birthday brawl on video, and later an r/Eve post that treated the shop as the story. Loudest system in the warzone all month.',
-            ships: system_stat('Amamake').ships,
-            isk_label: system_stat('Amamake').isk_label,
-            vs_last_month: system_stat('Amamake').vs_last_month,
+            system: 'Kourmonen',
+            date_label: '14 Aug',
+            dek: 'The staging point for the push south. Kourmonen was the busiest system on the Amarr home front all month and the second-loudest in the warzone — the grind that opened the road to Kamela before it flipped Minmatar on the fourteenth.',
+            ships: system_stat('Kourmonen').ships,
+            isk_label: system_stat('Kourmonen').isk_label,
+            vs_last_month: system_stat('Kourmonen').vs_last_month,
             links: [
-                { href: 'https://zkillboard.com/system/30002537/', label: 'zKill' },
-                { href: 'https://youtu.be/6OZd594h2CM', label: 'Video' },
-                {
-                    href: 'https://www.reddit.com/r/Eve/comments/1uy7sl0/extra_extra_the_rats_are_back_to_amamake_rip_dng/',
-                    label: 'r/Eve thread',
-                },
+                { href: 'https://zkillboard.com/system/30003068/', label: 'zKill' },
             ],
         },
     ],
     occupancy: [
         {
-            date_label: '18 Jul',
-            system: 'Auga',
+            date_label: '13 Aug',
+            system: 'Kamela',
             taken_by: 'minmatar',
-            ships: system_stat('Auga').ships,
-            vs_last_month: system_stat('Auga').vs_last_month,
-            isk_label: system_stat('Auga').isk_label,
-            holds_today: system_stat('Auga').holds_today,
-            dotlan_href: 'https://evemaps.dotlan.net/system/Auga',
-            zkill_href: 'https://zkillboard.com/system/30002542/',
+            ships: system_stat('Kamela').ships,
+            vs_last_month: system_stat('Kamela').vs_last_month,
+            isk_label: system_stat('Kamela').isk_label,
+            holds_today: system_stat('Kamela').holds_today,
+            dotlan_href: 'https://evemaps.dotlan.net/system/Kamela',
+            zkill_href: 'https://zkillboard.com/system/30003069/',
         },
         {
-            date_label: '5 Jul',
-            system: 'Eszur',
-            taken_by: 'amarr',
-            ships: system_stat('Eszur').ships,
-            vs_last_month: system_stat('Eszur').vs_last_month,
-            isk_label: system_stat('Eszur').isk_label,
-            holds_today: system_stat('Eszur').holds_today,
-            dotlan_href: 'https://evemaps.dotlan.net/system/Eszur',
-            zkill_href: 'https://zkillboard.com/system/30002095/',
+            date_label: '14 Aug',
+            system: 'Kourmonen',
+            taken_by: 'minmatar',
+            ships: system_stat('Kourmonen').ships,
+            vs_last_month: system_stat('Kourmonen').vs_last_month,
+            isk_label: system_stat('Kourmonen').isk_label,
+            holds_today: system_stat('Kourmonen').holds_today,
+            dotlan_href: 'https://evemaps.dotlan.net/system/Kourmonen',
+            zkill_href: 'https://zkillboard.com/system/30003068/',
         },
         {
-            date_label: '6 Jul',
-            system: 'Hadozeko',
-            taken_by: 'amarr',
-            ships: system_stat('Hadozeko').ships,
-            vs_last_month: system_stat('Hadozeko').vs_last_month,
-            isk_label: system_stat('Hadozeko').isk_label,
-            holds_today: system_stat('Hadozeko').holds_today,
-            dotlan_href: 'https://evemaps.dotlan.net/system/Hadozeko',
-            zkill_href: 'https://zkillboard.com/system/30002057/',
-        },
-        {
-            date_label: '8 Jul',
+            date_label: '15 Aug',
             system: 'Lantorn',
-            taken_by: 'amarr',
+            taken_by: 'minmatar',
             ships: system_stat('Lantorn').ships,
             vs_last_month: system_stat('Lantorn').vs_last_month,
             isk_label: system_stat('Lantorn').isk_label,
@@ -174,41 +161,44 @@ export const YC128_07: WarzoneIssue = {
     ],
     traffic: TRAFFIC,
     traffic_footnote:
-        'Busiest systems by ships destroyed in July, across all 70 warzone systems. Source: zKillboard per-system API, capsules removed.',
+        'Busiest systems by ships destroyed in August, across all 70 warzone systems. Source: zKillboard per-system API, capsules removed.',
     fronts: [
         {
             name: 'Minmatar front',
             regions: 'Heimatar and Metropolis',
-            occupancy_label: '5 occupancy changes',
+            occupancy_label: '1 occupancy change',
             ships: FRONTS.minmatar.ships,
             ships_label: FRONTS.minmatar.ships_label,
             ships_vs: FRONTS.minmatar.ships_vs,
             hottest_system: FRONTS.minmatar.hottest_system,
-            dek: 'Heimatar and Metropolis. This is where the war is actually fought — the large majority of the month\'s ship kills fell here, led by Amamake and Auga. Every occupancy change in July was on this front.',
+            dek: 'Heimatar and Metropolis. Still where most of the war is fought — Amamake led the warzone again by a wide margin, and Auga stayed loud after July\'s siege. Lantorn was the one system to change hands here, flipping back to Minmatar.',
         },
         {
             name: 'Amarr front',
             regions: 'Devoid and The Bleak Lands',
-            occupancy_label: 'no occupancy changes',
+            occupancy_label: '2 occupancy changes',
             ships: FRONTS.amarr.ships,
             ships_label: FRONTS.amarr.ships_label,
             ships_vs: FRONTS.amarr.ships_vs,
             hottest_system: FRONTS.amarr.hottest_system,
-            dek: 'Devoid and The Bleak Lands. Quieter by an order of magnitude, with Kourmonen the one real hotspot as the fight spills over from Hed next door. No system changed hands here in July.',
+            dek: 'Devoid and The Bleak Lands. Normally the quiet front — but this month the war came here. Kourmonen and Kamela both flipped to Minmatar, and Kamela alone burned 474B in ships as the militia pushed toward Sosala.',
         },
     ],
     focus: {
-        title: 'Auga siege',
-        window_label: '12–18 Jul',
+        title: 'Kamela: 350B down',
+        window_label: KAMELA_WINDOW,
+        section_dek:
+            'One story that would not fit a normal issue: the night the push south turned into a 350-billion-ISK brawl over the Kamela Fortizar.',
+        cta_label: 'Read the full AAR',
         dek: [
-            'Cradle of War landed in June. By mid-July the new complexes were a reason to stay after the first brawl. The sites pay. The bar moves. Someone has to be plexing at downtime.',
-            'Amarr took Auga on 4 Jul. They still held it on the seventeenth — after a 171-pilot Minmatar Fleet pickup, after an Amarr Revelation went down. On the morning of the eighteenth Twan Molenaar called the flip. The same morning that alliance formed for Kourmonen.',
-            `Minmatar lost ${(MINMATAR_DESTROYED_ISK / 1_000_000_000).toFixed(2)}B on that field; Amarr lost ${(AMARR_DESTROYED_ISK / 1_000_000_000).toFixed(2)}B. Empyrean Edict and Slide On Contact put the heaviest Amarr boards there. Minmatar Fleet was the largest alliance on the mails, which also means they took the heaviest losses. A hundred and fourteen Angels showed up to farm the wrecks. Most of the week was not a fleet: 869 small gang, 486 solo, 226 fleet (11+). The hulls that died were the hulls of the warzone after Uprising: Thrasher Fleet Issue, T1 Thrasher, Rifter, then navy cruisers; Amarr answered Punisher and Slicer; Gallente navy showed up anyway.`,
+            'Minmatar Fleet is back in faction warfare full time, and the campaign this summer has been a march south — Auga, Kourmonen, Kamela, and one day the holy land, Sosala. With docking secured, the point of tension became the Kamela Fortizar, which the militia reinforced again and again.',
+            'CVA got tired of the rats gnawing at the walls. On the twenty-ninth the timer finally broke into a real fight: FL33T bridged in Tempest Fleet Issues and guardians, CVA and RMC landed at zero, and both sides started throwing dreads. FL33T ran cheap T1 Revelations by the dozen; CVA answered with better-fit capitals. Seventeen dreadnoughts died on the field.',
+            `Then everyone else arrived. CAMELOT tornadoes, INIT zealots and Kikimoras, Sedition and BIGAB Barghests, BRAVE, AHBA, SRS — a dozen groups piling onto a lowsec grid. When the smoke cleared, ${KAMELA_SHIPS} ships and ${(CAMPAIGN_ISK_DESTROYED / 1_000_000_000).toFixed(0)}B ISK were gone and ${KAMELA_UNIQUE_PILOTS.toLocaleString('en-US')} pilots had been on grid. Third parties did most of the dying; CVA took the worst of the two principals. Kamela stayed Minmatar.`,
         ],
-        ships: AUGA_SIEGE_SHIPS,
+        ships: KAMELA_SHIPS,
         isk: CAMPAIGN_ISK_DESTROYED,
-        unique_pilots: AUGA_UNIQUE_PILOTS,
-        flip_label: '18 Jul',
+        unique_pilots: KAMELA_UNIQUE_PILOTS,
+        flip_label: '13 Aug',
         minmatar_pilots: MINMATAR_PILOTS,
         minmatar_ships: MINMATAR_DESTROYED_SHIPS,
         amarr_pilots: AMARR_PILOTS,
@@ -218,32 +208,23 @@ export const YC128_07: WarzoneIssue = {
         other_ships: OTHER_DESTROYED_SHIPS,
         other_isk: OTHER_DESTROYED_ISK,
         engagement_mix: ENGAGEMENT_MIX,
-        small_gang_kills: SMALL_GANG?.value ?? 869,
-        closing: 'A flip is a week. A front is a year.',
+        small_gang_kills: SMALL_GANG?.value ?? 103,
+        closing: 'GFs all, until the next one.',
         links: [
-            {
-                href: 'https://br.evetools.org/related/30002542/202607141800',
-                label: '14 Jul, 18:00 EUTZ · 45 kills, 16.71B',
-            },
-            {
-                href: 'https://br.evetools.org/related/30002542/202607171743',
-                label: '17 Jul round · 47 kills, 80 pilots',
-            },
-            {
-                href: 'https://zkillboard.com/kill/137030626/',
-                label: 'Revelation',
-            },
+            { href: AAR_URL, label: 'AAR: 350b down in Kamela' },
+            { href: BATTLE_REPORT_URL, label: '29 Aug, 19:00 — peak-hour battle report' },
+            { href: KAMELA_ZKILL, label: 'Kamela on zKillboard' },
         ],
-        campaign_path: AUGA_CANONICAL_PATH,
+        campaign_path: AAR_URL,
     },
     fleet: {
-        tracked_fleets: 64,
+        tracked_fleets: 60,
         untracked_forms_lower_bound: 15,
-        largest_public_pickup: 171,
-        dek: 'Public windows included a 171-pilot pickup on 16 Jul, the Kourmonen form the morning of the Auga flip, and a Dal battlefield on the 22nd. Character-level boards and Discord ping internals stay off this page.',
+        largest_public_pickup: 179,
+        dek: 'Public windows centered on the Kamela Fortizar timers through mid-to-late August, peaking with the 29 Aug brawl. Character-level boards and Discord ping internals stay off this page.',
     },
     pilots: {
-        scope: 'Killmails appeared on as attacker across the warzone systems in July, from zKillboard. Solo is only one character on the killmail. Small gang, 2-10 pilots. Fleets have 25+ characters involved.',
+        scope: 'Killmails appeared on as attacker across the warzone systems in August, from zKillboard. Solo is only one character on the killmail. Small gang, 2-10 pilots. Fleets have 25+ characters involved.',
         boards: [
             { title: 'Solo', minmatar: MINMATAR_SOLO, amarr: AMARR_SOLO },
             { title: 'Small gang', minmatar: MINMATAR_SMALL_GANG, amarr: AMARR_SMALL_GANG },
@@ -258,7 +239,7 @@ export const YC128_07: WarzoneIssue = {
         ],
     },
     groups: {
-        scope: 'Alliances, or corporations flying without one, ranked by killmails in the warzone. Only groups with more than half of their July kills inside the warzone are listed, so nullsec blocs passing through do not crowd out the people who live here.',
+        scope: 'Alliances, or corporations flying without one, ranked by killmails in the warzone. Only groups with more than half of their August kills inside the warzone are listed, so nullsec blocs passing through do not crowd out the people who live here.',
         rows: GROUPS,
     },
     get_involved: {

@@ -5,6 +5,7 @@ import { COVER_IMAGE as HEK_COVER, ISK_DESTROYED as HEK_ISK } from '@/data/campa
 import { COVER_IMAGE as AUGA_COVER, CAMPAIGN_ISK_DESTROYED as AUGA_ISK, ALLIANCE_PATH as AUGA_PATH, SLUG as AUGA_SLUG } from '@/data/campaigns/auga'
 import { formatIsk } from '@/data/campaigns/hek'
 import { COVER_IMAGE as WARZONE_COVER, PERMALINK_PATH as WARZONE_PATH, YC128_07 } from '@/data/warzone/yc128-07'
+import { PERMALINK_PATH as WARZONE_08_PATH, YC128_08 } from '@/data/warzone/yc128-08'
 
 export type CampaignKind = 'campaign' | 'siege' | 'warzone'
 
@@ -94,6 +95,18 @@ export const campaigns: CampaignMeta[] = [
         sortOrder: 0,
         kind: 'warzone',
         published_at: new Date('2026-07-31T00:00:00Z'),
+    },
+    {
+        slug: 'yc128-08',
+        path: WARZONE_08_PATH,
+        nameKey: 'warzone.yc128_08.name',
+        periodKey: 'warzone.yc128_08.period',
+        excerptKey: 'warzone.yc128_08.leading_text',
+        coverImage: WARZONE_COVER,
+        iskDestroyed: YC128_08.sampled_isk,
+        sortOrder: 0,
+        kind: 'warzone',
+        published_at: new Date('2026-08-31T00:00:00Z'),
     },
 ]
 
