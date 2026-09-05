@@ -21,6 +21,7 @@ from ninja.testing import TestClient
 from fittings.models import EveFitting, EveFittingModuleSubstitution
 from market.endpoints.fitting_buy_orders import router
 from market.helpers.fitting_buy_check import run_fitting_buy_jita_check
+from market.helpers.fitting_buy_fit_copies import build_fit_copies_by_line
 from market.helpers.fitting_buy_eft import effective_eft_for_line
 from market.helpers.fitting_buy_jita import (
     JITA_DEPTH_BAND_MIN_PRICE,
@@ -1141,6 +1142,59 @@ class FittingBuyAllocationTestCase(TestCase):
         body = response.json()
         self.assertIn(f"{self.faction.name} 5", body["multibuy"])
         self.assertIn(f"{self.preferred.name} 15", body["multibuy"])
+
+    def test_fit_copies_compose_independent_allocations(self):
+        kinetic = _type(3146, "Centum A-Type Kinetic Energized Membrane")
+        kinetic_sub = _type(3148, "Centum B-Type Kinetic Energized Membrane")
+        fitting = EveFitting.objects.create(
+            name="[TEST] Multi Alloc",
+            ship_id=self.hull.id,
+            description="test",
+            eft_format=(
+                f"[{self.hull.name}, Multi]\n"
+                f"{self.preferred.name}\n"
+                f"{kinetic.name}\n"
+            ),
+        )
+        order = FittingBuyOrder.objects.create(owner=self.owner)
+        FittingBuyOrderLine.objects.create(
+            order=order,
+            fitting=fitting,
+            quantity=20,
+        )
+        sync_order_items(order)
+        order.shopping_allocations = {
+            str(self.preferred.id): [
+                {"type_id": self.compact.id, "qty": 20},
+            ],
+            str(kinetic.id): [
+                {"type_id": kinetic.id, "qty": 12},
+                {"type_id": kinetic_sub.id, "qty": 8},
+            ],
+        }
+        order.save(update_fields=["shopping_allocations"])
+        line = order.lines.select_related("fitting").get()
+        copies = build_fit_copies_by_line(order, [line])[line.id]
+        self.assertEqual(sum(copy["quantity"] for copy in copies), 20)
+        both = next(
+            copy
+            for copy in copies
+            if kinetic_sub.name in copy["eft"]
+            and self.compact.name in copy["eft"]
+        )
+        dc_only = next(
+            copy
+            for copy in copies
+            if self.compact.name in copy["eft"]
+            and kinetic_sub.name not in copy["eft"]
+        )
+        self.assertEqual(both["quantity"], 8)
+        self.assertEqual(dc_only["quantity"], 12)
+        self.assertIn(kinetic.name, dc_only["eft"])
+        self.assertNotIn(self.preferred.name, both["eft"])
+        self.assertNotIn(self.preferred.name, dc_only["eft"])
+        self.assertEqual(len(both["swaps"]), 2)
+        self.assertEqual(len(dc_only["swaps"]), 1)
 
 
 class FittingBuyAlternateFitFilterTestCase(TestCase):
