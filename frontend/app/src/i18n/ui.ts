@@ -3208,6 +3208,7 @@ export const ui = {
         'metro_dn_description': 'Newsreels from MD News!',
         'the_cope_description': 'Minmatar Fleet Alliance Think speak team take on The Scope, the official CCP in-game news.',
         'videos_description': 'Content creators from the alliance.',
+        'dispatches_description': 'Writeups and r/Eve posts from the alliance.',
         'philosophy': 'Philosophy',
         'our_values': 'Our values',
         'our_story': 'Our story',

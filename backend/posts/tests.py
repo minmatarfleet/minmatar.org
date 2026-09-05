@@ -8,6 +8,7 @@ from eveonline.models import EveCharacter
 from esi.models import Token
 from posts.authors import MINMATAR_FLEET_AUTHOR_NAME
 from posts.models import EvePost, EveTag
+from posts.router import extract_first_image_link
 from tribes.models import Tribe, TribeGroup
 
 BASE_URL = "/api/blog"
@@ -229,4 +230,18 @@ class PostsRouterTestCase(TestCase):
         self.assertEqual(
             [thinkspeak.id],
             list(post.tribe_groups.values_list("id", flat=True)),
+        )
+
+    def test_extract_first_image_from_bare_reddit_preview(self):
+        url = extract_first_image_link(
+            "Hello\nhttps://preview.redd.it/abc.png?width=10\nBye"
+        )
+        self.assertEqual(url, "https://preview.redd.it/abc.png?width=10")
+
+    def test_extract_first_image_from_external_preview(self):
+        url = extract_first_image_link(
+            "https://external-preview.redd.it/abc.jpg?width=10&amp;s=1"
+        )
+        self.assertEqual(
+            url, "https://external-preview.redd.it/abc.jpg?width=10&s=1"
         )
