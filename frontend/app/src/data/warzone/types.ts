@@ -8,7 +8,12 @@ export type WarzoneMilitiaScoreboard = {
     enlisted_pilots_label: string
     active_pilots: number
     active_pilots_label: string
-    kills_last_week: number
+    /** Month-over-month change in active pilots (optional trend indicator). */
+    active_pilots_vs?: number
+    /** Warzone killmails the militia was on this month (full period). */
+    kills: number
+    /** Month-over-month change in kills (optional trend indicator). */
+    kills_vs?: number
     victory_points_last_week: number
     victory_points_last_week_label: string
 }
@@ -53,6 +58,8 @@ export type WarzoneFrontCard = {
     occupancy_label: string
     ships: number
     ships_label: string
+    /** Month-over-month change in ships destroyed on this front (optional). */
+    ships_vs?: number
     hottest_system: string
     dek: string
 }
@@ -75,6 +82,8 @@ export type WarzonePilot = {
     affiliation: string
     affiliation_id: number
     affiliation_kind: 'alliance' | 'corporation'
+    /** Pilot was not active in the warzone the prior month. */
+    is_new?: boolean
 }
 
 export type WarzonePilotBoard = {
@@ -99,6 +108,14 @@ export type WarzoneGroup = {
     kind: 'alliance' | 'corporation'
     name: string
     killmails: number
+    /** Month-over-month percentage change in killmails; null when new (no baseline). */
+    killmails_pct?: number | null
+    /** Rank change vs prior month's board (positive = moved up); null when off it. */
+    rank_delta?: number | null
+    /** Group was not on the prior month's board (new entrant to the leaderboard). */
+    new_to_board?: boolean
+    /** Group did not appear in the warzone the prior month. */
+    is_new?: boolean
     isk_destroyed: number
     ships_lost: number
     militia: WarzoneMilitiaId | null
@@ -135,6 +152,9 @@ export type WarzoneIssue = {
     opening: string
     sampled_ships: number
     sampled_isk: number
+    /** Month-over-month change in sampled ships / ISK destroyed (optional trend). */
+    sampled_ships_vs?: number
+    sampled_isk_vs?: number
     focus_name: string
     occupancy_changes: number
     occupancy_net_amarr: number
@@ -166,7 +186,12 @@ export type WarzoneIssue = {
         small_gang_kills: number
         closing: string
         links: readonly WarzoneFocusLink[]
+        /** Internal path or external URL for the "read the full report" button. */
         campaign_path: string
+        /** Optional override for the focus-section dek (defaults to a siege line). */
+        section_dek?: string
+        /** Optional override for the focus CTA button label. */
+        cta_label?: string
     }
     fleet: {
         tracked_fleets: number

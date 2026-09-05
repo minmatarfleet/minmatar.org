@@ -19,7 +19,7 @@
  *
  * Output: src/data/warzone/<slug>-boards.ts   (do not hand-edit; re-run instead)
  */
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
 import Database from 'better-sqlite3'
@@ -46,6 +46,7 @@ const FACTION_NAMES = { 500002: 'Minmatar Republic', 500003: 'Amarr Empire', 500
 const CAPSULES = new Set([670, 33328])
 const ROOT = path.resolve(import.meta.dirname, '..')
 const CACHE = path.join(ROOT, '.cache', 'warzone', 'systems')
+const DOTLAN_CACHE = path.join(ROOT, '.cache', 'warzone', 'dotlan')
 const OUT_FILE = path.join(ROOT, 'src', 'data', 'warzone', `${SLUG}-boards.ts`)
 const prev = MONTH === 1 ? { year: YEAR - 1, month: 12 } : { year: YEAR, month: MONTH - 1 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -59,6 +60,17 @@ async function fetch_json(url, init = {}, attempt = 1) {
     }
     if (!res.ok) throw new Error(`${url} -> ${res.status}`)
     return res.json()
+}
+
+async function fetch_text(url, attempt = 1) {
+    const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT } })
+    if (res.status === 429 || res.status >= 500) {
+        if (attempt > 6) throw new Error(`${url} failed (${res.status})`)
+        await sleep(Math.min(60_000, 2_000 * 2 ** attempt))
+        return fetch_text(url, attempt + 1)
+    }
+    if (!res.ok) throw new Error(`${url} -> ${res.status}`)
+    return res.text()
 }
 
 async function system_month_kills(sid, year, month) {
@@ -121,6 +133,56 @@ for (const [fid, key] of [[500002, 'minmatar'], [500003, 'amarr']]) {
     }
 }
 
+// Month-end systems held, scored from Dotlan occupancy history. /fw/stats is a
+// LIVE count that drifts after the month closes (and is identical for every issue
+// generated on the same day), so it is wrong for a monthly retrospective. Dotlan's
+// per-system history gives the true holder as of month-end. In each occupancy row
+// the new owner is the LAST faction, the previous owner the first.
+await mkdir(DOTLAN_CACHE, { recursive: true })
+const month_end = `${YEAR}-${String(MONTH).padStart(2, '0')}-${String(new Date(YEAR, MONTH, 0).getDate()).padStart(2, '0')}`
+const FACTION_RE = /(Amarr Empire|Minmatar Republic|Angel Cartel|Guristas Pirates)/g
+const dotlan_holder_asof = (html, cutoff) => {
+    for (const m of html.matchAll(/<tr[^>]*>[\s\S]*?<\/tr>/g)) {
+        const dm = m[0].match(/(20\d\d-\d\d-\d\d)/)
+        if (!dm || dm[1] > cutoff) continue
+        const facs = m[0].match(FACTION_RE)
+        if (facs && facs.length >= 2) return facs[facs.length - 1]
+    }
+    return null
+}
+const month_end_systems = { minmatar: 0, amarr: 0 }
+let month_end_resolved = 0
+for (const sid of system_ids) {
+    const name = sys_meta(sid).name.replaceAll(' ', '_')
+    const file = path.join(DOTLAN_CACHE, `${name}.html`)
+    let html
+    try {
+        html = await readFile(file, 'utf8')
+    } catch {
+        html = await fetch_text(`https://evemaps.dotlan.net/system/${encodeURIComponent(name)}`)
+        await writeFile(file, html)
+        await sleep(1_100)
+    }
+    const owner = dotlan_holder_asof(html, month_end)
+    if (owner) month_end_resolved += 1
+    if (owner === 'Minmatar Republic') month_end_systems.minmatar++
+    else if (owner === 'Amarr Empire') month_end_systems.amarr++
+    // pirate-held systems (Angel/Guristas) resolve but count toward neither militia
+}
+console.error(`Month-end (${month_end}) systems held — Minmatar ${month_end_systems.minmatar}, Amarr ${month_end_systems.amarr} (${month_end_resolved}/${system_ids.length} resolved from Dotlan)`)
+// Guard against a Dotlan markup/caching change that would leave systems unparsed:
+// only trust the scraped month-end holders when (almost) every system resolved,
+// otherwise keep the live /fw/stats count rather than write a skewed scoreboard.
+if (month_end_resolved >= system_ids.length - 1) {
+    scoreboard.minmatar.systems = month_end_systems.minmatar
+    scoreboard.amarr.systems = month_end_systems.amarr
+} else {
+    console.error(
+        `WARNING: only ${month_end_resolved}/${system_ids.length} systems resolved from Dotlan; ` +
+        `keeping live /fw/stats systems-held counts instead of the month-end scrape.`,
+    )
+}
+
 // Gather kills per system for both months.
 const per_system = new Map() // sid -> {ships, isk}
 const per_system_prev = new Map()
@@ -141,15 +203,42 @@ const group_key = (e) =>
 
 let total_ships = 0
 let total_isk = 0
+let total_ships_prev = 0
+let total_isk_prev = 0
 let done = 0
 const militia_kills = { minmatar: 0, amarr: 0 }
+const militia_kills_prev = { minmatar: 0, amarr: 0 }
 const active_pilots = { minmatar: new Set(), amarr: new Set() }
+const active_pilots_prev = { minmatar: new Set(), amarr: new Set() }
+const groups_prev = new Map() // key -> prior-month warzone killmails (for trend + "new" badge)
 const ships_by_bucket = { solo: new Map(), small_gang: new Map(), fleet: new Map() }
 for (const sid of system_ids) {
     const cur = clean(await system_month_kills(sid, YEAR, MONTH), YEAR, MONTH)
     const pv = clean(await system_month_kills(sid, prev.year, prev.month), prev.year, prev.month)
     per_system.set(sid, { ships: cur.length, isk: cur.reduce((a, k) => a + (k.zkb?.totalValue ?? 0), 0) })
-    per_system_prev.set(sid, { ships: pv.length })
+    per_system_prev.set(sid, { ships: pv.length, isk: pv.reduce((a, k) => a + (k.zkb?.totalValue ?? 0), 0) })
+    // Prior-month aggregates for month-over-month trend indicators.
+    for (const k of pv) {
+        total_ships_prev += 1
+        total_isk_prev += k.zkb?.totalValue ?? 0
+        const seen_prev = new Set()
+        const militias_on_prev = new Set()
+        for (const a of k.attackers) {
+            if (!a.character_id) continue
+            const m = MILITIAS[a.faction_id]
+            if (m) {
+                active_pilots_prev[m].add(a.character_id)
+                militias_on_prev.add(m)
+            }
+            const key = group_key(a)
+            if (key && !seen_prev.has(key)) {
+                seen_prev.add(key)
+                groups_prev.set(key, (groups_prev.get(key) ?? 0) + 1)
+            }
+        }
+        if (militias_on_prev.has('minmatar')) militia_kills_prev.minmatar += 1
+        if (militias_on_prev.has('amarr')) militia_kills_prev.amarr += 1
+    }
     for (const k of cur) {
         total_ships += 1
         total_isk += k.zkb?.totalValue ?? 0
@@ -273,7 +362,7 @@ const traffic = system_ids
 const FRONT_REGIONS = { minmatar: ['Heimatar', 'Metropolis'], amarr: ['Devoid', 'The Bleak Lands'] }
 const region_front = (region) =>
     FRONT_REGIONS.minmatar.includes(region) ? 'minmatar' : FRONT_REGIONS.amarr.includes(region) ? 'amarr' : null
-const fronts = { minmatar: { ships: 0, isk: 0, hottest: null }, amarr: { ships: 0, isk: 0, hottest: null } }
+const fronts = { minmatar: { ships: 0, ships_prev: 0, isk: 0, hottest: null }, amarr: { ships: 0, ships_prev: 0, isk: 0, hottest: null } }
 const system_stats = []
 for (const sid of system_ids) {
     const cur = per_system.get(sid) ?? { ships: 0, isk: 0 }
@@ -283,6 +372,7 @@ for (const sid of system_ids) {
     system_stats.push({ sid, name: meta.name, region: meta.region, front, ships: cur.ships, isk: Math.round(cur.isk), vs: cur.ships - pv.ships, holds: holder.get(sid) })
     if (front) {
         fronts[front].ships += cur.ships
+        fronts[front].ships_prev += pv.ships
         fronts[front].isk += cur.isk
         if (!fronts[front].hottest || cur.ships > fronts[front].hottest.ships) fronts[front].hottest = { name: meta.name, ships: cur.ships }
     }
@@ -304,13 +394,41 @@ const ti = (v) => Math.round(v).toLocaleString('en-US').replaceAll(',', '_')
 const isk_label = (v) => (v >= 1e12 ? `${(v / 1e12).toFixed(2)}T` : v >= 100e9 ? `${Math.round(v / 1e9)}B` : v >= 1e9 ? `${(v / 1e9).toFixed(1)}B` : `${Math.round(v / 1e6)}M`)
 const front_of = (region, constellation) =>
     region === 'Heimatar' ? 'Heimatar' : region === 'Metropolis' ? 'Metropolis' : region === 'The Bleak Lands' ? 'Bleak Lands' : region === 'Devoid' ? 'Devoid' : constellation
-const pilots_ts = (rows) => rows.map(([id, km]) => {
+const pilots_ts = (rows, prev_set) => rows.map(([id, km]) => {
     const aff = top_affiliation(id)
     const aff_name = aff ? (names.get(aff.id) ?? String(aff.id)) : ''
-    return `    { characterId: ${ti(id)}, name: ${JSON.stringify(names.get(id) ?? String(id))}, killmails: ${km}, affiliation: ${JSON.stringify(aff_name)}, affiliation_id: ${aff ? ti(aff.id) : 0}, affiliation_kind: ${JSON.stringify(aff ? aff.kind : 'corporation')} },`
+    return `    { characterId: ${ti(id)}, name: ${JSON.stringify(names.get(id) ?? String(id))}, killmails: ${km}, affiliation: ${JSON.stringify(aff_name)}, affiliation_id: ${aff ? ti(aff.id) : 0}, affiliation_kind: ${JSON.stringify(aff ? aff.kind : 'corporation')}, is_new: ${!prev_set.has(id)} },`
 }).join('\n')
 const militia_of = (g) => (g.minmatar === 0 && g.amarr === 0 ? 'null' : g.minmatar >= g.amarr ? "'minmatar'" : "'amarr'")
-const groups_ts = (rows) => rows.map((g) => `    { id: ${ti(g.id)}, kind: '${g.kind}', name: ${JSON.stringify(names.get(g.id) ?? String(g.id))}, killmails: ${ti(g.killmails)}, isk_destroyed: ${ti(g.isk)}, ships_lost: ${ti(g.losses)}, militia: ${g.militia_label ? `'${g.militia_label}'` : 'null'}, faction: ${JSON.stringify(g.faction)}, faction_id: ${g.faction_id ?? 'null'}, fw_share: ${g.share.toFixed(2)} },`).join('\n')
+// Previous month's PUBLISHED board order, for true rank movement. Read the prior
+// boards file (regenerated alongside this one) and take its GROUPS order. Rank
+// movement is measured against that actual board; a group absent from it is "new
+// to the board". If there is no prior board at all, no movement is shown.
+async function prev_board_ranks() {
+    const dir = path.join(ROOT, 'src', 'data', 'warzone')
+    const tag = `systems in ${prev.year}-${String(prev.month).padStart(2, '0')}`
+    const here = path.basename(OUT_FILE)
+    for (const f of await readdir(dir)) {
+        if (!f.endsWith('-boards.ts') || f === here) continue
+        const txt = await readFile(path.join(dir, f), 'utf8')
+        if (!txt.includes(tag)) continue
+        const block = txt.match(/export const GROUPS[\s\S]*?\n\]/)?.[0] ?? ''
+        const ids = [...block.matchAll(/\{ id: ([0-9_]+),/g)].map((m) => Number(m[1].replaceAll('_', '')))
+        return new Map(ids.map((id, i) => [id, i + 1]))
+    }
+    return new Map()
+}
+const prev_board = await prev_board_ranks()
+const has_prev_board = prev_board.size > 0
+const groups_ts = (rows) => rows.map((g, i) => {
+    const key = `${g.kind}:${g.id}`
+    const prev_km = groups_prev.get(key) ?? 0
+    const pct = prev_km > 0 ? Math.round(((g.killmails - prev_km) / prev_km) * 100) : null
+    const prev_rank = prev_board.get(g.id)
+    const rank_delta = prev_rank != null ? prev_rank - (i + 1) : null
+    const new_to_board = has_prev_board && prev_rank == null
+    return `    { id: ${ti(g.id)}, kind: '${g.kind}', name: ${JSON.stringify(names.get(g.id) ?? String(g.id))}, killmails: ${ti(g.killmails)}, killmails_pct: ${pct}, rank_delta: ${rank_delta}, new_to_board: ${new_to_board}, is_new: ${prev_km === 0}, isk_destroyed: ${ti(g.isk)}, ships_lost: ${ti(g.losses)}, militia: ${g.militia_label ? `'${g.militia_label}'` : 'null'}, faction: ${JSON.stringify(g.faction)}, faction_id: ${g.faction_id ?? 'null'}, fw_share: ${g.share.toFixed(2)} },`
+}).join('\n')
 const traffic_ts = (rows) => rows.map((r) => `    { system: ${JSON.stringify(r.name)}, system_id: ${ti(r.sid)}, front: ${JSON.stringify(front_of(r.region, r.constellation))}, ships: ${ti(r.ships)}, vs_last_month: ${r.vs}, isk: ${ti(r.isk)}, isk_label: ${JSON.stringify(isk_label(r.isk))}, holds_today: ${JSON.stringify(r.holds)}, href: ${JSON.stringify(`https://zkillboard.com/system/${r.sid}/`)} },`).join('\n')
 
 const today = new Date().toISOString().slice(0, 10)
@@ -326,15 +444,17 @@ import type { WarzoneGroup, WarzonePilot, WarzoneShip, WarzoneTrafficRow } from 
 
 export const BOARDS_GENERATED_ON = '${today}'
 export const BOARDS_SAMPLED_KILLS = ${ti(total_ships)}
+export const BOARDS_SAMPLED_KILLS_VS = ${total_ships - total_ships_prev}
 export const BOARDS_TOTAL_ISK = ${ti(total_isk)}
+export const BOARDS_TOTAL_ISK_VS = ${ti(total_isk - total_isk_prev)}
 
 export const SCOREBOARD_STATS = {
-    minmatar: { systems: ${scoreboard.minmatar.systems}, pilots: ${scoreboard.minmatar.pilots}, active_pilots: ${active_pilots.minmatar.size}, kills: ${militia_kills.minmatar}, kills_last_week: ${scoreboard.minmatar.kills_last_week}, victory_points_last_week: ${scoreboard.minmatar.vp_last_week} },
-    amarr: { systems: ${scoreboard.amarr.systems}, pilots: ${scoreboard.amarr.pilots}, active_pilots: ${active_pilots.amarr.size}, kills: ${militia_kills.amarr}, kills_last_week: ${scoreboard.amarr.kills_last_week}, victory_points_last_week: ${scoreboard.amarr.vp_last_week} },
+    minmatar: { systems: ${scoreboard.minmatar.systems}, pilots: ${scoreboard.minmatar.pilots}, active_pilots: ${active_pilots.minmatar.size}, active_pilots_vs: ${active_pilots.minmatar.size - active_pilots_prev.minmatar.size}, kills: ${militia_kills.minmatar}, kills_vs: ${militia_kills.minmatar - militia_kills_prev.minmatar}, kills_last_week: ${scoreboard.minmatar.kills_last_week}, victory_points_last_week: ${scoreboard.minmatar.vp_last_week} },
+    amarr: { systems: ${scoreboard.amarr.systems}, pilots: ${scoreboard.amarr.pilots}, active_pilots: ${active_pilots.amarr.size}, active_pilots_vs: ${active_pilots.amarr.size - active_pilots_prev.amarr.size}, kills: ${militia_kills.amarr}, kills_vs: ${militia_kills.amarr - militia_kills_prev.amarr}, kills_last_week: ${scoreboard.amarr.kills_last_week}, victory_points_last_week: ${scoreboard.amarr.vp_last_week} },
 } as const
 `
 for (const m of ['minmatar', 'amarr']) for (const b of ['solo', 'small_gang', 'fleet'])
-    out += `\nexport const ${m.toUpperCase()}_${BL[b]}: readonly WarzonePilot[] = [\n${pilots_ts(boards[m][b])}\n]\n`
+    out += `\nexport const ${m.toUpperCase()}_${BL[b]}: readonly WarzonePilot[] = [\n${pilots_ts(boards[m][b], active_pilots_prev[m])}\n]\n`
 const ships_ts = (rows) => rows.map(([id, count]) => `    { typeId: ${ti(id)}, name: ${JSON.stringify(names.get(id) ?? String(id))}, count: ${count} },`).join('\n')
 for (const b of ['solo', 'small_gang', 'fleet'])
     out += `\nexport const SHIPS_${BL[b]}: readonly WarzoneShip[] = [\n${ships_ts(ship_boards[b])}\n]\n`
@@ -342,8 +462,8 @@ out += `\nexport const GROUPS: readonly WarzoneGroup[] = [\n${groups_ts(qualifie
 out += `\nexport const TRAFFIC: readonly WarzoneTrafficRow[] = [\n${traffic_ts(traffic)}\n]\n`
 const front_ships_label = (v) => (v >= 1000 ? `~${Math.round(v / 1000)}k` : String(v))
 out += `\nexport const FRONTS = {
-    minmatar: { ships: ${ti(fronts.minmatar.ships)}, ships_label: ${JSON.stringify(front_ships_label(fronts.minmatar.ships))}, hottest_system: ${JSON.stringify(fronts.minmatar.hottest?.name ?? '')} },
-    amarr: { ships: ${ti(fronts.amarr.ships)}, ships_label: ${JSON.stringify(front_ships_label(fronts.amarr.ships))}, hottest_system: ${JSON.stringify(fronts.amarr.hottest?.name ?? '')} },
+    minmatar: { ships: ${ti(fronts.minmatar.ships)}, ships_vs: ${fronts.minmatar.ships - fronts.minmatar.ships_prev}, ships_label: ${JSON.stringify(front_ships_label(fronts.minmatar.ships))}, hottest_system: ${JSON.stringify(fronts.minmatar.hottest?.name ?? '')} },
+    amarr: { ships: ${ti(fronts.amarr.ships)}, ships_vs: ${fronts.amarr.ships - fronts.amarr.ships_prev}, ships_label: ${JSON.stringify(front_ships_label(fronts.amarr.ships))}, hottest_system: ${JSON.stringify(fronts.amarr.hottest?.name ?? '')} },
 } as const
 `
 const stats_rows = system_stats
