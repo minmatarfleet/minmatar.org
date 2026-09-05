@@ -97,6 +97,22 @@ export interface FittingBuyIndustrySource {
     public_short_code: string
 }
 
+export interface FittingBuyContractFees {
+    broker_fee: string
+    sales_tax: string
+    total: string
+    net: string
+}
+
+export interface FittingBuyContractFeeRates {
+    contract_type: string
+    broker_rate: string
+    broker_min: string
+    sales_tax_rate: string
+}
+
+export type FittingBuyContractType = 'alliance' | 'public'
+
 export interface FittingBuyContractPrice {
     line_id: number
     fitting_id: number
@@ -113,12 +129,20 @@ export interface FittingBuyContractPrice {
     hull_cost_industry_order_id: number | null
     hull_cost_industry_short_code: string
     fitting_cost: string | null
+    fitting_uses_stock: boolean
     landed_per_ship: string | null
     landed_complete: boolean
     missing_type_names: string[]
     landed_plus_20: string | null
+    landed_line_total: string | null
     jita_sell_per_ship: string | null
     jita_plus_20: string | null
+    jita_marked_up: string | null
+    contract_price: string | null
+    contract_line_total: string | null
+    fees: FittingBuyContractFees | null
+    other_fees: FittingBuyContractFees | null
+    profit: string | null
     industry_sources: FittingBuyIndustrySource[]
 }
 
@@ -168,6 +192,10 @@ export interface FittingBuyOrderDetail {
     substitutions: FittingBuySubstitution[]
     active_jita_check: FittingBuyJitaCheck | null
     contract_prices: FittingBuyContractPrice[]
+    contract_markup_pct: string
+    contract_markup_presets: number[]
+    contract_type: FittingBuyContractType | string
+    contract_fee_rates: FittingBuyContractFeeRates | null
     multibuy_blocked: boolean
     multibuy_block_reason: string
     shopping_landed_complete: boolean
@@ -246,6 +274,8 @@ export async function patch_fitting_buy_order(
         status?: string
         stock_paste?: string
         include_hull?: boolean
+        contract_markup_pct?: string
+        contract_type?: string
     },
 ) {
     const endpoint = `${API_ENDPOINT}/fitting-buy-orders/${order_id}`

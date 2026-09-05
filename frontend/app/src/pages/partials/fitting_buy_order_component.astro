@@ -131,6 +131,22 @@ async function handle_post_action(action: string, form: FormData): Promise<Respo
             }
             break
         }
+        case 'contract_settings': {
+            const selected = String(form.get('contract_markup_pct') ?? '').trim()
+            const markup = selected === 'custom'
+                ? String(form.get('contract_markup_custom') ?? '').trim()
+                : selected
+            const contract_type = String(form.get('contract_type') ?? '').trim()
+            const payload: { contract_markup_pct?: string; contract_type?: string } = {}
+            if (markup)
+                payload.contract_markup_pct = markup
+            if (contract_type)
+                payload.contract_type = contract_type
+            order = Object.keys(payload).length
+                ? await patch_fitting_buy_order(token, order_id, payload)
+                : await get_fitting_buy_order(token, order_id)
+            break
+        }
         case 'landed_prices': {
             const result = await paste_fitting_buy_landed_prices(
                 token,
@@ -367,6 +383,10 @@ const guide_steps = [
                     can_complete={can_complete_order}
                     is_complete={is_fitting_buy_complete(order.status)}
                     partial_base={PARTIAL_BASE}
+                    markup_pct={order.contract_markup_pct ?? '20'}
+                    markup_presets={order.contract_markup_presets ?? [10, 20]}
+                    contract_type={order.contract_type ?? 'alliance'}
+                    fee_rates={order.contract_fee_rates ?? null}
                 />
             )}
         </Flexblock>
@@ -381,6 +401,7 @@ const guide_steps = [
     is_owner={is_owner}
     show={!!order}
     partial_base={PARTIAL_BASE}
+    can_complete={can_complete_order}
 />
 </>
 

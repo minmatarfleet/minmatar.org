@@ -17,9 +17,21 @@ from market.helpers.fitting_buy_plan import (
 )
 from market.helpers.pricing import get_prices_by_type_id
 from market.models.fitting_buy_order import (
+    FittingBuyContractType,
     FittingBuyOrder,
     FittingBuyOrderLine,
 )
+
+# Contract fees as shown in the in-game contract creation window (item
+# exchange, Amamake, Sept 2026). Public availability: 1.53% broker fee and
+# 0.5% sales tax, each with a 10,000 ISK floor. Private (alliance)
+# availability: flat 10,000 ISK broker fee and no sales tax.
+PUBLIC_CONTRACT_SALES_TAX_RATE = Decimal("0.005")
+PUBLIC_CONTRACT_BROKER_RATE = Decimal("0.0153")
+CONTRACT_FEE_MIN = Decimal("10000")
+ALLIANCE_CONTRACT_BROKER_FEE = Decimal("10000")
+CONTRACT_MARKUP_PRESETS = (10, 20)
+CONTRACT_MARKUP_MAX = Decimal("500")
 
 
 def _isk_str(value: Decimal | int | None) -> str | None:
@@ -41,6 +53,80 @@ def _cost_value(amount: Decimal, *, complete: bool) -> Decimal | None:
     if complete or amount > 0:
         return amount
     return None
+
+
+def markup_pct_str(markup_pct: Decimal | int | None) -> str:
+    """'20' for whole percentages, '12.5' otherwise."""
+    pct = Decimal(markup_pct if markup_pct is not None else 0)
+    if pct == pct.to_integral_value():
+        return str(int(pct))
+    return str(pct.normalize())
+
+
+def markup_factor(markup_pct: Decimal | int | None) -> Decimal:
+    pct = Decimal(markup_pct if markup_pct is not None else 0)
+    return Decimal("1") + (pct / Decimal("100"))
+
+
+def contract_fees(price: Decimal | None, contract_type: str) -> dict | None:
+    """Broker fee + sales tax the seller pays on one contract at ``price``."""
+    if price is None or price <= 0:
+        return None
+    if contract_type == FittingBuyContractType.PUBLIC:
+        broker = max(price * PUBLIC_CONTRACT_BROKER_RATE, CONTRACT_FEE_MIN)
+        sales_tax = max(
+            price * PUBLIC_CONTRACT_SALES_TAX_RATE, CONTRACT_FEE_MIN
+        )
+    else:
+        broker = ALLIANCE_CONTRACT_BROKER_FEE
+        sales_tax = Decimal("0")
+    return {
+        "broker_fee": _isk_str(broker),
+        "sales_tax": _isk_str(sales_tax),
+        "total": _isk_str(broker + sales_tax),
+        "net": _isk_str(price - broker - sales_tax),
+    }
+
+
+def contract_fee_rates(contract_type: str) -> dict:
+    public = contract_type == FittingBuyContractType.PUBLIC
+    return {
+        "contract_type": contract_type,
+        "broker_rate": str(PUBLIC_CONTRACT_BROKER_RATE) if public else "0",
+        "broker_min": _isk_str(
+            CONTRACT_FEE_MIN if public else ALLIANCE_CONTRACT_BROKER_FEE
+        ),
+        "sales_tax_rate": (
+            str(PUBLIC_CONTRACT_SALES_TAX_RATE) if public else "0"
+        ),
+    }
+
+
+def _pricing_block(
+    landed: Decimal | None,
+    *,
+    factor: Decimal,
+    contract_type: str,
+) -> dict:
+    """Recommended contract price for one hull plus fees and profit."""
+    price = landed * factor if landed is not None else None
+    fees = contract_fees(price, contract_type)
+    other_type = (
+        FittingBuyContractType.ALLIANCE
+        if contract_type == FittingBuyContractType.PUBLIC
+        else FittingBuyContractType.PUBLIC
+    )
+    other_fees = contract_fees(price, other_type)
+    profit = None
+    if price is not None and fees is not None:
+        profit = price - Decimal(fees["total"]) - landed
+    return {
+        "price": price,
+        "contract_price": _isk_str(price),
+        "fees": fees,
+        "other_fees": other_fees,
+        "profit": _isk_str(profit),
+    }
 
 
 @dataclass(frozen=True)
@@ -188,6 +274,9 @@ def build_contract_prices(order: FittingBuyOrder) -> list[dict]:  # noqa: C901
     if not order_lines:
         return []
 
+    factor = markup_factor(order.contract_markup_pct)
+    contract_type = str(order.contract_type or FittingBuyContractType.ALLIANCE)
+
     fit_copies = build_fit_copies_by_line(order, order_lines)
     original_boms = {
         bom.line_id: bom
@@ -263,6 +352,7 @@ def build_contract_prices(order: FittingBuyOrder) -> list[dict]:  # noqa: C901
         hull_industry_order_id: int | None = None
         hull_industry_short_code = ""
         hull_from_jita = False
+        fitting_uses_stock = False
 
         for type_id, qty in sorted(per_ship.items()):
             # qty is items on one hull — never multiply by line/copy quantity.
@@ -291,6 +381,8 @@ def build_contract_prices(order: FittingBuyOrder) -> list[dict]:  # noqa: C901
                     fitting_complete = False
                 continue
             line_cost = unit * Decimal(qty)
+            if not is_hull and from_jita:
+                fitting_uses_stock = True
             if is_hull:
                 hull_cost += line_cost
                 hull_complete = True
@@ -334,6 +426,10 @@ def build_contract_prices(order: FittingBuyOrder) -> list[dict]:  # noqa: C901
         fitting_value = _cost_value(fitting_cost, complete=fitting_complete)
         landed_value = _cost_value(landed, complete=landed_complete)
         jita_value: Decimal | None = jita_total if jita_complete else None
+        pricing = _pricing_block(
+            landed_value, factor=factor, contract_type=contract_type
+        )
+        copy_qty = int(copy.get("quantity") or 0)
 
         rows.append(
             {
@@ -355,12 +451,28 @@ def build_contract_prices(order: FittingBuyOrder) -> list[dict]:  # noqa: C901
                 "hull_cost_industry_order_id": hull_industry_order_id,
                 "hull_cost_industry_short_code": hull_industry_short_code,
                 "fitting_cost": _isk_str(fitting_value),
+                "fitting_uses_stock": fitting_uses_stock,
                 "landed_per_ship": _isk_str(landed_value),
                 "landed_complete": landed_complete,
                 "missing_type_names": missing,
                 "landed_plus_20": _markup(landed_value, Decimal("1.20")),
+                "landed_line_total": (
+                    _isk_str(landed_value * copy_qty)
+                    if landed_value is not None
+                    else None
+                ),
                 "jita_sell_per_ship": _isk_str(jita_value),
                 "jita_plus_20": _markup(jita_value, Decimal("1.20")),
+                "jita_marked_up": _markup(jita_value, factor),
+                "contract_price": pricing["contract_price"],
+                "contract_line_total": (
+                    _isk_str(pricing["price"] * copy_qty)
+                    if pricing["price"] is not None
+                    else None
+                ),
+                "fees": pricing["fees"],
+                "other_fees": pricing["other_fees"],
+                "profit": pricing["profit"],
                 "industry_sources": industry_sources,
             }
         )

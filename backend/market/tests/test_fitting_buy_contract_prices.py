@@ -21,6 +21,7 @@ from market.helpers.fitting_buy_contract_prices import build_contract_prices
 from market.helpers.fitting_buy_plan import sync_order_items
 from market.helpers.fitting_buy_prices import apply_landed_prices
 from market.models.fitting_buy_order import (
+    FittingBuyContractType,
     FittingBuyOrder,
     FittingBuyOrderLine,
     FittingBuyOrderStatus,
@@ -134,6 +135,20 @@ class FittingBuyContractPricesTestCase(TestCase):
         self.assertEqual(row["landed_plus_20"], "213600000")
         self.assertEqual(row["jita_sell_per_ship"], "23000000")
         self.assertEqual(row["jita_plus_20"], "27600000")
+        # Default markup 20% on an alliance contract: flat 10k broker fee,
+        # no sales tax.
+        self.assertEqual(row["contract_price"], "213600000")
+        self.assertEqual(row["contract_line_total"], "640800000")
+        self.assertEqual(row["landed_line_total"], "534000000")
+        self.assertEqual(row["jita_marked_up"], "27600000")
+        self.assertEqual(row["fees"]["broker_fee"], "10000")
+        self.assertEqual(row["fees"]["sales_tax"], "0")
+        self.assertEqual(row["fees"]["total"], "10000")
+        self.assertEqual(row["fees"]["net"], "213590000")
+        self.assertEqual(row["profit"], "35590000")
+        # Public would pay a 1.53% broker fee and 0.5% sales tax instead.
+        self.assertEqual(row["other_fees"]["broker_fee"], "3268080")
+        self.assertEqual(row["other_fees"]["sales_tax"], "1068000")
         self.assertEqual(len(row["industry_sources"]), 1)
         self.assertEqual(row["industry_sources"][0]["order_id"], industry.id)
         self.assertEqual(row["industry_sources"][0]["type_id"], self.hull.id)
@@ -377,6 +392,110 @@ class FittingBuyContractPricesTestCase(TestCase):
         self.assertEqual(row["fitting_cost"], "3500000")
         self.assertEqual(row["landed_per_ship"], "53500000")
 
+    @patch("market.helpers.fitting_buy_contract_prices.get_prices_by_type_id")
+    def test_markup_and_public_contract_fees(self, mock_jita):
+        mock_jita.return_value = {
+            self.hull.id: 20_000_000,
+            self.mod_a.id: 1_000_000,
+            self.mod_b.id: 2_000_000,
+        }
+        apply_landed_prices(
+            self.order,
+            f"{self.mod_a.name}\t1000000\n{self.mod_b.name}\t2000000",
+        )
+        self._industry_ask(self.hull, "175000000")
+        self.order.contract_markup_pct = Decimal("10")
+        self.order.contract_type = FittingBuyContractType.PUBLIC
+        self.order.save(update_fields=["contract_markup_pct", "contract_type"])
+
+        row = build_contract_prices(self.order)[0]
+        # 178M landed +10%
+        self.assertEqual(row["contract_price"], "195800000")
+        self.assertEqual(row["jita_marked_up"], "25300000")
+        self.assertEqual(row["fees"]["broker_fee"], "2995740")
+        self.assertEqual(row["fees"]["sales_tax"], "979000")
+        self.assertEqual(row["fees"]["net"], "191825260")
+        self.assertEqual(row["profit"], "13825260")
+        self.assertEqual(row["other_fees"]["broker_fee"], "10000")
+
+    @patch("market.helpers.fitting_buy_contract_prices.get_prices_by_type_id")
+    def test_multibuy_total_paste_is_divided_per_unit(self, mock_jita):
+        """A paste of line totals must not inflate per-hull costs by qty."""
+        mock_jita.return_value = {
+            self.hull.id: 20_000_000,
+            self.mod_a.id: 1_000_000,
+            self.mod_b.id: 2_000_000,
+        }
+        self._industry_ask(self.hull, "175000000")
+        # Order buys 3 of each module; record the Jita reference like the
+        # depth check does, then paste "name<TAB>qty<TAB>total".
+        self.order.items.filter(eve_type=self.mod_a).update(
+            jita_sell_min=Decimal("1000000")
+        )
+        self.order.items.filter(eve_type=self.mod_b).update(
+            jita_sell_min=Decimal("2000000")
+        )
+        apply_landed_prices(
+            self.order,
+            f"{self.mod_a.name}\t3\t3,060,000.00\n{self.mod_b.name}\t3\t6,150,000.00",
+        )
+        row = build_contract_prices(self.order)[0]
+        self.assertEqual(row["fitting_cost"], "3070000")
+        self.assertEqual(row["landed_per_ship"], "178070000")
+
+    @patch("market.helpers.fitting_buy_contract_prices.get_prices_by_type_id")
+    def test_total_paste_without_qty_column_uses_jita_reference(
+        self, mock_jita
+    ):
+        mock_jita.return_value = {
+            self.hull.id: 20_000_000,
+            self.mod_a.id: 1_000_000,
+            self.mod_b.id: 2_000_000,
+        }
+        self._industry_ask(self.hull, "175000000")
+        self.order.items.filter(eve_type=self.mod_a).update(
+            jita_sell_min=Decimal("1000000")
+        )
+        self.order.items.filter(eve_type=self.mod_b).update(
+            jita_sell_min=Decimal("2000000")
+        )
+        # Totals for qty 3 pasted as if they were unit prices.
+        apply_landed_prices(
+            self.order,
+            f"{self.mod_a.name}\t3060000\n{self.mod_b.name}\t6150000",
+        )
+        row = build_contract_prices(self.order)[0]
+        self.assertEqual(row["fitting_cost"], "3070000")
+
+    def test_unit_price_paste_with_qty_column_stays_per_unit(self):
+        self.order.items.filter(eve_type=self.mod_a).update(
+            jita_sell_min=Decimal("1000000")
+        )
+        self.order.items.filter(eve_type=self.mod_b).update(
+            jita_sell_min=Decimal("2000000")
+        )
+        # qty, unit, total columns → the unit column wins.
+        apply_landed_prices(
+            self.order,
+            (
+                f"{self.mod_a.name}\t3\t1,020,000.00\t3,060,000.00\n"
+                f"{self.mod_b.name}\t3\t2,050,000.00\t6,150,000.00"
+            ),
+        )
+        prices = {
+            row.eve_type_id: row.unit_price for row in self.order.items.all()
+        }
+        self.assertEqual(prices[self.mod_a.id], Decimal("1020000.00"))
+        self.assertEqual(prices[self.mod_b.id], Decimal("2050000.00"))
+
+    def test_unit_price_paste_near_jita_is_left_alone(self):
+        self.order.items.filter(eve_type=self.mod_a).update(
+            jita_sell_min=Decimal("1000000")
+        )
+        apply_landed_prices(self.order, f"{self.mod_a.name}\t1,050,000.00")
+        item = self.order.items.get(eve_type=self.mod_a)
+        self.assertEqual(item.unit_price, Decimal("1050000.00"))
+
 
 class FittingBuyContractPricesApiTestCase(TestCase):
     def setUp(self):
@@ -452,6 +571,37 @@ class FittingBuyContractPricesApiTestCase(TestCase):
         self.assertEqual(len(body["contract_prices"]), 1)
         self.assertTrue(body["contract_prices"][0]["landed_complete"])
         self.assertEqual(body["contract_prices"][0]["fitting_cost"], "5")
+
+    def test_patch_contract_settings_and_validation(self):
+        order = FittingBuyOrder.objects.create(
+            owner=self.owner,
+            status=FittingBuyOrderStatus.PENDING_FITTING,
+        )
+        response = self.client.patch(
+            f"/fitting-buy-orders/{order.id}",
+            json={"contract_markup_pct": "12.5", "contract_type": "public"},
+            headers=_auth_headers(self.owner),
+        )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["contract_markup_pct"], "12.5")
+        self.assertEqual(body["contract_type"], "public")
+        self.assertEqual(body["contract_markup_presets"], [10, 20])
+        self.assertEqual(body["contract_fee_rates"]["broker_rate"], "0.0153")
+        order.refresh_from_db()
+        self.assertEqual(order.contract_markup_pct, Decimal("12.5"))
+
+        for bad in (
+            {"contract_markup_pct": "-5"},
+            {"contract_markup_pct": "abc"},
+            {"contract_type": "corp"},
+        ):
+            response = self.client.patch(
+                f"/fitting-buy-orders/{order.id}",
+                json=bad,
+                headers=_auth_headers(self.owner),
+            )
+            self.assertEqual(response.status_code, 400, bad)
 
     def test_complete_order_pending_fitting_to_completed(self):
         order = FittingBuyOrder.objects.create(

@@ -45,7 +45,13 @@ from market.helpers.fitting_buy_plan import (
     build_shopping_plan,
     sync_order_items,
 )
-from market.helpers.fitting_buy_prices import apply_landed_prices
+from market.helpers.fitting_buy_prices import (
+    PriceRow,
+    apply_landed_prices,
+    normalize_unit_price,
+    parse_price_paste,
+    pasted_prices_are_totals,
+)
 from market.helpers.fitting_buy_serialize import serialize_order_detail
 from market.helpers.fitting_buy_swap import apply_swap_on_order
 from market.helpers.item_classification import (
@@ -210,6 +216,72 @@ class FittingBuyPlanTestCase(TestCase):
         self.assertEqual(unresolved, [])
         item = self.order.items.get(eve_type_id=self.mod_a.id)
         self.assertEqual(item.unit_price, Decimal("12345.67"))
+
+
+class PastedPriceNormalizationTestCase(TestCase):
+    def test_parse_qty_and_total_columns(self):
+        parsed = parse_price_paste(
+            "Damage Control II\t3\t3,060,000.00\n1MN Afterburner II\t2,050,000.00"
+        )
+        self.assertEqual(parsed["Damage Control II"].quantity, 3)
+        self.assertEqual(
+            parsed["Damage Control II"].price, Decimal("3060000.00")
+        )
+        self.assertIsNone(parsed["1MN Afterburner II"].quantity)
+
+    def test_votes_totals_when_prices_match_qty_times_jita(self):
+        rows = [
+            PriceRow(
+                price=Decimal("3060000"),
+                buy_qty=3,
+                jita_unit=Decimal("1000000"),
+            ),
+            PriceRow(
+                price=Decimal("6150000"),
+                buy_qty=3,
+                jita_unit=Decimal("2000000"),
+            ),
+            PriceRow(
+                price=Decimal("500"), buy_qty=1, jita_unit=Decimal("450")
+            ),
+        ]
+        self.assertTrue(pasted_prices_are_totals(rows))
+        self.assertEqual(
+            normalize_unit_price(rows[0], totals=True), Decimal("1020000.00")
+        )
+        self.assertEqual(
+            normalize_unit_price(rows[2], totals=True), Decimal("500")
+        )
+
+    def test_votes_units_when_prices_match_jita(self):
+        rows = [
+            PriceRow(
+                price=Decimal("1050000"),
+                buy_qty=3,
+                jita_unit=Decimal("1000000"),
+            ),
+            PriceRow(
+                price=Decimal("1900000"),
+                buy_qty=3,
+                jita_unit=Decimal("2000000"),
+            ),
+        ]
+        self.assertFalse(pasted_prices_are_totals(rows))
+
+    def test_qty_column_without_jita_reads_as_total(self):
+        rows = [
+            PriceRow(
+                price=Decimal("3000"), buy_qty=3, jita_unit=None, pasted_qty=3
+            )
+        ]
+        self.assertTrue(pasted_prices_are_totals(rows))
+        self.assertEqual(
+            normalize_unit_price(rows[0], totals=True), Decimal("1000.00")
+        )
+
+    def test_no_signal_keeps_unit_prices(self):
+        rows = [PriceRow(price=Decimal("3000"), buy_qty=3, jita_unit=None)]
+        self.assertFalse(pasted_prices_are_totals(rows))
 
 
 class BandedJitaSellDepthTestCase(TestCase):

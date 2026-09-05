@@ -8,6 +8,7 @@ interface Props {
     is_owner: boolean
     show: boolean
     partial_base: string
+    can_complete?: boolean
     [propName: string]: any
 }
 
@@ -15,6 +16,7 @@ const {
     is_owner,
     show,
     partial_base,
+    can_complete = false,
     ...attributes
 } = Astro.props
 
@@ -34,6 +36,20 @@ delete attributes.class
                 class="[ fitting-buy-actions-menu__list ]"
                 aria-label={t('actions')}
             >
+                {can_complete && (
+                    <button
+                        type="button"
+                        class="[ fitting-buy-actions-menu__item fitting-buy-actions-menu__item--primary ]"
+                        hx-post={partial_base}
+                        hx-vals={JSON.stringify({ action: 'complete_order' })}
+                        hx-target="#fitting-buy-order"
+                        hx-swap="outerHTML"
+                        hx-indicator=".loader"
+                        x-on:click.stop
+                    >
+                        {t('fitting_buy.complete_order')}
+                    </button>
+                )}
                 <div
                     class="[ fitting-buy-actions-menu__confirm ]"
                     x-data={`{ confirming: false }`}
@@ -99,6 +115,10 @@ delete attributes.class
         &:focus-visible {
             color: var(--foreground);
             background: color-mix(in srgb, var(--foreground) 8%, transparent);
+        }
+
+        &--primary {
+            color: var(--fleet-yellow);
         }
 
         &--danger {
