@@ -138,10 +138,8 @@ def make_test_fleet(
 class FleetHelperTestCase(SimpleTestCase):
     """Tests for Fleet helper code"""
 
-    @patch(
-        "fleets.motd.random.choice", return_value='Quote with <tags> & "chars"'
-    )
-    def test_get_motd_appends_rat_quote_escaped(self, mock_choice):
+    def test_get_motd_is_compact(self):
+        """No role nag or quote: MOTD real estate is for fleet info."""
         motd = get_motd(
             1,
             "FC Name",
@@ -152,17 +150,11 @@ class FleetHelperTestCase(SimpleTestCase):
             "https://example.com/d",
             "Doctrine",
         )
-        self.assertIn("Quote with", motd)
-        self.assertIn("&lt;tags&gt;", motd)
-        self.assertIn("&amp;", motd)
-        mock_choice.assert_called_once()
+        self.assertNotIn("fleet roles are missing", motd)
+        self.assertNotIn("Rat", motd.split("Doctrine", 1)[1])
+        self.assertFalse(motd.endswith("\n"))
 
-    @patch(
-        "fleets.motd.random.choice", return_value='Quote with <tags> & "chars"'
-    )
-    def test_get_motd_shows_set_doctrine_link_when_no_doctrine(
-        self, mock_choice
-    ):
+    def test_get_motd_shows_set_doctrine_link_when_no_doctrine(self):
         motd = get_motd(
             1,
             "FC Name",

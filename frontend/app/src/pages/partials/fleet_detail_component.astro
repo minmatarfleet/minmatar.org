@@ -22,13 +22,12 @@ const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') as string)
 if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
 
-import type { FleetUI, FleetCompositionUI, FleetRadarUI, FleetCombatLog } from '@dtypes/layout_components'
+import type { FleetUI, FleetCompositionUI, FleetRadarUI } from '@dtypes/layout_components'
 import type { EveCharacterProfile } from '@dtypes/api.minmatar.org'
 import { fetch_fleet_by_id, group_members_by_ship, group_members_by_location } from '@helpers/fetching/fleets'
 import { get_fleet_members } from '@helpers/api.minmatar.org/fleets'
 import { get_user_character } from '@helpers/fetching/characters'
 import { get_system_id } from '@helpers/sde/map'
-import { get_fleet_combatlogs } from '@helpers/fetching/combatlog'
 
 let fetch_fleets_error: Error | false = false
 let fleet:FleetUI | null = null
@@ -36,13 +35,18 @@ let user_character:EveCharacterProfile | null = null
 let fleet_composition:FleetCompositionUI[] = []
 let fleet_radar:FleetRadarUI[] = []
 let is_fleet_commander = false
-let saved_logs:FleetCombatLog[] = []
 
 import type { SummaryCharacter, FleetMetrics, FleetCommanderMetrics } from '@dtypes/api.minmatar.org'
 import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 import {
     get_fleet_role_volunteers,
+    get_fleet_ship_volunteers,
+    get_fleet_refits,
+    get_fleet_composition,
     type FleetRoleVolunteer,
+    type FleetShipVolunteer,
+    type FleetRefit,
+    type FleetCompositionEntry,
 } from '@helpers/api.minmatar.org/fleets'
 import {
     get_fleets_metrics,
@@ -50,6 +54,9 @@ import {
 } from '@helpers/api.minmatar.org/fleets'
 let pilots: SummaryCharacter[] = []
 let volunteers: FleetRoleVolunteer[] = []
+let ship_volunteers: FleetShipVolunteer[] = []
+let refits: FleetRefit[] = []
+let composition: FleetCompositionEntry[] = []
 let fleet_metrics: FleetMetrics | undefined
 let fleet_commander_metrics: FleetCommanderMetrics | undefined
 
@@ -76,6 +83,17 @@ try {
     volunteers = await get_fleet_role_volunteers(auth_token as string, fleet_id)
     pilots = summary.characters ?? []
 
+    if (upcoming) {
+        const [fetched_composition, fetched_ship_volunteers, fetched_refits] = await Promise.all([
+            get_fleet_composition(auth_token as string, fleet_id),
+            get_fleet_ship_volunteers(auth_token as string, fleet_id),
+            get_fleet_refits(auth_token as string, fleet_id),
+        ])
+        composition = fetched_composition
+        ship_volunteers = fetched_ship_volunteers
+        refits = fetched_refits
+    }
+
     const fleets_metrics = await get_fleets_metrics(auth_token as string)
     fleet_metrics = fleets_metrics.find(metric => metric.fleet_id === fleet_id)
     const fleet_commanders_metrics = await get_fleet_commander_metrics(auth_token as string)
@@ -87,27 +105,8 @@ try {
     fetch_fleets_error = error
 }
 
-try {
-    saved_logs = user && !fetch_fleets_error ? await get_fleet_combatlogs(auth_token as string, fleet_id) : []
-} catch (error) {
-    console.log(error)
-}
-
-import { get_market_contracts } from '@helpers/api.minmatar.org/market'
-import { get_locations } from '@helpers/api.minmatar.org/locations'
-import type { Contract } from '@dtypes/api.minmatar.org'
-let supply_contracts: Contract[] = []
-
-if (fleet?.doctrine && upcoming) {
-    try {
-        const locations = await get_locations()
-        const fleet_location = locations.find(location => location.location_name === fleet?.location)
-        
-        supply_contracts = fleet_location?.location_id ? await get_market_contracts(fleet_location?.location_id) : []
-    } catch (error) {
-        console.error('Error fetching supply contracts:', error)
-    }
-}
+import { fetch_fleet_supply, EMPTY_SUPPLY } from '@helpers/fleet_ships'
+const supply = fleet && upcoming ? await fetch_fleet_supply(auth_token as string, fleet_id) : EMPTY_SUPPLY
 
 const FLEET_DETAIL_PARTIAL_URL = translatePath(`/partials/fleet_detail_component?fleet_id=${fleet_id}&upcoming=${JSON.stringify(upcoming)}`)
 
@@ -117,12 +116,9 @@ const can_remove_fleet = is_superuser ||
                          user_permissions.includes('fleets.delete_evefleet') ||
                          user_character?.character_id === fleet?.fleet_commander_id
 
-import PageSubheader from '@components/page/PageSubheader.astro';
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import FleetDetails from '@components/blocks/FleetDetails.astro';
-import CancelFleetButton from '@components/blocks/CancelFleetButton.astro';
-import RestoreFleetButton from '@components/blocks/RestoreFleetButton.astro';
 import Button from '@components/blocks/Button.astro';
 ---
 
@@ -135,37 +131,7 @@ import Button from '@components/blocks/Button.astro';
         }}
     />
     :
-    <PageSubheader
-        id="subheader-oob"
-        hx-swap-oob="true"
-        is_empty={!is_fleet_commander || !fleet || !upcoming}
-    >
-        {fleet && is_fleet_commander &&
-            <>{upcoming && fleet.status !== 'cancelled' &&
-                <Button
-                    size='sm'
-                    href={translatePath(`/fleets/upcoming/edit/${fleet.id}`)}
-                >
-                    {t('edit_fleet')}
-                </Button>
-            }
 
-            {upcoming && fleet?.tracking && !fleet?.tracking?.end_time &&
-                <form method="post" action={translatePath(`/fleets/upcoming/${fleet.id}/refresh-motd`)} class="inline">
-                    <Button type="submit" size="sm">
-                        {t('refresh_motd')}
-                    </Button>
-                </form>
-            }
-
-            {upcoming && fleet.tracking === null &&
-                <>{fleet.status !== 'cancelled' ?
-                    <CancelFleetButton fleet_id={fleet.id} /> :
-                    <RestoreFleetButton fleet_id={fleet.id} />
-                }</>
-            }</>
-        }
-    </PageSubheader>
 
     <FleetDetails
         fleet={fleet as FleetUI }
@@ -174,13 +140,15 @@ import Button from '@components/blocks/Button.astro';
         fleet_composition={fleet_composition}
         fleet_radar={fleet_radar}
         history={!upcoming}
-        saved_logs={saved_logs}
         pilots={pilots}
         volunteers={volunteers}
         update_cover={true}
         fleet_metrics={fleet_metrics}
         fleet_commander_metrics={fleet_commander_metrics}
-        supply_contracts={supply_contracts}
         init_tooltips={true}
+        ship_volunteers={ship_volunteers}
+        refits={refits}
+        composition={composition}
+        supply={supply}
     />
 }

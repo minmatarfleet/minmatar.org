@@ -1,0 +1,169 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value as string : false
+const user: User | false = auth_token ? (jose.decodeJwt(auth_token) as User) : false
+
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(Astro.url.toString())}`)
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+const readonly = JSON.parse(Astro.url.searchParams.get('readonly') ?? 'false') as boolean
+const can_manage = Astro.url.searchParams.get('can_manage') === 'true'
+
+import type { Alert, FleetUI } from '@dtypes/layout_components'
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import { get_characters_summary_sorted } from '@helpers/fetching/characters'
+import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
+import { fetch_fleet_supply, EMPTY_SUPPLY } from '@helpers/fleet_ships'
+import {
+    get_fleet_ship_volunteers,
+    get_fleet_composition,
+    get_fleet_refits,
+    create_fleet_fitting,
+    delete_fleet_fitting,
+    set_my_ship_volunteers,
+    type ShipSelection,
+    type FleetShipVolunteer,
+    type FleetCompositionEntry,
+    type FleetRefit,
+    type FleetFittingRole,
+    type FleetSupply,
+} from '@helpers/api.minmatar.org/fleets'
+
+let alert:Alert | false = false
+
+const as_role = (raw:string | null):FleetFittingRole =>
+    raw === 'secondary' || raw === 'support' ? raw : 'primary'
+
+// Any pilot: the "Volunteer my ships" modal posts one ship per character.
+if (Astro.request.method === 'POST' && Astro.url.searchParams.get('action') === 'pick_ships') {
+    try {
+        const data = await Astro.request.formData()
+        const selections:ShipSelection[] = []
+        for (const [field, raw] of data.entries()) {
+            const match = field.match(/^ship_(\d+)$/)
+            if (!match) continue
+            const value = String(raw)
+            const key_match = value.match(/^([fm]):(\d+)$/)
+            selections.push({
+                character_id: parseInt(match[1]),
+                fitting_id: key_match?.[1] === 'f' ? parseInt(key_match[2]) : null,
+                fleet_fitting_id: key_match?.[1] === 'm' ? parseInt(key_match[2]) : null,
+            })
+        }
+        await set_my_ship_volunteers(auth_token as string, fleet_id, selections)
+    } catch (error) {
+        alert = { title: t('volunteer_my_ships'), content: error.message as string }
+    }
+}
+
+// FC actions from the "Add ships" modal and the row remove buttons.
+if (Astro.request.method === 'POST' && can_manage && Astro.url.searchParams.get('action') !== 'pick_ships') {
+    try {
+        const data = await Astro.request.formData().catch(() => new FormData())
+        const role = as_role(data.get('role') as string | null)
+        const add_fitting_id = parseInt(Astro.url.searchParams.get('add_fitting_id') ?? '')
+
+        if (!isNaN(add_fitting_id)) {
+            await create_fleet_fitting(auth_token as string, fleet_id, { fitting_id: add_fitting_id, role })
+        } else if (Astro.url.searchParams.get('action') === 'add_eft') {
+            const eft_format = ((data.get('eft_format') as string | null) ?? '').trim()
+            if (!eft_format) throw new Error(t('eft_required'))
+            await create_fleet_fitting(auth_token as string, fleet_id, { eft_format, role })
+        }
+    } catch (error) {
+        alert = { title: t('manage_doctrine'), content: error.message as string }
+    }
+}
+
+if (Astro.request.method === 'DELETE' && can_manage) {
+    try {
+        const remove_id = parseInt(Astro.url.searchParams.get('remove_fleet_fitting_id') ?? '')
+        if (isNaN(remove_id)) throw new Error(t('invalid_fitting_id'))
+        await delete_fleet_fitting(auth_token as string, fleet_id, remove_id)
+    } catch (error) {
+        alert = { title: t('remove'), content: error.message as string }
+    }
+}
+
+let fetch_error: Error | false = false
+let pilots: SummaryCharacter[] = []
+let volunteers: FleetShipVolunteer[] = []
+let composition: FleetCompositionEntry[] = []
+let refits: FleetRefit[] = []
+let fleet: FleetUI | null = null
+let supply: FleetSupply = EMPTY_SUPPLY
+let history:boolean = false
+
+try {
+    if (isNaN(fleet_id))
+        throw new Error(t('invalid_fleet_id'), { cause: 400 })
+
+    fleet = await fetch_fleet_by_id(auth_token as string, fleet_id)
+    history = Boolean(fleet?.tracking?.end_time)
+
+    if (!history) {
+        const [summary, fetched_volunteers, fetched_composition, fetched_refits, fetched_supply] = await Promise.all([
+            get_characters_summary_sorted(auth_token as string),
+            get_fleet_ship_volunteers(auth_token as string, fleet_id),
+            get_fleet_composition(auth_token as string, fleet_id),
+            get_fleet_refits(auth_token as string, fleet_id),
+            fetch_fleet_supply(auth_token as string, fleet_id),
+        ])
+        volunteers = fetched_volunteers
+        composition = fetched_composition
+        refits = fetched_refits
+        supply = fetched_supply
+        pilots = summary.characters ?? []
+    }
+} catch (error) {
+    fetch_error = error
+
+    alert = {
+        title: t('fleet_ships'),
+        content: error.message,
+    }
+}
+
+import { query_string } from '@helpers/string';
+const FLEET_SHIPS_PARTIAL_URL = translatePath(`/partials/fleet_ship_volunteers_component?${query_string({
+    fleet_id: fleet_id,
+    readonly: readonly,
+    can_manage: can_manage,
+})}`)
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import FleetShips from '@components/blocks/FleetShips.astro';
+import ShowAlert from '@components/blocks/ShowAlert.astro';
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+---
+
+{alert && <ShowAlert alert={alert} /> }
+
+{fetch_error ?
+    <ErrorRefetch
+        args={{
+            partial: FLEET_SHIPS_PARTIAL_URL,
+            error: fetch_error,
+            delay: delay,
+        }}
+    />
+    :
+    !history &&
+        <FleetShips
+            fleet_id={fleet_id}
+            composition={composition}
+            volunteers={volunteers}
+            refits={refits}
+            pilots={pilots}
+            supply={supply}
+            readonly={readonly}
+            can_manage={can_manage}
+            doctrine_name={fleet?.doctrine?.name ?? null}
+        />
+}

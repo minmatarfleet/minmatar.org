@@ -10,13 +10,16 @@ interface Props {
     doctrine?:              DoctrineType | null;
     init_tooltips:          boolean;
     supply_contracts?:      Contract[];
+    /** Render the scrolling fittings/contracts strip under the hero. */
+    show_fittings?:         boolean;
 }
 
 const {
     fleet,
     doctrine,
     init_tooltips,
-    supply_contracts = []
+    supply_contracts = [],
+    show_fittings = true,
 } = Astro.props
 
 const [ system, station ] = fleet?.location?.split(' - ') ?? []
@@ -102,6 +105,33 @@ import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astr
                                 </FlexInline>
                             }
                         </FlexInline>
+
+                        <div class="[ fleet-facts animate-fade-in animate-duration-250 animate-delay-550 ]">
+                            <div class="[ fleet-facts__row ]">
+                                <div class="[ fleet-fact ]">
+                                    <small class="[ fleet-fact__label ]">{t('staging')}</small>
+                                    <b class="[ fleet-fact__value text-highlight ]">{system}</b>
+                                    {station && <small class="[ fleet-fact__hint ]">{station}</small>}
+                                </div>
+
+                                {doctrine &&
+                                    <div class="[ fleet-fact ]">
+                                        <small class="[ fleet-fact__label ]">{t('doctrine')}</small>
+                                        <StylessButton href={translatePath(`/ships/doctrines/${doctrine.id}`)}>
+                                            <ItemBadge
+                                                type_id={doctrine.primary_fittings[0].ship_id}
+                                                item_name={doctrine.name}
+                                                size={32}
+                                            />
+                                        </StylessButton>
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="[ fleet-facts__row ]">
+                                <slot />
+                            </div>
+                        </div>
                     </Flexblock>
                 </FixedFluid>
 
@@ -118,54 +148,10 @@ import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astr
                         </div>
                     }
                 </Flexblock>
-
-                <Flexblock gap='var(--space-m)'>
-                    <FlexInline class="[ items-center! animate-fade-in animate-duration-250 animate-delay-700 ]" gap='var(--space-l)'>
-                        <Flexblock gap='0'>
-                            <b class="[ text-highlight ]">{system}</b>
-                            <small>{station}</small>
-                        </Flexblock>
-
-                        {doctrine &&
-                            <StylessButton href={translatePath(`/ships/doctrines/${doctrine.id}`)}>
-                                <ItemBadge
-                                    type_id={doctrine.primary_fittings[0].ship_id}
-                                    item_name={doctrine.name}
-                                    size={32}
-                                >
-                                    <small class="[ text-foreground ]">{t('doctrine')}</small>
-                                </ItemBadge>
-                            </StylessButton>
-                        }
-                                
-                        <span>{t(`${fleet.type}_fleet` as any) ?? fleet.type}</span>
-
-                        {fleet.members_count !== undefined &&
-                            <FlexInline gap='var(--space-3xs)' class="[ items-center! ]">
-                                <div
-                                    class="[ text-highlight h-[16px] ]"
-                                    data-tippy-content={t('characters_in_fleet')}
-                                    x-init={init_tooltips ? 'tippy($el, tippy_options)' : undefined}
-                                >
-                                    <MemberIcon size={16} />
-                                </div>
-                                
-                                <span>{fleet.members_count}</span>
-                            </FlexInline>
-                        }
-                    </FlexInline>
-
-                    <FlexInline
-                        class="[ component items-center! animate-fade-in animate-duration-250 animate-delay-850 ]"
-                        gap='var(--space-l)'
-                    >
-                        <slot />
-                    </FlexInline>
-                </Flexblock>
             </Flexblock>
         </Wrapper>
     </VerticalCenter>
-    {doctrine &&
+    {doctrine && show_fittings &&
         <div
             class="[ !flex !items-end hidden! animate-slide-up-fade animate-delay-1000 ]"
             x-on:marquee-started="$el.classList.remove('hidden!')"
@@ -207,6 +193,58 @@ import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astr
 <style lang="scss">
     h2 {
         font-size: var(--step-5);
+    }
+
+    // Under the FC name: staging (and doctrine) on one row, EVE and local
+    // time side by side on the next. The column beside the portrait is too
+    // narrow for all of them on one line.
+    .fleet-facts {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        padding-top: var(--space-2xs);
+    }
+
+    .fleet-facts__row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-s) var(--space-l);
+        align-items: flex-start;
+    }
+
+    .fleet-fact,
+    .fleet-facts__row > :global(*) {
+        flex: 0 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        max-width: 100%;
+    }
+
+    .fleet-fact__hint {
+        max-width: 200px;
+    }
+
+    // Same treatment as TextGroup elsewhere on the site: Montserrat,
+    // regular weight, sentence case. Only the size steps down.
+    .fleet-fact__label,
+    .fleet-facts :global(h4) {
+        font-size: var(--step--1);
+        font-weight: 400;
+        color: var(--foreground);
+        margin: 0;
+    }
+
+    .fleet-fact__value,
+    .fleet-facts :global(p) {
+        font-size: var(--step-0);
+        font-weight: 400;
+        margin: 0;
+        white-space: nowrap;
+    }
+
+    .fleet-fact__hint {
+        color: var(--fleet-yellow);
     }
 
     h4 {

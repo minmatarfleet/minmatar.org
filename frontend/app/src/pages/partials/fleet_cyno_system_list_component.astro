@@ -1,0 +1,71 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value as string : false
+const user: User | false = auth_token ? (jose.decodeJwt(auth_token) as User) : false
+
+if (!user) return new Response(null, { status: 403 })
+
+import { filter_systems_by_name } from '@helpers/sde/map'
+import type { sde_filtered_system } from '@helpers/sde/map'
+import { get_item_icon } from '@helpers/eve_image_server';
+import { sec_status_class } from '@helpers/eve'
+import { query_string } from '@helpers/string';
+
+const system_name = Astro.url.searchParams.get('system') as string
+const id = Astro.url.searchParams.get('id') ?? ''
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+const volunteer_id = parseInt(Astro.url.searchParams.get('volunteer_id') ?? '0')
+
+let systems:sde_filtered_system[] = []
+
+try {
+    systems = system_name?.length > 2 ? await filter_systems_by_name(system_name) : []
+    systems = systems.sort((a, b) => a.security - b.security).slice(0, 25)
+} catch (error) {
+    console.log(error)
+}
+
+const FLEET_ROLE_ITEM_PARTIAL_URL = translatePath('/partials/fleet_role_item_component/')
+
+const assign_url = (system:sde_filtered_system) => `${FLEET_ROLE_ITEM_PARTIAL_URL}?${query_string({
+    id: id,
+    fleet_id: fleet_id,
+    role: 'cyno',
+    volunteer_id: volunteer_id,
+    solar_system_id: system.system_id,
+    solar_system_name: system.system_name,
+    can_assign: true,
+})}`
+
+import Badge from '@components/blocks/Badge.astro';
+---
+
+{(system_name?.length > 2 && systems.length === 0) ?
+    <div class="[ py-[var(--space-2xs)] px-[var(--space-2xs)] ]">
+        <span>{t('no_systems')}</span>
+    </div>
+    :
+    systems.map((system) =>
+        <button
+            type="button"
+            hx-patch={assign_url(system)}
+            hx-target={`#${id}`}
+            hx-indicator=".loader"
+            hx-swap="outerHTML transition:true"
+            x-on:click="close_dialog()"
+        >
+            <Badge
+                title={system.system_name}
+                image={get_item_icon(system.sun_type_id)}
+            >
+                <span slot="title" class:list={[ sec_status_class(system.security.toFixed(1)) ]}>{system.security.toFixed(1)}</span>
+                <small>{system.constellation_name} ‹ {system.region_name}</small>
+            </Badge>
+        </button>
+    )
+}

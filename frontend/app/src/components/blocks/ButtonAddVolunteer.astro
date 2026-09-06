@@ -6,15 +6,17 @@ import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
 import type { FleetRoles, FleetRolesSubtypes } from '@dtypes/layout_components'
 
 interface Props {
-    target:     string;
-    title:      string;
-    fleet_id:   number;
-    pilots:     SummaryCharacter[],
-    role:       FleetRoles;
-    subtype?:   FleetRolesSubtypes;
-    icon?:      number;
-    hidden?:    boolean;
-    id?:        string;
+    target:         string;
+    title:          string;
+    fleet_id:       number;
+    pilots:         SummaryCharacter[],
+    role:           FleetRoles;
+    subtype?:       FleetRolesSubtypes;
+    icon?:          number;
+    hidden?:        boolean;
+    id?:            string;
+    /** Extra query params forwarded to the role item partial (e.g. { can_assign: true }). */
+    params?:        Record<string, string | number | boolean | null | undefined>;
 }
 
 const {
@@ -27,11 +29,22 @@ const {
     icon,
     hidden = false,
     id,
+    params = {},
 } = Astro.props
 
 import { query_string } from '@helpers/string';
 
 const FLEET_ROLE_ITEM_PARTIAL_URL = `${translatePath('/partials/fleet_role_item_component/')}`
+
+const post_params = (pilot:SummaryCharacter) => query_string({
+    id: target,
+    fleet_id: fleet_id,
+    character_id: pilot.character_id,
+    role: role,
+    ...(subtype && { subtype }),
+    ...(icon && { icon }),
+    ...params,
+})
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import FlexInline from '@components/compositions/FlexInline.astro';
@@ -87,14 +100,7 @@ import AddIcon from '@components/icons/buttons/AddIcon.astro';
                         {pilots.map(pilot =>
                             <div class="[ swiper-slide ]" style="margin-right: 5px">
                                 <StylessButton
-                                    hx-post={`${FLEET_ROLE_ITEM_PARTIAL_URL}?${query_string({
-                                        id: target,
-                                        fleet_id: fleet_id,
-                                        character_id: pilot.character_id,
-                                        role: role,
-                                        ...(subtype && { subtype }),
-                                        ...(icon && { icon }),
-                                    })}`}
+                                    hx-post={`${FLEET_ROLE_ITEM_PARTIAL_URL}?${post_params(pilot)}`}
                                     hx-target={`#${target}`}
                                     hx-indicator=".loader"
                                     hx-swap='outerHTML transition:true'

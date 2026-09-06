@@ -1,0 +1,503 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import type { FleetShipVolunteer, FleetCompositionEntry, FleetRefit, FleetSupplyEntry } from '@helpers/api.minmatar.org/fleets'
+
+interface Props {
+    id:                 string;
+    fleet_id:           number;
+    entry:              FleetCompositionEntry;
+    volunteers:         FleetShipVolunteer[];
+    refits:             FleetRefit[];
+    /** Contract and market availability at staging; null when unknown. */
+    supply:             FleetSupplyEntry | null;
+    pilots:             SummaryCharacter[];
+    readonly?:          boolean;
+    /** Fleet commander: may remove any volunteer. */
+    can_manage?:        boolean;
+}
+
+const {
+    id,
+    fleet_id,
+    entry,
+    volunteers,
+    refits,
+    supply,
+    pilots,
+    readonly = false,
+    can_manage = false,
+} = Astro.props
+
+import { query_string } from '@helpers/string';
+import { get_item_icon } from '@helpers/eve_image_server'
+import { parse_eft, swappable_cargo } from '@helpers/eft'
+
+const FLEET_SHIP_VOLUNTEER_ITEM_PARTIAL_URL = translatePath('/partials/fleet_ship_volunteer_item_component/')
+
+const partial_params = {
+    key: entry.key,
+    ...(can_manage && { can_manage: true }),
+}
+
+const remove_url = (volunteer_id:number) => `${FLEET_SHIP_VOLUNTEER_ITEM_PARTIAL_URL}?${query_string({
+    id: id,
+    fleet_id: fleet_id,
+    remove_id: volunteer_id,
+    ...partial_params,
+})}`
+
+const fitting_href = entry.fitting_id ? translatePath(`/ships/fittings/${entry.fitting_id}/`) : undefined
+const contracts = supply?.contracts ?? null
+const market_fits = supply?.market_fits ?? null
+const market_title = market_fits === 0 && supply?.market_missing?.length
+    ? `${t('market_missing')}: ${supply.market_missing.slice(0, 6).join(', ')}${supply.market_missing.length > 6 ? '…' : ''}`
+    : undefined
+
+// FC-only controls. A refit is offered when the fit carries spare modules in
+// cargo (slot swaps) or has curated refits to pick from.
+const parsed = parse_eft(entry.eft_format)
+const can_refit = can_manage && !readonly && (swappable_cargo(parsed, entry.module_slots).length > 0 || entry.refits.length > 0)
+const can_remove_ship = can_manage && !readonly && entry.fleet_fitting_id !== null
+
+const REFIT_MODAL_URL = `${translatePath('/partials/fleet_refit_modal_component/')}?${query_string({
+    fleet_id: fleet_id,
+    key: entry.key,
+    row_id: id,
+})}`
+const SHIPS_PARTIAL_URL = `${translatePath('/partials/fleet_ship_volunteers_component/')}?${query_string({
+    fleet_id: fleet_id,
+    can_manage: true,
+    remove_fleet_fitting_id: entry.fleet_fitting_id ?? '',
+})}`
+const remove_refit_url = (refit_id:number) => `${FLEET_SHIP_VOLUNTEER_ITEM_PARTIAL_URL}?${query_string({
+    id: id,
+    fleet_id: fleet_id,
+    remove_refit_id: refit_id,
+    ...partial_params,
+})}`
+const refit_text = (refit:FleetRefit) => {
+    const modules = refit.modules.map(module => `${module.name}${module.quantity > 1 ? ` ×${module.quantity}` : ''}`).join(', ')
+    if (!modules || modules === refit.name) return refit.name
+    return `${refit.name} · ${modules}`
+}
+
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
+import Badge from '@components/blocks/Badge.astro'
+import FleetRowAction from '@components/blocks/FleetRowAction.astro'
+
+import TrashIcon from '@components/icons/buttons/TrashIcon.astro';
+import CogIcon from '@components/icons/buttons/CogIcon.astro';
+import ClipboardIcon from '@components/icons/buttons/ClipboardIcon.astro';
+import MemberIcon from '@components/icons/MemberIcon.astro';
+import CaretIcon from '@components/icons/CaretIcon.astro';
+---
+
+<div id={id} class="[ fleet-ship-row ][ light-transparency ]" role="listitem" x-data="{ open: false }">
+    {fitting_href ?
+        <StylessButton href={fitting_href} class="[ fleet-ship-row__ship ]">
+            <Badge title={entry.name} image={get_item_icon(entry.ship_id, 64)} size={40}>
+                <small>{entry.ship_name}{entry.source === 'manual' && ` · ${t('composition_source_manual')}`}</small>
+            </Badge>
+        </StylessButton>
+        :
+        <div class="[ fleet-ship-row__ship ]">
+            <Badge title={entry.name} image={get_item_icon(entry.ship_id, 64)} size={40}>
+                <small>{entry.ship_name}{entry.source === 'manual' && ` · ${t('composition_source_manual')}`}</small>
+            </Badge>
+        </div>
+    }
+
+    <div class="[ fleet-ship-row__meta ]">
+        {refits.map(refit =>
+            <small class="[ fleet-ship-row__refit ]" title={`${t('refit_label')}: ${refit_text(refit)}${refit.notes ? ` — ${refit.notes}` : ''}`}>
+                <span class="[ fleet-ship-row__refit-text ]">{t('refit_label')}: {refit_text(refit)}</span>
+                {can_manage && !readonly &&
+                    <button
+                        type="button"
+                        class="[ fleet-ship-row__inline-remove ]"
+                        title={t('remove')}
+                        hx-delete={remove_refit_url(refit.id)}
+                        hx-target={`#${id}`}
+                        hx-indicator=".loader"
+                        hx-swap='outerHTML transition:true'
+                    >✕</button>
+                }
+            </small>
+        )}
+    </div>
+
+    <div class="[ fleet-ship-row__availability ]">
+        {(contracts !== null || market_fits !== null) &&
+            <span class="[ fleet-ship-row__supply ]">
+                {contracts !== null ?
+                    <span class:list={[ 'supply-stat', contracts > 0 ? 'supply-stat--ok' : 'supply-stat--none' ]} title={t('supply_contracts_title')}>
+                        <span class="[ supply-stat__value ]"><i class="[ supply-stat__dot ]"></i>{contracts}</span>
+                        <small class="[ supply-stat__label ]">{t('supply_contracts_short')}</small>
+                    </span>
+                    :
+                    <span class="[ supply-stat supply-stat--na ]" title={t('supply_contracts_untracked')}>
+                        <span class="[ supply-stat__value ]">—</span>
+                        <small class="[ supply-stat__label ]">{t('supply_contracts_short')}</small>
+                    </span>
+                }
+                {market_fits !== null ?
+                    <span class:list={[ 'supply-stat', market_fits > 0 ? 'supply-stat--ok' : 'supply-stat--none' ]} title={market_title ?? t('supply_market_title')}>
+                        <span class="[ supply-stat__value ]"><i class="[ supply-stat__dot ]"></i>{market_fits}</span>
+                        <small class="[ supply-stat__label ]">{t('supply_market_short')}</small>
+                    </span>
+                    :
+                    <span class="[ supply-stat supply-stat--na ]" title={t('supply_market_unknown')}>
+                        <span class="[ supply-stat__value ]">—</span>
+                        <small class="[ supply-stat__label ]">{t('supply_market_short')}</small>
+                    </span>
+                }
+            </span>
+        }
+    </div>
+
+    <div class="[ fleet-ship-row__count-cell ]">
+        <button
+            type="button"
+            class:list={[ 'fleet-ship-row__count', { 'fleet-ship-row__count--empty': volunteers.length === 0 } ]}
+            x-on:click="open = !open"
+            x-bind:aria-expanded="open.toString()"
+            aria-controls={`${id}-volunteers`}
+            disabled={volunteers.length === 0}
+            title={t('volunteers_toggle_title')}
+        >
+            <MemberIcon size={14} />
+            <b>{volunteers.length}</b>
+            <span class="[ fleet-ship-row__caret ]" x-bind:class="{ 'is-open': open }" aria-hidden="true">
+                <CaretIcon />
+            </span>
+        </button>
+    </div>
+
+    <div class="[ fleet-ship-row__tools ]">
+        {(can_refit || can_remove_ship || (entry.source === 'manual' && entry.eft_format)) &&
+            <span class="[ fleet-ship-row__tools-inner ]">
+                {entry.source === 'manual' && entry.eft_format &&
+                    <>
+                        <FleetRowAction
+                            title={t('copy_eft')}
+                            x-on:click.stop.prevent={`copyFitToClipboard('${id}-eft')`}
+                        >
+                            <ClipboardIcon />
+                        </FleetRowAction>
+                        <textarea class="[ hidden ]" id={`${id}-eft`} readonly>{entry.eft_format}</textarea>
+                    </>
+                }
+                {can_refit &&
+                    <FleetRowAction
+                        title={t('refit_label')}
+                        x-on:click={`show_modal({ partial: '${REFIT_MODAL_URL}' })`}
+                    >
+                        <CogIcon />
+                    </FleetRowAction>
+                }
+                {can_remove_ship &&
+                    <FleetRowAction
+                        title={t('remove_ship')}
+                        danger={true}
+                        hx-delete={SHIPS_PARTIAL_URL}
+                        hx-target="#fleet-ships"
+                        hx-indicator=".loader"
+                        hx-swap='outerHTML transition:true'
+                        hx-confirm={t('remove_fitting_confirm')}
+                    >
+                        <TrashIcon />
+                    </FleetRowAction>
+                }
+            </span>
+        }
+
+    </div>
+
+    {volunteers.length > 0 &&
+        <div
+            id={`${id}-volunteers`}
+            class="[ fleet-ship-row__volunteers ]"
+            x-show="open"
+            x-collapse.duration.150ms
+            x-cloak
+        >
+            {volunteers.map(volunteer =>
+                <div class="[ fleet-ship-row__volunteer ]" title={volunteer.character_name}>
+                    <CharacterPicture
+                        character_id={volunteer.character_id}
+                        character_name={volunteer.character_name}
+                        size={32}
+                        icon_quality={32}
+                    />
+                    {!readonly && (can_manage || pilots.find(user_pilot => user_pilot.character_id === volunteer.character_id)) &&
+                        <FleetRowAction
+                            class="[ fleet-ship-row__volunteer-remove ]"
+                            title={t('remove')}
+                            danger={true}
+                            hx-delete={remove_url(volunteer.id)}
+                            hx-target={`#${id}`}
+                            hx-indicator=".loader"
+                            hx-swap='outerHTML transition:true'
+                        >
+                            <TrashIcon />
+                        </FleetRowAction>
+                    }
+                </div>
+            )}
+        </div>
+    }
+</div>
+
+<style lang="scss">
+    /*
+     * Columns: ship | refit notes | availability | pilot count | tools.
+     * Everything right of the ship has a fixed width so rows line up.
+     */
+    .fleet-ship-row {
+        display: grid;
+        // Name and refit share the flexible space; the refit text truncates
+        // (full text in the tooltip) instead of crushing the ship name.
+        grid-template-columns: minmax(220px, 1fr) minmax(0, 1fr) 240px 68px 72px;
+        gap: var(--space-2xs) var(--space-s);
+        align-items: center;
+        padding: var(--space-2xs) var(--space-xs);
+        border: solid 1px var(--border-color);
+
+        @media screen and (max-width: 1100px) {
+            grid-template-columns: minmax(0, 1fr) 68px 72px;
+
+            .fleet-ship-row__ship { grid-column: 1; grid-row: 1; }
+            .fleet-ship-row__count-cell { grid-column: 2; grid-row: 1; }
+            .fleet-ship-row__tools { grid-column: 3; grid-row: 1; }
+            .fleet-ship-row__availability { grid-column: 1 / -1; grid-row: 2; justify-self: start; }
+            .fleet-ship-row__meta { grid-column: 1 / -1; grid-row: 3; }
+            .fleet-ship-row__meta:empty { display: none; }
+        }
+    }
+
+    .fleet-ship-row__ship {
+        display: block;
+        min-width: 0;
+    }
+
+    .fleet-ship-row__meta {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-width: 0;
+    }
+
+    .fleet-ship-row__availability {
+        min-width: 0;
+    }
+
+    // Two fixed columns so the numbers line up down the list; quiet by
+    // default, the colour dot carries the in-stock / out-of-stock signal.
+    .fleet-ship-row__supply {
+        display: grid;
+        grid-template-columns: repeat(2, 104px);
+        gap: var(--space-s);
+        justify-content: end;
+    }
+
+    .supply-stat {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0;
+        min-width: 0;
+    }
+
+    .supply-stat__value {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        font-size: var(--step-0);
+        font-weight: 600;
+        line-height: 1.2;
+        color: var(--highlight);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .supply-stat__dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 1px;
+        background: var(--green);
+        flex: 0 0 6px;
+    }
+
+    .supply-stat--none .supply-stat__dot {
+        background: var(--fleet-red);
+    }
+
+    .supply-stat--none .supply-stat__value {
+        color: var(--fleet-red);
+    }
+
+    .supply-stat__label {
+        font-size: var(--step--2);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--foreground);
+        opacity: 0.6;
+        line-height: 1.2;
+        padding-left: calc(6px + var(--space-3xs));
+    }
+
+    .supply-stat--na {
+        opacity: 0.45;
+
+        .supply-stat__value {
+            color: var(--foreground);
+        }
+
+        .supply-stat__label {
+            padding-left: 0;
+        }
+    }
+
+    .fleet-ship-row__meta {
+        min-width: 0;
+    }
+
+    .fleet-ship-row__refit {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3xs);
+        min-width: 0;
+        color: var(--fleet-yellow);
+    }
+
+    .fleet-ship-row__refit-text {
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .fleet-ship-row__inline-remove {
+        background: transparent;
+        border: none;
+        color: var(--highlight);
+        cursor: pointer;
+        padding: 0 var(--space-3xs);
+        font-size: var(--step--1);
+        line-height: 1;
+    }
+
+    .fleet-ship-row__count-cell {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .fleet-ship-row__tools {
+        display: flex;
+        justify-content: flex-end;
+        min-height: 32px;
+    }
+
+    .fleet-ship-row__tools-inner {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+
+    .fleet-ship-row__count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-3xs);
+        height: 32px;
+        width: 68px;
+        padding: 0 var(--space-3xs);
+        background: transparent;
+        border: solid 1px var(--border-color);
+        color: var(--highlight);
+        font-size: var(--step--1);
+        cursor: pointer;
+        transition: var(--fast-transition);
+
+        b {
+            font-weight: 600;
+        }
+
+        &:hover:not([disabled]),
+        &:focus-visible {
+            background: rgba(255, 255, 255, 0.06);
+            outline: none;
+        }
+
+        &[disabled] {
+            cursor: default;
+            opacity: 0.45;
+        }
+    }
+
+    .fleet-ship-row__caret {
+        display: inline-flex;
+        transition: transform var(--fast-transition);
+
+        :global(svg) {
+            width: 10px;
+            height: 10px;
+        }
+
+        &.is-open {
+            transform: rotate(180deg);
+        }
+    }
+
+    .fleet-ship-row__volunteers {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: var(--space-2xs) 0 var(--space-3xs);
+        border-top: solid 1px var(--border-color);
+    }
+
+    .fleet-ship-row__volunteer {
+        position: relative;
+        width: 32px;
+        height: 32px;
+        flex: 0 0 32px;
+
+        :global(picture),
+        :global(img) {
+            display: block;
+            width: 32px;
+            height: 32px;
+        }
+    }
+
+    :global(.fleet-ship-row__volunteer-remove) {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        width: 16px !important;
+        height: 16px !important;
+        flex-basis: 16px !important;
+        background: var(--background) !important;
+        border-color: var(--border-color) !important;
+        opacity: 0;
+
+        :global(svg) {
+            width: 8px !important;
+            height: 8px !important;
+        }
+    }
+
+    .fleet-ship-row__volunteer:hover :global(.fleet-ship-row__volunteer-remove),
+    .fleet-ship-row__volunteer:focus-within :global(.fleet-ship-row__volunteer-remove) {
+        opacity: 1;
+    }
+</style>

@@ -12,8 +12,9 @@ if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redir
 
 const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
 const readonly = JSON.parse(Astro.url.searchParams.get('readonly') ?? 'true') as boolean
+const is_fleet_commander = Astro.url.searchParams.get('is_fleet_commander') === 'true'
 
-import type { FleetUI, Alert } from '@dtypes/layout_components'
+import type { Alert } from '@dtypes/layout_components'
 
 import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
 import { get_characters_summary_sorted } from '@helpers/fetching/characters'
@@ -54,6 +55,7 @@ import { query_string } from '@helpers/string';
 const FLEET_ROLES_PARTIAL_URL = translatePath(`/partials/fleet_role_component?${query_string({
     fleet_id: fleet_id,
     readonly: readonly,
+    is_fleet_commander: is_fleet_commander,
 })}`)
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
@@ -80,5 +82,6 @@ const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
             pilots={pilots}
             fleet_id={fleet_id}
             readonly={readonly}
+            is_fleet_commander={is_fleet_commander}
         />
 }

@@ -1,0 +1,211 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value as string : false
+const user: User | false = auth_token ? (jose.decodeJwt(auth_token) as User) : false
+
+if (!user) return new Response(null, { status: 403 })
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+const key = Astro.url.searchParams.get('key') ?? ''
+const row_id = Astro.url.searchParams.get('row_id') ?? ''
+
+if (isNaN(fleet_id) || !/^[fm]:\d+$/.test(key))
+    return new Response(null, { status: 400 })
+
+import { get_fleet_composition, get_fleet_fitting_access, type FleetCompositionEntry, type FleetFittingAccess } from '@helpers/api.minmatar.org/fleets'
+import { parse_eft, swappable_cargo, module_slot } from '@helpers/eft'
+import { query_string } from '@helpers/string'
+import { get_item_icon } from '@helpers/eve_image_server'
+
+let entry: FleetCompositionEntry | undefined
+let access: FleetFittingAccess | null = null
+let fetch_error: Error | false = false
+
+try {
+    const [composition, fetched_access] = await Promise.all([
+        get_fleet_composition(auth_token as string, fleet_id),
+        get_fleet_fitting_access(auth_token as string, fleet_id),
+    ])
+    entry = composition.find(e => e.key === key)
+    access = fetched_access
+    if (!entry) throw new Error(t('fitting_not_in_composition'))
+} catch (error) {
+    fetch_error = error
+}
+
+// Refits are saved in-game under the FC; without the scope the forms are hidden.
+const can_publish = access?.can_publish ?? false
+const MODAL_URL = `${translatePath('/partials/fleet_refit_modal_component/')}?${query_string({ fleet_id: fleet_id, key: key, row_id: row_id })}`
+
+const slots = entry?.module_slots ?? {}
+const has_slot_data = Object.keys(slots).length > 0
+const parsed = entry ? parse_eft(entry.eft_format) : null
+const cargo = parsed ? swappable_cargo(parsed, slots) : []
+const slotted = (parsed?.modules ?? []).map(module => ({ ...module, group: module_slot(module, slots) }))
+const modules = slotted.filter(module => module.group !== 'rig')
+const options_for = (group:string) => cargo.filter(item => !has_slot_data || slots[item.name] === group)
+const groups = [
+    { key: 'high', title: t('slot_high'), modules: modules.filter(m => m.group === 'high') },
+    { key: 'mid', title: t('slot_mid'), modules: modules.filter(m => m.group === 'mid') },
+    { key: 'low', title: t('slot_low'), modules: modules.filter(m => m.group === 'low') },
+]
+    .map(group => ({ ...group, options: options_for(group.key) }))
+    .filter(group => group.modules.length > 0 && group.options.length > 0)
+
+const ROW_PARTIAL_URL = translatePath('/partials/fleet_ship_volunteer_item_component/')
+const post_url = (extra:Record<string, string | number | boolean> = {}) => `${ROW_PARTIAL_URL}?${query_string({
+    id: row_id,
+    fleet_id: fleet_id,
+    key: key,
+    can_manage: true,
+    action: 'refit',
+    ...extra,
+})}`
+
+const CLOSE_MODAL = "if (event.detail.successful) document.querySelector('.modal-backdrop')?.click()"
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import Button from '@components/blocks/Button.astro'
+import Badge from '@components/blocks/Badge.astro'
+import Select from '@components/blocks/Select.astro'
+import Input from '@components/blocks/Input.astro'
+import FleetFittingScopeNotice from '@components/blocks/FleetFittingScopeNotice.astro'
+---
+
+{fetch_error || !entry || !parsed ?
+    <p>{(fetch_error as Error)?.message ?? t('fitting_not_in_composition')}</p>
+    :
+    <Wrapper padding_block='var(--space-m)' padding_inline='var(--space-m)' max_width='100%'>
+    <Flexblock gap='var(--space-m)'>
+        <Badge title={entry.name} image={get_item_icon(entry.ship_id, 64)} size={48}>
+            <small>{entry.ship_name}</small>
+        </Badge>
+
+        {!can_publish && access &&
+            <FleetFittingScopeNotice fleet_id={fleet_id} access={access} reload_url={MODAL_URL} />
+        }
+
+        {can_publish && entry.refits.length > 0 &&
+            <Flexblock gap='var(--space-2xs)'>
+                <small>{t('refit_modal_curated')}</small>
+                <FlexInline gap='var(--space-2xs)'>
+                    {entry.refits.map(refit =>
+                        <Button
+                            size='sm'
+                            type="button"
+                            hx-post={post_url({ refit_id: refit.id })}
+                            hx-target={`#${row_id}`}
+                            hx-swap="outerHTML transition:true"
+                            hx-indicator=".loader"
+                            hx-on--after-request={CLOSE_MODAL}
+                        >
+                            {refit.name}
+                        </Button>
+                    )}
+                </FlexInline>
+            </Flexblock>
+        }
+
+        {!can_publish ? null : cargo.length > 0 && groups.length > 0 ?
+            <form
+                hx-post={post_url()}
+                hx-target={`#${row_id}`}
+                hx-swap="outerHTML transition:true"
+                hx-indicator=".loader"
+                hx-on--after-request={CLOSE_MODAL}
+                x-data={`{
+                    swaps: {},
+                    stock: ${JSON.stringify(Object.fromEntries(cargo.map(item => [ item.name, item.quantity ])))},
+                    used(name) {
+                        return Object.values(this.swaps).filter(value => value === name).length
+                    },
+                    exhausted(name, index) {
+                        return this.swaps[index] !== name && this.used(name) >= (this.stock[name] ?? 0)
+                    },
+                    label(name) {
+                        const left = (this.stock[name] ?? 0) - this.used(name)
+                        return (this.stock[name] ?? 0) > 1 ? \`→ \${name} (\${left} left)\` : \`→ \${name}\`
+                    }
+                }`}
+            >
+                <Flexblock gap='var(--space-m)'>
+                    <small>{t('refit_modal_hint')}</small>
+
+                    <div class="[ refit-slots ]">
+                        {groups.map(group =>
+                            <Flexblock gap='var(--space-3xs)'>
+                                <small class="[ refit-slot-group ]">{group.title}</small>
+                                {group.modules.map(module =>
+                                    <div class="[ refit-slot ]">
+                                        <span class="[ refit-slot__fitted ]">{module.name}</span>
+                                        <Select name={`swap_${module.index}`} size='sm' x-model={`swaps[${module.index}]`}>
+                                            <option value="">{t('refit_keep')}</option>
+                                            {group.options.map(item =>
+                                                item.name !== module.name &&
+                                                    <option
+                                                        value={item.name}
+                                                        x-bind:disabled={`exhausted(${JSON.stringify(item.name)}, ${module.index})`}
+                                                        x-text={`label(${JSON.stringify(item.name)})`}
+                                                    >→ {item.name}</option>
+                                            )}
+                                        </Select>
+                                    </div>
+                                )}
+                            </Flexblock>
+                        )}
+                    </div>
+
+                    <FlexInline justification='space-between' class="[ items-end ]">
+                        <Flexblock gap='var(--space-3xs)' class="[ grow ]">
+                            <label for="refit-name"><small>{t('refit_name')} ({t('optional_lower')})</small></label>
+                            <Input id="refit-name" name="name" size='sm' placeholder={t('refit_name_placeholder')} width='320px' />
+                        </Flexblock>
+                        <Button size='sm' type="submit" color='green'>{t('refit_save')}</Button>
+                    </FlexInline>
+                </Flexblock>
+            </form>
+            :
+            entry.refits.length === 0 && <p>{t('refit_modal_no_cargo')}</p>
+        }
+    </Flexblock>
+    </Wrapper>
+}
+
+<style lang="scss">
+    .refit-slots {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-s);
+        max-height: min(48vh, 520px);
+        overflow-y: auto;
+        padding-right: var(--space-3xs);
+    }
+
+    .refit-slot-group {
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        opacity: 0.8;
+    }
+
+    .refit-slot {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(200px, 1fr);
+        gap: var(--space-xs);
+        align-items: center;
+        padding: var(--space-3xs) 0;
+        border-bottom: solid 1px var(--border-color);
+    }
+
+    .refit-slot__fitted {
+        color: var(--highlight);
+        font-size: var(--step--1);
+    }
+</style>

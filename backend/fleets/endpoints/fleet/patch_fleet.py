@@ -46,10 +46,10 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
 
     fleet.save()
 
-    if payload.doctrine_id:
+    if "doctrine_id" in payload.model_fields_set:
         try_refresh_active_fleet_motd(fleet)
 
-    if payload.status and (payload.status == "complete"):
+    if payload.status and payload.status in ("complete", "cancelled"):
         update_instance_endtime(fleet)
 
     out = {

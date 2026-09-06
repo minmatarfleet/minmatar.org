@@ -8,7 +8,11 @@ from .models import (
     EveFleetInstance,
     EveFleetInstanceMember,
     EveFleetInstanceMemberImplantSnapshot,
+    EveFleetFitting,
     EveFleetInstanceMemberShipSnapshot,
+    EveFleetFittingRefit,
+    EveFleetRoleVolunteer,
+    EveFleetShipVolunteer,
     NpsiEventSource,
     NpsiExternalEvent,
 )
@@ -141,6 +145,68 @@ class EveFleetInstanceAdmin(admin.ModelAdmin):
         return False
 
 
+class FleetRoleVolunteerInline(admin.TabularInline):
+    model = EveFleetRoleVolunteer
+    extra = 0
+    fields = (
+        "character_name",
+        "character_id",
+        "role",
+        "subtype",
+        "solar_system_name",
+        "solar_system_id",
+    )
+    verbose_name = "Role volunteer"
+    verbose_name_plural = "Role volunteers"
+
+
+class FleetFittingInline(admin.TabularInline):
+    model = EveFleetFitting
+    extra = 0
+    autocomplete_fields = ("fitting",)
+    fields = (
+        "role",
+        "order",
+        "fitting",
+        "name",
+        "ship_id",
+        "eft_format",
+        "esi_fitting_id",
+    )
+    readonly_fields = ("esi_fitting_id",)
+    verbose_name = "Fleet fitting"
+    verbose_name_plural = "Fleet fittings (makeshift doctrine / manual fits)"
+
+
+class FleetShipVolunteerInline(admin.TabularInline):
+    model = EveFleetShipVolunteer
+    extra = 0
+    autocomplete_fields = ("fitting",)
+    raw_id_fields = ("fleet_fitting",)
+    fields = ("character_name", "character_id", "fitting", "fleet_fitting")
+    verbose_name = "Ship volunteer"
+    verbose_name_plural = "Ship volunteers"
+
+
+class FleetRefitInline(admin.TabularInline):
+    model = EveFleetFittingRefit
+    extra = 0
+    autocomplete_fields = ("fitting",)
+    raw_id_fields = ("refit", "fleet_fitting")
+    fields = (
+        "fitting",
+        "fleet_fitting",
+        "refit",
+        "name",
+        "cargo_modules",
+        "notes",
+        "esi_fitting_id",
+    )
+    readonly_fields = ("esi_fitting_id",)
+    verbose_name = "Refit"
+    verbose_name_plural = "Refits (cargo to carry)"
+
+
 @admin.register(EveFleet)
 class FleetAdmin(admin.ModelAdmin):
     """Custom admin model for EveFleet entities"""
@@ -162,7 +228,13 @@ class FleetAdmin(admin.ModelAdmin):
         "members",
         "updated",
     )
-    inlines = [FleetInstanceInline]
+    inlines = [
+        FleetInstanceInline,
+        FleetFittingInline,
+        FleetRoleVolunteerInline,
+        FleetShipVolunteerInline,
+        FleetRefitInline,
+    ]
 
     def end_time(self, instance) -> Optional[datetime]:
         efi = EveFleetInstance.objects.filter(eve_fleet=instance).first()

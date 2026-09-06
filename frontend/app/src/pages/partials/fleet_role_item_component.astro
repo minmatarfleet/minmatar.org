@@ -17,6 +17,7 @@ const character_id = parseInt(Astro.url.searchParams.get('character_id') ?? '0')
 const id = Astro.url.searchParams.get('id') ?? ''
 const role = Astro.url.searchParams.get('role')
 const subtype = Astro.url.searchParams.get('subtype')
+const can_assign = Astro.url.searchParams.get('can_assign') === 'true'
 
 import type { FleetRoles, FleetRolesSubtypes, Alert } from '@dtypes/layout_components'
 import { fleet_roles, fleet_roles_subtypes } from '@dtypes/layout_components'
@@ -36,6 +37,7 @@ import {
     get_fleet_role_volunteers,
     create_fleet_role_volunteer,
     delete_fleet_role_volunteer,
+    assign_fleet_role_volunteer_system,
     type FleetRoleVolunteer,
 } from '@helpers/api.minmatar.org/fleets'
 
@@ -85,6 +87,28 @@ if (Astro.request.method === 'DELETE') {
     }
 }
 
+if (Astro.request.method === 'PATCH') {
+    const volunteer_id = parseInt(Astro.url.searchParams.get('volunteer_id') ?? '')
+    const clear_system = Astro.url.searchParams.get('clear_system') === 'true'
+    const solar_system_id = parseInt(Astro.url.searchParams.get('solar_system_id') ?? '')
+    const solar_system_name = Astro.url.searchParams.get('solar_system_name') ?? ''
+
+    try {
+        if (isNaN(volunteer_id))
+            throw new Error(t('invalid_remove_id'))
+
+        await assign_fleet_role_volunteer_system(auth_token as string, fleet_id, volunteer_id, clear_system ?
+            { solar_system_id: null, solar_system_name: null } :
+            { solar_system_id: isNaN(solar_system_id) ? null : solar_system_id, solar_system_name: solar_system_name }
+        )
+    } catch (error) {
+        alert = {
+            title: t('assign_cyno_system'),
+            content: error.message as string,
+        }
+    }
+}
+
 try {
     const summary = await get_characters_summary_sorted(auth_token as string)
     const volunteers = await get_fleet_role_volunteers(auth_token as string, fleet_id)
@@ -103,17 +127,22 @@ const FLEET_ROLE_ITEM_PARTIAL_URL = translatePath(`/partials/fleet_role_item_com
     character_id: character_id,
     role: role,
     ...(subtype && { subtype }),
+    ...(can_assign && { can_assign: true }),
 })}`)
 
 import { get_item_icon } from '@helpers/eve_image_server'
 
-import EhpLinksIcon from '@components/icons/EhpLinksIcon.astro'
 
 const ICONS_BY_SUBTYPE = {
-    ehp: null,
-    info: get_item_icon(43554, 32),
-    skirmish: get_item_icon(43556, 32),
+    ehp: get_item_icon(42526, 32),
+    info: get_item_icon(42527, 32),
+    skirmish: get_item_icon(42530, 32),
 }
+const ICONS_BY_ROLE = {
+    logi_anchor: get_item_icon(26914, 32),
+    cyno: get_item_icon(21096, 32),
+}
+const wanted = role === 'cyno' ? 2 : 1
 
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 import FleetRoleItem from '@components/blocks/FleetRoleItem.astro';
@@ -141,17 +170,14 @@ const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
         subtype={subtype ? subtype as FleetRolesSubtypes : undefined}
         volunteers={role_volunteers}
         pilots={pilots}
+        can_assign_system={can_assign}
+        wanted={wanted}
     >
-        {subtype === 'ehp' &&
-            <EhpLinksIcon slot="icon" />
+        {subtype &&
+            <img slot="icon" src={ICONS_BY_SUBTYPE[subtype]} width="32" height="32" alt="" />
         }
-        {subtype && subtype !== 'ehp' &&
-            <img
-                slot="icon"
-                src={ICONS_BY_SUBTYPE[subtype]}
-                width="32"
-                height="32"
-            />
+        {!subtype && ICONS_BY_ROLE[role as 'logi_anchor' | 'cyno'] &&
+            <img slot="icon" src={ICONS_BY_ROLE[role as 'logi_anchor' | 'cyno']} width="32" height="32" alt="" />
         }
     </FleetRoleItem>
 }

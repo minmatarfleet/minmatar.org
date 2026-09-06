@@ -10,13 +10,17 @@ from discord.client import DiscordClient
 from eveonline.client import EsiClient
 from eveonline.models import EveCharacter, EveLocation
 from eveonline.helpers.characters import user_primary_character
-from fittings.models import EveDoctrine
+from fittings.models import EveDoctrine, EveFitting, EveFittingRefit
 from fleets.helpers.member_ships import apply_esi_fleet_member
+from fleets.helpers.eft_items import fitting_href
 from fleets.motd import get_motd
 from fleets.notifications import get_fleet_discord_notification
 
 discord = DiscordClient()
 logger = logging.getLogger(__name__)
+
+# ESI rejects fleet MOTDs longer than this (characters).
+MOTD_MAX_LENGTH = 4000
 
 
 class EveFleet(models.Model):
@@ -230,35 +234,7 @@ class EveFleetInstance(models.Model):
         }
 
         if not disable_motd:
-            formup_location = self.eve_fleet.formup_location
-            role_volunteers = _motd_role_volunteers(self.eve_fleet)
-            missing_roles = _motd_missing_roles(self.eve_fleet)
-            volunteer_url = (
-                _motd_volunteer_url(self.eve_fleet) if missing_roles else None
-            )
-            fleet_edit_url = _motd_fleet_edit_url(self.eve_fleet)
-            self.motd = get_motd(
-                self.eve_fleet.fleet_commander.character_id,
-                self.eve_fleet.fleet_commander.character_name,
-                formup_location.location_id if formup_location else None,
-                formup_location.short_name if formup_location else None,
-                "https://discord.gg/minmatar",
-                "Minmatar Fleet Discord",
-                (
-                    self.eve_fleet.doctrine.doctrine_link
-                    if self.eve_fleet.doctrine
-                    else None
-                ),
-                (
-                    self.eve_fleet.doctrine.name
-                    if self.eve_fleet.doctrine
-                    else None
-                ),
-                role_volunteers=role_volunteers,
-                missing_roles=missing_roles or None,
-                volunteer_url=volunteer_url,
-                fleet_edit_url=fleet_edit_url,
-            )
+            self.motd = self.build_motd()
             update["motd"] = self.motd
 
         response = self.esi_client().update_fleet_details(self.id, update)
@@ -278,33 +254,40 @@ class EveFleetInstance(models.Model):
         """Regenerate and push the fleet MOTD to ESI. Public API for callers."""
         return self._update_motd()
 
-    def _update_motd(self):
-        """Update the motd for the fleet and push to ESI."""
-        formup_location = self.eve_fleet.formup_location
-        role_volunteers = _motd_role_volunteers(self.eve_fleet)
-        missing_roles = _motd_missing_roles(self.eve_fleet)
-        volunteer_url = (
-            _motd_volunteer_url(self.eve_fleet) if missing_roles else None
-        )
-        fleet_edit_url = _motd_fleet_edit_url(self.eve_fleet)
-        motd = get_motd(
-            self.eve_fleet.fleet_commander.character_id,
-            self.eve_fleet.fleet_commander.character_name,
+    def build_motd(self) -> str:
+        """Compose the MOTD text from the fleet's current state (no ESI)."""
+        eve_fleet = self.eve_fleet
+        formup_location = eve_fleet.formup_location
+        kwargs = {
+            "role_volunteers": _motd_role_volunteers(eve_fleet),
+            "fleet_edit_url": _motd_fleet_edit_url(eve_fleet),
+            "refits": _motd_refits(eve_fleet),
+            "composition": _motd_composition(eve_fleet),
+        }
+        args = (
+            eve_fleet.fleet_commander.character_id,
+            eve_fleet.fleet_commander.character_name,
             formup_location.location_id if formup_location else None,
             formup_location.short_name if formup_location else None,
             "https://discord.gg/minmatar",
             "Minmatar Fleet Discord",
-            (
-                self.eve_fleet.doctrine.doctrine_link
-                if self.eve_fleet.doctrine
-                else None
-            ),
-            self.eve_fleet.doctrine.name if self.eve_fleet.doctrine else None,
-            role_volunteers=role_volunteers,
-            missing_roles=missing_roles or None,
-            volunteer_url=volunteer_url,
-            fleet_edit_url=fleet_edit_url,
+            eve_fleet.doctrine.doctrine_link if eve_fleet.doctrine else None,
+            eve_fleet.doctrine.name if eve_fleet.doctrine else None,
         )
+        motd = get_motd(*args, **kwargs)
+        # ESI caps the MOTD length; drop the refit section first.
+        if len(motd) > MOTD_MAX_LENGTH and kwargs["refits"]:
+            kwargs["refits"] = []
+            motd = get_motd(*args, **kwargs)
+        # In-game DNA links are long; fall back to web links / plain names.
+        if len(motd) > MOTD_MAX_LENGTH and kwargs["composition"]:
+            kwargs["composition"] = _motd_composition(eve_fleet, in_game=False)
+            motd = get_motd(*args, **kwargs)
+        return motd
+
+    def _update_motd(self):
+        """Update the motd for the fleet and push to ESI."""
+        motd = self.build_motd()
         update = {"motd": motd}
         response = self.esi_client().update_fleet_details(self.id, update)
         if not response.success():
@@ -479,6 +462,7 @@ class EveFleetInstance(models.Model):
 
         self.eve_fleet.status = "complete"
         self.eve_fleet.save()
+        close_fleet_cleanup(self.eve_fleet)
 
 
 class EveFleetInstanceMember(models.Model):
@@ -567,7 +551,7 @@ class EveFleetInstanceMemberShipSnapshot(models.Model):
 class EveFleetInstanceMemberRole(models.Model):
     """
     Optional role assigned to a fleet instance member for critical fleet positions.
-    Roles: Logi Anchor, Links, Cyno, Scout.
+    Roles: Logi FC, Links, Cyno, Scout.
     For roles that need extra coordination (e.g. Links), use the optional RoleDetail.
     """
 
@@ -577,7 +561,7 @@ class EveFleetInstanceMemberRole(models.Model):
     ROLE_SCOUT = "scout"
 
     ROLE_CHOICES = (
-        (ROLE_LOGI_ANCHOR, "Logi Anchor"),
+        (ROLE_LOGI_ANCHOR, "Logi FC"),
         (ROLE_LINKS, "Links"),
         (ROLE_CYNO, "Cyno"),
         (ROLE_SCOUT, "Scout"),
@@ -672,7 +656,7 @@ class EveFleetRoleVolunteer(models.Model):
     ROLE_SCOUT = "scout"
 
     ROLE_CHOICES = (
-        (ROLE_LOGI_ANCHOR, "Logi Anchor"),
+        (ROLE_LOGI_ANCHOR, "Logi FC"),
         (ROLE_LINKS, "Links"),
         (ROLE_CYNO, "Cyno"),
         (ROLE_SCOUT, "Scout"),
@@ -701,6 +685,12 @@ class EveFleetRoleVolunteer(models.Model):
         blank=True,
     )
     quantity = models.PositiveSmallIntegerField(null=True, blank=True)
+    # FC-assigned system for cyno volunteers. Private: never shown in the
+    # MOTD; only the FC and the volunteer see it, and the pilot gets a DM.
+    solar_system_id = models.BigIntegerField(null=True, blank=True)
+    solar_system_name = models.CharField(
+        max_length=255, blank=True, default=""
+    )
 
     class Meta:
         """Unique per fleet/character/role; default ordering for display."""
@@ -720,10 +710,250 @@ class EveFleetRoleVolunteer(models.Model):
         return f"{self.character_name} — {self.get_role_display()}"
 
 
+class EveFleetFitting(models.Model):
+    """
+    One ship in a fleet's ad-hoc composition. Lets an FC build a "makeshift
+    doctrine" from catalog fittings (``fitting`` set) or run something
+    completely different by pasting EFT (``eft_format`` set, ``fitting``
+    null). Merged with the doctrine's fittings when the fleet has one.
+    """
+
+    ROLE_CHOICES = (
+        ("primary", "Primary"),
+        ("secondary", "Secondary"),
+        ("support", "Support"),
+    )
+
+    eve_fleet = models.ForeignKey(
+        EveFleet, on_delete=models.CASCADE, related_name="fleet_fittings"
+    )
+    fitting = models.ForeignKey(
+        EveFitting,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="fleet_fittings",
+        help_text="Catalog fitting; leave empty for a manual EFT fit.",
+    )
+    name = models.CharField(max_length=255)
+    ship_id = models.IntegerField()
+    eft_format = models.TextField(
+        blank=True,
+        default="",
+        help_text="EFT block for manual fits (ignored for catalog fits).",
+    )
+    role = models.CharField(
+        max_length=16, choices=ROLE_CHOICES, default="primary"
+    )
+    order = models.PositiveSmallIntegerField(default=0)
+    # In-game saved fitting created under the FC for manual fits, removed
+    # when the fleet closes (see fleets.helpers.esi_fittings).
+    esi_fitting_id = models.BigIntegerField(null=True, blank=True)
+    esi_character_id = models.BigIntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
+
+    class Meta:
+        # A catalog fit may appear once per fleet; enforced in the create
+        # endpoint because MariaDB ignores conditional unique constraints.
+        indexes = [
+            models.Index(fields=["eve_fleet"]),
+        ]
+        ordering = ["eve_fleet", "order", "id"]
+
+    @property
+    def is_manual(self) -> bool:
+        return self.fitting_id is None
+
+    @property
+    def effective_eft(self) -> str:
+        if self.fitting_id:
+            return self.fitting.eft_format
+        return self.eft_format
+
+    def __str__(self):
+        return f"{self.eve_fleet_id} — {self.name}"
+
+
+class EveFleetShipVolunteer(models.Model):
+    """
+    User volunteers a character to fly one of the fittings in the fleet's
+    composition (doctrine or fleet fitting) for an upcoming fleet.
+    Exactly one of ``fitting`` / ``fleet_fitting`` is set.
+    """
+
+    eve_fleet = models.ForeignKey(
+        EveFleet, on_delete=models.CASCADE, related_name="ship_volunteers"
+    )
+    character_id = models.BigIntegerField()
+    character_name = models.CharField(max_length=255)
+    fitting = models.ForeignKey(
+        EveFitting,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="fleet_ship_volunteers",
+    )
+    fleet_fitting = models.ForeignKey(
+        EveFleetFitting,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="ship_volunteers",
+    )
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["eve_fleet", "character_id", "fitting"],
+                name="fleets_ship_volunteer_unique",
+            ),
+            models.UniqueConstraint(
+                fields=["eve_fleet", "character_id", "fleet_fitting"],
+                name="fleets_ship_volunteer_fleet_fitting_unique",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(fitting__isnull=False, fleet_fitting__isnull=True)
+                    | models.Q(
+                        fitting__isnull=True, fleet_fitting__isnull=False
+                    )
+                ),
+                name="fleets_ship_volunteer_one_target",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["eve_fleet"]),
+        ]
+        ordering = ["eve_fleet", "fitting", "fleet_fitting", "id"]
+
+    @property
+    def target_name(self) -> str:
+        return (
+            self.fitting.name if self.fitting_id else self.fleet_fitting.name
+        )
+
+    @property
+    def target_ship_id(self) -> int:
+        return (
+            self.fitting.ship_id
+            if self.fitting_id
+            else self.fleet_fitting.ship_id
+        )
+
+    def __str__(self):
+        return f"{self.character_name} — {self.target_name}"
+
+
+class EveFleetFittingRefit(models.Model):
+    """
+    FC-configured refit for one of the fleet's doctrine fittings: what pilots
+    should carry in their cargohold so the fit can be swapped in-fleet.
+    Optionally points at a curated EveFittingRefit; cargo_modules is the
+    editable list of modules to bring (one per line, ``Name xN``).
+    """
+
+    eve_fleet = models.ForeignKey(
+        EveFleet, on_delete=models.CASCADE, related_name="refits"
+    )
+    fitting = models.ForeignKey(
+        EveFitting,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="fleet_refits",
+    )
+    fleet_fitting = models.ForeignKey(
+        EveFleetFitting,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="refits",
+    )
+    refit = models.ForeignKey(
+        EveFittingRefit,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="fleet_refits",
+    )
+    name = models.CharField(max_length=255)
+    cargo_modules = models.TextField(
+        blank=True,
+        default="",
+        help_text="Modules to carry in cargo, one per line (``Name xN``).",
+    )
+    notes = models.CharField(max_length=200, blank=True, default="")
+    eft_format = models.TextField(
+        blank=True,
+        default="",
+        help_text="Full EFT of the refitted ship (for in-game links).",
+    )
+    esi_fitting_id = models.BigIntegerField(null=True, blank=True)
+    esi_character_id = models.BigIntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["eve_fleet", "fitting", "name"],
+                name="fleets_refit_unique",
+            ),
+            models.UniqueConstraint(
+                fields=["eve_fleet", "fleet_fitting", "name"],
+                name="fleets_refit_fleet_fitting_unique",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(fitting__isnull=False, fleet_fitting__isnull=True)
+                    | models.Q(
+                        fitting__isnull=True, fleet_fitting__isnull=False
+                    )
+                ),
+                name="fleets_refit_one_target",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["eve_fleet"]),
+        ]
+        ordering = ["eve_fleet", "fitting", "fleet_fitting", "id"]
+
+    @property
+    def target_name(self) -> str:
+        return (
+            self.fitting.name if self.fitting_id else self.fleet_fitting.name
+        )
+
+    @property
+    def target_ship_id(self) -> int:
+        return (
+            self.fitting.ship_id
+            if self.fitting_id
+            else self.fleet_fitting.ship_id
+        )
+
+    @property
+    def base_eft(self) -> str:
+        return (
+            self.fitting.eft_format
+            if self.fitting_id
+            else self.fleet_fitting.effective_eft
+        )
+
+    def __str__(self):
+        return f"{self.target_name} → {self.name}"
+
+
 def _motd_role_volunteers(eve_fleet):
-    """Build role_volunteers list for get_motd: Logi Anchor, Cynos."""
+    """
+    Build role_volunteers list for get_motd: Logi FC, Cynos.
+    The FC-assigned cyno system is intentionally NOT included: it is
+    private and delivered to the pilot by Discord DM.
+    """
     critical_roles = [
-        (EveFleetRoleVolunteer.ROLE_LOGI_ANCHOR, "Logi Anchor"),
+        (EveFleetRoleVolunteer.ROLE_LOGI_ANCHOR, "Logi FC"),
         (EveFleetRoleVolunteer.ROLE_CYNO, "Cynos"),
     ]
     result = []
@@ -740,52 +970,63 @@ def _motd_role_volunteers(eve_fleet):
     return result
 
 
-def _motd_missing_roles(eve_fleet):
-    """
-    Required: all 3 link subtypes, 1 logi anchor, at least 2 cynos.
-    Return list of short strings for MOTD, e.g. ["EHP links", "Logi anchor", "Cynos"].
-    """
-    missing = []
-
-    # Links: need at least one volunteer per subtype (ehp, info, skirmish)
-    link_subtype_labels = {
-        EveFleetRoleVolunteer.SUBTYPE_EHP: "EHP links",
-        EveFleetRoleVolunteer.SUBTYPE_INFO: "Info links",
-        EveFleetRoleVolunteer.SUBTYPE_SKIRMISH: "Skirm links",
-    }
-    links_with_subtype = set(
-        EveFleetRoleVolunteer.objects.filter(
-            eve_fleet=eve_fleet,
-            role=EveFleetRoleVolunteer.ROLE_LINKS,
-            subtype__isnull=False,
-        )
-        .exclude(subtype="")
-        .values_list("subtype", flat=True)
+def close_fleet_cleanup(eve_fleet) -> None:
+    """Housekeeping when a fleet ends: drop the in-game fittings we saved."""
+    from fleets.helpers.esi_fittings import (  # pylint: disable=import-outside-toplevel
+        cleanup_fleet_esi_fittings,
     )
-    for subtype_value, label in link_subtype_labels.items():
-        if subtype_value not in links_with_subtype:
-            missing.append(label)
 
-    # Logi anchor: need at least 1
-    if not EveFleetRoleVolunteer.objects.filter(
-        eve_fleet=eve_fleet, role=EveFleetRoleVolunteer.ROLE_LOGI_ANCHOR
-    ).exists():
-        missing.append("Logi anchor")
-
-    # Cynos: need at least 2
-    cyno_count = EveFleetRoleVolunteer.objects.filter(
-        eve_fleet=eve_fleet, role=EveFleetRoleVolunteer.ROLE_CYNO
-    ).count()
-    if cyno_count < 2:
-        missing.append("Cynos")
-
-    return missing
+    try:
+        cleanup_fleet_esi_fittings(eve_fleet)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.warning(
+            "ESI fitting cleanup failed for fleet %s: %s", eve_fleet.id, e
+        )
 
 
-def _motd_volunteer_url(eve_fleet):
-    """URL to the fleet volunteer page for MOTD."""
+def _motd_refits(eve_fleet):
+    """
+    Build refits list for get_motd: [(refit_name, refit_href)].
+    refit_href is an in-game ``fitting:`` link when the refit EFT resolves.
+    """
+    refits = EveFleetFittingRefit.objects.filter(eve_fleet=eve_fleet)
+    return [
+        (
+            refit.name,
+            fitting_href(refit.eft_format) if refit.eft_format else None,
+        )
+        for refit in refits
+    ]
+
+
+def _fitting_web_url(fitting_id):
+    """Public fitting page for a catalog fit; None for manual fits."""
+    if not fitting_id:
+        return None
     base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org")
-    return f"{base.rstrip('/')}/fleets/upcoming/{eve_fleet.id}/volunteer"
+    return f"{base.rstrip('/')}/ships/fittings/{fitting_id}"
+
+
+def _motd_composition(eve_fleet, in_game=True):
+    """
+    Fleet-specific fits for the MOTD when there is no doctrine: list of
+    (name, href|None). Every fit opens in-game via a ``fitting:`` DNA link;
+    catalog fits fall back to their web page when the hull is unknown or
+    when ``in_game`` is off (MOTD too long).
+    """
+    if eve_fleet.doctrine_id:
+        return []
+    fittings = EveFleetFitting.objects.filter(eve_fleet=eve_fleet).order_by(
+        "role", "order", "id"
+    )
+    return [
+        (
+            f.name,
+            (fitting_href(f.effective_eft) if in_game else None)
+            or _fitting_web_url(f.fitting_id),
+        )
+        for f in fittings
+    ]
 
 
 def _motd_fleet_edit_url(eve_fleet):

@@ -46,7 +46,13 @@ import type { SummaryCharacter, FleetMetrics, FleetCommanderMetrics } from '@dty
 import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 import {
     get_fleet_role_volunteers,
+    get_fleet_ship_volunteers,
+    get_fleet_refits,
+    get_fleet_composition,
     type FleetRoleVolunteer,
+    type FleetShipVolunteer,
+    type FleetRefit,
+    type FleetCompositionEntry,
 } from '@helpers/api.minmatar.org/fleets'
 import {
     get_fleets_metrics,
@@ -54,6 +60,9 @@ import {
 } from '@helpers/api.minmatar.org/fleets'
 let pilots: SummaryCharacter[] = []
 let volunteers: FleetRoleVolunteer[] = []
+let ship_volunteers: FleetShipVolunteer[] = []
+let refits: FleetRefit[] = []
+let composition: FleetCompositionEntry[] = []
 let history: boolean = false
 let fleet_metrics: FleetMetrics | undefined
 let fleet_commander_metrics: FleetCommanderMetrics | undefined
@@ -78,6 +87,15 @@ try {
         const summary = await get_characters_summary_sorted(auth_token as string)
         volunteers = await get_fleet_role_volunteers(auth_token as string, fleet_id)
         pilots = summary.characters ?? []
+
+        const [fetched_composition, fetched_ship_volunteers, fetched_refits] = await Promise.all([
+            get_fleet_composition(auth_token as string, fleet_id),
+            get_fleet_ship_volunteers(auth_token as string, fleet_id),
+            get_fleet_refits(auth_token as string, fleet_id),
+        ])
+        composition = fetched_composition
+        ship_volunteers = fetched_ship_volunteers
+        refits = fetched_refits
     }
 
     const fleets_metrics = await get_fleets_metrics(auth_token as string)
@@ -91,21 +109,8 @@ try {
     fetch_fleets_error = error
 }
 
-import { get_market_contracts } from '@helpers/api.minmatar.org/market'
-import { get_locations } from '@helpers/api.minmatar.org/locations'
-import type { Contract } from '@dtypes/api.minmatar.org'
-let supply_contracts: Contract[] = []
-
-if (fleet?.doctrine) {
-    try {
-        const locations = await get_locations()
-        const fleet_location = locations.find(location => location.location_name === fleet?.location)
-        
-        supply_contracts = fleet_location?.location_id ? await get_market_contracts(fleet_location?.location_id) : []
-    } catch (error) {
-        console.error('Error fetching supply contracts:', error)
-    }
-}
+import { fetch_fleet_supply, EMPTY_SUPPLY } from '@helpers/fleet_ships'
+const supply = fleet && !history ? await fetch_fleet_supply(auth_token as string, fleet_id) : EMPTY_SUPPLY
 
 const can_remove_fleet = is_superuser ||
                          user_permissions.includes('fleets.delete_evefleet') ||
@@ -135,20 +140,24 @@ import Viewport from '@layouts/Viewport.astro';
 import PageWide from '@components/page/PageWide.astro';
 import PageActions from '@components/page/PageActions.astro';
 import PageTitle from '@components/page/PageTitle.astro';
-import PageSubheader from '@components/page/PageSubheader.astro';
 
 import FlexInline from '@components/compositions/FlexInline.astro';
+
+import Flexblock from '@components/compositions/Flexblock.astro';
 
 import FleetDetails from '@components/blocks/FleetDetails.astro';
 import Button from '@components/blocks/Button.astro';
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
-import CancelFleetButton from '@components/blocks/CancelFleetButton.astro';
-import RestoreFleetButton from '@components/blocks/RestoreFleetButton.astro';
+import Breadcrumb from '@components/blocks/Breadcrumb.astro';
+import FleetManageMenu from '@components/blocks/FleetManageMenu.astro';
 
-import AddIcon from '@components/icons/buttons/AddIcon.astro';
-import FleetIcon from '@components/icons/buttons/FleetIcon.astro';
 
 const page_title = `${t('fleet')} ${fleet_id}`;
+const breadcrumb_items = [
+    { label: t('fleets'), href: translatePath('/fleets/upcoming/') },
+    { label: t('upcoming_fleets_short'), href: translatePath('/fleets/upcoming/') },
+    { label: page_title },
+]
 ---
 
 <Viewport
@@ -175,54 +184,19 @@ const page_title = `${t('fleet')} ${fleet_id}`;
         data-clean-url={motd_alert ? translatePath(`/fleets/upcoming/${fleet_id}`) : undefined}
     >
         <FlexInline slot="header" justification='space-between' class="[ w-full ]">
-            <FlexInline>
+            <Flexblock gap="var(--space-3xs)">
+                <Breadcrumb items={breadcrumb_items} />
                 <PageTitle>
                     {page_title}
                 </PageTitle>
-            </FlexInline>
+            </Flexblock>
             <PageActions>
-                <Button href={translatePath('/fleets/upcoming/')}>
-                    <FleetIcon slot="icon" />
-                    {t('upcoming_fleets')}
-                </Button>
-                <Button color={'green'} href={translatePath('/fleets/add/')}>
-                    <AddIcon slot="icon" />
-                    {t('schedule_fleet')}
-                </Button>
+                {fleet && is_fleet_commander &&
+                    <FleetManageMenu fleet={fleet} />
+                }
             </PageActions>
         </FlexInline>
 
-        <PageSubheader
-            id="subheader-oob"
-            slot="subheader"
-            is_empty={!is_fleet_commander || !fleet || history}
-        >
-            {fleet && is_fleet_commander &&
-                <>{!history && fleet.status !== 'cancelled' &&
-                    <Button
-                        size='sm'
-                        href={translatePath(`/fleets/upcoming/edit/${fleet.id}`)}
-                    >
-                        {t('edit_fleet')}
-                    </Button>
-                }
-
-                {!history && fleet?.tracking && !fleet?.tracking?.end_time &&
-                    <form method="post" action={translatePath(`/fleets/upcoming/${fleet.id}/refresh-motd`)} class="inline">
-                        <Button type="submit" size="sm">
-                            {t('refresh_motd')}
-                        </Button>
-                    </form>
-                }
-
-                {!history && fleet.tracking === null &&
-                    <>{fleet.status !== 'cancelled' ?
-                        <CancelFleetButton fleet_id={fleet.id} /> :
-                        <RestoreFleetButton fleet_id={fleet.id} />
-                    }</>
-                }</>
-            }
-        </PageSubheader>
 
         {fetch_fleets_error ?
             <ErrorRefetch
@@ -244,8 +218,11 @@ const page_title = `${t('fleet')} ${fleet_id}`;
                 update_cover={false}
                 fleet_metrics={fleet_metrics}
                 fleet_commander_metrics={fleet_commander_metrics}
-                supply_contracts={supply_contracts}
                 init_tooltips={false}
+                ship_volunteers={ship_volunteers}
+                refits={refits}
+                composition={composition}
+                supply={supply}
             />
         }
     </PageWide>

@@ -1,0 +1,187 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value as string : false
+const user: User | false = auth_token ? (jose.decodeJwt(auth_token) as User) : false
+
+if (!user) return Astro.redirect(`${translatePath('/redirects/auth_init')}?redirect_url=${encodeURIComponent(Astro.url.toString())}`)
+
+import { query_string } from '@helpers/string';
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+const key = Astro.url.searchParams.get('key') ?? ''
+const id = Astro.url.searchParams.get('id') ?? ''
+const can_manage = Astro.url.searchParams.get('can_manage') === 'true'
+const action = Astro.url.searchParams.get('action') ?? ''
+
+if (isNaN(fleet_id) || !/^[fm]:\d+$/.test(key))
+    throw new Error('Invalid parameters')
+
+import type { Alert } from '@dtypes/layout_components'
+import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
+import { get_characters_summary_sorted } from '@helpers/fetching/characters'
+import { fetch_fleet_supply, supply_for, refits_for, volunteers_for, EMPTY_SUPPLY } from '@helpers/fleet_ships'
+import { parse_eft } from '@helpers/eft'
+import {
+    get_fleet_composition,
+    get_fleet_ship_volunteers,
+    get_fleet_refits,
+    delete_fleet_ship_volunteer,
+    create_fleet_refit,
+    delete_fleet_refit,
+    composition_target,
+    type FleetShipVolunteer,
+    type FleetCompositionEntry,
+    type FleetRefit,
+    type FleetSupply,
+} from '@helpers/api.minmatar.org/fleets'
+
+let fetch_error: Error | false = false
+let pilots: SummaryCharacter[] = []
+let entry_volunteers: FleetShipVolunteer[] = []
+let entry_refits: FleetRefit[] = []
+let entry: FleetCompositionEntry | undefined
+let supply: FleetSupply = EMPTY_SUPPLY
+let alert:Alert | false = false
+
+const find_entry = async () => {
+    const composition = await get_fleet_composition(auth_token as string, fleet_id)
+    return composition.find(e => e.key === key)
+}
+
+/** Build a custom refit from the slot-swap form: swap_<index>=<cargo module>. */
+const refit_from_swaps = (target:FleetCompositionEntry, data:FormData) => {
+    const parsed = parse_eft(target.eft_format)
+    const swaps:{ out:string; in:string }[] = []
+    for (const module of parsed.modules) {
+        const swap_in = ((data.get(`swap_${module.index}`) as string | null) ?? '').trim()
+        if (swap_in) swaps.push({ out: module.name, in: swap_in })
+    }
+    if (swaps.length === 0) throw new Error(t('refit_no_swaps'))
+
+    // A spare module can only fill as many slots as the cargohold carries.
+    const stock = Object.fromEntries(parsed.cargo.map(item => [ item.name, item.quantity ]))
+    const used:Record<string, number> = {}
+    for (const swap of swaps) {
+        used[swap.in] = (used[swap.in] ?? 0) + 1
+        if (used[swap.in] > (stock[swap.in] ?? 0))
+            throw new Error(t('refit_not_enough_in_cargo').replace('{module}', swap.in).replace('{count}', String(stock[swap.in] ?? 0)))
+    }
+
+    // The backend derives name/cargo/notes from the swaps, builds the refit
+    // EFT and saves it in-game under the FC.
+    const typed_name = ((data.get('name') as string | null) ?? '').trim()
+    return {
+        name: typed_name || null,
+        swaps: swaps.map(swap => ({ module_out: swap.out, module_in: swap.in })),
+    }
+}
+
+// FC only: save a refit from the refit modal (curated pick or slot swaps).
+if (Astro.request.method === 'POST' && action === 'refit' && can_manage) {
+    try {
+        const target_entry = await find_entry()
+        if (!target_entry)
+            throw new Error(t('fitting_not_in_composition'))
+
+        const refit_id = parseInt(Astro.url.searchParams.get('refit_id') ?? '')
+        if (!isNaN(refit_id)) {
+            await create_fleet_refit(auth_token as string, fleet_id, {
+                ...composition_target(target_entry),
+                refit_id,
+                cargo_modules: null,
+            })
+        } else {
+            const data = await Astro.request.formData()
+            await create_fleet_refit(auth_token as string, fleet_id, {
+                ...composition_target(target_entry),
+                ...refit_from_swaps(target_entry, data),
+            })
+        }
+    } catch (error) {
+        alert = {
+            title: t('refit_label'),
+            content: error.message as string,
+        }
+    }
+}
+
+if (Astro.request.method === 'DELETE') {
+    const remove_id = Astro.url.searchParams.get('remove_id') ?? ''
+    const remove_refit_id = parseInt(Astro.url.searchParams.get('remove_refit_id') ?? '')
+
+    try {
+        if (!isNaN(remove_refit_id) && can_manage) {
+            await delete_fleet_refit(auth_token as string, fleet_id, remove_refit_id)
+        } else {
+            if (!remove_id)
+                throw new Error(t('invalid_remove_id'))
+            await delete_fleet_ship_volunteer(auth_token as string, fleet_id, parseInt(remove_id as string))
+        }
+    } catch (error) {
+        alert = {
+            title: t('remove'),
+            content: error.message as string,
+        }
+    }
+}
+
+try {
+    entry = await find_entry()
+    if (!entry)
+        throw new Error(t('fitting_not_in_composition'))
+
+    const [summary, volunteers, refits, fetched_supply] = await Promise.all([
+        get_characters_summary_sorted(auth_token as string),
+        get_fleet_ship_volunteers(auth_token as string, fleet_id),
+        get_fleet_refits(auth_token as string, fleet_id),
+        fetch_fleet_supply(auth_token as string, fleet_id),
+    ])
+    pilots = summary.characters ?? []
+    entry_volunteers = volunteers_for(entry, volunteers)
+    entry_refits = refits_for(entry, refits)
+    supply = fetched_supply
+} catch (error) {
+    fetch_error = error
+}
+
+const FLEET_SHIP_VOLUNTEER_ITEM_PARTIAL_URL = translatePath(`/partials/fleet_ship_volunteer_item_component?${query_string({
+    id: id,
+    fleet_id: fleet_id,
+    key: key,
+    ...(can_manage && { can_manage: true }),
+})}`)
+
+import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
+import FleetShipRow from '@components/blocks/FleetShipRow.astro';
+import ShowAlert from '@components/blocks/ShowAlert.astro';
+
+const delay = parseInt(Astro.url.searchParams.get('delay') ?? '0')
+---
+
+{alert && <ShowAlert alert={alert} /> }
+
+{fetch_error || !entry ?
+    <ErrorRefetch
+        args={{
+            partial: FLEET_SHIP_VOLUNTEER_ITEM_PARTIAL_URL,
+            error: fetch_error || new Error(t('fitting_not_in_composition')),
+            delay: delay,
+        }}
+    />
+    :
+    <FleetShipRow
+        id={id}
+        fleet_id={fleet_id}
+        entry={entry}
+        volunteers={entry_volunteers}
+        refits={entry_refits}
+        supply={supply_for(entry, supply)}
+        pilots={pilots}
+        can_manage={can_manage}
+    />
+}
