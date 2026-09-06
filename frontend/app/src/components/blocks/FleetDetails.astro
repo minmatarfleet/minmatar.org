@@ -2,10 +2,10 @@
 import { i18n } from '@helpers/i18n'
 const { lang, t, translatePath } = i18n(Astro.url)
 
-import type { FleetUI, FleetCompositionUI, FleetRadarUI, SRPUI, FleetCombatLog } from '@dtypes/layout_components'
+import type { FleetUI, FleetCompositionUI, FleetRadarUI } from '@dtypes/layout_components'
 
 import type { SummaryCharacter, FleetMetrics, FleetCommanderMetrics, Contract } from '@dtypes/api.minmatar.org'
-import type { FleetRoleVolunteer } from '@helpers/api.minmatar.org/fleets'
+import type { FleetRoleVolunteer, FleetShipVolunteer, FleetRefit, FleetCompositionEntry, FleetSupply } from '@helpers/api.minmatar.org/fleets'
 
 interface Props {
     fleet:                      FleetUI;
@@ -14,7 +14,6 @@ interface Props {
     is_fleet_commander?:        boolean;
     fleet_composition?:         FleetCompositionUI[];
     fleet_radar?:               FleetRadarUI[];
-    saved_logs?:                FleetCombatLog[];
     volunteers:                 FleetRoleVolunteer[],
     pilots:                     SummaryCharacter[],
     update_cover:               boolean;
@@ -22,6 +21,10 @@ interface Props {
     fleet_commander_metrics:    FleetCommanderMetrics | undefined;
     supply_contracts?:          Contract[];
     init_tooltips:              boolean;
+    ship_volunteers?:           FleetShipVolunteer[];
+    refits?:                    FleetRefit[];
+    composition?:               FleetCompositionEntry[];
+    supply?:                    FleetSupply;
 }
 
 const {
@@ -31,7 +34,6 @@ const {
     is_fleet_commander = false,
     fleet_composition,
     fleet_radar,
-    saved_logs = [],
     volunteers,
     pilots,
     update_cover,
@@ -39,6 +41,10 @@ const {
     fleet_commander_metrics,
     supply_contracts = [],
     init_tooltips,
+    ship_volunteers = [],
+    refits = [],
+    composition = [],
+    supply,
 } = Astro.props
 
 const FLEET_COMPOSITION_PARTIAL_URL = `${translatePath('/partials/fleet_composition')}?id=${fleet.id}`
@@ -62,10 +68,10 @@ import TextGroup from '@components/blocks/TextGroup.astro';
 import FleetStatus from '@components/blocks/FleetStatus.astro';
 import SRPTable from '@components/blocks/SRPTable.astro';
 import FleetHero from '@components/blocks/FleetHero.astro';
-import FleetCombatLogTable from '@components/blocks/FleetCombatLogTable.astro';
 import LocalTimeGroup from '@components/blocks/LocalTimeGroup.astro';
 import AARLinkButton from '@components/blocks/AARLinkButton.astro';
 import FleetRoles from '@components/blocks/FleetRoles.astro';
+import FleetShips from '@components/blocks/FleetShips.astro';
 
 const eve_time = new Date(fleet.start_time);
 const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.env.DATETIME_FORMAT))
@@ -99,7 +105,8 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
             members_count: fleet_metrics?.members ?? 0,
         }}
         doctrine={fleet.doctrine}
-        supply_contracts={supply_contracts}
+        supply_contracts={history ? supply_contracts : []}
+        show_fittings={history}
         update_cover={update_cover}
         cover_overlay={true}
     >
@@ -150,6 +157,28 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
                 pilots={pilots}
                 fleet_id={fleet.id}
                 readonly={fleet.status === 'cancelled'}
+                is_fleet_commander={is_fleet_commander}
+            />
+        </Wrapper>
+    }
+
+    {!history && (composition.length > 0 || is_fleet_commander) &&
+        <Wrapper
+            padding_block='0'
+            padding_inline='0'
+            max_width='var(--max-col-width)'
+            class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
+        >
+            <FleetShips
+                fleet_id={fleet.id}
+                composition={composition}
+                volunteers={ship_volunteers}
+                refits={refits}
+                pilots={pilots}
+                supply={supply}
+                readonly={fleet.status === 'cancelled'}
+                can_manage={is_fleet_commander}
+                doctrine_name={fleet?.doctrine?.name ?? null}
             />
         </Wrapper>
     }
@@ -194,16 +223,4 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
         </Wrapper>
     }
 
-    <Wrapper
-        padding_block='0'
-        padding_inline='0'
-        max_width='var(--max-col-width)'
-        class="[ animate-fade-in animate-duration-250 animate-delay-1000 ]"
-    >
-        <FleetCombatLogTable
-            saved_logs={saved_logs}
-            fleet_id={fleet.id}
-            disabled={fleet.status === 'cancelled'}
-        />
-    </Wrapper>
 </BlockList>

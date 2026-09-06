@@ -57,7 +57,6 @@ const MARKET_SCOPES = [
 
 const EXECUTOR_SCOPES = [
     'esi-mail.send_mail.v1',
-    'esi-access.read_lists.v1',
 ] as const
 
 const TOKEN_SCOPES: Record<string, readonly string[]> = {

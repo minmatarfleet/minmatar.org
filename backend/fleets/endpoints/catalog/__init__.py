@@ -6,6 +6,12 @@ from fleets.endpoints.catalog.get_v3_fleets import (
     get_v3_fleets,
     METHOD as get_v3_fleets_method,
 )
+from fleets.endpoints.catalog.get_my_fleet_fittings import (
+    PATH as get_my_fleet_fittings_path,
+    ROUTE_SPEC as get_my_fleet_fittings_spec,
+    get_my_fleet_fittings,
+    METHOD as get_my_fleet_fittings_method,
+)
 from fleets.endpoints.catalog.post_create_fleet import (
     PATH as post_create_fleet_path,
     ROUTE_SPEC as post_create_fleet_spec,
@@ -14,6 +20,12 @@ from fleets.endpoints.catalog.post_create_fleet import (
 )
 
 _ROUTES = (
+    (
+        get_my_fleet_fittings_method,
+        get_my_fleet_fittings_path,
+        get_my_fleet_fittings_spec,
+        get_my_fleet_fittings,
+    ),
     (
         get_v3_fleets_method,
         get_v3_fleets_path,

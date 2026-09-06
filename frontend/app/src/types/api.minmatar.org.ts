@@ -949,7 +949,7 @@ export interface CharacterTag {
     image_name:     string;
 }
 
-export const esi_token_roles = [ 'Director', 'Public', 'Basic', 'Industry', 'Market', 'Executor' ] as const
+export const esi_token_roles = [ 'Director', 'Public', 'Basic', 'Industry', 'Market', 'Executor', 'FleetCommander' ] as const
 export type ESITokenRoles = typeof esi_token_roles[number]
 
 export const prime_times = [ 'US', 'AP', 'EU' ] as const

@@ -1,6 +1,6 @@
 ---
 import { i18n } from '@helpers/i18n'
-const { t, translatePath } = i18n(Astro.url)
+const { t } = i18n(Astro.url)
 
 import type { SummaryCharacter } from '@dtypes/api.minmatar.org'
 import type { FleetRoleVolunteer } from '@helpers/api.minmatar.org/fleets'
@@ -11,6 +11,7 @@ interface Props {
     pilots:         SummaryCharacter[],
     fleet_id:       number;
     readonly?:      boolean;
+    is_fleet_commander?: boolean;
 }
 
 const {
@@ -18,6 +19,7 @@ const {
     pilots,
     fleet_id,
     readonly,
+    is_fleet_commander = false,
 } = Astro.props
 
 const logi_anchors = volunteers.filter((v) => v.role === 'logi_anchor')
@@ -27,128 +29,105 @@ const ehp_links = links.filter((v) => v.subtype === 'ehp' || v.subtype === 'armo
 const info_links = links.filter((v) => v.subtype === 'info')
 const skirmish_links = links.filter((v) => v.subtype === 'skirmish')
 
-import { query_string } from '@helpers/string';
-const FLEET_ROLES_PARTIAL_URL = translatePath(`/partials/fleet_role_component?${query_string({
-    fleet_id: fleet_id,
-    readonly: readonly,
-})}`)
+// Minimum the MOTD considers "filled": 1 logi anchor, 2 cynos, one of each link.
+const CYNOS_WANTED = 2
+const filled_roles = [
+    logi_anchors.length >= 1,
+    cynos.length >= CYNOS_WANTED,
+    ehp_links.length >= 1,
+    info_links.length >= 1,
+    skirmish_links.length >= 1,
+].filter(Boolean).length
+
+// Large Remote Armor Repairer II for logi anchor, Cynosural Field Generator I
+// for cynos, Armor / Information / Skirmish Command Burst I for links.
+const LOGI_ICON_TYPE_ID = 26914
+const CYNO_ICON_TYPE_ID = 21096
+const ARMOR_BURST_TYPE_ID = 42526
+const INFO_BURST_TYPE_ID = 42527
+const SKIRMISH_BURST_TYPE_ID = 42530
 
 import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
-import Grid from '@components/compositions/Grid.astro'
+import BlockList from '@components/compositions/BlockList.astro'
 
 import FleetRoleItem from '@components/blocks/FleetRoleItem.astro'
-import Button from '@components/blocks/Button.astro'
-import EhpLinksIcon from '@components/icons/EhpLinksIcon.astro'
-
-import RefreshIcon from '@components/icons/buttons/RefreshIcon.astro';
 ---
 
-<div id="fleet-roles">
-    <Flexblock gap='var(--space-l)'>
-        <FlexInline justification='space-between'>
-            <h2>{t('fleet_roles')}</h2>
-
-            <Button
-                size='sm'
-                hx-get={translatePath(FLEET_ROLES_PARTIAL_URL)}
-                hx-target="#fleet-roles"
-                hx-swap="outerHTML transition:true"
-                hx-indicator=".loader"
-                x-on:click="start_dscan_animation()"
-                hx-on--before-request="this.setAttribute('disabled','');"
-                hx-on--after-request="this.removeAttribute('disabled')"
-            >
-                <RefreshIcon slot="icon" />
-                {t('reload')}
-            </Button>
-        </FlexInline>
-        
-        <div class="component">
-            <p>{t('fleet_roles_description')}</p>
-        </div>
-
-        <Flexblock gap='var(--space-3xs)'>
-            <Grid
-                class="[ w-full grid-fill ]"
-                row_gap="var(--space-3xs)"
-                column_gap="var(--space-3xs)"
-                min_item_width="350px"
-            >
-                <FleetRoleItem
-                    id='logi-anchor-role'
-                    title={t('logi_anchor_label')}
-                    fleet_id={fleet_id}
-                    role='logi_anchor'
-                    volunteers={logi_anchors}
-                    pilots={pilots}
-                    readonly={readonly}
-                />
-
-                <FleetRoleItem
-                    id='cynos-role'
-                    title={t('cyno_label')}
-                    fleet_id={fleet_id}
-                    role='cyno'
-                    volunteers={cynos}
-                    pilots={pilots}
-                    readonly={readonly}
-                />
-            </Grid>
-
-            <Grid
-                class="[ w-full grid-fill ]"
-                row_gap="var(--space-3xs)"
-                column_gap="var(--space-3xs)"
-                min_item_width="350px"
-            >
-                <FleetRoleItem
-                    id='ehp-links-role'
-                    title={t('ehp_links')}
-                    fleet_id={fleet_id}
-                    role='links'
-                    subtype='ehp'
-                    volunteers={ehp_links}
-                    pilots={pilots}
-                    readonly={readonly}
-                >
-                    <EhpLinksIcon slot="icon" />
-                </FleetRoleItem>
-                <FleetRoleItem
-                    id='info-links-role'
-                    title={t('info_links')}
-                    fleet_id={fleet_id}
-                    role='links'
-                    subtype='info'
-                    volunteers={info_links}
-                    pilots={pilots}
-                    readonly={readonly}
-                >
-                    <img
-                        slot="icon"
-                        src={get_item_icon(43554, 32)}
-                        width="32"
-                        height="32"
-                    />
-                </FleetRoleItem>
-                <FleetRoleItem
-                    id='skirmish-links-role'
-                    title={t('skirmish_links')}
-                    fleet_id={fleet_id}
-                    role='links'
-                    subtype='skirmish'
-                    volunteers={skirmish_links}
-                    pilots={pilots}
-                    readonly={readonly}
-                >
-                    <img
-                        slot="icon"
-                        src={get_item_icon(43556, 32)}
-                        width="32"
-                        height="32"
-                    />
-                </FleetRoleItem>
-            </Grid>
+<section id="fleet-roles" aria-labelledby="fleet-roles-title">
+    <Flexblock gap='var(--space-m)'>
+        <Flexblock gap="var(--space-3xs)">
+            <h2 id="fleet-roles-title">{t('fleet_roles')}</h2>
+            <small class="!mt-[var(--space-3xs)]">
+                {t('fleet_roles_summary').replace('{filled}', filled_roles.toString()).replace('{total}', '5')}
+            </small>
         </Flexblock>
+
+        <BlockList gap='var(--space-3xs)' role="list">
+            <FleetRoleItem
+                id='logi-anchor-role'
+                title={t('logi_anchor_label')}
+                fleet_id={fleet_id}
+                role='logi_anchor'
+                volunteers={logi_anchors}
+                pilots={pilots}
+                readonly={readonly}
+                wanted={1}
+            >
+                <img slot="icon" src={get_item_icon(LOGI_ICON_TYPE_ID, 32)} width="32" height="32" alt="" loading="lazy" />
+            </FleetRoleItem>
+
+            <FleetRoleItem
+                id='cynos-role'
+                title={t('cyno_label')}
+                fleet_id={fleet_id}
+                role='cyno'
+                volunteers={cynos}
+                pilots={pilots}
+                readonly={readonly}
+                can_assign_system={is_fleet_commander}
+                wanted={CYNOS_WANTED}
+            >
+                <img slot="icon" src={get_item_icon(CYNO_ICON_TYPE_ID, 32)} width="32" height="32" alt="" loading="lazy" />
+            </FleetRoleItem>
+
+            <FleetRoleItem
+                id='ehp-links-role'
+                title={t('ehp_links')}
+                fleet_id={fleet_id}
+                role='links'
+                subtype='ehp'
+                volunteers={ehp_links}
+                pilots={pilots}
+                readonly={readonly}
+            >
+                <img slot="icon" src={get_item_icon(ARMOR_BURST_TYPE_ID, 32)} width="32" height="32" alt="" loading="lazy" />
+            </FleetRoleItem>
+
+            <FleetRoleItem
+                id='info-links-role'
+                title={t('info_links')}
+                fleet_id={fleet_id}
+                role='links'
+                subtype='info'
+                volunteers={info_links}
+                pilots={pilots}
+                readonly={readonly}
+            >
+                <img slot="icon" src={get_item_icon(INFO_BURST_TYPE_ID, 32)} width="32" height="32" alt="" loading="lazy" />
+            </FleetRoleItem>
+
+            <FleetRoleItem
+                id='skirmish-links-role'
+                title={t('skirmish_links')}
+                fleet_id={fleet_id}
+                role='links'
+                subtype='skirmish'
+                volunteers={skirmish_links}
+                pilots={pilots}
+                readonly={readonly}
+            >
+                <img slot="icon" src={get_item_icon(SKIRMISH_BURST_TYPE_ID, 32)} width="32" height="32" alt="" loading="lazy" />
+            </FleetRoleItem>
+        </BlockList>
     </Flexblock>
-</div>
+</section>

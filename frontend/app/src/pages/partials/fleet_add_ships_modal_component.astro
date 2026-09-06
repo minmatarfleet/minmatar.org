@@ -1,0 +1,322 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value as string : false
+const user: User | false = auth_token ? (jose.decodeJwt(auth_token) as User) : false
+
+if (!user) return new Response(null, { status: 403 })
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+
+if (isNaN(fleet_id))
+    return new Response(null, { status: 400 })
+
+import type { FittingItem } from '@dtypes/layout_components'
+import { fetch_fittings } from '@helpers/fetching/ships'
+import { get_fleet_composition, get_my_fleet_fittings, get_fleet_fitting_access, type FleetCompositionEntry, type MyFleetFitting, type FleetFittingAccess } from '@helpers/api.minmatar.org/fleets'
+import { query_string } from '@helpers/string'
+import { get_item_icon } from '@helpers/eve_image_server'
+import { SHIP_TYPES_SORTED } from '@helpers/eve'
+
+let catalog: FittingItem[] = []
+let current: FleetCompositionEntry[] = []
+let my_fittings: MyFleetFitting[] = []
+let access: FleetFittingAccess | null = null
+let fetch_error: Error | false = false
+
+try {
+    const [fittings, composition, remembered, fetched_access] = await Promise.all([
+        fetch_fittings(),
+        get_fleet_composition(auth_token as string, fleet_id),
+        get_my_fleet_fittings(auth_token as string).catch(() => [] as MyFleetFitting[]),
+        get_fleet_fitting_access(auth_token as string, fleet_id),
+    ])
+    access = fetched_access
+    current = composition.filter(entry => entry.fleet_fitting_id !== null)
+    const in_fleet = new Set(current.filter(e => e.source === 'manual').map(e => `${e.name.toLowerCase()}|${e.ship_id}`))
+    my_fittings = remembered.filter(fit => !in_fleet.has(`${fit.name.toLowerCase()}|${fit.ship_id}`))
+    const already = new Set(composition.map(entry => entry.fitting_id).filter(Boolean))
+    catalog = fittings
+        .filter(fitting => !already.has(fitting.id) && fitting.ship_name !== t('error_ship_parsing'))
+        .sort((a, b) => (SHIP_TYPES_SORTED.indexOf(a.ship_type) - SHIP_TYPES_SORTED.indexOf(b.ship_type)) || a.fitting_name.localeCompare(b.fitting_name))
+} catch (error) {
+    fetch_error = error
+}
+
+const SHIPS_PARTIAL_URL = translatePath('/partials/fleet_ship_volunteers_component/')
+const base_params = {
+    fleet_id: fleet_id,
+    can_manage: true,
+}
+const add_url = (fitting_id:number) => `${SHIPS_PARTIAL_URL}?${query_string({ ...base_params, add_fitting_id: fitting_id })}`
+const eft_url = `${SHIPS_PARTIAL_URL}?${query_string({ ...base_params, action: 'add_eft' })}`
+const remove_url = (fleet_fitting_id:number) => `${SHIPS_PARTIAL_URL}?${query_string({ ...base_params, remove_fleet_fitting_id: fleet_fitting_id })}`
+const role_label = (role:string) => t(`fitting_role_${role}` as any)
+
+const CLOSE_MODAL = "if (event.detail.successful) document.querySelector('.modal-backdrop')?.click()"
+
+// Custom (EFT) fits are saved in-game under the FC and need the fittings
+// scope; catalog picks only link to their web page and stay available.
+const can_publish = access?.can_publish ?? false
+const MODAL_URL = `${translatePath('/partials/fleet_add_ships_modal_component/')}?${query_string({ fleet_id: fleet_id })}`
+
+const roles = [
+    { value: 'primary', label: t('fitting_role_primary') },
+    { value: 'secondary', label: t('fitting_role_secondary') },
+    { value: 'support', label: t('fitting_role_support') },
+]
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import Button from '@components/blocks/Button.astro'
+import Badge from '@components/blocks/Badge.astro'
+import Input from '@components/blocks/Input.astro'
+import Textarea from '@components/blocks/Textarea.astro'
+import StylessButton from '@components/blocks/StylessButton.astro'
+import UnstyledRadioCheckButton from '@components/blocks/UnstyledRadioCheckButton.astro'
+import FleetRowAction from '@components/blocks/FleetRowAction.astro'
+import FleetFittingScopeNotice from '@components/blocks/FleetFittingScopeNotice.astro'
+
+import TrashIcon from '@components/icons/buttons/TrashIcon.astro'
+
+import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro'
+---
+
+{fetch_error ?
+    <p>{(fetch_error as Error).message}</p>
+    :
+    <Wrapper padding_block='var(--space-m)' padding_inline='var(--space-m)' max_width='100%'>
+    <div
+        class="[ add-ships ]"
+        x-data={`{
+            search: '',
+            mode: 'catalog',
+            role: 'primary',
+            matches(name, ship) {
+                const q = this.search.trim().toLowerCase()
+                if (q.length < 2) return false
+                return name.toLowerCase().includes(q) || ship.toLowerCase().includes(q)
+            }
+        }`}
+    >
+        <Flexblock gap='var(--space-m)'>
+            <Flexblock gap='var(--space-3xs)' class="[ add-ships__header ]">
+                <h3 class="[ add-ships__title ]">{t('manage_doctrine')}</h3>
+                <small>{t('manage_doctrine_subtitle')}</small>
+            </Flexblock>
+
+            {current.length > 0 &&
+                <div class="[ add-ships__current ]">
+                    {current.map(entry =>
+                        <div class="[ add-ships__current-row ]">
+                            <Badge title={entry.name} image={get_item_icon(entry.ship_id, 64)} size={32}>
+                                <small>{entry.ship_name} · {role_label(entry.role)}{entry.source === 'manual' ? ` · ${t('composition_source_manual')}` : ''}</small>
+                            </Badge>
+                            <FleetRowAction
+                                title={t('remove_ship')}
+                                danger={true}
+                                hx-delete={remove_url(entry.fleet_fitting_id as number)}
+                                hx-target="#fleet-ships"
+                                hx-swap="outerHTML transition:true"
+                                hx-indicator=".loader"
+                                hx-confirm={t('remove_fitting_confirm')}
+                                hx-on--after-request={CLOSE_MODAL}
+                            >
+                                <TrashIcon />
+                            </FleetRowAction>
+                        </div>
+                    )}
+                </div>
+            }
+
+            <FlexInline justification='space-between' gap='var(--space-s)' class="[ items-center ]">
+                <FlexInline gap='var(--space-s)' role="tablist">
+                    <UnstyledRadioCheckButton type="radio" name="add_ships_mode" value="catalog" label={t('add_ships_from_catalog')} x-model="mode" />
+                    <UnstyledRadioCheckButton type="radio" name="add_ships_mode" value="eft" label={t('add_ships_paste_eft')} x-model="mode" />
+                </FlexInline>
+
+                <FlexInline id="add-ships-role" gap='var(--space-s)' class="[ items-center ]" role="radiogroup" aria-label={t('add_ships_role')}>
+                    <small>{t('add_ships_role')}</small>
+                    {roles.map(option =>
+                        <UnstyledRadioCheckButton type="radio" name="role" value={option.value} label={option.label} x-model="role" />
+                    )}
+                </FlexInline>
+            </FlexInline>
+
+            <div x-show="mode === 'catalog'">
+                <Flexblock gap='var(--space-2xs)'>
+                    <Input
+                        placeholder={t('add_ships_search_placeholder')}
+                        autocomplete="off"
+                        x-model="search"
+                        x-init="$nextTick(() => $el.focus())"
+                    >
+                        <MagnifierIcon slot="icon" />
+                    </Input>
+
+                    <div class="[ add-ships__results ]">
+                        {my_fittings.length > 0 && can_publish &&
+                            <div class="[ add-ships__mine ]" x-show="search.trim().length < 2 || true">
+                                <small class="[ add-ships__group ]" x-show="search.trim().length < 2">{t('add_ships_my_fits')}</small>
+                                {my_fittings.map(fit =>
+                                    <StylessButton
+                                        type="button"
+                                        class="[ add-ships__result ]"
+                                        x-show={`search.trim().length < 2 || matches(${JSON.stringify(fit.name)}, ${JSON.stringify(fit.ship_name)})`}
+                                        hx-post={eft_url}
+                                        hx-sync="closest .add-ships:drop"
+                                        hx-vals={JSON.stringify({ eft_format: fit.eft_format })}
+                                        hx-include="#add-ships-role"
+                                        hx-target="#fleet-ships"
+                                        hx-swap="outerHTML transition:true"
+                                        hx-indicator=".loader"
+                                        hx-on--after-request={CLOSE_MODAL}
+                                    >
+                                        <Badge title={fit.name} image={get_item_icon(fit.ship_id, 64)} size={32}>
+                                            <small>{fit.ship_name} · {t('composition_source_manual')}</small>
+                                        </Badge>
+                                    </StylessButton>
+                                )}
+                            </div>
+                        }
+                        {(my_fittings.length === 0 || !can_publish) &&
+                            <p class="[ add-ships__empty ]" x-show="search.trim().length < 2">{t('add_ships_search_hint')}</p>
+                        }
+                        {catalog.map(fitting =>
+                            <StylessButton
+                                type="button"
+                                class="[ add-ships__result ]"
+                                x-show={`matches(${JSON.stringify(fitting.fitting_name)}, ${JSON.stringify(fitting.ship_name)})`}
+                                x-cloak
+                                hx-post={add_url(fitting.id)}
+                                hx-sync="closest .add-ships:drop"
+                                hx-include="#add-ships-role"
+                                hx-target="#fleet-ships"
+                                hx-swap="outerHTML transition:true"
+                                hx-indicator=".loader"
+                                hx-on--after-request={CLOSE_MODAL}
+                            >
+                                <Badge title={fitting.fitting_name} image={get_item_icon(fitting.ship_id, 64)} size={32}>
+                                    <small>{fitting.ship_name} · {fitting.ship_type}</small>
+                                </Badge>
+                            </StylessButton>
+                        )}
+                    </div>
+                </Flexblock>
+            </div>
+
+            {!can_publish && access &&
+                <div x-show="mode === 'eft'" x-cloak>
+                    <FleetFittingScopeNotice fleet_id={fleet_id} access={access} reload_url={MODAL_URL} />
+                </div>
+            }
+
+            {can_publish &&
+            <form
+                x-show="mode === 'eft'"
+                x-cloak
+                hx-post={eft_url}
+                hx-sync="closest .add-ships:drop"
+                hx-include="#add-ships-role"
+                hx-target="#fleet-ships"
+                hx-swap="outerHTML transition:true"
+                hx-indicator=".loader"
+                hx-on--after-request={CLOSE_MODAL}
+            >
+                <Flexblock gap='var(--space-2xs)'>
+                    <Textarea name="eft_format" rows="11" class="[ eft ]" placeholder={t('eft_placeholder')} required />
+                    <FlexInline justification='space-between' class="[ items-center ]">
+                        <small>{t('add_ships_eft_hint')}</small>
+                        <Button size='sm' type="submit" color='green'>{t('add_ships_add_fit')}</Button>
+                    </FlexInline>
+                </Flexblock>
+            </form>
+            }
+        </Flexblock>
+    </div>
+    </Wrapper>
+}
+
+<style lang="scss">
+    [x-cloak] {
+        display: none !important;
+    }
+
+    .add-ships__header {
+        padding-right: var(--space-xl);
+    }
+
+    .add-ships__title {
+        font-size: var(--step-1);
+    }
+
+    .add-ships__current {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        max-height: 30vh;
+        overflow-y: auto;
+    }
+
+    .add-ships__current-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: var(--space-2xs);
+        padding: var(--space-3xs) var(--space-2xs);
+        border: solid 1px var(--border-color);
+    }
+
+    .add-ships__results {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        min-height: 260px;
+        max-height: 50vh;
+        overflow-y: auto;
+        border: solid 1px var(--border-color);
+        padding: var(--space-3xs);
+    }
+
+    .add-ships__mine {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+    }
+
+    .add-ships__group {
+        padding: var(--space-3xs) var(--space-2xs) 0;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        opacity: 0.75;
+    }
+
+    .add-ships__empty {
+        margin: auto;
+        padding: var(--space-l);
+        text-align: center;
+        opacity: 0.7;
+    }
+
+    :global(.add-ships__result) {
+        text-align: left;
+        padding: var(--space-3xs) var(--space-2xs);
+
+        &:hover,
+        &:focus-visible {
+            background: color-mix(in srgb, var(--fleet-red) 25%, transparent);
+        }
+    }
+
+    :global(textarea.eft) {
+        font-family: var(--mono-font, monospace);
+        font-size: var(--step--1);
+        min-height: 260px;
+    }
+</style>

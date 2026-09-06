@@ -1318,6 +1318,20 @@ class EsiClient:
         self, url: str, required_scopes: List[str]
     ) -> EsiResponse:
         """GET an authenticated ESI route with the Equinox compatibility date."""
+        return self._authenticated_esi_request("GET", url, required_scopes)
+
+    def _authenticated_esi_request(
+        self,
+        method: str,
+        url: str,
+        required_scopes: List[str],
+        json_body=None,
+    ) -> EsiResponse:
+        """
+        Call an authenticated ESI route the OpenAPI client does not cover
+        (e.g. fittings) with the Equinox compatibility date. ``data`` holds
+        the JSON body when the response has one (204 -> None).
+        """
         token, status = self._valid_token(required_scopes)
         if status > 0:
             return EsiResponse(status)
@@ -1327,14 +1341,41 @@ class EsiClient:
             "X-Compatibility-Date": ESI_COMPATIBILITY_DATE,
         }
         try:
-            resp = requests.get(url, headers=headers, timeout=30)
+            resp = requests.request(
+                method, url, headers=headers, json=json_body, timeout=30
+            )
         except Exception as e:
             return EsiResponse(response_code=ERROR_CALLING_ESI, response=e)
         if resp.status_code >= 400:
-            return EsiResponse(response_code=resp.status_code)
+            return EsiResponse(
+                response_code=resp.status_code, response=resp.text
+            )
         return EsiResponse(
             response_code=SUCCESS,
             data=resp.json() if resp.content else None,
+        )
+
+    # --- character fittings (no OpenAPI tag in django-esi) -------------------
+
+    def create_character_fitting(self, fitting: dict) -> EsiResponse:
+        """
+        Save a fitting under the character. ``fitting`` is the ESI body:
+        ``{"name", "description", "ship_type_id", "items": [{"type_id",
+        "flag", "quantity"}]}``; ``data["fitting_id"]`` on success.
+        """
+        return self._authenticated_esi_request(
+            "POST",
+            f"{ESI_BASE_URL}/characters/{self.character_id}/fittings/",
+            ["esi-fittings.write_fittings.v1"],
+            json_body=fitting,
+        )
+
+    def delete_character_fitting(self, fitting_id: int) -> EsiResponse:
+        """Delete one of the character's saved fittings."""
+        return self._authenticated_esi_request(
+            "DELETE",
+            f"{ESI_BASE_URL}/characters/{self.character_id}/fittings/{fitting_id}/",
+            ["esi-fittings.write_fittings.v1"],
         )
 
     def get_corp_structures(self, corp_id: int) -> EsiResponse:

@@ -6,6 +6,7 @@ from eveonline.helpers.characters import user_characters
 
 from fleets.endpoints.helpers import (
     _fleet_authorized,
+    make_role_volunteer_response,
     try_refresh_active_fleet_motd,
 )
 from fleets.endpoints.schemas import (
@@ -63,11 +64,4 @@ def create_fleet_role_volunteer(
         },
     )
     try_refresh_active_fleet_motd(fleet)
-    return 200, EveFleetRoleVolunteerResponse(
-        id=volunteer.id,
-        character_id=volunteer.character_id,
-        character_name=volunteer.character_name,
-        role=volunteer.role,
-        subtype=volunteer.subtype,
-        quantity=volunteer.quantity,
-    )
+    return 200, make_role_volunteer_response(volunteer, reveal_system=True)

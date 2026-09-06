@@ -21,12 +21,26 @@ import { get_characters_summary_sorted } from '@helpers/fetching/characters'
 import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 import {
     get_fleet_role_volunteers,
+    get_fleet_ship_volunteers,
+    get_fleet_composition,
+    get_fleet_refits,
     type FleetRoleVolunteer,
+    type FleetShipVolunteer,
+    type FleetCompositionEntry,
+    type FleetRefit,
+    type FleetSupply,
 } from '@helpers/api.minmatar.org/fleets'
+import { get_user_character } from '@helpers/fetching/characters'
+import { fetch_fleet_supply, EMPTY_SUPPLY } from '@helpers/fleet_ships'
 
 let fleet: FleetUI | null = null
 let pilots: SummaryCharacter[] = []
 let volunteers: FleetRoleVolunteer[] = []
+let ship_volunteers: FleetShipVolunteer[] = []
+let composition: FleetCompositionEntry[] = []
+let refits: FleetRefit[] = []
+let supply: FleetSupply = EMPTY_SUPPLY
+let is_fleet_commander = false
 let fetch_error: Error | false = false
 
 try {
@@ -45,6 +59,18 @@ if (fleet) {
         const summary = await get_characters_summary_sorted(auth_token as string)
         pilots = summary.characters ?? []
         volunteers = await get_fleet_role_volunteers(auth_token as string, fleet_id)
+        const [fetched_composition, fetched_ship_volunteers, fetched_refits, fetched_supply] = await Promise.all([
+            get_fleet_composition(auth_token as string, fleet_id),
+            get_fleet_ship_volunteers(auth_token as string, fleet_id),
+            get_fleet_refits(auth_token as string, fleet_id),
+            fetch_fleet_supply(auth_token as string, fleet_id),
+        ])
+        composition = fetched_composition
+        ship_volunteers = fetched_ship_volunteers
+        refits = fetched_refits
+        supply = fetched_supply
+        const user_character = await get_user_character(user.user_id)
+        is_fleet_commander = user_character?.character_id === fleet.fleet_commander_id
     } catch (error) {
         fetch_error = error
     }
@@ -65,12 +91,22 @@ import PageTitle from '@components/page/PageTitle.astro'
 import FlexInline from '@components/compositions/FlexInline.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
 
+
 import Button from '@components/blocks/Button.astro'
 import FleetRoles from '@components/blocks/FleetRoles.astro'
+import FleetShips from '@components/blocks/FleetShips.astro'
 import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import PilotBadge from '@components/blocks/PilotBadge.astro'
+import Breadcrumb from '@components/blocks/Breadcrumb.astro'
+import FleetManageMenu from '@components/blocks/FleetManageMenu.astro'
 
 const page_title = t('fleets.volunteer.page_title').replace('{fleet_id}', fleet_id.toString())
+const breadcrumb_items = [
+    { label: t('fleets'), href: translatePath('/fleets/upcoming/') },
+    { label: t('upcoming_fleets_short'), href: translatePath('/fleets/upcoming/') },
+    { label: `${t('fleet')} ${fleet_id}`, href: translatePath(`/fleets/upcoming/${fleet_id}`) },
+    { label: t('fleet_actions_volunteer') },
+]
 ---
 
 <Viewport
@@ -90,7 +126,10 @@ const page_title = t('fleets.volunteer.page_title').replace('{fleet_id}', fleet_
     >
         <FlexInline slot="header" justification="space-between" class="[ w-full ]">
             <Flexblock id="header-oob" gap="var(--space-3xs)">
+                <Breadcrumb items={breadcrumb_items} />
                 <PageTitle>{page_title}</PageTitle>
+            </Flexblock>
+            <PageActions>
                 {fleet?.fleet_commander_id &&
                     <PilotBadge
                         character_id={fleet.fleet_commander_id}
@@ -101,13 +140,12 @@ const page_title = t('fleets.volunteer.page_title').replace('{fleet_id}', fleet_
                         <small>{t('fleet_commander')}</small>
                     </PilotBadge>
                 }
-            </Flexblock>
-            <PageActions>
-                <Button href={translatePath(`/fleets/upcoming/${fleet_id}`)}>
-                    {t('back_to_fleet_details')}
-                </Button>
+                {fleet && is_fleet_commander &&
+                    <FleetManageMenu fleet={fleet} />
+                }
             </PageActions>
         </FlexInline>
+
 
         {fetch_error ?
             <ErrorRefetch
@@ -118,12 +156,27 @@ const page_title = t('fleets.volunteer.page_title').replace('{fleet_id}', fleet_
                 }}
             />
             :
-            <FleetRoles
-                volunteers={volunteers}
-                pilots={pilots}
-                fleet_id={fleet_id}
-                readonly={false}
-            />
+            <Flexblock gap='var(--space-2xl)'>
+                <FleetRoles
+                    volunteers={volunteers}
+                    pilots={pilots}
+                    fleet_id={fleet_id}
+                    readonly={false}
+                    is_fleet_commander={is_fleet_commander}
+                />
+
+                <FleetShips
+                    fleet_id={fleet_id}
+                    composition={composition}
+                    volunteers={ship_volunteers}
+                    refits={refits}
+                    pilots={pilots}
+                    supply={supply}
+                    readonly={false}
+                    can_manage={is_fleet_commander}
+                    doctrine_name={fleet?.doctrine?.name ?? null}
+                />
+            </Flexblock>
         }
     </PageDefault>
 </Viewport>

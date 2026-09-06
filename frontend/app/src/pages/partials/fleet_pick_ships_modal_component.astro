@@ -1,0 +1,201 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t, translatePath } = i18n(Astro.url)
+
+import type { User } from '@dtypes/jwt'
+import * as jose from 'jose'
+
+const auth_token = Astro.cookies.has('auth_token') ? Astro.cookies.get('auth_token')?.value as string : false
+const user: User | false = auth_token ? (jose.decodeJwt(auth_token) as User) : false
+
+if (!user) return new Response(null, { status: 403 })
+
+const fleet_id = parseInt(Astro.url.searchParams.get('fleet_id') ?? '0')
+const can_manage = Astro.url.searchParams.get('can_manage') === 'true'
+
+if (isNaN(fleet_id))
+    return new Response(null, { status: 400 })
+
+import {
+    get_fleet_composition,
+    get_fleet_my_pilots,
+    type FleetCompositionEntry,
+    type MyFleetPilot,
+} from '@helpers/api.minmatar.org/fleets'
+import { is_capital_entry } from '@helpers/fleet_ships'
+import { query_string } from '@helpers/string'
+
+let composition: FleetCompositionEntry[] = []
+let pilots: MyFleetPilot[] = []
+let fetch_error: Error | false = false
+
+try {
+    ;[composition, pilots] = await Promise.all([
+        get_fleet_composition(auth_token as string, fleet_id),
+        get_fleet_my_pilots(auth_token as string, fleet_id),
+    ])
+} catch (error) {
+    fetch_error = error
+}
+
+const recent = pilots.filter(pilot => pilot.recent_fleets)
+const others = pilots.filter(pilot => !pilot.recent_fleets)
+// New accounts have no fleet history yet: show everyone rather than nothing.
+const show_all_by_default = recent.length === 0
+
+const groups = [
+    { title: t('primary_ships'), entries: composition.filter(e => e.role === 'primary' && !is_capital_entry(e)) },
+    { title: t('secondary_ships'), entries: composition.filter(e => e.role === 'secondary' && !is_capital_entry(e)) },
+    { title: t('support_ships'), entries: composition.filter(e => e.role === 'support' && !is_capital_entry(e)) },
+    { title: t('capital_ships'), entries: composition.filter(is_capital_entry) },
+].filter(group => group.entries.length > 0)
+
+const selected_key = (pilot:MyFleetPilot) => {
+    if (!pilot.selection) return ''
+    return pilot.selection.fitting_id ? `f:${pilot.selection.fitting_id}` : `m:${pilot.selection.fleet_fitting_id}`
+}
+
+const SAVE_URL = `${translatePath('/partials/fleet_ship_volunteers_component/')}?${query_string({
+    fleet_id: fleet_id,
+    action: 'pick_ships',
+    ...(can_manage && { can_manage: true }),
+})}`
+
+const CLOSE_MODAL = "if (event.detail.successful) document.querySelector('.modal-backdrop')?.click()"
+
+import Flexblock from '@components/compositions/Flexblock.astro'
+import Wrapper from '@components/compositions/Wrapper.astro'
+import FlexInline from '@components/compositions/FlexInline.astro'
+
+import Button from '@components/blocks/Button.astro'
+import Select from '@components/blocks/Select.astro'
+import PilotBadge from '@components/blocks/PilotBadge.astro'
+---
+
+{fetch_error ?
+    <p>{(fetch_error as Error).message}</p>
+    :
+    <Wrapper padding_block='var(--space-m)' padding_inline='var(--space-m)' max_width='100%'>
+    <form
+        class="[ pick-ships ]"
+        hx-post={SAVE_URL}
+        hx-target="#fleet-ships"
+        hx-swap="outerHTML transition:true"
+        hx-indicator=".loader"
+        hx-on--after-request={CLOSE_MODAL}
+        x-data={`{ show_all: ${show_all_by_default} }`}
+    >
+        <Flexblock gap='var(--space-m)'>
+            <Flexblock gap='var(--space-3xs)' class="[ pick-ships__header ]">
+                <h3 class="[ pick-ships__title ]">{t('pick_ships_title')}</h3>
+                <small>{t('pick_ships_subtitle')}</small>
+            </Flexblock>
+
+            {composition.length === 0 ?
+                <p>{t('fleet_ships_empty')}</p>
+                :
+                <div class="[ pick-ships__rows ]">
+                    {pilots.map(pilot =>
+                        <div
+                            class="[ pick-ships__row ]"
+                            x-show={pilot.recent_fleets ? 'true' : 'show_all'}
+                            x-cloak={!pilot.recent_fleets && !show_all_by_default ? true : undefined}
+                        >
+                            <PilotBadge
+                                character_id={pilot.character_id}
+                                character_name={pilot.character_name}
+                                size={40}
+                                icon_quality={64}
+                                inert={true}
+                            >
+                                {pilot.recent_fleets ?
+                                    <small>{t('pick_ships_recent')}</small> :
+                                    <small class="[ pick-ships__quiet ]">{t('pick_ships_no_recent')}</small>
+                                }
+                            </PilotBadge>
+                            <Select name={`ship_${pilot.character_id}`} size='sm'>
+                                <option value="" selected={selected_key(pilot) === ''}>{t('pick_ships_not_flying')}</option>
+                                {groups.map(group =>
+                                    <optgroup label={group.title}>
+                                        {group.entries.map(entry =>
+                                            <option value={entry.key} selected={selected_key(pilot) === entry.key}>{entry.name}</option>
+                                        )}
+                                    </optgroup>
+                                )}
+                            </Select>
+                        </div>
+                    )}
+                </div>
+            }
+
+            <FlexInline justification='space-between' class="[ items-center ]">
+                {others.length > 0 && !show_all_by_default ?
+                    <button type="button" class="[ pick-ships__toggle ]" x-on:click="show_all = !show_all">
+                        <span x-show="!show_all">{t('pick_ships_show_all').replace('{count}', others.length.toString())}</span>
+                        <span x-show="show_all" x-cloak>{t('pick_ships_show_recent')}</span>
+                    </button>
+                    :
+                    <span></span>
+                }
+                {composition.length > 0 &&
+                    <Button size='sm' type="submit" color='green'>{t('save')}</Button>
+                }
+            </FlexInline>
+        </Flexblock>
+    </form>
+    </Wrapper>
+}
+
+<style lang="scss">
+    [x-cloak] {
+        display: none !important;
+    }
+
+    .pick-ships__header {
+        padding-right: var(--space-xl);
+    }
+
+    .pick-ships__title {
+        font-size: var(--step-1);
+    }
+
+    .pick-ships__rows {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3xs);
+        max-height: 55vh;
+        overflow-y: auto;
+    }
+
+    .pick-ships__row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(220px, 1fr);
+        gap: var(--space-s);
+        align-items: center;
+        padding: var(--space-3xs) 0;
+        border-bottom: solid 1px var(--border-color);
+
+        @media screen and (max-width: 640px) {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    .pick-ships__quiet {
+        opacity: 0.6;
+    }
+
+    .pick-ships__toggle {
+        background: transparent;
+        border: none;
+        color: var(--highlight);
+        font-family: var(--button-font);
+        font-weight: 600;
+        font-size: var(--step--1);
+        cursor: pointer;
+        padding: 0;
+
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+</style>
