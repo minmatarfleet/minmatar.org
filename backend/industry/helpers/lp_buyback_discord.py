@@ -29,6 +29,18 @@ discord = DiscordClient()
 # Discord does not reopen the thread when a post lands after close.
 THREAD_ARCHIVE_DELAY_SECONDS = 5
 
+# Deleted orders 122/123 and cancelled order 130 (thread created after cancel).
+ORPHAN_LP_BUYBACK_THREAD_IDS = (
+    1541754525805842462,
+    1541754700171452416,
+    1542512504742346832,
+)
+
+_TERMINAL_STATUSES = (
+    IndustryLoyaltyPointMarketOrder.Status.CANCELLED,
+    IndustryLoyaltyPointMarketOrder.Status.COMPLETED,
+)
+
 
 def order_site_url(order: IndustryLoyaltyPointMarketOrder) -> str:
     base = getattr(settings, "WEB_LINK_URL", "https://my.minmatar.org").rstrip(
@@ -156,14 +168,23 @@ def create_order_thread(order: IndustryLoyaltyPointMarketOrder) -> int | None:
         return None
 
 
+def close_lp_buyback_thread_id(thread_id: int | None) -> bool:
+    """Archive/lock a buyback forum thread by Discord channel id."""
+    if not thread_id:
+        return False
+    try:
+        discord.close_thread(channel_id=int(thread_id))
+        return True
+    except Exception as exc:
+        logger.error(
+            "Failed closing LP buyback Discord thread %s: %s", thread_id, exc
+        )
+        return False
+
+
 def close_order_thread(order: IndustryLoyaltyPointMarketOrder) -> None:
     """Archive/lock the order thread without posting (avoids Discord reopen race)."""
-    if not order.discord_thread_id:
-        return
-    try:
-        discord.close_thread(channel_id=order.discord_thread_id)
-    except Exception as exc:
-        logger.error("Failed closing LP buyback Discord thread: %s", exc)
+    close_lp_buyback_thread_id(order.discord_thread_id)
 
 
 def post_order_status_update(
@@ -186,12 +207,29 @@ def post_order_status_update(
 
 
 def notify_order_created(order: IndustryLoyaltyPointMarketOrder) -> None:
-    thread_id = create_order_thread(order)
-    if thread_id:
-        IndustryLoyaltyPointMarketOrder.objects.filter(pk=order.pk).update(
-            discord_thread_id=thread_id
-        )
-        order.discord_thread_id = thread_id
+    try:
+        current = IndustryLoyaltyPointMarketOrder.objects.select_related(
+            "loyalty_point", "created_by"
+        ).get(pk=order.pk)
+    except IndustryLoyaltyPointMarketOrder.DoesNotExist:
+        return
+    if current.status in _TERMINAL_STATUSES:
+        close_order_thread(current)
+        return
+
+    thread_id = create_order_thread(current)
+    if not thread_id:
+        return
+
+    attached = (
+        IndustryLoyaltyPointMarketOrder.objects.filter(pk=current.pk)
+        .exclude(status__in=_TERMINAL_STATUSES)
+        .update(discord_thread_id=thread_id)
+    )
+    if not attached:
+        close_lp_buyback_thread_id(thread_id)
+        return
+    current.discord_thread_id = thread_id
 
 
 def _destination_label(
@@ -417,7 +455,3 @@ def notify_order_status_changed(
         # Post first, wait, then archive — never post after close (Discord
         # unarchives). Caller must invoke after DB commit (see transition_order).
         _post_completed_then_archive(order)
-    elif status == order.Status.CANCELLED:
-        # Do not post a cancel message — Discord unarchives threads when
-        # anything is sent (including after archive), same race as help tickets.
-        close_order_thread(order)

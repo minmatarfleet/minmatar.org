@@ -837,6 +837,59 @@ class LoyaltyBuybackDiscordTestCase(AppTestCase):
         self.assertIsNone(self.order.discord_thread_id)
         discord_mock.create_forum_thread.assert_not_called()
 
+    @patch("industry.helpers.lp_buyback_discord.discord")
+    def test_notify_order_created_skips_cancelled(self, discord_mock):
+        IndustryLoyaltyPointMarketOrder.objects.filter(
+            pk=self.order.pk
+        ).update(
+            status=IndustryLoyaltyPointMarketOrder.Status.CANCELLED,
+            discord_thread_id=777,
+        )
+        self.order.refresh_from_db()
+        notify_order_created(self.order)
+        discord_mock.create_forum_thread.assert_not_called()
+        discord_mock.close_thread.assert_called_once_with(channel_id=777)
+
+    @patch("industry.helpers.lp_buyback_discord.discord")
+    def test_notify_order_created_closes_if_deleted_during_create(
+        self, discord_mock
+    ):
+        self._stub_forum_create(discord_mock, "888999000")
+
+        def _create_then_delete(*args, **kwargs):
+            self.order.delete()
+            return discord_mock.create_forum_thread.return_value
+
+        discord_mock.create_forum_thread.side_effect = _create_then_delete
+        notify_order_created(self.order)
+        discord_mock.close_thread.assert_called_once_with(channel_id=888999000)
+
+    @patch("industry.helpers.lp_buyback_discord.discord")
+    def test_notify_order_created_closes_if_cancelled_during_create(
+        self, discord_mock
+    ):
+        self._stub_forum_create(discord_mock, "888999001")
+
+        def _create_then_cancel(*args, **kwargs):
+            IndustryLoyaltyPointMarketOrder.objects.filter(
+                pk=self.order.pk
+            ).update(status=IndustryLoyaltyPointMarketOrder.Status.CANCELLED)
+            return discord_mock.create_forum_thread.return_value
+
+        discord_mock.create_forum_thread.side_effect = _create_then_cancel
+        notify_order_created(self.order)
+        discord_mock.close_thread.assert_called_once_with(channel_id=888999001)
+        self.order.refresh_from_db()
+        self.assertIsNone(self.order.discord_thread_id)
+
+    def _stub_forum_create(self, discord_mock, thread_id: str):
+        response = MagicMock()
+        response.json.return_value = {"id": thread_id}
+        discord_mock.create_forum_thread.return_value = response
+        channel_response = MagicMock()
+        channel_response.json.return_value = {"available_tags": [], "flags": 0}
+        discord_mock.get_channel.return_value = channel_response
+
     def test_receive_lp_buyback_is_unique(self):
         other = DiscordChannel.objects.create(
             channel_id=999000111,
@@ -1074,13 +1127,65 @@ class LpBuybackSideAwareMessagingTestCase(AppTestCase):
             side=IndustryLoyaltyPointMarketOrder.Side.SELL,
             quantity=1000,
             isk_per_lp=800,
-            status=IndustryLoyaltyPointMarketOrder.Status.CANCELLED,
             created_by=self.seller,
             discord_thread_id=777,
         )
-        notify_order_status_changed(order)
+        order.status = IndustryLoyaltyPointMarketOrder.Status.CANCELLED
+        order.save()
         discord_mock.create_message.assert_not_called()
         discord_mock.close_thread.assert_called_once_with(channel_id=777)
+
+
+class LpBuybackThreadCloseSignalTestCase(AppTestCase):
+    def setUp(self):
+        super().setUp()
+        self.currency, _ = IndustryLoyaltyPoint.objects.update_or_create(
+            corporation_id=TLIB_CORP_ID,
+            defaults={
+                "name": "Tribal Liberation Force",
+                "default_isk_per_lp": 800,
+                "is_active": True,
+            },
+        )
+
+    def _open_order(self, thread_id=555):
+        return IndustryLoyaltyPointMarketOrder.objects.create(
+            loyalty_point=self.currency,
+            side=IndustryLoyaltyPointMarketOrder.Side.SELL,
+            quantity=1000,
+            isk_per_lp=800,
+            created_by=self.user,
+            discord_thread_id=thread_id,
+        )
+
+    @patch("industry.signals._close_market_order_discord_thread")
+    def test_delete_order_enqueues_thread_close(self, enqueue_mock):
+        order = self._open_order()
+        order.delete()
+        enqueue_mock.assert_called_once_with(555)
+
+    @patch("industry.signals._close_market_order_discord_thread")
+    def test_delete_user_enqueues_thread_close(self, enqueue_mock):
+        self._open_order(thread_id=666)
+        self.user.delete()
+        enqueue_mock.assert_called_once_with(666)
+
+    @patch("industry.signals._close_market_order_discord_thread")
+    def test_cancel_enqueues_thread_close(self, enqueue_mock):
+        order = self._open_order()
+        order.status = IndustryLoyaltyPointMarketOrder.Status.CANCELLED
+        order.save()
+        enqueue_mock.assert_called_once_with(555)
+
+    @patch("industry.signals._close_market_order_discord_thread")
+    def test_note_edit_does_not_enqueue_close(self, enqueue_mock):
+        order = self._open_order()
+        order.status = IndustryLoyaltyPointMarketOrder.Status.CANCELLED
+        order.save()
+        enqueue_mock.reset_mock()
+        order.notes = "updated"
+        order.save(update_fields=["notes", "updated_at"])
+        enqueue_mock.assert_not_called()
 
 
 class LpBuybackDiscordAckApiTestCase(LoyaltyBuybackApiTestCase):

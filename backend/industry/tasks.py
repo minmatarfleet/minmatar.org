@@ -37,6 +37,15 @@ logger = logging.getLogger(__name__)
 
 
 @app.task()
+def close_lp_buyback_discord_thread_task(thread_id: int) -> None:
+    """Archive an LP buyback Discord thread by id."""
+    # pylint: disable=import-outside-toplevel
+    from industry.helpers.lp_buyback_discord import close_lp_buyback_thread_id
+
+    close_lp_buyback_thread_id(thread_id)
+
+
+@app.task()
 def notify_lp_buyback_order_created_task(order_id: int) -> None:
     """Create Discord forum thread for a new LP buyback order (off request)."""
     # pylint: disable=import-outside-toplevel

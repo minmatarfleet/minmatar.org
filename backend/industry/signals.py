@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import logging
 
-from django.db.models.signals import m2m_changed
+from django.db.models.signals import m2m_changed, post_save, pre_delete
 from django.dispatch import receiver
 
-from industry.models import IndustryOrder
+from industry.models import IndustryLoyaltyPointMarketOrder, IndustryOrder
 
 logger = logging.getLogger(__name__)
 
@@ -51,3 +51,40 @@ def notify_when_order_tribe_groups_added(
             "change on order %s",
             instance.pk,
         )
+
+
+def _close_market_order_discord_thread(thread_id: int | None) -> None:
+    if not thread_id:
+        return
+    from industry.tasks import (  # pylint: disable=import-outside-toplevel
+        close_lp_buyback_discord_thread_task,
+    )
+
+    close_lp_buyback_discord_thread_task.delay(int(thread_id))
+
+
+@receiver(
+    pre_delete,
+    sender=IndustryLoyaltyPointMarketOrder,
+    dispatch_uid="lp_buyback_order_pre_delete_close_thread",
+)
+def close_lp_buyback_thread_on_order_delete(sender, instance, **kwargs):
+    _close_market_order_discord_thread(instance.discord_thread_id)
+
+
+@receiver(
+    post_save,
+    sender=IndustryLoyaltyPointMarketOrder,
+    dispatch_uid="lp_buyback_order_post_save_close_thread",
+)
+def close_lp_buyback_thread_on_order_cancel(
+    sender, instance, created, **kwargs
+):
+    if created:
+        return
+    if instance.status != IndustryLoyaltyPointMarketOrder.Status.CANCELLED:
+        return
+    update_fields = kwargs.get("update_fields")
+    if update_fields is not None and "status" not in update_fields:
+        return
+    _close_market_order_discord_thread(instance.discord_thread_id)
