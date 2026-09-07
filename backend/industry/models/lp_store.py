@@ -21,6 +21,14 @@ class IndustryLoyaltyPoint(models.Model):
         help_text="Default ISK per LP used when planning navy BPC costs.",
     )
     is_active = models.BooleanField(default=True)
+    allow_buy = models.BooleanField(
+        default=True,
+        help_text="Allow buy orders (Conversion Team purchasing this LP).",
+    )
+    allow_sell = models.BooleanField(
+        default=True,
+        help_text="Allow sell orders (pilots selling this LP to the alliance).",
+    )
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

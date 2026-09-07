@@ -1,0 +1,96 @@
+---
+import { i18n } from '@helpers/i18n'
+
+const { t } = i18n(Astro.url)
+
+interface Props {
+    /** 'book' has an actions column; 'history' leads with the settled date. */
+    variant?: 'book' | 'history'
+}
+
+const { variant = 'book' } = Astro.props
+
+type Column = { label: string, align?: 'start' | 'end' | 'center' }
+
+const columns: Column[] = [
+    { label: t('industry.loyalty.orders.col.order') },
+    { label: t('industry.loyalty.orders.col.quantity'), align: 'end' },
+    { label: t('industry.loyalty.orders.col.rate'), align: 'end' },
+    { label: t('industry.loyalty.orders.col.total'), align: 'end' },
+    { label: t('industry.loyalty.orders.col.status') },
+    { label: t('industry.loyalty.orders.col.purchasers'), align: 'center' },
+    ...(variant === 'book'
+        ? [{ label: t('industry.loyalty.orders.col.actions'), align: 'end' as const }]
+        : []),
+]
+---
+
+<div class:list={['loyalty-order-list', `loyalty-order-list--${variant}`]}>
+    <div class="[ loyalty-order-list__inner ]">
+        <div class="[ loyalty-order-list__head ]" aria-hidden="true">
+            {columns.map((column) => (
+                <span class:list={[
+                    'loyalty-order-list__col',
+                    column.align ? `is-${column.align}` : '',
+                ]}>
+                    {column.label}
+                </span>
+            ))}
+        </div>
+        <slot />
+    </div>
+</div>
+
+<style lang="scss">
+    .loyalty-order-list {
+        width: 100%;
+        overflow-x: auto;
+
+        /* Dropdown panels open outside the row; avoid clipping while open. */
+        &:has(.button-dropdown.is-open) {
+            overflow: visible;
+        }
+    }
+
+    .loyalty-order-list--book {
+        --loyalty-order-columns: minmax(16rem, 3fr) 8rem 5rem 9rem 7.5rem minmax(5rem, 1fr) auto;
+    }
+
+    .loyalty-order-list--history {
+        --loyalty-order-columns: minmax(16rem, 3fr) 8rem 5rem 9rem 7.5rem minmax(5rem, 1fr);
+    }
+
+    .loyalty-order-list__inner {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2xs);
+        min-width: 56rem;
+    }
+
+    .loyalty-order-list__head {
+        display: grid;
+        grid-template-columns: var(--loyalty-order-columns);
+        column-gap: var(--space-s);
+        align-items: end;
+        padding-inline: var(--space-s);
+        padding-block-end: var(--space-3xs);
+    }
+
+    .loyalty-order-list__col {
+        font-family: var(--button-font);
+        font-size: var(--step--2);
+        font-weight: 400;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.55);
+        white-space: nowrap;
+
+        &.is-end {
+            text-align: right;
+        }
+
+        &.is-center {
+            text-align: center;
+        }
+    }
+</style>

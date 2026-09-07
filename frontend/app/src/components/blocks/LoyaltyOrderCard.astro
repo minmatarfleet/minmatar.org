@@ -1,0 +1,322 @@
+---
+import { i18n } from '@helpers/i18n'
+import type { LoyaltyMarketOrder } from '@dtypes/api.minmatar.org'
+import type { TagColors } from '@dtypes/layout_components'
+import { format_date_short } from '@helpers/date'
+import { get_corporation_logo } from '@helpers/eve_image_server'
+import { number_thousand_separator } from '@helpers/numbers'
+import FlexInline from '@components/compositions/FlexInline.astro'
+import ComponentBlock from '@components/blocks/ComponentBlock.astro'
+import CharacterPicture from '@components/blocks/CharacterPicture.astro'
+import Tag from '@components/blocks/Tag.astro'
+
+const { t, lang } = i18n(Astro.url)
+
+interface Props {
+    order: LoyaltyMarketOrder
+    /** Must match the enclosing LoyaltyOrderList variant (column layout). */
+    variant?: 'book' | 'history'
+    highlighted?: boolean
+}
+
+const { order, variant = 'book', highlighted = false } = Astro.props
+
+const STATUS_LABELS: Record<string, string> = {
+    open: t('industry.loyalty.status.open'),
+    claimed: t('industry.loyalty.status.claimed'),
+    awaiting_lp: t('industry.loyalty.status.awaiting_lp'),
+    awaiting_isk: t('industry.loyalty.status.awaiting_isk'),
+    completed: t('industry.loyalty.status.completed'),
+    cancelled: t('industry.loyalty.status.cancelled'),
+}
+
+const STATUS_COLORS: Record<string, TagColors> = {
+    open: 'fleet-yellow',
+    claimed: 'alliance-blue',
+    awaiting_lp: 'fleet-yellow',
+    awaiting_isk: 'alliance-blue',
+    completed: 'green',
+    cancelled: 'fleet-red',
+}
+
+const STATUS_TEXT_COLORS: Partial<Record<string, string>> = {
+    open: 'var(--background)',
+    awaiting_lp: 'var(--background)',
+}
+
+type PurchaserIcon = {
+    character_id: number
+    character_name: string
+}
+
+/** Buy orders: poster is the purchaser. Sell orders: claimers are. */
+const order_purchasers = (row: LoyaltyMarketOrder): PurchaserIcon[] => {
+    const by_user = new Map<number, PurchaserIcon>()
+
+    for (const claim of row.claims ?? []) {
+        if (!claim.claimed_by_character_id) continue
+        by_user.set(claim.claimed_by_user_id, {
+            character_id: claim.claimed_by_character_id,
+            character_name: claim.claimed_by_name,
+        })
+    }
+
+    if (
+        by_user.size === 0
+        && row.claimed_by_user_id
+        && row.claimed_by_character_id
+        && row.claimed_by_name
+    ) {
+        by_user.set(row.claimed_by_user_id, {
+            character_id: row.claimed_by_character_id,
+            character_name: row.claimed_by_name,
+        })
+    }
+
+    if (by_user.size === 0 && row.side === 'buy' && row.created_by_character_id) {
+        by_user.set(row.created_by_user_id, {
+            character_id: row.created_by_character_id,
+            character_name: row.created_by_name,
+        })
+    }
+
+    return [...by_user.values()]
+}
+
+const purchasers = order_purchasers(order)
+const quantity_claimed = order.quantity_claimed ?? 0
+const quantity_remaining = order.quantity_remaining ?? order.quantity
+const lp_for_total = quantity_claimed > 0 ? quantity_claimed : order.quantity
+const isk_total = lp_for_total * order.isk_per_lp
+const show_remaining = variant === 'book' && quantity_claimed > 0 && quantity_remaining > 0
+
+const status_label = STATUS_LABELS[order.status] ?? order.status
+const status_color = STATUS_COLORS[order.status] ?? 'alliance-blue'
+const status_text_color = STATUS_TEXT_COLORS[order.status]
+const is_sell = order.side !== 'buy'
+const side_label = is_sell
+    ? t('industry.loyalty.side.sell')
+    : t('industry.loyalty.side.buy')
+const side_color: TagColors = is_sell ? 'fleet-yellow' : 'alliance-blue'
+
+const row_date = variant === 'history'
+    ? (order.completed_at || order.updated_at || order.created_at)
+    : order.created_at
+const row_time = new Date(row_date).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+const date_text = `${format_date_short(lang, row_date)} · ${row_time}`
+const date_label = variant === 'history'
+    ? t('industry.loyalty.orders.settled_on')
+    : t('industry.loyalty.orders.posted_on')
+const card_class = [
+    'loyalty-order-card',
+    `loyalty-order-card--${variant}`,
+    highlighted ? 'loyalty-order-card--highlight' : '',
+].filter(Boolean).join(' ')
+---
+
+<ComponentBlock
+    class={card_class}
+    padding_block="var(--space-2xs)"
+    padding_inline="var(--space-s)"
+    id={`order-${order.id}`}
+>
+    <div class="[ loyalty-order-card__grid ]">
+        <FlexInline gap="var(--space-xs)" class="[ loyalty-order-card__identity ]">
+            <img
+                class="[ loyalty-order-card__logo ]"
+                loading="lazy"
+                src={get_corporation_logo(order.corporation_id, 64)}
+                width="32"
+                height="32"
+                alt={`${order.loyalty_point_name} ${t('corporation_logo')}`}
+            />
+            <span class="[ loyalty-order-card__identity-text ]">
+                <span class="[ loyalty-order-card__title-row ]">
+                    <Tag text={side_label} color={side_color} narrow={true} />
+                    <strong class="[ loyalty-order-card__title ]">{order.loyalty_point_name}</strong>
+                </span>
+                <small class="[ loyalty-order-card__date ]" title={date_label}>
+                    {date_text}
+                </small>
+            </span>
+        </FlexInline>
+
+        <span class="[ loyalty-order-card__numeric is-quantity ]">
+            <span>{number_thousand_separator(order.quantity)}</span>
+            {show_remaining && (
+                <small class="[ loyalty-order-card__remaining ]">
+                    {t('industry.loyalty.quantity_remaining').replace(
+                        '{remaining}',
+                        number_thousand_separator(quantity_remaining),
+                    )}
+                </small>
+            )}
+        </span>
+
+        <span class="[ loyalty-order-card__numeric ]">{number_thousand_separator(order.isk_per_lp)}</span>
+
+        <span class:list={[
+            'loyalty-order-card__numeric',
+            { 'is-due': order.status === 'awaiting_isk' },
+        ]}>
+            {number_thousand_separator(isk_total)}
+        </span>
+
+        <span class="[ loyalty-order-card__status ]">
+            <Tag
+                text={status_label}
+                color={status_color}
+                text_color={status_text_color}
+                title={order.destination_character_name || undefined}
+            />
+        </span>
+
+        <FlexInline gap="var(--space-3xs)" class="[ loyalty-order-card__purchasers ]">
+            {purchasers.length > 0 ? (
+                purchasers.map((pilot) => (
+                    <CharacterPicture
+                        character_id={pilot.character_id}
+                        character_name={pilot.character_name}
+                        tooltip={pilot.character_name}
+                        size={32}
+                        icon_quality={64}
+                    />
+                ))
+            ) : (
+                <span class="[ loyalty-order-card__none ]">{t('industry.loyalty.orders.no_purchasers')}</span>
+            )}
+        </FlexInline>
+
+        {variant === 'book' && (
+            <span class="[ loyalty-order-card__actions ]">
+                <slot name="actions" />
+            </span>
+        )}
+    </div>
+</ComponentBlock>
+
+<style lang="scss">
+    .loyalty-order-card__grid {
+        display: grid;
+        grid-template-columns: var(--loyalty-order-columns);
+        column-gap: var(--space-s);
+        align-items: center;
+        width: 100%;
+        font-size: var(--step--1);
+        font-variant-numeric: tabular-nums;
+    }
+
+    :global(.loyalty-order-card--highlight) {
+        box-shadow: inset 0 0 0 1px var(--fleet-yellow);
+        background: color-mix(in srgb, var(--fleet-yellow) 10%, transparent) !important;
+    }
+
+    .loyalty-order-card__identity {
+        min-width: 0;
+        align-items: center;
+        flex-wrap: nowrap;
+    }
+
+    .loyalty-order-card__logo {
+        flex-shrink: 0;
+        display: block;
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
+        border-radius: var(--border-radius);
+        background-color: var(--background);
+    }
+
+    .loyalty-order-card__identity-text {
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+        min-width: 0;
+    }
+
+    .loyalty-order-card__title-row {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2xs);
+        min-width: 0;
+    }
+
+    .loyalty-order-card__title {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-family: var(--heading-font);
+        font-size: var(--step-0);
+        line-height: 1.1;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+        color: var(--highlight);
+    }
+
+    .loyalty-order-card__date {
+        font-size: var(--step--2);
+        color: rgba(255, 255, 255, 0.55);
+        white-space: nowrap;
+    }
+
+    .loyalty-order-card__numeric {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        text-align: right;
+        white-space: nowrap;
+        color: var(--foreground);
+
+        &.is-quantity {
+            color: var(--highlight);
+            font-weight: 600;
+        }
+
+        &.is-due {
+            color: var(--green);
+            font-weight: 600;
+        }
+    }
+
+    .loyalty-order-card__remaining {
+        font-size: var(--step--2);
+        font-weight: 400;
+        color: rgba(255, 255, 255, 0.55);
+    }
+
+    .loyalty-order-card__purchasers {
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .loyalty-order-card__none {
+        font-size: var(--step--2);
+        color: rgba(255, 255, 255, 0.45);
+    }
+
+    .loyalty-order-card__actions {
+        display: flex;
+        justify-content: flex-end;
+
+        /* Compact text trigger so the row stays as slim as the history rows. */
+        :global(button[data-appearance="plain"]) {
+            font-family: var(--button-font);
+            font-size: var(--step--2);
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--highlight);
+            white-space: nowrap;
+            padding: var(--space-3xs) 0;
+            transition: var(--fast-transition);
+
+            @media (hover: hover) {
+                &:hover {
+                    color: var(--fleet-yellow);
+                }
+            }
+        }
+    }
+</style>
