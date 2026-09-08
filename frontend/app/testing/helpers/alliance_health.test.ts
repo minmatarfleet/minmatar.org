@@ -13,84 +13,33 @@ const base = {
 }
 
 describe('can_promote_alliance_health_trial', () => {
-    it('shows promote on the default current tab for approve decisions', () => {
+    it('shows promote whenever the officer can act on the corp', () => {
         expect(
             can_promote_alliance_health_trial({
                 ...base,
-                bucket: 'current',
-                decision: 'approve',
-                alliance_days: 70,
+                corporation_id: 1,
             }),
         ).toBe(true)
     })
 
-    it('hides promote on current for people who are not approve-ready', () => {
+    it('shows promote for officers scoped to that corp', () => {
         expect(
             can_promote_alliance_health_trial({
-                ...base,
-                bucket: 'current',
-                decision: 'nudge',
-                alliance_days: 80,
-            }),
-        ).toBe(false)
-    })
-
-    it('shows promote on evaluating for people who are not passing yet', () => {
-        expect(
-            can_promote_alliance_health_trial({
-                ...base,
-                bucket: 'evaluating',
-                decision: 'nudge',
-                alliance_days: 80,
-            }),
-        ).toBe(true)
-        expect(
-            can_promote_alliance_health_trial({
-                ...base,
-                bucket: 'evaluating',
-                decision: 'hold',
-                alliance_days: 90,
+                can_mutate: true,
+                alliance_wide: false,
+                officer_corp_ids: [7],
+                corporation_id: 7,
             }),
         ).toBe(true)
     })
 
-    it('hides promote on evaluating for too-early tenure', () => {
+    it('hides promote for a corp the officer cannot act on', () => {
         expect(
             can_promote_alliance_health_trial({
-                ...base,
-                bucket: 'evaluating',
-                decision: 'too_early',
-                alliance_days: 20,
-            }),
-        ).toBe(false)
-    })
-
-    it('hides promote on passing when tenure is under 60 days', () => {
-        expect(
-            can_promote_alliance_health_trial({
-                ...base,
-                bucket: 'passing',
-                decision: null,
-                alliance_days: 40,
-            }),
-        ).toBe(false)
-        expect(
-            can_promote_alliance_health_trial({
-                ...base,
-                bucket: 'passing',
-                decision: null,
-                alliance_days: null,
-            }),
-        ).toBe(false)
-    })
-
-    it('hides promote for too-early pilots on passing', () => {
-        expect(
-            can_promote_alliance_health_trial({
-                ...base,
-                bucket: 'passing',
-                decision: 'too_early',
-                alliance_days: 20,
+                can_mutate: true,
+                alliance_wide: false,
+                officer_corp_ids: [7],
+                corporation_id: 9,
             }),
         ).toBe(false)
     })
@@ -100,9 +49,6 @@ describe('can_promote_alliance_health_trial', () => {
             can_promote_alliance_health_trial({
                 ...base,
                 can_mutate: false,
-                bucket: 'passing',
-                decision: 'approve',
-                alliance_days: 70,
             }),
         ).toBe(false)
     })

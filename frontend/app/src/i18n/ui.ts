@@ -1789,7 +1789,7 @@ export const ui = {
         'alliance.health.bucket.dark': 'Gone for months',
         'alliance.health.bucket.seasonal': 'Comes and goes',
         'alliance.health.trials.title': 'Trials',
-        'alliance.health.trials.caption': 'Your trial members. Open Passing and hit Promote when they have been here 60 days and are still showing up. Failing needs a conversation. Evaluating is the gray area — nudge them in Discord.',
+        'alliance.health.trials.caption': 'Your trial members. Hit Promote when they have been here 60 days and are still showing up. Failing needs a conversation. Evaluating is the gray area — nudge them in Discord.',
         'alliance.health.trials.aria': 'Trial hygiene lists',
         'alliance.health.trials.empty': 'Nobody in this list.',
         'alliance.health.bucket.approve': 'Come off trial',
