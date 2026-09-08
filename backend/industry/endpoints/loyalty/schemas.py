@@ -12,6 +12,8 @@ class LoyaltyCurrencyResponse(Schema):
     corporation_id: int
     default_isk_per_lp: int
     is_active: bool
+    allow_buy: bool = True
+    allow_sell: bool = True
 
 
 class LoyaltyCapabilitiesResponse(Schema):
@@ -54,6 +56,13 @@ class LoyaltyMarketOrderResponse(Schema):
     created_at: datetime
     updated_at: datetime
     completed_at: Optional[datetime] = None
+
+
+class LoyaltyMarketOrdersListResponse(Schema):
+    items: list[LoyaltyMarketOrderResponse]
+    total: int
+    limit: Optional[int] = None
+    offset: int = 0
 
 
 class CreateLoyaltyMarketOrderRequest(Schema):

@@ -27,6 +27,8 @@ ACTIVE_STATUSES = (OPEN, CLAIMED, AWAITING_LP, AWAITING_ISK)
 
 # Maximum LP quantity for sell orders; buy orders have no quantity cap.
 MAX_SELL_LP = 2_500_000
+# Sell orders must be posted in whole multiples of this many LP.
+SELL_LP_INCREMENT = 100_000
 
 ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
     OPEN: frozenset({CLAIMED, CANCELLED}),
@@ -79,11 +81,28 @@ def create_order(
         raise LpMarketOrderError("quantity must be a positive integer.")
     if (
         side == IndustryLoyaltyPointMarketOrder.Side.SELL
-        and quantity > MAX_SELL_LP
+        and not currency.allow_sell
     ):
         raise LpMarketOrderError(
-            f"Sell orders cannot exceed {MAX_SELL_LP:,} LP."
+            f"Sell orders are currently disabled for {currency.name}."
         )
+    if (
+        side == IndustryLoyaltyPointMarketOrder.Side.BUY
+        and not currency.allow_buy
+    ):
+        raise LpMarketOrderError(
+            f"Buy orders are currently disabled for {currency.name}."
+        )
+    if side == IndustryLoyaltyPointMarketOrder.Side.SELL:
+        if quantity > MAX_SELL_LP:
+            raise LpMarketOrderError(
+                f"Sell orders cannot exceed {MAX_SELL_LP:,} LP."
+            )
+        if quantity % SELL_LP_INCREMENT != 0:
+            raise LpMarketOrderError(
+                "Sell orders must be in increments of "
+                f"{SELL_LP_INCREMENT:,} LP."
+            )
 
     destination = (destination_character_name or "").strip()
     if side == IndustryLoyaltyPointMarketOrder.Side.BUY and not destination:

@@ -38,12 +38,6 @@ from industry.endpoints.loyalty.get_orders import (
     get_orders,
     METHOD as get_orders_method,
 )
-from industry.endpoints.loyalty.get_stockpiles import (
-    PATH as get_stockpiles_path,
-    ROUTE_SPEC as get_stockpiles_spec,
-    get_stockpiles,
-    METHOD as get_stockpiles_method,
-)
 from industry.endpoints.loyalty.patch_order import (
     PATH as patch_order_path,
     ROUTE_SPEC as patch_order_spec,
@@ -77,12 +71,6 @@ _ROUTES = (
         get_currencies_path,
         get_currencies_spec,
         get_currencies,
-    ),
-    (
-        get_stockpiles_method,
-        get_stockpiles_path,
-        get_stockpiles_spec,
-        get_stockpiles,
     ),
     (get_ledger_method, get_ledger_path, get_ledger_spec, get_ledger),
     (get_offers_method, get_offers_path, get_offers_spec, get_offers),

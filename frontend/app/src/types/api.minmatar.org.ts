@@ -1709,6 +1709,8 @@ export interface LoyaltyCurrency {
     corporation_id:     number;
     default_isk_per_lp: number;
     is_active:          boolean;
+    allow_buy:          boolean;
+    allow_sell:         boolean;
 }
 
 export interface LoyaltyMarketOrderClaim {
@@ -1746,6 +1748,13 @@ export interface LoyaltyMarketOrder {
     created_at:                 Date | string;
     updated_at:                 Date | string;
     completed_at:               Date | string | null;
+}
+
+export interface LoyaltyMarketOrdersList {
+    items:  LoyaltyMarketOrder[];
+    total:  number;
+    limit:  number | null;
+    offset: number;
 }
 
 export interface LoyaltyLedgerEntry {

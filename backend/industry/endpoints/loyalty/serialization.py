@@ -44,6 +44,8 @@ def currency_response(
         corporation_id=int(currency.corporation_id),
         default_isk_per_lp=currency.default_isk_per_lp,
         is_active=currency.is_active,
+        allow_buy=currency.allow_buy,
+        allow_sell=currency.allow_sell,
     )
 
 

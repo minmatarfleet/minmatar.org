@@ -158,11 +158,76 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         clear_feature_cache()
 
     def test_get_currencies_public(self):
+        IndustryLoyaltyPoint.objects.filter(corporation_id=1000179).update(
+            allow_sell=False
+        )
         response = self.client.get("/api/industry/loyalty/currencies")
         self.assertEqual(response.status_code, 200)
-        names = {row["name"] for row in response.json()}
-        self.assertIn("Tribal Liberation Force", names)
-        self.assertEqual(len(response.json()), 4)
+        rows = {row["name"]: row for row in response.json()}
+        self.assertIn("Tribal Liberation Force", rows)
+        self.assertEqual(len(rows), 4)
+        self.assertTrue(rows["Tribal Liberation Force"]["allow_sell"])
+        self.assertTrue(rows["Tribal Liberation Force"]["allow_buy"])
+        self.assertFalse(rows["24th Imperial Crusade"]["allow_sell"])
+        self.assertTrue(rows["24th Imperial Crusade"]["allow_buy"])
+
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
+    def test_post_sell_rejected_when_currency_disallows_sell(
+        self, unused_notify
+    ):
+        self.currency.allow_sell = False
+        self.currency.save()
+        response = self.client.post(
+            "/api/industry/loyalty/orders",
+            data=json.dumps(
+                {
+                    "loyalty_point_id": self.currency.pk,
+                    "side": "sell",
+                    "quantity": 100_000,
+                }
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 400, response.content)
+        self.assertIn("disabled", response.json()["detail"])
+        self.assertFalse(IndustryLoyaltyPointMarketOrder.objects.exists())
+
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
+    def test_post_buy_rejected_when_currency_disallows_buy(
+        self, unused_notify
+    ):
+        self.currency.allow_buy = False
+        self.currency.save()
+        response = self.client.post(
+            "/api/industry/loyalty/orders",
+            data=json.dumps(
+                {
+                    "loyalty_point_id": self.currency.pk,
+                    "side": "buy",
+                    "quantity": 100_000,
+                    "destination_character_name": "LP Buyer",
+                }
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.manager_token}",
+        )
+        self.assertEqual(response.status_code, 400, response.content)
+        self.assertIn("disabled", response.json()["detail"])
+        # Sell side is still allowed for the same currency.
+        response = self.client.post(
+            "/api/industry/loyalty/orders",
+            data=json.dumps(
+                {
+                    "loyalty_point_id": self.currency.pk,
+                    "side": "sell",
+                    "quantity": 100_000,
+                }
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 201, response.content)
 
     def test_capabilities_for_manager_and_trader(self):
         anon = self.client.get("/api/industry/loyalty/capabilities")
@@ -185,14 +250,6 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         # Manage is tribe-gated; trade is affiliation-gated. This manager has
         # Conversion tribe membership only, so can_trade stays false.
         self.assertFalse(manager.json()["can_trade"])
-
-    def test_get_stockpiles_public(self):
-        response = self.client.get("/api/industry/loyalty/stockpiles")
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertEqual(len(data), 1)
-        self.assertEqual(data[0]["account_name"], "FL33T TLIB pot")
-        self.assertEqual(data[0]["balance"], 100_000)
 
     def test_get_ledger_returns_chronological_entries(self):
         seller = IndustryLoyaltyPointAccount.objects.create(
@@ -289,6 +346,42 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         )
         self.assertEqual(response.status_code, 400, response.content)
         self.assertIn("2,500,000", response.json()["detail"])
+
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
+    def test_post_sell_requires_100k_increment(self, unused_notify):
+        response = self.client.post(
+            "/api/industry/loyalty/orders",
+            data=json.dumps(
+                {
+                    "loyalty_point_id": self.currency.pk,
+                    "side": "sell",
+                    "quantity": 150_000,
+                }
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.token}",
+        )
+        self.assertEqual(response.status_code, 400, response.content)
+        self.assertIn("100,000", response.json()["detail"])
+        self.assertFalse(IndustryLoyaltyPointMarketOrder.objects.exists())
+
+    @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
+    def test_post_buy_not_bound_to_100k_increment(self, unused_notify):
+        response = self.client.post(
+            "/api/industry/loyalty/orders",
+            data=json.dumps(
+                {
+                    "loyalty_point_id": self.currency.pk,
+                    "side": "buy",
+                    "quantity": 150_000,
+                    "destination_character_name": "LP Buyer",
+                }
+            ),
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {self.manager_token}",
+        )
+        self.assertEqual(response.status_code, 201, response.content)
+        self.assertEqual(response.json()["quantity"], 150_000)
 
     @patch("industry.tasks.notify_lp_buyback_order_created_task.delay")
     def test_post_buy_over_max_sell_lp_allowed(self, unused_notify):
@@ -697,7 +790,7 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
                 {
                     "loyalty_point_id": self.currency.pk,
                     "side": "sell",
-                    "quantity": 50_000,
+                    "quantity": 100_000,
                 }
             ),
             content_type="application/json",
@@ -708,7 +801,7 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
             f"/api/industry/loyalty/orders/{order_id}/claim",
             data=json.dumps(
                 {
-                    "amount": 50_000,
+                    "amount": 100_000,
                     "destination_corporation_name": "Gallifrey Security Services",
                 }
             ),
@@ -745,9 +838,124 @@ class LoyaltyBuybackApiTestCase(AppTestCase):
         )
         response = self.client.get("/api/industry/loyalty/orders")
         self.assertEqual(response.status_code, 200)
-        ids = {row["id"] for row in response.json()}
+        body = response.json()
+        ids = {row["id"] for row in body["items"]}
         self.assertIn(open_order.pk, ids)
         self.assertEqual(len(ids), 1)
+        self.assertEqual(body["total"], 1)
+        self.assertIsNone(body["limit"])
+        self.assertEqual(body["offset"], 0)
+
+    def _make_history_orders(self):
+        other_currency = IndustryLoyaltyPoint.objects.get(
+            corporation_id=1000179
+        )
+        completed = []
+        for index in range(3):
+            completed.append(
+                IndustryLoyaltyPointMarketOrder.objects.create(
+                    loyalty_point=self.currency,
+                    side=IndustryLoyaltyPointMarketOrder.Side.SELL,
+                    quantity=100_000 * (index + 1),
+                    isk_per_lp=800,
+                    status=IndustryLoyaltyPointMarketOrder.Status.COMPLETED,
+                    created_by=self.user,
+                )
+            )
+        cancelled = IndustryLoyaltyPointMarketOrder.objects.create(
+            loyalty_point=self.currency,
+            side=IndustryLoyaltyPointMarketOrder.Side.SELL,
+            quantity=100_000,
+            isk_per_lp=800,
+            status=IndustryLoyaltyPointMarketOrder.Status.CANCELLED,
+            created_by=self.user,
+        )
+        other = IndustryLoyaltyPointMarketOrder.objects.create(
+            loyalty_point=other_currency,
+            side=IndustryLoyaltyPointMarketOrder.Side.BUY,
+            quantity=100_000,
+            isk_per_lp=800,
+            status=IndustryLoyaltyPointMarketOrder.Status.COMPLETED,
+            created_by=self.manager,
+            destination_character_name="LP Buyer",
+        )
+        return completed, cancelled, other
+
+    def test_get_orders_paginates_history(self):
+        completed, cancelled, other = self._make_history_orders()
+        response = self.client.get(
+            "/api/industry/loyalty/orders",
+            {
+                "status": "completed,cancelled",
+                "ordering": "-updated_at",
+                "limit": 2,
+                "offset": 0,
+            },
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        body = response.json()
+        self.assertEqual(body["total"], 5)
+        self.assertEqual(body["limit"], 2)
+        self.assertEqual(body["offset"], 0)
+        self.assertEqual(len(body["items"]), 2)
+        self.assertEqual(
+            [row["id"] for row in body["items"]],
+            [other.pk, cancelled.pk],
+        )
+
+        response = self.client.get(
+            "/api/industry/loyalty/orders",
+            {
+                "status": "completed,cancelled",
+                "ordering": "-updated_at",
+                "limit": 2,
+                "offset": 4,
+            },
+        )
+        body = response.json()
+        self.assertEqual(body["total"], 5)
+        self.assertEqual(
+            [row["id"] for row in body["items"]], [completed[0].pk]
+        )
+
+    def test_get_orders_filters_by_status_and_currency(self):
+        completed, cancelled, other = self._make_history_orders()
+        response = self.client.get(
+            "/api/industry/loyalty/orders", {"status": "cancelled"}
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [row["id"] for row in response.json()["items"]], [cancelled.pk]
+        )
+
+        response = self.client.get(
+            "/api/industry/loyalty/orders",
+            {
+                "status": "completed",
+                "loyalty_point_id": other.loyalty_point_id,
+            },
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [row["id"] for row in response.json()["items"]], [other.pk]
+        )
+
+        response = self.client.get(
+            "/api/industry/loyalty/orders",
+            {"status": "completed", "loyalty_point_id": self.currency.pk},
+        )
+        ids = {row["id"] for row in response.json()["items"]}
+        self.assertEqual(ids, {order.pk for order in completed})
+
+    def test_get_orders_rejects_unknown_status_or_ordering(self):
+        response = self.client.get(
+            "/api/industry/loyalty/orders", {"status": "bogus"}
+        )
+        self.assertEqual(response.status_code, 400)
+        response = self.client.get(
+            "/api/industry/loyalty/orders", {"ordering": "quantity"}
+        )
+        self.assertEqual(response.status_code, 400)
 
 
 class LoyaltyBuybackDiscordTestCase(AppTestCase):

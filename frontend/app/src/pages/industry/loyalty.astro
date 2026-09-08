@@ -13,21 +13,24 @@ const user_is_staff = Boolean(user && user.is_staff)
 import type {
     LoyaltyCurrency,
     LoyaltyMarketOrder,
-    OrderLpStockpile,
+    LoyaltyMarketOrdersList,
 } from '@dtypes/api.minmatar.org'
 import {
     get_loyalty_capabilities,
     get_loyalty_currencies,
     get_loyalty_orders,
-    get_loyalty_stockpiles,
 } from '@helpers/api.minmatar.org/loyalty'
 import { get_characters_summary } from '@helpers/api.minmatar.org/characters'
 import { TLIB_CORP_ID } from '@helpers/loyalty_offers_metrics'
+import {
+    loyalty_history_query,
+    parse_loyalty_history_params,
+} from '@helpers/loyalty_order_history'
 
 let currencies: LoyaltyCurrency[] = []
 let orders: LoyaltyMarketOrder[] = []
-let order_history: LoyaltyMarketOrder[] = []
-let stockpiles: OrderLpStockpile[] = []
+let order_history: LoyaltyMarketOrdersList = { items: [], total: 0, limit: null, offset: 0 }
+const history_filters = parse_loyalty_history_params(Astro.url.searchParams)
 let fetching_error: Error | false = false
 let claim_characters: {
     character_name: string
@@ -41,12 +44,13 @@ let can_manage_buyback = false
 const current_user_id = user ? Number(user.user_id) : 0
 
 try {
-    [currencies, orders, order_history, stockpiles] = await Promise.all([
+    let active_orders: LoyaltyMarketOrdersList
+    ;[currencies, active_orders, order_history] = await Promise.all([
         get_loyalty_currencies(),
         get_loyalty_orders(),
-        get_loyalty_orders({ status: 'completed,cancelled' }),
-        get_loyalty_stockpiles(),
+        get_loyalty_orders(loyalty_history_query(history_filters)),
     ])
+    orders = active_orders.items
 } catch (error) {
     fetching_error = error as Error
 }
@@ -88,6 +92,8 @@ const default_currency = currencies.find((c) => c.corporation_id === TLIB_CORP_I
     ?? currencies[0]
     ?? null
 const default_currency_id = default_currency?.id ?? null
+const can_post_sell = currencies.some((c) => c.allow_sell)
+const can_post_buy = currencies.some((c) => c.allow_buy)
 const default_isk_per_lp = default_currency?.default_isk_per_lp ?? 800
 
 import Viewport from '@layouts/Viewport.astro'
@@ -101,7 +107,6 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro'
 import LoyaltyRateCards from '@components/blocks/LoyaltyRateCards.astro'
 import LoyaltyOrderBook from '@components/blocks/LoyaltyOrderBook.astro'
 import LoyaltyOrderHistory from '@components/blocks/LoyaltyOrderHistory.astro'
-import LoyaltyStockpiles from '@components/blocks/LoyaltyStockpiles.astro'
 import Button from '@components/blocks/Button.astro'
 import CogIcon from '@components/icons/buttons/CogIcon.astro'
 
@@ -172,16 +177,18 @@ const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
             ) : (
                 <>
                     <LoyaltyRateCards currencies={currencies} />
-                    {is_logged_in && (
+                    {is_logged_in && (can_post_sell || (can_manage_buyback && can_post_buy)) && (
                         <div class="[ loyalty-cta-row ]">
-                            <Button
-                                class="[ loyalty-cta-row__button ]"
-                                color="fleet-red"
-                                x-on:click="$dispatch('loyalty-open-sell')"
-                            >
-                                {t('industry.loyalty.post_sell')}
-                            </Button>
-                            {can_manage_buyback && (
+                            {can_post_sell && (
+                                <Button
+                                    class="[ loyalty-cta-row__button ]"
+                                    color="fleet-red"
+                                    x-on:click="$dispatch('loyalty-open-sell')"
+                                >
+                                    {t('industry.loyalty.post_sell')}
+                                </Button>
+                            )}
+                            {can_manage_buyback && can_post_buy && (
                                 <Button
                                     class="[ loyalty-cta-row__button ]"
                                     color="green"
@@ -206,8 +213,12 @@ const admin_loyalty_url = `${api_base}/admin/industry/loyalty/`
                         default_claim_character={default_claim_character}
                         default_claim_corporation={default_claim_corporation}
                     />
-                    <LoyaltyOrderHistory orders={order_history} />
-                    <LoyaltyStockpiles stockpiles={stockpiles} />
+                    <LoyaltyOrderHistory
+                        orders={order_history.items}
+                        currencies={currencies}
+                        total={order_history.total}
+                        filters={history_filters}
+                    />
                 </>
             )}
         </Flexblock>
