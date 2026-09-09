@@ -1024,10 +1024,11 @@ class DiscordOffboardSyncTests(TestCase):
     def test_sync_discord_user_missing_user_is_noop(self):
         sync_discord_user(999999)
 
+    @patch("users.router.sync_user_corporation_groups")
     @patch("users.router.sync_discord_user")
     @patch("users.router.update_affiliation")
     def test_sync_user_endpoint_returns_410_after_offboard(
-        self, mock_affiliation, mock_sync
+        self, mock_affiliation, mock_sync, mock_corp_groups
     ):
         user_id = self.user.id
 
@@ -1044,10 +1045,11 @@ class DiscordOffboardSyncTests(TestCase):
         self.assertIn(b"offboarded", response.content)
 
     @patch("users.router.offboard_user")
+    @patch("users.router.sync_user_corporation_groups")
     @patch("users.router.sync_discord_user")
     @patch("users.router.update_affiliation")
     def test_sync_user_endpoint_returns_410_on_affiliation_member_missing(
-        self, mock_affiliation, mock_sync, mock_offboard
+        self, mock_affiliation, mock_sync, mock_corp_groups, mock_offboard
     ):
         """REST-API-MZ/MX: DiscordRoleAssignmentError rolls back in-atomic offboard."""
         user_id = self.user.id
@@ -1069,12 +1071,14 @@ class DiscordOffboardSyncTests(TestCase):
         self.assertIn(b"offboarded", response.content)
         mock_offboard.assert_called_once_with(user_id)
         mock_sync.assert_not_called()
+        mock_corp_groups.assert_not_called()
         self.assertFalse(User.objects.filter(id=user_id).exists())
 
+    @patch("users.router.sync_user_corporation_groups")
     @patch("users.router.sync_discord_user")
     @patch("users.router.update_affiliation")
     def test_sync_user_endpoint_returns_404_when_user_missing(
-        self, mock_affiliation, mock_sync
+        self, mock_affiliation, mock_sync, mock_corp_groups
     ):
         mock_affiliation.side_effect = User.DoesNotExist
         client = Client()
@@ -1085,6 +1089,7 @@ class DiscordOffboardSyncTests(TestCase):
         self.assertEqual(response.status_code, 404)
         self.assertIn(b"not found", response.content)
         mock_sync.assert_not_called()
+        mock_corp_groups.assert_not_called()
 
 
 if __name__ == "__main__":

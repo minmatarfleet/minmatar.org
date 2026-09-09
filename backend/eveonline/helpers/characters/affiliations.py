@@ -1,3 +1,6 @@
+from eveonline.helpers.characters.corporation_history import (
+    corporation_id_preferring_history_over_stale_esi,
+)
 from eveonline.models import EveCharacter
 
 
@@ -8,6 +11,9 @@ def update_character_with_affiliations(
     faction_id: int | None = None,
 ) -> bool:
     character = EveCharacter.objects.get(character_id=character_id)
+    corporation_id = corporation_id_preferring_history_over_stale_esi(
+        character, corporation_id
+    )
     updated = False
     if (corporation_id and character.corporation_id != corporation_id) or (
         not corporation_id and character.corporation_id is not None

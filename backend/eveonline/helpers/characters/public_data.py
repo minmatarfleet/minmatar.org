@@ -5,6 +5,7 @@ from django.utils import timezone
 from eveonline.client import EsiResponse, esi_public, live_esi_allowed
 from eveonline.helpers.characters.characters import orphan_character
 from eveonline.helpers.characters.corporation_history import (
+    corporation_id_preferring_history_over_stale_esi,
     sync_character_corporation_history,
 )
 from eveonline.helpers.esi import raise_if_esi_error_limited
@@ -26,7 +27,9 @@ def apply_character_public_data(
         character.character_name = name
         updated = True
 
-    corporation_id = esi_character.get("corporation_id")
+    corporation_id = corporation_id_preferring_history_over_stale_esi(
+        character, esi_character.get("corporation_id")
+    )
     if (
         corporation_id is not None
         and character.corporation_id != corporation_id
