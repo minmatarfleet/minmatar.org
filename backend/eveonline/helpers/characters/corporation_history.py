@@ -24,6 +24,39 @@ CORPORATION_HISTORY_TTL = timedelta(hours=24)
 ALLIANCE_HISTORY_TTL = timedelta(hours=1)
 
 
+def corporation_id_preferring_history_over_stale_esi(
+    character: EveCharacter, esi_corporation_id: int | None
+) -> int | None:
+    """
+    ESI character public data and /characters/affiliation/ often lag a corp
+    join. If history already records a newer membership and ESI still reports
+    the previous corporation, keep the history corporation.
+    """
+    if not esi_corporation_id:
+        return esi_corporation_id
+    rows = list(
+        character.corporation_history.order_by(
+            "-start_date", "-record_id"
+        ).only("corporation_id")[:2]
+    )
+    if len(rows) < 2:
+        return esi_corporation_id
+    latest, previous = rows[0], rows[1]
+    if (
+        esi_corporation_id != latest.corporation_id
+        and esi_corporation_id == previous.corporation_id
+    ):
+        logger.info(
+            "Ignoring stale ESI corporation %s for character %s; "
+            "corporation history current is %s",
+            esi_corporation_id,
+            character.character_id,
+            latest.corporation_id,
+        )
+        return latest.corporation_id
+    return esi_corporation_id
+
+
 def character_corporation_history_is_stale(
     character: EveCharacter,
     *,

@@ -430,6 +430,47 @@ def sync_eve_corporation_groups():
                     )
 
 
+def sync_user_corporation_groups(user: User) -> None:
+    """
+    Recompute Corp <TICKER> auth groups for one user from linked characters.
+
+    Used by Discord role refresh so corp roles do not wait for the :19/:49 beat.
+    """
+    for corporation_group in EveCorporationGroup.objects.select_related(
+        "corporation", "group"
+    ):
+        if not corporation_group.corporation:
+            continue
+        group = corporation_group.group
+        qualifies = _user_qualifies_for_corporation_group(
+            user, corporation_group
+        )
+        in_group = user.groups.filter(pk=group.id).exists()
+        try:
+            if qualifies and not in_group:
+                user.groups.add(group)
+                logger.info(
+                    "User %s qualifies for corporation group %s, adding",
+                    user.id,
+                    group.name,
+                )
+            elif not qualifies and in_group:
+                user.groups.remove(group)
+                logger.info(
+                    "User %s no longer qualifies for corporation group %s, "
+                    "removing",
+                    user.id,
+                    group.name,
+                )
+        except Exception as e:  # pylint: disable=broad-except
+            logger.warning(
+                "Error updating user %s corporation group %s: %s",
+                user.id,
+                corporation_group,
+                e,
+            )
+
+
 @app.task
 def sync_tribe_chief_group():
     """Ensure Tribe - Chief auth group exists and matches active tribe chiefs."""

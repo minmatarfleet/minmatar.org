@@ -26,6 +26,7 @@ from groups.helpers import (
 from groups.tasks import (
     update_affiliations,
     sync_eve_corporation_groups,
+    sync_user_corporation_groups,
 )
 from tribes.models import Tribe, TribeGroup
 
@@ -294,6 +295,43 @@ class GroupTasksTestCase(TestCase):
 
         self.assertEqual(
             [group_a.name],
+            list(self.user.groups.values_list("name", flat=True)),
+        )
+
+    @factory.django.mute_signals(
+        signals.pre_save, signals.post_save, signals.m2m_changed
+    )
+    def test_sync_user_corporation_groups_switches_corp(self):
+        old_corp = EveCorporation.objects.create(
+            corporation_id=98838034,
+            name="FOSFO",
+        )
+        new_corp = EveCorporation.objects.create(
+            corporation_id=98741376,
+            name="L3ARN",
+        )
+        old_group = Group.objects.create(name="Corp FOSFO")
+        new_group = Group.objects.create(name="Corp L3ARN")
+        EveCorporationGroup.objects.create(
+            corporation=old_corp, group=old_group
+        )
+        EveCorporationGroup.objects.create(
+            corporation=new_corp, group=new_group
+        )
+        char = EveCharacter.objects.create(
+            character_id=2115133763,
+            character_name="Paul Steinor",
+            corporation_id=old_corp.corporation_id,
+        )
+        set_primary_character(self.user, char)
+        self.user.groups.add(old_group)
+
+        char.corporation_id = new_corp.corporation_id
+        char.save(update_fields=["corporation_id"])
+        sync_user_corporation_groups(self.user)
+
+        self.assertEqual(
+            [new_group.name],
             list(self.user.groups.values_list("name", flat=True)),
         )
 
