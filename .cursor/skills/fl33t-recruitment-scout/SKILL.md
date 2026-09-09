@@ -268,6 +268,8 @@ primary corp. Skip or note poor fits (e.g. WH-only seekers) in a short bullet li
   corps, not FW alliance corps. MFA lives in **highsec bulwark systems** with
   **lowsec excursions** — pitch that, not FW daily life. Mention a PvP corp only
   as an optional side path, not the primary pitch.
+- **Academy is Omega-only** (API `requirements`). Alpha seekers go MFA / highsec
+  PvE, not L3ARN.
 
 One primary corp per prospect. Optional one-liner for a graduate path or
 bigger/smaller corp in the same alliance — name only, no ad link. Use
@@ -289,13 +291,14 @@ recognize complementary seats, not a pecking order.
 | **FOSFO** (ad ticker; user shorthand FASFO) | Experienced **small-gang** crews, **UK especially**. Only name/route when the corp is on the corporations API (or a live `u/MinmatarFleet` ad you are intentionally linking). Use the live API/ad name — do not invent Administrative Atrocities / DHDR if the listing differs. |
 | **Banshee Squadron** | **Small, tight-knit new players in EUTZ**, **UK especially**. Prefer when the ask is EU/UK newbro + small roster rather than the larger Academy feeder. |
 | **The Dark Tribe (TDT)** | **Late-night USTZ**, small / tight-knit home for newer pilots in that window (check API requirements — currently 30m SP / KB / capital-ready; if OP does not match those, route Academy or Soltech for that TZ instead). |
-| **Minmatar Fleet Academy (L3ARN)** | **All-TZ new players** default feeder. API may still list US fleet hours — recruit as all-TZ newbro door; natural next homes include Banshee (EU), TDT or Soltech (US), or Rattini when they grow into caps/multi-box. |
+| **Minmatar Fleet Academy (L3ARN)** | **All-TZ new Omega players** default feeder. Skip alphas (Omega required). API may still list US fleet hours — recruit as all-TZ newbro door; natural next homes include Banshee (EU), TDT or Soltech (US), or Rattini when they grow into caps/multi-box. |
 
 Additional principles:
 
 - **New EU/UK pilots:** Banshee Squadron when they want a small tight EUTZ home; Academy (L3ARN) when they want the all-TZ feeder / “learn by undocking” frame. Rattini and Soltech are usually later seats, not the first EU newbro door.
 - **New USTZ / late USTZ:** Academy (L3ARN) for brand-new; TDT for late-night tight-knit if they match requirements; Soltech for late-USTZ pilots who want the daily Amamake intermediate seat.
-- **Industry-primary:** MFA associate corps primary. Base in highsec bulwark systems, lowsec excursions when people want out. PvP corp is a side note only. Name **Minmatar Extraction Company** (and its Amo mining ad) when they want organized mining fleets; MFA network + Keldor for general industry/PvE. Dual accounts (mining main + PvP alt) can split Extraction + a FW corp (e.g. Soltech) — on forums, linking `my.minmatar.org/alliance/corporations/` works when dual-routing. **Always close mining/industry pitches with Rock Hoppin'** (`https://youtu.be/XCApG7Pt6m4`).
+- **Industry-primary:** MFA associate corps primary. Base in highsec bulwark systems, lowsec excursions when people want out. PvP corp is a side note only. Name **Minmatar Extraction Company** (and its Amo mining ad) when they want organized mining fleets; MFA network + **Keldor00** on Discord for general industry/PvE. Dual accounts (mining main + PvP alt) can split Extraction + a FW corp (e.g. Soltech) — on forums, linking `my.minmatar.org/alliance/corporations/` works when dual-routing. Small industry **corps** seeking a null alliance home still get Extraction (fleet density / ore volume), not a silent skip. **Always close mining/industry pitches with Rock Hoppin'** (`https://youtu.be/XCApG7Pt6m4`).
+- **Ex-FL33T returning:** if they already left Rattini (or another cap/multi-box seat) for IRL / inactivity and are not asking for dreads, route **Soltech** (IRL-first Amamake) rather than sending them back to the same corp.
 - **Caps / multi-box veterans:** Rattini. Unused capital + learning lowsec → Rattini (own the dread-feed joke); mention Soltech only as a same-alliance option when they want the Amamake intermediate seat instead of the capital culture. **Always close PvP pitches with Bring Fun Shit** (`https://youtu.be/7-eGTtq9vWo`); add a fresh capital AAR from pre-scout 1c when it strengthens the cap hook. **Straylight is not in the alliance** — never route or link there.
 - **Alliance positioning:** we are a **faction warfare** alliance. Daily content is FW and lowsec small gang. Do not pitch nullsec, sovereignty, null ratting, structure timers, or bloc null. If OP wants dedicated sov-null mining, pitch highsec bulwarks / Extraction instead — never "we have sov too." If OP wants dedicated nullbloc PAP/CRAB lifestyle with no industry-or-FW opening, leave unanswered rather than inventing a null pitch.
 - **WH → FW redirects:** alliance door + **Bring Fun Shit** (`https://youtu.be/7-eGTtq9vWo`); optional fresh AAR from pre-scout 1c as a second beat. Do not close WH→FW with Rock Hoppin'.
@@ -303,26 +306,32 @@ Additional principles:
 ### Draft outreach
 
 Read [examples.md](examples.md) for past learnings if any exist. Every recommended
-message is **one short paragraph** — punchy, readable on a phone, no line breaks.
+**pitch** is **one short paragraph** — punchy, readable on a phone, no line breaks
+inside that block. Proof video and forum oneboxes are **separate send blocks**,
+never glued onto the pitch sentence.
 
 #### Shape (always)
 
-**One paragraph. 2–4 sentences max.** Weave their detail, name one primary corp,
-what it does, then ad link and/or discord inline at the end. No bullet lists, no
-second paragraph, no wall of text.
+**One pitch paragraph. 2–4 sentences max.** Weave their detail, name one primary
+corp, what it does, then ad link and/or discord inline at the end of that
+paragraph only. No bullet lists, no wall of text.
 
 ```
 [hook: their words, a fear, or what the corp does — first sentence grabs attention]
 
 [corp + one concrete detail tied to their post + optional graduate/alt corp in passing]
 
-[ad link and/or discord.gg/minmatar woven into the last sentence]
-
-[proof video — required by type: Rock Hoppin' for mining/industry, Bring Fun Shit for PvP/FW]
+[ad link and/or discord.gg/minmatar woven into the last sentence of the pitch]
 ```
 
-On Reddit the proof video may sit in a second short block after the paragraph (same
-family as examples.md). On forums, multi-block proof closes are fine.
+**Send-shape (required — do not collapse into the pitch):**
+
+| Surface | After the pitch paragraph |
+|---------|---------------------------|
+| **Reddit** | Blank line, then the proof video URL alone on its own line. Discord may also sit on its own line when the pitch has no ad. |
+| **Forums** | Onebox on its own line (`reddit.com/r/evejobs/s/…` shortlink, `my.minmatar.org`, or corp directory). Then a **bare** `https://youtu.be/…` URL on its own line so Discourse embeds the player. Do not bold the YouTube URL. Do not wrap it in markdown. |
+
+Proof video by type: **Rock Hoppin'** (`https://youtu.be/XCApG7Pt6m4`) mining/industry; **Bring Fun Shit** (`https://youtu.be/7-eGTtq9vWo`) PvP/FW.
 
 #### Variety (mandatory per scout run)
 
@@ -369,10 +378,15 @@ Shit.
   or "we have sov too" in outreach. We are FW/lowsec; sov-null seekers get skipped
   or an honest FW pitch only if their ask fits.
 - **One paragraph only** for the corp pitch. Reddit and forums use the same shape
-  for that block. Link + discord inline; skip discord when the ad link is enough.
-  **Proof video is required** and may be a second short block: **Rock Hoppin'**
-  (`https://youtu.be/XCApG7Pt6m4`) for mining/industry, **Bring Fun Shit**
-  (`https://youtu.be/7-eGTtq9vWo`) for PvP/FW. Do not swap them. Do not omit them.
+  for that block. Link + discord inline in the pitch; skip discord when the ad
+  link is enough. **Proof video is required as its own send block** (see
+  send-shape above). Do not swap Rock Hoppin' / Bring Fun Shit. Do not omit them.
+  Do not paste the video URL into the pitch paragraph (table glue is how it gets
+  sent glued).
+- **Forums Reddit ads:** prefer `/r/evejobs/s/` shortlinks so Discourse oneboxes
+  as `Reddit`. Full reddit.com comment URLs also onebox as `Reddit`.
+- **MFA Discord contact:** `ask for Keldor00` (handle, not the older `Keldor`
+  shorthand).
 - Keep motivational lines only when OP is about to quit EVE (still one paragraph).
 
 ### Present output
@@ -387,7 +401,10 @@ Shit.
 | Title | Corp fit | Responded | Type | Link | Recommended message |
 |-------|----------|-----------|------|------|---------------------|
 
-Put recommended messages in the table as a **single paragraph** (no line breaks).
+Put the **pitch** in the table as a **single paragraph** (no line breaks, no
+video URL in that cell). Recruiter send-shape is pitch, then the video/onebox
+blocks above — call that out in a one-line note under the tables if a draft
+would otherwise glue the YouTube link.
 
 Below the tables, optionally list:
 
