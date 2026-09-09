@@ -1,7 +1,7 @@
 import logging
 
 from django.contrib.auth.models import Group as AuthGroup
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Permission, User
 
 from eveonline.models import EveCorporation
 from groups.models import (
@@ -31,6 +31,60 @@ CORPORATION_GROUP_SUFFIXES = {
     EveCorporationGroup.GROUP_TYPE_GUNNER: " Gunner",
 }
 
+# Same Django permissions as alliance corp recruiter groups (A-RAT, L3ARN, …).
+# Associate recruiters are not in the Alliance group, so they only get site
+# access if these are on their Corp <TICKER> Recruiter group.
+RECRUITER_APPLICATION_PERMISSION_CODENAMES = (
+    "add_evecorporationapplication",
+    "change_evecorporationapplication",
+    "delete_evecorporationapplication",
+    "view_evecorporationapplication",
+)
+
+
+def recruiter_application_permissions():
+    """Permissions that let recruiters view/manage corp applications on the site."""
+    return list(
+        Permission.objects.filter(
+            content_type__app_label="applications",
+            codename__in=RECRUITER_APPLICATION_PERMISSION_CODENAMES,
+        )
+    )
+
+
+def ensure_recruiter_application_permissions(auth_group: AuthGroup) -> None:
+    """Grant corp-application perms on a recruiter Django group if missing."""
+    perms = recruiter_application_permissions()
+    if not perms:
+        logger.warning(
+            "Application permissions missing; cannot grant them to %s",
+            auth_group.name,
+        )
+        return
+    existing = set(
+        auth_group.permissions.filter(
+            pk__in=[p.pk for p in perms]
+        ).values_list("pk", flat=True)
+    )
+    missing = [p for p in perms if p.pk not in existing]
+    if missing:
+        auth_group.permissions.add(*missing)
+        logger.info(
+            "Granted application permissions to recruiter group %s",
+            auth_group.name,
+        )
+
+
+def _grant_recruiter_permissions_for_corp_groups(
+    corporation_groups: list[EveCorporationGroup],
+) -> None:
+    for corporation_group in corporation_groups:
+        if (
+            corporation_group.group_type
+            == EveCorporationGroup.GROUP_TYPE_RECRUITER
+        ):
+            ensure_recruiter_application_permissions(corporation_group.group)
+
 
 def ensure_corporation_groups_for_corp(
     corporation: EveCorporation,
@@ -42,11 +96,13 @@ def ensure_corporation_groups_for_corp(
     Returns the list of EveCorporationGroup for this corporation.
     """
     if not corporation.generate_corporation_groups or not corporation.ticker:
-        return list(
+        groups = list(
             EveCorporationGroup.objects.filter(
                 corporation=corporation
             ).order_by("group_type")
         )
+        _grant_recruiter_permissions_for_corp_groups(groups)
+        return groups
 
     base_name = f"Corp {corporation.ticker}"
     created_groups = []
@@ -71,11 +127,13 @@ def ensure_corporation_groups_for_corp(
         )
         created_groups.append(ecg)
 
-    return list(
+    groups = list(
         EveCorporationGroup.objects.filter(corporation=corporation).order_by(
             "group_type"
         )
     )
+    _grant_recruiter_permissions_for_corp_groups(groups)
+    return groups
 
 
 def offboard_corporation_groups(corporation: EveCorporation) -> None:
