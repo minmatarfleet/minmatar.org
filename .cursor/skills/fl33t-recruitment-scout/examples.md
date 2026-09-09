@@ -4,6 +4,158 @@ Real responses that worked. Add entries here after you send outreach — no temp
 
 ---
 
+## 2026-09-09 scout run
+
+### Ex-Rattini, USTZ, fried PSU / kicked for inactivity (72m SP)
+**Thread:** [72m SP Looking for a new home](https://www.reddit.com/r/evejobs/comments/1wbe6sk/72m_sp_looking_for_a_new_home/)  
+**Routed:** Soltech Armada  
+**Author:** BearThatCares
+
+**Sent (matched scout pitch, video glued):**
+> Leadership that kicks you after a fried PSU is a bad look, and Soltech Armada is an IRL-first Amamake crew in Minmatar faction warfare that wants you on comms for fleets and leaves you alone while you gas-huff through work. Central and Eastern US evenings are the busy window, with room to sneak an EU hour, and the mining/gas alts sit beside the pew without a dread tax. [Ad](https://www.reddit.com/r/evejobs/comments/1w80at6/sltar_soltech_armada_were_probably_a_bad/) or [discord.gg/minmatar](http://discord.gg/minmatar) [https://youtu.be/7-eGTtq9vWo](https://youtu.be/7-eGTtq9vWo)
+
+**Formatting issue:** Scout table put Bring Fun Shit in the same paragraph. Send it as pitch → blank line → video alone (see action-thread send below).
+
+**Routing note:** Already did a year in Rattini, not interested in dreads, patchy IRL → Soltech IRL-first, not Rattini again.
+
+---
+
+### Alpha, Amarr staging, L3s + FW
+**Thread:** [Corp looking](https://www.reddit.com/r/evejobs/comments/1wbd6q6/corp_looking/)  
+**Routed:** Minmatar Fleet Associates  
+**Author:** BearThatCares
+
+**Sent (matched scout pitch, video glued):**
+> Alpha with short grind time is still enough for Minmatar Fleet Associates, highsec bulwark missions and industry without an Omega tax, and you can keep Amarr as a staging while you decide if a subscription is worth it later. [discord.gg/minmatar](http://discord.gg/minmatar) and ask for Keldor [https://youtu.be/XCApG7Pt6m4](https://youtu.be/XCApG7Pt6m4)
+
+**What to change next time:** Same glue issue. Split Rock Hoppin' onto its own line. Discord contact is now **Keldor00** (this send still said Keldor).
+
+**Routing note:** Academy API requires Omega. Alpha + highsec missions → MFA, not L3ARN.
+
+---
+
+### 380m SP Delve industrialist, four accounts, prefers a large bloc
+**Thread:** [Looking for a new home](https://www.reddit.com/r/evejobs/comments/1w9xy2o/looking_for_a_new_home/)  
+**Routed:** Minmatar Extraction Company  
+**Author:** BearThatCares
+
+**Sent (matched scout pitch, video glued):**
+> The new highsec bulwark systems pay well enough that a four-account miner with a JF and a demanding job does not need another Delve shuffle, and Minmatar Extraction Company runs multiple Amo fleets a day with roughly 24/7 coverage inside Minmatar Fleet Associates. [discord.gg/minmatar](http://discord.gg/minmatar) and ask for Keldor, or [the mining ad](https://www.reddit.com/r/evejobs/comments/1w9rlea/mining_for_the_largest_war_in_new_eden/) [https://youtu.be/XCApG7Pt6m4](https://youtu.be/XCApG7Pt6m4)
+
+**Routing note:** Sov-null / Delve-prefer mining lock still gets Extraction; never “we have sov too.” Split the video next time. Use Keldor00.
+
+---
+
+### r/Eve: returning Goons, “where’s the action”
+**Thread:** [Returning player, where’s the action](https://www.reddit.com/r/Eve/comments/1wad0w2/returning_player_wheres_the_action/)  
+**Routed:** alliance FW redirect  
+**Author:** BearThatCares
+
+**Scout draft (one paragraph, video glued):**
+> Delve is quieter than the 2022 Goons memory and Amarr-Minmatar faction warfare is where the back-to-back fights actually are, Amamake especially, so skip the asset-safety trip. discord.gg/minmatar + Bring Fun Shit
+
+**Sent:**
+> Delve is quieter than the 2022 Goons memory and Amarr-Minmatar faction warfare is where the back-to-back fights actually are, Amamake especially, so skip the asset-safety trip.
+>
+> [discord.gg/minmatar](http://discord.gg/minmatar)
+>
+> [https://youtu.be/7-eGTtq9vWo](https://youtu.be/7-eGTtq9vWo)
+
+**What changed and why:** Split discord and Bring Fun Shit onto their own lines. This is the Reddit send-shape for a no-ad FW redirect (pitch / discord / video).
+
+**Routing note:** Location/advice threads still count when they are shopping for where to play. Proof-first FW, no named corp.
+
+---
+
+### Forum: UK 53m SP, wants 0.0 roams / Sabre
+**Thread:** [Returning long time player looking for a new home UK TZ](https://forums.eveonline.com/t/returning-long-time-player-looking-for-a-new-home-uk-tz/517891)  
+**Routed:** FOSFO (live ad; not on corporations API)  
+**Author:** BearThatCares
+
+**Scout draft:**
+> Skip another 0.0 PAP home if the real ask is UK evening roams in a Sabre. FOSFO … [full evejobs comment URL] **https://youtu.be/7-eGTtq9vWo**
+
+**Sent:**
+> Skip another 0.0 PAP home if the real ask is UK evening roams in a Sabre. FOSFO is the tight EUTZ Minmatar FW skirmish crew for that window, small roster, thick skin, and alliance fights when something huge shows up.
+>
+> https://www.reddit.com/r/evejobs/s/qjCRmobtF5
+>
+> https://youtu.be/7-eGTtq9vWo
+
+**What changed and why:**
+- Reddit **shortlink** (`/r/evejobs/s/…`) so Discourse oneboxes as the word `Reddit`.
+- Bare YouTube URL on its own line → native video embed. Do **not** bold the URL (that was the old house close; embeds beat bold text).
+
+**Routing note:** Prefer-null + UK small-gang roam → FOSFO live ad OK while corp is missing from the API.
+
+---
+
+### Forum: small EU indy corp seeking a null-sec home
+**Thread:** [Small EU Indy Corp Looking for a Null-Sec Home](https://forums.eveonline.com/t/small-eu-indy-corp-looking-for-a-null-sec-home/517953)  
+**Routed:** Minmatar Extraction Company  
+**Author:** BearThatCares
+
+**Scout draft:** pitch + Keldor + mining ad + Rock Hoppin' in one blob.
+
+**Sent:**
+> Null-sec politics are optional when the rocks are in highsec bulwarks. Minmatar Extraction Company runs multiple daily Amo fleets with 100% Jita buyback inside Minmatar Fleet Associates if a small EU industry group wants a laid-back home that still undocks.
+>
+> discord.gg/minmatar and ask for Keldor00
+>
+> https://youtu.be/XCApG7Pt6m4
+
+**What changed and why:** Dropped the Reddit mining ad (site/discord is enough when the ask is a group home). Discord contact **Keldor00**. Bare YouTube on its own line for the embed. Pitch / contact / video.
+
+**Routing note:** Industry **corp** hunting a null alliance is still an Extraction redirect, not a skip.
+
+---
+
+### Forum: 14-person Gallente mine/build corp looking to merge
+**Thread:** [Small Corp looking to disband and merge into another team](https://forums.eveonline.com/t/small-corp-looking-to-disband-and-merge-into-another-team/517824)  
+**Routed:** Minmatar Extraction Company  
+**Author:** BearThatCares
+
+**Scout draft (not sent):**
+> Fourteen people who mainly mine and build, tired of alliance merges that do not stick, is the Minmatar Extraction Company picture: organized Amo fleets, 100% Jita buyback, highsec bulwarks, and a network that already absorbs small industry groups. discord.gg/minmatar and ask for Keldor + Rock Hoppin'
+
+**Sent:**
+> Minmatar Extraction Company has 3-5 mining fleets a day, and supplies 100B+ of highsec ore every month to the faction warfare efforts.
+>
+> https://my.minmatar.org/
+>
+> https://youtu.be/XCApG7Pt6m4
+
+**What changed and why:** Dropped the 14-person weave and Keldor. Fleet-density + monthly ore volume is the fear-kill for empty mining promises. Site onebox (`my.minmatar.org`) then Rock Hoppin' embed. Same family as “4 fleets per day / 24/7” sov-miner redirects.
+
+**Routing note:** Corp-merge industry seekers → Extraction stats + site, not a brochure paragraph.
+
+---
+
+### Already on the thread before this scout closed
+- [Returner 76m SP lf...](https://www.reddit.com/r/evejobs/comments/1wai32z/returner_76m_sp_lf/) — Bear: casual-dad FW + my.minmatar.org
+- [Returning player looking for PvX WH corp UK/EU TZ](https://www.reddit.com/r/evejobs/comments/1w79ue3/returning_player_looking_for_pvx_wh_corp_ukeu_tz/) — Bear: WH second-job / FW session math + Bring Fun Shit (glued in one paragraph; split next time)
+- [EU based returning bittervet looking for home](https://www.reddit.com/r/evejobs/comments/1w7132l/eu_based_returning_bittervet_looking_for_home/) — Sycamoria: Soltech
+- [Back into the fray](https://forums.eveonline.com/t/back-into-the-fray/517708) — Bear: Soltech + MFA PI, corp directory onebox, Bring Fun Shit embed
+
+---
+
+## Patterns (2026-09-09 run)
+
+| Situation | What landed |
+|-----------|-------------|
+| Ex-Rattini USTZ, no caps, IRL patchy | Soltech; do not recycle Rattini |
+| Alpha / no Omega | MFA; Academy is Omega-gated |
+| Delve / sov-prefer miner | Extraction bulwarks; video split next time |
+| r/Eve “where’s the action” | FW redirect; pitch / discord / video as three blocks |
+| UK Sabre roam, wants 0.0 | FOSFO live ad; forum Reddit **shortlink** + bare youtu.be embed |
+| EU indy corp seeking null home | Extraction; Keldor00; drop mining ad; YouTube embed |
+| 14-person mine/build merge | Extraction **stats** (3–5 fleets/day, 100B+ ore/month) + my.minmatar.org + Rock Hoppin' embed |
+| Reddit send-shape | Pitch paragraph → blank → proof video alone. Do not glue youtu.be into the pitch |
+| Forum send-shape | Pitch → onebox (shortlink or my.minmatar.org) → **bare** youtu.be (Discourse video player). Stop bolding YouTube URLs |
+| MFA Discord | `Keldor00` |
+
+---
+
 ## 2026-08-10 scout run
 
 ### Returning US Central, 12m SP, PvE-leaning learner
