@@ -15,6 +15,7 @@ from eveonline.helpers.characters import (
 from eveonline.models import EveCharacter
 
 from .helpers import (
+    ensure_recruiter_application_permissions,
     process_bulk_community_status_row,
     sync_tribe_chief_group_membership,
     sync_user_community_groups,
@@ -368,6 +369,11 @@ def sync_eve_corporation_groups():
 
         corp = corporation_group.corporation
         group = corporation_group.group
+        if (
+            corporation_group.group_type
+            == EveCorporationGroup.GROUP_TYPE_RECRUITER
+        ):
+            ensure_recruiter_application_permissions(group)
 
         in_group_user_ids = set(group.user_set.values_list("id", flat=True))
         recruiter_user_ids = {
