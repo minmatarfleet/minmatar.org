@@ -41,6 +41,25 @@ do not duplicate it — one clarifying clause at most.
 
 ---
 
+## 2026-09-09 — BUILD alliance BPC packs not on site / claim
+
+**Category:** pulse.technology
+**Verdict:** needs-decision (plus clarify: not a bug)
+**Discord:** tagged decision owner
+**PR:** skill-only
+**Symptom vs cause:** Asked to surface BUILD alliance BPC/mineral packs in
+industry-order claim and/or on `/industry/blueprints/` or a
+`/market/ops/contracts/`-style industrial page. Those pages are hangar
+BPC search and doctrine fitting stock. Packs exist as corp ESI contracts
+assigned to BUILD; they are not `EveFitting`-matched and the structure
+was not an `EveLocation`, so they never hit `EveMarketContract`. Claim is
+quantity + blueprints checkbox. 48h cap is `self_assign_maximum`.
+**Durable rule:** Alliance industrial packs ≠ ops contracts. Dump
+`EveCorporationContract` (`assignee_id` = BUILD) before treating missing
+site listings as a sync bug. Product intent before building a new
+surface.
+**Skill update:** failure-class row; stub `HelpTicket.body` → read replies.
+
 ## Seed patterns (anonymized)
 
 These are the classes already encoded in SKILL.md. New tickets append

@@ -118,7 +118,8 @@ ticket = (
 If no row: still use Discord text/screenshots; note the gap.
 
 Follow-up **replies** show up in `read_messages`. Include them. The starter
-still needs `HelpTicket.body`.
+still needs `HelpTicket.body`. If that body is a stub (one-line category
+label), the real ask is in follow-up messages plus screenshots.
 
 ### Screenshots
 
@@ -173,6 +174,7 @@ Scan this table before inventing a new theory.
 | Wrong doctrine behind a hull chip | Capital guides (`CapitalGuideMetaBlocks`) must use `primary_fitting_for_ship` / `fit_match`, **not** `fittings[0]` (lowest id). “Passive” often means Buffer. Dump `EveFitting` for that `ship_id` on `production_readonly`. Local Astro often has an empty fittings API — use production HTML or unit tests with real names. |
 | Tribe Actions “wack” / Discord channel missing | **Withdraw** = pending or active (cancel/leave), not a broken menu. Auth/Discord roles (`Tribe Group - …`) sync on **active** only. Each group is a separate apply. Channel list ≠ site membership (overwrites can leak). Dump `TribeGroupMembership` + history before blaming Discord. |
 | Corp Discord role looked right, then the **previous** ticker came back | ESI `/characters/affiliation/` and public character data often still report the **old** corp after a join. Bulk `update_character_affilliations` can overwrite `corporation_id`; corporation **history** is usually current first. `Corp <TICKER>` groups sync on `sync_eve_corporation_groups` (different beat). Refresh-Discord-roles should recompute `sync_user_corporation_groups` then `sync_discord_user`. Dump primary `corporation_id`, latest two `corporation_history` rows, `user.groups` `Corp *`, and `DiscordRole.name` (display name may lag a Django group rename). |
+| Show BUILD alliance BPC / mineral packs on blueprints, ops/contracts, or in industry-order claim | Feature request, not a 403. `/industry/blueprints/` is hangar inventory search. `/market/ops/contracts/` is doctrine **fitting** stock (`EveMarketContract` + `fitting_id` not null). Alliance pack listings live on `EveCorporationContract` (`for_corporation`, `assignee_id` = BUILD alliance id); ESI `availability` is often `personal` with the alliance as assignee. They are not fitting-matched and the structure may not be an `EveLocation`, so they never appear on ops. Claim UI (`ButtonClaimOrder`) is quantity + “I have blueprints.” `IndustryContractAssociation` matches producer **delivery** contracts to orders, not supply packs. 48h claim cap is per-line `self_assign_maximum` (order config; stepping qty to 10/20/30 is a separate code change). Tag BearThatCares for product intent. |
 
 ### Discord reply
 
@@ -254,6 +256,7 @@ done until that PR exists.
 | Hull-chip / dialog-race / progress-% classes | Full ticket dumps |
 | Associates vs `MAIN_NOT_IN_FL33T` | Channel overwrite archaeology |
 | Tribe pending vs Discord role timing | Prod Discord REST from a local bot token |
+| BPC/mineral packs vs fitting contracts | Pack issuer names, in-game contract dumps |
 
 ## Additional resources
 
