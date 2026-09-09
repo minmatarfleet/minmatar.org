@@ -10,7 +10,13 @@ export type {
     GuideInfoTable,
 } from './types'
 export { capitalTierLabels } from './types'
-export { fittingsForHull, fittingsForShipId } from './fittings'
+export {
+    fittingsForHull,
+    fittingsForShipId,
+    infer_fit_match,
+    primary_fitting,
+    primary_fitting_for_ship,
+} from './fittings'
 export { buildCapitalGuideJsonLd } from './seo'
 export { load_capital_guide_runtime } from './runtime'
 export type { CapitalGuideRuntime, CapitalGuideRuntimeOptions } from './runtime'
