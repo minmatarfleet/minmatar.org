@@ -57,12 +57,28 @@ export const AlertDialogXData = `
         
         return new Promise((resolve) => {
             this.alert_dialog_close().then((result) => {
-                this.alert_dialog_open = false
-                this.alert_dialog_accept_href = ''
-                this.alert_dialog_accept_label = ''
-                this.alert_dialog_cancel_label = ''
-                this.alert_dialog_show_cancel = false
-                resolve(result.action == 'accept' ? this.alert_dialog_return_on_accept : false) 
+                const accepted = result.action == 'accept' ? this.alert_dialog_return_on_accept : false
+                const finish = () => {
+                    this.alert_dialog_open = false
+                    this.alert_dialog_accept_href = ''
+                    this.alert_dialog_accept_label = ''
+                    this.alert_dialog_cancel_label = ''
+                    this.alert_dialog_show_cancel = false
+                    resolve(accepted)
+                }
+                const schedule = window.__schedule_alert_dialog_reset
+                if (typeof schedule === 'function') {
+                    schedule({
+                        action: result.action,
+                        accept_href: this.alert_dialog_accept_href || '',
+                        finish,
+                    })
+                    return
+                }
+                if (result.action == 'accept' && this.alert_dialog_accept_href)
+                    setTimeout(finish, 0)
+                else
+                    finish()
             })
         })
     },
