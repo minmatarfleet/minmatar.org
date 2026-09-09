@@ -153,6 +153,7 @@ Real responses that worked. Add entries here after you send outreach — no temp
 | Reddit send-shape | Pitch paragraph → blank → proof video alone. Do not glue youtu.be into the pitch |
 | Forum send-shape | Pitch → onebox (shortlink or my.minmatar.org) → **bare** youtu.be (Discourse video player). Stop bolding YouTube URLs |
 | MFA Discord | `Keldor00` |
+| Proof stack (going forward) | Bring Fun Shit on **every** send; Rock Hoppin' extra for mining; newest kit AAR extra for PvP/caps (Kamela 350B default, Ahbazon 700B for dreads) |
 
 ---
 

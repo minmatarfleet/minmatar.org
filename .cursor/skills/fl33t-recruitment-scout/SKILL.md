@@ -178,20 +178,37 @@ python scripts/fetch_proof_media.py --days 45 --json
 Config: `reddit.proof_accounts` (default `["BearThatCares"]`). Override with
 `--account OtherUser` (repeatable).
 
-**You** pick which links to use. Prefer recent capital AARs, dread brawls, and
-high-signal videos over old or off-topic posts. Keep a short mental list of 2–4
-fresh proof URLs for the draft pass.
+**You** pick which **extra** AAR to add. Prefer the newest billion-ISK-class
+fight over old or off-topic posts. After each scout, replace the Current kit
+table below when a bigger or newer AAR lands — do not keep a graveyard of six
+old reports.
 
-**Evergreen proof closes (always link these by prospect type):**
+**Proof closes (required stack):**
 
-| Prospect | Video | URL |
-|----------|-------|-----|
-| **Mining / industry** (Extraction, MFA rock fleets, highsec bulwark miners, casual no-PvP industry) | **Rock Hoppin'** (Extraction Company) | `https://youtu.be/XCApG7Pt6m4` |
-| **PvP / FW** (Rattini, Soltech, TDT, Banshee, FOSFO, Academy combat, WH→FW redirects, casual-null → FW) | **Bring Fun Shit** | `https://youtu.be/7-eGTtq9vWo` |
+| Layer | Resource | URL | When |
+|-------|----------|-----|------|
+| **Always** | **Bring Fun Shit** | `https://youtu.be/7-eGTtq9vWo` | **Every send.** Mining, MFA, no-PvP, WH redirect, named corp, saturated thread. Own block. |
+| **Also mining / industry** | **Rock Hoppin'** (Extraction Company) | `https://youtu.be/XCApG7Pt6m4` | Extraction, MFA rock fleets, highsec bulwark miners, corp-merge industry. **In addition to** Bring Fun Shit, not instead of it. Own block after BFS. |
+| **Also big fight** | Newest AAR in the Current kit | see table | PvP/FW, caps, Rattini, WH→FW, “where’s the action.” One AAR max unless they asked for capitals — then you may add the cap-feed AAR too. Never a substitute for Bring Fun Shit. |
 
-Fresh AARs from pre-scout 1c can **add** a second proof beat (especially capital
-AARs for Rattini). They do **not** replace Rock Hoppin' / Bring Fun Shit for the
-matching prospect type. One video minimum; do not dump every AAR into every message.
+Do not dump every AAR into every message. Do not skip Bring Fun Shit because an
+AAR or Rock Hoppin' is already in the reply.
+
+#### Current kit (update from pre-scout 1c)
+
+Replace rows when a new mega-fight AAR posts. URLs also live in `config.json`
+(`proof_videos`, `proof_aars`, `proof_pages`).
+
+| Kind | Title | URL | Use |
+|------|-------|-----|-----|
+| Video | Bring Fun Shit | `https://youtu.be/7-eGTtq9vWo` | Every send |
+| Video | Rock Hoppin' | `https://youtu.be/XCApG7Pt6m4` | Mining/industry extra |
+| AAR | 350B down in Kamela (29 Aug YC128) | `https://www.reddit.com/r/Eve/comments/1w21ozl/aar_350b_down_in_kamela/` | Default extra AAR (newest big fight) |
+| AAR | 700B down in Ahbazon (1 Aug YC128) | `https://www.reddit.com/r/Eve/comments/1vcyik3/aar_700b_down_in_ahbazon/` | Caps / Rattini / dread-feed hook |
+| Site | Monthly Warzone Report | `https://my.minmatar.org/warzone/` | Forums onebox / casual-null / action-location threads |
+| Site | Corporation directory | `https://my.minmatar.org/alliance/corporations/` | Dual-route, self-serve bios |
+| Site | Freight contracts history | `https://my.minmatar.org/market/freight/contracts/history/` | Hauler learning PvP (side proof, not MFA routing) |
+| Site | Auga siege (YC128) | `https://my.minmatar.org/alliance/campaigns/auga-yc128/` | Optional older siege page; prefer Kamela AAR + warzone report when both fit |
 
 ### Phase 2: Scout (prospects)
 
@@ -229,8 +246,9 @@ join — read the title and body, do not pattern-match keywords.
 **Poor corp fit ≠ silent skip.** Still draft outreach (Open prospects, corp fit =
 FW redirect / Extraction / MFA) when:
 
-- **WH-only seekers** — blunt FW redirect (session ISK/kills, no scanning); optional
-  Bring Fun Shit video / WH-operator credibility. Do not force Soltech/Rattini into a
+- **WH-only seekers** — blunt FW redirect (session ISK/kills, no scanning);
+  Bring Fun Shit always; optional WH-operator credibility. Add the newest kit AAR
+  when the thread can take a second proof beat. Do not force Soltech/Rattini into a
   jspace-locked thread unless they leave LS open.
 - **Sov-null mining / industry seekers** — highsec bulwark + Extraction fleet density;
   never “we have sov too.”
@@ -297,11 +315,11 @@ Additional principles:
 
 - **New EU/UK pilots:** Banshee Squadron when they want a small tight EUTZ home; Academy (L3ARN) when they want the all-TZ feeder / “learn by undocking” frame. Rattini and Soltech are usually later seats, not the first EU newbro door.
 - **New USTZ / late USTZ:** Academy (L3ARN) for brand-new; TDT for late-night tight-knit if they match requirements; Soltech for late-USTZ pilots who want the daily Amamake intermediate seat.
-- **Industry-primary:** MFA associate corps primary. Base in highsec bulwark systems, lowsec excursions when people want out. PvP corp is a side note only. Name **Minmatar Extraction Company** (and its Amo mining ad) when they want organized mining fleets; MFA network + **Keldor00** on Discord for general industry/PvE. Dual accounts (mining main + PvP alt) can split Extraction + a FW corp (e.g. Soltech) — on forums, linking `my.minmatar.org/alliance/corporations/` works when dual-routing. Small industry **corps** seeking a null alliance home still get Extraction (fleet density / ore volume), not a silent skip. **Always close mining/industry pitches with Rock Hoppin'** (`https://youtu.be/XCApG7Pt6m4`).
+- **Industry-primary:** MFA associate corps primary. Base in highsec bulwark systems, lowsec excursions when people want out. PvP corp is a side note only. Name **Minmatar Extraction Company** (and its Amo mining ad) when they want organized mining fleets; MFA network + **Keldor00** on Discord for general industry/PvE. Dual accounts (mining main + PvP alt) can split Extraction + a FW corp (e.g. Soltech) — on forums, linking `my.minmatar.org/alliance/corporations/` works when dual-routing. Small industry **corps** seeking a null alliance home still get Extraction (fleet density / ore volume), not a silent skip. Close with **Bring Fun Shit then Rock Hoppin'** (two blocks).
 - **Ex-FL33T returning:** if they already left Rattini (or another cap/multi-box seat) for IRL / inactivity and are not asking for dreads, route **Soltech** (IRL-first Amamake) rather than sending them back to the same corp.
-- **Caps / multi-box veterans:** Rattini. Unused capital + learning lowsec → Rattini (own the dread-feed joke); mention Soltech only as a same-alliance option when they want the Amamake intermediate seat instead of the capital culture. **Always close PvP pitches with Bring Fun Shit** (`https://youtu.be/7-eGTtq9vWo`); add a fresh capital AAR from pre-scout 1c when it strengthens the cap hook. **Straylight is not in the alliance** — never route or link there.
+- **Caps / multi-box veterans:** Rattini. Unused capital + learning lowsec → Rattini (own the dread-feed joke); mention Soltech only as a same-alliance option when they want the Amamake intermediate seat instead of the capital culture. Close with Bring Fun Shit, then the cap-feed AAR from the Current kit (Ahbazon 700B until a newer cap brawl replaces it). **Straylight is not in the alliance** — never route or link there.
 - **Alliance positioning:** we are a **faction warfare** alliance. Daily content is FW and lowsec small gang. Do not pitch nullsec, sovereignty, null ratting, structure timers, or bloc null. If OP wants dedicated sov-null mining, pitch highsec bulwarks / Extraction instead — never "we have sov too." If OP wants dedicated nullbloc PAP/CRAB lifestyle with no industry-or-FW opening, leave unanswered rather than inventing a null pitch.
-- **WH → FW redirects:** alliance door + **Bring Fun Shit** (`https://youtu.be/7-eGTtq9vWo`); optional fresh AAR from pre-scout 1c as a second beat. Do not close WH→FW with Rock Hoppin'.
+- **WH → FW redirects:** alliance door + Bring Fun Shit; add the newest kit AAR when it helps. Do not close WH→FW with Rock Hoppin'.
 
 ### Draft outreach
 
@@ -328,10 +346,8 @@ paragraph only. No bullet lists, no wall of text.
 
 | Surface | After the pitch paragraph |
 |---------|---------------------------|
-| **Reddit** | Blank line, then the proof video URL alone on its own line. Discord may also sit on its own line when the pitch has no ad. |
-| **Forums** | Onebox on its own line (`reddit.com/r/evejobs/s/…` shortlink, `my.minmatar.org`, or corp directory). Then a **bare** `https://youtu.be/…` URL on its own line so Discourse embeds the player. Do not bold the YouTube URL. Do not wrap it in markdown. |
-
-Proof video by type: **Rock Hoppin'** (`https://youtu.be/XCApG7Pt6m4`) mining/industry; **Bring Fun Shit** (`https://youtu.be/7-eGTtq9vWo`) PvP/FW.
+| **Reddit** | Blank line, then each proof URL on its own line: **Bring Fun Shit always**, then Rock Hoppin' if mining/industry, then one AAR link if the kit says so. Discord may sit on its own line when the pitch has no ad. |
+| **Forums** | Onebox on its own line (`reddit.com/r/evejobs/s/…` shortlink, AAR, `my.minmatar.org/warzone/`, or corp directory). Then **bare** `https://youtu.be/…` URLs on their own lines so Discourse embeds the player (BFS first, Rock Hoppin' second when mining). Do not bold YouTube URLs. Do not wrap them in markdown. |
 
 #### Variety (mandatory per scout run)
 
@@ -350,9 +366,9 @@ paragraph opens**, not how many paragraphs there are:
 Do not repeat the same opening mode or the same first three words across messages
 in one run. Rotate how link/discord land (end of sentence, after corp name, etc.).
 
-**Self-check:** each message should be scannable in under 5 seconds. Mining/
-industry drafts must include Rock Hoppin'; PvP/FW drafts must include Bring Fun
-Shit.
+**Self-check:** each message should be scannable in under 5 seconds. **Every**
+draft includes Bring Fun Shit. Mining/industry also includes Rock Hoppin'.
+PvP/FW/caps/redirects also include the newest kit AAR when the thread has room.
 
 **Voice rules:**
 
@@ -379,10 +395,10 @@ Shit.
   or an honest FW pitch only if their ask fits.
 - **One paragraph only** for the corp pitch. Reddit and forums use the same shape
   for that block. Link + discord inline in the pitch; skip discord when the ad
-  link is enough. **Proof video is required as its own send block** (see
-  send-shape above). Do not swap Rock Hoppin' / Bring Fun Shit. Do not omit them.
-  Do not paste the video URL into the pitch paragraph (table glue is how it gets
-  sent glued).
+  link is enough. **Bring Fun Shit is required on every send**, own block (see
+  send-shape). Rock Hoppin' is extra for mining/industry, never a BFS substitute.
+  Add one Current-kit AAR for PvP/caps/redirects as they land; do not paste proof
+  URLs into the pitch paragraph.
 - **Forums Reddit ads:** prefer `/r/evejobs/s/` shortlinks so Discourse oneboxes
   as `Reddit`. Full reddit.com comment URLs also onebox as `Reddit`.
 - **MFA Discord contact:** `ask for Keldor00` (handle, not the older `Keldor`
@@ -409,7 +425,8 @@ would otherwise glue the YouTube link.
 Below the tables, optionally list:
 
 - Corporation roster + latest reddit ad URLs (from pre-scout output)
-- Fresh proof media shortlist (2–4 AAR / capital video URLs from pre-scout 1c)
+- Current proof kit actually used this run (BFS + extras; flag if a new AAR should
+  replace a row in SKILL.md / `config.json`)
 - True no-reply posts (hard nullbloc lock with no redirect worth sending) in one
   short bullet list
 
@@ -431,8 +448,10 @@ markers, or routing. Those live in this skill.
 | `reddit.subreddits` | Subreddits for raw `/new` fetch |
 | `forums.recruitment_center_category` | Forum category slug |
 | `discord_invite` | For outreach closers (skill only) |
-| `proof_videos.mining` | Rock Hoppin' URL — required close for mining/industry |
-| `proof_videos.pvp` | Bring Fun Shit URL — required close for PvP/FW |
+| `proof_videos.always` | Bring Fun Shit — required on every send |
+| `proof_videos.mining` | Rock Hoppin' — extra close for mining/industry |
+| `proof_aars` | Current billion-ISK AARs (newest first); rotate when a new one posts |
+| `proof_pages` | Warzone report, corp directory, freight history, optional siege pages |
 
 ## Additional resources
 
