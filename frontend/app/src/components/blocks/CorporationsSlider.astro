@@ -23,6 +23,7 @@ const CORPORATIONS_WITH_SLIDE = [
     'The Ministry Of Ungentlemanly Warfare inc.',
     'Every Little Helps.',
     'Banshee Squadron',
+    'Solaris Expeditionary Corps',
     'Minmatar Extraction Company',
 ]
 
@@ -70,6 +71,7 @@ import StraylightSystemsSlide from '@components/blocks/StraylightSystemsSlide.as
 import TheDarkTribeSlide from '@components/blocks/TheDarkTribeSlide.astro';
 import TheMinistryOfUngentlemanlyWarfareincSlide from '@components/blocks/TheMinistryOfUngentlemanlyWarfareincSlide.astro';
 import BansheeSquadronSlide from '@components/blocks/BansheeSquadronSlide.astro';
+import SolarisExpeditionaryCorps from '@components/blocks/SolarisExpeditionaryCorps.astro';
 import MinmatarExtractionCompany from '@components/blocks/MinmatarExtractionCompany.astro';
 import EveryLittleHelpSlide from '@components/blocks/EveryLittleHelpSlide.astro';
 import AssociatesSlide from '@components/blocks/AssociatesSlide.astro';
@@ -136,6 +138,13 @@ import FleetCorporationsSlide from '@components/blocks/FleetCorporationsSlide.as
                     }
                     {corporation.corporation_name == 'Banshee Squadron' &&
                         <BansheeSquadronSlide
+                            corporation={corporation}
+                            is_user_corporation={corporation.corporation_id === user_corporation_id}
+                            picture_placement={index%2 == 0 ? 'left' : 'right'}
+                        />
+                    }
+                    {corporation.corporation_name == 'Solaris Expeditionary Corps' &&
+                        <SolarisExpeditionaryCorps
                             corporation={corporation}
                             is_user_corporation={corporation.corporation_id === user_corporation_id}
                             picture_placement={index%2 == 0 ? 'left' : 'right'}
