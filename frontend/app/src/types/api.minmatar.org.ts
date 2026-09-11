@@ -445,6 +445,7 @@ export interface Fleet {
     tracking?:          Tracking;
     status?:            TrackingStatus;
     aar_link:           string;
+    roam_report_url?:   string | null;
 }
 
 export interface FleetBasic {
@@ -483,6 +484,7 @@ export interface FleetPatchRequest {
     immediate_ping?:    boolean;
     status?:            TrackingStatus;
     aar_link?:          string;
+    roam_report_url?:   string | null;
 }
 
 export const tracking_status = ['pending', 'active', 'complete', 'cancelled', 'unknown'] as const

@@ -46,6 +46,7 @@ def get_fleet(request, fleet_id: int):
         "disable_motd": fleet.disable_motd,
         "status": fleet.status,
         "aar_link": fleet.aar_link,
+        "roam_report_url": fleet.roam_report_url,
     }
     if fleet.doctrine:
         payload["doctrine_id"] = fleet.doctrine.id

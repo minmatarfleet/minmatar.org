@@ -886,16 +886,20 @@ class FleetRouterTestCase(TestCase):
 
         update = {"status": "complete"}
 
-        response = self.client.patch(
-            f"{BASE_URL}/{fleet.id}",
-            update,
-            "application/json",
-            HTTP_AUTHORIZATION=f"Bearer {self.token}",
-        )
+        with patch(
+            "fleets.endpoints.helpers.schedule_roam_report"
+        ) as schedule_mock:
+            response = self.client.patch(
+                f"{BASE_URL}/{fleet.id}",
+                update,
+                "application/json",
+                HTTP_AUTHORIZATION=f"Bearer {self.token}",
+            )
 
         self.assertEqual(200, response.status_code)
 
         self.assertIsNotNone(EveFleetInstance.objects.get(id=123456).end_time)
+        schedule_mock.assert_called_once_with(fleet.id)
 
     @patch("fleets.models.EsiClient")
     def test_start_fleet_error(self, esi_client_class):
@@ -1124,10 +1128,14 @@ class FleetTaskTests(TestCase):
         )
         efi.refresh_from_db()
 
-        efi.update_fleet_members()
+        with patch(
+            "fleets.helpers.roam_report.schedule_roam_report"
+        ) as schedule_mock:
+            efi.update_fleet_members()
 
         self.assertEqual("complete", efi.eve_fleet.status)
         self.assertIsNotNone(efi.end_time)
+        schedule_mock.assert_called_once_with(efi.eve_fleet.id)
 
     @factory.django.mute_signals(signals.pre_save, signals.post_save)
     @patch("fleets.models.EsiClient")

@@ -69,6 +69,7 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
         "status": fleet.status,
         "disable_motd": fleet.disable_motd,
         "aar_link": fleet.aar_link,
+        "roam_report_url": fleet.roam_report_url,
     }
 
     return EveFleetResponse(**out)
