@@ -1664,6 +1664,13 @@ export interface RootSingleItem {
     assignments:                    OrderAssignment[];
 }
 
+export interface BuildPack {
+    title:          string;
+    count:          number;
+    price:          string | null;
+    location_name:  string | null;
+}
+
 export interface IndustrySingleOrder {
     id:                 number;
     created_at:         Date;
