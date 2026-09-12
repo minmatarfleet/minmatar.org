@@ -78,6 +78,7 @@ class EveFleet(models.Model):
     # Link to After Action Report in Discord
     # e.g. https://discord.com/channels/1041384161505722368/1398825964225695945
     aar_link = models.CharField(max_length=120, null=True)
+    roam_report_url = models.CharField(max_length=255, null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     updated_at = models.DateTimeField(auto_now=True, null=True)
@@ -463,6 +464,12 @@ class EveFleetInstance(models.Model):
         self.eve_fleet.status = "complete"
         self.eve_fleet.save()
         close_fleet_cleanup(self.eve_fleet)
+        # Imported lazily: fleets.helpers.roam_report may import this module.
+        from fleets.helpers.roam_report import (  # pylint: disable=import-outside-toplevel
+            schedule_roam_report,
+        )
+
+        schedule_roam_report(self.eve_fleet.id)
 
 
 class EveFleetInstanceMember(models.Model):

@@ -120,6 +120,7 @@ export async function fetch_fleet_by_id(access_token:string, fleet_id:number) {
         disable_motd: fleet.disable_motd,
         status: fleet.status,
         aar_link: fleet.aar_link ?? '',
+        roam_report_url: fleet.roam_report_url ?? '',
     } as FleetUI
 }
 

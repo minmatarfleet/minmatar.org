@@ -46,6 +46,7 @@ class EveFleetResponse(BaseModel):
     disable_motd: bool = False
     status: Optional[str] = None
     aar_link: Optional[str] = None
+    roam_report_url: Optional[str] = None
 
     tracking: Optional[EveFleetTrackingResponse] = None
 

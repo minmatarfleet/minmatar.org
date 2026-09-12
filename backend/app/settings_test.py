@@ -88,6 +88,15 @@ DISCORD_STRUCTURE_PINGS_CHANNEL_ID = int(
 DISCORD_INDUSTRY_CHANNEL_ID = int(
     os.environ.get("DISCORD_INDUSTRY_CHANNEL_ID", 1062178037875081226)
 )
+DISCORD_AARS_FORUM_CHANNEL_ID = int(
+    os.environ.get("DISCORD_AARS_FORUM_CHANNEL_ID", 1069380111897481256)
+)
+
+# Roam Report — empty in tests so unit tests never POST.
+ROAM_REPORT_API_KEY = os.environ.get("ROAM_REPORT_API_KEY", "")
+ROAM_REPORT_API_URL = os.environ.get(
+    "ROAM_REPORT_API_URL", "https://www.roamreport.com/api/fleets"
+)
 
 # ESI
 ESI_SSO_CLIENT_ID = os.environ.get("ESI_SSO_CLIENT_ID", "")

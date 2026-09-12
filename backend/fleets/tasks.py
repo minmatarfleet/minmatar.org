@@ -13,6 +13,7 @@ from fleets.helpers.active_clones import (
     poll_fleet_member_implants as poll_member_implants_impl,
 )
 from fleets.helpers.npsi_ingest import poll_npsi_sources
+from fleets.helpers.roam_report import publish_fleet_roam_report_impl
 from fleets.models import EveFleet, EveFleetInstance
 
 discord_client = DiscordClient()
@@ -147,6 +148,12 @@ def poll_active_fleet_implants():
 def poll_fleet_member_implants(member_id: int):
     """Poll implants for one fleet member."""
     return poll_member_implants_impl(member_id)
+
+
+@app.task()
+def publish_fleet_roam_report(fleet_id: int):
+    """POST roamreport.com and Eve-mail the FC when a tracked fleet closes."""
+    return publish_fleet_roam_report_impl(fleet_id)
 
 
 @app.task(

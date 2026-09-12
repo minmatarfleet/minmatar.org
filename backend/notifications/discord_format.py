@@ -5,11 +5,13 @@ from __future__ import annotations
 # Human labels for notification `feature` keys (registry field).
 FEATURE_LABELS: dict[str, str] = {
     "industry": "Industry",
+    "fleets": "Fleets",
 }
 
 # Discord embed accent colors (decimal).
 FEATURE_COLORS: dict[str, int] = {
     "industry": 0xC45C26,  # Minmatar-ish orange
+    "fleets": 0xB91C1C,  # fleet red
 }
 
 _DEFAULT_COLOR = 0x4A5568

@@ -716,6 +716,7 @@ export interface FleetUI {
     disable_motd:           boolean;
     status?:                TrackingStatus;
     aar_link:               string;
+    roam_report_url?:       string;
 }
 
 export interface Tracking {
