@@ -1,0 +1,54 @@
+---
+import { i18n } from '@helpers/i18n'
+const { lang, t } = i18n(Astro.url)
+
+import type { BuildPack } from '@dtypes/api.minmatar.org'
+
+interface Props {
+    packs:      BuildPack[];
+    id_prefix:  string;
+}
+
+const {
+    packs,
+    id_prefix,
+} = Astro.props
+
+import { number_thousand_separator } from '@helpers/numbers'
+
+import Flexblock from '@components/compositions/Flexblock.astro';
+import FlexInline from '@components/compositions/FlexInline.astro';
+
+import ClipboardButton from '@components/blocks/ClipboardButton.astro';
+---
+
+{packs.length === 0 ?
+    <small class="[ text-muted ]">{t('no_build_packs')}</small>
+    :
+    <Flexblock gap='var(--space-2xs)'>
+        <small class="[ text-muted ]">{t('build_packs_hint')}</small>
+
+        {packs.map((pack, index) =>
+            <FlexInline justification='space-between' gap='var(--space-3xs)'>
+                <Flexblock gap='var(--space-3xs)'>
+                    <small>
+                        {pack.count > 1 ? t('build_pack_title_count').replace('{title}', pack.title).replace('{count}', String(pack.count)) : pack.title}
+                    </small>
+                    <small class="[ text-muted ]">
+                        {pack.price !== null && `${number_thousand_separator(parseInt(pack.price), lang)} ISK`}
+                        {pack.price !== null && pack.location_name && ' — '}
+                        {pack.location_name}
+                    </small>
+                </Flexblock>
+
+                <ClipboardButton
+                    id={`${id_prefix}-${index}`}
+                    type="button"
+                    size='sm'
+                    narrow={true}
+                    text={t('copy_name')}
+                >{pack.title}</ClipboardButton>
+            </FlexInline>
+        )}
+    </Flexblock>
+}
