@@ -6,8 +6,13 @@ import { COVER_IMAGE as AUGA_COVER, CAMPAIGN_ISK_DESTROYED as AUGA_ISK, ALLIANCE
 import { formatIsk } from '@/data/campaigns/hek'
 import { COVER_IMAGE as WARZONE_COVER, PERMALINK_PATH as WARZONE_PATH, YC128_07 } from '@/data/warzone/yc128-07'
 import { PERMALINK_PATH as WARZONE_08_PATH, YC128_08 } from '@/data/warzone/yc128-08'
+import {
+    COVER_IMAGE as AMAMAKE_COVER,
+    PERMALINK_PATH as AMAMAKE_08_PATH,
+    YC128_08 as AMAMAKE_YC128_08,
+} from '@/data/amamake-market/yc128-08'
 
-export type CampaignKind = 'campaign' | 'siege' | 'warzone'
+export type CampaignKind = 'campaign' | 'siege' | 'warzone' | 'market'
 
 export type CampaignMeta = {
     slug: string
@@ -19,6 +24,8 @@ export type CampaignMeta = {
     iskDestroyed: number
     sortOrder: number
     kind: CampaignKind
+    /** i18n key for the card's ISK figure label. Defaults to `destroyed`. */
+    isk_label_key?: string
     /** Campaign/siege end date for content-stream sorting. */
     published_at: Date
 }
@@ -108,6 +115,19 @@ export const campaigns: CampaignMeta[] = [
         kind: 'warzone',
         published_at: new Date('2026-08-31T00:00:00Z'),
     },
+    {
+        slug: 'amamake-market-yc128-08',
+        path: AMAMAKE_08_PATH,
+        nameKey: 'amamake_market.yc128_08.name',
+        periodKey: 'amamake_market.yc128_08.period',
+        excerptKey: 'amamake_market.yc128_08.leading_text',
+        coverImage: AMAMAKE_COVER,
+        iskDestroyed: AMAMAKE_YC128_08.sales.isk,
+        sortOrder: 0,
+        kind: 'market',
+        isk_label_key: 'sold',
+        published_at: AMAMAKE_YC128_08.published_at,
+    },
 ]
 
 export function getCampaigns(): CampaignMeta[] {
@@ -122,15 +142,22 @@ export function getSieges(): CampaignMeta[] {
         .sort((a, b) => a.sortOrder - b.sortOrder)
 }
 
+/** Campaigns and sieges; the monthly report series have their own strips. */
 export function getAllCampaigns(): CampaignMeta[] {
     return campaigns
-        .filter((c) => c.kind !== 'warzone')
+        .filter((c) => c.kind !== 'warzone' && c.kind !== 'market')
         .sort((a, b) => b.published_at.getTime() - a.published_at.getTime())
 }
 
 export function getWarzoneReports(): CampaignMeta[] {
     return campaigns
         .filter((c) => c.kind === 'warzone')
+        .sort((a, b) => b.published_at.getTime() - a.published_at.getTime())
+}
+
+export function getMarketReports(): CampaignMeta[] {
+    return campaigns
+        .filter((c) => c.kind === 'market')
         .sort((a, b) => b.published_at.getTime() - a.published_at.getTime())
 }
 

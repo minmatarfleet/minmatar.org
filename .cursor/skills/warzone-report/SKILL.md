@@ -154,4 +154,6 @@ Then preview `http://localhost:4321/warzone/` (dev server usually already runnin
   (Dotlan). "Holds today" per system is ESI-live and may differ from `taken_by` when a
   system flipped back after the snapshot — reflect that in the note text.
 - Keep the raw-page cache (`.cache/warzone/`) between runs; deleting it forces a full
-  re-fetch.
+  re-fetch. The Amamake Market Report extractor (`scripts/amamake_market_extract.mjs`,
+  skill `amamake-market-report`) reads the same per-system cache, so generate the
+  warzone month first and the market report's kill pass costs zero requests.

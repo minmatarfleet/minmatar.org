@@ -1,0 +1,16 @@
+---
+import { i18n } from '@helpers/i18n'
+const { t } = i18n(Astro.url)
+
+import { getMarketReports } from '@/data/campaigns'
+import ReportStrip from '@components/blocks/ReportStrip.astro'
+---
+
+<ReportStrip
+    reports={getMarketReports()}
+    title={t('amamake_market.reports.section_title')}
+    leading_text={t('amamake_market.reports.section_leading_text')}
+    anchor_id="AmamakeMarketReports"
+    swiper_id="amamake-market-reports-reel-swiper"
+    show_isk={true}
+/>

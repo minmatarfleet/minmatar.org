@@ -1,0 +1,40 @@
+{
+  "extractor": "frontend/app/scripts/amamake_market_extract.mjs",
+  "npm_script": "amamake:extract",
+  "sales_api": "GET /api/market/inferred-sales/monthly?location_id=&year=&month=",
+  "sales_api_backend": {
+    "endpoint": "backend/market/endpoints/get_inferred_sales_monthly.py",
+    "helper": "backend/market/helpers/inferred_sales_monthly.py",
+    "tests": "backend/market/tests/test_inferred_sales_monthly.py"
+  },
+  "default_api_base": "https://api.minmatar.org",
+  "local_api_base": "http://localhost:8000",
+  "kill_cache_dir": "frontend/app/.cache/warzone/systems",
+  "market_cache_dir": "frontend/app/.cache/amamake-market",
+  "generated_output": "frontend/app/src/data/amamake-market/<slug>-boards.ts",
+  "issue_file": "frontend/app/src/data/amamake-market/<slug>.ts",
+  "registry": "frontend/app/src/data/amamake-market/index.ts",
+  "types": "frontend/app/src/data/amamake-market/types.ts",
+  "shared_component": "frontend/app/src/components/blocks/amamake-market/AmamakeMarketReportIssue.astro",
+  "landing_component": "frontend/app/src/components/blocks/amamake-market/AmamakeMarketReportLanding.astro",
+  "routes": {
+    "latest": "/amamake-market/",
+    "issue": "/amamake-market/<slug>/"
+  },
+  "content_hub": {
+    "registry": "frontend/app/src/data/campaigns/index.ts",
+    "kind": "market",
+    "strip": "frontend/app/src/components/blocks/AmamakeMarketReportStrip.astro",
+    "anchor": "/alliance/content#AmamakeMarketReports"
+  },
+  "sde_sqlite_glob": "frontend/app/src/data/sde-*.sqlite",
+  "location_id": 1022167642188,
+  "amamake_system_id": 30002537,
+  "pipe_systems": ["Amamake", "Auga", "Siseide", "Dal", "Vard", "Lantorn"],
+  "industry_systems": ["Amamake", "Jita", "Auner", "Basgerin", "Amo", "Auga"],
+  "capital_group_ids": [30, 485, 547, 659, 883, 902, 1538, 4594],
+  "capsule_type_ids": [670, 33328],
+  "week_buckets": ["1-7", "8-14", "15-21", "22-28", "29-end"],
+  "rate_limit_seconds": 1.1,
+  "user_agent_env": "ZKILL_USER_AGENT"
+}
