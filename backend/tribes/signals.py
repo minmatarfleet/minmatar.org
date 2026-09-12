@@ -1,8 +1,14 @@
 import logging
 
+from django.contrib.auth.models import User
 from django.db.models import signals
 from django.dispatch import receiver
 
+from tribes.helpers.external_guild import (
+    on_membership_became_active,
+    on_membership_became_inactive,
+    prepare_seats_for_user_delete,
+)
 from tribes.helpers.tribe_auth_groups import (
     remove_tribe_auth_groups_for_inactive_membership,
     sync_membership_rank_auth_groups,
@@ -51,6 +57,7 @@ def tribe_group_membership_post_save(sender, instance, created, **kwargs):
        - inactive → remove user from tribe_group.group;
                     remove from tribe.group only if no other active memberships remain
     3. Sync rank auth groups when active; strip rank groups when inactive.
+    4. Sync isolated external Discord guild seats (never fail-closed).
     """
     tribe_group = instance.tribe_group
     tribe = tribe_group.tribe
@@ -98,3 +105,35 @@ def tribe_group_membership_post_save(sender, instance, created, **kwargs):
 
     elif instance.status == TribeGroupMembership.STATUS_INACTIVE:
         remove_tribe_auth_groups_for_inactive_membership(instance)
+
+    # External guild: isolated; never fail the membership save.
+    status_changed = created or (
+        previous_status is not None and previous_status != current_status
+    )
+    if status_changed:
+        try:
+            if current_status == TribeGroupMembership.STATUS_ACTIVE:
+                on_membership_became_active(instance)
+            elif current_status == TribeGroupMembership.STATUS_INACTIVE:
+                on_membership_became_inactive(instance)
+        except Exception:  # pylint: disable=broad-except
+            logger.exception(
+                "External guild sync failed for membership %s",
+                instance.pk,
+            )
+
+
+@receiver(
+    signals.pre_delete,
+    sender=User,
+    dispatch_uid="tribe_external_guild_user_pre_delete",
+)
+def tribe_external_guild_user_pre_delete(sender, instance, **kwargs):
+    """Snapshot usernames and kick external guild seats before User CASCADE."""
+    try:
+        prepare_seats_for_user_delete(instance)
+    except Exception:  # pylint: disable=broad-except
+        logger.exception(
+            "External guild pre-delete cleanup failed for user %s",
+            instance.pk,
+        )

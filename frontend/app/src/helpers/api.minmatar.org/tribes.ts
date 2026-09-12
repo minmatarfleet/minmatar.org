@@ -7,6 +7,7 @@ import type {
     TribeGroupGrowth,
     TribeGroupShowcase,
     CharacterMembership,
+    TribeExternalGuildJoin,
 } from '@dtypes/api.minmatar.org'
 import { get_error_message, query_string } from '@helpers/string'
 
@@ -452,5 +453,34 @@ export async function add_character_to_membership(
         return await response.json() as CharacterMembership
     } catch (error) {
         throw new Error(`Error applying to group: ${error.message}`, { cause: error.cause })
+    }
+}
+
+export async function get_external_guild_join(
+    access_token: string,
+    group_id: number,
+    redirect_url: string,
+): Promise<TribeExternalGuildJoin> {
+    const ENDPOINT = `${API_ENDPOINT}/external-guild/join?${query_string({
+        group_id,
+        redirect_url,
+    })}`
+    console.log(`Requesting: ${ENDPOINT}`)
+    try {
+        const response = await fetch(ENDPOINT, {
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${access_token}`,
+            },
+        })
+        if (!response.ok)
+            throw new Error(get_error_message(response.status, `GET ${ENDPOINT}`), {
+                cause: response.status
+            })
+        return await response.json() as TribeExternalGuildJoin
+    } catch (error) {
+        throw new Error(`Error starting external guild join: ${error.message}`, {
+            cause: error.cause,
+        })
     }
 }

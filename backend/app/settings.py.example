@@ -59,6 +59,11 @@ DISCORD_REDIRECT_URL = os.environ.get("DISCORD_REDIRECT_URL", "")
 DISCORD_ADMIN_REDIRECT_URL = os.environ.get(
     "DISCORD_ADMIN_REDIRECT_URL", ""
 )
+# Website tribe Discord join callback, e.g.
+# http://localhost:4321/redirects/external_guild_callback
+DISCORD_EXTERNAL_GUILD_REDIRECT_URL = os.environ.get(
+    "DISCORD_EXTERNAL_GUILD_REDIRECT_URL", ""
+)
 DISCORD_HOLY_RAT_WEBHOOK_MINMATAR_FLEET = os.environ.get(
     "DISCORD_HOLY_RAT_WEBHOOK_MINMATAR_FLEET", ""
 )

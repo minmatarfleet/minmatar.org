@@ -744,5 +744,108 @@
       "discord_channel_id": null,
       "is_active": true
     }
+  },
+  {
+    "model": "tribes.tribegroup",
+    "pk": 19,
+    "fields": {
+      "tribe": 4,
+      "name": "Fishermen",
+      "code": "pulse.fishermen",
+      "description": "An NPSI tribe focused on fishing for large kills with black ops battleships. We often kill capitals, supercarriers, and the occasional titan. Acceptance into this tribe will provide you an invite to the discord.",
+      "content": "Commit a blackops pilot (**Black Ops V** + **Jump Drive Calibration V**) and a covert cyno alt (**Cynosural Field Theory V** + **Covert Ops IV**). You must be off trial. After approval you get a Discord DM to join the Fishermen server.",
+      "group": null,
+      "chief": null,
+      "discord_channel_id": null,
+      "is_active": true,
+      "required_token_type": "",
+      "require_off_trial": true
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirement",
+    "pk": 13,
+    "fields": {
+      "tribe_group": 19
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirement",
+    "pk": 14,
+    "fields": {
+      "tribe_group": 19
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 40,
+    "fields": {
+      "requirement": 13,
+      "eve_type": 28656,
+      "minimum_level": 5
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 41,
+    "fields": {
+      "requirement": 13,
+      "eve_type": 21611,
+      "minimum_level": 5
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 42,
+    "fields": {
+      "requirement": 14,
+      "eve_type": 21603,
+      "minimum_level": 5
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementskill",
+    "pk": 43,
+    "fields": {
+      "requirement": 14,
+      "eve_type": 12093,
+      "minimum_level": 4
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 28,
+    "fields": {
+      "requirement": 13,
+      "eve_type": 22428,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 29,
+    "fields": {
+      "requirement": 13,
+      "eve_type": 22430,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 30,
+    "fields": {
+      "requirement": 13,
+      "eve_type": 22436,
+      "locations": []
+    }
+  },
+  {
+    "model": "tribes.tribegrouprequirementassettype",
+    "pk": 31,
+    "fields": {
+      "requirement": 13,
+      "eve_type": 22440,
+      "locations": []
+    }
   }
 ]

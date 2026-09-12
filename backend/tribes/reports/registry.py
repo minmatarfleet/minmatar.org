@@ -37,6 +37,7 @@ _MANUAL_PULSE_CODES = (
     "pulse.readiness",
     "pulse.advocates",
     "pulse.tournaments",
+    "pulse.fishermen",
 )
 
 

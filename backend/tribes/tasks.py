@@ -23,6 +23,7 @@ from tribes.helpers.offboarding import (
 from tribes.helpers.tribe_auth_groups import (
     remove_tribe_auth_groups_for_inactive_membership,
 )
+from tribes.helpers.external_guild import reconcile_external_guilds
 from tribes.models import TribeGroupMembership
 
 discord = DiscordClient()
@@ -162,3 +163,9 @@ def remove_tribe_members_without_permission():
                 membership.pk,
                 exc,
             )
+
+
+@app.task()
+def reconcile_tribe_external_guilds():
+    """Desired-state poll for tribe secondary Discord guild seats."""
+    return reconcile_external_guilds()
