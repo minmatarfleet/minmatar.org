@@ -136,10 +136,13 @@ OpenAPI docs: https://api.minmatar.org/api/docs
 Fetch posts from **`u/MinmatarFleet`** for the **past 30 days** (default
 `--pre-scout-days 30`). This is the alliance recruitment Reddit account; it posts
 corp ads on `r/evejobs` (Rattini, Soltech, Dark Tribe, Academy,
-Banshee, FOSFO, Extraction, etc.). **Only route to corps present in the API**
-and with a recent ad — corps leave the alliance (e.g. Straylight is gone).
-FOSFO may have a live ad while missing from the API; do not scout-route it until
-listed (a human can still link the ad).
+Banshee, Solaris, FOSFO, Extraction, etc.). **Only route to corps present in the
+API** — corps leave the alliance (e.g. Straylight is gone). Prefer a live
+`u/MinmatarFleet` ad when one exists; a new API corp with no dedicated ad yet
+(e.g. Solaris Expeditionary Corps) is still fair to name, and close with
+`discord.gg/minmatar` (forums: corp directory onebox). FOSFO may have a live ad
+while missing from the API; do not scout-route it until listed (a human can
+still link the ad).
 
 ```
 https://www.reddit.com/user/MinmatarFleet/submitted/
@@ -248,15 +251,21 @@ FW redirect / Extraction / MFA) when:
 
 - **WH-only seekers** — blunt FW redirect (session ISK/kills, no scanning);
   Bring Fun Shit always; optional WH-operator credibility. Add the newest kit AAR
-  when the thread can take a second proof beat. Do not force Soltech/Rattini into a
-  jspace-locked thread unless they leave LS open.
+  when the thread can take a second proof beat. Name **Solaris Expeditionary
+  Corps** when they are USTZ, have alts for the C2, **or** want a small laid-back
+  hole that still covers mining / industry / PvP (one character is enough; TZ
+  optional). That mix is the Solaris split, not a nameless dump. Do not force
+  Soltech/Rattini into a jspace-locked thread unless they leave LS open.
+  PvP-only WH lock with no TZ and no industry hook still gets a nameless FW
+  redirect.
 - **Sov-null mining / industry seekers** — highsec bulwark + Extraction fleet density;
   never “we have sov too.”
 - **Prefer-null casual / leisure PvP** — FW proof BR redirect (see examples).
 
 **True no-reply** is rare: hard nullbloc lifestyle lock (dedicated sov Indy/CRAB +
 PAPs + supers with no opening past null) may stay unanswered — note it, do not invent
-a null pitch.
+a null pitch. Same for **Discord-impossible** seekers (invite banned in their
+country) when every corp on the API requires Discord; do not invent Mumble/TS.
 
 When unsure, open the thread and read it.
 
@@ -265,6 +274,9 @@ When unsure, open the thread and read it.
 Open the thread. Mark **Y** if your alliance already reached out — a recruiter
 reply, a corp pitch mentioning Minmatar Fleet / FL33T / `discord.gg/minmatar`, or
 any clear prior outreach from your side.
+
+A stranger saying “try the Amarr-Minmatar warzone / Amamake” is **not** Responded.
+Need a FL33T recruiter, a named alliance corp, or `discord.gg/minmatar`.
 
 **Already responded → separate table. Do not draft new outreach.**
 
@@ -275,7 +287,8 @@ any clear prior outreach from your side.
 against recent `u/MinmatarFleet` ads. Corps change over time.
 
 This is your judgment call. Read the pilot's post, read the corp bios, pick one
-primary corp. Skip or note poor fits (e.g. WH-only seekers) in a short bullet list.
+primary corp. Poor WH or sov-mining fit still gets a redirect draft in Open
+prospects, not a silent skip.
 
 **Principles** (apply using current `requirements` fields from the API):
 
@@ -306,20 +319,22 @@ recognize complementary seats, not a pecking order.
 |-----------------|-------------|
 | **Rattini Tribe** | All-TZ **veterans** and **multi-boxers**, especially pilots who want to fly **capitals**. Cap AARs, Bring Fun Shit, and recent Reddit capital footage are the usual draw. |
 | **Soltech Armada** | **USTZ**, especially **late USTZ**, pilots ready for steady Amamake fleets and IRL-first PvP — the busy late-US seat for people past brand-new who want daily fights without a capital/multi-box focus. |
+| **Solaris Expeditionary Corps** | **USTZ** (API hours ~19:00–23:00 EVE) **WH→FW** crew: mains pew in Minmatar faction warfare, industry/gas/trade alts stay in a **C2**. Route USTZ pilots leaving jspace, dual-boxing hole+FW, new Omega players who want teaching without a PAP sheet, **and** laid-back WH seekers who still want mining / industry / PvP (bit of everything, even on one character). Pitch the live API intro (`Die in the warzone, get paid in a wormhole`). Discord close until a dedicated `u/MinmatarFleet` ad exists. Not the capital seat (Rattini) and not the late-US Amamake intermediate (Soltech). |
 | **FOSFO** (ad ticker; user shorthand FASFO) | Experienced **small-gang** crews, **UK especially**. Only name/route when the corp is on the corporations API (or a live `u/MinmatarFleet` ad you are intentionally linking). Use the live API/ad name — do not invent Administrative Atrocities / DHDR if the listing differs. |
 | **Banshee Squadron** | **Small, tight-knit new players in EUTZ**, **UK especially**. Prefer when the ask is EU/UK newbro + small roster rather than the larger Academy feeder. |
 | **The Dark Tribe (TDT)** | **Late-night USTZ**, small / tight-knit home for newer pilots in that window (check API requirements — currently 30m SP / KB / capital-ready; if OP does not match those, route Academy or Soltech for that TZ instead). |
-| **Minmatar Fleet Academy (L3ARN)** | **All-TZ new Omega players** default feeder. Skip alphas (Omega required). API may still list US fleet hours — recruit as all-TZ newbro door; natural next homes include Banshee (EU), TDT or Soltech (US), or Rattini when they grow into caps/multi-box. |
+| **Minmatar Fleet Academy (L3ARN)** | **All-TZ new Omega players** default feeder. Skip alphas (Omega required). API may still list US fleet hours — recruit as all-TZ newbro door; natural next homes include Banshee (EU), TDT, Soltech, or Solaris (US), or Rattini when they grow into caps/multi-box. |
 
 Additional principles:
 
 - **New EU/UK pilots:** Banshee Squadron when they want a small tight EUTZ home; Academy (L3ARN) when they want the all-TZ feeder / “learn by undocking” frame. Rattini and Soltech are usually later seats, not the first EU newbro door.
-- **New USTZ / late USTZ:** Academy (L3ARN) for brand-new; TDT for late-night tight-knit if they match requirements; Soltech for late-USTZ pilots who want the daily Amamake intermediate seat.
+- **New USTZ / late USTZ:** Academy (L3ARN) for brand-new all-TZ feeder; **Solaris** for early/mid USTZ when they lean WH, want a C2 for alts, or want a small teaching crew in FW; TDT for late-night tight-knit if they match requirements; Soltech for late-USTZ pilots who want the daily Amamake intermediate seat without a hole or capital focus.
+- **New Omega + explorer / PI / gas, open to WH:** Academy primary (all-TZ teach-by-undocking). Name **Solaris Expeditionary Corps (same alliance)** in one clause when they want the C2 for gas/PI. Do not make Solaris primary when their TZ is Pacific/late and the API window is early-mid USTZ.
 - **Industry-primary:** MFA associate corps primary. Base in highsec bulwark systems, lowsec excursions when people want out. PvP corp is a side note only. Name **Minmatar Extraction Company** (and its Amo mining ad) when they want organized mining fleets; MFA network + **Keldor00** on Discord for general industry/PvE. Dual accounts (mining main + PvP alt) can split Extraction + a FW corp (e.g. Soltech) — on forums, linking `my.minmatar.org/alliance/corporations/` works when dual-routing. Small industry **corps** seeking a null alliance home still get Extraction (fleet density / ore volume), not a silent skip. Close with **Bring Fun Shit then Rock Hoppin'** (two blocks).
 - **Ex-FL33T returning:** if they already left Rattini (or another cap/multi-box seat) for IRL / inactivity and are not asking for dreads, route **Soltech** (IRL-first Amamake) rather than sending them back to the same corp.
-- **Caps / multi-box veterans:** Rattini. Unused capital + learning lowsec → Rattini (own the dread-feed joke); mention Soltech only as a same-alliance option when they want the Amamake intermediate seat instead of the capital culture. Close with Bring Fun Shit, then the cap-feed AAR from the Current kit (Ahbazon 700B until a newer cap brawl replaces it). **Straylight is not in the alliance** — never route or link there.
+- **Caps / multi-box veterans:** Rattini. Unused capital + learning lowsec → Rattini (own the dread-feed joke); BLOPS/dread seekers leaving a null blob stay Rattini, not Solaris. Mention Soltech only as a same-alliance option when they want the Amamake intermediate seat instead of the capital culture. Close with Bring Fun Shit, then the cap-feed AAR from the Current kit (Ahbazon 700B until a newer cap brawl replaces it). **Straylight is not in the alliance** — never route or link there.
 - **Alliance positioning:** we are a **faction warfare** alliance. Daily content is FW and lowsec small gang. Do not pitch nullsec, sovereignty, null ratting, structure timers, or bloc null. If OP wants dedicated sov-null mining, pitch highsec bulwarks / Extraction instead — never "we have sov too." If OP wants dedicated nullbloc PAP/CRAB lifestyle with no industry-or-FW opening, leave unanswered rather than inventing a null pitch.
-- **WH → FW redirects:** alliance door + Bring Fun Shit; add the newest kit AAR when it helps. Do not close WH→FW with Rock Hoppin'.
+- **WH → FW redirects:** name **Solaris Expeditionary Corps** when USTZ matches, alts can sit in the C2, or they want laid-back jspace that still mines/builds/shoots. Otherwise alliance door + Bring Fun Shit (no named Soltech/Rattini). Add the newest kit AAR when it helps. Do not close WH→FW with Rock Hoppin'.
 
 ### Draft outreach
 
@@ -347,7 +362,7 @@ paragraph only. No bullet lists, no wall of text.
 | Surface | After the pitch paragraph |
 |---------|---------------------------|
 | **Reddit** | Blank line, then each proof URL on its own line: **Bring Fun Shit always**, then Rock Hoppin' if mining/industry, then one AAR link if the kit says so. Discord may sit on its own line when the pitch has no ad. |
-| **Forums** | Onebox on its own line (`reddit.com/r/evejobs/s/…` shortlink, AAR, `my.minmatar.org/warzone/`, or corp directory). Then **bare** `https://youtu.be/…` URLs on their own lines so Discourse embeds the player (BFS first, Rock Hoppin' second when mining). Do not bold YouTube URLs. Do not wrap them in markdown. |
+| **Forums** | **Join CTA is required** and is not optional proof. Last sentence of the pitch weaves `discord.gg/minmatar` (MFA: `and ask for Keldor00`) and/or a corp ad. Then a join onebox on its own line if it is not already in the pitch: evejobs `/s/` shortlink, `discord.gg/minmatar`, or `https://my.minmatar.org/alliance/corporations/`. Warzone, AARs, and YouTube are proof only — they do not count as the call to action. After the CTA, **bare** `https://youtu.be/…` URLs on their own lines so Discourse embeds the player (BFS first, Rock Hoppin' second when mining). Do not bold YouTube URLs. Do not wrap them in markdown. |
 
 #### Variety (mandatory per scout run)
 
@@ -369,6 +384,8 @@ in one run. Rotate how link/discord land (end of sentence, after corp name, etc.
 **Self-check:** each message should be scannable in under 5 seconds. **Every**
 draft includes Bring Fun Shit. Mining/industry also includes Rock Hoppin'.
 PvP/FW/caps/redirects also include the newest kit AAR when the thread has room.
+**Every forum draft** has a join CTA in the pitch last sentence. If you only
+linked warzone or a YouTube URL after the paragraph, rewrite.
 
 **Voice rules:**
 
@@ -400,7 +417,10 @@ PvP/FW/caps/redirects also include the newest kit AAR when the thread has room.
   Add one Current-kit AAR for PvP/caps/redirects as they land; do not paste proof
   URLs into the pitch paragraph.
 - **Forums Reddit ads:** prefer `/r/evejobs/s/` shortlinks so Discourse oneboxes
-  as `Reddit`. Full reddit.com comment URLs also onebox as `Reddit`.
+  as `Reddit`. Full reddit.com comment URLs also onebox as `Reddit`. Named corp
+  with **no dedicated ad:** discord in the pitch last sentence, then corp
+  directory onebox (`https://my.minmatar.org/alliance/corporations/`). Do not
+  substitute the warzone report for that join action.
 - **MFA Discord contact:** `ask for Keldor00` (handle, not the older `Keldor`
   shorthand).
 - Keep motivational lines only when OP is about to quit EVE (still one paragraph).
@@ -418,21 +438,26 @@ PvP/FW/caps/redirects also include the newest kit AAR when the thread has room.
 |-------|----------|-----------|------|------|---------------------|
 
 Put the **pitch** in the table as a **single paragraph** (no line breaks, no
-video URL in that cell). Recruiter send-shape is pitch, then the video/onebox
-blocks above — call that out in a one-line note under the tables if a draft
-would otherwise glue the YouTube link.
+video URL in that cell). **Forums: that paragraph must already contain the join
+CTA** (`discord.gg/minmatar`, `ask for Keldor00`, and/or the corp ad). Do not
+leave discord/ad only in an after-table of warzone/YouTube links — recruiters
+copy the cell. Recruiter send-shape is pitch, then proof oneboxes/videos under
+the tables. Call that out in a one-line note if a draft would otherwise glue
+the YouTube link.
 
 Below the tables, optionally list:
 
 - Corporation roster + latest reddit ad URLs (from pre-scout output)
 - Current proof kit actually used this run (BFS + extras; flag if a new AAR should
   replace a row in SKILL.md / `config.json`)
-- True no-reply posts (hard nullbloc lock with no redirect worth sending) in one
+- True no-reply posts (hard nullbloc lock, or Discord-impossible) in one
   short bullet list
 
 Do **not** dump WH-only or sov-mining seekers into a “skipped, no message” list.
-Put them in **Open prospects** with corp fit `FW redirect` or `Minmatar Extraction
-Company` / MFA and a recommended redirect message (see examples.md).
+Put them in **Open prospects** with corp fit `Solaris Expeditionary Corps` (WH→FW:
+USTZ, alts for the C2, or laid-back hole plus mining/industry/PvP), `FW redirect`
+(PvP-only jspace lock, no TZ), or `Minmatar Extraction Company` / MFA and a
+recommended message (see examples.md).
 
 ## Configuration
 

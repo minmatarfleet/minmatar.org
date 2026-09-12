@@ -4,6 +4,100 @@ Real responses that worked. Add entries here after you send outreach — no temp
 
 ---
 
+## 2026-09-12 scout run
+
+Recruiter iteration on drafts (Solaris added mid-run; forum CTAs; laid-back WH). Not all of these were sent yet — the corrections are the learning.
+
+### USTZ WH returner, two maxed accounts, scanner alts, kid / WFH
+**Thread:** [USTZ returning player looking for corp](https://www.reddit.com/r/evejobs/comments/1wegnij/ustz_returning_player_looking_for_corp/)  
+**Routed:** Solaris Expeditionary Corps (after first-pass nameless FW redirect)
+
+**First scout:** nameless FW redirect. Loaded Solaris from the API, then skipped it because there was no `u/MinmatarFleet` ad.
+
+**Corrected pitch:**
+> Solaris Expeditionary Corps left the holes so the mains could shoot people for a living, and the C2 is still there for the industry and scanner alts, which is the version of wormhole life that does not eat a kid and a WFH calendar. USTZ, no PAP sheet, you undock and lose ships on purpose. [discord.gg/minmatar](http://discord.gg/minmatar)
+
+**Routing note:** New API corp with no dedicated ad is still a primary route. Discord close. USTZ WH-primary + alts that can sit in a C2 → Solaris, not a nameless dump and not Rattini (no cap ask).
+
+---
+
+### Forum: laid-back WH, 75m SP, mining / PvP / indy, one character
+**Thread:** [Looking for Laid Back WH Corp](https://forums.eveonline.com/t/looking-for-laid-back-wh-corp/518135)  
+**Routed:** Solaris Expeditionary Corps (after nameless FW, then CTA fix)
+
+**First scout:** nameless FW, no discord (warzone + YouTube only). Recruiter: forum threads need a join CTA, and this mix is Solaris.
+
+**Corrected send:**
+> Laid-back wormhole with mining, industry, and PvP on one character is the Solaris Expeditionary Corps split: die in the warzone, get paid in a C2, small crew, no PAP sheet. discord.gg/minmatar
+>
+> https://my.minmatar.org/alliance/corporations/
+>
+> https://youtu.be/7-eGTtq9vWo
+>
+> https://www.reddit.com/r/Eve/comments/1w21ozl/aar_350b_down_in_kamela/
+
+**Routing note:** Laid-back hole that still covers mining, industry, and PvP is Solaris even on one character and even with no TZ. Pitch the live API intro. No ad → discord in the pitch last sentence, corp directory onebox, then proof. Warzone/video are not the call to action.
+
+---
+
+### Forum CTAs (same run, other threads)
+Scout table left join actions in an after-block of warzone/YouTube. Recruiter could not send them.
+
+**Fix:** last sentence of every forum pitch weaves `discord.gg/minmatar` (Extraction: `and ask for Keldor00`). Named corp with an ad also gets the evejobs URL as its own onebox line. Proof (warzone, AAR, BFS, Rock Hoppin') comes after the CTA.
+
+---
+
+### Pacific 7m Omega explorer, PI/gas, open to WH
+**Thread:** [USTZ / Pacific] Newer Omega player looking for a long-term nullsec or wormhole home  
+**Routed:** Minmatar Fleet Academy primary; Solaris Expeditionary Corps (same alliance) aside for the C2
+
+**Routing note:** All-TZ new Omega feeder stays Academy when Solaris hours are midday Pacific. Gas/PI + WH left open earns a Solaris one-liner, not a Soltech Amamake aside.
+
+---
+
+### BLOPS / dread, leaving Horde, USTZ
+**Thread:** [USTZ] 83M SP pilot looking for a lowsec home  
+**Routed:** Rattini Tribe
+
+**Routing note:** Caps and BLOPS stay Rattini. A stranger recommending “Amarr-Minmatar / Amamake” is not Responded.
+
+---
+
+### True no-reply
+- [Returning Player Looking For A Home](https://forums.eveonline.com/t/returning-player-looking-for-a-home/518117) — Discord banned where they live; every FL33T corp on the API needs Discord.
+
+---
+
+## Patterns (2026-09-12 run)
+
+| Situation | What landed |
+|-----------|-------------|
+| New API corp, no MinmatarFleet ad yet | Still name it; discord close; forums add corp directory onebox |
+| USTZ WH + alts for a C2 | Solaris primary, not nameless FW |
+| Laid-back WH + mining/indy/PvP, even one toon | Solaris; pitch `die in the warzone, get paid in a C2` |
+| Pacific new Omega + gas/PI + WH open | Academy primary; Solaris (same alliance) aside |
+| BLOPS/dread leaving a null blob | Rattini, not Solaris |
+| Forum scout table | Join CTA **in the pitch cell**. Warzone/AAR/YouTube are proof only |
+| Forum named corp, no ad | discord last sentence + `my.minmatar.org/alliance/corporations/` |
+| “Try Amamake / Minmatar warzone” from a random poster | Not Responded |
+| Discord banned in OP’s country | True no-reply; do not invent TS/Mumble |
+
+### Corp routing map (recruiter update, 2026-09-12)
+
+Complementary seats — phrase by what each corp offers, not as a hierarchy. Confirm the corp is on the API (or has a live ad) before naming it. New API corps with no dedicated ad yet still get named; close with discord.
+
+| Corp | Route |
+|------|--------|
+| Rattini Tribe | All-TZ veterans + multi-boxers; capital pilots — cap AARs / videos |
+| Soltech Armada | USTZ / late USTZ; daily Amamake seat past brand-new, without a capital/multi-box or hole focus |
+| Solaris Expeditionary Corps | USTZ WH→FW; mains in the warzone, C2 for industry/gas/trade alts; teaching crew. Also laid-back WH + mining/indy/PvP even on one character. Discord until a dedicated ad exists. |
+| FOSFO (FASFO) | Experienced small-gang, UK especially — only when on API or linking live ad |
+| Banshee Squadron | Small tight-knit EUTZ new players, UK especially |
+| The Dark Tribe (TDT) | Late-night USTZ, smaller/tight-knit home for newer pilots (watch SP/KB requirements) |
+| Minmatar Fleet Academy (L3ARN) | All-TZ new players feeder |
+
+---
+
 ## 2026-09-09 scout run
 
 ### Ex-Rattini, USTZ, fried PSU / kicked for inactivity (72m SP)
@@ -151,7 +245,7 @@ Real responses that worked. Add entries here after you send outreach — no temp
 | EU indy corp seeking null home | Extraction; Keldor00; drop mining ad; YouTube embed |
 | 14-person mine/build merge | Extraction **stats** (3–5 fleets/day, 100B+ ore/month) + my.minmatar.org + Rock Hoppin' embed |
 | Reddit send-shape | Pitch paragraph → blank → proof video alone. Do not glue youtu.be into the pitch |
-| Forum send-shape | Pitch → onebox (shortlink or my.minmatar.org) → **bare** youtu.be (Discourse video player). Stop bolding YouTube URLs |
+| Forum send-shape | Pitch with join CTA (discord and/or ad/directory) → optional proof onebox (warzone/AAR) → **bare** youtu.be. Warzone/video are not the call to action. Stop bolding YouTube URLs |
 | MFA Discord | `Keldor00` |
 | Proof stack (going forward) | Bring Fun Shit on **every** send; Rock Hoppin' extra for mining; newest kit AAR extra for PvP/caps (Kamela 350B default, Ahbazon 700B for dreads) |
 
@@ -469,7 +563,7 @@ Real responses that worked. Add entries here after you send outreach — no temp
 
 ### Corp routing map (recruiter update, 2026-08-09)
 
-Complementary seats — phrase by what each corp offers, not as a hierarchy. Confirm the corp is on the API (or has a live ad) before naming it.
+Complementary seats — phrase by what each corp offers, not as a hierarchy. Confirm the corp is on the API (or has a live ad) before naming it. Superseded 2026-09-12 (Solaris added).
 
 | Corp | Route |
 |------|--------|
