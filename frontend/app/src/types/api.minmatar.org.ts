@@ -190,6 +190,19 @@ export interface TribeAvailableCharacter {
     missing_token: boolean;
 }
 
+export type TribeExternalGuildSeatStatus =
+    | 'pending_join'
+    | 'present'
+    | 'pending_remove'
+    | 'removed'
+    | 'cleanup_failed'
+
+export interface TribeExternalGuildJoin {
+    authorize_url: string;
+    group_id: number;
+    status: TribeExternalGuildSeatStatus;
+}
+
 export interface SigRequest {
     id:             number;
     user:           number;

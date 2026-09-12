@@ -1,6 +1,7 @@
 """Client wrapper for interacting with Discord API"""
 
 import logging
+from urllib.parse import quote
 
 import requests
 from backoff import expo, on_exception
@@ -86,9 +87,9 @@ def _raise_discord_rate_limit(response: requests.Response) -> None:
 class DiscordBaseClient:
     """Base Discord API Client"""
 
-    def __init__(self):
+    def __init__(self, guild_id: int | str | None = None):
         self.access_token = settings.DISCORD_BOT_TOKEN
-        self.guild_id = GUILD_ID
+        self.guild_id = GUILD_ID if guild_id is None else guild_id
         self.session = s
 
     @limits(calls=5, period=1)
@@ -189,18 +190,28 @@ DISCORD_OAUTH_SCOPES = "identify guilds.join"
 DISCORD_OAUTH_SCOPES_URL = "identify%20guilds.join"
 
 
-def discord_authorize_url(client_id: str, redirect_uri: str) -> str:
+def discord_authorize_url(
+    client_id: str, redirect_uri: str, state: str | None = None
+) -> str:
     """Discord OAuth authorize URL for site login (identify + guilds.join)."""
-    return (
+    url = (
         "https://discord.com/api/oauth2/authorize"
         f"?client_id={client_id}"
-        f"&redirect_uri={redirect_uri}"
+        f"&redirect_uri={quote(redirect_uri, safe='')}"
         f"&response_type=code&scope={DISCORD_OAUTH_SCOPES_URL}"
     )
+    if state:
+        url = f"{url}&state={quote(state, safe='')}"
+    return url
 
 
 class DiscordClient(DiscordBaseClient):
     """Discord API Client"""
+
+    @classmethod
+    def for_guild(cls, guild_id: int | str) -> "DiscordClient":
+        """Client bound to a specific Discord guild."""
+        return cls(guild_id=guild_id)
 
     def exchange_code(self, code: str, redirect_uri: str):
         """Exchange OAuth code for ``(user_profile, access_token)``."""
@@ -271,6 +282,12 @@ class DiscordClient(DiscordBaseClient):
         user, access_token = self.exchange_code(code, redirect_uri)
         self.add_guild_member(user["id"], access_token)
         return user
+
+    def kick_guild_member(self, user_id: int | str):
+        """Remove a member from this client's guild."""
+        return self.delete(
+            f"{BASE_URL}/guilds/{self.guild_id}/members/{user_id}",
+        )
 
     def get_channel(self, channel_id):
         """Get a discord channel by id (includes forum available_tags)."""

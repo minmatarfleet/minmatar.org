@@ -1,0 +1,25 @@
+---
+import { get_api_url, get_app_url } from '@helpers/env'
+
+const api = get_api_url()
+const qs = Astro.url.searchParams.toString()
+const fallback = get_app_url('/alliance/tribes/?external_guild=join_failed')
+
+let location = fallback
+try {
+    const upstream = await fetch(
+        `${api}/api/tribes/external-guild/callback?${qs}`,
+        { redirect: 'manual' },
+    )
+    const header = upstream.headers.get('location')
+    if (header) {
+        location = header.startsWith('http')
+            ? header
+            : new URL(header, Astro.url.origin).toString()
+    }
+} catch {
+    location = fallback
+}
+
+return Astro.redirect(location)
+---

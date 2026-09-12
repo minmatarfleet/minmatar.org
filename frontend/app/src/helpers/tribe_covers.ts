@@ -18,6 +18,7 @@ export const TRIBE_GROUP_COVERS: Record<number, string> = {
     17: '/images/tournament-cover.webp',
     16: '/images/loyalty-points-cover.webp',
     18: '/images/fcs-cover.webp',
+    19: '/images/blackops-cover.jpg',
 }
 
 export const TRIBE_COVERS: Record<number, string> = {

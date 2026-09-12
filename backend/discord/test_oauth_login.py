@@ -15,7 +15,7 @@ class DiscordOAuthLoginTests(SimpleTestCase):
     def test_discord_authorize_url_includes_guilds_join(self):
         url = discord_authorize_url("client-1", "http://localhost/callback")
         self.assertIn("client_id=client-1", url)
-        self.assertIn("redirect_uri=http://localhost/callback", url)
+        self.assertIn("redirect_uri=http%3A%2F%2Flocalhost%2Fcallback", url)
         self.assertIn("scope=identify%20guilds.join", url)
 
     @patch("discord.client.requests.post")

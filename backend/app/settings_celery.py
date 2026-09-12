@@ -248,6 +248,13 @@ CELERYBEAT_TRIBES = [
             "schedule": crontab(minute=0, hour="*/2"),
         },
     ),
+    (
+        "[Tribes] Reconcile external Discord guild seats",
+        {
+            "task": "tribes.tasks.reconcile_tribe_external_guilds",
+            "schedule": crontab(minute="5,20,35,50", hour="*"),
+        },
+    ),
 ]
 
 # Misc (Celery, Fleets, ESI, Reminders, Reddit, Discord)
