@@ -10,6 +10,8 @@ from django.test import TestCase, override_settings
 from discord.models import DiscordGuild, DiscordUser
 from discord.signals import group_post_save, user_group_changed
 from tribes.helpers.external_guild import (
+    FISHERMEN_ALERT_CHANNEL_ID,
+    FISHERMEN_MEMBER_ROLE_ID,
     append_query,
     build_pending_join_dm_message,
     decode_oauth_state,
@@ -17,6 +19,7 @@ from tribes.helpers.external_guild import (
     join_seat_with_oauth_token,
     prepare_seats_for_user_delete,
     reconcile_external_guilds,
+    seed_fishermen_external_guild,
     send_pending_join_dm,
 )
 from tribes.models import (
@@ -188,6 +191,56 @@ class ExternalGuildSeatTestCase(TestCase):
         self.assertIsNone(seat.user_id)
         self.assertEqual(seat.discord_username, "bearthatcares")
         client_for_binding.return_value.kick_guild_member.assert_called()
+
+    def test_active_membership_without_binding_creates_no_seat(self):
+        self.binding.delete()
+        TribeGroupMembership.objects.create(
+            user=self.user,
+            tribe_group=self.tribe_group,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+        self.assertFalse(TribeExternalGuildSeat.objects.exists())
+
+    def test_seed_fishermen_external_guild_is_idempotent(self):
+        existing_id = self.binding.pk
+        binding = seed_fishermen_external_guild()
+        self.assertEqual(binding.pk, existing_id)
+        self.assertEqual(binding.member_role_id, 111)
+
+    def test_seed_fishermen_external_guild_creates_missing_binding(self):
+        self.binding.delete()
+        binding = seed_fishermen_external_guild()
+        self.assertIsNotNone(binding)
+        self.assertEqual(binding.tribe_group_id, self.tribe_group.id)
+        self.assertEqual(binding.member_role_id, FISHERMEN_MEMBER_ROLE_ID)
+        self.assertEqual(binding.alert_channel_id, FISHERMEN_ALERT_CHANNEL_ID)
+        self.assertTrue(binding.is_active)
+
+    @patch("tribes.helpers.external_guild.send_pending_join_dm")
+    @patch("tribes.helpers.external_guild.client_for_binding")
+    def test_reconciler_backfills_seats_for_active_members(
+        self, client_for_binding, send_dm
+    ):
+        self.binding.delete()
+        TribeGroupMembership.objects.create(
+            user=self.user,
+            tribe_group=self.tribe_group,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+        self.assertFalse(TribeExternalGuildSeat.objects.exists())
+
+        client = client_for_binding.return_value
+        client.get_members.return_value = []
+        client.get_user.side_effect = _unknown_member_error()
+        stats = reconcile_external_guilds()
+
+        self.assertEqual(stats["seats_ensured"], 1)
+        seat = TribeExternalGuildSeat.objects.get()
+        self.assertEqual(seat.user_id, self.user.id)
+        self.assertEqual(
+            seat.status, TribeExternalGuildSeat.STATUS_PENDING_JOIN
+        )
+        send_dm.assert_called_once()
 
     @patch("tribes.helpers.external_guild.client_for_binding")
     def test_reconciler_kicks_stray_role_holders(self, client_for_binding):
