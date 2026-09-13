@@ -13,11 +13,12 @@ from django.utils import timezone
 
 from discord.client import DiscordClient, DiscordError, discord_authorize_url
 from discord.helpers import is_discord_unknown_guild_member_error
-from discord.models import DiscordUser
+from discord.models import DiscordGuild, DiscordUser
 from eveonline.helpers.characters import user_primary_character
 from tribes.models import (
     TribeExternalGuild,
     TribeExternalGuildSeat,
+    TribeGroup,
     TribeGroupMembership,
 )
 
@@ -26,6 +27,12 @@ logger = logging.getLogger(__name__)
 CLEANUP_FAILURE_ALERT_THRESHOLD = 3
 OAUTH_STATE_SALT = "tribes.external_guild.oauth"
 OAUTH_STATE_MAX_AGE = 60 * 60 * 24 * 7
+
+# Pulse / Fishermen secondary guild. Approve DMs no-op without this binding.
+FISHERMEN_GROUP_CODE = "pulse.fishermen"
+FISHERMEN_GUILD_ID = 834087499658952735
+FISHERMEN_MEMBER_ROLE_ID = 1543301902375329922  # Minmatar Fleet Alliance
+FISHERMEN_ALERT_CHANNEL_ID = 1543302547157286972  # info-fl33t
 
 
 def client_for_binding(binding: TribeExternalGuild) -> DiscordClient:
@@ -40,6 +47,35 @@ def binding_for_group(group_id: int) -> TribeExternalGuild | None:
         .select_related("guild", "tribe_group", "tribe_group__tribe")
         .first()
     )
+
+
+def seed_fishermen_external_guild() -> TribeExternalGuild | None:
+    """Create the Fishermen binding if the group and Discord guild exist."""
+    group = TribeGroup.objects.filter(code=FISHERMEN_GROUP_CODE).first()
+    guild = DiscordGuild.objects.filter(guild_id=FISHERMEN_GUILD_ID).first()
+    if group is None or guild is None:
+        logger.warning(
+            "Cannot seed Fishermen external guild: group=%s guild=%s",
+            group,
+            guild,
+        )
+        return None
+    binding, created = TribeExternalGuild.objects.get_or_create(
+        tribe_group=group,
+        defaults={
+            "guild": guild,
+            "member_role_id": FISHERMEN_MEMBER_ROLE_ID,
+            "alert_channel_id": FISHERMEN_ALERT_CHANNEL_ID,
+            "is_active": True,
+        },
+    )
+    if created:
+        logger.info(
+            "Seeded Fishermen external guild binding %s → %s",
+            group.code,
+            guild.name,
+        )
+    return binding
 
 
 def _snapshot_fields(user: User) -> dict:
@@ -468,7 +504,9 @@ def reconcile_external_guilds() -> dict:
         "kicked": 0,
         "alerts": 0,
         "errors": 0,
+        "seats_ensured": 0,
     }
+    seed_fishermen_external_guild()
     bindings = TribeExternalGuild.objects.filter(
         is_active=True
     ).select_related("guild", "tribe_group")
@@ -486,6 +524,33 @@ def reconcile_external_guilds() -> dict:
                 exc,
             )
     return stats
+
+
+def _ensure_seats_for_active_members(
+    binding: TribeExternalGuild, active_user_ids: set[int]
+) -> dict:
+    """Create seats (and pending-join DMs) for active members missing one."""
+    result = {"joined": 0, "seats_ensured": 0}
+    if not active_user_ids:
+        return result
+    seated_user_ids = set(
+        TribeExternalGuildSeat.objects.filter(binding=binding)
+        .exclude(status=TribeExternalGuildSeat.STATUS_REMOVED)
+        .exclude(user_id=None)
+        .values_list("user_id", flat=True)
+    )
+    missing_ids = active_user_ids - seated_user_ids
+    if not missing_ids:
+        return result
+    for user in User.objects.filter(id__in=missing_ids):
+        seat = ensure_seat(user, binding)
+        if seat is None:
+            continue
+        status = apply_seat(seat, entitled=True, send_dm_if_pending=True)
+        result["seats_ensured"] += 1
+        if status == TribeExternalGuildSeat.STATUS_PRESENT:
+            result["joined"] += 1
+    return result
 
 
 def _reconcile_seats(
@@ -543,8 +608,24 @@ def _kick_stray_role_holders(
 
 
 def _reconcile_binding(binding: TribeExternalGuild) -> dict:
-    result = {"joined": 0, "kicked": 0, "alerts": 0, "errors": 0}
+    result = {
+        "joined": 0,
+        "kicked": 0,
+        "alerts": 0,
+        "errors": 0,
+        "seats_ensured": 0,
+    }
     client = client_for_binding(binding)
+    active_user_ids = set(
+        TribeGroupMembership.objects.filter(
+            tribe_group_id=binding.tribe_group_id,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        ).values_list("user_id", flat=True)
+    )
+    ensure_stats = _ensure_seats_for_active_members(binding, active_user_ids)
+    for key, value in ensure_stats.items():
+        result[key] = result.get(key, 0) + value
+
     try:
         members = client.get_members()
     except (DiscordError, requests.RequestException) as exc:
@@ -557,12 +638,6 @@ def _reconcile_binding(binding: TribeExternalGuild) -> dict:
         return result
 
     members_by_id = {int(m["user"]["id"]): m for m in members if m.get("user")}
-    active_user_ids = set(
-        TribeGroupMembership.objects.filter(
-            tribe_group_id=binding.tribe_group_id,
-            status=TribeGroupMembership.STATUS_ACTIVE,
-        ).values_list("user_id", flat=True)
-    )
     seat_stats, seat_discord_ids = _reconcile_seats(binding, active_user_ids)
     for key, value in seat_stats.items():
         result[key] += value

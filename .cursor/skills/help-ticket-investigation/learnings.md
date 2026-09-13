@@ -41,6 +41,22 @@ do not duplicate it — one clarifying clause at most.
 
 ---
 
+## 2026-09-13 — Tribe approve sent no secondary Discord invite DM
+
+**Category:** pulse.fishermen
+**Verdict:** bug
+**Discord:** n/a (Cursor report, not a #help thread)
+**PR:** fix+skill
+**Symptom vs cause:** Chief approved a tribe-group application and the
+applicant never got a Discord join DM. Schema for
+`TribeExternalGuild` was deployed but no binding row existed, so
+`on_membership_became_active` returned immediately. The chief apply-DM
+is a separate helper and still worked.
+**Durable rule:** Invite-DM missing after tribe approve → dump
+`TribeExternalGuild` for that `TribeGroup.code` and seats. Empty
+binding is a no-op. Reconciler now seeds Fishermen and backfills seats.
+**Skill update:** known-failure row for secondary-guild invite DMs.
+
 ## 2026-09-09 — BUILD alliance BPC packs not on site / claim
 
 **Category:** pulse.technology
