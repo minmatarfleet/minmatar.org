@@ -25,6 +25,11 @@ const FLET_START_PARTIAL_URL = translatePath('/partials/fleet_start_component/')
 <form
     method="post"
     action={FLET_START_PARTIAL_URL}
+    hx-post={FLET_START_PARTIAL_URL}
+    hx-trigger="submit"
+    hx-target="#fleet-start"
+    hx-swap="innerHTML"
+    hx-indicator=".loader"
     class="block w-full"
     x-on:submit="$nextTick(() => {
         submitted = true

@@ -36,7 +36,17 @@ if (Astro.request.method === 'POST') {
         const fleet = await start_fleet_now(auth_token as string, fc_character_id)
         send_active_fleet_notification(auth_token as string, fleet.id)
 
-        return Astro.redirect(translatePath(`/fleets/upcoming/${fleet.id}`))
+        const fleet_path = translatePath(`/fleets/upcoming/${fleet.id}`)
+        if (Astro.request.headers.get('HX-Request') === 'true') {
+            return new Response('', {
+                status: 200,
+                headers: {
+                    'Content-Type': 'text/html',
+                    'HX-Redirect': fleet_path,
+                },
+            })
+        }
+        return Astro.redirect(fleet_path)
     } catch (error) {
         alert = {
             title: t('starting_fleet'),

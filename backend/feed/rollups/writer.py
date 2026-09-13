@@ -8,6 +8,7 @@ from django.utils import timezone
 from feed.helpers.amarr_fleet_pings import maybe_notify_amarr_fleet
 from feed.models import (
     FeedEvent,
+    FeedEventFleetLink,
     FeedEventKillmailLink,
     FeedKillmail,
 )
@@ -91,9 +92,7 @@ def _upsert_event(result: RollupResult) -> FeedEvent:
         event = matches[0]
         prior_payloads.append(dict(event.payload or {}))
         if len(matches) > 1:
-            FeedEvent.objects.filter(
-                pk__in=[row.pk for row in matches[1:]]
-            ).delete()
+            _delete_feed_events([row.pk for row in matches[1:]])
         for field, value in defaults.items():
             setattr(event, field, value)
         event.save()
@@ -221,9 +220,15 @@ def _coalesce_fleet_active_event(
     _apply_upgrade_metadata(event, prior_payloads)
 
     if duplicates:
-        FeedEvent.objects.filter(
-            pk__in=[dup.pk for dup in duplicates]
-        ).delete()
+        _delete_feed_events([dup.pk for dup in duplicates])
+
+
+def _delete_feed_events(pks: list[int]) -> None:
+    if not pks:
+        return
+    FeedEventKillmailLink.objects.filter(feed_event_id__in=pks).delete()
+    FeedEventFleetLink.objects.filter(feed_event_id__in=pks).delete()
+    FeedEvent.objects.filter(pk__in=pks).delete()
 
 
 def _sync_killmail_links(event: FeedEvent, killmail_ids: list[int]) -> None:
