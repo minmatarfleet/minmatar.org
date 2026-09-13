@@ -47,15 +47,30 @@ def _isk(value) -> float:
     return float(value or 0)
 
 
-def build_monthly_response(location_id: int, year: int, month: int) -> dict:
-    """Assemble the monthly report payload (cached)."""
+def build_monthly_response(
+    location_id: int,
+    year: int,
+    month: int,
+    *,
+    using: str | None = None,
+) -> dict:
+    """Assemble the monthly report payload (cached).
+
+    Pass ``using`` to read from an alternate DB alias (e.g.
+    ``production_readonly``). The public API leaves this unset.
+    """
     start, end = month_bounds(year, month)
     key = CACHE_KEY.format(location_id=location_id, year=year, month=month)
+    if using:
+        key = f"{key}:using:{using}"
     cached = cache.get(key)
     if cached is not None:
         return cached
 
-    qs = EveMarketInferredSale.objects.filter(
+    sales = EveMarketInferredSale.objects
+    if using:
+        sales = sales.using(using)
+    qs = sales.filter(
         location_id=location_id,
         inferred_at__gte=start,
         inferred_at__lt=end,

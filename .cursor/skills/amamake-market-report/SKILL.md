@@ -4,16 +4,16 @@ description: >-
   Produce the monthly Amamake Market Report at /amamake-market/ (my.minmatar.org
   frontend). Use when asked to build, publish, refresh, or add a new month's
   Amamake market report / freeport report / "what sold in Amamake", or to update
-  its sales, died-vs-sold, catchment, or industry data. One cached extraction
+  its sales, died-vs-sold (Amamake sells vs warzone losses), catchment, or industry data. One cached extraction
   pass (site API + the Warzone Report's zKillboard cache) feeds a data-driven
   Astro component reused every month.
 ---
 
 # Amamake Market Report (monthly)
 
-A public monthly report on the Amamake freeport market, at `/amamake-market/`
-(latest) and `/amamake-market/<slug>/`. It is the market twin of the Warzone Report
-and follows the same shape: **one extractor writes a generated data file, one hand
+A public monthly **Amamake Economic Report** on the Amamake freeport market, at `/amamake-market/`
+(latest) and `/amamake-market/<slug>/`. It is one of two Warzone Reports (Frontline and
+Amamake Economic) and follows the same shape: **one extractor writes a generated data file, one hand
 authored issue file supplies the prose, one shared component renders every issue.**
 A new month is: run one script, copy last month's issue file, rewrite the editorial
 text, register it. Do not rebuild the UI each month.
@@ -38,10 +38,11 @@ Working dir for every command below: `frontend/app`.
    renders every section from an `AmamakeMarketIssue` object. A new month writes
    **data**, not markup. If a section needs a real change, change the one component.
 4. **Generated vs hand-authored.** `<slug>-boards.ts` is machine-generated (never hand
-   edit — re-run). `<slug>.ts` is the editorial layer: the opening, deks, the Focus
-   story, and the two manual tables (import vs local, LP conversion). Interpolate
-   generated numbers into prose (template strings) instead of typing them, so a
-   regenerated extract never leaves stale figures in the text.
+   edit — re-run). `<slug>.ts` is the editorial layer: the opening and section deks.
+   Interpolate generated
+   numbers into prose (template strings) instead of typing them, so a regenerated
+   extract never leaves stale figures in the text. There is no Focus section on
+   the Amamake Economic report — Frontline warzone reports keep theirs.
 
 ## Data sources
 
@@ -50,10 +51,11 @@ Working dir for every command below: `frontend/app`.
 | Inferred fills (ISK, units, fills, per day, per type) | my.minmatar.org API `inferred-sales/monthly` (order-book diffs, ~15 min snapshots) |
 | Ships / ISK destroyed per FW system, hulls lost in Amamake, characters on mails | zKillboard `kills/systemID/<id>/year/<y>/month/<m>/` via the shared cache |
 | FW system list + current holder | ESI `GET /fw/systems/` |
-| System cost indices (manufacturing, reaction) | ESI `GET /industry/systems/` — a **live snapshot**, dated in the output |
 | Hub health (sell-order / contract health %, ISK on the book) | my.minmatar.org API `market/health` — live snapshot, nullable |
-| Type names, categories, capital classification, system → region | local SDE sqlite `src/data/sde-*.sqlite` (no API) |
-| Jita prices, freight, LP store math | **manual** — hand-authored tables in the issue file (like Dotlan occupancy in the warzone report) |
+| Finished contracts (ISK, count, hull) | `EveMarketContract` via production_readonly cache dump |
+| Jita guide / worth-seeding spread / inferred profit | Forge `EveMarketItemHistory` via production_readonly + SDE packaged volume × alliance Jita→Amamake freight (450 ISK/m³, freight calculator `EveFreightRoute`) |
+| Type names, categories, capital classification, system → region | local SDE sqlite `src/data/sde-*.sqlite`, then inferred-sales payload names, then ESI `POST /universe/names/` + `GET /universe/types/{id}/` (cached under `.cache/amamake-market/esi-types.json`) |
+| Month-end import vs local snapshot | **not shown** — leftover issue data, not rendered |
 
 Key ids and thresholds live in [config.json](./config.json).
 
@@ -71,9 +73,10 @@ Example: September YC128 → year 2026, month 9, slug `yc128-09`.
    Heimatar pipe system list. Closed months are cached under `.cache/amamake-market/`;
    the running month is always refetched. Writes `src/data/amamake-market/yc128-09-boards.ts`
    exporting `SALES_TOTALS`, `SALES_TOTALS_PREV`, `SALES_TOTALS_VS`, `DAYS`, `WEEKS`,
-   `CATEGORIES`, `TOP_TYPES`, `HULLS` (+ `HULLS_SOLD_TOTAL`/`HULLS_LOST_TOTAL`),
+   `CATEGORIES`, `TOP_TYPES`, `TOP_TYPES_BY_CLASS`, `HULLS` (+ `HULLS_SOLD_TOTAL`/`HULLS_LOST_TOTAL`),
    `AMAMAKE`, `WARZONE`, `CATCHMENT`, `REGIONS`, `PIPE`, `CAPITAL_SPLIT`,
-   `INDUSTRY_INDICES` (+ `INDUSTRY_AS_OF`), `HUB_HEALTH`, `EXTRACTED_AT`.
+   `CONTRACTS`, `CONTRACT_HULLS`, `MARGINS` (+ `JITA_AS_OF`, `FREIGHT_ISK_PER_M3`), `HUB_HEALTH`,
+   `EXTRACTED_AT`. `SALES_TOTALS.profit` is (Amamake − Jita − freight/unit) × units over priced types.
    If the warzone issue for the month has not been generated yet, the kill pass fetches
    ~70 systems × 2 months from zKillboard (10–20 min, rate-limited) and caches them for
    the warzone report too.
@@ -81,16 +84,19 @@ Example: September YC128 → year 2026, month 9, slug `yc128-09`.
 2. **Author the issue file** `src/data/amamake-market/yc128-09.ts`: copy the previous
    month's `.ts`, change the imports to `./yc128-09-boards`, update `SLUG`,
    `published_at` (last day of the month), `period_utc`, `previous_period_label`,
-   `context_as_of`. Rewrite the editorial fields: `headline`, `opening`, section deks
-   and footnotes, the `focus` story (title, dek, closing, CTA — pick the month's story),
-   the `import_vs_local` and `loyalty` tables (month-end Jita/Amamake prices and LP
-   store rates — the only manual inputs), and `shelf`/`get_involved` if anything moved.
-   Keep every number that exists in the boards file interpolated, not typed.
+   `context_as_of`. Rewrite the editorial fields: `headline`, `opening`, and section deks
+   and footnotes on the briefing (The month, Market sales overview, What sold,
+   Items worth seeding, Market Capture). Keep every number that exists in the boards
+   file interpolated, not typed.
+   The Amamake Economic report has no Focus, Build in Amamake, Loyalty points,
+   Contracts, Import vs local, Shelf, Use the hub, or About the numbers sections.
 
 3. **Register the issue:** add it to `ISSUES` in `src/data/amamake-market/index.ts`
-   (latest sorts first automatically) and add a `kind: 'market'` entry to the
-   content-hub list in `src/data/campaigns/index.ts` (`iskDestroyed: <ISSUE>.sales.isk`,
-   `isk_label_key: 'sold'`).
+   (latest sorts first automatically) and add a `kind: 'warzone'` /
+   `warzone_type: 'economic'` entry to the content-hub list in
+   `src/data/campaigns/index.ts` (`iskDestroyed: <ISSUE>.sales.isk`,
+   `isk_label_key: 'sold'`). It appears on the shared **Warzone Reports** strip
+   next to that month's Frontline report.
 
 4. **i18n + sitemap:** add `amamake_market.<slug_with_underscores>.*` strings in
    `src/i18n/ui.ts` (name, page_title, period, leading_text, meta_title,
@@ -102,27 +108,37 @@ Example: September YC128 → year 2026, month 9, slug `yc128-09`.
 
 ## What each section shows
 
-- **Hero**: four stat tiles — inferred ISK sold (▲/▼ % vs prior month), inferred fills,
-  ships destroyed in Amamake, focus story. Then a jump nav (section chips).
+- **Hero**: three stat tiles — inferred ISK sold (▲/▼ % vs prior month), inferred profit
+  (markup vs Jita minus Jita→Amamake freight, ▲/▼ ISK vs prior month),
+  and ships destroyed at the hub (Amamake only — the shop fueling the warzone). No Focus tile.
 - **The month**: editorial opening paragraphs.
-- **Through the book**: a per-day ISK strip (one column per calendar day; hatched columns
-  are days with no snapshots — visible gaps are a feature), a weekly table with bars,
-  and a "where the ISK went" share bar by category (Ships / Modules / Charges / …).
-- **What sold**: top types by inferred ISK with type icons, units × fills, MoM % and a
-  NEW badge for types with no fills the prior month.
-- **Died vs sold**: hulls lost in Amamake vs inferred sells of the same hull, side-by-side
-  bars, MoM deltas, and a sold-per-loss ratio (green ≥ 1, red < 1).
-- **The catchment**: region share bar, warzone/pipe/Amamake stat line, and a per-system
-  table (holder mark, ships bar, vs prior month, ISK, capital share) — same numbers as the
-  Warzone Report's "Where the ships died".
-- **Focus of the month**: the curated story with stat tiles, a capital-vs-subcap stacked
-  bar per system, and a CTA (internal path or external URL).
-- **Import vs local**, **Loyalty points**: hand-authored tables (rows can carry a `tone`).
-- **Build in Amamake**: ESI cost indices for the configured systems, dated.
-- **The shelf**: hub-health stat tiles (when the API has them) plus outbound links.
-- **Use the hub**: three step cards, a CTA, featured guides.
-- **About the numbers**: methodology definition list + source chips.
+- **Market sales overview**: a per-day ISK strip (one column per calendar day; hatched columns
+  are days with no snapshots — visible gaps are a feature) and a sell-orders-by-class table
+  (Ships / Rigs / Modules / Charges / …) with MoM ISK, fills, units, and volume-weighted
+  average markup versus Jita.
+- **What sold**: top types by inferred ISK with type icons, units × fills, MoM %, average
+  markup versus Jita (em-dash when Jita is missing), and a
+  NEW badge for types with no fills the prior month. Class chips (htmx) swap the
+  list: All is the overall top ten; each class is that bucket's top ten.
+  Classes come from `bucket_for_type` in the extractor: Ships / Rigs / Modules /
+  Charges / Drones / **PLEX adjacent** (skill injectors, Skill Extractor, PLEX, MPT) /
+  Implants / Materials (including harvested gas, fullerite, magmatic gas) / Other
+  (blueprints fold here — no Blueprints chip).
+- **Items worth seeding**: types whose inferred fill average beats Jita plus freight,
+  with enough volume that another hauler can participate without cooking the book
+  (25 inferred fills and 25 units — August 2026 participation floor; among
+  5%-over-Jita types, median fills were 29 and the units quartile was 21).
+  Ranked by extra ISK (spread × units), not fattest %. Blueprints excluded.
+- **Market Capture**: inferred sells at Amamake vs hulls lost in the Amarr–Minmatar
+  warzone (side-by-side bars, MoM deltas, sold-per-loss ratio) plus the catchment
+  around the shop — region share bar, warzone/pipe/Amamake stat line, and a
+  per-system table (holder mark, ships bar, vs prior month, ISK, capital share).
+  Same kill numbers as the Warzone Report's "Where the ships died". One section,
+  one jump-nav chip.
 - Bottom: previous / browse all / next report nav and a colophon.
+
+Do **not** re-author Focus of the month, Build in Amamake (cost indices), Loyalty
+points, Contracts, Import vs local, The shelf, Use the hub, or About the numbers.
 
 ## Verification
 
@@ -152,3 +168,6 @@ approach in the memory note `reference-playwright-screenshots`.
   tiles skip them automatically.
 - Keep `.cache/warzone/` and `.cache/amamake-market/` between runs; deleting them forces a
   full re-fetch.
+- The bundled SDE (`src/data/sde-*.sqlite`) lags CCP patches. The extractor fills missing
+  type names from the sales payload, then ESI, so a new hull or SKIN never publishes as
+  `Type {id}`. Refreshing the sqlite still helps volume/capital classification.

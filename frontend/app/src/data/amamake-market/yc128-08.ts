@@ -1,29 +1,27 @@
-import {
-    AAR_URL as KAMELA_AAR_URL,
-    CAMPAIGN_ISK_DESTROYED as KAMELA_BRAWL_ISK,
-    REVELATIONS_LOST as KAMELA_REVELATIONS,
-    SHIPS_DESTROYED as KAMELA_BRAWL_SHIPS,
-} from '@/data/campaigns/kamela'
-
 import type { AmamakeMarketIssue, MarketStat } from './types'
 import {
     AMAMAKE,
     CAPITAL_SPLIT,
     CATCHMENT,
     CATEGORIES,
+    CONTRACT_HULLS,
+    CONTRACTS,
     DAYS,
-    DAYS_IN_MONTH,
+    EXTRACTED_AT,
+    FREIGHT_ISK_PER_M3,
+    FREIGHT_ROUTE_LABEL,
     HUB_HEALTH,
     HULLS,
     HULLS_LOST_TOTAL,
     HULLS_SOLD_TOTAL,
-    INDUSTRY_AS_OF,
-    INDUSTRY_INDICES,
+    JITA_AS_OF,
+    MARGINS,
     PIPE,
     REGIONS,
     SALES_TOTALS,
     SALES_TOTALS_VS,
     TOP_TYPES,
+    TOP_TYPES_BY_CLASS,
     WARZONE,
     WEEKS,
 } from './yc128-08-boards'
@@ -47,10 +45,7 @@ const pct_word = (pct: number | null) =>
     pct === null ? 'with no July baseline' : pct >= 0 ? `up ${pct}% on July` : `down ${Math.abs(pct)}% on July`
 
 const category = (name: string) => CATEGORIES.find((row) => row.name === name)
-const split = (system: string) => CAPITAL_SPLIT.find((row) => row.system === system)
-const kamela = split('Kamela')
-const amamake_split = split('Amamake')
-const days_missing = DAYS_IN_MONTH - SALES_TOTALS.days_with_sales
+const kamela = CAPITAL_SPLIT.find((row) => row.system === 'Kamela')
 
 const shelf_stats: MarketStat[] = []
 if (HUB_HEALTH?.sell_orders_isk) {
@@ -73,13 +68,12 @@ export const YC128_08: AmamakeMarketIssue = {
     published_at: new Date('2026-08-31T00:00:00Z'),
     period_utc: '1–31 Aug 2026 UTC',
     previous_period_label: 'July',
-    context_as_of: INDUSTRY_AS_OF,
+    context_as_of: JITA_AS_OF ?? EXTRACTED_AT.slice(0, 10),
     headline: 'Kamela ate capitals. Amamake sold destroyers.',
-    focus_name: 'Kamela’s capitals',
     opening: [
         'Hello sales tax enjoyers. This structure is still sixth on Fuzzwork by sell orders, behind Jita, Amarr, Dodixie, Hek, and Rens. CCP does not publish structure transactions; we watch the order book move about every fifteen minutes and treat every total on this page as a floor. Amarr dock here. Gallente and Caldari hulls sell here. This is a freeport on the warzone, not an alliance ledger.',
         `${SALES_TOTALS.isk_label} ISK moved through the book in August across ${n(SALES_TOTALS.fills)} inferred fills and ${n(SALES_TOTALS.types)} types, ${pct_word(SALES_TOTALS_VS.isk_pct)}. Money moved in ${CATEGORIES[0]?.name.toLowerCase()} (${CATEGORIES[0]?.isk_label}) and ${CATEGORIES[1]?.name.toLowerCase()} (${CATEGORIES[1]?.isk_label}); charges were ${category('Charges')?.isk_label ?? '—'} and ${n(category('Charges')?.units ?? 0)} units, which is the plexing ammo. The warzone around the shop lost ${n(WARZONE.ships)} ships and ${WARZONE.isk_label} ISK. Amamake was ${AMAMAKE.share_of_warzone}% of those ships.`,
-        `What made August different is not the shop. Kamela ate ${kamela?.capital_ships ?? 0} capitals while this undock ate Typhoons, and ${day(AMAMAKE.loudest_day.date)} was a local meat grinder, not a region-wide node. That is the focus of the month.`,
+        `Kamela ate ${kamela?.capital_ships ?? 0} capitals while this undock ate Typhoons. ${day(AMAMAKE.loudest_day.date)} was a local meat grinder, not a region-wide node.`,
     ],
 
     sales: SALES_TOTALS,
@@ -87,31 +81,20 @@ export const YC128_08: AmamakeMarketIssue = {
     days: DAYS,
     weeks: WEEKS,
     weeks_dek:
-        'Quiet days still clear tens of billions: ammo, paste, and people who live here. Inventory for the floor. Make margin on the spikes.',
-    weeks_footnote: [
-        `Inferred ISK sold at the freeport, by day and by calendar week of August 2026.`,
-        SALES_TOTALS.loudest_day
-            ? `Loudest day ${day(SALES_TOTALS.loudest_day.date)} at ${isk(SALES_TOTALS.loudest_day.isk)} on ${n(SALES_TOTALS.loudest_day.fills)} fills.`
-            : '',
-        days_missing > 0
-            ? `Hatched columns are ${days_missing} days with no order-book snapshots; the month total is a floor.`
-            : '',
-        'Order-book diffs, roughly fifteen-minute snapshots.',
-    ]
-        .filter(Boolean)
-        .join(' '),
+        'A high level overview of the items that sold in the Amamake freeport keepstar, broken down by category and timeline.',
     categories: CATEGORIES,
+    categories_dek: 'Sell-order ISK by class, inferred fills at the freeport. Month-over-month ISK, fills, units, and average markup versus Jita.',
 
     top_types: {
         rows: TOP_TYPES,
-        dek: 'Rank by units and Tritanium, Pyerite, and Hail always look like the story. Rank by ISK and the hub is injectors, paste, T2 rigs, and the destroyers that die on the undock.',
-        footnote: `Top types by inferred ISK (quantity times fill price), August 2026, Amamake structure. Percentages are the type's share of the month and its change on July. A single-fill hull or blueprint copy can be one buyer; treat it as noise until a second month shows it again.`,
+        by_class: TOP_TYPES_BY_CLASS,
+        dek: 'The top items sold for each category. Markup is included so that you can gauge how much profit traders made on them.',
     },
 
     hulls: {
         rows: HULLS,
-        dek: 'Hulls lost in Amamake against inferred sells of the same hull. Tackle sells about as fast as it dies. Where the ratio drops below one, the shelf is being drained by the undock, and that is where an importer or a builder starts next month.',
-        footnote: `August counts. Sells: inferred fills at the freeport. Losses: killmails in Amamake (30002537) only, capsules excluded. Ranked by sold plus lost; across every hull type ${n(HULLS_SOLD_TOTAL)} were sold here and ${n(HULLS_LOST_TOTAL)} were lost here.`,
+        dek: 'Hulls sold in Amamake versus lost in the warzone, and the systems around the shop that feed the book.',
+        footnote: `August counts. Sells: inferred fills at the freeport. Losses: killmails in the Amarr–Minmatar warzone, capsules excluded. Ranked by sold plus lost; across every hull type ${n(HULLS_SOLD_TOTAL)} were sold here and ${n(HULLS_LOST_TOTAL)} were lost in the warzone.`,
     },
 
     catchment: {
@@ -127,28 +110,20 @@ export const YC128_08: AmamakeMarketIssue = {
         footnote: `Ships destroyed, August 2026, ${WARZONE.systems} monitored systems, capsules and NPC-only kills removed, from the same zKillboard pass as the Warzone Report. Holder marks are the live ESI occupier. Capital ISK is the share of a system's destroyed ISK that was capital hulls.`,
     },
 
-    focus: {
-        title: 'Kamela’s capitals, Amamake’s Typhoons',
-        window_label: 'August · Kamela and Amamake',
-        section_dek: 'One story that would not fit a normal issue: the month the expensive ships died one jump off the shop, not on it.',
-        dek: [
-            `On ${day(AMAMAKE.loudest_day.date)}, Amamake lost ${n(AMAMAKE.loudest_day.ships)} ships. It was the loudest market day of the month too, and it was a weekday in Heimatar, not a nullsec CTA.`,
-            `If you only watch this undock you will think expensive ships die here. They do not, relatively. Kamela was outside the top five for ships lost and second in ISK destroyed. ${kamela?.capital_ships ?? 0} capitals left the field there, ${KAMELA_REVELATIONS} of them Revelations, plus a wall of Tempest Fleet Issues. Those hulls are ${kamela?.capital_isk_label ?? '—'} of Kamela's ISK. Amamake lost ${amamake_split?.capital_ships ?? 0} capitals, including a Nyx, and that is still only about a third of the ${AMAMAKE.isk_label} that died in system. Dal, the occupancy fight, is almost all subcaps.`,
-        ],
-        stats: [
-            { label: 'Kamela capitals lost', value: n(kamela?.capital_ships ?? 0), note: kamela?.capital_isk_label ? `${kamela.capital_isk_label} ISK` : undefined },
-            { label: 'Amamake capitals lost', value: n(AMAMAKE.capital_ships), note: `${isk(AMAMAKE.capital_isk)} of ${AMAMAKE.isk_label}` },
-            { label: 'Loudest Amamake day', value: day(AMAMAKE.loudest_day.date), note: `${n(AMAMAKE.loudest_day.ships)} ships` },
-            { label: 'Kamela Fortizar brawl', value: isk(KAMELA_BRAWL_ISK), note: `${n(KAMELA_BRAWL_SHIPS)} ships on 29 Aug` },
-        ],
-        capital_split: CAPITAL_SPLIT,
-        capital_split_footnote:
-            'ISK destroyed by system, August 2026, zKillboard totalValue. Capitals are dreadnoughts, carriers, supercarriers, titans, force auxiliaries, capital industrials, and jump freighters; everything else is subcap.',
-        closing: [
-            `There was a ${isk(KAMELA_BRAWL_ISK)} afternoon in Kamela at the end of the month. Do not restock Amamake as if it happened on this undock. What died one jump off the shop was Typhoons, Abaddons, and Hyperions. Dropping a FAX in known space is usually a statement, escalate or die, and Kamela spent August doing that. This hub spent August selling destroyers.`,
-        ],
-        cta_label: 'AAR: 350B down in Kamela (29 Aug)',
-        cta_href: KAMELA_AAR_URL,
+    contracts: CONTRACTS
+        ? {
+            totals: CONTRACTS,
+            rows: CONTRACT_HULLS,
+            dek: `Finished item-exchange contracts at the freeport, grouped by hull. ${n(CONTRACTS.count)} contracts for ${CONTRACTS.isk_label}, ${pct_word(CONTRACTS.count > 0 && CONTRACTS.count - CONTRACTS.count_vs > 0 ? Math.round((CONTRACTS.count_vs / (CONTRACTS.count - CONTRACTS.count_vs)) * 100) : null)}. ${n(CONTRACTS.unmatched)} had no matching doctrine fit and stay in the total only.`,
+            footnote: `Finished public and private item-exchange contracts completed at the Amamake structure in August. ISK is the contract price. Ranked by ISK among hulls we could match to a doctrine fit (${n(CONTRACTS.matched)} of ${n(CONTRACTS.count)}). Unmatched titles are in the month total, not the table.`,
+        }
+        : null,
+
+    margins: {
+        rows: MARGINS,
+        dek: 'High volume items that still offer great profit margins.',
+        footnote: `Mean inferred fill price versus the Forge daily average on ${JITA_AS_OF ?? 'month end'}, plus 450 ISK/m³ on SDE packaged volume. Types need at least 25 inferred fills and 25 units (August participation floor — thin books cook if extra seeders pile in) and a 5% spread after freight. Ranked by extra ISK, not fattest percent. Blueprints excluded.`,
+        jita_as_of: JITA_AS_OF,
     },
 
     import_vs_local: {
@@ -169,38 +144,6 @@ export const YC128_08: AmamakeMarketIssue = {
             footnote:
                 'Lowest Amamake sell versus the Jita average on 31 Aug, after 450 ISK/m³ freight (destroyer 2,500 m³, tactical destroyer 5,000, cruiser 10,000, battlecruiser 15,000, battleship 50,000). Skip: local is already cheaper. Haul: Jita plus freight still wins. Hand-collected month-end snapshot.',
         },
-    },
-
-    industry: {
-        dek: [
-            'Sotiyo and Tatara, faction warfare level 5, 0.75% facility tax. The system cost index is high because the system is busy; the −50% rebate is why you still job here. Refine and T1 in Amo. Keep reactions off Auner. Do not job in Auga: cheap index, no buyers.',
-            'Thrasher Fleet Issue, Stabber, Exequror and Vexor Navy, and Hurricane Fleet Issue cleared at or under Jita. Typhoons did not. Build the first group. Import the second. Industry legs from Amo, Auner, and Basgerin are 120 ISK/m³; the 450 pipe is for the haul column.',
-        ],
-        indices: INDUSTRY_INDICES,
-        footnote: `ESI system cost indices as of ${INDUSTRY_AS_OF}. Indices move daily with job volume, so read the shape, not the third decimal.`,
-    },
-
-    loyalty: {
-        dek: [
-            'Public store math only. Convert TLIB or 24th Imperial into hulls this book already sells. Do not chase paper ISK/LP on day one, and do not haul the output in an Iteron. The offers tool works for any faction. Plex in the loud systems above; job and sell here.',
-        ],
-        table: {
-            headers: ['Offer', 'Militia', 'ISK/LP', '30d vol'],
-            rows: [
-                { cells: ['Imperial Navy 200mm Steel Plates', '24th', '1,175', '1.1k'] },
-                { cells: ['Republic Fleet Target Painter', 'TLIB', '1,013', '2.4k'] },
-                { cells: ['Imperial Navy Infiltrator', '24th', '979', '39k'] },
-                { cells: ['Stabber Fleet Issue BPC', 'TLIB', '899', '1.5k'] },
-                { cells: ['Republic Fleet Berserker', 'TLIB', '876', '30.8k'] },
-                { cells: ['Omen Navy Issue BPC', '24th', '930', '1.6k'] },
-            ],
-            footnote:
-                'Buy conversion on 31 Aug, corporations 1000182 (Tribal Liberation Force) and 1000179 (24th Imperial Crusade). Amarr plates lead on rate; TLIB painters and Fleet BPCs lead on volume into this hub. Hand-collected month-end snapshot.',
-        },
-        actions: [
-            { href: '/learning/guides/selling-loyalty-points/', label: 'LP cashout guide' },
-            { href: '/industry/loyalty/offers/', label: 'LP offers (any faction)' },
-        ],
     },
 
     shelf: {
@@ -239,7 +182,7 @@ export const YC128_08: AmamakeMarketIssue = {
             },
         ],
         actions: [{ href: 'https://discord.com/invite/3hZfahmkFx', label: 'Join Militia Discord' }],
-        featured_guides: ['selling-loyalty-points', 'navy-destroyer-metagame', 'navy-frigate-guide'],
+        featured_guides: ['navy-destroyer-metagame', 'navy-frigate-guide'],
     },
 
     methodology: [
@@ -248,20 +191,36 @@ export const YC128_08: AmamakeMarketIssue = {
             text: 'CCP does not publish structure transactions. Minmatar Fleet snapshots the Amamake sell book about every fifteen minutes and records each drop in an order as a fill at that order\'s price. ISK sold is quantity times fill price, summed over the calendar month (UTC). Buy orders, relists and cancelled orders are not counted, so every total is a floor.',
         },
         {
-            label: 'Month over month',
-            text: 'Deltas compare the same measure against the prior calendar month from the same snapshot feed.',
+            label: 'Inferred profit',
+            text: `Per type-month: (Amamake fill average − Forge Jita guide − freight per unit) × units. Freight is the alliance ${FREIGHT_ROUTE_LABEL} rate from the freight calculator: ${n(FREIGHT_ISK_PER_M3)} ISK/m³ × SDE packaged volume (volume charge only; the route also has 1.5% collateral, which is omitted because inferred fills have no collateral). Types with no Forge Jita average are excluded from the total, not treated as 0. August is ${SALES_TOTALS.profit_label} across ${n(SALES_TOTALS.profit_types)} priced types (${n(SALES_TOTALS.profit_unpriced_types)} omitted). Jita averages are dated ${JITA_AS_OF ?? 'month end'}.`,
         },
         {
-            label: 'Died vs sold',
-            text: 'Hull losses are killmails in the Amamake system only, capsules excluded, matched by type to inferred sells of the same hull at the structure.',
+            label: 'Month over month',
+            text: 'Deltas compare the same measure against the prior calendar month from the same snapshot feed. Inferred profit uses that month\'s Forge Jita guide the same way.',
+        },
+        {
+            label: 'Market Capture',
+            text: 'Hull losses are killmails across the Amarr–Minmatar faction-warfare systems, capsules excluded, matched by type to inferred sells of the same hull at the Amamake structure. The ratio is sold in Amamake per warzone loss.',
         },
         {
             label: 'Destruction',
             text: 'Every ship kill in the Amarr–Minmatar faction-warfare systems for the month, from zKillboard, with capsules and NPC-only kills removed. Identical to the Warzone Report for the same month.',
         },
         {
+            label: 'Contracts',
+            text: 'Finished item-exchange contracts at the Amamake structure, priced as listed. Hull rows are doctrine fits we could match; unmatched contracts stay in the month total.',
+        },
+        {
+            label: 'Items worth seeding',
+            text: `Extra ISK is the inferred fill average minus the Forge Jita guide minus 450 ISK/m³ freight, times units. Jita averages are dated ${JITA_AS_OF ?? 'month end'}. Types need at least 25 inferred fills and 25 units (August 2026 participation floor: among 5%-over-Jita types, median fills were 29 and the units quartile was 21). A spread under 5% after freight, no Jita history, or an SDE blueprint is omitted. Ranked by extra ISK, not fattest percent.`,
+        },
+        {
+            label: 'Markup',
+            text: `Markup on What sold and Sell orders by class is the volume-weighted inferred fill average versus the Forge daily Jita guide (${JITA_AS_OF ?? 'month end'}), as a percent over Jita. Types and classes with no Forge history show an em-dash, not 0%. This is not the Items worth seeding spread, which also subtracts freight.`,
+        },
+        {
             label: 'Live context',
-            text: `Industry cost indices and hub-health figures are live snapshots from ESI and the Minmatar Fleet API, dated ${INDUSTRY_AS_OF}. The import and loyalty tables are hand-collected at month end.`,
+            text: `Hub-health figures are a live snapshot from the Minmatar Fleet API. The import table is a hand-collected month-end snapshot of the live book, not the inferred-fill averages above.`,
         },
         {
             label: 'Not shown',

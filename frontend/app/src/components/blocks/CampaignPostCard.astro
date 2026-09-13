@@ -33,12 +33,20 @@ switch (campaign.kind) {
         kind_color = 'fleet-yellow'
         break
     case 'warzone':
-        kind_label = t('content.kind.warzone')
-        kind_color = 'alliance-blue'
-        break
-    case 'market':
-        kind_label = t('content.kind.market')
-        kind_color = 'green'
+        switch (campaign.warzone_type) {
+            case 'frontline':
+                kind_label = t('content.kind.warzone.frontline')
+                kind_color = 'alliance-blue'
+                break
+            case 'economic':
+                kind_label = t('content.kind.warzone.economic')
+                kind_color = 'fleet-yellow'
+                break
+            default: {
+                const _exhaustive: never = campaign.warzone_type
+                throw new Error(`Unhandled warzone report type: ${_exhaustive}`)
+            }
+        }
         break
     default: {
         const _exhaustive: never = campaign.kind

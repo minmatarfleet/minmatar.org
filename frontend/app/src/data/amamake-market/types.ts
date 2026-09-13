@@ -19,6 +19,16 @@ export type MarketSalesTotals = {
     units: number
     /** Distinct types with at least one inferred fill. */
     types: number
+    /**
+     * (Amamake fill − Jita − freight/unit) × units, summed over types with a
+     * Forge Jita average. Types with no Jita price are omitted, not treated as 0.
+     */
+    profit: number
+    profit_label: string
+    /** Types included in `profit` (had a Jita average and units). */
+    profit_types: number
+    /** Types omitted from `profit` because Jita was missing. */
+    profit_unpriced_types: number
     days_with_sales: number
     loudest_day: MarketSalesDay | null
     quietest_day: MarketSalesDay | null
@@ -32,6 +42,8 @@ export type MarketSalesTotalsVs = {
     units: number
     units_pct: number | null
     types: number
+    profit: number
+    profit_pct: number | null
 }
 
 export type MarketDayRow = {
@@ -58,7 +70,55 @@ export type MarketCategoryRow = {
     /** Share of the month's inferred ISK, percent. */
     share: number
     isk_vs: number
+    isk_vs_label: string
     isk_vs_pct: number | null
+    units_vs: number
+    fills_vs: number
+    /** Volume-weighted % over Jita (priced types only). Null when the class has no Forge average. */
+    markup_pct: number | null
+}
+
+export type MarketContractTotals = {
+    count: number
+    count_vs: number
+    isk: number
+    isk_label: string
+    isk_vs: number
+    unmatched: number
+    matched: number
+}
+
+export type MarketContractHullRow = {
+    typeId: number
+    name: string
+    group: string
+    isk: number
+    isk_label: string
+    count: number
+    isk_vs: number
+    count_vs: number
+    share: number
+}
+
+export type MarketMarginRow = {
+    typeId: number
+    name: string
+    category: string
+    units: number
+    fills: number
+    isk: number
+    isk_label: string
+    /** Mean inferred fill price at the freeport. */
+    amamake_avg: number
+    /** Forge daily average (Jita guide) as of JITA_AS_OF. */
+    jita: number
+    freight: number
+    landed: number
+    margin: number
+    margin_pct: number
+    /** (Amamake − Jita − freight) × units. Rank key. */
+    extra_isk: number
+    extra_isk_label: string
 }
 
 export type MarketTopTypeRow = {
@@ -74,7 +134,12 @@ export type MarketTopTypeRow = {
     isk_vs_pct: number | null
     /** Type had no inferred fills the prior month. */
     is_new: boolean
+    /** Volume-weighted % over Jita (fill ISK / units vs Forge average). Null when Jita is missing. */
+    markup_pct: number | null
 }
+
+/** Top inferred-ISK types in each SDE class bucket (Ships, Rigs, …). */
+export type MarketTopTypesByClass = Readonly<Record<string, readonly MarketTopTypeRow[]>>
 
 export type MarketHullRow = {
     typeId: number
@@ -82,7 +147,7 @@ export type MarketHullRow = {
     group: string
     /** Inferred units sold at the freeport. */
     sold: number
-    /** Hulls of this type destroyed in Amamake (capsules excluded). */
+    /** Hulls of this type destroyed in the Amarr–Minmatar warzone (capsules excluded). */
     lost: number
     sold_vs: number
     lost_vs: number
@@ -160,13 +225,6 @@ export type MarketCapitalSplitRow = {
     subcap_isk_label: string
 }
 
-export type MarketIndustryIndexRow = {
-    system: string
-    system_id: number
-    manufacturing: number | null
-    reaction: number | null
-}
-
 export type MarketHubHealth = {
     sell_orders_health_pct: number | null
     sell_orders_viability_pct: number | null
@@ -191,7 +249,7 @@ export type MarketStat = {
     note?: string
 }
 
-/** A hand-authored table (import vs local, LP conversion). */
+/** A hand-authored table (import vs local). */
 export type MarketTable = {
     headers: readonly string[]
     rows: readonly { cells: readonly string[]; tone?: 'success' | 'danger' | 'info' }[]
@@ -218,12 +276,10 @@ export type AmamakeMarketIssue = {
     period_utc: string
     /** Short name of the month being compared against, e.g. "July". */
     previous_period_label: string
-    /** When the live context (industry indices, hub health) was captured. */
+    /** When the live context (hub health, Jita guide) was captured. */
     context_as_of: string
     /** One-line verdict shown on the hub card and under the masthead. */
     headline: string
-    /** Short focus label for the hero tile, e.g. "Kamela’s capitals". */
-    focus_name: string
     opening: readonly string[]
 
     sales: MarketSalesTotals
@@ -231,13 +287,13 @@ export type AmamakeMarketIssue = {
     days: readonly MarketDayRow[]
     weeks: readonly MarketWeekRow[]
     weeks_dek: string
-    weeks_footnote: string
     categories: readonly MarketCategoryRow[]
+    categories_dek: string
 
     top_types: {
         rows: readonly MarketTopTypeRow[]
+        by_class: MarketTopTypesByClass
         dek: string
-        footnote: string
     }
 
     hulls: {
@@ -256,35 +312,23 @@ export type AmamakeMarketIssue = {
         footnote: string
     }
 
-    focus: {
-        title: string
-        window_label: string
-        section_dek?: string
-        dek: readonly string[]
-        stats: readonly MarketStat[]
-        capital_split: readonly MarketCapitalSplitRow[]
-        capital_split_footnote: string
-        closing: readonly string[]
-        cta_label: string
-        /** Internal path or external URL. */
-        cta_href: string
+    contracts: {
+        totals: MarketContractTotals
+        rows: readonly MarketContractHullRow[]
+        dek: string
+        footnote: string
+    } | null
+
+    margins: {
+        rows: readonly MarketMarginRow[]
+        dek: string
+        footnote: string
+        jita_as_of: string | null
     }
 
     import_vs_local: {
         dek: readonly string[]
         table: MarketTable
-    }
-
-    industry: {
-        dek: readonly string[]
-        indices: readonly MarketIndustryIndexRow[]
-        footnote: string
-    }
-
-    loyalty: {
-        dek: readonly string[]
-        table: MarketTable
-        actions: readonly MarketLink[]
     }
 
     shelf: {

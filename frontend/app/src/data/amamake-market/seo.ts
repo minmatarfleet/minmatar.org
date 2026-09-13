@@ -50,8 +50,8 @@ export function build_amamake_market_json_ld(options: AmamakeMarketJsonLdOptions
                     {
                         '@type': 'ListItem',
                         position: 2,
-                        name: 'Amamake Market Report',
-                        item: `${site_origin}/amamake-market/`,
+                        name: 'Warzone Reports',
+                        item: `${site_origin}/alliance/content`,
                     },
                     {
                         '@type': 'ListItem',
@@ -81,6 +81,8 @@ export function build_amamake_market_json_ld(options: AmamakeMarketJsonLdOptions
                     'EVE Online',
                     'Amamake',
                     'Amamake market',
+                    'amamake economic report',
+                    'Warzone Report',
                     'market report',
                     'structure market',
                     'faction warfare',

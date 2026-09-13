@@ -2,21 +2,16 @@
 import { i18n } from '@helpers/i18n'
 const { translatePath } = i18n(Astro.url)
 
-import type { AmamakeMarketIssue, MarketLink, MarketMilitiaId, MarketTable } from '@/data/amamake-market/types'
-import { ALL_REPORTS_PATH, get_adjacent_issues, issue_label } from '@/data/amamake-market'
-import { getPublishedGuides } from '@/data/guides'
-import { LEARNING_HUB_PATH } from '@/data/guides/urls'
+import type { AmamakeMarketIssue, MarketMilitiaId } from '@/data/amamake-market/types'
+import { ALL_REPORTS_PATH, format_markup_pct, get_adjacent_issues, issue_label } from '@/data/amamake-market'
 import { number_thousand_separator } from '@helpers/numbers'
 
 import ComponentBlock from '@components/blocks/ComponentBlock.astro'
-import Button from '@components/blocks/Button.astro'
 import Flexblock from '@components/compositions/Flexblock.astro'
-import FlexInline from '@components/compositions/FlexInline.astro'
-import Grid from '@components/compositions/Grid.astro'
 import MinmatarLogo from '@components/logos/MinmatarLogo.astro'
 import AmarrLogo from '@components/logos/AmarrLogo.astro'
 import ItemPicture from '@components/blocks/ItemPicture.astro'
-import GuidePostCard from '@components/blocks/GuidePostCard.astro'
+import AmamakeMarketSoldTypes from '@components/blocks/amamake-market/AmamakeMarketSoldTypes.astro'
 
 interface Props {
     issue: AmamakeMarketIssue
@@ -28,16 +23,11 @@ const { newer, older } = get_adjacent_issues(issue.slug)
 
 const SECTION_NAV = [
     { id: 'month', label: 'The month' },
-    { id: 'book', label: 'Book' },
+    { id: 'book', label: 'Market sales overview' },
     { id: 'sold', label: 'Sold' },
-    { id: 'hulls', label: 'Died vs sold' },
-    { id: 'catchment', label: 'Catchment' },
-    { id: 'focus', label: 'Focus' },
-    { id: 'import', label: 'Import' },
-    { id: 'industry', label: 'Industry' },
-    { id: 'loyalty', label: 'LP' },
-    { id: 'shelf', label: 'Shelf' },
-] as const
+    { id: 'margins', label: 'Items worth seeding' },
+    { id: 'capture', label: 'Market Capture' },
+]
 
 function format_isk(value: number): string {
     if (value >= 1_000_000_000_000) return `${(value / 1_000_000_000_000).toFixed(2)}T`
@@ -49,14 +39,6 @@ function format_isk(value: number): string {
 
 function percent(part: number, total: number): number {
     return total === 0 ? 0 : Math.round((part / total) * 1000) / 10
-}
-
-function is_external(href: string): boolean {
-    return href.startsWith('http://') || href.startsWith('https://')
-}
-
-function resolve_href(href: string): string {
-    return is_external(href) ? href : translatePath(href)
 }
 
 function militia_label(id: MarketMilitiaId): string {
@@ -90,35 +72,18 @@ const strip = Array.from({ length: days_in_month }, (_, i) => {
         loudest: row?.date === loudest_day,
     }
 })
-const max_week_isk = Math.max(...issue.weeks.map((w) => w.isk), 1)
-
-const category_total = issue.categories.reduce((sum, c) => sum + c.isk, 0)
-const category_colors = [
-    'var(--mk-sold)',
-    'color-mix(in srgb, var(--mk-sold) 65%, white 35%)',
-    'var(--fleet-yellow)',
-    'rgba(255, 255, 255, 0.7)',
-    'rgba(255, 255, 255, 0.45)',
-    'rgba(255, 255, 255, 0.28)',
-    'rgba(255, 255, 255, 0.16)',
-]
-
-const max_type_isk = Math.max(...issue.top_types.rows.map((t) => t.isk), 1)
 const max_hull = Math.max(...issue.hulls.rows.flatMap((h) => [h.sold, h.lost]), 1)
 const max_catchment = Math.max(...issue.catchment.rows.map((r) => r.ships), 1)
 const region_total = issue.catchment.regions.reduce((sum, r) => sum + r.ships, 0)
-const max_capital_row = Math.max(...issue.focus.capital_split.map((r) => r.capital_isk + r.subcap_isk), 1)
-const max_index = Math.max(
-    ...issue.industry.indices.flatMap((r) => [r.manufacturing ?? 0, r.reaction ?? 0]),
-    0.0001,
-)
+const max_category_isk = Math.max(...issue.categories.map((c) => c.isk), 1)
+const max_margin_extra = Math.max(...issue.margins.rows.map((r) => r.extra_isk), 1)
 
-const published_guides = getPublishedGuides()
-const featured_guides = issue.get_involved.featured_guides
-    .map((slug) => published_guides.find((guide) => guide.slug === slug))
-    .filter((guide): guide is NonNullable<typeof guide> => Boolean(guide))
+function format_unit_isk(value: number): string {
+    if (value >= 1_000_000) return format_isk(value)
+    if (value >= 1_000) return `${(value / 1_000).toFixed(1)}k`
+    return `${Math.round(value)}`
+}
 
-const render_table = (table: MarketTable) => table
 ---
 
 <div class="[ market-report ]">
@@ -143,11 +108,11 @@ const render_table = (table: MarketTable) => table
                     <img src="/images/icons/48px-Market.png" alt="" width="64" height="64" loading="lazy" />
                 </span>
                 <div>
-                    <span class="[ mk-hero-stat__label ]">Inferred fills</span>
-                    <b class="[ mk-hero-stat__value ]">{number_thousand_separator(issue.sales.fills)}</b>
-                    {issue.sales_vs.fills !== 0 && (
-                        <span class:list={['mk-trend', issue.sales_vs.fills > 0 ? 'mk-delta--up' : 'mk-delta--down']}>
-                            <span aria-hidden="true">{issue.sales_vs.fills > 0 ? '▲' : '▼'}</span>{number_thousand_separator(Math.abs(issue.sales_vs.fills))} {vs_label}
+                    <span class="[ mk-hero-stat__label ]">Inferred profit</span>
+                    <b class="[ mk-hero-stat__value ]">{issue.sales.profit_label}</b>
+                    {issue.sales_vs.profit !== 0 && (
+                        <span class:list={['mk-trend', issue.sales_vs.profit > 0 ? 'mk-delta--up' : 'mk-delta--down']}>
+                            <span aria-hidden="true">{issue.sales_vs.profit > 0 ? '▲' : '▼'}</span>{format_isk(Math.abs(issue.sales_vs.profit))} {vs_label}
                         </span>
                     )}
                 </div>
@@ -157,22 +122,13 @@ const render_table = (table: MarketTable) => table
                     <img src="/images/icons/64px-Killreport.png" alt="" width="64" height="64" loading="lazy" />
                 </span>
                 <div>
-                    <span class="[ mk-hero-stat__label ]">Ships destroyed in Amamake</span>
+                    <span class="[ mk-hero-stat__label ]">Ships destroyed at the hub</span>
                     <b class="[ mk-hero-stat__value ]">{number_thousand_separator(issue.catchment.amamake.ships)}</b>
                     {issue.catchment.amamake.ships_vs !== 0 && (
                         <span class:list={['mk-trend', issue.catchment.amamake.ships_vs > 0 ? 'mk-delta--up' : 'mk-delta--down']}>
                             <span aria-hidden="true">{issue.catchment.amamake.ships_vs > 0 ? '▲' : '▼'}</span>{number_thousand_separator(Math.abs(issue.catchment.amamake.ships_vs))} {vs_label}
                         </span>
                     )}
-                </div>
-            </div>
-            <div class="[ mk-hero-stat ]">
-                <span class="[ mk-hero-stat__icon ]" aria-hidden="true">
-                    <img src="/images/icons/64px-Warreport.png" alt="" width="64" height="64" loading="lazy" />
-                </span>
-                <div>
-                    <span class="[ mk-hero-stat__label ]">Focus story</span>
-                    <b class="[ mk-hero-stat__value ]">{issue.focus_name}</b>
                 </div>
             </div>
         </div>
@@ -196,7 +152,7 @@ const render_table = (table: MarketTable) => table
 
     <section id="book" class="[ mk-section ]">
         <header class="[ mk-section__head ]">
-            <h2>Through the book</h2>
+            <h2>Market sales overview</h2>
             <p class="[ mk-dek ]">{issue.weeks_dek}</p>
         </header>
 
@@ -214,58 +170,67 @@ const render_table = (table: MarketTable) => table
                     </ol>
                 </div>
 
-                <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Inferred ISK sold by week">
+                <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Sell orders by class">
+                    <h4>Sell orders by class</h4>
+                    <p class="[ mk-dek ]">{issue.categories_dek}</p>
                     <table class="[ mk-table mk-table--weeks ]">
                         <thead>
                             <tr>
-                                <th scope="col">Week</th>
+                                <th scope="col">Class</th>
                                 <th scope="col" class="[ mk-table__bar-head ]">ISK sold</th>
+                                <th scope="col" class="[ mk-table__num ]">{vs_label}</th>
                                 <th scope="col" class="[ mk-table__num ]">Fills</th>
                                 <th scope="col" class="[ mk-table__num ]">Units</th>
+                                <th scope="col" class="[ mk-table__num ]">Markup</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {issue.weeks.map((week) => (
+                            {issue.categories.map((row) => (
                                 <tr>
-                                    <td class="[ mk-table__when ]">{week.label}</td>
+                                    <td class="[ mk-table__when ]">{row.name}</td>
                                     <td class="[ mk-table__bar ]">
                                         <div class="[ mk-bar ]">
-                                            <span class="[ mk-bar__fill mk-bar__fill--sold ]" style={`width: ${percent(week.isk, max_week_isk)}%`}></span>
+                                            <span class="[ mk-bar__fill mk-bar__fill--sold ]" style={`width: ${percent(row.isk, max_category_isk)}%`}></span>
                                         </div>
-                                        <b>{week.isk_label}</b>
+                                        <b>{row.isk_label}</b>
                                     </td>
-                                    <td class="[ mk-table__num ]">{number_thousand_separator(week.fills)}</td>
-                                    <td class="[ mk-table__num ]">{number_thousand_separator(week.units)}</td>
+                                    <td class="[ mk-table__num ]">
+                                        {row.isk_vs !== 0 && (
+                                            <span class:list={['mk-delta', row.isk_vs > 0 ? 'mk-delta--up' : 'mk-delta--down']}>
+                                                <span class="[ mk-delta__arrow ]">{row.isk_vs > 0 ? '▲' : '▼'}</span>
+                                                <span class="[ mk-delta__num ]">{row.isk_vs_label}</span>
+                                            </span>
+                                        )}
+                                        {row.isk_vs === 0 && '—'}
+                                    </td>
+                                    <td class="[ mk-table__num ]">{number_thousand_separator(row.fills)}</td>
+                                    <td class="[ mk-table__num ]">
+                                        {number_thousand_separator(row.units)}
+                                        {row.units_vs !== 0 && (
+                                            <span class:list={['mk-compare__trend', row.units_vs > 0 ? 'mk-delta--up' : 'mk-delta--down']}>{row.units_vs > 0 ? '▲' : '▼'}{number_thousand_separator(Math.abs(row.units_vs))}</span>
+                                        )}
+                                    </td>
+                                    <td class="[ mk-table__num ]">
+                                        {row.markup_pct === null ? (
+                                            <span title="No Forge Jita average for types in this class">—</span>
+                                        ) : (
+                                            <span
+                                                class:list={[
+                                                    'mk-markup',
+                                                    row.markup_pct > 0 && 'mk-delta--up',
+                                                    row.markup_pct < 0 && 'mk-delta--down',
+                                                ]}
+                                                title="Volume-weighted average fill versus Jita"
+                                            >{format_markup_pct(row.markup_pct)}</span>
+                                        )}
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
-
-                <div class="[ mk-chart ]">
-                    <h4>Where the ISK went</h4>
-                    <div class="[ mk-share__bar mk-share__bar--thin ]" role="img" aria-label={issue.categories.map((c) => `${c.name}: ${c.isk_label}`).join('; ')}>
-                        {issue.categories.map((category, index) => (
-                            <span class="[ mk-share__fill ]" style={`width: ${percent(category.isk, category_total)}%; background: ${category_colors[index % category_colors.length]}`}></span>
-                        ))}
-                    </div>
-                    <ul class="[ mk-legend-list ]">
-                        {issue.categories.map((category, index) => (
-                            <li>
-                                <span class="[ mk-swatch ]" style={`background: ${category_colors[index % category_colors.length]}`} aria-hidden="true"></span>
-                                <span>{category.name}</span>
-                                <b>{category.isk_label}</b>
-                                <span class="[ mk-legend-list__pct ]">{Math.round(category.share)}%</span>
-                                {category.isk_vs_pct !== null && category.isk_vs_pct !== 0 && (
-                                    <span class:list={['mk-compare__trend', category.isk_vs_pct > 0 ? 'mk-delta--up' : 'mk-delta--down']}>{category.isk_vs_pct > 0 ? '▲' : '▼'}{Math.abs(category.isk_vs_pct)}%</span>
-                                )}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
             </Flexblock>
         </ComponentBlock>
-        <p class="[ mk-footnote ]">{issue.weeks_footnote}</p>
     </section>
 
     <section id="sold" class="[ mk-section ]">
@@ -274,50 +239,75 @@ const render_table = (table: MarketTable) => table
             <p class="[ mk-dek ]">{issue.top_types.dek}</p>
         </header>
         <ComponentBlock padding_inline="var(--space-m)" class="[ mk-board ]">
-            <ol class="[ mk-types ]">
-                {issue.top_types.rows.map((row, index) => (
-                    <li class:list={['mk-type', index === 0 && 'mk-type--lead']}>
-                        <span class="[ mk-type__rank ]">{index + 1}</span>
-                        <span class="[ mk-type__icon ]">
-                            <ItemPicture item_id={row.typeId} item_name={row.name} size={40} icon_quality={64} />
-                        </span>
-                        <div class="[ mk-type__body ]">
-                            <div class="[ mk-type__line ]">
-                                <span class="[ mk-type__name ]">
-                                    {row.name}
-                                    {row.is_new && <span class="[ mk-badge ]">NEW</span>}
-                                </span>
-                                <span class="[ mk-type__meta ]">
-                                    {number_thousand_separator(row.units)} units · {number_thousand_separator(row.fills)} fills
-                                    {row.isk_vs_pct !== null && row.isk_vs_pct !== 0 && (
-                                        <span class:list={['mk-compare__trend', row.isk_vs_pct > 0 ? 'mk-delta--up' : 'mk-delta--down']}>{row.isk_vs_pct > 0 ? '▲' : '▼'}{Math.abs(row.isk_vs_pct)}%</span>
-                                    )}
-                                </span>
-                                <b class="[ mk-type__isk ]">{row.isk_label}</b>
-                            </div>
-                            <div class="[ mk-bar ]">
-                                <span class="[ mk-bar__fill mk-bar__fill--sold ]" style={`width: ${percent(row.isk, max_type_isk)}%`}></span>
-                            </div>
-                        </div>
-                    </li>
-                ))}
-            </ol>
+            <div id="mk-sold-types">
+                <AmamakeMarketSoldTypes issue={issue} />
+            </div>
         </ComponentBlock>
-        <p class="[ mk-footnote ]">{issue.top_types.footnote}</p>
     </section>
 
-    <section id="hulls" class="[ mk-section ]">
+    {issue.margins.rows.length > 0 && (
+    <section id="margins" class="[ mk-section ]">
         <header class="[ mk-section__head ]">
-            <h2>Died vs sold</h2>
+            <h2>Items worth seeding</h2>
+            <p class="[ mk-dek ]">{issue.margins.dek}</p>
+        </header>
+        <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="High-volume types with a healthy Amamake versus Jita spread">
+            <table class="[ mk-table mk-table--hulls ]">
+                <thead>
+                    <tr>
+                        <th scope="col">Type</th>
+                        <th scope="col" class="[ mk-table__bar-head ]">Extra ISK</th>
+                        <th scope="col" class="[ mk-table__num ]">Spread</th>
+                        <th scope="col" class="[ mk-table__num ]">Units</th>
+                        <th scope="col" class="[ mk-table__num ]">Fill / Jita</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {issue.margins.rows.map((row) => (
+                        <tr>
+                            <td class="[ mk-table__hull ]">
+                                <span class="[ mk-table__owner ]">
+                                    <span class="[ mk-table__icon ]">
+                                        <ItemPicture item_id={row.typeId} item_name={row.name} size={32} icon_quality={64} />
+                                    </span>
+                                    <span>
+                                        <span class="[ mk-table__system ]">{row.name}</span>
+                                        <span class="[ mk-table__front ]">{row.category}</span>
+                                    </span>
+                                </span>
+                            </td>
+                            <td class="[ mk-table__bar ]" data-label="Extra ISK">
+                                <div class="[ mk-bar ]">
+                                    <span class="[ mk-bar__fill mk-bar__fill--sold ]" style={`width: ${percent(row.extra_isk, max_margin_extra)}%`}></span>
+                                </div>
+                                <b>{row.extra_isk_label}</b>
+                            </td>
+                            <td class="[ mk-table__num ]" data-label="Spread">
+                                <span class="[ mk-ratio mk-ratio--covered ]">{row.margin_pct.toFixed(1)}%</span>
+                            </td>
+                            <td class="[ mk-table__num ]" data-label="Units">{number_thousand_separator(row.units)}</td>
+                            <td class="[ mk-table__num ]" data-label="Fill / Jita">{format_unit_isk(row.amamake_avg)} / {format_unit_isk(row.jita)}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+        <p class="[ mk-footnote ]">{issue.margins.footnote}</p>
+    </section>
+    )}
+
+    <section id="capture" class="[ mk-section ]">
+        <header class="[ mk-section__head ]">
+            <h2>Market Capture</h2>
             <p class="[ mk-dek ]">{issue.hulls.dek}</p>
         </header>
-        <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Hulls sold versus lost in Amamake">
+        <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Hulls sold in Amamake versus lost in the warzone">
             <table class="[ mk-table mk-table--hulls ]">
                 <thead>
                     <tr>
                         <th scope="col">Hull</th>
-                        <th scope="col" class="[ mk-table__bar-head ]">Sold here</th>
-                        <th scope="col" class="[ mk-table__bar-head ]">Lost in Amamake</th>
+                        <th scope="col" class="[ mk-table__bar-head ]">Sold in Amamake</th>
+                        <th scope="col" class="[ mk-table__bar-head ]">Died in the warzone</th>
                         <th scope="col" class="[ mk-table__num ]">Sold per loss</th>
                     </tr>
                 </thead>
@@ -335,7 +325,7 @@ const render_table = (table: MarketTable) => table
                                     </span>
                                 </span>
                             </td>
-                            <td class="[ mk-table__bar ]" data-label="Sold here">
+                            <td class="[ mk-table__bar ]" data-label="Sold in Amamake">
                                 <div class="[ mk-bar ]">
                                     <span class="[ mk-bar__fill mk-bar__fill--sold ]" style={`width: ${percent(row.sold, max_hull)}%`}></span>
                                 </div>
@@ -346,7 +336,7 @@ const render_table = (table: MarketTable) => table
                                     )}
                                 </b>
                             </td>
-                            <td class="[ mk-table__bar ]" data-label="Lost in Amamake">
+                            <td class="[ mk-table__bar ]" data-label="Died in the warzone">
                                 <div class="[ mk-bar ]">
                                     <span class="[ mk-bar__fill mk-bar__fill--lost ]" style={`width: ${percent(row.lost, max_hull)}%`}></span>
                                 </div>
@@ -368,13 +358,6 @@ const render_table = (table: MarketTable) => table
             </table>
         </div>
         <p class="[ mk-footnote ]">{issue.hulls.footnote}</p>
-    </section>
-
-    <section id="catchment" class="[ mk-section ]">
-        <header class="[ mk-section__head ]">
-            <h2>The catchment</h2>
-            <p class="[ mk-dek ]">The {issue.catchment.warzone.systems} Amarr–Minmatar systems around the shop, by ships destroyed.</p>
-        </header>
 
         <ComponentBlock>
             <Flexblock gap="var(--space-m)">
@@ -475,350 +458,7 @@ const render_table = (table: MarketTable) => table
         <p class="[ mk-footnote ]">{issue.catchment.footnote}</p>
     </section>
 
-    <section id="focus" class="[ mk-section ]">
-        <header class="[ mk-section__head ]">
-            <h2>Focus of the month</h2>
-            <p class="[ mk-dek ]">{issue.focus.section_dek ?? `One story that would not fit a normal issue — this month, ${issue.focus.title}.`}</p>
-        </header>
-
-        <ComponentBlock class="[ mk-focus ]">
-            <Flexblock gap="var(--space-l)">
-                <FlexInline justification="space-between" class="[ w-full ]">
-                    <h3 class="[ mk-focus__title ]">{issue.focus.title}</h3>
-                    <span class="[ mk-date ]">{issue.focus.window_label}</span>
-                </FlexInline>
-
-                {issue.focus.dek.length > 0 && (
-                    <div class="[ mk-story ]">
-                        {issue.focus.dek.map((paragraph) => <p>{paragraph}</p>)}
-                    </div>
-                )}
-
-                {issue.focus.stats.length > 0 && (
-                    <div class="[ mk-focus-stats ]">
-                        {issue.focus.stats.map((stat) => (
-                            <div class="[ mk-stat ]">
-                                <span class="[ mk-stat__label ]">{stat.label}</span>
-                                <b class="[ mk-stat__value ]">{stat.value}</b>
-                                {stat.note && <span class="[ mk-stat__note ]">{stat.note}</span>}
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {issue.focus.capital_split.length > 0 && (
-                    <div class="[ mk-chart ]">
-                        <h4>Capitals versus everything else</h4>
-                        <ul class="[ mk-losses ]">
-                            {issue.focus.capital_split.map((row) => (
-                                <li>
-                                    <div class="[ mk-losses__body ]">
-                                        <div class="[ mk-losses__meta ]">
-                                            <b>{row.system}</b>
-                                            <span>{row.capital_ships} capitals · <span class="[ mk-capital-text ]">{row.capital_isk_label}</span> capital · {row.subcap_isk_label} subcap</span>
-                                        </div>
-                                        <div class="[ mk-bar mk-bar--stacked ]">
-                                            <span class="[ mk-bar__fill mk-bar__fill--capital ]" style={`width: ${percent(row.capital_isk, max_capital_row)}%`}></span>
-                                            <span class="[ mk-bar__fill mk-bar__fill--subcap ]" style={`width: ${percent(row.subcap_isk, max_capital_row)}%`}></span>
-                                        </div>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                        <ul class="[ mk-legend-list mk-legend-list--inline ]">
-                            <li><span class="[ mk-swatch ]" style="background: var(--mk-capital)" aria-hidden="true"></span><span>Capital ISK destroyed</span></li>
-                            <li><span class="[ mk-swatch ]" style="background: var(--mk-subcap)" aria-hidden="true"></span><span>Subcapital ISK destroyed</span></li>
-                        </ul>
-                        <p class="[ mk-footnote ]">{issue.focus.capital_split_footnote}</p>
-                    </div>
-                )}
-
-                {issue.focus.closing.length > 0 && (
-                    <div class="[ mk-story ]">
-                        {issue.focus.closing.map((paragraph) => <p>{paragraph}</p>)}
-                    </div>
-                )}
-
-                <FlexInline gap="var(--space-2xs)">
-                    <Button
-                        href={resolve_href(issue.focus.cta_href)}
-                        size="sm"
-                        new_tab={is_external(issue.focus.cta_href)}
-                        external={is_external(issue.focus.cta_href)}
-                    >
-                        {issue.focus.cta_label}
-                    </Button>
-                </FlexInline>
-            </Flexblock>
-        </ComponentBlock>
-    </section>
-
-    <section id="import" class="[ mk-section ]">
-        <header class="[ mk-section__head ]">
-            <h2>Import vs local</h2>
-            <p class="[ mk-dek ]">Things that actually move, priced against Jita after freight.</p>
-        </header>
-        <ComponentBlock>
-            <Flexblock gap="var(--space-m)">
-                <div class="[ mk-story mk-story--compact ]">
-                    {issue.import_vs_local.dek.map((paragraph) => <p>{paragraph}</p>)}
-                </div>
-                {[render_table(issue.import_vs_local.table)].map((table) => (
-                    <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Import versus local pricing">
-                        <table class="[ mk-table mk-table--plain ]">
-                            <thead>
-                                <tr>
-                                    {table.headers.map((header, index) => (
-                                        <th scope="col" class:list={[index > 0 && 'mk-table__num']}>{header}</th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {table.rows.map((row) => (
-                                    <tr class:list={[row.tone && `mk-row--${row.tone}`]}>
-                                        {row.cells.map((cell, index) => (
-                                            <td class:list={[index > 0 && 'mk-table__num']}>
-                                                {index === 0 ? <span class="[ mk-table__system ]">{cell}</span> : cell}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                ))}
-                <p class="[ mk-footnote ]">{issue.import_vs_local.table.footnote}</p>
-            </Flexblock>
-        </ComponentBlock>
-    </section>
-
-    <section id="industry" class="[ mk-section ]">
-        <header class="[ mk-section__head ]">
-            <h2>Build in Amamake</h2>
-            <p class="[ mk-dek ]">System cost indices around the hub, and where each job belongs.</p>
-        </header>
-        <ComponentBlock>
-            <Flexblock gap="var(--space-m)">
-                <div class="[ mk-story mk-story--compact ]">
-                    {issue.industry.dek.map((paragraph) => <p>{paragraph}</p>)}
-                </div>
-                <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Industry cost indices">
-                    <table class="[ mk-table mk-table--indices ]">
-                        <thead>
-                            <tr>
-                                <th scope="col">System</th>
-                                <th scope="col" class="[ mk-table__bar-head ]">Manufacturing index</th>
-                                <th scope="col" class="[ mk-table__bar-head ]">Reaction index</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {issue.industry.indices.map((row) => (
-                                <tr>
-                                    <td><span class="[ mk-table__system ]">{row.system}</span></td>
-                                    <td class="[ mk-table__bar ]" data-label="Manufacturing">
-                                        <div class="[ mk-bar ]">
-                                            <span class="[ mk-bar__fill mk-bar__fill--index ]" style={`width: ${percent(row.manufacturing ?? 0, max_index)}%`}></span>
-                                        </div>
-                                        <b>{row.manufacturing === null ? '—' : row.manufacturing.toFixed(3)}</b>
-                                    </td>
-                                    <td class="[ mk-table__bar ]" data-label="Reaction">
-                                        <div class="[ mk-bar ]">
-                                            <span class="[ mk-bar__fill mk-bar__fill--index ]" style={`width: ${percent(row.reaction ?? 0, max_index)}%`}></span>
-                                        </div>
-                                        <b>{row.reaction === null ? '—' : row.reaction.toFixed(3)}</b>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-                <p class="[ mk-footnote ]">{issue.industry.footnote}</p>
-            </Flexblock>
-        </ComponentBlock>
-    </section>
-
-    <section id="loyalty" class="[ mk-section ]">
-        <header class="[ mk-section__head ]">
-            <h2>Loyalty points</h2>
-            <p class="[ mk-dek ]">Public store math only: convert militia LP into hulls this book already sells.</p>
-        </header>
-        <ComponentBlock>
-            <Flexblock gap="var(--space-m)">
-                <div class="[ mk-story mk-story--compact ]">
-                    {issue.loyalty.dek.map((paragraph) => <p>{paragraph}</p>)}
-                </div>
-                {[render_table(issue.loyalty.table)].map((table) => (
-                    <div class="[ mk-table-wrap ]" tabindex="0" role="region" aria-label="Loyalty point conversions">
-                        <table class="[ mk-table mk-table--plain ]">
-                            <thead>
-                                <tr>
-                                    {table.headers.map((header, index) => (
-                                        <th scope="col" class:list={[index > 0 && 'mk-table__num']}>{header}</th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {table.rows.map((row) => (
-                                    <tr class:list={[row.tone && `mk-row--${row.tone}`]}>
-                                        {row.cells.map((cell, index) => (
-                                            <td class:list={[index > 0 && 'mk-table__num']}>
-                                                {index === 0 ? <span class="[ mk-table__system ]">{cell}</span> : cell}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                ))}
-                <p class="[ mk-footnote ]">{issue.loyalty.table.footnote}</p>
-                <FlexInline gap="var(--space-2xs)">
-                    {issue.loyalty.actions.map((link: MarketLink, index) => (
-                        <Button
-                            href={resolve_href(link.href)}
-                            size="sm"
-                            color={index === 0 ? 'fleet-red' : 'transparent'}
-                            class={index === 0 ? undefined : '[ mk-ghost ]'}
-                            new_tab={is_external(link.href)}
-                            external={is_external(link.href)}
-                        >
-                            {link.label}
-                        </Button>
-                    ))}
-                </FlexInline>
-            </Flexblock>
-        </ComponentBlock>
-    </section>
-
-    <section id="shelf" class="[ mk-section ]">
-        <header class="[ mk-section__head ]">
-            <h2>The shelf</h2>
-            <p class="[ mk-dek ]">What is on the book right now, and where to look yourself.</p>
-        </header>
-        <ComponentBlock>
-            <Flexblock gap="var(--space-m)">
-                {issue.shelf.stats.length > 0 && (
-                    <div class="[ mk-focus-stats ]">
-                        {issue.shelf.stats.map((stat) => (
-                            <div class="[ mk-stat ]">
-                                <span class="[ mk-stat__label ]">{stat.label}</span>
-                                <b class="[ mk-stat__value ]">{stat.value}</b>
-                                {stat.note && <span class="[ mk-stat__note ]">{stat.note}</span>}
-                            </div>
-                        ))}
-                    </div>
-                )}
-                <div class="[ mk-story mk-story--compact ]">
-                    {issue.shelf.dek.map((paragraph) => <p>{paragraph}</p>)}
-                </div>
-                <FlexInline gap="var(--space-2xs)">
-                    {issue.shelf.actions.map((link: MarketLink, index) => (
-                        <Button
-                            href={resolve_href(link.href)}
-                            size="sm"
-                            color={index === 0 ? 'fleet-red' : 'transparent'}
-                            class={index === 0 ? undefined : '[ mk-ghost ]'}
-                            new_tab={is_external(link.href)}
-                            external={is_external(link.href)}
-                        >
-                            {link.label}
-                        </Button>
-                    ))}
-                </FlexInline>
-            </Flexblock>
-        </ComponentBlock>
-    </section>
-
-    <section id="get-involved" class="[ mk-section ]">
-        <header class="[ mk-section__head ]">
-            <h2>Use the hub</h2>
-            <p class="[ mk-dek ]">New to Amamake, or new to selling on a structure market? Three steps, then the guides.</p>
-        </header>
-
-        <Grid min_item_width="16rem" row_gap="var(--space-m)" column_gap="var(--space-m)" class="[ mk-equal mk-steps ]">
-            {issue.get_involved.steps.map((step, index) => (
-                <ComponentBlock padding_inline="var(--space-m)" padding_block="var(--space-m)" class="[ mk-step ]">
-                    <Flexblock gap="var(--space-m)" class="[ h-full ]">
-                        <div class="[ mk-step__head ]">
-                            <span class="[ mk-step__number ]" aria-hidden="true">{String(index + 1).padStart(2, '0')}</span>
-                            <h3>{step.title}</h3>
-                        </div>
-                        <p class="[ mk-step__text push-bottom ]">{step.text}</p>
-                        <a class="[ mk-step__link ]" href={resolve_href(step.href)} target={is_external(step.href) ? '_blank' : undefined} rel={is_external(step.href) ? 'nofollow noopener noreferrer' : undefined}>{step.label} →</a>
-                    </Flexblock>
-                </ComponentBlock>
-            ))}
-        </Grid>
-
-        <ComponentBlock class="[ mk-cta ]" padding_inline="var(--space-m)" padding_block="var(--space-m)">
-            <div class="[ mk-cta__inner ]">
-                <div>
-                    <h3>Ready to dock?</h3>
-                    <p>The book does not check your militia. Buy the ship, fit it from the shelf, undock into the busiest system in the warzone.</p>
-                </div>
-                <FlexInline gap="var(--space-2xs)">
-                    {issue.get_involved.actions.map((link, index) => (
-                        <Button
-                            href={resolve_href(link.href)}
-                            size="sm"
-                            color={index === 0 ? 'fleet-red' : 'transparent'}
-                            class={index === 0 ? undefined : '[ mk-ghost ]'}
-                            new_tab={is_external(link.href)}
-                            external={is_external(link.href)}
-                        >
-                            {link.label}
-                        </Button>
-                    ))}
-                </FlexInline>
-            </div>
-        </ComponentBlock>
-
-        {featured_guides.length > 0 && (
-            <>
-                <div class="[ mk-subhead ]">
-                    <h3>Guides for the hub</h3>
-                    <p>Cash out, then fly what actually sells here.</p>
-                </div>
-                <Grid min_item_width="18rem" class="[ mk-equal mk-guides ]">
-                    {featured_guides.map((guide) => (
-                        <GuidePostCard guide={guide} />
-                    ))}
-                </Grid>
-                <FlexInline>
-                    <Button href={translatePath(LEARNING_HUB_PATH)} size="sm" color="transparent" class="[ mk-ghost ]">
-                        Browse all guides
-                    </Button>
-                </FlexInline>
-            </>
-        )}
-    </section>
-
-    <section id="about" class="[ mk-section ]">
-        <header class="[ mk-section__head ]">
-            <h2>About the numbers</h2>
-            <p class="[ mk-dek ]">Where every figure on this page comes from.</p>
-        </header>
-        <ComponentBlock class="[ mk-about ]">
-            <div class="[ mk-about__head ]">
-                <h4>Sources and method</h4>
-                <ul class="[ mk-about__sources ]">
-                    <li>Minmatar Fleet order-book snapshots</li>
-                    <li>zKillboard</li>
-                    <li>EVE ESI</li>
-                </ul>
-            </div>
-            <dl class="[ mk-method ]">
-                {issue.methodology.map((entry) => (
-                    <div class="[ mk-method__row ]">
-                        <dt>{entry.label}</dt>
-                        <dd>{entry.text}</dd>
-                    </div>
-                ))}
-            </dl>
-        </ComponentBlock>
-    </section>
-
-    <nav class="[ mk-more ]" aria-label="More Amamake market reports">
+    <nav class="[ mk-more ]" aria-label="More warzone reports">
         {older && (
             <a class="[ mk-more__link mk-more__link--prev ]" href={translatePath(older.permalink_path)}>
                 <span class="[ mk-more__dir ]">← Previous report</span>
@@ -838,20 +478,20 @@ const render_table = (table: MarketTable) => table
     </nav>
 
     <p class="[ mk-footnote mk-colophon ]">
-        Amamake Market Report · {issue.period_utc} · Published by Minmatar Fleet · Sources: Minmatar Fleet order-book snapshots, zKillboard, EVE ESI.
+        Amamake Economic Report · {issue.period_utc} · Published by Minmatar Fleet · Sources: Minmatar Fleet order-book snapshots, zKillboard, EVE ESI.
     </p>
 </div>
 
 <style lang="scss">
     .market-report {
-        --mk-minmatar: color-mix(in srgb, var(--fleet-red) 78%, white 22%);
+        --mk-minmatar: color-mix(in srgb, var(--fleet-red) 78%, var(--highlight) 22%);
         --mk-amarr: var(--fleet-yellow);
-        --mk-sold: color-mix(in srgb, var(--alliance-blue) 70%, white 30%);
-        --mk-lost: color-mix(in srgb, var(--fleet-red) 78%, white 22%);
+        --mk-sold: var(--green);
+        --mk-lost: var(--fleet-red);
         --mk-capital: var(--fleet-yellow);
-        --mk-subcap: rgba(255, 255, 255, 0.35);
-        --mk-track: rgba(255, 255, 255, 0.06);
-        --mk-rule: rgba(255, 255, 255, 0.08);
+        --mk-subcap: var(--faded);
+        --mk-track: color-mix(in srgb, var(--highlight) 6%, transparent);
+        --mk-rule: color-mix(in srgb, var(--highlight) 8%, transparent);
 
         display: flex;
         flex-direction: column;
@@ -913,16 +553,16 @@ const render_table = (table: MarketTable) => table
         letter-spacing: 0.04em;
         text-transform: uppercase;
         color: var(--foreground);
-        border: solid 1px rgba(255, 255, 255, 0.18);
+        border: solid 1px color-mix(in srgb, var(--highlight) 18%, transparent);
         white-space: nowrap;
     }
 
     .mk-ghost {
-        border: solid 1px rgba(255, 255, 255, 0.22) !important;
+        border: solid 1px color-mix(in srgb, var(--highlight) 22%, transparent) !important;
 
         &:hover,
         &:focus-visible {
-            border-color: rgba(255, 255, 255, 0.6) !important;
+            border-color: color-mix(in srgb, var(--highlight) 60%, transparent) !important;
         }
     }
 
@@ -968,8 +608,8 @@ const render_table = (table: MarketTable) => table
         width: 3rem;
         height: 3rem;
         border-radius: 50%;
-        background: rgba(255, 255, 255, 0.05);
-        border: solid 1px rgba(255, 255, 255, 0.1);
+        background: color-mix(in srgb, var(--highlight) 5%, transparent);
+        border: solid 1px var(--border-color-hover);
 
         img {
             width: 2.25rem;
@@ -1035,7 +675,7 @@ const render_table = (table: MarketTable) => table
         flex-direction: column;
         gap: var(--space-m);
         /* Clear the fixed site header so jump-nav anchors don't land under it. */
-        scroll-margin-top: 4.5rem;
+        scroll-margin-top: var(--sticky-top);
     }
 
     .mk-section__head {
@@ -1259,7 +899,7 @@ const render_table = (table: MarketTable) => table
         }
 
         .mk-strip__day.is-empty & {
-            background: repeating-linear-gradient(-45deg, transparent 0 3px, rgba(255, 255, 255, 0.12) 3px 5px);
+            background: repeating-linear-gradient(-45deg, transparent 0 3px, color-mix(in srgb, var(--highlight) 12%, transparent) 3px 5px);
             height: 100% !important;
             opacity: 0.6;
         }
@@ -1290,10 +930,6 @@ const render_table = (table: MarketTable) => table
         height: 2rem;
         gap: 2px;
         background: var(--mk-track);
-
-        &--thin {
-            height: 1rem;
-        }
     }
 
     .mk-share__fill {
@@ -1326,46 +962,6 @@ const render_table = (table: MarketTable) => table
         color: var(--faded);
         text-align: center;
         max-width: none;
-    }
-
-    .mk-legend-list {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-2xs);
-        font-size: var(--step--1);
-
-        li {
-            display: flex;
-            align-items: baseline;
-            gap: var(--space-xs);
-            flex-wrap: wrap;
-        }
-
-        b {
-            color: var(--highlight);
-        }
-
-        &--inline {
-            flex-direction: row;
-            flex-wrap: wrap;
-            gap: var(--space-m);
-        }
-    }
-
-    .mk-legend-list__pct {
-        color: var(--faded);
-        font-variant-numeric: tabular-nums;
-    }
-
-    .mk-swatch {
-        display: inline-block;
-        width: 0.8rem;
-        height: 0.8rem;
-        flex: 0 0 auto;
-        align-self: center;
     }
 
     .mk-statline {
@@ -1477,7 +1073,7 @@ const render_table = (table: MarketTable) => table
         }
 
         tbody tr:hover td {
-            background: rgba(255, 255, 255, 0.025);
+            background: color-mix(in srgb, var(--highlight) 2.5%, transparent);
         }
 
         td:first-child {
@@ -1728,13 +1324,7 @@ const render_table = (table: MarketTable) => table
         white-space: nowrap;
     }
 
-    /* Focus --------------------------------------------------------------- */
-
-    .mk-focus__title {
-        font-size: var(--step-2);
-    }
-
-    .mk-focus-stats {
+    .mk-shelf-stats {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(min(10rem, 100%), 1fr));
         gap: var(--space-3xs);
@@ -1746,7 +1336,7 @@ const render_table = (table: MarketTable) => table
         gap: 0.15em;
         padding: var(--space-s);
         border: solid 1px var(--border-color);
-        background: rgba(255, 255, 255, 0.02);
+        background: color-mix(in srgb, var(--highlight) 2%, transparent);
     }
 
     .mk-stat__label {
@@ -1873,7 +1463,7 @@ const render_table = (table: MarketTable) => table
 
         li {
             padding: 0.15em 0.6em;
-            border: solid 1px rgba(255, 255, 255, 0.18);
+            border: solid 1px color-mix(in srgb, var(--highlight) 18%, transparent);
             font-size: var(--step--2);
             text-transform: uppercase;
             letter-spacing: 0.05em;

@@ -23,17 +23,35 @@
   },
   "content_hub": {
     "registry": "frontend/app/src/data/campaigns/index.ts",
-    "kind": "market",
-    "strip": "frontend/app/src/components/blocks/AmamakeMarketReportStrip.astro",
-    "anchor": "/alliance/content#AmamakeMarketReports"
+    "kind": "warzone",
+    "warzone_type": "economic",
+    "strip": "frontend/app/src/components/blocks/WarzoneReportStrip.astro",
+    "anchor": "/alliance/content#WarzoneReports"
   },
   "sde_sqlite_glob": "frontend/app/src/data/sde-*.sqlite",
   "location_id": 1022167642188,
   "amamake_system_id": 30002537,
-  "pipe_systems": ["Amamake", "Auga", "Siseide", "Dal", "Vard", "Lantorn"],
-  "industry_systems": ["Amamake", "Jita", "Auner", "Basgerin", "Amo", "Auga"],
+    "pipe_systems": ["Amamake", "Auga", "Siseide", "Dal", "Vard", "Lantorn"],
+    "seeding": {
+        "min_fills": 25,
+        "min_units": 25,
+        "min_margin_pct": 5,
+        "top": 10,
+        "note": "August 2026 participation floor. Among types already ≥5% vs Jita, fills p25/p50 = 10/29 and units p25 = 21. 25 fills + 25 units drops thin books (9-fill / 11-unit outliers) so extra seeders cannot instantly cook the Amamake price. Rank by extra ISK. Blueprints excluded."
+    },
+    "freight_isk_per_m3": 450,
+    "freight_route": "Jita → Amamake",
+    "freight_source": "EveFreightRoute isk_per_m3 on the active Jita→Amamake rate route (freight calculator). Volume only; collateral % omitted.",
   "capital_group_ids": [30, 485, 547, 659, 883, 902, 1538, 4594],
   "capsule_type_ids": [670, 33328],
+  "report_class_map": {
+    "plex_adjacent_groups": ["Skill Injectors", "PLEX"],
+    "plex_adjacent_type_ids": [40519, 63188, 34133, 29668],
+    "plex_adjacent_type_ids_note": "Skill Extractor, Multiple Pilot Training, Multiple Pilot Training Certificate, legacy 30 Day PLEX. Skill Injectors group covers Large/Small/Daily Alpha/Mini/AIR.",
+    "material_extra_categories": ["Colony Resources", "Gas", "Fullerite", "Booster Gas"],
+    "material_extra_groups": ["Harvestable Cloud", "Compressed Gas", "Colony Reagents"],
+    "blueprints": "fold into Other"
+  },
   "week_buckets": ["1-7", "8-14", "15-21", "22-28", "29-end"],
   "rate_limit_seconds": 1.1,
   "user_agent_env": "ZKILL_USER_AGENT"

@@ -12,9 +12,10 @@ import {
     YC128_08 as AMAMAKE_YC128_08,
 } from '@/data/amamake-market/yc128-08'
 
-export type CampaignKind = 'campaign' | 'siege' | 'warzone' | 'market'
+export type CampaignKind = 'campaign' | 'siege' | 'warzone'
+export type WarzoneReportType = 'frontline' | 'economic'
 
-export type CampaignMeta = {
+type CampaignMetaShared = {
     slug: string
     path: string
     nameKey: string
@@ -23,12 +24,15 @@ export type CampaignMeta = {
     coverImage: string
     iskDestroyed: number
     sortOrder: number
-    kind: CampaignKind
     /** i18n key for the card's ISK figure label. Defaults to `destroyed`. */
     isk_label_key?: string
     /** Campaign/siege end date for content-stream sorting. */
     published_at: Date
 }
+
+export type CampaignMeta =
+    | (CampaignMetaShared & { kind: 'campaign' | 'siege' })
+    | (CampaignMetaShared & { kind: 'warzone'; warzone_type: WarzoneReportType })
 
 export const campaigns: CampaignMeta[] = [
     {
@@ -101,6 +105,7 @@ export const campaigns: CampaignMeta[] = [
         iskDestroyed: YC128_07.sampled_isk,
         sortOrder: 0,
         kind: 'warzone',
+        warzone_type: 'frontline',
         published_at: new Date('2026-07-31T00:00:00Z'),
     },
     {
@@ -113,6 +118,7 @@ export const campaigns: CampaignMeta[] = [
         iskDestroyed: YC128_08.sampled_isk,
         sortOrder: 0,
         kind: 'warzone',
+        warzone_type: 'frontline',
         published_at: new Date('2026-08-31T00:00:00Z'),
     },
     {
@@ -124,7 +130,8 @@ export const campaigns: CampaignMeta[] = [
         coverImage: AMAMAKE_COVER,
         iskDestroyed: AMAMAKE_YC128_08.sales.isk,
         sortOrder: 0,
-        kind: 'market',
+        kind: 'warzone',
+        warzone_type: 'economic',
         isk_label_key: 'sold',
         published_at: AMAMAKE_YC128_08.published_at,
     },
@@ -142,23 +149,33 @@ export function getSieges(): CampaignMeta[] {
         .sort((a, b) => a.sortOrder - b.sortOrder)
 }
 
-/** Campaigns and sieges; the monthly report series have their own strips. */
+/** Campaigns and sieges; monthly warzone reports have their own strip. */
 export function getAllCampaigns(): CampaignMeta[] {
     return campaigns
-        .filter((c) => c.kind !== 'warzone' && c.kind !== 'market')
+        .filter((c) => c.kind !== 'warzone')
         .sort((a, b) => b.published_at.getTime() - a.published_at.getTime())
 }
 
+const WARZONE_TYPE_ORDER: Record<WarzoneReportType, number> = {
+    frontline: 0,
+    economic: 1,
+}
+
+function is_warzone_report(
+    campaign: CampaignMeta,
+): campaign is CampaignMeta & { kind: 'warzone'; warzone_type: WarzoneReportType } {
+    return campaign.kind === 'warzone'
+}
+
+/** Frontline and Economic reports, newest month first; Frontline before Economic in the same month. */
 export function getWarzoneReports(): CampaignMeta[] {
     return campaigns
-        .filter((c) => c.kind === 'warzone')
-        .sort((a, b) => b.published_at.getTime() - a.published_at.getTime())
-}
-
-export function getMarketReports(): CampaignMeta[] {
-    return campaigns
-        .filter((c) => c.kind === 'market')
-        .sort((a, b) => b.published_at.getTime() - a.published_at.getTime())
+        .filter(is_warzone_report)
+        .sort((a, b) => {
+            const by_date = b.published_at.getTime() - a.published_at.getTime()
+            if (by_date !== 0) return by_date
+            return WARZONE_TYPE_ORDER[a.warzone_type] - WARZONE_TYPE_ORDER[b.warzone_type]
+        })
 }
 
 export { formatIsk }
