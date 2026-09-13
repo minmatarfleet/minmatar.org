@@ -1,6 +1,9 @@
+from unittest.mock import patch
+
 import factory
 
 from django.contrib.auth.models import Group, User
+from django.db import IntegrityError
 from django.db.models import signals
 from django.test import Client
 from esi.models import Token
@@ -24,6 +27,8 @@ from groups.helpers import (
     sync_tribe_chief_group_membership,
 )
 from groups.tasks import (
+    _ensure_user_affiliation,
+    update_affiliation,
     update_affiliations,
     sync_eve_corporation_groups,
     sync_user_corporation_groups,
@@ -190,6 +195,88 @@ class UserAffiliationTestCase(TestCase):
         update_affiliations()
         user_affiliation = UserAffiliation.objects.get(user=user)
         assert user_affiliation.affiliation == affiliation_type_2
+
+    def test_set_user_affiliation_replaces_lower_priority(self):
+        user = User.objects.create(
+            username="test_set_user_affiliation_replaces_lower_priority"
+        )
+        group = Group.objects.create(
+            name="test_set_user_affiliation_replaces_lower_priority"
+        )
+        group_2 = Group.objects.create(
+            name="test_set_user_affiliation_replaces_lower_priority_2"
+        )
+        corporation = EveCorporation.objects.create(corporation_id=98726135)
+        character = EveCharacter.objects.create(character_id=124)
+        token = Token.objects.create(
+            character_id=124,
+            user=user,
+        )
+        character.token = token
+        character.save()
+        set_primary_character(user, character)
+        affiliation_type = AffiliationType.objects.create(
+            name="Example",
+            description="Example",
+            image_url="https://example.com/image.png",
+            group=group,
+            priority=1,
+        )
+        affiliation_type_2 = AffiliationType.objects.create(
+            name="Example",
+            description="Example",
+            image_url="https://example.com/image.png",
+            group=group_2,
+            priority=5,
+        )
+        affiliation_type.corporations.add(corporation)
+        character.corporation_id = corporation.corporation_id
+        character.save()
+        update_affiliations()
+        self.assertEqual(
+            UserAffiliation.objects.get(user=user).affiliation,
+            affiliation_type,
+        )
+
+        affiliation_type_2.corporations.add(corporation)
+        update_affiliations()
+        self.assertEqual(UserAffiliation.objects.filter(user=user).count(), 1)
+        self.assertEqual(
+            UserAffiliation.objects.get(user=user).affiliation,
+            affiliation_type_2,
+        )
+
+    def test_ensure_user_affiliation_swallows_integrity_error(self):
+        user = User.objects.create(
+            username="test_ensure_user_affiliation_integrity"
+        )
+        group = Group.objects.create(
+            name="test_ensure_user_affiliation_integrity"
+        )
+        affiliation = AffiliationType.objects.create(
+            name="Example",
+            description="Example",
+            image_url="https://example.com/image.png",
+            group=group,
+            priority=1,
+        )
+        UserAffiliation.objects.create(user=user, affiliation=affiliation)
+        with patch(
+            "groups.tasks.UserAffiliation.objects.get_or_create",
+            side_effect=IntegrityError(),
+        ):
+            _ensure_user_affiliation(user, affiliation)
+        self.assertEqual(UserAffiliation.objects.filter(user=user).count(), 1)
+
+    def test_update_affiliation_logs_errors_instead_of_raising(self):
+        with patch(
+            "groups.tasks._update_affiliation_for_user",
+            side_effect=RuntimeError("boom"),
+        ):
+            update_affiliation(self.user.id)
+        self.assertFalse(
+            UserAffiliation.objects.filter(user=self.user).exists()
+        )
 
 
 class GroupTasksTestCase(TestCase):

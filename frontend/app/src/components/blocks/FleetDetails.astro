@@ -83,7 +83,7 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
         tracking_started: false,
     }`}
     @tracking_started="tracking_started = true"
-    @is_fleet_time="document.getElementById('preping-button').remove()"
+    @is_fleet_time="document.getElementById('preping-button')?.remove()"
 >
     <FleetHero
         fleet={{

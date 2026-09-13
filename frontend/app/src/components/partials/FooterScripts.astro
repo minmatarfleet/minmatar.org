@@ -88,6 +88,11 @@ const DISABLED_CCPWGL = is_disabled_ccpwgl()
         if (typeof Alpine !== 'undefined') Alpine.initTree(next)
     }
 
+    window.minmatar_after_inner_html_swap = function () {
+        if (typeof htmx !== 'undefined') htmx.process(this)
+        if (typeof Alpine !== 'undefined') Alpine.initTree(this)
+    }
+
     if (!window.__footer_scripts_bound) {
         window.__footer_scripts_bound = true
 

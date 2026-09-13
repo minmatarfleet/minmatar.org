@@ -52,7 +52,12 @@ import ErrorRefetch from '@components/blocks/ErrorRefetch.astro';
 const page_title = t('fleets.start.page_title')
 ---
 
-<Viewport title={page_title}>
+<Viewport
+    title={page_title}
+    components={{
+        alert_dialog: true,
+    }}
+>
     <PageDefault
         cover={{
             image: '/images/fleets-cover.jpg',
@@ -75,18 +80,23 @@ const page_title = t('fleets.start.page_title')
                 <p class="[ excerpt ]">{t('fleets.start.choose_character')}</p>
             </TextBox>
 
-            {fetch_error ?
-                <ErrorRefetch
-                    args={{
-                        partial: FLET_START_PARTIAL_URL,
-                        error: fetch_error,
-                        delay: 0,
-                    }}
-                /> :
-                pilots.length > 0 ?
-                    <StartFleet pilots={pilots} /> :
-                    <p>{t('no_pilots_to_show')}</p>
-            }
+            <div
+                id="fleet-start"
+                hx-on--after-swap="window.minmatar_after_inner_html_swap.call(this)"
+            >
+                {fetch_error ?
+                    <ErrorRefetch
+                        args={{
+                            partial: FLET_START_PARTIAL_URL,
+                            error: fetch_error,
+                            delay: 0,
+                        }}
+                    /> :
+                    pilots.length > 0 ?
+                        <StartFleet pilots={pilots} /> :
+                        <p>{t('no_pilots_to_show')}</p>
+                }
+            </div>
         </Flexblock>
     </PageDefault>
 </Viewport>

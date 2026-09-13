@@ -4,6 +4,7 @@ import logging
 from collections import defaultdict
 
 from django.contrib.auth.models import User
+from django.db import IntegrityError
 
 from app.celery import app
 from discord.client import DiscordClient
@@ -182,29 +183,7 @@ def _update_affiliation_for_user(user, affiliation_rules):
                 user,
                 affiliation,
             )
-            if UserAffiliation.objects.filter(
-                user=user, affiliation=affiliation
-            ).exists():
-                logger.info(
-                    "User %s already has affiliation %s",
-                    user,
-                    affiliation,
-                )
-                return
-
-            if UserAffiliation.objects.filter(user=user).exists():
-                logger.info(
-                    "User %s already has an affiliation, removing",
-                    user,
-                )
-                UserAffiliation.objects.filter(user=user).delete()
-
-            logger.info(
-                "Creating affiliation for user %s with %s",
-                user,
-                affiliation,
-            )
-            UserAffiliation.objects.create(user=user, affiliation=affiliation)
+            _ensure_user_affiliation(user, affiliation)
             return
 
         logger.info(
@@ -234,7 +213,39 @@ def _update_affiliation_for_user(user, affiliation_rules):
 @app.task
 def update_affiliation(user_id: int):
     user = User.objects.get(id=user_id)
-    _update_affiliation_for_user(user, _load_affiliation_rules())
+    try:
+        _update_affiliation_for_user(user, _load_affiliation_rules())
+    except Exception as e:  # pylint: disable=broad-except
+        log_affiliation_update_error(user, e)
+
+
+def _ensure_user_affiliation(user, affiliation):
+    UserAffiliation.objects.filter(user=user).exclude(
+        affiliation=affiliation
+    ).delete()
+    try:
+        _, created = UserAffiliation.objects.get_or_create(
+            user=user, affiliation=affiliation
+        )
+    except IntegrityError:
+        logger.info(
+            "User %s already has affiliation %s",
+            user,
+            affiliation,
+        )
+        return
+    if created:
+        logger.info(
+            "Creating affiliation for user %s with %s",
+            user,
+            affiliation,
+        )
+    else:
+        logger.info(
+            "User %s already has affiliation %s",
+            user,
+            affiliation,
+        )
 
 
 def log_affiliation_update_error(user: User, e):
