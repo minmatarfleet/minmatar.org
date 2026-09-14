@@ -83,6 +83,14 @@ URL shape: `https://discord.com/channels/<guild_id>/<thread_id>`
 - Last path segment is `HelpTicket.thread_id`.
 - Thread names look like `<category-code>-<opener-name>`. These are help
   tickets, not Sentry.
+- **No URL / “each discord thread” / open help tickets:**
+  `find_channel help` + `list_active_threads` (parent `#help`) and dump
+  `HelpTicket` `status=open`. Ingest every row. Pulse-technology gets a
+  1/2/3 reply. Do **not** hijack a non-Pulse thread whose assignee is
+  already working it (corp applications, LP team). Do **not** ping
+  BearThatCares on their own note-to-self ticket. If they already
+  answered the product question in-thread, do not re-ask — implement or
+  confirm the next Pulse step.
 
 ### Discord MCP
 
@@ -170,12 +178,16 @@ Scan this table before inventing a new theory.
 | External button / “Open” reloads the same page | Leaving-site dialog: Open is `x-bind:href="alert_dialog_accept_href"`; `show_alert_dialog` can clear that href in the same click → `href=""` reloads. Not the remote site. Persist-checkbox lives on the dialog; the next Open can still race. |
 | Learning / page progress stuck ~80% | `UserPageProgress` / `UserPageSectionProgress` often n−1 (last `resources` / `additional-resources`). Mark-as-read only after every section dwell. |
 | UI “roles” plus a query string | Character tags (`/account/tags/`) or ESI `token_type=`, not Discord roles. |
-| “Main is not a FL33T member” banner | `MAIN_NOT_IN_FL33T` in `build_character_response` when primary `alliance_id` ∉ `FL33T_MEMBER_ALLIANCE_IDS`. That set includes **Associates**. Do not tell Associates to add an Alliance main. |
+| “Main is not a FL33T member” banner | `MAIN_NOT_IN_FL33T` in `build_character_response` when primary `alliance_id` ∉ `FL33T_MEMBER_ALLIANCE_IDS` (`eveonline.constants`: Alliance + Associates). Associates **is** BUILD (same alliance id, ticker BUILD). Dump primary `alliance_id` and `EveAlliance.ticker`. Do not tell BUILD / M-EXC / Associates to add an Alliance main. Grep origin/main — a skill row is not proof the constant shipped. |
 | Wrong doctrine behind a hull chip | Capital guides (`CapitalGuideMetaBlocks`) must use `primary_fitting_for_ship` / `fit_match`, **not** `fittings[0]` (lowest id). “Passive” often means Buffer. Dump `EveFitting` for that `ship_id` on `production_readonly`. Local Astro often has an empty fittings API — use production HTML or unit tests with real names. |
 | Tribe Actions “wack” / Discord channel missing | **Withdraw** = pending or active (cancel/leave), not a broken menu. Auth/Discord roles (`Tribe Group - …`) sync on **active** only. Each group is a separate apply. Channel list ≠ site membership (overwrites can leak). Dump `TribeGroupMembership` + history before blaming Discord. |
 | Tribe approved but no secondary Discord invite DM | Dump `TribeExternalGuild` for that `TribeGroup.code` and any `TribeExternalGuildSeat`. Empty binding → `on_membership_became_active` is a no-op (no seat, no DM). The chief “new application” DM is a different path. Reconciler seeds the Fishermen binding and backfills seats for already-active members. |
 | Corp Discord role looked right, then the **previous** ticker came back | ESI `/characters/affiliation/` and public character data often still report the **old** corp after a join. Bulk `update_character_affilliations` can overwrite `corporation_id`; corporation **history** is usually current first. `Corp <TICKER>` groups sync on `sync_eve_corporation_groups` (different beat). Refresh-Discord-roles should recompute `sync_user_corporation_groups` then `sync_discord_user`. Dump primary `corporation_id`, latest two `corporation_history` rows, `user.groups` `Corp *`, and `DiscordRole.name` (display name may lag a Django group rename). |
-| Show BUILD alliance BPC / mineral packs on blueprints, ops/contracts, or in industry-order claim | Feature request, not a 403. `/industry/blueprints/` is hangar inventory search. `/market/ops/contracts/` is doctrine **fitting** stock (`EveMarketContract` + `fitting_id` not null). Alliance pack listings live on `EveCorporationContract` (`for_corporation`, `assignee_id` = BUILD alliance id); ESI `availability` is often `personal` with the alliance as assignee. They are not fitting-matched and the structure may not be an `EveLocation`, so they never appear on ops. Claim UI (`ButtonClaimOrder`) is quantity + “I have blueprints.” `IndustryContractAssociation` matches producer **delivery** contracts to orders, not supply packs. 48h claim cap is per-line `self_assign_maximum` (order config; stepping qty to 10/20/30 is a separate code change). Tag BearThatCares for product intent. |
+| Show BUILD alliance BPC / mineral packs on blueprints, ops/contracts, or in industry-order claim | Feature request, not a 403. `/industry/blueprints/` is hangar inventory search. `/market/ops/contracts/` is doctrine **fitting** stock (`EveMarketContract` + `fitting_id` not null). Alliance pack listings live on `EveCorporationContract` (`for_corporation`, `assignee_id` = BUILD alliance id); ESI `availability` is often `personal` with the alliance as assignee. They are not fitting-matched and the structure may not be an `EveLocation`, so they never appear on ops. Claim UI (`ButtonClaimOrder`) is quantity + “I have blueprints.” `IndustryContractAssociation` matches producer **delivery** contracts to orders, not supply packs. 48h claim cap is per-line `self_assign_maximum` (order config; stepping qty to 10/20/30 is a separate code change). Tag BearThatCares for product intent **unless they already answered in-thread** — then implement or confirm next, do not re-ask. |
+| PTT off / voice activation in fleet channels | Discord **Use Voice Activity** on the voice channel, not a Django/site group. Dump `user.groups` (FC etc.) then tag BearThatCares. Do not edit Discord overwrites without that call. New-player guide still says PTT in large fleets. |
+| Fishermen (or other secondary guild) nicknames | FL33T already sets `[TICKER] CharacterName` via `sync_discord_nickname`. `TribeExternalGuildSeat` stores that nick; it does **not** PATCH the secondary guild. Tag BearThatCares before adding fishermen nick sync. |
+| Hull missing from the industry order page | Catalog, not a 403. Dump `IndustryProduct` for that `EveType`. Combat/capital/mineral rows can exist while mining/logi hulls do not. Tag BearThatCares for which hulls and `strategy` (produced vs imported). |
+| Fittings page icons too big / hard to scan | `FittingCard` `ItemPicture` is `size={256}` on `/ships/fittings/`. UX product call — tag BearThatCares (current size + denser-card vs list-mode question). |
 
 ### Discord reply
 
@@ -255,7 +267,7 @@ done until that PR exists.
 | MCP embed gap → always load `HelpTicket.body` | Discord REST wrappers, bot tokens |
 | Permission / affiliation / ESI-lag gotchas | Discord user ids, guild ids |
 | Hull-chip / dialog-race / progress-% classes | Full ticket dumps |
-| Associates vs `MAIN_NOT_IN_FL33T` | Channel overwrite archaeology |
+| Associates vs `MAIN_NOT_IN_FL33T` (Associates ticker is BUILD) | Channel overwrite archaeology |
 | Tribe pending vs Discord role timing | Prod Discord REST from a local bot token |
 | BPC/mineral packs vs fitting contracts | Pack issuer names, in-game contract dumps |
 
