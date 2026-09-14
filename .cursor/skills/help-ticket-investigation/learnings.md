@@ -41,6 +41,83 @@ do not duplicate it — one clarifying clause at most.
 
 ---
 
+## 2026-09-14 — Open #help batch (no thread URLs)
+
+**Category:** mixed (mostly pulse.technology)
+**Verdict:** mixed (one bug, several needs-decision, two ops skip)
+**Discord:** per-thread 1/2/3; skipped assignee-handled non-Pulse
+**PR:** fix+skill
+**Symptom vs cause:** User said “each discord thread” with no URLs.
+  Ingest is `#help` active threads + open `HelpTicket` rows.
+**Durable rule:** No URL → list open help tickets. Do not hijack LP/BUILD
+  assignee threads. Do not ping the decision owner on their note-to-self.
+  Do not re-ask a product question they already answered in-thread.
+**Skill update:** ingest “no URL” path; skip/hijack/re-ask rules.
+
+## 2026-09-14 — BUILD main still flagged MAIN_NOT_IN_FL33T
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** Troubleshooting banner on a BUILD (Associates)
+  main. Skill claimed `FL33T_MEMBER_ALLIANCE_IDS` included Associates;
+  origin/main still compared `!=` Alliance only. Associates ticker is
+  BUILD — same alliance as M-EXC.
+**Durable rule:** Dump primary `alliance_id` + ticker. Associates = BUILD.
+  Grep origin/main for the constant; do not trust the skill row alone.
+**Skill update:** rewrote the banner row; Associates ticker called out.
+
+## 2026-09-14 — PTT off in fleet voice
+
+**Category:** pulse.technology
+**Verdict:** needs-decision
+**Discord:** tagged decision owner
+**PR:** skill-only (same PR as banner fix)
+**Symptom vs cause:** Asked for push-to-talk off in fleet channels.
+  That is Discord Use Voice Activity, not a site group.
+**Durable rule:** Dump `user.groups` (FC etc.), then tag BearThatCares.
+  Do not edit channel overwrites without that call.
+**Skill update:** PTT failure-class row.
+
+## 2026-09-14 — Fishermen nicknames to in-game main
+
+**Category:** pulse.technology
+**Verdict:** needs-decision
+**Discord:** tagged decision owner
+**PR:** skill-only (same PR)
+**Symptom vs cause:** Wanted the fishermen bot to nick joiners to their
+  in-game main. FL33T already syncs `[TICKER] CharacterName`; secondary
+  guild seats store that nick but do not PATCH fishermen.
+**Durable rule:** Tag BearThatCares before adding secondary-guild nick
+  sync. Invite DM is a different path.
+**Skill update:** fishermen nickname row.
+
+## 2026-09-14 — Fittings list icons too large
+
+**Category:** pulse.technology
+**Verdict:** needs-decision
+**Discord:** tagged decision owner
+**PR:** skill-only (same PR)
+**Symptom vs cause:** Wanted smaller fittings-page icons to scan faster.
+  `FittingCard` renders `ItemPicture` at 256.
+**Durable rule:** UX product call, not a 403. Ask denser cards vs list
+  mode.
+**Skill update:** fittings-icon row.
+
+## 2026-09-14 — Mining hulls missing from industry orders
+
+**Category:** pulse.technology
+**Verdict:** needs-decision
+**Discord:** tagged decision owner
+**PR:** skill-only (same PR)
+**Symptom vs cause:** Wanted Covetor/Retriever/Porpoise (and later
+  Guardian) on the order page. Those EveTypes have no `IndustryProduct`
+  row; combat/capital/minerals do.
+**Durable rule:** Dump `IndustryProduct` for the hull. Catalog config;
+  tag BearThatCares for hulls + strategy.
+**Skill update:** missing-order-hull row.
+
 ## 2026-09-13 — Tribe approve sent no secondary Discord invite DM
 
 **Category:** pulse.fishermen

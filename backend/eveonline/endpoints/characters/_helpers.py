@@ -11,6 +11,7 @@ from esi.models import CallbackRedirect, Token
 from app.errors import create_error_id
 from audit.models import AuditEntry
 from applications.models import EveCorporationApplication
+from eveonline.constants import FL33T_MEMBER_ALLIANCE_IDS
 from eveonline.endpoints.characters.schemas import UserCharacter
 from eveonline.helpers.characters import (
     merge_scope_groups,
@@ -137,7 +138,10 @@ def build_character_response(char: EveCharacter, primary: EveCharacter | None):
                 .first()
                 or ""
             )
-        if item.is_primary and item.alliance_id != 99011978:
+        if (
+            item.is_primary
+            and item.alliance_id not in FL33T_MEMBER_ALLIANCE_IDS
+        ):
             if not user_has_pending_or_rejected_application(char.user):
                 item.flags.append("MAIN_NOT_IN_FL33T")
         if getattr(char, "tag_count", 0) == 0:
