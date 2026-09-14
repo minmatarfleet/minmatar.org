@@ -101,6 +101,7 @@ import Viewport from '@layouts/Viewport.astro';
 import PageWide from '@components/page/PageWide.astro';
 import PageTitle from '@components/page/PageTitle.astro';
 import PageActions from '@components/page/PageActions.astro';
+import PageSubheader from '@components/page/PageSubheader.astro';
 
 import Flexblock from '@components/compositions/Flexblock.astro';
 import BlockList from '@components/compositions/BlockList.astro';
@@ -109,9 +110,14 @@ import Grid from '@components/compositions/Grid.astro';
 
 import Input from '@components/blocks/Input.astro';
 import Select from '@components/blocks/Select.astro';
+import Button from '@components/blocks/Button.astro';
 
 import MagnifierIcon from '@components/icons/buttons/MagnifierIcon.astro';
 import FittingsDialog from '@components/blocks/FittingsDialog.astro'
+import FittingsCollapsible from '@components/blocks/FittingsCollapsible.astro'
+
+const card_size_query = Astro.url.searchParams.get('card_size') ?? 'lg'
+const card_size = card_size_query === 'lg' || card_size_query === 'sm' ? card_size_query : 'lg'
 
 const page_title = t('fitting.list.page_title');
 const site_name = t('index.page_title')
@@ -274,6 +280,23 @@ const structured_data = buildFittingsListJsonLd(
             </PageActions>
         </FlexInline>
 
+        <PageSubheader slot="subheader">
+            {card_size === 'sm' ?
+                <Button
+                    href={translatePath('/ships/fittings/')}
+                    size='sm'
+                >
+                    {t('card_style')}
+                </Button> :
+                <Button
+                    href={translatePath('/ships/fittings?card_size=sm')}
+                    size='sm'
+                >
+                    {t('compact_mode')}
+                </Button>
+            }
+        </PageSubheader>
+
         <BlockList gap='var(--space-2xl)'>
             {fitting_groups.map((ship_type_group) =>
                 <Flexblock
@@ -296,7 +319,7 @@ const structured_data = buildFittingsListJsonLd(
                         <Grid
                             role="list"
                             class="[ w-full grid-fill ]"
-                            min_item_width='240px'
+                            min_item_width={card_size === 'lg' ? '240px' : '500px'}
                             row_gap='var(--space-3xs)'
                             column_gap='var(--space-3xs)'
                         >
@@ -306,7 +329,11 @@ const structured_data = buildFittingsListJsonLd(
                                     data-fitting-tags={(ship_group.tags ?? []).join(' ')}
                                     x-show="show_item($el)"
                                 >
-                                    <FittingsDialog ship_group={ship_group} />
+                                    {card_size === 'lg' ?
+                                            <FittingsDialog ship_group={ship_group} />
+                                        :
+                                            <FittingsCollapsible ship_group={ship_group} />
+                                    }
                                 </div>
                         )}
                     </Grid>

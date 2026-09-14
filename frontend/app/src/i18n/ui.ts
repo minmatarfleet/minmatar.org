@@ -3857,5 +3857,7 @@ export const ui = {
         'last_day_delta': 'Delta: Current value vs. yesterday’s initial sample.',
         'copy_data': 'Copy data',
         'solaris_description_fallback': 'Solaris Expeditionary Corps helps newer pilots break into J-space and lowsec with experienced mentorship, strong infrastructure, and room to learn through experience. We focus on building self-sufficient pilots who can make ISK, find content, and operate confidently on their own.',
+        'compact_mode': 'Compact mode',
+        'card_style': 'Card style',
     },
 } as const;
