@@ -41,6 +41,20 @@ do not duplicate it — one clarifying clause at most.
 
 ---
 
+## 2026-09-14 — External guild nicks are `[FL33T] Primary`
+
+**Category:** pulse.fishermen
+**Verdict:** bug (missing nick sync) after needs-decision
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** Tribe guild seats stored the FL33T nick but never
+  PATCHed the secondary guild. Decision: `[FL33T] Primary Character Name`,
+  including people already in the tribe.
+**Durable rule:** `apply_seat` sets that nick; reconciler backfills
+  present seats. Main Discord stays `[TICKER] Name`.
+**Skill update:** fishermen nickname row now describes the PATCH, not
+  “tag Bear first.”
+
 ## 2026-09-14 — Open #help batch (no thread URLs)
 
 **Category:** mixed (mostly pulse.technology)

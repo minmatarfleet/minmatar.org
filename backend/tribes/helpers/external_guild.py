@@ -12,6 +12,7 @@ from django.core import signing
 from django.utils import timezone
 
 from discord.client import DiscordClient, DiscordError, discord_authorize_url
+from discord.core import format_discord_nickname
 from discord.helpers import is_discord_unknown_guild_member_error
 from discord.models import DiscordGuild, DiscordUser
 from eveonline.helpers.characters import user_primary_character
@@ -33,6 +34,17 @@ FISHERMEN_GROUP_CODE = "pulse.fishermen"
 FISHERMEN_GUILD_ID = 834087499658952735
 FISHERMEN_MEMBER_ROLE_ID = 1543301902375329922  # Minmatar Fleet Alliance
 FISHERMEN_ALERT_CHANNEL_ID = 1543302547157286972  # info-fl33t
+
+# Secondary guild nicks are alliance-branded, not corp ticker.
+EXTERNAL_GUILD_NICK_PREFIX = "[FL33T] "
+
+
+def expected_external_guild_nickname(eve_name: str) -> str:
+    """`[FL33T] Primary Character Name`, truncated to Discord's 32-char limit."""
+    name = (eve_name or "").strip()
+    if not name:
+        return ""
+    return format_discord_nickname(EXTERNAL_GUILD_NICK_PREFIX, name)
 
 
 def client_for_binding(binding: TribeExternalGuild) -> DiscordClient:
@@ -193,6 +205,39 @@ def _refresh_identity(seat: TribeExternalGuildSeat, member: dict) -> None:
         seat.discord_nickname = nick
 
 
+def _refresh_eve_name(seat: TribeExternalGuildSeat) -> None:
+    if seat.user_id is None:
+        return
+    fields = _snapshot_fields(seat.user)
+    if fields:
+        seat.eve_name = fields["eve_name"]
+
+
+def _apply_expected_nickname(
+    client: DiscordClient, seat: TribeExternalGuildSeat, member: dict
+) -> bool:
+    """Set `[FL33T] Primary` on the secondary guild. True if Discord was PATCHed."""
+    expected = expected_external_guild_nickname(seat.eve_name)
+    if not expected:
+        return False
+    current = member.get("nick") if isinstance(member, dict) else None
+    if current == expected:
+        seat.discord_nickname = expected
+        return False
+    try:
+        client.update_user(seat.discord_user_id, expected)
+    except (DiscordError, requests.RequestException, RuntimeError) as exc:
+        logger.warning(
+            "Failed external-guild nick for seat %s (discord %s): %s",
+            seat.pk,
+            seat.discord_user_id,
+            exc,
+        )
+        return False
+    seat.discord_nickname = expected
+    return True
+
+
 def _try_oauth_guild_join(
     client: DiscordClient,
     seat: TribeExternalGuildSeat,
@@ -260,6 +305,7 @@ def apply_seat(
     if member is None:
         return seat.status
 
+    _refresh_eve_name(seat)
     _refresh_identity(seat, member)
     try:
         client.add_user_role(seat.discord_user_id, seat.binding.member_role_id)
@@ -267,6 +313,7 @@ def apply_seat(
         _record_seat_error(seat, f"add_role: {exc}")
         return seat.status
 
+    _apply_expected_nickname(client, seat, member)
     _mark_present(seat)
     return seat.status
 
@@ -505,6 +552,7 @@ def reconcile_external_guilds() -> dict:
         "alerts": 0,
         "errors": 0,
         "seats_ensured": 0,
+        "nicks_updated": 0,
     }
     seed_fishermen_external_guild()
     bindings = TribeExternalGuild.objects.filter(
@@ -530,7 +578,7 @@ def _ensure_seats_for_active_members(
     binding: TribeExternalGuild, active_user_ids: set[int]
 ) -> dict:
     """Create seats (and pending-join DMs) for active members missing one."""
-    result = {"joined": 0, "seats_ensured": 0}
+    result = {"joined": 0, "seats_ensured": 0, "nicks_updated": 0}
     if not active_user_ids:
         return result
     seated_user_ids = set(
@@ -546,17 +594,21 @@ def _ensure_seats_for_active_members(
         seat = ensure_seat(user, binding)
         if seat is None:
             continue
+        before_nick = seat.discord_nickname
         status = apply_seat(seat, entitled=True, send_dm_if_pending=True)
         result["seats_ensured"] += 1
         if status == TribeExternalGuildSeat.STATUS_PRESENT:
             result["joined"] += 1
+            seat.refresh_from_db()
+            if seat.discord_nickname != before_nick:
+                result["nicks_updated"] += 1
     return result
 
 
 def _reconcile_seats(
     binding: TribeExternalGuild, active_user_ids: set[int]
 ) -> tuple[dict, set[int]]:
-    result = {"joined": 0, "kicked": 0, "alerts": 0}
+    result = {"joined": 0, "kicked": 0, "alerts": 0, "nicks_updated": 0}
     seats = list(
         TribeExternalGuildSeat.objects.filter(binding=binding).exclude(
             status=TribeExternalGuildSeat.STATUS_REMOVED
@@ -565,10 +617,14 @@ def _reconcile_seats(
     for seat in seats:
         entitled = seat.user_id is not None and seat.user_id in active_user_ids
         before = seat.status
+        before_nick = seat.discord_nickname
         status = apply_seat(seat, entitled=entitled)
         if entitled and status == TribeExternalGuildSeat.STATUS_PRESENT:
             if before != TribeExternalGuildSeat.STATUS_PRESENT:
                 result["joined"] += 1
+            seat.refresh_from_db()
+            if seat.discord_nickname != before_nick:
+                result["nicks_updated"] += 1
         elif not entitled and status == TribeExternalGuildSeat.STATUS_REMOVED:
             result["kicked"] += 1
         elif status == TribeExternalGuildSeat.STATUS_CLEANUP_FAILED:
@@ -614,6 +670,7 @@ def _reconcile_binding(binding: TribeExternalGuild) -> dict:
         "alerts": 0,
         "errors": 0,
         "seats_ensured": 0,
+        "nicks_updated": 0,
     }
     client = client_for_binding(binding)
     active_user_ids = set(

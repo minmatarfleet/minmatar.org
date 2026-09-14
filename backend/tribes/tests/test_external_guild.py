@@ -9,13 +9,17 @@ from django.test import TestCase, override_settings
 
 from discord.models import DiscordGuild, DiscordUser
 from discord.signals import group_post_save, user_group_changed
+from eveonline.helpers.characters import set_primary_character
+from eveonline.models import EveCharacter
 from tribes.helpers.external_guild import (
     FISHERMEN_ALERT_CHANNEL_ID,
     FISHERMEN_MEMBER_ROLE_ID,
     append_query,
+    apply_seat,
     build_pending_join_dm_message,
     decode_oauth_state,
     encode_oauth_state,
+    expected_external_guild_nickname,
     join_seat_with_oauth_token,
     prepare_seats_for_user_delete,
     reconcile_external_guilds,
@@ -56,6 +60,14 @@ def _unknown_member_error() -> requests.exceptions.HTTPError:
 
 class ExternalGuildSeatTestCase(TestCase):
     def setUp(self):
+        django_signals.post_save.disconnect(
+            sender=EveCharacter,
+            dispatch_uid="populate_eve_character_public_data",
+        )
+        django_signals.post_save.disconnect(
+            sender=EveCharacter,
+            dispatch_uid="populate_eve_character_private_data",
+        )
         self.guild = DiscordGuild.objects.create(
             guild_id=834087499658952735,
             name="Fishermen",
@@ -82,6 +94,27 @@ class ExternalGuildSeatTestCase(TestCase):
             user=self.user,
             nickname="[A-RAT] BearThatCares",
         )
+
+    def _set_primary(self, name="Gray Vixen", character_id=2111111111):
+        char = EveCharacter.objects.create(
+            character_id=character_id,
+            character_name=name,
+            user=self.user,
+        )
+        set_primary_character(self.user, char)
+        return char
+
+    def test_expected_external_guild_nickname_format(self):
+        self.assertEqual(
+            expected_external_guild_nickname("Gray Vixen"),
+            "[FL33T] Gray Vixen",
+        )
+        self.assertEqual(expected_external_guild_nickname(""), "")
+        long_name = "A" * 40
+        nick = expected_external_guild_nickname(long_name)
+        self.assertTrue(nick.startswith("[FL33T] "))
+        self.assertLessEqual(len(nick), 32)
+        self.assertTrue(nick.endswith("…"))
 
     @patch("tribes.helpers.external_guild.send_pending_join_dm")
     @patch("tribes.helpers.external_guild.client_for_binding")
@@ -113,6 +146,7 @@ class ExternalGuildSeatTestCase(TestCase):
             "nick": "Bear",
             "roles": [],
         }
+        self._set_primary()
         TribeGroupMembership.objects.create(
             user=self.user,
             tribe_group=self.tribe_group,
@@ -121,6 +155,10 @@ class ExternalGuildSeatTestCase(TestCase):
         seat = TribeExternalGuildSeat.objects.get(binding=self.binding)
         self.assertEqual(seat.status, TribeExternalGuildSeat.STATUS_PRESENT)
         send_dm.assert_not_called()
+        client.update_user.assert_called_once_with(
+            self.discord_user.id, "[FL33T] Gray Vixen"
+        )
+        self.assertEqual(seat.discord_nickname, "[FL33T] Gray Vixen")
 
     @override_settings(
         DISCORD_EXTERNAL_GUILD_REDIRECT_URL=(
@@ -277,6 +315,7 @@ class ExternalGuildSeatTestCase(TestCase):
             "nick": "Bear",
             "roles": [],
         }
+        self._set_primary()
         ok = join_seat_with_oauth_token(seat, "oauth-token")
         self.assertTrue(ok)
         client.add_guild_member.assert_called_once_with(
@@ -285,8 +324,90 @@ class ExternalGuildSeatTestCase(TestCase):
         client.add_user_role.assert_called_once_with(
             self.discord_user.id, self.binding.member_role_id
         )
+        client.update_user.assert_called_once_with(
+            self.discord_user.id, "[FL33T] Gray Vixen"
+        )
         seat.refresh_from_db()
         self.assertEqual(seat.status, TribeExternalGuildSeat.STATUS_PRESENT)
+        self.assertEqual(seat.discord_nickname, "[FL33T] Gray Vixen")
+
+    @patch("tribes.helpers.external_guild.client_for_binding")
+    def test_apply_seat_skips_nick_patch_when_already_expected(
+        self, client_for_binding
+    ):
+        client = client_for_binding.return_value
+        self._set_primary()
+        seat = TribeExternalGuildSeat.objects.create(
+            binding=self.binding,
+            user=self.user,
+            discord_user_id=self.discord_user.id,
+            discord_username="bearthatcares",
+            discord_nickname="old",
+            eve_name="Gray Vixen",
+            status=TribeExternalGuildSeat.STATUS_PRESENT,
+        )
+        client.get_user.return_value = {
+            "user": {
+                "id": str(self.discord_user.id),
+                "username": "bearthatcares",
+            },
+            "nick": "[FL33T] Gray Vixen",
+            "roles": [str(self.binding.member_role_id)],
+        }
+        apply_seat(seat, entitled=True)
+        client.update_user.assert_not_called()
+        seat.refresh_from_db()
+        self.assertEqual(seat.discord_nickname, "[FL33T] Gray Vixen")
+
+    @patch("tribes.helpers.external_guild.send_pending_join_dm")
+    @patch("tribes.helpers.external_guild.client_for_binding")
+    def test_reconciler_backfills_nicks_for_present_seats(
+        self, client_for_binding, send_dm
+    ):
+        del send_dm
+        client = client_for_binding.return_value
+        self._set_primary()
+        client.get_user.side_effect = _unknown_member_error()
+        TribeGroupMembership.objects.create(
+            user=self.user,
+            tribe_group=self.tribe_group,
+            status=TribeGroupMembership.STATUS_ACTIVE,
+        )
+        seat = TribeExternalGuildSeat.objects.get(binding=self.binding)
+        self.assertEqual(
+            seat.status, TribeExternalGuildSeat.STATUS_PENDING_JOIN
+        )
+        seat.status = TribeExternalGuildSeat.STATUS_PRESENT
+        seat.discord_nickname = "[A-RAT] BearThatCares"
+        seat.save(update_fields=["status", "discord_nickname", "updated_at"])
+        client.get_user.side_effect = None
+        client.get_user.return_value = {
+            "user": {
+                "id": str(self.discord_user.id),
+                "username": "bearthatcares",
+            },
+            "nick": "[A-RAT] BearThatCares",
+            "roles": [str(self.binding.member_role_id)],
+        }
+        client.get_members.return_value = [
+            {
+                "user": {
+                    "id": str(self.discord_user.id),
+                    "username": "bearthatcares",
+                    "bot": False,
+                },
+                "nick": "[A-RAT] BearThatCares",
+                "roles": [str(self.binding.member_role_id)],
+            }
+        ]
+        client.update_user.reset_mock()
+        stats = reconcile_external_guilds()
+        self.assertGreaterEqual(stats["nicks_updated"], 1)
+        client.update_user.assert_called_with(
+            self.discord_user.id, "[FL33T] Gray Vixen"
+        )
+        seat.refresh_from_db()
+        self.assertEqual(seat.discord_nickname, "[FL33T] Gray Vixen")
 
     @override_settings(WEB_LINK_URL="https://my.minmatar.org")
     def test_oauth_state_roundtrip(self):
