@@ -57,13 +57,8 @@ import Tech3Icon from '@components/icons/Tech3Icon.astro';
             </div>
             <Wrapper class="[ fitting-card-body ]" padding_block="var(--space-2xs)" padding_inline="var(--space-2xs)">
                 <Flexblock gap='var(--space-3xs)'>
-                    <FlexInline gap='var(--space-3xs)'>
-                        {format_fitting_tags_line(ship_group.tags, t)?.map(tag =>
-                            <Tag text={tag} />
-                        )}
-                    </FlexInline>
                     <small>
-                        {t(ship_group.fittings.length !== 1 ? 'fittings_plural' : 'fittings_singular').replace('{count}', String(ship_group.fittings.length))}
+                        {semantic_list(lang, format_fitting_tags_line(ship_group.tags, t))}
                     </small>
                     <h3>{ship_group.ship_name}</h3>
                 </Flexblock>
