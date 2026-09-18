@@ -41,6 +41,77 @@ do not duplicate it — one clarifying clause at most.
 
 ---
 
+## 2026-09-18 — Buyback Match stock extra ores + non-100 lots
+
+**Category:** pulse.technology
+**Verdict:** bug
+**Discord:** fix + PR URL
+**PR:** fix+skill
+**Symptom vs cause:** Pasting compressed ore into Match stock added other
+  ore families and leftover hangar amounts like 11231. Leftover ore was
+  converted to mineral demand, then filled from any hangar ore. Compressed
+  picks were not floored to the 100-unit reprocess batch.
+**Durable rule:** Ore paste stays in-family. Floor compressed qty to
+  `ORE_BATCH_SIZE`. Mineral paste still converts to ore.
+**Skill update:** Match stock failure-class row.
+
+## 2026-09-18 — No voice / no Discord roles after site auth
+
+**Category:** pulse.technology
+**Verdict:** bug (missing primary) + clarify (Guest)
+**Discord:** fix + PR URL for the sole-character heal; clarify Guest
+**PR:** fix+skill
+**Symptom vs cause:** Voice needs the Alliance Discord role. That role
+  comes from `UserAffiliation`, which requires a primary character.
+  `EvePlayer` can exist with `primary_character` null while a FL33T
+  character is already linked (`Corp <TICKER>` present, no Alliance).
+  A Guest with a non-FL33T/BUILD main is expected.
+**Durable rule:** Dump `EvePlayer.primary_character` before blaming
+  Discord. Affiliation sync sets a main when there is exactly one
+  character.
+**Skill update:** authed-but-no-roles row.
+
+## 2026-09-18 — Recruiter group required to see applications
+
+**Category:** pulse.technology
+**Verdict:** clarify
+**Discord:** clarify to opener
+**PR:** skill-only (same PR)
+**Symptom vs cause:** Applications page needs `Corp <TICKER> Recruiter`
+  (ESI Personnel_Manager). Generic Corporation Director / Basic ESI is
+  not that group. Empty corp recruiter/director M2M means ESI roles
+  have not listed anyone.
+**Durable rule:** Dump `user.groups` vs `corporation.recruiters`. Role
+  name ≠ Django perm.
+**Skill update:** recruiter-vs-director applications row.
+
+## 2026-09-18 — Tribe green tick is OR across requirement blocks
+
+**Category:** pulse.technology
+**Verdict:** clarify
+**Discord:** clarify to opener
+**PR:** skill-only (same PR)
+**Symptom vs cause:** A group can be green without Black Ops / JDC if
+  another requirement block is met (e.g. Covert Ops + cyno). Multiple
+  `TribeGroupRequirement` rows OR; skills inside one row AND.
+**Durable rule:** Dump the group’s requirement rows before treating a
+  green tick as a skillset bug.
+**Skill update:** tribe green-tick OR row.
+
+## 2026-09-18 — Wiki /en/ prefix and archived tech thread
+
+**Category:** pulse.technology
+**Verdict:** clarify
+**Discord:** thread gone; body still used
+**PR:** skill-only (same PR) + drop `/en/` from site wiki links
+**Symptom vs cause:** Onboarding URL with `/en/` times out; wiki hosting
+  can also hang. BUILD mains are already covered by `FL33T_MEMBER_ALLIANCE_IDS`
+  on origin/main. Associates can apply to supply tribe groups on the
+  tribe pages (token/skill gates still apply).
+**Durable rule:** Open `HelpTicket` row with a missing Discord thread is
+  still a ticket. Do not use `/en/` on wiki.minmatar.org links.
+**Skill update:** wiki `/en/` row; archived-thread row.
+
 ## 2026-09-14 — External guild nicks are `[FL33T] Primary`
 
 **Category:** pulse.fishermen

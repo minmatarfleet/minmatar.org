@@ -13,7 +13,10 @@ from buyback.helpers.classify import (
     classify_eve_type,
     resolve_types_by_name,
 )
-from buyback.helpers.ore_names import compressed_buyback_ore_base
+from buyback.helpers.ore_names import (
+    buyback_ore_family,
+    compressed_buyback_ore_base,
+)
 from buyback.helpers.paste import parse_eve_paste
 from buyback.helpers.purchase_refine import (
     PurchaseRefine,
@@ -31,6 +34,7 @@ from industry.helpers.compressed_ore import (
     PRIMARY_BELT_ORE_FOR_MINERAL,
     ore_reprocessing_yields,
 )
+from industry.helpers.producers import ORE_BATCH_SIZE
 
 
 def _ore_yields(name: str, refine_rate: float) -> dict[str, float]:
@@ -178,6 +182,63 @@ def _allocate_ore_for_minerals(
         _credit_minerals(remaining_minerals, yields, take)
 
 
+def _allocate_same_family_ore(
+    remaining: dict[int, int],
+    lots: dict[int, EveType],
+    leftover: int,
+    family: str,
+    picks: dict[int, FillPick],
+) -> int:
+    """Fill leftover requested ore from the same family only. Returns unfilled qty."""
+    if leftover <= 0 or not family:
+        return leftover
+    ranked: list[tuple[tuple, int, EveType]] = []
+    for type_id, eve_type in lots.items():
+        if remaining.get(type_id, 0) <= 0:
+            continue
+        if buyback_ore_family(eve_type.name) != family:
+            continue
+        exact = eve_type.name == f"Compressed {family}"
+        ranked.append(((0 if exact else 1, eve_type.name), type_id, eve_type))
+    ranked.sort(key=lambda row: row[0])
+    for _, type_id, eve_type in ranked:
+        if leftover <= 0:
+            break
+        take = min(remaining[type_id], leftover)
+        if take <= 0:
+            continue
+        remaining[type_id] -= take
+        leftover -= take
+        _add_pick(
+            picks,
+            FillPick(
+                type_id=type_id,
+                name=eve_type.name,
+                quantity=take,
+                fill_source="refine",
+                unit_price=None,
+                line_total=None,
+            ),
+        )
+    return leftover
+
+
+def _quantize_compressed_ore_picks(
+    picks: dict[int, FillPick], remaining: dict[int, int]
+) -> None:
+    """Sell compressed ore in reprocessable lots of ORE_BATCH_SIZE."""
+    for type_id, pick in list(picks.items()):
+        if not compressed_buyback_ore_base(pick.name):
+            continue
+        quantized = (pick.quantity // ORE_BATCH_SIZE) * ORE_BATCH_SIZE
+        extra = pick.quantity - quantized
+        if extra:
+            remaining[type_id] = remaining.get(type_id, 0) + extra
+            pick.quantity = quantized
+        if pick.quantity <= 0:
+            del picks[type_id]
+
+
 def fill_purchase(  # noqa: C901
     paste: str,
     *,
@@ -256,21 +317,19 @@ def fill_purchase(  # noqa: C901
             continue
         classified = classify_eve_type(eve_type)
         if classified.category == BuybackCategory.ORE:
-            yields = _ore_yields(
-                eve_type.name, refine.rate_for_ore(eve_type.name)
+            family = buyback_ore_family(eve_type.name)
+            leftover = _allocate_same_family_ore(
+                remaining, lots, leftover, family or "", picks
             )
-            for mineral, per_unit in yields.items():
-                if mineral not in MINERAL_NAMES or per_unit <= 0:
-                    continue
-                remaining_minerals[mineral] = remaining_minerals.get(
-                    mineral, 0
-                ) + int(math.ceil(per_unit * leftover))
+            if leftover > 0:
+                unmatched.append((eve_type.name, leftover, eve_type))
             continue
         unmatched.append((eve_type.name, leftover, eve_type))
 
     _allocate_ore_for_minerals(
         remaining, lots, remaining_minerals, refine, picks
     )
+    _quantize_compressed_ore_picks(picks, remaining)
 
     for name, qty in remaining_minerals.items():
         if qty > 0:

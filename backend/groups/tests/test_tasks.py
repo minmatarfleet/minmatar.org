@@ -14,8 +14,12 @@ from eveonline.models import (
     EveAlliance,
     EveCharacter,
     EveCorporation,
+    EvePlayer,
 )
-from eveonline.helpers.characters import set_primary_character
+from eveonline.helpers.characters import (
+    set_primary_character,
+    user_primary_character,
+)
 from discord.models import DiscordUser
 from groups.models import (
     AffiliationType,
@@ -267,6 +271,78 @@ class UserAffiliationTestCase(TestCase):
         ):
             _ensure_user_affiliation(user, affiliation)
         self.assertEqual(UserAffiliation.objects.filter(user=user).count(), 1)
+
+    def test_affiliation_heals_missing_primary_when_user_has_one_character(
+        self,
+    ):
+        user = User.objects.create(username="heal_sole_primary")
+        group = Group.objects.create(name="heal_sole_primary")
+        corporation = EveCorporation.objects.create(corporation_id=98726199)
+        affiliation_type = AffiliationType.objects.create(
+            name="HealCorp",
+            description="Example",
+            image_url="https://example.com/image.png",
+            group=group,
+            priority=1,
+        )
+        affiliation_type.corporations.add(corporation)
+        character = EveCharacter.objects.create(
+            character_id=1440000001,
+            character_name="Heal Sole Pilot",
+            user=user,
+            corporation_id=corporation.corporation_id,
+        )
+        EvePlayer.objects.create(
+            user=user,
+            nickname="heal_sole_primary",
+            primary_character=None,
+        )
+        self.assertIsNone(user_primary_character(user))
+
+        update_affiliations()
+
+        self.assertEqual(user_primary_character(user), character)
+        self.assertEqual(
+            UserAffiliation.objects.get(user=user).affiliation,
+            affiliation_type,
+        )
+
+    def test_affiliation_does_not_guess_primary_when_user_has_two_characters(
+        self,
+    ):
+        user = User.objects.create(username="heal_two_chars")
+        group = Group.objects.create(name="heal_two_chars")
+        corporation = EveCorporation.objects.create(corporation_id=98726200)
+        affiliation_type = AffiliationType.objects.create(
+            name="TwoCharCorp",
+            description="Example",
+            image_url="https://example.com/image.png",
+            group=group,
+            priority=1,
+        )
+        affiliation_type.corporations.add(corporation)
+        EveCharacter.objects.create(
+            character_id=1440000002,
+            character_name="Two Char A",
+            user=user,
+            corporation_id=corporation.corporation_id,
+        )
+        EveCharacter.objects.create(
+            character_id=1440000003,
+            character_name="Two Char B",
+            user=user,
+            corporation_id=corporation.corporation_id,
+        )
+        EvePlayer.objects.create(
+            user=user,
+            nickname="heal_two_chars",
+            primary_character=None,
+        )
+
+        update_affiliations()
+
+        self.assertIsNone(user_primary_character(user))
+        self.assertFalse(UserAffiliation.objects.filter(user=user).exists())
 
     def test_update_affiliation_logs_errors_instead_of_raising(self):
         with patch(

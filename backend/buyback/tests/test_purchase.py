@@ -197,6 +197,14 @@ class PurchaseFillTestCase(TestCase):
             category_id=25,
             category_name="Asteroid",
         )
+        self.scordite = ensure_type(
+            type_id=62520,
+            name="Compressed Scordite",
+            group_id=463,
+            group_name="Scordite",
+            category_id=25,
+            category_name="Asteroid",
+        )
         self.water = ensure_type(
             type_id=3645,
             name="Water",
@@ -227,6 +235,7 @@ class PurchaseFillTestCase(TestCase):
         for eve_type, split in (
             (self.ore, "12.00"),
             (self.grade, "13.00"),
+            (self.scordite, "14.00"),
             (self.water, "100.00"),
         ):
             EveMarketItemLocationPrice.objects.create(
@@ -282,6 +291,42 @@ class PurchaseFillTestCase(TestCase):
         self.assertEqual(fill.picks[0].name, "Compressed Veldspar II-Grade")
         self.assertIn("Compressed Veldspar II-Grade\t", fill.janice_tsv)
         self.assertNotIn("Veldspar\t100", fill.janice_tsv)
+
+    def test_ore_paste_does_not_substitute_other_families(
+        self, unused_mock_esi
+    ):
+        _ledger(
+            eve_type=self.ore,
+            quantity=50,
+            reason=BuybackLedgerEntry.Reason.IN_CONTRACT,
+            source_id="in:ore-short",
+        )
+        _ledger(
+            eve_type=self.scordite,
+            quantity=5000,
+            reason=BuybackLedgerEntry.Reason.IN_CONTRACT,
+            source_id="in:scordite",
+        )
+        fill = fill_purchase("Compressed Veldspar\t200")
+        pick_names = [pick.name for pick in fill.picks]
+        self.assertNotIn("Compressed Scordite", pick_names)
+        self.assertTrue(
+            any(row.name == "Compressed Veldspar" for row in fill.shortfalls)
+        )
+
+    def test_compressed_ore_quantities_are_multiples_of_100(
+        self, unused_mock_esi
+    ):
+        _ledger(
+            eve_type=self.ore,
+            quantity=11231,
+            reason=BuybackLedgerEntry.Reason.IN_CONTRACT,
+            source_id="in:ore-odd",
+        )
+        fill = fill_purchase("Compressed Veldspar\t11231")
+        self.assertEqual(len(fill.picks), 1)
+        self.assertEqual(fill.picks[0].quantity, 11200)
+        self.assertEqual(fill.janice_tsv, "Compressed Veldspar\t11200")
 
     def test_amamake_uses_facility_refine_not_settings(self, unused_mock_esi):
         _ledger(

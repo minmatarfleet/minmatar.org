@@ -38,7 +38,14 @@ def compressed_buyback_ore_base(name: str) -> str | None:
     """Return the buyback ore family for a Compressed * type, if any."""
     if not name.startswith("Compressed "):
         return None
-    rest = name[len("Compressed ") :]
+    return buyback_ore_family(name)
+
+
+def buyback_ore_family(name: str) -> str | None:
+    """Return the ore family for compressed or uncompressed buyback ores."""
+    rest = name
+    if rest.startswith("Compressed "):
+        rest = rest[len("Compressed ") :]
     rest = _GRADE_SUFFIX_RE.sub("", rest)
     rest = _MOON_PREFIX_RE.sub("", rest)
     return rest if rest in BUYBACK_ORE_BASES else None
