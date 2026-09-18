@@ -17,6 +17,7 @@ from buyback.helpers.accepted_items import (
     ore_jita_buy_unit,
     seed_accepted_items,
 )
+from buyback.helpers.ore_names import buyback_ore_family
 from buyback.models import BuybackAcceptedItem
 from buyback.tests.helpers import ensure_type
 from eveonline.models import EveCharacter
@@ -67,6 +68,12 @@ class AcceptedItemsSeedTestCase(TestCase):
         self.assertIsNone(compressed_buyback_ore_base("Veldspar"))
         self.assertIsNone(compressed_buyback_ore_base("Compressed Blue Ice"))
         self.assertIsNone(compressed_buyback_ore_base("Compressed Arkonor"))
+
+    def test_buyback_ore_family_includes_uncompressed(self):
+        self.assertEqual(buyback_ore_family("Veldspar"), "Veldspar")
+        self.assertEqual(
+            buyback_ore_family("Compressed Veldspar II-Grade"), "Veldspar"
+        )
 
     def test_compressed_ore_buy_factor_and_market_name(self):
         self.assertEqual(

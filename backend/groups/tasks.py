@@ -11,6 +11,7 @@ from discord.client import DiscordClient
 from discord.exceptions import DiscordRoleAssignmentError
 from discord.helpers import handle_discord_guild_member_error
 from eveonline.helpers.characters import (
+    set_primary_character,
     user_primary_character,
 )
 from eveonline.models import EveCharacter
@@ -161,10 +162,24 @@ def _user_qualifies_for_affiliation(primary_character, rule):
     return False
 
 
+def _maybe_set_sole_primary_character(user):
+    """If the user has exactly one character and no main, make it the main."""
+    primary = user_primary_character(user)
+    if primary:
+        return primary
+    characters = list(
+        EveCharacter.objects.filter(user=user).order_by("character_id")
+    )
+    if len(characters) != 1:
+        return None
+    set_primary_character(user, characters[0])
+    return user_primary_character(user)
+
+
 def _update_affiliation_for_user(user, affiliation_rules):
     logger.info("Checking affiliations for user %s", user)
 
-    primary_character = user_primary_character(user)
+    primary_character = _maybe_set_sole_primary_character(user)
     if not primary_character:
         logger.info("No primary character found for user %s", user)
         UserAffiliation.objects.filter(user=user).delete()
