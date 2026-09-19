@@ -45,6 +45,7 @@ import FlexInline from '@components/compositions/FlexInline.astro';
 import FixedFluid from '@components/compositions/FixedFluid.astro';
 
 import StylessButton from '@components/blocks/StylessButton.astro';
+import Tag from '@components/blocks/Tag.astro';
 import VerticalCenter from '@components/blocks/VerticalCenter.astro';
 import CharacterPicture from '@components/blocks/CharacterPicture.astro';
 import CorporationBadge from '@components/blocks/CorporationBadge.astro';
@@ -122,6 +123,18 @@ import FlexInlineSiblings from '@components/compositions/FlexInlineSiblings.astr
                                                 type_id={doctrine.primary_fittings[0].ship_id}
                                                 item_name={doctrine.name}
                                                 size={32}
+                                            />
+                                        </StylessButton>
+                                    </div>
+                                }
+
+                                {fleet.campaign_slug &&
+                                    <div class="[ fleet-fact ]">
+                                        <small class="[ fleet-fact__label ]">{t('campaign')}</small>
+                                        <StylessButton href={translatePath(`/campaigns/${fleet.campaign_slug}/`)}>
+                                            <Tag
+                                                color='militia-purple'
+                                                text={fleet.campaign_name ?? fleet.campaign_slug}
                                             />
                                         </StylessButton>
                                     </div>

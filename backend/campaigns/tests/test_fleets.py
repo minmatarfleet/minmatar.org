@@ -354,3 +354,33 @@ class FleetCampaignApiTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertNotIn("standing", [row["type"] for row in response.json()])
+
+    def test_re_saving_a_fleet_keeps_a_campaign_that_has_ended(self):
+        """A campaign ending must not detach the fleets that fought in it."""
+        fleet_id = self._create(campaign_id=self.campaign.id).json()["id"]
+        self.campaign.status = "completed"
+        self.campaign.save()
+
+        response = self.client.patch(
+            f"/api/fleets/{fleet_id}",
+            data=json.dumps({"campaign_id": self.campaign.id}),
+            content_type="application/json",
+            **auth_headers(self.fc),
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(
+            EveFleet.objects.get(id=fleet_id).campaign_id, self.campaign.id
+        )
+
+    def test_moving_a_fleet_onto_a_finished_campaign_is_still_refused(self):
+        fleet_id = self._create().json()["id"]
+        self.campaign.status = "completed"
+        self.campaign.save()
+
+        response = self.client.patch(
+            f"/api/fleets/{fleet_id}",
+            data=json.dumps({"campaign_id": self.campaign.id}),
+            content_type="application/json",
+            **auth_headers(self.fc),
+        )
+        self.assertEqual(response.status_code, 400)

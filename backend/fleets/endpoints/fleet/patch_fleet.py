@@ -45,7 +45,13 @@ def update_fleet(request, fleet_id: int, payload: UpdateEveFleetRequest):
         return 400, err
     _fleet_apply_optional_scalar_updates(fleet, payload)
 
-    if "campaign_id" in payload.model_fields_set:
+    if (
+        "campaign_id" in payload.model_fields_set
+        and payload.campaign_id != fleet.campaign_id
+    ):
+        # Only a change is validated. A fleet attached to a campaign that has
+        # since ended keeps it, and re-saving the fleet cannot detach it by
+        # accident.
         campaign = resolve_campaign(payload.campaign_id)
         if isinstance(campaign, tuple):
             return 400, campaign[1]

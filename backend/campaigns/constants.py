@@ -154,7 +154,6 @@ DEFAULT_ORDER_POINTS = {
     "gang_kill": 30,
     "gang": 30,
     "plex": 40,
-    "plex_class": 50,
     "advantage_site": 40,
     "supply_cache": 50,
     "advantage_generated": 60,

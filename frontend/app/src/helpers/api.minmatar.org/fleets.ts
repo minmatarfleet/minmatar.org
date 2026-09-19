@@ -136,6 +136,11 @@ export async function get_fleets_v3(access_token:string, status:FleetStatus) {
     }
 }
 
+/**
+ * `fleet.campaign_id` is forwarded as-is: an id attaches the fleet to that
+ * campaign, `null` schedules it unattached. The API answers 400 when the
+ * campaign is not `scheduled`/`active` or does not exist.
+ */
 export async function create_fleet(access_token:string, fleet:FleetRequest) {
     const data = JSON.stringify(fleet)
 
@@ -170,6 +175,11 @@ export async function create_fleet(access_token:string, fleet:FleetRequest) {
     }
 }
 
+/**
+ * `fleet.campaign_id` is only sent when it is set on the payload: `null`
+ * detaches the campaign, an id re-attaches it, and leaving it `undefined`
+ * (JSON.stringify drops it) leaves the current campaign untouched.
+ */
 export async function update_fleet(access_token:string, fleet:FleetPatchRequest, fleet_id: number) {
     const data = JSON.stringify(fleet)
     

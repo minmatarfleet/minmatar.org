@@ -2679,6 +2679,8 @@ export const ui = {
         'view': 'View',
         'apply': 'Apply',
         'no_doctrine': 'No doctrine',
+        'campaign': 'Campaign',
+        'no_campaign': 'No campaign',
         'push_notifications': 'Push notifications',
         'fleet_notifications': 'Fleet notifications',
         'fleet_notifications_description': 'Receive starting fleets notifications on this device',

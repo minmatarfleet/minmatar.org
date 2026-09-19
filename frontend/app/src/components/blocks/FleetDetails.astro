@@ -103,6 +103,8 @@ const eve_time_text = eve_time.toLocaleDateString(lang, JSON.parse(import.meta.e
             corporation_name: fleet_commander_metrics?.corporation_name ?? t('unknown_corporation'),
             fleet_commander_fleet_count: fleet_commander_metrics?.fleet_count,
             members_count: fleet_metrics?.members ?? 0,
+            campaign_slug: fleet.campaign_slug,
+            campaign_name: fleet.campaign_name,
         }}
         doctrine={fleet.doctrine}
         supply_contracts={history ? supply_contracts : []}

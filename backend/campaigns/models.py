@@ -432,7 +432,6 @@ class CampaignDailyOrder(models.Model):
         GANG_KILL = "gang_kill", "Kill alongside enlisted pilots"
         GANG = "gang", "Form or join a gang"
         PLEX = "plex", "Capture complexes"
-        PLEX_CLASS = "plex_class", "Capture a larger complex"
         ADVANTAGE_SITE = "advantage_site", "Run an advantage site"
         SUPPLY_CACHE = "supply_cache", "Kill a supply cache"
         ADVANTAGE_GENERATED = "advantage_generated", "Generate advantage"

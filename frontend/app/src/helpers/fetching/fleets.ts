@@ -22,6 +22,7 @@ import {
 import { get_route } from '@helpers/api.eveonline/routes'
 import { get_user_character, get_users_character } from '@helpers/fetching/characters'
 import { fetch_doctrine_by_id } from '@helpers/fetching/doctrines'
+import { get_campaign } from '@helpers/api.minmatar.org/campaigns'
 import { get_system_sun_type_id } from '@helpers/sde/map'
 import { get_fleet_users } from '@helpers/api.minmatar.org/fleets'
 import { unique_values } from '@helpers/array'
@@ -105,6 +106,17 @@ export async function fetch_fleet_by_id(access_token:string, fleet_id:number) {
     if (fleet?.doctrine_id)
         doctrine = await fetch_doctrine_by_id(fleet.doctrine_id)
 
+    // The fleet payload only carries the slug. The readable name is a bonus:
+    // a viewer without the campaigns feature gets a 403 and keeps the slug.
+    let campaign_name:string | null = null
+    if (fleet?.campaign_slug) {
+        try {
+            campaign_name = (await get_campaign(fleet.campaign_slug, access_token))?.name ?? null
+        } catch (error) {
+            console.log(`Skipping campaign name: ${error.message}`)
+        }
+    }
+
     return {
         id: fleet.id,
         description: fleet.description,
@@ -121,6 +133,9 @@ export async function fetch_fleet_by_id(access_token:string, fleet_id:number) {
         status: fleet.status,
         aar_link: fleet.aar_link ?? '',
         roam_report_url: fleet.roam_report_url ?? '',
+        campaign_id: fleet.campaign_id ?? null,
+        campaign_slug: fleet.campaign_slug ?? null,
+        campaign_name: campaign_name,
     } as FleetUI
 }
 

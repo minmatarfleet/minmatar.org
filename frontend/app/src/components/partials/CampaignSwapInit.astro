@@ -7,12 +7,19 @@
 ---
 
 <script>
-    function init_campaign_swap_root(target: HTMLElement) {
+    function init_campaign_swap_root(node: unknown) {
+        const element = node as HTMLElement | null
+
+        // An `outerHTML` swap detaches the old target, and processing a node
+        // that is no longer in the document does nothing useful.
+        if (!element || !element.isConnected)
+            return
+
         const htmx_global = (window as any).htmx
         const alpine_global = (window as any).Alpine
 
-        if (htmx_global) htmx_global.process(target)
-        if (alpine_global) alpine_global.initTree(target)
+        if (htmx_global) htmx_global.process(element)
+        if (alpine_global) alpine_global.initTree(element)
     }
 
     function bind_campaign_swap_init() {
@@ -22,17 +29,17 @@
         document.body.dataset.campaignSwapBound = '1'
 
         document.body.addEventListener('htmx:afterSwap', (event: any) => {
-            const target = event.detail?.target as HTMLElement | undefined
+            // `innerHTML` swaps report the live container in detail.target.
+            // `outerHTML` swaps replace it, so detail.target is detached and
+            // the event fires on the parent that now holds the new markup.
+            init_campaign_swap_root(event.detail?.target)
+            init_campaign_swap_root(event.target)
 
-            if (!target)
-                return
-
-            init_campaign_swap_root(target)
-
-            // `outerHTML` swaps replace the target, so its parent is the live root.
-            const scope = target.parentElement
-            if (scope && scope !== target)
-                init_campaign_swap_root(scope)
+            const replacement = event.detail?.target?.id
+                ? document.getElementById(event.detail.target.id)
+                : null
+            if (replacement && replacement !== event.detail?.target)
+                init_campaign_swap_root(replacement)
         })
     }
 

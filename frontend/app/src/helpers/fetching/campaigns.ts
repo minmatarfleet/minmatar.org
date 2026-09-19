@@ -9,6 +9,7 @@ import type {
     CampaignWeekTarget,
 } from '@dtypes/api.minmatar.org'
 import type { TagColors } from '@dtypes/layout_components'
+import { get_campaigns } from '@helpers/api.minmatar.org/campaigns'
 
 export interface CampaignGroups {
     live:       CampaignListItem[];
@@ -42,6 +43,29 @@ export interface CoverageBar {
     hostile_activity:   number;
     our_percent:        number;
     hostile_percent:    number;
+}
+
+/** A fleet can only be attached to a campaign that is open for fights. */
+const ATTACHABLE_CAMPAIGN_STATUSES = [ 'scheduled', 'active' ]
+
+/**
+ * Id/name/slug only — the campaign dropdown on the fleet schedule form.
+ *
+ * Scheduling a fleet must never depend on campaigns: a fleet commander
+ * without the `campaigns.view` feature gets a 403 here, and every other
+ * failure (backend down, network) is just as survivable. Both answer with an
+ * empty list so the form renders without the field.
+ */
+export async function fetch_campaign_options(access_token:string | false = false):Promise<CampaignListItem[]> {
+    try {
+        const campaigns = await get_campaigns(access_token)
+
+        return (campaigns ?? []).filter(campaign => ATTACHABLE_CAMPAIGN_STATUSES.includes(campaign.status))
+    } catch (error) {
+        console.log(`Skipping campaign options: ${error.message}`)
+
+        return []
+    }
 }
 
 /** Live campaigns first, then the ones yet to open, then everything finished. */

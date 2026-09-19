@@ -459,6 +459,8 @@ export interface Fleet {
     status?:            TrackingStatus;
     aar_link:           string;
     roam_report_url?:   string | null;
+    campaign_id?:       number | null;
+    campaign_slug?:     string | null;
 }
 
 export interface FleetBasic {
@@ -483,6 +485,7 @@ export interface FleetRequest {
     disable_motd:       boolean;
     immediate_ping?:    boolean;
     status?:            TrackingStatus;
+    campaign_id?:       number | null;
 }
 
 export interface FleetPatchRequest {
@@ -498,6 +501,7 @@ export interface FleetPatchRequest {
     status?:            TrackingStatus;
     aar_link?:          string;
     roam_report_url?:   string | null;
+    campaign_id?:       number | null;
 }
 
 export const tracking_status = ['pending', 'active', 'complete', 'cancelled', 'unknown'] as const
@@ -2419,6 +2423,7 @@ export interface CampaignSystemSummary {
 }
 
 export interface CampaignListItem {
+    id:                 number;
     slug:               string;
     name:               string;
     short_code:         string;

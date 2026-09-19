@@ -2,7 +2,7 @@
 import { i18n } from '@helpers/i18n'
 const { t, translatePath } = i18n(Astro.url)
 
-import type { Audience, Location } from '@dtypes/api.minmatar.org'
+import type { Audience, Location, CampaignListItem } from '@dtypes/api.minmatar.org'
 import type { DoctrineType, SelectOptions, FleetUI, CharacterBasic } from '@dtypes/layout_components'
 import { fleet_types } from '@dtypes/api.minmatar.org'
 import { get_player_icon } from '@helpers/eve_image_server'
@@ -12,6 +12,7 @@ interface Props {
     audiences:                      Audience[];
     locations:                      Location[];
     doctrines:                      DoctrineType[];
+    campaigns?:                     CampaignListItem[];
     fleet_commander:                CharacterBasic | null;
     eve_date:                       string;
     eve_time:                       string;
@@ -24,6 +25,7 @@ const {
     audiences: audiences_prop,
     locations: locations_prop,
     doctrines: doctrines_prop,
+    campaigns: campaigns_prop = [],
     fleet_commander,
     eve_date,
     eve_time,
@@ -34,6 +36,7 @@ const {
 const audiences = Array.isArray(audiences_prop) ? audiences_prop : []
 const locations = Array.isArray(locations_prop) ? locations_prop : []
 const doctrines = Array.isArray(doctrines_prop) ? doctrines_prop : []
+const campaigns = Array.isArray(campaigns_prop) ? campaigns_prop : []
 
 const no_doctrine_option = {
     label: t('no_doctrine'),
@@ -42,6 +45,36 @@ const no_doctrine_option = {
 
 const doctrines_select_options = [  no_doctrine_option  ].concat(
     doctrines.map( (i):SelectOptions => { return { label: i.name, value: i.id } } )
+)
+
+// An alliance with nothing running gets no dropdown at all, and the page
+// then posts no `campaign_id`, which leaves the fleet's campaign untouched.
+const show_campaign_picker = campaigns.length > 0 || (
+    fleet?.campaign_id !== undefined && fleet?.campaign_id !== null
+)
+
+const no_campaign_option = {
+    label: t('no_campaign'),
+    value: '-1'
+} as SelectOptions
+
+// A fleet can be attached to a campaign that has since ended, and that
+// campaign is not in the running list. Offer it anyway, or re-saving the
+// fleet would silently detach it.
+const current_campaign_missing = (
+    fleet?.campaign_id !== undefined &&
+    fleet?.campaign_id !== null &&
+    !campaigns.some((campaign) => campaign.id === fleet.campaign_id)
+)
+
+const finished_campaign_option = current_campaign_missing ? [ {
+    label: fleet?.campaign_name ?? fleet?.campaign_slug ?? String(fleet?.campaign_id),
+    value: fleet?.campaign_id as number,
+} as SelectOptions ] : []
+
+const campaigns_select_options = [  no_campaign_option  ].concat(
+    campaigns.map( (i):SelectOptions => { return { label: i.name, value: i.id } } ),
+    finished_campaign_option
 )
 
 let FLEET_TYPES_LABELS = {}
@@ -100,6 +133,9 @@ if (fleet) {
 
 const default_fleet_type = fleet?.type ?? fleet_types_select_options[0].value
 const default_doctrine = fleet?.doctrine?.id ?? doctrines_select_options[0].value
+const default_campaign = campaigns_select_options.find(
+    (option) => option.value === fleet?.campaign_id
+)?.value ?? campaigns_select_options[0].value
 const default_audience = fleet_audience_id ?? (
     audiences.length === 1
         ? audiences[0].id
@@ -154,6 +190,7 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
             audience: ${JSON.stringify(default_audience_value)},
             location_id: ${JSON.stringify(default_location_value)},
             doctrine_id: ${JSON.stringify(String(default_doctrine))},
+            campaign_id: ${JSON.stringify(String(default_campaign))},
             objective: ${JSON.stringify(fleet?.objective ?? '')},
             local_datetime: '',
             audiences: ${JSON.stringify(AUDIENCES)},
@@ -284,6 +321,26 @@ import TimerIcon from '@components/icons/buttons/TimerIcon.astro';
                                     )}
                                 </Select>
                             </FixedFluid>
+
+                            {show_campaign_picker &&
+                                <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
+                                    <label for="campaign">{t('campaign')}</label>
+                                    <Select
+                                        id="campaign"
+                                        name="campaign_id"
+                                        x-model="campaign_id"
+                                    >
+                                        {campaigns_select_options.map((option) =>
+                                            <option
+                                                value={option.value}
+                                                selected={String(option.value) === String(default_campaign)}
+                                            >
+                                                {option.label}
+                                            </option>
+                                        )}
+                                    </Select>
+                                </FixedFluid>
+                            }
 
                             <FixedFluid class="[ w-full items-center ]" gap="var(--space-3xs)" width="250px" breakpoint="60%">
                                 <FlexInline class="[ !items-center ]" gap='var(--space-3xs)'>

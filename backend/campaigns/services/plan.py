@@ -326,6 +326,17 @@ def generate_orders(campaign: Campaign, day: date | None = None) -> int:
                     {"system": system.name},
                     gap_share_pct,
                 )
+            if net is not None and net < floor:
+                created += _make_order(
+                    campaign,
+                    day,
+                    CampaignDailyOrder.Kind.ADVANTAGE_GENERATED,
+                    pool["advantage_generated"],
+                    system,
+                    {"count": 6, "system": system.name},
+                    gap_share_pct,
+                )
+
             snapshot = (
                 CampaignSystemSnapshot.objects.filter(campaign_system=system)
                 .order_by("-captured_at")
@@ -510,6 +521,7 @@ def _order_progress(order: CampaignDailyOrder, row) -> float:
         CampaignDailyOrder.Kind.GANG_KILL: row.gang_kills,
         CampaignDailyOrder.Kind.PLEX: row.complexes,
         CampaignDailyOrder.Kind.ADVANTAGE_SITE: row.advantage_sites,
+        CampaignDailyOrder.Kind.ADVANTAGE_GENERATED: row.advantage_generated,
         CampaignDailyOrder.Kind.SUPPLY_CACHE: row.supply_caches,
         CampaignDailyOrder.Kind.ADVANTAGE_REPORT: row.advantage_readings,
         CampaignDailyOrder.Kind.FLEET: row.fleets_attended,

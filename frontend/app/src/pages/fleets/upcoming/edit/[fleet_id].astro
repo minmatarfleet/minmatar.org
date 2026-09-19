@@ -27,7 +27,7 @@ if (isNaN(fleet_id))
     return HTTP_404_Not_Found()
 
 import { update_fleet, get_audiences, get_locations, start_fleet } from '@helpers/api.minmatar.org/fleets'
-import type { FleetPatchRequest, FleetTypes, Audience, Location } from '@dtypes/api.minmatar.org'
+import type { FleetPatchRequest, FleetTypes, Audience, Location, CampaignListItem } from '@dtypes/api.minmatar.org'
 import type { DoctrineType, CharacterBasic, Alert } from '@dtypes/layout_components'
 import { send_active_fleet_notification } from '@helpers/notifications'
 
@@ -40,8 +40,15 @@ if (Astro.request.method === "POST") {
         const doctrine = data.get('doctrine_id') as string
         const doctrine_id = doctrine !== '-1' ? parseInt(doctrine) : null
 
+        // The field is missing when the FC has no campaigns to pick from. Leave
+        // `campaign_id` off the payload then, so the PATCH does not detach a
+        // campaign the FC was never shown.
+        const campaign = data.get('campaign_id') as string | null
+        const campaign_id = campaign !== null ? (campaign !== '-1' ? parseInt(campaign) : null) : undefined
+
         const fleet_data = {
             doctrine_id: doctrine_id,
+            ...(campaign_id !== undefined && { campaign_id: campaign_id }),
             description: data.get('description') as string,
             objective: data.get('objective') as string,
             start_time: new Date(`${data.get('eve_date')}T${data.get('eve_time')}Z`),
@@ -82,9 +89,11 @@ if (Astro.request.method === "POST") {
 
 import type { FleetUI } from '@dtypes/layout_components'
 import { fetch_doctrine_options } from '@helpers/fetching/doctrines'
+import { fetch_campaign_options } from '@helpers/fetching/campaigns'
 import { fetch_fleet_by_id } from '@helpers/fetching/fleets'
 
 let doctrines:DoctrineType[] = []
+let campaigns:CampaignListItem[] = []
 let fleet:FleetUI | null = null
 let fleet_commander:CharacterBasic | null = null
 let fetch_doctrines_error: Error | false = false
@@ -100,6 +109,8 @@ try {
     doctrines = await fetch_doctrine_options()
     audiences = await get_audiences(auth_token as string)
     locations = await get_locations(auth_token as string)
+    // Never fatal: swallows its own errors and answers [] instead.
+    campaigns = await fetch_campaign_options(auth_token as string)
 } catch (error) {
     fetch_doctrines_error = error
 }
@@ -193,6 +204,7 @@ const eve_time = eve_datetime.toISOString().slice(11, 16)
                         audiences={audiences}
                         locations={locations}
                         doctrines={doctrines}
+                        campaigns={campaigns}
                         fleet_commander={fleet_commander}
                         eve_date={eve_date}
                         eve_time={eve_time}
